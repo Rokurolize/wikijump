@@ -9,6 +9,7 @@ import {
   parseWikidotLiveEvidenceRows,
   resolveWikidotLiveEvidenceFormat,
   verifiedExternalEvidenceCaseIds,
+  verifiedNativeThemeCaseIds,
 } from "../../../../scripts/lib/wikidot-live-evidence.mjs";
 
 function sha256(value) {
@@ -48,6 +49,37 @@ test("unknown evidence formats are rejected", () => {
       }),
     /Unsupported Wikidot live evidence format/u,
   );
+});
+
+test("native theme controls require the independently retained source and response bytes", () => {
+  const root = mkdtempSync(join(tmpdir(), "wikidot-native-theme-evidence-"));
+  try {
+    const source = '[[module ThemePreviewer noUi="true" theme_url=" "]]';
+    const response = JSON.stringify({status: "ok", body: ""});
+    writeFileSync(join(root, "spaced-source.wikidot.txt"), source);
+    writeFileSync(join(root, "spaced-response.json"), response);
+    const receipt = {schema: "theme_lab_native_theme_previewer_preview_boundary.v1", actor: "anonymous", public_writes: 0, rows: [{id: "spaced", source_sha256: sha256(source), response_sha256: sha256(response), http_status: 200, body: ""}]};
+    assert.deepEqual(verifiedNativeThemeCaseIds(receipt, root), new Set(["spaced"]));
+    assert.throws(() => verifiedNativeThemeCaseIds({...receipt, rows: [receipt.rows[0], receipt.rows[0]]}, root), /duplicate/u);
+    assert.throws(() => verifiedNativeThemeCaseIds({...receipt, public_writes: 1}, root), /anonymous read-only/u);
+    writeFileSync(join(root, "spaced-source.wikidot.txt"), "different source");
+    assert.throws(() => verifiedNativeThemeCaseIds(receipt, root), /hash drifted/u);
+    writeFileSync(join(root, "spaced-source.wikidot.txt"), source);
+    writeFileSync(join(root, "spaced-response.json"), JSON.stringify({status: "error", body: ""}));
+    assert.throws(() => verifiedNativeThemeCaseIds(receipt, root), /hash drifted/u);
+  } finally { rmSync(root, {recursive: true, force: true}); }
+});
+
+test("saved native theme controls bind original HTML rather than their summary", () => {
+  const root = mkdtempSync(join(tmpdir(), "wikidot-native-saved-theme-"));
+  try {
+    const html = '<style>@import url("/common--theme/base/css/style.css");</style>';
+    writeFileSync(join(root, "original.html"), html);
+    const receipt = {schema: "theme_lab_native_saved_theme_reset.v1", actor: "anonymous", public_writes: 0, rows: [{url: "https://example.wikidot.com/page", original_html: {path: "original.html", sha256: sha256(html)}}]};
+    assert.deepEqual(verifiedNativeThemeCaseIds(receipt, root), new Set(["https://example.wikidot.com/page"]));
+    writeFileSync(join(root, "original.html"), "summary alone");
+    assert.throws(() => verifiedNativeThemeCaseIds(receipt, root), /hash drifted/u);
+  } finally { rmSync(root, {recursive: true, force: true}); }
 });
 
 test("summary case IDs require hashed raw external captures", () => {

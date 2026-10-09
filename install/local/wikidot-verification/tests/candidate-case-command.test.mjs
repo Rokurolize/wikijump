@@ -358,6 +358,7 @@ test("private candidate input is hashed from one private non-linked file read", 
 
   const publicFile = path.join(root, "public.json");
   await fs.writeFile(publicFile, "{}\n", { mode: 0o644 });
+  await fs.chmod(publicFile, 0o644);
   await assert.rejects(
     readPrivateCandidateCaseInput(publicFile),
     /private regular file/u,

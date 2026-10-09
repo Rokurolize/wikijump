@@ -236,6 +236,9 @@ lift-expired-punishments-secs = 86400  # 1 day
 # - wikijump.dev        (development / staging)
 # - wikijump.localhost  (local)
 main = "wikijump.com"
+# Public HTTPS listener port used when Deepwell builds absolute site links.
+# The standard HTTPS port is 443; local and candidate deployments set their published port.
+https-port = 443
 
 # The domain used by this instance to serve user-uploaded files
 # and other potentially-insecure data.

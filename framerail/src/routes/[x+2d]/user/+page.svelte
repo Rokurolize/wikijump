@@ -2,6 +2,7 @@
   import Page from "./[slug]/PageView.svelte"
 
   import { errorPopupState } from "$lib/layout/stores.svelte"
+  import { acceptedSnapshot, partialPatch } from "$lib/user-profile-draft.js"
   import { invalidateAll } from "$app/navigation"
   import { fileProxy, superForm } from "sveltekit-superforms"
   import { untrack } from "svelte"
@@ -17,18 +18,15 @@
   // avatar will always be undefined if not uploaded a new avatar
   type checkFormType = Omit<InferOutput<typeof userEditSchema>, "avatar">
 
-  let lastSubmitted = $state<checkFormType>({
-    name: untrack(() => data.user?.name ?? ""),
-    realName: untrack(() => data.user?.real_name ?? ""),
-    email: untrack(() => data.user?.email ?? ""),
-    gender: untrack(() => data.user?.gender ?? ""),
-    birthday: untrack(() => data.user?.birthday ?? ""),
-    location: untrack(() => data.user?.location ?? ""),
-    website: untrack(() => data.user?.website ?? ""),
-    userPage: untrack(() => data.user?.user_page ?? ""),
-    biography: untrack(() => data.user?.biography ?? ""),
-    locales: untrack(() => data.user?.locales?.join(" ") ?? "")
-  })
+  // The last accepted account state. It is the baseline for partial patches and
+  // the value shown in the profile view, so it changes only after the server
+  // confirms a save. Rejected drafts never become part of it.
+  let lastSubmitted = $state<checkFormType>(untrack(() => acceptedSnapshot(data.user)))
+
+  // Cancel and reopening the editor always start from the accepted state.
+  const discardDraft = () => {
+    $form = { ...lastSubmitted, avatar: undefined }
+  }
 
   const { form, enhance } = superForm(
     untrack(() => data.userEditForm),
@@ -36,28 +34,17 @@
       dataType: "json",
       onSubmit: ({ jsonData }) => {
         const { avatar, ...rest } = $form
-        const submitForm = (
-          Object.entries(rest) as [keyof checkFormType, string][]
-        ).reduce<Partial<InferOutput<typeof userEditSchema>>>(
-          (acc, [key, value]) => {
-            if (value === lastSubmitted[key]) {
-              return acc
-            }
-            return { ...acc, [key]: value }
-          },
-          { avatar }
-        )
-
-        lastSubmitted = rest
-
-        jsonData(submitForm)
+        jsonData(partialPatch(rest, lastSubmitted, avatar))
       },
       onResult: async ({ result, cancel }) => {
         if (result.type === "success" && result.data) {
           isEdit = false
           await invalidateAll()
           cancel()
-          $form = untrack(() => ({ ...lastSubmitted, avatar: $form.avatar }))
+          // Adopt what the server persisted, including normalized values, rather
+          // than the client payload.
+          lastSubmitted = acceptedSnapshot(data.user)
+          discardDraft()
         }
         if (result.type === "failure" && result.data) {
           errorPopupState.current = {
@@ -92,11 +79,18 @@
     use:enhance
   >
     <label for="name">{data.internationalization?.["user-profile-info.name"]}</label>
-    <input name="name" class="user-attribute name" type="text" bind:value={$form.name} />
+    <input
+      id="name"
+      name="name"
+      class="user-attribute name"
+      type="text"
+      bind:value={$form.name}
+    />
     <label for="real-name"
       >{data.internationalization?.["user-profile-info.real-name"]}</label
     >
     <input
+      id="real-name"
       name="realName"
       class="user-attribute real-name"
       type="text"
@@ -104,6 +98,7 @@
     />
     <label for="email">{data.internationalization?.["user-profile-info.email"]}</label>
     <input
+      id="email"
       name="email"
       class="user-attribute email"
       type="text"
@@ -111,6 +106,7 @@
     />
     <label for="avatar">{data.internationalization?.["user-profile-info.avatar"]}</label>
     <input
+      id="avatar"
       name="avatar"
       class="user-attribute avatar"
       accept="image/png,image/jpeg,image/bmp"
@@ -119,6 +115,7 @@
     />
     <label for="gender">{data.internationalization?.["user-profile-info.gender"]}</label>
     <input
+      id="gender"
       name="gender"
       class="user-attribute gender"
       type="text"
@@ -128,6 +125,7 @@
       >{data.internationalization?.["user-profile-info.birthday"]}</label
     >
     <input
+      id="birthday"
       name="birthday"
       class="user-attribute birthday"
       type="date"
@@ -137,6 +135,7 @@
       >{data.internationalization?.["user-profile-info.location"]}</label
     >
     <input
+      id="location"
       name="location"
       class="user-attribute location"
       type="text"
@@ -145,6 +144,7 @@
     <label for="website">{data.internationalization?.["user-profile-info.website"]}</label
     >
     <input
+      id="website"
       name="website"
       class="user-attribute website"
       type="text"
@@ -154,6 +154,7 @@
       >{data.internationalization?.["user-profile-info.user-page"]}</label
     >
     <input
+      id="user-page"
       name="userPage"
       class="user-attribute user-page"
       type="text"
@@ -163,6 +164,7 @@
       >{data.internationalization?.["user-profile-info.biography"]}</label
     >
     <input
+      id="biography"
       name="biography"
       class="user-attribute biography"
       type="text"
@@ -171,6 +173,7 @@
     <label for="locales">{data.internationalization?.["user-profile-info.locales"]}</label
     >
     <input
+      id="locales"
       name="locales"
       class="user-attribute locales"
       type="text"
@@ -179,7 +182,10 @@
     <div class="action-row editor-actions">
       <button
         class="action-button editor-button button-cancel clickable"
-        onclick={() => (isEdit = false)}
+        onclick={() => {
+          isEdit = false
+          discardDraft()
+        }}
         type="button"
       >
         {data.internationalization?.cancel}

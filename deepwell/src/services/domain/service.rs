@@ -196,6 +196,24 @@ impl DomainService {
         }
     }
 
+    /// Gets the externally reachable HTTPS origin for a site.
+    ///
+    /// Deployments behind a non-default public HTTPS port must include that
+    /// port in absolute cross-site links. The persisted preferred domain is a
+    /// hostname; the public listener port belongs to deployment configuration.
+    pub fn preferred_https_origin(config: &Config, site: &SiteModel) -> String {
+        preferred_https_origin(&Self::preferred_domain(config, site), config.https_port)
+    }
+
+    /// Gets the HTTPS origin for an already-resolved preferred domain.
+    ///
+    /// Runtime views that project a site row rather than loading its model can
+    /// still use the configured public listener port without duplicating URL
+    /// assembly rules.
+    pub fn preferred_https_origin_for_domain(config: &Config, domain: &str) -> String {
+        preferred_https_origin(domain, config.https_port)
+    }
+
     /// Return the preferred domain for the `www` site.
     ///
     /// This site is a special exception, instead of visiting `www.wikijump.com`
@@ -228,6 +246,31 @@ impl DomainService {
             .or_raise(make_error)?;
 
         Ok(models)
+    }
+}
+
+fn preferred_https_origin(domain: &str, port: u16) -> String {
+    if port == 443 {
+        format!("https://{domain}")
+    } else {
+        format!("https://{domain}:{port}")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::preferred_https_origin;
+
+    #[test]
+    fn preferred_https_origin_omits_the_default_port_and_keeps_custom_ports() {
+        assert_eq!(
+            preferred_https_origin("platform.example.test", 443),
+            "https://platform.example.test",
+        );
+        assert_eq!(
+            preferred_https_origin("platform.example.test", 18445),
+            "https://platform.example.test:18445",
+        );
     }
 }
 

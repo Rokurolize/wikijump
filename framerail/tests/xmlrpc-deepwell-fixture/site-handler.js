@@ -6,10 +6,15 @@ export const handleSiteRpc = ({ rpcRequest }) => {
 
   if (
     rpcRequest.method === "preload_view" &&
-    hasExactKeys(rpcRequest.params, ["site_id", "locales", "session_token"]) &&
+    (hasExactKeys(rpcRequest.params, ["site_id", "locales"]) ||
+      hasExactKeys(rpcRequest.params, ["site_id", "locales", "session_token"])) &&
     rpcRequest.params?.site_id === 6000005 &&
     Array.isArray(rpcRequest.params.locales) &&
-    rpcRequest.params.session_token === "fixture-session-token"
+    (rpcRequest.params.session_token === null ||
+      rpcRequest.params.session_token === undefined ||
+      ["fixture-session-token", "fixture-authenticated-session-token"].includes(
+        rpcRequest.params.session_token
+      ))
   ) {
     result = {
       site: {
@@ -56,7 +61,19 @@ export const handleSiteRpc = ({ rpcRequest }) => {
       license_url: "https://creativecommons.org/licenses/by-sa/3.0/",
       license_kind: "standard",
       license_html: null,
-      user_session: null
+      user_session:
+        rpcRequest.params.session_token === "fixture-authenticated-session-token"
+          ? {
+              session_id: 6000008,
+              user: {
+                user_id: 6000008,
+                user_type: "regular",
+                name: "Fixture Member",
+                slug: "fixture-member",
+                locales: ["en"]
+              }
+            }
+          : null
     }
   } else if (
     rpcRequest.method === "admin_view" &&
@@ -124,8 +141,23 @@ export const handleSiteRpc = ({ rpcRequest }) => {
     rpcRequest.params.messages !== null &&
     Array.isArray(rpcRequest.params.strip_message_keys)
   ) {
+    const isJapanese = rpcRequest.params.locales.some((locale) =>
+      `${locale}`.toLowerCase().startsWith("ja")
+    )
+    const authLabels = isJapanese
+      ? {
+          "error-form.password-mismatch": "パスワードが一致しません。",
+          "error-form.password-too-short": "パスワードは15文字以上で入力してください。"
+        }
+      : {
+          specifier: "Email or Username",
+          password: "Password",
+          "password.placeholder": "Enter password...",
+          "confirm-password": "Confirm Password",
+          "mfa-code": "MFA code"
+        }
     result = Object.fromEntries(
-      Object.keys(rpcRequest.params.messages).map((key) => [key, key])
+      Object.keys(rpcRequest.params.messages).map((key) => [key, authLabels[key] ?? key])
     )
   } else {
     return undefined

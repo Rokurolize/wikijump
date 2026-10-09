@@ -19,6 +19,23 @@ const AUTHENTICATED_HEADERS = {
 }
 const FIXTURE_URL = `http://127.0.0.1:${process.env.PLAYWRIGHT_FIXTURE_PORT ?? "42747"}`
 
+test("canonical page URL aliases issue a 301 and preserve route state", async ({
+  page,
+  request
+}) => {
+  const redirect = await request.get("/PAGE-WORKFLOW-PROBE?view=history", {
+    headers: SITE_HEADERS,
+    maxRedirects: 0
+  })
+  expect(redirect.status()).toBe(301)
+  expect(redirect.headers().location).toBe("/page-workflow-probe?view=history")
+
+  await page.setExtraHTTPHeaders(SITE_HEADERS)
+  await page.goto("/PAGE-WORKFLOW-PROBE?view=history#history-target")
+  await expect(page).toHaveURL(/\/page-workflow-probe\?view=history#history-target$/u)
+  await expect(page.locator("#page-content")).toContainText("Page workflow probe")
+})
+
 async function expectSuccessfulAction(response: APIResponse) {
   const body = await response.text()
   expect(response.ok(), body).toBe(true)
@@ -211,6 +228,72 @@ test("article routes carry load and mutation context through Deepwell", async ({
       })
     })
   )
+})
+
+test("rating pane loads its score and refreshes after plus, minus, and cancel", async ({
+  page
+}) => {
+  const scoreStatuses: number[] = []
+  page.on("response", (response) => {
+    if (response.url().includes("?/score")) scoreStatuses.push(response.status())
+  })
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/page-workflow-rating-probe")
+  await waitForSvelteDelegatedHandler(page, "#pagerate-button")
+  await page.locator("#pagerate-button").click()
+
+  const rating = page.locator(".page-rate-widget-box")
+  const score = rating.locator(".number.prw54353")
+  await expect(rating).toBeVisible()
+  await expect(score).toHaveText("0")
+  expect(scoreStatuses).toEqual([200])
+
+  const refreshAfter = async (
+    action: () => Promise<unknown>,
+    actionName: string,
+    expectedScoreRequests: number,
+    expectedScore: string
+  ) => {
+    const actionResponse = page.waitForResponse((response) =>
+      response.url().includes(`?/${actionName}`)
+    )
+    await action()
+    expect((await actionResponse).status()).toBe(200)
+    await expect(score).toHaveText(expectedScore)
+    await expect.poll(() => scoreStatuses.length).toBe(expectedScoreRequests)
+  }
+
+  await refreshAfter(() => rating.locator(".rateup a").click(), "voteCast", 2, "1")
+  await page.getByRole("link", { name: "Look who rated this page" }).click()
+  await expect(page.locator("#who-rated-page-area")).toContainText("Guest")
+  await refreshAfter(() => rating.locator(".ratedown a").click(), "voteCast", 3, "-1")
+  await refreshAfter(() => rating.locator(".cancel a").click(), "voteCancel", 4, "0")
+  await page.getByRole("link", { name: "Look who rated this page" }).click()
+  await expect(page.locator("#who-rated-page-area")).not.toContainText("Guest")
+  expect(scoreStatuses).toEqual([200, 200, 200, 200])
+
+  scoreStatuses.length = 0
+  await page.goto("/page-workflow-star-probe")
+  await waitForSvelteDelegatedHandler(page, "#pagerate-button")
+  await page.locator("#pagerate-button").click()
+  const starWidget = page.locator(".page-rate-widget")
+  await expect(starWidget).toBeVisible()
+  await expect(starWidget.locator(".page-rate-widget-start")).toHaveAttribute(
+    "data-rating",
+    "3"
+  )
+  await expect.poll(() => scoreStatuses.length).toBe(1)
+  const starVoteResponse = page.waitForResponse((response) =>
+    response.url().includes("?/voteCast")
+  )
+  await starWidget.locator('img[alt="4"]').click()
+  expect((await starVoteResponse).status()).toBe(200)
+  await expect.poll(() => scoreStatuses.length).toBe(2)
+  await expect(starWidget.locator(".page-rate-widget-start")).toHaveAttribute(
+    "data-rating",
+    "4"
+  )
+  expect(scoreStatuses).toEqual([200, 200])
 })
 
 test("autonumbered page creation follows the assigned slug", async ({ page }) => {
@@ -480,13 +563,45 @@ test("WIKIDOT History preserves source row selectors and functional actions acro
     await expect(row.locator(".printuser.avatarhover")).toBeVisible()
     await expect(row.locator(".odate[class*='format_%25e']")).toHaveCount(1)
     await expect(row.locator(".odate")).toHaveText("15 Aug 2026 00:00")
+    await expect(row.locator(".odate")).toBeVisible()
     await expect(row.locator('input[type="radio"][name="from"]')).toBeVisible()
     await expect(row.locator('input[type="radio"][name="to"]')).toBeVisible()
     const cells = await row
       .locator("td")
       .evaluateAll((items) => items.map((cell) => cell.textContent?.trim() ?? ""))
     expect(cells).toHaveLength(7)
+
+    const revisionDates = table.locator('tbody > tr[id^="revision-row-"] .odate')
+    const dateCount = await revisionDates.count()
+    for (let dateIndex = 0; dateIndex < dateCount; dateIndex += 1) {
+      await expect(revisionDates.nth(dateIndex)).toBeVisible()
+    }
   }
+})
+
+test("WIKIDOT reveals populated odate spans after hydration and dynamic insertion", async ({
+  page
+}) => {
+  await page.setExtraHTTPHeaders(SITE_HEADERS)
+  await page.goto("/page-workflow-probe")
+  await page.evaluate(() => {
+    const content = document.querySelector("#page-content")
+    if (!content) throw new Error("page content was not rendered")
+
+    const populated = document.createElement("span")
+    populated.className = "odate time_1785638315 format_%25e%20%25b%20%25Y"
+    populated.textContent = "02 Aug 2026 02:38"
+    populated.dataset.testid = "odate-populated"
+    content.append(populated)
+
+    const empty = document.createElement("span")
+    empty.className = "odate time_1785638315 format_%25e%20%25b%20%25Y"
+    empty.dataset.testid = "odate-empty"
+    content.append(empty)
+  })
+
+  await expect(page.getByTestId("odate-populated")).toBeVisible()
+  await expect(page.getByTestId("odate-empty")).not.toBeVisible()
 })
 
 test("mobile Files pane keeps long Japanese filenames and actions horizontally accessible", async ({

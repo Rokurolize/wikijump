@@ -30,6 +30,7 @@ time-skew = 1
 
 [domain]
 main = "wikijump.localhost"
+https-port = 18443
 files = "wjfiles.localhost"
 
 [job]

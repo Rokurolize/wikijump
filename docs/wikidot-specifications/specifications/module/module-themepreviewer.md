@@ -20,6 +20,31 @@ Every explicit default, accepted value, rejected value, alias, limit, interactio
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
 
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### Blank ThemePreviewer consumes module output; saved documents omit their site theme
+
+- Observation ID: `theme-previewer-blank-saved-page-and-preview-20261003`
+- Classification: `documentation-omission`
+- Observed at: `2026-10-03`
+- Analysis: Four anonymous cache-gated PagePreview requests establish empty module output for the exact noUi="true" and theme_url=" " head, including abutted attributes. Literal code and Wikidot comments remain inert. Independently retained original saved-page HTML for theme:wikifot and two including articles contains Wikidot base and PageRate styles plus a blank theme import, without the site Sigma stylesheet. Saved-page stylesheet behavior is not inferred from PagePreview cssInclude; those responses contain no CSS additions. No public pages were written. Retained saved-page authority is original HTML only and does not assert completeness of unrelated assets.
+
+Normative behavior:
+
+- The evidenced exact two double-quoted attributes noUi="true" and theme_url=" " produce no visible ThemePreviewer body; a missing whitespace separator between those attributes is accepted.
+- In saved-page rendering, this executable blank-theme form selects the blank site-theme slot while retaining Wikidot base and PageRate styles. Its presence in resolved include content is page-wide, as evidenced by the retained including articles.
+- PagePreview produces no module body or CSS additions for this form; it does not authorize resetting the saved page shell during preview.
+- The code-block and Wikidot-comment cases are inert. Unknown attribute heads, nonblank URLs, other values and conditional/unevidenced cases are outside this bounded observation.
+
+Evidence:
+
+- `install/local/theme-lab/ports/authority-evidence/native-theme-previewer-blank-20261003/receipt.json` (SHA-256 `3ed236a9c69c4b24c91080e97e6220237e8a530b12c07094e9a733744e0f84ed`), cases: `abutted`, `spaced`, `code`, `comment`
+- `install/local/theme-lab/ports/authority-evidence/wikifot-native-site-theme-reset-20261003/receipt.json` (SHA-256 `839dd08d080f5287b4e60c50603962185ee7ed8c3d08f1010f61b5934421981f`), cases: `https://scp-wiki.wikidot.com/theme:wikifot`, `https://scp-wiki.wikidot.com/noodles-goober-inc`, `https://scp-wiki.wikidot.com/wynths-authorpage`
+
+
 
 ## Suggested public TDD seams
 
@@ -32,6 +57,7 @@ These seams are recommendations. The implementation agent must present and confi
 
 - Module names and attribute names are compatibility-sensitive and must not be modernized.
 - Examples are acceptance-test inputs, not permission to infer behavior beyond the documented case.
+- Observation theme-previewer-blank-saved-page-and-preview-20261003 binds blank saved-page theme selection separately from empty PagePreview output. Its resolved executable include content owns persisted presentation state; code and comments remain inert. Unknown heads and values remain outside that observation.
 
 ## Source inventory
 
@@ -69,7 +95,3 @@ L0021 which results in (you can try this now):
 L0022 
 L0023 [[module ThemePreviewer]]
 ```
-
-## Bounded native observation: blank saved-page theme
-
-Observation `theme-previewer-blank-saved-page-and-preview-20261003` in the [live observation registry](../../live-observations.json) binds the exact double-quoted `noUi="true" theme_url=" "` form, including abutted attributes. Anonymous PagePreview consumes the module with no visible body or CSS additions; code and comment instances are inert. Retained original HTML for Wikifot and two including articles independently proves that saved pages retain Wikidot base and PageRate styles while selecting a blank site-theme import. This saved-page effect belongs to resolved executable source and must be carried as page presentation state, independently of CSS-module output. PagePreview must not apply the saved-page shell effect. Unknown heads and other values remain outside this observation.

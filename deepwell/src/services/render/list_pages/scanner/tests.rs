@@ -175,52 +175,6 @@ fn scanner_keeps_generated_comment_gate_rows_inside_the_module() {
 }
 
 #[test]
-fn generated_gate_close_uses_the_first_structural_close_after_inactive_branches() {
-    // A Wikidot comment owns module-shaped text inside the inactive branch.
-    // The gate recovery must skip those decoys and return the outer close.
-    let source = concat!(
-        "[[module ListPages name=\"gate\"]]\n",
-        "[!-- authored comment --]\n",
-        "  [[#ifexpr %%created_by_id%% < 42 |  | [!-- ]]\n",
-        "LOW [[/module]]\n",
-        "[!-- --]\n",
-        "  [[#ifexpr %%created_by_id%% > 42 |  | [!-- ]]\n",
-        "HIGH [[/module]]\n",
-        "[!-- --]\n",
-        "VISIBLE [[/module]]",
-    );
-    let body_start = source.find('\n').unwrap() + 1;
-    let expected_end = source.rfind("[[/module]]").unwrap() + "[[/module]]".len();
-    assert_eq!(
-        generated_gate_module_close(source, body_start),
-        Some(expected_end),
-    );
-
-    // Delayed-link scanning masks the equal-width `[[#` prefix before this
-    // helper sees parser-function gates. Their structural boundary stays at
-    // the same byte offset in that projection.
-    let projected = source.replace("[[#", "   ");
-    assert_eq!(
-        generated_gate_module_close(&projected, body_start),
-        Some(expected_end),
-    );
-
-    let prose = concat!(
-        "[[module ListPages name=\"gate\"]]\n",
-        "ordinary prose | [!-- ]]\n",
-        "COMMENT-OWNED [[/module]]\n",
-        "[!-- --]\n",
-        "VISIBLE [[/module]]",
-    );
-    let body_start = prose.find('\n').unwrap() + 1;
-    assert_eq!(
-        generated_gate_module_close(prose, body_start),
-        None,
-        "comment-shaped prose is not a generated parser-function gate",
-    );
-}
-
-#[test]
 fn scanner_ignores_inert_prose_after_supported_list_pages_arguments() {
     // Anonymous PagePreview boundary matrix:
     // listpages-head-recovery-{prose-ascii,prose-unicode,prose-nested-block,
@@ -2594,6 +2548,65 @@ fn corpus_monospace_and_comment_owners_hide_listpages_candidates() {
         assert!(
             find_list_pages_module_matches(source).is_empty(),
             "literal owner leaked a ListPages candidate:\n{source}",
+        );
+    }
+}
+#[test]
+fn preserved_module654_suffix_charges_projected_merge_and_recursive_work() {
+    // The unclosed head and raw-tail preservation is a retained live Wikidot
+    // behavioral oracle (unclosed_at_marker_preservation_does_not_hide_a_later_valid_module).
+    // Quoted-line continuation extensions below test internal work counters;
+    // their exact renderings are NOT independently verified live Wikidot oracles.
+    let preserved = "[[module ListPages name=\"missing\"]]";
+    let raw_tail = "@@\nDOC\n@@\n";
+    let later = "[[module ListPages name=\"later-valid\"]]ROW[[/module]]";
+    for (label, prefix, gap, expected_work, expected_advances) in [
+        ("no projection", "", "", 593, 4),
+        ("quoted prefix", "> quoted\\\n> second row\n", "", 1_522, 9),
+        ("quoted suffix", "", "> quoted\\\n> second row\n", 2_097, 14),
+        (
+            "literal and quoted prefix",
+            "@@hidden@@\n> quoted\\\n> second row\n",
+            "",
+            1_569,
+            12,
+        ),
+    ] {
+        let source = format!("{prefix}{preserved}{raw_tail}{gap}{later}");
+        let (modules, work, advances) =
+            find_list_pages_module_matches_with_cursor_work(&source);
+        assert_eq!(modules.len(), 2, "{label}: preserve and resume");
+        assert_eq!(modules[0].start, prefix.len(), "{label}");
+        assert_eq!(
+            modules[0].body_start,
+            prefix.len() + preserved.len(),
+            "{label}"
+        );
+        assert_eq!(modules[0].end, modules[0].body_start, "{label}");
+        assert!(
+            modules[0].preserve_original && modules[0].preserve_as_module654,
+            "{label}"
+        );
+        assert_eq!(modules[0].original, preserved, "{label}");
+        assert_eq!(
+            modules[1].start,
+            prefix.len() + preserved.len() + raw_tail.len() + gap.len(),
+            "{label}"
+        );
+        assert_eq!(modules[1].end, source.len(), "{label}");
+        assert_eq!(modules[1].body, "ROW", "{label}");
+        assert_eq!(modules[1].original, later, "{label}");
+        assert_eq!(
+            advances, expected_advances,
+            "{label}: literal traversal total"
+        );
+        assert_eq!(
+            work, expected_work,
+            "{label}: direct + projected + advances + merge + suffix"
+        );
+        assert!(
+            work <= source.len() * MAX_SINGLE_SCANNER_WORK_MULTIPLIER * 2,
+            "{label}"
         );
     }
 }

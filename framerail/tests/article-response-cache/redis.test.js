@@ -59,7 +59,7 @@ const createPubSubRedisServer = async ({
       buffer += chunk
       if (!buffer.includes("SUBSCRIBE")) return
       buffer = ""
-      onSubscribe?.(socket)
+      if (onSubscribe?.(socket) === false) return
       socket.write(redisArray("subscribe", channel, "1"))
     })
   })
@@ -340,12 +340,23 @@ test("Redis cache store times out unanswered authentication", async () => {
 
 test("Redis article response fence subscriber retries after initial subscribe failure", async () => {
   const channel = "test:article-response-fence"
-  const port = await getUnusedPort()
-  const redisUrl = `redis://127.0.0.1:${port}`
   let disconnects = 0
   let subscribed = 0
+  let subscribeAttempts = 0
+  const redis = await createPubSubRedisServer({
+    channel,
+    onSubscribe: (socket) => {
+      subscribeAttempts += 1
+      if (subscribeAttempts !== 1) return
+      socket.destroy()
+      return false
+    }
+  })
 
-  const subscriber = new RedisFenceInvalidationSubscriber(redisUrl, [])
+  const subscriber = new RedisFenceInvalidationSubscriber(
+    `redis://127.0.0.1:${redis.port}`,
+    []
+  )
   subscriber.subscribe({
     channel,
     onSubscribed: () => {
@@ -358,10 +369,8 @@ test("Redis article response fence subscriber retries after initial subscribe fa
     onMalformed: () => {}
   })
 
-  await waitFor(() => disconnects > 0, "subscriber did not fail closed")
-  const redis = await createPubSubRedisServer({ channel, port })
-
   try {
+    await waitFor(() => disconnects > 0, "subscriber did not fail closed")
     await waitFor(() => subscribed === 1, "subscriber did not retry subscription")
     assert.equal(disconnects >= 1, true)
   } finally {

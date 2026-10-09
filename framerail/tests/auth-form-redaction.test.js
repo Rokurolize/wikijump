@@ -88,3 +88,26 @@ test("registration action forms clear both password fields", () => {
   assert.equal(form.data.username, "alice")
   assert.doesNotMatch(JSON.stringify(form), /submitted/)
 })
+
+test("registration field errors stay present without echoing submitted passwords", () => {
+  const password = "too-short"
+  const form = {
+    valid: false,
+    data: { username: "alice", password, confirmPassword: password },
+    errors: {
+      password: ["account-password-too-short"],
+      confirmPassword: [`mismatch ${password}`]
+    }
+  }
+
+  const payload = redactAuthActionPayload({ form: clearRegisterPasswords(form) }, [
+    password,
+    password
+  ])
+
+  assert.deepEqual(payload.form.errors.password, ["account-password-[redacted]"])
+  assert.deepEqual(payload.form.errors.confirmPassword, ["mismatch [redacted]"])
+  assert.equal(payload.form.data.password, "")
+  assert.equal(payload.form.data.confirmPassword, "")
+  assert.doesNotMatch(JSON.stringify(payload), /too-short/)
+})

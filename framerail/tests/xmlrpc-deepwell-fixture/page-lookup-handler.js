@@ -47,6 +47,18 @@ export const handlePageLookupRpc = ({ rpcRequest, request, response }) => {
   } else if (
     rpcRequest.method === "page_edit_permission" &&
     hasExactKeys(rpcRequest.params, []) &&
+    request.headers["x-deepwell-session-token"] === undefined &&
+    request.headers["x-deepwell-site-id"] === "6000005" &&
+    typeof request.headers["x-deepwell-page"] === "string" &&
+    pages[request.headers["x-deepwell-page"]]
+  ) {
+    // Production answers an anonymous actor with the permission decision, not
+    // a transport error, so Hash Magic and option-bar edit clicks both reach
+    // the localized denial dialog instead of an RPC failure message.
+    result = { can_edit: false }
+  } else if (
+    rpcRequest.method === "page_edit_permission" &&
+    hasExactKeys(rpcRequest.params, []) &&
     request.headers["x-deepwell-session-token"] === "fixture-session-token" &&
     request.headers["x-deepwell-site-id"] === "6000005" &&
     typeof request.headers["x-deepwell-page"] === "string" &&
@@ -106,6 +118,50 @@ export const handlePageLookupRpc = ({ rpcRequest, request, response }) => {
   ) {
     pageReadRequests.pageGetDirect.push(rpcRequest.params)
     result = toPageResult(pageById(rpcRequest.params.page_id), rpcRequest.params.details)
+  } else if (
+    rpcRequest.method === "page_get_score" &&
+    hasExactKeys(rpcRequest.params, ["page", "site_id"]) &&
+    rpcRequest.params.site_id === 6000005 &&
+    typeof rpcRequest.params.page === "string" &&
+    request.headers["x-deepwell-site-id"] === "6000005" &&
+    request.headers["x-deepwell-page"] === rpcRequest.params.page &&
+    pages[rpcRequest.params.page]
+  ) {
+    pageReadRequests.pageGetScore.push({
+      headers: {
+        page: request.headers["x-deepwell-page"],
+        siteId: request.headers["x-deepwell-site-id"]
+      },
+      params: rpcRequest.params
+    })
+    const page = pages[rpcRequest.params.page]
+    result = {
+      page_id: page.page_id,
+      score: fixtureState.ratingScores[page.page_id] ?? 0
+    }
+  } else if (
+    rpcRequest.method === "page_who_rated" &&
+    hasExactKeys(rpcRequest.params, ["page_id", "site_id"]) &&
+    rpcRequest.params.site_id === 6000005 &&
+    rpcRequest.params.page_id === 3000342 &&
+    request.headers["x-deepwell-session-token"] === "fixture-session-token" &&
+    request.headers["x-deepwell-site-id"] === "6000005" &&
+    request.headers["x-deepwell-page"] === "3000342"
+  ) {
+    const value = fixtureState.voteValues[3000342]
+    result = value
+      ? [
+          {
+            user: {
+              "user-id": 123,
+              "user-slug": "guest",
+              "user-name": "Guest",
+              "user-karma": 0
+            },
+            value
+          }
+        ]
+      : []
   } else if (
     rpcRequest.method === "page_revision_count" &&
     hasExactKeys(rpcRequest.params, ["page", "site_id"]) &&

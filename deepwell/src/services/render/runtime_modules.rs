@@ -2,6 +2,8 @@
 
 mod membership;
 mod page_calendar;
+mod platform_directory;
+mod platform_navigation;
 mod rate;
 mod rated_pages;
 mod tag_cloud;
@@ -55,13 +57,15 @@ use super::search_feed::expand_search_feed_modules;
 use super::service::{
     MAX_LISTPAGES_RENDER_SCAN_ROWS, PAGECALENDAR_MODULE_REGEX, RATE_MODULE_REGEX,
     RATEDPAGES_MODULE_REGEX, REGISTRY_MODULE_REGEX, RenderService, TAGCLOUD_MODULE_REGEX,
-    escape_list_pages_html_attr, escape_list_pages_html_text, render_clone_module,
+    escape_list_pages_html_attr, escape_list_pages_html_text,
+    localized_runtime_module_label, render_clone_module,
 };
 use super::site_changes::expand_site_changes_modules;
 use super::site_utility_modules::expand_site_utility_modules;
 use super::url_arguments::UrlArguments;
 use super::user_directory::{MEMBERS_MODULE_REGEX, render_members_module};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::services::domain::DomainService;
 use crate::services::membership::{JoinModuleState, MembershipService};
 use crate::services::page_query::{
     AuthorSelector, CategoriesSelector, ComparisonOperation, DateSelector,
@@ -76,8 +80,8 @@ use crate::services::settings::PageRatingType;
 use crate::services::user::User;
 use crate::services::view::redirect::escape_wikidot_html_text as escape_redirect_notice_text;
 use crate::services::{
-    PageDraftPageType, PageDraftService, PageDraftView, PageRevisionService, PageService,
-    RelationService, ServiceContext, SiteService, UserService,
+    PageDraftService, PageDraftView, PageRevisionService, PageService, RelationService,
+    ServiceContext, SiteService, UserService,
 };
 use crate::types::Reference;
 use crate::types::{Action, Permission, RelationType, Resource};
@@ -815,7 +819,11 @@ impl RenderService {
             output.push_str(&wikitext[cursor..matched.start()]);
             let head = captures.name("head").map_or("", |mtch| mtch.as_str());
             let rendered = if name.eq_ignore_ascii_case("NewPage") {
-                render_new_page_module(head, NewPageTemplateRendering::None)
+                render_new_page_module(
+                    head,
+                    NewPageTemplateRendering::None,
+                    "Name of the new page",
+                )
             } else if name.eq_ignore_ascii_case("Clone") {
                 render_clone_module(head)
             } else {
@@ -856,6 +864,7 @@ impl RenderService {
         ctx: &ServiceContext<'_>,
         wikitext: String,
         settings: &WikitextSettings,
+        language: &str,
         current_site_id: Option<i64>,
         compat_html: &mut CompatHtmlFragments,
     ) -> Result<String> {
@@ -863,6 +872,12 @@ impl RenderService {
             return Ok(wikitext);
         }
 
+        let accessible_name = localized_runtime_module_label(
+            ctx,
+            language,
+            "wiki-page-module-new-page-name",
+            "Name of the new page",
+        );
         let mut output = String::with_capacity(wikitext.len());
         let mut cursor = 0;
         for module in executable_new_page_modules(&wikitext) {
@@ -874,7 +889,8 @@ impl RenderService {
             };
             let templates =
                 resolve_new_page_templates(ctx, current_site_id, template_names).await?;
-            let rendered = render_new_page_module(module.head, templates);
+            let rendered =
+                render_new_page_module(module.head, templates, &accessible_name);
             output.push_str(&compat_html.push_html(rendered));
             cursor = module.source_range.end;
         }
@@ -1225,6 +1241,20 @@ impl RenderService {
         )
         .await
         .or_raise(make_error)?;
+        wikitext = platform_navigation::expand(ctx, wikitext, settings)
+            .await
+            .or_raise(make_error)?;
+        wikitext = platform_directory::expand(
+            ctx,
+            wikitext,
+            settings,
+            page_info,
+            options.viewer_user_id,
+            options.url,
+            compat_html,
+        )
+        .await
+        .or_raise(make_error)?;
         wikitext = {
             let _stage = StageGuard::new(options.trace, CorpusRenderStage::CountPages);
             Self::expand_count_pages(
@@ -1334,8 +1364,19 @@ impl RenderService {
         )
         .await
         .or_raise(make_error)?;
-        wikitext =
-            expand_search_feed_modules(wikitext, settings, options.url, compat_html);
+        let search_all_accessible_name = localized_runtime_module_label(
+            ctx,
+            page_info.language.as_ref(),
+            "wiki-page-module-search-all-query",
+            "Search all Wikis",
+        );
+        wikitext = expand_search_feed_modules(
+            wikitext,
+            settings,
+            options.url,
+            &search_all_accessible_name,
+            compat_html,
+        );
         wikitext = Self::expand_simpletodo_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_send_invitations_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_membership_email_invitation_modules(
@@ -1432,74 +1473,6 @@ fn wikidot_scope_head_is(source: &str, start: usize, expected: &str) -> bool {
         return false;
     };
     tail[..end].trim().eq_ignore_ascii_case(expected)
-}
-
-fn list_drafts_page_type(head: &str) -> Option<PageDraftPageType> {
-    if head.trim() == "pageType" {
-        return Some(PageDraftPageType::All);
-    }
-    let arguments = wikidot_module_arguments(head)?;
-    let exists = arguments.len() == 1
-        && arguments.iter().any(|argument| {
-            argument.key == "pageType"
-                && argument.op == "="
-                && argument.value_kind == WikidotModuleArgumentValueKind::DoubleQuoted
-                && argument.value == "exists"
-        });
-    Some(if exists {
-        PageDraftPageType::Exists
-    } else {
-        PageDraftPageType::All
-    })
-}
-
-#[cfg(test)]
-mod list_drafts_tests {
-    use super::{PageDraftPageType, PageDraftView, RenderService, list_drafts_page_type};
-
-    #[test]
-    fn page_type_filter_accepts_only_the_observed_exact_form() {
-        assert_eq!(
-            list_drafts_page_type(r#" pageType="exists""#),
-            Some(PageDraftPageType::Exists),
-        );
-        for head in [
-            "",
-            r#" pageType="notexists""#,
-            r#" pageType="""#,
-            r#" pageType="other""#,
-            " pageType='exists'",
-            " pageType=exists",
-            r#" PAGETYPE="exists""#,
-            r#" pageType!="exists""#,
-            r#" pageType="exists" other="value""#,
-            r#" pageType="exists" pageType="notexists""#,
-        ] {
-            assert_eq!(
-                list_drafts_page_type(head),
-                Some(PageDraftPageType::All),
-                "head: {head:?}",
-            );
-        }
-        assert_eq!(
-            list_drafts_page_type(" pageType"),
-            Some(PageDraftPageType::All),
-        );
-        assert_eq!(list_drafts_page_type(" malformed bare"), None);
-    }
-
-    #[test]
-    fn renderer_keeps_the_observed_row_hierarchy_and_escapes_values() {
-        let html = RenderService::render_list_drafts(&[PageDraftView {
-            slug: "run-owned:fixture".to_owned(),
-            title: "Draft <one>".to_owned(),
-        }]);
-        assert!(html.contains(r#"<div class="list-drafts-box">"#));
-        assert!(html.contains(r#"<div class="list-drafts-item">"#));
-        assert!(
-            html.contains(r#"<p><a href="/run-owned:fixture">Draft &lt;one&gt;</a></p>"#)
-        );
-    }
 }
 
 #[cfg(test)]

@@ -31,6 +31,10 @@ import {
 import type { PreloadDataAsync } from "$lib/server/deepwell/views"
 import { UserType, type TranslateKeys } from "$lib/types"
 import type { RequestEvent } from "@sveltejs/kit"
+import {
+  areSupportedUserInterfaceLocales,
+  USER_INTERFACE_LOCALES
+} from "$lib/user-interface-locales"
 
 export async function loadRegisterPage(request: Request, preloadData: PreloadDataAsync) {
   loadSiteInfo(request.headers)
@@ -59,6 +63,7 @@ export async function loadRegisterPage(request: Request, preloadData: PreloadDat
     "confirm-password": {},
     "register.toast": {},
     "create-account": {},
+    "login": {},
 
     // errors
     "error-form.password-mismatch": {},
@@ -71,7 +76,12 @@ export async function loadRegisterPage(request: Request, preloadData: PreloadDat
   const registerForm = await superValidate(valibot(registerSchema))
 
   // Return to page for rendering
-  return { isLoggedIn, internationalization, registerForm }
+  return {
+    isLoggedIn,
+    internationalization,
+    registerForm,
+    userInterfaceLocales: USER_INTERFACE_LOCALES
+  }
 }
 
 export async function registerAction({ request, getClientAddress }: RequestEvent) {
@@ -121,7 +131,11 @@ const registerSchema = pipe(
       check(accountPasswordMeetsMinimum, ACCOUNT_PASSWORD_TOO_SHORT)
     ),
     confirmPassword: pipe(string(), minLength(1)),
-    locale: pipe(optional(array(string()), ["en"]), minLength(1))
+    locale: pipe(
+      optional(array(string()), ["en"]),
+      minLength(1),
+      check(areSupportedUserInterfaceLocales, "Choose a supported display language.")
+    )
   }),
   forward(
     partialCheck(

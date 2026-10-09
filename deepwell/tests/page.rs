@@ -24,6 +24,9 @@ mod common;
 #[path = "page/page_modules.rs"]
 mod page_modules;
 
+#[path = "page/theme_previewer.rs"]
+mod theme_previewer;
+
 #[path = "page/forum.rs"]
 mod forum;
 
@@ -79,9 +82,7 @@ use deepwell::services::forum_post::{
 };
 use deepwell::services::forum_thread::CreateForumThread;
 use deepwell::services::page::{CreatePage, GetPageOutput};
-use deepwell::services::page_draft::{
-    PageDraftIdentity, PageDraftPageType, PageDraftService, SavePageDraft,
-};
+use deepwell::services::page_draft::{PageDraftPageType, PageDraftService};
 use deepwell::services::page_lock::{CreatePageLockInput, PageLockService};
 use deepwell::services::page_query::{
     AuthorSelector, CategoriesSelector, ComparisonOperation, DataFormSelector,
@@ -307,6 +308,72 @@ fn set_mutation_request_context(
         site_id: Some(site_id),
         page_reference: Some(page_reference),
     });
+}
+
+#[tokio::test]
+async fn public_page_view_resolves_observed_url_aliases_to_the_canonical_page() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}))
+        .expect("editable local authoring site should exist")
+        .site;
+    let slug = format!("url-alias-{}", cuid());
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Owned(slug.clone())),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "URL alias target body",
+            "title": "URL alias target",
+            "alt_title": null,
+            "slug": slug.clone(),
+            "layout": "wikidot",
+            "revision_comments": "create URL alias target",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site.site_id),
+        ..Default::default()
+    });
+    let alias_name = slug.strip_prefix("url-").expect("test slug prefix");
+    let aliases = [
+        format!("URL-{alias_name}"),
+        slug.replacen('-', "_", 1),
+        format!("{slug}."),
+        format!("{slug} "),
+    ];
+    for alias in aliases {
+        let view = run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site.site_id,
+                "session_token": null,
+                "route": {"slug": alias, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        );
+        match view {
+            GetPageViewOutput::Found {
+                page,
+                redirect_page,
+                ..
+            } => {
+                assert_eq!(page.slug, slug);
+                assert_eq!(redirect_page.as_deref(), Some(slug.as_str()));
+            }
+            other => panic!("expected canonical page for URL alias, got {other:?}"),
+        }
+    }
 }
 
 async fn import_cacheable_page_attribution_fixture(
@@ -3445,7 +3512,7 @@ async fn rerender_uses_latest_navigation_page_revision() {
     assert!(
         rerendered_home
             .compiled_generator
-            .ends_with("; deepwell-render/v12")
+            .ends_with("; deepwell-render/v13")
     );
 }
 
@@ -4262,11 +4329,11 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
         .article_page_cache_key
         .expect("imported static page should have an anonymous cache key");
     assert!(
-        current_key.starts_with("deepwell:article-view:page:v12:"),
+        current_key.starts_with("deepwell:article-view:page:v13:"),
         "source-freeze cache key must carry the final renderer epoch: {current_key}",
     );
     let stale_key = current_key.replacen(
-        "deepwell:article-view:page:v12:",
+        "deepwell:article-view:page:v13:",
         "deepwell:article-view:page:v11:",
         1,
     );
@@ -4396,7 +4463,7 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
     assert!(
         page_revision
             .compiled_generator
-            .ends_with("; deepwell-render/v12")
+            .ends_with("; deepwell-render/v13")
     );
     assert!(compiled_body_html.contains(CURRENT_BODY));
     assert!(!compiled_body_html.contains(STALE_BODY));
@@ -4421,7 +4488,7 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
     assert!(
         page_revision
             .compiled_generator
-            .ends_with("; deepwell-render/v12"),
+            .ends_with("; deepwell-render/v13"),
         "page view must expose the current compiled generator",
     );
     assert!(compiled_body_html.contains(CURRENT_BODY));
@@ -4435,7 +4502,7 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
     assert!(
         persisted
             .compiled_generator
-            .ends_with("; deepwell-render/v12"),
+            .ends_with("; deepwell-render/v13"),
         "read-time refresh should persist the current compiled generator",
     );
     let persisted_body =
@@ -9191,13 +9258,17 @@ async fn saved_rate_sidecar_binds_exact_revision_and_mutates_idempotently() {
             "locales": ["en-US", "en"],
         }),
     );
-    assert!(matches!(
-        anonymous,
+    // Anonymous viewers receive the same descriptors so their clicks reach the
+    // authoritative vote endpoint; they have no current vote of their own.
+    let anonymous_registry = match anonymous {
         GetPageViewOutput::Found {
-            rate_actions: None,
+            rate_actions: Some(registry),
             ..
-        }
-    ));
+        } => registry,
+        other => panic!("expected anonymous Rate sidecar, got {other:?}"),
+    };
+    assert_eq!(anonymous_registry.current_value, None);
+    assert_eq!(anonymous_registry.actions.len(), 3);
 
     let authenticated = run_endpoint!(
         runner,
@@ -11202,58 +11273,54 @@ async fn listdrafts_module_reads_persisted_drafts_and_enforces_target_filters() 
         site_id,
         Reference::Id(existing_page_id),
     );
-    PageDraftService::save(
-        runner.context(),
-        SavePageDraft {
-            site_id,
-            user_id: ADMIN_USER_ID,
-            page_id: Some(existing_page_id),
-            slug: EXISTING_SLUG.to_owned(),
-            title: "Existing draft v1".to_owned(),
-            wikitext: "existing draft source v1".to_owned(),
-        },
-    )
-    .await
-    .expect("existing-page draft should persist");
-    PageDraftService::save(
-        runner.context(),
-        SavePageDraft {
-            site_id,
-            user_id: ADMIN_USER_ID,
-            page_id: None,
-            slug: ABSENT_SLUG.to_owned(),
-            title: "Absent draft v1".to_owned(),
-            wikitext: "absent draft source v1".to_owned(),
-        },
-    )
-    .await
-    .expect("not-yet-created-page draft should persist");
-    PageDraftService::save(
-        runner.context(),
-        SavePageDraft {
-            site_id,
-            user_id: ADMIN_USER_ID,
-            page_id: Some(private_page_id),
-            slug: PRIVATE_SLUG.to_owned(),
-            title: "Private draft must stay hidden".to_owned(),
-            wikitext: "private draft source".to_owned(),
-        },
-    )
-    .await
-    .expect("private existing-page draft should persist for the administrator");
-    PageDraftService::save(
-        runner.context(),
-        SavePageDraft {
-            site_id,
-            user_id: ADMIN_USER_ID,
-            page_id: None,
-            slug: format!("{PRIVATE_CATEGORY}:absent"),
-            title: "Private absent draft must stay hidden".to_owned(),
-            wikitext: "private absent draft source".to_owned(),
-        },
-    )
-    .await
-    .expect("private absent-page draft should persist for the administrator");
+    assert!(run_endpoint!(
+        runner,
+        page_draft_save,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": Some(existing_page_id),
+            "slug": EXISTING_SLUG.to_owned(),
+            "title": "Existing draft v1".to_owned(),
+            "wikitext": "existing draft source v1".to_owned(),
+        })
+    ));
+    assert!(run_endpoint!(
+        runner,
+        page_draft_save,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": null,
+            "slug": ABSENT_SLUG.to_owned(),
+            "title": "Absent draft v1".to_owned(),
+            "wikitext": "absent draft source v1".to_owned(),
+        })
+    ));
+    assert!(run_endpoint!(
+        runner,
+        page_draft_save,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": Some(private_page_id),
+            "slug": PRIVATE_SLUG.to_owned(),
+            "title": "Private draft must stay hidden".to_owned(),
+            "wikitext": "private draft source".to_owned(),
+        })
+    ));
+    assert!(run_endpoint!(
+        runner,
+        page_draft_save,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": null,
+            "slug": format!("{PRIVATE_CATEGORY}:absent"),
+            "title": "Private absent draft must stay hidden".to_owned(),
+            "wikitext": "private absent draft source".to_owned(),
+        })
+    ));
 
     let all = PageDraftService::list(runner.context(), site_id, PageDraftPageType::All)
         .await
@@ -11326,44 +11393,38 @@ async fn listdrafts_module_reads_persisted_drafts_and_enforces_target_filters() 
         site_id,
         Reference::Id(private_page_id),
     );
-    assert!(
-        PageDraftService::save(
-            runner.context(),
-            SavePageDraft {
-                site_id,
-                user_id: SAMPLE_USER_ID,
-                page_id: Some(private_page_id),
-                slug: PRIVATE_SLUG.to_owned(),
-                title: "must not edit private target".to_owned(),
-                wikitext: "must not edit private target".to_owned(),
-            },
-        )
-        .await
-        .is_err(),
-        "a user without private-page edit permission must not save a draft",
+    let error = run_endpoint_err!(
+        runner,
+        page_draft_save,
+        json!({
+            "site_id": site_id,
+            "user_id": SAMPLE_USER_ID,
+            "page_id": Some(private_page_id),
+            "slug": PRIVATE_SLUG.to_owned(),
+            "title": "must not edit private target".to_owned(),
+            "wikitext": "must not edit private target".to_owned(),
+        })
     );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
     set_mutation_request_context(
         &mut runner,
         SAMPLE_USER_ID,
         site_id,
         Reference::Slug(Cow::Owned(format!("{PRIVATE_CATEGORY}:absent"))),
     );
-    assert!(
-        PageDraftService::save(
-            runner.context(),
-            SavePageDraft {
-                site_id,
-                user_id: SAMPLE_USER_ID,
-                page_id: None,
-                slug: format!("{PRIVATE_CATEGORY}:absent"),
-                title: "must not create private target draft".to_owned(),
-                wikitext: "must not create private target draft".to_owned(),
-            },
-        )
-        .await
-        .is_err(),
-        "a user without private-category create permission must not save a draft",
+    let error = run_endpoint_err!(
+        runner,
+        page_draft_save,
+        json!({
+            "site_id": site_id,
+            "user_id": SAMPLE_USER_ID,
+            "page_id": null,
+            "slug": format!("{PRIVATE_CATEGORY}:absent"),
+            "title": "must not create private target draft".to_owned(),
+            "wikitext": "must not create private target draft".to_owned(),
+        })
     );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
 
     for (case_id, source) in [
         (
@@ -11399,19 +11460,18 @@ async fn listdrafts_module_reads_persisted_drafts_and_enforces_target_filters() 
         site_id,
         Reference::Id(existing_page_id),
     );
-    PageDraftService::save(
-        runner.context(),
-        SavePageDraft {
-            site_id,
-            user_id: ADMIN_USER_ID,
-            page_id: Some(existing_page_id),
-            slug: EXISTING_SLUG.to_owned(),
-            title: "Existing draft v2".to_owned(),
-            wikitext: "existing draft source v2".to_owned(),
-        },
-    )
-    .await
-    .expect("saving the same target should update one persisted draft");
+    assert!(run_endpoint!(
+        runner,
+        page_draft_save,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": Some(existing_page_id),
+            "slug": EXISTING_SLUG.to_owned(),
+            "title": "Existing draft v2".to_owned(),
+            "wikitext": "existing draft source v2".to_owned(),
+        })
+    ));
     let updated =
         PageDraftService::list(runner.context(), site_id, PageDraftPageType::Exists)
             .await
@@ -11423,67 +11483,55 @@ async fn listdrafts_module_reads_persisted_drafts_and_enforces_target_filters() 
         )
     );
 
-    assert!(
-        PageDraftService::exists(
-            runner.context(),
-            PageDraftIdentity {
-                site_id,
-                user_id: ADMIN_USER_ID,
-                page_id: None,
-                slug: ABSENT_SLUG.to_owned(),
-            },
-        )
-        .await
-        .expect("persisted absent-page draft should have an exact identity")
-    );
-    assert!(
-        PageDraftService::remove(
-            runner.context(),
-            PageDraftIdentity {
-                site_id,
-                user_id: ADMIN_USER_ID,
-                page_id: None,
-                slug: ABSENT_SLUG.to_owned(),
-            },
-        )
-        .await
-        .expect("explicit draft discard should succeed")
-    );
-    assert!(
-        !PageDraftService::exists(
-            runner.context(),
-            PageDraftIdentity {
-                site_id,
-                user_id: ADMIN_USER_ID,
-                page_id: None,
-                slug: ABSENT_SLUG.to_owned(),
-            },
-        )
-        .await
-        .expect("discarded draft existence check should succeed")
-    );
+    assert!(run_endpoint!(
+        runner,
+        page_draft_exists,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": null,
+            "slug": ABSENT_SLUG.to_owned(),
+        })
+    ));
+    assert!(run_endpoint!(
+        runner,
+        page_draft_remove,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": null,
+            "slug": ABSENT_SLUG.to_owned(),
+        })
+    ));
+    assert!(!run_endpoint!(
+        runner,
+        page_draft_exists,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": null,
+            "slug": ABSENT_SLUG.to_owned(),
+        })
+    ));
 
     runner.set_request_context(RequestContext {
         user_id: None,
         site_id: Some(site_id),
         ..Default::default()
     });
-    assert!(
-        PageDraftService::save(
-            runner.context(),
-            SavePageDraft {
-                site_id,
-                user_id: ADMIN_USER_ID,
-                page_id: None,
-                slug: "fixture-listdrafts-anonymous-save".to_owned(),
-                title: "must not persist".to_owned(),
-                wikitext: "must not persist".to_owned(),
-            },
-        )
-        .await
-        .is_err(),
-        "an anonymous request must not persist another actor's page draft",
+    let error = run_endpoint_err!(
+        runner,
+        page_draft_save,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": null,
+            "slug": "fixture-listdrafts-anonymous-save".to_owned(),
+            "title": "must not persist".to_owned(),
+            "wikitext": "must not persist".to_owned(),
+        })
     );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
 }
 
 #[tokio::test]
@@ -12956,7 +13004,7 @@ async fn searchall_module_matches_live_form_and_unavailable_route_contract() {
         r#"<div class="search-box">"#,
         r#"<div class="query-area">"#,
         r#"<form action="dummy" id="search-form-all">"#,
-        r#"<input class="text" type="text" size="30" name="query" id="search-form-all-input" value=""/>"#,
+        r#"<input class="text" type="text" size="30" name="query" id="search-form-all-input" value="" aria-label="Search all Wikis"/>"#,
         r#"<input class="button" type="submit" value="Search"/>"#,
         r#"<input id="search-all-pf" class="radio" type="radio" name="area" value="pf" checked="checked"/>"#,
         r#"<label for="search-all-pf">pages and forums</label>"#,
@@ -13085,6 +13133,35 @@ async fn searchall_module_matches_live_form_and_unavailable_route_contract() {
             "{case_id} should render the current live backend failure:\n{queried}",
         );
     }
+}
+
+#[tokio::test]
+async fn japanese_site_localizes_module_input_accessible_names() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}))
+        .expect("local Japanese authoring site should exist");
+    let site_id = site.site.site_id;
+
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Japanese module labels",
+            "wikitext": "[[module NewPage]]\n[[module SearchAll]]",
+        }),
+    );
+
+    assert!(
+        preview.body.contains(r#"aria-label="新しいページ名""#),
+        "NewPage should use the Japanese accessible name for a Japanese site:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains(r#"aria-label="すべてのWikiを検索""#),
+        "SearchAll should use the Japanese accessible name for a Japanese site:\n{}",
+        preview.body,
+    );
 }
 
 #[tokio::test]

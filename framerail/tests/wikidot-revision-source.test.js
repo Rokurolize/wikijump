@@ -7,16 +7,16 @@ import { fileURLToPath } from "node:url"
 import { wikidotRevisionSourceHtml } from "../src/lib/wikidot-history-contract.js"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
-const evidence = "install/local/theme-lab/evidence/wikidot-revision-source-20261001"
+const evidence = "framerail/tests/fixtures/native-revision-source"
 
 test("frozen revision source proves the div and explicit escaped line-boundary contract", () => {
-  const receipt = JSON.parse(fs.readFileSync(path.join(root, evidence + ".json")))
+  const receipt = JSON.parse(
+    fs.readFileSync(path.join(root, evidence + "/observation.json"))
+  )
   assert.equal(receipt.public_writes, 0)
   for (const site of receipt.sites) {
     const binding = site.requests[0]
-    const bytes = fs.readFileSync(
-      path.join(root, evidence + ".responses", binding.response_file)
-    )
+    const bytes = fs.readFileSync(path.join(root, evidence, binding.response_file))
     assert.equal(
       crypto.createHash("sha256").update(bytes).digest("hex"),
       binding.response_sha256

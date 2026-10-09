@@ -40,7 +40,7 @@ export const handlePageRevisionRpc = ({ rpcRequest, request }) => {
     rpcRequest.method === "vote_set" &&
     hasExactKeys(rpcRequest.params, ["page_id", "value"]) &&
     pageById(rpcRequest.params.page_id) &&
-    (rpcRequest.params.value === -1 || rpcRequest.params.value === 1) &&
+    [-1, 1, 2, 3, 4, 5].includes(rpcRequest.params.value) &&
     request.headers["x-deepwell-session-token"] === "fixture-session-token" &&
     request.headers["x-deepwell-site-id"] === "6000005" &&
     request.headers["x-deepwell-page"] === pageById(rpcRequest.params.page_id)?.slug
@@ -49,11 +49,45 @@ export const handlePageRevisionRpc = ({ rpcRequest, request }) => {
       headers: requestContextHeaders(request),
       params: rpcRequest.params
     })
+    const pageId = rpcRequest.params.page_id
+    const previousValue = fixtureState.voteValues[pageId] ?? 0
+    fixtureState.voteValues[pageId] = rpcRequest.params.value
+    if (pageById(pageId)?.slug === "page-workflow-star-probe") {
+      fixtureState.ratingScores[pageId] = rpcRequest.params.value
+    } else if (pageId === 3000342) {
+      fixtureState.ratingScores[pageId] += rpcRequest.params.value - previousValue
+    }
     result = {
       page_vote_id: 7000001,
       page_id: rpcRequest.params.page_id,
       user_id: 123,
       value: rpcRequest.params.value
+    }
+  } else if (
+    rpcRequest.method === "vote_remove" &&
+    hasExactKeys(rpcRequest.params, ["page_id"]) &&
+    pageById(rpcRequest.params.page_id) &&
+    request.headers["x-deepwell-session-token"] === "fixture-session-token" &&
+    request.headers["x-deepwell-site-id"] === "6000005" &&
+    request.headers["x-deepwell-page"] === pageById(rpcRequest.params.page_id)?.slug
+  ) {
+    pageWriteRequests.voteRemove.push({
+      headers: requestContextHeaders(request),
+      params: rpcRequest.params
+    })
+    const pageId = rpcRequest.params.page_id
+    const previousValue = fixtureState.voteValues[pageId] ?? 0
+    delete fixtureState.voteValues[pageId]
+    if (pageById(pageId)?.slug === "page-workflow-star-probe") {
+      fixtureState.ratingScores[pageId] = 3
+    } else if (pageId === 3000342) {
+      fixtureState.ratingScores[pageId] -= previousValue
+    }
+    result = {
+      page_vote_id: 7000001,
+      page_id: rpcRequest.params.page_id,
+      user_id: 123,
+      value: null
     }
   } else {
     return undefined

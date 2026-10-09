@@ -37,9 +37,34 @@ test("Wikidot header extension hooks exist at the initial no-script paint", asyn
     await expect(page.locator("#header > [id^='header-extra-div-'] > span")).toHaveCount(
       3
     )
+    const close = page.locator("#side-bar > a.close-menu")
+    await expect(close).toHaveAttribute("href", "##")
+    await expect(close.locator(":scope > br")).toHaveCount(2)
+    await expect(close.locator(":scope > img.image")).toHaveAttribute("alt", "black.png")
+    await expect(close.locator(":scope > img.image")).toHaveAttribute(
+      "src",
+      /^data:image\/png;base64,/u
+    )
   } finally {
     await context.close()
   }
+})
+
+test("mobile sidebar close control clears the native target state", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.setExtraHTTPHeaders(headers)
+  await page.goto("/wikidot-tabview#side-bar", { waitUntil: "load" })
+  const close = page.locator("#side-bar > a.close-menu")
+  await expect(close).toBeVisible()
+  expect(
+    await page.locator("#side-bar").evaluate((element) => element.matches(":target"))
+  ).toBe(true)
+  await close.click({ position: { x: 350, y: 400 } })
+  await expect(close).toBeHidden()
+  expect(
+    await page.locator("#side-bar").evaluate((element) => element.matches(":target"))
+  ).toBe(false)
+  expect(await page.evaluate(() => location.hash)).toBe("##")
 })
 
 test("Wikidot-compatible search chrome preserves its two inputs and focus behavior", async ({
@@ -104,4 +129,34 @@ test("SearchAll module submits the selected live area route", async ({ page }) =
   await form.locator('input[type="submit"]').click()
 
   await expect(page).toHaveURL(/\/search:all\/a\/f\/q\/%20%20a%2Fb%3F%20c%20%20$/u)
+})
+
+test("seeded platform SearchAll intercepts submit after hydration", async ({ page }) => {
+  await installNativeEventListenerProbe(page)
+  await page.setExtraHTTPHeaders(headers)
+  await page.goto("/platform:search")
+  await waitForNativeEventListener(page, null, "submit")
+
+  const form = page.locator("#search-form-all")
+  const query = form.locator("#search-form-all-input")
+  await expect(form).toHaveAttribute("action", "dummy")
+
+  await query.fill("SCP")
+  await form.locator('input[type="submit"]').click()
+  await expect(page).toHaveURL(/\/search:all\/a\/pf\/q\/SCP$/u)
+
+  await page.goto("/platform:search")
+  await waitForNativeEventListener(page, null, "submit")
+  await page.getByRole("link", { name: "terms-conditions", exact: true }).click()
+  await expect(page).toHaveURL(/\/$/u)
+  await page.goBack()
+  await expect(page).toHaveURL(/\/platform:search$/u)
+  await waitForNativeEventListener(page, null, "submit")
+
+  const keyboardForm = page.locator("#search-form-all")
+  const keyboardQuery = keyboardForm.locator("#search-form-all-input")
+  await keyboardForm.locator("#search-all-p").check()
+  await keyboardQuery.fill("  a/b? c  ")
+  await keyboardQuery.press("Enter")
+  await expect(page).toHaveURL(/\/search:all\/a\/p\/q\/%20%20a%2Fb%3F%20c%20%20$/u)
 })

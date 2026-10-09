@@ -25,9 +25,17 @@ export function resolvePageRedirect(
     return null
   }
 
+  let search = ""
+  try {
+    search = new URL(requestUrl).search
+  } catch {
+    // The page route normally receives an absolute Request URL. If a caller
+    // supplies an invalid one, keep the canonical redirect path usable.
+  }
+
   return {
-    status: 308,
-    location: `/${buildRoute(viewData.redirect_page || originalSlug, extra)}`
+    status: 301,
+    location: `/${buildRoute(viewData.redirect_page || originalSlug, extra)}${search}`
   }
 }
 

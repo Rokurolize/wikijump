@@ -160,8 +160,8 @@ use crate::services::{
 };
 use crate::types::Reference;
 use crate::types::{PageId, TextBlockType};
-use crate::utils::locale_for_ftml;
 use crate::utils::now;
+use crate::utils::{locale_for_ftml, parse_locales};
 use ftml::data::PageRef;
 use ftml::includes::{FetchedPage, IncludeRef};
 use ftml::prelude::{
@@ -1627,6 +1627,7 @@ impl RenderService {
                 ctx,
                 wikitext,
                 settings,
+                page_info.language.as_ref(),
                 current_site_id,
                 &mut wikidot_compat_html,
             ))
@@ -3487,6 +3488,24 @@ pub(super) fn escape_list_pages_html_text(value: &str) -> String {
 
 pub(super) fn escape_list_pages_html_attr(value: &str) -> String {
     escape_list_pages_html_text(value).replace('"', "&quot;")
+}
+
+pub(super) fn localized_runtime_module_label(
+    ctx: &ServiceContext<'_>,
+    locale: &str,
+    message_key: &str,
+    fallback: &str,
+) -> String {
+    let Ok(locales) = parse_locales(&[locale.to_owned()]) else {
+        return fallback.to_owned();
+    };
+    let arguments = fluent::FluentArgs::new();
+    ctx.localization()
+        .translate_option(&locales, message_key, &arguments)
+        .ok()
+        .flatten()
+        .map(|translation| translation.into_owned())
+        .unwrap_or_else(|| fallback.to_owned())
 }
 
 pub(super) fn decode_wikidot_email_html_entities(value: &str) -> String {

@@ -99,25 +99,33 @@
   <div id="edit-meta-newtag">
     <h2>Add a new meta tag</h2>
     <form id="edit-meta-newtag-form" onsubmit={(event) => event.preventDefault()}>
-      <table style:margin="0 auto">
-        <tbody>
-          <tr>
-            <td>&lt;meta&nbsp;&nbsp;&nbsp;name="</td>
-            <td><input name="metaName" size="20" type="text" bind:value={metaName} /></td>
-            <td>"&nbsp;&nbsp;&nbsp;content="</td>
-            <td
-              ><input
-                name="metaContent"
-                size="30"
-                type="text"
-                bind:value={metaContent}
-              /></td
-            >
-            <td>" /&gt;</td>
-          </tr>
-        </tbody>
-      </table>
-      <div style:text-align="center" style:padding="1em">
+      <!--
+        The legacy Wikidot form is a single-row table whose minimum content
+        width (~756px) overflows narrow phone viewports and widens the whole
+        document. The pane keeps the same literal meta syntax, field names,
+        and submit/cancel contract, but reflows so every field and control
+        stays bounded inside the pane at 320px.
+      -->
+      <div class="edit-meta-syntax-row">
+        <span class="edit-meta-syntax">&lt;meta&nbsp;&nbsp;&nbsp;name="</span>
+        <input
+          class="edit-meta-input edit-meta-name-input"
+          name="metaName"
+          size="20"
+          type="text"
+          bind:value={metaName}
+        />
+        <span class="edit-meta-syntax">"&nbsp;&nbsp;&nbsp;content="</span>
+        <input
+          class="edit-meta-input edit-meta-content-input"
+          name="metaContent"
+          size="30"
+          type="text"
+          bind:value={metaContent}
+        />
+        <span class="edit-meta-syntax">" /&gt;</span>
+      </div>
+      <div class="edit-meta-newtag-actions">
         <button
           class="btn btn-danger btn-small btn-sm"
           disabled={busy}
@@ -154,6 +162,49 @@
 </p>
 
 <style lang="scss">
+  #edit-meta-newtag-form {
+    max-width: 100%;
+
+    /* Reflowed replacement for the legacy single-row table. */
+    .edit-meta-syntax-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 0.25em;
+      align-items: center;
+      justify-content: center;
+      max-width: 100%;
+      margin: 0 auto;
+    }
+
+    .edit-meta-syntax {
+      overflow-wrap: anywhere;
+    }
+
+    .edit-meta-input {
+      box-sizing: border-box;
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .edit-meta-name-input {
+      flex: 0 1 10em;
+    }
+
+    .edit-meta-content-input {
+      flex: 1 1 14em;
+    }
+
+    .edit-meta-newtag-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5em;
+      align-items: center;
+      justify-content: center;
+      padding: 1em;
+      text-align: center;
+    }
+  }
+
   .edit-meta-remove {
     margin-right: 2em;
   }

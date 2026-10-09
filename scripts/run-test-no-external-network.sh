@@ -50,10 +50,33 @@ unset HTTP_PROXY HTTPS_PROXY ALL_PROXY http_proxy https_proxy all_proxy
 export NO_PROXY="localhost,127.0.0.1,::1,.localhost"
 export no_proxy="${NO_PROXY}"
 
+COMMAND_PID=""
+INTERRUPTED=false
+forward_interrupt() {
+  INTERRUPTED=true
+  if [[ -n "${COMMAND_PID}" ]]; then
+    kill -INT "${COMMAND_PID}" 2>/dev/null || true
+  fi
+}
+trap forward_interrupt INT TERM
 set +e
-"$@"
-STATUS=$?
+exec {COMMAND_STDIN}<&0
+"$@" <&"${COMMAND_STDIN}" &
+COMMAND_PID=$!
+exec {COMMAND_STDIN}<&-
+# Bash's wait returns early when a signal trap runs. Keep waiting for the
+# command to finish its own restoration and cleanup before deleting the guard.
+while true; do
+  wait "${COMMAND_PID}"
+  STATUS=$?
+  if ! kill -0 "${COMMAND_PID}" 2>/dev/null; then
+    break
+  fi
+done
 set -e
+if "${INTERRUPTED}"; then
+  exit 130
+fi
 
 BLOCKED=0
 if [[ -s "${LOG}" ]]; then

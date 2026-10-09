@@ -335,6 +335,33 @@ async fn unrestricted_sessions_still_get_and_renew_normally() {
 }
 
 #[tokio::test]
+async fn logout_invalidates_only_the_named_session_and_rejects_reuse() {
+    let runner = TestRunner::setup().await;
+    let (name, _) = create_auth_test_user(&runner, next_n(), false).await;
+    let first = run_endpoint!(runner, auth_login, login_params(&name));
+    let second = run_endpoint!(runner, auth_login, login_params(&name));
+
+    run_endpoint!(runner, auth_logout, json!([first.session_token.clone()]));
+    assert!(
+        run_endpoint!(
+            runner,
+            auth_session_get,
+            json!([first.session_token.clone()])
+        )
+        .is_none(),
+        "logout must remove the named session",
+    );
+    assert!(
+        run_endpoint!(runner, auth_session_get, json!([second.session_token])).is_some(),
+        "logout must preserve the user's other session",
+    );
+    for token in [first.session_token, "missing-logout-session".to_owned()] {
+        let error = run_endpoint_err!(runner, auth_logout, json!([token]));
+        assert_contains_error!(error, ErrorType::InvalidSessionToken);
+    }
+}
+
+#[tokio::test]
 async fn soft_deleted_users_cannot_authenticate_by_retained_name_or_slug() {
     let runner = TestRunner::setup().await;
     let n = next_n();

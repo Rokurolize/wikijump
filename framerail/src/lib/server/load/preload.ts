@@ -16,7 +16,11 @@ import { sanitizeUserData } from "$lib/server/load/user"
 import type { PreloadData, Viewer } from "$lib/server/deepwell/views"
 import type { Cookies } from "@sveltejs/kit"
 
-const PAGE_ROUTES_WITH_ARTICLE_PRELOAD = new Set(["/", "/[slug]/[...extra]"])
+const PAGE_ROUTES_WITH_ARTICLE_PRELOAD = new Set([
+  "/",
+  "/[slug]/[...extra]",
+  "/[x+2d]/user/[slug]"
+])
 
 export function pageRouteProvidesPreload(routeId: string | null) {
   return PAGE_ROUTES_WITH_ARTICLE_PRELOAD.has(routeId ?? "")

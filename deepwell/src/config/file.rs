@@ -144,6 +144,12 @@ struct Locale {
 struct Domain {
     main: String,
     files: String,
+    #[serde(default = "default_https_port")]
+    https_port: u16,
+}
+
+fn default_https_port() -> u16 {
+    443
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -302,6 +308,7 @@ impl ConfigFile {
                 Domain {
                     main: main_domain,
                     files: files_domain,
+                    https_port,
                 },
             job:
                 Job {
@@ -371,6 +378,8 @@ impl ConfigFile {
         // Assertions for bad values
         const RSMQ_DELAY_LIMIT: u64 = 9999999;
 
+        assert!(https_port != 0, "Public HTTPS port must not be zero");
+
         assert!(
             job_prune_session_secs < RSMQ_DELAY_LIMIT,
             "Session prune job period time too long",
@@ -414,6 +423,7 @@ impl ConfigFile {
             pid_file,
             main_domain,
             main_domain_no_dot,
+            https_port,
             files_domain,
             files_domain_no_dot,
             watch_files: false, // Not set in config file. Always false by default.
@@ -580,6 +590,7 @@ mod tests {
             domain: Domain {
                 main: str!("wikijump.example"),
                 files: str!(".files.example"),
+                https_port: 443,
             },
             job: Job {
                 workers: NonZeroU16::new(3).unwrap(),
@@ -685,6 +696,7 @@ mod tests {
         assert_eq!(config.pid_file, Some(PathBuf::from("deepwell.pid")));
         assert_eq!(config.main_domain, ".wikijump.example");
         assert_eq!(config.main_domain_no_dot, "wikijump.example");
+        assert_eq!(config.https_port, 443);
         assert_eq!(config.files_domain, ".files.example");
         assert_eq!(config.files_domain_no_dot, "files.example");
         assert!(!config.watch_files);
@@ -765,6 +777,24 @@ mod tests {
         assert_ne!(toml, false_toml);
         let false_config: ConfigFile = toml::from_str(&false_toml).unwrap();
         assert!(!false_config.database.sqlx_logging);
+    }
+
+    #[test]
+    fn domain_https_port_defaults_to_standard_https_for_existing_configs() {
+        let toml = toml::to_string(&sample_config_file()).unwrap();
+        let without_https_port = toml.replace("https-port = 443\n", "");
+        assert_ne!(toml, without_https_port);
+
+        let config_file: ConfigFile = toml::from_str(&without_https_port).unwrap();
+        assert_eq!(config_file.into_config(extra_config()).https_port, 443);
+    }
+
+    #[test]
+    fn into_config_preserves_custom_public_https_port() {
+        let mut config_file = sample_config_file();
+        config_file.domain.https_port = 18445;
+
+        assert_eq!(config_file.into_config(extra_config()).https_port, 18445);
     }
 
     #[test]
