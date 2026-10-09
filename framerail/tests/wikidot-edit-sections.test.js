@@ -9,7 +9,11 @@ import {
   toggleWikidotEditSections
 } from "../src/lib/wikidot/wikidot-edit-sections.js"
 
-const heading = (level, index) => ({ id: `toc${index}`, tagName: `H${level}` })
+const heading = (level, index, textContent) => ({
+  id: `toc${index}`,
+  tagName: `H${level}`,
+  textContent
+})
 
 const pageContent = (directHeadings, descendantHeadings = directHeadings) => ({
   children: directHeadings,
@@ -88,17 +92,22 @@ test("Edit Sections fails closed without a one-to-one direct heading match", () 
 test("Edit Sections inserts evidenced controls and toggles them off", () => {
   const controls = []
   const edits = []
-  const headings = [heading(1, 0), heading(2, 1)]
+  const headings = [heading(1, 0, "Overview"), heading(2, 1, "Overview")]
   for (const renderedHeading of headings) {
     renderedHeading.before = (control) => controls.push(control)
   }
   const ownerDocument = {
     createElement() {
       const listeners = new Map()
+      const attributes = new Map()
       return {
+        attributes,
         addEventListener: (name, listener) => listeners.set(name, listener),
         click() {
           listeners.get("click")({ preventDefault() {} })
+        },
+        setAttribute(name, value) {
+          attributes.set(name, value)
         },
         remove() {
           controls.splice(controls.indexOf(this), 1)
@@ -115,13 +124,17 @@ test("Edit Sections inserts evidenced controls and toggles them off", () => {
   }
 
   assert.equal(
-    toggleWikidotEditSections(root, "+ One\n\nBody\n\n++ Two\n\nBody", (section) =>
-      edits.push(section.index)
+    toggleWikidotEditSections(
+      root,
+      "+ One\n\nBody\n\n++ Two\n\nBody",
+      (section) => edits.push(section.index),
+      "Edit"
     ),
     true
   )
   assert.deepEqual(
-    controls.map(({ className, href, id, textContent }) => ({
+    controls.map(({ attributes, className, href, id, textContent }) => ({
+      ariaLabel: attributes.get("aria-label"),
       className,
       href,
       id,
@@ -129,6 +142,7 @@ test("Edit Sections inserts evidenced controls and toggles them off", () => {
     })),
     [
       {
+        ariaLabel: "Edit: Overview (1)",
         className: "edit-section-button",
         // eslint-disable-next-line no-script-url -- This fixture asserts Wikidot's observed inert href.
         href: "javascript:;",
@@ -136,6 +150,7 @@ test("Edit Sections inserts evidenced controls and toggles them off", () => {
         textContent: "edit"
       },
       {
+        ariaLabel: "Edit: Overview (2)",
         className: "edit-section-button",
         // eslint-disable-next-line no-script-url -- This fixture asserts Wikidot's observed inert href.
         href: "javascript:;",
@@ -151,6 +166,18 @@ test("Edit Sections inserts evidenced controls and toggles them off", () => {
     false
   )
   assert.deepEqual(controls, [])
+  assert.equal(
+    toggleWikidotEditSections(root, "+ One\n\nBody\n\n++ Two\n\nBody", () => {}, "編集"),
+    true
+  )
+  assert.deepEqual(
+    controls.map((control) => control.attributes.get("aria-label")),
+    ["編集: Overview (1)", "編集: Overview (2)"]
+  )
+  assert.deepEqual(
+    controls.map((control) => control.textContent),
+    ["edit", "edit"]
+  )
 })
 
 test("section edit submission replaces only its revision-bound source range", () => {

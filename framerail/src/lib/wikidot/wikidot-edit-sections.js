@@ -80,9 +80,15 @@ export const findWikidotEditSections = (source, pageContent) => {
  * @param {HTMLElement} pageContent
  * @param {string} source
  * @param {(section: WikidotEditSection) => void} edit
+ * @param {string} editLabel
  * @returns {boolean} Whether controls are visible after the toggle.
  */
-export const toggleWikidotEditSections = (pageContent, source, edit) => {
+export const toggleWikidotEditSections = (
+  pageContent,
+  source,
+  edit,
+  editLabel = "Edit"
+) => {
   const existing = editControlsByPage.get(pageContent)
   if (existing) {
     for (const control of existing) control.remove()
@@ -103,6 +109,11 @@ export const toggleWikidotEditSections = (pageContent, source, edit) => {
     control.href = "javascript:;"
     control.id = `edit-section-b-${section.index}`
     control.textContent = "edit"
+    const headingLabel = heading.textContent?.trim() || `${section.index + 1}`
+    control.setAttribute(
+      "aria-label",
+      `${editLabel}: ${headingLabel} (${section.index + 1})`
+    )
     control.addEventListener("click", (event) => {
       event.preventDefault()
       edit(section)
