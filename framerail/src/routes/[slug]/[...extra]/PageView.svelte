@@ -659,7 +659,8 @@
           onclick={() => activatePagePane(PagePane.Append)}
           type="button"
         >
-          {wikidotPageActions?.append ?? "Append"}
+          {wikidotPageActions?.append ??
+            data.internationalization?.["wiki-page-action-append"]}
         </a>
         <!-- svelte-ignore a11y_invalid_attribute -->
         <a
@@ -669,7 +670,7 @@
           onclick={toggleEditSections}
           type="button"
         >
-          Edit Sections
+          {data.internationalization?.["wiki-page-action-edit-sections"]}
         </a>
         <!-- svelte-ignore a11y_invalid_attribute -->
         <a
@@ -679,7 +680,7 @@
           onclick={() => activatePagePane(PagePane.EditMeta)}
           type="button"
         >
-          Edit Meta
+          {data.internationalization?.["wiki-page-action-edit-meta"]}
         </a>
         <!-- svelte-ignore a11y_invalid_attribute -->
         <a
@@ -689,7 +690,7 @@
           onclick={() => activatePagePane(PagePane.Watchers)}
           type="button"
         >
-          Watchers
+          {data.internationalization?.["wiki-page-action-watchers"]}
         </a>
         <!-- svelte-ignore a11y_invalid_attribute -->
         <a
@@ -699,7 +700,8 @@
           onclick={() => activatePagePane(PagePane.Backlinks)}
           type="button"
         >
-          {wikidotPageActions?.backlinks ?? "Backlinks"}
+          {wikidotPageActions?.backlinks ??
+            data.internationalization?.["wiki-page-action-backlinks"]}
         </a>
         <!-- svelte-ignore a11y_invalid_attribute -->
         <a
@@ -742,7 +744,7 @@
           }}
           type="button"
         >
-          {data.internationalization?.["wiki-page-lock"]}
+          {data.internationalization?.["wiki-page-action-lock"]}
         </a>
         <!-- svelte-ignore a11y_invalid_attribute -->
         <a
@@ -752,7 +754,7 @@
           onclick={() => activatePagePane(PagePane.Move)}
           type="button"
         >
-          {data.internationalization?.move}
+          {data.internationalization?.["wiki-page-action-rename-move"]}
         </a>
         <!-- svelte-ignore a11y_invalid_attribute -->
         <a
