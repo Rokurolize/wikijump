@@ -10,7 +10,22 @@ const withBaseUse = (device: (typeof devices)[keyof typeof devices]) => ({
 const config: PlaywrightTestConfig = {
   ...baseConfig,
   testMatch:
-    "**/{auth-accessible-names,browser-support,forum-start-routes,module-accessible-names,printer-friendly-print-toolbar}.spec.ts",
+    "**/{auth-accessible-names,browser-support,edit-meta-newtag-mobile,forum-start-routes,module-accessible-names,printer-friendly-print-toolbar}.spec.ts",
+  webServer: [
+    baseConfig.webServer!,
+    {
+      command: "sh tests/start-playwright-https-vite.sh",
+      port: Number(process.env.PLAYWRIGHT_HTTPS_APP_PORT ?? "4373"),
+      reuseExistingServer: false,
+      timeout: 120_000,
+      env: {
+        FRAMERAIL_VITE_TEST_CACHE: "1",
+        PLAYWRIGHT_HTTPS_APP_PORT: process.env.PLAYWRIGHT_HTTPS_APP_PORT ?? "4373",
+        PLAYWRIGHT_FIXTURE_PORT: process.env.PLAYWRIGHT_FIXTURE_PORT ?? "42747",
+        DEEPWELL_RPC_TOKEN: process.env.DEEPWELL_RPC_TOKEN ?? "0".repeat(64)
+      }
+    }
+  ],
   projects: [
     {
       name: "chromium",
@@ -23,6 +38,14 @@ const config: PlaywrightTestConfig = {
     {
       name: "webkit",
       use: withBaseUse(devices["Desktop Safari"])
+    },
+    {
+      name: "webkit-https-edit-meta",
+      testMatch: "**/edit-meta-newtag-mobile.spec.ts",
+      use: {
+        ...withBaseUse(devices["Desktop Safari"]),
+        ignoreHTTPSErrors: true
+      }
     },
     {
       name: "mobile-chromium",
