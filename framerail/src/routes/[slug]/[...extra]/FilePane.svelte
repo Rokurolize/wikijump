@@ -32,7 +32,13 @@
     historyRequestId += 1
   }
 
+  // Only the most recently requested file list may update the pane. Responses
+  // to superseded requests (a different active/deleted mode, a remount, or a
+  // navigation) are dropped so they cannot replace the visible file set.
+  let fileListRequestId = 0
+
   async function getFileList(deleted = false) {
+    const requestId = ++fileListRequestId
     const res = await fetch("?/fileList", {
       method: "POST",
       body: JSON.stringify({
@@ -41,6 +47,8 @@
         deleted
       })
     }).then((res) => res.text())
+
+    if (requestId !== fileListRequestId) return
 
     const result = deserialize<
       { res: PageFile[] },
@@ -194,6 +202,9 @@
 
   $effect(() => {
     getFileList(false)
+    return () => {
+      fileListRequestId += 1
+    }
   })
 </script>
 

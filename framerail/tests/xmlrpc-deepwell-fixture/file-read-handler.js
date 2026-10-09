@@ -33,6 +33,16 @@ export const handleFileReadRpc = ({ rpcRequest, request, port }) => {
       toFileResultWithoutData
     )
   } else if (
+    rpcRequest.method === "page_get_files" &&
+    hasExactKeys(rpcRequest.params, ["deleted", "page_id", "site_id"]) &&
+    rpcRequest.params.site_id === 6000005 &&
+    typeof rpcRequest.params.page_id === "number" &&
+    rpcRequest.params.deleted === true
+  ) {
+    result = Object.values(
+      fixtureState.deletedFilesByPageId[rpcRequest.params.page_id] ?? {}
+    ).map(toFileResultWithoutData)
+  } else if (
     rpcRequest.method === "file_revision_page_history" &&
     hasExactKeys(rpcRequest.params, ["limit", "page_id", "site_id"]) &&
     rpcRequest.params.site_id === 6000005 &&

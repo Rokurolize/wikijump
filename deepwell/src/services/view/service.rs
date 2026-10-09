@@ -60,7 +60,7 @@ use crate::services::membership::{
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::relation::{
-    GetPageAttributions, GetSiteBan, GetSiteMember, PageAttribution, RelationService,
+    GetPageAttributions, GetSiteBan, PageAttribution, RelationService,
 };
 use crate::services::render::{
     LegacyActionRegistry, MembershipActionRegistry, RenderOutput, RenderService,
@@ -68,7 +68,7 @@ use crate::services::render::{
     view_decisions_for_scanned_pages,
 };
 use crate::services::settings::{
-    NavigationPageHtml, PageRatingPermission, PageRatingSettings, SettingsService,
+    NavigationPageHtml, PageRatingSettings, SettingsService,
 };
 use crate::services::user::User;
 use crate::services::view::ViewType;
@@ -109,9 +109,6 @@ async fn rate_browser_actions_for_page(
     if !page_rating.enabled {
         return Ok(None);
     }
-    let Some(user_id) = viewer_user_id else {
-        return Ok(None);
-    };
     let registry = RenderService::rate_action_registry_from_wikidot_source(
         wikitext,
         page_rating.rating_type,
@@ -121,30 +118,25 @@ async fn rate_browser_actions_for_page(
     {
         return Ok(None);
     }
-    if page_rating.permission == PageRatingPermission::Members
-        && RelationService::get_optional_site_member(
+
+    // Every viewer receives the descriptor registry, including anonymous and
+    // nonmember viewers, so a control click reaches `wikidot_legacy_rate`
+    // instead of a blocked inline handler. Exposure is not authorization:
+    // that endpoint re-checks rating enablement, the page lock, members-only
+    // membership, and view permission before any vote is written.
+    let current_value = match viewer_user_id {
+        Some(user_id) => VoteService::get_optional(
             ctx,
-            GetSiteMember {
-                site_id: page.site_id,
+            GetVote {
+                page_id: page.page_id,
                 user_id,
             },
+            page_rating.rating_type.vote_store_key(),
         )
         .await?
-        .is_none()
-    {
-        return Ok(None);
-    }
-
-    let current_value = VoteService::get_optional(
-        ctx,
-        GetVote {
-            page_id: page.page_id,
-            user_id,
-        },
-        page_rating.rating_type.vote_store_key(),
-    )
-    .await?
-    .map(|vote| vote.value);
+        .map(|vote| vote.value),
+        None => None,
+    };
     Ok(registry.browser_registry_for_wikidot_html(
         compiled_body_html,
         page.site_id,

@@ -542,3 +542,39 @@ fn unclosed_collapsible_boundary_accounts_for_suffix_work_and_literal_advances()
         );
     }
 }
+
+#[test]
+fn unclosed_preservation_counts_literal_advances_in_resumed_suffix() {
+    // This adds scanner work-accounting coverage to the retained preservation
+    // case; it does not claim another live Wikidot behavior observation.
+    let source = concat!(
+        "\n[[# scanner-counter]]",
+        "[[module ListPages name=\"missing\"]]",
+        "@@\nDOC\n@@\n",
+        "@@[[module ListPages name=\"hidden\"]]HIDDEN[[/module]]@@\n",
+        "[[module ListPages name=\"later\"]]ROW[[/module]]",
+    );
+    let (modules, work, literal_advances) =
+        find_list_pages_module_matches_with_cursor_work(source);
+
+    assert_eq!(
+        modules.len(),
+        2,
+        "the resumed literal stays hidden and later module remains visible"
+    );
+    assert!(modules[0].preserve_original);
+    assert_eq!(modules[0].original, "[[module ListPages name=\"missing\"]]");
+    assert_eq!(
+        modules[1].start,
+        source.find("[[module ListPages name=\"later\"]]").unwrap()
+    );
+    assert_eq!(modules[1].body, "ROW");
+    assert_eq!(
+        literal_advances, 12,
+        "both top-level scanners and the recursive suffix scan cross the literal regions"
+    );
+    assert_eq!(
+        work, 1220,
+        "include all scanner and resumed-suffix work additively"
+    );
+}

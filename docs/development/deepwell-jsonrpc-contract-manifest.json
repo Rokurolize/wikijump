@@ -7723,7 +7723,8 @@
           "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_text_and_select_control_contract",
           "deepwell/tests/page_template_assignment.rs#pagepath_round_trips_fullnames_and_projects_only_resolved_visible_nodes",
           "deepwell/tests/rated_pages.rs#ratedpages_renders_live_top_rated_box_and_rating_filters",
-          "deepwell/tests/role.rs#ordinary_user_joins_only_the_editable_site_then_creates_a_page"
+          "deepwell/tests/role.rs#ordinary_user_joins_only_the_editable_site_then_creates_a_page",
+          "deepwell/tests/vote.rs#anonymous_rate_controls_are_exposed_and_rejected_by_the_vote_endpoint"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -10977,6 +10978,7 @@
         "kind": "endpoint_behavioral",
         "reference": "deepwell/tests/page.rs#saved_rate_sidecar_binds_exact_revision_and_mutates_idempotently",
         "alternatives": [
+          "deepwell/tests/vote.rs#anonymous_rate_controls_are_exposed_and_rejected_by_the_vote_endpoint",
           "deepwell/tests/vote_authorization.rs#vote_mutations_require_route_target_view_permission"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"

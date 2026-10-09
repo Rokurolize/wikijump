@@ -571,6 +571,9 @@ const pageForArticleRoute = (route) => {
   ) {
     return page
   }
+  // The `/edit` route loads the same page through article_view with the edit
+  // extra, so ordinary fixture pages model the editor's page data too.
+  if (route.extra === "edit") return page
   return route.extra === "" ? resolvedPage : null
 }
 
@@ -793,6 +796,11 @@ export const handleArticleRpc = ({ rpcRequest, request }) => {
             select_five: "a"
           }
         }
+      } else if (articleRoute.extra === "edit") {
+        // Catch-all for ordinary pages opened through the `/edit` route; the
+        // DATA_FORM_* arms above must stay first because they also attach
+        // their data-form definitions.
+        result.page.data.options.edit = true
       }
     } else {
       result = missingPageArticleViewResult(articleRoute)
