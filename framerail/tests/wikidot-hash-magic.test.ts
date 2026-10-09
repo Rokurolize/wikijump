@@ -30,6 +30,28 @@ test("matches Wikidot's word command and ignores a non-word suffix", () => {
   )
 })
 
+test("resolves the verified edit-page and edit-tags commands case-insensitively", () => {
+  for (const [hash, pane] of [
+    ["#_editpage", "edit-page"],
+    ["#_edittags", "edit-tags"],
+    ["#_EditPage", "edit-page"],
+    ["#_EDITPAGE", "edit-page"],
+    ["#_EditTags", "edit-tags"]
+  ] as const) {
+    assert.equal(
+      resolveWikidotHashMagicPagePane(`https://example.test/page${hash}`),
+      pane,
+      hash
+    )
+  }
+
+  // The edit commands match the same word-command continuation as history.
+  assert.equal(
+    resolveWikidotHashMagicPagePane("https://example.test/page#_editpage/extra"),
+    "edit-page"
+  )
+})
+
 test("does not widen word continuations or unsupported Hash Magic commands", () => {
   for (const href of [
     "https://example.test/page",
@@ -37,7 +59,12 @@ test("does not widen word continuations or unsupported Hash Magic commands", () 
     "https://example.test/page#_historyextra",
     "https://example.test/page#_history_extra",
     "https://example.test/page#_sitetools",
-    "https://example.test/page#_"
+    "https://example.test/page#_",
+    "https://example.test/page#_nonexistent",
+    "https://example.test/page#_backlinks",
+    "https://example.test/page#_viewsource",
+    "https://example.test/page#_edit-page",
+    "https://example.test/page#_edittag"
   ]) {
     assert.equal(resolveWikidotHashMagicPagePane(href), null, href)
   }

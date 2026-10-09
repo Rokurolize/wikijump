@@ -6526,7 +6526,7 @@
     },
     {
       "path": "framerail/src/lib/wikidot/wikidot-hash-magic.ts",
-      "sha256": "2f7f8391a0591dd9496a0be8cd1f431c61d2a2681cf0073ff5f57e0b548f3d87",
+      "sha256": "d0dcf0c9f8b54a732a54e1a1712c96ea2650f2b3fd54802d0b0a4c2be2615556",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6934,7 +6934,7 @@
     },
     {
       "path": "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
-      "sha256": "a8ae286f46e6c3cb923dd63dc14cd44c1f2379729a1f8b2b2992ce0e1d1932e0",
+      "sha256": "9cc01f3ba33fdef70c7dd8b0189e980a37fd9b45f1335ae0af8b2720d5ab7e32",
       "status": "pending",
       "anchors": [],
       "findings": [],

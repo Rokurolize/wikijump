@@ -47,6 +47,18 @@ export const handlePageLookupRpc = ({ rpcRequest, request, response }) => {
   } else if (
     rpcRequest.method === "page_edit_permission" &&
     hasExactKeys(rpcRequest.params, []) &&
+    request.headers["x-deepwell-session-token"] === undefined &&
+    request.headers["x-deepwell-site-id"] === "6000005" &&
+    typeof request.headers["x-deepwell-page"] === "string" &&
+    pages[request.headers["x-deepwell-page"]]
+  ) {
+    // Production answers an anonymous actor with the permission decision, not
+    // a transport error, so Hash Magic and option-bar edit clicks both reach
+    // the localized denial dialog instead of an RPC failure message.
+    result = { can_edit: false }
+  } else if (
+    rpcRequest.method === "page_edit_permission" &&
+    hasExactKeys(rpcRequest.params, []) &&
     request.headers["x-deepwell-session-token"] === "fixture-session-token" &&
     request.headers["x-deepwell-site-id"] === "6000005" &&
     typeof request.headers["x-deepwell-page"] === "string" &&
