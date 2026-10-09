@@ -27,7 +27,7 @@ function invoke(t, update = () => {}) {
 test("local identity gate accepts current source, test, and lockfile identities", (t) => {
   const result = invoke(t);
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /1405 source files, 9 inputs, 2 owner\(s\), 1 mutation owner\(s\)/u);
+  assert.match(result.stdout, /1407 source files, 9 inputs, 2 owner\(s\), 1 mutation owner\(s\)/u);
   assert.match(result.stdout, /Mutation results not rechecked/u);
 });
 

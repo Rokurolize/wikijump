@@ -6,7 +6,7 @@
     "wikidot-verification",
     "executed shared helpers"
   ],
-  "inventory_digest": "03cc81f0b38ac6d184a2b5a5b986baeeedc0c6ca90b8ae385ba63115eb16a54b",
+  "inventory_digest": "ec32198cce138eab98d607ed200fa92e513348dd01062cbf4cc2b568cd4eea19",
   "inputs": [
     {
       "path": "deepwell/Cargo.toml",
@@ -773,16 +773,16 @@
       "review": null
     },
     {
-      "path": "deepwell/src/endpoints/file_revision.rs",
-      "sha256": "2e02b6c45fb78c4e8028d45b333eff9fd7ca3cd5122fc6be8e5dc246264d74eb",
+      "path": "deepwell/src/endpoints/file.rs",
+      "sha256": "6a99fdb6a66ea3624b2f43761c63e160b0d6b80ded4c0d9968c52ffd455cc226",
       "status": "pending",
       "anchors": [],
       "findings": [],
       "review": null
     },
     {
-      "path": "deepwell/src/endpoints/file.rs",
-      "sha256": "6a99fdb6a66ea3624b2f43761c63e160b0d6b80ded4c0d9968c52ffd455cc226",
+      "path": "deepwell/src/endpoints/file_revision.rs",
+      "sha256": "2e02b6c45fb78c4e8028d45b333eff9fd7ca3cd5122fc6be8e5dc246264d74eb",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -869,6 +869,30 @@
       "review": null
     },
     {
+      "path": "deepwell/src/endpoints/page.rs",
+      "sha256": "ee5ec6b96f083dd4259ef4f488c1543aa618932b115591e4cccc853ad3dd5a2a",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "deepwell/src/endpoints/page/output.rs",
+      "sha256": "df392d3759d5ec4afb88a15ceb9c6d6bdd423ba4c9ed86e94c86d630364bedfd",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "deepwell/src/endpoints/page/permissions.rs",
+      "sha256": "9b9aaee1ff315e36ef7f9136532118861143b697df220e826ef4110db58dedc5",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
       "path": "deepwell/src/endpoints/page_attribution.rs",
       "sha256": "120462a794e0413b355d37b8a5bd90322ad7cb9d41554ebd6ff94dbbf52f60ee",
       "status": "pending",
@@ -901,30 +925,6 @@
       "review": null
     },
     {
-      "path": "deepwell/src/endpoints/page.rs",
-      "sha256": "ee5ec6b96f083dd4259ef4f488c1543aa618932b115591e4cccc853ad3dd5a2a",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "deepwell/src/endpoints/page/output.rs",
-      "sha256": "df392d3759d5ec4afb88a15ceb9c6d6bdd423ba4c9ed86e94c86d630364bedfd",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "deepwell/src/endpoints/page/permissions.rs",
-      "sha256": "9b9aaee1ff315e36ef7f9136532118861143b697df220e826ef4110db58dedc5",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
       "path": "deepwell/src/endpoints/parent.rs",
       "sha256": "a8b6e94c25e33b9c859d03ac25fc949c6a38b1c3b2d2acfcdf0737b303200092",
       "status": "pending",
@@ -949,6 +949,14 @@
       "review": null
     },
     {
+      "path": "deepwell/src/endpoints/site.rs",
+      "sha256": "90571957a7060b00f5782a3db428d3644e51c8babffb66c1f6a621122f1db49f",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
       "path": "deepwell/src/endpoints/site_ban.rs",
       "sha256": "5aadd61799bee08432482b466824f99e180d48a079f6f4044653c031ea523496",
       "status": "pending",
@@ -965,8 +973,8 @@
       "review": null
     },
     {
-      "path": "deepwell/src/endpoints/site.rs",
-      "sha256": "90571957a7060b00f5782a3db428d3644e51c8babffb66c1f6a621122f1db49f",
+      "path": "deepwell/src/endpoints/text.rs",
+      "sha256": "0c0d23f1ef20e22e6d2bea600b39c3a6ed11e612a983cc7578dc027b60727fe2",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -981,8 +989,8 @@
       "review": null
     },
     {
-      "path": "deepwell/src/endpoints/text.rs",
-      "sha256": "0c0d23f1ef20e22e6d2bea600b39c3a6ed11e612a983cc7578dc027b60727fe2",
+      "path": "deepwell/src/endpoints/user.rs",
+      "sha256": "095b85b48560c19fc7b7afda8ead5d95cef7341ed12353d207cd08f5d2ebd81c",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -991,14 +999,6 @@
     {
       "path": "deepwell/src/endpoints/user_bot.rs",
       "sha256": "07b0caebac592603ae777965cb29a3646c4f9b8eac89f6665fed6e5dfdab625d",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "deepwell/src/endpoints/user.rs",
-      "sha256": "095b85b48560c19fc7b7afda8ead5d95cef7341ed12353d207cd08f5d2ebd81c",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -1205,16 +1205,16 @@
       "review": null
     },
     {
-      "path": "deepwell/src/models/file_revision.rs",
-      "sha256": "38c65c2dfece4859da75a0ffb357fce09bb3de0aaf04905e2ce4f0c09d178e2c",
+      "path": "deepwell/src/models/file.rs",
+      "sha256": "0ae2c5f0353896faf672ac8806692147bcea3fae68183e7778b93b5b2ad29f0a",
       "status": "pending",
       "anchors": [],
       "findings": [],
       "review": null
     },
     {
-      "path": "deepwell/src/models/file.rs",
-      "sha256": "0ae2c5f0353896faf672ac8806692147bcea3fae68183e7778b93b5b2ad29f0a",
+      "path": "deepwell/src/models/file_revision.rs",
+      "sha256": "38c65c2dfece4859da75a0ffb357fce09bb3de0aaf04905e2ce4f0c09d178e2c",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -1245,6 +1245,14 @@
       "review": null
     },
     {
+      "path": "deepwell/src/models/forum_post.rs",
+      "sha256": "7fda667e9b595b382a467a36d16f6d3866d86a0dc1e69ef9e282c92c8a8f4ac3",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
       "path": "deepwell/src/models/forum_post_lock.rs",
       "sha256": "3a61afbfd1f849d98f03f43d1476d177161b6d1e91e634e707d909ce8497ee18",
       "status": "pending",
@@ -1261,8 +1269,8 @@
       "review": null
     },
     {
-      "path": "deepwell/src/models/forum_post.rs",
-      "sha256": "7fda667e9b595b382a467a36d16f6d3866d86a0dc1e69ef9e282c92c8a8f4ac3",
+      "path": "deepwell/src/models/forum_thread.rs",
+      "sha256": "a330dc44404032bacabc67c4ed9c3ddee03b3c4dae94d99a24840ba462ec4462",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -1277,16 +1285,16 @@
       "review": null
     },
     {
-      "path": "deepwell/src/models/forum_thread.rs",
-      "sha256": "a330dc44404032bacabc67c4ed9c3ddee03b3c4dae94d99a24840ba462ec4462",
+      "path": "deepwell/src/models/known_user.rs",
+      "sha256": "e6c928cc23dde985ea47fb6cee9a1cf393ba13dcf58530902c2caef70c30dac5",
       "status": "pending",
       "anchors": [],
       "findings": [],
       "review": null
     },
     {
-      "path": "deepwell/src/models/known_user.rs",
-      "sha256": "e6c928cc23dde985ea47fb6cee9a1cf393ba13dcf58530902c2caef70c30dac5",
+      "path": "deepwell/src/models/message.rs",
+      "sha256": "378596e9a4c43541749223ca143ac4ca04bddd207f0b4bbcc6c922303bf1b0b0",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -1325,16 +1333,16 @@
       "review": null
     },
     {
-      "path": "deepwell/src/models/message.rs",
-      "sha256": "378596e9a4c43541749223ca143ac4ca04bddd207f0b4bbcc6c922303bf1b0b0",
+      "path": "deepwell/src/models/mod.rs",
+      "sha256": "8ea2783506abeb037c516b0e7c97c229ca7c2243185ccb41da177cd13be4fd58",
       "status": "pending",
       "anchors": [],
       "findings": [],
       "review": null
     },
     {
-      "path": "deepwell/src/models/mod.rs",
-      "sha256": "8ea2783506abeb037c516b0e7c97c229ca7c2243185ccb41da177cd13be4fd58",
+      "path": "deepwell/src/models/page.rs",
+      "sha256": "f1a4fc7371a067e748a3b04c27375097892c7e7bf4a358f1deba2a0d951c8f10",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -1349,16 +1357,16 @@
       "review": null
     },
     {
-      "path": "deepwell/src/models/page_connection_missing.rs",
-      "sha256": "f930c1aa181b8acce6900ff7bf85ac27abc4e44b13db3fd7f9b92c302fb2c443",
+      "path": "deepwell/src/models/page_connection.rs",
+      "sha256": "abd66cf0d355211f1af049bf522f17e75b3a9acacf615bee8a61d75553ba9838",
       "status": "pending",
       "anchors": [],
       "findings": [],
       "review": null
     },
     {
-      "path": "deepwell/src/models/page_connection.rs",
-      "sha256": "abd66cf0d355211f1af049bf522f17e75b3a9acacf615bee8a61d75553ba9838",
+      "path": "deepwell/src/models/page_connection_missing.rs",
+      "sha256": "f930c1aa181b8acce6900ff7bf85ac27abc4e44b13db3fd7f9b92c302fb2c443",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -1421,14 +1429,6 @@
       "review": null
     },
     {
-      "path": "deepwell/src/models/page.rs",
-      "sha256": "f1a4fc7371a067e748a3b04c27375097892c7e7bf4a358f1deba2a0d951c8f10",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
       "path": "deepwell/src/models/prelude.rs",
       "sha256": "04aca17f53be6dbe96ca55213a907802348ac03df7ff258ff5c87a36330f3332",
       "status": "pending",
@@ -1445,16 +1445,16 @@
       "review": null
     },
     {
-      "path": "deepwell/src/models/role_permission.rs",
-      "sha256": "b55fdaed7f90e7c98a3528710fc7d66689da1e2255b74aee390522632a6783b4",
+      "path": "deepwell/src/models/role.rs",
+      "sha256": "464e839782b663ccd2463e69f3f6f5d95f3101db658ac77809a841b70ef623cf",
       "status": "pending",
       "anchors": [],
       "findings": [],
       "review": null
     },
     {
-      "path": "deepwell/src/models/role.rs",
-      "sha256": "464e839782b663ccd2463e69f3f6f5d95f3101db658ac77809a841b70ef623cf",
+      "path": "deepwell/src/models/role_permission.rs",
+      "sha256": "b55fdaed7f90e7c98a3528710fc7d66689da1e2255b74aee390522632a6783b4",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -1469,14 +1469,6 @@
       "review": null
     },
     {
-      "path": "deepwell/src/models/site_domain.rs",
-      "sha256": "ec797b7758490b08c491e2f7865e5e9bafd73414a4a2780025e4b06bd4683fba",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
       "path": "deepwell/src/models/site.rs",
       "sha256": "3660276c777cab135152354147b9725d9bfb9e9d0dfc854ac42a49b213ba4349",
       "status": "pending",
@@ -1485,8 +1477,8 @@
       "review": null
     },
     {
-      "path": "deepwell/src/models/text_block.rs",
-      "sha256": "15982170c7f94cf7da8b8b27e4756555926a7405840f965448d1b79bbbdac51d",
+      "path": "deepwell/src/models/site_domain.rs",
+      "sha256": "ec797b7758490b08c491e2f7865e5e9bafd73414a4a2780025e4b06bd4683fba",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -1501,8 +1493,8 @@
       "review": null
     },
     {
-      "path": "deepwell/src/models/user_role.rs",
-      "sha256": "60d96296c3534e81875cc9cc95615fddf1641701db6dc83a6819b8471de70771",
+      "path": "deepwell/src/models/text_block.rs",
+      "sha256": "15982170c7f94cf7da8b8b27e4756555926a7405840f965448d1b79bbbdac51d",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -1511,6 +1503,14 @@
     {
       "path": "deepwell/src/models/user.rs",
       "sha256": "d0e955512345e9268bf0a7bb71bec56b4af150bb37bcfb2f1331dff857b23087",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "deepwell/src/models/user_role.rs",
+      "sha256": "60d96296c3534e81875cc9cc95615fddf1641701db6dc83a6819b8471de70771",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -1877,30 +1877,6 @@
       "review": null
     },
     {
-      "path": "deepwell/src/services/file_revision/mod.rs",
-      "sha256": "3dc2411221bb611c82db3c8a8ae074668f199b2e9a65c25cf0708f70d7ee1442",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "deepwell/src/services/file_revision/service.rs",
-      "sha256": "4d918871ab0d6a157339633c340724219fb6c5f514e2b289847624ccf999009b",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "deepwell/src/services/file_revision/structs.rs",
-      "sha256": "e5da43fb497a73738c2ae166dadb887d1c3d6f0845ecb8a83fa8c321c687728a",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
       "path": "deepwell/src/services/file/mod.rs",
       "sha256": "eda1c112e82ecadbce10a86f6e31c5256ff857ccef5ff71456512b31a0d98441",
       "status": "pending",
@@ -1919,6 +1895,30 @@
     {
       "path": "deepwell/src/services/file/structs.rs",
       "sha256": "ff4f3bbff169066d0e627ffe473de3e938dd679023b07334b9925ffd5b1d21fc",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "deepwell/src/services/file_revision/mod.rs",
+      "sha256": "3dc2411221bb611c82db3c8a8ae074668f199b2e9a65c25cf0708f70d7ee1442",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "deepwell/src/services/file_revision/service.rs",
+      "sha256": "4d918871ab0d6a157339633c340724219fb6c5f514e2b289847624ccf999009b",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "deepwell/src/services/file_revision/structs.rs",
+      "sha256": "e5da43fb497a73738c2ae166dadb887d1c3d6f0845ecb8a83fa8c321c687728a",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -1957,24 +1957,24 @@
       "review": null
     },
     {
-      "path": "deepwell/src/services/forum_post_revision/mod.rs",
-      "sha256": "ad4d551fa2e29927c6ee020d52d6915253a53167dfa311696e2be6174ae5aceb",
+      "path": "deepwell/src/services/forum/mod.rs",
+      "sha256": "3d33aa2d2a2f82351e1708559578d1e9a52ecd98df9881e80a43eac11a492653",
       "status": "pending",
       "anchors": [],
       "findings": [],
       "review": null
     },
     {
-      "path": "deepwell/src/services/forum_post_revision/service.rs",
-      "sha256": "a60fc3d503e598bb6c7ae9f7d0a1f7b160340eaf94ca6b63b63597da04c6b8c5",
+      "path": "deepwell/src/services/forum/service.rs",
+      "sha256": "61d6a50cee26204ab66b2dc0a07e21ade600b5ac5c8796327b7a4da10173f702",
       "status": "pending",
       "anchors": [],
       "findings": [],
       "review": null
     },
     {
-      "path": "deepwell/src/services/forum_post_revision/structs.rs",
-      "sha256": "c1db428ce8ed04ce7717036a59f10679ccf733e8083a1a3671c78a1e5abcee4d",
+      "path": "deepwell/src/services/forum/structs.rs",
+      "sha256": "0c302125a847c229b745ee0019dd4728a84c408028d501c3ca70ba38885f95b6",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -2013,6 +2013,30 @@
       "review": null
     },
     {
+      "path": "deepwell/src/services/forum_post_revision/mod.rs",
+      "sha256": "ad4d551fa2e29927c6ee020d52d6915253a53167dfa311696e2be6174ae5aceb",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "deepwell/src/services/forum_post_revision/service.rs",
+      "sha256": "a60fc3d503e598bb6c7ae9f7d0a1f7b160340eaf94ca6b63b63597da04c6b8c5",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "deepwell/src/services/forum_post_revision/structs.rs",
+      "sha256": "c1db428ce8ed04ce7717036a59f10679ccf733e8083a1a3671c78a1e5abcee4d",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
       "path": "deepwell/src/services/forum_thread/mod.rs",
       "sha256": "a4236b00db8bbd75808f8d486a20cc26cf3b9a6cabcaa1c084c62e2664b470bf",
       "status": "pending",
@@ -2031,30 +2055,6 @@
     {
       "path": "deepwell/src/services/forum_thread/structs.rs",
       "sha256": "a06fddded55554faf8a4fb7f935d8f1d989b9fc3d45c667965780e64826b0f74",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "deepwell/src/services/forum/mod.rs",
-      "sha256": "3d33aa2d2a2f82351e1708559578d1e9a52ecd98df9881e80a43eac11a492653",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "deepwell/src/services/forum/service.rs",
-      "sha256": "61d6a50cee26204ab66b2dc0a07e21ade600b5ac5c8796327b7a4da10173f702",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "deepwell/src/services/forum/structs.rs",
-      "sha256": "0c302125a847c229b745ee0019dd4728a84c408028d501c3ca70ba38885f95b6",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -2189,30 +2189,6 @@
       "review": null
     },
     {
-      "path": "deepwell/src/services/message_report/mod.rs",
-      "sha256": "cd3aff7274d1961b75e31c8db0bfa151e87f7dc6f28a16f11d9f4eddf73f3d4e",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "deepwell/src/services/message_report/service.rs",
-      "sha256": "1948d355db91c233cec5fa76df871ce897cb7a72349d9923dff98f1688bb67d7",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "deepwell/src/services/message_report/structs.rs",
-      "sha256": "e674b5501dbf4fd9e060cc374f17875256854df4d56d66003ed92eeada240e93",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
       "path": "deepwell/src/services/message/mod.rs",
       "sha256": "8da9d64c6ffc80c2cd21dbd29e8d96fb590700a89c671eb0fcb5e9a4fe64ea0f",
       "status": "pending",
@@ -2231,6 +2207,30 @@
     {
       "path": "deepwell/src/services/message/structs.rs",
       "sha256": "7e7ca70dd1c1be52232083be4d365aa1b0cadbd227f4d7e5036035dfaa884c43",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "deepwell/src/services/message_report/mod.rs",
+      "sha256": "cd3aff7274d1961b75e31c8db0bfa151e87f7dc6f28a16f11d9f4eddf73f3d4e",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "deepwell/src/services/message_report/service.rs",
+      "sha256": "1948d355db91c233cec5fa76df871ce897cb7a72349d9923dff98f1688bb67d7",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "deepwell/src/services/message_report/structs.rs",
+      "sha256": "e674b5501dbf4fd9e060cc374f17875256854df4d56d66003ed92eeada240e93",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -2279,6 +2279,30 @@
     {
       "path": "deepwell/src/services/outdate.rs",
       "sha256": "615ea46bbc1e719f0b4683b4e2ddade7e8055b1d145f18fe54d6642d38ca8d14",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "deepwell/src/services/page/mod.rs",
+      "sha256": "a3972e5ef23d0f32fac3cbe65a342bd875d7107f14fbf8c39e21e35e3c0a99e8",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "deepwell/src/services/page/service.rs",
+      "sha256": "948bb1c7bcfe50b0bdc8ed83b15b742b8f3397a63201f963f20f06e0f54bc388",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "deepwell/src/services/page/structs.rs",
+      "sha256": "e1846ee3a23c1eed8c78910f6319fa3e8adcb58151a000e1063a269e111145af",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -2471,30 +2495,6 @@
     {
       "path": "deepwell/src/services/page_revision/tasks.rs",
       "sha256": "4d6391bd3db73c64a523e7d892ef1902aa624c84e7e8cb6112c88603ed834edb",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "deepwell/src/services/page/mod.rs",
-      "sha256": "a3972e5ef23d0f32fac3cbe65a342bd875d7107f14fbf8c39e21e35e3c0a99e8",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "deepwell/src/services/page/service.rs",
-      "sha256": "948bb1c7bcfe50b0bdc8ed83b15b742b8f3397a63201f963f20f06e0f54bc388",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "deepwell/src/services/page/structs.rs",
-      "sha256": "e1846ee3a23c1eed8c78910f6319fa3e8adcb58151a000e1063a269e111145af",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -2789,16 +2789,16 @@
       "review": null
     },
     {
-      "path": "deepwell/src/services/render/compat/wikidot_embed_video.rs",
-      "sha256": "fdfd8c7cd34635bfffdf7812e06943ba7af2e4a28e5cd60107e7d8870853578a",
+      "path": "deepwell/src/services/render/compat/wikidot_embed.rs",
+      "sha256": "5e6c75c3d86091df55e5592a97a4db97a5562670652e3c91e50e9f0df9c289cf",
       "status": "pending",
       "anchors": [],
       "findings": [],
       "review": null
     },
     {
-      "path": "deepwell/src/services/render/compat/wikidot_embed.rs",
-      "sha256": "5e6c75c3d86091df55e5592a97a4db97a5562670652e3c91e50e9f0df9c289cf",
+      "path": "deepwell/src/services/render/compat/wikidot_embed_video.rs",
+      "sha256": "fdfd8c7cd34635bfffdf7812e06943ba7af2e4a28e5cd60107e7d8870853578a",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -2869,16 +2869,16 @@
       "review": null
     },
     {
-      "path": "deepwell/src/services/render/corpus/inventory_query.rs",
-      "sha256": "9dacc550a26f7cd24b1508b8ed451b83bd999a35858b491b2f19b7e7a9bd0938",
+      "path": "deepwell/src/services/render/corpus/inventory.rs",
+      "sha256": "8fc393995cdc122d1b86b5747315310b3a4844612fb7cd9294050c272ebbfc2a",
       "status": "pending",
       "anchors": [],
       "findings": [],
       "review": null
     },
     {
-      "path": "deepwell/src/services/render/corpus/inventory.rs",
-      "sha256": "8fc393995cdc122d1b86b5747315310b3a4844612fb7cd9294050c272ebbfc2a",
+      "path": "deepwell/src/services/render/corpus/inventory_query.rs",
+      "sha256": "9dacc550a26f7cd24b1508b8ed451b83bd999a35858b491b2f19b7e7a9bd0938",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -3261,14 +3261,6 @@
       "review": null
     },
     {
-      "path": "deepwell/src/services/render/list_pages/rendering_support.rs",
-      "sha256": "fb6db72ac4579ed7f7bac725e2335a6c7df7fafc84f042f416f4c91729a94e70",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
       "path": "deepwell/src/services/render/list_pages/rendering.rs",
       "sha256": "311699c09e30ade8312c6996cd094efcbf66e8c9a5373749cc47d7cdbe90f006",
       "status": "pending",
@@ -3311,6 +3303,14 @@
     {
       "path": "deepwell/src/services/render/list_pages/rendering/selected_content.rs",
       "sha256": "fdcb6961b847a76fc1fb0cb8706e3b588773b627a653a28f2ca7e8c9ea0ce6bd",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "deepwell/src/services/render/list_pages/rendering_support.rs",
+      "sha256": "fb6db72ac4579ed7f7bac725e2335a6c7df7fafc84f042f416f4c91729a94e70",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -3653,16 +3653,16 @@
       "review": null
     },
     {
-      "path": "deepwell/src/services/render/literal_regions/wikidot_ranges.rs",
-      "sha256": "edad82d009fba6b670f3223c36012da4f89f9d8311cfe106b87f105a736c5db9",
+      "path": "deepwell/src/services/render/literal_regions/wikidot.rs",
+      "sha256": "5722c2bb1af3011e7c2c7aa48d2b35f4164f28245da9312199fee9c28a195b93",
       "status": "pending",
       "anchors": [],
       "findings": [],
       "review": null
     },
     {
-      "path": "deepwell/src/services/render/literal_regions/wikidot.rs",
-      "sha256": "5722c2bb1af3011e7c2c7aa48d2b35f4164f28245da9312199fee9c28a195b93",
+      "path": "deepwell/src/services/render/literal_regions/wikidot_ranges.rs",
+      "sha256": "edad82d009fba6b670f3223c36012da4f89f9d8311cfe106b87f105a736c5db9",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -3749,16 +3749,16 @@
       "review": null
     },
     {
-      "path": "deepwell/src/services/render/pages_by_tag.rs",
-      "sha256": "3832cecb0171d6c57934671f1ae4b69cd3977b9a5b5731f1e5c8347428e9704d",
+      "path": "deepwell/src/services/render/pages.rs",
+      "sha256": "88ca302efe3bd2b4cd121cd1d5fa8bd21cacd7c1bd25191817eb7cdfc0823cb1",
       "status": "pending",
       "anchors": [],
       "findings": [],
       "review": null
     },
     {
-      "path": "deepwell/src/services/render/pages.rs",
-      "sha256": "88ca302efe3bd2b4cd121cd1d5fa8bd21cacd7c1bd25191817eb7cdfc0823cb1",
+      "path": "deepwell/src/services/render/pages_by_tag.rs",
+      "sha256": "3832cecb0171d6c57934671f1ae4b69cd3977b9a5b5731f1e5c8347428e9704d",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -3885,6 +3885,14 @@
       "review": null
     },
     {
+      "path": "deepwell/src/services/render/runtime.rs",
+      "sha256": "9dfe6a76e5ae294033c6706922190a04460623c9545ba9fc7b93580db73f8c5b",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
       "path": "deepwell/src/services/render/runtime_modules.rs",
       "sha256": "fa35f49dadbd9e5d65fb0a980b7cc02a082beef3a770f20af504e720bc0dce67",
       "status": "pending",
@@ -3975,14 +3983,6 @@
     {
       "path": "deepwell/src/services/render/runtime_page_queries.rs",
       "sha256": "c7b738889d272993b808d7af6f5dc21c5b842f389d34be5111f1c357c7dba2d0",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "deepwell/src/services/render/runtime.rs",
-      "sha256": "9dfe6a76e5ae294033c6706922190a04460623c9545ba9fc7b93580db73f8c5b",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -4253,6 +4253,14 @@
       "review": null
     },
     {
+      "path": "deepwell/src/services/text.rs",
+      "sha256": "73b32718405dc3e9351177e64e193004d68914d4c25f6f3cd75ed1064ff027cf",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
       "path": "deepwell/src/services/text_block/mime.rs",
       "sha256": "b2881410a86c64aacadf84e8e6dc0a34bf2ead0c9f32dcfd0497b8f1854074ab",
       "status": "pending",
@@ -4279,14 +4287,6 @@
     {
       "path": "deepwell/src/services/text_block/structs.rs",
       "sha256": "9b100aba9b9ee0b2347cdb2617449c1afa47b0379041c4694ea4aac91a41d5bd",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "deepwell/src/services/text.rs",
-      "sha256": "73b32718405dc3e9351177e64e193004d68914d4c25f6f3cd75ed1064ff027cf",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -4326,7 +4326,7 @@
     },
     {
       "path": "deepwell/src/services/view/article_cache.rs",
-      "sha256": "22c4f22f429fbbe7c7fc60616e0c40ab174cb51b49b5d3684c4f78c97c190f31",
+      "sha256": "fda44840a79773647c40bdefe13394fc551b972f7bfd73b9c8d908361ad7b930",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -4821,6 +4821,14 @@
       "review": null
     },
     {
+      "path": "framerail/src/lib/ForumModuleBody.svelte",
+      "sha256": "5db3fabe3dc1ebbb64390db9ca647cd3d2124cd1dd27c1294700e47fd44139e4",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
       "path": "framerail/src/lib/account-password-policy.js",
       "sha256": "0d5ebe62603b7c35b163309c039904e9d9d2e4e6cbd6730901e591533708b446",
       "status": "pending",
@@ -4925,6 +4933,70 @@
       "review": null
     },
     {
+      "path": "framerail/src/lib/component/Select.svelte",
+      "sha256": "7430ca0ad4bf0aeadff1d372d4abd3b2d6b87a8468a4d0330126bcdb7493d13f",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/lib/component/Spinny.svelte",
+      "sha256": "d98d1997717889264bd27ad3a7ed4472eddff62fc84ba5ea9f75fac40c1e269a",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/lib/component/Sprite.svelte",
+      "sha256": "86adce82f480fd9ffec1c553e83601a7be89d868a577edbd3917aaca36450c37",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/lib/component/TextBox.svelte",
+      "sha256": "b5dbe75b228edeed0c0be1cd17f65aa2393847f0e2ea613b41a971bb49761487",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/lib/component/TextInput.svelte",
+      "sha256": "9e98c5028ba21185cbc618889454bd5a465df93e57e23fe841504edf51611e1c",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/lib/component/TippySingleton.svelte",
+      "sha256": "a42d449819153eb27a81482b7cec8408ac037c3f7d145ae72ee9aa1a8d10b63e",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/lib/component/Toasts.svelte",
+      "sha256": "eab20e06b5981bef7117cc38de03596f21bfd2e8ab6be1c594af6e9b9db9da23",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/lib/component/Toggle.svelte",
+      "sha256": "f9622a565192789ece5d4fbf0e288914768827543675022494ffd8212af6e34f",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
       "path": "framerail/src/lib/component/scripts/animation.ts",
       "sha256": "1628c3300a9d999079f899228abb813b9cbbb1f784c0f41d539bd8c12c99a8df",
       "status": "pending",
@@ -4981,30 +5053,6 @@
       "review": null
     },
     {
-      "path": "framerail/src/lib/component/Select.svelte",
-      "sha256": "7430ca0ad4bf0aeadff1d372d4abd3b2d6b87a8468a4d0330126bcdb7493d13f",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "framerail/src/lib/component/Spinny.svelte",
-      "sha256": "d98d1997717889264bd27ad3a7ed4472eddff62fc84ba5ea9f75fac40c1e269a",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "framerail/src/lib/component/Sprite.svelte",
-      "sha256": "86adce82f480fd9ffec1c553e83601a7be89d868a577edbd3917aaca36450c37",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
       "path": "framerail/src/lib/component/tabs/Tab.svelte",
       "sha256": "f82b1d39ce58614bb78411a3c331801b176bfcd9fb701cc125384b4775e33a0c",
       "status": "pending",
@@ -5015,46 +5063,6 @@
     {
       "path": "framerail/src/lib/component/tabs/Tabview.svelte",
       "sha256": "0e53d1a9a85216dceaaebddc8c11085f3652d2c36e50e92db3300ef1a4b7da21",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "framerail/src/lib/component/TextBox.svelte",
-      "sha256": "b5dbe75b228edeed0c0be1cd17f65aa2393847f0e2ea613b41a971bb49761487",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "framerail/src/lib/component/TextInput.svelte",
-      "sha256": "9e98c5028ba21185cbc618889454bd5a465df93e57e23fe841504edf51611e1c",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "framerail/src/lib/component/TippySingleton.svelte",
-      "sha256": "a42d449819153eb27a81482b7cec8408ac037c3f7d145ae72ee9aa1a8d10b63e",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "framerail/src/lib/component/Toasts.svelte",
-      "sha256": "eab20e06b5981bef7117cc38de03596f21bfd2e8ab6be1c594af6e9b9db9da23",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "framerail/src/lib/component/Toggle.svelte",
-      "sha256": "f9622a565192789ece5d4fbf0e288914768827543675022494ffd8212af6e34f",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -5343,14 +5351,6 @@
     {
       "path": "framerail/src/lib/fetch.ts",
       "sha256": "0d15836f83c6302fe7ca46d356fd2da38094a933b784d7f3721cb1091480fd8d",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "framerail/src/lib/ForumModuleBody.svelte",
-      "sha256": "5db3fabe3dc1ebbb64390db9ca647cd3d2124cd1dd27c1294700e47fd44139e4",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6413,6 +6413,14 @@
       "review": null
     },
     {
+      "path": "framerail/src/lib/wikidot/WikidotBottomToolbar.svelte",
+      "sha256": "4af5a84f6d6bae8d1105a707018a09dd15f146dc9b20b8a3a11b86b604d2287f",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
       "path": "framerail/src/lib/wikidot/jquery-ui.d.ts",
       "sha256": "f4e51093b87cedf2372e9b2a26a42fa494a35d7719b6e279a900c76db9289b6b",
       "status": "pending",
@@ -6503,6 +6511,14 @@
     {
       "path": "framerail/src/lib/wikidot/wikidot-footer.js",
       "sha256": "bb2303e1e8525f8a357d7eb0cf58cf039dff62c39fb4947153508380ed909401",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/lib/wikidot/wikidot-footnotes.ts",
+      "sha256": "3095a32d568e90bacef2eb563babb0b564c63571467a5811571612e45e569d39",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6677,8 +6693,8 @@
       "review": null
     },
     {
-      "path": "framerail/src/lib/wikidot/WikidotBottomToolbar.svelte",
-      "sha256": "4af5a84f6d6bae8d1105a707018a09dd15f146dc9b20b8a3a11b86b604d2287f",
+      "path": "framerail/src/lib/wikidot/wikidot-toc.ts",
+      "sha256": "290a7f7345c1e19b6ea9e93520c37af5829a84d85a0c3876ec521e65a890bb91",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6701,24 +6717,48 @@
       "review": null
     },
     {
-      "path": "framerail/src/routes/_admin/+error.svelte",
-      "sha256": "65f4a0b956b9f03125d76642edb7dde0f4104ed4bf87d917ac584a9f76e6223d",
+      "path": "framerail/src/routes/+error.svelte",
+      "sha256": "3d1d95cb080d5eee7dafb797d08b8fac1ecef771ed5c606c38637c01d8832cb1",
       "status": "pending",
       "anchors": [],
       "findings": [],
       "review": null
     },
     {
-      "path": "framerail/src/routes/_admin/+page.server.ts",
-      "sha256": "8d11000949c306d862895e914d97451db4a6f4960ceedd5c1626c89e06f5ee8e",
+      "path": "framerail/src/routes/+layout.server.ts",
+      "sha256": "3a800d12184eb7ae7b68e1f04ce6582f1a4f4d9ef00f235588a0b2f3f3c5e7a6",
       "status": "pending",
       "anchors": [],
       "findings": [],
       "review": null
     },
     {
-      "path": "framerail/src/routes/_admin/+page.svelte",
-      "sha256": "a18c88379f35746d48053577c8be2d89a195d34033d2a8002d5fbac6a3ce60e3",
+      "path": "framerail/src/routes/+layout.svelte",
+      "sha256": "7ed0911ff6b28aaff8bbc42d2c0fc0e5646ceda8137dbca5d6056090782ece05",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/routes/+page.server.ts",
+      "sha256": "a5a6abf82179bd42e6bde3b3359b5c9d7579827e1ac1eabd93a5fae137067e69",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/routes/+page.svelte",
+      "sha256": "15a849f58fde4826da26fc43dc78e154b37e9b78199442c5f4342a468b7183b9",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/routes/WikiPageError.svelte",
+      "sha256": "e4cd7350799cd9b5258f2acbdf1cd1419b8ce6fc3a213ba15e86c7faaf866b43",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6805,14 +6845,6 @@
       "review": null
     },
     {
-      "path": "framerail/src/routes/[slug]/[...extra]/EditorPane.svelte",
-      "sha256": "d9d801c2659c08aa473359d0fdff39e6f907649e213b6730f5021f2f3cac7e11",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
       "path": "framerail/src/routes/[slug]/[...extra]/EditSectionPane.svelte",
       "sha256": "eea2fbd782ce3fd3ca68738d9bde232869d821adaffc2521da39d074750efa07",
       "status": "pending",
@@ -6821,8 +6853,8 @@
       "review": null
     },
     {
-      "path": "framerail/src/routes/[slug]/[...extra]/file-pane-state.ts",
-      "sha256": "53dcd36ab0ebc07405c81140f78ce2ce58d97752f11fd87f348d14038e5dbf0c",
+      "path": "framerail/src/routes/[slug]/[...extra]/EditorPane.svelte",
+      "sha256": "d9d801c2659c08aa473359d0fdff39e6f907649e213b6730f5021f2f3cac7e11",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6887,14 +6919,6 @@
     {
       "path": "framerail/src/routes/[slug]/[...extra]/MovePane.svelte",
       "sha256": "7b493b5c59f8aa567f247efcdeec6851c1066a16876eb2e5edeb8286557dc191",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "framerail/src/routes/[slug]/[...extra]/page.scss",
-      "sha256": "ae4617253dd663a4c4c140ee752945b24dce4c58cb3831ab78e936bb563a2dd1",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6997,8 +7021,16 @@
       "review": null
     },
     {
-      "path": "framerail/src/routes/[x+2d]/[slug]/[...extra]/+page.server.ts",
-      "sha256": "fb17333af088a633b8d3bba806860809d4c6bd00ed01bb51424108adddb63576",
+      "path": "framerail/src/routes/[slug]/[...extra]/file-pane-state.ts",
+      "sha256": "53dcd36ab0ebc07405c81140f78ce2ce58d97752f11fd87f348d14038e5dbf0c",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/routes/[slug]/[...extra]/page.scss",
+      "sha256": "ae4617253dd663a4c4c140ee752945b24dce4c58cb3831ab78e936bb563a2dd1",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7007,6 +7039,14 @@
     {
       "path": "framerail/src/routes/[x+2d]/+page.server.ts",
       "sha256": "4bccfd7d48ca30a787f5a267b5568da7d31ce85eddd579895f66fc8712342243",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/routes/[x+2d]/[slug]/[...extra]/+page.server.ts",
+      "sha256": "fb17333af088a633b8d3bba806860809d4c6bd00ed01bb51424108adddb63576",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7221,30 +7261,6 @@
       "review": null
     },
     {
-      "path": "framerail/src/routes/[x+2d]/user/[slug]/+page.server.ts",
-      "sha256": "02a8baadedcf5e56dff41cb6c1d3d30f1cc853115e9104d501d2269ff3a0d848",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "framerail/src/routes/[x+2d]/user/[slug]/+page.svelte",
-      "sha256": "ba5235f176bef8e4c588f310d69e20027b73307927406aa153594efe32a67cc3",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "framerail/src/routes/[x+2d]/user/[slug]/PageView.svelte",
-      "sha256": "b166cc8746642a2c3f8ae5c6fa676da221333f106ef6a604d3a8ac51e2017166",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
       "path": "framerail/src/routes/[x+2d]/user/+error.svelte",
       "sha256": "0b9078a625ff2a66e0fb085b3a9229335f4dec64f398c66992df2273dde0f558",
       "status": "pending",
@@ -7263,6 +7279,30 @@
     {
       "path": "framerail/src/routes/[x+2d]/user/+page.svelte",
       "sha256": "9c39aa6a6dacb0483636241859980228c4e084ee016a0e0f062f258d0ca89507",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/routes/[x+2d]/user/[slug]/+page.server.ts",
+      "sha256": "02a8baadedcf5e56dff41cb6c1d3d30f1cc853115e9104d501d2269ff3a0d848",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/routes/[x+2d]/user/[slug]/+page.svelte",
+      "sha256": "ba5235f176bef8e4c588f310d69e20027b73307927406aa153594efe32a67cc3",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/src/routes/[x+2d]/user/[slug]/PageView.svelte",
+      "sha256": "b166cc8746642a2c3f8ae5c6fa676da221333f106ef6a604d3a8ac51e2017166",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7293,40 +7333,24 @@
       "review": null
     },
     {
-      "path": "framerail/src/routes/+error.svelte",
-      "sha256": "3d1d95cb080d5eee7dafb797d08b8fac1ecef771ed5c606c38637c01d8832cb1",
+      "path": "framerail/src/routes/_admin/+error.svelte",
+      "sha256": "65f4a0b956b9f03125d76642edb7dde0f4104ed4bf87d917ac584a9f76e6223d",
       "status": "pending",
       "anchors": [],
       "findings": [],
       "review": null
     },
     {
-      "path": "framerail/src/routes/+layout.server.ts",
-      "sha256": "3a800d12184eb7ae7b68e1f04ce6582f1a4f4d9ef00f235588a0b2f3f3c5e7a6",
+      "path": "framerail/src/routes/_admin/+page.server.ts",
+      "sha256": "8d11000949c306d862895e914d97451db4a6f4960ceedd5c1626c89e06f5ee8e",
       "status": "pending",
       "anchors": [],
       "findings": [],
       "review": null
     },
     {
-      "path": "framerail/src/routes/+layout.svelte",
-      "sha256": "7ed0911ff6b28aaff8bbc42d2c0fc0e5646ceda8137dbca5d6056090782ece05",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "framerail/src/routes/+page.server.ts",
-      "sha256": "a5a6abf82179bd42e6bde3b3359b5c9d7579827e1ac1eabd93a5fae137067e69",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "framerail/src/routes/+page.svelte",
-      "sha256": "15a849f58fde4826da26fc43dc78e154b37e9b78199442c5f4342a468b7183b9",
+      "path": "framerail/src/routes/_admin/+page.svelte",
+      "sha256": "a18c88379f35746d48053577c8be2d89a195d34033d2a8002d5fbac6a3ce60e3",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7479,14 +7503,6 @@
     {
       "path": "framerail/src/routes/user[x+3a]info/[target]/+page.svelte",
       "sha256": "858f11779c611647caa09e10ecb8953889fb6865d7f0256e8739dfa34b9f81e9",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "framerail/src/routes/WikiPageError.svelte",
-      "sha256": "e4cd7350799cd9b5258f2acbdf1cd1419b8ce6fc3a213ba15e86c7faaf866b43",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7861,294 +7877,6 @@
       "review": null
     },
     {
-      "path": "install/local/wikidot-verification/scripts/capture_pr1334_anonymousnotificationsunsubscribe_token.py",
-      "sha256": "152f1c5b1cf05895d2a270081e01a2468680c6df0af295b614b38f07bd0b4e9f",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_pr1334_data_form_scalar_attribution.py",
-      "sha256": "4df45596ed96aee6ee79fd0e81db70084bb61ccac16e19463c29869b629b0199",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_pr1334_deepwell_identity_jsonrpc_attribution.py",
-      "sha256": "fc211776e3d7f86c828416e02ab28490677eabd78c90a3587ec0678708db4569",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_pr1334_deepwell_page_revision_jsonrpc_attribution.py",
-      "sha256": "90997c5591ac0dae53473eb75b2c335b99b22b14614f478764b52a96c87c27a5",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_pr1334_framerail_account_route_attribution.py",
-      "sha256": "0b8e15d194b1552ac1889898e1b4c2b98f8469faad948af2cf4f7739ee73a590",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_pr1334_ftml_embed_conditional_attribution.py",
-      "sha256": "05f8a2a06351309ad732ea1f10f79b6af1ae0d0e83659cb6c278224e27aa3394",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_pr1334_ftml_inline_core_syntax_attribution.py",
-      "sha256": "9dafa983809590492b00262f36123e01339d4972d1ed35e796f30ab21718be64",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_pr1334_ftml_lexical_text_attribution.py",
-      "sha256": "b899beb54ad86ae182916070ec90e57c07621648546747efae515bcb0e2b2505",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_pr1334_ftml_reference_control_attribution.py",
-      "sha256": "3a0abac6a227d4694184be6fe5f3f3f402cfb902d7e3ba912f251f49b4e3f46e",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_pr1334_ftml_structural_syntax_attribution.py",
-      "sha256": "e4255f7c8ac3537adb2d072b7ebf0e85784ec0e9084d97938382956075278268",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_pr1334_join_membership_source_attribution.py",
-      "sha256": "bb4bd149841adbef99bd68df056b3814d502b3b4b0365e975afdf869dfea5699",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_pr1334_q1032_whoinvited.py",
-      "sha256": "1441c8727956e80e8e8ef46e43968737b25d1335854818cdaa9ea65b115ddeb0",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_pr1334_q1036_active_search.py",
-      "sha256": "4a8344ffc0c2fda76b74c7a4435269b1876d038cb2f276c2a6b609e85e8330cc",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_pr1334_q1036_successful_feed.py",
-      "sha256": "ace985a7c26cb34c4b5d14d4ae6c78dc8c328605586180b2a1aa361fce7337d0",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_pr1334_wws_route_attribution.py",
-      "sha256": "146cce3ddd1eac7c4e92c3e375111c6bf95879bd1c6892d2fd30311de281bc82",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_pr1334_xmlrpc_surface_attribution.py",
-      "sha256": "0d18c8fbe1cc6d914f7a38ea7e236f8da43c216340d9f960fd2ac63fcccc4597",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_q1032_authenticated_readonly.py",
-      "sha256": "24c2d457eb00deca7ae86a5966088461d41f4f73aacd7edfccf7099ea2a23acc",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_wikidot_clone_action.py",
-      "sha256": "30b36bba0ef6fb7733da01d1494c9558a19a0028c8caab0012e24cb5a18e91b4",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_wikidot_existing_pages.py",
-      "sha256": "241e3e274989baad0242c0f75b68da639c9a03f2c0cdf23563647a24d70bc8c3",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_wikidot_featuredsite_global_rotation_v2.py",
-      "sha256": "cc07ce821d657818b9b73c857bf7ac55f6fa65cbd89a1baa6062d45e52f0b087",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_wikidot_featuredsite_global_rotation.py",
-      "sha256": "8c6f1769ffc2728ccd3b53ff55ff18fb736c13d8e07a66d4416df0709666b377",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_wikidot_listpages_campaign.py",
-      "sha256": "023a0c4c39ea814a9561600beffb542066235b47f60c888d43e5ee644c7f6179",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_wikidot_mailform_dom_submit.py",
-      "sha256": "ad681915556bb2a99c1b9dfae2b3ac00a485c9a6f38ee954a7e4ed8b1d89172c",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_wikidot_membership_application_review.py",
-      "sha256": "53b5388ab839899400b35ecabb3d0e21ed8995f0d5c6d92e959d8a6199be7281",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_wikidot_membership_invitation_consumption.py",
-      "sha256": "4613905d4808700f5285c65cfbc25b8d129ae4874529c23b47fc6e7643578df5",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_wikidot_preview_pages.py",
-      "sha256": "cf66df00dc6578275685d87a208cb8c5993b67747e8f69f349d26d09a189dd96",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_wikidot_preview_references.py",
-      "sha256": "3734a71e06b026d881dcd9e415f0cb8dc1365d3599dea0f8717fcb1eb8516b11",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_wikidot_py_direct_messages.py",
-      "sha256": "73415968486676b35df79421878fea5b1b02f21f96de3533f7af25426f550a33",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_wikidot_py_forum_revisions.py",
-      "sha256": "a5f8ea8b3bdbcefcde510cb59b84c9f754cada2282b04f185c62a35404159a12",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_wikidot_py_membership_applications.py",
-      "sha256": "9b963d694124bd7fbd476e172af112de6991477193506c6b5e9941723977e2b0",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_wikidot_py_sitechanges_shape.py",
-      "sha256": "830665c708f40a06759806931bdb59ea0051890c628659f38d085966d352e9db",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_wikidot_saved_pages.py",
-      "sha256": "20a38d3c0a3d92a17e04241ff2e9bba43d0d4c322bdfe154a2aea4dca4f4baa9",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_wikidot_simpletodo_mutation.py",
-      "sha256": "28d2708ad4fa691b243c49e59a37d72ed0873be3222eca85d480351dbebbbb10",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_wikidot_sitegrid_populated_v2.py",
-      "sha256": "0448e791b06c87d0f32c187763b344c35cc226d6807a38f4b94f7e2e4eecbd18",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_wikidot_sitegrid_populated.py",
-      "sha256": "9a8fb5f7fd1ccb6994acd2acaa3558df2e434e10287ff2dbaf20cba32a2c942e",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/capture_wikidot_themepreviewer_active.py",
-      "sha256": "869943c1634ace8a746f83dedcd8add966c4590f0cdb4b2ace66c4efe22804c5",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
       "path": "install/local/wikidot-verification/scripts/capture-browser-rendering.mjs",
       "sha256": "cfc68f8ec31a0f88269d680425f1c7188c2bf90554e1a17cf080f6baf3de4317",
       "status": "pending",
@@ -8445,6 +8173,294 @@
       "review": null
     },
     {
+      "path": "install/local/wikidot-verification/scripts/capture_pr1334_anonymousnotificationsunsubscribe_token.py",
+      "sha256": "152f1c5b1cf05895d2a270081e01a2468680c6df0af295b614b38f07bd0b4e9f",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_pr1334_data_form_scalar_attribution.py",
+      "sha256": "4df45596ed96aee6ee79fd0e81db70084bb61ccac16e19463c29869b629b0199",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_pr1334_deepwell_identity_jsonrpc_attribution.py",
+      "sha256": "fc211776e3d7f86c828416e02ab28490677eabd78c90a3587ec0678708db4569",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_pr1334_deepwell_page_revision_jsonrpc_attribution.py",
+      "sha256": "90997c5591ac0dae53473eb75b2c335b99b22b14614f478764b52a96c87c27a5",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_pr1334_framerail_account_route_attribution.py",
+      "sha256": "0b8e15d194b1552ac1889898e1b4c2b98f8469faad948af2cf4f7739ee73a590",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_pr1334_ftml_embed_conditional_attribution.py",
+      "sha256": "05f8a2a06351309ad732ea1f10f79b6af1ae0d0e83659cb6c278224e27aa3394",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_pr1334_ftml_inline_core_syntax_attribution.py",
+      "sha256": "9dafa983809590492b00262f36123e01339d4972d1ed35e796f30ab21718be64",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_pr1334_ftml_lexical_text_attribution.py",
+      "sha256": "b899beb54ad86ae182916070ec90e57c07621648546747efae515bcb0e2b2505",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_pr1334_ftml_reference_control_attribution.py",
+      "sha256": "3a0abac6a227d4694184be6fe5f3f3f402cfb902d7e3ba912f251f49b4e3f46e",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_pr1334_ftml_structural_syntax_attribution.py",
+      "sha256": "e4255f7c8ac3537adb2d072b7ebf0e85784ec0e9084d97938382956075278268",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_pr1334_join_membership_source_attribution.py",
+      "sha256": "bb4bd149841adbef99bd68df056b3814d502b3b4b0365e975afdf869dfea5699",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_pr1334_q1032_whoinvited.py",
+      "sha256": "1441c8727956e80e8e8ef46e43968737b25d1335854818cdaa9ea65b115ddeb0",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_pr1334_q1036_active_search.py",
+      "sha256": "4a8344ffc0c2fda76b74c7a4435269b1876d038cb2f276c2a6b609e85e8330cc",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_pr1334_q1036_successful_feed.py",
+      "sha256": "ace985a7c26cb34c4b5d14d4ae6c78dc8c328605586180b2a1aa361fce7337d0",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_pr1334_wws_route_attribution.py",
+      "sha256": "146cce3ddd1eac7c4e92c3e375111c6bf95879bd1c6892d2fd30311de281bc82",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_pr1334_xmlrpc_surface_attribution.py",
+      "sha256": "0d18c8fbe1cc6d914f7a38ea7e236f8da43c216340d9f960fd2ac63fcccc4597",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_q1032_authenticated_readonly.py",
+      "sha256": "24c2d457eb00deca7ae86a5966088461d41f4f73aacd7edfccf7099ea2a23acc",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_clone_action.py",
+      "sha256": "30b36bba0ef6fb7733da01d1494c9558a19a0028c8caab0012e24cb5a18e91b4",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_existing_pages.py",
+      "sha256": "241e3e274989baad0242c0f75b68da639c9a03f2c0cdf23563647a24d70bc8c3",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_featuredsite_global_rotation.py",
+      "sha256": "8c6f1769ffc2728ccd3b53ff55ff18fb736c13d8e07a66d4416df0709666b377",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_featuredsite_global_rotation_v2.py",
+      "sha256": "cc07ce821d657818b9b73c857bf7ac55f6fa65cbd89a1baa6062d45e52f0b087",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_listpages_campaign.py",
+      "sha256": "023a0c4c39ea814a9561600beffb542066235b47f60c888d43e5ee644c7f6179",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_mailform_dom_submit.py",
+      "sha256": "ad681915556bb2a99c1b9dfae2b3ac00a485c9a6f38ee954a7e4ed8b1d89172c",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_membership_application_review.py",
+      "sha256": "53b5388ab839899400b35ecabb3d0e21ed8995f0d5c6d92e959d8a6199be7281",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_membership_invitation_consumption.py",
+      "sha256": "4613905d4808700f5285c65cfbc25b8d129ae4874529c23b47fc6e7643578df5",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_preview_pages.py",
+      "sha256": "cf66df00dc6578275685d87a208cb8c5993b67747e8f69f349d26d09a189dd96",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_preview_references.py",
+      "sha256": "3734a71e06b026d881dcd9e415f0cb8dc1365d3599dea0f8717fcb1eb8516b11",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_py_direct_messages.py",
+      "sha256": "73415968486676b35df79421878fea5b1b02f21f96de3533f7af25426f550a33",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_py_forum_revisions.py",
+      "sha256": "a5f8ea8b3bdbcefcde510cb59b84c9f754cada2282b04f185c62a35404159a12",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_py_membership_applications.py",
+      "sha256": "9b963d694124bd7fbd476e172af112de6991477193506c6b5e9941723977e2b0",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_py_sitechanges_shape.py",
+      "sha256": "830665c708f40a06759806931bdb59ea0051890c628659f38d085966d352e9db",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_saved_pages.py",
+      "sha256": "20a38d3c0a3d92a17e04241ff2e9bba43d0d4c322bdfe154a2aea4dca4f4baa9",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_simpletodo_mutation.py",
+      "sha256": "28d2708ad4fa691b243c49e59a37d72ed0873be3222eca85d480351dbebbbb10",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_sitegrid_populated.py",
+      "sha256": "9a8fb5f7fd1ccb6994acd2acaa3558df2e434e10287ff2dbaf20cba32a2c942e",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_sitegrid_populated_v2.py",
+      "sha256": "0448e791b06c87d0f32c187763b344c35cc226d6807a38f4b94f7e2e4eecbd18",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/capture_wikidot_themepreviewer_active.py",
+      "sha256": "869943c1634ace8a746f83dedcd8add966c4590f0cdb4b2ace66c4efe22804c5",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
       "path": "install/local/wikidot-verification/scripts/check-corpus-pinned-literals.mjs",
       "sha256": "cb23044f3a2fdf717d6b4f6a399f3fbb9f6b9fe7ceda25c34490abc43c70d3b5",
       "status": "pending",
@@ -8717,16 +8733,16 @@
       "review": null
     },
     {
-      "path": "install/local/wikidot-verification/scripts/prepare_open43_a1037_run_owned.py",
-      "sha256": "aaeecc6f625409b388a1cc78234c16ffabea551a85ff6e40914fe8d066f1262f",
+      "path": "install/local/wikidot-verification/scripts/prepare-compatibility-candidate-inputs.mjs",
+      "sha256": "7b95b263a1d4b5af31c58f4dbd4a4df548b2b12db3bb69694a218dfb5900517d",
       "status": "pending",
       "anchors": [],
       "findings": [],
       "review": null
     },
     {
-      "path": "install/local/wikidot-verification/scripts/prepare-compatibility-candidate-inputs.mjs",
-      "sha256": "7b95b263a1d4b5af31c58f4dbd4a4df548b2b12db3bb69694a218dfb5900517d",
+      "path": "install/local/wikidot-verification/scripts/prepare_open43_a1037_run_owned.py",
+      "sha256": "aaeecc6f625409b388a1cc78234c16ffabea551a85ff6e40914fe8d066f1262f",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -9013,22 +9029,6 @@
       "review": null
     },
     {
-      "path": "install/local/wikidot-verification/scripts/validate_open43_a1037_browser_lifecycle.mjs",
-      "sha256": "4fff063f745bc550e271500113eacbc5a52d62564e8806accd021f62ba72848a",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
-      "path": "install/local/wikidot-verification/scripts/validate_open43_a1037_mutation_receipt.py",
-      "sha256": "18dca43168e709fa7ef27275fa515a47747abb10727578750556aa2e99be4ebd",
-      "status": "pending",
-      "anchors": [],
-      "findings": [],
-      "review": null
-    },
-    {
       "path": "install/local/wikidot-verification/scripts/validate-artifact.mjs",
       "sha256": "83b44ff65478577322573671868716322d9797a43f1ce5951fb1ac87a4b9e8a2",
       "status": "pending",
@@ -9055,6 +9055,22 @@
     {
       "path": "install/local/wikidot-verification/scripts/validate-redirect-runtime.mjs",
       "sha256": "c3d9e3a06e34bc1aada20b3de2e5b8d9e1f1fc9e8d1e031767df0421b36e6b2e",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/validate_open43_a1037_browser_lifecycle.mjs",
+      "sha256": "4fff063f745bc550e271500113eacbc5a52d62564e8806accd021f62ba72848a",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "install/local/wikidot-verification/scripts/validate_open43_a1037_mutation_receipt.py",
+      "sha256": "18dca43168e709fa7ef27275fa515a47747abb10727578750556aa2e99be4ebd",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -11383,10 +11399,10 @@
   ],
   "proofs": [
     {
-      "id": "resource-scanner-mutation-20261009e",
+      "id": "resource-scanner-mutation-20261009g",
       "kind": "mutation",
-      "path": "docs/development/test-quality-audit/resource-scanner-mutation-20261009e/resource-scanner-mutation.json",
-      "sha256": "6cd8abfd2bdc04071f37ae43483260c6e3d929743463dd5fd249e28273abbe16"
+      "path": "docs/development/test-quality-audit/resource-scanner-mutation-20261009g/resource-scanner-mutation.json",
+      "sha256": "723ba0ab2815077e46943729c0395a0db87dcf491dab3d8b29296cef0b8fa473"
     }
   ],
   "acceptance": null,
