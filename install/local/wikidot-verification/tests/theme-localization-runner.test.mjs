@@ -220,6 +220,7 @@ test("live dependencies leave the actor bound to the authenticated session by de
 test("insecure artifact root is rejected before adapters connect", async () => {
   const fx = await fixture();
   await fs.mkdir(fx.artifactDir, {mode: 0o755});
+  await fs.chmod(fx.artifactDir, 0o755);
   let connected = false;
   fx.dependencyFactory = async () => { connected = true; };
   await assert.rejects(executeGuardedThemeAction(fx), /artifact directory permissions/);

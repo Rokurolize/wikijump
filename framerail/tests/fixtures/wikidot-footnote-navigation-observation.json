@@ -1,0 +1,16 @@
+{
+  "source": "https://github.com/Rokurolize/wikijump/issues/2203",
+  "observed_at": "2026-10-08",
+  "runtime_contract": {
+    "reference_id_prefix": "footnoteref-",
+    "destination_id_prefix": "footnote-",
+    "legacy_handler": "WIKIDOT.page.utils.scrollToReference(targetId)",
+    "navigation": "scroll to target and blink"
+  },
+  "actions": [
+    { "reference": "footnoteref-1", "target": "footnote-1" },
+    { "reference": "footnoteref-2", "target": "footnote-2" },
+    { "reference": "footnote-1 > a", "target": "footnoteref-1" },
+    { "reference": "footnote-2 > a", "target": "footnoteref-2" }
+  ]
+}

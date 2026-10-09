@@ -77,6 +77,8 @@ register = Đăng ký
 specifier = Email hoặc Tên người dùng
   .placeholder = Nhập email hoặc tên người dùng...
 
+mfa-code = Mã MFA
+
 username = Tên người dùng
   .placeholder = Nhập tên người dùng...
   .info = Bạn sẽ có thể thay đổi thông tin này sau.

@@ -114,7 +114,7 @@ export async function loadPage(
     if (locals) {
       locals.wikidotDocument = resolveShellLayoutValue(errorData) === WIKIDOT_LAYOUT
     }
-    error(pageErrorStatus(response.type), errorData)
+    error(pageErrorStatus(response.type, slug), errorData)
   }
 
   const viewData = {
@@ -133,7 +133,16 @@ export async function loadPage(
   return loadData
 }
 
-function pageErrorStatus(type: Exclude<PageView["type"], "found">): number {
+function pageErrorStatus(
+  type: Exclude<PageView["type"], "found">,
+  slug: Optional<string>
+): number {
+  if (
+    type === "permissions" &&
+    slug?.replace(/^\/+|\/+$/gu, "").toLowerCase() === "_admin"
+  ) {
+    return 401
+  }
   return type === "missing" ? 404 : 403
 }
 

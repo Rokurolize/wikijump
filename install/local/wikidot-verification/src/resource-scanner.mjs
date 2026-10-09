@@ -73,9 +73,7 @@ export function scanForFixtureLocalResources({
     }
 
     const site = parsed.hostname;
-    const wikidotPath = parsed.pathname.includes("/local--files/")
-      ? parsed.pathname.slice(parsed.pathname.indexOf("/local--files/"))
-      : "";
+    const wikidotPath = parsed.pathname.slice(parsed.pathname.indexOf("/local--files/"));
     const filename = wikidotPath.split("/").at(-1) || "";
     const normalizedSource = {
       fixture_slug: fixtureSlug,
@@ -124,16 +122,4 @@ export function scanForFixtureLocalResources({
     manifest,
     out_of_scope: outOfScope,
   };
-}
-
-export function renderSampleManifestText({
-  fixtureSlug,
-  sourcePath,
-  sourceText,
-}) {
-  return JSON.stringify(
-    scanForFixtureLocalResources({fixtureSlug, sourcePath, sourceText}),
-    null,
-    2,
-  );
 }

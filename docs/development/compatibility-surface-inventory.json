@@ -11400,7 +11400,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "1613f082736b903cf95b1498e2016df38d8e0bc58f916676a8fa99ec49b8f3d7"
+      "source_input_set_sha256": "74c16f24d9ef2a11ded552e053b25c4cf2d7cb4ebdd0b332ab9044f8f6fcf223"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11493,23 +11493,23 @@
       },
       {
         "path": "deepwell/src/endpoints/page_lock.rs",
-        "sha256": "59eaced0f3f6ea21a000ea3876cba5833153d60c464a636fd9ce7b11ee58bb14"
+        "sha256": "9d5889ab72012a1a934204728a3aa188ff2acd12ccd3661640a2d9344510f14c"
       },
       {
         "path": "deepwell/src/endpoints/page_meta_tag.rs",
-        "sha256": "69365e960e8a99b93cbdcf0ee020ff4cdff3c28afa5c17676156396a153d3be1"
+        "sha256": "e49b6f71966542617aa2d78189250dedae120d907349213a6349f1f4e7a7d128"
       },
       {
         "path": "deepwell/src/endpoints/page_revision.rs",
-        "sha256": "d1a8e23a86a28046f9da3ec2aef1eecfcc739e80ae8219926f16854266be7350"
+        "sha256": "a285a6dfe135e1b983999040b48d3c78694bb3bd0fede0bee62250216a1e98d3"
       },
       {
         "path": "deepwell/src/endpoints/page.rs",
-        "sha256": "ab62692b2ef49ea8806a9248199197429565a924deb6a8e06ac97df1855b8ddf"
+        "sha256": "ee5ec6b96f083dd4259ef4f488c1543aa618932b115591e4cccc853ad3dd5a2a"
       },
       {
         "path": "deepwell/src/endpoints/parent.rs",
-        "sha256": "6d56acedbe45d7b2e014161421efb33fac61ebb0938c26774778c148e6db05dd"
+        "sha256": "a8b6e94c25e33b9c859d03ac25fc949c6a38b1c3b2d2acfcdf0737b303200092"
       },
       {
         "path": "deepwell/src/endpoints/routing.rs",
@@ -11561,7 +11561,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "35bf0e05642bf881df0b80f815a78b6bf6ea63c96a96430c83185a01b6012a46"
+        "sha256": "564464f925ec409782b9c075dc6222b49fbe8c0135dd7874e743a95c67a53ef9"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11609,7 +11609,7 @@
       },
       {
         "path": "docs/development/wikidot-page-action-surfaces.json",
-        "sha256": "c5268302383ce1c7449704ce3ce74ed047daf899669d3b62d0fbc458d9e15f59"
+        "sha256": "8a4df399dc223ad2a3ceb2d8d5330aff70a37910c088c58064199a33e52f1b67"
       },
       {
         "path": "docs/development/wikidot-py-amc-client-parity.json",
@@ -11625,19 +11625,19 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "3b5c731be07401e510aedf802c86caa71c314a3093f0c0262d80514bb0128c41"
+        "sha256": "cab8bffd3407819c8c8a9f12d98952a3393824b3cdd3eccdb4bbd56fc6dbdeca"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
-        "sha256": "2929d5634f1e1b598ef90e1e3d01b963ad0c7d76d0aff8c491f9a11338db28e4"
+        "sha256": "591185cde9c8cbf7cd5152345f7f8d026695a352ed101390594e577988d5b1f5"
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "fdcdbd1b057a59b11daeca245a2ccae7f7e38b6c4e10fffaf59396680039f419"
+        "sha256": "c4a50c586c9b0e57e030e68e7f5653a2231ae5827b5cd9129cca67a978acea13"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
-        "sha256": "7c9984fe6e1e208c8044c3738b5158df1cbaf674c1dd985c1b105d06d840eeba"
+        "sha256": "8620a546b10837b8a05bf886580be73933f5fc3ec1fb5ecb71b8e509a8c10146"
       },
       {
         "path": "docs/wikidot-specifications/source-coverage.json",
@@ -11657,7 +11657,7 @@
       },
       {
         "path": "framerail/src/lib/server/load/page/page.ts",
-        "sha256": "0e3fec2b0244071855e51d3e8bbd68ae6dfae50d11ac8098f253593c65510e6e"
+        "sha256": "51b0bc8a50e650af2fa11dbddec660a90973652c09a3b1f1b59cd8bf4a6ccc8b"
       },
       {
         "path": "framerail/src/lib/server/wikidot-site-changes.js",
@@ -11688,12 +11688,12 @@
         "sha256": "e06ad941b8a6ed3e5a0cfe58b46368407d0cda0881377933bc81248a268b6a7c"
       },
       {
-        "path": "framerail/src/routes/[x+2d]/[slug]/[...extra]/+page.svelte",
-        "sha256": "b31d199a2874bc9cb56f43a7415e502ef0e41e40e704f011447d17dbe521f1eb"
+        "path": "framerail/src/routes/[x+2d]/[slug]/[...extra]/+page.server.ts",
+        "sha256": "fb17333af088a633b8d3bba806860809d4c6bd00ed01bb51424108adddb63576"
       },
       {
-        "path": "framerail/src/routes/[x+2d]/+page.svelte",
-        "sha256": "68e7bfc723846a85421253857f8bcafd2f1ea5bda1e23e6d3a16111c59fa2064"
+        "path": "framerail/src/routes/[x+2d]/+page.server.ts",
+        "sha256": "4bccfd7d48ca30a787f5a267b5568da7d31ce85eddd579895f66fc8712342243"
       },
       {
         "path": "framerail/src/routes/[x+2d]/about/+page.server.ts",
@@ -11701,7 +11701,7 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/about/+page.svelte",
-        "sha256": "ff294afedab50478b5efd269ef7e328c134964b2dbf111cef4807c12409b87c6"
+        "sha256": "36bb002e403f139d41ed530fbe3407d79ceadacd0a2fe333e94e9eed2a9a6321"
       },
       {
         "path": "framerail/src/routes/[x+2d]/admin/+page.server.ts",
@@ -11717,7 +11717,7 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/login/+page.svelte",
-        "sha256": "788ebf1495732352f81731a3f67f5fbba5bec62e43c69a419efe2c7b78879232"
+        "sha256": "e46f7ff61479c50023a2f49f3e7a276ebef165e141021f1985c5bd06ed673857"
       },
       {
         "path": "framerail/src/routes/[x+2d]/logout/+page.server.ts",
@@ -11729,11 +11729,11 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/register/+page.server.ts",
-        "sha256": "4fb13974345ab4246d257c475b285477ed431b8207852bf17c2db796900ce904"
+        "sha256": "a839017a370583d3264ad6234a86b2e8b90159652bb1d9011bdad21be6d1b806"
       },
       {
         "path": "framerail/src/routes/[x+2d]/register/+page.svelte",
-        "sha256": "79d04ea2f001dafebd5455896f6c8b6899039defa1a84798160ba71b971ad229"
+        "sha256": "84e8cc7e4eb5f62fda9f2546cd9aee78f1843d64270fe33eacfff833a611426b"
       },
       {
         "path": "framerail/src/routes/[x+2d]/settings/+page.server.ts",
@@ -11741,7 +11741,7 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/settings/+page.svelte",
-        "sha256": "a2652943c1a7c873895309cc3fab432477160444c7c35bb6cac5ea2a1745f812"
+        "sha256": "9d03e03419e9db2f06e097b997c125e9a3e45d6d486e42072567b6776b167def"
       },
       {
         "path": "framerail/src/routes/[x+2d]/user/[slug]/+page.server.ts",
@@ -11757,7 +11757,7 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/user/+page.svelte",
-        "sha256": "c592d4803a24c7a6fef3aec416df6ce2864f6543a1d3b1bf41722fd9a2f16989"
+        "sha256": "9c39aa6a6dacb0483636241859980228c4e084ee016a0e0f062f258d0ca89507"
       },
       {
         "path": "framerail/src/routes/[x+2d]/wikidot-interwiki/interwikiFrame.html/+server.ts",
@@ -11773,7 +11773,7 @@
       },
       {
         "path": "framerail/src/routes/+error.svelte",
-        "sha256": "22292c890efc5e5d7a82585f28377c3784d9cc3be69d3c07091ddf0b6379f78c"
+        "sha256": "3d1d95cb080d5eee7dafb797d08b8fac1ecef771ed5c606c38637c01d8832cb1"
       },
       {
         "path": "framerail/src/routes/+page.server.ts",
@@ -11845,11 +11845,11 @@
       },
       {
         "path": "framerail/src/routes/printer--friendly/[...path]/+page.server.ts",
-        "sha256": "d4158648bc9a279f953d7c741338b89e29d873eb8d669823c6bff7e0e8300bfa"
+        "sha256": "09cfc8f3d521ded26a3622ae70b947e3c26d01e094adf04b9266f17425c06653"
       },
       {
         "path": "framerail/src/routes/printer--friendly/[...path]/+page.svelte",
-        "sha256": "67a38a8c64c2c65c653fd7db577a8eca81cae6191e02b594335dc97dea5b3172"
+        "sha256": "ac11588f94706805f2bf8f117bb96d6265cac3b54235fcf7a0e5d5a1d762af66"
       },
       {
         "path": "framerail/src/routes/user[x+3a]info/[target]/+page.server.ts",
@@ -11858,6 +11858,10 @@
       {
         "path": "framerail/src/routes/user[x+3a]info/[target]/+page.svelte",
         "sha256": "858f11779c611647caa09e10ecb8953889fb6865d7f0256e8739dfa34b9f81e9"
+      },
+      {
+        "path": "framerail/src/routes/WikiPageError.svelte",
+        "sha256": "2c970045f6aed675a58e49bd727c4cc832c9fe8677656f8d9a5cb1ad3376303b"
       },
       {
         "path": "framerail/src/routes/xml-rpc-api.php/+server.ts",
@@ -11893,7 +11897,7 @@
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
-        "sha256": "fdcdbd1b057a59b11daeca245a2ccae7f7e38b6c4e10fffaf59396680039f419"
+        "sha256": "c4a50c586c9b0e57e030e68e7f5653a2231ae5827b5cd9129cca67a978acea13"
       },
       {
         "path": "wws/src/route.rs",
@@ -25129,7 +25133,7 @@
         ],
         "cases": [],
         "tests": [
-          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+          "deepwell/tests/auth.rs#logout_invalidates_only_the_named_session_and_rejects_reuse"
         ]
       },
       "evidence": {
@@ -26254,7 +26258,7 @@
         ],
         "cases": [],
         "tests": [
-          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+          "deepwell/tests/page.rs#listdrafts_module_reads_persisted_drafts_and_enforces_target_filters"
         ]
       },
       "evidence": {
@@ -26299,7 +26303,7 @@
         ],
         "cases": [],
         "tests": [
-          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+          "deepwell/tests/page.rs#listdrafts_module_reads_persisted_drafts_and_enforces_target_filters"
         ]
       },
       "evidence": {
@@ -26344,7 +26348,7 @@
         ],
         "cases": [],
         "tests": [
-          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+          "deepwell/tests/page.rs#listdrafts_module_reads_persisted_drafts_and_enforces_target_filters"
         ]
       },
       "evidence": {
@@ -28414,7 +28418,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/auth.rs#mfa_setup_reset_disable_and_totp_login_flow"
+          "deepwell/tests/auth.rs#logout_invalidates_only_the_named_session_and_rejects_reuse"
         ]
       },
       "evidence": {
@@ -31563,7 +31567,7 @@
       "surface_id": "framerail-route:/-",
       "kind": "framerail_route",
       "public_reference": [
-        "framerail/src/routes/[x+2d]/+page.svelte#methods:GET"
+        "framerail/src/routes/[x+2d]/+page.server.ts#methods:GET"
       ],
       "existing_refs": {
         "issues": [
@@ -31603,7 +31607,7 @@
       "surface_id": "framerail-route:/-/{slug}/{*extra}",
       "kind": "framerail_route",
       "public_reference": [
-        "framerail/src/routes/[x+2d]/[slug]/[...extra]/+page.svelte#methods:GET"
+        "framerail/src/routes/[x+2d]/[slug]/[...extra]/+page.server.ts#methods:GET"
       ],
       "existing_refs": {
         "issues": [
@@ -37755,7 +37759,8 @@
         "docs/development/wikidot-page-action-surfaces.json",
         "framerail/src/lib/server/load/page/page-actions.ts",
         "framerail/src/lib/server/load/page/page-actions.ts#action:edit",
-        "framerail/src/routes/+error.svelte"
+        "framerail/src/routes/+error.svelte",
+        "framerail/src/routes/WikiPageError.svelte"
       ],
       "existing_refs": {
         "issues": [
@@ -37777,7 +37782,8 @@
         "status": "implemented",
         "references": [
           "framerail/src/lib/server/load/page/page-actions.ts",
-          "framerail/src/routes/+error.svelte"
+          "framerail/src/routes/+error.svelte",
+          "framerail/src/routes/WikiPageError.svelte"
         ]
       },
       "candidate": {
@@ -37816,8 +37822,12 @@
       },
       "source_identities": [
         {
+          "path": "framerail/src/routes/WikiPageError.svelte",
+          "sha256": "2c970045f6aed675a58e49bd727c4cc832c9fe8677656f8d9a5cb1ad3376303b"
+        },
+        {
           "path": "framerail/src/routes/+error.svelte",
-          "sha256": "22292c890efc5e5d7a82585f28377c3784d9cc3be69d3c07091ddf0b6379f78c"
+          "sha256": "3d1d95cb080d5eee7dafb797d08b8fac1ecef771ed5c606c38637c01d8832cb1"
         },
         {
           "path": "framerail/src/lib/server/load/page/page-actions.ts",
@@ -37839,7 +37849,8 @@
         "framerail/src/lib/server/load/page/page-actions.ts#action:restore",
         "framerail/src/lib/server/load/page/page-revision-actions.ts",
         "framerail/src/lib/server/load/page/page.ts",
-        "framerail/src/routes/+error.svelte"
+        "framerail/src/routes/+error.svelte",
+        "framerail/src/routes/WikiPageError.svelte"
       ],
       "existing_refs": {
         "issues": [
@@ -37863,7 +37874,8 @@
           "framerail/src/lib/server/load/page/page-actions.ts",
           "framerail/src/lib/server/load/page/page-revision-actions.ts",
           "framerail/src/lib/server/load/page/page.ts",
-          "framerail/src/routes/+error.svelte"
+          "framerail/src/routes/+error.svelte",
+          "framerail/src/routes/WikiPageError.svelte"
         ]
       },
       "candidate": {
@@ -37910,8 +37922,12 @@
       },
       "source_identities": [
         {
+          "path": "framerail/src/routes/WikiPageError.svelte",
+          "sha256": "2c970045f6aed675a58e49bd727c4cc832c9fe8677656f8d9a5cb1ad3376303b"
+        },
+        {
           "path": "framerail/src/routes/+error.svelte",
-          "sha256": "22292c890efc5e5d7a82585f28377c3784d9cc3be69d3c07091ddf0b6379f78c"
+          "sha256": "3d1d95cb080d5eee7dafb797d08b8fac1ecef771ed5c606c38637c01d8832cb1"
         },
         {
           "path": "framerail/src/lib/server/load/page/page-actions.ts",
@@ -37919,7 +37935,7 @@
         },
         {
           "path": "framerail/src/lib/server/load/page/page.ts",
-          "sha256": "0e3fec2b0244071855e51d3e8bbd68ae6dfae50d11ac8098f253593c65510e6e"
+          "sha256": "51b0bc8a50e650af2fa11dbddec660a90973652c09a3b1f1b59cd8bf4a6ccc8b"
         },
         {
           "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",

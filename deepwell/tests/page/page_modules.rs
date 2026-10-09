@@ -5266,7 +5266,7 @@ async fn newpage_module_resolves_existing_templates_in_rendered_pages() {
             .to_owned(),
         r#"<form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);">"#
             .to_owned(),
-        r#"<input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px"/>"#
+        r#"<input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px" aria-label="Name of the new page"/>"#
             .to_owned(),
         r#"<select name="template" style="margin: 1px">"#.to_owned(),
         r#"<option value="" selected="selected">-- Select a template --</option>"#

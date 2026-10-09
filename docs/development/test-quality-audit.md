@@ -5,54 +5,109 @@ reproducible and so a coverage number is never mistaken for an ownership
 judgement. It supports issue #1990 and the Deepwell owner-boundary work in
 #1977.
 
+## Opt-in audit commands and reviewed ledger
+
+`docs/development/test-quality-audit.json` binds the production denominator to
+current source, test, frozen input, manifest, and lockfile bytes. The inventory
+starts from checkout files, not a coverage report. It resolves relative module
+imports, Rust child test modules, JavaScript wrapper suites, Python tests,
+Deepwell binaries, and the separate relation proc-macro sources. Imported suites
+retain their named assertions but are not rerun as independent Node entrypoints.
+Discovery is navigation; an import or source-shaped registry witness alone does
+not establish behavioral ownership.
+
+```sh
+node scripts/run-test-quality-audit.mjs inventory --output-dir /tmp/audit-inventory
+node scripts/run-test-quality-audit.mjs coverage --output-dir /tmp/audit-coverage
+node scripts/run-test-quality-audit.mjs coverage --owner resource-scanner --output-dir /tmp/audit-resource-coverage
+node scripts/run-test-quality-audit.mjs mutate --owner generated-gate-close-unit --output-dir /tmp/audit-gate-unit
+node scripts/run-test-quality-audit.mjs mutate --owner generated-gate-close-listpages --output-dir /tmp/audit-gate-rendered
+node scripts/run-test-quality-audit.mjs verify --output-dir /tmp/audit-verification
+```
+
+Every output directory must be new and outside the checkout. Commands remain
+opt-in; no coverage or mutation jobs are added to CI. Measurements enter the
+normal external-network guard and use existing locked dependencies. Prepare the
+pinned FTML and wikidot.py checkouts using the existing `WIKIJUMP_FTML_CHECKOUT`
+and `WIKIDOT_PY_CHECKOUT` contracts when their default sibling paths are absent.
+
+The ledger currently keeps unaudited files pending. `verify` rejects unresolved
+records and missing final acceptance. `verify --allow-incomplete` can check a
+work-in-progress ledger without authorizing issue closure. Neither passing
+baselines nor a high coverage percentage changes that rule. Historical issue
+comments are provenance until their exact source, test, tool, and inventory
+identities are reconciled.
+
+Terminal records require named executable owners, a source-bound material-region
+assessment, independent review, and supporting proof references. Proof admission
+opens and hashes supporting artifacts. Mutation acceptance cross-checks the
+frozen inventory, successful baseline, command, target, log identity, restoration,
+and each individual outcome. Survivors, compilation failures, and demonstrated
+mutation-induced nonprogress retain separate dispositions. Arbitrary evidence
+strings cannot authorize acceptance. Final closure additionally requires current
+portable, proc-macro, generated-contract, scanner, and final-preflight evidence;
+a verified normal two-parent merge; and applicable merged-head standing proof.
+
+The former 39-entry generated-gate recovery inventory is retained only in
+the dated evidence package. The current develop implementation removed that
+recovery helper, so those receipts do not bind the merged source tree and are
+not admitted by the active ledger. Any future mutation proof must target a
+current executable owner. Standing volumes and persistent local development
+services are never part of the audit lifecycle.
+
 ## Measured coverage
 
 ### Deepwell (Rust)
 
-Unit coverage is measured with the stable toolchain:
+The combined measurement retains unit, integration, and combined JSON reports
+with line, function, and region denominators. It seeds a disposable stack using
+the normal uninstrumented build, resolves the seed binary through Cargo metadata,
+then retains unit profiles separately before collecting serial integration
+profiles. Seeder-only profiles cannot raise application coverage. The
+`deepwell-relation-impl-derive` package has its own report and test invocation;
+it is not counted as an implicitly exercised dependency.
 
-```sh
-CARGO_INCREMENTAL=0 cargo llvm-cov --lib --json \
-  --output-path /tmp/wj-deepwell-lib-coverage.json \
-  --offline --locked --manifest-path deepwell/Cargo.toml
-```
+Rust branch instrumentation requires nightly. Stable line/function/region
+coverage and targeted mutation are the accepted measurements; a missing branch
+percentage is a documented instrumentation limitation, not a coverage claim.
+Tool versions, selected features, exact commands, and source/test/input hashes
+must accompany reviewed measurements.
 
-This is **unit-only**. Deepwell's integration suites live in `deepwell/tests/`
-and are compiled as separate crates, so a service file whose behavior is owned
-by an integration test reports 0% here. Reading that as a missing test is
-wrong: classify the file by its actual owner (`deepwell/tests/<owner>.rs`)
-before acting on the number.
+### Node, Vite SSR, and frozen subprocess environments
 
-Branch coverage (`cargo llvm-cov --branch`) requires a nightly compiler. The
-repository builds on stable, so branch coverage is a documented tooling
-limitation; line, region, function, and instantiation coverage plus targeted
-mutation are used instead.
+Node's built-in instrumentation reports line, function, and V8 branch coverage
+without adding a new production seam. Framerail keeps its normal SvelteKit sync
+and Vite SSR owners. Some modules are visible in reports; absent SSR modules
+need a demonstrated instrumentation limitation and independently reviewed action
+or browser ownership. A blanket SSR exclusion is not an assessment.
 
-### Framerail
+Instrumentation of a child process can fail when Node tries to add
+`NODE_V8_COVERAGE` to a deliberately frozen environment. Preserve that environment
+contract. Retain the failed instrumented probe, a passing uninstrumented baseline,
+and the exact affected owner; measure compatible owners separately. Never turn
+an unrelated test failure into an instrumentation exclusion.
 
-```sh
-scripts/run-framerail-unit-tests.sh
-```
+Node coverage runs the compatible test entrypoints in sequential batches of at
+most 25 files. Each batch writes its own LCOV report; the audit merges line,
+function, and branch hits by source identity so a file exercised by multiple
+batches is not double-counted. Batching also prevents one subprocess's empty V8
+profile from discarding otherwise valid package coverage. If a frozen child
+environment fails under instrumentation, retain that probe and the complete
+passing baseline, then retry the exact owner in smaller batches. Exclude an owner
+only if the failure remains reproducible after batching; the summary lists only
+owners actually excluded from its test entrypoints.
 
-Framerail action tests run through a Vite SSR bootstrap. Node's built-in V8
-coverage does not observe many modules loaded that way, so a module missing
-from a V8 report is an instrumentation blind spot, not an untested module.
-Judge action coverage from the behavioral action-boundary tests.
-
-### wikidot-verification
-
-```sh
-WIKIJUMP_FTML_CHECKOUT=/home/roku/src/Rokurolize/ftml \
-WIKIDOT_PY_CHECKOUT=/home/roku/src/Rokurolize/wikidot.py \
-pnpm --dir install/local/wikidot-verification offline
-```
-
-`NODE_V8_COVERAGE` cannot be propagated through the whole suite because some
-child-process tests intentionally freeze their environment objects
-(`Cannot add property NODE_V8_COVERAGE, object is not extensible`). Coverage
-measurement must not change the semantics being measured, so subprocess-heavy
-code is treated as an instrumentation blind spot and measured directly where
-that is transparent.
+The Wikidot verification package has 13 explicitly named child-process owners
+whose deliberately frozen Git environments reject Node 24's injected
+`NODE_V8_COVERAGE` property. The full uninstrumented baseline still runs every
+entrypoint. The repository coverage command instruments every compatible owner
+and records those exact exclusions; `test-quality-coverage.mjs` fails if any
+named path disappears from the current inventory. The reproduced failures and
+exact-owner reruns remain in
+`docs/development/test-quality-audit/wikidot-verification-node-coverage-20261009/`;
+the current full-run results for Deepwell, Framerail, and Wikidot verification
+are retained in
+`docs/development/test-quality-audit/test-quality-coverage-20261009/`.
 
 ## Mutation testing
 
@@ -164,3 +219,16 @@ exactly one of:
 
 Only genuine missing regressions need new tests. Coverage percentage is
 evidence, not the objective.
+
+## Earlier mutation frontier
+
+The mutation frontier recorded on 2026-10-08 is preserved at
+docs/development/test-quality-audit-frontier-20261008.json, with its original
+method notes in docs/development/test-quality-audit-frontier-20261008.md. Its
+sharded replay driver remains available as
+scripts/run-test-quality-frontier-audit.mjs; its CLI regression is retained
+separately. Its 2026-10-08 identity snapshot is historical and is expected to
+fail current-source drift checks after this merge; use the current audit runner
+above for present-day verification. Those records are historical mutation evidence. The current
+source/test ownership denominator and fail-closed proof admission are maintained
+by the ledger and commands above.

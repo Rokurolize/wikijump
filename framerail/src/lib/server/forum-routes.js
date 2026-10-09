@@ -84,10 +84,7 @@ const threadBody = (result, fallback, thread) => {
  *   dependencies
  */
 export const loadForumStartRoute = async (event, dependencies) => {
-  const hidden = event.params.extra === "hidden/show"
-  if (event.params.extra && !hidden) {
-    error(404)
-  }
+  const hidden = event.params.extra?.split("/", 1)[0] === "hidden"
 
   const context = requestContext(event, (headers) => dependencies.loadSiteInfo(headers))
   const result = await dependencies.wikidotForumModule(

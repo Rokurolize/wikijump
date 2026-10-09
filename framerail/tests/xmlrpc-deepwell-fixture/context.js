@@ -45,8 +45,16 @@ export const fixtureState = {
     parentDirectMetadata: [],
     parentRelationshipsGet: [],
     siteGet: [],
-    voteList: []
+    voteList: [],
+    pageGetScore: []
   },
+  /**
+   * @type {{
+   *   headers: Record<string, string | string[] | undefined>
+   *   params: RpcParams
+   * }[]}
+   */
+  forumModuleRequests: [],
   /** @type {null | ((outcome?: "success" | "failure") => void)} */
   pendingPageRevisionDiffResponse: null,
   /** @type {Record<string, unknown[]>} */
@@ -65,8 +73,11 @@ export const fixtureState = {
     parentUpdate: [],
     sessionGet: [],
     userGet: [],
-    voteSet: []
+    voteSet: [],
+    voteRemove: []
   },
+  /** @type {Array<Record<string, unknown>>} */
+  userCreateRequests: [],
   /** @type {Record<string, RecordedRpcRequest[]>} */
   fileRequests: {
     blobUpload: [],
@@ -80,12 +91,19 @@ export const fixtureState = {
   pendingUploads: {},
   /** @type {Record<number, Record<string, FixtureFile>>} */
   filesByPageId: {},
+  deletedFilesByPageId: {},
   counters: {
     nextPageId: 4000000,
     nextRevisionId: 9100000,
     nextFileId: 5000000,
     nextPendingBlobId: 1
-  }
+  },
+  ratingScores: {
+    3000341: 3,
+    3000342: 0
+  },
+  /** @type {Record<number, number>} */
+  voteValues: {}
 }
 
 const MIN_I64 = -(1n << 63n)
@@ -137,6 +155,7 @@ export const toFileResult = (file, includeData) => {
       includeData && file.size_with_data !== undefined ? file.size_with_data : file.size,
     revision_comments: file.revision_comments
   }
+  if (file.revision_type !== undefined) result.revision_type = file.revision_type
   if (includeData) result.data = Array.from(file.content)
   return result
 }
@@ -235,6 +254,37 @@ fixtureState.filesByPageId[3000340] = {
     mime: "text/plain",
     size: 49,
     revision_comments: "responsive Files pane visual regression fixture"
+  }
+}
+
+fixtureState.deletedFilesByPageId[3000340] = {
+  "files-restore-race-deleted-a.txt": {
+    file_id: 5_600_010,
+    file_created_at: "2026-10-01T00:00:00Z",
+    file_updated_at: null,
+    revision_id: 9_600_010,
+    revision_created_at: "2026-10-01T00:00:00Z",
+    revision_user_id: 123,
+    name: "files-restore-race-deleted-a.txt",
+    revision_type: "delete",
+    content: Buffer.from("deleted fixture a"),
+    mime: "text/plain",
+    size: 17,
+    revision_comments: "files restore race deleted fixture"
+  },
+  "files-restore-race-deleted-b.txt": {
+    file_id: 5_600_011,
+    file_created_at: "2026-10-01T00:00:00Z",
+    file_updated_at: null,
+    revision_id: 9_600_011,
+    revision_created_at: "2026-10-01T00:00:00Z",
+    revision_user_id: 123,
+    name: "files-restore-race-deleted-b.txt",
+    revision_type: "delete",
+    content: Buffer.from("deleted fixture b"),
+    mime: "text/plain",
+    size: 17,
+    revision_comments: "files restore race deleted fixture"
   }
 }
 

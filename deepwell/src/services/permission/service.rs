@@ -44,6 +44,65 @@ pub struct PermissionService;
 
 #[allow(dead_code)] // TEMP
 impl PermissionService {
+    /// `_admin` is a reserved site-management resource. It is authorized by the
+    /// same site-edit permission as the native admin panel, regardless of the
+    /// page category's ordinary view permissions.
+    pub async fn check_user_can_view_page(
+        ctx: &ServiceContext<'_>,
+        user_id: Option<i64>,
+        page: &crate::models::page::Model,
+    ) -> Result<bool> {
+        let (resource_type, resource_category, action) =
+            if page.slug.eq_ignore_ascii_case("_admin") {
+                (Resource::Site, None, Action::Edit)
+            } else {
+                (
+                    Resource::Page,
+                    Some(Reference::Id(page.page_category_id)),
+                    Action::View,
+                )
+            };
+
+        Self::check_user_can(
+            ctx,
+            &CheckPermissionContext {
+                user_id,
+                site_id: page.site_id,
+                page_reference: (!page.slug.eq_ignore_ascii_case("_admin"))
+                    .then_some(Reference::Id(page.page_id)),
+            },
+            Permission {
+                resource_type,
+                resource_category,
+                action,
+            },
+        )
+        .await
+    }
+
+    /// Check access to the reserved `_admin` route before resolving any page
+    /// row or revision data.
+    pub async fn check_user_can_access_admin(
+        ctx: &ServiceContext<'_>,
+        user_id: Option<i64>,
+        site_id: i64,
+    ) -> Result<bool> {
+        Self::check_user_can(
+            ctx,
+            &CheckPermissionContext {
+                user_id,
+                site_id,
+                page_reference: None,
+            },
+            Permission {
+                resource_type: Resource::Site,
+                resource_category: None,
+                action: Action::Edit,
+            },
+        )
+        .await
+    }
+
     /// Updates the permissions for a role, replacing the existing set with the provided set.
     pub async fn update_permissions_for_role(
         ctx: &ServiceContext<'_>,

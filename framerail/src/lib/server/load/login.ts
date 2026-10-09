@@ -38,6 +38,7 @@ export async function loadLoginPage(request: Request, preloadData: PreloadDataAs
     // misc
     "specifier": {},
     "password": {},
+    "mfa-code": {},
     "login.toast": {},
     "forgot-password": {},
     "remember-me": {},

@@ -52,6 +52,8 @@ test("promotion candidate makes public registration deterministic", async () => 
   const candidateConfig = candidateDeepwellConfig(sourceConfig, 20443);
   assert.match(candidateConfig, /mock-mailcheck = true/u);
   assert.doesNotMatch(candidateConfig, /mock-mailcheck = false/u);
+  assert.match(candidateConfig, /main = "wikijump\.localhost"/u);
+  assert.match(candidateConfig, /https-port = 20443/u);
 });
 
 test("one sealed candidate runtime can expose independent site-bound endpoint projections", () => {

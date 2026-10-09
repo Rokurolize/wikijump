@@ -28,6 +28,7 @@ time-skew = 1
 
 [domain]
 main = "wikijump.com"
+https-port = 443
 files = "wjfiles.com"
 
 [job]

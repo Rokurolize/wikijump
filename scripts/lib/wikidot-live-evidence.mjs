@@ -1,6 +1,6 @@
 import {createHash} from "node:crypto";
 import {readFileSync} from "node:fs";
-import {dirname, relative} from "node:path";
+import {dirname, join, relative} from "node:path";
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
@@ -33,6 +33,35 @@ export function resolveWikidotLiveEvidenceFormat(evidence) {
     return format;
   }
   throw new Error(`Unsupported Wikidot live evidence format: ${format}`);
+}
+
+/** Named controls in retained anonymous ThemePreviewer receipts. These formats
+ * bind raw responses / original HTML, rather than promoting summary fields. */
+export function verifiedNativeThemeCaseIds(row, directory, fileCache) {
+  const preview = row.schema === "theme_lab_native_theme_previewer_preview_boundary.v1";
+  const saved = row.schema === "theme_lab_native_saved_theme_reset.v1";
+  if (!preview && !saved) return new Set();
+  if (row.actor !== "anonymous" || row.public_writes !== 0 || !Array.isArray(row.rows) || !row.rows.length) {
+    throw new Error("Native theme evidence must bind anonymous read-only controls");
+  }
+  const ids = new Set();
+  const verify = (name, expected) => {
+    if (!/^[a-zA-Z0-9_.-]+$/u.test(name) || !/^[0-9a-f]{64}$/u.test(expected)) throw new Error("Invalid native theme artifact binding");
+    const bytes = readFileCached(fileCache, join(directory, name));
+    if (sha256(bytes) !== expected) throw new Error(`Native theme artifact hash drifted: ${name}`);
+    return bytes;
+  };
+  for (const control of row.rows) {
+    const id = preview ? control.id : control.url;
+    if (typeof id !== "string" || !id || ids.has(id)) throw new Error("Missing/duplicate native theme control");
+    if (preview) {
+      verify(`${id}-source.wikidot.txt`, control.source_sha256);
+      const response = JSON.parse(verify(`${id}-response.json`, control.response_sha256));
+      if (control.http_status !== 200 || response.status !== "ok" || response.body !== control.body) throw new Error("Native theme response disagrees with its receipt");
+    } else verify(control.original_html?.path, control.original_html?.sha256);
+    ids.add(id);
+  }
+  return ids;
 }
 
 export function verifiedExternalEvidenceCaseIds(evidenceRow, fileCache) {

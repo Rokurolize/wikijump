@@ -62,6 +62,9 @@ pub struct Config {
     /// The main domain, but without a leading `.`
     pub main_domain_no_dot: String,
 
+    /// The externally visible HTTPS port for the main-domain origin.
+    pub https_port: u16,
+
     /// The files domain to serve user-generated content from.
     ///
     /// Always starts with a `.`
@@ -300,6 +303,7 @@ impl Config {
             pid_file: None,
             main_domain: str!(".wikijump.com"),
             main_domain_no_dot: str!("wikijump.com"),
+            https_port: 443,
             files_domain: str!(".wjfiles.com"),
             files_domain_no_dot: str!("wjfiles.com"),
             watch_files: false,

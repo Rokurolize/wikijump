@@ -3555,11 +3555,53 @@
       "evidence": [
         {
           "path": "install/local/theme-lab/ports/authority-evidence/native-theme-previewer-blank-20261003/receipt.json",
-          "sha256": "3ed236a9c69c4b24c91080e97e6220237e8a530b12c07094e9a733744e0f84ed"
+          "sha256": "3ed236a9c69c4b24c91080e97e6220237e8a530b12c07094e9a733744e0f84ed",
+          "case_ids": [
+            "abutted",
+            "spaced",
+            "code",
+            "comment"
+          ]
         },
         {
           "path": "install/local/theme-lab/ports/authority-evidence/wikifot-native-site-theme-reset-20261003/receipt.json",
-          "sha256": "839dd08d080f5287b4e60c50603962185ee7ed8c3d08f1010f61b5934421981f"
+          "sha256": "839dd08d080f5287b4e60c50603962185ee7ed8c3d08f1010f61b5934421981f",
+          "case_ids": [
+            "https://scp-wiki.wikidot.com/theme:wikifot",
+            "https://scp-wiki.wikidot.com/noodles-goober-inc",
+            "https://scp-wiki.wikidot.com/wynths-authorpage"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "forumstart-route-hidden-prefix-20261008",
+      "title": "ForumStart hidden-prefix route selection",
+      "feature_ids": [
+        "module-forumstart"
+      ],
+      "classification": "route-option",
+      "observed_at": "2026-10-08",
+      "analysis": "Anonymous read-only browser observations established that /forum/start and unknown suffixes show the ordinary category view, while /forum/start/hidden/show, /forum/start/hidden/hide, /forum/start/hidden/false, and /forum/start/hidden/show/extra include the hidden categories. The suffix does not select forum rows, add query parameters, or grant private-category permission.",
+      "normative_behavior": [
+        "A hidden-prefixed suffix selects the existing server-authoritative hidden-inclusive ForumStart behavior.",
+        "A suffix outside the hidden prefix selects the ordinary ForumStart view.",
+        "The suffix itself does not select forum rows, add query parameters, or grant permission to read private categories.",
+        "The observation does not establish mutation or forum-object permission behavior."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/forumstart-route-suffix-live-20261008.json",
+          "sha256": "4f1786c5427627b802c5f91ddaf46557223fa0477ed6ebdcacfc842cab8483cc",
+          "case_ids": [
+            "forumstart-base",
+            "forumstart-hidden-show",
+            "forumstart-hidden-hide",
+            "forumstart-hidden-false",
+            "forumstart-hidden-tail-ignored",
+            "forumstart-unknown-suffix",
+            "forumstart-unknown-multisegment-suffix"
+          ]
         }
       ]
     }

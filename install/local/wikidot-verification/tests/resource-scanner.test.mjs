@@ -3,6 +3,37 @@ import test from "node:test";
 
 import { scanForFixtureLocalResources } from "../src/resource-scanner.mjs";
 
+test("malformed URL tokens and authority-shaped paths do not hide subsequent resources", () => {
+  let result;
+  assert.doesNotThrow(() => { result = scanForFixtureLocalResources({
+    fixtureSlug: "malformed-tokens",
+    sourceText: [
+      "http://%/local--files/page/invalid.png",
+      "http:////local--files/not-a-resource.png",
+      "https://scp-wiki.wikidot.com/local--files/page/plainfile",
+      "https://scp-wiki.wikidot.com/local--files/page/UPPER.PNG",
+    ].join("\n"),
+  }); });
+  assert.deepEqual(result.out_of_scope, []);
+  assert.deepEqual(result.manifest.map(row => [row.filename, row.kind_guess]), [
+    ["plainfile", "unknown"], ["UPPER.PNG", "image"],
+  ]);
+});
+
+test("resource output order is independent of authored order", () => {
+  const result = scanForFixtureLocalResources({
+    fixtureSlug: "sorted-resources",
+    sourceText: [
+      "https://z.wikidot.com/local--files/page/z.png",
+      "https://a.wikidot.com/local--files/page/z.png",
+      "https://a.wikidot.com/local--files/page/a.png",
+    ].join("\n"),
+  });
+  assert.deepEqual(result.manifest.map(row => [row.site, row.filename]), [
+    ["a.wikidot.com", "a.png"], ["a.wikidot.com", "z.png"], ["z.wikidot.com", "z.png"],
+  ]);
+});
+
 test("detects CSS @import local--files URL", () => {
   const sourceText =
     "@import url('https://scp-wiki.wikidot.com/local--files/scp-8980/departuremono.css')";

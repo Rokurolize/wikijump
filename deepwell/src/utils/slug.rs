@@ -38,6 +38,60 @@ pub fn normalize_page_slug<S: Into<String>>(name: S) -> String {
     slug
 }
 
+/// Resolve only the page URL aliases observed in Wikidot's public router.
+///
+/// This intentionally does not use `normalize_page_slug`: that function also
+/// applies Unicode compatibility normalization and rewrites arbitrary
+/// punctuation, which is too broad for resolving an incoming URL to stored
+/// content. The caller still has to verify that the returned slug exists.
+pub fn observed_wikidot_page_url_alias(slug: &str) -> Option<String> {
+    if slug.is_empty() || !slug.is_ascii() {
+        return None;
+    }
+
+    let input = slug.trim_end_matches([' ', '.']).to_ascii_lowercase();
+    if input.is_empty() {
+        return None;
+    }
+
+    let mut colon_count = 0;
+    let mut canonical = String::with_capacity(input.len());
+    let mut at_segment_start = true;
+    for ch in input.chars() {
+        match ch {
+            ':' => {
+                colon_count += 1;
+                at_segment_start = true;
+            }
+            'a'..='z' | '0'..='9' | '-' => {
+                canonical.push(ch);
+                at_segment_start = false;
+            }
+            '_' => {
+                canonical.push(if at_segment_start { '_' } else { '-' });
+                at_segment_start = false;
+            }
+            _ => return None,
+        }
+        if colon_count > 1 {
+            return None;
+        }
+        if ch == ':' {
+            canonical.push(ch);
+        }
+    }
+
+    if matches!(canonical.as_str(), "forum" | "local--files" | "local--code") {
+        return None;
+    }
+
+    if canonical != slug {
+        Some(canonical)
+    } else {
+        None
+    }
+}
+
 #[test]
 fn regular_slug_replaces_category_separator() {
     assert_eq!(
@@ -58,4 +112,35 @@ fn slug_normalization_handles_case_and_spacing() {
         "mixed-case"
     );
     assert_eq!(normalize_page_slug("  Mixed Case  "), "mixed-case");
+}
+
+#[test]
+fn observed_page_url_aliases_are_narrow_and_category_aware() {
+    assert_eq!(
+        observed_wikidot_page_url_alias("SCP-9506"),
+        Some("scp-9506".to_owned())
+    );
+    assert_eq!(
+        observed_wikidot_page_url_alias("scp_9506"),
+        Some("scp-9506".to_owned())
+    );
+    assert_eq!(
+        observed_wikidot_page_url_alias("scp-9506."),
+        Some("scp-9506".to_owned())
+    );
+    assert_eq!(
+        observed_wikidot_page_url_alias("scp-9506 "),
+        Some("scp-9506".to_owned())
+    );
+    assert_eq!(
+        observed_wikidot_page_url_alias("SYSTEM:JOIN"),
+        Some("system:join".to_owned())
+    );
+    assert_eq!(
+        observed_wikidot_page_url_alias("_TEMPLATE"),
+        Some("_template".to_owned())
+    );
+    assert_eq!(observed_wikidot_page_url_alias("scp--9506"), None);
+    assert_eq!(observed_wikidot_page_url_alias("scp/%2fadmin"), None);
+    assert_eq!(observed_wikidot_page_url_alias("ѕср-9506"), None);
 }

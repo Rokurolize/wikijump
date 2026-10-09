@@ -1,0 +1,23 @@
+{
+  "schema": "wikijump.wikidot_toc_interaction_observation.v1",
+  "issue": "https://github.com/Rokurolize/wikijump/issues/2225",
+  "source_url": "https://www.wikidot.com/doc-wiki-syntax:table-of-contents",
+  "observed_at": "2026-10-09",
+  "browser": "Chrome/Chromium 155.0.8059.40",
+  "actions": [
+    {
+      "control": "Fold",
+      "toc_list_display": "none",
+      "fold_display": "none",
+      "unfold_display": "inline",
+      "url_unchanged": true
+    },
+    {
+      "control": "Unfold",
+      "toc_list_display": "block",
+      "fold_display": "inline",
+      "unfold_display": "none",
+      "url_unchanged": true
+    }
+  ]
+}

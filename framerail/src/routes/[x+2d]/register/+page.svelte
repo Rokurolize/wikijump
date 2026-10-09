@@ -1,30 +1,36 @@
 <script lang="ts">
-  import { errorPopupState } from "$lib/layout/stores.svelte"
   import { goto } from "$app/navigation"
-  import { resolve } from "$app/paths"
+  import { errorPopupState } from "$lib/layout/stores.svelte"
+  import { authCancelDestination } from "$lib/auth-cancel.js"
   import { untrack } from "svelte"
   import { superForm } from "sveltekit-superforms"
 
   import type { PageProps } from "./$types"
-  import { Langs } from "../../../types"
 
-  let { data }: PageProps = $props()
+  let { data, form: actionData }: PageProps = $props()
 
-  let isLoggedIn = $derived<boolean>(data.isLoggedIn)
-  let isRegistered = $state<boolean>(false)
+  let enhancedRegistrationSucceeded = $state(false)
+  let isRegistered = $derived(
+    actionData?.isRegistered === true || enhancedRegistrationSucceeded
+  )
+
+  const cancelRegistration = async () => {
+    await goto(authCancelDestination(), { replaceState: true })
+  }
 
   const { form, enhance, errors } = superForm(
     untrack(() => data.registerForm),
     {
       onResult: async ({ result, cancel }) => {
         if (result.type === "success" && result.data?.isRegistered) {
-          isRegistered = true
+          enhancedRegistrationSucceeded = true
           cancel()
-          await goto(resolve("/-/login", {}))
           return
         }
 
-        if (result.type === "failure" && result.data) {
+        // Field-level validation failures are shown inline; only server
+        // failures that carry a message open the error dialog.
+        if (result.type === "failure" && result.data?.message) {
           errorPopupState.current = {
             state: true,
             message: result.data?.message,
@@ -36,8 +42,11 @@
   )
 </script>
 
-{#if isLoggedIn || isRegistered}
-  {data.internationalization?.["register.toast"]}
+{#if isRegistered}
+  <p role="status" class="register-success">
+    {data.internationalization?.["register.toast"]}
+    <a href="/-/login">{data.internationalization?.login}</a>
+  </p>
 {:else}
   <form id="register" class="register-form" method="POST" use:enhance>
     <label for="username">
@@ -48,6 +57,7 @@
         id="username"
         name="username"
         class="username"
+        autocomplete="username"
         placeholder={data.internationalization?.["username.placeholder"]}
         required
         type="text"
@@ -64,6 +74,7 @@
         id="email"
         name="email"
         class="email"
+        autocomplete="email"
         placeholder={data.internationalization?.["email.placeholder"]}
         required
         type="text"
@@ -82,15 +93,19 @@
     </label>
     <div class="input-container">
       <input
+        id="password"
         name="password"
         class="auth-password"
+        autocomplete="new-password"
+        aria-invalid={$errors.password ? "true" : undefined}
+        aria-describedby={$errors.password ? "register-password-error" : undefined}
         placeholder={data.internationalization?.["password.placeholder"]}
         required
         type="password"
         bind:value={$form.password}
       />
       {#if $errors.password}
-        <p class="error">
+        <p id="register-password-error" class="error">
           {data.internationalization?.["error-form.password-too-short"]}
         </p>
       {/if}
@@ -101,15 +116,21 @@
     </label>
     <div class="input-container">
       <input
+        id="confirm-password"
         name="confirmPassword"
         class="confirm-password"
+        autocomplete="new-password"
+        aria-invalid={$errors.confirmPassword ? "true" : undefined}
+        aria-describedby={$errors.confirmPassword
+          ? "register-confirm-password-error"
+          : undefined}
         placeholder={data.internationalization?.["password.placeholder"]}
         required
         type="password"
         bind:value={$form.confirmPassword}
       />
       {#if $errors.confirmPassword}
-        <p class="error">
+        <p id="register-confirm-password-error" class="error">
           {data.internationalization?.["error-form.password-mismatch"]}
         </p>
       {/if}
@@ -120,14 +141,18 @@
       <!-- TODO: Implement a multi select component -->
       <!-- I know it's ugly, but we can implement a better looking component later on -->
       <select id="locale" name="locale" multiple required bind:value={$form.locale}>
-        {#each Object.entries(Langs) as [langName, langValue] (langName)}
-          <option value={langValue}>UNTRANSLATED: {langName}</option>
+        {#each data.userInterfaceLocales as locale (locale.value)}
+          <option value={locale.value}>{locale.label}</option>
         {/each}
       </select>
     </div>
 
     <div class="action-row auth-actions">
-      <button class="action-button auth-button button-cancel clickable" type="button">
+      <button
+        class="action-button auth-button button-cancel clickable"
+        onclick={cancelRegistration}
+        type="button"
+      >
         {data.internationalization?.cancel}
       </button>
       <button class="action-button auth-button button-create clickable" type="submit">
@@ -164,6 +189,19 @@
     .action-row {
       grid-column: span 2;
       justify-self: center;
+    }
+
+    // Two fixed columns cannot fit a 375px phone viewport, so stack the fields.
+    @media (max-width: 600px) {
+      grid-template-columns: minmax(0, 1fr);
+
+      .input-container {
+        min-width: 0;
+      }
+
+      .action-row {
+        grid-column: auto;
+      }
     }
   }
 </style>

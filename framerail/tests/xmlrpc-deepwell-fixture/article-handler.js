@@ -534,8 +534,16 @@ const optionValue = (extra, name) => {
 
 /** @param {{ slug: string; extra: string }} route */
 const pageForArticleRoute = (route) => {
-  const page = pages[route.slug]
+  const aliases = {
+    "PAGE-WORKFLOW-PROBE": "page-workflow-probe",
+    "page_workflow-probe": "page-workflow-probe",
+    "page-workflow-probe.": "page-workflow-probe",
+    "page-workflow-probe ": "page-workflow-probe"
+  }
+  const canonicalSlug = aliases[route.slug]
+  const page = pages[canonicalSlug ?? route.slug]
   if (!page) return null
+  const resolvedPage = canonicalSlug ? { ...page, redirect_page: page.slug } : page
   if (route.slug === "listpages-navigation") {
     if (route.extra !== "" && !LISTPAGES_NAVIGATION_EXTRA.test(route.extra)) {
       return null
@@ -563,7 +571,10 @@ const pageForArticleRoute = (route) => {
   ) {
     return page
   }
-  return route.extra === "" ? page : null
+  // The `/edit` route loads the same page through article_view with the edit
+  // extra, so ordinary fixture pages model the editor's page data too.
+  if (route.extra === "edit") return page
+  return route.extra === "" ? resolvedPage : null
 }
 
 const siteView = {
@@ -698,6 +709,10 @@ const missingPageArticleViewResult = (route) => ({
  */
 export const handleArticleRpc = ({ rpcRequest, request }) => {
   const { articleReadRequests, pageReadRequests } = fixtureState
+  const articleRoute =
+    rpcRequest.params?.route === null
+      ? { slug: "main", extra: "" }
+      : rpcRequest.params?.route
   let result
 
   if (
@@ -710,36 +725,36 @@ export const handleArticleRpc = ({ rpcRequest, request }) => {
         "session_token",
         "site_id"
       ]) &&
-        rpcRequest.params.session_token === "fixture-session-token")) &&
+        ["fixture-session-token", "fixture-authenticated-session-token"].includes(
+          rpcRequest.params.session_token
+        ))) &&
     rpcRequest.params.site_id === 6000005 &&
     Array.isArray(rpcRequest.params.locales) &&
-    hasExactKeys(rpcRequest.params.route, ["extra", "slug"]) &&
-    typeof rpcRequest.params.route.slug === "string" &&
-    (pageForArticleRoute(rpcRequest.params.route) ||
-      ((rpcRequest.params.route.slug === DATA_FORM_CREATE_SLUG ||
-        rpcRequest.params.route.slug === DATA_FORM_DATE_CREATE_SLUG ||
-        rpcRequest.params.route.slug === DATA_FORM_DATE_OPTIONS_CREATE_SLUG ||
-        rpcRequest.params.route.slug === DATA_FORM_PAGEPATH_CREATE_SLUG ||
-        rpcRequest.params.route.slug === DATA_FORM_PAGEPATH_ROOT_CREATE_SLUG) &&
-        rpcRequest.params.route.extra === "") ||
-      NEW_PAGE_EDIT_EXTRA.test(rpcRequest.params.route.extra))
+    (rpcRequest.params.route === null ||
+      hasExactKeys(rpcRequest.params.route, ["extra", "slug"])) &&
+    typeof articleRoute.slug === "string" &&
+    (pageForArticleRoute(articleRoute) ||
+      ((articleRoute.slug === DATA_FORM_CREATE_SLUG ||
+        articleRoute.slug === DATA_FORM_DATE_CREATE_SLUG ||
+        articleRoute.slug === DATA_FORM_DATE_OPTIONS_CREATE_SLUG ||
+        articleRoute.slug === DATA_FORM_PAGEPATH_CREATE_SLUG ||
+        articleRoute.slug === DATA_FORM_PAGEPATH_ROOT_CREATE_SLUG) &&
+        articleRoute.extra === "") ||
+      NEW_PAGE_EDIT_EXTRA.test(articleRoute.extra))
   ) {
     articleReadRequests.articleView.push(rpcRequest.params)
-    const page = pageForArticleRoute(rpcRequest.params.route)
+    const page = pageForArticleRoute(articleRoute)
     if (page) {
       result = toArticleViewResult(page)
-      if (
-        rpcRequest.params.route.slug === DATA_FORM_EDIT_SLUG &&
-        rpcRequest.params.route.extra === "edit"
-      ) {
+      if (articleRoute.slug === DATA_FORM_EDIT_SLUG && articleRoute.extra === "edit") {
         result.page.data.options.edit = true
         result.page.data.data_form = {
           definition: DATA_FORM_DEFINITION,
           values: { name: "Probe Name", choice: "a" }
         }
       } else if (
-        rpcRequest.params.route.slug === DATA_FORM_DATE_OPTIONS_CREATE_SLUG &&
-        rpcRequest.params.route.extra === "edit"
+        articleRoute.slug === DATA_FORM_DATE_OPTIONS_CREATE_SLUG &&
+        articleRoute.extra === "edit"
       ) {
         result.page.data.options.edit = true
         result.page.data.data_form = {
@@ -751,8 +766,8 @@ export const handleArticleRpc = ({ rpcRequest, request }) => {
           }
         }
       } else if (
-        rpcRequest.params.route.slug === DATA_FORM_CONTROLS_CREATE_SLUG &&
-        rpcRequest.params.route.extra === "edit"
+        articleRoute.slug === DATA_FORM_CONTROLS_CREATE_SLUG &&
+        articleRoute.extra === "edit"
       ) {
         result.page.data.options.edit = true
         result.page.data.data_form = {
@@ -767,8 +782,8 @@ export const handleArticleRpc = ({ rpcRequest, request }) => {
           }
         }
       } else if (
-        rpcRequest.params.route.slug === DATA_FORM_EMPTY_SELECT_CREATE_SLUG &&
-        rpcRequest.params.route.extra === "edit"
+        articleRoute.slug === DATA_FORM_EMPTY_SELECT_CREATE_SLUG &&
+        articleRoute.extra === "edit"
       ) {
         result.page.data.options.edit = true
         result.page.data.data_form = {
@@ -781,9 +796,14 @@ export const handleArticleRpc = ({ rpcRequest, request }) => {
             select_five: "a"
           }
         }
+      } else if (articleRoute.extra === "edit") {
+        // Catch-all for ordinary pages opened through the `/edit` route; the
+        // DATA_FORM_* arms above must stay first because they also attach
+        // their data-form definitions.
+        result.page.data.options.edit = true
       }
     } else {
-      result = missingPageArticleViewResult(rpcRequest.params.route)
+      result = missingPageArticleViewResult(articleRoute)
     }
   } else if (
     rpcRequest.method === "article_view_cache_metadata" &&
@@ -791,12 +811,13 @@ export const handleArticleRpc = ({ rpcRequest, request }) => {
     rpcRequest.params.site_id === 6000005 &&
     rpcRequest.params.session_token === null &&
     Array.isArray(rpcRequest.params.locales) &&
-    hasExactKeys(rpcRequest.params.route, ["extra", "slug"]) &&
-    typeof rpcRequest.params.route.slug === "string" &&
-    pageForArticleRoute(rpcRequest.params.route)
+    (rpcRequest.params.route === null ||
+      hasExactKeys(rpcRequest.params.route, ["extra", "slug"])) &&
+    typeof articleRoute.slug === "string" &&
+    pageForArticleRoute(articleRoute)
   ) {
     articleReadRequests.articleViewCacheMetadata.push(rpcRequest.params)
-    const page = pageForArticleRoute(rpcRequest.params.route)
+    const page = pageForArticleRoute(articleRoute)
     if (!page) return undefined
     result = {
       article_page_cache_key: `deepwell:article-view:page:v1:site=6000005:page=${page.page_id}:rev=${page.revision_id}:updated=0:permission=site=0,user=0:body=fixture`,

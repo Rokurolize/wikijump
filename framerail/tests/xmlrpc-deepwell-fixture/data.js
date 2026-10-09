@@ -205,6 +205,41 @@ export const pages = {
     compiled_body_html:
       '<script type="text/javascript" src="http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/yahooui/tabview-min.js"></script>\n<div id="wiki-tabview-0123456789abcdef0123456789abcdef" class="yui-navset"><ul class="yui-nav"><li class="selected"><a href="javascript:;"><em>First</em></a></li><li><a href="javascript:;"><em>Second</em></a></li></ul><div class="yui-content"><div id="wiki-tab-0-0" style="display: block;"><p>First panel</p></div><div id="wiki-tab-0-1" style="display: none;"><p>Second panel</p></div></div></div>'
   },
+  "wikidot-toc": {
+    page_id: 3000321,
+    revision_id: 9000321,
+    page_created_at: "2026-07-13T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-07-13T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Wikidot Table of Contents",
+    slug: "wikidot-toc",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: "+ First heading\n+ Second heading\n\n[[toc]]\n[[f>toc]]",
+    compiled_body_html:
+      '<h1 id="toc0"><span>First heading</span></h1><h1 id="toc1"><span>Second heading</span></h1><table style="margin:0; padding:0"><tr><td style="margin:0; padding:0"><div id="toc"><div id="toc-action-bar"><a href="javascript:;" onclick="WIKIDOT.page.listeners.foldToc(event)">Fold</a><a style="display: none" href="javascript:;" onclick="WIKIDOT.page.listeners.unfoldToc(event)">Unfold</a></div><div class="title">Table of Contents</div><div id="toc-list"><div style="margin-left: 1em;"><a href="#toc0">First heading</a></div><div style="margin-left: 1em;"><a href="#toc1">Second heading</a></div></div></div></td></tr></table><div id="toc" class="floatright"><div id="toc-action-bar"><a href="javascript:;" onclick="WIKIDOT.page.listeners.foldToc(event)">Fold</a><a style="display: none" href="javascript:;" onclick="WIKIDOT.page.listeners.unfoldToc(event)">Unfold</a></div><div class="title">Table of Contents</div><div id="toc-list"><div style="margin-left: 1em;"><a href="#toc0">First heading</a></div><div style="margin-left: 1em;"><a href="#toc1">Second heading</a></div></div></div>'
+  },
+  "wikidot-footnotes": {
+    page_id: 3000326,
+    revision_id: 9000326,
+    page_created_at: "2026-07-13T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-07-13T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Wikidot Footnotes",
+    slug: "wikidot-footnotes",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext:
+      "Reference one.[[footnote]]Note one.[[/footnote]] Reference two.[[footnote]]Note two.[[/footnote]]\n\n[[footnoteblock]]",
+    compiled_body_html:
+      '<p>Reference one.<sup class="footnoteref"><a id="footnoteref-1" href="javascript:;" class="footnoteref" onclick="WIKIDOT.page.utils.scrollToReference(\'footnote-1\')">1</a></sup> Reference two.<sup class="footnoteref"><a id="footnoteref-2" href="javascript:;" class="footnoteref" onclick="WIKIDOT.page.utils.scrollToReference(\'footnote-2\')">2</a></sup></p><div class="footnotes-footer"><div class="footnote-footer" id="footnote-1"><a href="javascript:;" onclick="WIKIDOT.page.utils.scrollToReference(\'footnoteref-1\')">1</a>. Note one.</div><div class="footnote-footer" id="footnote-2"><a href="javascript:;" onclick="WIKIDOT.page.utils.scrollToReference(\'footnoteref-2\')">2</a>. Note two.</div></div><div style="height: 1200px"></div><a id="ordinary-javascript-link" href="javascript:;" onclick="window.__unexpectedFootnoteAction = true">unrelated</a>'
+  },
   "search:all": {
     page_id: 3000325,
     revision_id: 9000325,
@@ -220,7 +255,24 @@ export const pages = {
     rating: 0,
     wikitext: "[[module SearchAll]]",
     compiled_body_html:
-      '<div class="search-box"><div class="query-area"><form action="dummy" id="search-form-all"><div><input class="text" type="text" size="30" name="query" id="search-form-all-input" value=""><input class="button" type="submit" value="Search"></div><div style="margin-top:5px;"><input id="search-all-pf" class="radio" type="radio" name="area" value="pf" checked="checked"><label for="search-all-pf">pages and forums</label><input id="search-all-p" class="radio" type="radio" name="area" value="p"><label for="search-all-p">pages only</label><input id="search-all-f" class="radio" type="radio" name="area" value="f"><label for="search-all-f">forums only</label></div></form></div><div class="search-results"></div></div>'
+      '<div class="search-box"><div class="query-area"><form action="dummy" id="search-form-all"><div><input class="text" type="text" size="30" name="query" id="search-form-all-input" value="" aria-label="Search all Wikis"><input class="button" type="submit" value="Search"></div><div style="margin-top:5px;"><input id="search-all-pf" class="radio" type="radio" name="area" value="pf" checked="checked"><label for="search-all-pf">pages and forums</label><input id="search-all-p" class="radio" type="radio" name="area" value="p"><label for="search-all-p">pages only</label><input id="search-all-f" class="radio" type="radio" name="area" value="f"><label for="search-all-f">forums only</label></div></form></div><div class="search-results"></div></div>'
+  },
+  "platform:search": {
+    page_id: 3000327,
+    revision_id: 9000327,
+    page_created_at: "2026-08-09T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-08-09T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Wikijump: Search all sites",
+    slug: "platform:search",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: "[[module SearchAll]]",
+    compiled_body_html:
+      '<div class="search-box"><div class="query-area"><form action="dummy" id="search-form-all"><div><input class="text" type="text" size="30" name="query" id="search-form-all-input" value="" aria-label="Search all Wikis"><input class="button" type="submit" value="Search"></div><div style="margin-top:5px;"><input id="search-all-pf" class="radio" type="radio" name="area" value="pf" checked="checked"><label for="search-all-pf">pages and forums</label><input id="search-all-p" class="radio" type="radio" name="area" value="p"><label for="search-all-p">pages only</label><input id="search-all-f" class="radio" type="radio" name="area" value="f"><label for="search-all-f">forums only</label></div></form></div><div class="search-results"></div></div>'
   },
   "search:site": {
     page_id: 3000326,
@@ -313,6 +365,38 @@ x^2 + y^2 = z^2
     wikitext: "Page workflow probe",
     compiled_body_html:
       '<p>Page workflow probe</p><a id="navigate-history-target" href="/scp-173" data-sveltekit-reload="off">Navigate to history target</a>'
+  },
+  "page-workflow-star-probe": {
+    page_id: 3000341,
+    revision_id: 9000341,
+    page_created_at: "2026-07-23T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-07-23T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Page Workflow Star Probe",
+    slug: "page-workflow-star-probe",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: "Page workflow star probe",
+    compiled_body_html: "<p>Page workflow star probe</p>"
+  },
+  "page-workflow-rating-probe": {
+    page_id: 3000342,
+    revision_id: 9000342,
+    page_created_at: "2026-07-23T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-07-23T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Page Workflow Rating Probe",
+    slug: "page-workflow-rating-probe",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: "Page workflow rating probe",
+    compiled_body_html: "<p>Page workflow rating probe</p>"
   },
   "authoring-history-probe": {
     page_id: 3000345,
@@ -460,7 +544,7 @@ x^2 + y^2 = z^2
     wikitext:
       '[[module NewPage button="Default create"]]\n[[module NewPage mode="save-and-go" tags="alpha beta" parent="main" button="Autosave"]]\n[[module NewPage template="template:fixture-newpage-template-a" tags="alpha beta" parent="main" button="Template"]]',
     compiled_body_html:
-      '<div id="default-newpage" class="new-page-box" style="text-align: center; margin: 1em 0;"><form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);"><input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px"/><input type="submit" class="button" value="Default create" style="margin: 1px;"/></form></div><div id="autosave-newpage" class="new-page-box" style="text-align: center; margin: 1em 0;"><form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);"><input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px"/><input type="submit" class="button" value="Autosave" style="margin: 1px;"/><input type="hidden" name="mode" value="save-and-go"/><input type="hidden" name="tags" value="alpha beta"/><input type="hidden" name="parent" value="main"/></form></div><div id="template-newpage" class="new-page-box" style="text-align: center; margin: 1em 0;"><form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);"><input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px"/><input type="submit" class="button" value="Template" style="margin: 1px;"/><input type="hidden" name="template" value="1469068384"/><input type="hidden" name="tags" value="alpha beta"/><input type="hidden" name="parent" value="main"/></form></div>'
+      '<div id="default-newpage" class="new-page-box" style="text-align: center; margin: 1em 0;"><form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);"><input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px" aria-label="Name of the new page"/><input type="submit" class="button" value="Default create" style="margin: 1px;"/></form></div><div id="autosave-newpage" class="new-page-box" style="text-align: center; margin: 1em 0;"><form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);"><input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px" aria-label="Name of the new page"/><input type="submit" class="button" value="Autosave" style="margin: 1px;"/><input type="hidden" name="mode" value="save-and-go"/><input type="hidden" name="tags" value="alpha beta"/><input type="hidden" name="parent" value="main"/></form></div><div id="template-newpage" class="new-page-box" style="text-align: center; margin: 1em 0;"><form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);"><input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px" aria-label="Name of the new page"/><input type="submit" class="button" value="Template" style="margin: 1px;"/><input type="hidden" name="template" value="1469068384"/><input type="hidden" name="tags" value="alpha beta"/><input type="hidden" name="parent" value="main"/></form></div>'
   },
   "gallery-lightbox": {
     page_id: 3000415,
@@ -543,7 +627,7 @@ export const toArticleViewResult = (page) => ({
         offset: null,
         data: ""
       },
-      redirect_page: null,
+      redirect_page: page.redirect_page ?? null,
       wikitext: page.wikitext,
       compiled_body_html: page.compiled_body_html,
       compiled_body_styles: page.compiled_body_styles ?? [],
@@ -588,7 +672,19 @@ export const toArticleViewResult = (page) => ({
       },
       wikidot_snapshot: null,
       wikidot_breadcrumbs: [],
-      attributions: []
+      attributions: [],
+      page_rating: {
+        enabled: true,
+        permission: "registered",
+        visibility: "visible",
+        rating_type: page.slug === "page-workflow-star-probe" ? "stars" : "plus_minus"
+      },
+      page_discussion: { enabled: false },
+      data_form: null,
+      legacy_actions: [],
+      rate_actions: null,
+      membership_actions: [],
+      meta_tags: []
     }
   }
 })

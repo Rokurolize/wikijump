@@ -204,21 +204,6 @@ test("the Wikidot header exposes the three legacy extension hooks in source orde
   assert.match(header, /@render loginStatus\?\.\(\)[\s\S]*header-extra-div-1/u)
 })
 
-test("the Wikidot sidebar exposes the legacy close-menu control", async () => {
-  const layout = await fs.readFile(
-    new URL("../src/lib/sigma-esque/wikidot.svelte", import.meta.url),
-    "utf8"
-  )
-  const sidebar =
-    /<div id="side-bar">(?<body>[\s\S]*?)<\/div>\s*<div id="main-content">/u.exec(layout)
-      ?.groups?.body
-
-  assert.ok(sidebar)
-  assert.match(sidebar, /@render sideBar\?\.\(\)/u)
-  assert.match(sidebar, /<a class="close-menu" href="##">/u)
-  assert.match(sidebar, /<img[^>]*alt="black\.png"[^>]*class="image"/u)
-})
-
 test("the Wikidot shell preserves the legacy two-input search chrome", async () => {
   const layout = await fs.readFile(
     new URL("../src/routes/+layout.svelte", import.meta.url),

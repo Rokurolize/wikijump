@@ -48,11 +48,36 @@ export const redactAuthActionPayload = (payload, secrets) => {
     visited.add(value)
     for (const [key, nested] of Object.entries(value)) {
       value[key] =
-        key === "password" || key === "confirmPassword"
-          ? ""
-          : key === "session_token"
-            ? nested
-            : redact(nested)
+        key === "errors"
+          ? redactValidationErrors(nested)
+          : key === "password" || key === "confirmPassword"
+            ? ""
+            : key === "session_token"
+              ? nested
+              : redact(nested)
+    }
+    return value
+  }
+
+  // Field-error entries are keyed by the same names as the credential fields
+  // (`errors.password`), so blanking by key would erase the message the page
+  // uses to decide that a field is invalid. Keep every entry non-empty and
+  // replace only the submitted secret text inside it.
+  /** @param {unknown} value */
+  const redactValidationErrors = (value) => {
+    if (typeof value === "string") {
+      return submitted.reduce(
+        (redacted, secret) => redacted.replaceAll(secret, "[redacted]"),
+        value
+      )
+    }
+    if (value === null || typeof value !== "object" || visited.has(value)) {
+      return value
+    }
+
+    visited.add(value)
+    for (const [key, nested] of Object.entries(value)) {
+      value[key] = redactValidationErrors(nested)
     }
     return value
   }
