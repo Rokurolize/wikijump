@@ -4758,7 +4758,7 @@
     },
     {
       "path": "framerail/playwright.browser-support.config.ts",
-      "sha256": "8835ebb0cbf6a4a3efab5ebf24dffcb2e42debceb88a569b18720231df0df803",
+      "sha256": "eb9ae70e8a4195cfc281225f9b306304947325aa5aa2b6818f3c7fe30a6d7338",
       "status": "pending",
       "anchors": [],
       "findings": [],
