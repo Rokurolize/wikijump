@@ -7,6 +7,9 @@
   let {
     data,
     fileMap,
+    fileListLoading,
+    fileListError,
+    requestedDeletedFiles,
     activeFileAction = $bindable(),
     fileEditId = $bindable(),
     wikidot,
@@ -16,6 +19,9 @@
   }: {
     data: PageProps["data"]
     fileMap: SvelteMap<number, PageFile>
+    fileListLoading: boolean
+    fileListError: string | null
+    requestedDeletedFiles: boolean
     activeFileAction: FileAction | null
     fileEditId: number
     wikidot: boolean
@@ -31,7 +37,12 @@
 </script>
 
 {#if wikidot}
-  <div class="buttons">
+  <div
+    class="buttons"
+    class:unavailable={fileListError !== null}
+    aria-hidden={fileListError !== null}
+    inert={fileListError !== null}
+  >
     <input
       class="btn btn-primary"
       onclick={() => (activeFileAction = "upload")}
@@ -46,7 +57,12 @@
     />
   </div>
 {:else}
-  <div class="action-row file-action">
+  <div
+    class="action-row file-action"
+    class:unavailable={fileListError !== null}
+    aria-hidden={fileListError !== null}
+    inert={fileListError !== null}
+  >
     <button
       class="action-button upload-file clickable"
       onclick={() => (activeFileAction = "upload")}
@@ -61,6 +77,21 @@
     >
       {data.internationalization?.restore}
     </button>
+  </div>
+{/if}
+
+{#if fileListError}
+  <div class="file-list-scroll">
+    <div class="file-list file-list-message" role="alert">
+      <p>{fileListError}</p>
+      <button
+        class="action-button clickable"
+        onclick={() => void getFileList(requestedDeletedFiles)}
+        type="button"
+      >
+        Retry
+      </button>
+    </div>
   </div>
 {/if}
 
@@ -116,7 +147,12 @@
         <div class="file-attribute size">
           {file.size}
         </div>
-        <div class="file-attribute action">
+        <div
+          class="file-attribute action"
+          class:unavailable={fileListError !== null}
+          aria-hidden={fileListError !== null}
+          inert={fileListError !== null}
+        >
           {#if wikidot}
             {#if file.revision_type === "delete"}
               <!-- svelte-ignore a11y_invalid_attribute -->
@@ -204,7 +240,11 @@
     {/each}
   </div>
   </div>
-{:else}
+{:else if fileListLoading}
+  <div class="file-list-scroll">
+    <div class="file-list file-list-message" role="status">Loading files…</div>
+  </div>
+{:else if fileListError === null}
   <div class="file-list-scroll">
   <div class="file-list">
     <div class="file-list-message">
@@ -215,6 +255,10 @@
 {/if}
 
 <style lang="scss">
+  .unavailable {
+    visibility: hidden;
+  }
+
   .file-list-scroll {
     max-width: 100%;
     overflow-x: auto;
