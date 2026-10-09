@@ -3014,7 +3014,7 @@
     },
     {
       "path": "deepwell/src/services/render/include_attachment_owners.rs",
-      "sha256": "35e8871a9e720d9b4f4065daf06cfb1e9c8be58c1d915054a99842d967bc8f76",
+      "sha256": "eb81ed83855414d1103406c58f94184208d137c2d569c3623a8533e4c232a8bb",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -3998,7 +3998,7 @@
     },
     {
       "path": "deepwell/src/services/render/service.rs",
-      "sha256": "a005592a9548c10c707d12b819c4a6d9dcc27997eb4cce829b5ca5b44c2005a2",
+      "sha256": "7dbe02b1c6a7e8cb9d1a35829e0c5ec30fc4d4198c52d05479c21958315ce02e",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -4022,7 +4022,7 @@
     },
     {
       "path": "deepwell/src/services/render/service/wikidot_preprocess.rs",
-      "sha256": "0ba8396a289671e58d6756fb76735892e60260f766ad0c179224c6b6351aced4",
+      "sha256": "4306ac41c2224dd7274fb83162a6d554ec65688c2e7ef79cd31ad6ab1d9ae4f6",
       "status": "pending",
       "anchors": [],
       "findings": [],
