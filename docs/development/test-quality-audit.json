@@ -6,7 +6,7 @@
     "wikidot-verification",
     "executed shared helpers"
   ],
-  "inventory_digest": "57e2b6551f3022bf08c9b2000b84cd5a660ee33712f10425c5cedcc5cf1b61e0",
+  "inventory_digest": "3f55d3254c8affa37f73bf09389b27d6c41b5775a833e7f4afec04eb114d41e8",
   "inputs": [
     {
       "path": "deepwell/Cargo.toml",
@@ -6878,7 +6878,7 @@
     },
     {
       "path": "framerail/src/routes/[slug]/[...extra]/HistoryPane.svelte",
-      "sha256": "67f417ae3522c3e7d9ffc780a78ec15f10922a8e46da99a616c41e0460105ca0",
+      "sha256": "01ef0b685f511d03f030f73910e34bef3cba140789b93d153e5b6825bab41947",
       "status": "pending",
       "anchors": [],
       "findings": [],
