@@ -35,7 +35,9 @@
   import { toggleWikidotEditSections } from "$lib/wikidot/wikidot-edit-sections"
   import { wikidotTabviews } from "$lib/wikidot/wikidot-tabviews"
   import { wikidotFoldableLists } from "$lib/wikidot/wikidot-foldable-lists.js"
+  import { wikidotCollapsibles } from "$lib/wikidot/wikidot-collapsibles"
   import { wikidotToc } from "$lib/wikidot/wikidot-toc"
+  import { wikidotFootnotes } from "$lib/wikidot/wikidot-footnotes"
   import { resolveWikidotHashMagicPagePane } from "$lib/wikidot/wikidot-hash-magic"
   import { onMount } from "svelte"
 
@@ -458,7 +460,9 @@
       use:wikidotMembershipActions={membershipActionParameters}
       use:wikidotTabviews
       use:wikidotFoldableLists
+      use:wikidotCollapsibles
       use:wikidotToc
+      use:wikidotFootnotes
     >
       {@html showRevision ? revision?.compiled_body_html : data.compiled_body_html}
     </div>
