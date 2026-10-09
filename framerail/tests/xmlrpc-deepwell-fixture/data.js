@@ -205,6 +205,23 @@ export const pages = {
     compiled_body_html:
       '<script type="text/javascript" src="http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/yahooui/tabview-min.js"></script>\n<div id="wiki-tabview-0123456789abcdef0123456789abcdef" class="yui-navset"><ul class="yui-nav"><li class="selected"><a href="javascript:;"><em>First</em></a></li><li><a href="javascript:;"><em>Second</em></a></li></ul><div class="yui-content"><div id="wiki-tab-0-0" style="display: block;"><p>First panel</p></div><div id="wiki-tab-0-1" style="display: none;"><p>Second panel</p></div></div></div>'
   },
+  "wikidot-toc": {
+    page_id: 3000321,
+    revision_id: 9000321,
+    page_created_at: "2026-07-13T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-07-13T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Wikidot Table of Contents",
+    slug: "wikidot-toc",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: "+ First heading\n+ Second heading\n\n[[toc]]\n[[f>toc]]",
+    compiled_body_html:
+      '<h1 id="toc0"><span>First heading</span></h1><h1 id="toc1"><span>Second heading</span></h1><table style="margin:0; padding:0"><tr><td style="margin:0; padding:0"><div id="toc"><div id="toc-action-bar"><a href="javascript:;" onclick="WIKIDOT.page.listeners.foldToc(event)">Fold</a><a style="display: none" href="javascript:;" onclick="WIKIDOT.page.listeners.unfoldToc(event)">Unfold</a></div><div class="title">Table of Contents</div><div id="toc-list"><div style="margin-left: 1em;"><a href="#toc0">First heading</a></div><div style="margin-left: 1em;"><a href="#toc1">Second heading</a></div></div></div></td></tr></table><div id="toc" class="floatright"><div id="toc-action-bar"><a href="javascript:;" onclick="WIKIDOT.page.listeners.foldToc(event)">Fold</a><a style="display: none" href="javascript:;" onclick="WIKIDOT.page.listeners.unfoldToc(event)">Unfold</a></div><div class="title">Table of Contents</div><div id="toc-list"><div style="margin-left: 1em;"><a href="#toc0">First heading</a></div><div style="margin-left: 1em;"><a href="#toc1">Second heading</a></div></div></div>'
+  },
   "search:all": {
     page_id: 3000325,
     revision_id: 9000325,
