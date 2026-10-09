@@ -44,12 +44,14 @@
   let revisionDiffLoading = $state(false)
   let revisionDiffCompareButton = $state<HTMLButtonElement | undefined>(undefined)
   let revisionDiffRequestId = 0
+  let revisionRequestId = 0
   let active = true
   let latestRevisionNumber = $derived(Math.max(...revisionMap.keys()))
 
   onDestroy(() => {
     active = false
     revisionDiffRequestId += 1
+    revisionRequestId += 1
   })
 
   const SVELTEKIT_ACTION_HEADERS = {
@@ -202,10 +204,11 @@
     timelineNumber: number,
     compiledHtml: boolean,
     wikitext: boolean
-  ) {
+  ): Promise<boolean> {
     const entry = revisionMap.get(timelineNumber)
     const revisionNumber = entry?.page_revision_number
-    if (revisionNumber === undefined || revisionNumber === null) return
+    if (revisionNumber === undefined || revisionNumber === null) return false
+    const requestId = ++revisionRequestId
 
     const res = await fetch("?/revision", {
       method: "POST",
@@ -224,7 +227,7 @@
       { message: string; code: string; data: Record<string, unknown> }
     >(res)
 
-    if (!active) return
+    if (!active || requestId !== revisionRequestId) return false
 
     if (result.type === "failure" && result.data?.message) {
       errorPopupState.current = {
@@ -232,10 +235,14 @@
         message: result.data.message,
         data: result.data
       }
+      return false
     } else if (result.type === "success" && result.data?.res) {
       setRevision(result.data.res)
       revision = result.data.res
+      return true
     }
+
+    return false
   }
 
   async function rollbackRevision(timelineNumber: number, comments?: string) {
@@ -361,13 +368,15 @@
               <a
                 href="javascript:;"
                 title={wikidotHistoryActionTitles(data.site.locale).view}
-                onclick={(event) => {
+                onclick={async (event) => {
                   event.stopPropagation()
-                  getRevision(revisionItem.timeline_number, true, false).then(() => {
-                    if (!active) return
-                    setShowRevision(true)
-                    showRevisionSource = false
-                  })
+                  if (
+                    !(await getRevision(revisionItem.timeline_number, true, false)) ||
+                    !active
+                  )
+                    return
+                  setShowRevision(true)
+                  showRevisionSource = false
                 }}
               >
                 V
@@ -376,13 +385,15 @@
               <a
                 href="javascript:;"
                 title={wikidotHistoryActionTitles(data.site.locale).source}
-                onclick={(event) => {
+                onclick={async (event) => {
                   event.stopPropagation()
-                  getRevision(revisionItem.timeline_number, false, true).then(() => {
-                    if (!active) return
-                    setShowRevision(false)
-                    showRevisionSource = true
-                  })
+                  if (
+                    !(await getRevision(revisionItem.timeline_number, false, true)) ||
+                    !active
+                  )
+                    return
+                  setShowRevision(false)
+                  showRevisionSource = true
                 }}
               >
                 S
@@ -455,13 +466,15 @@
             {#if revisionItem.history_kind === "page"}
               <button
                 class="action-button view-revision clickable"
-                onclick={(event) => {
+                onclick={async (event) => {
                   event.stopPropagation()
-                  getRevision(revisionItem.timeline_number, true, false).then(() => {
-                    if (!active) return
-                    setShowRevision(true)
-                    showRevisionSource = false
-                  })
+                  if (
+                    !(await getRevision(revisionItem.timeline_number, true, false)) ||
+                    !active
+                  )
+                    return
+                  setShowRevision(true)
+                  showRevisionSource = false
                 }}
                 type="button"
               >
@@ -469,13 +482,15 @@
               </button>
               <button
                 class="action-button view-revision-source clickable"
-                onclick={(event) => {
+                onclick={async (event) => {
                   event.stopPropagation()
-                  getRevision(revisionItem.timeline_number, false, true).then(() => {
-                    if (!active) return
-                    setShowRevision(false)
-                    showRevisionSource = true
-                  })
+                  if (
+                    !(await getRevision(revisionItem.timeline_number, false, true)) ||
+                    !active
+                  )
+                    return
+                  setShowRevision(false)
+                  showRevisionSource = true
                 }}
                 type="button"
               >
