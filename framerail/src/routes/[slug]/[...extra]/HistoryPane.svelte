@@ -241,6 +241,12 @@
   async function rollbackRevision(timelineNumber: number, comments?: string) {
     const entry = revisionMap.get(timelineNumber)
     if (!entry || entry.history_kind !== "page") return
+    if (!canEditPage) return
+    // A rollback writes a new page revision. Ask before sending it; cancelling
+    // sends no request.
+    const label = data.internationalization?.["wiki-page-revision-rollback"] ?? "Revert"
+    // eslint-disable-next-line no-alert
+    if (!globalThis.confirm(`${label} ${entry.revision_number}?`)) return
 
     const res = await fetch("?/rollback", {
       method: "POST",
@@ -272,8 +278,33 @@
     }
   }
 
+  // Revert is offered only to viewers who may edit the page. The server still
+  // revalidates every rollback; this keeps a submitting control away from
+  // viewers who can never complete it.
+  let canEditPage = $state(false)
+
+  async function fetchEditPermission() {
+    const res = await fetch("?/editPermission", {
+      method: "POST",
+      headers: SVELTEKIT_ACTION_HEADERS,
+      body: JSON.stringify({})
+    }).then((res) => res.text())
+
+    const result = deserialize<
+      { res: { can_edit: boolean } },
+      { message: string; code: string; data: Record<string, unknown> }
+    >(res)
+
+    if (!active) return
+    canEditPage = result.type === "success" && result.data?.res?.can_edit === true
+  }
+
   $effect(() => {
     fetchHistory()
+  })
+
+  $effect(() => {
+    void fetchEditPermission()
   })
 </script>
 
@@ -356,7 +387,7 @@
               >
                 S
               </a>
-              {#if revisionItem.history_kind === "page" && revisionItem.timeline_number < latestRevisionNumber}
+              {#if canEditPage && revisionItem.history_kind === "page" && revisionItem.timeline_number < latestRevisionNumber}
                 <!-- svelte-ignore a11y_invalid_attribute -->
                 <a
                   href="javascript:;"
@@ -450,16 +481,18 @@
               >
                 {data.internationalization?.["wiki-page-view-source"]}
               </button>
-              <button
-                class="action-button revision-rollback clickable"
-                onclick={(event) => {
-                  event.stopPropagation()
-                  rollbackRevision(revisionItem.timeline_number)
-                }}
-                type="button"
-              >
-                {data.internationalization?.["wiki-page-revision-rollback"]}
-              </button>
+              {#if canEditPage}
+                <button
+                  class="action-button revision-rollback clickable"
+                  onclick={(event) => {
+                    event.stopPropagation()
+                    rollbackRevision(revisionItem.timeline_number)
+                  }}
+                  type="button"
+                >
+                  {data.internationalization?.["wiki-page-revision-rollback"]}
+                </button>
+              {/if}
             {/if}
           {/if}
         </div>
