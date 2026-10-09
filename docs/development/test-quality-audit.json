@@ -6,15 +6,15 @@
     "wikidot-verification",
     "executed shared helpers"
   ],
-  "inventory_digest": "1b23d5bfa5f3efcd85bf11830af61092bec30dc332e0e603fa9ffa1cd16a34a8",
+  "inventory_digest": "21e5ac20452a7bed508c7310ddf32a69fa18da3478cd8cf0adb9b70f3ee3b488",
   "inputs": [
     {
       "path": "deepwell/Cargo.toml",
-      "sha256": "211f5873a2328f20f6c2e037e9cae063fc3a6f1202af8004c451a6d4870e828b"
+      "sha256": "175765e6ffee2f89b71d376d23ebc4ea835375f53fac89aa53b7d88eeac00ba4"
     },
     {
       "path": "deepwell/Cargo.lock",
-      "sha256": "7d89d3d117677a3891d0f319d75864c22887bddd77fecdf4f45b83f358aeb4a7"
+      "sha256": "69bedf2d7f254ce08a6bf793ab4f3ac5c259caedc01b656ebb6fb2d2cbc684f0"
     },
     {
       "path": "deepwell/relation-impl-derive/Cargo.toml",
@@ -9790,7 +9790,7 @@
     },
     {
       "path": "install/local/wikidot-verification/src/ftml-marker-contract-candidate-case-set.mjs",
-      "sha256": "d7748c49db38ff3ab5d8ebd23169b2ce6bf79a4a45392510c6a779a12266f112",
+      "sha256": "6a9e275fa9e20dd2827a7c5cad5b64bb754dd113906ac5054d0f59fd79e5f247",
       "status": "pending",
       "anchors": [],
       "findings": [],
