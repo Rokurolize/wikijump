@@ -156,8 +156,22 @@ export const handleSiteRpc = ({ rpcRequest }) => {
           "confirm-password": "Confirm Password",
           "mfa-code": "MFA code"
         }
+    const pageLabels = isJapanese
+      ? {
+          "wiki-page-layout": "ページレイアウト",
+          "wiki-page-meta-tag-name": "メタタグ名",
+          "wiki-page-meta-tag-content": "メタタグの内容"
+        }
+      : {
+          "wiki-page-layout": "Page layout",
+          "wiki-page-meta-tag-name": "Meta tag name",
+          "wiki-page-meta-tag-content": "Meta tag content"
+        }
     result = Object.fromEntries(
-      Object.keys(rpcRequest.params.messages).map((key) => [key, authLabels[key] ?? key])
+      Object.keys(rpcRequest.params.messages).map((key) => [
+        key,
+        authLabels[key] ?? pageLabels[key] ?? key
+      ])
     )
   } else {
     return undefined
