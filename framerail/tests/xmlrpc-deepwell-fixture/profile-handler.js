@@ -34,7 +34,7 @@ export const handleProfileRpc = ({ rpcRequest }) => {
           name_changes_left: 0,
           last_name_change_added_at: "2026-01-01T00:00:00Z",
           last_renamed_at: null,
-          email: "",
+          email: profile.email ?? "",
           email_verified_at: null,
           email_validation_info: null,
           email_validation_at: null,
@@ -46,9 +46,9 @@ export const handleProfileRpc = ({ rpcRequest }) => {
           forum_signature: null,
           real_name: null,
           gender: null,
-          birthday: null,
+          birthday: profile.birthday ?? null,
           location: null,
-          biography: null,
+          biography: profile.biography ?? null,
           website: profile.website,
           user_page: null
         }
@@ -67,11 +67,25 @@ export const handleProfileRpc = ({ rpcRequest }) => {
  *
  * @type {Record<
  *   string,
- *   { user_id: number; name: string; website: string | null }
+ *   {
+ *     user_id: number
+ *     name: string
+ *     website: string | null
+ *     email?: string
+ *     birthday?: string | null
+ *     biography?: string | null
+ *   }
  * >}
  */
 const PROFILE_FIXTURES = {
-  guest: { user_id: 987654, name: "Guest", website: null },
+  guest: {
+    user_id: 987654,
+    name: "Guest",
+    website: null,
+    email: "private-email-marker-2139@example.test",
+    birthday: "private-birthday-marker-2139",
+    biography: "private-biography-marker-2139"
+  },
   "website-frozen-probe": {
     user_id: 987657,
     name: "Website Frozen Probe",

@@ -4,12 +4,13 @@ const SITE_HEADERS = {
   "X-Wikijump-Site-Id": "6000005",
   "X-Wikijump-Site-Slug": "scp-wiki"
 }
+const APP_URL = `http://127.0.0.1:${process.env.PLAYWRIGHT_APP_PORT ?? "4173"}`
 
 test("supported browser families share the same core page and authority boundary", async ({
   page
 }) => {
   await page.setExtraHTTPHeaders(SITE_HEADERS)
-  const response = await page.goto("/theme:yossistyle")
+  const response = await page.goto(`${APP_URL}/theme:yossistyle`)
 
   expect(response?.status()).toBe(200)
   await expect(page.locator("#page-content p")).toHaveText("XML-RPC theme body marker.")
@@ -18,4 +19,35 @@ test("supported browser families share the same core page and authority boundary
 
   expect(response?.headers()["content-security-policy"]).toContain("default-src")
   expect(response?.headers()["x-content-type-options"]).toBe("nosniff")
+})
+
+test("anonymous public profile HTML omits private and internal profile data", async ({
+  page
+}) => {
+  await page.setExtraHTTPHeaders(SITE_HEADERS)
+
+  const response = await page.goto(`${APP_URL}/-/user/guest`)
+  expect(response?.status()).toBe(200)
+
+  const serverHtml = await response!.text()
+  const profile = page.locator(".user-info")
+  await expect(profile.locator(".name")).toHaveText("Guest")
+  await expect(page.locator("textarea.debug")).toHaveCount(0)
+  await expect(page.getByText(/UNTRANSLATED:/)).toHaveCount(0)
+
+  const forbiddenValues = [
+    "private-email-marker-2139@example.test",
+    "private-birthday-marker-2139",
+    "private-biography-marker-2139",
+    "site_settings",
+    "user_session",
+    "userEditForm"
+  ]
+  for (const value of forbiddenValues) {
+    expect(serverHtml).not.toContain(value)
+    await expect(page.locator("html")).not.toContainText(value)
+  }
+
+  const cookies = await page.context().cookies()
+  expect(cookies.some(({ name }) => name === "wikijump_token")).toBe(false)
 })
