@@ -38,6 +38,13 @@
     }
   }
 
+  function cancelAdding() {
+    adding = false
+    metaName = ""
+    metaContent = ""
+    error = ""
+  }
+
   function save(allPages: boolean) {
     if (!data.page || metaName.length === 0) return
     return runMutation(() =>
@@ -131,7 +138,7 @@
         <button
           class="btn btn-danger btn-small btn-sm"
           disabled={busy}
-          onclick={() => (adding = false)}
+          onclick={cancelAdding}
           type="button">Cancel</button
         >
         <button
