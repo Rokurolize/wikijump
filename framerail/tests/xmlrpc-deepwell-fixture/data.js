@@ -431,6 +431,7 @@ x^2 + y^2 = z^2
       "[[include component:image-block",
       "|caption=fixture",
       "]]",
+      "[[include component:image-block]]",
       " [[include component:spaced-literal]]",
       "[[include :scp-wiki:component:license-box]]",
       "@@[[include component:literal]]@@",
