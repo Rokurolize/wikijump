@@ -6,7 +6,7 @@
     "wikidot-verification",
     "executed shared helpers"
   ],
-  "inventory_digest": "7854a033b0cea33ca20c8e1f25f64d6f20edacc7534a3e8e2fd9141bbb7653bb",
+  "inventory_digest": "2348edb83589034a7664e024e93c85d5093312eedf39494a5ef2a8f6eb3ccdef",
   "inputs": [
     {
       "path": "deepwell/Cargo.toml",
@@ -4758,7 +4758,7 @@
     },
     {
       "path": "framerail/playwright.browser-support.config.ts",
-      "sha256": "fc33e9f002073fe21f9be819dec5e77ff6a2feb161948c917ab0ec457809746d",
+      "sha256": "ec4da3c09c0245863631093d1df8f3b54e733a74007aaa350209b8bd544d3363",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7591,6 +7591,14 @@
     {
       "path": "framerail/vite.config.ts",
       "sha256": "8e28c2c5f97a7bd5dc8303c42c9dc3314413192454008efb095a6b0a14218f51",
+      "status": "pending",
+      "anchors": [],
+      "findings": [],
+      "review": null
+    },
+    {
+      "path": "framerail/vite.playwright-https.config.ts",
+      "sha256": "accee2b4b334e13be56f20bbd652adaf839059e878468d7011738704bbf016ef",
       "status": "pending",
       "anchors": [],
       "findings": [],

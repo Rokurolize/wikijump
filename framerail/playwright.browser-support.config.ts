@@ -12,7 +12,11 @@ const config: PlaywrightTestConfig = {
   testMatch:
     "**/{auth-accessible-names,backlinks-watchers-failure,browser-support,edit-meta-newtag-mobile,forum-start-routes,module-accessible-names,printer-friendly-print-toolbar}.spec.ts",
   webServer: [
-    baseConfig.webServer!,
+    ...(baseConfig.webServer
+      ? Array.isArray(baseConfig.webServer)
+        ? baseConfig.webServer
+        : [baseConfig.webServer]
+      : []),
     {
       command: "sh tests/start-playwright-https-vite.sh",
       port: Number(process.env.PLAYWRIGHT_HTTPS_APP_PORT ?? "4373"),
