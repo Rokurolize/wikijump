@@ -713,3 +713,75 @@ async fn vote_set_rejects_out_of_domain_values_before_persistence() {
         assert_eq!(current.value, 1);
     }
 }
+
+#[tokio::test]
+async fn anonymous_rate_controls_are_exposed_and_rejected_by_the_vote_endpoint() {
+    let queue_namespace = format!("rsmq-rate-anonymous-{}", Uuid::new_v4().simple());
+    let verification =
+        AssertUnwindSafe(run_anonymous_rate_control_exposure(&queue_namespace))
+            .catch_unwind()
+            .await;
+    let cleanup = AssertUnwindSafe(cleanup_job_queue_namespace(&queue_namespace))
+        .catch_unwind()
+        .await;
+    if let Err(payload) = verification {
+        resume_unwind(payload);
+    }
+    if let Err(payload) = cleanup {
+        resume_unwind(payload);
+    }
+}
+
+async fn run_anonymous_rate_control_exposure(queue_namespace: &str) {
+    const CATEGORY: &str = "fixture-anonymous-rate-view";
+
+    let mut runner = TestRunner::setup_with_job_queue_namespace(queue_namespace).await;
+    let (site_id, slug, _category_id, page_id) = create_registered_rate_page(
+        &mut runner,
+        CATEGORY,
+        "plus_minus",
+        "[[module Rate]]",
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(slug.clone().into())),
+        ..Default::default()
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let registry = match view {
+        GetPageViewOutput::Found {
+            rate_actions: Some(registry),
+            ..
+        } => registry,
+        other => panic!("anonymous view should expose the Rate sidecar, got {other:?}"),
+    };
+    assert_eq!(registry.page_id, page_id);
+    assert_eq!(registry.current_value, None);
+    let actions = serde_json::to_value(&registry.actions).unwrap();
+    assert_eq!(actions.as_array().map(Vec::len), Some(3));
+
+    // Exposing the descriptor is not authorization: the anonymous click must
+    // reach the vote endpoint and be refused there, before any vote is written.
+    let rejected = run_endpoint_err!(
+        runner,
+        wikidot_legacy_rate,
+        json!({
+            "page_id": page_id,
+            "last_revision_id": registry.revision_id,
+            "action_index": actions[0]["index"],
+            "action_fingerprint": actions[0]["fingerprint"],
+        }),
+    );
+    assert_contains_error!(rejected, ErrorType::PermissionDenied);
+}
