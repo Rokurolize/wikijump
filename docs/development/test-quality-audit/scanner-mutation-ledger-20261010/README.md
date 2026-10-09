@@ -1,15 +1,17 @@
 # ListPages scanner — reproducible mutation ledger (2026-10-10)
 
-Immutable, portable copies of the **32 SHA-256-sealed cargo-mutants outcome receipts** used to reconcile 136 distinct mutation IDs. The eight `initial` sources precede 24 targeted `replay` sources. All receipt bytes are preserved exactly from the checked `/tmp` audit sources; `manifest.json` records their digests and ordered roles.
+Immutable, portable copies of **33 SHA-256-sealed cargo-mutants outcome files** used to reconcile 136 distinct mutation IDs: 8 initial shards and 25 targeted replays. `manifest.json` records their order, roles and exact SHA-256 digests. Outcome bytes are preserved from independently verified mutation-run files, without reliance on the original `/tmp` locations.
 
-From the repository root, run:
+From the repository root run:
 
 ```sh
 node docs/development/test-quality-audit/scanner-mutation-ledger-20261010/verify.mjs
 ```
 
-The verifier checks every input SHA, regenerates the reconciliation using `scripts/reconcile-test-quality-mutants.mjs`, verifies the regenerated report against the same sealed inputs, and checks the expected aggregate and exact survivor identity. The temporary report is removed after verification, without relying on the original `/tmp` input paths.
+The verifier checks every receipt SHA, regenerates the reconciliation using the repository's maintained script, independently re-verifies the generated report, and checks the exact aggregate and remaining survivor list. The temporary report is removed afterward.
 
-Expected result: **131 Caught / 1 Missed / 4 Unviable / 0 Timeout** (136 unique IDs). The remaining unapproved survivor is `scanner.rs:1645:21 && -> ||`, whose Wikidot CSS/anchor-ownership behavior awaits independent authoritative review. `Unviable` is a mutation-runner build classification, **not an approval of semantic equivalence**. Internal cursor and work-accounting tests are not themselves external Wikidot rendering oracles. This ledger does not certify all repository production files, close Issue #1990, or authorize standing/443 promotion.
+**Expected: 132 Caught / 0 Missed / 4 Unviable / 0 Timeout (136 unique scanner mutation IDs).** The four `Unviable` entries remain build-classification results, **not semantic-equivalence approvals**. Zero missed mutations in this frozen *scanner-only* campaign **does not certify Wikidot behavior**, all production files or Issue #1990 acceptance, and does not authorize standing/443 promotion.
 
-The final two successful replay receipts were `1913:25 && -> ||` (Caught) and `1912:24 delete !` (Caught). The latter succeeded with library-only mutation build (`-C --lib`) and a sparse source checkout including the required Caddyfile fixtures, avoiding the earlier full-disk and missing-fixture failures. Failed and incomplete mutation attempts were deliberately excluded from reconciliation.
+Most recent fully checked replays: `scanner.rs:1913:25 && -> ||` (Caught); `1912:24 delete !` (Caught after avoiding previous infrastructure failures); and `1645:21 && -> ||` (Caught with the **already committed** `original_css_ownership_filters_projected_structural_events` regression, not the parallel Codex agent's uncommitted test). This last test is an internal CSS/anchor ownership guard, **not a newly collected independent live Wikidot oracle**. External behavioral validation and the repository-wide production-file audit remain outstanding.
+
+The successful deletion-`!` replay used `CARGO_BUILD_JOBS=1`, `-C --lib`, and a sparse checkout that included the Caddyfile fixtures required for compiling lib tests. Attempts that failed due to SIGTERM, ENOSPC, or missing fixture files were **excluded** from this complete mutation ledger.

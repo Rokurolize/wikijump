@@ -1,18 +1,16 @@
 {
   "schema": 1,
-  "as_of": "2026-10-10T06:35:47+09:00",
+  "as_of": "2026-10-10T06:40:11+09:00",
   "subject": "ListPages scanner mutation IDs",
   "scanner_source_sha256": "41c1f5132bd938cf8fb0fb4228767583b59b7529a1ad0fd7740376ebbdb9d30e",
   "distinct_mutants": 136,
   "reconciled": {
-    "caught": 131,
-    "missed": 1,
+    "caught": 132,
+    "missed": 0,
     "unviable": 4,
     "timeout": 0
   },
-  "unresolved_survivors": [
-    "src/services/render/list_pages/scanner.rs:1645:21: replace && with || in find_list_pages_module_matches_with_cursor_work_context_lowercase"
-  ],
+  "unresolved_survivors": [],
   "source_files": [
     {
       "role": "initial",
@@ -173,6 +171,11 @@
       "role": "replay",
       "path": "inputs/32-replay/outcomes.json",
       "sha256": "300d01a8bda3730da1cfb1fa1f71c57915e021e0b2a34be3f1d60fd0b75352e9"
+    },
+    {
+      "role": "replay",
+      "path": "inputs/33-replay/outcomes.json",
+      "sha256": "ff62f8350fbcc6ddb8dab3dc1a1cfceefd2e7e2f5c63ebae30dd789e91099a82"
     }
   ]
 }

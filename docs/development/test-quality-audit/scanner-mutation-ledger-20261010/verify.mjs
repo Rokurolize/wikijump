@@ -11,7 +11,7 @@ const bundle = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(bundle, '../../../..');
 const manifest = JSON.parse(readFileSync(join(bundle, 'manifest.json'), 'utf8'));
 const reconciler = join(repoRoot, 'scripts/reconcile-test-quality-mutants.mjs');
-if (manifest.schema !== 1 || manifest.source_files.length !== 32) throw new Error('unexpected mutation ledger schema/count');
+if (manifest.schema !== 1 || manifest.source_files.length !== 33) throw new Error('unexpected mutation ledger schema/count');
 const args = [];
 let seenReplay = false;
 for (const source of manifest.source_files) {
