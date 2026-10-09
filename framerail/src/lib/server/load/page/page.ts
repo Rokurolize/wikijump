@@ -3,6 +3,7 @@ import {
   resolveShellLayoutValue,
   WIKIDOT_LAYOUT
 } from "$lib/layout/wikidot-shell-decision"
+import { articleRouteWithQueryNoRender } from "$lib/server/page-norender-query"
 import { resolvePageRedirect } from "$lib/server/page-redirect"
 import { translate } from "$lib/server/deepwell/translate"
 import { articleView } from "$lib/server/deepwell/views"
@@ -42,7 +43,13 @@ export async function loadPage(
 
   const requestLocales = getPreloadRequestLocales(request)
   const backendLocales = getPreloadBackendLocales(requestLocales)
-  const articleResponse = await articleView(siteId, backendLocales, route, sessionToken)
+  const articleRoute = articleRouteWithQueryNoRender(route, new URL(request.url).search)
+  const articleResponse = await articleView(
+    siteId,
+    backendLocales,
+    articleRoute,
+    sessionToken
+  )
   const { page: response, ...preloadResponse } = articleResponse
   const parentData = finalizePreloadData(preloadResponse, requestLocales)
   const locales = parentData.locales
