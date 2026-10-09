@@ -9258,13 +9258,17 @@ async fn saved_rate_sidecar_binds_exact_revision_and_mutates_idempotently() {
             "locales": ["en-US", "en"],
         }),
     );
-    assert!(matches!(
-        anonymous,
+    // Anonymous viewers receive the same descriptors so their clicks reach the
+    // authoritative vote endpoint; they have no current vote of their own.
+    let anonymous_registry = match anonymous {
         GetPageViewOutput::Found {
-            rate_actions: None,
+            rate_actions: Some(registry),
             ..
-        }
-    ));
+        } => registry,
+        other => panic!("expected anonymous Rate sidecar, got {other:?}"),
+    };
+    assert_eq!(anonymous_registry.current_value, None);
+    assert_eq!(anonymous_registry.actions.len(), 3);
 
     let authenticated = run_endpoint!(
         runner,
