@@ -10,7 +10,7 @@ const withBaseUse = (device: (typeof devices)[keyof typeof devices]) => ({
 const config: PlaywrightTestConfig = {
   ...baseConfig,
   testMatch:
-    "**/{auth-accessible-names,browser-support,edit-meta-newtag-mobile,forum-start-routes,module-accessible-names,printer-friendly-print-toolbar}.spec.ts",
+    "**/{auth-accessible-names,backlinks-watchers-failure,browser-support,edit-meta-newtag-mobile,forum-start-routes,module-accessible-names,printer-friendly-print-toolbar}.spec.ts",
   webServer: [
     baseConfig.webServer!,
     {
@@ -44,6 +44,15 @@ const config: PlaywrightTestConfig = {
       testMatch: "**/edit-meta-newtag-mobile.spec.ts",
       use: {
         ...withBaseUse(devices["Desktop Safari"]),
+        ignoreHTTPSErrors: true
+      }
+    },
+    {
+      name: "webkit-https-backlinks-watchers",
+      testMatch: "**/backlinks-watchers-failure.spec.ts",
+      use: {
+        ...withBaseUse(devices["Desktop Safari"]),
+        baseURL: `https://localhost:${process.env.PLAYWRIGHT_HTTPS_APP_PORT ?? "4373"}`,
         ignoreHTTPSErrors: true
       }
     },
