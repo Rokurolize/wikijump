@@ -6,7 +6,7 @@
     "wikidot-verification",
     "executed shared helpers"
   ],
-  "inventory_digest": "21e5ac20452a7bed508c7310ddf32a69fa18da3478cd8cf0adb9b70f3ee3b488",
+  "inventory_digest": "03cc81f0b38ac6d184a2b5a5b986baeeedc0c6ca90b8ae385ba63115eb16a54b",
   "inputs": [
     {
       "path": "deepwell/Cargo.toml",
@@ -2982,7 +2982,7 @@
     },
     {
       "path": "deepwell/src/services/render/generator.rs",
-      "sha256": "e664dd591f7f8da3c22b02833f37d03580b5c8d16e1512f73700c2f0043a56b9",
+      "sha256": "34592c2988dd7f62196f67ba52e8d656a345712a521d6f471f4aac4566afcba5",
       "status": "pending",
       "anchors": [],
       "findings": [],
