@@ -6,7 +6,7 @@
     "wikidot-verification",
     "executed shared helpers"
   ],
-  "inventory_digest": "95d0266ae2324b76a2a13f13944a4e04ba43c2356fc3290dad230d263ca8e61f",
+  "inventory_digest": "7854a033b0cea33ca20c8e1f25f64d6f20edacc7534a3e8e2fd9141bbb7653bb",
   "inputs": [
     {
       "path": "deepwell/Cargo.toml",
@@ -11399,16 +11399,16 @@
   ],
   "proofs": [
     {
-      "id": "resource-scanner-mutation-20261009h",
+      "id": "resource-scanner-mutation-20261009i",
       "kind": "mutation",
-      "path": "docs/development/test-quality-audit/resource-scanner-mutation-20261009h/resource-scanner-mutation.json",
-      "sha256": "e95dfb806491e41fb264cc81297cf20c859ec51080c61fff8e49abda2398a51f"
+      "path": "docs/development/test-quality-audit/resource-scanner-mutation-20261009i/resource-scanner-mutation.json",
+      "sha256": "963365c51008250196ecefe87a252ab017b2ff736bc07ccceb2d8f1b00ea3c64"
     },
     {
-      "id": "test-quality-full-coverage-20261009h",
+      "id": "test-quality-full-coverage-20261009i",
       "kind": "coverage",
-      "path": "docs/development/test-quality-audit/test-quality-coverage-20261009h/receipt.json",
-      "sha256": "0c92d2037b8bb41d74ac7a212109ae8754b18010176c7f3485b5603113ff5ee7"
+      "path": "docs/development/test-quality-audit/test-quality-coverage-20261009i/receipt.json",
+      "sha256": "6941aa17464e2aa7e393e947fa1a248ac458af2cf58ee5f40b0345f72cdf9962"
     }
   ],
   "acceptance": null,
