@@ -4758,7 +4758,7 @@
     },
     {
       "path": "framerail/playwright.browser-support.config.ts",
-      "sha256": "8835ebb0cbf6a4a3efab5ebf24dffcb2e42debceb88a569b18720231df0df803",
+      "sha256": "dd651291d3e9690bd9e493bb11fbac65367211e852fb12f178542483d4bda977",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6870,7 +6870,7 @@
     },
     {
       "path": "framerail/src/routes/[slug]/[...extra]/FileUploadPanel.svelte",
-      "sha256": "bc93f262d83dcbbe4655118f5bc6c7d2970a31180988b1d270da696837ec3b75",
+      "sha256": "04b3d51194d0d5f29a06b0d7223c5c15be3bc37a3b0ee1b3b7c30f93d1edaf6d",
       "status": "pending",
       "anchors": [],
       "findings": [],
