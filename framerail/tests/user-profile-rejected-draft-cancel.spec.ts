@@ -6,6 +6,10 @@ const SITE_HEADERS = {
   "X-Wikijump-Site-Slug": "scp-wiki"
 }
 
+test.afterEach(async ({ request }) => {
+  await request.post(`${FIXTURE_URL}/reset-authenticated-profile`)
+})
+
 test("Cancel discards a rejected profile draft and a corrected field is submitted", async ({
   page,
   request
@@ -82,5 +86,4 @@ test("Cancel discards a rejected profile draft and a corrected field is submitte
     expect(write.paramKeys).toContain("email")
     expect(write.paramKeys).not.toContain("name")
   }
-  await request.post(`${FIXTURE_URL}/reset-authenticated-profile`)
 })
