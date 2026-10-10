@@ -237,7 +237,7 @@
       "source_identities": [
         {
           "path": "framerail/src/routes/WikiPageError.svelte",
-          "sha256": "e4cd7350799cd9b5258f2acbdf1cd1419b8ce6fc3a213ba15e86c7faaf866b43"
+          "sha256": "2c970045f6aed675a58e49bd727c4cc832c9fe8677656f8d9a5cb1ad3376303b"
         },
         {
           "path": "framerail/src/routes/+error.svelte",
@@ -248,7 +248,7 @@
           "sha256": "13bfc494f60d509442ab91ae58fdfc0b8509c281bb992d78cdfea4ea55adf813"
         }
       ],
-      "issues": [1371, 1372],
+      "issues": [1371, 1372, 2090],
       "test_references": [
         "framerail/tests/new-page-helper.spec.ts",
         "framerail/tests/data-form-create-flow.spec.ts"
@@ -290,7 +290,7 @@
       "source_identities": [
         {
           "path": "framerail/src/routes/WikiPageError.svelte",
-          "sha256": "e4cd7350799cd9b5258f2acbdf1cd1419b8ce6fc3a213ba15e86c7faaf866b43"
+          "sha256": "2c970045f6aed675a58e49bd727c4cc832c9fe8677656f8d9a5cb1ad3376303b"
         },
         {
           "path": "framerail/src/routes/+error.svelte",
@@ -301,12 +301,17 @@
           "sha256": "13bfc494f60d509442ab91ae58fdfc0b8509c281bb992d78cdfea4ea55adf813"
         },
         {
+          "path": "framerail/src/lib/server/load/page/page.ts",
+          "sha256": "51b0bc8a50e650af2fa11dbddec660a90973652c09a3b1f1b59cd8bf4a6ccc8b"
+        },
+        {
           "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",
           "sha256": "03bf8790bbd004ed6094ee9c5fa043bb1241fabebbb1881f420c7363b4c2f3ee"
         }
       ],
-      "issues": [1371, 1372],
+      "issues": [1371, 1372, 2090],
       "test_references": [
+        "framerail/tests/data-form-create-flow.spec.ts",
         "framerail/tests/page-deleted-authorization.test.js"
       ]
     }

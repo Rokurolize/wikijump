@@ -11400,7 +11400,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "d55cc0dceb43f3c5aa5129a82f89a161ffadf0d43eeeec588cdf66d9bb052097"
+      "source_input_set_sha256": "74c16f24d9ef2a11ded552e053b25c4cf2d7cb4ebdd0b332ab9044f8f6fcf223"
     },
     "ftml": {
       "commit": "bf49d32fe980611fed368661396a3d6c1f02c51f",
@@ -11561,7 +11561,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "0a12296526c2cf7bbd6ec1d72c0ed00d11b647271fd50fdd8e596ac9ece5d027"
+        "sha256": "564464f925ec409782b9c075dc6222b49fbe8c0135dd7874e743a95c67a53ef9"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11609,7 +11609,7 @@
       },
       {
         "path": "docs/development/wikidot-page-action-surfaces.json",
-        "sha256": "f70e45d87548de6f43be0d1b884148449e1e8faad0574c43eff00a5355c8ed61"
+        "sha256": "8a4df399dc223ad2a3ceb2d8d5330aff70a37910c088c58064199a33e52f1b67"
       },
       {
         "path": "docs/development/wikidot-py-amc-client-parity.json",
@@ -11625,7 +11625,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "bcf10bd1136726c2318dd71b560dcfba7f905191cd9b95fd664ba5de80f33824"
+        "sha256": "cab8bffd3407819c8c8a9f12d98952a3393824b3cdd3eccdb4bbd56fc6dbdeca"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11654,6 +11654,10 @@
       {
         "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",
         "sha256": "03bf8790bbd004ed6094ee9c5fa043bb1241fabebbb1881f420c7363b4c2f3ee"
+      },
+      {
+        "path": "framerail/src/lib/server/load/page/page.ts",
+        "sha256": "51b0bc8a50e650af2fa11dbddec660a90973652c09a3b1f1b59cd8bf4a6ccc8b"
       },
       {
         "path": "framerail/src/lib/server/wikidot-site-changes.js",
@@ -11845,7 +11849,7 @@
       },
       {
         "path": "framerail/src/routes/printer--friendly/[...path]/+page.svelte",
-        "sha256": "67a38a8c64c2c65c653fd7db577a8eca81cae6191e02b594335dc97dea5b3172"
+        "sha256": "ac11588f94706805f2bf8f117bb96d6265cac3b54235fcf7a0e5d5a1d762af66"
       },
       {
         "path": "framerail/src/routes/user[x+3a]info/[target]/+page.server.ts",
@@ -11857,7 +11861,7 @@
       },
       {
         "path": "framerail/src/routes/WikiPageError.svelte",
-        "sha256": "e4cd7350799cd9b5258f2acbdf1cd1419b8ce6fc3a213ba15e86c7faaf866b43"
+        "sha256": "2c970045f6aed675a58e49bd727c4cc832c9fe8677656f8d9a5cb1ad3376303b"
       },
       {
         "path": "framerail/src/routes/xml-rpc-api.php/+server.ts",
@@ -37761,7 +37765,8 @@
       "existing_refs": {
         "issues": [
           1371,
-          1372
+          1372,
+          2090
         ],
         "cases": [],
         "tests": [
@@ -37818,7 +37823,7 @@
       "source_identities": [
         {
           "path": "framerail/src/routes/WikiPageError.svelte",
-          "sha256": "e4cd7350799cd9b5258f2acbdf1cd1419b8ce6fc3a213ba15e86c7faaf866b43"
+          "sha256": "2c970045f6aed675a58e49bd727c4cc832c9fe8677656f8d9a5cb1ad3376303b"
         },
         {
           "path": "framerail/src/routes/+error.svelte",
@@ -37843,16 +37848,19 @@
         "framerail/src/lib/server/load/page/page-actions.ts#action:deletedGet",
         "framerail/src/lib/server/load/page/page-actions.ts#action:restore",
         "framerail/src/lib/server/load/page/page-revision-actions.ts",
+        "framerail/src/lib/server/load/page/page.ts",
         "framerail/src/routes/+error.svelte",
         "framerail/src/routes/WikiPageError.svelte"
       ],
       "existing_refs": {
         "issues": [
           1371,
-          1372
+          1372,
+          2090
         ],
         "cases": [],
         "tests": [
+          "framerail/tests/data-form-create-flow.spec.ts",
           "framerail/tests/page-deleted-authorization.test.js"
         ]
       },
@@ -37865,6 +37873,7 @@
         "references": [
           "framerail/src/lib/server/load/page/page-actions.ts",
           "framerail/src/lib/server/load/page/page-revision-actions.ts",
+          "framerail/src/lib/server/load/page/page.ts",
           "framerail/src/routes/+error.svelte",
           "framerail/src/routes/WikiPageError.svelte"
         ]
@@ -37914,7 +37923,7 @@
       "source_identities": [
         {
           "path": "framerail/src/routes/WikiPageError.svelte",
-          "sha256": "e4cd7350799cd9b5258f2acbdf1cd1419b8ce6fc3a213ba15e86c7faaf866b43"
+          "sha256": "2c970045f6aed675a58e49bd727c4cc832c9fe8677656f8d9a5cb1ad3376303b"
         },
         {
           "path": "framerail/src/routes/+error.svelte",
@@ -37923,6 +37932,10 @@
         {
           "path": "framerail/src/lib/server/load/page/page-actions.ts",
           "sha256": "13bfc494f60d509442ab91ae58fdfc0b8509c281bb992d78cdfea4ea55adf813"
+        },
+        {
+          "path": "framerail/src/lib/server/load/page/page.ts",
+          "sha256": "51b0bc8a50e650af2fa11dbddec660a90973652c09a3b1f1b59cd8bf4a6ccc8b"
         },
         {
           "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",

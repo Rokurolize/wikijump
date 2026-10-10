@@ -80,6 +80,17 @@
   const missingPageSlug = $derived(
     page.params.slug ?? page.error?.site.default_page ?? ""
   )
+  const missingPageBody = $derived(errorData.compiled_body_html ?? "")
+  let restoreActionPage = $state("")
+
+  $effect(() => {
+    const slug = missingPageSlug
+    if (slug !== restoreActionPage || !errorData.restore_available) {
+      restoreActionPage = slug
+      showRestoreAction = false
+      deletedPages = []
+    }
+  })
   const missingPageName = $derived(
     missingPageSlug.includes(":")
       ? missingPageSlug.slice(missingPageSlug.indexOf(":") + 1)
@@ -111,6 +122,8 @@
   }
 
   async function getDeleted() {
+    showRestoreAction = false
+    deletedPages = []
     const res = await fetch(`?/deletedGet`, {
       method: "POST",
       body: ""
@@ -127,7 +140,7 @@
       }
     } else if (result.type === "success" && result.data?.res) {
       deletedPages = result.data.res
-      showRestoreAction = true
+      showRestoreAction = deletedPages.length > 0
     }
   }
 
@@ -279,26 +292,30 @@
     {/if}
   {:else}
     <div id="page-content">
-      <p id="404-message">
-        The page <em>{missingPageSlug}</em> you want to access does not exist.
-      </p>
-      <ul id="create-it-now-link">
-        <li>
-          <a
-            href={resolve(`/${missingPageSlug}/edit/true`, {})}
-            onclick={(event) => {
-              event.preventDefault()
-              goto(resolve(`/${missingPageSlug}/edit/true`, {}), {
-                noScroll: true
-              })
-            }}>Create page</a
-          >
-        </li>
-      </ul>
-      {@html errorData.compiled_body_html}
+      {#if !missingPageBody.includes(`id="404-message"`)}
+        <p id="404-message">
+          The page <em>{missingPageSlug}</em> you want to access does not exist.
+        </p>
+      {/if}
+      {#if !missingPageBody.includes(`id="create-it-now-link"`)}
+        <ul id="create-it-now-link">
+          <li>
+            <a
+              href={resolve(`/${missingPageSlug}/edit/true`, {})}
+              onclick={(event) => {
+                event.preventDefault()
+                goto(resolve(`/${missingPageSlug}/edit/true`, {}), {
+                  noScroll: true
+                })
+              }}>Create page</a
+            >
+          </li>
+        </ul>
+      {/if}
+      {@html missingPageBody}
     </div>
 
-    {#if pageLayoutContext.current === Layout.WIKIDOT}
+    {#if errorData.restore_available && pageLayoutContext.current === Layout.WIKIDOT}
       <div id="page-options-container">
         <div id="page-options-bottom" class="page-options-bottom">
           <!-- svelte-ignore a11y_invalid_attribute -->
@@ -313,7 +330,7 @@
           </a>
         </div>
       </div>
-    {:else}
+    {:else if errorData.restore_available}
       <div class="action-row editor-actions">
         <button
           class="action-button editor-button button-restore clickable"

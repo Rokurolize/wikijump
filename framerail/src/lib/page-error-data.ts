@@ -14,6 +14,7 @@ export type PageErrorData = {
   }
   options: PageOptions
   compiled_body_html: string
+  restore_available: boolean
   internationalization?: Record<string, string>
 }
 
@@ -55,6 +56,7 @@ export function isPageErrorData(value: unknown): value is PageErrorData {
     return false
   }
   if (typeof value.compiled_body_html !== "string") return false
+  if (typeof value.restore_available !== "boolean") return false
   if (value.internationalization !== undefined && !isRecord(value.internationalization)) {
     return false
   }

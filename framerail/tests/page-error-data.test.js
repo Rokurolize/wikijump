@@ -40,6 +40,7 @@ test("page-specific errors require validated site, options, and form payloads", 
       data: ""
     },
     compiled_body_html: "<p>missing page</p>",
+    restore_available: false,
     page_templates: []
   }
 
@@ -47,4 +48,6 @@ test("page-specific errors require validated site, options, and form payloads", 
   assert.equal(isPageErrorData({ ...pageError, forms: { pageEditForm: {} } }), false)
   assert.equal(isPageErrorData({ ...pageError, site: null }), false)
   assert.equal(isPageErrorData({ ...pageError, compiled_body_html: null }), false)
+  assert.equal(isPageErrorData({ ...pageError, restore_available: undefined }), false)
+  assert.equal(isPageErrorData({ ...pageError, restore_available: "yes" }), false)
 })
