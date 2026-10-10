@@ -2,13 +2,16 @@ import { fixtureState, hasExactKeys } from "./context.js"
 
 /** @param {{ rpcRequest: any }} input */
 export const handleSiteRpc = ({ rpcRequest }) => {
+  const siteId = rpcRequest.params?.site_id
+  const isFixtureSite = siteId === 6000005 || siteId === 6000006
+  const siteSlug = siteId === 6000006 ? "template-en" : "scp-wiki"
   let result
 
   if (
     rpcRequest.method === "preload_view" &&
     (hasExactKeys(rpcRequest.params, ["site_id", "locales"]) ||
       hasExactKeys(rpcRequest.params, ["site_id", "locales", "session_token"])) &&
-    rpcRequest.params?.site_id === 6000005 &&
+    isFixtureSite &&
     Array.isArray(rpcRequest.params.locales) &&
     (rpcRequest.params.session_token === null ||
       rpcRequest.params.session_token === undefined ||
@@ -18,13 +21,13 @@ export const handleSiteRpc = ({ rpcRequest }) => {
   ) {
     result = {
       site: {
-        site_id: 6000005,
+        site_id: siteId,
         created_at: "2026-01-01T00:00:00Z",
         updated_at: null,
         deleted_at: null,
         from_wikidot: false,
-        slug: "scp-wiki",
-        name: "SCP Foundation",
+        slug: siteSlug,
+        name: siteSlug === "template-en" ? "Template Fixture" : "SCP Foundation",
         tagline: "Secure, Contain, Protect",
         description: "Fixture site",
         locale: "en",
@@ -56,7 +59,7 @@ export const handleSiteRpc = ({ rpcRequest }) => {
         toolbars: { top: false, bottom: false, promote: true }
       },
       promoted_sites: [],
-      site_file_domain: "scp-wiki.wjfiles.localhost",
+      site_file_domain: `${siteSlug}.wjfiles.localhost`,
       license_name: "CC BY-SA 3.0",
       license_url: "https://creativecommons.org/licenses/by-sa/3.0/",
       license_kind: "standard",
@@ -78,7 +81,7 @@ export const handleSiteRpc = ({ rpcRequest }) => {
   } else if (
     rpcRequest.method === "admin_view" &&
     hasExactKeys(rpcRequest.params, ["site_id", "locales", "session_token"]) &&
-    rpcRequest.params?.site_id === 6000005 &&
+    isFixtureSite &&
     Array.isArray(rpcRequest.params.locales) &&
     rpcRequest.params.session_token === "fixture-session-token"
   ) {
@@ -90,7 +93,7 @@ export const handleSiteRpc = ({ rpcRequest }) => {
             category_id: 100,
             created_at: "2026-01-01T00:00:00Z",
             updated_at: null,
-            site_id: 6000005,
+            site_id: siteId,
             slug: "_default",
             layout: null,
             top_bar_page: null,
@@ -116,6 +119,30 @@ export const handleSiteRpc = ({ rpcRequest }) => {
       }
     }
   } else if (
+    rpcRequest.method === "admin_view" &&
+    hasExactKeys(rpcRequest.params, ["site_id", "locales", "session_token"]) &&
+    isFixtureSite &&
+    Array.isArray(rpcRequest.params.locales) &&
+    rpcRequest.params.session_token === "fixture-authenticated-session-token"
+  ) {
+    result = {
+      type: "admin_permissions",
+      data: { html: "Unauthorized: site manager permissions are required." }
+    }
+  } else if (
+    rpcRequest.method === "admin_view" &&
+    (hasExactKeys(rpcRequest.params, ["site_id", "locales"]) ||
+      hasExactKeys(rpcRequest.params, ["site_id", "locales", "session_token"])) &&
+    isFixtureSite &&
+    Array.isArray(rpcRequest.params.locales) &&
+    (rpcRequest.params.session_token === null ||
+      rpcRequest.params.session_token === undefined)
+  ) {
+    result = {
+      type: "admin_permissions",
+      data: { html: "Unauthorized: site manager permissions are required." }
+    }
+  } else if (
     rpcRequest.method === "category_get_all" &&
     rpcRequest.params?.site === "scp-wiki"
   ) {
@@ -123,7 +150,7 @@ export const handleSiteRpc = ({ rpcRequest }) => {
   } else if (
     rpcRequest.method === "membership_application_list" &&
     hasExactKeys(rpcRequest.params, ["site_id"]) &&
-    rpcRequest.params.site_id === 6000005
+    isFixtureSite
   ) {
     result = []
   } else if (
