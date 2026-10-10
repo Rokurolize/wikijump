@@ -116,6 +116,19 @@ export const handleSiteRpc = ({ rpcRequest }) => {
       }
     }
   } else if (
+    rpcRequest.method === "admin_view" &&
+    (hasExactKeys(rpcRequest.params, ["site_id", "locales"]) ||
+      hasExactKeys(rpcRequest.params, ["site_id", "locales", "session_token"])) &&
+    rpcRequest.params?.site_id === 6000005 &&
+    Array.isArray(rpcRequest.params.locales) &&
+    (rpcRequest.params.session_token === null ||
+      rpcRequest.params.session_token === undefined)
+  ) {
+    result = {
+      type: "admin_permissions",
+      data: { html: "Unauthorized: site manager permissions are required." }
+    }
+  } else if (
     rpcRequest.method === "category_get_all" &&
     rpcRequest.params?.site === "scp-wiki"
   ) {
