@@ -9254,7 +9254,7 @@
     },
     {
       "path": "install/local/wikidot-verification/src/browser-request-gate.mjs",
-      "sha256": "476783cced79ab8764039c827f58fe5d737f3444cf23eb3baa189efb18671beb",
+      "sha256": "7003bdebef80e16a230eb6a070e304062d7d365eec96c564ae852958c9228443",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -10902,7 +10902,7 @@
     },
     {
       "path": "install/local/wikidot-verification/src/standing-browser-parity-browser-session.mjs",
-      "sha256": "48dc05b40434fbea1ddf3d055c05bf60b452cd4cd2e3784fd1c1336c3ab73d92",
+      "sha256": "e075e2f69d30eb2faea9a6c7c88434bc4ed776186cde93b0193951462f48aa74",
       "status": "pending",
       "anchors": [],
       "findings": [],
