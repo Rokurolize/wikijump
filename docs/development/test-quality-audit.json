@@ -4382,7 +4382,7 @@
     },
     {
       "path": "deepwell/src/services/view/service.rs",
-      "sha256": "ff0487c68cf12cb6b65c926870dcb470449b523840db44939bf735bf7db94305",
+      "sha256": "15709e2245759b3d84c6299abbbdca995bdd59b8e5afe67cc0ae00673d0a4692",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -4398,7 +4398,7 @@
     },
     {
       "path": "deepwell/src/services/view/structs.rs",
-      "sha256": "4b71db74e8f610666cba79764a91fe29f089540e4924438e6a34b486e1d42042",
+      "sha256": "e9e58c3a8d0ba85711cfed7ae899c534282ec4fc6972b7c7124f4193e53c68e2",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -5406,7 +5406,7 @@
     },
     {
       "path": "framerail/src/lib/page-error-data.ts",
-      "sha256": "a1745ca3a5a888b390caa275236a3b24b8c99f017d1914e74baa5a1ebea3bbaf",
+      "sha256": "90bff05e647bd6fcb906ad2bb1c65867c7ba4f73a78e86b13f1e1682e3ac3340",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -5846,7 +5846,7 @@
     },
     {
       "path": "framerail/src/lib/server/deepwell/views.ts",
-      "sha256": "aee7d0117b3315958c1a75598b2cffc5d820319564d43199f48e313e5961d4d3",
+      "sha256": "68219973bcb774f621b503d5854000e907aa9b54fad804038f0708efcd6a24ae",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6046,7 +6046,7 @@
     },
     {
       "path": "framerail/src/lib/server/load/page/page.ts",
-      "sha256": "00bc9b3bff24c46fddbbcd0b0bf8566e823ec8c4e1eaf417799d63ab2c2324e7",
+      "sha256": "f74d0e926998764b305973fb80e8c7276e8b86b7029c15097a162009a99896fc",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6566,7 +6566,7 @@
     },
     {
       "path": "framerail/src/lib/wikidot/wikidot-locale.js",
-      "sha256": "4ea79b65746e3536e012e638dc3c243ca0228a8cb21c4627870aef15137e0ce8",
+      "sha256": "22224249aa67315074cc27a1eaf57707ed1adc02f6791292fe9338fae32bdc5a",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -7502,7 +7502,7 @@
     },
     {
       "path": "framerail/src/routes/WikiPageError.svelte",
-      "sha256": "e4cd7350799cd9b5258f2acbdf1cd1419b8ce6fc3a213ba15e86c7faaf866b43",
+      "sha256": "fa24a16b8638b6e27603d79c50be4bafd59913558bc52767c193d9c2412f098c",
       "status": "pending",
       "anchors": [],
       "findings": [],
