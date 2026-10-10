@@ -76,7 +76,7 @@ export const fixtureState = {
     voteSet: [],
     voteRemove: []
   },
-  /** @type {Array<Record<string, unknown>>} */
+  /** @type {Record<string, unknown>[]} */
   userCreateRequests: [],
   /** @type {Record<string, RecordedRpcRequest[]>} */
   fileRequests: {
@@ -105,6 +105,8 @@ export const fixtureState = {
   /** @type {Record<number, number>} */
   voteValues: {}
 }
+
+export const isFixtureSiteId = (siteId) => siteId === 6000005 || siteId === 6000006
 
 const MIN_I64 = -(1n << 63n)
 const MAX_I64 = (1n << 63n) - 1n
