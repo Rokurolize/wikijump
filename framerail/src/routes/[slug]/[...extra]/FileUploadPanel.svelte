@@ -140,4 +140,8 @@
     justify-content: stretch;
     width: 100%;
   }
+
+  .file-upload .file-attribute {
+    max-width: 100%;
+  }
 </style>
