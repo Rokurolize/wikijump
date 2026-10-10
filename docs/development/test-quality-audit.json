@@ -6558,7 +6558,7 @@
     },
     {
       "path": "framerail/src/lib/wikidot/wikidot-legacy-actions.js",
-      "sha256": "7dea23bc5677a1d924ec01618285b2e34a333bbcfe4fd15b7a57bcaf67d95476",
+      "sha256": "fb6db92a6b13afc822fd9a14565a489373419105ae8c17c367c78655615d290c",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6934,7 +6934,7 @@
     },
     {
       "path": "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
-      "sha256": "9cc01f3ba33fdef70c7dd8b0189e980a37fd9b45f1335ae0af8b2720d5ab7e32",
+      "sha256": "1cd22da8df726c27384cf1ff35e799c56302c2627721baf02286c4cc43ec0aad",
       "status": "pending",
       "anchors": [],
       "findings": [],
