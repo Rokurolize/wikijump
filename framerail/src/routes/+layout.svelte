@@ -16,6 +16,7 @@
     isImportedWikidotView,
     shouldUseWikidotLicenseHtml
   } from "$lib/wikidot/wikidot-footer"
+  import { resolveNativeFooterLinks } from "$lib/platform-footer-links"
   import {
     PAGE_LAYOUT_CONTEXT_KEY,
     type PageLayoutContext
@@ -34,10 +35,6 @@
   } from "$lib/wikidot/wikidot-chrome"
   import { buildGeneratedPageStylesHead } from "$lib/generated-page-styles"
   import {
-    buildWikidotInlineStyleFrameHead,
-    extractWikidotStyleFrameDeclarations
-  } from "$lib/wikidot/wikidot-styleframe"
-  import {
     IOS_ICON_DECLARATIONS,
     IOS_ICON_ROUTE_PREFIX,
     faviconDeclaration,
@@ -47,6 +44,10 @@
   import { installWikidotCategories } from "$lib/wikidot/wikidot-categories.js"
   import { installJavascriptAnchorGuard } from "$lib/wikidot/wikidot-javascript-anchors.js"
   import { installWikidotNewPageHelper } from "$lib/wikidot/wikidot-new-page-helper"
+  import {
+    buildWikidotHovertipContainersHtml,
+    installWikidotHovertips
+  } from "$lib/wikidot/wikidot-hovertips"
   import WikidotBottomToolbar from "$lib/wikidot/WikidotBottomToolbar.svelte"
   import WikidotLoginDialog from "$lib/wikidot/WikidotLoginDialog.svelte"
   import { isPlainPrimaryActivation } from "$lib/wikidot/wikidot-login-dialog.js"
@@ -111,6 +112,9 @@
   const viewData = $derived(canonicalView.viewData)
   const wikidotLocale = $derived(canonicalView.locale)
   const wikidotFooterLinks = $derived(buildWikidotFooterLinks(wikidotLocale))
+  const nativeFooterLinks = $derived(
+    resolveNativeFooterLinks(viewData?.native_footer_destinations)
+  )
   const wikidotLoginLabels = $derived(buildWikidotLoginLabels(wikidotLocale))
   const wikidotAccountLabels = $derived(buildWikidotAccountLabels(wikidotLocale))
   const wikidotLicenseHtml = $derived(
@@ -175,16 +179,6 @@
   const siteWindowsTile = $derived(windowsTileDeclaration(iconSite))
   const wikidotSiteTagline = $derived(resolveWikidotSiteTagline(viewData))
   const wikidotSessionUserName = $derived(resolveWikidotSessionUserName(viewData))
-  const styleFrameDeclarations = $derived(
-    extractWikidotStyleFrameDeclarations(
-      [
-        viewData?.compiled_top_bar_html,
-        viewData?.compiled_side_bar_html,
-        viewData?.compiled_body_html
-      ],
-      page.url.origin
-    )
-  )
   const pageLayoutContext = $state<PageLayoutContext>({
     current: resolveCurrentLayout()
   })
@@ -198,6 +192,9 @@
     const uninstallJavascriptAnchorGuard = installJavascriptAnchorGuard(document)
     installWikidotCategories(window)
     installWikidotNewPageHelper(window)
+    const uninstallHovertips = isImportedWikidotLayout
+      ? installWikidotHovertips(document)
+      : () => {}
     const wikidotSearchForm =
       document.querySelector<HTMLFormElement>("#search-top-box-form")
     const wikidotSearchInput = document.querySelector<HTMLInputElement>(
@@ -213,6 +210,7 @@
       stop?.()
       uninstallSearchAll()
       uninstallJavascriptAnchorGuard()
+      uninstallHovertips()
       wikidotSearchForm?.removeEventListener("submit", submitWikidotSearch)
       wikidotSearchInput?.removeEventListener("focus", clearWikidotSearchPrompt)
     }
@@ -273,18 +271,6 @@
     {#if themePreviewUrl}
       <link data-wikidot-theme-preview href={themePreviewUrl} rel="stylesheet" />
     {/if}
-    {#each styleFrameDeclarations as declaration, index (`${declaration.priority}:${declaration.kind}:${declaration.order}:${index}`)}
-      {#if declaration.kind === "theme"}
-        <link
-          data-wikidot-style-preloaded
-          data-wikidot-style-priority={declaration.priority}
-          href={declaration.href}
-          rel="stylesheet"
-        />
-      {:else}
-        {@html buildWikidotInlineStyleFrameHead(declaration)}
-      {/if}
-    {/each}
     {@html buildGeneratedPageStylesHead(viewData?.compiled_body_styles ?? [])}
   {/if}
 </svelte:head>
@@ -403,7 +389,12 @@
       {#if isImportedWikidotLayout}
         <div class="options">
           {#each wikidotFooterLinks as link, index (link.label)}
-            <a href={resolve(link.href, {})}>{link.label}</a
+            <!--
+              Wikidot destinations are absolute platform URLs or inert
+              `javascript:;` controls, so they are emitted verbatim rather than
+              through `resolve`, which only accepts internal pathnames.
+            -->
+            <a href={link.href} id={link.id}>{link.label}</a
             >{#if index < wikidotFooterLinks.length - 1}
               |
             {/if}
@@ -440,6 +431,9 @@
       {/if}
     {/snippet}
   </Wikidot>
+  {#if isImportedWikidotLayout}
+    {@html buildWikidotHovertipContainersHtml(wikidotLocale)}
+  {/if}
 {:else}
   <SigmaEsque>
     {#snippet header()}
@@ -457,20 +451,18 @@
     {#snippet footer()}
       <div class="footer-inner">
         <ul class="footer-items">
-          <li class="footer-item">
-            <a href={resolve("/", {})}
-              >{viewData?.internationalization?.["terms-conditions"]}</a
-            >
-          </li>
-          <li class="footer-item">
-            <a href={resolve("/", {})}>{viewData?.internationalization?.privacy}</a>
-          </li>
-          <li class="footer-item">
-            <a href={resolve("/", {})}>{viewData?.internationalization?.docs}</a>
-          </li>
-          <li class="footer-item">
-            <a href={resolve("/", {})}>{viewData?.internationalization?.security}</a>
-          </li>
+          {#each nativeFooterLinks as link (link.key)}
+            <li class="footer-item">
+              <!--
+                Platform/legal destinations are absolute instance-level URLs.
+                They never resolve against the viewed wiki and never inherit a
+                site origin.
+              -->
+              <a href={link.href} rel="external"
+                >{viewData?.internationalization?.[link.key]}</a
+              >
+            </li>
+          {/each}
         </ul>
         <div class="footer-powered-by">
           {viewData?.internationalization?.["footer-powered-by"]}

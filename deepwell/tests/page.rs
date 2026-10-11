@@ -3665,7 +3665,7 @@ async fn rerender_uses_latest_navigation_page_revision() {
     assert!(
         rerendered_home
             .compiled_generator
-            .ends_with("; deepwell-render/v14")
+            .ends_with("; deepwell-render/v16")
     );
 }
 
@@ -4482,11 +4482,11 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
         .article_page_cache_key
         .expect("imported static page should have an anonymous cache key");
     assert!(
-        current_key.starts_with("deepwell:article-view:page:v14:"),
+        current_key.starts_with("deepwell:article-view:page:v16:"),
         "source-freeze cache key must carry the final renderer epoch: {current_key}",
     );
     let stale_key = current_key.replacen(
-        "deepwell:article-view:page:v14:",
+        "deepwell:article-view:page:v16:",
         "deepwell:article-view:page:v11:",
         1,
     );
@@ -4616,7 +4616,7 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
     assert!(
         page_revision
             .compiled_generator
-            .ends_with("; deepwell-render/v14")
+            .ends_with("; deepwell-render/v16")
     );
     assert!(compiled_body_html.contains(CURRENT_BODY));
     assert!(!compiled_body_html.contains(STALE_BODY));
@@ -4641,7 +4641,7 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
     assert!(
         page_revision
             .compiled_generator
-            .ends_with("; deepwell-render/v14"),
+            .ends_with("; deepwell-render/v16"),
         "page view must expose the current compiled generator",
     );
     assert!(compiled_body_html.contains(CURRENT_BODY));
@@ -4655,7 +4655,7 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
     assert!(
         persisted
             .compiled_generator
-            .ends_with("; deepwell-render/v14"),
+            .ends_with("; deepwell-render/v16"),
         "read-time refresh should persist the current compiled generator",
     );
     let persisted_body =
@@ -27588,4 +27588,147 @@ async fn pagecalendar_module_matches_live_tag_url_and_current_category_quirks() 
         default_target.contains(&format!(r#"href="/{target}/d_date/2026""#)),
         "default-category PageCalendar should still honor targetPage and urlAttrPrefix:\n{default_html}",
     );
+}
+
+#[tokio::test]
+async fn wikidot_site_changes_feed_is_bounded_newest_first_and_hides_private_pages() {
+    const PRIVATE_CATEGORY: &str = "fixture-sitechanges-feed-private";
+    const PRIVATE_PAGE: &str = "fixture-sitechanges-feed-private-page";
+    const PUBLIC_PAGE: &str = "fixture-sitechanges-feed-public-page";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    let public_revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PUBLIC_PAGE,
+        "Fixture SiteChanges Feed Public Page",
+        "public SiteChanges feed fixture",
+    )
+    .await;
+    let private_revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_PAGE,
+        "Fixture SiteChanges Feed Private Page",
+        "private SiteChanges feed fixture",
+    )
+    .await;
+    set_listpages_test_category_slug(&runner, site_id, PRIVATE_PAGE, PRIVATE_CATEGORY)
+        .await;
+
+    // Enough source revisions to cross the bounded feed window.
+    insert_site_changes_feed_source_revisions(&runner, public_revision_id, 25, 100).await;
+    insert_site_changes_feed_source_revisions(&runner, private_revision_id, 25, 1_000)
+        .await;
+
+    runner.set_request_context(RequestContext {
+        user_id: None,
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+
+    let feed = run_endpoint!(
+        runner,
+        wikidot_site_changes_feed,
+        json!({"site_id": site_id}),
+    )
+    .expect("public site changes feed should be viewable");
+
+    assert_eq!(feed.site_name, site.site.name);
+    // A feed reports one bounded recent window, and the private page's
+    // revisions must not fill it.
+    assert_eq!(feed.items.len(), 20);
+    assert!(
+        feed.items
+            .windows(2)
+            .all(|items| items[0].created_at >= items[1].created_at)
+    );
+    assert!(
+        feed.items
+            .iter()
+            .all(|item| item.slug == PUBLIC_PAGE && !item.is_file)
+    );
+    assert_eq!(feed.items[0].change_type, "source");
+    assert_eq!(feed.items[0].title, "Fixture SiteChanges Feed Public Page");
+    assert!(!feed.items[0].user_name.is_empty());
+    assert!(
+        feed.items[0]
+            .body_html
+            .contains("public SiteChanges feed fixture")
+    );
+}
+
+#[tokio::test]
+async fn wikidot_site_changes_feed_is_empty_for_a_site_without_visible_revisions() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        user_id: None,
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+
+    let feed = run_endpoint!(
+        runner,
+        wikidot_site_changes_feed,
+        json!({"site_id": site_id}),
+    )
+    .expect("an empty site still exposes the feed channel");
+
+    assert_eq!(feed.site_name, site.site.name);
+    assert!(
+        feed.items.is_empty(),
+        "no visible revisions should produce no feed rows"
+    );
+}
+
+async fn insert_site_changes_feed_source_revisions(
+    runner: &TestRunner,
+    source_revision_id: i64,
+    count: i32,
+    time_offset_seconds: i32,
+) {
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO page_revision (",
+                "revision_type, created_at, updated_at, revision_number, page_id, ",
+                "site_id, user_id, from_wikidot, changes, wikitext_hash, ",
+                "compiled_body_html_hash, compiled_body_styles_hash, ",
+                "compiled_top_bar_html_hash, compiled_side_bar_html_hash, ",
+                "compiled_at, compiled_generator, comments, hidden, title, ",
+                "alt_title, slug, tags",
+                ") SELECT ",
+                "'regular', NOW() + make_interval(secs => ",
+                "($3 + fixture.sequence)::DOUBLE PRECISION), ",
+                "source.updated_at, 100 + fixture.sequence, source.page_id, ",
+                "source.site_id, source.user_id, source.from_wikidot, ",
+                "ARRAY['wikitext']::TEXT[], source.wikitext_hash, ",
+                "source.compiled_body_html_hash, source.compiled_body_styles_hash, ",
+                "source.compiled_top_bar_html_hash, source.compiled_side_bar_html_hash, ",
+                "source.compiled_at, source.compiled_generator, ",
+                "'site changes feed fixture ' || fixture.sequence, source.hidden, ",
+                "source.title, source.alt_title, source.slug, source.tags ",
+                "FROM page_revision source ",
+                "CROSS JOIN generate_series(1, $2::INTEGER) fixture(sequence) ",
+                "WHERE source.revision_id = $1",
+            ),
+            [
+                Value::from(source_revision_id),
+                Value::from(count),
+                Value::from(time_offset_seconds),
+            ],
+        ))
+        .await
+        .expect("site changes feed source fixtures should be inserted");
 }
