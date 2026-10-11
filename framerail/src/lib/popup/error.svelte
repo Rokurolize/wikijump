@@ -75,23 +75,34 @@
           page.error?.internationalization?.error}
       </div>
       <div class="content modal-body">
-        {#if errorPopupState.current.leadIn}
-          <p class="modal-message-lead-in">{errorPopupState.current.leadIn}</p>
-        {/if}
-        <h1 id="modal-title">
-          {errorPopupState.current.message}
-        </h1>
-        {#if errorExtraMessage}
-          <p id="model-message-extra" class="modal-message-extra">
-            {errorExtraMessage}
+        {#if errorPopupState.current.wikidotSourcePolicyBody}
+          <h1>{errorPopupState.current.leadIn}</h1>
+          <p>
+            {errorPopupState.current.message}{#if errorPopupState.current.actionLink}
+              <a bind:this={actionLink} href={errorPopupState.current.actionLink.href}
+                >{errorPopupState.current.actionLink.label}</a
+              >
+            {/if}
           </p>
-        {/if}
-        {#if errorPopupState.current.actionLink}
-          <p class="modal-action-link">
-            <a bind:this={actionLink} href={errorPopupState.current.actionLink.href}
-              >{errorPopupState.current.actionLink.label}</a
-            >
-          </p>
+        {:else}
+          {#if errorPopupState.current.leadIn}
+            <p class="modal-message-lead-in">{errorPopupState.current.leadIn}</p>
+          {/if}
+          <h1 id="modal-title">
+            {errorPopupState.current.message}
+          </h1>
+          {#if errorExtraMessage}
+            <p id="model-message-extra" class="modal-message-extra">
+              {errorExtraMessage}
+            </p>
+          {/if}
+          {#if errorPopupState.current.actionLink}
+            <p class="modal-action-link">
+              <a bind:this={actionLink} href={errorPopupState.current.actionLink.href}
+                >{errorPopupState.current.actionLink.label}</a
+              >
+            </p>
+          {/if}
         {/if}
       </div>
       <div class="button-bar modal-footer">
@@ -101,9 +112,10 @@
           href="javascript:;"
           onclick={containerExitPrompt}
           onkeydown={escKeydown}
-          role="button"
-          tabindex="0"
-          >{page.data?.internationalization?.close ??
+          role={errorPopupState.current.wikidotSourcePolicyBody ? undefined : "button"}
+          tabindex={errorPopupState.current.wikidotSourcePolicyBody ? undefined : "0"}
+          >{errorPopupState.current.closeLabel ??
+            page.data?.internationalization?.close ??
             page.error?.internationalization?.close}</a
         >
       </div>

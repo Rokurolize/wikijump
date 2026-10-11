@@ -174,7 +174,7 @@
    * calls the same server action and surfaces the same localized denial
    * dialog; it never grants, denies, or authorizes from hash text.
    */
-  async function checkEditPermission(): Promise<boolean> {
+  async function checkEditPermission(sourceEditAction = false): Promise<boolean> {
     const res = await fetch("?/editPermission", {
       method: "POST",
       body: ""
@@ -194,11 +194,36 @@
       return false
     }
     if (result.type === "success" && result.data?.res && !result.data.res.can_edit) {
-      errorPopupState.current = {
-        state: true,
-        message: editPermissionDeniedMessage(data.site.locale),
-        data: null
-      }
+      // Current source Wikidot EN SCP-9506 uses this exact modal for anonymous
+      // Edit and Tags. Do not generalize it to locked pages, other sites, or
+      // non-English locales without independent upstream browser evidence.
+      const sourcePolicy =
+        sourceEditAction &&
+        !data.user_session &&
+        data.site.slug === "scp-wiki" &&
+        data.site.locale.toLowerCase() === "en" &&
+        data.page?.from_wikidot === true
+
+      errorPopupState.current = sourcePolicy
+        ? {
+            state: true,
+            title: "Permission error",
+            leadIn: "Please note:",
+            message:
+              "Sorry, you can not edit this page. Only members of this site, owner (creator) of this page, site administrators and perhaps selected moderators are allowed to do it. ",
+            actionLink: {
+              href: "#action:login",
+              label: "Sign in as Wikidot user"
+            },
+            wikidotSourcePolicyBody: true,
+            closeLabel: "close message",
+            data: null
+          }
+        : {
+            state: true,
+            message: editPermissionDeniedMessage(data.site.locale),
+            data: null
+          }
       return false
     }
     return result.type === "success" && result.data?.res?.can_edit === true
@@ -206,7 +231,7 @@
 
   async function navigateEdit() {
     // Check edit permission first
-    if (!(await checkEditPermission())) return
+    if (!(await checkEditPermission(true))) return
 
     // Permission granted, navigate to edit page
     const options: string[] = Object.entries({
@@ -226,7 +251,7 @@
     // The Hash Magic tag command reuses the edit-permission boundary before
     // mounting the tag editor, so an unauthorized actor receives the same
     // denial dialog instead of an editable form.
-    if (!(await checkEditPermission())) return
+    if (!(await checkEditPermission(true))) return
     activatePagePane(PagePane.Tags)
   }
 

@@ -5374,7 +5374,7 @@
     },
     {
       "path": "framerail/src/lib/layout/stores.svelte.ts",
-      "sha256": "e8a3b2e61f6a34af3d7482fda3d8614a994c3a579b1bb1cf23dbc7c4a7a58675",
+      "sha256": "7198d99b017439065b7f999084111cbc9ee3a65265a4de261eb939cac9d827ad",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -5422,7 +5422,7 @@
     },
     {
       "path": "framerail/src/lib/popup/error.svelte",
-      "sha256": "4e9c4668604dc8039d55058ffce72a00f1b37c7555cd06460a7fd1f81959de4a",
+      "sha256": "aa3ee7dfb254d413389c052b8b377ed1d6d8b6ecfb7cc5167fd510fcdbce475e",
       "status": "pending",
       "anchors": [],
       "findings": [],
@@ -6942,7 +6942,7 @@
     },
     {
       "path": "framerail/src/routes/[slug]/[...extra]/PageView.svelte",
-      "sha256": "982974b05be9a3ec5abfe4d9a9c267ab265200576fc295b445fadf276443dfac",
+      "sha256": "96ed91b8992802fbcb03bbf4df73d4a1e34660157bf456a552cbcb434f06dcf0",
       "status": "pending",
       "anchors": [],
       "findings": [],

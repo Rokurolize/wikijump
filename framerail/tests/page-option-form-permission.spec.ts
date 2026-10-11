@@ -163,7 +163,21 @@ test.describe("Wikidot Tags option permission parity", () => {
     await page.locator("#tags-button").click()
 
     await expect(page.locator("#odialog-container .owindow.error")).toBeVisible()
-    await expect(page.locator("#modal-title")).toHaveText(PERMISSION_MESSAGE)
+    await expect(page.locator(".owindow.error > .title")).toHaveText("Permission error")
+    await expect(page.locator(".owindow.error .content > h1")).toHaveText("Please note:")
+    await expect(page.locator(".owindow.error .content > p")).toHaveText(
+      "Sorry, you can not edit this page. Only members of this site, owner (creator) of this page, site administrators and perhaps selected moderators are allowed to do it. Sign in as Wikidot user"
+    )
+    await expect(page.locator(".owindow.error .content > p > a")).toHaveAttribute(
+      "href",
+      "#action:login"
+    )
+    await expect(page.locator(".owindow.error .button-close-message")).toHaveText(
+      "close message"
+    )
+    await expect(
+      page.locator(".owindow.error .button-close-message")
+    ).not.toHaveAttribute("role", "button")
     await expectNoWritableSurface(page, "#page-tags")
     expect(permissionRequests).toHaveLength(1)
   })
@@ -187,4 +201,37 @@ test.describe("Wikidot Tags option permission parity", () => {
     await expect(page.locator("#odialog-container")).toHaveCount(0)
     expect(permissionRequests).toHaveLength(1)
   })
+})
+
+test("anonymous Wikidot Edit uses the original policy modal and login anchor", async ({
+  page
+}) => {
+  const permissionRequests: Route[] = []
+  await openOptionsMenu(
+    page,
+    false,
+    permissionRequests,
+    SITE_HEADERS,
+    "/wikidot-login-probe"
+  )
+  await page.locator("#edit-button").click()
+
+  await expect(page.locator(".owindow.error > .title")).toHaveText("Permission error")
+  await expect(page.locator(".owindow.error .content > h1")).toHaveText("Please note:")
+  await expect(page.locator(".owindow.error .content > p > a")).toHaveText(
+    "Sign in as Wikidot user"
+  )
+  await expect(page.locator(".owindow.error .content > p > a")).toHaveAttribute(
+    "href",
+    "#action:login"
+  )
+  await expect(page.locator(".owindow.error .button-close-message")).toHaveText(
+    "close message"
+  )
+  await expect(page.locator(".owindow.error .button-close-message")).not.toHaveAttribute(
+    "role",
+    "button"
+  )
+  await expectNoWritableSurface(page, "#page-tags")
+  expect(permissionRequests).toHaveLength(1)
 })
