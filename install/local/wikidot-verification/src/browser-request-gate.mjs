@@ -770,6 +770,30 @@ export function localBrowserCaptureOrigins(value) {
   return [url.origin, `https://${site}.wjfiles.localhost${port}`];
 }
 
+// The interwiki widget resolves a page's translations through this GraphQL lookup.
+// Only the read-only GET for a Wikidot page URL is public; every other crom request
+// stays blocked.
+const INTERWIKI_TRANSLATION_HOST = "api.crom.avn.sh";
+
+export function isInterwikiTranslationLookup(value, resourceType, method) {
+  const url = value instanceof URL ? value : new URL(value);
+  if (url.protocol !== "https:" || url.hostname.toLowerCase() !== INTERWIKI_TRANSLATION_HOST) return false;
+  if (url.pathname !== "/graphql" || method !== "GET" || resourceType !== "xhr") return false;
+  let target;
+  try {
+    target = JSON.parse(url.searchParams.get("variables") ?? "null")?.url;
+  } catch {
+    return false;
+  }
+  if (typeof target !== "string") return false;
+  try {
+    const page = new URL(target);
+    return new Set(["http:", "https:"]).has(page.protocol) && (page.hostname === "wikidot.com" || page.hostname.endsWith(".wikidot.com"));
+  } catch {
+    return false;
+  }
+}
+
 export function isWikidotCapturePublicOrigin(value, resourceType, method, initiatorUrl = null) {
   const url = value instanceof URL ? value : new URL(value);
   const hostname = url.hostname.toLowerCase();
@@ -786,6 +810,7 @@ export function isWikidotCapturePublicOrigin(value, resourceType, method, initia
       initiatedByInterwikiFrame = false;
     }
   }
+  if (isInterwikiTranslationLookup(url, resourceType, method)) return true;
   return new Set(["http:", "https:"]).has(url.protocol) &&
     !url.username &&
     !url.password &&
