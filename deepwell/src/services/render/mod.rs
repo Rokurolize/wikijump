@@ -110,7 +110,8 @@ pub use self::rate_actions::{
     RateActionRegistry, RateBrowserAction, RateBrowserActionRegistry,
 };
 pub use self::render_dependency::{
-    RenderDependencyClass, RenderDependencyClasses, classify_render_dependencies,
+    RenderDependencyClass, RenderDependencyClasses,
+    classify_anonymous_render_dependencies, classify_render_dependencies,
 };
 pub(crate) use self::replay::{
     RenderReplayService, RenderReplaySettings, run_worker_action,
