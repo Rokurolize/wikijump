@@ -27,8 +27,8 @@ use crate::services::blueprint::compose_template;
 use crate::services::permission::PermissionCache;
 use crate::services::public_cache::PublicContentCache;
 use crate::services::render::{
-    DEEPWELL_RENDERER_EPOCH, RenderDependencyClass, classify_render_dependencies,
-    wikitext_requires_runtime_render,
+    DEEPWELL_RENDERER_EPOCH, RenderDependencyClass,
+    classify_anonymous_render_dependencies, wikitext_requires_runtime_render,
 };
 use crate::utils::split_category;
 use redis::AsyncCommands;
@@ -294,7 +294,7 @@ pub(super) fn anonymous_article_cache_source_eligible(source: &str) -> bool {
     if wikitext_requires_runtime_render(source) {
         return false;
     }
-    let classes = classify_render_dependencies(source);
+    let classes = classify_anonymous_render_dependencies(source);
     !classes.contains(RenderDependencyClass::ViewerDependent)
         && !classes.contains(RenderDependencyClass::RequestDependent)
         && !classes.contains(RenderDependencyClass::UnsupportedUnverified)
@@ -464,7 +464,6 @@ mod tests {
             "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
             "[[module ListPages order=\"random\"]]%%title%%[[/module]]",
             "Request value @URL|0",
-            "[[module Rate]]",
             "[[module UnknownWidget]]",
             "[[module]]",
             "[[module ChildPages]]",
@@ -583,7 +582,6 @@ mod tests {
             "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
             "[[module ListPages order=\"random\"]]%%title%%[[/module]]",
             "Request value @URL|0",
-            "[[module Rate]]",
             "[[module Members]]",
             "[[module NewPage]]",
             "[[module Clone]]",
@@ -595,6 +593,16 @@ mod tests {
             "[[module NextPage by=\"title\"]]%%linked_title%%[[/module]]",
         ] {
             assert!(!anonymous_article_cache_source_eligible(source));
+        }
+    }
+
+    #[test]
+    fn article_page_cache_allows_the_rating_widget_for_anonymous_viewers() {
+        for source in ["[[module Rate]]", "Text\n\n[[module Rate]]\n\nmore text"] {
+            assert!(anonymous_article_cache_source_eligible(source), "{source}");
+        }
+        for source in ["[[module Rate]]\n[[module NewPage]]", "[[module NewPage]]"] {
+            assert!(!anonymous_article_cache_source_eligible(source), "{source}");
         }
     }
 }

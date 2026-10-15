@@ -120,6 +120,16 @@ static WIKIDOT_USER_LINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
+    classify_dependencies(source, false)
+}
+
+/// Dependencies of a view that every anonymous viewer shares. The rating widget renders
+/// the same markup for each anonymous viewer, so it does not make the view viewer-dependent.
+pub fn classify_anonymous_render_dependencies(source: &str) -> RenderDependencyClasses {
+    classify_dependencies(source, true)
+}
+
+fn classify_dependencies(source: &str, anonymous: bool) -> RenderDependencyClasses {
     let mut classes = RenderDependencyClasses::revision_local();
     if wikitext_has_executable_members_module(source) {
         classes.insert(RenderDependencyClass::QueryDependent);
@@ -234,7 +244,9 @@ pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
         }
 
         if MODULE_VIEWER_NAMES.contains(&name.as_str()) {
-            classes.insert(RenderDependencyClass::ViewerDependent);
+            if !(anonymous && name == "rate") {
+                classes.insert(RenderDependencyClass::ViewerDependent);
+            }
             continue;
         }
 
@@ -299,8 +311,8 @@ fn safely_parsed_module_name(tail: &str) -> Option<&str> {
 #[cfg(test)]
 mod tests {
     use super::{
-        RenderDependencyClass, classify_render_dependencies,
-        wikitext_needs_latest_revision_for_render,
+        RenderDependencyClass, classify_anonymous_render_dependencies,
+        classify_render_dependencies, wikitext_needs_latest_revision_for_render,
     };
 
     #[test]
@@ -728,5 +740,24 @@ mod tests {
         assert!(classes.contains(RenderDependencyClass::QueryDependent));
         assert!(classes.contains(RenderDependencyClass::RequestDependent));
         assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
+    }
+
+    #[test]
+    fn anonymous_classification_ignores_only_the_rating_widget() {
+        let rate = "[[module Rate]]";
+        assert!(
+            classify_render_dependencies(rate)
+                .contains(RenderDependencyClass::ViewerDependent)
+        );
+        assert!(
+            !classify_anonymous_render_dependencies(rate)
+                .contains(RenderDependencyClass::ViewerDependent)
+        );
+
+        let mixed = "[[module Rate]]\n[[module NewPage]]";
+        assert!(
+            classify_anonymous_render_dependencies(mixed)
+                .contains(RenderDependencyClass::ViewerDependent)
+        );
     }
 }
