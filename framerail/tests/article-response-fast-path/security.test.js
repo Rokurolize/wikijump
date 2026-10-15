@@ -13,6 +13,15 @@ import {
   withServer
 } from "./helpers.js"
 
+
+// The stored nonce must never replay: the header nonce is fresh and matches the body.
+const renewedNonceFrom = (cspHeader) => {
+  const nonce = cspHeader.match(/'nonce-([^']+)'/u)?.[1]
+  assert.ok(nonce && nonce !== "cached-nonce", "CSP nonce must be renewed on replay")
+  assert.equal(cspHeader, `script-src 'nonce-${nonce}'`)
+  return nonce
+}
+
 test("article response fast path enforces static security headers on replay", async () => {
   const csp = "script-src 'nonce-cached-nonce'"
   const cachedBody =
@@ -32,7 +41,7 @@ test("article response fast path enforces static security headers on replay", as
     const response = await fetch(`${baseUrl}/scp-173`, { headers: fastPathHeaders })
 
     assert.equal(response.status, 200)
-    assert.equal(response.headers.get("content-security-policy"), csp)
+    const renewedNonce = renewedNonceFrom(response.headers.get("content-security-policy"))
     assert.equal(response.headers.get("cross-origin-opener-policy"), "same-origin")
     assert.equal(
       response.headers.get("permissions-policy"),
@@ -48,7 +57,7 @@ test("article response fast path enforces static security headers on replay", as
     )
     assert.equal(response.headers.get("x-content-type-options"), "nosniff")
     assert.equal(response.headers.get("x-frame-options"), "DENY")
-    assert.equal(await response.text(), cachedBody)
+    assert.equal(await response.text(), cachedBody.replace("cached-nonce", renewedNonce))
     assert.equal(handlerCalls(), 0)
   })
 })
@@ -92,7 +101,8 @@ test("article response fast path replays prepared static security headers from l
     async ({ baseUrl, handlerCalls }) => {
       const first = await fetch(`${baseUrl}/scp-173`, { headers: fastPathHeaders })
       assert.equal(first.status, 200)
-      assert.equal(await first.text(), cachedBody)
+      const firstNonce = renewedNonceFrom(first.headers.get("content-security-policy"))
+      assert.equal(await first.text(), cachedBody.replace("cached-nonce", firstNonce))
 
       const replay = hotCache.getReplay(stores.tokenKey)
       assert.equal(replay.status, 200)
@@ -114,10 +124,10 @@ test("article response fast path replays prepared static security headers from l
 
       const second = await fetch(`${baseUrl}/scp-173`, { headers: fastPathHeaders })
       assert.equal(second.status, 200)
-      assert.equal(second.headers.get("content-security-policy"), csp)
+      const renewedNonce = renewedNonceFrom(second.headers.get("content-security-policy"))
       assert.equal(second.headers.get("cross-origin-opener-policy"), "same-origin")
       assert.equal(second.headers.get("x-frame-options"), "DENY")
-      assert.equal(await second.text(), cachedBody)
+      assert.equal(await second.text(), cachedBody.replace("cached-nonce", renewedNonce))
       assert.equal(handlerCalls(), 0)
     },
     { localHotCache: hotCache }
