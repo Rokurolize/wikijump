@@ -10,10 +10,12 @@ import {
 } from "./src/lib/server/cache/article-response/fences.js"
 import { createLocalArticleResponseHotCache } from "./src/lib/server/cache/article-response/hot.js"
 import { hasSessionCookie } from "./src/lib/server/cache/article-response/shared.js"
+import { containsCspNonce, renewCspNonce } from "./src/lib/server/cache/article-response/entry.js"
 import { applyStaticSecurityHeadersToNodeResponse } from "./src/lib/server/security-headers.js"
 import { parseAcceptLangHeader, withFallbackLocale } from "./src/lib/locales.js"
 import { promisify } from "node:util"
 import zlib from "node:zlib"
+import { randomBytes } from "node:crypto"
 
 const FALLBACK_LOCALE = "en"
 const SITE_ID_HEADER = "x-wikijump-site-id"
@@ -452,6 +454,30 @@ export const writeArticleResponseFastPathHit = (request, response, entry) => {
   }
 }
 
+/**
+ * A cached response replays the CSP nonce of the request that stored it. Renew the
+ * nonce for every serve, and rebuild the replay so compressed variants match the
+ * renewed body.
+ */
+export const renewArticleResponseFastPathNonce = async (request, entry) => {
+  if (!entry || typeof entry.status !== "number" || !Array.isArray(entry.headers)) {
+    return entry
+  }
+  const bodyBuffer = Buffer.isBuffer(entry.bodyBuffer)
+    ? entry.bodyBuffer
+    : Buffer.from(entry.body ?? "", "utf8")
+  const view = {
+    status: entry.status,
+    headers: entry.headers,
+    body: bodyBuffer.toString("utf8")
+  }
+  if (!containsCspNonce(view)) return entry
+
+  const renewed = renewCspNonce(view, randomBytes(16).toString("base64"))
+  const pathname = new URL(request.url ?? "", "http://localhost").pathname
+  return prepareArticleResponseFastPathReplay(renewed, pathname)
+}
+
 export const createArticleResponseFastPathHandler = ({
   responseStore,
   tokenStore,
@@ -479,7 +505,11 @@ export const createArticleResponseFastPathHandler = ({
       fenceCache
     })
     if (cachedEntry) {
-      writeArticleResponseFastPathHit(request, response, cachedEntry)
+      writeArticleResponseFastPathHit(
+        request,
+        response,
+        await renewArticleResponseFastPathNonce(request, cachedEntry)
+      )
       return
     }
 
