@@ -1,3 +1,4 @@
+/* eslint-disable no-script-url -- Wikidot footer and fixture markup use javascript:; no-op links that parity requires */
 import { strict as assert } from "node:assert"
 import test from "node:test"
 
@@ -259,11 +260,12 @@ test("reproduces the anonymous EN/JA BugReportModule bodies", async () => {
       await import("node:fs/promises")
     ).readFile(new URL("./fixtures/wikidot-footer-dialogs.json", import.meta.url), "utf8")
   )
-  for (const locale of ["en", "ja"])
+  for (const locale of ["en", "ja"]) {
     assert.equal(
       buildWikidotBugReportDialogHtml(locale),
       fixture.responses[locale]["report/BugReportModule"].body
     )
+  }
   assert.equal(
     buildWikidotBugReportDialogHtml("ja-corrections"),
     fixture.responses.ja["report/BugReportModule"].body

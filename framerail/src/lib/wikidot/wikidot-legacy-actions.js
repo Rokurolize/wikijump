@@ -1,3 +1,4 @@
+/* eslint-disable no-script-url -- Wikidot footer and fixture markup use javascript:; no-op links that parity requires */
 /**
  * @typedef {{ type: "edit" | "history" | "source" | "print" }
  *   | { type: "set-tags"; index: number; fingerprint: string }} LegacyBrowserAction

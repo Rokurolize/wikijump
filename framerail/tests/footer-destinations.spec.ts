@@ -1,3 +1,4 @@
+/* eslint-disable no-script-url -- Wikidot footer and fixture markup use javascript:; no-op links that parity requires */
 import { expect, test, waitForSvelteDelegatedHandler } from "./hermetic-playwright"
 
 /**
@@ -58,8 +59,8 @@ const expectedNativeHref = (key: NativeFooterKey) =>
 
 type NativeFooterSnapshot = {
   count: number
-  hrefs: Array<string | null>
-  rels: Array<string | null>
+  hrefs: (string | null)[]
+  rels: (string | null)[]
   texts: string[]
   origin: string
   host: string

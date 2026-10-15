@@ -31,17 +31,6 @@ const waitFor = async (condition, message, timeoutMs = 1500) => {
   }
 }
 
-const getUnusedPort = async () => {
-  const server = net.createServer()
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve))
-  const address = server.address()
-  assert.equal(typeof address, "object")
-  await new Promise((resolve, reject) => {
-    server.close((error) => (error ? reject(error) : resolve()))
-  })
-  return address.port
-}
-
 const createPubSubRedisServer = async ({
   channel,
   port = 0,
@@ -90,13 +79,20 @@ test("Redis protocol encodes commands and parses nested replies", () => {
   })
 })
 
-
-
 test("Redis protocol rejects server errors and invalid response shapes", () => {
   assert.throws(() => parseRedisResponse(Buffer.from("-ERR broken\r\n")), /ERR broken/u)
-  assert.throws(() => parseRedisResponse(Buffer.from("$nope\r\n")), /invalid Redis bulk string length/u)
-  assert.throws(() => parseRedisResponse(Buffer.from("*-2\r\n")), /invalid Redis array length/u)
-  assert.throws(() => parseRedisResponse(Buffer.from("?wat\r\n")), /unsupported Redis response type/u)
+  assert.throws(
+    () => parseRedisResponse(Buffer.from("$nope\r\n")),
+    /invalid Redis bulk string length/u
+  )
+  assert.throws(
+    () => parseRedisResponse(Buffer.from("*-2\r\n")),
+    /invalid Redis array length/u
+  )
+  assert.throws(
+    () => parseRedisResponse(Buffer.from("?wat\r\n")),
+    /unsupported Redis response type/u
+  )
 })
 
 test("Redis command state owns pending request cleanup", async () => {

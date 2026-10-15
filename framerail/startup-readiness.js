@@ -21,7 +21,7 @@ export const createStartupReadiness = ({
         // Do not log RPC credentials, response bodies, or transient errors.
       }
       try {
-        await sleep(backoff + Math.floor(random() * backoff / 4), undefined, {
+        await sleep(backoff + Math.floor((random() * backoff) / 4), undefined, {
           signal: controller.signal
         })
       } catch {
@@ -55,6 +55,11 @@ export const probeStartupDeepwell = async (signal) => {
   )
   if (!response.ok) return false
   const body = await response.json()
-  return body.jsonrpc === "2.0" && body.id === 1 &&
-    typeof body.result === "string" && body.result.length > 0 && !body.error
+  return (
+    body.jsonrpc === "2.0" &&
+    body.id === 1 &&
+    typeof body.result === "string" &&
+    body.result.length > 0 &&
+    !body.error
+  )
 }

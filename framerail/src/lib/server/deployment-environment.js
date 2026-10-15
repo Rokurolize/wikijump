@@ -3,7 +3,8 @@ const DEPLOYMENT_ENVIRONMENTS = new Set(["local", "dev", "prod"])
 /**
  * @param {{ framerailEnv?: string | null; nodeEnv?: string | null }} [input]
  * @returns {"local" | "dev" | "prod"}
- * @throws {Error} If `framerailEnv` names an unsupported deployment environment.
+ * @throws {Error} If `framerailEnv` names an unsupported deployment
+ *   environment.
  */
 export const parseDeploymentEnvironment = ({
   framerailEnv = process.env.FRAMERAIL_ENV,
@@ -24,7 +25,8 @@ export const parseDeploymentEnvironment = ({
  *   deploymentEnvironment?: "local" | "dev" | "prod"
  * }} [input]
  * @returns {boolean}
- * @throws {Error} If `csrfCheckOrigin` is present but is not `true` or `false`.
+ * @throws {Error} If `csrfCheckOrigin` is present but is not `true` or
+ *   `false`.
  */
 export const parseCsrfCheckOrigin = ({
   csrfCheckOrigin = process.env.FRAMERAIL_CSRF_CHECK_ORIGIN,

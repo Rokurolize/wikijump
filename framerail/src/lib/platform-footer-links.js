@@ -61,6 +61,8 @@ export const DEFAULT_NATIVE_FOOTER_LINKS = Object.freeze([
 ])
 
 const MAX_DESTINATION_LENGTH = 2048
+// Rejects NUL and every other control character on purpose.
+// eslint-disable-next-line no-control-regex
 const UNSAFE_CHARACTER = /[\u0000-\u0020\u007f\\]/u
 
 /**

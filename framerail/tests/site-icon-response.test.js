@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import crypto from "node:crypto"
+import nodeCrypto from "node:crypto"
 import fs from "node:fs/promises"
 import test from "node:test"
 
@@ -16,12 +16,15 @@ const FAVICON_SHA256 = "5dfe8fdaa35561856164200c8619fefa2f22d0668393fb777788df0a
 
 const retainedFavicon = () =>
   fs.readFile(
-    new URL("../../deepwell/tests/fixtures/site-icon-favicon-scp-wiki.gif", import.meta.url)
+    new URL(
+      "../../deepwell/tests/fixtures/site-icon-favicon-scp-wiki.gif",
+      import.meta.url
+    )
   )
 
 test("stored bytes serve with Wikidot's header shape and byte identity", async () => {
   const data = new Uint8Array(await retainedFavicon())
-  assert.equal(crypto.createHash("sha256").update(data).digest("hex"), FAVICON_SHA256)
+  assert.equal(nodeCrypto.createHash("sha256").update(data).digest("hex"), FAVICON_SHA256)
 
   const response = storedSiteIconResponse({
     mime: "image/gif",
@@ -32,7 +35,10 @@ test("stored bytes serve with Wikidot's header shape and byte identity", async (
   assert.equal(response.headers.get("content-type"), "image/gif; charset=utf-8")
   assert.equal(response.headers.get("etag"), `"${FAVICON_SHA256}"`)
   assert.equal(
-    crypto.createHash("sha256").update(new Uint8Array(await response.arrayBuffer())).digest("hex"),
+    nodeCrypto
+      .createHash("sha256")
+      .update(new Uint8Array(await response.arrayBuffer()))
+      .digest("hex"),
     FAVICON_SHA256
   )
 })
@@ -77,17 +83,34 @@ test("non-canonical filenames are 404 even with stored bytes", async () => {
   const data = new Uint8Array(await retainedFavicon())
   const stored = { mime: "image/gif", sha256Hex: FAVICON_SHA256, data }
   assert.equal(
-    selectSiteIconResponse(importedSite, "/local--files/site/favicon.gif", stored, "favicon", "other.gif")
-      .status,
+    selectSiteIconResponse(
+      importedSite,
+      "/local--files/site/favicon.gif",
+      stored,
+      "favicon",
+      "other.gif"
+    ).status,
     404
   )
   assert.equal(
-    selectSiteIconResponse(importedSite, "/local--files/site/x.png", null, "ios", "other.png").status,
+    selectSiteIconResponse(
+      importedSite,
+      "/local--files/site/x.png",
+      null,
+      "ios",
+      "other.png"
+    ).status,
     404
   )
   for (const filename of ["iosicon_57.png", "iosicon_72.png", "iosicon.png"]) {
     assert.equal(
-      selectSiteIconResponse(importedSite, "/local--files/site/x.png", null, "ios", filename).status,
+      selectSiteIconResponse(
+        importedSite,
+        "/local--files/site/x.png",
+        null,
+        "ios",
+        filename
+      ).status,
       302,
       filename
     )
@@ -99,5 +122,8 @@ test("an unconfigured site answers 404", () => {
     selectSiteIconResponse(importedSite, null, null, "favicon", "favicon.gif").status,
     404
   )
-  assert.equal(selectSiteIconResponse(null, null, null, "favicon", "favicon.gif").status, 404)
+  assert.equal(
+    selectSiteIconResponse(null, null, null, "favicon", "favicon.gif").status,
+    404
+  )
 })

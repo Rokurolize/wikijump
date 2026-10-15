@@ -127,7 +127,13 @@ test("file delete and move actions bind the actor and routed page context", asyn
     await actions.fileDelete(
       pageActionEvent({
         action: "fileDelete",
-        body: { siteId: SITE_ID, pageId: 42, lastRevisionId: 8, fileId: 5, comments: "delete" },
+        body: {
+          siteId: SITE_ID,
+          pageId: 42,
+          lastRevisionId: 8,
+          fileId: 5,
+          comments: "delete"
+        },
         siteId: SITE_ID,
         sessionToken: "file-session",
         requestContext: { ...TRUSTED_CONTEXT, sessionToken: "file-session" }

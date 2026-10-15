@@ -5,10 +5,7 @@ import {
   getPreloadBackendLocales,
   getPreloadRequestLocales
 } from "$lib/server/load/preload"
-import {
-  selectSiteIconResponse,
-  type StoredSiteIcon
-} from "$lib/site-icon-response"
+import { selectSiteIconResponse, type StoredSiteIcon } from "$lib/site-icon-response"
 import type { SiteIconSourceKind } from "$lib/site-icon-source"
 import type { Nullable, SiteModel } from "$lib/types"
 
@@ -51,11 +48,5 @@ export async function siteIconResponse(
     }
   }
 
-  return selectSiteIconResponse(
-    site,
-    site ? select(site) : null,
-    stored,
-    kind,
-    filename
-  )
+  return selectSiteIconResponse(site, site ? select(site) : null, stored, kind, filename)
 }

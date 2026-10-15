@@ -10,9 +10,11 @@
   let {
     data,
     fileMap,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- FilePane still passes fileListLoading; this list does not read it
     fileListLoading,
     fileListError,
     fileListLoaded,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- FilePane still passes requestedDeletedFiles; this list does not read it
     requestedDeletedFiles,
     activeFileAction = $bindable(),
     fileEditId = $bindable(),
@@ -192,138 +194,138 @@
     aria-label={data.internationalization?.["wiki-page-file"] ?? "Files"}
     tabindex="0"
   >
-  <div class="file-list populated" class:wikidot>
-    <div class="file-list-header">
-      <div class="file-attribute file-name">
-        {data.internationalization?.["wiki-page-file.name"]}
-      </div>
-      <div class="file-attribute created-at">
-        {data.internationalization?.["wiki-page-file.created-at"]}
-      </div>
-      <div class="file-attribute updated-at">
-        {data.internationalization?.["wiki-page-file.updated-at"]}
-      </div>
-      {#if !wikidot}
-        <div class="file-attribute mime">
-          {data.internationalization?.["wiki-page-file.mime"]}
-        </div>
-      {/if}
-      <div class="file-attribute size">
-        {data.internationalization?.["wiki-page-file.size"]}
-      </div>
-      <div class="file-attribute action"></div>
-    </div>
-    {#each [...fileMap].sort((a, b) => b[0] - a[0]) as [id, file] (id)}
-      <div class="file-row" data-id={id}>
+    <div class="file-list populated" class:wikidot>
+      <div class="file-list-header">
         <div class="file-attribute file-name">
-          <a
-            href={`//${data.site_file_domain}/-/file/${data.page?.slug}/${file.name}`}
-            rel="external"
-          >
-            {file.name}
-          </a>
+          {data.internationalization?.["wiki-page-file.name"]}
         </div>
         <div class="file-attribute created-at">
-          {new Date(file.file_created_at).toLocaleString()}
+          {data.internationalization?.["wiki-page-file.created-at"]}
         </div>
         <div class="file-attribute updated-at">
-          {file.file_updated_at ? new Date(file.file_updated_at).toLocaleString() : "-"}
+          {data.internationalization?.["wiki-page-file.updated-at"]}
         </div>
         {#if !wikidot}
           <div class="file-attribute mime">
-            {file.mime}
+            {data.internationalization?.["wiki-page-file.mime"]}
           </div>
         {/if}
         <div class="file-attribute size">
-          {file.size}
+          {data.internationalization?.["wiki-page-file.size"]}
         </div>
-        <div class="file-attribute action">
-          {#if wikidot}
-            {#if file.revision_type === "delete"}
-              <!-- svelte-ignore a11y_invalid_attribute -->
-              <a
-                class="btn btn-primary btn-sm btn-small"
-                href="javascript:;"
+        <div class="file-attribute action"></div>
+      </div>
+      {#each [...fileMap].sort((a, b) => b[0] - a[0]) as [id, file] (id)}
+        <div class="file-row" data-id={id}>
+          <div class="file-attribute file-name">
+            <a
+              href={`//${data.site_file_domain}/-/file/${data.page?.slug}/${file.name}`}
+              rel="external"
+            >
+              {file.name}
+            </a>
+          </div>
+          <div class="file-attribute created-at">
+            {new Date(file.file_created_at).toLocaleString()}
+          </div>
+          <div class="file-attribute updated-at">
+            {file.file_updated_at ? new Date(file.file_updated_at).toLocaleString() : "-"}
+          </div>
+          {#if !wikidot}
+            <div class="file-attribute mime">
+              {file.mime}
+            </div>
+          {/if}
+          <div class="file-attribute size">
+            {file.size}
+          </div>
+          <div class="file-attribute action">
+            {#if wikidot}
+              {#if file.revision_type === "delete"}
+                <!-- svelte-ignore a11y_invalid_attribute -->
+                <a
+                  class="btn btn-primary btn-sm btn-small"
+                  href="javascript:;"
+                  onclick={() => openFileAction(file.file_id, "restore")}
+                >
+                  {data.internationalization?.restore}
+                </a>
+              {:else}
+                <!-- svelte-ignore a11y_invalid_attribute -->
+                <a
+                  class="btn btn-primary btn-sm btn-small"
+                  href="javascript:;"
+                  onclick={() => openFileHistory(file.file_id)}
+                >
+                  {data.internationalization?.history}
+                </a>
+                <!-- svelte-ignore a11y_invalid_attribute -->
+                <a
+                  class="btn btn-primary btn-sm btn-small"
+                  href="javascript:;"
+                  onclick={() => openFileAction(file.file_id, "move")}
+                >
+                  {data.internationalization?.move}
+                </a>
+                <!-- svelte-ignore a11y_invalid_attribute -->
+                <a
+                  class="btn btn-primary btn-sm btn-small"
+                  href="javascript:;"
+                  onclick={() => openFileRename(file.file_id)}
+                >
+                  {data.internationalization?.edit}
+                </a>
+                <!-- svelte-ignore a11y_invalid_attribute -->
+                <a
+                  class="btn btn-primary btn-sm btn-small delete-file"
+                  href="javascript:;"
+                  onclick={(event) => requestDelete(event, file)}
+                >
+                  {data.internationalization?.delete}
+                </a>
+              {/if}
+            {:else if file.revision_type === "delete"}
+              <button
+                class="action-button restore-file clickable"
                 onclick={() => openFileAction(file.file_id, "restore")}
+                type="button"
               >
                 {data.internationalization?.restore}
-              </a>
+              </button>
             {:else}
-              <!-- svelte-ignore a11y_invalid_attribute -->
-              <a
-                class="btn btn-primary btn-sm btn-small"
-                href="javascript:;"
+              <button
+                class="action-button file-history clickable"
                 onclick={() => openFileHistory(file.file_id)}
+                type="button"
               >
                 {data.internationalization?.history}
-              </a>
-              <!-- svelte-ignore a11y_invalid_attribute -->
-              <a
-                class="btn btn-primary btn-sm btn-small"
-                href="javascript:;"
+              </button>
+              <button
+                class="action-button move-file clickable"
                 onclick={() => openFileAction(file.file_id, "move")}
+                type="button"
               >
                 {data.internationalization?.move}
-              </a>
-              <!-- svelte-ignore a11y_invalid_attribute -->
-              <a
-                class="btn btn-primary btn-sm btn-small"
-                href="javascript:;"
-                onclick={() => openFileRename(file.file_id)}
+              </button>
+              <button
+                class="action-button edit-file clickable"
+                onclick={() => openFileAction(file.file_id, "edit")}
+                type="button"
               >
                 {data.internationalization?.edit}
-              </a>
-              <!-- svelte-ignore a11y_invalid_attribute -->
-              <a
-                class="btn btn-primary btn-sm btn-small delete-file"
-                href="javascript:;"
+              </button>
+              <button
+                class="action-button delete-file clickable"
                 onclick={(event) => requestDelete(event, file)}
+                type="button"
               >
                 {data.internationalization?.delete}
-              </a>
+              </button>
             {/if}
-          {:else if file.revision_type === "delete"}
-            <button
-              class="action-button restore-file clickable"
-              onclick={() => openFileAction(file.file_id, "restore")}
-              type="button"
-            >
-              {data.internationalization?.restore}
-            </button>
-          {:else}
-            <button
-              class="action-button file-history clickable"
-              onclick={() => openFileHistory(file.file_id)}
-              type="button"
-            >
-              {data.internationalization?.history}
-            </button>
-            <button
-              class="action-button move-file clickable"
-              onclick={() => openFileAction(file.file_id, "move")}
-              type="button"
-            >
-              {data.internationalization?.move}
-            </button>
-            <button
-              class="action-button edit-file clickable"
-              onclick={() => openFileAction(file.file_id, "edit")}
-              type="button"
-            >
-              {data.internationalization?.edit}
-            </button>
-            <button
-              class="action-button delete-file clickable"
-              onclick={(event) => requestDelete(event, file)}
-              type="button"
-            >
-              {data.internationalization?.delete}
-            </button>
-          {/if}
+          </div>
         </div>
-      </div>
-    {/each}
-  </div>
+      {/each}
+    </div>
   </div>
   {#if pendingDelete}
     <dialog
@@ -349,11 +351,7 @@
         >
           {localized("cancel", "Cancel")}
         </button>
-        <button
-          class="file-delete-confirm"
-          onclick={confirmDelete}
-          type="button"
-        >
+        <button class="file-delete-confirm" onclick={confirmDelete} type="button">
           {localized("wiki-page-file-delete.confirm", "Confirm delete")}
         </button>
       </div>
@@ -361,11 +359,11 @@
   {/if}
 {:else if fileListLoaded}
   <div class="file-list-scroll">
-  <div class="file-list">
-    <div class="file-list-message">
-      {data.internationalization?.["wiki-page-file-no-files"]}
+    <div class="file-list">
+      <div class="file-list-message">
+        {data.internationalization?.["wiki-page-file-no-files"]}
+      </div>
     </div>
-  </div>
   </div>
 {/if}
 
@@ -405,7 +403,9 @@
     .file-list-header,
     .file-row {
       display: grid;
-      grid-template-columns: minmax(16rem, 2fr) minmax(9rem, 1fr) minmax(9rem, 1fr) minmax(10rem, 1.2fr) minmax(5rem, 0.6fr) minmax(14rem, 1.4fr);
+      grid-template-columns:
+        minmax(16rem, 2fr) minmax(9rem, 1fr) minmax(9rem, 1fr)
+        minmax(10rem, 1.2fr) minmax(5rem, 0.6fr) minmax(14rem, 1.4fr);
 
       .file-attribute {
         min-width: 0;
@@ -419,7 +419,9 @@
 
     &.wikidot .file-list-header,
     &.wikidot .file-row {
-      grid-template-columns: minmax(16rem, 2fr) minmax(9rem, 1fr) minmax(9rem, 1fr) minmax(5rem, 0.6fr) minmax(14rem, 1.4fr);
+      grid-template-columns:
+        minmax(16rem, 2fr) minmax(9rem, 1fr) minmax(9rem, 1fr)
+        minmax(5rem, 0.6fr) minmax(14rem, 1.4fr);
     }
   }
 </style>

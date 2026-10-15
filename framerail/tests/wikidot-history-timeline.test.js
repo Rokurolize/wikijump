@@ -89,10 +89,7 @@ test("places the captured file deletion between page rows 38 and 36", () => {
 
   const history = mergeWikidotHistoryTimeline(pageRevisions, fileRevisions, 41)
   assert.deepEqual(
-    history.slice(3, 6).map((entry) => [
-      entry.history_kind,
-      entry.timeline_number + 1
-    ]),
+    history.slice(3, 6).map((entry) => [entry.history_kind, entry.timeline_number + 1]),
     [
       ["page", 38],
       ["file", 37],
@@ -134,7 +131,7 @@ test("renders a file event as the observed seven-cell F row without page rollbac
     }
   ])
 
-  const row = body.match(/<tr id="revision-row-100">([\s\S]*?)<\/tr>/u)?.[1]
+  const row = /<tr id="revision-row-100">([\s\S]*?)<\/tr>/u.exec(body)?.[1]
   assert.ok(row)
   assert.equal([...row.matchAll(/<td\b/gu)].length, 7)
   assert.match(row, /<td>37\.<\/td>/u)

@@ -67,9 +67,10 @@ const labels = {
   }
 } as const
 
-for (const [locale, expected] of Object.entries(labels) as Array<
-  [keyof typeof labels, (typeof labels)[keyof typeof labels]]
->) {
+for (const [locale, expected] of Object.entries(labels) as [
+  keyof typeof labels,
+  (typeof labels)[keyof typeof labels]
+][]) {
   test.describe(`page actions expose localized names (${locale})`, () => {
     test.use({ locale })
 

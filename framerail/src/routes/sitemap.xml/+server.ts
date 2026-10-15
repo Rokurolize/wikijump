@@ -1,6 +1,10 @@
 import { wikidotSitemap } from "$lib/server/deepwell/page"
 import { loadSiteInfo } from "$lib/server/load/site-info"
-import { buildSitemapIndexXml, shardSitemapEntries, SITEMAP_XML_HEADERS } from "$lib/server/sitemap"
+import {
+  buildSitemapIndexXml,
+  shardSitemapEntries,
+  SITEMAP_XML_HEADERS
+} from "$lib/server/sitemap"
 
 import type { RequestHandler } from "./$types"
 

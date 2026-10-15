@@ -41,9 +41,9 @@ function notConfigured(): Response {
 /**
  * Serve materialized icon bytes with Wikidot's header shape.
  *
- * The content type keeps Wikidot's `charset=utf-8` suffix (observed on both
- * the favicon and Windows tile routes), and the ETag is the stored SHA-256
- * so refreshes change the cache identity.
+ * The content type keeps Wikidot's `charset=utf-8` suffix (observed on
+ * both the favicon and Windows tile routes), and the ETag is the stored
+ * SHA-256 so refreshes change the cache identity.
  */
 export function storedSiteIconResponse(stored: StoredSiteIcon): Response {
   return new Response(stored.data, {
