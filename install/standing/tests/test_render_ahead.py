@@ -240,6 +240,14 @@ class RenderUntilLinksSettleTest(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.settle()
 
+    def test_serving_image_is_rejected_except_on_a_seeded_candidate(self) -> None:
+        with self.assertRaisesRegex(ValueError, "already runs"):
+            RENDER_AHEAD.require_render_image("sha256:a", "sha256:a", "wikijump-standing-deepwell-1", False)
+        RENDER_AHEAD.require_render_image("sha256:a", "sha256:b", "wikijump-standing-deepwell-1", False)
+        RENDER_AHEAD.require_render_image("sha256:a", "sha256:a", "wjcand-x-deepwell-1", True)
+        with self.assertRaisesRegex(ValueError, "wjcand"):
+            RENDER_AHEAD.require_render_image("sha256:a", "sha256:a", "wikijump-standing-deepwell-1", True)
+
 
 if __name__ == "__main__":
     unittest.main()

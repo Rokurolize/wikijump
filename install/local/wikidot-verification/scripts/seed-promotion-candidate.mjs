@@ -80,8 +80,17 @@ async function listDirectories(volume) {
   return output.split("\n").filter(Boolean);
 }
 
+// Connect over TCP with the container's own POSTGRES_PASSWORD: the candidate
+// rejects peer authentication on its socket, and the password never leaves
+// the container's environment.
+const IN_CONTAINER_AUTH = ["sh", "-c", 'PGPASSWORD="$POSTGRES_PASSWORD" exec "$@"', "postgres-auth"];
+
+function postgres(container, ...command) {
+  return ["exec", container, ...IN_CONTAINER_AUTH, ...command, "-h", "127.0.0.1", "-U", "wikijump"];
+}
+
 async function sql(container, database, statement) {
-  return docker("exec", container, "psql", "-U", "wikijump", "-d", database, "-At", "-v", "ON_ERROR_STOP=1", "-c", statement);
+  return docker(...postgres(container, "psql", "-d", database, "-At", "-v", "ON_ERROR_STOP=1", "-c", statement));
 }
 
 /** Stream `pg_dump` from standing into `pg_restore` on the candidate,
@@ -90,8 +99,8 @@ function streamDatabase(plan) {
   return new Promise((resolve, reject) => {
     const hash = createHash("sha256");
     let bytes = 0;
-    const dump = spawn(DOCKER, ["exec", plan.standing.database, "pg_dump", "-U", "wikijump", "-d", "wikijump", "--format=custom", "--no-owner"], {stdio: ["ignore", "pipe", "pipe"]});
-    const restore = spawn(DOCKER, ["exec", "-i", plan.candidate.database, "pg_restore", "-U", "wikijump", "-d", "wikijump", "--no-owner", "--exit-on-error"], {stdio: ["pipe", "ignore", "pipe"]});
+    const dump = spawn(DOCKER, postgres(plan.standing.database, "pg_dump", "-d", "wikijump", "--format=custom", "--no-owner"), {stdio: ["ignore", "pipe", "pipe"]});
+    const restore = spawn(DOCKER, ["exec", "-i", ...postgres(plan.candidate.database, "pg_restore", "-d", "wikijump", "--no-owner", "--exit-on-error").slice(1)], {stdio: ["pipe", "ignore", "pipe"]});
     const errors = {dump: "", restore: ""};
     dump.stderr.on("data", (chunk) => { errors.dump += chunk; });
     restore.stderr.on("data", (chunk) => { errors.restore += chunk; });

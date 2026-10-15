@@ -337,8 +337,33 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="ignore existing ahead rows and render every stale page again",
     )
+    parser.add_argument(
+        "--seeded-candidate",
+        action="store_true",
+        help=(
+            "allow rendering with the image the container already serves: a "
+            "promotion candidate seeded from an older-generation standing "
+            "database; restart its Deepwell afterwards to promote the rows"
+        ),
+    )
     parser.add_argument("--output-dir", type=Path, required=True)
     return parser.parse_args()
+
+
+def require_render_image(
+    serving_image_id: str, image_id: str, container: str, seeded_candidate: bool
+) -> None:
+    """Render ahead only with a different image, except on a seeded candidate.
+
+    On standing, rendering with the serving image is pointless and signals a
+    wrong image argument. A promotion candidate seeded from standing already
+    serves the new image over older-generation saved pages, so it renders with
+    that image and promotes the rows when its Deepwell restarts.
+    """
+    if seeded_candidate and not container.startswith("wjcand-"):
+        raise ValueError("--seeded-candidate applies only to wjcand-* candidate containers")
+    if serving_image_id == image_id and not seeded_candidate:
+        raise ValueError("the serving Deepwell already runs the render-ahead image")
 
 
 def main() -> int:
@@ -357,8 +382,7 @@ def main() -> int:
 
     inspected = container_inspect(args.deepwell_container)
     serving_image_id = str(inspected.get("Image"))
-    if serving_image_id == image_id:
-        raise ValueError("the serving Deepwell already runs the render-ahead image")
+    require_render_image(serving_image_id, image_id, args.deepwell_container, args.seeded_candidate)
     environment = runtime_environment(inspected)
     config_source = config_mount(inspected)
 
