@@ -28,11 +28,19 @@ test("renewCspNonce replaces the header and every inline nonce with one fresh va
     renewed.body,
     `<html><script nonce="${FRESH_NONCE}">a()</script><style nonce="${FRESH_NONCE}"></style></html>`
   )
-  assert.equal(original.body.includes(STORED_NONCE), true, "input entry must not be mutated")
+  assert.equal(
+    original.body.includes(STORED_NONCE),
+    true,
+    "input entry must not be mutated"
+  )
 })
 
 test("renewCspNonce leaves an entry without a nonce unchanged", () => {
-  const plain = { status: 200, headers: [["content-type", "text/html"]], body: "<p>x</p>" }
+  const plain = {
+    status: 200,
+    headers: [["content-type", "text/html"]],
+    body: "<p>x</p>"
+  }
   assert.equal(containsCspNonce(plain), false)
   assert.equal(renewCspNonce(plain, FRESH_NONCE), plain)
 })
@@ -50,7 +58,11 @@ test("a fast-path hit serves a fresh nonce that matches its CSP header", async (
 
   assert.notEqual(headerNonce, STORED_NONCE)
   assert.equal(headerNonce, bodyNonce, "header and body must carry the same fresh nonce")
-  assert.equal(body.includes(STORED_NONCE), false, "the stored nonce must not be replayed")
+  assert.equal(
+    body.includes(STORED_NONCE),
+    false,
+    "the stored nonce must not be replayed"
+  )
 })
 
 test("a fast-path hit without a nonce keeps its entry unchanged", async () => {

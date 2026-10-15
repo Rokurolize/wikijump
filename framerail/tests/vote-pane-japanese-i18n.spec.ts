@@ -28,9 +28,10 @@ const locales = {
   }
 } as const
 
-for (const [locale, expected] of Object.entries(locales) as Array<
-  [keyof typeof locales, (typeof locales)[keyof typeof locales]]
->) {
+for (const [locale, expected] of Object.entries(locales) as [
+  keyof typeof locales,
+  (typeof locales)[keyof typeof locales]
+][]) {
   test.describe(`Vote pane labels (${locale})`, () => {
     test.use({ locale })
 

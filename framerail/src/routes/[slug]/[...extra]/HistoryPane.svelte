@@ -126,8 +126,9 @@
       fromRevision === null ||
       toRevision === undefined ||
       toRevision === null
-    )
+    ) {
       return
+    }
 
     const restoreCompareFocus = document.activeElement === revisionDiffCompareButton
     const requestedFromRevisionNumber = fromRevisionNumber
@@ -279,7 +280,7 @@
 
   async function rollbackRevision(timelineNumber: number, comments?: string) {
     const entry = revisionMap.get(timelineNumber)
-    if (!entry || entry.history_kind !== "page") return
+    if (entry?.history_kind !== "page") return
     if (!canEditPage) return
     // A rollback writes a new page revision. Ask before sending it; cancelling
     // sends no request.
@@ -351,6 +352,7 @@
   <h1 id="wikidot-history-heading" class="page-revision-header">
     {data.internationalization?.["wiki-page-revision-history"]}
   </h1>
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -- the scrollable revision list must be keyboard focusable -->
   <div
     id="revision-list"
     class="revision-list"
@@ -370,7 +372,7 @@
           {@const date = wikidotRevisionDate(revisionItem.created_at)}
           <tr id={`revision-row-${revisionItem.history_row_id}`}>
             <td>{revisionItem.timeline_number + 1}.</td>
-            <td style="width: 5em">
+            <td style:width="5em">
               <input
                 id={revisionItem.history_row_id}
                 type="radio"
@@ -409,7 +411,7 @@
                 <span class="spantip" title={flag.title}>{flag.code}</span>
               {/each}
             </td>
-            <td style="width: 5em" class="optionstd">
+            <td style:width="5em" class="optionstd">
               <!-- svelte-ignore a11y_invalid_attribute -->
               {#if revisionItem.history_kind === "file" && (revisionItem.page_revision_number === null || revisionItem.page_revision_number === undefined)}
                 <span
@@ -445,8 +447,9 @@
                   if (
                     !(await getRevision(revisionItem.timeline_number, false, true)) ||
                     !active
-                  )
+                  ) {
                     return
+                  }
                   setShowRevision(false)
                   showRevisionSource = true
                 }}
@@ -467,16 +470,16 @@
                 </a>
               {/if}
             </td>
-            <td style="width: 15em">
+            <td style:width="15em">
               <WikidotRevisionAuthor
                 author={revisionItem.author}
                 userId={revisionItem.user_id}
               />
             </td>
-            <td style="padding: 0 0.5em; width: 7em;">
+            <td style:padding="0 0.5em" style:width="7em">
               {#if date}<span class={date.className}>{date.text}</span>{/if}
             </td>
-            <td style="font-size: 90%">
+            <td style:font-size="90%">
               {revisionItem.comments}
             </td>
           </tr>
@@ -526,8 +529,9 @@
                   if (
                     !(await getRevision(revisionItem.timeline_number, true, false)) ||
                     !active
-                  )
+                  ) {
                     return
+                  }
                   setShowRevision(true)
                   showRevisionSource = false
                 }}
@@ -542,8 +546,9 @@
                   if (
                     !(await getRevision(revisionItem.timeline_number, false, true)) ||
                     !active
-                  )
+                  ) {
                     return
+                  }
                   setShowRevision(false)
                   showRevisionSource = true
                 }}

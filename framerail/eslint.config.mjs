@@ -91,6 +91,16 @@ export default defineConfig(
   },
   ...svelte.configs.recommended,
   {
+    // eslint-plugin-svelte 3.x crashes on the scope data of eslint 10 for plain
+    // JavaScript files. Core `no-inner-declarations` covers the same check.
+    rules: {
+      "svelte/no-inner-declarations": "off",
+      // eslint-plugin-svelte 3.23 reports svelte-ignore comments as unused even when the
+      // compiler still needs them (valid-compile), so this rule is off.
+      "svelte/no-unused-svelte-ignore": "off"
+    }
+  },
+  {
     files: ["**/*.svelte"],
     rules: {
       // these rules are enabled in recommended config.

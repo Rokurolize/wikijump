@@ -3,11 +3,12 @@ import { formatWikidotFeedDate } from "./list-pages-feed.ts"
 /**
  * The `/feed/site-changes.xml` RSS serializer.
  *
- * Current Wikidot serves a real RSS 2.0 document here that reports the same
- * recent page activity as the SiteChanges module: channel title and site link,
- * newest-first bounded change rows, per-item revision identity/change
- * type/author, and a page content preview. All internal links use the local
- * Wikijump origin rather than the source Wikidot host.
+ * Current Wikidot serves a real RSS 2.0 document here that reports the
+ * same recent page activity as the SiteChanges module: channel title and
+ * site link, newest-first bounded change rows, per-item revision
+ * identity/change type/author, and a page content preview. All internal
+ * links use the local Wikijump origin rather than the source Wikidot
+ * host.
  */
 
 export interface WikidotSiteChangesFeedItem {

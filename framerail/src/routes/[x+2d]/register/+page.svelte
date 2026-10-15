@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation"
+  import { resolve } from "$app/paths"
   import { errorPopupState } from "$lib/layout/stores.svelte"
   import { authCancelDestination } from "$lib/auth-cancel.js"
   import { untrack } from "svelte"
@@ -45,7 +46,7 @@
 {#if isRegistered}
   <p role="status" class="register-success">
     {data.internationalization?.["register.toast"]}
-    <a href="/-/login">{data.internationalization?.login}</a>
+    <a href={resolve("/-/login", {})}>{data.internationalization?.login}</a>
   </p>
 {:else}
   <form id="register" class="register-form" method="POST" use:enhance>

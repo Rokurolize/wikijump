@@ -77,7 +77,7 @@ const CSP_NONCE_REPLACE = /'nonce-[A-Za-z0-9+/_=-]+'/gu
 const HTML_NONCE_REPLACE = /\bnonce="[A-Za-z0-9+/_=-]+"/gu
 
 /**
- * @param {{ headers: HeaderPair[], body: string }} entry
+ * @param {{ headers: HeaderPair[]; body: string }} entry
  * @returns {boolean}
  */
 export const containsCspNonce = (entry) => {
@@ -88,13 +88,14 @@ export const containsCspNonce = (entry) => {
 }
 
 /**
- * Returns a copy of the entry whose CSP nonce and inline nonce attributes all carry
- * `nonce`. Entries without a nonce are returned unchanged. The copy drops
- * `bodyBuffer` so the renewed string body is the single source of bytes.
+ * Returns a copy of the entry whose CSP nonce and inline nonce attributes
+ * all carry `nonce`. Entries without a nonce are returned unchanged. The
+ * copy drops `bodyBuffer` so the renewed string body is the single source
+ * of bytes.
  *
- * @template {{ headers: HeaderPair[], body: string }} T
+ * @template {{ headers: HeaderPair[]; body: string }} T
  * @param {T} entry
- * @param {string} nonce base64 nonce from a fresh random source
+ * @param {string} nonce Base64 nonce from a fresh random source
  * @returns {T}
  */
 export const renewCspNonce = (entry, nonce) => {

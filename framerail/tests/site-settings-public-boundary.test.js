@@ -409,9 +409,12 @@ describe("Wikidot site settings public boundaries", () => {
     const blank = renderComponent(
       rootLayoutComponent,
       {},
-      requestContext({ ...previewData, theme_previewer_blank: true }, {
-        routeId: "/[slug]/[...extra]"
-      })
+      requestContext(
+        { ...previewData, theme_previewer_blank: true },
+        {
+          routeId: "/[slug]/[...extra]"
+        }
+      )
     )
     assert.match(blank.head, /wikidot-base-[a-z0-9]+\.css/u)
     assert.match(blank.head, /pagerate-[a-z0-9]+\.css/u)

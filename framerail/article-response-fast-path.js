@@ -10,7 +10,10 @@ import {
 } from "./src/lib/server/cache/article-response/fences.js"
 import { createLocalArticleResponseHotCache } from "./src/lib/server/cache/article-response/hot.js"
 import { hasSessionCookie } from "./src/lib/server/cache/article-response/shared.js"
-import { containsCspNonce, renewCspNonce } from "./src/lib/server/cache/article-response/entry.js"
+import {
+  containsCspNonce,
+  renewCspNonce
+} from "./src/lib/server/cache/article-response/entry.js"
 import { applyStaticSecurityHeadersToNodeResponse } from "./src/lib/server/security-headers.js"
 import { parseAcceptLangHeader, withFallbackLocale } from "./src/lib/locales.js"
 import { promisify } from "node:util"
@@ -455,9 +458,9 @@ export const writeArticleResponseFastPathHit = (request, response, entry) => {
 }
 
 /**
- * A cached response replays the CSP nonce of the request that stored it. Renew the
- * nonce for every serve, and rebuild the replay so compressed variants match the
- * renewed body.
+ * A cached response replays the CSP nonce of the request that stored it.
+ * Renew the nonce for every serve, and rebuild the replay so compressed
+ * variants match the renewed body.
  */
 export const renewArticleResponseFastPathNonce = async (request, entry) => {
   if (!entry || typeof entry.status !== "number" || !Array.isArray(entry.headers)) {

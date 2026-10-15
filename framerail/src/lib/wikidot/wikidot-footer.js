@@ -1,3 +1,4 @@
+/* eslint-disable no-script-url -- Wikidot footer and fixture markup use javascript:; no-op links that parity requires */
 import { showWikidotReadonlyDialog } from "./wikidot-readonly-dialog.js"
 import { isJapaneseWikidotLocale } from "./wikidot-locale.js"
 

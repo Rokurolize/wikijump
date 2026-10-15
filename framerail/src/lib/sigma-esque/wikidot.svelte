@@ -47,7 +47,8 @@
                 alt="black.png"
                 class="image"
                 src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAMSURBVBhXY2BgYAAAAAQAAVzN/2kAAAAASUVORK5CYII="
-                style="z-index:-1; opacity: 0.3;"
+                style:z-index="-1"
+                style:opacity="0.3"
               />
               <br />
             </a>

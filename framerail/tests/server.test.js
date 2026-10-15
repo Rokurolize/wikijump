@@ -76,7 +76,7 @@ test("startup blocks even a warm response cache until the dependency is ready", 
   assert.equal(calls, 0)
   allow = true
   await readiness.start()
-  assert.equal((await fetch(url + "/-/startup-ready")).status, 200)
+  assert.equal((await fetch(`${url}/-/startup-ready`)).status, 200)
   assert.equal(calls, 0)
   assert.equal(await (await fetch(url)).text(), "application")
   assert.equal(calls, 1)
@@ -103,7 +103,10 @@ test("startup retries unavailable dependencies with capped backoff without exiti
 test("shutdown cannot promote a pending startup probe to ready", async () => {
   let release
   const readiness = createStartupReadiness({
-    probe: () => new Promise(resolve => { release = resolve })
+    probe: () =>
+      new Promise((resolve) => {
+        release = resolve
+      })
   })
   const pending = readiness.start()
   readiness.close()
