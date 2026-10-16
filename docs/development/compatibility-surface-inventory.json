@@ -11475,7 +11475,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "51b935ac7dc0cc7eb03fc89aaaaafa06d58ba763b5b31920382e78b91468cd90"
+      "source_input_set_sha256": "59352897d98a50d4ccca5f725d009e6d5a016b8c3d455d13956ad071b531f32e"
     },
     "ftml": {
       "commit": "17dbc236a5bc879c1bcd451e2308bb080d854f15",
@@ -11640,7 +11640,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "48cf969f0da01e7437ac9698d076231ac26d963f108a92f335182623384b767c"
+        "sha256": "d9a1bd147bedde4d78e9c367f74f155315eacd036581c87c10f3ad952cdade90"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11704,7 +11704,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "d214af15a42090d5eb15ffd97bc3c97fc69db57f85dcdd10beb5ec2bdbfb7181"
+        "sha256": "492c562f27543612a2cf0a0977d81b0b5d470502a0d5b23bc9c038c1e4bcc6f6"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11940,11 +11940,11 @@
       },
       {
         "path": "framerail/src/routes/sitemap_page_[n].xml/+server.ts",
-        "sha256": "73294f9c7986801955d03ed6008788033e341e16fd0e181ec3133efbe6724daa"
+        "sha256": "5db7c1c598113c7c89208d21ce07756f649707ca50e0ed47590ed04f6832a72e"
       },
       {
         "path": "framerail/src/routes/sitemap.xml/+server.ts",
-        "sha256": "c5e9783555ecf274bc9ea75226149e3c9f76a99821a77e929523ccb0ea95b6d2"
+        "sha256": "85301a3b783d6ca38a087805c56307474c7013407db29b47d9b3ad6e0da98632"
       },
       {
         "path": "framerail/src/routes/user[x+3a]info/[target]/+page.server.ts",
@@ -30673,7 +30673,7 @@
         ],
         "cases": [],
         "tests": [
-          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+          "deepwell/tests/page.rs#sitemap_never_publishes_authenticated_only_site_pages"
         ]
       },
       "evidence": {

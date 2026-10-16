@@ -5263,6 +5263,7 @@
           "deepwell/tests/page.rs#restored_literal_and_unsupported_countpages_shapes_stay_inert",
           "deepwell/tests/page.rs#restored_page_uses_destination_template_countpages_after_explicit_restore",
           "deepwell/tests/page.rs#revision_diff_returns_typed_lines_without_exposing_hidden_source",
+          "deepwell/tests/page.rs#sitemap_never_publishes_authenticated_only_site_pages",
           "deepwell/tests/page.rs#startup_backfills_legacy_html_sha1_and_validates_constraint",
           "deepwell/tests/page.rs#text_block_get_index_requires_parent_page_view_permission",
           "deepwell/tests/page.rs#unbound_include_variables_remain_literal_in_attributes_and_text",
@@ -11386,16 +11387,10 @@
       },
       "transaction_isolation": "default",
       "test_witness": {
-        "kind": "source_contract_only",
-        "reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract",
-        "coverage_gap": {
-          "searched_root": "deepwell/tests",
-          "reason": "no direct run_endpoint handler invocation or rpc_request method invocation was found",
-          "searched_invocations": [
-            "run_endpoint!(runner, handler, ...)",
-            "rpc_request(\"method\", ...)"
-          ]
-        }
+        "kind": "endpoint_behavioral",
+        "reference": "deepwell/tests/page.rs#sitemap_never_publishes_authenticated_only_site_pages",
+        "alternatives": [],
+        "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
     }
   ]
