@@ -238,7 +238,10 @@ def prepare_saved_page_render_ahead(
     output_dir = evidence_root / f"{source_root.name}-{uuid.uuid4().hex}"
     script = source_root / "install" / "standing" / "render_ahead.py"
     try:
-        subprocess.run(
+        # The child prints its own summary JSON. Capture it so refresh's stdout
+        # carries only refresh's receipt; the promotion controller parses that
+        # stdout as one JSON document. Its stderr still reaches the operator.
+        completed = subprocess.run(
             [
                 sys.executable,
                 str(script),
@@ -249,11 +252,14 @@ def prepare_saved_page_render_ahead(
             ],
             cwd=source_root,
             check=True,
+            text=True,
+            stdout=subprocess.PIPE,
         )
     except subprocess.CalledProcessError as error:
         raise RuntimeError(
             f"render-ahead failed; inspect retained evidence in {output_dir}"
         ) from error
+    (output_dir / "render-ahead-stdout.txt").write_text(completed.stdout, encoding="utf-8")
     receipt_path = output_dir / "render-ahead-receipt.json"
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     if (
