@@ -10,6 +10,21 @@ import {
   browserRenderScriptPath as scriptPath,
 } from "./support/browser-render-evidence-fixture.mjs";
 
+// Independent mocked browsers must not fight over the real, process-global
+// Wikidot acquisition lock. The executable accepts this fixture-only override
+// exclusively inside the source-owned network isolation guard; without that
+// guard the production global lock remains mandatory.
+function mockCaptureEnvironment(root, extra = {}) {
+  return {
+    ...process.env,
+    XDG_CACHE_HOME: path.join(root, "cache"),
+    ...extra,
+    ...(process.env.WIKIJUMP_TEST_NETWORK_GUARD_ACTIVE === "1"
+      ? {WIKIJUMP_TEST_CAPTURE_LOCK_PATH: path.join(root, "mock-capture.lock")}
+      : {}),
+  };
+}
+
 test("capture CLI rejects an empty row selection before launching a browser", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-browser-empty-selection-"));
   const inventoryPath = path.join(root, "inventory.json");
@@ -194,7 +209,7 @@ exports.chromium = {
       browserRoot,
       "--json",
     ],
-    {env: {...process.env, XDG_CACHE_HOME: path.join(root, "cache"), WIKIJUMP_CONTEXT_TRACE: tracePath}}
+    {env: mockCaptureEnvironment(root, {WIKIJUMP_CONTEXT_TRACE: tracePath})}
   );
 
   const trace = (await fs.readFile(tracePath, "utf8"))
@@ -237,6 +252,30 @@ exports.chromium = {
   assert.equal(records.capture.request_gate.public_requests, 0);
   assert.equal(records.capture.browser_context_scope, "run");
   assert.equal(records.capture.source_response_cache.entries, 0);
+  if (process.env.WIKIJUMP_TEST_NETWORK_GUARD_ACTIVE === "1") {
+    assert.equal(requestGateConfig.lock.path, path.join(root, "mock-capture.lock"));
+    // An explicit override without the network guard must fail before any
+    // browser request, even when a Playwright stub is supplied.
+    await assert.rejects(
+      execFileAsync(process.execPath, [
+        scriptPath,
+        "--inventory", inventoryPath,
+        "--output-dir", path.join(root, "rejected-out"),
+        "--browser-root", browserRoot,
+      ], {
+        env: {
+          ...process.env,
+          WIKIJUMP_TEST_NETWORK_GUARD_ACTIVE: "",
+          WIKIJUMP_TEST_CAPTURE_LOCK_PATH: path.join(root, "forbidden.lock"),
+        },
+      }),
+      (error) => {
+        assert.match(error.stderr, /test capture lock override requires the offline network guard/u);
+        return true;
+      },
+    );
+    await assert.rejects(fs.access(path.join(root, "forbidden.lock")), {code: "ENOENT"});
+  }
 });
 
 test("capture CLI records requested visible text scope", async () => {
@@ -285,22 +324,37 @@ exports.chromium = {
   );
   await fs.writeFile(inventoryPath, JSON.stringify({schema: inventory.schema, rows: [inventory.rows[0]]}), "utf8");
 
-  await execFileAsync(
-    process.execPath,
-    [
-      scriptPath,
-      "--inventory",
-      inventoryPath,
-      "--output-dir",
-      outputDir,
-      "--browser-root",
-      browserRoot,
-      "--visible-text-scope",
-      "main-frame",
-      "--json",
-    ],
-    {env: {...process.env, XDG_CACHE_HOME: path.join(root, "cache")}},
-  );
+  const captureArgs = (directory) => [
+    scriptPath,
+    "--inventory", inventoryPath,
+    "--output-dir", directory,
+    "--browser-root", browserRoot,
+    "--visible-text-scope", "main-frame",
+    "--json",
+  ];
+  const captures = [execFileAsync(process.execPath, captureArgs(outputDir), {
+    env: mockCaptureEnvironment(root),
+  })];
+  // Exercise real process overlap: two mock browsers may capture at the same
+  // time, with distinct lock and durable gate paths. Real Wikidot acquisition
+  // still uses the single production lock and cannot evade it.
+  const otherRoot = path.join(root, "independent");
+  const otherOutputDir = path.join(otherRoot, "out");
+  if (process.env.WIKIJUMP_TEST_NETWORK_GUARD_ACTIVE === "1") {
+    captures.push(execFileAsync(process.execPath, captureArgs(otherOutputDir), {
+      env: mockCaptureEnvironment(otherRoot),
+    }));
+  }
+  await Promise.all(captures);
+  if (captures.length === 2) {
+    const first = JSON.parse(await fs.readFile(path.join(outputDir, "request-gate-config.json"), "utf8"));
+    const second = JSON.parse(await fs.readFile(path.join(otherOutputDir, "request-gate-config.json"), "utf8"));
+    assert.equal(first.lock.path, path.join(root, "mock-capture.lock"));
+    assert.equal(second.lock.path, path.join(otherRoot, "mock-capture.lock"));
+    assert.notEqual(first.lock.path, second.lock.path);
+    assert.equal(first.status, "sealed_before_browser_request");
+    assert.equal(second.status, "sealed_before_browser_request");
+  }
 
   const records = JSON.parse(await fs.readFile(path.join(outputDir, "records.json"), "utf8"));
   const [record] = records.evidence;
@@ -378,7 +432,7 @@ exports.chromium = {
         browserRoot,
         "--json",
       ],
-      {env: {...process.env, XDG_CACHE_HOME: path.join(root, "cache")}},
+      {env: mockCaptureEnvironment(root)},
     ),
     (error) => {
       assert.match(error.stdout, /"selected_count":1/);
