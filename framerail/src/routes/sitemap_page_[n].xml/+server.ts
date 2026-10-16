@@ -1,5 +1,6 @@
 import { wikidotSitemap } from "$lib/server/deepwell/page"
 import { loadSiteInfo } from "$lib/server/load/site-info"
+import { siteSitemapOrigin } from "$lib/server/sitemap-origin"
 import {
   buildSitemapUrlsetXml,
   InvalidSitemapShardPath,
@@ -33,7 +34,7 @@ export const GET: RequestHandler = async ({ request, params }) => {
     return new Response("Invalid sitemap shard size", { status: 502 })
   }
 
-  const origin = new URL(request.url).origin
+  const origin = await siteSitemapOrigin(siteId)
   return new Response(buildSitemapUrlsetXml(origin, output.entries), {
     headers: SITEMAP_XML_HEADERS
   })

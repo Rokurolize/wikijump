@@ -11475,7 +11475,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "eaa5b1abce07ff26b37008330237a4655d575b82707f10c064bceaf1fd50bfa4"
+      "source_input_set_sha256": "cbe0d447137047a098603bac1e4e5a5dda452dd49bec9fcb192e845aec797cfb"
     },
     "ftml": {
       "commit": "17dbc236a5bc879c1bcd451e2308bb080d854f15",
@@ -11704,7 +11704,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "93d90efe69a5ad89699e685ea35ebb86bc11e968fa3ebc53d8b7242275661485"
+        "sha256": "75fc77519d4c9ebb585fc0fd28d5edfc94baf0ee22f4cab88cbd4001debce631"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11940,11 +11940,11 @@
       },
       {
         "path": "framerail/src/routes/sitemap_page_[n].xml/+server.ts",
-        "sha256": "a31f976d1fd13265aea8d6b69fb168bd594173ca43775dfd618fee730a6fbdfa"
+        "sha256": "ea04b21938572828fafedaabaeb66d557a2e5fa1e5dfb465417e74bc7f836ba1"
       },
       {
         "path": "framerail/src/routes/sitemap.xml/+server.ts",
-        "sha256": "da35a5fffaab17dcc05fdc7d2b24b9f7af15560f94f2bc6d6c180d2eeea61bcb"
+        "sha256": "16e7103b742db5771f07c498153ef1794eb8fc2b4e32dc14534a236a1390bad2"
       },
       {
         "path": "framerail/src/routes/user[x+3a]info/[target]/+page.server.ts",
@@ -11996,7 +11996,7 @@
       },
       {
         "path": "wws/src/route.rs",
-        "sha256": "f7a65bbc577e5e465fb45a58b8a64e53fb700eaa71931cb59528253a96cf4d06"
+        "sha256": "27e7a8d21bc842d8822410016ce779e8423d7e73420677915dfa0eb8fed35f9b"
       }
     ]
   },
