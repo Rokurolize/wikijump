@@ -9,6 +9,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import textwrap
 import unittest
 from unittest import mock
 
@@ -442,7 +443,7 @@ class RefreshStandingTest(unittest.TestCase):
             runtime.mkdir()
             prepared = root / "prepared.json"
 
-            def render_ahead(command: list[str], *, cwd: Path, check: bool) -> None:
+            def render_ahead(command: list[str], *, cwd: Path, check: bool, **kwargs: object) -> subprocess.CompletedProcess[str]:
                 self.assertTrue(check)
                 self.assertEqual(cwd, source)
                 self.assertEqual(command[command.index("--prepared-receipt") + 1], str(prepared))
@@ -456,6 +457,7 @@ class RefreshStandingTest(unittest.TestCase):
                     "stale_without_valid_ahead": 0,
                     "unrendered_page_ids": [],
                 }), encoding="utf-8")
+                return subprocess.CompletedProcess(command, 0, stdout='{"status": "pass"}\n')
 
             with mock.patch.object(
                 REFRESH, "standing_stale_saved_pages",
@@ -469,11 +471,60 @@ class RefreshStandingTest(unittest.TestCase):
             receipt = result["receipt"]
             self.assertEqual(receipt["sha256"], REFRESH.file_sha256(Path(receipt["path"])))
 
+    def test_render_ahead_child_stdout_does_not_pollute_refresh_stdout(self) -> None:
+        # Regression: the render-ahead child prints its own summary JSON. Refresh
+        # used to inherit that stdout, so the promotion controller saw two JSON
+        # documents and reported a failed refresh after a passing activation.
+        image = "sha256:" + "a" * 64
+        child = textwrap.dedent(f"""
+            import json, sys
+            from pathlib import Path
+            output = Path(sys.argv[sys.argv.index("--output-dir") + 1])
+            output.mkdir()
+            (output / "render-ahead-receipt.json").write_text(json.dumps({{
+                "schema": "wikijump.render_ahead_receipt.v1",
+                "status": "pass",
+                "render_image_id": {image!r},
+                "compiled_generator": "gen",
+                "stale_without_valid_ahead": 0,
+                "unrendered_page_ids": [],
+            }}), encoding="utf-8")
+            print(json.dumps({{"status": "pass", "stale_without_valid_ahead": 0}}))
+        """)
+        driver = textwrap.dedent(f"""
+            import importlib.util, json, sys
+            from pathlib import Path
+            from unittest import mock
+            sys.path.insert(0, {str(SCRIPT.parent)!r})
+            spec = importlib.util.spec_from_file_location("standing_refresh", {str(SCRIPT)!r})
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            root = Path(sys.argv[1])
+            with mock.patch.object(module, "standing_stale_saved_pages", return_value=(1, "gen")):
+                result = module.prepare_saved_page_render_ahead(
+                    root / "runtime", root / "source", root / "prepared.json", {image!r}
+                )
+            print(json.dumps({{"status": result["status"]}}))
+        """)
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            root = Path(temporary_dir)
+            script = root / "source" / "install" / "standing" / "render_ahead.py"
+            script.parent.mkdir(parents=True)
+            script.write_text(child, encoding="utf-8")
+            completed = subprocess.run(
+                [sys.executable, "-c", driver, str(root)],
+                capture_output=True, text=True, check=True,
+            )
+            self.assertEqual(json.loads(completed.stdout), {"status": "pass"})
+            evidence = list((root / "runtime" / "render-ahead-evidence").glob("*/render-ahead-stdout.txt"))
+            self.assertEqual(len(evidence), 1)
+            self.assertIn('"stale_without_valid_ahead": 0', evidence[0].read_text(encoding="utf-8"))
+
     def test_render_ahead_rejects_mismatched_candidate_receipt(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_dir:
             root = Path(temporary_dir)
 
-            def forged_receipt(command: list[str], *, cwd: Path, check: bool) -> None:
+            def forged_receipt(command: list[str], *, cwd: Path, check: bool, **kwargs: object) -> subprocess.CompletedProcess[str]:
                 output = Path(command[command.index("--output-dir") + 1])
                 output.mkdir()
                 (output / "render-ahead-receipt.json").write_text(json.dumps({
@@ -484,6 +535,7 @@ class RefreshStandingTest(unittest.TestCase):
                     "stale_without_valid_ahead": 0,
                     "unrendered_page_ids": [],
                 }), encoding="utf-8")
+                return subprocess.CompletedProcess(command, 0, stdout="")
 
             with mock.patch.object(
                 REFRESH, "standing_stale_saved_pages", return_value=(1, "new generator")
