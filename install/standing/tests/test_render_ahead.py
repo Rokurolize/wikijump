@@ -110,6 +110,28 @@ class RenderAheadRuntimeTest(unittest.TestCase):
             with self.subTest(bad=bad), self.assertRaises(ValueError):
                 RENDER_AHEAD.link_digest_query(bad)
 
+    def test_literal_link_proof_is_sql_scoped_and_denies_dynamic_markup(self) -> None:
+        sql = []
+        original = RENDER_AHEAD.psql
+        try:
+            RENDER_AHEAD.psql = lambda container, query: sql.append(query) or "3\n8"
+            self.assertEqual(RENDER_AHEAD.certified_literal_link_pages("db", [8, 3, 8]), {3, 8})
+            query = sql[0]
+            self.assertIn("p.page_id IN (3,8)", query)
+            self.assertIn("p.deleted_at IS NULL", query)
+            self.assertIn("POSITION('[[' IN source.contents) = 0", query)
+            self.assertIn("POSITION('%%' IN source.contents) = 0", query)
+            self.assertIn("POSITION('{' IN source.contents) = 0", query)
+            RENDER_AHEAD.psql = lambda container, query: "9"
+            with self.assertRaisesRegex(RuntimeError, "unrequested"):
+                RENDER_AHEAD.certified_literal_link_pages("db", [8])
+            for bad in ([0], [-2], ["3"], [True]):
+                with self.subTest(bad=bad), self.assertRaises(ValueError):
+                    RENDER_AHEAD.certified_literal_link_pages("db", bad)
+            self.assertEqual(RENDER_AHEAD.certified_literal_link_pages("db", []), set())
+        finally:
+            RENDER_AHEAD.psql = original
+
     def test_changed_pages_include_added_and_removed_link_sets(self) -> None:
         self.assertEqual(
             RENDER_AHEAD.changed_pages({"1": "a", "2": "b", "3": "c"}, {"1": "a", "2": "x", "4": "d"}),
@@ -223,6 +245,75 @@ class RenderUntilLinksSettleTest(unittest.TestCase):
             "probing must only aggregate links for its changed page frontier",
         )
 
+    def test_literal_certification_shortcuts_only_proven_pages(self) -> None:
+        calls = []
+        links = {"1": "old", "2": "old"}
+        def render(name, cutoff, page_ids=None):
+            calls.append((name, page_ids))
+            if name.startswith("full"):
+                links["1"] = "new"
+                links["2"] = "new"
+            return {
+                "candidates": 2 if page_ids is None else len(page_ids),
+                "failed": 0,
+                "failed_page_ids": [],
+                "failures": [],
+            }
+        def digests(page_ids=None):
+            return {id: digest for id, digest in links.items()
+                    if page_ids is None or int(id) in page_ids}
+        passes = [{}]
+        def captured(name, cutoff, page_ids=None):
+            passes.append({})
+            return render(name, cutoff, page_ids)
+        RENDER_AHEAD.render_until_links_settle(
+            captured, digests, passes, None, certify_literal=lambda pending: {1}
+        )
+        probes = [(name, selected) for name, selected in calls if name.startswith("link-probe")]
+        self.assertTrue(probes)
+        self.assertTrue(all(selected == [2] for _, selected in probes))
+        self.assertTrue(any(name == "full-2" for name, _ in calls))
+
+    def test_entirely_literal_changed_frontier_skips_all_probe_processes(self) -> None:
+        calls = []
+        links = {"1": "old"}
+        def render(name, cutoff, selected=None):
+            calls.append(name)
+            if name.startswith("full"):
+                links["1"] = "new"
+            if name.startswith("link-probe"):
+                raise AssertionError("no empty probe invocation is permitted")
+            return {"failed": 0, "failed_page_ids": []}
+        passes = [{}]
+        def captured(name, cutoff, selected=None):
+            passes.append({})
+            return render(name, cutoff, selected)
+        RENDER_AHEAD.render_until_links_settle(
+            captured, lambda selected=None: dict(links), passes, None,
+            certify_literal=lambda pending: set(pending),
+        )
+        self.assertEqual(calls, ["full-1", "full-2"])
+
+    def test_unknown_or_falsely_certified_page_cannot_bypass_probes(self) -> None:
+        with self.assertRaisesRegex(RuntimeError, "noncandidate"):
+            self.settle_with_certifier(lambda pending: {999})
+
+    def settle_with_certifier(self, certifier):
+        passes = [{}]
+        def captured(name, cutoff, page_ids=None):
+            passes.append({})
+            return self.render(name, cutoff, page_ids)
+        return RENDER_AHEAD.render_until_links_settle(
+            captured,
+            lambda page_ids=None: {
+                page: digest for page, digest in self.links.items()
+                if page_ids is None or int(page) in page_ids
+            },
+            passes,
+            None,
+            certify_literal=certifier,
+        )
+
     def test_deadline_recovery_happens_before_link_probe_or_convergence(self) -> None:
         events = []
         links = {"1": "old"}
@@ -250,6 +341,9 @@ class RenderUntilLinksSettleTest(unittest.TestCase):
             return render(name, cutoff, page_ids)
         RENDER_AHEAD.render_until_links_settle(captured, digests, passes, None, recover)
         self.assertEqual(events[:4], ["digests", "full-1", "tail-serial", "digests"])
+        self.assertIn("link_changed_page_ids", passes[1])
+        self.assertEqual(passes[1]["link_changed_page_ids"], [1])
+        self.assertNotIn("link_changed_pages", passes[2], "a tail must not own its parent full-pass proof")
 
     def test_non_deadline_failure_stops_before_expensive_probing(self) -> None:
         calls = []

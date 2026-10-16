@@ -245,6 +245,39 @@ def changed_pages(before: dict[str, str], after: dict[str, str]) -> list[int]:
     return sorted(int(page) for page in before.keys() | after.keys() if before.get(page) != after.get(page))
 
 
+def certified_literal_link_pages(database_container: str, page_ids: list[int]) -> set[int]:
+    """Certify a deliberately narrow, source-literal, non-executable frontier.
+
+    An unchanged page revision with no Wikidot double-bracket commands or
+    triple-bracket links and no ``%%`` substitution cannot read another page's
+    state through an include/module/link target and cannot use random ListPages.
+    Dynamic/unknown syntax fails closed: it is always probed eight times.
+    This is not a guess based on one observed equal link digest.
+    """
+    if any(type(page_id) is not int or page_id <= 0 for page_id in page_ids):
+        raise ValueError("literal-link proof requires positive integer page IDs")
+    if not page_ids:
+        return set()
+    ids = ",".join(str(page_id) for page_id in sorted(set(page_ids)))
+    query = f"""
+SELECT p.page_id
+FROM page AS p
+JOIN page_revision AS revision ON revision.revision_id = p.latest_revision_id
+JOIN text AS source ON source.hash = revision.wikitext_hash
+WHERE p.page_id IN ({ids})
+  AND p.deleted_at IS NULL
+  AND POSITION('[[' IN source.contents) = 0
+  AND POSITION('%%' IN source.contents) = 0
+  AND POSITION('{{' IN source.contents) = 0
+ORDER BY p.page_id;
+"""
+    rows = psql(database_container, query)
+    eligible = {int(value) for value in rows.splitlines() if value}
+    if not eligible.issubset(page_ids):
+        raise RuntimeError("literal-link proof returned an unrequested page ID")
+    return eligible
+
+
 def utc_now() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
@@ -296,7 +329,9 @@ def render_pass(
     )
 
 
-def render_until_links_settle(render, digests, passes, not_before, recover_failures=None):
+def render_until_links_settle(
+    render, digests, passes, not_before, recover_failures=None, certify_literal=None
+):
     """Render every stale page, again if some page's links moved because of
     links it reads. Returns the cutoff, the last full-pass summary, and the
     pages whose links differ on every render."""
@@ -304,6 +339,7 @@ def render_until_links_settle(render, digests, passes, not_before, recover_failu
     for number in range(1, MAX_FULL_PASSES + 1):
         links_before = digests()
         summary = render(f"full-{number}", not_before)
+        full_pass_index = len(passes) - 1
         # A missing ahead row changes the later link frontier when its page is
         # eventually recovered. Resolve the deadline tail *before* measuring
         # outgoing link convergence, not after up to eight expensive probes.
@@ -317,7 +353,8 @@ def render_until_links_settle(render, digests, passes, not_before, recover_failu
                 raise RuntimeError("render-ahead deadline recovery left failed pages")
         links_after = digests()
         changed = changed_pages(links_before, links_after)
-        passes[-1]["link_changed_pages"] = len(changed)
+        passes[full_pass_index]["link_changed_pages"] = len(changed)
+        passes[full_pass_index]["link_changed_page_ids"] = changed
         if not set(changed) - known_random:
             return not_before, summary, sorted(known_random)
         # A page whose links change again when it alone is rendered again
@@ -329,9 +366,18 @@ def render_until_links_settle(render, digests, passes, not_before, recover_failu
         # A random choice among few options can repeat by chance, so a page
         # counts as settled only after several identical renders.
         pending = [page for page in changed if page not in known_random]
+        # Literal-only sources have no source-level include/module/variable
+        # inputs that could make a repeated render choose another link set.
+        # Other pages, including all uncertain and transitive source types,
+        # retain the full eight-probe nondeterminism safeguard.
+        certified = set() if certify_literal is None else set(certify_literal(pending))
+        if not certified.issubset(pending):
+            raise RuntimeError("literal-link certifier returned noncandidate pages")
+        pending = [page for page in pending if page not in certified]
+        passes[full_pass_index]["literal_link_certified_pages"] = len(certified)
         seen = {page: {links_after.get(str(page))} for page in pending}
         unrendered: set[int] = set()
-        for attempt in range(1, LINK_PROBES + 1):
+        for attempt in range(1, LINK_PROBES + 1) if pending else ():
             probe = render(f"link-probe-{number}.{attempt}", utc_now(), pending)
             if probe["candidates"] != len(pending):
                 raise RuntimeError(
@@ -348,9 +394,9 @@ def render_until_links_settle(render, digests, passes, not_before, recover_failu
             if not pending:
                 break
         known_random |= {page for page in seen if len(seen[page]) > 1}
-        settled = pending
-        passes[-1]["nondeterministic_link_pages"] = len(known_random)
-        passes[-1]["settled_link_pages"] = len(settled)
+        settled = pending + sorted(certified)
+        passes[full_pass_index]["nondeterministic_link_pages"] = len(known_random)
+        passes[full_pass_index]["settled_link_pages"] = len(settled)
         if not settled:
             return not_before, summary, sorted(known_random)
         if number == MAX_FULL_PASSES:
@@ -490,6 +536,7 @@ def main() -> int:
         passes,
         utc_now() if args.rerender_all else None,
         recover_deadlines,
+        lambda page_ids: certified_literal_link_pages(args.database_container, page_ids),
     )
     failed = summary["failed_page_ids"]
 

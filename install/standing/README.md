@@ -86,6 +86,16 @@ The command runs the prepared Deepwell image's `render-ahead` runtime action as 
 
 The new Deepwell promotes valid rows in one statement when it starts, before it accepts requests. A row is valid only while its revision is still the page's latest, with the same source, and has not been rerendered by the serving build since the row's inputs were read. Pages that changed after the run therefore stay stale. `refresh.py` verifies the required pre-render, source identity, serving container IDs and port-443 owner before parking any container. If a separate operator changed the runtime during the lengthy render, activation refuses the stale baseline. It rechecks `stale_pages_remaining: 0` after activation; a failure triggers the existing rollback path. The renderer switch therefore needs only the container restart when the saved-page inputs have remained valid.
 
+Full-pass receipts now record the exact changed page-ID frontier for later
+dependency provenance analysis. A source-literal page may be omitted from
+repeated stochastic link probes only if its current saved source contains no
+Wikidot double-bracket command/link, `%%` substitution or brace expansion.
+All modules, includes, internal Wikidot links and unknown macros still receive
+eight independent link probes. The certification is deliberately conservative;
+it does not yet solve the dominant cost of source-dynamic stable pages, and
+must be benchmarked on an isolated standing-sized corpus before claiming a
+material promotion-speed improvement.
+
 Full-pass link snapshots still cover the entire live site, but each repeated
 link probe now narrows its SQL digest to pages actually rendered by that probe.
 Deadline-only failures of a full pass are retried *before* starting the
