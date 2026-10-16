@@ -25,10 +25,13 @@ use super::structs::{
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::user::{self, Entity as User};
 use crate::services::ServiceContext;
-use crate::services::{MfaService, PasswordService, SessionService};
+use crate::services::{
+    AuthenticationAttemptService, MfaService, PasswordService, SessionService,
+};
 use crate::types::UserType;
 use sea_orm::sea_query::Expr;
 use sea_orm::{ColumnTrait, Condition, EntityTrait, ExprTrait, QueryFilter, QueryOrder};
+use std::net::IpAddr;
 
 #[derive(Debug)]
 pub struct AuthenticationService;
@@ -42,6 +45,7 @@ impl AuthenticationService {
             name_or_email,
             password,
         }: AuthenticateUser,
+        ip_address: IpAddr,
     ) -> Result<AuthenticateUserOutput> {
         let make_error = || {
             Error::new(
@@ -53,15 +57,44 @@ impl AuthenticationService {
         let auth = Self::get_user_auth(ctx, &name_or_email)
             .await
             .or_raise(make_error)?;
+        let ip_bucket =
+            AuthenticationAttemptService::login_ip_bucket(&ip_address.to_string());
+        let mut buckets = vec![ip_bucket.clone()];
 
-        PasswordService::verify(ctx, &password, &auth.password_hash)
-            .await
-            .or_raise(make_error)?;
-
-        // User not found, return authentication failure
-        if !auth.valid {
+        if !AuthenticationAttemptService::reserve(ctx, &ip_bucket, 30, 60).await? {
+            ctx.commit_expected_authentication_rejection();
             bail!(make_error());
         }
+        if auth.valid {
+            let account_bucket =
+                AuthenticationAttemptService::login_user_bucket(auth.user_id);
+            if !AuthenticationAttemptService::reserve(ctx, &account_bucket, 10, 600)
+                .await?
+            {
+                ctx.commit_expected_authentication_rejection();
+                bail!(make_error());
+            }
+            buckets.push(account_bucket);
+        }
+
+        if let Err(error) =
+            PasswordService::verify_sleep(ctx, &password, &auth.password_hash, false)
+                .await
+        {
+            if error.error_type == ErrorType::InvalidAuthentication {
+                ctx.commit_expected_authentication_rejection();
+            }
+            return Err(error.raise(make_error()));
+        }
+
+        // User not found, return authentication failure. The source bucket is
+        // still committed so repeated guesses against unknown names are bounded.
+        if !auth.valid {
+            ctx.commit_expected_authentication_rejection();
+            bail!(make_error());
+        }
+
+        AuthenticationAttemptService::clear(ctx, &buckets).await?;
 
         Ok(AuthenticateUserOutput {
             needs_mfa: auth.multi_factor_secret.is_some(),
@@ -95,6 +128,13 @@ impl AuthenticationService {
             return Ok(MultiFactorAuthenticateOutput::Rejected);
         };
 
+        // A shared, durable user bucket prevents fresh restricted sessions
+        // from restoring the full second-factor guess budget.
+        let mfa_bucket = AuthenticationAttemptService::mfa_user_bucket(user.user_id);
+        if !AuthenticationAttemptService::reserve(ctx, &mfa_bucket, 5, 600).await? {
+            return Ok(MultiFactorAuthenticateOutput::Rejected);
+        }
+
         // Process input, verifying depending on type
         let verification = match totp_or_code.parse() {
             // If the value is a positive integer, treat it as a TOTP
@@ -108,7 +148,10 @@ impl AuthenticationService {
         };
 
         match verification {
-            Ok(()) => Ok(MultiFactorAuthenticateOutput::Authenticated(user)),
+            Ok(()) => {
+                AuthenticationAttemptService::clear(ctx, &[mfa_bucket]).await?;
+                Ok(MultiFactorAuthenticateOutput::Authenticated(user))
+            }
             Err(error) if error.error_type == ErrorType::InvalidAuthentication => {
                 SessionService::record_failed_mfa_attempt(ctx, session_token)
                     .await
@@ -134,7 +177,8 @@ impl AuthenticationService {
         ctx: &ServiceContext<'_>,
         name_or_email: &str,
     ) -> Result<UserAuthInfo> {
-        info!("Looking for user matching name or email '{name_or_email}'");
+        // The submitted identifier may be a password accidentally pasted into
+        // the username field, so keep it out of logs.
 
         let txn = ctx.transaction();
         let verified_email_match = Expr::col(user::Column::Email)
@@ -159,7 +203,7 @@ impl AuthenticationService {
             .await
             .or_raise(|| {
                 Error::new(
-                    format!("unable to get user auth information for '{name_or_email}'"),
+                    "unable to get user auth information",
                     ErrorType::DatabaseQuery,
                 )
             })?;
