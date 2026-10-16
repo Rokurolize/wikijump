@@ -592,7 +592,17 @@ async function run() {
   }
   const {chromium} = loadPlaywright(args.browserRoot);
   const runId = crypto.randomUUID();
-  const captureLock = await acquireBrowserCaptureLock({runId});
+  // Mock-browser unit tests do not contact Wikidot and can use independent
+  // fixture locks. Never allow a production capture to replace the global
+  // source lock: the offline network guard must be active for this override.
+  const fixtureLockPath = process.env.WIKIJUMP_TEST_CAPTURE_LOCK_PATH;
+  if (fixtureLockPath && process.env.WIKIJUMP_TEST_NETWORK_GUARD_ACTIVE !== "1") {
+    throw new Error("test capture lock override requires the offline network guard");
+  }
+  const captureLock = await acquireBrowserCaptureLock({
+    runId,
+    ...(fixtureLockPath ? {lockPath: fixtureLockPath} : {}),
+  });
   const requestGateConfigPath = path.join(args.outputDir, "request-gate-config.json");
   let sourceEgressProxy = null;
   let localEgressProxy = null;
