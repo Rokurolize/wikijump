@@ -417,7 +417,11 @@ async fn public_page_view_resolves_observed_url_aliases_to_the_canonical_page() 
         slug.replacen('-', "_", 1),
         slug.replacen('-', ".", 1),
         slug.replacen('-', "--", 1),
+        slug.replacen('-', "---", 1),
+        slug.replacen('-', " ", 1),
         format!("{slug}-"),
+        format!("{slug}_"),
+        format!("{slug}\t"),
         format!("{slug}."),
         format!("{slug} "),
     ];
