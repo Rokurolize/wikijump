@@ -32,7 +32,7 @@ and post-cutover checks.
 
 ## Candidate runtimes
 
-Candidate stacks are isolated from the standing stack and never publish port 443. Each candidate has an explicit owner, Wikijump SHA and tree, FTML SHA, profile, artifact key or image digest, creation time, expiry time, and evidence directory. Candidate names, Compose project names, container labels, and receipts must carry that identity.
+Candidate stacks are isolated from the standing stack and never publish port 443. Each candidate has an explicit owner label naming the run that created it, Wikijump SHA and tree, FTML SHA, profile, artifact key or image digest, creation time, expiry time, and evidence directory. Candidate names, Compose project names, container labels, and receipts must carry that identity.
 
 Candidates may use a dedicated non-443 port or no host port. They must not share the authoritative service name or network alias while the standing stack is serving traffic. A candidate is stopped and archived or removed when its receipt is terminal or its expiry passes. Retaining an image or volume is not evidence that a candidate is still authoritative.
 

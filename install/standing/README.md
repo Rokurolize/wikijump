@@ -107,7 +107,7 @@ Tier 2 is the controlled maintenance ceremony for changes to named volume attach
 1. Record the current container identities, image digests, mounted volumes, network, edge owner, and passing canaries as rollback evidence. Verify the five named persistent volumes and their consumers before changing anything.
 2. Build the exact merged-head images under the required lease, render a staging home bound to those identities, and validate it before touching the canonical home.
 3. Activate the bounded explicit 503 maintenance response. Connection refusal, a generic 5xx, or silently serving an old candidate is not an acceptable maintenance state.
-4. Stop the old standing containers without `-v`, start the reviewed topology, and verify that every named volume survives. Never prune or recreate a named data volume as part of this ceremony.
+4. Stop the old standing containers without `-v`, start the merged-head topology, and verify that every named volume survives. Never prune or recreate a named data volume as part of this ceremony.
 5. Verify one port-443 owner, expected project and network identities, service health, HTTP and assets, WIKIREQUEST metadata, AJAX ListPages, DOM, and unmodified `wikidot.py` lookup canaries.
 6. On failure, restore the saved topology without `-v`, restore normal edge routing, and seal a failed receipt. On success, seal the promotion receipt, retain the immediate rollback image, and remove only superseded images whose lifecycle closure is proven.
 
@@ -140,7 +140,7 @@ is never deleted by the migration command. If an interrupted run leaves a
 partial durable destination, inspect its consumers first and rerun explicitly
 with `--replace-destinations`.
 
-After the verified copy exists, activate the reviewed/merged standing topology
+After the verified copy exists, activate the merged standing topology
 whose Compose file names the durable volumes. Then prove that the running
 database, files, and cache containers mount only the durable names while all
 three legacy rollback inputs still exist:

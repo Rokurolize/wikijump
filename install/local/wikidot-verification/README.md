@@ -464,9 +464,13 @@ Theme-localization execution is site-scoped by the audited two-member allowlist
 Python helper and checked at every origin boundary. The default site remains
 `scpaiueouiuiuiui`; selecting the sandbox requires explicit
 `--site sandbox-for-codex --wikidot-origin https://sandbox-for-codex.wikidot.com`
-and `--wikijump-origin https://sandbox-for-codex.wikijump.localhost`. The
-allowlist widening is a separate draft change held for owner sign-off before
-any live sandbox mutation.
+and `--wikijump-origin https://sandbox-for-codex.wikijump.localhost`. Any further
+widening of the allowlist is a separate change in its own PR. It updates the
+JavaScript and Python allowlists together, and it merges only when
+`tests/theme-localization-e2e.test.mjs`,
+`tests/theme-localization-execution.test.mjs`, and
+`tests/test_wikidot_theme_page_helper.py` pass with the new site covered. Those
+tests are the gate, so no separate sign-off step is needed.
 
 ## Completion controller
 

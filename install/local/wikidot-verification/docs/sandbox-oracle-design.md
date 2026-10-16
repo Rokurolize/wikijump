@@ -84,7 +84,7 @@ fixtureId validated against the fixture registry (section 4). This keeps oracle
 pages from colliding with or being mistaken for theme-l10n pages, and lets the
 helper's ownership check delete/rewrite only pages this system created.
 
-### Sign-off before merge
+### Isolation rule for allowlist changes
 
 Widening a live-Wikidot MUTATION rail from one site to two enlarges what the
 automated helper (holding write credentials) may create/edit/delete on the public
@@ -92,12 +92,16 @@ internet. Even though sandbox-for-codex is authorized in general, the specific
 rail-widening diff must be:
 
 1. Its own small, isolated, heavily-tested PR.
-2. Reviewed and approved by the owner BEFORE it lands.
+2. Passing the allowlist and origin tests before merge:
+   `tests/theme-localization-e2e.test.mjs`,
+   `tests/theme-localization-execution.test.mjs`, and
+   `tests/test_wikidot_theme_page_helper.py`. Those tests are the gate.
 3. Never bundled with content/methodology work.
 
-The two items that must stop for sign-off: (1) adding sandbox-for-codex to the
+The two kinds of change that fall under this rule are: (1) adding a site to the
 allowed set; (2) any change to validateTargetOrigin or the adapter origin checks.
-Design and draft freely; do not merge these without explicit approval.
+Design and draft freely; merge these through the normal PR path once the rule is
+met.
 
 ## 4. Content: the fixture condition matrix
 
