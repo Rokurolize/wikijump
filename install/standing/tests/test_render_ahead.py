@@ -122,6 +122,12 @@ class RenderAheadRuntimeTest(unittest.TestCase):
             self.assertIn("POSITION('[[' IN source.contents) = 0", query)
             self.assertIn("POSITION('%%' IN source.contents) = 0", query)
             self.assertIn("POSITION('{' IN source.contents) = 0", query)
+            self.assertIn("template_page.slug = CASE", query)
+            self.assertIn("regexp_replace(p.slug, ':[^:]*$', ':_template')", query)
+            self.assertIn("template_page.page_id <> p.page_id", query)
+            self.assertIn("POSITION('%%content%%' IN template_source.contents) > 0", query)
+            self.assertIn("length(replace(template_source.contents, '%%', '')) = 4", query)
+            self.assertIn("POSITION('[[' IN template_source.contents) > 0", query)
             RENDER_AHEAD.psql = lambda container, query: "9"
             with self.assertRaisesRegex(RuntimeError, "unrequested"):
                 RENDER_AHEAD.certified_literal_link_pages("db", [8])

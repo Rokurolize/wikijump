@@ -248,10 +248,10 @@ def changed_pages(before: dict[str, str], after: dict[str, str]) -> list[int]:
 def certified_literal_link_pages(database_container: str, page_ids: list[int]) -> set[int]:
     """Certify a deliberately narrow, source-literal, non-executable frontier.
 
-    An unchanged page revision with no Wikidot double-bracket commands or
-    triple-bracket links and no ``%%`` substitution cannot read another page's
-    state through an include/module/link target and cannot use random ListPages.
-    Dynamic/unknown syntax fails closed: it is always probed eight times.
+    The revision source and any exact category template must be free of
+    Wikidot double-bracket commands, ``%%`` substitutions, and brace expansion.
+    Otherwise the template can add links even when the saved revision is
+    literal. Dynamic/unknown syntax fails closed: it is always probed eight times.
     This is not a guess based on one observed equal link digest.
     """
     if any(type(page_id) is not int or page_id <= 0 for page_id in page_ids):
@@ -269,6 +269,34 @@ WHERE p.page_id IN ({ids})
   AND POSITION('[[' IN source.contents) = 0
   AND POSITION('%%' IN source.contents) = 0
   AND POSITION('{{' IN source.contents) = 0
+   -- Stored source is composed with its exact category template before render.
+   -- A dynamic template can add links, so certify it only when absent/literal.
+   AND NOT EXISTS (
+       SELECT 1
+       FROM page AS template_page
+       JOIN page_revision AS template_revision
+         ON template_revision.revision_id = template_page.latest_revision_id
+       JOIN text AS template_source ON template_source.hash = template_revision.wikitext_hash
+       WHERE template_page.site_id = p.site_id
+         AND template_page.slug = CASE
+             WHEN POSITION(':' IN p.slug) = 0 THEN '_template'
+             ELSE regexp_replace(p.slug, ':[^:]*$', ':_template')
+         END
+         AND template_page.page_id <> p.page_id
+         AND template_page.deleted_at IS NULL
+         AND (
+             POSITION('[[' IN template_source.contents) > 0
+             OR (
+                  POSITION('%%' IN template_source.contents) > 0
+                  AND NOT (
+                      POSITION('%%content%%' IN template_source.contents) > 0
+                      AND length(template_source.contents)
+                          - length(replace(template_source.contents, '%%', '')) = 4
+                  )
+              )
+             OR POSITION('{{' IN template_source.contents) > 0
+         )
+   )
 ORDER BY p.page_id;
 """
     rows = psql(database_container, query)
