@@ -86,6 +86,14 @@ The command runs the prepared Deepwell image's `render-ahead` runtime action as 
 
 The new Deepwell promotes valid rows in one statement when it starts, before it accepts requests. A row is valid only while its revision is still the page's latest, with the same source, and has not been rerendered by the serving build since the row's inputs were read. Pages that changed after the run therefore stay stale. `refresh.py` verifies the required pre-render, source identity, serving container IDs and port-443 owner before parking any container. If a separate operator changed the runtime during the lengthy render, activation refuses the stale baseline. It rechecks `stale_pages_remaining: 0` after activation; a failure triggers the existing rollback path. The renderer switch therefore needs only the container restart when the saved-page inputs have remained valid.
 
+Full-pass link snapshots still cover the entire live site, but each repeated
+link probe now narrows its SQL digest to pages actually rendered by that probe.
+Deadline-only failures of a full pass are retried *before* starting the
+link-stability proof; other failures terminate early. This does not reduce
+the eight observations required for nondeterministic links, nor the work of
+actually rerendering thousands of pages. See each pass log's `elapsed_ms`,
+`rows_per_sec`, and `candidates` to distinguish a long probe from a hang.
+
 The candidate Framerail image is built from the production Dockerfile with origin checks enabled by default, and the standing Compose environment repeats `FRAMERAIL_CSRF_CHECK_ORIGIN=true` so the runtime cannot silently disable the check.
 
 The standing image tier is deliberately separate from `install/local`: local images retain bind mounts and watch-mode startup for source iteration, while the sealed candidate images are already-built production artifacts. Deepwell's candidate image contains the pinned `sqlx-cli` and migrations and runs `sqlx migrate run` before the binary; migration handling is therefore explicit rather than silently lost when the local startup script is removed.

@@ -95,6 +95,21 @@ class RenderAheadRuntimeTest(unittest.TestCase):
         self.assertIn("source_page.deleted_at IS NULL", query)
         self.assertIn("source_page.latest_revision_id IS NOT NULL", query)
 
+    def test_scoped_link_probe_pushes_filters_into_all_link_sources(self) -> None:
+        query = RENDER_AHEAD.link_digest_query([9, 3, 9])
+        for source in (
+            "FROM page_connection WHERE from_page_id IN (3,9)",
+            "FROM page_connection_missing WHERE from_page_id IN (3,9)",
+            "FROM page_link WHERE page_id IN (3,9)",
+        ):
+            self.assertIn(source, query)
+        self.assertIn("source_page.deleted_at IS NULL", query)
+        self.assertEqual(RENDER_AHEAD.link_digest_query(), RENDER_AHEAD.LINK_DIGEST_QUERY)
+        self.assertIsNone(RENDER_AHEAD.link_digest_query([]))
+        for bad in ([-1], [0], ["1"], [True], ["1); DROP TABLE page;"]):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                RENDER_AHEAD.link_digest_query(bad)
+
     def test_changed_pages_include_added_and_removed_link_sets(self) -> None:
         self.assertEqual(
             RENDER_AHEAD.changed_pages({"1": "a", "2": "b", "3": "c"}, {"1": "a", "2": "x", "4": "d"}),
@@ -178,7 +193,72 @@ class RenderUntilLinksSettleTest(unittest.TestCase):
         def render(name, cutoff, pages=None):
             passes.append({})
             return self.render(name, cutoff, pages)
-        return RENDER_AHEAD.render_until_links_settle(render, lambda: dict(self.links), passes, not_before)
+        return RENDER_AHEAD.render_until_links_settle(
+            render,
+            lambda page_ids=None: {
+                page: digest for page, digest in self.links.items()
+                if page_ids is None or int(page) in page_ids
+            },
+            passes,
+            not_before,
+        )
+
+    def test_probe_digests_only_its_current_changed_page_frontier(self) -> None:
+        queried = []
+        def digests(page_ids=None):
+            queried.append(None if page_ids is None else list(page_ids))
+            return {
+                page: digest for page, digest in self.links.items()
+                if page_ids is None or int(page) in page_ids
+            }
+        passes = [{}]
+        def render(name, cutoff, pages=None):
+            passes.append({})
+            return self.render(name, cutoff, pages)
+        RENDER_AHEAD.render_until_links_settle(render, digests, passes, None)
+        self.assertIn(None, queried, "all full passes must compare all source links")
+        self.assertTrue(any(group for group in queried if group is not None))
+        self.assertTrue(
+            all(len(group) <= 3 for group in queried if group is not None),
+            "probing must only aggregate links for its changed page frontier",
+        )
+
+    def test_deadline_recovery_happens_before_link_probe_or_convergence(self) -> None:
+        events = []
+        links = {"1": "old"}
+        def digests(page_ids=None):
+            events.append("digests")
+            return dict(links)
+        def render(name, cutoff, page_ids=None):
+            events.append(name)
+            return {
+                "candidates": 1,
+                "failed": 1,
+                "failed_page_ids": [1],
+                "failures": [{"error": "deadline has elapsed"}],
+            }
+        def recover(summary, cutoff):
+            events.append("tail-serial")
+            links["1"] = "new"
+            return {"candidates": 1, "failed": 0, "failed_page_ids": [], "failures": []}
+        passes = [{}]
+        def captured(name, cutoff, page_ids=None):
+            passes.append({})
+            if name.startswith("link-probe"):
+                events.append(name)
+                return {"candidates": len(page_ids), "failed_page_ids": []}
+            return render(name, cutoff, page_ids)
+        RENDER_AHEAD.render_until_links_settle(captured, digests, passes, None, recover)
+        self.assertEqual(events[:4], ["digests", "full-1", "tail-serial", "digests"])
+
+    def test_non_deadline_failure_stops_before_expensive_probing(self) -> None:
+        calls = []
+        def render(name, cutoff, page_ids=None):
+            calls.append(name)
+            return {"failed": 1, "failed_page_ids": [4], "failures": [{"error": "invalid syntax"}]}
+        with self.assertRaisesRegex(RuntimeError, "non-deadline failures"):
+            RENDER_AHEAD.render_until_links_settle(render, lambda page_ids=None: {}, [{}], None)
+        self.assertEqual(calls, ["full-1"])
 
     def test_dependency_changes_render_everything_again(self) -> None:
         not_before, _, nondeterministic = self.settle()

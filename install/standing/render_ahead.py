@@ -201,8 +201,43 @@ def psql(database_container: str, sql: str) -> str:
     ).strip()
 
 
-def link_digests(database_container: str) -> dict[str, str]:
-    rows = psql(database_container, LINK_DIGEST_QUERY).splitlines()
+def link_digest_query(page_ids: list[int] | None = None) -> str | None:
+    """Scope repeated link probes to their exact candidate page IDs.
+
+    Full-pass before/after digests still cover the entire site. Only the
+    repeated probe comparison is scoped: its rendering action selects exactly
+    these page IDs, so the rest of the site cannot change as a consequence of
+    that probe. Push the filter into each indexed link source rather than
+    aggregating every site's link row on each of eight probe attempts.
+    """
+    if page_ids is None:
+        return LINK_DIGEST_QUERY
+    if any(type(page_id) is not int or page_id < 1 for page_id in page_ids):
+        raise ValueError("probe page IDs must be positive integers")
+    if not page_ids:
+        return None
+    sql_ids = ",".join(str(page_id) for page_id in sorted(set(page_ids)))
+    selected = f"IN ({sql_ids})"
+    sql = LINK_DIGEST_QUERY
+    for table, column in (
+        ("page_connection", "from_page_id"),
+        ("page_connection_missing", "from_page_id"),
+        ("page_link", "page_id"),
+    ):
+        sql = re.sub(
+            rf"\bFROM {table}\b",
+            f"FROM {table} WHERE {column} {selected}",
+            sql,
+            count=1,
+        )
+    return sql
+
+
+def link_digests(database_container: str, page_ids: list[int] | None = None) -> dict[str, str]:
+    sql = link_digest_query(page_ids)
+    if sql is None:
+        return {}
+    rows = psql(database_container, sql).splitlines()
     return dict(row.split("|", 1) for row in rows)
 
 
@@ -261,7 +296,7 @@ def render_pass(
     )
 
 
-def render_until_links_settle(render, digests, passes, not_before):
+def render_until_links_settle(render, digests, passes, not_before, recover_failures=None):
     """Render every stale page, again if some page's links moved because of
     links it reads. Returns the cutoff, the last full-pass summary, and the
     pages whose links differ on every render."""
@@ -269,6 +304,17 @@ def render_until_links_settle(render, digests, passes, not_before):
     for number in range(1, MAX_FULL_PASSES + 1):
         links_before = digests()
         summary = render(f"full-{number}", not_before)
+        # A missing ahead row changes the later link frontier when its page is
+        # eventually recovered. Resolve the deadline tail *before* measuring
+        # outgoing link convergence, not after up to eight expensive probes.
+        if summary["failed_page_ids"]:
+            if not deadline_only(summary):
+                raise RuntimeError("render-ahead full pass has non-deadline failures")
+            if recover_failures is None:
+                raise RuntimeError("render-ahead needs a deadline recovery callback")
+            summary = recover_failures(summary, not_before)
+            if summary["failed_page_ids"]:
+                raise RuntimeError("render-ahead deadline recovery left failed pages")
         links_after = digests()
         changed = changed_pages(links_before, links_after)
         passes[-1]["link_changed_pages"] = len(changed)
@@ -295,7 +341,7 @@ def render_until_links_settle(render, digests, passes, not_before):
                     "candidate selection requires investigation before promotion"
                 )
             unrendered |= set(probe["failed_page_ids"])
-            current = digests()
+            current = digests(pending)
             for page in pending:
                 seen[page].add(current.get(str(page)))
             pending = [page for page in pending if len(seen[page]) == 1 and page not in unrendered]
@@ -406,29 +452,17 @@ def main() -> int:
         )
         return summary
 
-    not_before, summary, nondeterministic = render_until_links_settle(
-        lambda name, cutoff, pages=None: render(
-            name, render_ahead_settings(args.concurrency, args.batch_size, cutoff, pages)
-        ),
-        lambda: link_digests(args.database_container),
-        passes,
-        utc_now() if args.rerender_all else None,
-    )
-
-    # Tail: pages that missed the deadline under load are retried alone, then
-    # once with a longer one-shot deadline. Any other failure stops the run.
-    failed = summary["failed_page_ids"]
-    if failed:
-        if not deadline_only(summary):
-            raise RuntimeError("render-ahead has failures other than the render deadline")
+    def recover_deadlines(summary: dict[str, object], cutoff: str | None) -> dict[str, object]:
+        failed = summary["failed_page_ids"]
         summary = render(
             "tail-serial",
-            render_ahead_settings(1, args.batch_size, not_before, failed),
+            render_ahead_settings(1, args.batch_size, cutoff, failed),
         )
         failed = summary["failed_page_ids"]
-    if failed:
+        if not failed:
+            return summary
         if not deadline_only(summary):
-            raise RuntimeError("render-ahead tail has failures other than the render deadline")
+            raise RuntimeError("render-ahead serial tail has non-deadline failures")
         with tempfile.NamedTemporaryFile(
             "w", encoding="utf-8", prefix="render-ahead-config.", suffix=".toml", delete=False
         ) as config_file:
@@ -440,14 +474,24 @@ def main() -> int:
             )
         os.chmod(config_file.name, 0o644)
         try:
-            summary = render(
+            return render(
                 "tail-extended-deadline",
-                render_ahead_settings(1, args.batch_size, not_before, failed),
+                render_ahead_settings(1, args.batch_size, cutoff, failed),
                 config_file.name,
             )
         finally:
             os.unlink(config_file.name)
-        failed = summary["failed_page_ids"]
+
+    not_before, summary, nondeterministic = render_until_links_settle(
+        lambda name, cutoff, pages=None: render(
+            name, render_ahead_settings(args.concurrency, args.batch_size, cutoff, pages)
+        ),
+        lambda pages=None: link_digests(args.database_container, pages),
+        passes,
+        utc_now() if args.rerender_all else None,
+        recover_deadlines,
+    )
+    failed = summary["failed_page_ids"]
 
     # Verify the whole site, not just the last pass's pages.
     final = render(
