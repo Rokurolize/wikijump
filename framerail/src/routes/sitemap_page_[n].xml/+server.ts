@@ -4,7 +4,7 @@ import {
   buildSitemapUrlsetXml,
   InvalidSitemapShardPath,
   parseSitemapShardNumber,
-  shardSitemapEntries,
+  SITEMAP_ENTRIES_PER_SHARD,
   SITEMAP_XML_HEADERS
 } from "$lib/server/sitemap"
 
@@ -23,17 +23,18 @@ export const GET: RequestHandler = async ({ request, params }) => {
 
   const { siteId } = loadSiteInfo(request.headers)
   // Child shards must use the same anonymous visibility boundary as the index.
-  const output = await wikidotSitemap(siteId, { siteId })
+  const output = await wikidotSitemap(siteId, shard, { siteId })
   // A site the viewer cannot see has no public sitemap, so the route answers
   // the same way as any other missing page.
   if (!output) return new Response("Not found", { status: 404 })
 
-  const shards = shardSitemapEntries(output.entries)
-  const entries = shards[shard - 1]
-  if (!entries) return new Response("Not found", { status: 404 })
+  if (output.entries.length === 0) return new Response("Not found", { status: 404 })
+  if (output.entries.length > SITEMAP_ENTRIES_PER_SHARD) {
+    return new Response("Invalid sitemap shard size", { status: 502 })
+  }
 
   const origin = new URL(request.url).origin
-  return new Response(buildSitemapUrlsetXml(origin, entries), {
+  return new Response(buildSitemapUrlsetXml(origin, output.entries), {
     headers: SITEMAP_XML_HEADERS
   })
 }

@@ -362,16 +362,19 @@ export interface WikidotSitemapEntry {
 
 export interface WikidotSitemapOutput {
   entries: WikidotSitemapEntry[]
+  shard_count: number | null
 }
 
 export async function wikidotSitemap(
   siteId: number,
+  shard: number,
   requestContext: RequestContext = {}
 ): Promise<WikidotSitemapOutput | null> {
   return client.request(
     "wikidot_sitemap",
     {
-      site_id: siteId
+      site_id: siteId,
+      shard
     },
     requestContext
   )

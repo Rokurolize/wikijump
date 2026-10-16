@@ -11475,7 +11475,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "24d346e798f361bfdd1e0f484e0c361c8b9cd91b71ce3abdf39887879b8aa0e3"
+      "source_input_set_sha256": "9ebbe75f06a6cd884f461128a6f0c791121a2b5e8738e79a216dec995053858c"
     },
     "ftml": {
       "commit": "17dbc236a5bc879c1bcd451e2308bb080d854f15",
@@ -11580,7 +11580,7 @@
       },
       {
         "path": "deepwell/src/endpoints/page.rs",
-        "sha256": "9e4f1965368874d69bfa0b7707beadcd4f7e98e4142a2f740fe94cb7e0fcc325"
+        "sha256": "fa70fbb9dffde40ad7e8747cbf11d20f847b974dcd42466d8c5ce818a835da8d"
       },
       {
         "path": "deepwell/src/endpoints/page/permissions.rs",
@@ -11640,7 +11640,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "0f2a72aefd19343b522c7c0828f4e10b73c780e18b51200c1c48f338057aca36"
+        "sha256": "7d5781d7bdf5b692316a56ff5767a2a18cc61e2feb02f2a2a8029a9a61057089"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11704,7 +11704,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "3b219e18d6646a1c51016b468729937de40bd82e4d4f8b2964a9743c6538fca6"
+        "sha256": "ddacb73ca06a4deec07efe68053136e0dce2fe07e5ba26a40740850918ce1dbc"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11940,11 +11940,11 @@
       },
       {
         "path": "framerail/src/routes/sitemap_page_[n].xml/+server.ts",
-        "sha256": "5db7c1c598113c7c89208d21ce07756f649707ca50e0ed47590ed04f6832a72e"
+        "sha256": "a31f976d1fd13265aea8d6b69fb168bd594173ca43775dfd618fee730a6fbdfa"
       },
       {
         "path": "framerail/src/routes/sitemap.xml/+server.ts",
-        "sha256": "85301a3b783d6ca38a087805c56307474c7013407db29b47d9b3ad6e0da98632"
+        "sha256": "da35a5fffaab17dcc05fdc7d2b24b9f7af15560f94f2bc6d6c180d2eeea61bcb"
       },
       {
         "path": "framerail/src/routes/user[x+3a]info/[target]/+page.server.ts",

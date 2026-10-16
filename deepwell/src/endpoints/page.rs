@@ -665,6 +665,8 @@ pub async fn wikidot_site_changes_feed(
 #[serde(deny_unknown_fields)]
 struct WikidotSitemapInput {
     site_id: i64,
+    #[serde(default)]
+    shard: u64,
 }
 
 pub async fn wikidot_sitemap(
@@ -683,7 +685,7 @@ pub async fn wikidot_sitemap(
         )
         .into());
     }
-    RenderService::wikidot_sitemap(ctx, input.site_id).await
+    RenderService::wikidot_sitemap(ctx, input.site_id, input.shard).await
 }
 
 pub async fn wikidot_members_list_module(

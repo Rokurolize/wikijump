@@ -40,11 +40,9 @@ use serde::Serialize;
 use std::collections::BTreeMap;
 use time::OffsetDateTime;
 
-/// The bounded number of *publicly viewable* sitemap entries one site reports.
-///
-/// An overflowing public site fails explicitly rather than silently publishing
-/// an incomplete index. Full inventories beyond this limit need a paged RPC.
-pub const SITEMAP_MAX_ENTRIES: u64 = 50_000;
+/// Each public sitemap shard is bounded, while the index covers every public
+/// page, including sites with more than 50,000 eligible pages.
+pub const SITEMAP_ENTRIES_PER_SHARD: u64 = 1_000;
 /// Bound both database memory and one permission batch, independently of the
 /// number of private pages preceding the indexable ones.
 // A typical imported SCP mirror (~25k rows) needs only three queries, while
@@ -69,13 +67,24 @@ pub struct WikidotSitemapEntry {
 #[derive(Clone, Debug, Serialize)]
 pub struct WikidotSitemapOutput {
     pub entries: Vec<WikidotSitemapEntry>,
+    pub shard_count: Option<u64>,
 }
 
 impl RenderService {
     pub async fn wikidot_sitemap(
         ctx: &ServiceContext<'_>,
         site_id: i64,
+        shard: u64,
     ) -> Result<Option<WikidotSitemapOutput>> {
+        // Shard 0 returns the index's total count; shard 1.. returns at most
+        // 1,000 public URLs. No RPC response contains a full unbounded list.
+        let start = shard
+            .saturating_sub(1)
+            .checked_mul(SITEMAP_ENTRIES_PER_SHARD)
+            .ok_or_else(|| {
+                Error::new("sitemap shard number overflow", ErrorType::Render)
+            })?;
+        let end = start.saturating_add(SITEMAP_ENTRIES_PER_SHARD);
         // Always compute the publicly indexable set. RPC callers can be
         // authenticated independently of the public sitemap request, but
         // their session or page attribution must not grant extra entries.
@@ -112,6 +121,7 @@ impl RenderService {
         };
         let mut last_page_id = 0_i64;
         let mut entries = Vec::new();
+        let mut eligible_count = 0_u64;
         let mut category_permissions = BTreeMap::new();
         loop {
             let rows = SitemapPageRow::find_by_statement(Statement::from_sql_and_values(
@@ -155,18 +165,19 @@ impl RenderService {
 
             for (row, viewable) in rows.into_iter().zip(decisions) {
                 if viewable {
-                    if entries.len() >= SITEMAP_MAX_ENTRIES as usize {
-                        return Err(Error::new(
-                            format!(
-                                "site {site_id} has more than {SITEMAP_MAX_ENTRIES} public sitemap pages; a paged sitemap RPC is required"
-                            ),
-                            ErrorType::Render,
-                        ).into());
+                    if shard > 0 && eligible_count >= start && eligible_count < end {
+                        entries.push(WikidotSitemapEntry {
+                            slug: row.slug,
+                            last_modified: row.last_modified,
+                        });
                     }
-                    entries.push(WikidotSitemapEntry {
-                        slug: row.slug,
-                        last_modified: row.last_modified,
-                    });
+                    eligible_count += 1;
+                    if shard > 0 && eligible_count >= end {
+                        return Ok(Some(WikidotSitemapOutput {
+                            entries,
+                            shard_count: None,
+                        }));
+                    }
                 }
             }
             if !full_batch {
@@ -174,6 +185,10 @@ impl RenderService {
             }
         }
 
-        Ok(Some(WikidotSitemapOutput { entries }))
+        Ok(Some(WikidotSitemapOutput {
+            entries,
+            shard_count: (shard == 0)
+                .then_some(eligible_count.div_ceil(SITEMAP_ENTRIES_PER_SHARD)),
+        }))
     }
 }

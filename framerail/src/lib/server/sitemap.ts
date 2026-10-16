@@ -35,7 +35,10 @@ function escapeXml(value: string): string {
 /// Shard numbers start at 1, matching the child locations the sitemap index
 /// advertises. Anything else is not a sitemap shard.
 export function parseSitemapShardNumber(value: string): number {
-  if (/^[1-9][0-9]*$/.test(value)) return parseInt(value, 10)
+  if (/^[1-9][0-9]*$/.test(value)) {
+    const number = Number(value)
+    if (Number.isSafeInteger(number)) return number
+  }
   throw new InvalidSitemapShardPath(`Not a sitemap shard number: ${value}`)
 }
 
@@ -82,14 +85,4 @@ export function buildSitemapUrlsetXml(origin: string, entries: SitemapEntry[]): 
     `${urls.join("\n")}\n` +
     `</urlset>`
   )
-}
-
-/// Splits the full entry set into shard slices of at most
-/// `SITEMAP_ENTRIES_PER_SHARD` entries each.
-export function shardSitemapEntries(entries: SitemapEntry[]): SitemapEntry[][] {
-  const shards: SitemapEntry[][] = []
-  for (let start = 0; start < entries.length; start += SITEMAP_ENTRIES_PER_SHARD) {
-    shards.push(entries.slice(start, start + SITEMAP_ENTRIES_PER_SHARD))
-  }
-  return shards
 }
