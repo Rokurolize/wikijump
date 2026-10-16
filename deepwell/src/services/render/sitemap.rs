@@ -47,7 +47,9 @@ use time::OffsetDateTime;
 pub const SITEMAP_MAX_ENTRIES: u64 = 50_000;
 /// Bound both database memory and one permission batch, independently of the
 /// number of private pages preceding the indexable ones.
-const SITEMAP_SCAN_BATCH_ROWS: u64 = 1_000;
+// A typical imported SCP mirror (~25k rows) needs only three queries, while
+// a site with many hidden pages is still scanned without raw-row truncation.
+const SITEMAP_SCAN_BATCH_ROWS: u64 = 10_000;
 
 #[derive(Debug, FromQueryResult)]
 struct SitemapPageRow {
