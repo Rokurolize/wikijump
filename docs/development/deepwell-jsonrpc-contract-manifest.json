@@ -11389,7 +11389,9 @@
       "test_witness": {
         "kind": "endpoint_behavioral",
         "reference": "deepwell/tests/page.rs#sitemap_never_publishes_authenticated_only_site_pages",
-        "alternatives": [],
+        "alternatives": [
+          "deepwell/tests/page.rs#sitemap_scans_past_fifty_thousand_private_pages_for_public_tail"
+        ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
     }
