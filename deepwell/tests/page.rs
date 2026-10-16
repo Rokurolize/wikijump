@@ -4705,6 +4705,19 @@ async fn sitemap_never_publishes_authenticated_only_site_pages() {
     .insert(runner.context().transaction())
     .await
     .expect("root-only sitemap page permission should be created");
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            role_id: root_role.role_id,
+            assigning_user_id: SYSTEM_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("authenticated sitemap test viewer should receive the root role");
     PermissionCache::invalidate_site(runner.context(), site_id)
         .await
         .expect("new category permissions must be visible");
@@ -4747,6 +4760,25 @@ async fn sitemap_never_publishes_authenticated_only_site_pages() {
     assert!(
         !guest_can_view_private_page,
         "the fixture page must be genuinely private to anonymous visitors"
+    );
+    let admin_can_view_private_page = PermissionService::check_user_can(
+        runner.context(),
+        &CheckPermissionContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id,
+            page_reference: Some(Reference::Id(created.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(private_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+    .expect("administrator private page access should be checked");
+    assert!(
+        admin_can_view_private_page,
+        "the fixture page must remain visible to its authenticated admin"
     );
 
     let sitemap_request = json!({"site_id": site_id});
