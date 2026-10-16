@@ -15,11 +15,16 @@
 //! Normal interactive renders never construct a trace. `StageGuard::new()`
 //! therefore avoids even reading the clock when its trace argument is `None`.
 
+use super::render_dependency::{RenderDependencyClass, classify_render_dependencies};
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::{Duration, Instant};
+
+pub(crate) const OBSERVED_SOURCE_DEPENDENCY: u64 = 1;
+pub(crate) const OBSERVED_QUERY_DEPENDENCY: u64 = 2;
+pub(crate) const OBSERVED_OTHER_DEPENDENCY: u64 = 4;
 
 const SCOPE_COUNT: usize = 5;
 const STAGE_COUNT: usize = 40;
@@ -240,6 +245,7 @@ struct CorpusRenderTraceInner {
     terminal: AtomicU64,
     dimensions: [AtomicU64; 4],
     executed_random_list_pages: AtomicBool,
+    observed_dependency_flags: AtomicU64,
     started_at: Instant,
 }
 
@@ -264,6 +270,7 @@ impl CorpusRenderTrace {
             terminal: AtomicU64::new(0),
             dimensions: std::array::from_fn(|_| AtomicU64::new(0)),
             executed_random_list_pages: AtomicBool::new(false),
+            observed_dependency_flags: AtomicU64::new(0),
             started_at: Instant::now(),
         }))
     }
@@ -285,6 +292,37 @@ impl CorpusRenderTrace {
 
     pub(crate) fn executed_random_list_pages(&self) -> bool {
         self.0.executed_random_list_pages.load(Ordering::Relaxed)
+    }
+
+    /// Records positive classifications of source material actually passed
+    /// through this render, including expanded includes and navigation.
+    /// An empty mask does not certify deterministic output: these classifiers
+    /// intentionally do not recognize every possible runtime dependency.
+    pub(crate) fn observe_render_source_dependencies(&self, source: &str) {
+        let classes = classify_render_dependencies(source);
+        let mut flags = 0;
+        if classes.contains(RenderDependencyClass::SourceDependent) {
+            flags |= OBSERVED_SOURCE_DEPENDENCY;
+        }
+        if classes.contains(RenderDependencyClass::QueryDependent) {
+            flags |= OBSERVED_QUERY_DEPENDENCY;
+        }
+        for other in [
+            RenderDependencyClass::ViewerDependent,
+            RenderDependencyClass::RequestDependent,
+            RenderDependencyClass::UnsupportedUnverified,
+        ] {
+            if classes.contains(other) {
+                flags |= OBSERVED_OTHER_DEPENDENCY;
+            }
+        }
+        self.0
+            .observed_dependency_flags
+            .fetch_or(flags, Ordering::Relaxed);
+    }
+
+    pub(crate) fn observed_dependency_flags(&self) -> u64 {
+        self.0.observed_dependency_flags.load(Ordering::Relaxed)
     }
 
     #[inline]
@@ -428,6 +466,29 @@ mod tests {
         assert!(trace.executed_random_list_pages());
         trace.mark_random_list_pages_execution();
         assert!(duplicate.executed_random_list_pages());
+    }
+
+    #[test]
+    fn source_and_query_provenance_accumulate_across_included_and_nav_sources() {
+        let trace = CorpusRenderTrace::new();
+        assert_eq!(trace.observed_dependency_flags(), 0);
+        trace.observe_render_source_dependencies("[[include fragment:somewhere]]");
+        assert_eq!(
+            trace.observed_dependency_flags(),
+            OBSERVED_SOURCE_DEPENDENCY
+        );
+        trace.observe_render_source_dependencies("[[module ListPages]]\n[[/module]]");
+        assert_eq!(
+            trace.observed_dependency_flags(),
+            OBSERVED_SOURCE_DEPENDENCY | OBSERVED_QUERY_DEPENDENCY,
+        );
+        trace.observe_render_source_dependencies("[[module MysteryWidget]]");
+        assert_ne!(
+            trace.observed_dependency_flags() & OBSERVED_OTHER_DEPENDENCY,
+            0
+        );
+        trace.observe_render_source_dependencies("ordinary static text");
+        assert_eq!(trace.observed_dependency_flags(), 7);
     }
 
     #[test]

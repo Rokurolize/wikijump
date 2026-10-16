@@ -40,13 +40,13 @@ impl PageRevisionService {
     /// Imported revisions use the corpus include ceiling, as the corpus
     /// finalizer renders them; local revisions keep the public limit.
     ///
-    /// Returns the stored revision ID and runtime-observed random ListPages
-    /// execution. The boolean alone must never certify deterministic links:
-    /// other dynamic link producers and transitive modules may exist.
+    /// Returns revision ID and positive runtime observations: actual random
+    /// ListPages execution, plus source dependency class flags. None of these
+    /// can independently certify deterministic link output.
     pub(crate) async fn render_ahead(
         ctx: &ServiceContext<'_>,
         id: PageId,
-    ) -> Result<(i64, bool)> {
+    ) -> Result<(i64, bool, u64)> {
         let PageId {
             site_id,
             category_id,
@@ -124,6 +124,10 @@ impl PageRevisionService {
         .await
         .or_raise(make_error)?;
 
-        Ok((revision.revision_id, trace.executed_random_list_pages()))
+        Ok((
+            revision.revision_id,
+            trace.executed_random_list_pages(),
+            trace.observed_dependency_flags(),
+        ))
     }
 }

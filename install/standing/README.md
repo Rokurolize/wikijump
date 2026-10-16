@@ -105,6 +105,11 @@ An empty array **does not** certify deterministic links, because other
 runtime modules, navigation, template data, and link-state dependencies may
 still change. The trace is evidence for future source-based link-producer
 classification; it is never a reason on its own to skip eight safety probes.
+The summary also records `observed_source_dependent_page_ids`,
+`observed_query_dependent_page_ids`, and
+`observed_other_dependent_page_ids` from existing dependency classification
+of body, navigation, and runtime-expanded source. These are positive warnings
+only: an absent ID is never a certificate of deterministic links.
 Deadline-only failures of a full pass are retried *before* starting the
 link-stability proof; other failures terminate early. This does not reduce
 the eight observations required for nondeterministic links, nor the work of

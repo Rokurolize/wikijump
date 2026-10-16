@@ -35,6 +35,9 @@
 //! rendered by a later run or by the normal stale-page path.
 
 use super::corpus::{parse_boolish, parse_positive_i64, parse_positive_usize};
+use super::diagnostics::{
+    OBSERVED_OTHER_DEPENDENCY, OBSERVED_QUERY_DEPENDENCY, OBSERVED_SOURCE_DEPENDENCY,
+};
 use super::generator::COMPILED_GENERATOR;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::runtime::ServerState;
@@ -90,6 +93,10 @@ pub struct RenderAheadSummary {
     /// Observed, actually executed random ListPages in rendered pages.
     /// This is a positive provenance signal, not a deterministic certificate.
     executed_random_list_pages_page_ids: Vec<i64>,
+    /// Conservative positive observations, not a safe-to-skip certificate.
+    observed_source_dependent_page_ids: Vec<i64>,
+    observed_query_dependent_page_ids: Vec<i64>,
+    observed_other_dependent_page_ids: Vec<i64>,
     stale_without_valid_ahead: i64,
     elapsed_ms: u128,
     rows_per_sec: f64,
@@ -153,6 +160,9 @@ impl RenderAheadService {
         let mut failures = Vec::new();
         let mut failed_page_ids = Vec::new();
         let mut executed_random_list_pages_page_ids = Vec::new();
+        let mut observed_source_dependent_page_ids = Vec::new();
+        let mut observed_query_dependent_page_ids = Vec::new();
+        let mut observed_other_dependent_page_ids = Vec::new();
         let mut after_page_id = 0;
 
         // Keyset pagination over page IDs, so a page that fails is not
@@ -168,7 +178,7 @@ impl RenderAheadService {
                 continue;
             }
 
-            let results: Vec<(PageId, Result<(i64, bool)>)> = stream::iter(batch)
+            let results: Vec<(PageId, Result<(i64, bool, u64)>)> = stream::iter(batch)
                 .map(|id| {
                     let state = state.clone();
                     async move { (id, Self::render_page(&state, id).await) }
@@ -179,10 +189,19 @@ impl RenderAheadService {
 
             for (id, result) in results {
                 match result {
-                    Ok((_, executed_random)) => {
+                    Ok((_, executed_random, dependency_flags)) => {
                         rendered += 1;
                         if executed_random {
                             executed_random_list_pages_page_ids.push(id.page_id);
+                        }
+                        if dependency_flags & OBSERVED_SOURCE_DEPENDENCY != 0 {
+                            observed_source_dependent_page_ids.push(id.page_id);
+                        }
+                        if dependency_flags & OBSERVED_QUERY_DEPENDENCY != 0 {
+                            observed_query_dependent_page_ids.push(id.page_id);
+                        }
+                        if dependency_flags & OBSERVED_OTHER_DEPENDENCY != 0 {
+                            observed_other_dependent_page_ids.push(id.page_id);
                         }
                     }
                     Err(error) => {
@@ -223,6 +242,18 @@ impl RenderAheadService {
             executed_random_list_pages_page_ids: {
                 executed_random_list_pages_page_ids.sort_unstable();
                 executed_random_list_pages_page_ids
+            },
+            observed_source_dependent_page_ids: {
+                observed_source_dependent_page_ids.sort_unstable();
+                observed_source_dependent_page_ids
+            },
+            observed_query_dependent_page_ids: {
+                observed_query_dependent_page_ids.sort_unstable();
+                observed_query_dependent_page_ids
+            },
+            observed_other_dependent_page_ids: {
+                observed_other_dependent_page_ids.sort_unstable();
+                observed_other_dependent_page_ids
             },
             stale_without_valid_ahead,
             elapsed_ms: elapsed.as_millis(),
@@ -408,7 +439,7 @@ impl RenderAheadService {
         row.try_get("", "stale").or_raise(make_error)
     }
 
-    async fn render_page(state: &ServerState, id: PageId) -> Result<(i64, bool)> {
+    async fn render_page(state: &ServerState, id: PageId) -> Result<(i64, bool, u64)> {
         let make_error = || {
             Error::new(
                 format!("failed to render ahead page ID {}", id.page_id),

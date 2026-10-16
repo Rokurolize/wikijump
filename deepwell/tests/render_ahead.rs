@@ -53,6 +53,7 @@ struct Fixture {
     namespace: String,
     site_id: i64,
     page_id: i64,
+    slug: String,
     marker: String,
 }
 
@@ -84,6 +85,7 @@ impl Fixture {
             Some(extra) => format!("{marker}\n{extra}"),
             None => marker.clone(),
         };
+        let slug = format!("render-ahead-{label}-{}", Uuid::new_v4().simple());
 
         let txn = state
             .database
@@ -104,7 +106,7 @@ impl Fixture {
                     title: String::from("Render ahead fixture"),
                     alt_title: None,
                     tags: Vec::new(),
-                    slug: format!("render-ahead-{label}-{}", Uuid::new_v4().simple()),
+                    slug: slug.clone(),
                     layout: None,
                     revision_comments: String::from("render-ahead fixture"),
                     user_id: ADMIN_USER_ID,
@@ -143,6 +145,7 @@ impl Fixture {
             namespace,
             site_id,
             page_id,
+            slug,
             marker,
         }
     }
@@ -255,11 +258,62 @@ async fn render_ahead_reports_executed_random_listpages_without_changing_promoti
         serde_json::json!([random.page_id])
     );
     assert_eq!(
+        summary["observed_query_dependent_page_ids"],
+        serde_json::json!([random.page_id]),
+        "ListPages must also be classified as query-dependent",
+    );
+    assert_eq!(
         random.ahead_rows().await,
         1,
         "observing execution must not affect ahead rows"
     );
     random.cleanup().await;
+}
+
+#[tokio::test]
+async fn render_ahead_records_source_include_dependency_even_when_unresolved() {
+    let fixture = Fixture::new_with_body(
+        "provenance-include",
+        Some("[[include fragment:unavailable-for-render-ahead-test]]"),
+    )
+    .await;
+    let summary = fixture.render_ahead(false).await;
+    assert_eq!(count(&summary, "failed"), 0, "{summary}");
+    assert_eq!(
+        summary["observed_source_dependent_page_ids"],
+        serde_json::json!([fixture.page_id]),
+        "even an unresolved include is a positive source dependency",
+    );
+    assert_eq!(
+        summary["executed_random_list_pages_page_ids"],
+        serde_json::json!([]),
+    );
+    fixture.cleanup().await;
+}
+
+#[tokio::test]
+async fn render_ahead_observes_random_listpages_through_a_real_transitive_include() {
+    let fragment = Fixture::new_with_body(
+        "random-include-fragment",
+        Some("[[module ListPages order=\"random\" limit=\"1\"]]\n%%title%%\n[[/module]]"),
+    )
+    .await;
+    let including_source = format!("[[include {}]]", fragment.slug);
+    let consumer =
+        Fixture::new_with_body("random-include-consumer", Some(&including_source)).await;
+    let summary = consumer.render_ahead(false).await;
+    assert_eq!(count(&summary, "failed"), 0, "{summary}");
+    assert_eq!(
+        summary["executed_random_list_pages_page_ids"],
+        serde_json::json!([consumer.page_id]),
+        "a ListPages module executed after include expansion must be observed on its consumer",
+    );
+    assert_eq!(
+        summary["observed_source_dependent_page_ids"],
+        serde_json::json!([consumer.page_id]),
+    );
+    consumer.cleanup().await;
+    fragment.cleanup().await;
 }
 
 fn count(summary: &JsonValue, field: &str) -> i64 {

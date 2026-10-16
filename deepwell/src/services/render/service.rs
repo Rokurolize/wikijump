@@ -2006,6 +2006,9 @@ impl RenderService {
         if let Some((trace, CorpusRenderScope::Body)) = trace {
             trace.set_dimension(CorpusRenderDimension::SourceBytes, wikitext.len());
         }
+        if let Some((trace, _)) = trace {
+            trace.observe_render_source_dependencies(&wikitext);
+        }
 
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
@@ -2127,6 +2130,9 @@ impl RenderService {
         let theme_previewer_blank = expanded.theme_previewer_blank && !page_preview;
         let expanded_include_count = expanded.expanded_include_count;
         let mut expanded = expanded;
+        if let Some((trace, _)) = trace {
+            trace.observe_render_source_dependencies(&expanded.wikitext);
+        }
         if !allow_wikidot_styleframe {
             Self::neutralize_untrusted_wikidot_styleframe_embeds(&mut expanded.wikitext);
         }
