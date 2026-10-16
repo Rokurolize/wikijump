@@ -2513,6 +2513,52 @@ test("rejects catastrophic NewPage format patterns without running them", async 
   })
 })
 
+test("rejects sequential quantified NewPage atoms before executing the regex", async () => {
+  // A separate quantified atom at each position can backtrack combinatorially
+  // even though the original group-local nested-quantifier check accepts it.
+  for (const format of [
+    `/^${"a*".repeat(12)}b$/`,
+    "/^(?:a|aa)*b$/",
+    "/^a{0,20}a{0,20}b$/",
+    "/^(?:a?)(?:a?)b$/"
+  ]) {
+    const response = await handleAjaxModuleConnectorRequest(
+      request({
+        action: "misc/NewPageHelperAction",
+        event: "createNewPage",
+        moduleName: "Empty",
+        pageName: `${"a".repeat(48)}!`,
+        format
+      }),
+      { siteId: 6000006, renderListPages: async () => assert.fail("must not render") }
+    )
+    assert.equal((await response.json()).status, "incorrect_name")
+  }
+})
+
+test("keeps bounded NewPage formats with one quantified atom functional", async () => {
+  for (const [format, pageName, expectedStatus] of [
+    ["/^[a-z]+$/", "safe", "ok"],
+    ["/^[a-z]+$/", "safe-123", "incorrect_name"],
+    ["/^(?:[a-z]+)$/", "letters", "ok"],
+    ["/^[a-z]{2,12}$/", "letters", "ok"],
+    ["/^[*?]+$/", "**?", "ok"],
+    ["/^(?:alpha|beta)$/", "alpha", "ok"]
+  ]) {
+    const response = await handleAjaxModuleConnectorRequest(
+      request({
+        action: "misc/NewPageHelperAction",
+        event: "createNewPage",
+        moduleName: "Empty",
+        pageName,
+        format
+      }),
+      { siteId: 6000006, renderListPages: async () => assert.fail("must not render") }
+    )
+    assert.equal((await response.json()).status, expectedStatus, format)
+  }
+})
+
 test("NewPage template autosave creates an empty page and ignores parent", async () => {
   const calls = []
   const response = await handleAjaxModuleConnectorRequest(

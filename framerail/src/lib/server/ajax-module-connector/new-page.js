@@ -55,8 +55,12 @@ const parseDelimitedRegex = (format) => {
 /**
  * Reject regex features whose backtracking cost cannot be bounded by this
  * synchronous request handler. The accepted NewPage formats are simple
- * anchored patterns; nested quantifiers, ambiguous alternation,
- * lookarounds, and backreferences are unsupported and fail closed.
+ * anchored patterns; nested or sequential quantified atoms, alternation,
+ * lookarounds, and backreferences are unsupported and fail closed. A
+ * single quantified atom without alternation cannot cause exponential
+ * backtracking on the bounded (128-character) page name. Adjacent but
+ * separate quantifiers are unsafe even if no group contains two
+ * quantifiers.
  *
  * @param {string} format
  */
@@ -72,6 +76,8 @@ const newPageFormatIsSafe = (format) => {
   let escaped = false
   let inCharacterClass = false
   let previousWasQuantifier = false
+  let quantifierCount = 0
+  let hasAlternation = false
 
   for (let index = 0; index < pattern.length; index += 1) {
     const character = pattern[index]
@@ -97,10 +103,14 @@ const newPageFormatIsSafe = (format) => {
     if (character === "(") {
       if (pattern[index + 1] === "?" && pattern[index + 2] !== ":") return false
       groups.push({ hasQuantifier: false, hasAlternation: false })
+      if (pattern[index + 1] === "?" && pattern[index + 2] === ":") index += 2
       previousWasQuantifier = false
       continue
     }
     if (character === "|") {
+      // Plain alternation is bounded. An alternative combined with even one
+      // quantified atom may reintroduce ambiguous backtracking paths.
+      hasAlternation = true
       groups.at(-1).hasAlternation = true
       previousWasQuantifier = false
       continue
@@ -122,6 +132,8 @@ const newPageFormatIsSafe = (format) => {
       character === "{"
     ) {
       if (previousWasQuantifier) return false
+      quantifierCount += 1
+      if (quantifierCount > 1) return false
       groups.at(-1).hasQuantifier = true
       previousWasQuantifier = true
       continue
@@ -132,7 +144,7 @@ const newPageFormatIsSafe = (format) => {
   // Let the parser's existing malformed-format fallback handle unclosed
   // delimiters and groups; only recognized, executable patterns are subject
   // to the safety decision above.
-  return true
+  return !hasAlternation || quantifierCount === 0
 }
 
 /**
