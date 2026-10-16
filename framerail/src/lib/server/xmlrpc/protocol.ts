@@ -277,7 +277,10 @@ function openTagPattern(tagName: string): RegExp {
   if (!pattern) {
     const escaped = escapeRegExp(tagName)
     pattern = new RegExp(
-      `<${escaped}(?:${XML_WHITESPACE}[^>]*)?>|<${escaped}${XML_WHITESPACE}*/>`,
+      // An XML opening tag cannot contain another literal '<'. Stopping at
+      // it prevents repeated attempts from scanning the same unterminated
+      // attribute tail to the end of a large untrusted value.
+      `<${escaped}(?:${XML_WHITESPACE}[^<>]*)?>|<${escaped}${XML_WHITESPACE}*/>`,
       "g"
     )
     OPEN_TAG_PATTERN_CACHE.set(tagName, pattern)
@@ -290,7 +293,7 @@ function closingTagPattern(tagName: string): RegExp {
   if (!pattern) {
     const escaped = escapeRegExp(tagName)
     pattern = new RegExp(
-      `</?${escaped}(?:${XML_WHITESPACE}[^>]*)?>|<${escaped}${XML_WHITESPACE}*/>`,
+      `</?${escaped}(?:${XML_WHITESPACE}[^<>]*)?>|<${escaped}${XML_WHITESPACE}*/>`,
       "g"
     )
     TAG_PATTERN_CACHE.set(tagName, pattern)
