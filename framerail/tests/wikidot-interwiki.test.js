@@ -52,6 +52,15 @@ class FakeElement {
   set href(value) {
     this.setAttribute("href", value)
   }
+
+  addEventListener(type, listener) {
+    this.listeners = this.listeners ?? new Map()
+    this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener])
+  }
+
+  fire(type) {
+    for (const listener of this.listeners?.get(type) ?? []) listener()
+  }
 }
 
 class FakeHead {
@@ -125,11 +134,13 @@ const install = (frameWindow, siteUrl = "https://scp-wiki.wikidot.com") =>
   installWikidotInterwikiStyleRuntime(frameWindow, { siteUrl }, localizeWikidotThemeUrl)
 
 const headShape = (frameWindow) =>
-  frameWindow.document.head.children.map((element) => [
-    element.tagName,
-    element.getAttribute("data-priority"),
-    element.tagName === "LINK" ? element.getAttribute("href") : element.textContent
-  ])
+  frameWindow.document.head.children
+    .filter((element) => !element.dataset.wikijumpThemePending)
+    .map((element) => [
+      element.tagName,
+      element.getAttribute("data-priority"),
+      element.tagName === "LINK" ? element.getAttribute("href") : element.textContent
+    ])
 
 test("serves Wikidot's static styleFrame document without echoing its query", () => {
   const html = buildWikidotStyleFrameHtml()
@@ -395,4 +406,79 @@ test("localizes Wikidot local file and code theme URLs to the local file host", 
     ),
     "https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css"
   )
+})
+
+test("holds the side block until pulled themes load, then releases it once", () => {
+  const frameWindow = fakeFrameWindow({
+    siblings: [styleFrame("?priority=2&theme=https://cdn.scpwiki.com/theme.css")]
+  })
+  const events = []
+  frameWindow.dispatchEvent = (event) => events.push(event.type)
+  frameWindow.Event = function Event(type) {
+    this.type = type
+  }
+  frameWindow.document.head.children[0].sheet = {}
+  install(frameWindow)
+  frameWindow.dispatch("DOMContentLoaded")
+
+  const pending = frameWindow.document.head.children.find(
+    (element) => element.dataset.wikijumpThemePending
+  )
+  const theme = frameWindow.document.head.children.find(
+    (element) =>
+      element.tagName === "LINK" &&
+      element.getAttribute("href") === "https://cdn.scpwiki.com/theme.css"
+  )
+  assert.equal(pending.textContent, ".side-block{display:none}")
+  assert.deepEqual(events, [])
+
+  theme.fire("load")
+
+  assert.equal(pending.textContent, "")
+  assert.deepEqual(events, ["wikijump-themes-settled"])
+})
+
+test("releases the side block at once when no theme was pulled", () => {
+  const frameWindow = fakeFrameWindow({
+    siblings: [styleFrame("?priority=2&css=.late{}")]
+  })
+  const events = []
+  frameWindow.dispatchEvent = (event) => events.push(event.type)
+  frameWindow.Event = function Event(type) {
+    this.type = type
+  }
+  frameWindow.document.head.children[0].sheet = {}
+  install(frameWindow)
+  frameWindow.dispatch("DOMContentLoaded")
+
+  const pending = frameWindow.document.head.children.find(
+    (element) => element.dataset.wikijumpThemePending
+  )
+  assert.equal(pending.textContent, "")
+  assert.deepEqual(events, ["wikijump-themes-settled"])
+})
+
+test("releases a stalled theme after a timeout instead of hiding the frame forever", () => {
+  const frameWindow = fakeFrameWindow({
+    siblings: [styleFrame("?priority=3&theme=https://cdn.scpwiki.com/stalled.css")]
+  })
+  const timers = []
+  frameWindow.setTimeout = (callback) => timers.push(callback)
+  frameWindow.dispatchEvent = () => {}
+  frameWindow.Event = function Event(type) {
+    this.type = type
+  }
+  frameWindow.document.head.children[0].sheet = {}
+  install(frameWindow)
+  frameWindow.dispatch("DOMContentLoaded")
+
+  const pending = frameWindow.document.head.children.find(
+    (element) => element.dataset.wikijumpThemePending
+  )
+  assert.equal(pending.textContent, ".side-block{display:none}")
+  assert.equal(timers.length, 1)
+
+  timers[0]()
+
+  assert.equal(pending.textContent, "")
 })
