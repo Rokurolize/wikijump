@@ -4961,6 +4961,64 @@ async fn sitemap_never_publishes_authenticated_only_site_pages() {
         "logging in must not expand a crawler-visible page inventory"
     );
 
+    // An earlier response must not be reused after a category permission
+    // grant or revocation. No shared snapshot can keep newly private URLs.
+    let guest_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("guest")),
+    )
+    .await
+    .expect("guest role should exist");
+    role_permission::ActiveModel {
+        role_id: Set(guest_role.role_id),
+        site_id: Set(site_id),
+        resource_type: Set(Resource::Page),
+        resource_category_id: Set(Some(private_category_id)),
+        action: Set(Action::View),
+        ..Default::default()
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("temporary guest category permission should be granted");
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("grant should invalidate cached permissions");
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let newly_public = run_endpoint!(runner, wikidot_sitemap, sitemap_request.clone())
+        .expect("public sitemap must reflect category grant");
+    assert!(
+        newly_public
+            .entries
+            .iter()
+            .any(|entry| entry.slug == private_slug),
+        "the category permission grant must make its page public"
+    );
+    RolePermissionTable::delete_many()
+        .filter(role_permission::Column::RoleId.eq(guest_role.role_id))
+        .filter(role_permission::Column::SiteId.eq(site_id))
+        .filter(role_permission::Column::ResourceType.eq(Resource::Page))
+        .filter(role_permission::Column::ResourceCategoryId.eq(private_category_id))
+        .filter(role_permission::Column::Action.eq(Action::View))
+        .exec(runner.context().transaction())
+        .await
+        .expect("temporary guest category permission should be revoked");
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("revocation should invalidate cached permissions");
+    let newly_private = run_endpoint!(runner, wikidot_sitemap, sitemap_request.clone())
+        .expect("public site still exposes a sitemap after category revocation");
+    assert!(
+        newly_private
+            .entries
+            .iter()
+            .all(|entry| entry.slug != private_slug),
+        "a revoked category must disappear immediately from the next sitemap"
+    );
+
     let roles = ["guest", "anonymous", "everyone"];
     for role_slug in roles {
         let role = RoleService::get(
