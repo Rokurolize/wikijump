@@ -26,9 +26,11 @@ use deepwell::error::ErrorType;
 use deepwell::models::known_user::Entity as KnownUser;
 use deepwell::models::session::Entity as SessionTable;
 use deepwell::services::session::CreateSession;
-use deepwell::services::{ServiceContext, SessionService};
+use deepwell::services::{AuthenticationAttemptService, ServiceContext, SessionService};
 use rust_otp::{Algorithm as TotpAlgorithm, TOTP};
-use sea_orm::{ConnectionTrait, EntityTrait, TransactionTrait};
+use sea_orm::{
+    ConnectionTrait, EntityTrait, Statement, TransactionTrait, Value as SqlValue,
+};
 use serde_json::{Value, json};
 use std::env;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -561,8 +563,302 @@ async fn production_rpc_stack_commits_terminal_mfa_rejection_state() {
         "a terminal MFA rejection must persist the failed-attempt counter",
     );
 
+    // Spend the remaining account-wide budget on this restricted session.
+    for _ in 0..4 {
+        let rejected = rpc_request(
+            "mfa_verify",
+            json!({
+                "session_token": restricted_token,
+                "totp_or_code": wrong_code,
+                "ip_address": "192.0.2.1",
+                "user_agent": "rpc-boundary-mfa",
+            }),
+        )
+        .await;
+        assert_eq!(
+            rejected["error"]["code"],
+            ErrorType::InvalidAuthentication.code(),
+            "a wrong TOTP must be rejected: {rejected}",
+        );
+    }
+
+    // A new password-authenticated session must not reset the user-wide MFA
+    // failure budget, even when the submitted TOTP is valid.
+    let fresh_login = rpc_request(
+        "login",
+        json!({
+            "name_or_email": name,
+            "password": password,
+            "ip_address": "192.0.2.1",
+            "user_agent": "rpc-boundary-mfa-fresh-session",
+        }),
+    )
+    .await;
+    let fresh_token = fresh_login["result"]["session_token"]
+        .as_str()
+        .expect("fresh login should return a restricted session token")
+        .to_owned();
+    let fresh_rejected = rpc_request(
+        "mfa_verify",
+        json!({
+            "session_token": fresh_token,
+            "totp_or_code": valid_code,
+            "ip_address": "192.0.2.1",
+            "user_agent": "rpc-boundary-mfa-fresh-session",
+        }),
+    )
+    .await;
+    assert_eq!(
+        fresh_rejected["error"]["code"],
+        ErrorType::InvalidAuthentication.code(),
+        "a new restricted session must not restore the MFA guess budget: {fresh_rejected}",
+    );
+
     // Best-effort cleanup for repeated runs in the shared task-owned database.
+    let login_ip_bucket = AuthenticationAttemptService::login_ip_bucket("192.0.2.1");
     for statement in [
+        format!("DELETE FROM session WHERE user_id = {user_id}"),
+        format!(
+            "DELETE FROM authentication_attempt WHERE bucket_key IN ('mfa:user:{user_id}', 'login:user:{user_id}', '{login_ip_bucket}')"
+        ),
+        format!("DELETE FROM \"user\" WHERE user_id = {user_id}"),
+        format!("DELETE FROM known_user WHERE user_id = {user_id}"),
+    ] {
+        state.database.execute_unprepared(&statement).await.ok();
+    }
+}
+
+#[tokio::test]
+async fn production_rpc_stack_commits_password_failure_buckets() {
+    let state = build_server_state_without_workers(
+        Config::integration_testing(),
+        Secrets::load(),
+    )
+    .await
+    .expect("Unable to set up server state");
+    let suffix = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system clock should be after the Unix epoch")
+        .as_nanos();
+    let name = format!("Rpc Boundary Login {suffix}");
+    let ip_address = "198.51.100.17";
+
+    let created = rpc_request(
+        "user_create",
+        json!({
+            "user_type": "regular",
+            "name": name,
+            "email": format!("rpc-boundary-login-{suffix}@example.com"),
+            "locales": ["en"],
+            "password": "rpc-boundary-login-password",
+            "ip_address": ip_address,
+        }),
+    )
+    .await;
+    let user_id = created["result"]["user_id"]
+        .as_i64()
+        .unwrap_or_else(|| panic!("user_create should return a user id: {created}"));
+
+    let mut rejection_code = None;
+    for _ in 0..2 {
+        let rejected = rpc_request(
+            "login",
+            json!({
+                "name_or_email": name,
+                "password": "wrong-rpc-boundary-login-password",
+                "ip_address": ip_address,
+                "user_agent": "rpc-boundary-login",
+            }),
+        )
+        .await;
+        let code = rejected["error"]["code"]
+            .as_i64()
+            .unwrap_or_else(|| panic!("bad password should be rejected: {rejected}"));
+        assert_eq!(code, i64::from(ErrorType::InvalidAuthentication.code()));
+        if let Some(previous_code) = rejection_code {
+            assert_eq!(code, previous_code, "bad login responses stay generic");
+        } else {
+            rejection_code = Some(code);
+        }
+    }
+
+    let login_ip_bucket = AuthenticationAttemptService::login_ip_bucket(ip_address);
+    for (bucket_key, expected) in [
+        (format!("login:user:{user_id}"), 2_i64),
+        (login_ip_bucket.clone(), 2_i64),
+    ] {
+        let row = state
+            .database
+            .query_one_raw(Statement::from_sql_and_values(
+                state.database.get_database_backend(),
+                "SELECT attempts FROM authentication_attempt WHERE bucket_key = $1",
+                [SqlValue::from(bucket_key.clone())],
+            ))
+            .await
+            .expect("authentication attempt query should succeed")
+            .unwrap_or_else(|| panic!("expected persisted auth bucket {bucket_key}"));
+        let attempts: i64 = row
+            .try_get("", "attempts")
+            .expect("attempt count should be an integer");
+        assert_eq!(attempts, expected, "bucket {bucket_key} should persist");
+    }
+
+    let successful_login = rpc_request(
+        "login",
+        json!({
+            "name_or_email": name,
+            "password": "rpc-boundary-login-password",
+            "ip_address": ip_address,
+            "user_agent": "rpc-boundary-login-success",
+        }),
+    )
+    .await;
+    assert!(
+        successful_login["result"]["session_token"].is_string(),
+        "a valid password should log in and clear prior failure buckets: {successful_login}",
+    );
+    for bucket_key in [format!("login:user:{user_id}"), login_ip_bucket.clone()] {
+        let row = state
+            .database
+            .query_one_raw(Statement::from_sql_and_values(
+                state.database.get_database_backend(),
+                "SELECT attempts FROM authentication_attempt WHERE bucket_key = $1",
+                [SqlValue::from(bucket_key.clone())],
+            ))
+            .await
+            .expect("cleared authentication attempt query should succeed");
+        assert!(row.is_none(), "successful login should clear {bucket_key}");
+    }
+
+    for statement in [
+        format!(
+            "DELETE FROM authentication_attempt WHERE bucket_key IN ('login:user:{user_id}', '{login_ip_bucket}')"
+        ),
+        format!("DELETE FROM session WHERE user_id = {user_id}"),
+        format!("DELETE FROM \"user\" WHERE user_id = {user_id}"),
+        format!("DELETE FROM known_user WHERE user_id = {user_id}"),
+    ] {
+        state.database.execute_unprepared(&statement).await.ok();
+    }
+}
+
+#[tokio::test]
+async fn production_rpc_serializes_recovery_code_use_across_sessions() {
+    let state = build_server_state_without_workers(
+        Config::integration_testing(),
+        Secrets::load(),
+    )
+    .await
+    .expect("Unable to set up server state");
+    let suffix = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system clock should be after the Unix epoch")
+        .as_nanos();
+    let name = format!("Rpc Boundary Recovery {suffix}");
+    let email = format!("rpc-boundary-recovery-{suffix}@example.com");
+    let password = "rpc-boundary-recovery-password";
+    let ip_address = "203.0.113.29";
+
+    let created = rpc_request(
+        "user_create",
+        json!({
+            "user_type": "regular",
+            "name": name,
+            "email": email,
+            "locales": ["en"],
+            "password": password,
+            "ip_address": ip_address,
+        }),
+    )
+    .await;
+    let user_id = created["result"]["user_id"]
+        .as_i64()
+        .unwrap_or_else(|| panic!("user_create should return a user id: {created}"));
+    let initial_login = rpc_request(
+        "login",
+        json!({
+            "name_or_email": name,
+            "password": password,
+            "ip_address": ip_address,
+            "user_agent": "rpc-boundary-recovery-setup",
+        }),
+    )
+    .await;
+    let session_token = initial_login["result"]["session_token"]
+        .as_str()
+        .expect("initial login should return a session token")
+        .to_owned();
+    let setup = rpc_request(
+        "mfa_setup",
+        json!({
+            "user_id": user_id,
+            "session_token": session_token,
+            "ip_address": ip_address,
+        }),
+    )
+    .await;
+    let recovery_code = setup["result"]["recovery_codes"][0]
+        .as_str()
+        .expect("MFA setup should return a recovery code")
+        .to_owned();
+
+    let login_attempt = |label: &'static str| {
+        let name = name.clone();
+        let password = password.to_owned();
+        let ip_address = ip_address.to_owned();
+        async move {
+            let login = rpc_request(
+                "login",
+                json!({
+                    "name_or_email": name,
+                    "password": password,
+                    "ip_address": ip_address,
+                    "user_agent": format!("rpc-boundary-recovery-{label}"),
+                }),
+            )
+            .await;
+            login["result"]["session_token"]
+                .as_str()
+                .unwrap_or_else(|| {
+                    panic!("MFA login should return a restricted session: {login}")
+                })
+                .to_owned()
+        }
+    };
+    let (first_token, second_token) =
+        tokio::join!(login_attempt("first"), login_attempt("second"),);
+
+    let make_attempt = |token: String| {
+        let recovery_code = recovery_code.clone();
+        let ip_address = ip_address.to_owned();
+        async move {
+            rpc_request(
+                "mfa_verify",
+                json!({
+                    "session_token": token,
+                    "totp_or_code": recovery_code,
+                    "ip_address": ip_address,
+                    "user_agent": "rpc-boundary-recovery-race",
+                }),
+            )
+            .await
+        }
+    };
+    let (first, second) =
+        tokio::join!(make_attempt(first_token), make_attempt(second_token));
+    let first_succeeded = first.get("result").and_then(Value::as_str).is_some();
+    let second_succeeded = second.get("result").and_then(Value::as_str).is_some();
+    assert_ne!(
+        first_succeeded, second_succeeded,
+        "a recovery code must authenticate exactly one concurrent session: {first}, {second}",
+    );
+
+    // Best-effort cleanup for repeated runs in the shared task-owned database.
+    let login_ip_bucket = AuthenticationAttemptService::login_ip_bucket(ip_address);
+    for statement in [
+        format!(
+            "DELETE FROM authentication_attempt WHERE bucket_key IN ('mfa:user:{user_id}', 'login:user:{user_id}', '{login_ip_bucket}')"
+        ),
         format!("DELETE FROM session WHERE user_id = {user_id}"),
         format!("DELETE FROM \"user\" WHERE user_id = {user_id}"),
         format!("DELETE FROM known_user WHERE user_id = {user_id}"),

@@ -286,7 +286,7 @@ async fn restricted_mfa_session_has_a_shared_five_failure_budget() {
     assert_contains_error!(locked_out_error, ErrorType::InvalidAuthentication);
 
     let fresh_login = run_endpoint!(runner, auth_login, login_params(&name));
-    let fresh_normal_token = run_endpoint!(
+    let fresh_session_error = run_endpoint_err!(
         runner,
         auth_mfa_verify,
         json!({
@@ -296,10 +296,7 @@ async fn restricted_mfa_session_has_a_shared_five_failure_budget() {
             "user_agent": "deepwell-auth-test-mfa-fresh-session",
         }),
     );
-    assert!(
-        run_endpoint!(runner, auth_session_get, json!([fresh_normal_token])).is_some(),
-        "a fresh restricted session should have a fresh MFA attempt budget",
-    );
+    assert_contains_error!(fresh_session_error, ErrorType::InvalidAuthentication);
 }
 
 #[tokio::test]

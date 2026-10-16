@@ -316,8 +316,8 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
 
                 // Wrap each call in a transaction, normally committing only
                 // after the endpoint succeeds and running queued side effects
-                // only after commit. The MFA rejection path may explicitly
-                // commit its durable attempt counter before returning an error.
+                // only after commit. Password/MFA rejection paths may explicitly
+                // commit durable attempt counters before returning an error.
                 let db_state = Arc::clone(&state);
                 async move {
                     let txn_result = match $isolation {
