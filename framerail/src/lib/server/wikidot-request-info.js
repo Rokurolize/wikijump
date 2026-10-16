@@ -1,4 +1,9 @@
 export const WIKIDOT_REQUEST_INFO_MARKER = "/*__WIKIDOT_REQUEST_INFO__*/"
+// The marker may also appear in user-authored page titles or body text. Only
+// replace the app-template script slot, never a second occurrence from content
+// or a later streamed HTML chunk.
+const REQUEST_INFO_TEMPLATE_SCRIPT =
+  /<script data-wikidot-request-info nonce="[^"]+">\s*\/\*__WIKIDOT_REQUEST_INFO__\*\/\s*<\/script>/u
 const WIKIDOT_DOCUMENT_LANGUAGE_MARKER = "<meta data-wikidot-document-language />"
 
 const SITE_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u
@@ -164,15 +169,9 @@ export const injectWikidotRequestInfo = (
       ? `<meta http-equiv="content-language" content="${locale}"/>`
       : ""
   )
-  const first = documentHtml.indexOf(WIKIDOT_REQUEST_INFO_MARKER)
-  if (first === -1) return documentHtml
-  if (
-    documentHtml.indexOf(
-      WIKIDOT_REQUEST_INFO_MARKER,
-      first + WIKIDOT_REQUEST_INFO_MARKER.length
-    ) !== -1
-  ) {
-    throw new Error("WIKIREQUEST template marker must occur at most once")
-  }
+  const templateScript = REQUEST_INFO_TEMPLATE_SCRIPT.exec(documentHtml)
+  if (!templateScript) return documentHtml
+  const first =
+    templateScript.index + templateScript[0].indexOf(WIKIDOT_REQUEST_INFO_MARKER)
   return `${documentHtml.slice(0, first)}${serializeWikidotRequestInfo(info)}${documentHtml.slice(first + WIKIDOT_REQUEST_INFO_MARKER.length)}`
 }
