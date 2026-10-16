@@ -10,7 +10,7 @@ import {
 
 import type { RequestHandler } from "./$types"
 
-export const GET: RequestHandler = async ({ request, cookies, params }) => {
+export const GET: RequestHandler = async ({ request, params }) => {
   let shard: number
   try {
     shard = parseSitemapShardNumber(params.n)
@@ -22,10 +22,8 @@ export const GET: RequestHandler = async ({ request, cookies, params }) => {
   }
 
   const { siteId } = loadSiteInfo(request.headers)
-  const output = await wikidotSitemap(siteId, {
-    siteId,
-    sessionToken: cookies.get("wikijump_token")
-  })
+  // Child shards must use the same anonymous visibility boundary as the index.
+  const output = await wikidotSitemap(siteId, { siteId })
   // A site the viewer cannot see has no public sitemap, so the route answers
   // the same way as any other missing page.
   if (!output) return new Response("Not found", { status: 404 })

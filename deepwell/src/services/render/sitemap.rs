@@ -23,10 +23,11 @@
 //! Current Wikidot publishes a sitemap index at `/sitemap.xml` with bounded
 //! child pages shaped like `/sitemap_page_<n>.xml`, and advertises the index
 //! from the site's `robots.txt`. This service returns the eligible public
-//! page set behind those routes: non-deleted pages the viewer may view,
+//! page set behind those routes: non-deleted pages an *anonymous* viewer may view,
 //! ordered by page id, with the revision timestamp crawlers use for
-//! `<lastmod>`. It reuses the standard page-view permission derivation rather
-//! than a second visibility model, the same way the SiteChanges feed does.
+//! `<lastmod>`. A sitemap is publicly advertised through robots.txt, so an
+//! authenticated caller must not cause privileged URLs to appear in it. It
+//! reuses the standard page-view permission derivation with no viewer role.
 
 use super::runtime_page_queries::{ViewablePageRef, view_decisions_for_scanned_pages};
 use super::service::RenderService;
@@ -70,7 +71,10 @@ impl RenderService {
         ctx: &ServiceContext<'_>,
         site_id: i64,
     ) -> Result<Option<WikidotSitemapOutput>> {
-        let viewer_user_id = ctx.request().user_id().ok();
+        // Always compute the publicly indexable set. RPC callers can be
+        // authenticated independently of the public sitemap request, but
+        // their session or page attribution must not grant extra entries.
+        let viewer_user_id = None;
         let site_viewable = PermissionService::check_user_can(
             ctx,
             &CheckPermissionContext {

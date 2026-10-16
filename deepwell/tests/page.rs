@@ -4671,6 +4671,169 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
 }
 
 #[tokio::test]
+async fn sitemap_never_publishes_authenticated_only_site_pages() {
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site must exist")
+        .site
+        .site_id;
+
+    // A page in a category with admin-only view permission must not enter a
+    // public sitemap even when the requester is logged in as its author.
+    let private_category = "sitemap-visibility-private";
+    let private_slug = "sitemap-visibility-private:author-only";
+    let private_category_id =
+        CategoryService::get_or_create(runner.context(), site_id, private_category)
+            .await
+            .expect("private sitemap test category should be created")
+            .category_id;
+    let root_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("root")),
+    )
+    .await
+    .expect("root role should exist");
+    role_permission::ActiveModel {
+        role_id: Set(root_role.role_id),
+        site_id: Set(site_id),
+        resource_type: Set(Resource::Page),
+        resource_category_id: Set(Some(private_category_id)),
+        action: Set(Action::View),
+        ..Default::default()
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("root-only sitemap page permission should be created");
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("new category permissions must be visible");
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(private_slug)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Private sitemap control",
+            "title": "Private sitemap control",
+            "alt_title": null,
+            "slug": private_slug,
+            "layout": "wikidot",
+            "revision_comments": "private sitemap regression fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let guest_can_view_private_page = PermissionService::check_user_can(
+        runner.context(),
+        &CheckPermissionContext {
+            user_id: None,
+            site_id,
+            page_reference: Some(Reference::Id(created.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(private_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+    .expect("anonymous private page access should be checked");
+    assert!(
+        !guest_can_view_private_page,
+        "the fixture page must be genuinely private to anonymous visitors"
+    );
+
+    let sitemap_request = json!({"site_id": site_id});
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let anonymous = run_endpoint!(runner, wikidot_sitemap, sitemap_request.clone())
+        .expect("a public site should expose an anonymous sitemap");
+    assert!(
+        !anonymous
+            .entries
+            .iter()
+            .any(|entry| entry.slug == private_slug),
+        "public site sitemap must exclude private category pages"
+    );
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let authenticated = run_endpoint!(runner, wikidot_sitemap, sitemap_request.clone())
+        .expect("a signed-in user should see the same public sitemap");
+    assert_eq!(
+        serde_json::to_value(&anonymous).expect("serialize guest sitemap"),
+        serde_json::to_value(&authenticated).expect("serialize signed-in sitemap"),
+        "logging in must not expand a crawler-visible page inventory"
+    );
+
+    let roles = ["guest", "anonymous", "everyone"];
+    for role_slug in roles {
+        let role = RoleService::get(
+            runner.context(),
+            site_id,
+            Reference::Slug(Cow::Borrowed(role_slug)),
+        )
+        .await
+        .expect("site role should exist");
+        RolePermissionTable::delete_many()
+            .filter(role_permission::Column::RoleId.eq(role.role_id))
+            .filter(role_permission::Column::SiteId.eq(site_id))
+            .filter(role_permission::Column::ResourceType.eq(Resource::Page))
+            .filter(role_permission::Column::ResourceCategoryId.is_null())
+            .filter(role_permission::Column::Action.eq(Action::View))
+            .exec(runner.context().transaction())
+            .await
+            .expect("public view permission should be revoked");
+    }
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("site permission cache should be invalidated");
+
+    let admin_can_view = PermissionService::check_user_can(
+        runner.context(),
+        &CheckPermissionContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id,
+            page_reference: None,
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: None,
+            action: Action::View,
+        },
+    )
+    .await
+    .expect("admin page permission should be checked");
+    assert!(
+        admin_can_view,
+        "the admin must still be able to view the site"
+    );
+
+    assert!(
+        run_endpoint!(runner, wikidot_sitemap, sitemap_request.clone()).is_none(),
+        "even the site admin must not publish a sitemap for a private site"
+    );
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    assert!(
+        run_endpoint!(runner, wikidot_sitemap, sitemap_request).is_none(),
+        "anonymous private-site sitemap should also be absent"
+    );
+}
+
+#[tokio::test]
 async fn article_view_cache_respects_anonymous_permission_revocation() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
