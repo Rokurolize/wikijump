@@ -551,7 +551,16 @@ function decodeXmlText(value: string): string {
 }
 
 function trimXmlWhitespace(value: string): string {
-  return value.replace(/^[ \t\r\n]+|[ \t\r\n]+$/g, "")
+  // A global regex with a greedy end-of-input whitespace alternative retries
+  // long interior runs from every offset. Scan each edge exactly once so a
+  // large authenticated XML-RPC payload cannot monopolize the event loop.
+  let start = 0
+  let end = value.length
+  const isWhitespace = (code: number) =>
+    code === 0x20 || code === 0x09 || code === 0x0a || code === 0x0d
+  while (start < end && isWhitespace(value.charCodeAt(start))) start += 1
+  while (end > start && isWhitespace(value.charCodeAt(end - 1))) end -= 1
+  return value.slice(start, end)
 }
 
 function isXmlWhitespaceOnly(value: string): boolean {
