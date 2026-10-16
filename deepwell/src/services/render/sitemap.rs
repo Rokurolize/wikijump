@@ -29,7 +29,6 @@
 //! authenticated caller must not cause privileged URLs to appear in it. It
 //! reuses the standard page-view permission derivation with no viewer role.
 
-use super::runtime_page_queries::{ViewablePageRef, view_decisions_for_scanned_pages};
 use super::service::RenderService;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::ServiceContext;
@@ -43,18 +42,20 @@ use time::OffsetDateTime;
 /// Each public sitemap shard is bounded, while the index covers every public
 /// page, including sites with more than 50,000 eligible pages.
 pub const SITEMAP_ENTRIES_PER_SHARD: u64 = 1_000;
-/// Bound both database memory and one permission batch, independently of the
-/// number of private pages preceding the indexable ones.
-// A typical imported SCP mirror (~25k rows) needs only three queries, while
-// a site with many hidden pages is still scanned without raw-row truncation.
-const SITEMAP_SCAN_BATCH_ROWS: u64 = 10_000;
-
 #[derive(Debug, FromQueryResult)]
 struct SitemapPageRow {
-    page_id: i64,
-    page_category_id: i64,
     slug: String,
     last_modified: OffsetDateTime,
+}
+
+#[derive(Debug, FromQueryResult)]
+struct SitemapCategoryRow {
+    page_category_id: i64,
+}
+
+#[derive(Debug, FromQueryResult)]
+struct SitemapCountRow {
+    eligible_count: i64,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -84,7 +85,6 @@ impl RenderService {
             .ok_or_else(|| {
                 Error::new("sitemap shard number overflow", ErrorType::Render)
             })?;
-        let end = start.saturating_add(SITEMAP_ENTRIES_PER_SHARD);
         // Always compute the publicly indexable set. RPC callers can be
         // authenticated independently of the public sitemap request, but
         // their session or page attribution must not grant extra entries.
@@ -119,76 +119,106 @@ impl RenderService {
                 ErrorType::Render,
             )
         };
-        let mut last_page_id = 0_i64;
-        let mut entries = Vec::new();
-        let mut eligible_count = 0_u64;
-        let mut category_permissions = BTreeMap::new();
-        loop {
-            let rows = SitemapPageRow::find_by_statement(Statement::from_sql_and_values(
+        // Anonymous visitors have no page attribution, so the same category
+        // decision applies to *every* page in that category. Resolve each
+        // category once using the canonical permission service, then push the
+        // resulting allowed category IDs into SQL. This avoids re-fetching and
+        // rechecking all preceding pages for every child sitemap request.
+        let categories =
+            SitemapCategoryRow::find_by_statement(Statement::from_sql_and_values(
                 ctx.transaction().get_database_backend(),
-                format!(
-                    "SELECT page_id, page_category_id, slug, \
-                            COALESCE(updated_at, created_at) AS last_modified \
-                     FROM page \
-                     WHERE site_id = $1 AND deleted_at IS NULL AND page_id > $2 \
-                     ORDER BY page_id ASC \
-                     LIMIT {SITEMAP_SCAN_BATCH_ROWS}"
-                ),
-                [Value::from(site_id), Value::from(last_page_id)],
+                "SELECT DISTINCT page_category_id FROM page \
+                 WHERE site_id = $1 AND deleted_at IS NULL",
+                [Value::from(site_id)],
             ))
             .all(ctx.transaction())
             .await
             .or_raise(make_error)?;
-            if rows.is_empty() {
-                break;
-            }
-            // Keyset paging retains a stable page-id ordering and does not
-            // skip viewable pages merely because the first 50k are private.
-            last_page_id = rows.last().expect("nonempty page batch").page_id;
-            let full_batch = rows.len() == SITEMAP_SCAN_BATCH_ROWS as usize;
-            let refs = rows
-                .iter()
-                .map(|row| ViewablePageRef {
-                    page_id: row.page_id,
-                    site_id,
-                    page_category_id: Some(row.page_category_id),
-                })
-                .collect::<Vec<_>>();
-            let decisions = view_decisions_for_scanned_pages(
-                ctx,
-                viewer_user_id,
-                &refs,
-                &mut category_permissions,
-            )
-            .await
-            .or_raise(make_error)?;
-
-            for (row, viewable) in rows.into_iter().zip(decisions) {
-                if viewable {
-                    if shard > 0 && eligible_count >= start && eligible_count < end {
-                        entries.push(WikidotSitemapEntry {
-                            slug: row.slug,
-                            last_modified: row.last_modified,
-                        });
-                    }
-                    eligible_count += 1;
-                    if shard > 0 && eligible_count >= end {
-                        return Ok(Some(WikidotSitemapOutput {
-                            entries,
-                            shard_count: None,
-                        }));
-                    }
-                }
-            }
-            if !full_batch {
-                break;
-            }
+        let candidate_ids = categories
+            .iter()
+            .map(|category| Some(category.page_category_id))
+            .collect::<Vec<_>>();
+        let mut category_permissions = BTreeMap::new();
+        let decisions = PermissionService::batch_check_page_view_without_page_roles(
+            ctx,
+            None,
+            site_id,
+            &candidate_ids,
+            &mut category_permissions,
+        )
+        .await
+        .or_raise(make_error)?;
+        let allowed_ids = categories
+            .iter()
+            .zip(decisions)
+            .filter_map(|(category, visible)| {
+                visible.then_some(category.page_category_id)
+            })
+            .collect::<Vec<_>>();
+        if allowed_ids.is_empty() {
+            return Ok(Some(WikidotSitemapOutput {
+                entries: Vec::new(),
+                shard_count: (shard == 0).then_some(0),
+            }));
         }
 
+        // Numeric IDs came exclusively from PostgreSQL and were permission
+        // checked; no user-supplied slug or SQL fragment is interpolated.
+        let allowed_sql = allowed_ids
+            .iter()
+            .map(i64::to_string)
+            .collect::<Vec<_>>()
+            .join(",");
+        let where_sql = format!(
+            "site_id = $1 AND deleted_at IS NULL AND page_category_id IN ({allowed_sql})"
+        );
+
+        if shard == 0 {
+            let count = SitemapCountRow::find_by_statement(Statement::from_sql_and_values(
+                ctx.transaction().get_database_backend(),
+                format!("SELECT COUNT(*)::BIGINT AS eligible_count FROM page WHERE {where_sql}"),
+                [Value::from(site_id)],
+            ))
+            .one(ctx.transaction())
+            .await
+            .or_raise(make_error)?
+            .expect("COUNT aggregate always returns one row");
+            let count = u64::try_from(count.eligible_count)
+                .expect("a SQL COUNT must not be negative");
+            return Ok(Some(WikidotSitemapOutput {
+                entries: Vec::new(),
+                shard_count: Some(count.div_ceil(SITEMAP_ENTRIES_PER_SHARD)),
+            }));
+        }
+
+        if start > i64::MAX as u64 {
+            return Ok(Some(WikidotSitemapOutput {
+                entries: Vec::new(),
+                shard_count: None,
+            }));
+        }
+        let rows = SitemapPageRow::find_by_statement(Statement::from_sql_and_values(
+            ctx.transaction().get_database_backend(),
+            format!(
+                "SELECT slug, \
+                        COALESCE(updated_at, created_at) AS last_modified \
+                 FROM page WHERE {where_sql} \
+                 ORDER BY page_id ASC LIMIT {SITEMAP_ENTRIES_PER_SHARD} OFFSET {start}"
+            ),
+            [Value::from(site_id)],
+        ))
+        .all(ctx.transaction())
+        .await
+        .or_raise(make_error)?;
         Ok(Some(WikidotSitemapOutput {
-            entries,
-            shard_count: (shard == 0)
-                .then_some(eligible_count.div_ceil(SITEMAP_ENTRIES_PER_SHARD)),
+            entries: rows
+                .into_iter()
+                .map(|row| WikidotSitemapEntry {
+                    slug: row.slug,
+                    last_modified: row.last_modified,
+                })
+                .collect(),
+            shard_count: None,
         }))
     }
 }
