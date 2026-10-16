@@ -20,6 +20,27 @@ export interface SitemapEntry {
 
 export class InvalidSitemapShardPath extends Error {}
 export class InvalidSitemapEntry extends Error {}
+export class InvalidSitemapCanonicalDomain extends Error {}
+
+// The site_domain RPC returns a configured hostname, not an arbitrary URL.
+// Keep untrusted request Host headers out of search-engine canonical links.
+export function canonicalSitemapOrigin(preferredDomain: string): string {
+  const hostname = preferredDomain.split(":")[0]
+  if (
+    !/^[a-z0-9.-]+(?::[0-9]+)?$/iu.test(preferredDomain) ||
+    preferredDomain.startsWith(".") ||
+    preferredDomain.endsWith(".") ||
+    preferredDomain.includes("..") ||
+    hostname.split(".").some((label) => label.length === 0 || label.startsWith("-") || label.endsWith("-"))
+  ) {
+    throw new InvalidSitemapCanonicalDomain("Invalid configured sitemap domain")
+  }
+  const parsed = new URL(`https://${preferredDomain}`)
+  if (parsed.hostname.length === 0 || parsed.username || parsed.password) {
+    throw new InvalidSitemapCanonicalDomain("Invalid configured sitemap domain")
+  }
+  return parsed.origin
+}
 
 function escapeXml(value: string): string {
   return value

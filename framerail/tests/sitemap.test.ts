@@ -5,6 +5,7 @@ import test from "node:test"
 import {
   buildSitemapIndexXml,
   buildSitemapUrlsetXml,
+  canonicalSitemapOrigin,
   InvalidSitemapEntry,
   InvalidSitemapShardPath,
   formatSitemapLastmod,
@@ -59,6 +60,15 @@ test("represents more than 50,000 public URLs in a bounded sitemap index", () =>
   assert.equal(SITEMAP_ENTRIES_PER_SHARD, 1_000)
 })
 
+test("uses the configured canonical host rather than a request Host header", () => {
+  assert.equal(canonicalSitemapOrigin("scp-wiki.wikijump.localhost"), "https://scp-wiki.wikijump.localhost")
+  assert.equal(canonicalSitemapOrigin("custom.example"), "https://custom.example")
+  assert.equal(canonicalSitemapOrigin("custom.example:18443"), "https://custom.example:18443")
+  for (const invalid of ["", "https://evil.example", "good.example/evil", "good.example@evil.example", "good.example?x=1", "good..example", "-bad.example"]) {
+    assert.throws(() => canonicalSitemapOrigin(invalid))
+  }
+})
+
 test("public sitemap routes do not forward signed-in cookies to their inventory", async () => {
   for (const route of [
     "../src/routes/sitemap.xml/+server.ts",
@@ -68,4 +78,17 @@ test("public sitemap routes do not forward signed-in cookies to their inventory"
     assert.match(source, /wikidotSitemap\(siteId, (?:0|shard), \{ siteId \}\)/u, route)
     assert.doesNotMatch(source, /sessionToken|cookies\.get/u, route)
   }
+})
+
+test("both sitemap routes resolve the configured site domain rather than request Host", async () => {
+  for (const route of [
+    "../src/routes/sitemap.xml/+server.ts",
+    "../src/routes/sitemap_page_[n].xml/+server.ts"
+  ]) {
+    const source = await readFile(new URL(route, import.meta.url), "utf8")
+    assert.match(source, /await siteSitemapOrigin\(siteId\)/u, route)
+    assert.doesNotMatch(source, /new URL\(request\.url\)\.origin/u, route)
+  }
+  const helper = await readFile(new URL("../src/lib/server/sitemap-origin.ts", import.meta.url), "utf8")
+  assert.match(helper, /client\.request\("site_domain", \[siteId\], \{ siteId \}\)/u)
 })
