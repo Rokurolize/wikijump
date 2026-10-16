@@ -40,11 +40,14 @@ use serde::Serialize;
 use std::collections::BTreeMap;
 use time::OffsetDateTime;
 
-/// The bounded number of sitemap entries one site reports.
+/// The bounded number of *publicly viewable* sitemap entries one site reports.
 ///
-/// A full crawlable inventory rather than a recent window, but still bounded
-/// so one response cannot grow without limit on very large sites.
+/// An overflowing public site fails explicitly rather than silently publishing
+/// an incomplete index. Full inventories beyond this limit need a paged RPC.
 pub const SITEMAP_MAX_ENTRIES: u64 = 50_000;
+/// Bound both database memory and one permission batch, independently of the
+/// number of private pages preceding the indexable ones.
+const SITEMAP_SCAN_BATCH_ROWS: u64 = 1_000;
 
 #[derive(Debug, FromQueryResult)]
 struct SitemapPageRow {
@@ -105,50 +108,69 @@ impl RenderService {
                 ErrorType::Render,
             )
         };
-        let rows = SitemapPageRow::find_by_statement(Statement::from_sql_and_values(
-            ctx.transaction().get_database_backend(),
-            format!(
-                "SELECT page_id, page_category_id, slug, \
-                        COALESCE(updated_at, created_at) AS last_modified \
-                 FROM page \
-                 WHERE site_id = $1 AND deleted_at IS NULL \
-                 ORDER BY page_id ASC \
-                 LIMIT {limit}",
-                limit = SITEMAP_MAX_ENTRIES,
-            ),
-            [Value::from(site_id)],
-        ))
-        .all(ctx.transaction())
-        .await
-        .or_raise(make_error)?;
-
-        let refs = rows
-            .iter()
-            .map(|row| ViewablePageRef {
-                page_id: row.page_id,
-                site_id,
-                page_category_id: Some(row.page_category_id),
-            })
-            .collect::<Vec<_>>();
+        let mut last_page_id = 0_i64;
+        let mut entries = Vec::new();
         let mut category_permissions = BTreeMap::new();
-        let decisions = view_decisions_for_scanned_pages(
-            ctx,
-            viewer_user_id,
-            &refs,
-            &mut category_permissions,
-        )
-        .await
-        .or_raise(make_error)?;
+        loop {
+            let rows = SitemapPageRow::find_by_statement(Statement::from_sql_and_values(
+                ctx.transaction().get_database_backend(),
+                format!(
+                    "SELECT page_id, page_category_id, slug, \
+                            COALESCE(updated_at, created_at) AS last_modified \
+                     FROM page \
+                     WHERE site_id = $1 AND deleted_at IS NULL AND page_id > $2 \
+                     ORDER BY page_id ASC \
+                     LIMIT {SITEMAP_SCAN_BATCH_ROWS}"
+                ),
+                [Value::from(site_id), Value::from(last_page_id)],
+            ))
+            .all(ctx.transaction())
+            .await
+            .or_raise(make_error)?;
+            if rows.is_empty() {
+                break;
+            }
+            // Keyset paging retains a stable page-id ordering and does not
+            // skip viewable pages merely because the first 50k are private.
+            last_page_id = rows.last().expect("nonempty page batch").page_id;
+            let full_batch = rows.len() == SITEMAP_SCAN_BATCH_ROWS as usize;
+            let refs = rows
+                .iter()
+                .map(|row| ViewablePageRef {
+                    page_id: row.page_id,
+                    site_id,
+                    page_category_id: Some(row.page_category_id),
+                })
+                .collect::<Vec<_>>();
+            let decisions = view_decisions_for_scanned_pages(
+                ctx,
+                viewer_user_id,
+                &refs,
+                &mut category_permissions,
+            )
+            .await
+            .or_raise(make_error)?;
 
-        let entries = rows
-            .into_iter()
-            .zip(decisions)
-            .filter(|(_, viewable)| *viewable)
-            .map(|(row, _)| WikidotSitemapEntry {
-                slug: row.slug,
-                last_modified: row.last_modified,
-            })
-            .collect();
+            for (row, viewable) in rows.into_iter().zip(decisions) {
+                if viewable {
+                    if entries.len() >= SITEMAP_MAX_ENTRIES as usize {
+                        return Err(Error::new(
+                            format!(
+                                "site {site_id} has more than {SITEMAP_MAX_ENTRIES} public sitemap pages; a paged sitemap RPC is required"
+                            ),
+                            ErrorType::Render,
+                        ).into());
+                    }
+                    entries.push(WikidotSitemapEntry {
+                        slug: row.slug,
+                        last_modified: row.last_modified,
+                    });
+                }
+            }
+            if !full_batch {
+                break;
+            }
+        }
 
         Ok(Some(WikidotSitemapOutput { entries }))
     }

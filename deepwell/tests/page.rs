@@ -4671,6 +4671,71 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
 }
 
 #[tokio::test]
+async fn sitemap_scans_past_fifty_thousand_private_pages_for_public_tail() {
+    const HIDDEN_CATEGORY: &str = "sitemap-keyset-hidden";
+    const PUBLIC_TAIL_SLUG: &str = "sitemap-keyset-public-tail";
+    const PRIVATE_PAGE_COUNT: i32 = 50_100;
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, HIDDEN_CATEGORY).await;
+    let hidden_category_id =
+        CategoryService::get_or_create(runner.context(), site_id, HIDDEN_CATEGORY)
+            .await
+            .expect("private sitemap category should exist")
+            .category_id;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO page \
+             (created_at, updated_at, deleted_at, from_wikidot, site_id, \
+              latest_revision_id, page_category_id, slug, discussion_thread_id, layout) \
+             SELECT NOW(), NULL, NULL, false, $1, NULL, $2, \
+                    'sitemap-keyset-hidden-' || series, NULL, 'wikidot' \
+             FROM generate_series(1, $3) AS series",
+            [
+                Value::from(site_id),
+                Value::from(hidden_category_id),
+                Value::from(PRIVATE_PAGE_COUNT),
+            ],
+        ))
+        .await
+        .expect("private pages beyond the old raw-scan cap should be inserted");
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PUBLIC_TAIL_SLUG,
+        "Sitemap public tail",
+        "public tail",
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let output = run_endpoint!(runner, wikidot_sitemap, json!({"site_id": site_id}))
+        .expect("the public sitemap must be complete despite private rows");
+    assert!(
+        output
+            .entries
+            .iter()
+            .any(|entry| entry.slug == PUBLIC_TAIL_SLUG),
+        "a public page after 50,100 hidden pages must not be discarded by a raw SQL LIMIT"
+    );
+    assert!(
+        output
+            .entries
+            .iter()
+            .all(|entry| !entry.slug.starts_with("sitemap-keyset-hidden-")),
+        "private pages must not appear among the discovered public entries"
+    );
+}
+
+#[tokio::test]
 async fn sitemap_never_publishes_authenticated_only_site_pages() {
     let mut runner = TestRunner::setup().await;
     let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
