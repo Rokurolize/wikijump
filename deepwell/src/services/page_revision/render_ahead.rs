@@ -27,6 +27,7 @@
 use super::service::PageRevisionService;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::ServiceContext;
+use crate::services::render::CorpusRenderTrace;
 use crate::services::render::RenderPageOutput;
 use crate::types::PageId;
 use sea_orm::{ConnectionTrait, Statement, Value};
@@ -39,11 +40,13 @@ impl PageRevisionService {
     /// Imported revisions use the corpus include ceiling, as the corpus
     /// finalizer renders them; local revisions keep the public limit.
     ///
-    /// Returns the revision ID whose output was stored.
+    /// Returns the stored revision ID and runtime-observed random ListPages
+    /// execution. The boolean alone must never certify deterministic links:
+    /// other dynamic link producers and transitive modules may exist.
     pub(crate) async fn render_ahead(
         ctx: &ServiceContext<'_>,
         id: PageId,
-    ) -> Result<i64> {
+    ) -> Result<(i64, bool)> {
         let PageId {
             site_id,
             category_id,
@@ -61,6 +64,7 @@ impl PageRevisionService {
         let revision = Self::get_latest(ctx, site_id, page_id)
             .await
             .or_raise(make_error)?;
+        let trace = CorpusRenderTrace::new();
         let RenderPageOutput {
             compiled_body_html_hash,
             compiled_body_styles_hash,
@@ -69,9 +73,15 @@ impl PageRevisionService {
             compiled_at,
             compiled_generator,
             ..
-        } = Self::render_revision(ctx, id, &revision, revision.from_wikidot, None)
-            .await
-            .or_raise(make_error)?;
+        } = Self::render_revision(
+            ctx,
+            id,
+            &revision,
+            revision.from_wikidot,
+            Some(&trace),
+        )
+        .await
+        .or_raise(make_error)?;
 
         let txn = ctx.transaction();
         txn.execute_raw(Statement::from_sql_and_values(
@@ -114,6 +124,6 @@ impl PageRevisionService {
         .await
         .or_raise(make_error)?;
 
-        Ok(revision.revision_id)
+        Ok((revision.revision_id, trace.executed_random_list_pages()))
     }
 }

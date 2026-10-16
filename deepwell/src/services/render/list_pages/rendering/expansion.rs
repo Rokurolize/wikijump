@@ -59,6 +59,7 @@ impl RenderService {
             render_cost_budget,
             url,
             pager_route,
+            trace,
         } = options;
         let Some(current_site_id) = current_site_id else {
             return Ok(ListPagesExpansion {
@@ -637,6 +638,7 @@ impl RenderService {
                         &mut score_filter_cache,
                         &mut author_resolution_cache,
                         compat_text,
+                        trace,
                     ))
                     .await?;
                     match rendered {
@@ -751,6 +753,7 @@ impl RenderService {
                         &mut score_filter_cache,
                         &mut author_resolution_cache,
                         compat_text,
+                        trace,
                     ))
                     .await?;
                     match rendered {
@@ -865,6 +868,7 @@ impl RenderService {
                     render_cost_budget: render_cost_budget.clone(),
                     url,
                     pager_route,
+                    trace,
                 },
                 expansion_budget,
                 seen,

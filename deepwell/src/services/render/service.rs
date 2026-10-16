@@ -967,6 +967,7 @@ impl RenderService {
         layout: Layout,
         id: PageId,
         current_page_data_form_values: BTreeMap<String, String>,
+        trace: Option<&CorpusRenderTrace>,
     ) -> Result<RenderPageOutput> {
         Box::pin(Self::render_page_with_include_limit(
             ctx,
@@ -980,7 +981,7 @@ impl RenderService {
                 current_page_data_form_values: Some(current_page_data_form_values),
                 persist_page_artifacts: true,
                 url: UrlArguments::default(),
-                trace: None,
+                trace,
             },
         ))
         .await
@@ -1525,6 +1526,7 @@ impl RenderService {
                     render_cost_budget: render_cost_budget.clone(),
                     url,
                     pager_route: list_pages_pager_route,
+                    trace: trace.map(|(trace, _)| trace),
                 },
             )
             .await

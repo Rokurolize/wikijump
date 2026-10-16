@@ -1166,8 +1166,8 @@ impl PageRevisionService {
         };
 
         // Parse and render
-        let mut output = if let Some(trace) = trace {
-            debug_assert!(allow_corpus_dense_includes);
+        let mut output = if allow_corpus_dense_includes && trace.is_some() {
+            let trace = trace.expect("verified traced corpus render");
             RenderService::render_corpus_page_traced(
                 ctx, wikitext, &page_info, layout, id, trace,
             )
@@ -1184,6 +1184,7 @@ impl PageRevisionService {
                 layout,
                 id,
                 current_page_data_form_values,
+                trace,
             )
             .await
         }

@@ -18,7 +18,7 @@
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 const SCOPE_COUNT: usize = 5;
@@ -239,6 +239,7 @@ struct CorpusRenderTraceInner {
     timings: [AtomicU64; SCOPE_COUNT * STAGE_COUNT],
     terminal: AtomicU64,
     dimensions: [AtomicU64; 4],
+    executed_random_list_pages: AtomicBool,
     started_at: Instant,
 }
 
@@ -262,6 +263,7 @@ impl CorpusRenderTrace {
             timings: std::array::from_fn(|_| AtomicU64::new(0)),
             terminal: AtomicU64::new(0),
             dimensions: std::array::from_fn(|_| AtomicU64::new(0)),
+            executed_random_list_pages: AtomicBool::new(false),
             started_at: Instant::now(),
         }))
     }
@@ -270,6 +272,19 @@ impl CorpusRenderTrace {
     pub(crate) fn set_dimension(&self, dimension: CorpusRenderDimension, value: usize) {
         self.0.dimensions[dimension.index()]
             .store(u64::try_from(value).unwrap_or(u64::MAX), Ordering::Relaxed);
+    }
+
+    /// This reports an actually executed random ListPages query, including
+    /// one produced by runtime include expansion. It does not assert that
+    /// every other possible nondeterministic link source is ruled out.
+    pub(crate) fn mark_random_list_pages_execution(&self) {
+        self.0
+            .executed_random_list_pages
+            .store(true, Ordering::Relaxed);
+    }
+
+    pub(crate) fn executed_random_list_pages(&self) -> bool {
+        self.0.executed_random_list_pages.load(Ordering::Relaxed)
     }
 
     #[inline]
@@ -401,6 +416,19 @@ fn saturating_us(value: u128) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn executed_random_list_pages_is_a_monotone_render_trace_signal() {
+        let trace = CorpusRenderTrace::new();
+        assert!(!trace.executed_random_list_pages());
+        let duplicate = trace.clone();
+        std::thread::scope(|scope| {
+            scope.spawn(|| duplicate.mark_random_list_pages_execution());
+        });
+        assert!(trace.executed_random_list_pages());
+        trace.mark_random_list_pages_execution();
+        assert!(duplicate.executed_random_list_pages());
+    }
 
     #[test]
     fn guard_accumulates_and_snapshot_uses_stable_tie_order() {

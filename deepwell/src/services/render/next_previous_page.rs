@@ -294,6 +294,7 @@ impl RenderService {
                 &mut score_filter_cache,
                 &mut author_resolution_cache,
                 compat_text,
+                None,
             ))
             .await?;
 

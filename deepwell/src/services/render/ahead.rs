@@ -87,6 +87,9 @@ pub struct RenderAheadSummary {
     rendered: usize,
     failed: usize,
     failed_page_ids: Vec<i64>,
+    /// Observed, actually executed random ListPages in rendered pages.
+    /// This is a positive provenance signal, not a deterministic certificate.
+    executed_random_list_pages_page_ids: Vec<i64>,
     stale_without_valid_ahead: i64,
     elapsed_ms: u128,
     rows_per_sec: f64,
@@ -149,6 +152,7 @@ impl RenderAheadService {
         let mut rendered = 0;
         let mut failures = Vec::new();
         let mut failed_page_ids = Vec::new();
+        let mut executed_random_list_pages_page_ids = Vec::new();
         let mut after_page_id = 0;
 
         // Keyset pagination over page IDs, so a page that fails is not
@@ -164,7 +168,7 @@ impl RenderAheadService {
                 continue;
             }
 
-            let results: Vec<(PageId, Result<i64>)> = stream::iter(batch)
+            let results: Vec<(PageId, Result<(i64, bool)>)> = stream::iter(batch)
                 .map(|id| {
                     let state = state.clone();
                     async move { (id, Self::render_page(&state, id).await) }
@@ -175,7 +179,12 @@ impl RenderAheadService {
 
             for (id, result) in results {
                 match result {
-                    Ok(_) => rendered += 1,
+                    Ok((_, executed_random)) => {
+                        rendered += 1;
+                        if executed_random {
+                            executed_random_list_pages_page_ids.push(id.page_id);
+                        }
+                    }
                     Err(error) => {
                         failed_page_ids.push(id.page_id);
                         warn!(
@@ -210,6 +219,10 @@ impl RenderAheadService {
             failed_page_ids: {
                 failed_page_ids.sort_unstable();
                 failed_page_ids
+            },
+            executed_random_list_pages_page_ids: {
+                executed_random_list_pages_page_ids.sort_unstable();
+                executed_random_list_pages_page_ids
             },
             stale_without_valid_ahead,
             elapsed_ms: elapsed.as_millis(),
@@ -395,7 +408,7 @@ impl RenderAheadService {
         row.try_get("", "stale").or_raise(make_error)
     }
 
-    async fn render_page(state: &ServerState, id: PageId) -> Result<i64> {
+    async fn render_page(state: &ServerState, id: PageId) -> Result<(i64, bool)> {
         let make_error = || {
             Error::new(
                 format!("failed to render ahead page ID {}", id.page_id),

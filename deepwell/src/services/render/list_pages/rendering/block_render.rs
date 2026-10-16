@@ -1,5 +1,13 @@
 //! ListPages block query and row rendering.
 
+use super::super::super::diagnostics::CorpusRenderTrace;
+
+fn uses_random_list_pages_order(arguments: &ListPagesArguments) -> bool {
+    arguments
+        .order
+        .as_ref()
+        .is_some_and(|order| matches!(&order.property, OrderProperty::Random))
+}
 use super::{
     Action, BTreeMap, BTreeSet, CategoriesSelector, CheckPermissionContext, ColumnTrait,
     ComparisonOperation, CompatHtmlFragments, CompatTextFragments,
@@ -67,6 +75,7 @@ impl RenderService {
             ResolvedListPagesAuthors,
         >,
         compat_text: &mut CompatTextFragments,
+        trace: Option<&CorpusRenderTrace>,
     ) -> Result<ListPagesBlockRenderResult> {
         let ListPagesPageContext {
             site_id: current_site_id,
@@ -85,6 +94,11 @@ impl RenderService {
                 feed_info,
                 expansion_budget,
             ));
+        }
+        if uses_random_list_pages_order(&arguments) {
+            if let Some(trace) = trace {
+                trace.mark_random_list_pages_execution();
+            }
         }
         seed_random_list_pages_order(
             ctx,

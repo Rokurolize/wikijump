@@ -98,6 +98,13 @@ material promotion-speed improvement.
 
 Full-pass link snapshots still cover the entire live site, but each repeated
 link probe now narrows its SQL digest to pages actually rendered by that probe.
+The Deepwell `render-ahead` JSON summary also records
+`executed_random_list_pages_page_ids`: a positive observation from the actual
+ListPages execution path (including modules exposed by runtime includes).
+An empty array **does not** certify deterministic links, because other
+runtime modules, navigation, template data, and link-state dependencies may
+still change. The trace is evidence for future source-based link-producer
+classification; it is never a reason on its own to skip eight safety probes.
 Deadline-only failures of a full pass are retried *before* starting the
 link-stability proof; other failures terminate early. This does not reduce
 the eight observations required for nondeterministic links, nor the work of

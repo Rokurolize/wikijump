@@ -630,6 +630,8 @@ pub(in crate::services::render) struct ListPagesExpansionOptions<'a> {
     /// The Wikidot URL path arguments this request carried.
     pub(in crate::services::render) url: UrlArguments<'a>,
     pub(in crate::services::render) pager_route: super::ListPagesPagerRoute,
+    pub(in crate::services::render) trace:
+        Option<&'a super::super::diagnostics::CorpusRenderTrace>,
 }
 
 /// The request a CountPages expansion is answering.

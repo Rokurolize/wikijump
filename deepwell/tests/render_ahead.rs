@@ -67,6 +67,10 @@ impl Fixture {
     /// Commit a page, then make its saved output stale as a renderer
     /// generation bump does: an old generator and an old body.
     async fn new(label: &str) -> Self {
+        Self::new_with_body(label, None).await
+    }
+
+    async fn new_with_body(label: &str, extra_wikitext: Option<&str>) -> Self {
         let namespace = format!("rsmq-render-ahead-{label}-{}", Uuid::new_v4().simple());
         let state = build_server_state_without_workers_with_job_queue_namespace(
             Config::integration_testing(),
@@ -76,6 +80,10 @@ impl Fixture {
         .await
         .expect("isolated render-ahead state should build");
         let marker = format!("RENDER_AHEAD_SOURCE_{}", Uuid::new_v4().simple());
+        let source = match extra_wikitext {
+            Some(extra) => format!("{marker}\n{extra}"),
+            None => marker.clone(),
+        };
 
         let txn = state
             .database
@@ -92,7 +100,7 @@ impl Fixture {
                 &ctx,
                 CreatePage {
                     site_id,
-                    wikitext: marker.clone(),
+                    wikitext: source,
                     title: String::from("Render ahead fixture"),
                     alt_title: None,
                     tags: Vec::new(),
@@ -224,6 +232,36 @@ impl Fixture {
     }
 }
 
+#[tokio::test]
+async fn render_ahead_reports_executed_random_listpages_without_changing_promotion() {
+    let deterministic = Fixture::new("provenance-deterministic").await;
+    let ordinary = deterministic.render_ahead(false).await;
+    assert_eq!(count(&ordinary, "rendered"), 1);
+    assert_eq!(
+        ordinary["executed_random_list_pages_page_ids"],
+        serde_json::json!([])
+    );
+    deterministic.cleanup().await;
+
+    let random = Fixture::new_with_body(
+        "provenance-random",
+        Some("[[module ListPages order=\"random\" limit=\"1\"]]\n%%title%%\n[[/module]]"),
+    )
+    .await;
+    let summary = random.render_ahead(false).await;
+    assert_eq!(count(&summary, "failed"), 0, "{summary}");
+    assert_eq!(
+        summary["executed_random_list_pages_page_ids"],
+        serde_json::json!([random.page_id])
+    );
+    assert_eq!(
+        random.ahead_rows().await,
+        1,
+        "observing execution must not affect ahead rows"
+    );
+    random.cleanup().await;
+}
+
 fn count(summary: &JsonValue, field: &str) -> i64 {
     summary[field]
         .as_i64()
@@ -317,6 +355,11 @@ async fn render_ahead_dry_run_renders_nothing() {
     let summary = fixture.render_ahead(true).await;
     assert_eq!(count(&summary, "candidates"), 1, "{summary}");
     assert_eq!(count(&summary, "rendered"), 0, "{summary}");
+    assert_eq!(
+        summary["executed_random_list_pages_page_ids"],
+        serde_json::json!([]),
+        "dry runs must not report executed modules",
+    );
     assert_eq!(count(&summary, "stale_without_valid_ahead"), 1, "{summary}");
     assert_eq!(fixture.ahead_rows().await, 0);
 
