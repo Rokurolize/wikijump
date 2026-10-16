@@ -9,14 +9,13 @@ import {
   InvalidSitemapShardPath,
   formatSitemapLastmod,
   parseSitemapShardNumber,
-  shardSitemapEntries,
   SITEMAP_ENTRIES_PER_SHARD
 } from "../src/lib/server/sitemap.ts"
 
 test("parses shard numbers starting at 1 and rejects anything else", () => {
   assert.equal(parseSitemapShardNumber("1"), 1)
   assert.equal(parseSitemapShardNumber("12"), 12)
-  for (const bad of ["0", "01", "-1", "1.5", "1.xml", "", "one"]) {
+  for (const bad of ["0", "01", "-1", "1.5", "1.xml", "", "one", "9007199254740992"]) {
     assert.throws(() => parseSitemapShardNumber(bad), InvalidSitemapShardPath)
   }
 })
@@ -53,16 +52,11 @@ test("builds a shard urlset with escaped locations and lastmod dates", () => {
   )
 })
 
-test("splits entries into bounded shards", () => {
-  const entries = Array.from({ length: SITEMAP_ENTRIES_PER_SHARD + 1 }, (_, index) => ({
-    slug: `page-${index}`,
-    last_modified: "2026-05-22T00:00:00+00:00"
-  }))
-  const shards = shardSitemapEntries(entries)
-  assert.equal(shards.length, 2)
-  assert.equal(shards[0].length, SITEMAP_ENTRIES_PER_SHARD)
-  assert.equal(shards[1].length, 1)
-  assert.deepEqual(shardSitemapEntries([]), [])
+test("represents more than 50,000 public URLs in a bounded sitemap index", () => {
+  const xml = buildSitemapIndexXml("https://scp-wiki.example", 51)
+  assert.equal((xml.match(/<sitemap>/gu) ?? []).length, 51)
+  assert.match(xml, /sitemap_page_51\.xml/u)
+  assert.equal(SITEMAP_ENTRIES_PER_SHARD, 1_000)
 })
 
 test("public sitemap routes do not forward signed-in cookies to their inventory", async () => {
@@ -71,7 +65,7 @@ test("public sitemap routes do not forward signed-in cookies to their inventory"
     "../src/routes/sitemap_page_[n].xml/+server.ts"
   ]) {
     const source = await readFile(new URL(route, import.meta.url), "utf8")
-    assert.match(source, /wikidotSitemap\(siteId, \{ siteId \}\)/u, route)
+    assert.match(source, /wikidotSitemap\(siteId, (?:0|shard), \{ siteId \}\)/u, route)
     assert.doesNotMatch(source, /sessionToken|cookies\.get/u, route)
   }
 })

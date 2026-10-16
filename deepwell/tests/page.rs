@@ -4671,6 +4671,90 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
 }
 
 #[tokio::test]
+async fn sitemap_paged_rpc_includes_more_than_fifty_thousand_public_pages() {
+    const PUBLIC_PAGE_COUNT: i32 = 50_100;
+    const TAIL: &str = "sitemap-paged-public-tail";
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let public_category_id =
+        CategoryService::get_or_create(runner.context(), site_id, "_default")
+            .await
+            .expect("default category should exist")
+            .category_id;
+    let tx = runner.context().transaction();
+    tx.execute_raw(Statement::from_sql_and_values(
+        tx.get_database_backend(),
+        "INSERT INTO page \
+         (created_at, updated_at, deleted_at, from_wikidot, site_id, \
+          latest_revision_id, page_category_id, slug, discussion_thread_id, layout) \
+         SELECT NOW(), NULL, NULL, false, $1, NULL, $2, \
+                'sitemap-paged-public-' || series, NULL, 'wikidot' \
+         FROM generate_series(1, $3) AS series",
+        [
+            Value::from(site_id),
+            Value::from(public_category_id),
+            Value::from(PUBLIC_PAGE_COUNT),
+        ],
+    ))
+    .await
+    .expect("large public sitemap page set should be inserted");
+    create_listpages_test_page(&mut runner, site_id, TAIL, "Public last page", "tail")
+        .await;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+
+    let index = run_endpoint!(
+        runner,
+        wikidot_sitemap,
+        json!({"site_id": site_id, "shard": 0})
+    )
+    .expect("index should count all public pages");
+    assert!(
+        index.entries.is_empty(),
+        "index RPC must never return a large URL list"
+    );
+    let count = index.shard_count.expect("index must have a shard count");
+    assert!(
+        count >= 51,
+        "more than 50,000 eligible pages require 51+ bounded shards"
+    );
+    let first = run_endpoint!(
+        runner,
+        wikidot_sitemap,
+        json!({"site_id": site_id, "shard": 1})
+    )
+    .expect("first public sitemap shard should exist");
+    assert_eq!(first.entries.len(), 1_000);
+    assert_eq!(first.shard_count, None);
+
+    let last_shard = run_endpoint!(
+        runner,
+        wikidot_sitemap,
+        json!({"site_id": site_id, "shard": count})
+    )
+    .expect("last public sitemap shard should exist");
+    assert!(
+        last_shard.entries.len() <= 1_000,
+        "child response must be bounded"
+    );
+    assert_eq!(last_shard.shard_count, None);
+    assert!(last_shard.entries.iter().any(|entry| entry.slug == TAIL));
+    let beyond_last = run_endpoint!(
+        runner,
+        wikidot_sitemap,
+        json!({"site_id": site_id, "shard": count + 1})
+    )
+    .expect("out-of-range shard should have empty entries");
+    assert!(beyond_last.entries.is_empty());
+}
+
+#[tokio::test]
 async fn sitemap_scans_past_fifty_thousand_private_pages_for_public_tail() {
     const HIDDEN_CATEGORY: &str = "sitemap-keyset-hidden";
     const PUBLIC_TAIL_SLUG: &str = "sitemap-keyset-public-tail";
@@ -4717,8 +4801,12 @@ async fn sitemap_scans_past_fifty_thousand_private_pages_for_public_tail() {
         site_id: Some(site_id),
         ..Default::default()
     });
-    let output = run_endpoint!(runner, wikidot_sitemap, json!({"site_id": site_id}))
-        .expect("the public sitemap must be complete despite private rows");
+    let output = run_endpoint!(
+        runner,
+        wikidot_sitemap,
+        json!({"site_id": site_id, "shard": 1})
+    )
+    .expect("the public sitemap must be complete despite private rows");
     assert!(
         output
             .entries
@@ -4846,7 +4934,7 @@ async fn sitemap_never_publishes_authenticated_only_site_pages() {
         "the fixture page must remain visible to its authenticated admin"
     );
 
-    let sitemap_request = json!({"site_id": site_id});
+    let sitemap_request = json!({"site_id": site_id, "shard": 1});
     runner.set_request_context(RequestContext {
         site_id: Some(site_id),
         ..Default::default()
