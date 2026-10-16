@@ -131,3 +131,25 @@ test("canonical slug redirects use a 301 and retain route options and query", ()
     { status: 301, location: "/normalized/history?view=history" }
   )
 })
+
+test("verified Wikidot URL spelling aliases redirect to canonical pages with HTTP 301", () => {
+  // Deepwell resolves each alias to this canonical page and performs the
+  // canonical page's permission check before Framerail sends the redirect.
+  for (const source of [
+    "scp---9506",
+    "scp-9506_",
+    "scp%209506",
+    "scp-9506%09"
+  ]) {
+    assert.deepEqual(
+      resolvePageRedirect(
+        { redirect_page: "scp-9506", redirect_kind: null },
+        source,
+        "history",
+        `https://scp-wiki.wikijump.localhost/${source}/history?view=history`
+      ),
+      { status: 301, location: "/scp-9506/history?view=history" },
+      source
+    )
+  }
+})
