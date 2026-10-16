@@ -97,6 +97,10 @@ pub struct RenderAheadSummary {
     observed_source_dependent_page_ids: Vec<i64>,
     observed_query_dependent_page_ids: Vec<i64>,
     observed_other_dependent_page_ids: Vec<i64>,
+    /// Positive dependency observations grouped by render scope (body, top
+    /// navigation, side navigation, etc.). A missing ID is not a proof of
+    /// determinism; these data support future fail-closed frontier analysis.
+    observed_dependent_page_ids_by_scope: std::collections::BTreeMap<String, Vec<i64>>,
     stale_without_valid_ahead: i64,
     elapsed_ms: u128,
     rows_per_sec: f64,
@@ -163,6 +167,10 @@ impl RenderAheadService {
         let mut observed_source_dependent_page_ids = Vec::new();
         let mut observed_query_dependent_page_ids = Vec::new();
         let mut observed_other_dependent_page_ids = Vec::new();
+        let mut observed_dependent_page_ids_by_scope: std::collections::BTreeMap<
+            String,
+            Vec<i64>,
+        > = std::collections::BTreeMap::new();
         let mut after_page_id = 0;
 
         // Keyset pagination over page IDs, so a page that fails is not
@@ -178,7 +186,10 @@ impl RenderAheadService {
                 continue;
             }
 
-            let results: Vec<(PageId, Result<(i64, bool, u64)>)> = stream::iter(batch)
+            let results: Vec<(
+                PageId,
+                Result<(i64, bool, u64, std::collections::BTreeMap<String, u64>)>,
+            )> = stream::iter(batch)
                 .map(|id| {
                     let state = state.clone();
                     async move { (id, Self::render_page(&state, id).await) }
@@ -189,7 +200,12 @@ impl RenderAheadService {
 
             for (id, result) in results {
                 match result {
-                    Ok((_, executed_random, dependency_flags)) => {
+                    Ok((
+                        _,
+                        executed_random,
+                        dependency_flags,
+                        scope_dependency_flags,
+                    )) => {
                         rendered += 1;
                         if executed_random {
                             executed_random_list_pages_page_ids.push(id.page_id);
@@ -202,6 +218,14 @@ impl RenderAheadService {
                         }
                         if dependency_flags & OBSERVED_OTHER_DEPENDENCY != 0 {
                             observed_other_dependent_page_ids.push(id.page_id);
+                        }
+                        for (scope, flags) in scope_dependency_flags {
+                            if flags != 0 {
+                                observed_dependent_page_ids_by_scope
+                                    .entry(scope)
+                                    .or_default()
+                                    .push(id.page_id);
+                            }
                         }
                     }
                     Err(error) => {
@@ -254,6 +278,12 @@ impl RenderAheadService {
             observed_other_dependent_page_ids: {
                 observed_other_dependent_page_ids.sort_unstable();
                 observed_other_dependent_page_ids
+            },
+            observed_dependent_page_ids_by_scope: {
+                for page_ids in observed_dependent_page_ids_by_scope.values_mut() {
+                    page_ids.sort_unstable();
+                }
+                observed_dependent_page_ids_by_scope
             },
             stale_without_valid_ahead,
             elapsed_ms: elapsed.as_millis(),
@@ -439,7 +469,10 @@ impl RenderAheadService {
         row.try_get("", "stale").or_raise(make_error)
     }
 
-    async fn render_page(state: &ServerState, id: PageId) -> Result<(i64, bool, u64)> {
+    async fn render_page(
+        state: &ServerState,
+        id: PageId,
+    ) -> Result<(i64, bool, u64, std::collections::BTreeMap<String, u64>)> {
         let make_error = || {
             Error::new(
                 format!("failed to render ahead page ID {}", id.page_id),

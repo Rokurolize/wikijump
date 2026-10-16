@@ -246,6 +246,7 @@ struct CorpusRenderTraceInner {
     dimensions: [AtomicU64; 4],
     executed_random_list_pages: AtomicBool,
     observed_dependency_flags: AtomicU64,
+    observed_dependency_flags_by_scope: [AtomicU64; SCOPE_COUNT],
     started_at: Instant,
 }
 
@@ -271,6 +272,9 @@ impl CorpusRenderTrace {
             dimensions: std::array::from_fn(|_| AtomicU64::new(0)),
             executed_random_list_pages: AtomicBool::new(false),
             observed_dependency_flags: AtomicU64::new(0),
+            observed_dependency_flags_by_scope: std::array::from_fn(|_| {
+                AtomicU64::new(0)
+            }),
             started_at: Instant::now(),
         }))
     }
@@ -298,7 +302,11 @@ impl CorpusRenderTrace {
     /// through this render, including expanded includes and navigation.
     /// An empty mask does not certify deterministic output: these classifiers
     /// intentionally do not recognize every possible runtime dependency.
-    pub(crate) fn observe_render_source_dependencies(&self, source: &str) {
+    pub(crate) fn observe_render_source_dependencies(
+        &self,
+        source: &str,
+        scope: CorpusRenderScope,
+    ) {
         let classes = classify_render_dependencies(source);
         let mut flags = 0;
         if classes.contains(RenderDependencyClass::SourceDependent) {
@@ -319,10 +327,34 @@ impl CorpusRenderTrace {
         self.0
             .observed_dependency_flags
             .fetch_or(flags, Ordering::Relaxed);
+        self.0.observed_dependency_flags_by_scope[scope as usize]
+            .fetch_or(flags, Ordering::Relaxed);
     }
 
     pub(crate) fn observed_dependency_flags(&self) -> u64 {
         self.0.observed_dependency_flags.load(Ordering::Relaxed)
+    }
+
+    /// Scope-level positive dependency evidence lets the promotion analyzer
+    /// distinguish content from shared navigation without treating a missing
+    /// classification as a determinism certificate.
+    pub(crate) fn observed_dependency_flags_by_scope(&self) -> BTreeMap<String, u64> {
+        CorpusRenderScope::ALL
+            .into_iter()
+            .map(|scope| {
+                (
+                    scope.as_str().to_owned(),
+                    self.observed_dependency_flags_for_scope(scope),
+                )
+            })
+            .collect()
+    }
+
+    pub(crate) fn observed_dependency_flags_for_scope(
+        &self,
+        scope: CorpusRenderScope,
+    ) -> u64 {
+        self.0.observed_dependency_flags_by_scope[scope as usize].load(Ordering::Relaxed)
     }
 
     #[inline]
@@ -472,23 +504,52 @@ mod tests {
     fn source_and_query_provenance_accumulate_across_included_and_nav_sources() {
         let trace = CorpusRenderTrace::new();
         assert_eq!(trace.observed_dependency_flags(), 0);
-        trace.observe_render_source_dependencies("[[include fragment:somewhere]]");
+        trace.observe_render_source_dependencies(
+            "[[include fragment:somewhere]]",
+            CorpusRenderScope::Body,
+        );
         assert_eq!(
             trace.observed_dependency_flags(),
             OBSERVED_SOURCE_DEPENDENCY
         );
-        trace.observe_render_source_dependencies("[[module ListPages]]\n[[/module]]");
+        trace.observe_render_source_dependencies(
+            "[[module ListPages]]\n[[/module]]",
+            CorpusRenderScope::TopNav,
+        );
         assert_eq!(
             trace.observed_dependency_flags(),
             OBSERVED_SOURCE_DEPENDENCY | OBSERVED_QUERY_DEPENDENCY,
         );
-        trace.observe_render_source_dependencies("[[module MysteryWidget]]");
+        trace.observe_render_source_dependencies(
+            "[[module MysteryWidget]]",
+            CorpusRenderScope::SideNav,
+        );
         assert_ne!(
             trace.observed_dependency_flags() & OBSERVED_OTHER_DEPENDENCY,
             0
         );
-        trace.observe_render_source_dependencies("ordinary static text");
+        trace.observe_render_source_dependencies(
+            "ordinary static text",
+            CorpusRenderScope::Body,
+        );
         assert_eq!(trace.observed_dependency_flags(), 7);
+        assert_eq!(
+            trace.observed_dependency_flags_for_scope(CorpusRenderScope::Body),
+            OBSERVED_SOURCE_DEPENDENCY
+        );
+        assert_eq!(
+            trace.observed_dependency_flags_for_scope(CorpusRenderScope::TopNav),
+            OBSERVED_QUERY_DEPENDENCY
+        );
+        assert_eq!(
+            trace.observed_dependency_flags_for_scope(CorpusRenderScope::SideNav),
+            OBSERVED_OTHER_DEPENDENCY
+        );
+        let by_scope = trace.observed_dependency_flags_by_scope();
+        assert_eq!(by_scope["body"], OBSERVED_SOURCE_DEPENDENCY);
+        assert_eq!(by_scope["top_nav"], OBSERVED_QUERY_DEPENDENCY);
+        assert_eq!(by_scope["side_nav"], OBSERVED_OTHER_DEPENDENCY);
+        assert_eq!(by_scope["rerender"], 0);
     }
 
     #[test]

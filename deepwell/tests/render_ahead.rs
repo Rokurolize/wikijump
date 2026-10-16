@@ -263,6 +263,11 @@ async fn render_ahead_reports_executed_random_listpages_without_changing_promoti
         "ListPages must also be classified as query-dependent",
     );
     assert_eq!(
+        summary["observed_dependent_page_ids_by_scope"]["body"],
+        serde_json::json!([random.page_id]),
+        "the source-bearing body scope must be distinguished from shared navigation",
+    );
+    assert_eq!(
         random.ahead_rows().await,
         1,
         "observing execution must not affect ahead rows"

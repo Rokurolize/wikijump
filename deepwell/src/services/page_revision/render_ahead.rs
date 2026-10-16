@@ -41,12 +41,13 @@ impl PageRevisionService {
     /// finalizer renders them; local revisions keep the public limit.
     ///
     /// Returns revision ID and positive runtime observations: actual random
-    /// ListPages execution, plus source dependency class flags. None of these
-    /// can independently certify deterministic link output.
+    /// ListPages execution, aggregate source dependency class flags, and flags
+    /// by render scope. None of these can independently certify deterministic
+    /// link output.
     pub(crate) async fn render_ahead(
         ctx: &ServiceContext<'_>,
         id: PageId,
-    ) -> Result<(i64, bool, u64)> {
+    ) -> Result<(i64, bool, u64, std::collections::BTreeMap<String, u64>)> {
         let PageId {
             site_id,
             category_id,
@@ -128,6 +129,7 @@ impl PageRevisionService {
             revision.revision_id,
             trace.executed_random_list_pages(),
             trace.observed_dependency_flags(),
+            trace.observed_dependency_flags_by_scope(),
         ))
     }
 }
