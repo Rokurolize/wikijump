@@ -122,13 +122,13 @@ impl RenderService {
         // Anonymous visitors have no page attribution, so the same category
         // decision applies to *every* page in that category. Resolve each
         // category once using the canonical permission service, then push the
-        // resulting allowed category IDs into SQL. This avoids re-fetching and
-        // rechecking all preceding pages for every child sitemap request.
+        // resulting allowed category IDs into SQL. Read the category table
+        // directly: DISTINCT over the page table would still scan every page
+        // on every shard request.
         let categories =
             SitemapCategoryRow::find_by_statement(Statement::from_sql_and_values(
                 ctx.transaction().get_database_backend(),
-                "SELECT DISTINCT page_category_id FROM page \
-                 WHERE site_id = $1 AND deleted_at IS NULL",
+                "SELECT category_id AS page_category_id FROM page_category WHERE site_id = $1",
                 [Value::from(site_id)],
             ))
             .all(ctx.transaction())
