@@ -8,12 +8,10 @@ import {
 
 import type { RequestHandler } from "./$types"
 
-export const GET: RequestHandler = async ({ request, cookies }) => {
+export const GET: RequestHandler = async ({ request }) => {
   const { siteId } = loadSiteInfo(request.headers)
-  const output = await wikidotSitemap(siteId, {
-    siteId,
-    sessionToken: cookies.get("wikijump_token")
-  })
+  // This is a public crawler resource even when a signed-in user requests it.
+  const output = await wikidotSitemap(siteId, { siteId })
   // A site the viewer cannot see has no public sitemap, so the route answers
   // the same way as any other missing page.
   if (!output) return new Response("Not found", { status: 404 })

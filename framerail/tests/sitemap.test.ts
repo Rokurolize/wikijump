@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { readFile } from "node:fs/promises"
 import test from "node:test"
 
 import {
@@ -62,4 +63,15 @@ test("splits entries into bounded shards", () => {
   assert.equal(shards[0].length, SITEMAP_ENTRIES_PER_SHARD)
   assert.equal(shards[1].length, 1)
   assert.deepEqual(shardSitemapEntries([]), [])
+})
+
+test("public sitemap routes do not forward signed-in cookies to their inventory", async () => {
+  for (const route of [
+    "../src/routes/sitemap.xml/+server.ts",
+    "../src/routes/sitemap_page_[n].xml/+server.ts"
+  ]) {
+    const source = await readFile(new URL(route, import.meta.url), "utf8")
+    assert.match(source, /wikidotSitemap\(siteId, \{ siteId \}\)/u, route)
+    assert.doesNotMatch(source, /sessionToken|cookies\.get/u, route)
+  }
 })
