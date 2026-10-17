@@ -274,6 +274,25 @@ class RenderUntilLinksSettleTest(unittest.TestCase):
             site.settle()
         self.assertNotEqual(site.links["2"], "reads-" + site.links["1"])
 
+    def test_deep_reader_chain_is_not_mistaken_for_random_movement(self) -> None:
+        # The last reader needs five propagation rounds. Four rounds change
+        # overlapping page IDs, but each page is fully deterministic. They
+        # still cannot be accepted with an output depending on older links.
+        links = {page: (lambda values, _n, page=page: f"{page}<" + values[str(page - 1)])
+                 for page in range(2, 7)}
+        links[1] = lambda _values, _n: "new"
+        site = FakeSite(links, readers=range(2, 7))
+        original = site.render
+
+        def render(name, cutoff, pages=None, **flags):
+            selected = pages if pages is not None else links
+            return original(name, cutoff, sorted(selected, reverse=True), **flags)
+
+        site.render = render
+        with self.assertRaisesRegex(RuntimeError, "did not settle"):
+            site.settle()
+        self.assertNotEqual(site.links["6"], "6<" + site.links["5"])
+
     def test_links_that_still_settle_after_the_last_round_fail_the_run(self) -> None:
         # Page 6 moves on every render; page 8 first moves in the last round,
         # so it has not been shown to settle.
