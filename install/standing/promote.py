@@ -643,20 +643,34 @@ def promote(args, source_root, runtime_home, override_file, identity, evidence, 
         overlay_standing_files(rehearsal_volumes["files"], rehearsal_volumes["files_upper"])
         return dict(rehearsal_volumes)
 
+    def browser_dependencies_stage():
+        # The browser parity drives Chromium through Framerail's locked
+        # Playwright; a fresh checkout has no node_modules yet.
+        if (source_root / "framerail" / "node_modules" / "@playwright" / "test").is_dir():
+            return {"status": "present"}
+        run_logged(
+            ["pnpm", "--dir", "framerail", "install", "--frozen-lockfile", "--prefer-offline"],
+            evidence / "browser-dependencies.log",
+            source_root,
+        )
+        return {"status": "installed"}
+
     # Without render-ahead the clone does not wait for anything, so it runs
     # alongside the build; with it, the clone must include the ahead rows.
     clone_early = plan["rehearse"] and not plan["render_ahead"]
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
         validation = pool.submit(stages.run, "validation", validation_stage)
         build = pool.submit(stages.run, "build", build_stage)
+        dependencies = pool.submit(stages.run, "browser-dependencies", browser_dependencies_stage)
         clone = pool.submit(stages.run, "rehearsal-clone", clone_stage) if clone_early else None
         try:
             receipt["validation"] = validation.result()
             built = build.result()
+            dependencies.result()
             if clone:
                 clone.result()
         except BaseException:
-            for future in (validation, build, clone):
+            for future in (validation, build, dependencies, clone):
                 if future:
                     future.cancel()
             if clone_early:
