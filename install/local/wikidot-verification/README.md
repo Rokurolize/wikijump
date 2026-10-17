@@ -568,45 +568,25 @@ The document inventory output is the exact complement of the sealed redirect set
 
 ## Standing candidate browser parity
 
-`scripts/run-standing-browser-parity.mjs` defines the source-owned browser-parity receipts used around promotion. `verify-standing-candidate-parity-admission.mjs` binds candidate evidence to the candidate identity, live reference, and completion policy; `install/standing/scripts/verify-promotion-precondition.mjs` binds that admission to the sealed build, final-frozen inputs, and staging home before standing preparation or refresh. The runner has three intentional modes. `live-reference` captures only the six production-theme canaries from `scp-wiki.wikidot.com` through an identity-bound persistent response cache with a 0 ms fixed inter-request interval; repeated runs reuse retained responses, while cache misses still honor server `Retry-After`. `candidate` captures the same pages only from a sealed, expiring non-443 candidate and compares them to an exact sealed live reference. `standing` runs only after a passing standing refresh receipt, captures the canonical local `https://scp-wiki.wikijump.localhost` and `https://scp-wiki.wjfiles.localhost` authorities on port 443 without rewriting their origins, replays retained source redirects through the same evidence cache, and seals a post-refresh browser proof bound to that refresh receipt. Candidate mode never targets port 443; standing mode intentionally does because changing the standing origin or port changes CSP and resource semantics. Historical sealed references retain the request interval recorded when they were acquired and remain reusable evidence rather than forcing another external fetch.
+`scripts/run-standing-browser-parity.mjs` is the browser check of a standing promotion. `install/standing/promote.py` runs it twice: in `candidate` mode against the rehearsal (only when migrations change), and in `standing` mode after activation, where a failure rolls standing back. Both modes compare six production-theme canaries (`src/standing-browser-canaries.mjs`) with a retained live Wikidot reference and replay public resources from a persistent response cache only (zero external requests).
 
-Any later merge that changes runtime inputs after a passing final-zero makes that receipt historical. Re-certification must establish a fresh pre-merge candidate identity from the new runtime base, then repeat promotion, standing proof, reconciliation, and final-zero; do not carry a previous standing or final-zero verdict across a dependency-only runtime merge.
+The reference is retained once in `${XDG_STATE_HOME:-$HOME/.local/state}/wikijump/standing-browser-reference/reference.json`. It names the live completion policy, the reference ledger and its SHA-256, the response cache directory and identity, the browser executable, and `candidate_public_port`. The port matters: cross-origin theme fonts and stylesheets answer with `Vary: Origin`, so a cached response replays only for the candidate origin it was captured from, and a candidate on any other port fails with "candidate response cache miss". Promotions never recapture the reference. Recapture it with `--mode live-reference` only when the canary contract or the live pages change, then update `reference.json`:
 
 ```sh
 node install/local/wikidot-verification/scripts/run-standing-browser-parity.mjs \
   --mode live-reference \
-  --output-dir /mnt/oracle-store/wjlab/standing-live-reference-... \
-  --live-completion-policy /secure/standing-live-completion-policy.json \
-  --source-response-cache-dir "$HOME/.cache/wikijump-verification/standing-live-reference-v1" \
-  --source-response-cache-identity standing-live-<browser-sha>-<policy-sha> \
+  --output-dir <new reference directory> \
+  --live-completion-policy <policy.json> \
+  --source-response-cache-dir "$HOME/.cache/wikijump-verification/candidate-public-evidence-v1" \
+  --source-response-cache-identity wikijump-candidate-public-evidence-cache-v1 \
   --cache-source-documents \
   --browser-root framerail \
   --browser-executable /usr/bin/google-chrome
 ```
 
-```sh
-node install/local/wikidot-verification/scripts/run-standing-browser-parity.mjs \
-  --mode candidate \
-  --output-dir /mnt/oracle-store/wjlab/standing-candidate-parity-... \
-  --live-completion-policy /secure/standing-live-completion-policy.json \
-  --candidate-identity /secure/candidate-parity-identity.json \
-  --live-reference-ledger /mnt/oracle-store/wjlab/standing-live-reference-.../standing-browser-live-reference.json \
-  --live-reference-sha256 <sealed-reference-sha256> \
-  --browser-root framerail \
-  --browser-executable /usr/bin/google-chrome
-```
+`candidate` mode captures only from a sealed, expiring non-443 candidate (`--candidate-identity`, written by `start-promotion-candidate.mjs`). `standing` mode runs only after a passing standing refresh receipt (`--standing-refresh`, schema 4 from `promote.py`), captures the canonical local `https://scp-wiki.wikijump.localhost` and `https://scp-wiki.wjfiles.localhost` authorities on port 443 without rewriting their origins, and seals a proof bound to that receipt. Candidate mode never targets port 443; standing mode intentionally does, because changing the standing origin or port changes CSP and resource semantics. A candidate that serves a copy of standing's data must re-render the canary pages with its own configuration first (`promote.py` does): standing's saved HTML embeds standing's own origin.
 
-```sh
-node install/local/wikidot-verification/scripts/run-standing-browser-parity.mjs \
-  --mode standing \
-  --output-dir /mnt/oracle-store/wjlab/standing-browser-parity-... \
-  --live-completion-policy /secure/standing-live-completion-policy.json \
-  --standing-refresh /secure/standing-refresh.json \
-  --live-reference-ledger /mnt/oracle-store/wjlab/standing-live-reference-.../standing-browser-live-reference.json \
-  --live-reference-sha256 <sealed-reference-sha256> \
-  --source-response-cache-dir "$HOME/.cache/wikijump-verification/candidate-public-evidence-v1" \
-  --source-response-cache-identity wikijump-candidate-public-evidence-cache-v1
-```
+`verify-standing-candidate-parity-admission.mjs`, `install/standing/scripts/verify-promotion-precondition.mjs`, and `emit-final-frozen-receipt.mjs` belong to the retired multi-receipt promotion chain. Promotion does not use them; they remain only for historical final-zero inputs (`verify-final-zero.mjs`).
 
 The live policy is sealed before any browser request and names each tolerated external failure exactly. A candidate identity is sealed before local capture and binds its repository/tree, FTML pin, immutable image IDs, isolated configuration hashes, owner/expiry, non-443 endpoint, loopback address, and evidence seal. Before opening the browser, and again after browser, proxy, request-gate, and lock closure, the runner independently inspects the candidate Compose project. Every declared role must be running exactly once with the sealed image, provenance labels, expiry, artifact key, configuration hash, and a Caddy HTTPS mapping limited to the declared loopback non-443 endpoint. The identity also carries the expected aggregate hash of effective Docker service configuration. The runner computes that hash from command, entrypoint, environment, mounts, network, port, and security settings without recording secret values. Candidate mode runs only from a clean source checkout whose exact Wikijump tree and FTML lock pin match the candidate, and binds a canonical manifest of every parity module into the receipt. Standing mode instead binds the proof to the validated refresh receipt and keeps both canonical local HTTPS origins unchanged; local file redirects are resolved through retained evidence before Chromium follows them so a missing mirrored file does not turn a source response into a different cross-origin browser observation. The resulting receipts reject a missing canary, stale or mismatched source identity, local-only anomaly, omitted screenshot, incomplete load/font/image observation, or a record that lacks the `DOMContentLoaded` observation. A terminal ledger and receipt are published only after clean closure, with the final shared-gate snapshot bound into both. The immediate capture is DOM/CSS evidence at `DOMContentLoaded`, not a compositor-filmstrip claim.
 

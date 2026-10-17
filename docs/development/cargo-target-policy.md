@@ -22,33 +22,23 @@ cargo test --manifest-path deepwell/Cargo.toml --profile debugging
 
 The `debugging` profile is for diagnosis, not the default development loop.
 `release` remains the production profile; Deepwell keeps link-time
-optimisation enabled there.
+optimisation enabled there. Standing promotion images use Deepwell's `standing`
+profile instead: release optimisation without whole-program LTO, with
+incremental compilation, so a source change rebuilds in minutes.
 
 ## Candidate and rollback builds
 
-Candidate verification must not write into `target/`. Set `CARGO_TARGET_DIR` to
-a revision-specific directory outside the checkout (the existing candidate
-builder does this) and record the following identity with the candidate
-receipt:
-
-- Wikijump revision and worktree;
-- FTML revision and dependency lockfiles;
-- Cargo profile and feature set;
-- target-directory path or artifact key;
-- owner, creation time, expiry, and evidence receipt.
-
-Keep only the active candidate and the immediately preceding known-good
-rollback candidate after a promotion. Once a candidate receipt is terminal and
-no lease, process, container, or browser evidence references its target, remove
-the target directory. A historical result is reproducible from its receipt;
-retaining an unbounded cache is not provenance. Runtime database/files
-volumes, browser evidence, and the standing runtime are separate assets and
-must not be removed by Cargo-target cleanup.
-
-One-shot candidate or CI builds may additionally set
-`CARGO_INCREMENTAL=0`; this avoids retaining incremental state that cannot be
-reused by a later revision. The normal local development cache keeps Cargo's
-incremental compilation enabled.
+Promotion and rehearsal images are built inside Docker by
+`install/local/wikidot-verification/scripts/build-promotion-candidate-images.mjs`
+(called by `install/standing/promote.py` and `run-consolidated-validation.mjs`),
+never from a host `target/` directory. Their compiler state lives in BuildKit
+cache mounts: the cargo registry and Git caches, and the target directories
+`id=deepwell-target` and `id=wws-release-target`. Those caches are content
+addressed by the build inputs; an image is identified by its image ID and the
+commit, tree, and FTML labels on it, not by a target-directory path. Reclaim
+them with `docker builder prune`, never by deleting Docker's storage
+directories, and keep the current and rollback standing images (see
+`docs/deployment/runtime-drift-policy.md`).
 
 ## Safe cleanup
 
