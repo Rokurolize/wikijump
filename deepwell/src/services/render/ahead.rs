@@ -53,6 +53,9 @@ const ACTION: &str = "render-ahead";
 const DEFAULT_BATCH_SIZE: i64 = 200;
 const DEFAULT_CONCURRENCY: usize = 16;
 const MAX_REPORTED_FAILURES: usize = 50;
+const MAX_REPORTED_SLOW_RENDERS: usize = 50;
+/// A render at least this long counts as slow in the summary.
+const SLOW_RENDER_MS: u64 = 1_000;
 
 /// SQL predicate for an ahead row `ahead` that may replace the output of
 /// revision `revision`. `$1` is the current compiled generator and `$2` the
@@ -95,6 +98,18 @@ pub struct RenderAheadSummary {
     elapsed_ms: u128,
     rows_per_sec: f64,
     failures: Vec<RenderAheadFailure>,
+    /// Rendered pages that took at least `SLOW_RENDER_MS`, beside the others
+    /// of the pass.
+    slow_renders: usize,
+    /// The slowest renders, slowest first.
+    slowest_renders: Vec<RenderAheadTiming>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct RenderAheadTiming {
+    site_id: i64,
+    page_id: i64,
+    elapsed_ms: u64,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -157,6 +172,7 @@ impl RenderAheadService {
         let mut failures = Vec::new();
         let mut failed_page_ids = Vec::new();
         let mut link_reader_page_ids = Vec::new();
+        let mut timings = Vec::new();
 
         // Keyset pagination over page IDs, so a page that fails is not
         // selected again in the same run.
@@ -177,7 +193,11 @@ impl RenderAheadService {
                 .map(|id| {
                     let task = tokio::spawn({
                         let state = state.clone();
-                        async move { Self::render_page(&state, id).await }
+                        async move {
+                            let started_at = Instant::now();
+                            let result = Self::render_page(&state, id).await;
+                            result.map(|rendered| (rendered, elapsed_ms(started_at)))
+                        }
                     });
                     async move {
                         let result = task.await.unwrap_or_else(|error| {
@@ -197,8 +217,13 @@ impl RenderAheadService {
 
             while let Some((id, result)) = results.next().await {
                 match result {
-                    Ok(RenderedAhead { reads_link_graph }) => {
+                    Ok((RenderedAhead { reads_link_graph }, elapsed_ms)) => {
                         rendered += 1;
+                        timings.push(RenderAheadTiming {
+                            site_id: id.site_id,
+                            page_id: id.page_id,
+                            elapsed_ms,
+                        });
                         if reads_link_graph {
                             link_reader_page_ids.push(id.page_id);
                         }
@@ -227,6 +252,7 @@ impl RenderAheadService {
         let elapsed_secs = elapsed.as_secs_f64();
         failed_page_ids.sort_unstable();
         link_reader_page_ids.sort_unstable();
+        let (slow_renders, slowest_renders) = slowest_renders(timings);
         Ok(RenderAheadSummary {
             action: ACTION,
             compiled_generator: COMPILED_GENERATOR.clone(),
@@ -246,6 +272,8 @@ impl RenderAheadService {
                 0.0
             },
             failures,
+            slow_renders,
+            slowest_renders,
         })
     }
 
@@ -465,6 +493,27 @@ struct RenderedAhead {
     reads_link_graph: bool,
 }
 
+fn elapsed_ms(started_at: Instant) -> u64 {
+    u64::try_from(started_at.elapsed().as_millis()).unwrap_or(u64::MAX)
+}
+
+/// How many renders were slow, and the slowest ones, slowest first.
+fn slowest_renders(
+    mut timings: Vec<RenderAheadTiming>,
+) -> (usize, Vec<RenderAheadTiming>) {
+    let slow = timings
+        .iter()
+        .filter(|timing| timing.elapsed_ms >= SLOW_RENDER_MS)
+        .count();
+    timings.sort_unstable_by(|a, b| {
+        b.elapsed_ms
+            .cmp(&a.elapsed_ms)
+            .then(a.page_id.cmp(&b.page_id))
+    });
+    timings.truncate(MAX_REPORTED_SLOW_RENDERS);
+    (slow, timings)
+}
+
 fn not_before(settings: &RenderAheadSettings) -> OffsetDateTime {
     settings.not_before.unwrap_or(OffsetDateTime::UNIX_EPOCH)
 }
@@ -545,6 +594,31 @@ mod tests {
         );
         assert_eq!(configured.page_ids, Some(vec![7, 3]));
         assert!(!configured.dry_run);
+    }
+
+    #[test]
+    fn summary_counts_slow_renders_and_keeps_the_slowest_first() {
+        let timing = |page_id, elapsed_ms| RenderAheadTiming {
+            site_id: 1,
+            page_id,
+            elapsed_ms,
+        };
+        let mut timings: Vec<_> = (0..120).map(|page_id| timing(page_id, 10)).collect();
+        timings.extend([timing(500, 999), timing(501, 1_000), timing(502, 4_200)]);
+
+        let (slow, slowest) = slowest_renders(timings);
+
+        assert_eq!(slow, 2);
+        assert_eq!(slowest.len(), MAX_REPORTED_SLOW_RENDERS);
+        assert_eq!(
+            slowest[..4],
+            [
+                timing(502, 4_200),
+                timing(501, 1_000),
+                timing(500, 999),
+                timing(0, 10)
+            ],
+        );
     }
 
     #[test]
