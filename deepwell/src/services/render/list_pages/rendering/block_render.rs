@@ -95,10 +95,10 @@ impl RenderService {
                 expansion_budget,
             ));
         }
-        if uses_random_list_pages_order(&arguments) {
-            if let Some(trace) = trace {
-                trace.mark_random_list_pages_execution();
-            }
+        if uses_random_list_pages_order(&arguments)
+            && let Some(trace) = trace
+        {
+            trace.mark_random_list_pages_execution();
         }
         seed_random_list_pages_order(
             ctx,

@@ -1166,14 +1166,21 @@ impl PageRevisionService {
         };
 
         // Parse and render
-        let mut output = if allow_corpus_dense_includes && trace.is_some() {
-            let trace = trace.expect("verified traced corpus render");
-            RenderService::render_corpus_page_traced(
-                ctx, wikitext, &page_info, layout, id, trace,
-            )
-            .await
-        } else if allow_corpus_dense_includes {
-            RenderService::render_corpus_page(ctx, wikitext, &page_info, layout, id).await
+        let mut output = if allow_corpus_dense_includes {
+            match trace {
+                Some(trace) => {
+                    RenderService::render_corpus_page_traced(
+                        ctx, wikitext, &page_info, layout, id, trace,
+                    )
+                    .await
+                }
+                None => {
+                    RenderService::render_corpus_page(
+                        ctx, wikitext, &page_info, layout, id,
+                    )
+                    .await
+                }
+            }
         } else {
             // A stored revision render answers no particular request, so it
             // carries no URL arguments.

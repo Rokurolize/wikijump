@@ -76,6 +76,9 @@ MAX_FULL_PASSES = 3
 # Renders of a changed page before it counts as settled; a choice between two
 # equally likely link sets survives all of them with probability 1/256.
 LINK_PROBES = 8
+# Must exactly match the renderer's audited registry. Unknown or partial
+# provenance falls back to the conservative existing eight-probe path.
+NONDETERMINISTIC_LINK_PRODUCER_KINDS = ["list_pages_order_random"]
 
 
 def run(*args: str, input_text: str | None = None) -> str:
@@ -357,12 +360,46 @@ def render_pass(
     )
 
 
+def summary_page_ids(summary: dict[str, object], key: str) -> set[int] | None:
+    values = summary.get(key)
+    if not isinstance(values, list) or any(
+        type(value) is not int or value <= 0 for value in values
+    ):
+        return None
+    return set(values)
+
+
+def merge_recovered_render_observations(
+    initial: dict[str, object], recovered: dict[str, object]
+) -> dict[str, object]:
+    """Keep provenance for successful pages from both full-pass attempts."""
+    merged = dict(recovered)
+    for key in ("rendered_page_ids", "executed_random_list_pages_page_ids"):
+        initial_ids = summary_page_ids(initial, key)
+        recovered_ids = summary_page_ids(recovered, key)
+        if initial_ids is None or recovered_ids is None:
+            merged.pop(key, None)
+        else:
+            merged[key] = sorted(initial_ids | recovered_ids)
+    producer_kinds = initial.get("nondeterministic_link_producer_kinds")
+    if producer_kinds == recovered.get("nondeterministic_link_producer_kinds"):
+        merged["nondeterministic_link_producer_kinds"] = producer_kinds
+    else:
+        merged.pop("nondeterministic_link_producer_kinds", None)
+    return merged
+
+
 def render_until_links_settle(
     render, digests, passes, not_before, recover_failures=None, certify_literal=None
 ):
-    """Render every stale page, again if some page's links moved because of
-    links it reads. Returns the cutoff, the last full-pass summary, and the
-    pages whose links differ on every render."""
+    """Render stale pages until non-random link dependencies converge.
+
+    Use the exact renderer provenance registry to probe only changed pages
+    whose rendered output actually executed a stochastic link producer. Any
+    changed page without that complete per-page proof uses the legacy
+    fail-closed probe path. Returns the cutoff, last full-pass summary, and
+    pages whose links differed across probes.
+    """
     known_random: set[int] = set()
     for number in range(1, MAX_FULL_PASSES + 1):
         links_before = digests()
@@ -376,7 +413,11 @@ def render_until_links_settle(
                 raise RuntimeError("render-ahead full pass has non-deadline failures")
             if recover_failures is None:
                 raise RuntimeError("render-ahead needs a deadline recovery callback")
-            summary = recover_failures(summary, not_before)
+            initial_summary = summary
+            recovered_summary = recover_failures(summary, not_before)
+            summary = merge_recovered_render_observations(
+                initial_summary, recovered_summary
+            )
             if summary["failed_page_ids"]:
                 raise RuntimeError("render-ahead deadline recovery left failed pages")
         links_after = digests()
@@ -385,23 +426,44 @@ def render_until_links_settle(
         passes[full_pass_index]["link_changed_page_ids"] = changed
         if not set(changed) - known_random:
             return not_before, summary, sorted(known_random)
-        # A page whose links change again when it alone is rendered again
-        # produces different links on every render (random ListPages,
-        # per-render placeholders). Any other changed page moved because the
-        # links it reads moved, so pages rendered before it may be stale.
-        # The probe renders the changed pages afresh, so it needs its own
-        # cutoff; their rows from this pass are already valid.
-        # A random choice among few options can repeat by chance, so a page
-        # counts as settled only after several identical renders.
-        pending = [page for page in changed if page not in known_random]
-        # Literal-only sources have no source-level include/module/variable
-        # inputs that could make a repeated render choose another link set.
-        # Other pages, including all uncertain and transitive source types,
-        # retain the full eight-probe nondeterminism safeguard.
-        certified = set() if certify_literal is None else set(certify_literal(pending))
-        if not certified.issubset(pending):
-            raise RuntimeError("literal-link certifier returned noncandidate pages")
-        pending = [page for page in pending if page not in certified]
+        # A random choice among few options can repeat by chance, so an
+        # executed random producer retains the eight-observation safeguard
+        # unless a different link digest is observed. Other changed pages still
+        # trigger another full pass to propagate link-state changes.
+        rendered_ids = summary_page_ids(summary, "rendered_page_ids")
+        random_ids = summary_page_ids(
+            summary, "executed_random_list_pages_page_ids"
+        )
+        complete_producers = summary.get("nondeterministic_link_producer_kinds")
+        complete_random_trace = (
+            complete_producers == NONDETERMINISTIC_LINK_PRODUCER_KINDS
+            and rendered_ids is not None
+            and random_ids is not None
+            and set(changed).issubset(rendered_ids)
+            and random_ids.issubset(rendered_ids)
+        )
+        if complete_random_trace:
+            pending = sorted((set(changed) & random_ids) - known_random)
+            nonrandom_changed = set(changed) - set(pending) - known_random
+            certified: set[int] = set()
+            passes[full_pass_index]["random_link_probe_candidates"] = len(pending)
+            passes[full_pass_index]["nonrandom_changed_pages"] = len(
+                nonrandom_changed
+            )
+        else:
+            # Unknown/partial provenance keeps the previous conservative
+            # behavior. The source-literal proof is an additional narrow
+            # optimization, never a replacement for missing runtime evidence.
+            pending = [page for page in changed if page not in known_random]
+            certified = (
+                set() if certify_literal is None else set(certify_literal(pending))
+            )
+            if not certified.issubset(pending):
+                raise RuntimeError("literal-link certifier returned noncandidate pages")
+            pending = [page for page in pending if page not in certified]
+            nonrandom_changed = set()
+            passes[full_pass_index]["random_link_probe_candidates"] = len(pending)
+            passes[full_pass_index]["nonrandom_changed_pages"] = 0
         passes[full_pass_index]["literal_link_certified_pages"] = len(certified)
         seen = {page: {links_after.get(str(page))} for page in pending}
         unrendered: set[int] = set()
@@ -422,7 +484,7 @@ def render_until_links_settle(
             if not pending:
                 break
         known_random |= {page for page in seen if len(seen[page]) > 1}
-        settled = pending + sorted(certified)
+        settled = sorted(set(pending) | certified | nonrandom_changed)
         passes[full_pass_index]["nondeterministic_link_pages"] = len(known_random)
         passes[full_pass_index]["settled_link_pages"] = len(settled)
         if not settled:

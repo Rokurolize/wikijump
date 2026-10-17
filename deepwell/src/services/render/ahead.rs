@@ -55,6 +55,15 @@ const ACTION: &str = "render-ahead";
 const DEFAULT_BATCH_SIZE: i64 = 200;
 const DEFAULT_CONCURRENCY: usize = 16;
 const MAX_REPORTED_FAILURES: usize = 50;
+/// Exhaustive audited sources of nondeterministic saved-page links. The
+/// render RNG audit found ListPages `order=random` as the only link producer;
+/// Files-module IDs and member-AJAX IDs do not change saved-page backlinks.
+/// The promotion controller requires this exact registry before narrowing
+/// probes; adding a source requires updating the controller and its tests.
+const NONDETERMINISTIC_LINK_PRODUCER_KINDS: [&str; 1] = ["list_pages_order_random"];
+
+type RenderPageResult = Result<(i64, bool, u64, std::collections::BTreeMap<String, u64>)>;
+type CompletedPageRender = (PageId, RenderPageResult);
 
 /// SQL predicate for an ahead row `ahead` that may replace the output of
 /// revision `revision`. `$1` is the current compiled generator and `$2` the
@@ -90,6 +99,12 @@ pub struct RenderAheadSummary {
     rendered: usize,
     failed: usize,
     failed_page_ids: Vec<i64>,
+    /// Every page successfully rendered by this action, for complete per-page
+    /// provenance coverage checks in the promotion controller.
+    rendered_page_ids: Vec<i64>,
+    /// Audited inventory of stochastic sources that can change saved-page links.
+    /// Consumers must fail closed if this registry changes or is absent.
+    nondeterministic_link_producer_kinds: Vec<&'static str>,
     /// Observed, actually executed random ListPages in rendered pages.
     /// This is a positive provenance signal, not a deterministic certificate.
     executed_random_list_pages_page_ids: Vec<i64>,
@@ -163,6 +178,7 @@ impl RenderAheadService {
         let mut rendered = 0;
         let mut failures = Vec::new();
         let mut failed_page_ids = Vec::new();
+        let mut rendered_page_ids = Vec::new();
         let mut executed_random_list_pages_page_ids = Vec::new();
         let mut observed_source_dependent_page_ids = Vec::new();
         let mut observed_query_dependent_page_ids = Vec::new();
@@ -186,10 +202,7 @@ impl RenderAheadService {
                 continue;
             }
 
-            let results: Vec<(
-                PageId,
-                Result<(i64, bool, u64, std::collections::BTreeMap<String, u64>)>,
-            )> = stream::iter(batch)
+            let results: Vec<CompletedPageRender> = stream::iter(batch)
                 .map(|id| {
                     let state = state.clone();
                     async move { (id, Self::render_page(&state, id).await) }
@@ -207,6 +220,7 @@ impl RenderAheadService {
                         scope_dependency_flags,
                     )) => {
                         rendered += 1;
+                        rendered_page_ids.push(id.page_id);
                         if executed_random {
                             executed_random_list_pages_page_ids.push(id.page_id);
                         }
@@ -263,6 +277,12 @@ impl RenderAheadService {
                 failed_page_ids.sort_unstable();
                 failed_page_ids
             },
+            rendered_page_ids: {
+                rendered_page_ids.sort_unstable();
+                rendered_page_ids
+            },
+            nondeterministic_link_producer_kinds: NONDETERMINISTIC_LINK_PRODUCER_KINDS
+                .to_vec(),
             executed_random_list_pages_page_ids: {
                 executed_random_list_pages_page_ids.sort_unstable();
                 executed_random_list_pages_page_ids

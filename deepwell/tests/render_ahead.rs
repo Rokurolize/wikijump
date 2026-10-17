@@ -241,6 +241,14 @@ async fn render_ahead_reports_executed_random_listpages_without_changing_promoti
     let ordinary = deterministic.render_ahead(false).await;
     assert_eq!(count(&ordinary, "rendered"), 1);
     assert_eq!(
+        ordinary["rendered_page_ids"],
+        serde_json::json!([deterministic.page_id])
+    );
+    assert_eq!(
+        ordinary["nondeterministic_link_producer_kinds"],
+        serde_json::json!(["list_pages_order_random"])
+    );
+    assert_eq!(
         ordinary["executed_random_list_pages_page_ids"],
         serde_json::json!([])
     );
@@ -253,6 +261,14 @@ async fn render_ahead_reports_executed_random_listpages_without_changing_promoti
     .await;
     let summary = random.render_ahead(false).await;
     assert_eq!(count(&summary, "failed"), 0, "{summary}");
+    assert_eq!(
+        summary["rendered_page_ids"],
+        serde_json::json!([random.page_id])
+    );
+    assert_eq!(
+        summary["nondeterministic_link_producer_kinds"],
+        serde_json::json!(["list_pages_order_random"])
+    );
     assert_eq!(
         summary["executed_random_list_pages_page_ids"],
         serde_json::json!([random.page_id])

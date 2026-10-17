@@ -203,6 +203,25 @@ class RenderUntilLinksSettleTest(unittest.TestCase):
     def tearDown(self) -> None:
         RENDER_AHEAD.utc_now = self.original_now
 
+    def test_recovery_merges_render_and_random_provenance(self) -> None:
+        initial = {
+            "rendered_page_ids": [1, 2],
+            "executed_random_list_pages_page_ids": [2],
+            "nondeterministic_link_producer_kinds": ["list_pages_order_random"],
+        }
+        recovered = {
+            "rendered_page_ids": [3],
+            "executed_random_list_pages_page_ids": [3],
+            "nondeterministic_link_producer_kinds": ["list_pages_order_random"],
+        }
+        merged = RENDER_AHEAD.merge_recovered_render_observations(initial, recovered)
+        self.assertEqual(merged["rendered_page_ids"], [1, 2, 3])
+        self.assertEqual(merged["executed_random_list_pages_page_ids"], [2, 3])
+        self.assertEqual(
+            merged["nondeterministic_link_producer_kinds"],
+            ["list_pages_order_random"],
+        )
+
     def render(self, name, cutoff, pages=None):
         self.calls.append((name, cutoff, pages))
         selected = pages or [1, 2, 3]
@@ -278,6 +297,131 @@ class RenderUntilLinksSettleTest(unittest.TestCase):
         probes = [(name, selected) for name, selected in calls if name.startswith("link-probe")]
         self.assertTrue(probes)
         self.assertTrue(all(selected == [2] for _, selected in probes))
+        self.assertTrue(any(name == "full-2" for name, _ in calls))
+
+    def test_complete_runtime_provenance_probes_only_random_link_pages(self) -> None:
+        calls = []
+        links = {"1": "old", "2": "r0"}
+        random_counter = 0
+
+        def render(name, cutoff, page_ids=None):
+            nonlocal random_counter
+            calls.append((name, page_ids))
+            selected = [1, 2] if page_ids is None else page_ids
+            if name.startswith("full"):
+                links["1"] = "new"
+            if 2 in selected:
+                random_counter += 1
+                links["2"] = f"r{random_counter}"
+            return {
+                "candidates": len(selected),
+                "failed_page_ids": [],
+                "rendered_page_ids": selected,
+                "executed_random_list_pages_page_ids": [2] if 2 in selected else [],
+                "nondeterministic_link_producer_kinds": ["list_pages_order_random"],
+            }
+
+        passes = [{}]
+        def captured(name, cutoff, page_ids=None):
+            passes.append({})
+            return render(name, cutoff, page_ids)
+
+        RENDER_AHEAD.render_until_links_settle(
+            captured,
+            lambda page_ids=None: {
+                page: digest for page, digest in links.items()
+                if page_ids is None or int(page) in page_ids
+            },
+            passes,
+            None,
+        )
+        probes = [(name, pages) for name, pages in calls if name.startswith("link-probe")]
+        self.assertEqual(
+            len(probes), 1, "a changed random digest is proven by one observation"
+        )
+        self.assertTrue(all(pages == [2] for _, pages in probes))
+        self.assertIn(
+            ("full-2", None), calls, "non-random changes still require convergence"
+        )
+        self.assertNotIn(("link-probe-1.1", [1, 2]), calls)
+
+    def test_large_complete_trace_scopes_eight_probes_to_random_frontier(self) -> None:
+        page_ids = list(range(1, 3_701))
+        random_ids = list(range(1, 15))
+        links = {str(page): "old" for page in page_ids}
+        calls = []
+
+        def render(name, cutoff, selected=None):
+            chosen = page_ids if selected is None else selected
+            calls.append((name, chosen))
+            if name.startswith("full"):
+                for page in page_ids:
+                    links[str(page)] = "new"
+            return {
+                "candidates": len(chosen),
+                "failed_page_ids": [],
+                "rendered_page_ids": chosen,
+                "executed_random_list_pages_page_ids": [
+                    page for page in random_ids if page in chosen
+                ],
+                "nondeterministic_link_producer_kinds": ["list_pages_order_random"],
+            }
+
+        passes = [{}]
+        def captured(name, cutoff, selected=None):
+            passes.append({})
+            return render(name, cutoff, selected)
+
+        RENDER_AHEAD.render_until_links_settle(
+            captured,
+            lambda selected=None: dict(links),
+            passes,
+            None,
+        )
+        probes = [selected for name, selected in calls if name.startswith("link-probe")]
+        self.assertEqual(len(probes), RENDER_AHEAD.LINK_PROBES)
+        self.assertTrue(all(selected == random_ids for selected in probes))
+        self.assertEqual(sum(map(len, probes)), 112)
+        self.assertEqual(passes[1]["random_link_probe_candidates"], 14)
+        self.assertEqual(passes[1]["nonrandom_changed_pages"], 3_686)
+        self.assertEqual(
+            len(page_ids) * RENDER_AHEAD.LINK_PROBES,
+            29_600,
+            "legacy behavior would render the entire 3,700-page frontier eight times",
+        )
+
+    def test_unknown_random_producer_registry_fails_closed(self) -> None:
+        calls = []
+        links = {"1": "old"}
+
+        def render(name, cutoff, page_ids=None):
+            calls.append((name, page_ids))
+            if name.startswith("full"):
+                links["1"] = "new"
+            selected = [1] if page_ids is None else page_ids
+            return {
+                "candidates": len(selected),
+                "failed_page_ids": [],
+                "rendered_page_ids": selected,
+                "executed_random_list_pages_page_ids": [],
+                "nondeterministic_link_producer_kinds": ["future_unknown_producer"],
+            }
+
+        passes = [{}]
+        def captured(name, cutoff, page_ids=None):
+            passes.append({})
+            return render(name, cutoff, page_ids)
+
+        RENDER_AHEAD.render_until_links_settle(
+            captured,
+            lambda page_ids=None: dict(links),
+            passes,
+            None,
+        )
+        self.assertEqual(
+            sum(name.startswith("link-probe") for name, _ in calls),
+            RENDER_AHEAD.LINK_PROBES,
+        )
         self.assertTrue(any(name == "full-2" for name, _ in calls))
 
     def test_entirely_literal_changed_frontier_skips_all_probe_processes(self) -> None:
