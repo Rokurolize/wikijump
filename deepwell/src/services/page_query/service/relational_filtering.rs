@@ -226,6 +226,11 @@ pub(super) async fn outgoing_link_condition(
         return Ok(None);
     }
 
+    // ListPages link_to= filters read page_connection just like the dedicated
+    // Backlinks/OrphanedPages/WantedPages modules. Render-ahead must rerender
+    // these readers after other pages update their links in the full pass.
+    ctx.note_link_graph_read();
+
     let mut condition = Condition::all();
     let incoming_ids =
         PageService::get_pages(ctx, queried_site_id, contains_outgoing_links)
