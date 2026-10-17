@@ -24,11 +24,25 @@
 //! compatible with DEEPWELL's Redis code.
 
 use crate::error::Result;
-use redis::AsyncCommands;
+use redis::{AsyncCommands, AsyncConnectionConfig};
+use std::time::Duration;
+
+/// The reply and connection timeouts DEEPWELL uses (`deepwell/src/redis.rs`):
+/// a saturated host can hold a Valkey reply past the client library's 500 ms
+/// default, while a reply this late means Valkey is unreachable.
+const REDIS_TIMEOUT: Duration = Duration::from_secs(5);
+
+fn connection_config() -> AsyncConnectionConfig {
+    AsyncConnectionConfig::new()
+        .set_connection_timeout(Some(REDIS_TIMEOUT))
+        .set_response_timeout(Some(REDIS_TIMEOUT))
+}
 
 macro_rules! get_connection {
     ($client:expr) => {
-        $client.get_multiplexed_async_connection().await?
+        $client
+            .get_multiplexed_async_connection_with_config(&connection_config())
+            .await?
     };
 }
 
