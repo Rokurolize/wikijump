@@ -5,13 +5,13 @@
     "inputs": [
       {
         "path": "deepwell/Cargo.lock",
-        "git_blob": "051683419fc22861ed91a735d63eb70bdecac804",
-        "sha256": "72f714917bfd92cfa5da38a87805d9012c16de59b18cb21fc6cbaa16b7f28e0a"
+        "git_blob": "95c39f086bbd9a66957545b93f7f53b5751328de",
+        "sha256": "1666abc0400c33866ea6111bd2db736234fa6f9e8f10e8dd680b6e347ceae126"
       },
       {
         "path": "deepwell/Cargo.toml",
-        "git_blob": "0b9a7a83412e603996dedecf35da4a6bbacb8c4f",
-        "sha256": "3ecbd934e7c943dabafbaaec93a1f68414c249ea680ed5e058855add00205010"
+        "git_blob": "c616f341255e5fd71fcb35c311a02bfb2926ba41",
+        "sha256": "77ec88841d41b36e3af3e89db43b2b8ffa8013457b6c932ff4ef87ec9dc085aa"
       },
       {
         "path": "deepwell/migrations/20260815010000_text_block_wikidot_sha1.sql",
