@@ -97,6 +97,52 @@ test("local classifier still selects complete component validation", () => {
   assert.equal(toolchain.locales, true)
 })
 
+test("known local Compose runtime definitions trigger runtime, workflow and verification checks", () => {
+  // These compose files instantiate local runtime services, not Theme Lab or
+  // locales. Check their service inventories so adding a new kind of service
+  // cannot silently inherit this reduced classification.
+  const known = new Map([
+    ["install/local/docker-compose.yaml", ["database", "files", "cache", "deepwell", "framerail", "wws", "caddy"]],
+    ["install/local/docker-compose.dev.yaml", ["deepwell", "framerail", "wws"]],
+    ["install/local/docker-compose.postgres-perf.yaml", ["database"]],
+  ])
+  for (const [file, services] of known) {
+    const source = read(file)
+    const serviceSection = source.split(/^volumes:\s*$/mu, 1)[0]
+    assert.deepEqual(
+      [...serviceSection.matchAll(/^  ([\w-]+):\s*$/gmu)].map((match) => match[1]),
+      services,
+      `${file}: compose service inventory changed; revisit validation ownership`
+    )
+    const selected = classifyChanges([file])
+    for (const group of ["deepwell", "wws", "framerail", "workflow", "verification"]) {
+      assert.equal(selected[group], true, `${file}: ${group}`)
+    }
+    for (const group of ["locales", "theme_lab"]) {
+      assert.equal(selected[group], false, `${file}: no ${group} input`)
+    }
+  }
+  const unknown = classifyChanges(["install/local/docker-compose.new-service.yaml"])
+  for (const group of [...GROUPS, "verification"]) {
+    assert.equal(unknown[group], true, `unknown compose: ${group}`)
+  }
+
+  // A promotion that changes local publish security, Framerail CSP, and
+  // locale messages still checks every affected group. Unrelated historical
+  // Theme Lab evidence is outside those change inputs.
+  const promotion = classifyChanges([
+    "install/local/docker-compose.yaml",
+    ".github/tests/local-publish-loopback.test.mjs",
+    "framerail/svelte.config.js",
+    "framerail/tests/wikidot-csp-config.test.js",
+    "locales/fluent/wiki-page/zh_Hans.ftl",
+  ])
+  for (const group of ["deepwell", "wws", "framerail", "locales", "workflow", "verification"]) {
+    assert.equal(promotion[group], true, `promotion: ${group}`)
+  }
+  assert.equal(promotion.theme_lab, false, "unrelated Theme Lab inputs are not part of this promotion")
+})
+
 test("local classifier keeps workflow and verification ownership", () => {
   for (const file of [
     ".github/workflows/README.md",

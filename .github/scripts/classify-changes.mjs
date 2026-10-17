@@ -10,6 +10,17 @@ const WORKFLOW_POLICY_SUBJECTS = new Set([
   "framerail/playwright.config.ts",
 ])
 
+// All services in these reviewed local Compose manifests are supplied by the
+// Deepwell, Framerail and WWS runtimes. Their dependencies (Postgres, object
+// storage, cache and Caddy) affect those runtimes and their local security
+// checks, but do not provide Theme Lab or Fluent locale inputs. Unknown
+// Compose filenames still take the fail-closed selectAll path.
+const LOCAL_COMPOSE_RUNTIME_FILES = new Set([
+  "install/local/docker-compose.yaml",
+  "install/local/docker-compose.dev.yaml",
+  "install/local/docker-compose.postgres-perf.yaml",
+])
+
 const selectAll = (selected) => {
   for (const group of GROUPS) selected[group] = true
   selected.verification = true
@@ -79,6 +90,13 @@ export function classifyChanges(paths, all = false) {
     }
 
     if (metadataOnly(file) || verificationOnly(file)) continue
+
+    if (LOCAL_COMPOSE_RUNTIME_FILES.has(file)) {
+      for (const group of ["deepwell", "wws", "framerail"]) selected[group] = true
+      selected.workflow = true
+      selected.verification = true
+      continue
+    }
 
     let matched = false
 
