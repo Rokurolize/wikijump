@@ -273,6 +273,23 @@ class ActivationTest(unittest.TestCase):
         self.assertFalse(any(call[0] == "subprocess" for call in self.standing.calls))
 
 
+class SavedPageStalenessTest(unittest.TestCase):
+    def query(self, *args):
+        with mock.patch.object(promote, "run", return_value="0") as run:
+            promote.saved_page_staleness("db", "ftml v1; deepwell-render/v2", *args)
+        return run.call_args.args[-1]
+
+    def test_the_whole_site_is_counted_by_default(self) -> None:
+        sql = self.query()
+        self.assertIn("compiled_generator <> 'ftml v1; deepwell-render/v2'", sql)
+        self.assertNotIn("p.slug IN", sql)
+
+    def test_a_rehearsal_after_a_generator_change_counts_only_its_own_pages(self) -> None:
+        sql = self.query(["scp-9506", "theme:it's"])
+        self.assertIn("slug = 'scp-wiki'", sql)
+        self.assertIn("p.slug IN ('scp-9506', 'theme:it''s')", sql)
+
+
 class ActivationSafetyTest(unittest.TestCase):
     def test_the_cli_has_no_volume_removal_spelling(self) -> None:
         script = Path(promote.__file__)

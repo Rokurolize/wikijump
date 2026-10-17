@@ -33,7 +33,6 @@ import json
 import os
 from pathlib import Path
 import re
-import secrets
 import socket
 import subprocess
 import sys
@@ -282,12 +281,20 @@ def remove_volumes(*names: str) -> None:
         subprocess.run(["docker", "volume", "rm", "--force", name], capture_output=True)
 
 
-def saved_page_staleness(database_container: str, expected: str) -> int:
+def saved_page_staleness(
+    database_container: str, expected: str, scp_wiki_slugs: list[str] | None = None
+) -> int:
     sql = (
         "SELECT count(*) FROM page p JOIN page_revision pr "
         "ON pr.revision_id = p.latest_revision_id WHERE p.deleted_at IS NULL "
         "AND pr.compiled_generator <> '" + expected.replace("'", "''") + "'"
     )
+    if scp_wiki_slugs is not None:
+        quoted = ", ".join("'" + slug.replace("'", "''") + "'" for slug in scp_wiki_slugs)
+        sql += (
+            " AND p.site_id = (SELECT site_id FROM site WHERE slug = 'scp-wiki')"
+            f" AND p.slug IN ({quoted})"
+        )
     return int(
         run(
             "docker", "exec", database_container, "sh", "-c",
@@ -655,14 +662,13 @@ def promote(args, source_root, runtime_home, override_file, identity, evidence, 
         )
         return {"status": "installed"}
 
-    # Without render-ahead the clone does not wait for anything, so it runs
-    # alongside the build; with it, the clone must include the ahead rows.
-    clone_early = plan["rehearse"] and not plan["render_ahead"]
+    # The rehearsal renders the pages it serves itself, so its copy needs
+    # nothing from render-ahead and is taken alongside the build.
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
         validation = pool.submit(stages.run, "validation", validation_stage)
         build = pool.submit(stages.run, "build", build_stage)
         dependencies = pool.submit(stages.run, "browser-dependencies", browser_dependencies_stage)
-        clone = pool.submit(stages.run, "rehearsal-clone", clone_stage) if clone_early else None
+        clone = pool.submit(stages.run, "rehearsal-clone", clone_stage) if plan["rehearse"] else None
         try:
             receipt["validation"] = validation.result()
             built = build.result()
@@ -673,10 +679,26 @@ def promote(args, source_root, runtime_home, override_file, identity, evidence, 
             for future in (validation, build, dependencies, clone):
                 if future:
                     future.cancel()
-            if clone_early:
+            if plan["rehearse"]:
                 pool.shutdown(wait=True)
                 remove_volumes(*rehearsal_volumes.values())
             raise
+    try:
+        return finish(
+            args, source_root, runtime_home, override_file, identity, evidence,
+            stages, receipt, plan, reference, built, rehearsal_volumes,
+        )
+    finally:
+        if plan["rehearse"]:
+            remove_volumes(*rehearsal_volumes.values())
+
+
+def finish(
+    args, source_root, runtime_home, override_file, identity, evidence,
+    stages, receipt, plan, reference, built, rehearsal_volumes,
+) -> int:
+    """Render ahead, rehearse, activate and prove, after the build."""
+    target = identity["wikijump_sha"]
     images = {service: built["images"][service] for service in SERVICES}
     receipt["images"] = images
 
@@ -714,15 +736,31 @@ def promote(args, source_root, runtime_home, override_file, identity, evidence, 
                 "receipt": {"path": str(path), "sha256": refresh.file_sha256(path)},
             }
 
+    def rehearsal_stage():
+        return rehearse(
+            source_root, evidence, stages, plan, reference, rehearsal_volumes,
+            target, images["deepwell"],
+        )
+
+    # 5. rehearsal, alongside render-ahead when both are needed: neither reads
+    # the other's database.
+    if plan["render_ahead"] and plan["rehearse"]:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            ahead = pool.submit(stages.run, "render-ahead", render_stage)
+            rehearsal = pool.submit(rehearsal_stage)
+            errors = [future.exception() for future in (ahead, rehearsal)]
+        for error in errors:
+            if error is not None:
+                raise error
+        render_ahead = ahead.result()
+        receipt["rehearsal"] = rehearsal.result()
+    elif plan["render_ahead"]:
         render_ahead = stages.run("render-ahead", render_stage)
     receipt["render_ahead"] = render_ahead
 
-    # 5. rehearsal
     if plan["rehearse"]:
-        receipt["rehearsal"] = rehearse(
-            source_root, evidence, stages, plan, reference, rehearsal_volumes,
-            target, None if clone_early else clone_stage, images["deepwell"],
-        )
+        if "rehearsal" not in receipt:
+            receipt["rehearsal"] = rehearsal_stage()
     else:
         receipt["rehearsal"] = {
             "status": "not-needed",
@@ -739,14 +777,11 @@ def promote(args, source_root, runtime_home, override_file, identity, evidence, 
     return 0
 
 
-def rehearse(source_root, evidence, stages, plan, reference, volumes, target, clone, deepwell_image) -> dict[str, object]:
+def rehearse(source_root, evidence, stages, plan, reference, volumes, target, deepwell_image) -> dict[str, object]:
     project = f"wjcand-rehearsal-{target[:12]}"
     candidate_root = evidence / "rehearsal"
     ports = {"public": reference["candidate_port"], "rpc": free_port(), "object_store": free_port()}
     try:
-        if clone is not None:
-            stages.run("rehearsal-clone", clone)
-
         def start_stage():
             stdout = run_logged(
                 [
@@ -769,13 +804,21 @@ def rehearse(source_root, evidence, stages, plan, reference, volumes, target, cl
             return last_json_line(stdout)
 
         started = stages.run("rehearsal-start", start_stage)
+        slugs = browser_canary_slugs(source_root)
         stages.run(
             "rehearsal-render",
-            lambda: rerender_rehearsal_pages(project, deepwell_image, browser_canary_slugs(source_root)),
+            lambda: rerender_rehearsal_pages(project, deepwell_image, slugs),
         )
 
         def check_stage():
-            stale = saved_page_staleness(f"{project}-database-1", plan["expected_compiled_generator"])
+            # After a generator change only the pages the rehearsal rendered
+            # itself are current on its copy; render-ahead renders the rest on
+            # standing, and activation requires all of them fresh there.
+            stale = saved_page_staleness(
+                f"{project}-database-1",
+                plan["expected_compiled_generator"],
+                slugs if plan["render_ahead"] else None,
+            )
             if stale:
                 raise RuntimeError(f"the rehearsal serves {stale} stale saved pages")
             origin = f"scp-wiki.wikijump.localhost:{ports['public']}"
