@@ -88,6 +88,7 @@ esac
 set -euo pipefail
 # One write per line, so parallel groups cannot interleave entries.
 line="${command}$(printf ' %s' "$@")"
+if [[ -n "\${PREFLIGHT_DELAY_MATCH:-}" && "$*" == *"$PREFLIGHT_DELAY_MATCH"* ]]; then sleep 1; fi
 printf '%s\\n' "$line" >> "$PREFLIGHT_COMMAND_LOG"
 if [[ -n "\${PREFLIGHT_FAIL_MATCH:-}" && "$*" == *"$PREFLIGHT_FAIL_MATCH"* ]]; then exit 1; fi
 `)
@@ -240,7 +241,9 @@ test("final preflight runs groups side by side with the same checks, ordered log
   const parallel = createHarness(t)
   const result = parallel.runPreflight(["--base", remoteOid, "--final"], {
     PREFLIGHT_JOBS: "0",
-    PREFLIGHT_FAIL_MATCH: "clippy --manifest-path wws/Cargo.toml"
+    PREFLIGHT_FAIL_MATCH: "clippy --manifest-path wws/Cargo.toml",
+    // Logged late, so a Deepwell shard started beside it would log first.
+    PREFLIGHT_DELAY_MATCH: "--dir framerail test:unit"
   })
   assert.equal(result.status, 1, result.stdout)
   assert.deepEqual([...parallel.commands()].sort(), [...serial.commands()].sort())
@@ -251,6 +254,13 @@ test("final preflight runs groups side by side with the same checks, ordered log
   assert.match(result.stdout, /^preflight: FAILED: wws clippy$/mu)
   assert.match(result.stdout, /^preflight: finished group deepwell$/mu)
   assert.match(result.stdout, /^preflight: finished group deepwell_lint$/mu)
+
+  // Suites with wall-clock deadlines finish before the Deepwell shards start.
+  const order = parallel.commands()
+  const lastTimed = order.indexOf("pnpm --dir framerail test:unit")
+  const firstDeepwell = order.findIndex((command) =>
+    command.includes("run-deepwell-integration-validation.mjs"))
+  assert.ok(lastTimed >= 0 && firstDeepwell > lastTimed, order.join("\n"))
 })
 
 test("verification and specification inputs run only the final verification barrier", async (t) => {

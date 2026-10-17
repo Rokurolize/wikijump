@@ -18,7 +18,9 @@
 #   --groups <a,b>  Run only these of the selected groups (the standing
 #                   promotion runs the groups no earlier receipt covers).
 #   --jobs <n>      Run up to n check groups at once (0: all; the default for
-#                   --final, 1 otherwise). Checks within a group stay in order;
+#                   --final, 1 otherwise), in two waves: the suites with
+#                   wall-clock deadlines, then the Deepwell tests beside the
+#                   compile-only groups. Checks within a group stay in order;
 #                   each Rust group then builds in its own target directory.
 #   --list          Print the selected groups and the checks, then exit.
 #
@@ -254,18 +256,28 @@ else
     running=$((running - 1))
     echo "preflight: finished group ${GROUP_OF_PID[${pid}]}"
   }
-  for group in "${GROUP_ORDER[@]}"; do
-    if [[ "${JOBS}" != 0 ]] && (( running >= JOBS )); then finish_one; fi
-    (
-      FAILED=()
-      "group_${group}"
-      : > "${GROUP_DIR}/${group}.failed"
-      (( ${#FAILED[@]} == 0 )) || printf '%s\n' "${FAILED[@]}" > "${GROUP_DIR}/${group}.failed"
-    ) > "${GROUP_DIR}/${group}.log" 2>&1 &
-    GROUP_OF_PID[$!]="${group}"
-    running=$((running + 1))
+  # Two waves. The test suites that give subprocesses and timers wall-clock
+  # deadlines run first, without the Deepwell shards: beside them they missed
+  # those deadlines. The Deepwell tests then run beside the groups that only
+  # compile and lint.
+  WAVES=(
+    "theme_lab workflow verification framerail_lint framerail"
+    "contracts deepwell_lint deepwell wws locales"
+  )
+  for wave in "${WAVES[@]}"; do
+    for group in ${wave}; do
+      if [[ "${JOBS}" != 0 ]] && (( running >= JOBS )); then finish_one; fi
+      (
+        FAILED=()
+        "group_${group}"
+        : > "${GROUP_DIR}/${group}.failed"
+        (( ${#FAILED[@]} == 0 )) || printf '%s\n' "${FAILED[@]}" > "${GROUP_DIR}/${group}.failed"
+      ) > "${GROUP_DIR}/${group}.log" 2>&1 &
+      GROUP_OF_PID[$!]="${group}"
+      running=$((running + 1))
+    done
+    while (( running > 0 )); do finish_one; done
   done
-  while (( running > 0 )); do finish_one; done
   for group in "${GROUP_ORDER[@]}"; do
     cat "${GROUP_DIR}/${group}.log"
     if [[ -s "${GROUP_DIR}/${group}.failed" ]]; then
