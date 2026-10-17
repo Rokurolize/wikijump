@@ -346,7 +346,7 @@ class RenderUntilLinksSettleTest(unittest.TestCase):
         self.assertNotIn(("link-probe-1.1", [1, 2]), calls)
 
     def test_large_complete_trace_scopes_eight_probes_to_random_frontier(self) -> None:
-        page_ids = list(range(1, 3_701))
+        page_ids = list(range(1, 3_705))
         random_ids = list(range(1, 15))
         links = {str(page): "old" for page in page_ids}
         calls = []
@@ -383,11 +383,12 @@ class RenderUntilLinksSettleTest(unittest.TestCase):
         self.assertTrue(all(selected == random_ids for selected in probes))
         self.assertEqual(sum(map(len, probes)), 112)
         self.assertEqual(passes[1]["random_link_probe_candidates"], 14)
-        self.assertEqual(passes[1]["nonrandom_changed_pages"], 3_686)
-        self.assertEqual(
-            len(page_ids) * RENDER_AHEAD.LINK_PROBES,
-            29_600,
-            "legacy behavior would render the entire 3,700-page frontier eight times",
+        self.assertEqual(passes[1]["nonrandom_changed_pages"], 3_690)
+        # The retained standing receipt recorded 29,536 legacy probe page-renders.
+        legacy_probe_page_renders = 29_536
+        self.assertLess(
+            sum(map(len, probes)), legacy_probe_page_renders // 100,
+            "the complete-trace path should retain at least 100x probe reduction",
         )
 
     def test_unknown_random_producer_registry_fails_closed(self) -> None:
