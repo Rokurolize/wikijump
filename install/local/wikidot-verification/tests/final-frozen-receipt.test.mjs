@@ -146,13 +146,15 @@ test("preflight output yields selected groups and every check result", () => {
   const parsed = parsePreflightOutput([
     "preflight: groups: deepwell=true wws=false verification=true ",
     "--- deepwell fmt: ok",
-    "--- deepwell full tests: FAILED",
+    "--- deepwell clippy: ok (41s)",
+    "--- deepwell full tests: FAILED (312s)",
     "preflight: FAILED: deepwell full tests",
   ].join("\n"));
   assert.deepEqual(parsed.groups, {deepwell: true, wws: false, verification: true});
   assert.deepEqual(parsed.checks, [
     {name: "deepwell fmt", status: "ok"},
-    {name: "deepwell full tests", status: "failed"},
+    {name: "deepwell clippy", status: "ok", duration_seconds: 41},
+    {name: "deepwell full tests", status: "failed", duration_seconds: 312},
   ]);
   assert.throws(
     () => validateConsolidatedValidation(validation({checks: parsed.checks, status: "fail"}), SOURCE),

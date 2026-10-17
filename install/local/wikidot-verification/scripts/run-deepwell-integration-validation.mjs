@@ -13,12 +13,14 @@ import {
 } from "../src/deepwell-integration-stack.mjs";
 
 /** Run `shards` copies of this script, each on one nextest partition and its
- * own task-owned stack, and fail if any fails. Output lines carry the shard. */
+ * own task-owned stack, and fail if any fails. Output lines carry the shard.
+ * Partitions hash test names: `count:` restarts at shard 1 in every test
+ * binary, so shard 1 received a test from each small binary and ran longest. */
 async function runShards(shards, argv) {
   const script = fileURLToPath(import.meta.url);
   const results = await Promise.all(Array.from({length: shards}, (_, index) => new Promise((resolve, reject) => {
     const label = `[shard ${index + 1}/${shards}] `;
-    const env = {...process.env, WIKIJUMP_DEEPWELL_NEXTEST_PARTITION: `count:${index + 1}/${shards}`};
+    const env = {...process.env, WIKIJUMP_DEEPWELL_NEXTEST_PARTITION: `hash:${index + 1}/${shards}`};
     delete env.WIKIJUMP_DEEPWELL_TEST_SHARDS;
     const child = spawn(process.execPath, [script, ...argv], {env, stdio: ["ignore", "pipe", "pipe"]});
     for (const [stream, sink] of [[child.stdout, process.stdout], [child.stderr, process.stderr]]) {
