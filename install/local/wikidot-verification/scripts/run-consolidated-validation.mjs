@@ -16,6 +16,7 @@ import path from "node:path";
 import {promisify} from "node:util";
 
 import {runCliIfMain} from "../src/cli-entry.mjs";
+import {buildApplicationImages} from "./build-promotion-candidate-images.mjs";
 import {sealJsonNoReplace} from "../src/standing-browser-parity-util.mjs";
 import {CONSOLIDATED_VALIDATION_SCHEMA} from "../src/final-frozen-receipt-contract.mjs";
 
@@ -43,9 +44,14 @@ export function validationStore(env = process.env) {
 }
 
 function parseArgs(argv) {
-  const args = {};
+  const args = {imageBuild: true};
   for (let index = 0; index < argv.length; index += 2) {
     const flag = argv[index];
+    if (flag === "--no-image-build") {
+      args.imageBuild = false;
+      index -= 1;
+      continue;
+    }
     const value = argv[index + 1];
     if (!["--repository", "--base", "--output", "--log", "--groups"].includes(flag) || !value || value.startsWith("--")) {
       fail(`invalid option: ${flag ?? "<missing>"}`);
@@ -62,6 +68,7 @@ function parseArgs(argv) {
     output,
     log: args.log ? path.resolve(args.log) : `${output}.log`,
     groups: args.groups ?? null,
+    imageBuild: args.imageBuild,
   };
 }
 
@@ -128,7 +135,28 @@ async function runPreflight(repository, base, logPath, groups) {
   }
 }
 
-export async function runConsolidatedValidation({repository, base, output, log, groups: onlyGroups = null}) {
+/** The standing application images, built alongside preflight (see
+ * `buildApplicationImages`); a build failure is a failed check. */
+async function imageBuildCheck(repository, buildImages) {
+  try {
+    const images = await buildImages(repository);
+    process.stdout.write(`--- standing images build: ok ${JSON.stringify(images)}\n`);
+    return {name: "standing images build", status: "ok"};
+  } catch (error) {
+    process.stdout.write(`--- standing images build: FAILED ${error?.message ?? error}\n`);
+    return {name: "standing images build", status: "failed"};
+  }
+}
+
+export async function runConsolidatedValidation({
+  repository,
+  base,
+  output,
+  log,
+  groups: onlyGroups = null,
+  imageBuild = true,
+  buildImages = buildApplicationImages,
+}) {
   const status = await git(repository, "status", "--porcelain=v1", "--untracked-files=all");
   if (status !== "") fail("consolidated validation requires a clean checkout");
   const commit = await git(repository, "rev-parse", "HEAD^{commit}");
@@ -136,13 +164,20 @@ export async function runConsolidatedValidation({repository, base, output, log, 
   const baseCommit = await git(repository, "rev-parse", `${base}^{commit}`);
   const startedAt = new Date().toISOString();
   if (onlyGroups !== null && !/^[a-z_]+(?:,[a-z_]+)*$/u.test(onlyGroups)) fail("--groups must be a comma-separated group list");
-  const run = await runPreflight(repository, baseCommit, log, onlyGroups);
+  const [run, imageCheck] = await Promise.all([
+    runPreflight(repository, baseCommit, log, onlyGroups),
+    imageBuild ? imageBuildCheck(repository, buildImages) : null,
+  ]);
   const {groups, checks} = parsePreflightOutput(run.output);
+  // A run in which preflight itself selected nothing proves nothing, however
+  // the image build went.
+  const preflightRan = checks.length > 0;
+  if (imageCheck) checks.push(imageCheck);
   const source_sha256 = {};
   for (const relative of SOURCE_FILES) {
     source_sha256[relative] = await sha256File(path.join(repository, relative));
   }
-  const passed = run.code === 0 && checks.length > 0 && checks.every((check) => check.status === "ok");
+  const passed = run.code === 0 && preflightRan && checks.every((check) => check.status === "ok");
   const receipt = {
     schema: CONSOLIDATED_VALIDATION_SCHEMA,
     status: passed ? "pass" : "fail",

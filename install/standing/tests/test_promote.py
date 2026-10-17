@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
@@ -137,6 +138,139 @@ class BrowserReferenceTest(unittest.TestCase):
             self.reference(home, b"{}", recorded="0" * 64)
             with self.assertRaisesRegex(ValueError, "does not match"):
                 promote.browser_reference(home)
+
+
+class FakeStanding:
+    """Containers and calls of a standing runtime for `promote.activate`."""
+
+    IDENTITY = {"wikijump_sha": "1" * 40, "wikijump_tree": "2" * 40, "ftml_sha": "3" * 40, "dependency_lock_sha256": "4" * 64}
+
+    def __init__(self, home: Path):
+        self.home = home
+        (home / ".env").write_text(
+            "STANDING_PROJECT_NAME=wikijump-standing\nSTANDING_NETWORK_NAME=net\n"
+            "STANDING_DEEPWELL_IMAGE=sha256:" + "a" * 64 + "\n",
+            encoding="utf-8",
+        )
+        self.calls: list[tuple] = []
+        self.switched = False
+
+    def containers(self, _home=None):
+        generation = "new" if self.switched else "old"
+        result = {}
+        for index, service in enumerate(("deepwell", "framerail", "wws", "caddy")):
+            image = ("b" if self.switched and service != "caddy" else "a") + str(index)
+            result[service] = {
+                "container_id": (generation if service != "caddy" else "old") + service,
+                "image_id": "sha256:" + image * 32,
+                "name": f"wikijump-standing-{service}-1",
+                "running": True,
+                "published_ports": [{"host_port": "443"}] if service == "caddy" else [],
+            }
+        return result
+
+    def image(self, reference, _home=None):
+        return {
+            "reference": reference, "id": reference, "repo_digests": [],
+            "labels": {
+                "com.rokurolize.wikijump.sha": self.IDENTITY["wikijump_sha"],
+                "com.rokurolize.wikijump.tree": self.IDENTITY["wikijump_tree"],
+                "com.rokurolize.wikijump.ftml_sha": self.IDENTITY["ftml_sha"],
+            },
+        }
+
+    def command(self, *args, cwd=None):
+        self.calls.append(("command",) + args)
+        if "up" in args:
+            self.switched = True
+        return "config: {}"
+
+    def run(self, evidence: Path, render_ahead: dict, proof=None):
+        new_images = {service: "sha256:" + ("b" + str(index)) * 32 for index, service in enumerate(("deepwell", "framerail", "wws"))}
+        (evidence / "build").mkdir(parents=True, exist_ok=True)
+        (evidence / "build" / "seal.json").write_text("{}", encoding="utf-8")
+        patches = [
+            mock.patch.object(promote.refresh, "runtime_containers", side_effect=self.containers),
+            mock.patch.object(promote.refresh, "image_identity", side_effect=self.image),
+            mock.patch.object(promote.refresh, "command", side_effect=self.command),
+            mock.patch.object(promote.refresh, "wait_for_health", side_effect=lambda *a: (self.calls.append(("health",)), {s: "healthy" for s in promote.SERVICES})[1]),
+            mock.patch.object(promote.refresh, "park_containers", side_effect=lambda previous, home, run_id: (self.calls.append(("park",)), {s: {"parked_name": f"parked-{s}"} for s in promote.SERVICES})[1]),
+            mock.patch.object(promote.refresh, "restore_parked_containers", side_effect=lambda parked, home: (self.calls.append(("restore-parked",)), setattr(self, "switched", False))[0]),
+            mock.patch.object(promote, "saved_page_staleness", return_value=0),
+            mock.patch.object(promote, "http_canary", return_value={"url": "u", "status": "pass", "required_markers": ["scp-9506", "page-content"]}),
+            mock.patch.object(promote, "snapshot_saved_page_output", side_effect=lambda path: (self.calls.append(("snapshot",)), path.write_text("rows", encoding="utf-8"), 24573)[2]),
+            mock.patch.object(promote, "restore_saved_page_output", side_effect=lambda path, generator: (self.calls.append(("restore-pages", generator)), 24573)[1]),
+            mock.patch.object(promote, "browser_parity", side_effect=proof or (lambda *a: {"status": "pass"})),
+            mock.patch.object(promote.subprocess, "run", side_effect=lambda args, **k: self.calls.append(("subprocess",) + tuple(args))),
+        ]
+        for patch in patches:
+            patch.start()
+        try:
+            return promote.activate(
+                Path(promote.__file__).parents[2], self.home, Path("/src/refresh.compose.yaml"), self.IDENTITY, evidence,
+                promote.Stages(), new_images, render_ahead, {}, 1,
+            )
+        finally:
+            for patch in reversed(patches):
+                patch.stop()
+
+
+GENERATION_CHANGE = {"status": "pass", "expected_compiled_generator": "ftml v1; deepwell-render/v26", "stale_pages_before": 24573, "receipt": {"path": "/r", "sha256": "0" * 64}}
+NO_RENDER = {"status": "not-needed", "expected_compiled_generator": "ftml v1; deepwell-render/v25", "stale_pages_before": 0}
+
+
+class ActivationTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.directory = tempfile.TemporaryDirectory()
+        self.root = Path(self.directory.name)
+        (self.root / "home").mkdir()
+        self.standing = FakeStanding(self.root / "home")
+
+    def tearDown(self) -> None:
+        self.directory.cleanup()
+
+    def test_a_passing_activation_removes_the_parked_containers_and_binds_the_build(self) -> None:
+        result = self.standing.run(self.root / "evidence", NO_RENDER)
+        receipt = json.loads(Path(result["refresh_receipt"]).read_text(encoding="utf-8"))
+        self.assertEqual(receipt["schema_version"], 4)
+        self.assertEqual(receipt["build_evidence"]["path"], str(self.root / "evidence" / "build" / "seal.json"))
+        removed = [call for call in self.standing.calls if call[:3] == ("subprocess", "docker", "rm")]
+        self.assertEqual([call[-1] for call in removed], [f"parked-{s}" for s in promote.SERVICES])
+        self.assertNotIn(("snapshot",), self.standing.calls, "no generator change, nothing to keep")
+        env = (self.standing.home / ".env").read_text(encoding="utf-8")
+        self.assertIn("STANDING_WIKIJUMP_SHA=" + "1" * 40, env)
+
+    def test_a_failed_standing_proof_restores_the_old_runtime_and_its_saved_pages(self) -> None:
+        def failing_proof(*args):
+            raise RuntimeError("parity differs")
+
+        with self.assertRaisesRegex(RuntimeError, "activation failed .*parity differs.*'status': 'pass'"):
+            self.standing.run(self.root / "evidence", GENERATION_CHANGE, failing_proof)
+        names = [call[0] for call in self.standing.calls]
+        self.assertLess(names.index("snapshot"), names.index("park"), "the snapshot precedes the switch")
+        self.assertLess(names.index("restore-pages"), names.index("restore-parked"), "pages are put back before the old build starts")
+        self.assertIn(("restore-pages", GENERATION_CHANGE["expected_compiled_generator"]), self.standing.calls)
+        new_containers_removed = [call for call in self.standing.calls if call[:4] == ("subprocess", "docker", "rm", "--force")]
+        self.assertEqual(len(new_containers_removed), 3)
+        env = (self.standing.home / ".env").read_text(encoding="utf-8")
+        self.assertIn("STANDING_DEEPWELL_IMAGE=sha256:" + "a0" * 32, env)
+        self.assertNotIn("STANDING_WIKIJUMP_SHA=" + "1" * 40, env)
+
+    def test_a_standing_change_before_the_switch_touches_nothing(self) -> None:
+        original = self.standing.containers
+
+        def drifting(_home=None, calls=[0]):
+            calls[0] += 1
+            value = original()
+            if calls[0] > 1:
+                value["deepwell"]["container_id"] = "someone-else"
+            return value
+
+        self.standing.containers = drifting
+        with self.assertRaisesRegex(RuntimeError, "standing changed"):
+            self.standing.run(self.root / "evidence", NO_RENDER)
+        self.assertNotIn(("park",), self.standing.calls)
+        self.assertFalse(any(call[0] == "subprocess" for call in self.standing.calls))
 
 
 class ActivationSafetyTest(unittest.TestCase):

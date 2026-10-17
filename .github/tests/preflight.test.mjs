@@ -230,7 +230,7 @@ test("final preflight is the single explicit full-check barrier", (t) => {
   const source = readFileSync(path.join(root, "scripts/preflight.sh"), "utf8")
   assert.match(
     source,
-    /run_test "deepwell full tests" node[\s\\]+install\/local\/wikidot-verification\/scripts\/run-deepwell-integration-validation\.mjs/u
+    /run_test "deepwell full tests" env WIKIJUMP_DEEPWELL_TEST_SHARDS="\$\{WIKIJUMP_DEEPWELL_TEST_SHARDS:-4\}" node[\s\\]+install\/local\/wikidot-verification\/scripts\/run-deepwell-integration-validation\.mjs/u
   )
 })
 

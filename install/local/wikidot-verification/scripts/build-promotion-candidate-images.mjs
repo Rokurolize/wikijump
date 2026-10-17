@@ -198,6 +198,19 @@ export async function standingInfrastructureImages(runtimeHome) {
   );
 }
 
+/**
+ * Build the application images exactly as a promotion does, without sealing
+ * evidence. The final validation barrier runs this so the BuildKit cache
+ * already holds the images when the merged head is promoted: a merge whose
+ * runtime inputs equal the validated tree then rebuilds from cache.
+ */
+export async function buildApplicationImages(sourceRoot, {buildImage = dockerBuildImage} = {}) {
+  const sourceIdentity = await promotionSourceIdentity(sourceRoot);
+  const plan = promotionImageBuildPlan(sourceRoot).filter(({role}) => APPLICATION_IMAGE_ROLES.includes(role));
+  const images = await Promise.all(plan.map((entry) => buildImage(entry, sourceIdentity)));
+  return Object.fromEntries(plan.map(({role}, index) => [role, images[index].image_id]));
+}
+
 async function writeEvidenceManifest(root) {
   const files = (await listRegularFiles(root)).filter((relative) => !BUILD_MANIFEST_EXCLUSIONS.has(relative));
   const lines = [];

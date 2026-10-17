@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   deepwellNextestPartition,
   deepwellTestImageName,
+  deepwellTestShards,
   deepwellTestThreads,
   runValidationCommand,
   resolveDeepwellSeedBinary,
@@ -25,6 +26,14 @@ test("Deepwell stack validates test concurrency and nextest partitions", () => {
     () => deepwellNextestPartition({WIKIJUMP_DEEPWELL_NEXTEST_PARTITION: "hash:0/4"}),
     /must look like/u,
   );
+});
+
+test("Deepwell stack validates side-by-side shard counts", () => {
+  assert.equal(deepwellTestShards({}), 1);
+  assert.equal(deepwellTestShards({WIKIJUMP_DEEPWELL_TEST_SHARDS: "4"}), 4);
+  for (const value of ["0", "17", "two"]) {
+    assert.throws(() => deepwellTestShards({WIKIJUMP_DEEPWELL_TEST_SHARDS: value}), /integer from 1 through 16/u);
+  }
 });
 
 test("Deepwell stack honors local image overrides", () => {

@@ -154,7 +154,8 @@ if group_selected deepwell; then
   if [[ "${MODE}" == "final" ]]; then
     run "deepwell dependencies" cargo machete deepwell
     run "deepwell clippy" cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps -- -D warnings
-    run_test "deepwell full tests" node \
+    # Four nextest partitions, each on its own task-owned stack, side by side.
+    run_test "deepwell full tests" env WIKIJUMP_DEEPWELL_TEST_SHARDS="${WIKIJUMP_DEEPWELL_TEST_SHARDS:-4}" node \
       install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs
   fi
 fi

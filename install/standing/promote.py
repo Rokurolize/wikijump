@@ -48,6 +48,7 @@ from volume_contract import PROTECTED_VOLUMES
 SERVICES = refresh.SERVICES
 VERIFICATION = Path("install/local/wikidot-verification")
 STANDING_DATABASE = "wikijump-standing-database-1"
+STANDING_CACHE = "wikijump-standing-cache-1"
 STANDING_NAMESPACE = "wikijump-standing-caddy-1"
 STANDING_FILES_VOLUME = "wikijump-standing-files-data"
 RESOURCE_LIFETIME = timedelta(days=30)
@@ -319,13 +320,13 @@ def psql(container: str, script: str) -> str:
     ).stdout
 
 
-def snapshot_saved_page_output(path: Path) -> int:
+def snapshot_saved_page_output(path: Path, database: str = STANDING_DATABASE) -> int:
     """Keep the compiled output that activating a new renderer generation
     replaces, so a failed activation can put it back for the old build
     instead of leaving every saved page stale to it."""
     columns = ", ".join(SAVED_PAGE_OUTPUT_COLUMNS)
     data = psql(
-        STANDING_DATABASE,
+        database,
         f"COPY (SELECT {columns} FROM page_revision WHERE revision_id IN "
         "(SELECT latest_revision_id FROM page WHERE deleted_at IS NULL) "
         "ORDER BY revision_id) TO STDOUT;\n",
@@ -335,7 +336,12 @@ def snapshot_saved_page_output(path: Path) -> int:
     return len(data.splitlines())
 
 
-def restore_saved_page_output(path: Path, promoted_generator: str) -> int:
+def restore_saved_page_output(
+    path: Path,
+    promoted_generator: str,
+    database: str = STANDING_DATABASE,
+    cache: str = STANDING_CACHE,
+) -> int:
     """Put the snapshot back on revisions the new build has not rendered
     since (their generator is still the promoted one), and move every site's
     public-content fence so no cached response from the new build is served."""
@@ -343,7 +349,7 @@ def restore_saved_page_output(path: Path, promoted_generator: str) -> int:
     assignments = ", ".join(f"{column} = saved.{column}" for column in SAVED_PAGE_OUTPUT_COLUMNS[1:])
     generator = promoted_generator.replace("'", "''")
     output = psql(
-        STANDING_DATABASE,
+        database,
         "CREATE TEMPORARY TABLE saved ON COMMIT DROP AS "
         f"SELECT {columns} FROM page_revision WITH NO DATA;\n"
         f"COPY saved ({columns}) FROM STDIN;\n"
@@ -354,10 +360,10 @@ def restore_saved_page_output(path: Path, promoted_generator: str) -> int:
         f"AND page_revision.compiled_generator = '{generator}' RETURNING 1) "
         "SELECT count(*) FROM restored;\n",
     )
-    sites = psql(STANDING_DATABASE, "SELECT site_id FROM site ORDER BY site_id;\n").split()
+    sites = psql(database, "SELECT site_id FROM site ORDER BY site_id;\n").split()
     for site_id in sites:
         run(
-            "docker", "exec", "wikijump-standing-cache-1", "valkey-cli", "INCR",
+            "docker", "exec", cache, "valkey-cli", "INCR",
             f"deepwell:public-content:site:{site_id}:version",
         )
     return int(output.split()[-1])
@@ -601,6 +607,8 @@ def promote(args, source_root, runtime_home, override_file, identity, evidence, 
                     "--base", standing_sha,
                     "--groups", ",".join(missing),
                     "--output", str(output),
+                    # The build stage builds the images alongside.
+                    "--no-image-build",
                 ],
                 evidence / "validation.log",
                 source_root,

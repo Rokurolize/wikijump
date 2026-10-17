@@ -26,6 +26,16 @@ export function deepwellTestThreads(env = process.env) {
   return String(value);
 }
 
+/** How many nextest partitions run side by side, each on its own stack. */
+export function deepwellTestShards(env = process.env) {
+  const raw = env.WIKIJUMP_DEEPWELL_TEST_SHARDS?.trim() || "1";
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 1 || value > 16) {
+    fail("WIKIJUMP_DEEPWELL_TEST_SHARDS must be an integer from 1 through 16");
+  }
+  return value;
+}
+
 export function deepwellNextestPartition(env = process.env) {
   const value = env.WIKIJUMP_DEEPWELL_NEXTEST_PARTITION?.trim();
   if (!value) return null;
