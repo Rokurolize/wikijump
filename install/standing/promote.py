@@ -503,9 +503,47 @@ def browser_parity(
 # Promotion
 
 
+def prepare_promotion_checkout(repository: Path, checkout: Path) -> Path:
+    """The persistent checkout promotions run from, moved to the fetched
+    origin/develop.
+
+    It keeps its cargo target directory, node_modules and test build between
+    promotions, so a promotion that must run checks compiles incrementally
+    instead of from a fresh worktree. It must be clean; it is never reset."""
+    run("git", "-C", str(repository), "fetch", "--quiet", "origin", "develop")
+    if not checkout.exists():
+        checkout.parent.mkdir(parents=True, exist_ok=True)
+        run("git", "-C", str(repository), "worktree", "add", "--detach", str(checkout), "origin/develop")
+        return checkout
+    common = lambda root: Path(root, run("git", "-C", str(root), "rev-parse", "--git-common-dir")).resolve()
+    if common(checkout) != common(repository):
+        raise ValueError(f"{checkout} is not a worktree of {repository}")
+    if run("git", "-C", str(checkout), "status", "--porcelain", "--untracked-files=all"):
+        raise ValueError(f"the promotion checkout {checkout} has local changes; it is never reset")
+    run("git", "-C", str(checkout), "checkout", "--quiet", "--detach", "origin/develop")
+    return checkout
+
+
+def run_from_source_root(source_root: Path) -> None:
+    """Re-run this command from the promoted source's own promote.py, so the
+    orchestrator is the one that source ships."""
+    own = source_root / "install" / "standing" / "promote.py"
+    if Path(__file__).resolve() == own.resolve():
+        return
+    arguments = [argument for argument in sys.argv[1:]]
+    if "--source-root" not in arguments:
+        arguments = ["--source-root", str(source_root), *arguments]
+    os.execv(sys.executable, [sys.executable, str(own), *arguments])
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--source-root", type=Path, default=Path(__file__).resolve().parents[2])
+    parser.add_argument(
+        "--source-root",
+        type=Path,
+        help="a clean checkout of the fetched origin/develop; by default the persistent "
+        "promotion checkout under the state directory, moved to origin/develop",
+    )
     parser.add_argument("--runtime-home", type=Path, default=refresh.DEFAULT_RUNTIME_HOME)
     parser.add_argument("--evidence-dir", type=Path)
     parser.add_argument("--validation-store", type=Path, default=state_root() / "validation")
@@ -524,7 +562,13 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    source_root = args.source_root.resolve()
+    if args.source_root is None:
+        source_root = prepare_promotion_checkout(
+            Path(__file__).resolve().parents[2], state_root() / "promotion-checkout"
+        )
+    else:
+        source_root = args.source_root.resolve()
+    run_from_source_root(source_root)
     runtime_home = args.runtime_home.resolve()
     override_file = source_root / "install" / "standing" / "refresh.compose.yaml"
     stages = Stages()
