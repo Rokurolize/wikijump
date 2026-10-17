@@ -273,6 +273,65 @@ class ActivationTest(unittest.TestCase):
         self.assertFalse(any(call[0] == "subprocess" for call in self.standing.calls))
 
 
+class PromotionCheckoutTest(unittest.TestCase):
+    def git(self, *args, cwd):
+        return subprocess.run(["git", *args], cwd=cwd, check=True, text=True, capture_output=True).stdout.strip()
+
+    def setUp(self) -> None:
+        self.directory = tempfile.TemporaryDirectory()
+        root = Path(self.directory.name)
+        self.origin = root / "origin.git"
+        self.repository = root / "repository"
+        self.checkout = root / "state" / "promotion-checkout"
+        self.git("init", "--quiet", "--bare", "--initial-branch=develop", str(self.origin), cwd=root)
+        self.git("clone", "--quiet", str(self.origin), str(self.repository), cwd=root)
+        for key, value in (("user.email", "test@example.invalid"), ("user.name", "Test")):
+            self.git("config", key, value, cwd=self.repository)
+        self.commit("first")
+
+    def tearDown(self) -> None:
+        self.directory.cleanup()
+
+    def commit(self, text: str) -> str:
+        (self.repository / "file.txt").write_text(text, encoding="utf-8")
+        self.git("add", "file.txt", cwd=self.repository)
+        self.git("commit", "--quiet", "-m", text, cwd=self.repository)
+        self.git("push", "--quiet", "origin", "HEAD:develop", cwd=self.repository)
+        return self.git("rev-parse", "HEAD", cwd=self.repository)
+
+    def test_the_checkout_is_created_once_and_follows_origin_develop(self) -> None:
+        promote.prepare_promotion_checkout(self.repository, self.checkout)
+        first = self.git("rev-parse", "HEAD", cwd=self.checkout)
+        second = self.commit("second")
+        promote.prepare_promotion_checkout(self.repository, self.checkout)
+        self.assertNotEqual(first, second)
+        self.assertEqual(self.git("rev-parse", "HEAD", cwd=self.checkout), second)
+
+    def test_a_changed_checkout_is_refused_not_reset(self) -> None:
+        promote.prepare_promotion_checkout(self.repository, self.checkout)
+        (self.checkout / "file.txt").write_text("local edit", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "has local changes"):
+            promote.prepare_promotion_checkout(self.repository, self.checkout)
+        self.assertEqual((self.checkout / "file.txt").read_text(encoding="utf-8"), "local edit")
+
+    def test_a_foreign_directory_is_refused(self) -> None:
+        self.checkout.mkdir(parents=True)
+        self.git("init", "--quiet", str(self.checkout), cwd=self.checkout.parent)
+        with self.assertRaisesRegex(ValueError, "is not a worktree of"):
+            promote.prepare_promotion_checkout(self.repository, self.checkout)
+
+    def test_the_command_runs_from_the_promoted_source(self) -> None:
+        own_root = Path(promote.__file__).resolve().parents[2]
+        with mock.patch.object(promote.os, "execv") as execv:
+            promote.run_from_source_root(own_root)
+            execv.assert_not_called()
+            with mock.patch.object(promote.sys, "argv", ["promote.py", "--rehearse", "always"]):
+                promote.run_from_source_root(self.repository)
+        executable, argv = execv.call_args.args
+        self.assertEqual(argv[1], str(self.repository / "install" / "standing" / "promote.py"))
+        self.assertEqual(argv[2:], ["--source-root", str(self.repository), "--rehearse", "always"])
+
+
 class SavedPageStalenessTest(unittest.TestCase):
     def query(self, *args):
         with mock.patch.object(promote, "run", return_value="0") as run:
