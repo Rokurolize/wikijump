@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -90,16 +92,15 @@ class ValidationCoverageTest(unittest.TestCase):
 
 
 class RehearsalReasonTest(unittest.TestCase):
-    def test_one_way_activations_are_rehearsed(self) -> None:
-        self.assertEqual(promote.rehearsal_reason("auto", True, []), "the renderer generation changes")
+    def test_new_migrations_are_rehearsed_because_they_cannot_be_undone(self) -> None:
         self.assertEqual(
-            promote.rehearsal_reason("auto", False, ["deepwell/migrations/x.sql"]),
+            promote.rehearsal_reason("auto", ["deepwell/migrations/x.sql"]),
             "the schema migrations change",
         )
 
-    def test_a_restartable_activation_is_not_rehearsed_unless_requested(self) -> None:
-        self.assertIsNone(promote.rehearsal_reason("auto", False, []))
-        self.assertEqual(promote.rehearsal_reason("always", False, []), "requested")
+    def test_an_undoable_activation_is_not_rehearsed_unless_requested(self) -> None:
+        self.assertIsNone(promote.rehearsal_reason("auto", []))
+        self.assertEqual(promote.rehearsal_reason("always", []), "requested")
 
 
 class BrowserReferenceTest(unittest.TestCase):
@@ -134,6 +135,39 @@ class BrowserReferenceTest(unittest.TestCase):
             self.reference(home, b"{}", recorded="0" * 64)
             with self.assertRaisesRegex(ValueError, "does not match"):
                 promote.browser_reference(home)
+
+
+class ActivationSafetyTest(unittest.TestCase):
+    def test_the_cli_has_no_volume_removal_spelling(self) -> None:
+        script = Path(promote.__file__)
+        for forbidden in ("-v", "--volumes", "--remove-volumes"):
+            with self.subTest(forbidden=forbidden):
+                result = subprocess.run(
+                    (sys.executable, str(script), forbidden), text=True, capture_output=True
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("unrecognized arguments", result.stderr)
+
+    def test_activation_starts_built_images_without_building_or_touching_volumes(self) -> None:
+        source = inspect.getsource(promote.activate)
+        self.assertIn('"up", "--detach", "--no-deps", "--no-build", *SERVICES', source)
+        self.assertNotIn("docker\", \"build", source)
+        self.assertNotIn('"down"', source)
+        self.assertNotIn("--volumes", source)
+
+    def test_activation_requires_fresh_saved_pages_before_the_canary(self) -> None:
+        source = inspect.getsource(promote.activate)
+        self.assertLess(
+            source.index("saved_page_staleness(STANDING_DATABASE"),
+            source.index("http_canary(refresh.CANARY_URL)"),
+        )
+        self.assertIn("standing serves {stale} stale saved pages", source)
+
+    def test_rehearsal_teardown_only_names_rehearsal_resources(self) -> None:
+        source = inspect.getsource(promote.rehearse)
+        self.assertIn('project = f"wjcand-rehearsal-{target[:12]}"', source)
+        self.assertIn('"down", "--volumes"', source)
+        self.assertNotIn("wikijump-standing", source)
 
 
 if __name__ == "__main__":
