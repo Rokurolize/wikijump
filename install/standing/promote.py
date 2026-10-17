@@ -41,6 +41,7 @@ import tempfile
 import time
 
 import refresh
+import render_ahead
 from volume_contract import PROTECTED_VOLUMES
 
 
@@ -311,7 +312,7 @@ def psql(container: str, script: str) -> str:
     return subprocess.run(
         [
             "docker", "exec", "-i", container, "sh", "-c",
-            'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -h 127.0.0.1 -U "$POSTGRES_USER" '
+            'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -q -h 127.0.0.1 -U "$POSTGRES_USER" '
             '-d "$POSTGRES_DB" -At -v ON_ERROR_STOP=1 --single-transaction',
         ],
         input=script, check=True, text=True, capture_output=True,
@@ -370,6 +371,66 @@ def http_canary(url: str, resolve: str | None = None) -> dict[str, object]:
     if "scp-9506" not in body.lower() or "page-content" not in body:
         raise RuntimeError(f"canary {url} returned an unexpected document")
     return {"url": url, "status": "pass", "required_markers": ["scp-9506", "page-content"]}
+
+
+def browser_canary_slugs(source_root: Path) -> list[str]:
+    """The pages the browser parity loads, from its own canary contract."""
+    return json.loads(
+        run(
+            "node", "--input-type=module", "-e",
+            "const m = await import('./install/local/wikidot-verification/src/standing-browser-canaries.mjs');"
+            "console.log(JSON.stringify(m.STANDING_BROWSER_CANARIES.map((c) => c.slug)));",
+            cwd=source_root,
+        )
+    )
+
+
+def rerender_rehearsal_pages(project: str, image: str, slugs: list[str]) -> dict[str, object]:
+    """Render the canary pages on the rehearsal with its own configuration.
+
+    The copied saved pages were rendered by standing, so their embedded URLs
+    name standing's origin, which the rehearsal does not serve. Marking only
+    these pages stale on the copy lets render-ahead render them with the new
+    image and the rehearsal's configuration; restarting its Deepwell promotes
+    them, as activation would."""
+    database = f"{project}-database-1"
+    deepwell = f"{project}-deepwell-1"
+    quoted = ", ".join("'" + slug.replace("'", "''") + "'" for slug in slugs)
+    page_ids = [
+        int(value)
+        for value in psql(
+            database,
+            "WITH canary AS (SELECT p.page_id, p.latest_revision_id FROM page p "
+            "JOIN site s ON s.site_id = p.site_id "
+            f"WHERE s.slug = 'scp-wiki' AND p.slug IN ({quoted}) AND p.deleted_at IS NULL), "
+            "marked AS (UPDATE page_revision SET compiled_generator = 'rehearsal-rerender' "
+            "WHERE revision_id IN (SELECT latest_revision_id FROM canary) RETURNING 1) "
+            "SELECT page_id FROM canary;\n",
+        ).split()
+    ]
+    if len(page_ids) != len(slugs):
+        raise RuntimeError(f"the rehearsal has {len(page_ids)} of the {len(slugs)} canary pages")
+    inspected = render_ahead.container_inspect(deepwell)
+    migration = run("docker", "run", "--rm", "--entrypoint", "cat", image, render_ahead.MIGRATION_PATH)
+    render_ahead.require_idempotent_migration(migration)
+    render_ahead.psql(database, migration)
+    with tempfile.TemporaryDirectory() as directory:
+        summary = render_ahead.render_pass(
+            image, deepwell,
+            render_ahead.config_mount(inspected),
+            render_ahead.runtime_environment(inspected),
+            render_ahead.render_ahead_settings(len(page_ids), 200, render_ahead.utc_now(), page_ids),
+            Path(directory) / "render.log",
+        )
+    if summary["rendered"] != len(page_ids) or summary["failed"]:
+        raise RuntimeError(f"the rehearsal could not render its canary pages: {summary['failures']}")
+    run("docker", "restart", deepwell)
+    deadline = time.monotonic() + 300
+    while run("docker", "inspect", "--format", "{{.State.Health.Status}}", deepwell) != "healthy":
+        if time.monotonic() > deadline:
+            raise RuntimeError("the rehearsal Deepwell did not become healthy after its restart")
+        time.sleep(1)
+    return {"pages": len(page_ids), "slugs": slugs}
 
 
 # Browser parity
@@ -638,7 +699,7 @@ def promote(args, source_root, runtime_home, override_file, identity, evidence, 
     if plan["rehearse"]:
         receipt["rehearsal"] = rehearse(
             source_root, evidence, stages, plan, reference, rehearsal_volumes,
-            target, None if clone_early else clone_stage,
+            target, None if clone_early else clone_stage, images["deepwell"],
         )
     else:
         receipt["rehearsal"] = {
@@ -656,7 +717,7 @@ def promote(args, source_root, runtime_home, override_file, identity, evidence, 
     return 0
 
 
-def rehearse(source_root, evidence, stages, plan, reference, volumes, target, clone) -> dict[str, object]:
+def rehearse(source_root, evidence, stages, plan, reference, volumes, target, clone, deepwell_image) -> dict[str, object]:
     project = f"wjcand-rehearsal-{target[:12]}"
     candidate_root = evidence / "rehearsal"
     ports = {"public": reference["candidate_port"], "rpc": free_port(), "object_store": free_port()}
@@ -686,6 +747,10 @@ def rehearse(source_root, evidence, stages, plan, reference, volumes, target, cl
             return last_json_line(stdout)
 
         started = stages.run("rehearsal-start", start_stage)
+        stages.run(
+            "rehearsal-render",
+            lambda: rerender_rehearsal_pages(project, deepwell_image, browser_canary_slugs(source_root)),
+        )
 
         def check_stage():
             stale = saved_page_staleness(f"{project}-database-1", plan["expected_compiled_generator"])
