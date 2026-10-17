@@ -120,9 +120,21 @@ pub(in crate::services::render) fn has_count_pages_module_opening_candidate(
     first_module_opening_candidate(source, b"countpages", false).is_some()
 }
 
+/// Whether `body` contains the module name `countpages` at all; neither
+/// CountPages shape below can match without it, so the literal-region index
+/// they need is built only then. Each nested ListPages occurrence asks.
+fn mentions_count_pages(body: &str) -> bool {
+    body.as_bytes()
+        .windows(b"countpages".len())
+        .any(|window| window.eq_ignore_ascii_case(b"countpages"))
+}
+
 pub(in crate::services::render) fn list_pages_body_has_standalone_count_pages_opening(
     body: &str,
 ) -> bool {
+    if !mentions_count_pages(body) {
+        return false;
+    }
     let literal_regions = LiteralRegionIndex::new_count_pages_syntax(body);
     let mut line_start = 0usize;
     for line_with_ending in body.split_inclusive('\n') {
@@ -146,6 +158,9 @@ pub(in crate::services::render) fn list_pages_body_has_standalone_count_pages_op
 pub(in crate::services::render) fn list_pages_body_inline_count_pages_legacy_tail(
     body: &str,
 ) -> Option<String> {
+    if !mentions_count_pages(body) {
+        return None;
+    }
     let literal_regions = LiteralRegionIndex::new_count_pages_syntax(body);
     let mut line_start = 0usize;
     for line_with_ending in body.split_inclusive('\n') {
