@@ -68,7 +68,7 @@ explicit acquisition or release investigation, not the default development
 sequence:
 
 - `evidence.md`: historical acquisition and browser/live-reference method.
-- `runtime.md`: historical candidate/standing promotion and proof method.
+- `runtime.md`: candidate and standing runtime rules. These are current: standing promotion is `install/standing/promote.py` (`install/standing/README.md`).
 - `closure.md`: historical reconciliation/final-zero closure method.
 - `execution.md`: historical bulk-analysis and batching lessons.
 

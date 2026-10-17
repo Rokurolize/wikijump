@@ -24,8 +24,8 @@ Inside local Rust containers that path is `/src/target`, backed by the named
 volume `local-rust-1-95-0-target`. Registry and Git caches use
 `local-rust-1-95-0-cargo-registry` and `local-rust-1-95-0-cargo-git`. Deepwell
 and WWS mount the same three volumes. No checkout `target/` directory is
-mounted into a container, and candidate/rollback builders continue to use
-revision-specific external `CARGO_TARGET_DIR` paths.
+mounted into a container. Promotion images build in Docker with their own
+BuildKit cache mounts (`docs/development/cargo-target-policy.md`).
 
 Normal `debug`/`test` commands use the compact profiles from
 `docs/development/cargo-target-policy.md`: line tables for the local package,
