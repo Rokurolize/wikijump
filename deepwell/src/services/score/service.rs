@@ -32,6 +32,7 @@ use sea_orm::{
     ColumnTrait, Condition, ConnectionTrait, DatabaseTransaction, EntityTrait,
     FromQueryResult, QueryFilter, QuerySelect,
 };
+use std::collections::BTreeSet;
 
 #[derive(Debug)]
 pub struct ScoreService;
@@ -87,11 +88,8 @@ impl ScoreService {
             return Ok(Vec::new());
         }
 
-        for &page_id in page_ids {
-            let scorer = Self::get_scorer(ctx, page_id).await?;
-            if scorer.score_type() != ScoreType::Sum {
-                return Self::scores_sequential(ctx, page_ids).await;
-            }
+        if !Self::all_sum_scored(ctx, page_ids).await? {
+            return Self::scores_sequential(ctx, page_ids).await;
         }
 
         #[derive(FromQueryResult, Debug)]
@@ -220,18 +218,70 @@ impl ScoreService {
         page_id: i64,
     ) -> Result<ConfiguredScorer> {
         let page = PageService::get_direct(ctx, page_id, true).await?;
-        let settings = SettingsService::get_page_rating_settings(
-            ctx,
-            page.site_id,
-            page.page_category_id,
-        )
-        .await?;
+        Self::category_scorer(ctx, page.site_id, page.page_category_id).await
+    }
+
+    async fn category_scorer(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        category_id: i64,
+    ) -> Result<ConfiguredScorer> {
+        let settings =
+            SettingsService::get_page_rating_settings(ctx, site_id, category_id).await?;
         Ok(match settings.rating_type {
             PageRatingType::Stars => ConfiguredScorer::Mean(MeanScorer),
             PageRatingType::Plus | PageRatingType::PlusMinus => {
                 ConfiguredScorer::Sum(SumScorer)
             }
         })
+    }
+
+    /// Whether every page is scored by summing, as the bulk query assumes.
+    ///
+    /// The scorer depends only on the page's category, so it is decided once
+    /// per distinct `(site, category)`: a ListPages score filter or ordering
+    /// passes every candidate here, and deciding per page cost two queries
+    /// for each of them (9,394 pages for SCP Wiki's `rating=">75"`).
+    async fn all_sum_scored(ctx: &ServiceContext<'_>, page_ids: &[i64]) -> Result<bool> {
+        #[derive(FromQueryResult, Debug)]
+        struct PageCategoryRow {
+            page_id: i64,
+            site_id: i64,
+            page_category_id: i64,
+        }
+
+        let txn = ctx.transaction();
+        let rows = PageCategoryRow::find_by_statement(Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            "SELECT page_id, site_id, page_category_id FROM page WHERE page_id = ANY($1)",
+            [page_ids.to_vec().into()],
+        ))
+        .all(txn)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to load page categories for scoring",
+                ErrorType::PageVote,
+            )
+        })?;
+
+        // A page that does not exist fails as it did when each page was loaded.
+        let found = rows.iter().map(|row| row.page_id).collect::<BTreeSet<_>>();
+        if let Some(&missing) = page_ids.iter().find(|page_id| !found.contains(page_id)) {
+            PageService::get_direct(ctx, missing, true).await?;
+        }
+
+        let categories = rows
+            .into_iter()
+            .map(|row| (row.site_id, row.page_category_id))
+            .collect::<BTreeSet<_>>();
+        for (site_id, category_id) in categories {
+            let scorer = Self::category_scorer(ctx, site_id, category_id).await?;
+            if scorer.score_type() != ScoreType::Sum {
+                return Ok(false);
+            }
+        }
+        Ok(true)
     }
 
     /// Helper method for retrieving a `VoteMap` for a page.
