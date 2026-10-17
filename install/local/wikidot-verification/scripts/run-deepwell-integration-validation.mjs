@@ -9,7 +9,7 @@ import {
   deepwellTestShards,
   deepwellTestThreads,
   runValidationCommand,
-  withDeepwellIntegrationStack,
+  withProvisionedDeepwellStack,
 } from "../src/deepwell-integration-stack.mjs";
 
 /** Run `shards` copies of this script, each on one nextest partition and its
@@ -70,7 +70,7 @@ async function run() {
   const cargoTestArgs = process.argv.slice(2, separator === -1 ? undefined : separator);
   const harnessArgs = separator === -1 ? [] : process.argv.slice(separator + 1);
 
-  await withDeepwellIntegrationStack(async ({env, cargo}) => {
+  await withProvisionedDeepwellStack(async ({env, cargo}) => {
     const partition = deepwellNextestPartition(env);
     if (partition) {
       await runValidationCommand(cargo, [
