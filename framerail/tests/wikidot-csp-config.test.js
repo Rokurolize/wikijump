@@ -94,6 +94,7 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
   )
   assert.deepEqual(directives["frame-src"], [
     "self",
+    "https://wikijump-current-site.invalid",
     "https://www.youtube.com",
     "https://embed.acast.com"
   ])

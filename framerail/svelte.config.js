@@ -108,7 +108,13 @@ function scriptSources() {
 
 /** @returns {CspSources} */
 function frameSources() {
-  return ["self", ...WIKIDOT_MEDIA_FRAME_SOURCES]
+  // The [[html]] block fallback iframe is emitted with a same-origin src
+  // (`/<slug>/html/<n>`) that redirects to the site's file origin, where the
+  // block is hosted. Chromium re-checks frame-src on every redirect hop, so
+  // without the per-site file origin (materialized per response by
+  // `materializeSiteCsp`) every html block fails with `ERR_BLOCKED_BY_CSP`.
+  // YouTube/Acast remain the only external embeds.
+  return ["self", CURRENT_SITE_FILE_ORIGIN, ...WIKIDOT_MEDIA_FRAME_SOURCES]
 }
 
 /** @type {import("@sveltejs/kit").Config} */
