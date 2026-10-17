@@ -394,6 +394,9 @@ def browser_reference(path: Path) -> dict[str, str]:
         "cache_dir": manifest["source_response_cache_dir"],
         "cache_identity": manifest["source_response_cache_identity"],
         "browser": manifest["browser_executable"],
+        # Cross-origin responses vary by Origin, so the retained responses
+        # replay only for the candidate origin they were captured from.
+        "candidate_port": int(manifest["candidate_public_port"]),
     }
 
 
@@ -656,7 +659,7 @@ def promote(args, source_root, runtime_home, override_file, identity, evidence, 
 def rehearse(source_root, evidence, stages, plan, reference, volumes, target, clone) -> dict[str, object]:
     project = f"wjcand-rehearsal-{target[:12]}"
     candidate_root = evidence / "rehearsal"
-    ports = {"public": free_port(), "rpc": free_port(), "object_store": free_port()}
+    ports = {"public": reference["candidate_port"], "rpc": free_port(), "object_store": free_port()}
     try:
         if clone is not None:
             stages.run("rehearsal-clone", clone)

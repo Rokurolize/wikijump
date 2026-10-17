@@ -116,6 +116,7 @@ class BrowserReferenceTest(unittest.TestCase):
                     "source_response_cache_dir": "/cache",
                     "source_response_cache_identity": "cache-v1",
                     "browser_executable": "/usr/bin/google-chrome",
+                    "candidate_public_port": 18560,
                 }
             ),
             encoding="utf-8",
@@ -128,6 +129,7 @@ class BrowserReferenceTest(unittest.TestCase):
             reference = promote.browser_reference(home)
             self.assertEqual(reference["ledger"], str(home / "ledger.json"))
             self.assertEqual(reference["policy"], str(home / "policy.json"))
+            self.assertEqual(reference["candidate_port"], 18560)
 
     def test_a_changed_reference_is_refused(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
