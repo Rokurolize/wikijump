@@ -41,6 +41,7 @@ use crate::runtime::ServerState;
 use crate::services::public_cache::PublicContentCache;
 use crate::services::{PageRevisionService, ServiceContext};
 use crate::types::PageId;
+use exn::ErrorExt;
 use futures::{StreamExt, stream};
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, TransactionTrait, Value};
 use std::env;
@@ -87,6 +88,9 @@ pub struct RenderAheadSummary {
     rendered: usize,
     failed: usize,
     failed_page_ids: Vec<i64>,
+    /// Rendered pages whose output read the page link graph. Their output can
+    /// depend on links that other pages of the same pass changed.
+    link_reader_page_ids: Vec<i64>,
     stale_without_valid_ahead: i64,
     elapsed_ms: u128,
     rows_per_sec: f64,
@@ -140,42 +144,65 @@ impl RenderAheadSettings {
 
 impl RenderAheadService {
     /// Renders every stale page without a valid ahead row.
+    ///
+    /// Each page renders in its own task, so `concurrency` pages use that many
+    /// runtime workers instead of sharing the one that polls the stream, and a
+    /// slow page does not hold back the pages selected after it.
     pub async fn run(
         state: &ServerState,
         settings: RenderAheadSettings,
     ) -> Result<RenderAheadSummary> {
         let started_at = Instant::now();
-        let mut candidates = 0;
         let mut rendered = 0;
         let mut failures = Vec::new();
         let mut failed_page_ids = Vec::new();
-        let mut after_page_id = 0;
+        let mut link_reader_page_ids = Vec::new();
 
         // Keyset pagination over page IDs, so a page that fails is not
         // selected again in the same run.
+        let mut candidates = Vec::new();
+        let mut after_page_id = 0;
         loop {
             let batch = Self::select_candidates(state, &settings, after_page_id).await?;
             let Some(last) = batch.last() else {
                 break;
             };
             after_page_id = last.page_id;
-            candidates += batch.len();
-            if settings.dry_run {
-                continue;
-            }
+            candidates.extend(batch);
+        }
+        let candidate_count = candidates.len();
 
-            let results: Vec<(PageId, Result<i64>)> = stream::iter(batch)
+        if !settings.dry_run {
+            let mut results = stream::iter(candidates)
                 .map(|id| {
-                    let state = state.clone();
-                    async move { (id, Self::render_page(&state, id).await) }
+                    let task = tokio::spawn({
+                        let state = state.clone();
+                        async move { Self::render_page(&state, id).await }
+                    });
+                    async move {
+                        let result = task.await.unwrap_or_else(|error| {
+                            Err(Error::new(
+                                format!(
+                                    "render-ahead task for page ID {} failed: {error}",
+                                    id.page_id,
+                                ),
+                                ErrorType::Render,
+                            )
+                            .raise())
+                        });
+                        (id, result)
+                    }
                 })
-                .buffer_unordered(settings.concurrency)
-                .collect()
-                .await;
+                .buffer_unordered(settings.concurrency);
 
-            for (id, result) in results {
+            while let Some((id, result)) = results.next().await {
                 match result {
-                    Ok(_) => rendered += 1,
+                    Ok(RenderedAhead { reads_link_graph }) => {
+                        rendered += 1;
+                        if reads_link_graph {
+                            link_reader_page_ids.push(id.page_id);
+                        }
+                    }
                     Err(error) => {
                         failed_page_ids.push(id.page_id);
                         warn!(
@@ -198,19 +225,19 @@ impl RenderAheadService {
             Self::count_stale_without_valid_ahead(state, &settings).await?;
         let elapsed = started_at.elapsed();
         let elapsed_secs = elapsed.as_secs_f64();
+        failed_page_ids.sort_unstable();
+        link_reader_page_ids.sort_unstable();
         Ok(RenderAheadSummary {
             action: ACTION,
             compiled_generator: COMPILED_GENERATOR.clone(),
             dry_run: settings.dry_run,
             batch_size: settings.batch_size,
             concurrency: settings.concurrency,
-            candidates,
+            candidates: candidate_count,
             rendered,
             failed: failed_page_ids.len(),
-            failed_page_ids: {
-                failed_page_ids.sort_unstable();
-                failed_page_ids
-            },
+            failed_page_ids,
+            link_reader_page_ids,
             stale_without_valid_ahead,
             elapsed_ms: elapsed.as_millis(),
             rows_per_sec: if elapsed_secs > 0.0 {
@@ -395,7 +422,7 @@ impl RenderAheadService {
         row.try_get("", "stale").or_raise(make_error)
     }
 
-    async fn render_page(state: &ServerState, id: PageId) -> Result<i64> {
+    async fn render_page(state: &ServerState, id: PageId) -> Result<RenderedAhead> {
         let make_error = || {
             Error::new(
                 format!("failed to render ahead page ID {}", id.page_id),
@@ -405,21 +432,24 @@ impl RenderAheadService {
         let txn = state.database.begin().await.or_raise(make_error)?;
         let result: Result<_> = async {
             let ctx = ServiceContext::new(state, &txn);
-            let revision_id = PageRevisionService::render_ahead(&ctx, id).await?;
+            PageRevisionService::render_ahead(&ctx, id).await?;
             let actions = ctx.drain_post_commit_actions()?;
-            Ok((revision_id, actions))
+            let rendered = RenderedAhead {
+                reads_link_graph: ctx.link_graph_was_read(),
+            };
+            Ok((rendered, actions))
         }
         .await;
 
         match result {
-            Ok((revision_id, actions)) => {
+            Ok((rendered, actions)) => {
                 txn.commit().await.or_raise(make_error)?;
                 ServiceContext::run_post_commit_actions_for_corpus_finalizer(
                     state, actions,
                 )
                 .await
                 .or_raise(make_error)?;
-                Ok(revision_id)
+                Ok(rendered)
             }
             Err(error) => {
                 txn.rollback().await.or_raise(make_error)?;
@@ -427,6 +457,12 @@ impl RenderAheadService {
             }
         }
     }
+}
+
+/// One page rendered into the ahead table.
+#[derive(Debug, Clone, Copy)]
+struct RenderedAhead {
+    reads_link_graph: bool,
 }
 
 fn not_before(settings: &RenderAheadSettings) -> OffsetDateTime {

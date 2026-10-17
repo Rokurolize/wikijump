@@ -35,13 +35,14 @@ pub async fn handle_robots_txt(headers: HeaderMap) -> Response {
     // host, or on the files target which serves no sitemap, the policy stays
     // a plain allow-all.
     let body = match get_target_server(&headers) {
-        TargetServer::Main => match headers.get(HOST).and_then(|value| value.to_str().ok())
-        {
-            Some(host) => {
-                format!("{ROBOTS_TXT_ALLOW_ALL}Sitemap: https://{host}/sitemap.xml\n")
+        TargetServer::Main => {
+            match headers.get(HOST).and_then(|value| value.to_str().ok()) {
+                Some(host) => {
+                    format!("{ROBOTS_TXT_ALLOW_ALL}Sitemap: https://{host}/sitemap.xml\n")
+                }
+                None => ROBOTS_TXT_ALLOW_ALL.to_owned(),
             }
-            None => ROBOTS_TXT_ALLOW_ALL.to_owned(),
-        },
+        }
         TargetServer::Files => ROBOTS_TXT_ALLOW_ALL.to_owned(),
     };
 

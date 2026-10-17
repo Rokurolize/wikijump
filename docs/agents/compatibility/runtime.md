@@ -2,7 +2,7 @@
 
 ## Build and freeze the material identity
 
-Develop in the local incremental stack; produce production/release images only after the source batch passes the consolidated validation barrier below and a release suffix is needed. Commit and push the exact tree before the immutable build so validation, build, and measurement share one identity. The final-frozen receipt (`wikijump.final_frozen_receipt.v2`) is derived only from executed evidence of that tree: run `install/local/wikidot-verification/scripts/run-consolidated-validation.mjs --repository <clean checkout> --base <standing commit> --output <receipt>` (the final preflight barrier; it seals every selected group and per-check result, tool versions, and a fail receipt naming each failing check), then `scripts/emit-final-frozen-receipt.mjs --source-root <checkout> --validation-receipt <receipt> --image-producer <sealed image producer output> --output <final-frozen>`. No review, roster, or sign-off input exists; a failing or missing check blocks promotion by name. Regenerate both when source identity changes.
+Develop in the local incremental stack. The final barrier is `install/local/wikidot-verification/scripts/run-consolidated-validation.mjs --repository <clean checkout> --base <standing commit>`: it runs `scripts/preflight.sh --final`, seals every selected group and per-check result, tool versions, and a fail receipt naming each failing check, and keeps the receipt in `${XDG_STATE_HOME:-$HOME/.local/state}/wikijump/validation/` where `install/standing/promote.py` finds it. No review, roster, or sign-off input exists; a failing or missing check blocks promotion by name. Production images are built only by the promotion, from the merged head; there is no separate pre-merge image freeze. The final-frozen receipt (`emit-final-frozen-receipt.mjs`) is now only an input to historical final-zero verification.
 
 ## Candidate inputs and execution
 
@@ -10,7 +10,7 @@ Use maintained producer/start scripts, their Compose naming/topology, and owners
 
 ## Promotion and merge
 
-Generate and retain the promotion precondition while PR head is candidate source. After merge, `install/standing/prepare.py` revalidates the retained candidate/precondition against normal merge; never regenerate admission from the merge checkout, whose commit is not the candidate. Use normal two-parent merge and `docs/deployment/runtime-drift-policy.md`; let `install/standing/merge_identity.py` / `install/standing/prepare.py` decide eligibility from actual Git delta and FTML identity, never filenames. Reuse a policy-approved sealed image only when eligible; a rejected runtime-input delta requires a new sealed candidate.
+Run `scripts/preflight.sh --final` (through `run-consolidated-validation.mjs`, which keeps the receipt in the shared validation store) on the PR head before merging. Use normal two-parent merge and `docs/deployment/runtime-drift-policy.md`. After merge, `install/standing/promote.py` promotes the merged head: it reuses that receipt for every check group the merge did not change, builds from the merged head, and decides rehearsal and render-ahead from the actual Git delta and saved-page generator, never filenames.
 
 ## Saved-page freshness
 
@@ -18,7 +18,7 @@ Persisted render semantics are standing identity: expected `compiled_generator` 
 
 ## Standing activation and proof
 
-Activate only through maintained `install/standing/prepare.py`/`install/standing/refresh.py`; preserve protected standing volumes. The refresh receipt's saved-page freshness section must PASS with zero stale pages; a validator rejecting/ignoring new freshness fields is a verifier/schema defect, not grounds to drop them. After activation, fresh standing evidence must bind merge identity; candidate PASS is never standing PASS. Use the maintained comparison contract, retained reference's exact browser/cache identity, zero-repeat external replay, and full-page/canary checks. If fresh standing parity fails after a healthy promotion, compare active source hashes, `compiled_generator` freshness, site/user/file metadata, browser/resource failures, and exact comparison contract before mutating; repair the smallest authoritative persistent state and never copy an entire candidate database into standing to make a canary pass.
+Activate only through `install/standing/promote.py`; preserve protected standing volumes. The refresh receipt's saved-page freshness section must PASS with zero stale pages; a validator rejecting/ignoring new freshness fields is a verifier/schema defect, not grounds to drop them. After activation, fresh standing evidence must bind merge identity; candidate PASS is never standing PASS. Use the maintained comparison contract, retained reference's exact browser/cache identity, zero-repeat external replay, and full-page/canary checks. If fresh standing parity fails after a healthy promotion, compare active source hashes, `compiled_generator` freshness, site/user/file metadata, browser/resource failures, and exact comparison contract before mutating; repair the smallest authoritative persistent state and never copy an entire candidate database into standing to make a canary pass.
 
 ## Runtime cleanup
 

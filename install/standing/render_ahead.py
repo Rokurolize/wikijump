@@ -15,14 +15,19 @@ not the image start script, so no migration is recorded: the command only runs
 the image's idempotent render-ahead table migration, which keeps the serving
 build's own migration check (and a rollback to it) working.
 
-Rendering also refreshes link rows. If those rows change during the run, a page
-rendered early may have read links that a later page changed. After each full
-pass, the pages whose links changed are rendered once more: a page that
-changes again has links that differ on every render and is recorded; if any
-other page changed, every page is rendered again, up to three full passes. Pages that miss the serving
-render deadline under concurrent load are retried alone and then once with a
-longer one-shot deadline (docs/agents/compatibility/execution.md); any other
-failure stops the run. A final dry run checks the whole site.
+Rendering also refreshes link rows, and three modules read them while they
+render: Backlinks, OrphanedPages and WantedPages. Deepwell reports every page
+whose render read the link graph. Every other page's output depends only on
+its own inputs, so one full pass renders it for good. A link reader rendered
+early in that pass may have read links that later renders changed, so the
+readers are rendered again, alone, until a round leaves every link unchanged.
+Pages that miss the serving render deadline under concurrent load are retried
+alone and then once with a longer one-shot deadline
+(docs/agents/compatibility/execution.md); any other failure stops the run. A
+final dry run checks the whole site.
+
+Each run renders every stale page itself: rows left by an earlier run are not
+reused, because only this run's own passes know which pages read links.
 """
 
 from __future__ import annotations
@@ -70,12 +75,9 @@ IDEMPOTENT_STATEMENT = re.compile(
 SUMMARY_SCHEMA = "wikijump.render_ahead_receipt.v1"
 RENDER_TIMEOUT = re.compile(r"^render-timeout-ms\s*=\s*[0-9]+\s*$", re.MULTILINE)
 DEADLINE_MARKERS = ("deadline has elapsed", "due to timeout")
-# A page that reads another page's links can only move in the pass after that
-# page moved, so each link dependency level needs one more full pass.
-MAX_FULL_PASSES = 3
-# Renders of a changed page before it counts as settled; a choice between two
-# equally likely link sets survives all of them with probability 1/256.
-LINK_PROBES = 8
+# A link reader's own links can be read by another reader, so each level of
+# that chain needs one more round of reader renders.
+MAX_READER_ROUNDS = 4
 
 
 def run(*args: str, input_text: str | None = None) -> str:
@@ -261,58 +263,72 @@ def render_pass(
     )
 
 
-def render_until_links_settle(render, digests, passes, not_before):
-    """Render every stale page, again if some page's links moved because of
-    links it reads. Returns the cutoff, the last full-pass summary, and the
-    pages whose links differ on every render."""
-    known_random: set[int] = set()
-    for number in range(1, MAX_FULL_PASSES + 1):
+def link_readers(summary: dict[str, object]) -> set[int]:
+    """Pages of one pass whose render read the link graph."""
+    readers = summary.get("link_reader_page_ids")
+    if not isinstance(readers, list):
+        raise RuntimeError(
+            "the render image does not report link readers; it predates this tool"
+        )
+    return set(readers)
+
+
+def render_with_deadline_tail(render, name, cutoff, pages=None):
+    """Render, then retry pages that only missed the serving deadline: alone,
+    then once with the extended deadline. Returns how many pages the first
+    pass selected and every pass's link readers."""
+    summary = render(name, cutoff, pages)
+    selected = summary["candidates"]
+    readers = link_readers(summary)
+    for tail, extended in (("tail-serial", False), ("tail-extended-deadline", True)):
+        failed = summary["failed_page_ids"]
+        if not failed:
+            break
+        if not deadline_only(summary):
+            raise RuntimeError(f"{name} has failures other than the render deadline")
+        # Alone, a page must meet the serving deadline; with the extended
+        # deadline nothing is racing it, so those renders run side by side.
+        summary = render(f"{name}-{tail}", cutoff, failed, serial=not extended, extended=extended)
+        readers |= link_readers(summary)
+    if summary["failed_page_ids"]:
+        raise RuntimeError(
+            f"{name} could not render pages even with the extended deadline: "
+            f"{summary['failed_page_ids'][:20]}"
+        )
+    return selected, readers
+
+
+def render_until_links_settle(render, digests, cutoff):
+    """Render every stale page once, then the link readers until their links
+    settle. Returns the link readers and the pages whose links moved in every
+    reader round: they read or produce links nondeterministically, so no
+    number of rounds settles them."""
+    links_before = digests()
+    _, readers = render_with_deadline_tail(render, "full", cutoff)
+    changed = set(changed_pages(links_before, digests()))
+    moving: set[int] | None = None
+    for number in range(1, MAX_READER_ROUNDS + 1):
+        if not changed or not readers:
+            return sorted(readers), sorted(moving or ())
         links_before = digests()
-        summary = render(f"full-{number}", not_before)
-        links_after = digests()
-        changed = changed_pages(links_before, links_after)
-        passes[-1]["link_changed_pages"] = len(changed)
-        if not set(changed) - known_random:
-            return not_before, summary, sorted(known_random)
-        # A page whose links change again when it alone is rendered again
-        # produces different links on every render (random ListPages,
-        # per-render placeholders). Any other changed page moved because the
-        # links it reads moved, so pages rendered before it may be stale.
-        # The probe renders the changed pages afresh, so it needs its own
-        # cutoff; their rows from this pass are already valid.
-        # A random choice among few options can repeat by chance, so a page
-        # counts as settled only after several identical renders.
-        pending = [page for page in changed if page not in known_random]
-        seen = {page: {links_after.get(str(page))} for page in pending}
-        unrendered: set[int] = set()
-        for attempt in range(1, LINK_PROBES + 1):
-            probe = render(f"link-probe-{number}.{attempt}", utc_now(), pending)
-            if probe["candidates"] != len(pending):
-                raise RuntimeError(
-                    f"link probe {number}.{attempt} selected "
-                    f"{probe['candidates']} of {len(pending)} changed active page IDs; "
-                    f"requested sample={pending[:20]}; "
-                    "candidate selection requires investigation before promotion"
-                )
-            unrendered |= set(probe["failed_page_ids"])
-            current = digests()
-            for page in pending:
-                seen[page].add(current.get(str(page)))
-            pending = [page for page in pending if len(seen[page]) == 1 and page not in unrendered]
-            if not pending:
-                break
-        known_random |= {page for page in seen if len(seen[page]) > 1}
-        settled = pending
-        passes[-1]["nondeterministic_link_pages"] = len(known_random)
-        passes[-1]["settled_link_pages"] = len(settled)
-        if not settled:
-            return not_before, summary, sorted(known_random)
-        if number == MAX_FULL_PASSES:
+        requested = sorted(readers)
+        selected, round_readers = render_with_deadline_tail(
+            render, f"link-readers-{number}", utc_now(), requested
+        )
+        if selected != len(requested):
             raise RuntimeError(
-                f"links of {len(settled)} pages did not converge after {number} passes: {settled[:20]}"
+                f"link-reader round {number} selected {selected} of "
+                f"{len(requested)} reader pages: {requested[:20]}"
             )
-        not_before = utc_now()
-    raise AssertionError("unreachable")
+        readers |= round_readers
+        changed = set(changed_pages(links_before, digests()))
+        moving = changed if moving is None else moving & changed
+    if changed - (moving or set()):
+        raise RuntimeError(
+            f"links of {len(changed)} pages did not settle after "
+            f"{MAX_READER_ROUNDS} link-reader rounds: {sorted(changed)[:20]}"
+        )
+    return sorted(readers), sorted(changed)
 
 
 def image_identity(image: str) -> str:
@@ -322,19 +338,10 @@ def image_identity(image: str) -> str:
     return image_id
 
 
-def prepared_deepwell_image(prepared_receipt: Path) -> str:
-    prepared = json.loads(prepared_receipt.read_text(encoding="utf-8"))
-    image = prepared["images"]["deepwell"]
-    if IMAGE_ID.fullmatch(image.get("id", "")) is None:
-        raise ValueError("prepared receipt has no immutable Deepwell image ID")
-    return image["id"]
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    source = parser.add_mutually_exclusive_group(required=True)
-    source.add_argument("--prepared-receipt", type=Path)
-    source.add_argument("--image", help="Deepwell image ID to render with")
+    parser.add_argument("--image", required=True, help="Deepwell image ID to render with")
     parser.add_argument("--deepwell-container", default="wikijump-standing-deepwell-1")
     parser.add_argument("--database-container", default="wikijump-standing-database-1")
     parser.add_argument("--concurrency", type=int, default=16)
@@ -345,11 +352,6 @@ def parse_args() -> argparse.Namespace:
         default=300_000,
         help="one-shot deadline for pages that still miss the serving deadline alone",
     )
-    parser.add_argument(
-        "--rerender-all",
-        action="store_true",
-        help="ignore existing ahead rows and render every stale page again",
-    )
     parser.add_argument("--output-dir", type=Path, required=True)
     return parser.parse_args()
 
@@ -358,12 +360,7 @@ def main() -> int:
     args = parse_args()
     if min(args.concurrency, args.batch_size, args.tail_render_timeout_ms) < 1:
         raise ValueError("numeric options must be positive")
-    image = (
-        prepared_deepwell_image(args.prepared_receipt)
-        if args.prepared_receipt is not None
-        else args.image
-    )
-    image_id = image_identity(image)
+    image_id = image_identity(args.image)
     args.output_dir.mkdir(mode=0o700, parents=True, exist_ok=False)
     started_at = datetime.now(UTC)
     started = time.monotonic()
@@ -379,14 +376,29 @@ def main() -> int:
     require_idempotent_migration(migration)
     psql(args.database_container, migration)
 
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", prefix="render-ahead-config.", suffix=".toml", delete=False
+    ) as config_file:
+        config_file.write(
+            config_with_render_timeout(
+                Path(config_source).read_text(encoding="utf-8"),
+                args.tail_render_timeout_ms,
+            )
+        )
+    os.chmod(config_file.name, 0o644)
+    extended_config = config_file.name
+
     passes: list[dict[str, object]] = []
 
-    def render(name: str, settings: dict[str, str], config: str = config_source) -> dict[str, object]:
+    def render(name, cutoff, pages=None, *, serial=False, extended=False, dry_run=False):
+        settings = render_ahead_settings(
+            1 if serial else args.concurrency, args.batch_size, cutoff, pages, dry_run
+        )
         pass_started = time.monotonic()
         summary = render_pass(
             image_id,
             args.deepwell_container,
-            config,
+            extended_config if extended else config_source,
             environment,
             settings,
             args.output_dir / f"{name}.log",
@@ -399,61 +411,24 @@ def main() -> int:
                     for key, value in settings.items()
                     if key != "DEEPWELL_RUNTIME_ACTION"
                 },
-                "config": "serving" if config == config_source else "extended-deadline",
+                "config": "extended-deadline" if extended else "serving",
                 "duration_seconds": time.monotonic() - pass_started,
                 "summary": summary,
             }
         )
         return summary
 
-    not_before, summary, nondeterministic = render_until_links_settle(
-        lambda name, cutoff, pages=None: render(
-            name, render_ahead_settings(args.concurrency, args.batch_size, cutoff, pages)
-        ),
-        lambda: link_digests(args.database_container),
-        passes,
-        utc_now() if args.rerender_all else None,
-    )
-
-    # Tail: pages that missed the deadline under load are retried alone, then
-    # once with a longer one-shot deadline. Any other failure stops the run.
-    failed = summary["failed_page_ids"]
-    if failed:
-        if not deadline_only(summary):
-            raise RuntimeError("render-ahead has failures other than the render deadline")
-        summary = render(
-            "tail-serial",
-            render_ahead_settings(1, args.batch_size, not_before, failed),
+    # Rows rendered before this run started are not accepted: only this
+    # run's passes know which pages read links.
+    cutoff = utc_now()
+    try:
+        readers, nondeterministic = render_until_links_settle(
+            render, lambda: link_digests(args.database_container), cutoff
         )
-        failed = summary["failed_page_ids"]
-    if failed:
-        if not deadline_only(summary):
-            raise RuntimeError("render-ahead tail has failures other than the render deadline")
-        with tempfile.NamedTemporaryFile(
-            "w", encoding="utf-8", prefix="render-ahead-config.", suffix=".toml", delete=False
-        ) as config_file:
-            config_file.write(
-                config_with_render_timeout(
-                    Path(config_source).read_text(encoding="utf-8"),
-                    args.tail_render_timeout_ms,
-                )
-            )
-        os.chmod(config_file.name, 0o644)
-        try:
-            summary = render(
-                "tail-extended-deadline",
-                render_ahead_settings(1, args.batch_size, not_before, failed),
-                config_file.name,
-            )
-        finally:
-            os.unlink(config_file.name)
-        failed = summary["failed_page_ids"]
-
-    # Verify the whole site, not just the last pass's pages.
-    final = render(
-        "verify",
-        render_ahead_settings(args.concurrency, args.batch_size, not_before, dry_run=True),
-    )
+        # Verify the whole site, not just the last pass's pages.
+        final = render("verify", cutoff, dry_run=True)
+    finally:
+        os.unlink(extended_config)
     receipt = {
         "schema": SUMMARY_SCHEMA,
         "status": "pass" if final["stale_without_valid_ahead"] == 0 else "incomplete",
@@ -468,7 +443,8 @@ def main() -> int:
         "migration_sha256": hashlib.sha256(migration.encode()).hexdigest(),
         "tail_render_timeout_ms": args.tail_render_timeout_ms,
         "passes": passes,
-        "unrendered_page_ids": failed,
+        "unrendered_page_ids": [],
+        "link_reader_page_ids": readers,
         "nondeterministic_link_page_ids": nondeterministic,
         "stale_without_valid_ahead": final["stale_without_valid_ahead"],
     }

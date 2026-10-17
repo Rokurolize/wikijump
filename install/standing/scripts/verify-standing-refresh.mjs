@@ -108,6 +108,11 @@ function validateRefreshRuntimeIdentity(value, refresh) {
 }
 
 export function validateStandingRefreshReceipt(value) {
+  // Version 4 is written by install/standing/promote.py, which builds,
+  // rehearses and activates in one run: the receipt binds the sealed build
+  // instead of the retired prepared-receipt and promotion-precondition chain
+  // that versions 1-3 (still read by historical final-zero inputs) carry.
+  const chained = value?.schema_version !== 4;
   exactKeys(
     value,
     [
@@ -126,9 +131,8 @@ export function validateStandingRefreshReceipt(value) {
       "wikijump_tree",
       "ftml_sha",
       "dependency_lock_sha256",
-      "promotion_precondition",
+      ...(chained ? ["promotion_precondition", "prepared_receipt", "cleanup"] : ["build_evidence"]),
       "runtime_home",
-      "prepared_receipt",
       "project_name",
       "network_name",
       "images",
@@ -138,13 +142,12 @@ export function validateStandingRefreshReceipt(value) {
       "runtime_differential_identity",
       "health",
       "canary",
-      "cleanup",
       "resource_disposition",
-      ...(value?.schema_version === 3 ? ["render_ahead"] : []),
+      ...(value?.schema_version >= 3 ? ["render_ahead"] : []),
     ],
     "standing refresh receipt",
   );
-  if (![1, 2, 3].includes(value.schema_version) || value.kind !== STANDING_REFRESH_KIND || value.status !== "pass") {
+  if (![1, 2, 3, 4].includes(value.schema_version) || value.kind !== STANDING_REFRESH_KIND || value.status !== "pass") {
     throw new Error("standing refresh receipt is not a passing canonical receipt");
   }
   requireNonEmptyString(value.run_id, "standing refresh.run_id");
@@ -161,8 +164,12 @@ export function validateStandingRefreshReceipt(value) {
   requireGitObject(value.wikijump_tree, "standing refresh Wikijump tree");
   requireGitObject(value.ftml_sha, "standing refresh FTML commit");
   requireSha256(value.dependency_lock_sha256, "standing refresh dependency lock");
-  requirePathDigest(value.promotion_precondition, "standing refresh promotion precondition");
-  requirePathDigest(value.prepared_receipt, "standing refresh prepared receipt");
+  if (chained) {
+    requirePathDigest(value.promotion_precondition, "standing refresh promotion precondition");
+    requirePathDigest(value.prepared_receipt, "standing refresh prepared receipt");
+  } else {
+    requirePathDigest(value.build_evidence, "standing refresh build evidence");
+  }
   requireNonEmptyString(value.runtime_home, "standing refresh.runtime_home");
   requireNonEmptyString(value.project_name, "standing refresh.project_name");
   if (value.project_name !== "wikijump-standing") throw new Error("standing refresh project is not standing");
@@ -191,7 +198,7 @@ export function validateStandingRefreshReceipt(value) {
     throw new Error("standing refresh saved page render freshness is not passing");
   }
 
-  if (value.schema_version === 3) {
+  if (value.schema_version >= 3) {
     const ahead = value.render_ahead;
     if (ahead?.status !== "pass" && ahead?.status !== "not-needed") {
       throw new Error("standing refresh has no passing render-ahead decision");
@@ -227,12 +234,14 @@ export function validateStandingRefreshReceipt(value) {
     throw new Error("standing refresh canary is not passing");
   }
 
-  exactKeys(value.cleanup, ["status", "candidate_receipt", "receipt", "superseded_images"], "standing refresh.cleanup");
-  if (value.cleanup.status !== "pass" || !Array.isArray(value.cleanup.superseded_images)) throw new Error("standing refresh cleanup is not passing");
-  requirePathDigest(value.cleanup.candidate_receipt, "standing refresh cleanup candidate receipt");
-  requirePathDigest(value.cleanup.receipt, "standing refresh cleanup receipt");
-  if (JSON.stringify(value.cleanup.candidate_receipt) !== JSON.stringify(value.prepared_receipt) || JSON.stringify(value.cleanup.receipt) !== JSON.stringify(value.prepared_receipt)) {
-    throw new Error("standing refresh cleanup identity is not bound to the prepared receipt");
+  if (chained) {
+    exactKeys(value.cleanup, ["status", "candidate_receipt", "receipt", "superseded_images"], "standing refresh.cleanup");
+    if (value.cleanup.status !== "pass" || !Array.isArray(value.cleanup.superseded_images)) throw new Error("standing refresh cleanup is not passing");
+    requirePathDigest(value.cleanup.candidate_receipt, "standing refresh cleanup candidate receipt");
+    requirePathDigest(value.cleanup.receipt, "standing refresh cleanup receipt");
+    if (JSON.stringify(value.cleanup.candidate_receipt) !== JSON.stringify(value.prepared_receipt) || JSON.stringify(value.cleanup.receipt) !== JSON.stringify(value.prepared_receipt)) {
+      throw new Error("standing refresh cleanup identity is not bound to the prepared receipt");
+    }
   }
 
   exactKeys(value.resource_disposition, ["active", "rollback", "volumes", "worktrees", "target_directories"], "standing refresh resource disposition");

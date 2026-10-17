@@ -83,7 +83,7 @@ case "$1" in
 esac
 `)
 
-  for (const command of ["cargo", "pnpm"]) {
+  for (const command of ["cargo", "pnpm", "python3"]) {
     writeExecutable(path.join(bin, command), `#!/usr/bin/env bash
 set -euo pipefail
 {
@@ -230,7 +230,7 @@ test("final preflight is the single explicit full-check barrier", (t) => {
   const source = readFileSync(path.join(root, "scripts/preflight.sh"), "utf8")
   assert.match(
     source,
-    /run_test "deepwell full tests" node[\s\\]+install\/local\/wikidot-verification\/scripts\/run-deepwell-integration-validation\.mjs/u
+    /run_test "deepwell full tests" env WIKIJUMP_DEEPWELL_TEST_SHARDS="\$\{WIKIJUMP_DEEPWELL_TEST_SHARDS:-4\}" node[\s\\]+install\/local\/wikidot-verification\/scripts\/run-deepwell-integration-validation\.mjs/u
   )
 })
 
@@ -241,7 +241,8 @@ test("verification and specification inputs run only the final verification barr
   const finalExpected = [
     "node install/local/wikidot-verification/scripts/verify-repository-generated-contracts.mjs --full",
     "pnpm --dir install/local/wikidot-verification test",
-    "node --test install/standing/tests/verify-promotion-precondition.test.mjs",
+    "python3 -m unittest discover -s install/standing/tests -p test_*.py",
+    "node --test install/standing/tests/*.test.mjs",
     "node scripts/generate-wikidot-specifications.mjs --check",
     "node scripts/initialize-wikidot-implementation-ledger.mjs --check"
   ]

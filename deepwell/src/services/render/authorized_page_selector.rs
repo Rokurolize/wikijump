@@ -11,6 +11,7 @@ use crate::models::page::Model as PageModel;
 use crate::services::ServiceContext;
 use crate::services::page::PageService;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::services::render::{ViewablePageRef, view_decisions_for_scanned_pages};
 use crate::types::{Action, Permission, Reference, Resource};
 
 /// Resolves page candidates only after applying the page-view permission for
@@ -20,6 +21,7 @@ pub(crate) struct AuthorizedPageSelector<'a, 'ctx> {
     ctx: &'a ServiceContext<'ctx>,
     viewer_user_id: Option<i64>,
     decisions: BTreeMap<(i64, i64, i64), bool>,
+    category_permissions: BTreeMap<(i64, Option<i64>), bool>,
 }
 
 impl<'a, 'ctx> AuthorizedPageSelector<'a, 'ctx> {
@@ -31,20 +33,50 @@ impl<'a, 'ctx> AuthorizedPageSelector<'a, 'ctx> {
             ctx,
             viewer_user_id,
             decisions: BTreeMap::new(),
+            category_permissions: BTreeMap::new(),
         }
     }
 
+    /// Decides every page of the batch together: one permission derivation
+    /// per site and one category probe per distinct category, with pages the
+    /// viewer is attributed to checked individually
+    /// (`view_decisions_for_scanned_pages`). A render resolves dozens of link
+    /// targets at once, and a full derivation per target dominated it.
     pub(crate) async fn filter_models(
         &mut self,
         pages: impl IntoIterator<Item = PageModel>,
     ) -> Result<Vec<PageModel>> {
-        let mut viewable = Vec::new();
-        for page in pages {
-            if self.check_page_viewability(&page).await? {
-                viewable.push(page);
-            }
+        let pages = pages.into_iter().collect::<Vec<_>>();
+        let undecided = pages
+            .iter()
+            .filter(|page| !self.decisions.contains_key(&Self::key(page)))
+            .collect::<Vec<_>>();
+        let references = undecided
+            .iter()
+            .map(|page| ViewablePageRef {
+                page_id: page.page_id,
+                site_id: page.site_id,
+                page_category_id: Some(page.page_category_id),
+            })
+            .collect::<Vec<_>>();
+        let decisions = view_decisions_for_scanned_pages(
+            self.ctx,
+            self.viewer_user_id,
+            &references,
+            &mut self.category_permissions,
+        )
+        .await?;
+        for (page, decision) in undecided.into_iter().zip(decisions) {
+            self.decisions.insert(Self::key(page), decision);
         }
-        Ok(viewable)
+        Ok(pages
+            .into_iter()
+            .filter(|page| self.decisions[&Self::key(page)])
+            .collect())
+    }
+
+    fn key(page: &PageModel) -> (i64, i64, i64) {
+        (page.site_id, page.page_id, page.page_category_id)
     }
 
     pub(crate) async fn resolve_models(
@@ -60,7 +92,7 @@ impl<'a, 'ctx> AuthorizedPageSelector<'a, 'ctx> {
         &mut self,
         page: &PageModel,
     ) -> Result<bool> {
-        let key = (page.site_id, page.page_id, page.page_category_id);
+        let key = Self::key(page);
         if let Some(decision) = self.decisions.get(&key) {
             return Ok(*decision);
         }

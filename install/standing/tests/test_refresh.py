@@ -4,12 +4,10 @@ import importlib.util
 import hashlib
 import json
 import os
-from contextlib import contextmanager
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
-import textwrap
 import unittest
 from unittest import mock
 
@@ -20,27 +18,6 @@ SPEC = importlib.util.spec_from_file_location("standing_refresh", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 REFRESH = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(REFRESH)
-
-
-@contextmanager
-def merged_candidate(identity: dict[str, str], candidate_commit: str = "9" * 40):
-    original_command = REFRESH.command
-
-    def fake_command(*args: str, cwd: Path, capture: bool = True) -> str:
-        if args[:2] == ("git", "merge-base"):
-            return candidate_commit
-        if args[:3] == ("git", "diff", "--name-only"):
-            return "install/standing/refresh.py"
-        if args[:3] == ("git", "rev-list", "--parents"):
-            return " ".join((identity["wikijump_sha"], "8" * 40, candidate_commit))
-        raise AssertionError(args)
-
-    REFRESH.command = fake_command
-    try:
-        yield
-    finally:
-        REFRESH.command = original_command
-
 
 
 class RefreshStandingTest(unittest.TestCase):
@@ -109,57 +86,6 @@ class RefreshStandingTest(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 REFRESH.atomic_json_no_replace(path, {"status": "changed"})
             self.assertEqual(path.read_text(encoding="utf-8"), original)
-
-    def test_candidate_cleanup_proves_container_and_image_absence(self) -> None:
-        candidate = {
-            service: {"container_id": chr(99 + index) * 64}
-            for index, service in enumerate(REFRESH.SERVICES)
-        }
-        candidate_images = {
-            service: {"id": "sha256:" + chr(100 + index) * 64}
-            for index, service in enumerate(REFRESH.SERVICES)
-        }
-        rollback_images = {
-            service: {"id": "sha256:" + "a" * 64} for service in REFRESH.SERVICES
-        }
-        containers = {value["container_id"] for value in candidate.values()}
-        images = {value["id"] for value in candidate_images.values()}
-        with self.assertRaisesRegex(RuntimeError, "inventory is unavailable"):
-            REFRESH.remove_candidate_resources(
-                None, candidate_images, rollback_images, Path("/runtime")
-            )
-        original_command = REFRESH.command
-
-        def fake_command(*args: str, cwd: Path, capture: bool = True) -> str:
-            if args[:2] == ("docker", "inspect") or args[:3] == (
-                "docker",
-                "image",
-                "inspect",
-            ):
-                reference = args[-1]
-                if reference in containers or reference in images:
-                    return "present"
-                raise subprocess.CalledProcessError(1, args)
-            if args[:3] == ("docker", "rm", "--force"):
-                containers.remove(args[3])
-                return ""
-            if args[:3] == ("docker", "image", "rm"):
-                images.remove(args[3])
-                return ""
-            raise AssertionError(args)
-
-        try:
-            REFRESH.command = fake_command
-            result = REFRESH.remove_candidate_resources(
-                candidate, candidate_images, rollback_images, Path("/runtime")
-            )
-        finally:
-            REFRESH.command = original_command
-        self.assertEqual(result["status"], "pass")
-        self.assertEqual(len(result["containers_removed"]), 3)
-        self.assertEqual(len(result["images_removed"]), 3)
-        self.assertEqual(containers, set())
-        self.assertEqual(images, set())
 
     def test_rollback_restores_parked_container_identity(self) -> None:
         service = REFRESH.SERVICES[0]
@@ -258,72 +184,6 @@ class RefreshStandingTest(unittest.TestCase):
             all(not entry["container"]["running"] for entry in parked.values())
         )
 
-    def prepared_receipt_fixture(
-        self, root: Path, *, expiry: object = "2026-09-05T12:34:56.123456+00:00"
-    ) -> tuple[dict[str, object], dict[str, str]]:
-        for service in REFRESH.SERVICES:
-            path = root / "install/prod" / service / "Dockerfile"
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(service, encoding="utf-8")
-        identity = {
-            "wikijump_sha": "a" * 40,
-            "wikijump_tree": "b" * 40,
-            "ftml_sha": "c" * 40,
-            "dependency_lock_sha256": "d" * 64,
-        }
-        proof_path = root / "promotion-precondition.json"
-        proof_path.write_text(
-            json.dumps(
-                {
-                    "schema": REFRESH.PROMOTION_PRECONDITION_SCHEMA,
-                    "status": "pass",
-                    "run_id": "candidate-run-001122334455",
-                    "candidate": {
-                        "wikijump_commit": "9" * 40,
-                        "wikijump_tree": identity["wikijump_tree"],
-                        "ftml_sha": identity["ftml_sha"],
-                    },
-                    "build": {
-                        "wikijump_commit": "9" * 40,
-                        "wikijump_tree": identity["wikijump_tree"],
-                        "ftml_sha": identity["ftml_sha"],
-                        "images": {
-                            service: "sha256:" + "e" * 64
-                            for service in REFRESH.SERVICES
-                        },
-                    },
-                }
-            ),
-            encoding="utf-8",
-        )
-        receipt: dict[str, object] = {
-            "schema_version": 1,
-            "kind": "standing-image-preparation",
-            "status": "pass",
-            "run_id": "candidate-run-001122334455",
-            **identity,
-            "promotion_precondition": {
-                "path": str(proof_path),
-                "sha256": hashlib.sha256(proof_path.read_bytes()).hexdigest(),
-            },
-            "dockerfiles": {
-                service: hashlib.sha256(service.encode()).hexdigest()
-                for service in REFRESH.SERVICES
-            },
-            "images": {
-                service: {
-                    "reference": "sha256:" + "e" * 64,
-                    "id": "sha256:" + "e" * 64,
-                    "profile": "release" if service != "framerail" else "built",
-                }
-                for service in REFRESH.SERVICES
-            },
-            "resource_disposition": {
-                "owner": "standing-image-preparation",
-                "expiry": expiry,
-            },
-        }
-        return receipt, identity
 
     def test_standing_runtime_uses_supported_release_profiles(self) -> None:
         compose = (SCRIPT.parent / "compose.yaml").read_text(encoding="utf-8")
@@ -371,31 +231,6 @@ class RefreshStandingTest(unittest.TestCase):
         self.assertNotIn("--volumes", command)
         self.assertNotIn("--remove-volumes", command)
 
-    def test_cli_rejects_every_volume_removal_spelling(self) -> None:
-        for forbidden in ("-v", "--volumes", "--remove-volumes"):
-            with self.subTest(forbidden=forbidden):
-                result = subprocess.run(
-                    (
-                        sys.executable,
-                        str(SCRIPT),
-                        "--prepared-receipt",
-                        "/tmp/absent",
-                        forbidden,
-                    ),
-                    text=True,
-                    capture_output=True,
-                )
-                self.assertNotEqual(result.returncode, 0)
-                self.assertIn("unrecognized arguments", result.stderr)
-
-    def test_activation_has_no_build_path_and_uses_prepared_references(self) -> None:
-        source = SCRIPT.read_text(encoding="utf-8")
-        self.assertNotIn('docker", "build', source)
-        self.assertIn("--prepared-receipt", source)
-        self.assertIn("--no-build", source)
-        prepare = (SCRIPT.parent / "prepare.py").read_text(encoding="utf-8")
-        self.assertIn('"install" / "prod" / service / "Dockerfile"', prepare)
-
     def test_local_development_still_uses_watch_mode(self) -> None:
         deepwell_start = (
             SCRIPT.parents[1] / "local/deepwell/deepwell-start"
@@ -409,192 +244,6 @@ class RefreshStandingTest(unittest.TestCase):
         self.assertIn("cargo watch", deepwell_start)
         self.assertIn("cargo watch", wws_start)
         self.assertIn("pnpm dev", framerail_start)
-
-    def test_refresh_checks_saved_page_generator_freshness_before_canary(self) -> None:
-        source = SCRIPT.read_text(encoding="utf-8")
-        self.assertIn("stale_pages_remaining", source)
-        self.assertIn("saved_page_render_freshness", source)
-        call = source.rindex("standing_stale_saved_pages(")
-        self.assertLess(call, source.index('body = command('))
-
-    def test_refresh_requires_zero_stale_saved_pages(self) -> None:
-        source = SCRIPT.read_text(encoding="utf-8")
-        self.assertIn("stale_pages_remaining", source)
-        self.assertIn("standing contains stale saved-page renders", source)
-
-    def test_render_ahead_skips_when_saved_pages_are_current(self) -> None:
-        with mock.patch.object(
-            REFRESH, "standing_stale_saved_pages", return_value=(0, "generator")
-        ), mock.patch.object(REFRESH.subprocess, "run") as run:
-            result = REFRESH.prepare_saved_page_render_ahead(
-                Path("/runtime"), Path("/source"), Path("/prepared.json"),
-                "sha256:" + "a" * 64,
-            )
-        self.assertEqual(result["status"], "not-needed")
-        run.assert_not_called()
-
-    def test_render_ahead_runs_before_activation_and_binds_its_proof(self) -> None:
-        image = "sha256:" + "a" * 64
-        with tempfile.TemporaryDirectory() as temporary_dir:
-            root = Path(temporary_dir)
-            source = root / "source"
-            source.mkdir()
-            runtime = root / "runtime"
-            runtime.mkdir()
-            prepared = root / "prepared.json"
-
-            def render_ahead(command: list[str], *, cwd: Path, check: bool, **kwargs: object) -> subprocess.CompletedProcess[str]:
-                self.assertTrue(check)
-                self.assertEqual(cwd, source)
-                self.assertEqual(command[command.index("--prepared-receipt") + 1], str(prepared))
-                output = Path(command[command.index("--output-dir") + 1])
-                output.mkdir()
-                (output / "render-ahead-receipt.json").write_text(json.dumps({
-                    "schema": "wikijump.render_ahead_receipt.v1",
-                    "status": "pass",
-                    "render_image_id": image,
-                    "compiled_generator": "ftml; deepwell-render/v24",
-                    "stale_without_valid_ahead": 0,
-                    "unrendered_page_ids": [],
-                }), encoding="utf-8")
-                return subprocess.CompletedProcess(command, 0, stdout='{"status": "pass"}\n')
-
-            with mock.patch.object(
-                REFRESH, "standing_stale_saved_pages",
-                return_value=(24573, "ftml; deepwell-render/v24"),
-            ), mock.patch.object(REFRESH.subprocess, "run", side_effect=render_ahead):
-                result = REFRESH.prepare_saved_page_render_ahead(
-                    runtime, source, prepared, image
-                )
-            self.assertEqual(result["status"], "pass")
-            self.assertEqual(result["stale_pages_before"], 24573)
-            receipt = result["receipt"]
-            self.assertEqual(receipt["sha256"], REFRESH.file_sha256(Path(receipt["path"])))
-
-    def test_render_ahead_child_stdout_does_not_pollute_refresh_stdout(self) -> None:
-        # Regression: the render-ahead child prints its own summary JSON. Refresh
-        # used to inherit that stdout, so the promotion controller saw two JSON
-        # documents and reported a failed refresh after a passing activation.
-        image = "sha256:" + "a" * 64
-        child = textwrap.dedent(f"""
-            import json, sys
-            from pathlib import Path
-            output = Path(sys.argv[sys.argv.index("--output-dir") + 1])
-            output.mkdir()
-            (output / "render-ahead-receipt.json").write_text(json.dumps({{
-                "schema": "wikijump.render_ahead_receipt.v1",
-                "status": "pass",
-                "render_image_id": {image!r},
-                "compiled_generator": "gen",
-                "stale_without_valid_ahead": 0,
-                "unrendered_page_ids": [],
-            }}), encoding="utf-8")
-            print(json.dumps({{"status": "pass", "stale_without_valid_ahead": 0}}))
-        """)
-        driver = textwrap.dedent(f"""
-            import importlib.util, json, sys
-            from pathlib import Path
-            from unittest import mock
-            sys.path.insert(0, {str(SCRIPT.parent)!r})
-            spec = importlib.util.spec_from_file_location("standing_refresh", {str(SCRIPT)!r})
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            root = Path(sys.argv[1])
-            with mock.patch.object(module, "standing_stale_saved_pages", return_value=(1, "gen")):
-                result = module.prepare_saved_page_render_ahead(
-                    root / "runtime", root / "source", root / "prepared.json", {image!r}
-                )
-            print(json.dumps({{"status": result["status"]}}))
-        """)
-        with tempfile.TemporaryDirectory() as temporary_dir:
-            root = Path(temporary_dir)
-            script = root / "source" / "install" / "standing" / "render_ahead.py"
-            script.parent.mkdir(parents=True)
-            script.write_text(child, encoding="utf-8")
-            completed = subprocess.run(
-                [sys.executable, "-c", driver, str(root)],
-                capture_output=True, text=True, check=True,
-            )
-            self.assertEqual(json.loads(completed.stdout), {"status": "pass"})
-            evidence = list((root / "runtime" / "render-ahead-evidence").glob("*/render-ahead-stdout.txt"))
-            self.assertEqual(len(evidence), 1)
-            self.assertIn('"stale_without_valid_ahead": 0', evidence[0].read_text(encoding="utf-8"))
-
-    def test_render_ahead_rejects_mismatched_candidate_receipt(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary_dir:
-            root = Path(temporary_dir)
-
-            def forged_receipt(command: list[str], *, cwd: Path, check: bool, **kwargs: object) -> subprocess.CompletedProcess[str]:
-                output = Path(command[command.index("--output-dir") + 1])
-                output.mkdir()
-                (output / "render-ahead-receipt.json").write_text(json.dumps({
-                    "schema": "wikijump.render_ahead_receipt.v1",
-                    "status": "pass",
-                    "render_image_id": "sha256:" + "b" * 64,
-                    "compiled_generator": "old generator",
-                    "stale_without_valid_ahead": 0,
-                    "unrendered_page_ids": [],
-                }), encoding="utf-8")
-                return subprocess.CompletedProcess(command, 0, stdout="")
-
-            with mock.patch.object(
-                REFRESH, "standing_stale_saved_pages", return_value=(1, "new generator")
-            ), mock.patch.object(REFRESH.subprocess, "run", side_effect=forged_receipt):
-                with self.assertRaisesRegex(RuntimeError, "did not prove a fresh candidate"):
-                    REFRESH.prepare_saved_page_render_ahead(
-                        root, root, root / "prepared.json", "sha256:" + "a" * 64
-                    )
-
-    def test_render_ahead_failure_keeps_evidence_path_and_prevents_activation(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary_dir:
-            root = Path(temporary_dir)
-            with mock.patch.object(
-                REFRESH, "standing_stale_saved_pages", return_value=(10, "new generator")
-            ), mock.patch.object(
-                REFRESH.subprocess, "run",
-                side_effect=subprocess.CalledProcessError(1, ["render_ahead.py"]),
-            ):
-                with self.assertRaisesRegex(RuntimeError, "inspect retained evidence in"):
-                    REFRESH.prepare_saved_page_render_ahead(
-                        root, root, root / "prepared.json", "sha256:" + "a" * 64
-                    )
-
-    def test_render_ahead_occurs_before_parking_containers(self) -> None:
-        source = SCRIPT.read_text(encoding="utf-8")
-        main = source[source.index("def main() -> int:"):]
-        self.assertLess(
-            main.index("render_ahead = prepare_saved_page_render_ahead("),
-            main.index("parked = park_containers("),
-        )
-
-    def test_render_ahead_rechecks_serving_container_identity_before_parking(self) -> None:
-        before = {
-            service: {
-                "container_id": str(index + 1) * 64,
-                "image_id": "sha256:" + str(index + 1) * 64,
-            }
-            for index, service in enumerate(REFRESH.RUNTIME_SERVICES)
-        }
-        after = {service: dict(value) for service, value in before.items()}
-        edge = {"container_id": before["caddy"]["container_id"]}
-        with mock.patch.object(REFRESH, "port_443_owner", return_value=edge):
-            REFRESH.assert_standing_unchanged_during_render_ahead(before, after, edge)
-            after["deepwell"]["container_id"] = "a" * 64
-            with self.assertRaisesRegex(RuntimeError, "standing deepwell changed"):
-                REFRESH.assert_standing_unchanged_during_render_ahead(before, after, edge)
-            after["deepwell"] = dict(before["deepwell"])
-        with mock.patch.object(
-            REFRESH, "port_443_owner", return_value={"container_id": "b" * 64}
-        ):
-            with self.assertRaisesRegex(RuntimeError, "port-443 owner changed"):
-                REFRESH.assert_standing_unchanged_during_render_ahead(before, after, edge)
-
-        source = SCRIPT.read_text(encoding="utf-8")
-        main = source[source.index("def main() -> int:"):]
-        self.assertLess(
-            main.index("assert_standing_unchanged_during_render_ahead("),
-            main.index("parked = park_containers("),
-        )
 
     def test_expected_compiled_generator_is_source_derived(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_dir:
@@ -641,94 +290,6 @@ class RefreshStandingTest(unittest.TestCase):
         self.assertNotIn("STANDING_LOCALES_SOURCE", compose)
         self.assertNotIn("STANDING_LOCALES_SOURCE", renderer_source)
         self.assertNotIn("STANDING_LOCALES_SOURCE", refresher)
-
-    def test_prepared_receipt_rejects_mutable_or_wrong_image_reference(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary_dir:
-            root = Path(temporary_dir)
-            receipt, identity = self.prepared_receipt_fixture(root)
-            images = receipt["images"]
-            assert isinstance(images, dict)
-            deepwell = images["deepwell"]
-            assert isinstance(deepwell, dict)
-            deepwell["reference"] = "sha256:" + "f" * 64
-            path = root / "prepared.json"
-            path.write_text(json.dumps(receipt), encoding="utf-8")
-            with merged_candidate(identity):
-                with self.assertRaisesRegex(ValueError, "immutable image ID"):
-                    REFRESH.load_prepared_receipt(path, root, identity)
-
-    def test_prepared_receipt_accepts_candidate_proof_from_the_parent_of_the_merged_tree(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary_dir:
-            root = Path(temporary_dir)
-            receipt, identity = self.prepared_receipt_fixture(root)
-            proof_ref = receipt["promotion_precondition"]
-            assert isinstance(proof_ref, dict)
-            proof_path = Path(str(proof_ref["path"]))
-            proof = json.loads(proof_path.read_text(encoding="utf-8"))
-            candidate_commit = "9" * 40
-            for section in ("candidate", "build"):
-                proof[section]["wikijump_commit"] = candidate_commit
-            proof_path.write_text(json.dumps(proof), encoding="utf-8")
-            proof_ref["sha256"] = hashlib.sha256(proof_path.read_bytes()).hexdigest()
-            path = root / "prepared.json"
-            path.write_text(json.dumps(receipt), encoding="utf-8")
-            with merged_candidate(identity, candidate_commit):
-                loaded, _, loaded_proof = REFRESH.load_prepared_receipt(
-                    path, root, identity
-                )
-                self.assertEqual(loaded["run_id"], proof["run_id"])
-                self.assertEqual(
-                    loaded_proof["candidate"]["wikijump_commit"], candidate_commit
-                )
-
-    def test_prepared_receipt_binds_the_promotion_precondition_run_id(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary_dir:
-            root = Path(temporary_dir)
-            receipt, identity = self.prepared_receipt_fixture(root)
-            receipt["run_id"] = "candidate-run-other"
-            path = root / "prepared.json"
-            path.write_text(json.dumps(receipt), encoding="utf-8")
-            with merged_candidate(identity):
-                with self.assertRaisesRegex(ValueError, "run ID"):
-                    REFRESH.load_prepared_receipt(path, root, identity)
-
-    def test_prepared_receipt_rejects_unsafe_resource_expiry(self) -> None:
-        invalid_expiries: tuple[object, ...] = (
-            "2026-09-05T12:34:56+00:00\nSTANDING_DEEPWELL_IMAGE=evil",
-            "2026-09-05T12:34:56+00:00\rSTANDING_NETWORK_NAME=evil",
-            "2026-09-05T12:34:56+00:00\x00suffix",
-            "2026-09-05T12:34:56+00:00\tsuffix",
-            " 2026-09-05T12:34:56+00:00",
-            "2026-09-05T12:34:56+00:00 ",
-            "2026-09-05T12:34:56",
-            "not-a-timestamp",
-            None,
-            7,
-        )
-        for expiry in invalid_expiries:
-            with (
-                self.subTest(expiry=expiry),
-                tempfile.TemporaryDirectory() as temporary_dir,
-            ):
-                root = Path(temporary_dir)
-                receipt, identity = self.prepared_receipt_fixture(root, expiry=expiry)
-                path = root / "prepared.json"
-                path.write_text(json.dumps(receipt), encoding="utf-8")
-                with merged_candidate(identity):
-                    with self.assertRaisesRegex(ValueError, "resource expiry"):
-                        REFRESH.load_prepared_receipt(path, root, identity)
-
-    def test_prepared_receipt_accepts_canonical_resource_expiry(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary_dir:
-            root = Path(temporary_dir)
-            receipt, identity = self.prepared_receipt_fixture(root)
-            path = root / "prepared.json"
-            path.write_text(json.dumps(receipt), encoding="utf-8")
-            with merged_candidate(identity):
-                loaded, _, _ = REFRESH.load_prepared_receipt(path, root, identity)
-            self.assertEqual(
-                loaded["resource_disposition"], receipt["resource_disposition"]
-            )
 
     def test_standing_framerail_keeps_csrf_origin_checks_enabled(self) -> None:
         compose = (SCRIPT.parent / "compose.yaml").read_text(encoding="utf-8")

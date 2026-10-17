@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 #
 # WWS build
 #
@@ -12,11 +14,14 @@ RUN mkdir /src
 COPY ./wws /src/wws
 WORKDIR /src/wws
 
-# Cache rust dependencies
-RUN mkdir .cargo && cargo vendor > .cargo/config.toml
-
-# Build wws
-RUN cargo build --release
+# Build wws.  The registry and target directory are build caches, so a source
+# change recompiles only what it affects; the binary is copied out of the
+# cache because cache mounts are not part of the image.
+RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
+    --mount=type=cache,target=/src/wws/target,id=wws-release-target,sharing=locked \
+    cargo build --release --locked \
+    && install -D target/release/wws /out/wws
 
 #
 # Final image
@@ -30,7 +35,7 @@ FROM debian:trixie-slim@sha256:020c0d20b9880058cbe785a9db107156c3c75c2ac944a6aa7
 RUN apt update && apt install -y curl
 
 # Install files
-COPY --from=rust /src/wws/target/release/wws /usr/local/bin/wws
+COPY --from=rust /out/wws /usr/local/bin/wws
 COPY ./install/prod/wws/health-check.sh /usr/local/bin/wikijump-health-check
 
 USER daemon
