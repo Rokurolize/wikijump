@@ -59,7 +59,8 @@ use self::filtering::date_span_bounds;
 use self::filtering::{
     category_local_wikidot_name_patterns, date_selector_condition,
     filter_pages_by_data_form_fields, load_pages_static_data_form_values,
-    postgres_bind_placeholders, vote_selectors_condition, wikidot_name_pattern,
+    postgres_bind_placeholders, vote_selectors_condition, wikidot_name_condition,
+    wikidot_name_pattern,
 };
 
 use self::ordering::{
@@ -336,10 +337,8 @@ impl PageQueryService {
             {
                 let mut local_slug_condition = Condition::any();
                 for pattern in patterns {
-                    local_slug_condition = local_slug_condition.add(
-                        Expr::col((Page, page::Column::Slug))
-                            .binary(PgBinOper::ILike, Expr::val(pattern)),
-                    );
+                    local_slug_condition =
+                        local_slug_condition.add(wikidot_name_condition(&pattern));
                 }
                 condition = condition.add(local_slug_condition);
             } else {
@@ -356,18 +355,13 @@ impl PageQueryService {
             {
                 let mut local_slug_condition = Condition::any();
                 for pattern in patterns {
-                    local_slug_condition = local_slug_condition.add(
-                        Expr::col((Page, page::Column::Slug))
-                            .binary(PgBinOper::ILike, Expr::val(pattern)),
-                    );
+                    local_slug_condition =
+                        local_slug_condition.add(wikidot_name_condition(&pattern));
                 }
                 condition = condition.add(local_slug_condition);
             } else {
                 let pattern = wikidot_name_pattern(name.as_ref());
-                condition = condition.add(
-                    Expr::col((Page, page::Column::Slug))
-                        .binary(PgBinOper::ILike, Expr::val(pattern)),
-                );
+                condition = condition.add(wikidot_name_condition(&pattern));
             }
         }
 

@@ -7,7 +7,7 @@ use super::{
     needs_effective_revision_projection, project_effective_revision_count,
     score_filter_plan_from_probe, score_membership_condition,
     score_membership_polarity_order, score_selector_condition, score_selectors_condition,
-    wikidot_name_pattern,
+    wikidot_name_condition, wikidot_name_pattern,
 };
 use crate::models::page;
 use crate::services::page_query::{
@@ -82,6 +82,43 @@ fn wikidot_name_patterns_preserve_the_evidenced_wildcard_boundary() {
     assert_eq!(wikidot_name_pattern("image?block"), "image_block");
     assert_eq!(wikidot_name_pattern("fragment:part%"), "fragment:part\\%");
     assert_eq!(wikidot_name_pattern("literal_name"), "literal\\_name");
+}
+
+#[test]
+fn wildcard_free_names_use_the_slug_index_and_wildcards_keep_ilike() {
+    let sql = |name: &str| {
+        page::Entity::find()
+            .filter(wikidot_name_condition(&wikidot_name_pattern(name)))
+            .build(DatabaseBackend::Postgres)
+    };
+
+    // Stored slugs are lowercase, so a literal name compares with lower(name)
+    // and the (site_id, slug) index serves it; the escaped `_` stays literal.
+    let literal = sql("Component:Literal_Name");
+    assert!(
+        literal.sql.contains(r#""page"."slug" = LOWER($1)"#),
+        "{}",
+        literal.sql
+    );
+    assert!(!literal.sql.contains("ILIKE"), "{}", literal.sql);
+    assert_eq!(
+        literal.values.unwrap().0,
+        vec![Value::from("Component:Literal_Name".to_owned())],
+    );
+
+    for name in ["scp-*", "image?block"] {
+        let pattern = sql(name);
+        assert!(
+            pattern.sql.contains(r#""page"."slug" ILIKE $1"#),
+            "{name}: {}",
+            pattern.sql
+        );
+        assert_eq!(
+            pattern.values.unwrap().0,
+            vec![Value::from(wikidot_name_pattern(name))],
+            "{name}",
+        );
+    }
 }
 
 #[test]
