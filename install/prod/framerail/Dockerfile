@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 #
 # Framerail build
 #
@@ -14,15 +16,21 @@ ENV FRAMERAIL_CSRF_CHECK_ORIGIN=${FRAMERAIL_CSRF_CHECK_ORIGIN}
 RUN apk add --no-cache curl && \
     npm install --global pnpm@11.10.0
 
-# Copy sources
+# Install the locked dependencies before copying the sources, so a source
+# change reuses this layer. The pnpm store is a build cache.
 RUN mkdir /app
 WORKDIR /app
+COPY framerail/package.json framerail/pnpm-lock.yaml framerail/pnpm-workspace.yaml framerail/.npmrc ./
+COPY framerail/patches ./patches
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store,sharing=locked \
+    pnpm install --frozen-lockfile
+
+# Copy sources
 COPY framerail/ ./
 COPY assets ./src/assets
 
-# Install app
+# Build app
 RUN \
-    pnpm install --frozen-lockfile && \
     pnpm build && \
     pnpm prune --prod && \
     rm -rf tests/

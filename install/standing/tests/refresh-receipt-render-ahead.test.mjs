@@ -84,3 +84,19 @@ test("v3 standing refresh allows current pages without a redundant render", () =
   assert.equal(validateStandingRefreshReceipt(valid), valid);
   assert.throws(() => validateStandingRefreshReceipt({...valid, render_ahead: {...valid.render_ahead, stale_pages_before: 1}}), /inconsistent/u);
 });
+
+function v4Receipt() {
+  const {promotion_precondition: _precondition, prepared_receipt: _prepared, cleanup: _cleanup, ...rest} = receipt();
+  return {...rest, schema_version: 4, build_evidence: ref("build-seal")};
+}
+
+test("v4 standing refresh binds the sealed build instead of the retired prepared-receipt chain", () => {
+  const valid = v4Receipt();
+  assert.equal(validateStandingRefreshReceipt(valid), valid);
+  const {build_evidence: _build, ...unbound} = valid;
+  assert.throws(() => validateStandingRefreshReceipt(unbound), /missing or unknown fields/u);
+  assert.throws(() => validateStandingRefreshReceipt({...valid, build_evidence: {path: "relative", sha256: sha("a")}}), /absolute/u);
+  assert.throws(() => validateStandingRefreshReceipt({...valid, prepared_receipt: ref("prepared")}), /missing or unknown fields/u);
+  assert.throws(() => validateStandingRefreshReceipt({...valid, render_ahead: {...valid.render_ahead, status: "incomplete"}}), /render-ahead/u);
+  assert.throws(() => validateStandingRefreshReceipt({...valid, saved_page_render_freshness: {...valid.saved_page_render_freshness, stale_pages_remaining: 1}}), /freshness/u);
+});

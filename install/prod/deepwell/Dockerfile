@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 #
 # DEEPWELL build
 #
@@ -14,24 +16,32 @@ RUN apt install -y build-essential libmagic-dev pkg-config musl-tools
 # libc requirement.
 RUN rustup target add x86_64-unknown-linux-musl
 
+# Keep migration execution in the immutable standing image.  The runtime
+# wrapper runs this binary before the prebuilt Deepwell server starts.  It does
+# not depend on the Deepwell sources, so it is built before they are copied and
+# a source change reuses this layer.
+RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
+    cargo install sqlx-cli --version 0.9.0 --locked \
+    --target x86_64-unknown-linux-musl \
+    --root /tmp/sqlx-root \
+    --no-default-features --features rustls,postgres
+
 # Copy source
 RUN mkdir /src
 COPY ./deepwell /src/deepwell
 WORKDIR /src/deepwell
 
-# Keep migration execution in the immutable standing image.  The runtime
-# wrapper runs this binary before the prebuilt Deepwell server starts.
-RUN cargo install sqlx-cli --version 0.9.0 --locked \
-    --target x86_64-unknown-linux-musl \
-    --target-dir /src/deepwell/target \
-    --root /tmp/sqlx-root \
-    --no-default-features --features rustls,postgres
-
-# Cache rust dependencies for the application build only.
-RUN mkdir .cargo && cargo vendor > .cargo/config.toml
-
-# Build deepwell server
-RUN cargo build --release
+# Build deepwell server.  The registry and target directory are build caches,
+# so a source change recompiles only what it affects; the binary is copied out
+# of the cache because cache mounts are not part of the image.  Standing
+# promotion builds pass CARGO_PROFILE=standing (see deepwell/Cargo.toml).
+ARG CARGO_PROFILE=release
+RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
+    --mount=type=cache,target=/src/deepwell/target,id=deepwell-target,sharing=locked \
+    cargo build --profile "${CARGO_PROFILE}" --locked \
+    && install -D "target/${CARGO_PROFILE}/deepwell" /out/deepwell
 
 #
 # Final image
@@ -47,7 +57,7 @@ ENV LOCALIZATION_PATH="/opt/locales"
 
 RUN apt update
 RUN apt install -y curl libmagic1 libmagic-mgc
-COPY --from=rust /src/deepwell/target/release/deepwell /usr/local/bin/deepwell
+COPY --from=rust /out/deepwell /usr/local/bin/deepwell
 COPY --from=rust /tmp/sqlx-root/bin/sqlx /usr/local/bin/sqlx
 COPY ./deepwell/migrations /opt/deepwell/migrations
 COPY ./deepwell/seeder /opt/deepwell/seeder

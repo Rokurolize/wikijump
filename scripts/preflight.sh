@@ -10,12 +10,14 @@
 # change touches.
 #
 # Usage:
-#   scripts/preflight.sh [--base <ref>] [--final] [--list]
+#   scripts/preflight.sh [--base <ref>] [--final] [--groups <a,b>] [--list]
 #
-#   --base <ref>  Compare against this ref instead of origin/develop.
-#   --final       Run the complete candidate barrier, including Clippy, full
-#                 tests, validators, and the Framerail production build.
-#   --list        Print the selected groups and the checks, then exit.
+#   --base <ref>    Compare against this ref instead of origin/develop.
+#   --final         Run the complete candidate barrier, including Clippy, full
+#                   tests, validators, and the Framerail production build.
+#   --groups <a,b>  Run only these of the selected groups (the standing
+#                   promotion runs the groups no earlier receipt covers).
+#   --list          Print the selected groups and the checks, then exit.
 #
 # Exit code is non-zero if any check fails.
 
@@ -27,12 +29,14 @@ cd "${REPO_ROOT}" || exit 1
 BASE="origin/develop"
 MODE="checkpoint"
 LIST=false
+ONLY_GROUPS=""
 TEST_NETWORK_GUARD="${REPO_ROOT}/scripts/run-test-no-external-network.sh"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --base) BASE="$2"; shift 2 ;;
     --final) MODE="final"; shift ;;
+    --groups) ONLY_GROUPS="$2"; shift 2 ;;
     --list) LIST=true; shift ;;
     -h|--help) sed -n '2,/^# Exit code/p' "${BASH_SOURCE[0]}" | sed 's/^# \?//'; exit 0 ;;
     *) echo "preflight: unknown argument: $1" >&2; exit 2 ;;
@@ -70,6 +74,14 @@ fi
 if ! SELECTED="$(printf '%s\0' "${CHANGED_PATHS[@]}" | node .github/scripts/classify-changes.mjs)"; then
   echo "preflight: failed to classify changed paths" >&2
   exit 2
+fi
+if [[ -n "${ONLY_GROUPS}" ]]; then
+  RESTRICTED=""
+  while IFS='=' read -r group value; do
+    [[ ",${ONLY_GROUPS}," == *",${group},"* ]] || value=false
+    RESTRICTED+="${group}=${value}"$'\n'
+  done <<<"${SELECTED}"
+  SELECTED="${RESTRICTED%$'\n'}"
 fi
 group_selected() { grep -qx "$1=true" <<<"${SELECTED}"; }
 

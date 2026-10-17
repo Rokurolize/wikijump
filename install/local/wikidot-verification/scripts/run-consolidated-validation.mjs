@@ -11,6 +11,7 @@
 import {execFile as execFileCallback, spawn} from "node:child_process";
 import {createHash} from "node:crypto";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import {promisify} from "node:util";
 
@@ -35,24 +36,32 @@ function fail(message) {
   throw new Error(message);
 }
 
+/** Where receipts are kept for `install/standing/promote.py` to reuse. */
+export function validationStore(env = process.env) {
+  const stateRoot = env.XDG_STATE_HOME || path.join(os.homedir(), ".local", "state");
+  return path.join(stateRoot, "wikijump", "validation");
+}
+
 function parseArgs(argv) {
   const args = {};
   for (let index = 0; index < argv.length; index += 2) {
     const flag = argv[index];
     const value = argv[index + 1];
-    if (!["--repository", "--base", "--output", "--log"].includes(flag) || !value || value.startsWith("--")) {
+    if (!["--repository", "--base", "--output", "--log", "--groups"].includes(flag) || !value || value.startsWith("--")) {
       fail(`invalid option: ${flag ?? "<missing>"}`);
     }
     const key = flag.slice(2);
     if (Object.hasOwn(args, key)) fail(`duplicate option: ${flag}`);
     args[key] = value;
   }
-  for (const key of ["repository", "base", "output"]) if (!args[key]) fail(`--${key} is required`);
+  for (const key of ["repository", "base"]) if (!args[key]) fail(`--${key} is required`);
+  const output = path.resolve(args.output ?? path.join(validationStore(), `validation-${Date.now()}.json`));
   return {
     repository: path.resolve(args.repository),
     base: args.base,
-    output: path.resolve(args.output),
-    log: args.log ? path.resolve(args.log) : `${path.resolve(args.output)}.log`,
+    output,
+    log: args.log ? path.resolve(args.log) : `${output}.log`,
+    groups: args.groups ?? null,
   };
 }
 
@@ -92,12 +101,13 @@ async function toolVersions() {
   return versions;
 }
 
-async function runPreflight(repository, base, logPath) {
+async function runPreflight(repository, base, logPath, groups) {
+  await fs.mkdir(path.dirname(logPath), {recursive: true, mode: 0o700});
   const log = await fs.open(logPath, "wx", 0o600);
   let output = "";
   try {
     const code = await new Promise((resolve, reject) => {
-      const child = spawn("bash", ["scripts/preflight.sh", "--base", base, "--final"], {
+      const child = spawn("bash", ["scripts/preflight.sh", "--base", base, "--final", ...(groups ? ["--groups", groups] : [])], {
         cwd: repository,
         env: process.env,
         stdio: ["ignore", "pipe", "pipe"],
@@ -118,14 +128,15 @@ async function runPreflight(repository, base, logPath) {
   }
 }
 
-export async function runConsolidatedValidation({repository, base, output, log}) {
+export async function runConsolidatedValidation({repository, base, output, log, groups: onlyGroups = null}) {
   const status = await git(repository, "status", "--porcelain=v1", "--untracked-files=all");
   if (status !== "") fail("consolidated validation requires a clean checkout");
   const commit = await git(repository, "rev-parse", "HEAD^{commit}");
   const tree = await git(repository, "rev-parse", "HEAD^{tree}");
   const baseCommit = await git(repository, "rev-parse", `${base}^{commit}`);
   const startedAt = new Date().toISOString();
-  const run = await runPreflight(repository, baseCommit, log);
+  if (onlyGroups !== null && !/^[a-z_]+(?:,[a-z_]+)*$/u.test(onlyGroups)) fail("--groups must be a comma-separated group list");
+  const run = await runPreflight(repository, baseCommit, log, onlyGroups);
   const {groups, checks} = parsePreflightOutput(run.output);
   const source_sha256 = {};
   for (const relative of SOURCE_FILES) {

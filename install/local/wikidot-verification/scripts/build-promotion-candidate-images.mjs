@@ -16,6 +16,10 @@ const BUILD_MANIFEST_EXCLUSIONS = new Set(["evidence-manifest.sha256", "seal.jso
 const IMAGE_ID = /^sha256:[0-9a-f]{64}$/u;
 const GIT_OBJECT = /^[0-9a-f]{40}$/u;
 
+// Tier 1 promotions replace only these; the others belong to the standing
+// topology and are reused from it (`--reuse-runtime-home`).
+export const APPLICATION_IMAGE_ROLES = Object.freeze(["deepwell", "framerail", "wws"]);
+
 export const PROMOTION_IMAGE_ROLES = Object.freeze([
   "cache",
   "caddy",
@@ -30,7 +34,9 @@ const BUILD_DEFINITIONS = Object.freeze({
   cache: {dockerfile: "Dockerfile", context: "install/local/valkey"},
   caddy: {dockerfile: "install/prod/caddy/Dockerfile", context: "."},
   database: {dockerfile: "install/local/postgres/Dockerfile", context: "."},
-  deepwell: {dockerfile: "install/prod/deepwell/Dockerfile", context: "."},
+  // The standing profile skips whole-program LTO and builds incrementally
+  // (deepwell/Cargo.toml); production builds keep the release profile.
+  deepwell: {dockerfile: "install/prod/deepwell/Dockerfile", context: ".", buildArgs: ["CARGO_PROFILE=standing"]},
   files: {dockerfile: "Dockerfile", context: "install/local/silo"},
   framerail: {
     dockerfile: "install/prod/framerail/Dockerfile",
@@ -163,6 +169,35 @@ async function dockerBuildImage({role, dockerfile, context, build_args: buildArg
   }
 }
 
+async function inspectReusedImage(role, imageId) {
+  if (!IMAGE_ID.test(imageId)) fail(`reused ${role} image is not an immutable image ID`);
+  const {stdout} = await execFile(DOCKER, ["image", "inspect", imageId, "--format", "{{json .}}"], {
+    encoding: "utf8",
+    maxBuffer: 16 * 1024 * 1024,
+  });
+  const inspect = JSON.parse(stdout);
+  if (inspect?.Id !== imageId) fail(`reused ${role} image ${imageId} is not present`);
+  if (inspect?.Os !== "linux" || inspect?.Architecture !== "amd64") fail(`reused ${role} image is not linux/amd64`);
+  return {image_id: imageId, os: "linux", architecture: "amd64"};
+}
+
+/** Image IDs of the standing runtime's non-application services. */
+export async function standingInfrastructureImages(runtimeHome) {
+  const environment = Object.fromEntries(
+    (await fs.readFile(path.join(runtimeHome, ".env"), "utf8"))
+      .split("\n")
+      .filter((line) => line && !line.startsWith("#"))
+      .map((line) => [line.slice(0, line.indexOf("=")), line.slice(line.indexOf("=") + 1)]),
+  );
+  return Object.fromEntries(
+    PROMOTION_IMAGE_ROLES.filter((role) => !APPLICATION_IMAGE_ROLES.includes(role)).map((role) => {
+      const imageId = environment[`STANDING_${role.toUpperCase()}_IMAGE`];
+      if (!IMAGE_ID.test(imageId ?? "")) fail(`standing runtime has no immutable ${role} image`);
+      return [role, imageId];
+    }),
+  );
+}
+
 async function writeEvidenceManifest(root) {
   const files = (await listRegularFiles(root)).filter((relative) => !BUILD_MANIFEST_EXCLUSIONS.has(relative));
   const lines = [];
@@ -179,7 +214,9 @@ export async function buildPromotionCandidateImages({
   outputDir,
   runId,
   sourceIdentity,
+  reuse = {},
   buildImage = dockerBuildImage,
+  reuseImage = inspectReusedImage,
 }) {
   const root = path.resolve(outputDir);
   try {
@@ -194,13 +231,23 @@ export async function buildPromotionCandidateImages({
   const staging = await fs.mkdtemp(path.join(path.dirname(root), `.${path.basename(root)}.build-`));
   try {
     const plan = promotionImageBuildPlan(sourceRoot);
-    const finalImages = [];
-    const contextRows = [];
-    for (const entry of plan) {
+    for (const role of Object.keys(reuse)) {
+      if (APPLICATION_IMAGE_ROLES.includes(role) || !PROMOTION_IMAGE_ROLES.includes(role)) {
+        fail(`only standing infrastructure images may be reused, not ${role}`);
+      }
+    }
+    // The builds are independent; BuildKit runs them side by side.
+    const results = await Promise.all(plan.map(async (entry) => {
+      const reused = reuse[entry.role];
       const [image, dockerfileSha256] = await Promise.all([
-        buildImage(entry, sourceIdentity),
+        reused ? reuseImage(entry.role, reused) : buildImage(entry, sourceIdentity),
         fileSha256(entry.dockerfile),
       ]);
+      return {entry, image, dockerfileSha256, reused: Boolean(reused)};
+    }));
+    const finalImages = [];
+    const contextRows = [];
+    for (const {entry, image, dockerfileSha256, reused} of results) {
       if (!IMAGE_ID.test(image.image_id) || image.os !== "linux" || image.architecture !== "amd64") {
         fail(`candidate ${entry.role} image result is invalid`);
       }
@@ -211,6 +258,7 @@ export async function buildPromotionCandidateImages({
         dockerfile_sha256: dockerfileSha256,
         context: path.relative(sourceRoot, entry.context) || ".",
         build_args: entry.build_args,
+        ...(reused ? {reused_from: "standing-runtime"} : {}),
       });
     }
     if (new Set(finalImages.map(({image_id: imageId}) => imageId)).size !== finalImages.length) {
@@ -267,7 +315,7 @@ function parseArgs(argv) {
     const flag = argv[index];
     const name = flag?.startsWith("--") ? flag.slice(2) : "";
     const value = argv[index + 1];
-    if (!["source-root", "output-dir", "run-id"].includes(name) || Object.hasOwn(args, name) || !value || value.startsWith("--")) fail(`unknown or duplicate option: ${flag}`);
+    if (!["source-root", "output-dir", "run-id", "reuse-runtime-home"].includes(name) || Object.hasOwn(args, name) || !value || value.startsWith("--")) fail(`unknown or duplicate option: ${flag}`);
     args[name] = value;
   }
   for (const name of ["source-root", "output-dir", "run-id"]) if (!args[name]) fail(`--${name} is required`);
@@ -283,6 +331,9 @@ export async function main(argv, {stdout = console.log} = {}) {
     outputDir: path.resolve(args["output-dir"]),
     runId: args["run-id"],
     sourceIdentity,
+    reuse: args["reuse-runtime-home"]
+      ? await standingInfrastructureImages(path.resolve(args["reuse-runtime-home"]))
+      : {},
   });
   if (await promotionSourceIdentity(sourceRoot).then((after) => JSON.stringify(after) !== JSON.stringify(sourceIdentity))) {
     fail("promotion candidate source identity changed during the build");

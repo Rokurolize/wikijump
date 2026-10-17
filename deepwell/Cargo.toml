@@ -104,6 +104,14 @@ ignored = ["rust-s3"]  # renamed to s3
 [profile.release]
 lto = true
 
+# Standing promotion images: release optimisation without whole-program LTO,
+# which alone takes about 14 minutes for this crate, and with incremental
+# compilation, so a source change rebuilds in minutes.
+[profile.standing]
+inherits = "release"
+lto = false
+incremental = true
+
 # Keep ordinary development and test artifacts bounded. Full debug information
 # is opt-in through `cargo --profile debugging` below.
 [profile.dev]
