@@ -15,10 +15,9 @@ not the image start script, so no migration is recorded: the command only runs
 the image's idempotent render-ahead table migration, which keeps the serving
 build's own migration check (and a rollback to it) working.
 
-Rendering also refreshes link rows, and three modules read them while they
-render: Backlinks, OrphanedPages and WantedPages. Deepwell reports every page
-whose render read the link graph. Every other page's output depends only on
-its own inputs, so one full pass renders it for good. A link reader rendered
+Rendering also refreshes link rows. Backlinks, OrphanedPages, WantedPages,
+and page queries using ListPages/CountPages link_to= read those rows. Deepwell
+reports every page whose render read the link graph. A link reader rendered
 early in that pass may have read links that later renders changed, so the
 readers are rendered again, alone, until a round leaves every link unchanged.
 Pages that miss the serving render deadline under concurrent load are retried
