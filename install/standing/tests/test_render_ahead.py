@@ -245,14 +245,53 @@ class RenderUntilLinksSettleTest(unittest.TestCase):
         self.assertEqual((readers, nondeterministic), ([2, 3, 4], []))
         self.assertEqual(site.links["4"], "4<3<2<new")
 
-    def test_readers_that_move_on_every_render_are_recorded(self) -> None:
+    def test_readers_that_move_on_every_render_block_promotion(self) -> None:
         site = FakeSite(
             {1: lambda links, n: "new", 5: lambda links, n: f"random-{n}"},
             readers=[5],
         )
-        readers, nondeterministic = site.settle()
-        self.assertEqual((readers, nondeterministic), ([5], [5]))
+        with self.assertRaisesRegex(RuntimeError, "did not settle"):
+            site.settle()
         self.assertEqual(site.names()[-1], f"link-readers-{RENDER_AHEAD.MAX_READER_ROUNDS}")
+
+    def test_stochastic_reader_makes_another_reader_stale(self) -> None:
+        # A random-order ListPages can change its saved links every time.
+        # Another link-reading page may render before it in every concurrent
+        # pass, leaving an ahead row that reflects a previous link snapshot.
+        site = FakeSite(
+            {1: lambda links, n: f"random-{n}", 2: lambda links, n: "reads-" + links["1"]},
+            readers=[1, 2],
+        )
+        original = site.render
+
+        def render(name, cutoff, pages=None, **flags):
+            selected = set(pages) if pages is not None else {1, 2}
+            ordered = [page for page in (2, 1) if page in selected]
+            return original(name, cutoff, ordered, **flags)
+
+        site.render = render
+        with self.assertRaisesRegex(RuntimeError, "did not settle"):
+            site.settle()
+        self.assertNotEqual(site.links["2"], "reads-" + site.links["1"])
+
+    def test_deep_reader_chain_is_not_mistaken_for_random_movement(self) -> None:
+        # The last reader needs five propagation rounds. Four rounds change
+        # overlapping page IDs, but each page is fully deterministic. They
+        # still cannot be accepted with an output depending on older links.
+        links = {page: (lambda values, _n, page=page: f"{page}<" + values[str(page - 1)])
+                 for page in range(2, 7)}
+        links[1] = lambda _values, _n: "new"
+        site = FakeSite(links, readers=range(2, 7))
+        original = site.render
+
+        def render(name, cutoff, pages=None, **flags):
+            selected = pages if pages is not None else links
+            return original(name, cutoff, sorted(selected, reverse=True), **flags)
+
+        site.render = render
+        with self.assertRaisesRegex(RuntimeError, "did not settle"):
+            site.settle()
+        self.assertNotEqual(site.links["6"], "6<" + site.links["5"])
 
     def test_links_that_still_settle_after_the_last_round_fail_the_run(self) -> None:
         # Page 6 moves on every render; page 8 first moves in the last round,

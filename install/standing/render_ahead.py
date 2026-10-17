@@ -20,6 +20,8 @@ and page queries using ListPages/CountPages link_to= read those rows. Deepwell
 reports every page whose render read the link graph. A link reader rendered
 early in that pass may have read links that later renders changed, so the
 readers are rendered again, alone, until a round leaves every link unchanged.
+If links continue to change after the bounded rounds, the run fails closed:
+even a nondeterministic reader can leave another reader with stale output.
 Pages that miss the serving render deadline under concurrent load are retried
 alone and then once with a longer one-shot deadline
 (docs/agents/compatibility/execution.md); any other failure stops the run. A
@@ -299,9 +301,10 @@ def render_with_deadline_tail(render, name, cutoff, pages=None):
 
 def render_until_links_settle(render, digests, cutoff):
     """Render every stale page once, then the link readers until their links
-    settle. Returns the link readers and the pages whose links moved in every
-    reader round: they read or produce links nondeterministically, so no
-    number of rounds settles them."""
+    settle. Every successful run ends with an unchanged graph: a reader may
+    have observed links before another concurrent reader rewrote them. A
+    continually moving reader cannot be declared safe without dependency
+    provenance proving that its output is independent of those changes."""
     links_before = digests()
     _, readers = render_with_deadline_tail(render, "full", cutoff)
     changed = set(changed_pages(links_before, digests()))
@@ -322,12 +325,15 @@ def render_until_links_settle(render, digests, cutoff):
         readers |= round_readers
         changed = set(changed_pages(links_before, digests()))
         moving = changed if moving is None else moving & changed
-    if changed - (moving or set()):
+    if changed:
+        suspected_stochastic = changed & (moving or set())
         raise RuntimeError(
             f"links of {len(changed)} pages did not settle after "
-            f"{MAX_READER_ROUNDS} link-reader rounds: {sorted(changed)[:20]}"
+            f"{MAX_READER_ROUNDS} link-reader rounds: {sorted(changed)[:20]}; "
+            f"{len(suspected_stochastic)} changed in every round. "
+            "A subsequent reader may have observed an earlier link snapshot"
         )
-    return sorted(readers), sorted(changed)
+    return sorted(readers), []
 
 
 def image_identity(image: str) -> str:
