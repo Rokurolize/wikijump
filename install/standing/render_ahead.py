@@ -338,19 +338,10 @@ def image_identity(image: str) -> str:
     return image_id
 
 
-def prepared_deepwell_image(prepared_receipt: Path) -> str:
-    prepared = json.loads(prepared_receipt.read_text(encoding="utf-8"))
-    image = prepared["images"]["deepwell"]
-    if IMAGE_ID.fullmatch(image.get("id", "")) is None:
-        raise ValueError("prepared receipt has no immutable Deepwell image ID")
-    return image["id"]
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    source = parser.add_mutually_exclusive_group(required=True)
-    source.add_argument("--prepared-receipt", type=Path)
-    source.add_argument("--image", help="Deepwell image ID to render with")
+    parser.add_argument("--image", required=True, help="Deepwell image ID to render with")
     parser.add_argument("--deepwell-container", default="wikijump-standing-deepwell-1")
     parser.add_argument("--database-container", default="wikijump-standing-database-1")
     parser.add_argument("--concurrency", type=int, default=16)
@@ -369,12 +360,7 @@ def main() -> int:
     args = parse_args()
     if min(args.concurrency, args.batch_size, args.tail_render_timeout_ms) < 1:
         raise ValueError("numeric options must be positive")
-    image = (
-        prepared_deepwell_image(args.prepared_receipt)
-        if args.prepared_receipt is not None
-        else args.image
-    )
-    image_id = image_identity(image)
+    image_id = image_identity(args.image)
     args.output_dir.mkdir(mode=0o700, parents=True, exist_ok=False)
     started_at = datetime.now(UTC)
     started = time.monotonic()
