@@ -86,11 +86,11 @@ esac
   for (const command of ["cargo", "pnpm", "python3"]) {
     writeExecutable(path.join(bin, command), `#!/usr/bin/env bash
 set -euo pipefail
-{
-  printf '${command}'
-  printf ' %s' "$@"
-  printf '\\n'
-} >> "$PREFLIGHT_COMMAND_LOG"
+# One write per line, so parallel groups cannot interleave entries.
+line="${command}$(printf ' %s' "$@")"
+if [[ -n "\${PREFLIGHT_DELAY_MATCH:-}" && "$*" == *"$PREFLIGHT_DELAY_MATCH"* ]]; then sleep 1; fi
+printf '%s\\n' "$line" >> "$PREFLIGHT_COMMAND_LOG"
+if [[ -n "\${PREFLIGHT_FAIL_MATCH:-}" && "$*" == *"$PREFLIGHT_FAIL_MATCH"* ]]; then exit 1; fi
 `)
   }
 
@@ -103,11 +103,8 @@ if [[ "\${1:-}" == .github/scripts/classify-changes.mjs ]]; then
   fi
   tee "$PREFLIGHT_PATH_LOG" | "$PREFLIGHT_REAL_NODE" "$@"
 else
-  {
-    printf 'node'
-    printf ' %s' "$@"
-    printf '\n'
-  } >> "$PREFLIGHT_COMMAND_LOG"
+  line="node$(printf ' %s' "$@")"
+  printf '%s\n' "$line" >> "$PREFLIGHT_COMMAND_LOG"
 fi
 `)
 
@@ -115,6 +112,8 @@ fi
     ...process.env,
     PATH: `${bin}:${process.env.PATH}`,
     PREFLIGHT_CLASSIFIER_FAIL: "false",
+    // Serial, so the recorded command order is deterministic.
+    PREFLIGHT_JOBS: "1",
     PREFLIGHT_COMMAND_LOG: commandLog,
     PREFLIGHT_FAKE_ROOT: root,
     PREFLIGHT_FALLBACK_SCOPE: "all",
@@ -230,8 +229,38 @@ test("final preflight is the single explicit full-check barrier", (t) => {
   const source = readFileSync(path.join(root, "scripts/preflight.sh"), "utf8")
   assert.match(
     source,
-    /run_test "deepwell full tests" env WIKIJUMP_DEEPWELL_TEST_SHARDS="\$\{WIKIJUMP_DEEPWELL_TEST_SHARDS:-4\}" node[\s\\]+install\/local\/wikidot-verification\/scripts\/run-deepwell-integration-validation\.mjs/u
+    /run_test "deepwell full tests" env WIKIJUMP_DEEPWELL_TEST_SHARDS="\$\{WIKIJUMP_DEEPWELL_TEST_SHARDS:-12\}" node[\s\\]+install\/local\/wikidot-verification\/scripts\/run-deepwell-integration-validation\.mjs/u
   )
+})
+
+test("final preflight runs groups side by side with the same checks, ordered logs, and every failure", (t) => {
+  const serial = createHarness(t)
+  const serialResult = serial.runPreflight(["--base", remoteOid, "--final"])
+  assert.equal(serialResult.status, 0, serialResult.stderr)
+
+  const parallel = createHarness(t)
+  const result = parallel.runPreflight(["--base", remoteOid, "--final"], {
+    PREFLIGHT_JOBS: "0",
+    PREFLIGHT_FAIL_MATCH: "clippy --manifest-path wws/Cargo.toml",
+    // Logged late, so a Deepwell shard started beside it would log first.
+    PREFLIGHT_DELAY_MATCH: "--dir framerail test:unit"
+  })
+  assert.equal(result.status, 1, result.stdout)
+  assert.deepEqual([...parallel.commands()].sort(), [...serial.commands()].sort())
+  const sections = (output) => [...output.matchAll(/^=== (.+)$/gmu)].map((match) => match[1])
+  assert.deepEqual(sections(result.stdout), sections(serialResult.stdout))
+  assert.match(result.stdout, /^--- wws clippy: FAILED \(\d+s\)$/mu)
+  assert.match(result.stdout, /^--- deepwell clippy: ok \(\d+s\)$/mu)
+  assert.match(result.stdout, /^preflight: FAILED: wws clippy$/mu)
+  assert.match(result.stdout, /^preflight: finished group deepwell$/mu)
+  assert.match(result.stdout, /^preflight: finished group deepwell_lint$/mu)
+
+  // Suites with wall-clock deadlines finish before the Deepwell shards start.
+  const order = parallel.commands()
+  const lastTimed = order.indexOf("pnpm --dir framerail test:unit")
+  const firstDeepwell = order.findIndex((command) =>
+    command.includes("run-deepwell-integration-validation.mjs"))
+  assert.ok(lastTimed >= 0 && firstDeepwell > lastTimed, order.join("\n"))
 })
 
 test("verification and specification inputs run only the final verification barrier", async (t) => {

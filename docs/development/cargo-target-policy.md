@@ -40,6 +40,17 @@ them with `docker builder prune`, never by deleting Docker's storage
 directories, and keep the current and rollback standing images (see
 `docs/deployment/runtime-drift-policy.md`).
 
+## Barrier target directories
+
+`scripts/preflight.sh` runs its check groups side by side for `--final` (or any
+`--jobs` other than 1). Cargo locks a target directory for the whole build, so
+the Deepwell lint, WWS, and locales groups then build in their own
+`target/preflight-deepwell-lint`, `target/preflight-wws`, and
+`target/preflight-locales`; the Deepwell tests keep the canonical target. These
+are ordinary per-checkout targets: the standing promotion's persistent
+checkout keeps them warm between promotions, and `cargo clean` with the
+matching `--target-dir` reclaims them.
+
 ## Safe cleanup
 
 Before cleanup, verify that no `cargo`, `rustc`, candidate builder, or lease is

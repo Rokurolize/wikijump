@@ -41,16 +41,16 @@ There are two operational tiers. Routine application refreshes use Tier 1. Tier 
 Tier 1 is the routine step after a change merges to `develop`, and it is one command. A browser-visible, chrome, layout, or DOM claim about standing needs the current merged head on standing first: a claim against an older standing SHA is not evidence about current code.
 
 ```sh
-git fetch origin develop
-git checkout --detach origin/develop   # in a clean checkout
-python3 install/standing/promote.py --source-root "$PWD"
+python3 install/standing/promote.py
 ```
+
+It fetches `origin/develop`, moves its own worktree `${XDG_STATE_HOME:-$HOME/.local/state}/wikijump/promotion-checkout` there (creating it the first time), and continues with that checkout's `promote.py`, so the orchestrator is always the one the promoted source ships. The worktree keeps its Cargo target directories and `node_modules` between promotions, so checks that must run compile incrementally. It must stay clean and is never reset; local changes in it stop the promotion. `--source-root <clean checkout of the fetched origin/develop>` promotes from another checkout instead.
 
 It stops at the first failing stage, leaves standing as it was or restores it, and writes `promotion-receipt.json` with every stage's duration and result under `${XDG_STATE_HOME:-$HOME/.local/state}/wikijump/promotions/<sha>-<time>/`. The stages:
 
 1. **identity** — the checkout is clean and exactly the fetched `origin/develop`; the standing runtime records the revision it serves. Nothing runs when standing already serves this head.
 2. **plan** — the change since the standing revision selects `scripts/preflight.sh` check groups (the same classifier), counts saved pages the new renderer generation makes stale, and lists migration changes.
-3. **validation** — every selected group needs a passing `preflight.sh --final` receipt (from `run-consolidated-validation.mjs`, kept in `${XDG_STATE_HOME:-$HOME/.local/state}/wikijump/validation/`) for this tree, or for a tree whose difference from this one does not select that group. A pull request's own final barrier normally provides it. Groups without one run now (`preflight.sh --groups`), alongside the build; a failing check stops the promotion by name.
+3. **validation** — every selected group needs a passing `preflight.sh --final` receipt (from `run-consolidated-validation.mjs`, kept in `${XDG_STATE_HOME:-$HOME/.local/state}/wikijump/validation/`) for this tree, or for a tree whose difference from this one does not select that group. A pull request's own final barrier normally provides it. Groups without one run now (`preflight.sh --final --groups`, the groups side by side), alongside the build; a failing check stops the promotion by name.
 4. **build** — the Deepwell, Framerail, and WWS production images, side by side, from BuildKit caches (cargo registry and target directories, the pnpm store). Deepwell uses the `standing` cargo profile: release optimisation without the whole-program LTO that alone took about 14 minutes, and incremental, so a source change rebuilds in about four minutes. The database, files, cache, and Caddy images are standing's own (they change only in Tier 2).
 5. **render-ahead** — when saved pages are stale to the new renderer generation, `render_ahead.py` renders them with the new image while the old one serves (below).
 6. **rehearsal** — only when migrations change. They cannot be undone: the old build's migration check refuses a schema it does not know, so its parked containers would not start again. The new images start on a copy of standing's data — a `pg_basebackup` of the database (about a minute) and a copy-on-write overlay of the object store (instant, standing's volume is only the read-only lower layer) — and must pass zero stale saved pages, the HTTP canary, and the candidate browser parity. The copy is removed afterwards.

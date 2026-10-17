@@ -8,6 +8,7 @@ import {
   deepwellTestThreads,
   runValidationCommand,
   resolveDeepwellSeedBinary,
+  withProvisionedDeepwellStack,
 } from "../src/deepwell-integration-stack.mjs";
 
 test("Deepwell stack validates test concurrency and nextest partitions", () => {
@@ -59,4 +60,40 @@ test("validation command can explicitly accept a reviewed nonzero outcome", asyn
     {acceptableExitCodes: [0, 2]},
   );
   assert.equal(result.exitCode, 2);
+});
+
+test("a failed stack provisioning gets one fresh stack, a failed test none", async () => {
+  // Fake stack: provisions according to the script, then runs the body.
+  const fakeStack = (outcomes) => {
+    const calls = {provisions: 0};
+    calls.stack = async (body) => {
+      calls.provisions += 1;
+      if (outcomes.shift() === "seed-fails") throw new Error("seeder timed out");
+      return body({env: {}, cargo: "cargo"});
+    };
+    return calls;
+  };
+  const quiet = {log: () => {}};
+
+  const recovered = fakeStack(["seed-fails", "ok"]);
+  let runs = 0;
+  assert.equal(
+    await withProvisionedDeepwellStack(async () => { runs += 1; return "passed"; }, {}, {...quiet, stack: recovered.stack}),
+    "passed",
+  );
+  assert.deepEqual([recovered.provisions, runs], [2, 1]);
+
+  const failingTests = fakeStack(["ok", "ok"]);
+  await assert.rejects(
+    withProvisionedDeepwellStack(async () => { throw new Error("test failed"); }, {}, {...quiet, stack: failingTests.stack}),
+    /test failed/u,
+  );
+  assert.equal(failingTests.provisions, 1);
+
+  const broken = fakeStack(["seed-fails", "seed-fails", "ok"]);
+  await assert.rejects(
+    withProvisionedDeepwellStack(async () => "unreached", {}, {...quiet, stack: broken.stack}),
+    /seeder timed out/u,
+  );
+  assert.equal(broken.provisions, 2);
 });

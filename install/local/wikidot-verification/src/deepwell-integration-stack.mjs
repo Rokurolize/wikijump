@@ -147,6 +147,28 @@ export async function resolveDeepwellSeedBinary({cargo = "cargo", env = process.
   return join(metadata.target_directory, "debug", process.platform === "win32" ? "deepwell.exe" : "deepwell");
 }
 
+/** Run `body` on a provisioned stack. Provisioning (containers, migrations,
+ * the seeder) is setup, not a test: on a saturated barrier the seeder's
+ * renders can outlast Deepwell's 500 ms Valkey reply timeout. A failed
+ * provisioning gets one fresh stack; a failure inside `body` is never retried. */
+export async function withProvisionedDeepwellStack(body, options = {}, {
+  stack = withDeepwellIntegrationStack,
+  log = (message) => console.error(message),
+} = {}) {
+  for (let attempt = 1; ; attempt += 1) {
+    let provisioned = false;
+    try {
+      return await stack(async (context) => {
+        provisioned = true;
+        return await body(context);
+      }, options);
+    } catch (error) {
+      if (provisioned || attempt >= 2) throw error;
+      log(`Deepwell test stack provisioning failed; retrying once on a fresh stack: ${error?.message ?? error}`);
+    }
+  }
+}
+
 export async function withDeepwellIntegrationStack(callback, {
   env: baseEnv = process.env,
   cargo = baseEnv.WIKIJUMP_OFFLINE_CARGO?.trim() || "cargo",
