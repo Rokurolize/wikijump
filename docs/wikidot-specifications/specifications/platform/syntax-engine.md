@@ -64,19 +64,6 @@ Evidence basis:
 ### P7 - DOM, CSS, resources, interaction, and geometry
 
 - Generated HTML/DOM must follow each syntax feature's Wikidot layout contract, including legacy classes/IDs/quirks rather than modernized equivalents.
-- Foldable controls toggle the owning `li` between `folded` and `unfolded`
-  even when the content is styled through sibling `div` elements rather than
-  a nested `ul`. The retained Wikidot `_foldableMenuToggle` changes the class
-  before looking up the first descendant list. The shared corpus's
-  `en/pages/info:start/source.wikidot.txt` (capture
-  `0cb35933824447284e15a1dcaa29e1c32f150f44b7233662268b07d88f808b21`,
-  run `run-20261011-230158`) uses precisely this sibling structure. This
-  class transition is what lets the component stylesheet reveal its modal
-  and fader. Browser state and keyboard handling belong to Framerail.
-  Retained script: `/home/roku/.cache/wikijump-verification/manual-public-evidence/WIKIDOT.combined-v--7690939296dc.js`
-  (gzip bytes SHA-256 `376ae615e4d8e31580b030e57ffc2704acba601b6e461956def6a58bd9c068cc`).
-  Offline regression: `framerail/tests/wikidot-foldable-lists.spec.ts`,
-  including independent dialogs with no nested list or unique panel ID.
 
 ### P8 - temporal behavior, failure atomicity, limits, and resource bounds
 
