@@ -59,7 +59,14 @@ const WIKIDOT_IMAGE_SOURCES = [
   "https://*.wdfiles.com",
   "https://cdn.scpwiki.com",
   "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com",
-  "https://d2qhngyckgiutd.cloudfront.net"
+  "https://d2qhngyckgiutd.cloudfront.net",
+  // Header logos and decorative images that theme stylesheets reference from
+  // their GitHub Pages hosts and from Wikimedia Commons. Live Wikidot loads
+  // each (retained observation:
+  // install/local/wikidot-verification/artifacts/theme-sweep-external-origins-20261019.json).
+  "https://nu-scptheme.github.io",
+  "https://scpwiki.github.io",
+  "https://upload.wikimedia.org"
 ]
 /** @type {CspSources} */
 const WIKIDOT_MEDIA_FRAME_SOURCES = ["https://www.youtube.com", "https://embed.acast.com"]
