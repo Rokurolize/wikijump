@@ -107,5 +107,5 @@ test("both sitemap routes resolve the configured site domain rather than request
     new URL("../src/lib/server/sitemap-origin.ts", import.meta.url),
     "utf8"
   )
-  assert.match(helper, /client\.request\("site_domain", \[siteId\], \{ siteId \}\)/u)
+  assert.match(helper, /client\.request\("site_domain", \[siteId\], \{\s*siteId\s*\}\)/u)
 })

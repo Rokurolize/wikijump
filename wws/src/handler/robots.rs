@@ -65,10 +65,10 @@ fn valid_site_domain(domain: &str) -> bool {
         Some((hostname, port)) => (hostname, Some(port)),
         None => (domain, None),
     };
-    if let Some(port) = port {
-        if port.is_empty() || port.bytes().any(|c| !c.is_ascii_digit()) {
-            return false;
-        }
+    if let Some(port) = port
+        && (port.is_empty() || port.bytes().any(|c| !c.is_ascii_digit()))
+    {
+        return false;
     }
     !hostname.is_empty()
         && hostname.split('.').all(|part| {
