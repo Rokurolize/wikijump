@@ -54,8 +54,9 @@ pub async fn site_get_domain(
         .await
         .or_raise(|| Error::new("failed to get site domain", ErrorType::SiteSettings))?;
 
-    let domain = DomainService::preferred_domain(config, &site);
-    Ok(domain.into_owned())
+    // Consumers build absolute URLs from this value (sitemap and robots.txt),
+    // so it carries the public HTTPS port when that port is not 443.
+    Ok(DomainService::preferred_authority(config, &site))
 }
 
 pub async fn site_custom_domain_create(

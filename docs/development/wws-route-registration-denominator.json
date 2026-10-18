@@ -20,8 +20,8 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "git_blob": "821b92a055f0c184bc253b44daae13c47ecb540f",
-        "sha256": "1937ed69310c00e1353df883f8457c7790c0322da5a60be29622c2e117449bb5"
+        "git_blob": "b248952c4945f327ca9eaca458241b4e47187236",
+        "sha256": "7da8b1082c5a5b9d2171d38f6f94de5377c5e37780490f22d8909130e7698159"
       },
       {
         "path": "deepwell/src/endpoints/text_block.rs",
@@ -80,8 +80,8 @@
       },
       {
         "path": "wws/src/handler/file.rs",
-        "git_blob": "8898df376cb0c0db8afcaa868709009f9d612959",
-        "sha256": "efe0b785041957f3fd5387d6dc163ba3831e2702f7ae83daaa27c75ceb60d6db"
+        "git_blob": "7ae7eb4e29ac3a7b45ec76d9969c51e352dc459c",
+        "sha256": "718fd69d982b9f7cc44eb7a16b97d90d65c49fb32f21c8e344c3928263383449"
       },
       {
         "path": "wws/src/handler/misc.rs",
@@ -279,7 +279,7 @@
       "registered_handler_symbol": "handle_local_file",
       "handler_definition_path": "wws/src/handler/file.rs",
       "route_registration_reference": "wws/src/route.rs#L42",
-      "handler_definition_reference": "wws/src/handler/file.rs#L334",
+      "handler_definition_reference": "wws/src/handler/file.rs#L337",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -400,7 +400,7 @@
       "registered_handler_symbol": "handle_file_download",
       "handler_definition_path": "wws/src/handler/file.rs",
       "route_registration_reference": "wws/src/route.rs#L84",
-      "handler_definition_reference": "wws/src/handler/file.rs#L421",
+      "handler_definition_reference": "wws/src/handler/file.rs#L424",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -411,7 +411,7 @@
       "registered_handler_symbol": "handle_file_fetch",
       "handler_definition_path": "wws/src/handler/file.rs",
       "route_registration_reference": "wws/src/route.rs#L74",
-      "handler_definition_reference": "wws/src/handler/file.rs#L389",
+      "handler_definition_reference": "wws/src/handler/file.rs#L392",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },

@@ -8,7 +8,7 @@ export const THEME_LOCALIZATION_E2E_SCHEMA = "wikijump_local_lab.theme_localizat
 export const DEFAULT_SITE_SLUG = "scpaiueouiuiuiui";
 export const ALLOWED_SITE_SLUGS = Object.freeze(new Set([DEFAULT_SITE_SLUG, "sandbox-for-codex"]));
 export const DEFAULT_WIKIDOT_ORIGIN = "https://scpaiueouiuiuiui.wikidot.com";
-export const DEFAULT_WIKIJUMP_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
+export const DEFAULT_WIKIJUMP_ORIGIN = "https://scpaiueouiuiuiui.wikijump.dev.localhost:18443";
 export const RUN_OWNED_SLUG_PREFIX = "codex-l10n:";
 export const ORACLE_RUN_OWNED_SLUG_PREFIX = "codex-oracle:";
 export const LEGACY_RUN_OWNED_SLUG_PREFIX = "theme:codex-l10n-";
@@ -358,10 +358,16 @@ export function validateTargetOrigin(value, target, siteSlug = DEFAULT_SITE_SLUG
     throw new Error(`${target} origin is not a valid URL`);
   }
   const wikidotProtocol = "https:";
-  const expected = target === "wikidot"
-    ? {protocol: wikidotProtocol, hostname: `${validatedSite}.wikidot.com`, ports: new Set([""])}
-    : {protocol: "https:", hostname: `${validatedSite}.wikijump.localhost`, ports: new Set(["", "18443"])};
-  if (url.protocol !== expected.protocol || url.hostname !== expected.hostname || !expected.ports.has(url.port) || url.username || url.password || url.pathname !== "/" || url.search || url.hash) {
+  // Wikijump targets are standing (`<site>.wikijump.localhost` on 443) or the
+  // local development stack (`<site>.wikijump.dev.localhost` on 18443).
+  const allowed = target === "wikidot"
+    ? [{protocol: wikidotProtocol, hostname: `${validatedSite}.wikidot.com`, port: ""}]
+    : [
+      {protocol: "https:", hostname: `${validatedSite}.wikijump.localhost`, port: ""},
+      {protocol: "https:", hostname: `${validatedSite}.wikijump.dev.localhost`, port: "18443"},
+    ];
+  const expected = allowed.some((entry) => url.protocol === entry.protocol && url.hostname === entry.hostname && url.port === entry.port);
+  if (!expected || url.username || url.password || url.pathname !== "/" || url.search || url.hash) {
     throw new Error(`${target} origin is outside the hard allowlist`);
   }
   return url.origin;

@@ -76,7 +76,10 @@ fn local_lab_wikidot_file_fallback(headers: &HeaderMap, uri: &Uri) -> Option<Str
         .next()?
         .trim_end_matches('.')
         .to_ascii_lowercase();
-    if request_host != format!("{site_slug}.wjfiles.localhost") {
+    // Any loopback files host of a local environment: `wjfiles.localhost`
+    // (standing) or `wjfiles.dev.localhost` (the local development stack).
+    let environment = request_host.strip_prefix(&format!("{site_slug}.wjfiles."))?;
+    if environment != "localhost" && !environment.ends_with(".localhost") {
         return None;
     }
 
@@ -1228,6 +1231,33 @@ mod tests {
         );
         assert!(response.bytes().await.unwrap().is_empty());
         assert!(s3_server.requests().is_empty());
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn dev_environment_scp_mirror_redirects_missing_files_to_wdfiles() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let response = router_request_with_headers(
+            state,
+            Method::GET,
+            "/local--files/theme%3Abasalt/missing.txt",
+            &[
+                (crate::handler::HEADER_SITE_SLUG, "scp-wiki"),
+                (header::HOST, "scp-wiki.wjfiles.dev.localhost:18443"),
+            ],
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::FOUND);
+        assert_eq!(
+            response.headers().get(LOCATION).unwrap(),
+            "https://scp-wiki.wdfiles.com/local--files/theme%3Abasalt/missing.txt",
+        );
         s3_server.join();
         deepwell_server.abort();
     }

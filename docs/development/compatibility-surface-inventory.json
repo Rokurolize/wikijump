@@ -11485,7 +11485,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "df10fadfc2c345683e81f5b5268de06e2db3b61806d26c468f5fb18431007523"
+      "source_input_set_sha256": "baff1cb0350d8027339bd31228bcce07b5c06ebe4fe1fa0d66c553769ece9f7d"
     },
     "ftml": {
       "commit": "9a828056bdc14ac3a2ab6900d45361273b94cd32",
@@ -11502,7 +11502,7 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "1937ed69310c00e1353df883f8457c7790c0322da5a60be29622c2e117449bb5"
+        "sha256": "7da8b1082c5a5b9d2171d38f6f94de5377c5e37780490f22d8909130e7698159"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
@@ -11526,7 +11526,7 @@
       },
       {
         "path": "deepwell/src/endpoints/domain.rs",
-        "sha256": "c76b8a81e003b0358bfe25e8af9ffeb5c336258b818df4d604f9f159910891f7"
+        "sha256": "de30b748f3eeb7f50a506b2820f99ec8d034aa1ea2986bbadb38d6a9a1bd01b3"
       },
       {
         "path": "deepwell/src/endpoints/email.rs",
@@ -11642,7 +11642,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "cd180dcb20bbd7997bfa3dc8e0da644558e617d09d775bb728aae66fcfdebb3d"
+        "sha256": "dd6655a258ea4f102c9ef362a4a6a5995beee14995e6debd55c17621659d76bc"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -11650,7 +11650,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "138efb84f1c9fbf945549a66dc124f0d60cd61e75b73b07c13e8d08074df1579"
+        "sha256": "f2276f2c0682f1f8b2b57d146a7b9f0d8b59d0923e61773a6695d9a70f221385"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11714,7 +11714,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "fb2aabdcac39d7f22d40e0d6b4fceec5ef87c041eaaf4cd888d5e12dd2b4ab88"
+        "sha256": "b03423462ddd43903c5e8be03bed60241f2ad75df8aaac59b05a8330daf504bb"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -19997,7 +19997,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/caddy/caddyfile.j2#redir https://{{ domain }}{uri}",
+          "deepwell/src/services/caddy/caddyfile.j2#redir https://{{ domain }}{{ public_port_suffix }}{uri}",
           "deepwell/src/services/caddy/service.rs#should_use_wildcard: wildcard_cert.is_some() || *local"
         ]
       },
