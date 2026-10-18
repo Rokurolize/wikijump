@@ -460,6 +460,48 @@ fn leaves_quote_prefixed_css_modules_for_ftml_literal_rendering() {
 }
 
 #[test]
+fn css_module_openers_are_recognized_only_at_the_start_of_a_line() {
+    // Wikidot treats a mid-line `[[module CSS]]`, including one inside `{{ }}`,
+    // as plain text that consumes nothing, while an indented opener is live
+    // (`css-mid-line-*`, `css-indented-opener`, `css-same-line-open-close-mid`
+    // in wikidot-at-raw-preview-20261019.json). `theme:flopstyle-dark` documents
+    // `{{[[module CSS]]}}` thousands of lines before its real module.
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+
+    for original in [
+        "text {{[[module CSS]]}} more",
+        "text [[module CSS]] more\n.x { color: red; }\n[[/module]]",
+        "a [[module CSS]].x{color:red}[[/module]] b",
+    ] {
+        let mut source = original.to_owned();
+        let styles = extract_wikidot_css_modules(&mut source, &settings);
+
+        assert_eq!(source, original);
+        assert!(styles.is_empty(), "{original}");
+    }
+
+    let mut source = concat!(
+        "docs: {{[[module CSS]]}}\n\n",
+        "[[code type=\"CSS\"]]\n.kept { color: red; }\n[[/code]]\n\n",
+        "[[module CSS]]\n.real { color: blue; }\n[[/module]]\n",
+    )
+    .to_owned();
+    let styles = extract_wikidot_css_modules(&mut source, &settings);
+
+    assert_eq!(styles.len(), 1);
+    assert!(styles[0].contains(".real"));
+    assert!(!styles[0].contains(".kept"));
+    assert!(source.contains("docs: {{[[module CSS]]}}"));
+    assert!(source.contains(".kept { color: red; }"));
+
+    let mut source =
+        " [[module CSS]]\n.indented { color: blue; }\n[[/module]]\n".to_owned();
+    let styles = extract_wikidot_css_modules(&mut source, &settings);
+    assert_eq!(styles.len(), 1);
+    assert!(styles[0].contains(".indented"));
+}
+
+#[test]
 fn escapes_css_module_style_end_tags() {
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
     let mut source = concat!(
