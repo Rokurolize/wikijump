@@ -423,9 +423,11 @@ struct OuterPreparedRenderWikitext {
 
 pub(super) const MAX_INCLUDE_EXPANSION_DEPTH: usize = 8;
 pub(super) const MAX_INCLUDE_EXPANSION_TOTAL: usize = 256;
-// The frozen EN corpus contains a page with 1,266 direct includes. Only the
-// trusted corpus finalizer receives this higher ceiling; user-controlled
-// render paths retain the ordinary limit above.
+// The frozen EN corpus contains a page with 1,266 direct includes. The
+// trusted corpus finalizer and pages of Wikidot mirror sites (source-owned,
+// read-only content that Wikidot renders) receive this higher ceiling;
+// locally authored sites retain the ordinary limit above. The render
+// deadline still bounds the cost of every render.
 const MAX_CORPUS_INCLUDE_EXPANSION_TOTAL: usize = 4096;
 pub(super) const DEFAULT_LISTPAGES_PER_PAGE: u64 = 20;
 pub(super) const MAX_LISTPAGES_RENDER_LIMIT: u64 = 250;
@@ -1092,6 +1094,16 @@ impl RenderService {
             trace,
         }: RenderPageOptions<'_>,
     ) -> Result<RenderPageOutput> {
+        let max_include_expansions = if max_include_expansions
+            < MAX_CORPUS_INCLUDE_EXPANSION_TOTAL
+            && SiteService::get_optional(ctx, Reference::Id(site_id))
+                .await?
+                .is_some_and(|site| site_is_wikidot_local_asset_mirror(&site))
+        {
+            MAX_CORPUS_INCLUDE_EXPANSION_TOTAL
+        } else {
+            max_include_expansions
+        };
         let page_settings = WikitextSettings::from_mode(WikitextMode::Page, layout);
         let nav_settings = WikitextSettings::from_mode(WikitextMode::PageNav, layout);
 
