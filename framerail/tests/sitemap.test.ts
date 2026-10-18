@@ -61,10 +61,24 @@ test("represents more than 50,000 public URLs in a bounded sitemap index", () =>
 })
 
 test("uses the configured canonical host rather than a request Host header", () => {
-  assert.equal(canonicalSitemapOrigin("scp-wiki.wikijump.localhost"), "https://scp-wiki.wikijump.localhost")
+  assert.equal(
+    canonicalSitemapOrigin("scp-wiki.wikijump.localhost"),
+    "https://scp-wiki.wikijump.localhost"
+  )
   assert.equal(canonicalSitemapOrigin("custom.example"), "https://custom.example")
-  assert.equal(canonicalSitemapOrigin("custom.example:18443"), "https://custom.example:18443")
-  for (const invalid of ["", "https://evil.example", "good.example/evil", "good.example@evil.example", "good.example?x=1", "good..example", "-bad.example"]) {
+  assert.equal(
+    canonicalSitemapOrigin("custom.example:18443"),
+    "https://custom.example:18443"
+  )
+  for (const invalid of [
+    "",
+    "https://evil.example",
+    "good.example/evil",
+    "good.example@evil.example",
+    "good.example?x=1",
+    "good..example",
+    "-bad.example"
+  ]) {
     assert.throws(() => canonicalSitemapOrigin(invalid))
   }
 })
@@ -89,6 +103,9 @@ test("both sitemap routes resolve the configured site domain rather than request
     assert.match(source, /await siteSitemapOrigin\(siteId\)/u, route)
     assert.doesNotMatch(source, /new URL\(request\.url\)\.origin/u, route)
   }
-  const helper = await readFile(new URL("../src/lib/server/sitemap-origin.ts", import.meta.url), "utf8")
+  const helper = await readFile(
+    new URL("../src/lib/server/sitemap-origin.ts", import.meta.url),
+    "utf8"
+  )
   assert.match(helper, /client\.request\("site_domain", \[siteId\], \{ siteId \}\)/u)
 })

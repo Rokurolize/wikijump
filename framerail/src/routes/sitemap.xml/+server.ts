@@ -13,7 +13,8 @@ export const GET: RequestHandler = async ({ request }) => {
   // the same way as any other missing page.
   if (!output) return new Response("Not found", { status: 404 })
 
-  if (output.shard_count === null) return new Response("Invalid sitemap index", { status: 502 })
+  if (output.shard_count === null)
+    return new Response("Invalid sitemap index", { status: 502 })
   const origin = await siteSitemapOrigin(siteId)
   return new Response(buildSitemapIndexXml(origin, output.shard_count), {
     headers: SITEMAP_XML_HEADERS

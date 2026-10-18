@@ -31,7 +31,9 @@ export function canonicalSitemapOrigin(preferredDomain: string): string {
     preferredDomain.startsWith(".") ||
     preferredDomain.endsWith(".") ||
     preferredDomain.includes("..") ||
-    hostname.split(".").some((label) => label.length === 0 || label.startsWith("-") || label.endsWith("-"))
+    hostname
+      .split(".")
+      .some((label) => label.length === 0 || label.startsWith("-") || label.endsWith("-"))
   ) {
     throw new InvalidSitemapCanonicalDomain("Invalid configured sitemap domain")
   }
