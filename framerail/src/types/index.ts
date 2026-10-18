@@ -373,6 +373,7 @@ export interface Locales {
   "wiki-page-action-edit-sections": string
   "wiki-page-action-edit-meta": string
   "wiki-page-action-watchers": string
+  "wiki-page-watchers-unimported": string
   "wiki-page-action-backlinks": string
   "wiki-page-action-lock": string
   "wiki-page-action-rename-move": string
