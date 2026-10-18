@@ -8689,7 +8689,8 @@
           "deepwell/tests/auth.rs#restricted_mfa_sessions_are_not_normal_login_sessions",
           "deepwell/tests/auth.rs#session_other_listing_and_invalidation_keep_current_session",
           "deepwell/tests/auth.rs#unrestricted_sessions_still_get_and_renew_normally",
-          "deepwell/tests/user.rs#user_create_only_verified_email_blocks_conflict"
+          "deepwell/tests/user.rs#user_create_only_verified_email_blocks_conflict",
+          "deepwell/tests/user.rs#verifying_email_displaces_other_pending_claims"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -10084,6 +10085,7 @@
           "deepwell/tests/user.rs#self_email_change_requires_current_password_proof",
           "deepwell/tests/user.rs#user_create_only_verified_email_blocks_conflict",
           "deepwell/tests/user.rs#user_mutations_enforce_request_actor_and_staff_only_fields",
+          "deepwell/tests/user.rs#verifying_email_displaces_other_pending_claims",
           "deepwell/tests/user.rs#wikidot_user"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
@@ -10145,6 +10147,7 @@
           "deepwell/tests/user.rs#user_delete_and_its_audit_event_roll_back_together",
           "deepwell/tests/user.rs#user_import_reclaims_existing_wikidot_user",
           "deepwell/tests/user.rs#user_mutations_enforce_request_actor_and_staff_only_fields",
+          "deepwell/tests/user.rs#verifying_email_displaces_other_pending_claims",
           "deepwell/tests/user.rs#wikidot_user"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"

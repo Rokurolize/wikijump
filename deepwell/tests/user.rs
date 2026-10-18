@@ -940,6 +940,10 @@ async fn user_create_only_verified_email_blocks_conflict() {
         .expect("verified email login should create a session");
     assert_eq!(session.user_id, first.user_id);
 
+    // The second account was displaced when the first verified, so it no
+    // longer names any mailbox: verification fails as "no email set"
+    // (UserEmailEmpty) rather than "owned by another" (UserExists). Either
+    // way no second verified owner is created.
     let error = run_endpoint_err!(
         runner,
         user_edit,
@@ -949,7 +953,7 @@ async fn user_create_only_verified_email_blocks_conflict() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    assert_contains_error!(error, ErrorType::UserExists);
+    assert_contains_error!(error, ErrorType::UserEmailEmpty);
 
     let error = run_endpoint_err!(
         runner,
@@ -966,6 +970,114 @@ async fn user_create_only_verified_email_blocks_conflict() {
     );
 
     assert_contains_error!(error, ErrorType::UserExists);
+}
+
+#[tokio::test]
+async fn verifying_email_displaces_other_pending_claims() {
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+
+    let first = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "First Pending Email Claim",
+            "email": "disputed-mailbox@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let second = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Second Pending Email Claim",
+            "email": "disputed-mailbox@example.invalid",
+            "locales": ["en"],
+            "password": "changed-password-fixture",
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_ne!(first.user_id, second.user_id);
+
+    // First verified proof wins the mailbox.
+    let verified = run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": first.user_id,
+            "email_verified": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(verified.email_verified_at.is_some());
+
+    // The other pending claim loses the address, not the account.
+    let displaced = run_endpoint!(runner, user_get, json!({"user": second.user_id}))
+        .expect("displaced user should remain readable")
+        .user
+        .unwrap_wikijump()
+        .expect("displaced user should be a Wikijump user");
+    assert!(displaced.email.is_empty());
+    assert!(displaced.email_verified_at.is_none());
+
+    // Name login still works for the displaced account.
+    let login = run_endpoint!(
+        runner,
+        auth_login,
+        json!({
+            "name_or_email": "Second Pending Email Claim",
+            "password": "changed-password-fixture",
+            "ip_address": common::IP_ADDRESS,
+            "user_agent": "displaced-claim-test",
+        }),
+    );
+    let session = run_endpoint!(runner, auth_session_get, json!([login.session_token]),)
+        .expect("name login should still work after displacement");
+    assert_eq!(session.user_id, second.user_id);
+
+    // The displaced account cannot verify an address it no longer holds.
+    let error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": second.user_id,
+            "email_verified": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::UserEmailEmpty);
+
+    // It can claim a new address and verify that one instead.
+    let relocated = run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": second.user_id,
+            "email": "relocated-claim@example.invalid",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(relocated.email, "relocated-claim@example.invalid");
+    let relocated = run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": second.user_id,
+            "email_verified": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(relocated.email_verified_at.is_some());
 }
 
 #[tokio::test]
