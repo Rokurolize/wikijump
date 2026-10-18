@@ -223,14 +223,13 @@ impl LiteralRegionIndex {
         }
     }
 
-    /// Literal and tag regions where a pre-FTML compatibility protector must
-    /// not recognize authored syntax.
+    /// Inline protectors must follow FTML's physical-line ownership of `@@`.
+    /// A dangling raw delimiter on an earlier line cannot hide real syntax or
+    /// expose escaped syntax on the next one.
     pub(super) fn new_wikidot_protection(source: &str) -> Self {
-        let mut index = Self::build(source, false);
+        let mut index = Self::new_wikidot_conditional_syntax(source);
         let mut ranges = Vec::new();
         collect_wikidot_tag_ranges(source, &mut ranges);
-        index.merge_sorted_ranges(ranges);
-        let mut ranges = Vec::new();
         collect_html_tag_ranges(source, &mut ranges);
         index.merge_sorted_ranges(ranges);
         index
@@ -286,7 +285,9 @@ impl LiteralRegionIndex {
     /// renders with color spans), never a code block, so markers inside it
     /// must restore.
     pub(super) fn new_html_color_restoration(source: &str) -> Self {
-        let mut index = Self::build(source, false);
+        // These bytes have already crossed FTML. Visible `@@` or `[[code]]`
+        // text is no longer an authored delimiter at this boundary.
+        let mut index = Self { ranges: Vec::new() };
         let mut ranges = Vec::new();
         collect_html_literal_ranges(source, &mut ranges, false, false);
         index.merge_sorted_ranges(ranges);

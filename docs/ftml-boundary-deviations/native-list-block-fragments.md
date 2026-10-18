@@ -27,6 +27,38 @@ This is existing BND-09 debt, not a new supported Wikijump grammar. No current F
 
 Remove `NativeListSourceContext` and the trusted block-fragment pre-rendering when FTML exposes a Wikidot-layout list representation with source spans and final-parent information sufficient for Deepwell to render the list normally, with corpus and browser parity evidence proving the top-bar, inline-scope, and inline-delimiter cases.
 
+## Protection restoration repair (#2435, 2026-10-18)
+
+The existing fallback protects inline color/bold output before registering an
+optimized native list. The list registry must restore first, followed by those
+inline dependencies; restoration remains a single ownership-bound pass per
+registry, without recursively interpreting arbitrary marker-shaped text.
+
+`replace_active_inline_matches` in
+`deepwell/src/services/render/compat/color_and_inline_protection.rs` is part of
+this existing BND-09 debt. It applies the existing FTML-compatible literal index
+to each pass's exact input. Inline raw ownership ends on its physical line;
+code, HTML blocks, raw text and attribute interiors cannot acquire a generated
+inline marker. At the later HTML restoration boundary, visible Wikidot
+delimiter text is ordinary output, so only HTML literal/tag regions protect a
+color marker.
+
+Evidence is retained in
+`install/local/wikidot-verification/artifacts/issue2435-protection-boundaries-live-20261018.json`
+(anonymous, non-mutating previews with source/HTML hashes), especially
+`issue2435-literal-line-color`. The public regressions in
+`deepwell/tests/page/placeholder_restoration.rs` vary list length and marker
+position, includes and saved/preview HTML-block lifecycle. FTML PR 741 fixes
+bracketed-span syntax at its owner instead of adding another Deepwell shim.
+
+ListPages runtime containers now retain paired closing-tag provenance and the
+structural stack at their opening boundary. A malformed selected fragment can
+no longer expose the fixed `</div>` delimiter or poison later rows. Literal
+HTML contexts, unrelated namespaces and ordinary block-parent rejection remain
+unchanged. The migration condition above still applies; this repair does not
+add a new source-container allowlist entry or claim that every residual #2435
+case is resolved.
+
 ## Owner
 
 Rokurolize.

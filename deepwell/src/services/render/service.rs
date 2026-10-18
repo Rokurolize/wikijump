@@ -2531,6 +2531,11 @@ impl RenderService {
                         std::mem::take(&mut html_output.body),
                         &wikidot_embed_iframes,
                     );
+                    // Optimized native lists contain the inline/color markers
+                    // protected before the list was registered. Expose that
+                    // trusted HTML before restoring its inline dependencies.
+                    html_output.body =
+                        protection.compat_html().restore(&html_output.body);
                     html_output.body = Self::restore_protected_wikidot_color_spans(
                         std::mem::take(&mut html_output.body),
                         protection.color_spans(),
@@ -2539,8 +2544,6 @@ impl RenderService {
                         std::mem::take(&mut html_output.body),
                         protection.inline_html(),
                     );
-                    html_output.body =
-                        protection.compat_html().restore(&html_output.body);
                     if render_page_info.page.as_ref() == "_ajax-module-connector" {
                         html_output.body = protect_ajax_module_literal_markers(
                             std::mem::take(&mut html_output.body),

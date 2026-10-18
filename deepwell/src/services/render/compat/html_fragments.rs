@@ -53,7 +53,7 @@ enum CompatFragment {
         trim_preceding_space: bool,
         allow_span_parent: bool,
         unwrap_residual_div_paragraph_prefix: bool,
-        list_pages_row_boundary: Option<ListPagesRowBoundary>,
+        list_pages_row_boundary: Option<ListPagesContainerBoundary>,
     },
     Plain {
         plain: String,
@@ -62,7 +62,7 @@ enum CompatFragment {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-enum ListPagesRowBoundary {
+enum ListPagesContainerBoundary {
     Open,
     Close,
 }
@@ -131,7 +131,7 @@ impl CompatHtmlFragments {
         })
     }
 
-    pub(in crate::services::render) fn push_list_pages_row_open(
+    pub(in crate::services::render) fn push_list_pages_container_open(
         &mut self,
         html: String,
     ) -> String {
@@ -140,20 +140,23 @@ impl CompatHtmlFragments {
             trim_preceding_space: false,
             allow_span_parent: false,
             unwrap_residual_div_paragraph_prefix: false,
-            list_pages_row_boundary: Some(ListPagesRowBoundary::Open),
+            list_pages_row_boundary: Some(ListPagesContainerBoundary::Open),
         })
     }
 
-    pub(in crate::services::render) fn push_list_pages_row_close(
+    /// Register only the fixed closing tag of a paired runtime container.
+    /// Its restoration may outlive structurally invalid selected HTML, so it
+    /// must never carry arbitrary block content.
+    pub(in crate::services::render) fn push_list_pages_container_close(
         &mut self,
-        html: String,
+        trim_preceding_space: bool,
     ) -> String {
         self.push_fragment(CompatFragment::BlockHtml {
-            html,
-            trim_preceding_space: true,
+            html: "</div>".to_owned(),
+            trim_preceding_space,
             allow_span_parent: false,
             unwrap_residual_div_paragraph_prefix: false,
-            list_pages_row_boundary: Some(ListPagesRowBoundary::Close),
+            list_pages_row_boundary: Some(ListPagesContainerBoundary::Close),
         })
     }
 
@@ -462,7 +465,7 @@ impl CompatHtmlFragments {
                         } => *list_pages_row_boundary,
                         CompatFragment::Html(_) | CompatFragment::Plain { .. } => None,
                     };
-                    if row_boundary == Some(ListPagesRowBoundary::Close)
+                    if row_boundary == Some(ListPagesContainerBoundary::Close)
                         && !parent_stack.has_list_pages_row_boundary()
                     {
                         output.push_str(&text[start..marker_end]);
@@ -504,6 +507,8 @@ impl CompatHtmlFragments {
                             ..
                         },
                     );
+                    let known_container_close =
+                        row_boundary == Some(ListPagesContainerBoundary::Close);
                     let restored_fragment_start = if unwrap_block_paragraphs
                         && matches!(
                             &self.fragments[index],
@@ -517,17 +522,19 @@ impl CompatHtmlFragments {
                             &mut cursor,
                             &mut parent_stack,
                             BlockParagraphRestoreOptions {
+                                known_container_close,
                                 unwrap_residual_div_paragraph_prefix,
                                 trim_preceding_space,
                             },
                         ) {
                             Some(fragment_start)
                         } else {
-                            if !parent_stack
-                                .advance_and_check_parent_accepts_block_fragment(
-                                    &output,
-                                    allow_span_parent,
-                                )
+                            if !known_container_close
+                                && !parent_stack
+                                    .advance_and_check_parent_accepts_block_fragment(
+                                        &output,
+                                        allow_span_parent,
+                                    )
                             {
                                 output.push_str(&text[start..marker_end]);
                                 cursor = marker_end;
@@ -545,13 +552,13 @@ impl CompatHtmlFragments {
                         fragment_start
                     });
                     match row_boundary {
-                        Some(ListPagesRowBoundary::Open) => {
+                        Some(ListPagesContainerBoundary::Open) => {
                             parent_stack.record_list_pages_row_boundary(
                                 &output,
                                 fragment_start + fragment.len(),
                             );
                         }
-                        Some(ListPagesRowBoundary::Close) => {
+                        Some(ListPagesContainerBoundary::Close) => {
                             parent_stack.close_list_pages_row_boundary(
                                 &mut output,
                                 fragment_start,
@@ -586,6 +593,7 @@ impl CompatHtmlFragments {
 
 #[derive(Clone, Copy, Debug)]
 struct BlockParagraphRestoreOptions {
+    known_container_close: bool,
     unwrap_residual_div_paragraph_prefix: bool,
     trim_preceding_space: bool,
 }
@@ -614,7 +622,9 @@ fn restore_block_html_from_paragraph(
     if !contains_only_text_breaks_and_balanced_inline_elements(trailing) {
         return None;
     }
-    if !parent_stack.advance_and_check_parent_is_safe(&output[..paragraph_start]) {
+    if !options.known_container_close
+        && !parent_stack.advance_and_check_parent_is_safe(&output[..paragraph_start])
+    {
         return None;
     }
 
@@ -774,7 +784,7 @@ fn leading_break_end(value: &str) -> Option<usize> {
 struct IncrementalHtmlElementStack {
     parsed: usize,
     stack: Vec<String>,
-    list_pages_row_depths: Vec<usize>,
+    list_pages_row_stacks: Vec<Vec<String>>,
     valid: bool,
 }
 
@@ -783,7 +793,7 @@ impl Default for IncrementalHtmlElementStack {
         Self {
             parsed: 0,
             stack: Vec::new(),
-            list_pages_row_depths: Vec::new(),
+            list_pages_row_stacks: Vec::new(),
             valid: true,
         }
     }
@@ -795,24 +805,32 @@ impl IncrementalHtmlElementStack {
     }
 
     fn has_list_pages_row_boundary(&self) -> bool {
-        !self.list_pages_row_depths.is_empty()
+        !self.list_pages_row_stacks.is_empty()
     }
 
     fn record_list_pages_row_boundary(&mut self, html: &str, end: usize) {
         if self.advance(&html[..end]) {
-            self.list_pages_row_depths.push(self.stack.len());
+            self.list_pages_row_stacks.push(self.stack.clone());
         }
     }
 
     fn close_list_pages_row_boundary(&mut self, html: &mut String, start: usize) {
-        if !self.advance(&html[..start]) {
-            return;
-        }
-        let Some(depth) = self.list_pages_row_depths.pop() else {
+        // The paired delimiter is trusted closing markup, even when a selected
+        // fragment contains crossed/unmatched authored tags. Never let those
+        // tags expose the delimiter's internal marker. Ordinary block fragments
+        // still require the conservative structural parent check.
+        let structurally_valid = self.advance(&html[..start]);
+        let Some(boundary_stack) = self.list_pages_row_stacks.pop() else {
             return;
         };
-        if self.stack.len() < depth {
-            self.valid = false;
+        let depth = boundary_stack.len();
+        if !structurally_valid || self.stack.len() < depth {
+            // A sealed selected-content row owns its malformed descendants.
+            // Resume at its paired, fixed close rather than poisoning every
+            // later runtime fragment with those descendants' scan state.
+            self.stack = boundary_stack;
+            self.parsed = start;
+            self.valid = true;
             return;
         }
         let mut closing = String::new();
@@ -1293,9 +1311,10 @@ mod tests {
     #[test]
     fn list_pages_row_boundary_closes_unmatched_summary_html() {
         let mut fragments = CompatHtmlFragments::new("");
-        let row_open = fragments
-            .push_list_pages_row_open(r#"<div class="list-pages-item">"#.to_owned());
-        let row_close = fragments.push_list_pages_row_close("</div>".to_owned());
+        let row_open = fragments.push_list_pages_container_open(
+            r#"<div class="list-pages-item">"#.to_owned(),
+        );
+        let row_close = fragments.push_list_pages_container_close(true);
 
         assert_eq!(
             fragments.restore(&format!(
@@ -1312,9 +1331,10 @@ mod tests {
     #[test]
     fn list_pages_row_boundary_preserves_balanced_summary_html() {
         let mut fragments = CompatHtmlFragments::new("");
-        let row_open = fragments
-            .push_list_pages_row_open(r#"<div class="list-pages-item">"#.to_owned());
-        let row_close = fragments.push_list_pages_row_close("</div>".to_owned());
+        let row_open = fragments.push_list_pages_container_open(
+            r#"<div class="list-pages-item">"#.to_owned(),
+        );
+        let row_close = fragments.push_list_pages_container_close(true);
 
         assert_eq!(
             fragments.restore(&format!(
@@ -1333,12 +1353,14 @@ mod tests {
         let mut fragments = CompatHtmlFragments::new("");
         let wrapper_open =
             fragments.push_block_html(r#"<div class="list-pages-box">"#.to_owned());
-        let first_open = fragments
-            .push_list_pages_row_open(r#"<div class="list-pages-item">"#.to_owned());
-        let first_close = fragments.push_list_pages_row_close("</div>".to_owned());
-        let second_open = fragments
-            .push_list_pages_row_open(r#"<div class="list-pages-item">"#.to_owned());
-        let second_close = fragments.push_list_pages_row_close("</div>".to_owned());
+        let first_open = fragments.push_list_pages_container_open(
+            r#"<div class="list-pages-item">"#.to_owned(),
+        );
+        let first_close = fragments.push_list_pages_container_close(true);
+        let second_open = fragments.push_list_pages_container_open(
+            r#"<div class="list-pages-item">"#.to_owned(),
+        );
+        let second_close = fragments.push_list_pages_container_close(true);
         let wrapper_close = fragments.push_block_html("</div>".to_owned());
         let parsed = format!(
             "<p>{wrapper_open}</p><p>{first_open}</p><h1>FIRST</h1><p><div style=\"text-align: right;\"></p><p>{first_close}<br>\n{second_open}</p><h1>SECOND</h1><p>{second_close}</p><p>{wrapper_close}</p>",
@@ -1356,10 +1378,33 @@ mod tests {
     #[test]
     fn list_pages_row_close_without_its_open_boundary_remains_literal() {
         let mut fragments = CompatHtmlFragments::new("");
-        let row_close = fragments.push_list_pages_row_close("</div>".to_owned());
+        let row_close = fragments.push_list_pages_container_close(true);
         let html = format!("<p>{row_close}</p>");
 
         assert_eq!(fragments.restore(&html), html);
+    }
+
+    #[test]
+    fn paired_container_closers_survive_crossed_selected_content_tags() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let wrapper = fragments
+            .push_list_pages_container_open(r#"<div class="list-pages-box">"#.to_owned());
+        let row = fragments.push_list_pages_container_open(
+            r#"<div class="list-pages-item">"#.to_owned(),
+        );
+        let row_close = fragments.push_list_pages_container_close(true);
+        let wrapper_close = fragments.push_list_pages_container_close(false);
+        let ordinary = fragments.push_block_html("<div>unsafe context</div>".to_owned());
+        let crossed = "<p><span></p><div><p>FIRST<br>\n</span></p></div>";
+        let html = format!(
+            "<p>{wrapper}</p><p>{row}</p>{crossed}<p>{row_close}</p><p>{wrapper_close}</p><span>{ordinary}</span>"
+        );
+        assert_eq!(
+            fragments.restore(&html),
+            format!(
+                "<div class=\"list-pages-box\"><div class=\"list-pages-item\">{crossed}</div></div><span>{ordinary}</span>",
+            )
+        );
     }
 
     #[test]
