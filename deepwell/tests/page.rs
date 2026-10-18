@@ -21710,8 +21710,10 @@ async fn listpages_plain_content_shares_the_outer_include_budget() {
     const INCLUDES_PER_SOURCE: usize = 128;
 
     let mut runner = TestRunner::setup().await;
-    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
-        .expect("seeded SCP Wiki site should exist");
+    // The local test site keeps the ordinary include ceiling (mirror
+    // sites use the corpus ceiling).
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
     let site_id = site.site.site_id;
 
     create_listpages_test_page(
@@ -21817,7 +21819,7 @@ async fn listpages_plain_content_shares_the_outer_include_budget() {
     let page_info = PageInfo {
         page: Cow::Borrowed(INDEX_SLUG),
         category: None,
-        site: Cow::Borrowed("scp-wiki"),
+        site: Cow::Borrowed("test"),
         title: Cow::Borrowed("ListPages Include Budget Index"),
         alt_title: None,
         score: ScoreValue::Integer(0),
