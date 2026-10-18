@@ -102,6 +102,17 @@
         Retry
       </button>
     </p>
+  {:else if state.items.length === 0 && data.page?.from_wikidot}
+    <!--
+      Imported pages carry no subscription graph: their watch relations
+      were never imported, so an empty roster would falsely assert zero
+      subscriptions. Say so instead of showing a bare empty list
+      (issue #2172). Locally authored pages keep the genuine empty list.
+    -->
+    <p>
+      {data.internationalization?.["wiki-page-watchers-unimported"] ??
+        "The watcher list for this imported page is unavailable because its subscriptions were not imported."}
+    </p>
   {:else}
     <WatchersList watchers={state.items} />
   {/if}
