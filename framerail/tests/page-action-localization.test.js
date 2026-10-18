@@ -289,6 +289,28 @@ test("the site language defines the page interface ahead of browser preferences"
   ])
 })
 
+test("Japanese catalog defines the revision banner chrome requested for found pages", async () => {
+  // The historical-revision banner (#2151) renders through the same
+  // internationalization dictionary as the panes; without requested keys
+  // and Japanese entries it falls back to English on Japanese sites (#2178).
+  const keys = buildPageTranslateKeys(foundResponse, foundKeysContext)
+  const bannerKeys = [
+    "wiki-page-revision-banner.title",
+    "wiki-page-revision-banner.page",
+    "wiki-page-revision-banner.close"
+  ]
+  for (const key of bannerKeys) assert.ok(Object.hasOwn(keys, key), key)
+
+  const wikiJa = await readFile(
+    new URL("../../locales/fluent/wiki-page/ja.ftl", import.meta.url),
+    "utf8"
+  )
+  assert.match(wikiJa, /^wiki-page-revision-banner =$/mu)
+  assert.match(wikiJa, /^ {2}\.title = 過去のリビジョン$/mu)
+  assert.match(wikiJa, /^ {2}\.page = ページ$/mu)
+  assert.match(wikiJa, /^ {2}\.close = 閉じる$/mu)
+})
+
 test("explicit user locale preferences outrank the site language", () => {
   assert.deepEqual(finalizePreloadData(preloadResponse("ja", ["ko"]), ["en"]).locales, [
     "ko",
