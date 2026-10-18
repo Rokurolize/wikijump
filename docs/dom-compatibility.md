@@ -60,3 +60,12 @@ page reload. Framerail gives each activation a new pane instance, aborting
 the superseded read and discarding its local failure/result state. The
 offline `backlinks-watchers-failure.spec.ts` regression clicks the same
 action after a failed read and requires a second request and populated result.
+
+The shared source callback `WIKIDOT.page.callbacks.backlinksClick` first checks
+the successful result, inserts its body into `action-area`, and only then sets
+`display="block"` and adds Close. Consequently, the initial pending action area
+must stay hidden and have no element children, including during lazy browser
+module loading. Keep the read mounted so changing pages or selecting another
+action can invalidate it; the source does not expose Close before a result.
+Offline regressions hold both the module script and the read response and
+require empty DOM until success. Native-layout loading controls are separate.

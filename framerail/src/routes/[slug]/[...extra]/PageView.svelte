@@ -79,22 +79,18 @@
   let wikidotFilesListReady = $state(false)
   let wikidotFilesPrefetched = $state<PageFile[] | null>(null)
   let wikidotFilesRequestId = 0
-  // Wikidot leaves #action-area hidden and empty when a read-only Backlinks
-  // or WhoWatches request fails (issue #2241): no result list, no error
-  // dialog, no retry control. Each pane reports its read state; only a
-  // reported failure hides the area. While the read is in flight the area
-  // keeps its loading state and close control, preserving the abort-on-close
-  // contract for hung reads.
-  let wikidotBacklinksFailed = $state(false)
-  let wikidotWatchersFailed = $state(false)
+  // The source Backlinks/WhoWatches callback inserts the result and reveals
+  // #action-area only after success. Keep both pending and failed reads empty.
+  let wikidotBacklinksReady = $state(false)
+  let wikidotWatchersReady = $state(false)
   let auxPaneRequestId = $state(0)
 
   function onAuxPaneReadStateChange(
     pane: "backlinks" | "watchers",
     readState: "loading" | "success" | "failure"
   ) {
-    if (pane === "backlinks") wikidotBacklinksFailed = readState === "failure"
-    else wikidotWatchersFailed = readState === "failure"
+    if (pane === "backlinks") wikidotBacklinksReady = readState === "success"
+    else wikidotWatchersReady = readState === "success"
   }
 
   async function preloadWikidotFiles() {
@@ -141,8 +137,8 @@
   let actionAreaHidden = $derived(
     (!showSource && pagePaneState === PagePane.None && !editSection) ||
       (pagePaneState === PagePane.File && !wikidotFilesListReady) ||
-      (pagePaneState === PagePane.Backlinks && wikidotBacklinksFailed) ||
-      (pagePaneState === PagePane.Watchers && wikidotWatchersFailed)
+      (pagePaneState === PagePane.Backlinks && !wikidotBacklinksReady) ||
+      (pagePaneState === PagePane.Watchers && !wikidotWatchersReady)
   )
   let isDirectWikidotFragmentPage = $derived(
     pageLayoutContext.current === Layout.WIKIDOT &&
@@ -320,8 +316,8 @@
     }
     // A newly opened Backlinks/Watchers pane starts a fresh read, clearing
     // any failure inherited from its previous mount.
-    if (pane === PagePane.Backlinks) wikidotBacklinksFailed = false
-    if (pane === PagePane.Watchers) wikidotWatchersFailed = false
+    if (pane === PagePane.Backlinks) wikidotBacklinksReady = false
+    if (pane === PagePane.Watchers) wikidotWatchersReady = false
     // Clicking a read action again starts a new module request, even when
     // its previous failure hid the pane and left the same selection active.
     if (pane === PagePane.Backlinks || pane === PagePane.Watchers) {
@@ -994,7 +990,7 @@
       class:hidden={actionAreaHidden}
       style:display={actionAreaHidden ? "none" : undefined}
     >
-      {#if (showSource || pagePaneState !== PagePane.None || editSection) && (pagePaneState !== PagePane.File || wikidotFilesListReady) && (pagePaneState !== PagePane.Backlinks || !wikidotBacklinksFailed) && (pagePaneState !== PagePane.Watchers || !wikidotWatchersFailed)}
+      {#if (showSource || pagePaneState !== PagePane.None || editSection) && (pagePaneState !== PagePane.File || wikidotFilesListReady) && (pagePaneState !== PagePane.Backlinks || wikidotBacklinksReady) && (pagePaneState !== PagePane.Watchers || wikidotWatchersReady)}
         <!-- svelte-ignore a11y_invalid_attribute -->
         <a
           class="action-area-close btn btn-danger"

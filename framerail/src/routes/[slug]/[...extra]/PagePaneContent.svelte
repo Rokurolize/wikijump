@@ -118,7 +118,7 @@
             onPaneReadStateChange?.("backlinks", readState)}
         />
       {/key}
-    {:else}
+    {:else if !wikidot}
       <p class="pane-loading" aria-live="polite">Loading…</p>
     {/if}
   {:else if pagePaneState === PagePane.EditMeta}
@@ -178,7 +178,7 @@
             onPaneReadStateChange?.("watchers", readState)}
         />
       {/key}
-    {:else}
+    {:else if !wikidot}
       <p class="pane-loading" aria-live="polite">Loading…</p>
     {/if}
   {:else if pagePaneState === PagePane.File}
