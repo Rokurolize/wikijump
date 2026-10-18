@@ -7,6 +7,7 @@ import {candidateIdentity} from '../ports/scripts/candidate-identity.mjs';
 import {assertPublishablePackage} from '../src/adaptation-authority.mjs';
 import {validatePublicationCandidateSet} from '../src/publication-candidate-freeze.mjs';
 import {validateSigmaPreviewFinding} from './preview-authority.mjs';
+import {loadHistoricalSigma10RunContract} from './historical-run-contract.mjs';
 
 const root=path.dirname(fileURLToPath(import.meta.url));
 if(process.argv.slice(2).some(arg=>arg!=='--historical-only')){
@@ -30,10 +31,11 @@ const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const fail=[];
 const authorityLedger=JSON.parse(await fs.readFile(path.join(ports,'adaptation-authority.json'),'utf8'));
 const read=async file=>JSON.parse(await fs.readFile(path.join(root,file),'utf8'));
-const [audit,comparison,manifest,contract,findings,campaign]=await Promise.all([
- read('evidence/interactive-visual-audit.json'),read('evidence/sigma9-comparison-audit.json'),read('fixture-manifest.json'),read('run-contract.json'),read('findings.json'),
+const [audit,comparison,manifest,historicalContract,findings,campaign]=await Promise.all([
+ read('evidence/interactive-visual-audit.json'),read('evidence/sigma9-comparison-audit.json'),read('fixture-manifest.json'),loadHistoricalSigma10RunContract(),read('findings.json'),
  JSON.parse(await fs.readFile(path.join(ports,'en-theme-campaign.json'),'utf8'))
 ]);
+const {contract,sha256:contractSha}=historicalContract;
 const candidates=['dear-dictator',...campaign.themes.map(x=>x.slug.replace(/^theme:/u,'')),'sigma10-baseline'];
 if(candidates.length!==36||new Set(candidates).size!==36)fail.push('candidate inventory is not exactly 36 unique candidates');
 const normal=audit.records.filter(r=>r.surface==='page.normal'&&r.state==='settled');
@@ -44,7 +46,6 @@ const comparisonRows=comparison.records.filter(r=>r.surface==='page.normal'&&r.s
 const comparisonCells=new Map(comparisonRows.map(r=>[`${r.theme}|${r.browser_engine}|${r.viewport}`,r]));
 for(const candidate of candidates)for(const [engine,viewport] of matrix)if(!comparisonCells.has(`${candidate}|${engine}|${viewport}`))fail.push(`missing Sigma-9 comparison cell ${candidate}/${engine}/${viewport}`);
 const manifestSha=sha(await fs.readFile(path.join(root,'fixture-manifest.json')));
-const contractSha=sha(await fs.readFile(path.join(root,'run-contract.json')));
 const fixturePackage=path.resolve(ports,'interactive-visual-fixture');
 const themeFixtureHash=async row=>{
  const variant=row.fixture?.endsWith('credit-no-rate-20260924')?'fixture-no-rate.wikidot.txt':row.fixture?.endsWith('credit-heritage-20260924')?'fixture-heritage.wikidot.txt':null;
