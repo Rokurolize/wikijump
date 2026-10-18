@@ -55,7 +55,7 @@ use super::compat::color_and_inline_protection::{
     substitute_wikidot_protected_inline_dashes_with_scan_count,
     wikidot_compat_html_marker,
 };
-use super::compat::hosted_code::hosted_code_texts;
+use super::compat::hosted_code::persist_hosted_code_blocks;
 use super::compat::link_targets::restore_compat_text_in_link_targets;
 #[cfg(test)]
 use super::compat::preparation::extract_css_modules;
@@ -155,9 +155,7 @@ use crate::services::ServiceContext;
 use crate::services::settings::{
     NavigationPageWikitext, PageRatingType, SettingsService,
 };
-use crate::services::text_block::{
-    MIME_HTML, TextBlock, TextBlockService, mime_for_language,
-};
+use crate::services::text_block::{MIME_HTML, TextBlock, TextBlockService};
 use crate::services::{
     LinkService, PageQueryService, ScoreService, SiteService, TextService,
 };
@@ -2375,27 +2373,12 @@ impl RenderService {
                 .await
                 .or_raise(make_error)?;
 
-                let hosted_texts = Self::hosted_code_block_texts(
+                persist_hosted_code_blocks(
+                    ctx,
+                    page_id,
                     &fallback_code_blocks,
                     hosted_code_source.as_deref(),
                     current_site.as_ref(),
-                    config,
-                );
-                let code_blocks: Vec<TextBlock> = fallback_code_blocks
-                    .iter()
-                    .zip(&hosted_texts)
-                    .map(|(CodeBlock { language, name, .. }, text)| TextBlock {
-                        text,
-                        text_type: language.as_deref(),
-                        mime: mime_for_language(language),
-                        name: name.as_deref(),
-                    })
-                    .collect();
-                TextBlockService::add_blocks(
-                    ctx,
-                    page_id,
-                    TextBlockType::Code,
-                    &code_blocks,
                 )
                 .await
                 .or_raise(make_error)?;
@@ -2800,28 +2783,12 @@ impl RenderService {
             // [[code]]
             {
                 let _stage = StageGuard::new(trace, CorpusRenderStage::CodeBlocks);
-                let hosted_texts = Self::hosted_code_block_texts(
+                persist_hosted_code_blocks(
+                    ctx,
+                    page_id,
                     &code_blocks,
                     hosted_code_source.as_deref(),
                     current_site.as_ref(),
-                    config,
-                );
-                let code_text_blocks: Vec<TextBlock> = code_blocks
-                    .iter()
-                    .zip(&hosted_texts)
-                    .map(|(CodeBlock { language, name, .. }, text)| TextBlock {
-                        text,
-                        text_type: language.as_deref(),
-                        mime: mime_for_language(language),
-                        name: name.as_deref(),
-                    })
-                    .collect();
-
-                TextBlockService::add_blocks(
-                    ctx,
-                    page_id,
-                    TextBlockType::Code,
-                    &code_text_blocks,
                 )
                 .await
                 .or_raise(make_error)?;
@@ -2835,23 +2802,6 @@ impl RenderService {
             errors,
             compiled_hash,
             expanded_include_count,
-        })
-    }
-
-    /// The `/local--code/` text for each rendered code block; see
-    /// [`hosted_code_texts`].
-    fn hosted_code_block_texts(
-        code_blocks: &[CodeBlock<'_>],
-        hosted_code_source: Option<&[CompatCodeBlock]>,
-        current_site: Option<&SiteModel>,
-        config: &Config,
-    ) -> Vec<String> {
-        let rendered = code_blocks
-            .iter()
-            .map(|block| block.contents.as_ref())
-            .collect::<Vec<_>>();
-        hosted_code_texts(&rendered, hosted_code_source, |code| {
-            Self::restore_wikidot_code_block_compatibility(code, current_site, config)
         })
     }
 

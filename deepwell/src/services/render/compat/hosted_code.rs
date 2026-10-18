@@ -22,6 +22,46 @@
 //! text, so a block the raw scan cannot pair is never replaced by guesswork.
 
 use super::fallback_code::CompatCodeBlock;
+use crate::error::prelude::Result;
+use crate::models::site::Model as SiteModel;
+use crate::services::ServiceContext;
+use crate::services::render::RenderService;
+use crate::services::text_block::{TextBlock, TextBlockService, mime_for_language};
+use crate::types::TextBlockType;
+use ftml::tree::CodeBlock;
+
+/// Replaces a page's hosted code blocks with their `/local--code/` text.
+pub(in crate::services::render) async fn persist_hosted_code_blocks(
+    ctx: &ServiceContext<'_>,
+    page_id: i64,
+    code_blocks: &[CodeBlock<'_>],
+    hosted_code_source: Option<&[CompatCodeBlock]>,
+    current_site: Option<&SiteModel>,
+) -> Result<()> {
+    let config = ctx.config();
+    let rendered = code_blocks
+        .iter()
+        .map(|block| block.contents.as_ref())
+        .collect::<Vec<_>>();
+    let hosted_texts = hosted_code_texts(&rendered, hosted_code_source, |code| {
+        RenderService::restore_wikidot_code_block_compatibility(
+            code,
+            current_site,
+            config,
+        )
+    });
+    let blocks = code_blocks
+        .iter()
+        .zip(&hosted_texts)
+        .map(|(CodeBlock { language, name, .. }, text)| TextBlock {
+            text,
+            text_type: language.as_deref(),
+            mime: mime_for_language(language),
+            name: name.as_deref(),
+        })
+        .collect::<Vec<_>>();
+    TextBlockService::add_blocks(ctx, page_id, TextBlockType::Code, &blocks).await
+}
 
 /// The hosted text for each rendered code block.
 ///
