@@ -7,9 +7,7 @@ const AUTHENTICATED_HEADERS = {
   origin: `http://localhost:${process.env.PLAYWRIGHT_APP_PORT ?? "4173"}`
 }
 
-test("file rename form fields expose their associated labels", async ({
-  page
-}) => {
+test("file rename form fields expose their associated labels", async ({ page }) => {
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
   await page.goto("/page-workflow-probe", { waitUntil: "domcontentloaded" })
   await waitForSvelteDelegatedHandler(page, "#files-button")
@@ -31,8 +29,8 @@ test("file rename form fields expose their associated labels", async ({
         (element: HTMLInputElement) => element.labels?.[0]?.control === element
       )
     ).toBe(true)
-    const name = await input.evaluate(
-      (element: HTMLInputElement) => element.labels?.[0]?.textContent?.trim()
+    const name = await input.evaluate((element: HTMLInputElement) =>
+      element.labels?.[0]?.textContent?.trim()
     )
     expect(name).toBeTruthy()
     await expect(input).toHaveAccessibleName(name!)
