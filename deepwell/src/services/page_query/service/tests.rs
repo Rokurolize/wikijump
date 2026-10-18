@@ -85,6 +85,38 @@ fn wikidot_name_patterns_preserve_the_evidenced_wildcard_boundary() {
 }
 
 #[test]
+fn author_selectors_test_first_revisions_once_per_query() {
+    use crate::services::page_query::AuthorSelector;
+
+    let sql = |author| {
+        page::Entity::find()
+            .filter(super::author_condition(author).expect("an author condition"))
+            .build(DatabaseBackend::Postgres)
+            .sql
+    };
+    let user_ids = [7, 11];
+    let any = sql(AuthorSelector::Any {
+        user_ids: &user_ids,
+        wikidot_snapshot_names: &[],
+    });
+    let not_any = sql(AuthorSelector::NotAny {
+        user_ids: &user_ids,
+        wikidot_snapshot_names: &[],
+    });
+
+    // Uncorrelated with the outer page, so Postgres hashes it once instead of
+    // probing every candidate page for its first revision.
+    for (sql, operator) in [
+        (&any, "page.page_id IN ("),
+        (&not_any, "page.page_id NOT IN ("),
+    ] {
+        assert!(sql.contains(operator), "{sql}");
+        assert!(sql.contains("WHERE pr2.page_id = pr.page_id"), "{sql}");
+        assert!(!sql.contains("pr.page_id = page.page_id"), "{sql}");
+    }
+}
+
+#[test]
 fn wildcard_free_names_use_the_slug_index_and_wildcards_keep_ilike() {
     let sql = |name: &str| {
         page::Entity::find()
