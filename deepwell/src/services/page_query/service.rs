@@ -640,4 +640,7 @@ impl PageQueryService {
 }
 
 #[cfg(test)]
+mod score_filter_tests;
+
+#[cfg(test)]
 mod tests;
