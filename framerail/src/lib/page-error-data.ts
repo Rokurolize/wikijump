@@ -17,6 +17,8 @@ export type PageErrorData = {
    * returned missing" alone.
    */
   restore_available?: boolean
+  /** The body is the site's own missing-page template (`_404`). */
+  missing_template?: boolean
   site: {
     site_id: number
     default_page: string
@@ -64,6 +66,12 @@ export function isPageErrorData(value: unknown): value is PageErrorData {
     return false
   }
   if (typeof value.compiled_body_html !== "string") return false
+  if (
+    value.missing_template !== undefined &&
+    typeof value.missing_template !== "boolean"
+  ) {
+    return false
+  }
   if (
     value.restore_available !== undefined &&
     typeof value.restore_available !== "boolean"

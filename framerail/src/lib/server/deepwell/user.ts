@@ -137,6 +137,24 @@ export async function userEdit(
   )
 }
 
+/* ----- User Password Change ----- */
+export async function userPasswordChange(
+  currentPassword: string,
+  newPassword: string,
+  userIpAddr: string,
+  requestContext: RequestContext
+): Promise<{ other_sessions_revoked: number }> {
+  return client.request(
+    "user_password_change",
+    {
+      current_password: currentPassword,
+      new_password: newPassword,
+      ip_address: userIpAddr
+    },
+    requestContext
+  )
+}
+
 /* ----- User Create ----- */
 interface UserCreate {
   user_id: number

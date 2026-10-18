@@ -184,8 +184,6 @@ wiki-page-parent = Page parents
 
 wiki-page-missing = The page //{ $slug }// you want to access does not exist.
 
-    { " *" } [/{ $slug }/edit create this page].
-
 wiki-page-private = + Private content
 
     This area of the website is private and you don't have access to it. If you believe you need access to this area please contact the web site administrators.

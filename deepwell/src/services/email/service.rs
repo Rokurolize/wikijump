@@ -65,6 +65,15 @@ impl EmailService {
             ));
         }
 
+        // MailCheck may be unavailable, so the address must at least be
+        // well formed before it can be stored unvalidated.
+        if !is_well_formed_email(email) {
+            bail!(Error::new(
+                "email address is not well formed",
+                ErrorType::InvalidEmail,
+            ));
+        }
+
         let response = if ctx.config().mock_mailcheck {
             warn!(
                 "Using mocked MailCheck! This is fine for tests, but don't do this in prod!"
@@ -102,13 +111,12 @@ impl EmailService {
                 status: 400,
                 error,
             }) => {
-                error!("MailCheck API request failed with bad response: {}", error);
+                // MailCheck rejected the address itself: report it as the
+                // user-facing invalid-email error, not an internal failure.
+                warn!("MailCheck API rejected the email address: {}", error);
                 bail!(Error::new(
-                    format!(
-                        "failed to validate email, MailCheck API returned an error: {}",
-                        error,
-                    ),
-                    ErrorType::EmailVerification,
+                    format!("MailCheck API rejected the email address: {error}"),
+                    ErrorType::InvalidEmail,
                 ));
             }
 
@@ -287,6 +295,22 @@ impl EmailService {
     // TODO (WJ-1390) one-time code (used as substitute second factor when logging in)
 }
 
+/// A deliberately small syntax check: one `@`, a non-empty local part, and a
+/// domain of non-empty dot-separated labels, with no whitespace or control
+/// characters. Single-label domains stay valid (local accounts such as
+/// `admin@wikijump`); MailCheck, when it answers, decides deliverability.
+fn is_well_formed_email(email: &str) -> bool {
+    if email.chars().any(|c| c.is_whitespace() || c.is_control()) {
+        return false;
+    }
+    let Some((local, domain)) = email.split_once('@') else {
+        return false;
+    };
+    !local.is_empty()
+        && !domain.contains('@')
+        && domain.split('.').all(|label| !label.is_empty())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -323,8 +347,33 @@ mod tests {
     }
 
     #[test]
+    fn only_well_formed_addresses_can_be_stored_unvalidated() {
+        for email in [
+            "someone@gmail.com",
+            "a.b+c@sub.example.org",
+            "admin@wikijump",
+        ] {
+            assert!(is_well_formed_email(email), "{email}");
+        }
+        for email in [
+            "not-an-email",
+            "@example.com",
+            "someone@",
+            "some one@example.com",
+            "a@b@example.com",
+            "someone@example..com",
+            "someone@.example.com",
+        ] {
+            assert!(!is_well_formed_email(email), "{email}");
+        }
+    }
+
+    #[test]
     fn a_mailcheck_verdict_is_still_enforced() {
-        assert!(EmailService::mailcheck_verdict(failure(400)).is_err());
+        let rejected = EmailService::mailcheck_verdict(failure(400)).unwrap_err();
+        assert!(
+            format!("{rejected:?}").contains("MailCheck API rejected the email address")
+        );
 
         let verdict = |email| {
             EmailService::mailcheck_verdict(EmailService::mock_mailcheck(email))

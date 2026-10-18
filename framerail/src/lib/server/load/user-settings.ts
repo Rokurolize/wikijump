@@ -1,6 +1,11 @@
 import { authGetSession } from "$lib/server/auth/get-session"
 import { translate } from "$lib/server/deepwell/translate"
-import { userEdit } from "$lib/server/deepwell/user"
+import { userEdit, userPasswordChange } from "$lib/server/deepwell/user"
+import {
+  ACCOUNT_PASSWORD_TOO_SHORT,
+  accountPasswordMeetsMinimum
+} from "$lib/account-password-policy.js"
+import { redactAuthActionPayload } from "$lib/server/load/auth-form-redaction.js"
 import {
   failForActionError,
   failForMissingSession,
@@ -16,7 +21,17 @@ import {
 import { fail, redirect } from "@sveltejs/kit"
 import { superValidate } from "sveltekit-superforms"
 import { valibot } from "sveltekit-superforms/adapters"
-import { array, maxLength, minLength, object, pipe, string } from "valibot"
+import {
+  array,
+  check,
+  forward,
+  maxLength,
+  minLength,
+  object,
+  partialCheck,
+  pipe,
+  string
+} from "valibot"
 
 import type { PreloadDataAsync } from "$lib/server/deepwell/views"
 import type { RequestEvent } from "@sveltejs/kit"
@@ -42,6 +57,7 @@ export async function loadUserSettings(parent: PreloadDataAsync) {
     },
     valibot(userDisplaySettingsSchema)
   )
+  const passwordChangeForm = await superValidate(valibot(userPasswordChangeSchema))
   const internationalization = await translate(
     parentData.locales,
     {
@@ -56,6 +72,7 @@ export async function loadUserSettings(parent: PreloadDataAsync) {
   return {
     ...parentData,
     displaySettingsForm,
+    passwordChangeForm,
     internationalization,
     userInterfaceLocales
   }
@@ -109,3 +126,74 @@ export const userDisplaySettingsSchema = object({
     maxLength(400, "Forum signatures are limited to 400 characters.")
   )
 })
+
+const clearPasswordChange = <T extends { data: Record<string, string> }>(form: T) => {
+  form.data.currentPassword = ""
+  form.data.newPassword = ""
+  form.data.confirmPassword = ""
+  return form
+}
+
+/**
+ * Changes the signed-in account's password. Deepwell checks the current
+ * password (under the login rate limits) and revokes the account's other
+ * sessions; no submitted password is ever returned to the page.
+ */
+export async function userPasswordChangeAction({
+  request,
+  cookies,
+  getClientAddress,
+  locals
+}: RequestEvent) {
+  const form = await superValidate(request, valibot(userPasswordChangeSchema))
+  const submitted = [
+    form.data.currentPassword,
+    form.data.newPassword,
+    form.data.confirmPassword
+  ]
+  const redact = <T>(payload: T) => redactAuthActionPayload(payload, submitted)
+  if (!form.valid) {
+    return fail(400, redact({ form: clearPasswordChange(form) }))
+  }
+
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return failForMissingSession(redact({ form: clearPasswordChange(form) }))
+  }
+
+  try {
+    requireActionSession(await authGetSession(sessionToken))
+    const result = await userPasswordChange(
+      form.data.currentPassword,
+      form.data.newPassword,
+      getClientAddress(),
+      getRequestContext(locals)
+    )
+    return redact({
+      form: clearPasswordChange(form),
+      passwordChanged: true,
+      otherSessionsRevoked: result.other_sessions_revoked
+    })
+  } catch (error) {
+    return failForActionError(error, { form: clearPasswordChange(form) }, 400, redact)
+  }
+}
+
+export const userPasswordChangeSchema = pipe(
+  object({
+    currentPassword: pipe(string(), minLength(1, "Enter your current password.")),
+    newPassword: pipe(
+      string(),
+      check(accountPasswordMeetsMinimum, ACCOUNT_PASSWORD_TOO_SHORT)
+    ),
+    confirmPassword: pipe(string(), minLength(1, "Confirm the new password."))
+  }),
+  forward(
+    partialCheck(
+      [["newPassword"], ["confirmPassword"]],
+      ({ newPassword, confirmPassword }) => newPassword === confirmPassword,
+      "The new passwords do not match."
+    ),
+    ["confirmPassword"]
+  )
+)

@@ -43,10 +43,10 @@ const NATIVE_FOOTER_ENVIRONMENT_VARIABLES: Record<NativeFooterKey, string> = {
   security: "PUBLIC_WIKIJUMP_FOOTER_SECURITY_URL"
 }
 const DOCUMENTED_NATIVE_FOOTER_HREFS: Record<NativeFooterKey, string> = {
-  "terms-conditions": "https://wikijump.com/legal/terms-of-service",
-  privacy: "https://wikijump.com/legal/privacy-policy",
-  docs: "https://wikijump.com/docs",
-  security: "https://wikijump.com/legal/security"
+  "terms-conditions": "https://wikijump.localhost/legal:terms-of-service",
+  privacy: "https://wikijump.localhost/legal:privacy-policy",
+  docs: "https://wikijump.localhost/docs",
+  security: "https://wikijump.localhost/legal:security"
 }
 
 /**

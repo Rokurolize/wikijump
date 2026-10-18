@@ -23,10 +23,10 @@ test("the registration form discloses the account-creation legal contract", asyn
 
   await expect(
     page.getByRole("link", { name: "Terms of Service", exact: true })
-  ).toHaveAttribute("href", "https://wikijump.localhost/legal/terms-of-service")
+  ).toHaveAttribute("href", "https://wikijump.localhost/legal:terms-of-service")
   await expect(
     page.getByRole("link", { name: "Privacy Policy", exact: true })
-  ).toHaveAttribute("href", "https://wikijump.localhost/legal/privacy-policy")
+  ).toHaveAttribute("href", "https://wikijump.localhost/legal:privacy-policy")
 
   // The destinations must be the authoritative platform policies, never the
   // wiki being viewed.

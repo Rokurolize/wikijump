@@ -3742,6 +3742,11 @@
       "target": "wikijump.deepwell"
     },
     {
+      "source": "deepwell-jsonrpc:user_password_change",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
       "source": "deepwell-jsonrpc:user_view",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
@@ -4328,6 +4333,11 @@
     },
     {
       "source": "framerail-server-action:/-/settings?/display",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/-/settings?/password",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
@@ -11475,7 +11485,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "b5673a4e2005727903daef300267aa874818e750c29d5913dab299fe84808569"
+      "source_input_set_sha256": "eb67b6e28a02c18a6601b403b45020235cc150e464c8afd5bc68b7abb4e5c8b3"
     },
     "ftml": {
       "commit": "9a828056bdc14ac3a2ab6900d45361273b94cd32",
@@ -11492,7 +11502,7 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "c4af8601d4014d3d0630fbfc728cc72b398523a458e0820a2e56743506076e49"
+        "sha256": "1937ed69310c00e1353df883f8457c7790c0322da5a60be29622c2e117449bb5"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
@@ -11620,7 +11630,7 @@
       },
       {
         "path": "deepwell/src/endpoints/user.rs",
-        "sha256": "095b85b48560c19fc7b7afda8ead5d95cef7341ed12353d207cd08f5d2ebd81c"
+        "sha256": "ede54816f3d9dcb4e22a9b34b5e83d33724eac6564c62f1ed68f50cbd8d254fe"
       },
       {
         "path": "deepwell/src/endpoints/view.rs",
@@ -11640,7 +11650,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "904ded55f229604a78825a5f32e753e3d0336c19b4a88008999ff35bd1fdf5bd"
+        "sha256": "18576b2e9ef19a72bbc922a74596d83708d9a83db578bcdd113d8188600e2904"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11648,7 +11658,7 @@
       },
       {
         "path": "docs/development/framerail-route-action-evidence.json",
-        "sha256": "02a8ee14197dc02b5a145edbbe8b90e2efa011714b62308b1ef3db99475c9fa4"
+        "sha256": "061d013a73bd5a874cba784b77e315efce9ecd26f9e53eac45b4c502e4d55b8a"
       },
       {
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
@@ -11704,7 +11714,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "e40b5c86245e181d9d57250eb6d684b071b4e30b63ef53d7ad1d5e70ab030043"
+        "sha256": "8d95e384a7d9d567a1d149f690ace42b1367bc9f33522b4b2a4542dfc1867bf0"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11780,7 +11790,7 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/about/+page.svelte",
-        "sha256": "36bb002e403f139d41ed530fbe3407d79ceadacd0a2fe333e94e9eed2a9a6321"
+        "sha256": "029b3d2d9354f4a6753fe5b259c980ea3533e473b5dd77e1e366e9447908be48"
       },
       {
         "path": "framerail/src/routes/[x+2d]/admin/+page.server.ts",
@@ -11816,11 +11826,11 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/settings/+page.server.ts",
-        "sha256": "8680e1ec7232676a33bcd4dd468746828a763d8f98e73150f388e00232b9edb2"
+        "sha256": "d13f34526a1f240c806f710f2ba4de2183cce1deb878480a2955ed6fe9518bdd"
       },
       {
         "path": "framerail/src/routes/[x+2d]/settings/+page.svelte",
-        "sha256": "d9c5296c4037e2f6772625e11153bce32a88d09e67cd834f86e313c53c574aa3"
+        "sha256": "86d7a4ffec3eb87f18a58ac0ae71eb4fdf9e821ae18bddd85158938e06fbfb62"
       },
       {
         "path": "framerail/src/routes/[x+2d]/user/[slug]/+page.server.ts",
@@ -11892,7 +11902,7 @@
       },
       {
         "path": "framerail/src/routes/forum/[fallback]/[...extra]/+page.svelte",
-        "sha256": "8cd1a3519308a05f55611a940c6e79e6af82ba45095abd3825b82f7362a63dc0"
+        "sha256": "4b44665e6b44c726d4555b5204e74700f92e2ac445c1fe11f97fdd3f9b2c9ff9"
       },
       {
         "path": "framerail/src/routes/forum/c-[category=id]/[...name]/+page.server.ts",
@@ -11956,7 +11966,7 @@
       },
       {
         "path": "framerail/src/routes/WikiPageError.svelte",
-        "sha256": "6ff1e28fdfa78facc511bb3eefc8ed4fb15fc58fce9e8d1fb57543976f3964c9"
+        "sha256": "fe20a4367423b53a28b3e91fce30edbd5a8f0db441715c49266974e41cc54bb1"
       },
       {
         "path": "framerail/src/routes/xml-rpc-api.php/+server.ts",
@@ -12083,14 +12093,14 @@
     ]
   },
   "counts": {
-    "total": 972,
+    "total": 974,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 186,
+      "deepwell_jsonrpc_method": 187,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 27,
       "framerail_route": 35,
-      "framerail_server_action": 111,
+      "framerail_server_action": 112,
       "framerail_xmlrpc_method": 17,
       "missing_page_control": 2,
       "open43_audit_case": 285,
@@ -29728,7 +29738,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/user.rs#avatar_removal_is_owner_only_and_clears_only_the_association"
+          "deepwell/tests/auth.rs#account_holders_change_their_password_with_the_current_one"
         ]
       },
       "evidence": {
@@ -29774,6 +29784,51 @@
         "cases": [],
         "tests": [
           "deepwell/tests/user.rs#basic_update"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/user.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:user_password_change",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:user_password_change",
+        "deepwell/src/endpoints/user.rs#user_password_change"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/auth.rs#account_holders_change_their_password_with_the_current_one"
         ]
       },
       "evidence": {
@@ -34687,6 +34742,46 @@
       ]
     },
     {
+      "surface_id": "framerail-server-action:/-/settings?/password",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/settings/+page.server.ts#action:password"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/user-settings-password-change.spec.ts#account settings change the password with the current one"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-server-action:/-/user?/userEdit",
       "kind": "framerail_server_action",
       "public_reference": [
@@ -38559,7 +38654,7 @@
       "source_identities": [
         {
           "path": "framerail/src/routes/WikiPageError.svelte",
-          "sha256": "6ff1e28fdfa78facc511bb3eefc8ed4fb15fc58fce9e8d1fb57543976f3964c9"
+          "sha256": "fe20a4367423b53a28b3e91fce30edbd5a8f0db441715c49266974e41cc54bb1"
         },
         {
           "path": "framerail/src/routes/+error.svelte",
@@ -38659,7 +38754,7 @@
       "source_identities": [
         {
           "path": "framerail/src/routes/WikiPageError.svelte",
-          "sha256": "6ff1e28fdfa78facc511bb3eefc8ed4fb15fc58fce9e8d1fb57543976f3964c9"
+          "sha256": "fe20a4367423b53a28b3e91fce30edbd5a8f0db441715c49266974e41cc54bb1"
         },
         {
           "path": "framerail/src/routes/+error.svelte",

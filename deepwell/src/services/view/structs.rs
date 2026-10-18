@@ -166,6 +166,11 @@ pub enum GetPageViewOutput {
         /// `page_create`; when false, no template or data-form source is returned.
         #[serde(default)]
         can_create: bool,
+        /// Whether the body is the site's own missing-page template (`_404`).
+        /// Wikidot then shows only that template; otherwise it shows its
+        /// default message and a "Create page" link.
+        #[serde(default)]
+        missing_template: bool,
         compiled_body_html: String,
         compiled_body_styles: Vec<String>,
         compiled_top_bar_html: Option<String>,

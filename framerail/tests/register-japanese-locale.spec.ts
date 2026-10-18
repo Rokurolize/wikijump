@@ -25,11 +25,11 @@ test("registration discloses the account-creation legal contract in Japanese", a
   )
   await expect(page.getByRole("link", { name: "利用規約", exact: true })).toHaveAttribute(
     "href",
-    "https://wikijump.localhost/legal/terms-of-service"
+    "https://wikijump.localhost/legal:terms-of-service"
   )
   await expect(
     page.getByRole("link", { name: "プライバシーポリシー", exact: true })
-  ).toHaveAttribute("href", "https://wikijump.localhost/legal/privacy-policy")
+  ).toHaveAttribute("href", "https://wikijump.localhost/legal:privacy-policy")
 
   // The action boundary still names the disclosure under the Japanese locale.
   await expect(page.locator("#register button[type=submit]")).toHaveAttribute(

@@ -38,3 +38,15 @@ upload = アップロード
 view = 表示
 vote = 評価
 alt-title = 代替タイトル
+
+about-info = プラットフォーム情報
+    .backend = バックエンド
+    .frontend = フロントエンド
+    .package-name = パッケージ名
+    .package-description = パッケージの説明
+    .package-license = パッケージのライセンス
+    .package-repository = パッケージのリポジトリ
+    .package-version = パッケージのバージョン
+    .rustc-version = Rustc のバージョン
+    .node-version = Node のバージョン
+    .pnpm-version = pnpm のバージョン

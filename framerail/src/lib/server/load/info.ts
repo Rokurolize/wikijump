@@ -16,7 +16,18 @@ export async function loadInfo(preloadData: PreloadDataAsync) {
   const response = await info()
 
   const translateKeys: TranslateKeys = {
-    ...defaults.translateKeys
+    ...defaults.translateKeys,
+    "about-info": {},
+    "about-info.backend": {},
+    "about-info.frontend": {},
+    "about-info.package-name": {},
+    "about-info.package-description": {},
+    "about-info.package-license": {},
+    "about-info.package-repository": {},
+    "about-info.package-version": {},
+    "about-info.rustc-version": {},
+    "about-info.node-version": {},
+    "about-info.pnpm-version": {}
   }
 
   const viewData = {
