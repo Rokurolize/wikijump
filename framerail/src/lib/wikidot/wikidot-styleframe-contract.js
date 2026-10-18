@@ -25,14 +25,15 @@ export const localizeWikidotThemeUrl = (themeUrl, origin) => {
     return themeUrl
   }
 
+  // Any local environment's site host maps to its own files host:
+  // `x.wikijump.localhost` -> `x.wjfiles.localhost` (standing) and
+  // `x.wikijump.dev.localhost` -> `x.wjfiles.dev.localhost` (development).
   const localHost = localOrigin.hostname.replace(
-    /\.wikijump\.localhost$/u,
-    ".wjfiles.localhost"
+    /\.wikijump\.((?:[a-z0-9-]+\.)*localhost)$/u,
+    ".wjfiles.$1"
   )
   if (localHost === localOrigin.hostname) return themeUrl
-  parsed.protocol = localOrigin.hostname.endsWith(".wikijump.localhost")
-    ? "https:"
-    : localOrigin.protocol
+  parsed.protocol = "https:"
   parsed.hostname = localHost
   parsed.port = localOrigin.port
   return parsed.toString()

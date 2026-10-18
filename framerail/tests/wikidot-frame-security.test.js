@@ -171,6 +171,31 @@ test("preserves a local request port in the current-site file CSP origin", () =>
   )
 })
 
+test("the local development stack materializes its own files host", () => {
+  const previous = process.env.WIKIJUMP_FILES_DOMAIN
+  process.env.WIKIJUMP_FILES_DOMAIN = "wjfiles.dev.localhost"
+  try {
+    const response = new Response("", {
+      headers: {
+        "content-security-policy": "img-src 'self' https://wikijump-current-site.invalid"
+      }
+    })
+    materializeSiteCsp(
+      response,
+      "scp-wiki",
+      "local",
+      "https://scp-wiki.wikijump.dev.localhost:18443"
+    )
+    assert.equal(
+      response.headers.get("content-security-policy"),
+      "img-src 'self' https://scp-wiki.wjfiles.dev.localhost:18443"
+    )
+  } finally {
+    if (previous === undefined) delete process.env.WIKIJUMP_FILES_DOMAIN
+    else process.env.WIKIJUMP_FILES_DOMAIN = previous
+  }
+})
+
 test("does not materialize untrusted site slugs", () => {
   const response = new Response("", {
     headers: {

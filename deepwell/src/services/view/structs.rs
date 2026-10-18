@@ -261,6 +261,8 @@ pub struct Viewer {
     pub site: SiteModel,
     pub site_settings: crate::services::settings::SiteSettings,
     pub promoted_sites: Vec<PromotedSiteView>,
+    /// URL authority of the site's files host: the files domain, plus the
+    /// public HTTPS port when it is not 443.
     pub site_file_domain: String,
     pub license_name: String,
     pub license_url: &'static str,

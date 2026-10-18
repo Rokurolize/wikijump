@@ -31,13 +31,13 @@ const COMPUTED_STYLE_CONTRACT = {
 function fixtureTier() {
   const slug = "codex-l10n:capture-run-yossistyle";
   return {
-    url: "https://scpaiueouiuiuiui.wikijump.localhost:18443/codex-l10n:test-yossistyle",
-    final_url: "https://scpaiueouiuiuiui.wikijump.localhost:18443/codex-l10n:test-yossistyle",
+    url: "https://scpaiueouiuiuiui.wikijump.dev.localhost:18443/codex-l10n:test-yossistyle",
+    final_url: "https://scpaiueouiuiuiui.wikijump.dev.localhost:18443/codex-l10n:test-yossistyle",
     id: "yossistyle",
     run_owned_slug: slug,
     targets: [
       {id: "wikidot", url: `https://scpaiueouiuiuiui.wikidot.com/${slug}`},
-      {id: "wikijump", url: `https://scpaiueouiuiuiui.wikijump.localhost:18443/${slug}`},
+      {id: "wikijump", url: `https://scpaiueouiuiuiui.wikijump.dev.localhost:18443/${slug}`},
     ],
     capture: {
       viewports: [{id: "desktop", width: 1440, height: 1000}, {id: "mobile", width: 390, height: 844}],
@@ -81,7 +81,7 @@ test("local file routing preserves the candidate canary port without widening ho
   let pattern;
   let handler;
   const context = {async route(value, callback) { pattern = value; handler = callback; }};
-  const target = {id: "wikijump", url: "https://scpaiueouiuiuiui.wikijump.localhost:18443/codex-l10n:test-yossistyle"};
+  const target = {id: "wikijump", url: "https://scpaiueouiuiuiui.wikijump.dev.localhost:18443/codex-l10n:test-yossistyle"};
   assert.equal(await installLocalFilePortRoute(context, target), true);
   assert.equal(pattern, "https://*.wjfiles.localhost/**");
 
@@ -124,7 +124,7 @@ test("strict verdict applies every performance, browser, syntax, and interaction
   assert.ok(failed.missing_gate_ids.includes("fcp_ms"));
   assert.ok(failed.missing_gate_ids.includes("computed_style_probes"));
 
-  const redirected = evaluateStrictThemeVerdict(passingViewport({final_url: "https://scpaiueouiuiuiui.wikijump.localhost:18443/login", settle_status: "timeout"}), THEME_PERFORMANCE_GATES, COMPUTED_STYLE_CONTRACT);
+  const redirected = evaluateStrictThemeVerdict(passingViewport({final_url: "https://scpaiueouiuiuiui.wikijump.dev.localhost:18443/login", settle_status: "timeout"}), THEME_PERFORMANCE_GATES, COMPUTED_STYLE_CONTRACT);
   assert.equal(redirected.status, "fail");
   assert.ok(redirected.failed_gate_ids.includes("final_url"));
   assert.ok(!redirected.failed_gate_ids.includes("network_idle_settle"));
@@ -274,7 +274,7 @@ test("tier orchestration opens one cold context per target and viewport and is f
 
   assert.equal(openCalls.length, 1);
   assert.equal(openCalls[0].createInitialContexts, false);
-  assert.deepEqual(proxyCalls, [{allowedLocalOrigins: ["https://scpaiueouiuiuiui.wikidot.com", "https://scpaiueouiuiuiui.wikijump.localhost:18443"]}]);
+  assert.deepEqual(proxyCalls, [{allowedLocalOrigins: ["https://scpaiueouiuiuiui.wikidot.com", "https://scpaiueouiuiuiui.wikijump.dev.localhost:18443"]}]);
   assert.equal(contextOptions.length, 4);
   assert.deepEqual(contextOptions.map((options) => options.viewport), [{width: 1440, height: 1000}, {width: 390, height: 844}, {width: 1440, height: 1000}, {width: 390, height: 844}]);
   assert.deepEqual(contextOptions.map((options) => options.proxy), Array.from({length: 4}, () => ({server: "http://127.0.0.1:27777", bypass: "<-loopback>"})));

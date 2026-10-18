@@ -1,0 +1,201 @@
+# Global options
+{
+	metrics {
+		per_host
+	}
+	http_port 18080
+	https_port 18443
+	local_certs
+	skip_install_trust
+}
+
+# Common segments
+
+(strip_headers) {
+	# Strip internal headers used by Wikijump
+	request_header -X-Wikijump-*
+}
+
+(reverse_proxy_framerail) {
+	reverse_proxy * {
+		# TODO: support multiple upstreams
+		to framerail:3393
+
+	}
+}
+
+(reverse_proxy_wws) {
+	reverse_proxy {args[0]} {
+		# TODO: support multiple upstreams
+		to wws:3466
+
+	}
+}
+#
+# MAIN
+#
+
+(serve_main) {
+	# Special routes
+	respond /-/health-check/caddy ✅ 200
+	respond /-/teapot             🫖 418
+
+	# The anonymous, read-only ListPages endpoint accepts Wikidot form posts without a browser Origin header; the gateway supplies the canonical Origin for SvelteKit.
+	@ajax_module {
+		path /ajax-module-connector.php
+
+	}
+	handle @ajax_module {
+		reverse_proxy framerail:3393 {
+			header_up Host {http.request.host}
+			header_up Origin https://{http.request.host}
+		}
+	}
+
+	# wjfiles-managed routes
+	# These are proxied to wws for it to handle, but shouldn't be redirected
+	@proxy {
+		path /robots.txt
+		path /.well-known
+		path /.well-known/*
+		path /-/health-check
+		path /common--theme/base/css/html-block.css
+		path /common--javascript/html-block-iframe.js
+		path /common--javascript/resize-iframe.html
+	}
+	handle @proxy {
+		request_header X-Wikijump-Target-Server main
+		import reverse_proxy_wws *
+	}
+
+	# Redirect, true route is on the files server
+	@redirect {
+		path /*/code
+		path /*/code/*
+		path /*/html/*
+		path /*/file/*  # for the /{slug}/file/{filename} convenience routes
+		path /*/download/*
+		path /local--files/*
+		path /local--code/*
+		path /local--html/*
+		path /-/files/*
+		path /-/file/*
+		path /-/download/*
+		path /-/avatar/*
+		path /-/code/*
+		path /-/html/*
+	}
+	redir @redirect https://{vars.site_slug}.wjfiles.dev.localhost:18443{uri}
+
+	# Enable default compression settings
+	encode
+
+	# Finally, proxy to framerail to get the actual HTML
+	# Note, the x-wikijump-site-* headers have already been set at this point
+	import reverse_proxy_framerail
+}
+
+
+# Canonical domain
+foo.wikijump.dev.localhost {
+	import strip_headers
+
+	vars {
+		site_id 1
+		site_slug foo
+	}
+
+	request_header X-Wikijump-Site-Id {vars.site_id}
+	request_header X-Wikijump-Site-Slug {vars.site_slug}
+	import serve_main
+}
+www.foo.wikijump.dev.localhost {
+	redir https://foo.wikijump.dev.localhost:18443{uri}
+}
+
+# Canonical domain
+bar.wikijump.dev.localhost,
+www.bar.wikijump.dev.localhost {
+	redir https://example.com:18443{uri}
+}
+
+# Custom domains
+example.com {
+	import strip_headers
+
+	vars {
+		site_id 2
+		site_slug bar
+	}
+
+	request_header X-Wikijump-Site-Id {vars.site_id}
+	request_header X-Wikijump-Site-Slug {vars.site_slug}
+	import serve_main
+}
+www.example.com {
+	redir https://example.com:18443{uri}
+}
+
+
+#
+# FILES
+#
+
+(serve_files) {
+	# Special routes
+	respond /-/health-check/caddy ✅ 200
+	respond /-/teapot             🫖 418
+
+	# Enable default compression settings
+	encode
+
+	# Reverse proxy
+	request_header X-Wikijump-Target-Server files
+	import reverse_proxy_wws *
+}
+
+wjfiles.dev.localhost {
+	import strip_headers
+	request_header X-Wikijump-Basic-Error 1
+	rewrite * /-/basic-error/file-root
+	import reverse_proxy_wws *
+}
+
+*.wjfiles.dev.localhost {
+	import strip_headers
+
+	@foo host foo.wjfiles.dev.localhost
+	vars @foo site_id 1
+
+	@bar host bar.wjfiles.dev.localhost
+	vars @bar site_id 2
+
+	request_header X-Wikijump-Site-Slug {labels.3}
+	request_header X-Wikijump-Site-Id {vars.site_id}
+	import serve_files
+}
+
+
+#
+# FALLBACK
+# (i.e. "no such site")
+#
+
+# Missing canonical domains
+*.wikijump.dev.localhost {
+	import strip_headers
+	request_header X-Wikijump-Basic-Error 1
+	request_header X-Wikijump-Site-Slug {labels.3}
+	rewrite * /-/basic-error/site-slug
+	import reverse_proxy_wws *
+}
+
+# Missing custom domains
+http://,
+https://,
+localhost {
+	import strip_headers
+	request_header X-Wikijump-Basic-Error 1
+	rewrite * /-/basic-error/site-custom
+	reverse_proxy wws:3466
+}

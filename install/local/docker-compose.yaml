@@ -109,6 +109,10 @@ services:
       - "DEEPWELL_HOST=deepwell"
       - "DEEPWELL_RPC_TOKEN=${DEEPWELL_RPC_TOKEN:?set DEEPWELL_RPC_TOKEN to 64 lowercase hex characters}"
       - "FRAMERAIL_MODE=${FRAMERAIL_MODE:-dev}"
+      # Platform hosts and public port; must match deepwell/config.toml [domain].
+      - "WIKIJUMP_MAIN_DOMAIN=wikijump.dev.localhost"
+      - "WIKIJUMP_FILES_DOMAIN=wjfiles.dev.localhost"
+      - "WIKIJUMP_HTTPS_PORT=18443"
       - "REDIS_URL=redis://cache"
       - "PNPM_HOME=/pnpm"
       - "PNPM_STORE_DIR=/pnpm/store"
@@ -179,10 +183,12 @@ services:
     volumes:
       - local-caddy-data:/data
       - local-caddy-config:/config
+    # Standing owns 127.0.0.1:80/443. This stack's hosts are its own
+    # (*.wikijump.dev.localhost), served on 18080/18443 so both can run.
     ports:
-      - "127.0.0.1:80:80"
-      - "127.0.0.1:443:443"
-      - "127.0.0.1:443:443/udp"
+      - "127.0.0.1:18080:18080"
+      - "127.0.0.1:18443:18443"
+      - "127.0.0.1:18443:18443/udp"
     environment:
       - "DEEPWELL_RPC_TOKEN=${DEEPWELL_RPC_TOKEN:?set DEEPWELL_RPC_TOKEN to 64 lowercase hex characters}"
     restart: unless-stopped

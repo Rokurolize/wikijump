@@ -5,6 +5,8 @@
 	"params": {
 		"debug": false,
 		"local": true,
+		"http_port": 18080,
+		"https_port": 18443,
 		"framerail_host": "framerail:3393",
 		"wws_host": "wws:3466"
 	}
