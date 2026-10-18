@@ -17,8 +17,8 @@
 use super::text_fragments::CompatTextFragments;
 use ftml::data::PageRef;
 use ftml::tree::{
-    Container, DefinitionListItem, Element, LinkLocation, ListItem, PartialElement,
-    SyntaxTree,
+    Container, DefinitionListItem, Element, LinkLabel, LinkLocation, ListItem,
+    PartialElement, SyntaxTree,
 };
 use std::borrow::Cow;
 use wikidot_normalize::normalize;
@@ -61,7 +61,11 @@ fn restore_element(
 ) {
     let next = depth + 1;
     match element {
-        Element::Link { link, .. } => restore_location(link, fragments),
+        Element::Link { link, label, .. } => {
+            let derived = label_derived_from_target(label, link, fragments);
+            restore_location(link, fragments);
+            restore_label(label, link, derived, fragments);
+        }
         Element::Image {
             link: Some(link), ..
         } => restore_location(link, fragments),
@@ -168,5 +172,59 @@ fn restore_location(location: &mut LinkLocation<'_>, fragments: &CompatTextFragm
 fn restore_string(value: &mut String, fragments: &CompatTextFragments) {
     if fragments.contains_marker(value) {
         *value = fragments.restore_ignoring_case(value);
+    }
+}
+
+/// Wikidot derives an empty label (`[[[{$prev}|]]]`) from the normalized
+/// target, and FTML does so while parsing, so such a label is the normalized
+/// marker. A label equal to the parsed page target is that derivation.
+fn label_derived_from_target(
+    label: &LinkLabel<'_>,
+    location: &LinkLocation<'_>,
+    fragments: &CompatTextFragments,
+) -> bool {
+    match (label, location) {
+        (LinkLabel::Text(text), LinkLocation::Page(PageRef { site, page, .. })) => {
+            fragments.contains_marker(text)
+                && match site {
+                    None => text.as_ref() == page.as_str(),
+                    Some(site) => {
+                        text.as_ref() == page.as_str()
+                            || text.as_ref() == format!("{site}:{page}")
+                    }
+                }
+        }
+        _ => false,
+    }
+}
+
+/// Put the authored text back into a link label. A label derived from the
+/// target follows the restored, normalized target (Wikidot links
+/// `[[[{$prev}|]]]` as `prev`); an authored label keeps its authored text
+/// (`[[[{$link}]]]` and `[[[target | {$title}]]]` show the variable as
+/// written).
+fn restore_label(
+    label: &mut LinkLabel<'_>,
+    location: &LinkLocation<'_>,
+    derived: bool,
+    fragments: &CompatTextFragments,
+) {
+    if derived {
+        if let LinkLocation::Page(PageRef { site, page, .. }) = location {
+            let text = match site {
+                Some(site) => format!("{site}:{page}"),
+                None => page.clone(),
+            };
+            *label = LinkLabel::Text(Cow::Owned(text));
+        }
+        return;
+    }
+    match label {
+        LinkLabel::Text(text) | LinkLabel::Slug(text)
+            if fragments.contains_marker(text) =>
+        {
+            *text = Cow::Owned(fragments.restore_ignoring_case(text));
+        }
+        _ => {}
     }
 }

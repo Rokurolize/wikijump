@@ -13,8 +13,6 @@
 
 <h1>{errorData?.internationalization?.["error"]}</h1>
 
-<p><textarea class="debug">{JSON.stringify(page, null, 2)}</textarea></p>
-
 <!--
 Use svelte-switch-case package with {#switch data.view}
 as soon as we can figure out prettier support for it.
@@ -25,10 +23,3 @@ as soon as we can figure out prettier support for it.
 {:else}
   {errorData.internationalization?.["error-api.GENERIC"]}
 {/if}
-
-<style global lang="scss">
-  .debug {
-    width: 100%;
-    height: 60vh;
-  }
-</style>

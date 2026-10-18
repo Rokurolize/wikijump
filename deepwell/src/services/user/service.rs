@@ -435,15 +435,21 @@ impl UserService {
         // We've already checked for empty emails above (e.g. system users can have empty emails).
         let (email_validation_json, email_validation_at) =
             if !bypass_email_verification && !email.is_empty() {
-                let email_validation_output = EmailService::validate(ctx, &email)
+                // MailCheck being unavailable leaves the email recorded as
+                // not validated instead of refusing the account.
+                match EmailService::validate_when_available(ctx, &email)
                     .await
-                    .or_raise(make_error)?;
+                    .or_raise(make_error)?
+                {
+                    Some(email_validation_output) => {
+                        let email_validation_json =
+                            check_email_validation(&slug, &email_validation_output)
+                                .or_raise(make_error)?;
 
-                let email_validation_json =
-                    check_email_validation(&slug, &email_validation_output)
-                        .or_raise(make_error)?;
-
-                (Some(email_validation_json), Some(now()))
+                        (Some(email_validation_json), Some(now()))
+                    }
+                    None => (None, None),
+                }
             } else {
                 // Skipping email validation
                 (None, None)
@@ -932,17 +938,22 @@ impl UserService {
             }
 
             // Validate email
-            let email_validation_output = EmailService::validate(ctx, &email)
-                .await
-                .or_raise(make_error)?;
-
             let email_validation_json =
-                check_email_validation(&user.slug, &email_validation_output)
-                    .or_raise(make_error)?;
+                match EmailService::validate_when_available(ctx, &email)
+                    .await
+                    .or_raise(make_error)?
+                {
+                    Some(email_validation_output) => Some(
+                        check_email_validation(&user.slug, &email_validation_output)
+                            .or_raise(make_error)?,
+                    ),
+                    None => None,
+                };
 
             model.email = Set(email);
-            model.email_validation_info = Set(Some(email_validation_json));
-            model.email_validation_at = Set(Some(now()));
+            model.email_validation_at =
+                Set(email_validation_json.as_ref().map(|_| now()));
+            model.email_validation_info = Set(email_validation_json);
 
             // Deliverability validation does not prove ownership of the new
             // address. A separate verification step must establish that.
