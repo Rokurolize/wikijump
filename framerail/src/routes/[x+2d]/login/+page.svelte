@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { goto, invalidateAll } from "$app/navigation"
-  import { authCancelDestination } from "$lib/auth-cancel.js"
+  import { goto } from "$app/navigation"
+  import { page } from "$app/state"
+  import { authCancelDestination, authReturnDestination } from "$lib/auth-cancel.js"
   import { errorPopupState } from "$lib/layout/stores.svelte"
   import { superForm } from "sveltekit-superforms"
   import { untrack } from "svelte"
@@ -30,7 +31,14 @@
 
           mfaSessionToken = undefined
           isLoggedIn = result.data.isLoggedIn
-          await invalidateAll()
+          // Land where sign-in started (or the site root) with the session's
+          // account menu, instead of staying on the bare /-/login screen.
+          if (isLoggedIn) {
+            await goto(authReturnDestination(page.url), {
+              replaceState: true,
+              invalidateAll: true
+            })
+          }
           return
         }
 
