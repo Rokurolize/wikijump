@@ -1,4 +1,10 @@
-import { expect, test, waitForSvelteDelegatedHandler } from "./hermetic-playwright"
+import {
+  expect,
+  installNativeEventListenerProbe,
+  test,
+  waitForNativeEventListener,
+  waitForSvelteDelegatedHandler
+} from "./hermetic-playwright"
 
 const FIXTURE_URL = `http://127.0.0.1:${process.env.PLAYWRIGHT_FIXTURE_PORT ?? "42747"}`
 const SITE_HEADERS = {
@@ -18,7 +24,9 @@ test("Cancel discards a rejected profile draft and a corrected field is submitte
   await request.get(`${FIXTURE_URL}/last-page-write-requests`)
   await page.setExtraHTTPHeaders(SITE_HEADERS)
 
-  await page.goto("/-/login")
+  await installNativeEventListenerProbe(page)
+  await page.goto("/-/login?return=/page-workflow-probe")
+  await waitForNativeEventListener(page, "#login", "submit")
   await page.locator("#login-name-or-email").fill("fixture-member")
   await page.locator("#login-password").fill("fixture-member-password")
   const loginResponse = page.waitForResponse(
@@ -33,6 +41,9 @@ test("Cancel discards a rejected profile draft and a corrected field is submitte
       (await page.context().cookies()).some((cookie) => cookie.name === "wikijump_token")
     )
     .toBe(true)
+  // Successful login now navigates away from the form. Let that navigation
+  // finish before opening the profile, or it can interrupt our next goto.
+  await page.waitForURL((url) => url.pathname === "/page-workflow-probe")
 
   await page.goto("/-/user")
   await waitForSvelteDelegatedHandler(page, ".button-edit")
