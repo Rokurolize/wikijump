@@ -65,8 +65,8 @@
       },
       {
         "path": "wws/src/deepwell.rs",
-        "git_blob": "8c1835ed82506d1c6d6b8e67acdd1f8416b522e0",
-        "sha256": "04443f5175f631b640f2589e3ace6ad48d246a2714c6d7447b3114630c43a2b3"
+        "git_blob": "9af024d0b5297e041652c80bedc22afb629cdaaa",
+        "sha256": "13baca4af3db21e2088dc1c7711598bacd6477c06dc22f7cffd391c89edeee37"
       },
       {
         "path": "wws/src/handler/avatar.rs",
