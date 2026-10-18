@@ -157,7 +157,7 @@ use crate::services::settings::{
 };
 use crate::services::text_block::{MIME_HTML, TextBlock, TextBlockService};
 use crate::services::{
-    LinkService, PageQueryService, ScoreService, SiteService, TextService,
+    DomainService, LinkService, PageQueryService, ScoreService, SiteService, TextService,
 };
 use crate::types::Reference;
 use crate::types::{PageId, TextBlockType};
@@ -2933,8 +2933,9 @@ impl RenderService {
             };
 
         Some(format!(
-            "https://{}{}{}",
-            target_site_slug, config.files_domain, path,
+            "https://{}{}",
+            DomainService::get_files_authority(config, target_site_slug),
+            path,
         ))
     }
 

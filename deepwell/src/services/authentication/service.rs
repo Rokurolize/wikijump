@@ -65,23 +65,26 @@ impl AuthenticationService {
             ctx.commit_expected_authentication_rejection();
             bail!(make_error());
         }
-        if auth.valid {
-            let account_bucket =
-                AuthenticationAttemptService::login_user_bucket(auth.user_id);
-            if !AuthenticationAttemptService::reserve(ctx, &account_bucket, 10, 600)
-                .await?
-            {
-                ctx.commit_expected_authentication_rejection();
-                bail!(make_error());
-            }
-            buckets.push(account_bucket);
-        }
+        let account_bucket = auth.valid.then(|| {
+            let bucket = AuthenticationAttemptService::login_user_bucket(auth.user_id);
+            buckets.push(bucket.clone());
+            bucket
+        });
 
+        // Verify the password before consulting the per-account bucket. A
+        // correct password always clears the buckets and logs in, so flooding
+        // the account with failures cannot lock the real holder out (#2512).
+        // Wrong passwords still consume both buckets below, keeping the
+        // brute-force bound identical for attackers.
         if let Err(error) =
             PasswordService::verify_sleep(ctx, &password, &auth.password_hash, false)
                 .await
         {
             if error.error_type == ErrorType::InvalidAuthentication {
+                if let Some(account_bucket) = &account_bucket {
+                    AuthenticationAttemptService::reserve(ctx, account_bucket, 10, 600)
+                        .await?;
+                }
                 ctx.commit_expected_authentication_rejection();
             }
             return Err(error.raise(make_error()));

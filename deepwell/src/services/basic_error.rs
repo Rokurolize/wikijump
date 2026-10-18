@@ -67,9 +67,11 @@ impl BasicErrorService {
 
         assert!(!locales.is_empty(), "No languages specified");
         let config = ctx.config();
+        let main_domain = config.public_authority(&config.main_domain_no_dot);
+        let files_domain = config.public_authority(&config.files_domain_no_dot);
         let mut args = FluentArgs::new();
-        args.set("main_domain", fluent_str!(config.main_domain_no_dot));
-        args.set("files_domain", fluent_str!(config.files_domain_no_dot));
+        args.set("main_domain", fluent_str!(main_domain));
+        args.set("files_domain", fluent_str!(files_domain));
         args.set("slug", fluent_str!(site_slug));
 
         let title = ctx
@@ -106,9 +108,11 @@ impl BasicErrorService {
 
         assert!(!locales.is_empty(), "No languages specified");
         let config = ctx.config();
+        let main_domain = config.public_authority(&config.main_domain_no_dot);
+        let files_domain = config.public_authority(&config.files_domain_no_dot);
         let mut args = FluentArgs::new();
-        args.set("main_domain", fluent_str!(config.main_domain_no_dot));
-        args.set("files_domain", fluent_str!(config.files_domain_no_dot));
+        args.set("main_domain", fluent_str!(main_domain));
+        args.set("files_domain", fluent_str!(files_domain));
         args.set("custom_domain", fluent_str!(domain));
 
         let title = ctx
@@ -157,7 +161,7 @@ impl BasicErrorService {
             .await
             .or_raise(make_error)?;
 
-        let domain = DomainService::preferred_domain(config, &site);
+        let domain = DomainService::preferred_authority(config, &site);
         args.set("domain", fluent_str!(domain));
 
         let title = ctx
@@ -201,7 +205,7 @@ impl BasicErrorService {
         let site = SiteService::get(ctx, Reference::Id(site_id))
             .await
             .or_raise(make_error)?;
-        let domain = DomainService::preferred_domain(config, &site);
+        let domain = DomainService::preferred_authority(config, &site);
         args.set("domain", fluent_str!(domain));
         args.set("page_slug", fluent_str!(page_slug));
 
@@ -245,7 +249,7 @@ impl BasicErrorService {
         let site = SiteService::get(ctx, Reference::Id(site_id))
             .await
             .or_raise(make_error)?;
-        let domain = DomainService::preferred_domain(config, &site);
+        let domain = DomainService::preferred_authority(config, &site);
         args.set("domain", fluent_str!(domain));
         args.set("page_slug", fluent_str!(page_slug));
         args.set("filename", fluent_str!(filename));
@@ -290,7 +294,7 @@ impl BasicErrorService {
             .await
             .or_raise(make_error)?;
 
-        let domain = DomainService::preferred_domain(config, &site);
+        let domain = DomainService::preferred_authority(config, &site);
         args.set("domain", fluent_str!(domain));
         args.set("page_slug", fluent_str!(page_slug));
         args.set("filename", fluent_str!(filename));
@@ -336,7 +340,7 @@ impl BasicErrorService {
         let site = SiteService::get(ctx, Reference::Id(site_id))
             .await
             .or_raise(make_error)?;
-        let domain = DomainService::preferred_domain(config, &site);
+        let domain = DomainService::preferred_authority(config, &site);
         args.set("domain", fluent_str!(domain));
         args.set("index", fluent_str!(index));
         args.set("type", fluent_str!(block_type));
@@ -372,9 +376,11 @@ impl BasicErrorService {
 
         assert!(!locales.is_empty(), "No languages specified");
         let config = ctx.config();
+        let main_domain = config.public_authority(&config.main_domain_no_dot);
+        let files_domain = config.public_authority(&config.files_domain_no_dot);
         let mut args = FluentArgs::new();
-        args.set("main_domain", fluent_str!(config.main_domain_no_dot));
-        args.set("files_domain", fluent_str!(config.files_domain_no_dot));
+        args.set("main_domain", fluent_str!(main_domain));
+        args.set("files_domain", fluent_str!(files_domain));
 
         let title = ctx
             .localization()

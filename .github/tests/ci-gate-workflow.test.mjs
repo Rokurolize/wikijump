@@ -122,6 +122,19 @@ test("known local Compose runtime definitions trigger runtime, workflow and veri
       assert.equal(selected[group], false, `${file}: no ${group} input`)
     }
   }
+  for (const file of [
+    "install/local/caddy/request.json",
+    "install/local/caddy/health-check.sh",
+    "install/local/caddy/Caddyfile",
+  ]) {
+    const selected = classifyChanges([file])
+    for (const group of ["deepwell", "wws", "framerail", "workflow", "verification"]) {
+      assert.equal(selected[group], true, `${file}: ${group}`)
+    }
+    for (const group of ["locales", "theme_lab"]) {
+      assert.equal(selected[group], false, `${file}: no ${group} input`)
+    }
+  }
   const unknown = classifyChanges(["install/local/docker-compose.new-service.yaml"])
   for (const group of [...GROUPS, "verification"]) {
     assert.equal(unknown[group], true, `unknown compose: ${group}`)
@@ -180,7 +193,12 @@ test("machine-readable development authorities select local verification", () =>
 })
 
 test("documentation stays cheap and unknown local-preflight paths fail closed", () => {
-  const docs = classifyChanges(["README.md", "AGENTS.md", "docs/development.md"])
+  const docs = classifyChanges([
+    "README.md",
+    "AGENTS.md",
+    "docs/development.md",
+    "install/local/README.md",
+  ])
   for (const group of GROUPS) assert.equal(docs[group], false, group)
 
   for (const file of [

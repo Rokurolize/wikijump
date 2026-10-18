@@ -11485,7 +11485,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "864e471377f123a0d6bddf48ac277bc7b687b1f8e1f46f4becca8d059ba85e4d"
+      "source_input_set_sha256": "52d0fa036f70832760cfbee20128dbb44e7d3fcf3bcc327042120d67338b4ff2"
     },
     "ftml": {
       "commit": "e96ff5f80d719d5904da9e80617b2d7f9cfef509",
@@ -11502,7 +11502,7 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "1937ed69310c00e1353df883f8457c7790c0322da5a60be29622c2e117449bb5"
+        "sha256": "7da8b1082c5a5b9d2171d38f6f94de5377c5e37780490f22d8909130e7698159"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
@@ -11526,7 +11526,7 @@
       },
       {
         "path": "deepwell/src/endpoints/domain.rs",
-        "sha256": "c76b8a81e003b0358bfe25e8af9ffeb5c336258b818df4d604f9f159910891f7"
+        "sha256": "de30b748f3eeb7f50a506b2820f99ec8d034aa1ea2986bbadb38d6a9a1bd01b3"
       },
       {
         "path": "deepwell/src/endpoints/email.rs",
@@ -11630,7 +11630,7 @@
       },
       {
         "path": "deepwell/src/endpoints/user.rs",
-        "sha256": "ede54816f3d9dcb4e22a9b34b5e83d33724eac6564c62f1ed68f50cbd8d254fe"
+        "sha256": "e7ac2f98c2de1b72454776219617557f0a225f4f6aebe72ceffde60b6174ade5"
       },
       {
         "path": "deepwell/src/endpoints/view.rs",
@@ -11642,7 +11642,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "677e2bb27df7be24509fe2e4bdb5c52cc041366e6d4a1b289825cd9c64b3b2a9"
+        "sha256": "c20cb19b856a82c378cd3587c350d29ab721ca32bf48054dbd832a939ecb0679"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -11650,7 +11650,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "8567ed0c90892fccc6df347769f55fb1f31a7e1d83ddd5c8e8862b5c2f2fc826"
+        "sha256": "4f5abe6c2b088577e21482383cade33a56645649c32ca254c50b6e45224daa72"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11714,7 +11714,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "3ebce817ed9ffdbf72312cb9873fc89b11f764fd36f8d835737b6751fbe258f6"
+        "sha256": "65b42cbffc457691efb6f8bef2e1fec6e6ef229ad0330dcc3e91cce6e86d8e76"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11846,7 +11846,7 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/user/+page.svelte",
-        "sha256": "8c65cf97b96588e52afe487eb48be91fb76c60e7ff499ee4453444d5eed84f27"
+        "sha256": "8a331c248b726fca68f0eff0e465dcb332346ff22adca680b8c2ff582dcaf7ff"
       },
       {
         "path": "framerail/src/routes/[x+2d]/wikidot-interwiki/interwikiFrame.html/+server.ts",
@@ -19997,7 +19997,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/caddy/caddyfile.j2#redir https://{{ domain }}{uri}",
+          "deepwell/src/services/caddy/caddyfile.j2#redir https://{{ domain }}{{ public_port_suffix }}{uri}",
           "deepwell/src/services/caddy/service.rs#should_use_wildcard: wildcard_cert.is_some() || *local"
         ]
       },

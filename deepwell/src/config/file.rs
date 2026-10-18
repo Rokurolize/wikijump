@@ -379,6 +379,16 @@ impl ConfigFile {
         const RSMQ_DELAY_LIMIT: u64 = 9999999;
 
         assert!(https_port != 0, "Public HTTPS port must not be zero");
+        // The public port is configured once, as `https-port`. A domain that
+        // also spells a port would leak it into hostname comparisons.
+        assert!(
+            is_bare_hostname(&main_domain),
+            "Main domain must be a bare hostname (set the port with https-port): {main_domain:?}",
+        );
+        assert!(
+            is_bare_hostname(&files_domain),
+            "Files domain must be a bare hostname (set the port with https-port): {files_domain:?}",
+        );
 
         assert!(
             job_prune_session_secs < RSMQ_DELAY_LIMIT,
@@ -513,6 +523,26 @@ impl ConfigFile {
             maximum_message_recipients,
         }
     }
+}
+
+/// Whether a configured domain is a hostname alone, without a scheme, port, or path.
+fn is_bare_hostname(domain: &str) -> bool {
+    let domain = domain.strip_prefix('.').unwrap_or(domain);
+    !domain.is_empty()
+        && domain.split('.').all(|label| {
+            !label.is_empty()
+                && label.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+        })
+}
+
+#[test]
+fn test_is_bare_hostname() {
+    assert!(is_bare_hostname("wikijump.com"));
+    assert!(is_bare_hostname(".wikijump.dev.localhost"));
+    assert!(!is_bare_hostname("wikijump.localhost:18443"));
+    assert!(!is_bare_hostname("https://wikijump.com"));
+    assert!(!is_bare_hostname("wikijump..com"));
+    assert!(!is_bare_hostname(""));
 }
 
 /// Takes a domain, and returns a value with and without a leading `.`
@@ -787,6 +817,24 @@ mod tests {
 
         let config_file: ConfigFile = toml::from_str(&without_https_port).unwrap();
         assert_eq!(config_file.into_config(extra_config()).https_port, 443);
+    }
+
+    #[test]
+    #[should_panic(expected = "set the port with https-port")]
+    fn into_config_rejects_a_port_spelled_into_the_main_domain() {
+        let mut config_file = sample_config_file();
+        config_file.domain.main = str!("wikijump.localhost:18443");
+
+        config_file.into_config(extra_config());
+    }
+
+    #[test]
+    #[should_panic(expected = "set the port with https-port")]
+    fn into_config_rejects_a_port_spelled_into_the_files_domain() {
+        let mut config_file = sample_config_file();
+        config_file.domain.files = str!("wjfiles.localhost:18443");
+
+        config_file.into_config(extra_config());
     }
 
     #[test]

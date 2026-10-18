@@ -168,6 +168,7 @@ pub async fn user_edit(
         user: reference,
         ip_address,
         body,
+        current_password,
     } = parse!(params, User);
 
     let target = UserService::get_real(ctx, reference)
@@ -188,6 +189,39 @@ pub async fn user_edit(
             ErrorType::PermissionDenied,
         )
         .into());
+    }
+
+    // Changing the account email re-points password reset and recovery, so
+    // a hijacked session must not be able to do it silently: the account
+    // holder first proves the current password. Platform staff editing
+    // another account, and edits that keep the current email, need no
+    // proof. Missing and wrong proofs are indistinguishable.
+    let email_changing = match &body.email {
+        Maybe::Set(new_email) => {
+            !new_email.trim().eq_ignore_ascii_case(target.email.trim())
+        }
+        _ => false,
+    };
+    if email_changing && actor_user_id == target.user_id && actor_user_id != ADMIN_USER_ID
+    {
+        let proof = current_password
+            .as_deref()
+            .map(str::trim)
+            .filter(|proof| !proof.is_empty())
+            .ok_or_else(|| {
+                Error::new(
+                    "current password verification failed",
+                    ErrorType::InvalidAuthentication,
+                )
+            })?;
+        PasswordService::verify_sleep(ctx, proof, &target.password, true)
+            .await
+            .map_err(|_| {
+                Error::new(
+                    "current password verification failed",
+                    ErrorType::InvalidAuthentication,
+                )
+            })?;
     }
 
     info!("Updating user ID {}", target.user_id);

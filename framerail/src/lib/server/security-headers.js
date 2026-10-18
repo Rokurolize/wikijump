@@ -3,6 +3,7 @@ import { createHash } from "node:crypto"
 import { auditedExternalAssetOrigins } from "./audited-external-asset-origins.js"
 import { WIKIDOT_STYLE_FRAME_SCRIPT } from "../wikidot/wikidot-styleframe.js"
 import { parseDeploymentEnvironment } from "./deployment-environment.js"
+import { platformDomains } from "./platform-domains.js"
 
 const SECURITY_HEADERS = {
   "cross-origin-opener-policy": "same-origin",
@@ -32,11 +33,6 @@ const SECURITY_HEADERS = {
 
 const HSTS_HEADER = "max-age=31536000; includeSubDomains"
 const CURRENT_SITE_FILE_ORIGIN = "https://wikijump-current-site.invalid"
-const DEPLOYMENT_FILE_SUFFIX = {
-  local: "localhost",
-  dev: "dev",
-  prod: "com"
-}
 const WIKIDOT_INTERWIKI_STYLE_SOURCES = auditedExternalAssetOrigins("styles").join(" ")
 const WIKIDOT_INTERWIKI_FONT_SOURCES = auditedExternalAssetOrigins("fonts").join(" ")
 const WIKIDOT_INTERWIKI_FRAME_POLICIES = new Map([
@@ -120,7 +116,8 @@ export const materializeSiteCsp = (
       port = ""
     }
   }
-  const origin = `https://${slug}.wjfiles.${DEPLOYMENT_FILE_SUFFIX[deploymentEnvironment]}${port ? `:${port}` : ""}`
+  const { files } = platformDomains({ deploymentEnvironment })
+  const origin = `https://${slug}.${files}${port ? `:${port}` : ""}`
   const materialized = materializeExactCspSource(policy, CURRENT_SITE_FILE_ORIGIN, origin)
   if (materialized) response.headers.set("content-security-policy", materialized)
 }

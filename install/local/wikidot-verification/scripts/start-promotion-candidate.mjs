@@ -57,7 +57,7 @@ export function candidateDeepwellConfig(source, port, {seed = true} = {}) {
     ['seeder-path = "seeder"', 'seeder-path = "/opt/deepwell/seeder"'],
     ['main = "wikijump.com"', 'main = "wikijump.localhost"'],
     ["https-port = 443", `https-port = ${port}`],
-    ['files = "wjfiles.com"', `files = "wjfiles.localhost:${port}"`],
+    ['files = "wjfiles.com"', 'files = "wjfiles.localhost"'],
     ["mock-mailcheck = false", "mock-mailcheck = true"],
   ]) {
     if (!config.includes(before)) fail(`candidate Deepwell config source does not contain ${before}`);

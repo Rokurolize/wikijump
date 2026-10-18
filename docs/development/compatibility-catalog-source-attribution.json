@@ -1020,7 +1020,7 @@
     {
       "surface_id": "catalog-feature:site-https",
       "sources": [
-        { "path": "deepwell/src/services/caddy/caddyfile.j2", "anchor": "redir https://{{ domain }}{uri}" },
+        { "path": "deepwell/src/services/caddy/caddyfile.j2", "anchor": "redir https://{{ domain }}{{ public_port_suffix }}{uri}" },
         { "path": "deepwell/src/services/caddy/service.rs", "anchor": "should_use_wildcard: wildcard_cert.is_some() || *local" }
       ],
       "tests": [

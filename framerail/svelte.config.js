@@ -9,6 +9,10 @@ import {
   parseDeploymentEnvironment
 } from "./src/lib/server/deployment-environment.js"
 import { auditedExternalAssetOrigins } from "./src/lib/server/audited-external-asset-origins.js"
+import {
+  platformDomains,
+  platformHttpsOrigin
+} from "./src/lib/server/platform-domains.js"
 
 // The former only works on node 20.11+
 const __dirname = import.meta.dirname ?? dirname(fileURLToPath(import.meta.url))
@@ -42,10 +46,10 @@ const WIKIDOT_LEGACY_SCRIPT_SOURCES = []
 // components also retain their source mirror's stylesheet/font authority
 // (e.g. info:start imports scp-wiki's info:style on the local authoring site).
 // Keep this exact local allowlist; authored imports cannot grant new origins.
-const LOCAL_SCP_FILE_ASSET_SOURCES = [
-  "https://scp-wiki.wjfiles.localhost",
-  "https://scp-jp.wjfiles.localhost"
-]
+// The mirrors are this local environment's own file hosts (standing:
+// `scp-wiki.wjfiles.localhost`; local development:
+// `scp-wiki.wjfiles.dev.localhost:18443`).
+const LOCAL_SCP_FILE_ASSET_SITES = ["scp-wiki", "scp-jp"]
 /** @type {CspSources} */
 const WIKIDOT_IMAGE_SOURCES = [
   "https://scp-wiki.wikidot.com",
@@ -67,6 +71,12 @@ const WIKIDOT_STYLE_SOURCES = auditedExternalAssetOrigins("styles")
 const WIKIDOT_FONT_SOURCES = auditedExternalAssetOrigins("fonts")
 
 const deploymentEnvironment = parseDeploymentEnvironment()
+const domains = platformDomains({ deploymentEnvironment })
+const LOCAL_SCP_FILE_ASSET_SOURCES = /** @type {CspSources} */ (
+  LOCAL_SCP_FILE_ASSET_SITES.map((site) =>
+    platformHttpsOrigin(`${site}.${domains.files}`, domains)
+  )
+)
 const testOutDir = process.env.NODE_TEST_CONTEXT
   ? resolve(tmpdir(), `wikijump-framerail-svelte-kit-test-${process.pid}`)
   : null

@@ -2037,7 +2037,7 @@ ORDER BY breadcrumb_chain.depth ASC
         } else {
             Vec::new()
         };
-        let site_file_domain = DomainService::get_files(config, &site.slug);
+        let site_file_domain = DomainService::get_files_authority(config, &site.slug);
         let license_name = site.license.translate(ctx.localization(), &locales)?;
         let license_url = site.license.url();
 

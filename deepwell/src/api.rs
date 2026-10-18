@@ -746,7 +746,15 @@ async fn build_request(
     })
 }
 
-const LOCAL_AUTHORING_DOMAIN: &str = "wikijump.localhost";
+/// Whether the configured platform domain is a loopback-only `.localhost`
+/// name (RFC 6761), such as `wikijump.localhost` (standing) or
+/// `wikijump.dev.localhost` (the local development stack).
+fn is_local_authoring_domain(configured_domain: &str) -> bool {
+    configured_domain.ends_with(".localhost")
+        && configured_domain
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'.')
+}
 const LOCAL_AUTHORING_SITE_SLUG: &str = "scpaiueouiuiuiui";
 const LOCAL_AUTHORING_USER_ID: i64 = -1;
 
@@ -769,7 +777,7 @@ fn may_bind_local_authoring_actor(
     actor_marker_present: bool,
     method_name: &str,
 ) -> bool {
-    configured_domain == LOCAL_AUTHORING_DOMAIN
+    is_local_authoring_domain(configured_domain)
         && session_token.is_none_or(str::is_empty)
         && request_user_id.is_none()
         && actor_marker_present
@@ -831,15 +839,19 @@ mod tests {
     #[test]
     fn local_authoring_actor_requires_local_domain_anonymous_request_marker_and_allowed_method()
      {
-        assert!(may_bind_local_authoring_actor(
-            LOCAL_AUTHORING_DOMAIN,
-            None,
-            None,
-            true,
-            "page_create",
-        ));
+        const LOCAL_AUTHORING_DOMAIN: &str = "wikijump.localhost";
+
+        for domain in [LOCAL_AUTHORING_DOMAIN, "wikijump.dev.localhost"] {
+            assert!(
+                may_bind_local_authoring_actor(domain, None, None, true, "page_create"),
+                "expected actor binding for {domain}",
+            );
+        }
         for (domain, session, user, marker, method) in [
             ("wikijump.com", None, None, true, "page_create"),
+            ("wikijump.dev", None, None, true, "page_create"),
+            ("localhost.wikijump.com", None, None, true, "page_create"),
+            ("wikijump.localhost:18443", None, None, true, "page_create"),
             (
                 LOCAL_AUTHORING_DOMAIN,
                 Some("invalid-token"),

@@ -30,6 +30,22 @@ test("legal destinations default to the platform host for the deployment", () =>
   })
 })
 
+test("the local development stack links to its own platform host and port", () => {
+  assert.deepEqual(
+    legalDestinations({
+      deploymentEnvironment: "local",
+      env: {
+        WIKIJUMP_MAIN_DOMAIN: "wikijump.dev.localhost",
+        WIKIJUMP_HTTPS_PORT: "18443"
+      }
+    }),
+    {
+      termsOfService: "https://wikijump.dev.localhost:18443/legal:terms-of-service",
+      privacyPolicy: "https://wikijump.dev.localhost:18443/legal:privacy-policy"
+    }
+  )
+})
+
 test("a self-hosted instance configures its own legal destinations", () => {
   const destinations = legalDestinations({
     deploymentEnvironment: "prod",
