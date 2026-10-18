@@ -87,6 +87,7 @@
   // contract for hung reads.
   let wikidotBacklinksFailed = $state(false)
   let wikidotWatchersFailed = $state(false)
+  let auxPaneRequestId = $state(0)
 
   function onAuxPaneReadStateChange(
     pane: "backlinks" | "watchers",
@@ -321,6 +322,11 @@
     // any failure inherited from its previous mount.
     if (pane === PagePane.Backlinks) wikidotBacklinksFailed = false
     if (pane === PagePane.Watchers) wikidotWatchersFailed = false
+    // Clicking a read action again starts a new module request, even when
+    // its previous failure hid the pane and left the same selection active.
+    if (pane === PagePane.Backlinks || pane === PagePane.Watchers) {
+      auxPaneRequestId += 1
+    }
     pagePaneState = pane
   }
 
@@ -1024,6 +1030,7 @@
           initialFileList={wikidotFilesPrefetched}
           onFileListVisibilityChange={(ready) => (wikidotFilesListReady = ready)}
           onPaneReadStateChange={onAuxPaneReadStateChange}
+          {auxPaneRequestId}
           bind:pagePaneState
         />
       {/if}

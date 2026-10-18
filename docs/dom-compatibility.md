@@ -44,3 +44,19 @@ asset allowlist: it neither adds executable/connection/frame sources nor grants
 arbitrary authored origins or production exceptions. A run-owned page including
 `info:start` twice reproduced the denied `scp-wiki.wjfiles.localhost` stylesheet
 under another site's CSP; the mirrored CSS itself returns 200 with CSS MIME.
+
+## Reopening read-only page actions after a failed request
+
+The retained Wikidot `backlinksClick` and `watchersClick` handlers dispatch a
+new `OZONE.ajax.requestModule` call on every activation, with no existing-pane
+or failed-state shortcut. They request `backlinks/BacklinksModule` and
+`watch/WhoWatchesModule` respectively. Evidence: the same retained compressed
+`WIKIDOT.combined-v--7690939296dc.js` and SHA-256 recorded above. Matched
+HTTP 503 observations on SCP-3922 and SCP-9506 are recorded in issue #2241:
+the failed result area is hidden and empty, with no new error/retry widget.
+
+Reactivating either action must therefore start another read without a full
+page reload. Framerail gives each activation a new pane instance, aborting
+the superseded read and discarding its local failure/result state. The
+offline `backlinks-watchers-failure.spec.ts` regression clicks the same
+action after a failed read and requires a second request and populated result.

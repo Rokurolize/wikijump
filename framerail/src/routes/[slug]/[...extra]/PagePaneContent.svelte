@@ -15,6 +15,7 @@
     initialFileList = null,
     onFileListVisibilityChange,
     onPaneReadStateChange,
+    auxPaneRequestId = 0,
     setRevision,
     setShowRevision
   }: {
@@ -24,6 +25,7 @@
     wikidot: boolean
     initialFileList?: PageFile[] | null
     onFileListVisibilityChange?: (ready: boolean) => void
+    auxPaneRequestId?: number
     onPaneReadStateChange?: (
       pane: "backlinks" | "watchers",
       readState: "loading" | "success" | "failure"
@@ -109,11 +111,13 @@
     {/if}
   {:else if pagePaneState === PagePane.Backlinks}
     {#if BacklinksPane}
-      <BacklinksPane
-        {...props}
-        onPaneReadStateChange={(readState: "loading" | "success" | "failure") =>
-          onPaneReadStateChange?.("backlinks", readState)}
-      />
+      {#key auxPaneRequestId}
+        <BacklinksPane
+          {...props}
+          onPaneReadStateChange={(readState: "loading" | "success" | "failure") =>
+            onPaneReadStateChange?.("backlinks", readState)}
+        />
+      {/key}
     {:else}
       <p class="pane-loading" aria-live="polite">Loading…</p>
     {/if}
@@ -167,11 +171,13 @@
     {/if}
   {:else if pagePaneState === PagePane.Watchers}
     {#if WatchersPane}
-      <WatchersPane
-        {...props}
-        onPaneReadStateChange={(readState: "loading" | "success" | "failure") =>
-          onPaneReadStateChange?.("watchers", readState)}
-      />
+      {#key auxPaneRequestId}
+        <WatchersPane
+          {...props}
+          onPaneReadStateChange={(readState: "loading" | "success" | "failure") =>
+            onPaneReadStateChange?.("watchers", readState)}
+        />
+      {/key}
     {:else}
       <p class="pane-loading" aria-live="polite">Loading…</p>
     {/if}
