@@ -38,10 +38,24 @@ pub(super) fn remove_unresolved_include_comment_branches(wikitext: &mut String) 
 /// caller after nested sources are assembled.
 pub(super) fn remove_nested_include_boundaries(wikitext: &mut String) {
     let mut output = String::with_capacity(wikitext.len());
+    let mut plain_comment_open = false;
     for line in wikitext.split_inclusive('\n') {
         let marker = line.trim();
+        if plain_comment_open {
+            // Inside a plain Wikidot comment every line is comment text.
+            // A boundary-looking line here carries the `--]` that closes
+            // the comment, so it must survive: dropping it leaves the
+            // comment unterminated, and later literal-region scans swallow
+            // following caller content into the comment.
+            output.push_str(line);
+            if marker.contains("--]") {
+                plain_comment_open = false;
+            }
+            continue;
+        }
         if !is_boundary(marker) && !is_unresolved_branch_open(marker) {
             output.push_str(line);
+            plain_comment_open = opens_plain_comment(line);
         }
     }
     *wikitext = output;
@@ -311,6 +325,38 @@ mod tests {
         remove_nested_include_boundaries(&mut wikitext);
 
         assert_eq!(wikitext, "Before\nNested content\nAfter\n");
+    }
+
+    #[test]
+    fn nested_boundary_pruning_preserves_plain_comment_closers() {
+        // A `[!-- --]` line that carries the `--]` closing an earlier plain
+        // comment opener is comment text, not a nested-include boundary:
+        // dropping it leaves the comment unterminated, and module
+        // recognition then treats following modules as comment text
+        // (component:pride-logos shape behind the deer-college Rate stub).
+        let original = concat!(
+            "Before\n",
+            "[!-- -draft\n",
+            "Commented branch body\n",
+            "[!-- --]\n",
+            "[[module Rate]]\n",
+        );
+        let mut wikitext = original.to_owned();
+
+        remove_nested_include_boundaries(&mut wikitext);
+
+        assert_eq!(wikitext, original);
+        let literal_regions =
+            crate::services::render::literal_regions::LiteralRegionIndex::new_wikidot_module_recognition(
+                &wikitext,
+            );
+        let rate_start = wikitext
+            .find("[[module Rate]]")
+            .expect("rate module present");
+        assert!(
+            !literal_regions.contains(rate_start),
+            "a module after a closed plain comment must stay recognizable",
+        );
     }
 
     #[test]
