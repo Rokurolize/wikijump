@@ -11485,7 +11485,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "3b9555cdcb4e06cc871f1bc0825b66aeb5a0f4957799ac8f0795c169b1f366e0"
+      "source_input_set_sha256": "cc743dc92ed2c31e3e9b2e3829ba2af3d65f415d1779740171c58945136f553f"
     },
     "ftml": {
       "commit": "9a828056bdc14ac3a2ab6900d45361273b94cd32",
@@ -11590,7 +11590,7 @@
       },
       {
         "path": "deepwell/src/endpoints/page.rs",
-        "sha256": "9e4f1965368874d69bfa0b7707beadcd4f7e98e4142a2f740fe94cb7e0fcc325"
+        "sha256": "fa70fbb9dffde40ad7e8747cbf11d20f847b974dcd42466d8c5ce818a835da8d"
       },
       {
         "path": "deepwell/src/endpoints/page/permissions.rs",
@@ -11650,7 +11650,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "5d80ee609adf155c97f8057e1056e1031f50465fd51b17804e6a2c1d61dba781"
+        "sha256": "4f4df84ca3432d116ad75af7661d950953cebca39e9b89511b2b4e8a3f1eab1f"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11714,7 +11714,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "cefdd03cbe69cb4093817da22c29345f28f195828d072b69d4a26867126ba379"
+        "sha256": "4b60344d837f75a24e97c67fb99013876259840809042aefdca3901e9544d52c"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11950,11 +11950,11 @@
       },
       {
         "path": "framerail/src/routes/sitemap_page_[n].xml/+server.ts",
-        "sha256": "73294f9c7986801955d03ed6008788033e341e16fd0e181ec3133efbe6724daa"
+        "sha256": "ea04b21938572828fafedaabaeb66d557a2e5fa1e5dfb465417e74bc7f836ba1"
       },
       {
         "path": "framerail/src/routes/sitemap.xml/+server.ts",
-        "sha256": "c5e9783555ecf274bc9ea75226149e3c9f76a99821a77e929523ccb0ea95b6d2"
+        "sha256": "738527aa0b2612a3b7ecab0f3d7123bb656e1539edadc5f8018f2ad507229ecf"
       },
       {
         "path": "framerail/src/routes/user[x+3a]info/[target]/+page.server.ts",
@@ -12006,7 +12006,7 @@
       },
       {
         "path": "wws/src/route.rs",
-        "sha256": "f7a65bbc577e5e465fb45a58b8a64e53fb700eaa71931cb59528253a96cf4d06"
+        "sha256": "27e7a8d21bc842d8822410016ce779e8423d7e73420677915dfa0eb8fed35f9b"
       }
     ]
   },
@@ -30728,7 +30728,7 @@
         ],
         "cases": [],
         "tests": [
-          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+          "deepwell/tests/page.rs#sitemap_never_publishes_authenticated_only_site_pages"
         ]
       },
       "evidence": {
