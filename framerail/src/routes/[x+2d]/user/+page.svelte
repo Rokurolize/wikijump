@@ -129,6 +129,21 @@
       type="text"
       bind:value={$form.email}
     />
+    <label for="current-password"
+      >{data.internationalization?.["user-profile-info.current-password"]}</label
+    >
+    <input
+      id="current-password"
+      name="currentPassword"
+      class="user-attribute current-password"
+      type="password"
+      autocomplete="current-password"
+      aria-describedby="current-password-hint"
+      bind:value={$form.currentPassword}
+    />
+    <p id="current-password-hint" class="settings-note">
+      {data.internationalization?.["user-profile-info.current-password-hint"]}
+    </p>
     <label for="avatar">{data.internationalization?.["user-profile-info.avatar"]}</label>
     <input
       id="avatar"

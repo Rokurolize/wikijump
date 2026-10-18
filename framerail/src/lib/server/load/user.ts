@@ -157,6 +157,8 @@ export async function loadUser(
       "user-profile-info.name": {},
       "user-profile-info.real-name": {},
       "user-profile-info.email": {},
+      "user-profile-info.current-password": {},
+      "user-profile-info.current-password-hint": {},
       "user-profile-info.avatar": {},
       "user-profile-info.gender": {},
       "user-profile-info.birthday": {},
@@ -281,6 +283,7 @@ export async function userEditAction({
       name,
       realName,
       email,
+      currentPassword,
       avatar,
       removeAvatar,
       gender,
@@ -308,6 +311,7 @@ export async function userEditAction({
       {
         name,
         email,
+        currentPassword: currentPassword || undefined,
         locales: locales
           ? limitLocalePreferences(
               locales.replaceAll("_", "-").replaceAll(",", " ").split(" ")
@@ -337,6 +341,7 @@ export const userEditSchema = object({
   name: optional(string()),
   realName: optional(string()),
   email: optional(string()),
+  currentPassword: optional(string()),
   avatar: optional(file()),
   removeAvatar: optional(boolean()),
   gender: optional(string()),
