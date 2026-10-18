@@ -34,9 +34,10 @@
   interface Props extends PageProps {
     setShowRevision: (val: boolean) => void
     setRevision: (rev: Optional<PageRevisionModelFiltered>) => void
+    setRevisionContext: (context: string | null) => void
   }
 
-  let { setShowRevision, setRevision, data }: Props = $props()
+  let { setShowRevision, setRevision, setRevisionContext, data }: Props = $props()
 
   const pageLayoutContext = getPageLayoutContext()
 
@@ -438,6 +439,7 @@
                       return
                     }
                     if (!active) return
+                    setRevisionContext(revisionItem.comments ?? null)
                     setShowRevision(true)
                     showRevisionSource = false
                   }}
@@ -539,6 +541,7 @@
                   ) {
                     return
                   }
+                  setRevisionContext(revisionItem.comments ?? null)
                   setShowRevision(true)
                   showRevisionSource = false
                 }}

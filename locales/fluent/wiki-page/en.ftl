@@ -39,6 +39,11 @@ wiki-page-revision-diff = Compare revisions
 
 wiki-page-revision-view-unavailable = Historical page snapshot unavailable
 
+wiki-page-revision-banner =
+  .title = Historical revision
+  .page = Page
+  .close = Close
+
 wiki-page-revision-number = Revision #
 
 wiki-page-revision-created-at = Edit time
