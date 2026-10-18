@@ -30,6 +30,12 @@ pub const MEMBERSHIP_SELF_JOIN_THROTTLE: ActionThrottlePolicy = ActionThrottlePo
     window_seconds: 60,
 };
 
+pub const MEMBERSHIP_PASSWORD_THROTTLE: ActionThrottlePolicy = ActionThrottlePolicy {
+    action_key: "membership-password",
+    max_attempts: 10,
+    window_seconds: 60,
+};
+
 pub const LEGACY_SET_TAGS_THROTTLE: ActionThrottlePolicy = ActionThrottlePolicy {
     action_key: "legacy-set-tags",
     max_attempts: 10,
