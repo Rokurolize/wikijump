@@ -36,3 +36,11 @@ transition. A newly unfolded dialog may still have computed hidden visibility
 in the opening event. Framerail focuses its close control after it is revealed;
 closing, replacement or action destruction must cancel pending focus work. The
 foldable browser regression retains this transition and checks cancellation.
+
+Local includes can reference a different mirrored site's CSS and fonts. The
+local deployment therefore grants the existing reviewed SCP mirror file
+origins to style and font loading as well as images. This is an exact local
+asset allowlist: it neither adds executable/connection/frame sources nor grants
+arbitrary authored origins or production exceptions. A run-owned page including
+`info:start` twice reproduced the denied `scp-wiki.wjfiles.localhost` stylesheet
+under another site's CSP; the mirrored CSS itself returns 200 with CSS MIME.
