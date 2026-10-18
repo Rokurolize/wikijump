@@ -11485,7 +11485,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "6ffd2e1f9a1d2b7518fdc17c3be0c612a45acd2538797b88e69f085f2645296d"
+      "source_input_set_sha256": "df10fadfc2c345683e81f5b5268de06e2db3b61806d26c468f5fb18431007523"
     },
     "ftml": {
       "commit": "9a828056bdc14ac3a2ab6900d45361273b94cd32",
@@ -11630,7 +11630,7 @@
       },
       {
         "path": "deepwell/src/endpoints/user.rs",
-        "sha256": "ede54816f3d9dcb4e22a9b34b5e83d33724eac6564c62f1ed68f50cbd8d254fe"
+        "sha256": "e7ac2f98c2de1b72454776219617557f0a225f4f6aebe72ceffde60b6174ade5"
       },
       {
         "path": "deepwell/src/endpoints/view.rs",
@@ -11650,7 +11650,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "02871c9e4f741f8739d22923961cb8f12e3785e6bf31946bdf3aa578782d7735"
+        "sha256": "138efb84f1c9fbf945549a66dc124f0d60cd61e75b73b07c13e8d08074df1579"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11846,7 +11846,7 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/user/+page.svelte",
-        "sha256": "8c65cf97b96588e52afe487eb48be91fb76c60e7ff499ee4453444d5eed84f27"
+        "sha256": "8a331c248b726fca68f0eff0e465dcb332346ff22adca680b8c2ff582dcaf7ff"
       },
       {
         "path": "framerail/src/routes/[x+2d]/wikidot-interwiki/interwikiFrame.html/+server.ts",

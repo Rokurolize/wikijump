@@ -43,6 +43,7 @@ export async function userView(
 interface UserEditParams {
   name?: Optional<string>
   email?: Optional<string>
+  currentPassword?: Optional<string>
   emailVerified?: Optional<boolean>
   password?: Optional<string>
   locales?: Optional<string[]>
@@ -94,6 +95,7 @@ export async function userEdit(
     const value = params[paramName]
     if (value !== undefined) data[rpcName] = value
   }
+  if (params.currentPassword) data.current_password = params.currentPassword
   for (const [paramName, rpcName] of nullableUserEditFields) {
     const value = params[paramName]
     if (value !== undefined) data[rpcName] = value || null

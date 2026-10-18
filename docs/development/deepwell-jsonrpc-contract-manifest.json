@@ -9791,7 +9791,7 @@
         "component": "deepwell",
         "handler": "user_activate_from_wikidot",
         "source": "deepwell/src/endpoints/user.rs#user_activate_from_wikidot",
-        "source_sha256": "ede54816f3d9dcb4e22a9b34b5e83d33724eac6564c62f1ed68f50cbd8d254fe",
+        "source_sha256": "e7ac2f98c2de1b72454776219617557f0a225f4f6aebe72ceffde60b6174ade5",
         "function_sha256": "41ad884a3a111e28d691b19606eb1dfd8e9a12dded16b379deddbd6ade561b16"
       },
       "params_schema": {
@@ -9848,7 +9848,7 @@
         "component": "deepwell",
         "handler": "user_add_name_change",
         "source": "deepwell/src/endpoints/user.rs#user_add_name_change",
-        "source_sha256": "ede54816f3d9dcb4e22a9b34b5e83d33724eac6564c62f1ed68f50cbd8d254fe",
+        "source_sha256": "e7ac2f98c2de1b72454776219617557f0a225f4f6aebe72ceffde60b6174ade5",
         "function_sha256": "06858bf9c55be089bcc100d28e303cee4c8eddf3da3cfa7df4727fbd7840c952"
       },
       "params_schema": {
@@ -9905,7 +9905,7 @@
         "component": "deepwell",
         "handler": "user_create",
         "source": "deepwell/src/endpoints/user.rs#user_create",
-        "source_sha256": "ede54816f3d9dcb4e22a9b34b5e83d33724eac6564c62f1ed68f50cbd8d254fe",
+        "source_sha256": "e7ac2f98c2de1b72454776219617557f0a225f4f6aebe72ceffde60b6174ade5",
         "function_sha256": "2dae2535183de9272e1bd443c5a165633e00aac846afa0f560cee9b385bc434f"
       },
       "params_schema": {
@@ -9965,7 +9965,7 @@
         "component": "deepwell",
         "handler": "user_delete",
         "source": "deepwell/src/endpoints/user.rs#user_delete",
-        "source_sha256": "ede54816f3d9dcb4e22a9b34b5e83d33724eac6564c62f1ed68f50cbd8d254fe",
+        "source_sha256": "e7ac2f98c2de1b72454776219617557f0a225f4f6aebe72ceffde60b6174ade5",
         "function_sha256": "2c8607ca5fbf7a1ae8382b9090df37f4d5bb131c7ff1672e220c1896fb7152db"
       },
       "params_schema": {
@@ -10027,8 +10027,8 @@
         "component": "deepwell",
         "handler": "user_edit",
         "source": "deepwell/src/endpoints/user.rs#user_edit",
-        "source_sha256": "ede54816f3d9dcb4e22a9b34b5e83d33724eac6564c62f1ed68f50cbd8d254fe",
-        "function_sha256": "79fc79bba3496997d9f4ffc9197a7bb246b2e22fbb621988b9cc5f870247c960"
+        "source_sha256": "e7ac2f98c2de1b72454776219617557f0a225f4f6aebe72ceffde60b6174ade5",
+        "function_sha256": "c435f58ab68a20179aa5e8834b337f34f66e30f789b074c304bdecbf03ed9152"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -10081,6 +10081,7 @@
           "deepwell/tests/user.rs#display_locale_preferences_round_trip_only_for_the_session_actor",
           "deepwell/tests/user.rs#oversized_avatar_rejection_does_not_promote_blob_or_change_target",
           "deepwell/tests/user.rs#regular_account_password_policy_rejects_short_create_passwords",
+          "deepwell/tests/user.rs#self_email_change_requires_current_password_proof",
           "deepwell/tests/user.rs#user_create_only_verified_email_blocks_conflict",
           "deepwell/tests/user.rs#user_mutations_enforce_request_actor_and_staff_only_fields",
           "deepwell/tests/user.rs#wikidot_user"
@@ -10094,7 +10095,7 @@
         "component": "deepwell",
         "handler": "user_get",
         "source": "deepwell/src/endpoints/user.rs#user_get",
-        "source_sha256": "ede54816f3d9dcb4e22a9b34b5e83d33724eac6564c62f1ed68f50cbd8d254fe",
+        "source_sha256": "e7ac2f98c2de1b72454776219617557f0a225f4f6aebe72ceffde60b6174ade5",
         "function_sha256": "0e38c5dfd7d51d30ed1f2e54eaa5bf448378dab1b6b7cbb11c3f9a66369a08cb"
       },
       "params_schema": {
@@ -10155,7 +10156,7 @@
         "component": "deepwell",
         "handler": "user_password_change",
         "source": "deepwell/src/endpoints/user.rs#user_password_change",
-        "source_sha256": "ede54816f3d9dcb4e22a9b34b5e83d33724eac6564c62f1ed68f50cbd8d254fe",
+        "source_sha256": "e7ac2f98c2de1b72454776219617557f0a225f4f6aebe72ceffde60b6174ade5",
         "function_sha256": "4f84c1d35853625fce6418e10924df674c5871ed739c68e9973d39ae610e3c61"
       },
       "params_schema": {

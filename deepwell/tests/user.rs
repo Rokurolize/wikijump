@@ -1692,3 +1692,82 @@ async fn avatar_removal_is_owner_only_and_clears_only_the_association() {
         Some(OTHER_HASH.to_vec())
     );
 }
+
+#[tokio::test]
+async fn self_email_change_requires_current_password_proof() {
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    let user = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Email Proof User",
+            "email": "before-proof@example.invalid",
+            "locales": ["en"],
+            "password": "email-proof-password",
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    // Act as the account holder, not as platform staff.
+    runner.set_request_context(RequestContext {
+        user_id: Some(user.user_id),
+        ..Default::default()
+    });
+
+    // No proof: rejected, email untouched.
+    let error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": user.user_id,
+            "email": "after-proof@example.invalid",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::InvalidAuthentication);
+
+    // Wrong proof: same indistinguishable rejection.
+    let error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": user.user_id,
+            "email": "after-proof@example.invalid",
+            "current_password": "not-the-password",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::InvalidAuthentication);
+
+    // Non-email self edits need no proof.
+    let renamed = run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": user.user_id,
+            "name": "Email Proof Renamed",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(renamed.email, "before-proof@example.invalid");
+
+    // Correct proof: email changes and verified ownership is cleared.
+    let changed = run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": user.user_id,
+            "email": "after-proof@example.invalid",
+            "current_password": "email-proof-password",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(changed.email, "after-proof@example.invalid");
+    assert!(changed.email_verified_at.is_none());
+}
