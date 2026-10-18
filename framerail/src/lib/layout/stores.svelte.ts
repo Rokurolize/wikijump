@@ -9,6 +9,7 @@ class ErrorPopupState {
     extraMessage?: string | null
     actionLink?: { href: string; label: string } | null
     inlineActionLink?: boolean | null
+    closeLabel?: string | null
     data: unknown | null
   }>({
     state: false,
