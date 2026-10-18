@@ -123,10 +123,13 @@ test("Backlinks cancels the previous read and ignores its late response after th
   await page.locator("#more-options-button").click()
   await waitForSvelteDelegatedHandler(page, "#backlinks-button")
   await page.locator("#backlinks-button").click()
-  // The probe page's read is deliberately held in flight, so the pane is still
-  // loading when the route changes.
-  await expect(page.locator("#page-backlinks-list")).toContainText("Loading…")
   await expect.poll(() => heldRequest !== undefined).toBe(true)
+  // Wikidot's callback reveals the action area only after success. The read
+  // remains mounted while pending, but must not expose loading/Close children.
+  await expect(page.locator("#action-area")).toBeHidden()
+  await expect
+    .poll(() => page.locator("#action-area").evaluate((area) => area.children.length))
+    .toBe(0)
 
   // Navigate to another page without closing the pane: the pane stays mounted
   // and starts the read for the new page while the first read is in flight.

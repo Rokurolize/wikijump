@@ -80,6 +80,37 @@ const selectPane = async (page: import("@playwright/test").Page, pane: Pane) => 
 }
 
 for (const pane of ["backlinks", "watchers"] as const) {
+  test(`${pane} leaves the action area empty while its browser module loads`, async ({
+    page
+  }) => {
+    await page.setExtraHTTPHeaders(SITE_HEADERS)
+    const component = pane === "backlinks" ? "BacklinksPane" : "WatchersPane"
+    let heldModule: Route | undefined
+    await page.route(
+      (url) => url.search === `?/${pane}`,
+      (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: actionResult("success", populatedResult(pane))
+        })
+    )
+    await page.route(
+      (url) => url.pathname.endsWith(`/${component}.svelte`),
+      (route) => {
+        heldModule = route
+      }
+    )
+    await openPane(page, pane)
+    await expect.poll(() => heldModule !== undefined).toBe(true)
+    await expect(page.locator("#action-area")).toBeHidden()
+    await expect
+      .poll(() => page.locator("#action-area").evaluate((area) => area.children.length))
+      .toBe(0)
+    await heldModule!.continue()
+    await expect(page.locator(`.page-${pane}-header`)).toBeVisible()
+  })
+
   test(`${pane} retries a failed read by clicking the same action without reloading`, async ({
     page
   }) => {
@@ -213,7 +244,7 @@ for (const pane of ["backlinks", "watchers"] as const) {
     ).toEqual([])
   })
 
-  test(`${pane} ignores a stale response after close, rapid pane switch, and reopen`, async ({
+  test(`${pane} keeps pending reads empty and ignores stale responses after switching and reopening`, async ({
     page
   }) => {
     await page.setExtraHTTPHeaders(SITE_HEADERS)
@@ -243,7 +274,7 @@ for (const pane of ["backlinks", "watchers"] as const) {
               body: actionResult("success", populatedResult(pane))
             })
           } catch {
-            // Closing the pane aborts this request; its late response is ignored.
+            // Switching panes aborts this request; its late response is ignored.
           }
           return
         }
@@ -274,11 +305,17 @@ for (const pane of ["backlinks", "watchers"] as const) {
 
     await openPane(page, pane)
     await expect.poll(() => heldRoute !== undefined).toBe(true)
-    await page.locator("#action-area .action-area-close").click()
-    await expect(page.locator("#action-area")).toHaveClass(/hidden/u)
+    await expect(page.locator("#action-area")).toBeHidden()
+    await expect
+      .poll(() => page.locator("#action-area").evaluate((area) => area.children.length))
+      .toBe(0)
+    // Source Wikidot has no Close control before the first result arrives.
+    // Selecting another public action cancels the pending module instead.
+    await page.locator("#history-button").click()
+    await expect(page.locator(".page-revision-header")).toBeVisible()
     await expect
       .poll(() => heldRequest?.failure()?.errorText ?? null, {
-        message: "closing the pane must cancel the in-flight read"
+        message: "switching panes must cancel the in-flight read"
       })
       .toMatch(/ABORTED/u)
     await selectPane(page, otherPane)
