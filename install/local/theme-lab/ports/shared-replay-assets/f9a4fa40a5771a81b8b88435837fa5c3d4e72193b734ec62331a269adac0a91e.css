@@ -1,0 +1,273 @@
+/* CROQSTYLE CSS */
+/* Source: https://scp-wiki.wikidot.com/component:croqstyle */
+
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700');
+
+
+/* Little improvements */
+
+/* 1. Reasonably-sized footnotes */
+.hovertip { max-width: 400px; }
+
+/* 2. No more big avatar hover thingies */
+.avatar-hover { display: none !important; }
+
+/* 3. Monospace editor + code blocks */
+:root { --mono-font: "Fira Code", Cousine, monospace; }
+#edit-page-textarea, .code pre, .code p, .code, tt, .page-source {
+  font-family: var(--mono-font);
+}
+.code pre * { white-space: pre; }
+.code *, .pre * { font-feature-settings: unset; }
+.change-textarea-size { padding-right: 3em; }
+
+/* 4. Better image block positioning */
+@media (max-width: 550px), (min-width: 768px) and (max-width: 850px) {
+  .scp-image-block:is(.block-right, .block-left) {
+    float: none;
+    margin-inline: auto;
+  }
+}
+
+/* 5. Offsite image enforcement */
+img[src*="imgur.com"] {
+  content: url(https://scp-wiki.wdfiles.com/local--files/component%3Acroqstyle/imgurblock.png);
+}
+
+
+/* Documentation helpers */
+
+/* 1. Teletype backgrounds */
+tt {
+  background-color: var(--swatch-something-bhl-idk-will-fix-later, #f4f4f4);
+  font-size: 85%;
+  padding: 0.2em 0.4em;
+  margin: 0;
+  border-radius: 6px;
+}
+
+/* 2. Code colours */
+:root {
+  --croqstyle-terminal-light-bg: #ffffff;
+  --croqstyle-terminal-light-syntax: #000000;
+  --croqstyle-terminal-light-comment: #008000;
+  --croqstyle-terminal-light-error: #e51602;
+  --croqstyle-terminal-light-value: #267f99;
+  --croqstyle-terminal-light-symbol: #795e26;
+  --croqstyle-terminal-light-string: #a31515;
+  --croqstyle-terminal-light-operator: #0000ff;
+  --croqstyle-terminal-light-builtin: #14238a;
+  --croqstyle-terminal-light-keyword: #af00db;
+  --croqstyle-terminal-light-border: 0.1rem solid #444444;
+
+  --croqstyle-terminal-dark-bg: #1f1f1f;
+  --croqstyle-terminal-dark-syntax: #d4d4d4;
+  --croqstyle-terminal-dark-comment: #6a9955;
+  --croqstyle-terminal-dark-error: #cd4343;
+  --croqstyle-terminal-dark-value: #4dc8af;
+  --croqstyle-terminal-dark-symbol: #d9d9a7;
+  --croqstyle-terminal-dark-string: #ce9178;
+  --croqstyle-terminal-dark-operator: #5294ca;
+  --croqstyle-terminal-dark-builtin: #9adafb;
+  --croqstyle-terminal-dark-keyword: #c384be;
+  --croqstyle-terminal-dark-border: 0.3rem solid #bbbbbb;
+}
+.code.terminal, .terminal > .code {
+  color: var(--c-syntax);
+  background-color: var(--c-bg);
+  border: var(--croqstyle-terminal-border);
+  border-radius: 0.3rem;
+  margin-inline: 1em;
+}
+:root, .terminal--light {
+  --c-bg: var(--croqstyle-terminal-light-bg);
+  --c-syntax: var(--croqstyle-terminal-light-syntax);
+  --c-comment: var(--croqstyle-terminal-light-comment);
+  --c-error: var(--croqstyle-terminal-light-error);
+  --c-value: var(--croqstyle-terminal-light-value);
+  --c-symbol: var(--croqstyle-terminal-light-symbol);
+  --c-string: var(--croqstyle-terminal-light-string);
+  --c-operator: var(--croqstyle-terminal-light-operator);
+  --c-builtin: var(--croqstyle-terminal-light-builtin);
+  --c-keyword: var(--croqstyle-terminal-light-keyword);
+  --croqstyle-terminal-border: var(--croqstyle-terminal-light-border);
+}
+.terminal--dark {
+  --c-bg: var(--croqstyle-terminal-dark-bg);
+  --c-syntax: var(--croqstyle-terminal-dark-syntax);
+  --c-comment: var(--croqstyle-terminal-dark-comment);
+  --c-error: var(--croqstyle-terminal-dark-error);
+  --c-value: var(--croqstyle-terminal-dark-value);
+  --c-symbol: var(--croqstyle-terminal-dark-symbol);
+  --c-string: var(--croqstyle-terminal-dark-string);
+  --c-operator: var(--croqstyle-terminal-dark-operator);
+  --c-builtin: var(--croqstyle-terminal-dark-builtin);
+  --c-keyword: var(--croqstyle-terminal-dark-keyword);
+  --croqstyle-terminal-border: var(--croqstyle-terminal-dark-border);
+}
+
+/* 3. Debug mode */
+.debug-mode, .debug-mode *, .debug-mode *::before, .debug-mode *::after {
+  outline: thin solid var(--debug-colour, red);
+  position: relative;
+}
+.debug-info {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Fira Code', monospace;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+.debug-info.over { top: -2.5rem; }
+.debug-info.under { bottom: -2.5rem; }
+.debug-info p { margin: 0; }
+
+
+/* Opt-in features */
+
+/* 1. Improved image block */
+/* Custom image block with alt text, hover zoom, high res swap and WEBP support
+ * Define low res (~300px wide) image via --image-url CSS var
+ * Define high res (~1000px wide) image via --image-large-url CSS var (optional)
+ * Define aspect ratio (as 'H / W') via --aspect-ratio CSS var
+ */
+.croqstyle-image-block .scp-image-alt {
+  position: relative;
+  font-size: 0;
+  aspect-ratio: var(--aspect-ratio);
+}
+.croqstyle-image-block .scp-image-alt::before {
+  content: ""; position: absolute; inset: 0;
+  pointer-events: none;
+  background-image: var(--image-url);
+  background-size: cover, 0.6rem, cover;
+  background-position: center, left 0.3rem bottom 0.3rem, center;
+  background-repeat: no-repeat;
+  transition: transform 0.3s ease-in-out;
+}
+@media (prefers-reduced-motion) {
+  .croqstyle-image-block .scp-image-alt::before {
+    transition-duration: 0s;
+  }
+}
+@media (min-width: 670px) and (max-width: 767px), (min-width: 940px) {
+  .croqstyle-image-block:not(.croqstyle-image-block--no-hover) .scp-image-alt:hover::before,
+  .croqstyle-image-block--no-hover .scp-image-alt::before {
+    background-image: var(--image-large-url, var(--image-url)), url(https://scp-wiki.wdfiles.com/local--files/component%3Acroqstyle/loading.gif), var(--image-url);
+  }
+  .croqstyle-image-block:not(.croqstyle-image-block--no-hover) .scp-image-alt:hover::before {
+    transform: scale3d(1.6, 1.6, 1);
+    z-index: 1;
+  }
+}
+.croqstyle-image-block.block-right .scp-image-alt::before { transform-origin: 90% center }
+.croqstyle-image-block.block-left .scp-image-alt::before { transform-origin: 10% center }
+.croqstyle-image-block .scp-image-alt img {
+  width: 100%;
+  height: 100%;
+  object-fit: center;
+}
+
+/* 2. Image footnotes */
+/* Custom footnote that uses the same vars as the image block above */
+.croqstyle-img-footnote {
+  position: relative;
+  --croqstyle-img-footnote-link-color: rgb(var(--link-color, 187,0,17));
+  text-decoration: var(--croqstyle-img-footnote-link-color) dashed underline;
+  cursor: help;
+}
+.croqstyle-img-footnote::after {
+  content: "";
+  display: inline-block;
+  /* https://icon-sets.iconify.design/material-symbols/image-outline/ */
+  --croqstyle-img-footnote-icon-url: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1em' height='1em' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v14q0 .825-.587 1.413T19 21zm0-2h14V5H5zm1-2h12l-3.75-5l-3 4L9 13zm-1 2V5z'/%3E%3C/svg%3E");
+  -webkit-mask-image: var(--croqstyle-img-footnote-icon-url);
+          mask-image: var(--croqstyle-img-footnote-icon-url);
+  -webkit-mask-size: cover;
+          mask-size: cover;
+  -webkit-mask-position: center;
+          mask-position: center;
+  background-color: var(--croqstyle-img-footnote-link-color);
+  width: 1em; height: 1em;
+  vertical-align: super;
+  font-size: smaller;
+  line-height: normal;
+}
+.croqstyle-img-footnote::before {
+  content: "";
+  display: block;
+  position: absolute;
+  aspect-ratio: var(--aspect-ratio);
+  height: 16rem;
+  border: thin solid grey;
+  background-color: white;
+  background-image: var(--image-url);
+  background-size: 92.5%;
+  background-position: center;
+  background-repeat: no-repeat;
+  bottom: 0; left: 50%;
+  --croqstyle-img-footnote-icon-offset: 0px;
+  transform: translate(-50%, calc(100% + var(--croqstyle-img-footnote-icon-offset)));
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.croqstyle-img-footnote:hover { --croqstyle-img-footnote-link-color: purple; }
+.croqstyle-img-footnote:hover::before {
+  opacity: 1;
+  pointer-events: initial;
+  --croqstyle-img-footnote-icon-offset: 0.5em;
+}
+@media (max-width: 1200px) {
+  .croqstyle-img-footnote { position: static; }
+  .croqstyle-img-footnote::before {
+    bottom: auto;
+    left: 50%;
+    transform: translate(-50%, calc(0px + var(--croqstyle-img-footnote-icon-offset)));
+  }
+}
+
+/* 3. Simple responsive div */
+.croqstyle-responsive-div {
+  container-type: inline-size;
+}
+.croqstyle-responsive-div__desktop {
+  display: none;
+}
+.croqstyle-responsive-div__mobile table {
+  margin-left: 0; /* Left align for consistent header row placement */
+}
+@container (min-width: 550px) {
+  .croqstyle-responsive-div__desktop { display: revert !important }
+  .croqstyle-responsive-div__mobile { display: none }
+}
+
+/* 4. Reset tabview */
+/* Undoes base Wikidot tab styling. These reset styles are derived from Wikidot's base theme. They override and undo all the tab styles in the base theme, matching the selectors exactly to cancel them out.
+* It might look like these selectors can be simplified, merged, reduced in complexity - they can't, because otherwise they wouldn't cancel out the base theme styling.
+*/
+/* Entire tabview */
+:where(.croqstyle-reset-tabs) .yui-navset { padding: initial; position: initial }
+/* List of tabs */
+:where(.croqstyle-reset-tabs) .yui-nav { margin: initial; padding: initial; list-style: initial }
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav { width: initial; position: initial; border: initial }
+/* Internal wrapper for each tab */
+:where(.croqstyle-reset-tabs) .yui-nav li { margin: initial; padding: initial; list-style: initial }
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav li { display: initial; vertical-align: initial; cursor: initial; margin: initial; padding: initial }
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav .selected { margin: initial }
+/* Each tab */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav li a { background: initial; border: initial; color: initial; position: initial; text-decoration: initial; display: initial; vertical-align: initial }
+/* Selected tab */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav .selected a { border-color: initial }
+/* Hovered tab */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav a:is(:hover, :focus) { background: initial; outline: initial }
+/* Selected + hovered tab */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav .selected :is(a, a:focus, a:hover) { background: initial; color: initial }
+/* Text in each tab */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav li a em { font-style: initial; display: initial; border: initial; cursor: initial; padding: initial; left: initial; top: initial; position: initial }
+/* Text in the selected tab */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav .selected a em { padding: initial; border-color: initial }
+/* Content panel */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-content { background: initial; border: initial; padding: initial }

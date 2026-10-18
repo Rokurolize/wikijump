@@ -60,6 +60,25 @@ approval to publish a changed candidate. Verify the separate Sigma-10
 historical contract provenance fix (#2509), retain an independent current-head
 final validation receipt, and do not alter signed accepted source identities.
 
+## Frozen package input recovery (2026-10-19)
+
+The historical Git tree `1685a1a976` contains 42 content-addressed assets
+missing from the maintained shared replay pool (including Basalt's 43-byte
+`theme:basalt/5` CSS import). Each restored asset was independently checked
+against the SHA-256 embedded in its filename and verified to exist at that
+historical Git revision. The SCP-FR `quand-le-soleil-se-couche` package also
+requires its two SHA-pinned local attachments; these were recovered from the
+same historical revision with exact byte counts and manifest hashes.
+
+After recovery, `real-port-regression.mjs --verify-only` passed for all 35
+default campaign packages without a running Theme Lab daemon or Wikidot
+requests. The standalone SCP-FR Python contract tests passed 30/30 after
+restoring the two attachments and updating assertions to match the existing
+authority-composed CSS and the already-recorded `warn-no-actionable-issues`
+target receipt. These checks validate frozen package inputs; they do **not**
+replace present-day browser/runtime acceptance or make the remaining 36-theme
+campaign-completion evidence current.
+
 The retained source worktree is a local recovery source, not a reproducible
 public download. Before calling the current-head restoration portable, issue
 an independently sealed/split evidence supplement with the source manifest,
