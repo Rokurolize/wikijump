@@ -40,6 +40,17 @@
           ...(removeAvatar === true ? { removeAvatar: true } : {})
         })
       },
+      onError: () => {
+        // Transport and malformed-response errors have no accepted profile
+        // state. Keep the draft available and use the existing error dialog.
+        errorPopupState.current = {
+          state: true,
+          message:
+            data.internationalization?.["error-api.GENERIC"] ??
+            "Something went wrong with your request.",
+          data: null
+        }
+      },
       onResult: async ({ result, cancel }) => {
         if (result.type === "success" && result.data) {
           isEdit = false

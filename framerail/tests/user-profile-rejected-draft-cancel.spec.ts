@@ -16,6 +16,67 @@ test.afterEach(async ({ request }) => {
   await request.post(`${FIXTURE_URL}/reset-authenticated-profile`)
 })
 
+for (const fault of ["503", "malformed", "network"] as const) {
+  test(`profile ${fault} errors preserve the draft and Cancel restores accepted state`, async ({
+    page,
+    request
+  }) => {
+    await request.post(`${FIXTURE_URL}/reset-authenticated-profile`)
+    await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+    await page.setExtraHTTPHeaders({
+      ...SITE_HEADERS,
+      cookie: "wikijump_token=fixture-authenticated-session-token"
+    })
+    const errors: string[] = []
+    page.on("pageerror", (error) => errors.push(error.message))
+    let injectFault = true
+    await page.route(
+      (url) => url.search === "?/userEdit",
+      (route) => {
+        if (!injectFault) return route.continue()
+        if (fault === "network") return route.abort("failed")
+        return route.fulfill({
+          status: fault === "503" ? 503 : 200,
+          contentType: "text/plain",
+          body: "not an action response"
+        })
+      }
+    )
+
+    await page.goto("/-/user")
+    await waitForSvelteDelegatedHandler(page, ".button-edit")
+    await page.locator(".button-edit").click()
+    const email = page.locator("#email")
+    const draftEmail = "transport-draft@example.test"
+    await email.fill(draftEmail)
+    await page.locator("#editor .button-save").click()
+    await expect(page.locator("#modal-message")).toHaveText(
+      "Something went wrong with your request."
+    )
+    await expect(email).toHaveValue(draftEmail)
+    await page.keyboard.press("Escape")
+    await page.locator("#editor .button-cancel").click()
+    await waitForSvelteDelegatedHandler(page, ".button-edit")
+    await page.locator(".button-edit").click()
+    await expect(email).toHaveValue("fixture-member@example.test")
+
+    injectFault = false
+    await email.fill(draftEmail)
+    await page.locator("#editor .button-save").click()
+    await expect(page.locator("#editor")).toBeHidden()
+    await page.reload()
+    await waitForSvelteDelegatedHandler(page, ".button-edit")
+    await page.locator(".button-edit").click()
+    await expect(email).toHaveValue(draftEmail)
+    expect(errors).toEqual([])
+    const writes = await request
+      .get(`${FIXTURE_URL}/last-page-write-requests`)
+      .then((response) => response.json())
+    expect(writes.userEdit).toHaveLength(1)
+    expect(writes.userEdit[0].paramKeys).toContain("email")
+  })
+}
+
 test("Cancel discards a rejected profile draft and a corrected field is submitted", async ({
   page,
   request

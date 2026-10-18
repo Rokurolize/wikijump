@@ -13,6 +13,7 @@ test.describe.configure({ mode: "serial" })
 
 const fixtureUrl = `http://127.0.0.1:${process.env.PLAYWRIGHT_FIXTURE_PORT ?? "42747"}`
 const emptyPageReadRequests = {
+  backlinksView: [],
   forumPostSelect: [],
   forumPostPageSummary: [],
   forumPostGet: [],
