@@ -145,7 +145,10 @@ test("CSS-driven Info controls toggle their owning LI without a nested UL or cre
     '<div class="close-credits foldable-list-container"><a href="javascript:;">X</a></div>' +
     '<div class="credit">Author credits</div></div></div></div></li>'
   await page.setContent(
-    "<style>.folded .modalcontainer,.folded .fader {visibility:hidden}" +
+    "<style>.modalcontainer {transition:opacity 0.105s linear,visibility 0.105s}" +
+      ".folded .modalcontainer {opacity:0}" +
+      ".unfolded .modalcontainer {opacity:1}" +
+      ".folded .modalcontainer,.folded .fader {visibility:hidden}" +
       ".unfolded .modalcontainer,.unfolded .fader {visibility:visible}</style>" +
       `<main><ul class="creditRate">${infoBox}${infoBox}</ul></main>`
   )
@@ -178,6 +181,30 @@ test("CSS-driven Info controls toggle their owning LI without a nested UL or cre
   await second.getByRole("button", { name: "Info", exact: true }).press("Enter")
   await expect(second.locator(".modalcontainer")).toBeVisible()
   await expect(dialog).toBeHidden()
+
+  // A reveal callback must not steal focus after closing or unmounting.
+  await expect(second.locator(".close-credits")).toBeFocused()
+  await page.keyboard.press("Escape")
+  await opener.evaluate((element) => {
+    ;(element as HTMLElement).click()
+    ;(element as HTMLElement).click()
+  })
+  await expect(dialog).toBeHidden()
+  const otherOpener = second.getByRole("button", { name: "Info", exact: true })
+  await otherOpener.focus()
+  await first.evaluate((owner) => {
+    owner.dispatchEvent(new Event("transitionend", { bubbles: true }))
+  })
+  await expect(otherOpener).toBeFocused()
+  await opener.evaluate((element) => {
+    ;(element as HTMLElement).click()
+    ;(Reflect.get(window, "foldableAction") as { destroy(): void }).destroy()
+  })
+  await otherOpener.focus()
+  await first.evaluate((owner) => {
+    owner.dispatchEvent(new Event("transitionend", { bubbles: true }))
+  })
+  await expect(otherOpener).toBeFocused()
 })
 
 test("PageView initializes replacement menus and unfolds ancestors of the current page", async ({
