@@ -157,8 +157,9 @@ export async function userPasswordChangeAction({
   }
 
   const sessionToken = cookies.get("wikijump_token")
-  if (!sessionToken)
-    {return failForMissingSession(redact({ form: clearPasswordChange(form) }))}
+  if (!sessionToken) {
+    return failForMissingSession(redact({ form: clearPasswordChange(form) }))
+  }
 
   try {
     requireActionSession(await authGetSession(sessionToken))

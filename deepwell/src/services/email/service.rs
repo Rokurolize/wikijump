@@ -296,8 +296,9 @@ impl EmailService {
 }
 
 /// A deliberately small syntax check: one `@`, a non-empty local part, and a
-/// dotted domain of non-empty labels, with no whitespace or control
-/// characters. MailCheck, when it answers, decides deliverability.
+/// domain of non-empty dot-separated labels, with no whitespace or control
+/// characters. Single-label domains stay valid (local accounts such as
+/// `admin@wikijump`); MailCheck, when it answers, decides deliverability.
 fn is_well_formed_email(email: &str) -> bool {
     if email.chars().any(|c| c.is_whitespace() || c.is_control()) {
         return false;
@@ -307,7 +308,6 @@ fn is_well_formed_email(email: &str) -> bool {
     };
     !local.is_empty()
         && !domain.contains('@')
-        && domain.contains('.')
         && domain.split('.').all(|label| !label.is_empty())
 }
 
@@ -348,14 +348,17 @@ mod tests {
 
     #[test]
     fn only_well_formed_addresses_can_be_stored_unvalidated() {
-        for email in ["someone@gmail.com", "a.b+c@sub.example.org"] {
+        for email in [
+            "someone@gmail.com",
+            "a.b+c@sub.example.org",
+            "admin@wikijump",
+        ] {
             assert!(is_well_formed_email(email), "{email}");
         }
         for email in [
             "not-an-email",
             "@example.com",
             "someone@",
-            "someone@localhost",
             "some one@example.com",
             "a@b@example.com",
             "someone@example..com",
