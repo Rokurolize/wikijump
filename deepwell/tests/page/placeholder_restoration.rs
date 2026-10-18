@@ -245,9 +245,8 @@ async fn selected_content_and_native_lists_restore_runtime_fragments() {
         "[[span]]\n[[div]]\nFIRST\n[[/span]]\n[[/div]]\nLAST",
     )
     .await;
-    let content = format!(
-        "[[module ListPages category=\"fragment\" name=\"protection-selected-content\" limit=\"1\"]]\n%%content%%\n[[/module]]"
-    );
+    let content = "[[module ListPages category=\"fragment\" name=\"protection-selected-content\" limit=\"1\"]]\n%%content%%\n[[/module]]"
+        .to_owned();
     let mut cases = vec![content.clone()];
     cases.push("[[module ListPages category=\"fragment\" name=\"protection-crossed-spans\" limit=\"1\"]]\n%%content%%\n[[/module]]".to_owned());
     for syntax in [
