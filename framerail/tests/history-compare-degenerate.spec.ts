@@ -59,10 +59,7 @@ const fileEntry = (timeline: number) => ({
 const successBody = (value: unknown) =>
   JSON.stringify({ type: "success", status: 200, data: devalue(value) })
 
-const openHistory = async (
-  page: import("@playwright/test").Page,
-  entries: unknown[]
-) => {
+const openHistory = async (page: import("@playwright/test").Page, entries: unknown[]) => {
   await page.setExtraHTTPHeaders(SITE_HEADERS)
   await page.route(
     (url) => url.search === "?/history",
@@ -77,7 +74,9 @@ const openHistory = async (
   await page.goto("/page-workflow-probe", { waitUntil: "domcontentloaded" })
   await waitForSvelteDelegatedHandler(page, "#history-button")
   await page.locator("#history-button").click()
-  await expect(page.locator(".revision-row, tr[id^='revision-row-']").first()).toBeVisible()
+  await expect(
+    page.locator(".revision-row, tr[id^='revision-row-']").first()
+  ).toBeVisible()
 }
 
 test("compare stays disabled when only one revision can be compared", async ({
@@ -98,9 +97,7 @@ test("compare stays disabled when only one revision can be compared", async ({
   expect(diffPosts).toEqual([])
 })
 
-test("compare submits two distinct revisions when both exist", async ({
-  page
-}) => {
+test("compare submits two distinct revisions when both exist", async ({ page }) => {
   const diffPosts: string[] = []
   page.on("request", (request) => {
     if (
@@ -125,9 +122,7 @@ test("compare submits two distinct revisions when both exist", async ({
   const compare = page.getByRole("button", { name: /compare/i })
   await expect(compare).toBeEnabled()
   await compare.click()
-  await expect
-    .poll(() => diffPosts.length, { timeout: 10000 })
-    .toBe(1)
+  await expect.poll(() => diffPosts.length, { timeout: 10000 }).toBe(1)
   const payload = JSON.parse(diffPosts[0]) as Record<string, unknown>
   expect(payload.fromRevisionNumber).not.toBe(payload.toRevisionNumber)
 })
