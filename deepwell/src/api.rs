@@ -650,6 +650,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("user_activate_from_wikidot", user_activate_from_wikidot);
     register!("user_get", user_get);
     register!("user_edit", user_edit);
+    register!("user_password_change", user_password_change);
     register!("user_delete", user_delete);
     register!("user_add_name_change", user_add_name_change);
 

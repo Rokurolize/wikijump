@@ -76,6 +76,26 @@ export const handleProfileRpc = ({ rpcRequest, request, response }) => {
     return { result: fixtureState.authenticatedUser }
   }
 
+  if (rpcRequest.method === "user_password_change") {
+    const params = rpcRequest.params ?? {}
+    if (
+      request.headers["x-deepwell-session-token"] !==
+      "fixture-authenticated-session-token"
+    ) {
+      return undefined
+    }
+    if (params.current_password !== "fixture-member-password") {
+      sendRpcError(
+        response,
+        rpcRequest.id,
+        4000,
+        "Invalid username, password, or TOTP code"
+      )
+      return { responded: true }
+    }
+    return { result: { other_sessions_revoked: 2 } }
+  }
+
   if (rpcRequest.method !== "user_view") return undefined
 
   const params = rpcRequest.params ?? {}

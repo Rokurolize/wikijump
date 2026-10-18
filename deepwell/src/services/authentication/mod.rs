@@ -23,6 +23,6 @@ mod structs;
 
 pub use self::service::AuthenticationService;
 pub use self::structs::{
-    AuthenticateUserOutput, LoginUser, LoginUserMfa, LoginUserOutput,
+    AuthenticateUser, AuthenticateUserOutput, LoginUser, LoginUserMfa, LoginUserOutput,
     MultiFactorAuthenticateOutput, MultiFactorAuthenticateUser,
 };
