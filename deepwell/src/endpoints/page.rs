@@ -29,7 +29,8 @@ use permissions::{
     ensure_page_edit_permission, ensure_page_permission, ensure_page_view_permission,
 };
 pub use permissions::{
-    page_delete_permission, page_edit_permission, page_move_permission,
+    page_create_permission, page_delete_permission, page_edit_permission,
+    page_move_permission,
 };
 
 use crate::models::file::Model as FileModel;
@@ -42,7 +43,8 @@ use crate::services::page::{
     CreatePage, CreatePageOutput, DeletePage, DeletePageOutput, EditPage, EditPageOutput,
     GetDeletedPageOutput, GetPageAnyDetails, GetPageOutput, GetPageReference,
     GetPageReferenceDetails, GetPageScoreOutput, GetPageSlug, MovePage, MovePageOutput,
-    PageDeletePermissionOutput, PageEditPermissionOutput, PageLifecycleIdentity,
+    PageCreatePermissionOutput, PageDeletePermissionOutput, PageEditPermissionOutput,
+    PageLifecycleIdentity,
     PageMovePermissionOutput, RestorePage, RestorePageOutput, RollbackPage,
     SetPageLayout,
 };

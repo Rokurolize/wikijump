@@ -558,6 +558,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("wikidot_page_preview", wikidot_page_preview);
     register!("wikidot_legacy_set_tags", wikidot_legacy_set_tags);
     register!("page_edit", page_edit);
+    register!("page_create_permission", page_create_permission);
     register!("page_edit_permission", page_edit_permission);
     register!("page_move_permission", page_move_permission);
     register!("page_delete_permission", page_delete_permission);
@@ -761,12 +762,20 @@ const LOCAL_AUTHORING_USER_ID: i64 = -1;
 fn is_local_page_mutation_method(method_name: &str) -> bool {
     matches!(
         method_name,
+        // Mutations themselves.
         "page_create"
             | "page_edit"
             | "page_delete"
             | "page_move"
             | "file_restore"
             | "file_rollback"
+            // Read-only permission preflights for the same mutations. These
+            // only report booleans for the bound actor; the mutations above
+            // still enforce. (Issue #2131.)
+            | "page_create_permission"
+            | "page_edit_permission"
+            | "page_move_permission"
+            | "page_delete_permission"
     )
 }
 
@@ -807,6 +816,10 @@ mod tests {
             "page_move",
             "file_restore",
             "file_rollback",
+            "page_create_permission",
+            "page_edit_permission",
+            "page_move_permission",
+            "page_delete_permission",
         ] {
             assert!(is_local_page_mutation_method(method), "{method}");
         }

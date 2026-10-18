@@ -26,7 +26,8 @@ pub use self::structs::{
     CreatePage, CreatePageOutput, DeletePage, DeletePageOutput, EditPage, EditPageBody,
     EditPageOutput, GetDeletedPageOutput, GetPageAnyDetails, GetPageOutput,
     GetPageReference, GetPageReferenceDetails, GetPageScoreOutput, GetPageSlug, MovePage,
-    MovePageOutput, PageDeletePermissionOutput, PageEditPermissionOutput,
+    MovePageOutput, PageCreatePermissionOutput, PageDeletePermissionOutput,
+    PageEditPermissionOutput,
     PageLifecycleIdentity, PageMovePermissionOutput, RestorePage, RestorePageOutput,
     RollbackPage, SetPageLayout,
 };

@@ -5,7 +5,8 @@ import {
 } from "$lib/layout/wikidot-shell-decision"
 import { articleRouteWithQueryNoRender } from "$lib/server/page-norender-query"
 import { resolvePageRedirect } from "$lib/server/page-redirect"
-import { pageDeletedGet } from "$lib/server/deepwell/page"
+import { authGetSession } from "$lib/server/auth/get-session"
+import { pageCreatePermission, pageDeletedGet } from "$lib/server/deepwell/page"
 import { pageErrorStatus } from "$lib/server/load/page/page-error-status.js"
 import { translate } from "$lib/server/deepwell/translate"
 import { articleView } from "$lib/server/deepwell/views"
@@ -20,6 +21,7 @@ import {
   getPreloadBackendLocales,
   getPreloadRequestLocales
 } from "$lib/server/load/preload"
+import { resolvePageMutationUserId } from "$lib/server/load/local-authoring-actor"
 import { loadSiteInfo } from "$lib/server/load/site-info"
 import { getRequestContext } from "$lib/server/request-context"
 import {
@@ -54,7 +56,14 @@ export async function loadPage(
     sessionToken
   )
   const { page: articlePage, ...preloadResponse } = articleResponse
-  const response = gateMissingPageCreateSource(articlePage)
+  const response = gateMissingPageCreateSource(
+    await applyLocalAuthoringCreateGrant(articlePage, {
+      siteId,
+      siteSlug,
+      slug,
+      sessionToken
+    })
+  )
   const parentData = finalizePreloadData(preloadResponse, requestLocales)
   const locales = parentData.locales
   const siteLocale = parentData.site.locale
@@ -140,6 +149,45 @@ export async function loadPage(
     locals.wikidotDocument = resolveShellLayoutValue(loadData) === WIKIDOT_LAYOUT
   }
   return loadData
+}
+
+/**
+ * Missing-page create decision for the anonymous local-authoring seam.
+ * Deepwell reports can_create=false for anonymous viewers; when this
+ * request itself resolves to the local admin actor, ask Deepwell honestly
+ * (marker-bound create permission for the same actor the save would use)
+ * and adopt a grant. Anything else — including a Deepwell refusal or
+ * failure — keeps the denial (fail closed). Template and data-form sources
+ * below are then gated on the adopted decision like any other grant.
+ */
+async function applyLocalAuthoringCreateGrant(
+  articlePage: PageView,
+  options: {
+    siteId: number
+    siteSlug: string
+    slug: Optional<string>
+    sessionToken: string | undefined
+  }
+): Promise<PageView> {
+  const { siteId, siteSlug, slug, sessionToken } = options
+  if (articlePage.type !== "missing" || articlePage.data.can_create === true) {
+    return articlePage
+  }
+  if (!slug) return articlePage
+  const session = sessionToken ? await authGetSession(sessionToken) : null
+  if (resolvePageMutationUserId(session?.user_id, siteSlug, siteId, siteId) !== -1) {
+    return articlePage
+  }
+  try {
+    const grant = await pageCreatePermission(
+      { page: slug },
+      { siteId, localPageMutationActor: true }
+    )
+    if (!grant.can_create) return articlePage
+    return { ...articlePage, data: { ...articlePage.data, can_create: true } }
+  } catch {
+    return articlePage
+  }
 }
 
 /**
