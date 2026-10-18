@@ -628,7 +628,7 @@
 
 {#if pageLayoutContext.current === Layout.WIKIDOT}
   {#if data.options?.debug}
-    <h2 class:hidden={dataFormEditing}>UNTRANSLATED:Debug Response</h2>
+    <h2 class:hidden={dataFormEditing}>Debug response</h2>
   {:else if showRevision}
     <div id="page-title" class:hidden={dataFormEditing}>{revision?.title}</div>
   {:else}
@@ -1031,7 +1031,7 @@
   {/if}
 {:else}
   {#if data.options?.debug}
-    <h2>UNTRANSLATED:Debug Response</h2>
+    <h2>Debug response</h2>
   {:else if showRevision}
     <h2 class="page-title">{revision?.title}</h2>
   {:else}

@@ -4,27 +4,35 @@
   let { data }: PageProps = $props()
 </script>
 
-<h1>UNTRANSLATED: Info page</h1>
+<h1>{data.internationalization?.["about-info"]}</h1>
 
 <table class="platform-info">
   <tbody>
     <tr class="info-header">
-      <th colspan="2">UT:Backend</th>
+      <th colspan="2">{data.internationalization?.["about-info.backend"]}</th>
     </tr>
     <tr class="info-attribute-row">
-      <th class="info-attribute-name">UT:Package name</th>
+      <th class="info-attribute-name"
+        >{data.internationalization?.["about-info.package-name"]}</th
+      >
       <td class="info-attribute-value">{data.backend.package.name}</td>
     </tr>
     <tr class="info-attribute-row">
-      <th class="info-attribute-name">UT:Package description</th>
+      <th class="info-attribute-name"
+        >{data.internationalization?.["about-info.package-description"]}</th
+      >
       <td class="info-attribute-value">{data.backend.package.description}</td>
     </tr>
     <tr class="info-attribute-row">
-      <th class="info-attribute-name">UT:Package license</th>
+      <th class="info-attribute-name"
+        >{data.internationalization?.["about-info.package-license"]}</th
+      >
       <td class="info-attribute-value">{data.backend.package.license}</td>
     </tr>
     <tr class="info-attribute-row">
-      <th class="info-attribute-name">UT:Package repository</th>
+      <th class="info-attribute-name"
+        >{data.internationalization?.["about-info.package-repository"]}</th
+      >
       <td class="info-attribute-value">
         <a href={data.backend.package.repository} rel="external">
           {data.backend.package.repository}
@@ -32,32 +40,44 @@
       </td>
     </tr>
     <tr class="info-attribute-row">
-      <th class="info-attribute-name">UT:Package version</th>
+      <th class="info-attribute-name"
+        >{data.internationalization?.["about-info.package-version"]}</th
+      >
       <td class="info-attribute-value">{data.backend.package.version}</td>
     </tr>
     <tr class="info-attribute-row">
-      <th class="info-attribute-name">UT:Rustc version</th>
+      <th class="info-attribute-name"
+        >{data.internationalization?.["about-info.rustc-version"]}</th
+      >
       <td class="info-attribute-value">{data.backend.compile_info.rustc_version}</td>
     </tr>
   </tbody>
   <tbody>
     <tr class="info-header">
-      <th colspan="2">UT:Frontend</th>
+      <th colspan="2">{data.internationalization?.["about-info.frontend"]}</th>
     </tr>
     <tr class="info-attribute-row">
-      <th class="info-attribute-name">UT:Package name</th>
+      <th class="info-attribute-name"
+        >{data.internationalization?.["about-info.package-name"]}</th
+      >
       <td class="info-attribute-value">{data.frontend.name}</td>
     </tr>
     <tr class="info-attribute-row">
-      <th class="info-attribute-name">UT:Package description</th>
+      <th class="info-attribute-name"
+        >{data.internationalization?.["about-info.package-description"]}</th
+      >
       <td class="info-attribute-value">{data.frontend.description}</td>
     </tr>
     <tr class="info-attribute-row">
-      <th class="info-attribute-name">UT:Package license</th>
+      <th class="info-attribute-name"
+        >{data.internationalization?.["about-info.package-license"]}</th
+      >
       <td class="info-attribute-value">{data.frontend.license}</td>
     </tr>
     <tr class="info-attribute-row">
-      <th class="info-attribute-name">UT:Package repository</th>
+      <th class="info-attribute-name"
+        >{data.internationalization?.["about-info.package-repository"]}</th
+      >
       <td class="info-attribute-value">
         <a href={data.frontend.repository} rel="external">
           {data.frontend.repository}
@@ -65,15 +85,21 @@
       </td>
     </tr>
     <tr class="info-attribute-row">
-      <th class="info-attribute-name">UT:Package version</th>
+      <th class="info-attribute-name"
+        >{data.internationalization?.["about-info.package-version"]}</th
+      >
       <td class="info-attribute-value">{data.frontend.version}</td>
     </tr>
     <tr class="info-attribute-row">
-      <th class="info-attribute-name">UT:Node version</th>
+      <th class="info-attribute-name"
+        >{data.internationalization?.["about-info.node-version"]}</th
+      >
       <td class="info-attribute-value">{data.frontend.node}</td>
     </tr>
     <tr class="info-attribute-row">
-      <th class="info-attribute-name">UT:Pnpm version</th>
+      <th class="info-attribute-name"
+        >{data.internationalization?.["about-info.pnpm-version"]}</th
+      >
       <td class="info-attribute-value">{data.frontend.pnpm}</td>
     </tr>
   </tbody>

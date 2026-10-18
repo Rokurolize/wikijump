@@ -509,10 +509,11 @@
     {/if}
   {/if}
 {:else if errorData.view === "permissions"}
-  UNTRANSLATED:Lacks permissions for page
+  <!-- The private/banned blueprint page carries the explanation. -->
   {@html errorData.compiled_body_html}
 {:else}
-  UNTRANSLATED:Fatal error: Unable to display view
+  {errorData.internationalization?.["error-api.GENERIC"] ??
+    "Something went wrong while handling your request."}
 {/if}
 
 <style global lang="scss">
