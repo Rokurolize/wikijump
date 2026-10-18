@@ -311,6 +311,25 @@ inspection success never means campaign acceptance.
 After current browser evidence and direct reviews are complete, finalize each
 package with `node scripts/finalize-current-package.mjs --package NAME
 --result PATH --review PATH --audit PATH --output ports/current-acceptance/NAME`.
+
+For a fresh **Sigma-9 full-check capture**, use
+`node scripts/run-current-full-check.mjs basalt /path/to/frozen-reference-cache --run-id=basalt-YYYYMMDD-new-runtime`
+from the Theme Lab directory after provisioning a task-owned built Framerail
+transport with a current SHA-pinned run contract. If the new contract is at a
+different path, supply `--run-contract=/absolute/path/to/current-run-contract.json`
+(inside the Theme Lab tree). The capture reads `target_site.origin` from that
+contract, probes the required runtime/backend identity headers, and writes its
+result and artifacts under `ports/current-acceptance/basalt/runs/<run-id>/`.
+Existing run directories fail closed rather than overwriting the sealed
+October 7 evidence. This creates an input for review, **not a PASS**: use the
+same current run contract and fresh interactive audit for final acceptance.
+
+The regular `wikijump-local-development` development proxy does not itself
+provide the Theme Lab proof headers. `ports/interactive-visual-fixture/ensure-built-framerail.mjs`
+provisions the separate SHA-pinned built transport, and
+`ports/interactive-visual-fixture/capture-theme-matrix.mjs` verifies it before
+running interactive states. Neither operation can reuse the older runtime
+fingerprint or an unreviewed historical browser receipt as current acceptance.
 This writes `accepted-result.json` and `browser-audit.json` under that package's
 current directory and updates its package receipt. The Sigma-10 current matrix
 owner supplies `sigma10-migration/current-campaign/browser-audit.json` and
