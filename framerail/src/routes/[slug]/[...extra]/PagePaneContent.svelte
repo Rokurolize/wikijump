@@ -17,7 +17,8 @@
     onPaneReadStateChange,
     auxPaneRequestId = 0,
     setRevision,
-    setShowRevision
+    setShowRevision,
+    setRevisionContext
   }: {
     props: PageProps
     pagePaneState: PagePane
@@ -32,6 +33,7 @@
     ) => void
     setRevision: (revision: Optional<PageRevisionModelFiltered>) => void
     setShowRevision: (state: boolean) => void
+    setRevisionContext: (context: string | null) => void
   } = $props()
 
   let { data } = $derived(props)
@@ -190,7 +192,7 @@
   {:else if pagePaneState === PagePane.History}
     {#if HistoryPane}
       {#key `${data.site.site_id}:${data.page?.page_id ?? ""}`}
-        <HistoryPane {setRevision} {setShowRevision} {...props} />
+        <HistoryPane {setRevision} {setShowRevision} {setRevisionContext} {...props} />
       {/key}
     {:else}
       <p class="pane-loading" aria-live="polite">Loading…</p>

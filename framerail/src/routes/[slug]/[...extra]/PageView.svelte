@@ -55,6 +55,7 @@
   import CurrentPageActions from "./CurrentPageActions.svelte"
   import CurrentPageMetadata from "./CurrentPageMetadata.svelte"
   import PageHead from "./PageHead.svelte"
+  import RevisionBanner from "./RevisionBanner.svelte"
   import PagePaneContent from "./PagePaneContent.svelte"
   import WikidotFoundPageTags from "./WikidotFoundPageTags.svelte"
   import WikidotPageInfoBreak from "./WikidotPageInfoBreak.svelte"
@@ -73,6 +74,7 @@
   let showPageOptions = $state<boolean>(false)
   let showRevision = $state<boolean>(false)
   let revision = $state<Optional<PageRevisionModelFiltered>>(undefined)
+  let revisionContext = $state<string | null>(null)
   let pagePaneState = $state<PagePane>(PagePane.None)
   // Wikidot does not reveal its Files action area while the first file-list
   // request is pending or has failed (source SCP-9506, issue #2273).
@@ -296,6 +298,15 @@
 
   function setRevision(rev: Optional<PageRevisionModelFiltered>) {
     revision = rev
+  }
+
+  function setRevisionContext(context: string | null) {
+    revisionContext = context
+  }
+
+  function closeRevision() {
+    showRevision = false
+    setRevisionContext(null)
   }
 
   async function ensureEditorPane() {
@@ -626,6 +637,14 @@
   {compiledBodyStylesHead}
   fontPreloadHrefs={pageFontPreloadHrefs}
   metaTags={showRevision ? [] : (data.meta_tags ?? [])}
+/>
+
+<RevisionBanner
+  {data}
+  {revision}
+  {showRevision}
+  {revisionContext}
+  onClose={closeRevision}
 />
 
 {#if pageLayoutContext.current === Layout.WIKIDOT}
@@ -1021,6 +1040,7 @@
           {props}
           {setRevision}
           {setShowRevision}
+          {setRevisionContext}
           {showSource}
           wikidot
           initialFileList={wikidotFilesPrefetched}
