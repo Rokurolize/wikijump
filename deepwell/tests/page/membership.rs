@@ -1105,3 +1105,199 @@ async fn membership_email_invitation_matches_hash_one_use_and_cancel_contract() 
         "canceled invitation must collapse to the same unavailable state",
     );
 }
+
+#[tokio::test]
+async fn membership_password_submit_is_throttled_per_site_and_actor() {
+    let mut runner = TestRunner::setup().await;
+    let site_output =
+        run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}))
+            .expect("seeded editable site should exist");
+    let site_id = site_output.site.site_id;
+    let membership_password = format!("membership-throttle-{}", cuid());
+
+    let mut site_model = site_output.site.into_active_model();
+    site_model.membership_by_password = Set(true);
+    site_model.membership_password_hash = Set(Some(
+        PasswordService::new_hash(&membership_password)
+            .expect("membership password fixture should hash"),
+    ));
+    site_model
+        .update(runner.context().transaction())
+        .await
+        .expect("membership password fixture should update");
+
+    async fn throttle_actor(runner: &TestRunner, label: &str) -> i64 {
+        UserService::create(
+            runner.context(),
+            CreateUser {
+                user_type: UserType::Regular,
+                name: format!("Throttle {label} {}", cuid()),
+                email: format!("throttle-{label}-{}@example.invalid", cuid()),
+                locales: vec!["en".to_owned()],
+                password: format!("throttle-fixture-{}", cuid()),
+                bypass_filter: true,
+                bypass_email_verification: true,
+                override_user_id: None,
+                ip_address: common::IP_ADDRESS,
+            },
+        )
+        .await
+        .expect("throttle fixture user should be created")
+        .user_id
+    }
+
+    let actor_id = throttle_actor(&runner, "limited").await;
+    let other_actor_id = throttle_actor(&runner, "other").await;
+    let page_slug = format!("membership-throttle-{}", cuid());
+    let page = PageService::create(
+        runner.context(),
+        CreatePage {
+            site_id,
+            wikitext: "[[module MembershipByPassword]]".to_owned(),
+            title: "Membership throttle fixture".to_owned(),
+            alt_title: None,
+            tags: Vec::new(),
+            slug: page_slug.clone(),
+            layout: None,
+            revision_comments: "Create membership throttle fixture".to_owned(),
+            user_id: SYSTEM_USER_ID,
+            bypass_filter: true,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("membership throttle page should be created");
+
+    async fn password_binding_for(
+        runner: &mut TestRunner,
+        site_id: i64,
+        page_slug: &str,
+        user_id: i64,
+    ) -> (i64, i64, usize, String) {
+        let session_token = SessionService::create(
+            runner.context(),
+            CreateSession {
+                user_id,
+                ip_address: common::IP_ADDRESS,
+                user_agent: "membership throttle fixture".to_owned(),
+                restricted: false,
+            },
+        )
+        .await
+        .expect("throttle fixture session should be created");
+        runner.set_request_context(RequestContext {
+            user_id: Some(user_id),
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Slug(page_slug.to_owned().into())),
+            ..Default::default()
+        });
+        let view = run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": session_token,
+                "route": {"slug": page_slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        );
+        match view {
+            GetPageViewOutput::Found {
+                membership_actions, ..
+            } => membership_actions
+                .iter()
+                .find_map(|action| match action {
+                    MembershipBrowserAction::Password {
+                        page_id,
+                        revision_id,
+                        index,
+                        fingerprint,
+                    } => Some((*page_id, *revision_id, *index, fingerprint.clone())),
+                    _ => None,
+                })
+                .expect("registered nonmember should receive password action binding"),
+            other => panic!("expected membership action page, got {other:?}"),
+        }
+    }
+
+    let binding = password_binding_for(&mut runner, site_id, &page_slug, actor_id).await;
+    assert_eq!(binding.0, page.page_id);
+    runner.set_request_context(RequestContext {
+        user_id: Some(actor_id),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(page_slug.clone().into())),
+        ..Default::default()
+    });
+    for attempt in 1..=10 {
+        let outcome = run_endpoint!(
+            runner,
+            membership_password_submit,
+            json!({
+                "page_id": binding.0,
+                "last_revision_id": binding.1,
+                "action_index": binding.2,
+                "action_fingerprint": binding.3,
+                "password": format!("wrong-{attempt}"),
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        assert_eq!(
+            outcome,
+            deepwell::services::membership::MembershipPasswordOutcome::WrongPassword,
+            "attempt {attempt} within the window must stay a plain wrong-password outcome",
+        );
+    }
+    // The window is now exhausted for this (site, actor): even the correct
+    // password is indistinguishable from every other unavailable action.
+    let exhausted = run_endpoint_err!(
+        runner,
+        membership_password_submit,
+        json!({
+            "page_id": binding.0,
+            "last_revision_id": binding.1,
+            "action_index": binding.2,
+            "action_fingerprint": binding.3,
+            "password": membership_password,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(exhausted, ErrorType::PermissionDenied);
+    assert!(
+        !RelationService::site_member_exists(
+            runner.context(),
+            deepwell::services::relation::GetSiteMember {
+                site_id,
+                user_id: actor_id,
+            },
+        )
+        .await
+        .expect("membership lookup should succeed"),
+        "an exhausted window must not create membership",
+    );
+
+    // A different actor keeps an independent partition.
+    let other_binding =
+        password_binding_for(&mut runner, site_id, &page_slug, other_actor_id).await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(other_actor_id),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(page_slug.clone().into())),
+        ..Default::default()
+    });
+    let other_outcome = run_endpoint!(
+        runner,
+        membership_password_submit,
+        json!({
+            "page_id": other_binding.0,
+            "last_revision_id": other_binding.1,
+            "action_index": other_binding.2,
+            "action_fingerprint": other_binding.3,
+            "password": "wrong-other",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(
+        other_outcome,
+        deepwell::services::membership::MembershipPasswordOutcome::WrongPassword,
+    );
+}
