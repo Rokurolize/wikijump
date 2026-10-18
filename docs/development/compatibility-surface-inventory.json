@@ -11475,7 +11475,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "f9019f41026850129fe0dec661667c7b42c715ac601acd5945d8b5c106844dee"
+      "source_input_set_sha256": "9724d29e15b1bdb141e7aa854e7e2ecc92e59814bf12e4068906cbf402b1b267"
     },
     "ftml": {
       "commit": "9a828056bdc14ac3a2ab6900d45361273b94cd32",
@@ -11492,11 +11492,11 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "04f4f3289ded4f796118004fecfe211f49a0e02612ba20140cba4077bef5c9ee"
+        "sha256": "c4af8601d4014d3d0630fbfc728cc72b398523a458e0820a2e56743506076e49"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
-        "sha256": "798b280788f4c91d5cbfdce01473302dc718c71880db1875393ccd2e3fb12340"
+        "sha256": "2096a2bc7ffeffacdfc4af5f94604c0f810b0adddea673414a727845a2e04d32"
       },
       {
         "path": "deepwell/src/endpoints/basic_error.rs",
@@ -11640,7 +11640,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "48cf969f0da01e7437ac9698d076231ac26d963f108a92f335182623384b767c"
+        "sha256": "904ded55f229604a78825a5f32e753e3d0336c19b4a88008999ff35bd1fdf5bd"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11704,7 +11704,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "5a4b73b19418bca3ddc191cd472a3650a3a17560eeb758882e9067e43bf5e474"
+        "sha256": "e40b5c86245e181d9d57250eb6d684b071b4e30b63ef53d7ad1d5e70ab030043"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11872,7 +11872,7 @@
       },
       {
         "path": "framerail/src/routes/common--theme/base/images/feed/feed-icon-14x14.png/+server.ts",
-        "sha256": "38f86d15abb60e92ee1b53856073c8d261593bb1217a551af00ba97ee03ed6b5"
+        "sha256": "957ffd131ebaa76cfadc8e673fd37dd14666b421d9591d2f641e6f4bbcd4aa22"
       },
       {
         "path": "framerail/src/routes/feed/forum/[feed]/+server.ts",
@@ -25228,7 +25228,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
+          "deepwell/tests/rpc_boundary.rs#production_rpc_serializes_recovery_code_use_across_sessions"
         ]
       },
       "evidence": {
@@ -25993,7 +25993,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
+          "deepwell/tests/rpc_boundary.rs#production_rpc_serializes_recovery_code_use_across_sessions"
         ]
       },
       "evidence": {
@@ -26038,7 +26038,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
+          "deepwell/tests/rpc_boundary.rs#production_rpc_serializes_recovery_code_use_across_sessions"
         ]
       },
       "evidence": {
@@ -29638,7 +29638,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
+          "deepwell/tests/rpc_boundary.rs#production_rpc_serializes_recovery_code_use_across_sessions"
         ]
       },
       "evidence": {

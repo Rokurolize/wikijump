@@ -3,7 +3,7 @@
   "source_identities": {
     "jsonrpc_registry": {
       "path": "deepwell/src/api.rs",
-      "sha256": "04f4f3289ded4f796118004fecfe211f49a0e02612ba20140cba4077bef5c9ee"
+      "sha256": "c4af8601d4014d3d0630fbfc728cc72b398523a458e0820a2e56743506076e49"
     },
     "request_context_middleware": {
       "path": "deepwell/src/middleware.rs",
@@ -222,7 +222,7 @@
         "component": "deepwell",
         "handler": "auth_token_issue",
         "source": "deepwell/src/endpoints/auth.rs#auth_token_issue",
-        "source_sha256": "798b280788f4c91d5cbfdce01473302dc718c71880db1875393ccd2e3fb12340",
+        "source_sha256": "2096a2bc7ffeffacdfc4af5f94604c0f810b0adddea673414a727845a2e04d32",
         "function_sha256": "a207f29c48b22cf0bbea8fa483bea3a0794e94f55010ca043ee66cf5f35343ae"
       },
       "params_schema": {
@@ -3740,8 +3740,8 @@
         "component": "deepwell",
         "handler": "auth_login",
         "source": "deepwell/src/endpoints/auth.rs#auth_login",
-        "source_sha256": "798b280788f4c91d5cbfdce01473302dc718c71880db1875393ccd2e3fb12340",
-        "function_sha256": "4af3d9963468af216b188c473cccb1af086c9e3d0c378d1f34220d713873e17c"
+        "source_sha256": "2096a2bc7ffeffacdfc4af5f94604c0f810b0adddea673414a727845a2e04d32",
+        "function_sha256": "31df89ade9a15cb6df0277f5655f730b96295477202b04530f7dd58048a851d3"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -3784,8 +3784,11 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "rpc_behavioral",
-        "reference": "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state",
-        "alternatives": [],
+        "reference": "deepwell/tests/rpc_boundary.rs#production_rpc_serializes_recovery_code_use_across_sessions",
+        "alternatives": [
+          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_password_failure_buckets",
+          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
+        ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
     },
@@ -3795,7 +3798,7 @@
         "component": "deepwell",
         "handler": "auth_logout",
         "source": "deepwell/src/endpoints/auth.rs#auth_logout",
-        "source_sha256": "798b280788f4c91d5cbfdce01473302dc718c71880db1875393ccd2e3fb12340",
+        "source_sha256": "2096a2bc7ffeffacdfc4af5f94604c0f810b0adddea673414a727845a2e04d32",
         "function_sha256": "ab05278cace9efb5ad54776df024f490dd9761a4713582478be80ea654e67f72"
       },
       "params_schema": {
@@ -4609,7 +4612,7 @@
         "component": "deepwell",
         "handler": "auth_mfa_disable",
         "source": "deepwell/src/endpoints/auth.rs#auth_mfa_disable",
-        "source_sha256": "798b280788f4c91d5cbfdce01473302dc718c71880db1875393ccd2e3fb12340",
+        "source_sha256": "2096a2bc7ffeffacdfc4af5f94604c0f810b0adddea673414a727845a2e04d32",
         "function_sha256": "390be3adc961b1b45277fe7cdeef5fb03cc28c4da0bda2a86b1917653f737f6e"
       },
       "params_schema": {
@@ -4664,7 +4667,7 @@
         "component": "deepwell",
         "handler": "auth_mfa_reset_recovery",
         "source": "deepwell/src/endpoints/auth.rs#auth_mfa_reset_recovery",
-        "source_sha256": "798b280788f4c91d5cbfdce01473302dc718c71880db1875393ccd2e3fb12340",
+        "source_sha256": "2096a2bc7ffeffacdfc4af5f94604c0f810b0adddea673414a727845a2e04d32",
         "function_sha256": "9ea6fa69b27c0c40316ac2d2fabda22731a44cdbd2116a10edf8365c6ff5c70a"
       },
       "params_schema": {
@@ -4719,7 +4722,7 @@
         "component": "deepwell",
         "handler": "auth_mfa_setup",
         "source": "deepwell/src/endpoints/auth.rs#auth_mfa_setup",
-        "source_sha256": "798b280788f4c91d5cbfdce01473302dc718c71880db1875393ccd2e3fb12340",
+        "source_sha256": "2096a2bc7ffeffacdfc4af5f94604c0f810b0adddea673414a727845a2e04d32",
         "function_sha256": "45aec4dbf41d5993216ad5a54cae4241aa046f75d5d0fb301583cd440eefec61"
       },
       "params_schema": {
@@ -4763,8 +4766,10 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "rpc_behavioral",
-        "reference": "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state",
-        "alternatives": [],
+        "reference": "deepwell/tests/rpc_boundary.rs#production_rpc_serializes_recovery_code_use_across_sessions",
+        "alternatives": [
+          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
+        ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
     },
@@ -4774,7 +4779,7 @@
         "component": "deepwell",
         "handler": "auth_mfa_verify",
         "source": "deepwell/src/endpoints/auth.rs#auth_mfa_verify",
-        "source_sha256": "798b280788f4c91d5cbfdce01473302dc718c71880db1875393ccd2e3fb12340",
+        "source_sha256": "2096a2bc7ffeffacdfc4af5f94604c0f810b0adddea673414a727845a2e04d32",
         "function_sha256": "4d0994ed2a45a52e436ac1ae7070d34f9e8317396c3c3960dcb6ae0c13073025"
       },
       "params_schema": {
@@ -4818,8 +4823,10 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "rpc_behavioral",
-        "reference": "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state",
-        "alternatives": [],
+        "reference": "deepwell/tests/rpc_boundary.rs#production_rpc_serializes_recovery_code_use_across_sessions",
+        "alternatives": [
+          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
+        ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
     },
@@ -8627,7 +8634,7 @@
         "component": "deepwell",
         "handler": "auth_session_get",
         "source": "deepwell/src/endpoints/auth.rs#auth_session_get",
-        "source_sha256": "798b280788f4c91d5cbfdce01473302dc718c71880db1875393ccd2e3fb12340",
+        "source_sha256": "2096a2bc7ffeffacdfc4af5f94604c0f810b0adddea673414a727845a2e04d32",
         "function_sha256": "ec62d123a9bb5d3b3b453a26fd38daa0cdf767ce4b602754c3a120fded459687"
       },
       "params_schema": {
@@ -8687,7 +8694,7 @@
         "component": "deepwell",
         "handler": "auth_session_get_others",
         "source": "deepwell/src/endpoints/auth.rs#auth_session_get_others",
-        "source_sha256": "798b280788f4c91d5cbfdce01473302dc718c71880db1875393ccd2e3fb12340",
+        "source_sha256": "2096a2bc7ffeffacdfc4af5f94604c0f810b0adddea673414a727845a2e04d32",
         "function_sha256": "42849cc4c9eb0e9555270ae341fdfda77663ce937f4063473194056369a8cf52"
       },
       "params_schema": {
@@ -8740,7 +8747,7 @@
         "component": "deepwell",
         "handler": "auth_session_invalidate_others",
         "source": "deepwell/src/endpoints/auth.rs#auth_session_invalidate_others",
-        "source_sha256": "798b280788f4c91d5cbfdce01473302dc718c71880db1875393ccd2e3fb12340",
+        "source_sha256": "2096a2bc7ffeffacdfc4af5f94604c0f810b0adddea673414a727845a2e04d32",
         "function_sha256": "a43944e2627478ee2be5455a08363b1bf32a30b1a3823e767ea4d732d81e899f"
       },
       "params_schema": {
@@ -8795,7 +8802,7 @@
         "component": "deepwell",
         "handler": "auth_session_renew",
         "source": "deepwell/src/endpoints/auth.rs#auth_session_renew",
-        "source_sha256": "798b280788f4c91d5cbfdce01473302dc718c71880db1875393ccd2e3fb12340",
+        "source_sha256": "2096a2bc7ffeffacdfc4af5f94604c0f810b0adddea673414a727845a2e04d32",
         "function_sha256": "8fef3cc20f87099b8eb07d2acebcff9a8db237a42e8c3cd17bc500ad2c0df459"
       },
       "params_schema": {
@@ -9937,8 +9944,11 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "rpc_behavioral",
-        "reference": "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state",
-        "alternatives": [],
+        "reference": "deepwell/tests/rpc_boundary.rs#production_rpc_serializes_recovery_code_use_across_sessions",
+        "alternatives": [
+          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_password_failure_buckets",
+          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
+        ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
     },
