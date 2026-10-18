@@ -1,2 +1,2 @@
 #!/bin/sh
-curl -k -If -H 'Host: wikijump.localhost' https://localhost/-/health-check/caddy
+curl -k -If -H 'Host: wikijump.dev.localhost' https://localhost:18443/-/health-check/caddy

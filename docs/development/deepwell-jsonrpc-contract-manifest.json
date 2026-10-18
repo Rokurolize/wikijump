@@ -3,7 +3,7 @@
   "source_identities": {
     "jsonrpc_registry": {
       "path": "deepwell/src/api.rs",
-      "sha256": "1937ed69310c00e1353df883f8457c7790c0322da5a60be29622c2e117449bb5"
+      "sha256": "7da8b1082c5a5b9d2171d38f6f94de5377c5e37780490f22d8909130e7698159"
     },
     "request_context_middleware": {
       "path": "deepwell/src/middleware.rs",
@@ -1988,7 +1988,7 @@
         "component": "deepwell",
         "handler": "site_custom_domain_create",
         "source": "deepwell/src/endpoints/domain.rs#site_custom_domain_create",
-        "source_sha256": "c76b8a81e003b0358bfe25e8af9ffeb5c336258b818df4d604f9f159910891f7",
+        "source_sha256": "de30b748f3eeb7f50a506b2820f99ec8d034aa1ea2986bbadb38d6a9a1bd01b3",
         "function_sha256": "41c1a72498cfc530b32caf8470fcf8de6758d1af42458ec81e6caf0ae6829a49"
       },
       "params_schema": {
@@ -2052,7 +2052,7 @@
         "component": "deepwell",
         "handler": "site_custom_domain_list",
         "source": "deepwell/src/endpoints/domain.rs#site_custom_domain_list",
-        "source_sha256": "c76b8a81e003b0358bfe25e8af9ffeb5c336258b818df4d604f9f159910891f7",
+        "source_sha256": "de30b748f3eeb7f50a506b2820f99ec8d034aa1ea2986bbadb38d6a9a1bd01b3",
         "function_sha256": "8dc1f289468d9c855971b785db8e75e01106c1ae480dfffb7e3006fa403b0f31"
       },
       "params_schema": {
@@ -2111,7 +2111,7 @@
         "component": "deepwell",
         "handler": "site_custom_domain_remove",
         "source": "deepwell/src/endpoints/domain.rs#site_custom_domain_remove",
-        "source_sha256": "c76b8a81e003b0358bfe25e8af9ffeb5c336258b818df4d604f9f159910891f7",
+        "source_sha256": "de30b748f3eeb7f50a506b2820f99ec8d034aa1ea2986bbadb38d6a9a1bd01b3",
         "function_sha256": "ab2c4270695aa481b12e0320b3c8ac03b43b7f24e76fc502fcc4932b921317cc"
       },
       "params_schema": {
@@ -9107,8 +9107,8 @@
         "component": "deepwell",
         "handler": "site_get_domain",
         "source": "deepwell/src/endpoints/domain.rs#site_get_domain",
-        "source_sha256": "c76b8a81e003b0358bfe25e8af9ffeb5c336258b818df4d604f9f159910891f7",
-        "function_sha256": "2243f3a5c4b6da30ffc3913928f0ad71d90834be9f5ec8c527d073405e81b9bc"
+        "source_sha256": "de30b748f3eeb7f50a506b2820f99ec8d034aa1ea2986bbadb38d6a9a1bd01b3",
+        "function_sha256": "a65af8a19b817261cf46dd21d1f73169a08cd34cd739eb9b37c43003def4b288"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",

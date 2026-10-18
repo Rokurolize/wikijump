@@ -122,6 +122,7 @@ const CADDYFILE_BASIC_LOCAL_DEV: &str = test_file_path!("basic_localdev");
 const CADDYFILE_BASIC_DIFFERENT_PROXIES: &str = test_file_path!("proxies");
 const CADDYFILE_FULL_PROD: &str = test_file_path!("full_prod");
 const CADDYFILE_LONG_DOMAIN: &str = test_file_path!("long");
+const CADDYFILE_DEV_LOCALHOST: &str = test_file_path!("dev_localhost");
 
 /// Overwrite test data, for instance when updating `CaddyService`.
 ///
@@ -270,6 +271,52 @@ fn generated_caddyfile_routes_exact_default_code_path_to_files_domain() {
 }
 
 #[test]
+fn redirects_stay_on_the_configured_public_https_port() {
+    let mut config = build_config("wikijump.dev.localhost", "wjfiles.dev.localhost");
+    config.https_port = 18443;
+    let (sites, _) = build_site_data();
+    let caddyfile = CaddyService::generate_with_data(
+        &config,
+        &CaddyfileOptions {
+            debug: false,
+            local: true,
+            http_port: Some(18080),
+            https_port: Some(18443),
+            wildcard_cert: None,
+            deploy_host: Some(cow!("komodo:9120")),
+            framerail_host: cow!("framerail:3393"),
+            wws_host: cow!("wws:3466"),
+        },
+        &sites,
+    )
+    .expect("failed to generate Caddyfile");
+
+    let redirects = caddyfile
+        .lines()
+        .map(str::trim)
+        .filter(|line| line.starts_with("redir "))
+        .collect::<Vec<_>>();
+    assert!(
+        redirects.contains(&"redir https://example.com:18443{uri}"),
+        "canonical-to-custom redirect lost the public port: {redirects:#?}",
+    );
+    assert!(
+        redirects.contains(&"redir https://deploy.wikijump.dev.localhost:18443"),
+        "deploy redirect lost the public port: {redirects:#?}",
+    );
+    assert!(
+        redirects.contains(
+            &"redir @redirect https://{vars.site_slug}.wjfiles.dev.localhost:18443{uri}"
+        ),
+        "files redirect lost the public port: {redirects:#?}",
+    );
+    assert!(
+        redirects.iter().all(|line| line.contains(":18443")),
+        "every redirect must stay on the public port: {redirects:#?}",
+    );
+}
+
+#[test]
 fn generated_caddyfiles_do_not_use_unsupported_push_directive() {
     let config = build_config("wikijump.test", "wjfiles.test");
     let (sites, _) = build_site_data();
@@ -376,6 +423,11 @@ fn generate_caddyfiles() {
         "site.wikijump.com",
         "wjfiles.host.site.somedomain.example.com",
     );
+    let config_dev_localhost = {
+        let mut config = build_config("wikijump.dev.localhost", "wjfiles.dev.localhost");
+        config.https_port = 18443;
+        config
+    };
     let (sites_basic, sites_full) = build_site_data();
 
     macro_rules! check {
@@ -506,6 +558,22 @@ UNIT TEST INFO:
             local: false,
             http_port: None,
             https_port: None,
+            wildcard_cert: None,
+            deploy_host: None,
+            framerail_host: cow!(FRAMERAIL_HOST),
+            wws_host: cow!(WWS_HOST),
+        },
+    );
+
+    check!(
+        CADDYFILE_DEV_LOCALHOST,
+        config_dev_localhost,
+        sites_basic,
+        CaddyfileOptions {
+            debug: false,
+            local: true,
+            http_port: Some(18080),
+            https_port: Some(18443),
             wildcard_cert: None,
             deploy_host: None,
             framerail_host: cow!(FRAMERAIL_HOST),

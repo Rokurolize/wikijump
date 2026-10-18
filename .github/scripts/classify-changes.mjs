@@ -21,6 +21,11 @@ const LOCAL_COMPOSE_RUNTIME_FILES = new Set([
   "install/local/docker-compose.postgres-perf.yaml",
 ])
 
+// The local Caddy edge serves the Deepwell-generated routes in front of the
+// same Deepwell, Framerail and WWS runtimes, so it takes the same checks as
+// the Compose manifests that start it.
+const LOCAL_CADDY_RUNTIME_PREFIX = "install/local/caddy/"
+
 const selectAll = (selected) => {
   for (const group of GROUPS) selected[group] = true
   selected.verification = true
@@ -32,7 +37,15 @@ const selectWorkflow = (selected) => {
 
 const metadataOnly = (file) =>
   file.startsWith("docs/") ||
-  ["AGENTS.md", "CLAUDE.md", "CODEOWNERS", "LICENSE.md", "README.md", "SECURITY.md"].includes(file)
+  [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "CODEOWNERS",
+    "LICENSE.md",
+    "README.md",
+    "SECURITY.md",
+    "install/local/README.md"
+  ].includes(file)
 
 const machineAuthorityDocument = (file) =>
   file.startsWith("docs/development/") && file.endsWith(".json")
@@ -91,7 +104,7 @@ export function classifyChanges(paths, all = false) {
 
     if (metadataOnly(file) || verificationOnly(file)) continue
 
-    if (LOCAL_COMPOSE_RUNTIME_FILES.has(file)) {
+    if (LOCAL_COMPOSE_RUNTIME_FILES.has(file) || file.startsWith(LOCAL_CADDY_RUNTIME_PREFIX)) {
       for (const group of ["deepwell", "wws", "framerail"]) selected[group] = true
       selected.workflow = true
       selected.verification = true
