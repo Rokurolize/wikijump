@@ -35,7 +35,7 @@ mod tests {
         assert_eq!(
             COMPILED_GENERATOR.as_str(),
             format!(
-                "{} v{}; deepwell-render/v31",
+                "{} v{}; deepwell-render/v32",
                 ftml::info::PKG_NAME,
                 ftml::info::PKG_VERSION,
             ),

@@ -51,6 +51,23 @@ static AUTHORED_WIKIDOT_COMPAT_OPEN_TAG_REGEX: LazyLock<Regex> = LazyLock::new(|
     .unwrap()
 });
 
+/// Whether only spaces or tabs precede `start` on its physical line.
+///
+/// Wikidot recognizes a `[[module CSS]]` opener only at the start of a line,
+/// after optional indentation. Mid-line it is ordinary text, including inside
+/// `{{ }}`, and it consumes nothing: `text {{[[module CSS]]}} more` renders
+/// `text <tt>[[module CSS]]</tt> more` and a later real module still works
+/// (`css-mid-line-*` and `css-indented-opener` in
+/// wikidot-at-raw-preview-20261019.json). Treating a documentation mention as
+/// an opener paired it with a `[[/module]]` thousands of lines later and
+/// swallowed everything between, e.g. `theme:flopstyle-dark`'s code blocks.
+fn opens_its_line(source: &str, start: usize) -> bool {
+    let line_start = source[..start].rfind('\n').map_or(0, |newline| newline + 1);
+    source[line_start..start]
+        .bytes()
+        .all(|byte| byte == b' ' || byte == b'\t')
+}
+
 pub(in crate::services::render) fn protect_css_modules_before_first_list_pages(
     wikitext: &mut String,
     settings: &WikitextSettings,
@@ -76,6 +93,7 @@ pub(in crate::services::render) fn protect_css_modules_before_first_list_pages(
     while let Some(open) = CSS_MODULE_OPEN_REGEX.find_at(source, cursor) {
         if literal_regions.contains(open.start())
             || native_quote_lines.contains(open.start())
+            || !opens_its_line(source, open.start())
         {
             output.push_str(&source[cursor..open.end()]);
             cursor = open.end();
@@ -126,6 +144,7 @@ pub(in crate::services::render) fn extract_css_modules(
     while let Some(open) = CSS_MODULE_OPEN_REGEX.find_at(source, cursor) {
         if literal_regions.contains(open.start())
             || native_quote_lines.contains(open.start())
+            || !opens_its_line(source, open.start())
         {
             output.push_str(&source[cursor..open.end()]);
             cursor = open.end();

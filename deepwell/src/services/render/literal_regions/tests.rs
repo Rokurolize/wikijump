@@ -186,8 +186,11 @@ fn runtime_meta_raw_owns_exactly_six_delimiter_bytes() {
 
     assert!((0..6).all(|offset| runtime.contains(offset)));
     assert!(!runtime.contains(source.find("live").unwrap()));
+    // Wikidot pairs the first four `@@` (an empty raw) and leaves the last two
+    // literal, so `live` is ordinary text (`six-at-then-bold` in
+    // wikidot-at-raw-preview-20261019.json renders `@@ live <strong>bold</strong>`).
     assert!(
-        LiteralRegionIndex::new_wikidot_syntax(source)
+        !LiteralRegionIndex::new_wikidot_syntax(source)
             .contains(source.find("live").unwrap())
     );
 }
@@ -277,22 +280,57 @@ fn unclosed_wikidot_comments_and_blocks_extend_to_eof() {
 }
 
 #[test]
-fn common_index_preserves_legacy_multiline_and_unclosed_raw_ranges() {
+fn common_index_pairs_inline_raw_within_physical_lines() {
+    // Wikidot never pairs `@@` across lines or paragraphs (retained anonymous
+    // PagePreviewModule observations, wikidot-at-raw-preview-20261019.json):
+    // an unmatched `@@` is literal and must not own the text that follows.
     for source in [
         "live @@raw\nacross lines@@ following",
         "live @@unclosed\nthrough eof",
+        "live {{@@}} lone\n\nacross paragraphs @@ following",
     ] {
-        let common = LiteralRegionIndex::new_wikidot_syntax(source);
-        let runtime = LiteralRegionIndex::new_list_pages_syntax(source);
-        let needle = if source.contains("through") {
-            "through"
-        } else {
-            "across"
-        };
-        let offset = source.find(needle).unwrap();
+        // The ListPages runtime index additionally protects an unmatched `@@`
+        // to the end of its own line, so only the next line is compared there.
+        let offset = source.find("across").or(source.find("through")).unwrap();
+        for index in [
+            LiteralRegionIndex::new_wikidot_syntax(source),
+            LiteralRegionIndex::new(source),
+            LiteralRegionIndex::new_list_pages_syntax(source),
+        ] {
+            assert!(!index.contains(offset), "offset {source:?}");
+        }
+        for index in [
+            LiteralRegionIndex::new_wikidot_syntax(source),
+            LiteralRegionIndex::new(source),
+        ] {
+            assert!(!index.contains(source.len() - 1), "end {source:?}");
+        }
+    }
 
-        assert!(common.contains(offset));
-        assert!(!runtime.contains(offset));
+    let balanced = "a @@raw text@@ b";
+    let index = LiteralRegionIndex::new_wikidot_syntax(balanced);
+    assert!(index.contains(balanced.find("raw text").unwrap()));
+    assert!(!index.contains(balanced.find(" b").unwrap()));
+}
+
+#[test]
+fn a_lone_raw_marker_does_not_invert_later_raw_pairs() {
+    // `theme:flopstyle-dark` carries one `{{@@}}` on line 433 and documents
+    // markup with balanced `@@...@@` pairs for the remaining 5,000 lines.
+    // Document-wide pairing flipped every later pair, so the documentation
+    // examples became live markup and the page's CSS code blocks vanished.
+    let source = concat!(
+        "an unpaired {{@@}} marker\n",
+        "example: @@[[ul class=\"creditRate\"]]@@\n",
+        "[[module Rate]]\n",
+    );
+    for index in [
+        LiteralRegionIndex::new(source),
+        LiteralRegionIndex::new_wikidot_syntax(source),
+        LiteralRegionIndex::new_count_pages_syntax(source),
+    ] {
+        assert!(index.contains(source.find("[[ul class").unwrap()));
+        assert!(!index.contains(source.find("[[module Rate]]").unwrap()));
     }
 }
 
