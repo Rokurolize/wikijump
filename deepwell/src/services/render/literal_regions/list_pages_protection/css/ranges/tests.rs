@@ -172,13 +172,6 @@ fn wikidot_unclosed_css_does_not_recover_list_pages_heads_in_literal_contexts() 
         ),
         concat!(
             "[[module CSS]]\n",
-            "@@\n",
-            "[[module ListPages name=\"inline-raw\"]]\n",
-            "[[/module]]\n",
-            "@@",
-        ),
-        concat!(
-            "[[module CSS]]\n",
             "\\[[module ListPages name=\"escaped\"]]\n",
             "[[/module]]",
         ),
@@ -619,4 +612,21 @@ fn assert_css_range_owns_named_module_only(source: &str, owned: &str, live: &str
 
     assert!(index.contains(source.find(owned).unwrap()), "{source:?}");
     assert!(!index.contains(source.find(live).unwrap()), "{source:?}");
+}
+
+#[test]
+fn raw_markers_on_their_own_lines_do_not_change_css_module_recognition() {
+    // Wikidot's `@@` never spans lines, so a CSS module whose body holds lone
+    // `@@` lines is recognized exactly like the same module without them
+    // (`css-module-lone-at-lines-listpages` and `css-module-no-at-listpages` in
+    // wikidot-at-raw-preview-20261019.json).
+    let with_raw =
+        "[[module CSS]]\n@@\n[[module ListPages name=\"inline-raw\"]]\n[[/module]]\n@@";
+    let without_raw =
+        "[[module CSS]]\n[[module ListPages name=\"inline-raw\"]]\n[[/module]]";
+
+    assert_eq!(
+        collect_downstream_css_module_ranges(with_raw).is_empty(),
+        collect_downstream_css_module_ranges(without_raw).is_empty(),
+    );
 }

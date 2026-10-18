@@ -303,7 +303,7 @@ impl LiteralRegionIndex {
         let mut block_ranges = Vec::new();
         collect_wikidot_block_ranges(source, &mut block_ranges);
         let mut raw_ranges = Vec::new();
-        collect_paired_ranges(source, "@@", "@@", &mut raw_ranges);
+        collect_line_paired_ranges(source, "@@", &mut raw_ranges);
         let mut comment_ranges = Vec::new();
         collect_paired_ranges(source, "[!--", "--]", &mut comment_ranges);
         let mut ranges =
@@ -503,6 +503,38 @@ fn collect_html_tag_ranges(source: &str, ranges: &mut Vec<Range<usize>>) {
         };
         ranges.push(start..end);
         cursor = end;
+    }
+}
+
+/// Pairs `delimiter` occurrences left to right within each physical line.
+///
+/// Wikidot's inline raw `@@ ... @@` never spans lines: a lone `@@`, plain or
+/// inside `{{ }}`, is literal text, and `@@` on different lines or in different
+/// paragraphs never pair (anonymous `PagePreviewModule` observations,
+/// retained in
+/// `install/local/wikidot-verification/artifacts/wikidot-at-raw-preview-20261019.json`).
+/// A page that mentions one `@@` therefore must not change which later `@@`
+/// pairs own literal text; an unmatched `@@` owns no region.
+fn collect_line_paired_ranges(
+    source: &str,
+    delimiter: &str,
+    ranges: &mut Vec<Range<usize>>,
+) {
+    let mut line_start = 0usize;
+    for line in source.split_inclusive('\n') {
+        let body = wikidot::physical_line_body(line);
+        let mut cursor = 0usize;
+        while let Some(relative_start) = body[cursor..].find(delimiter) {
+            let start = cursor + relative_start;
+            let body_start = start + delimiter.len();
+            let Some(relative_end) = body[body_start..].find(delimiter) else {
+                break;
+            };
+            let end = body_start + relative_end + delimiter.len();
+            ranges.push(line_start + start..line_start + end);
+            cursor = end;
+        }
+        line_start += line.len();
     }
 }
 

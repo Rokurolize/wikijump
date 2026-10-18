@@ -270,7 +270,9 @@ impl RenderService {
             normalized.push_str(&source[last..link_match.start()]);
             last = link_match.end();
 
-            if literal_regions.contains(link_match.start()) {
+            if literal_regions.contains(link_match.start())
+                || Self::joined_lines_carry_raw_markers(&source, &link_match)
+            {
                 normalized.push_str(link_match.as_str());
                 continue;
             }
@@ -302,6 +304,27 @@ impl RenderService {
 
         normalized.push_str(&source[last..]);
         *wikitext = normalized;
+    }
+
+    /// Whether joining a link's physical lines could change `@@` pairing.
+    ///
+    /// Wikidot pairs inline raw `@@ ... @@` within each original physical line,
+    /// before a link label spanning lines is read. Collapsing the label puts
+    /// those lines' `@@` markers on one line, where the parser would then pair
+    /// them. Such a link is left to the parser, which reads the label across
+    /// lines itself (`raw-pair-across-lines-link` in
+    /// wikidot-at-raw-preview-20261019.json).
+    fn joined_lines_carry_raw_markers(
+        source: &str,
+        link_match: &regex::Match<'_>,
+    ) -> bool {
+        let line_start = source[..link_match.start()]
+            .rfind('\n')
+            .map_or(0, |newline| newline + 1);
+        let line_end = source[link_match.end()..]
+            .find('\n')
+            .map_or(source.len(), |newline| link_match.end() + newline);
+        source[line_start..line_end].contains("@@")
     }
 
     pub(super) fn collapse_wikidot_inline_whitespace(value: &str) -> String {
@@ -702,8 +725,13 @@ impl RenderService {
         in_html
     }
 
+    /// Whether `start` falls inside an inline raw `@@ ... @@` pair.
+    ///
+    /// Wikidot pairs `@@` within a physical line only, so an earlier lone `@@`
+    /// on another line must not change the answer.
     pub(super) fn is_inside_wikidot_escape(source: &str, start: usize) -> bool {
-        source[..start].matches("@@").count() % 2 == 1
+        let line_start = source[..start].rfind('\n').map_or(0, |newline| newline + 1);
+        source[line_start..start].matches("@@").count() % 2 == 1
     }
 
     pub(in crate::services::render) fn is_inside_wikidot_literal_region(

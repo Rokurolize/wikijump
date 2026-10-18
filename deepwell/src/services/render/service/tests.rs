@@ -1839,7 +1839,6 @@ fn multiline_page_links_respect_canonical_literal_regions() {
     let mut wikitext = concat!(
         "[[code]]\n[[[code-link|Nope\nPlease]]]\n[[/code]]\n",
         "[[html]]\n[[[html-link|Nope\nPlease]]]\n[[/html]]\n",
-        "@@[[[escape-link|Nope\nPlease]]]@@\n",
         "[!-- [[[comment-link|Nope\nPlease]]] --]\n",
         "<pre>[[[pre-link|Nope\nPlease]]]</pre>\n",
         "[[[page-link|Yes\nPlease]]]\n",
@@ -1851,7 +1850,6 @@ fn multiline_page_links_respect_canonical_literal_regions() {
     for literal in [
         "[[[code-link|Nope\nPlease]]]",
         "[[[html-link|Nope\nPlease]]]",
-        "@@[[[escape-link|Nope\nPlease]]]@@",
         "[!-- [[[comment-link|Nope\nPlease]]] --]",
         "<pre>[[[pre-link|Nope\nPlease]]]</pre>",
     ] {
@@ -1861,6 +1859,29 @@ fn multiline_page_links_respect_canonical_literal_regions() {
         );
     }
     assert!(wikitext.contains("[[[page-link|Yes Please]]]"));
+}
+
+#[test]
+fn raw_markers_on_separate_lines_do_not_protect_a_multiline_page_link() {
+    // Wikidot never pairs `@@` across lines: `@@[[[escape-link|Nope\nPlease]]]@@`
+    // renders `@@<a class="newpage" href="/escape-link">Nope Please</a>@@`
+    // (`raw-pair-across-lines-link` in wikidot-at-raw-preview-20261019.json).
+    // The marker lines are not literal, but joining them would put both `@@`
+    // on one line where the parser would pair them, so the link is left as-is.
+    let source = "@@[[[escape-link|Nope\nPlease]]]@@\n";
+    let mut wikitext = source.to_owned();
+    RenderService::normalize_wikidot_multiline_page_links(&mut wikitext);
+    assert_eq!(wikitext, source);
+
+    // Other links, including ones next to a closed pair, still normalize.
+    let mut wikitext =
+        "@@raw@@\n[[[page-link|Yes\nPlease]]]\n@@[[[escape-link|Nope Please]]]@@\n"
+            .to_owned();
+    RenderService::normalize_wikidot_multiline_page_links(&mut wikitext);
+    assert_eq!(
+        wikitext,
+        "@@raw@@\n[[[page-link|Yes Please]]]\n@@[[[escape-link|Nope Please]]]@@\n"
+    );
 }
 
 #[test]
