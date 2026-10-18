@@ -98,6 +98,20 @@ export const AUDITED_EXTERNAL_ASSET_ORIGINS = Object.freeze([
       "Legacy Bootstrap CDN, cited by the retained Theme Lab port manifests (e.g. `install/local/theme-lab/ports/site/manifest.json`)."
   },
   {
+    origin: "https://use.typekit.net",
+    styles: true,
+    fonts: true,
+    evidence:
+      "Adobe Fonts (Typekit) kit stylesheets and font files, cited by the retained Theme Lab port manifests (`install/local/theme-lab/ports/aesthetic-theme/manifest.json`, `install/local/theme-lab/ports/ouroborous-theme/manifest.json`) and observed loading on live Wikidot in `install/local/wikidot-verification/artifacts/theme-sweep-external-origins-20261019.json`."
+  },
+  {
+    origin: "https://p.typekit.net",
+    styles: true,
+    fonts: false,
+    evidence:
+      "Typekit's kit stylesheets begin with `@import url(https://p.typekit.net/p.css?...)`, a near-empty stylesheet, so a kit that is allowed must be able to complete that import (retained observation in `install/local/wikidot-verification/artifacts/theme-sweep-external-origins-20261019.json`)."
+  },
+  {
     origin: "https://nu-scptheme.github.io",
     styles: true,
     fonts: true,
