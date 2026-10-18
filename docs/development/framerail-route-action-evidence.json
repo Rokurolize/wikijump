@@ -1058,6 +1058,18 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-server-action:/-/settings?/password",
+      "tests": [
+        "framerail/tests/user-settings-password-change.spec.ts::account settings change the password with the current one"
+      ],
+      "tracking": [
+        {
+          "issue": 2146
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-server-action:/-/user?/userEdit",
       "tests": [
         "framerail/tests/account-route-boundaries.test.js::logout and user-edit route actions bind mutations to the server session"
