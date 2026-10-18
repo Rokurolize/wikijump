@@ -19,18 +19,29 @@
  */
 
 use crate::config::RpcToken;
-use crate::error::{Result, TextBlockErrorReason};
+use crate::error::{Error, Result, TextBlockErrorReason};
 use axum::http::header::{AUTHORIZATION, HeaderMap, HeaderValue};
 use jsonrpsee::core::client::ClientT;
+use jsonrpsee::core::traits::ToRpcParams;
 use jsonrpsee::http_client::HttpClient;
 use jsonrpsee::rpc_params;
 use serde::Deserialize;
+use serde::de::DeserializeOwned;
 use std::fmt;
 use std::num::NonZeroU16;
 use std::time::Duration;
+use tokio::sync::Semaphore;
 
 const JSONRPC_MAX_REQUEST: u32 = 16 * 1024;
-const JSONRPC_TIMEOUT: Duration = Duration::from_millis(200);
+
+// Public file and text-block routes resolve page and file metadata freshly
+// on every request, so outside callers decide how many Deepwell lookups run
+// (#717). The in-flight bound caps that: a call beyond it fails at once
+// instead of queueing. Within the bound, the timeout outlasts a briefly busy
+// Deepwell, so ordinary requests no longer fail with a 500 under load
+// (#2536).
+const JSONRPC_MAX_IN_FLIGHT: usize = 64;
+const JSONRPC_TIMEOUT: Duration = Duration::from_secs(2);
 
 /// Macro to create `ObjectParams` instances.
 /// This is the object equivalent to `rpc_params!`, which creates `ArrayParams` instances.
@@ -51,6 +62,7 @@ macro_rules! rpc_object {
 
 pub struct Deepwell {
     client: HttpClient,
+    in_flight: Semaphore,
 }
 
 impl fmt::Debug for Deepwell {
@@ -73,7 +85,22 @@ impl Deepwell {
             .set_headers(headers)
             .build(deepwell_url)?;
 
-        Ok(Deepwell { client })
+        Ok(Deepwell {
+            client,
+            in_flight: Semaphore::new(JSONRPC_MAX_IN_FLIGHT),
+        })
+    }
+
+    async fn request<R, P>(&self, method: &str, params: P) -> Result<R>
+    where
+        R: DeserializeOwned,
+        P: ToRpcParams + Send,
+    {
+        let _permit = self
+            .in_flight
+            .try_acquire()
+            .map_err(|_| Error::DeepwellBusy)?;
+        Ok(self.client.request(method, params).await?)
     }
 
     /// Attempt to ping DEEPWELL, panicking if connecting failed.
@@ -82,7 +109,7 @@ impl Deepwell {
     }
 
     pub async fn ping(&self) -> Result<()> {
-        let response: String = self.client.request("ping", rpc_params![]).await?;
+        let response: String = self.request("ping", rpc_params![]).await?;
         assert!(!response.is_empty());
         debug!("Successfully pinged DEEPWELL");
         Ok(())
@@ -92,7 +119,7 @@ impl Deepwell {
 
     pub async fn get_site_domain(&self, site_id: i64) -> Result<String> {
         let params = rpc_params![site_id];
-        let domain: String = self.client.request("site_domain", params).await?;
+        let domain: String = self.request("site_domain", params).await?;
         Ok(domain)
     }
 
@@ -108,7 +135,7 @@ impl Deepwell {
             "compiled" => false,
         };
 
-        let page_data: Option<PageData> = self.client.request("page_get", params).await?;
+        let page_data: Option<PageData> = self.request("page_get", params).await?;
         Ok(page_data)
     }
 
@@ -127,7 +154,7 @@ impl Deepwell {
             "session_token" => session_token,
         };
 
-        let file_data: Option<FileData> = self.client.request("file_get", params).await?;
+        let file_data: Option<FileData> = self.request("file_get", params).await?;
         Ok(file_data)
     }
 
@@ -136,7 +163,7 @@ impl Deepwell {
             "user" => user_id,
         };
 
-        let user_data: Option<UserData> = self.client.request("user_get", params).await?;
+        let user_data: Option<UserData> = self.request("user_get", params).await?;
         Ok(user_data)
     }
 
@@ -162,7 +189,7 @@ impl Deepwell {
         };
 
         let block_info: Option<TextBlockIndex> =
-            self.client.request("text_block_get_index", params).await?;
+            self.request("text_block_get_index", params).await?;
 
         Ok(block_info)
     }
@@ -184,7 +211,7 @@ impl Deepwell {
         };
 
         let block_info: Option<TextBlockIndex> =
-            self.client.request("text_block_get_index", params).await?;
+            self.request("text_block_get_index", params).await?;
 
         Ok(block_info)
     }
@@ -202,7 +229,6 @@ impl Deepwell {
         };
 
         let html: BasicErrorHtml = self
-            .client
             .request("basic_error_missing_site_slug", params)
             .await?;
 
@@ -220,7 +246,6 @@ impl Deepwell {
         };
 
         let html: BasicErrorHtml = self
-            .client
             .request("basic_error_missing_custom_domain", params)
             .await?;
 
@@ -240,7 +265,6 @@ impl Deepwell {
         };
 
         let html: BasicErrorHtml = self
-            .client
             .request("basic_error_missing_page_slug", params)
             .await?;
 
@@ -259,10 +283,7 @@ impl Deepwell {
             "page_slug" => page_slug,
         };
 
-        let html: BasicErrorHtml = self
-            .client
-            .request("basic_error_page_fetch", params)
-            .await?;
+        let html: BasicErrorHtml = self.request("basic_error_page_fetch", params).await?;
 
         Ok(html)
     }
@@ -282,7 +303,6 @@ impl Deepwell {
         };
 
         let html: BasicErrorHtml = self
-            .client
             .request("basic_error_missing_file_name", params)
             .await?;
 
@@ -303,10 +323,7 @@ impl Deepwell {
             "filename" => filename,
         };
 
-        let html: BasicErrorHtml = self
-            .client
-            .request("basic_error_file_fetch", params)
-            .await?;
+        let html: BasicErrorHtml = self.request("basic_error_file_fetch", params).await?;
 
         Ok(html)
     }
@@ -327,10 +344,7 @@ impl Deepwell {
             "reason" => reason.value(),
         };
 
-        let html: BasicErrorHtml = self
-            .client
-            .request("basic_error_text_block", params)
-            .await?;
+        let html: BasicErrorHtml = self.request("basic_error_text_block", params).await?;
 
         Ok(html)
     }
@@ -343,8 +357,7 @@ impl Deepwell {
             "locales" => locales,
         };
 
-        let html: BasicErrorHtml =
-            self.client.request("basic_error_file_root", params).await?;
+        let html: BasicErrorHtml = self.request("basic_error_file_root", params).await?;
 
         Ok(html)
     }
@@ -359,10 +372,7 @@ impl Deepwell {
             "s3_hash" => s3_hash,
         };
 
-        let html: BasicErrorHtml = self
-            .client
-            .request("basic_error_blob_fetch", params)
-            .await?;
+        let html: BasicErrorHtml = self.request("basic_error_blob_fetch", params).await?;
 
         Ok(html)
     }
@@ -377,10 +387,7 @@ impl Deepwell {
             "user_id" => user_id,
         };
 
-        let html: BasicErrorHtml = self
-            .client
-            .request("basic_error_user_fetch", params)
-            .await?;
+        let html: BasicErrorHtml = self.request("basic_error_user_fetch", params).await?;
 
         Ok(html)
     }
@@ -395,10 +402,8 @@ impl Deepwell {
             "user_id" => user_id,
         };
 
-        let html: BasicErrorHtml = self
-            .client
-            .request("basic_error_user_avatar", params)
-            .await?;
+        let html: BasicErrorHtml =
+            self.request("basic_error_user_avatar", params).await?;
 
         Ok(html)
     }
@@ -564,8 +569,58 @@ mod tests {
     }
 
     #[test]
-    fn public_deepwell_requests_keep_a_short_timeout() {
-        assert_eq!(JSONRPC_TIMEOUT, Duration::from_millis(200));
+    fn public_deepwell_requests_keep_a_bounded_timeout_and_concurrency() {
+        assert_eq!(JSONRPC_TIMEOUT, Duration::from_secs(2));
+        assert_eq!(JSONRPC_MAX_IN_FLIGHT, 64);
+    }
+
+    async fn slow_page_rpc(body: Bytes) -> Response {
+        let request: Value = serde_json::from_slice(&body).unwrap();
+        tokio::time::sleep(Duration::from_millis(500)).await;
+        let body = json!({
+            "jsonrpc": "2.0",
+            "result": { "page_id": 123 },
+            "id": request["id"].clone(),
+        })
+        .to_string();
+        ([(header::CONTENT_TYPE, "application/json")], body).into_response()
+    }
+
+    #[tokio::test]
+    async fn a_busy_deepwell_still_answers_within_the_timeout() {
+        let app = Router::new().route("/", post(slow_page_rpc));
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        let deepwell = Deepwell::connect(
+            &format!("http://{address}"),
+            &RpcToken::parse("0".repeat(64)).unwrap(),
+        )
+        .unwrap();
+
+        let page = deepwell.get_page(1, "scp-9506").await.unwrap();
+        assert_eq!(page.map(|page| page.page_id), Some(123));
+    }
+
+    #[tokio::test]
+    async fn calls_beyond_the_in_flight_bound_fail_without_reaching_deepwell() {
+        let (url, requests) = spawn_rpc_server().await;
+        let deepwell =
+            Deepwell::connect(&url, &RpcToken::parse("0".repeat(64)).unwrap()).unwrap();
+        let held = deepwell
+            .in_flight
+            .acquire_many(JSONRPC_MAX_IN_FLIGHT as u32)
+            .await
+            .unwrap();
+
+        let error = deepwell.get_page(1, "scp-9506").await.unwrap_err();
+        assert!(matches!(error, Error::DeepwellBusy), "{error}");
+        assert!(requests_by_method(&requests, "page_get").is_empty());
+
+        drop(held);
+        assert!(deepwell.get_page(1, "scp-9506").await.unwrap().is_some());
     }
 
     #[test]

@@ -4678,6 +4678,412 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
 }
 
 #[tokio::test]
+async fn sitemap_paged_rpc_includes_more_than_fifty_thousand_public_pages() {
+    const PUBLIC_PAGE_COUNT: i32 = 50_100;
+    const TAIL: &str = "sitemap-paged-public-tail";
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let public_category_id =
+        CategoryService::get_or_create(runner.context(), site_id, "_default")
+            .await
+            .expect("default category should exist")
+            .category_id;
+    let tx = runner.context().transaction();
+    tx.execute_raw(Statement::from_sql_and_values(
+        tx.get_database_backend(),
+        "INSERT INTO page \
+         (created_at, updated_at, deleted_at, from_wikidot, site_id, \
+          latest_revision_id, page_category_id, slug, discussion_thread_id, layout) \
+         SELECT NOW(), NULL, NULL, false, $1, NULL, $2, \
+                'sitemap-paged-public-' || series, NULL, 'wikidot' \
+         FROM generate_series(1, $3) AS series",
+        [
+            Value::from(site_id),
+            Value::from(public_category_id),
+            Value::from(PUBLIC_PAGE_COUNT),
+        ],
+    ))
+    .await
+    .expect("large public sitemap page set should be inserted");
+    create_listpages_test_page(&mut runner, site_id, TAIL, "Public last page", "tail")
+        .await;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+
+    let index = run_endpoint!(
+        runner,
+        wikidot_sitemap,
+        json!({"site_id": site_id, "shard": 0})
+    )
+    .expect("index should count all public pages");
+    assert!(
+        index.entries.is_empty(),
+        "index RPC must never return a large URL list"
+    );
+    let count = index.shard_count.expect("index must have a shard count");
+    assert!(
+        count >= 51,
+        "more than 50,000 eligible pages require 51+ bounded shards"
+    );
+    let first = run_endpoint!(
+        runner,
+        wikidot_sitemap,
+        json!({"site_id": site_id, "shard": 1})
+    )
+    .expect("first public sitemap shard should exist");
+    assert_eq!(first.entries.len(), 1_000);
+    assert_eq!(first.shard_count, None);
+
+    let last_shard = run_endpoint!(
+        runner,
+        wikidot_sitemap,
+        json!({"site_id": site_id, "shard": count})
+    )
+    .expect("last public sitemap shard should exist");
+    assert!(
+        last_shard.entries.len() <= 1_000,
+        "child response must be bounded"
+    );
+    assert_eq!(last_shard.shard_count, None);
+    assert!(last_shard.entries.iter().any(|entry| entry.slug == TAIL));
+    let beyond_last = run_endpoint!(
+        runner,
+        wikidot_sitemap,
+        json!({"site_id": site_id, "shard": count + 1})
+    )
+    .expect("out-of-range shard should have empty entries");
+    assert!(beyond_last.entries.is_empty());
+}
+
+#[tokio::test]
+async fn sitemap_scans_past_fifty_thousand_private_pages_for_public_tail() {
+    const HIDDEN_CATEGORY: &str = "sitemap-keyset-hidden";
+    const PUBLIC_TAIL_SLUG: &str = "sitemap-keyset-public-tail";
+    const PRIVATE_PAGE_COUNT: i32 = 50_100;
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, HIDDEN_CATEGORY).await;
+    let hidden_category_id =
+        CategoryService::get_or_create(runner.context(), site_id, HIDDEN_CATEGORY)
+            .await
+            .expect("private sitemap category should exist")
+            .category_id;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO page \
+             (created_at, updated_at, deleted_at, from_wikidot, site_id, \
+              latest_revision_id, page_category_id, slug, discussion_thread_id, layout) \
+             SELECT NOW(), NULL, NULL, false, $1, NULL, $2, \
+                    'sitemap-keyset-hidden-' || series, NULL, 'wikidot' \
+             FROM generate_series(1, $3) AS series",
+            [
+                Value::from(site_id),
+                Value::from(hidden_category_id),
+                Value::from(PRIVATE_PAGE_COUNT),
+            ],
+        ))
+        .await
+        .expect("private pages beyond the old raw-scan cap should be inserted");
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PUBLIC_TAIL_SLUG,
+        "Sitemap public tail",
+        "public tail",
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let output = run_endpoint!(
+        runner,
+        wikidot_sitemap,
+        json!({"site_id": site_id, "shard": 1})
+    )
+    .expect("the public sitemap must be complete despite private rows");
+    assert!(
+        output
+            .entries
+            .iter()
+            .any(|entry| entry.slug == PUBLIC_TAIL_SLUG),
+        "a public page after 50,100 hidden pages must not be discarded by a raw SQL LIMIT"
+    );
+    assert!(
+        output
+            .entries
+            .iter()
+            .all(|entry| !entry.slug.starts_with("sitemap-keyset-hidden-")),
+        "private pages must not appear among the discovered public entries"
+    );
+}
+
+#[tokio::test]
+async fn sitemap_never_publishes_authenticated_only_site_pages() {
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site must exist")
+        .site
+        .site_id;
+
+    // A page in a category with admin-only view permission must not enter a
+    // public sitemap even when the requester is logged in as its author.
+    let private_category = "sitemap-visibility-private";
+    let private_slug = "sitemap-visibility-private:author-only";
+    let private_category_id =
+        CategoryService::get_or_create(runner.context(), site_id, private_category)
+            .await
+            .expect("private sitemap test category should be created")
+            .category_id;
+    let root_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("root")),
+    )
+    .await
+    .expect("root role should exist");
+    role_permission::ActiveModel {
+        role_id: Set(root_role.role_id),
+        site_id: Set(site_id),
+        resource_type: Set(Resource::Page),
+        resource_category_id: Set(Some(private_category_id)),
+        action: Set(Action::View),
+        ..Default::default()
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("root-only sitemap page permission should be created");
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            role_id: root_role.role_id,
+            assigning_user_id: SYSTEM_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("authenticated sitemap test viewer should receive the root role");
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("new category permissions must be visible");
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(private_slug)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Private sitemap control",
+            "title": "Private sitemap control",
+            "alt_title": null,
+            "slug": private_slug,
+            "layout": "wikidot",
+            "revision_comments": "private sitemap regression fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let guest_can_view_private_page = PermissionService::check_user_can(
+        runner.context(),
+        &CheckPermissionContext {
+            user_id: None,
+            site_id,
+            page_reference: Some(Reference::Id(created.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(private_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+    .expect("anonymous private page access should be checked");
+    assert!(
+        !guest_can_view_private_page,
+        "the fixture page must be genuinely private to anonymous visitors"
+    );
+    let admin_can_view_private_page = PermissionService::check_user_can(
+        runner.context(),
+        &CheckPermissionContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id,
+            page_reference: Some(Reference::Id(created.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(private_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+    .expect("administrator private page access should be checked");
+    assert!(
+        admin_can_view_private_page,
+        "the fixture page must remain visible to its authenticated admin"
+    );
+
+    let sitemap_request = json!({"site_id": site_id, "shard": 1});
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let anonymous = run_endpoint!(runner, wikidot_sitemap, sitemap_request.clone())
+        .expect("a public site should expose an anonymous sitemap");
+    assert!(
+        !anonymous
+            .entries
+            .iter()
+            .any(|entry| entry.slug == private_slug),
+        "public site sitemap must exclude private category pages"
+    );
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let authenticated = run_endpoint!(runner, wikidot_sitemap, sitemap_request.clone())
+        .expect("a signed-in user should see the same public sitemap");
+    assert_eq!(
+        serde_json::to_value(&anonymous).expect("serialize guest sitemap"),
+        serde_json::to_value(&authenticated).expect("serialize signed-in sitemap"),
+        "logging in must not expand a crawler-visible page inventory"
+    );
+
+    // An earlier response must not be reused after a category permission
+    // grant or revocation. No shared snapshot can keep newly private URLs.
+    let guest_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("guest")),
+    )
+    .await
+    .expect("guest role should exist");
+    role_permission::ActiveModel {
+        role_id: Set(guest_role.role_id),
+        site_id: Set(site_id),
+        resource_type: Set(Resource::Page),
+        resource_category_id: Set(Some(private_category_id)),
+        action: Set(Action::View),
+        ..Default::default()
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("temporary guest category permission should be granted");
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("grant should invalidate cached permissions");
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let newly_public = run_endpoint!(runner, wikidot_sitemap, sitemap_request.clone())
+        .expect("public sitemap must reflect category grant");
+    assert!(
+        newly_public
+            .entries
+            .iter()
+            .any(|entry| entry.slug == private_slug),
+        "the category permission grant must make its page public"
+    );
+    RolePermissionTable::delete_many()
+        .filter(role_permission::Column::RoleId.eq(guest_role.role_id))
+        .filter(role_permission::Column::SiteId.eq(site_id))
+        .filter(role_permission::Column::ResourceType.eq(Resource::Page))
+        .filter(role_permission::Column::ResourceCategoryId.eq(private_category_id))
+        .filter(role_permission::Column::Action.eq(Action::View))
+        .exec(runner.context().transaction())
+        .await
+        .expect("temporary guest category permission should be revoked");
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("revocation should invalidate cached permissions");
+    let newly_private = run_endpoint!(runner, wikidot_sitemap, sitemap_request.clone())
+        .expect("public site still exposes a sitemap after category revocation");
+    assert!(
+        newly_private
+            .entries
+            .iter()
+            .all(|entry| entry.slug != private_slug),
+        "a revoked category must disappear immediately from the next sitemap"
+    );
+
+    let roles = ["guest", "anonymous", "everyone"];
+    for role_slug in roles {
+        let role = RoleService::get(
+            runner.context(),
+            site_id,
+            Reference::Slug(Cow::Borrowed(role_slug)),
+        )
+        .await
+        .expect("site role should exist");
+        RolePermissionTable::delete_many()
+            .filter(role_permission::Column::RoleId.eq(role.role_id))
+            .filter(role_permission::Column::SiteId.eq(site_id))
+            .filter(role_permission::Column::ResourceType.eq(Resource::Page))
+            .filter(role_permission::Column::ResourceCategoryId.is_null())
+            .filter(role_permission::Column::Action.eq(Action::View))
+            .exec(runner.context().transaction())
+            .await
+            .expect("public view permission should be revoked");
+    }
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("site permission cache should be invalidated");
+
+    let admin_can_view = PermissionService::check_user_can(
+        runner.context(),
+        &CheckPermissionContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id,
+            page_reference: None,
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: None,
+            action: Action::View,
+        },
+    )
+    .await
+    .expect("admin page permission should be checked");
+    assert!(
+        admin_can_view,
+        "the admin must still be able to view the site"
+    );
+
+    assert!(
+        run_endpoint!(runner, wikidot_sitemap, sitemap_request.clone()).is_none(),
+        "even the site admin must not publish a sitemap for a private site"
+    );
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    assert!(
+        run_endpoint!(runner, wikidot_sitemap, sitemap_request).is_none(),
+        "anonymous private-site sitemap should also be absent"
+    );
+}
+
+#[tokio::test]
 async fn article_view_cache_respects_anonymous_permission_revocation() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
