@@ -239,6 +239,8 @@ export const handleSiteRpc = ({ rpcRequest }) => {
     )
     const authLabels = isJapanese
       ? {
+          // The Japanese catalog currently uses the English fallback here.
+          "error-api.GENERIC": "Something went wrong with your request.",
           "error-form.password-mismatch": "パスワードが一致しません。",
           "error-form.password-too-short": "パスワードは15文字以上で入力してください。",
           "register.legal-notice": "アカウントを作成すると、",
@@ -248,6 +250,7 @@ export const handleSiteRpc = ({ rpcRequest }) => {
           "register.legal-suffix": "に同意したものとみなされます。"
         }
       : {
+          "error-api.GENERIC": "Something went wrong with your request.",
           specifier: "Email or Username",
           password: "Password",
           "password.placeholder": "Enter password...",

@@ -4361,7 +4361,9 @@
       "test_witness": {
         "kind": "endpoint_behavioral",
         "reference": "deepwell/tests/page/membership.rs#membership_application_and_password_mutations_match_disposable_live_contract",
-        "alternatives": [],
+        "alternatives": [
+          "deepwell/tests/page/membership.rs#membership_password_submit_is_throttled_per_site_and_actor"
+        ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
     },
@@ -5824,7 +5826,6 @@
           "deepwell/tests/page.rs#changed_file_revision_fences_but_noop_and_failed_revision_do_not",
           "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page",
           "deepwell/tests/page.rs#component_css_include_visibility_and_lifecycle_matrix",
-          "deepwell/tests/page.rs#corpus_render_supports_dense_includes_without_raising_public_limit",
           "deepwell/tests/page.rs#countpages_artwork_hub_url_fallback_ignores_display_options",
           "deepwell/tests/page.rs#countpages_category_filter_counts_matching_pages",
           "deepwell/tests/page.rs#countpages_current_author_uses_creation_revision_after_first_render",
@@ -5861,6 +5862,8 @@
           "deepwell/tests/page.rs#listpages_plain_content_shares_the_outer_include_budget",
           "deepwell/tests/page.rs#listpages_zero_row_content_modules_do_not_exhaust_the_work_budget",
           "deepwell/tests/page.rs#listusers_module_matches_live_preview_and_runtime_viewer",
+          "deepwell/tests/page.rs#locally_authored_sites_keep_the_ordinary_include_ceiling",
+          "deepwell/tests/page.rs#mirror_and_corpus_renders_support_dense_includes",
           "deepwell/tests/page.rs#missing_remote_site_include_does_not_fall_back_to_same_slug_local_page",
           "deepwell/tests/page.rs#nested_include_image_blocks_keep_their_attachment_page_owner",
           "deepwell/tests/page.rs#page_select_rejects_non_finite_rating_filters",
@@ -7893,6 +7896,7 @@
           "deepwell/tests/page/membership.rs#membership_application_and_password_mutations_match_disposable_live_contract",
           "deepwell/tests/page/membership.rs#membership_by_password_module_matches_live_anonymous_and_member_output",
           "deepwell/tests/page/membership.rs#membership_email_invitation_matches_hash_one_use_and_cancel_contract",
+          "deepwell/tests/page/membership.rs#membership_password_submit_is_throttled_per_site_and_actor",
           "deepwell/tests/page/page_modules.rs#backlinks_module_renders_current_page_incoming_links",
           "deepwell/tests/page/page_modules.rs#childpages_module_renders_live_child_list_and_empty_state",
           "deepwell/tests/page/page_modules.rs#list_pages_prefixed_url_arguments_address_only_the_matching_module",

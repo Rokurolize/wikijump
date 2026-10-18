@@ -21720,8 +21720,10 @@ async fn listpages_plain_content_shares_the_outer_include_budget() {
     const INCLUDES_PER_SOURCE: usize = 128;
 
     let mut runner = TestRunner::setup().await;
-    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
-        .expect("seeded SCP Wiki site should exist");
+    // The local test site keeps the ordinary include ceiling (mirror
+    // sites use the corpus ceiling).
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
     let site_id = site.site.site_id;
 
     create_listpages_test_page(
@@ -21827,7 +21829,7 @@ async fn listpages_plain_content_shares_the_outer_include_budget() {
     let page_info = PageInfo {
         page: Cow::Borrowed(INDEX_SLUG),
         category: None,
-        site: Cow::Borrowed("scp-wiki"),
+        site: Cow::Borrowed("test"),
         title: Cow::Borrowed("ListPages Include Budget Index"),
         alt_title: None,
         score: ScoreValue::Integer(0),
@@ -23087,7 +23089,7 @@ async fn random_countpages_capped_sample_does_not_reveal_private_matches() {
 }
 
 #[tokio::test]
-async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
+async fn mirror_and_corpus_renders_support_dense_includes() {
     const COMPONENT_SLUG: &str = "component:dense-include-cell";
     const PAGE_SLUG: &str = "fixture-dense-includes";
     const CHILD_SLUG: &str = "fixture-dense-listpages-child";
@@ -23165,7 +23167,9 @@ async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
         page_id: page.page_id,
     };
 
-    let public_error = RenderService::render_page(
+    // scp-wiki is a Wikidot mirror: its source-owned pages render with the
+    // corpus ceiling, as Wikidot renders them.
+    let mirror_output = RenderService::render_page(
         runner.context(),
         wikitext.clone(),
         &page_info,
@@ -23174,10 +23178,10 @@ async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
         UrlArguments::default(),
     )
     .await
-    .expect_err("ordinary render must retain the public include ceiling");
-    assert!(
-        format!("{public_error:?}")
-            .contains("include expansion exceeded maximum total includes 256")
+    .expect("a mirror page should render its evidenced dense include shape");
+    assert_eq!(
+        mirror_output.html_output.body.matches(MARKER).count(),
+        INCLUDE_COUNT
     );
 
     let output = RenderService::render_corpus_page(
@@ -23202,7 +23206,7 @@ async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
         "[[/module]]",
     )
     .to_owned();
-    let public_list_pages_error = RenderService::render_page(
+    let mirror_list_pages_output = RenderService::render_page(
         runner.context(),
         list_pages_wikitext.clone(),
         &page_info,
@@ -23211,11 +23215,14 @@ async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
         UrlArguments::default(),
     )
     .await
-    .expect_err("ordinary ListPages content must enforce the public include ceiling");
-    assert!(
-        format!("{public_list_pages_error:?}")
-            .contains("include expansion exceeded maximum total includes 256"),
-        "the public ListPages failure must identify the ordinary include ceiling: {public_list_pages_error:?}",
+    .expect("mirror ListPages content should execute the dense include shape");
+    assert_eq!(
+        mirror_list_pages_output
+            .html_output
+            .body
+            .matches(MARKER)
+            .count(),
+        INCLUDE_COUNT
     );
 
     let list_pages_output = RenderService::render_corpus_page(
@@ -23240,6 +23247,60 @@ async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
         list_pages_output.html_output.body.matches(MARKER).count(),
         INCLUDE_COUNT,
         "trusted plain content must execute every selected include within its corpus budget",
+    );
+}
+
+#[tokio::test]
+async fn locally_authored_sites_keep_the_ordinary_include_ceiling() {
+    const COMPONENT_SLUG: &str = "component:dense-include-cell";
+    const PAGE_SLUG: &str = "fixture-dense-includes";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+    create_listpages_test_page(&mut runner, site_id, COMPONENT_SLUG, "Cell", "CELL")
+        .await;
+    create_listpages_test_page(&mut runner, site_id, PAGE_SLUG, "Dense", "placeholder")
+        .await;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": PAGE_SLUG,
+        }),
+    )
+    .expect("dense include fixture should exist");
+    let page_info = PageInfo {
+        page: Cow::Borrowed(PAGE_SLUG),
+        category: None,
+        site: Cow::Borrowed("test"),
+        title: Cow::Borrowed("Dense"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+
+    let error = RenderService::render_page(
+        runner.context(),
+        format!("[[include {COMPONENT_SLUG}]]\n").repeat(300),
+        &page_info,
+        Layout::Wikidot,
+        PageId {
+            site_id,
+            category_id: page.page_category_id,
+            page_id: page.page_id,
+        },
+        UrlArguments::default(),
+    )
+    .await
+    .expect_err("a locally authored page must keep the ordinary include ceiling");
+    assert!(
+        format!("{error:?}")
+            .contains("include expansion exceeded maximum total includes 256"),
+        "{error:?}"
     );
 }
 

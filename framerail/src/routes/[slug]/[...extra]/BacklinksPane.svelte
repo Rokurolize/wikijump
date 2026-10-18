@@ -83,15 +83,11 @@
 </script>
 
 <!--
-  Source Wikidot leaves `#action-area` hidden and empty when a read-only
-  Backlinks request fails (issue #2241): no result list, no error dialog, no
-  retry control. The parent hides the action area once this pane reports its
-  read failed, so a failed Wikidot-layout read renders nothing at all. While
-  the read is in flight the pane keeps its loading state (and the parent's
-  close control), and the native layout keeps the visible error/retry
-  affordance.
+  Wikidot inserts the module result only on success. Pending and failed reads
+  render no child elements; the parent also hides the action area and Close.
+  Native layout retains its loading and error/retry controls.
 -->
-{#if !wikidot || state.status !== "failure"}
+{#if !wikidot || state.status === "success"}
   <h1 class="page-backlinks-header">
     {data.wikidot_page_actions?.backlinks ?? "Backlinks"}
   </h1>
