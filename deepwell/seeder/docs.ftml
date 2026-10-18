@@ -1,0 +1,13 @@
+This instance runs [https://github.com/Rokurolize/wikijump Wikijump], which renders Wikidot syntax and serves Wikidot-compatible sites.
+
++ Writing pages
+
+* [http://www.wikidot.com/doc-wiki-syntax:start Wikidot syntax documentation]: the markup used on every wiki here.
+* [http://www.wikidot.com/doc-modules:start Wikidot modules]: ListPages, Rate and the other modules pages can use.
+
++ This platform
+
+* [[[platform:sites | All wikis]]]
+* [[[platform:activity | Recent activity]]]
+* [[[platform:search | Search all wikis]]]
+* [[[legal:terms-of-service | Terms of Service]]], [[[legal:privacy-policy | Privacy Policy]]] and [[[legal:security | Security]]]

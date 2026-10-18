@@ -31,8 +31,14 @@ const PLATFORM_LEGAL_HOSTS = {
 }
 
 const PLATFORM_LEGAL_PATHS = {
-  termsOfService: "/legal/terms-of-service",
-  privacyPolicy: "/legal/privacy-policy"
+  termsOfService: "/legal:terms-of-service",
+  privacyPolicy: "/legal:privacy-policy"
+}
+
+// The platform wiki (www) serves these as ordinary seeded pages.
+const PLATFORM_FOOTER_PATHS = {
+  docs: "/docs",
+  security: "/legal:security"
 }
 
 const LEGAL_DESTINATION_ENVIRONMENT_VARIABLES = {
@@ -97,4 +103,28 @@ export const legalDestinations = ({
     destinations[key] = configured ?? `https://${host}${PLATFORM_LEGAL_PATHS[key]}`
     return destinations
   }, {} as LegalDestinations)
+}
+
+/**
+ * The native footer's destinations for this deployment: Terms and Privacy
+ * are the same pages the registration disclosure names, Docs and Security
+ * are the platform wiki's own pages. Explicit
+ * `PUBLIC_WIKIJUMP_FOOTER_*_URL` overrides still win (see
+ * `$lib/platform-footer-links`).
+ */
+export const platformFooterDestinations = ({
+  deploymentEnvironment = parseDeploymentEnvironment(),
+  env = process.env
+}: {
+  deploymentEnvironment?: "local" | "dev" | "prod"
+  env?: Record<string, string | undefined>
+} = {}): Record<string, string> => {
+  const host = PLATFORM_LEGAL_HOSTS[deploymentEnvironment]
+  const legal = legalDestinations({ deploymentEnvironment, env })
+  return {
+    "terms-conditions": legal.termsOfService,
+    privacy: legal.privacyPolicy,
+    docs: `https://${host}${PLATFORM_FOOTER_PATHS.docs}`,
+    security: `https://${host}${PLATFORM_FOOTER_PATHS.security}`
+  }
 }

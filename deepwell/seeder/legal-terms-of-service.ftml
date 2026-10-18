@@ -1,0 +1,12 @@
+This is a self-hosted [https://github.com/Rokurolize/wikijump Wikijump] instance. Its operator has not published terms beyond what this page states.
+
++ Content
+
+* The content of each wiki is licensed as stated in the footer of its pages.
+* The SCP Wiki and SCP-JP sites here are read-only mirrors of [https://scp-wiki.wikidot.com scp-wiki.wikidot.com] and [https://scp-jp.wikidot.com scp-jp.wikidot.com]. Their pages are copies of content published there under Creative Commons Attribution-ShareAlike 3.0, and their authors are credited on the source pages. Edit those pages on the source wikis.
+
++ Software
+
+This instance runs Wikijump, which is distributed under the [https://www.gnu.org/licenses/agpl-3.0.html GNU Affero General Public License v3]. That license gives no warranty.
+
+See also the [[[legal:privacy-policy | Privacy Policy]]] and [[[legal:security | Security]]].

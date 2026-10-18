@@ -50,14 +50,14 @@ export const NATIVE_FOOTER_DESTINATION_ENVIRONMENT_VARIABLES = Object.freeze({
 export const DEFAULT_NATIVE_FOOTER_LINKS = Object.freeze([
   Object.freeze({
     key: "terms-conditions",
-    href: `${PLATFORM_FOOTER_ORIGIN}/legal/terms-of-service`
+    href: `${PLATFORM_FOOTER_ORIGIN}/legal:terms-of-service`
   }),
   Object.freeze({
     key: "privacy",
-    href: `${PLATFORM_FOOTER_ORIGIN}/legal/privacy-policy`
+    href: `${PLATFORM_FOOTER_ORIGIN}/legal:privacy-policy`
   }),
   Object.freeze({ key: "docs", href: `${PLATFORM_FOOTER_ORIGIN}/docs` }),
-  Object.freeze({ key: "security", href: `${PLATFORM_FOOTER_ORIGIN}/legal/security` })
+  Object.freeze({ key: "security", href: `${PLATFORM_FOOTER_ORIGIN}/legal:security` })
 ])
 
 const MAX_DESTINATION_LENGTH = 2048

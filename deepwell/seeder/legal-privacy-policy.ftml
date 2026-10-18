@@ -1,0 +1,19 @@
+This page describes the personal data this [https://github.com/Rokurolize/wikijump Wikijump] instance stores and why.
+
++ Accounts
+
+When you create an account, the instance stores your username, email address, a salted Argon2 hash of your password (never the password itself), your display languages and any profile fields you fill in (real name, gender, birthday, location, website, biography, avatar image and forum signature).
+
+When you register or change your email address, the address is sent to the [https://www.mailcheck.ai MailCheck API] to check that it can receive mail. This instance does not send email.
+
++ Sessions and activity
+
+* Signing in sets the {{wikijump_token}} cookie, which holds your session. The session record stores the IP address and browser user agent it was created from, and expires.
+* Failed sign-in attempts are counted per account and per IP address to slow down password guessing.
+* Edits, uploads and other changes are recorded with the account and IP address that made them, in page and file histories and in an audit log.
+
++ Third parties
+
+Pages on a wiki may load images, fonts and styles from other sites named in their content. Google Analytics runs only on wikis whose administrators enable it in their Site Manager.
+
+See also the [[[legal:terms-of-service | Terms of Service]]] and [[[legal:security | Security]]].

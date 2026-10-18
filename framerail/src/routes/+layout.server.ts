@@ -1,4 +1,5 @@
 import { readNativeFooterDestinationOverrides } from "$lib/platform-footer-links"
+import { platformFooterDestinations } from "$lib/server/legal-links"
 import { loadPreload, pageRouteProvidesPreload } from "$lib/server/load/preload"
 
 import type { PreloadData } from "$lib/server/deepwell/views"
@@ -14,7 +15,13 @@ export const load: LayoutServerLoad<PreloadData> = async ({
   // instance-level, not per-wiki. They are resolved once here so every route
   // that renders the native layout, including the routes whose own load owns
   // the preload, exposes the same platform destinations.
-  const nativeFooterDestinations = readNativeFooterDestinationOverrides(process.env)
+  const overrides = readNativeFooterDestinationOverrides(process.env)
+  const nativeFooterDestinations = {
+    ...platformFooterDestinations(),
+    ...Object.fromEntries(
+      Object.entries(overrides).filter(([, value]) => value !== undefined && value !== "")
+    )
+  }
 
   if (pageRouteProvidesPreload(route.id)) {
     return { native_footer_destinations: nativeFooterDestinations } as PreloadData
