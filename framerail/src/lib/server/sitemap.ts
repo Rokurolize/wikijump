@@ -20,6 +20,27 @@ export interface SitemapEntry {
 
 export class InvalidSitemapShardPath extends Error {}
 export class InvalidSitemapEntry extends Error {}
+export class InvalidSitemapCanonicalDomain extends Error {}
+
+// The site_domain RPC returns a configured hostname, not an arbitrary URL.
+// Keep untrusted request Host headers out of search-engine canonical links.
+export function canonicalSitemapOrigin(preferredDomain: string): string {
+  const hostname = preferredDomain.split(":")[0]
+  if (
+    !/^[a-z0-9.-]+(?::[0-9]+)?$/iu.test(preferredDomain) ||
+    preferredDomain.startsWith(".") ||
+    preferredDomain.endsWith(".") ||
+    preferredDomain.includes("..") ||
+    hostname.split(".").some((label) => label.length === 0 || label.startsWith("-") || label.endsWith("-"))
+  ) {
+    throw new InvalidSitemapCanonicalDomain("Invalid configured sitemap domain")
+  }
+  const parsed = new URL(`https://${preferredDomain}`)
+  if (parsed.hostname.length === 0 || parsed.username || parsed.password) {
+    throw new InvalidSitemapCanonicalDomain("Invalid configured sitemap domain")
+  }
+  return parsed.origin
+}
 
 function escapeXml(value: string): string {
   return value
@@ -35,7 +56,10 @@ function escapeXml(value: string): string {
 /// Shard numbers start at 1, matching the child locations the sitemap index
 /// advertises. Anything else is not a sitemap shard.
 export function parseSitemapShardNumber(value: string): number {
-  if (/^[1-9][0-9]*$/.test(value)) return parseInt(value, 10)
+  if (/^[1-9][0-9]*$/.test(value)) {
+    const number = Number(value)
+    if (Number.isSafeInteger(number)) return number
+  }
   throw new InvalidSitemapShardPath(`Not a sitemap shard number: ${value}`)
 }
 
@@ -82,14 +106,4 @@ export function buildSitemapUrlsetXml(origin: string, entries: SitemapEntry[]): 
     `${urls.join("\n")}\n` +
     `</urlset>`
   )
-}
-
-/// Splits the full entry set into shard slices of at most
-/// `SITEMAP_ENTRIES_PER_SHARD` entries each.
-export function shardSitemapEntries(entries: SitemapEntry[]): SitemapEntry[][] {
-  const shards: SitemapEntry[][] = []
-  for (let start = 0; start < entries.length; start += SITEMAP_ENTRIES_PER_SHARD) {
-    shards.push(entries.slice(start, start + SITEMAP_ENTRIES_PER_SHARD))
-  }
-  return shards
 }

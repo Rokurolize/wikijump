@@ -1,21 +1,22 @@
 import assert from "node:assert/strict"
+import { readFile } from "node:fs/promises"
 import test from "node:test"
 
 import {
   buildSitemapIndexXml,
   buildSitemapUrlsetXml,
+  canonicalSitemapOrigin,
   InvalidSitemapEntry,
   InvalidSitemapShardPath,
   formatSitemapLastmod,
   parseSitemapShardNumber,
-  shardSitemapEntries,
   SITEMAP_ENTRIES_PER_SHARD
 } from "../src/lib/server/sitemap.ts"
 
 test("parses shard numbers starting at 1 and rejects anything else", () => {
   assert.equal(parseSitemapShardNumber("1"), 1)
   assert.equal(parseSitemapShardNumber("12"), 12)
-  for (const bad of ["0", "01", "-1", "1.5", "1.xml", "", "one"]) {
+  for (const bad of ["0", "01", "-1", "1.5", "1.xml", "", "one", "9007199254740992"]) {
     assert.throws(() => parseSitemapShardNumber(bad), InvalidSitemapShardPath)
   }
 })
@@ -52,14 +53,42 @@ test("builds a shard urlset with escaped locations and lastmod dates", () => {
   )
 })
 
-test("splits entries into bounded shards", () => {
-  const entries = Array.from({ length: SITEMAP_ENTRIES_PER_SHARD + 1 }, (_, index) => ({
-    slug: `page-${index}`,
-    last_modified: "2026-05-22T00:00:00+00:00"
-  }))
-  const shards = shardSitemapEntries(entries)
-  assert.equal(shards.length, 2)
-  assert.equal(shards[0].length, SITEMAP_ENTRIES_PER_SHARD)
-  assert.equal(shards[1].length, 1)
-  assert.deepEqual(shardSitemapEntries([]), [])
+test("represents more than 50,000 public URLs in a bounded sitemap index", () => {
+  const xml = buildSitemapIndexXml("https://scp-wiki.example", 51)
+  assert.equal((xml.match(/<sitemap>/gu) ?? []).length, 51)
+  assert.match(xml, /sitemap_page_51\.xml/u)
+  assert.equal(SITEMAP_ENTRIES_PER_SHARD, 1_000)
+})
+
+test("uses the configured canonical host rather than a request Host header", () => {
+  assert.equal(canonicalSitemapOrigin("scp-wiki.wikijump.localhost"), "https://scp-wiki.wikijump.localhost")
+  assert.equal(canonicalSitemapOrigin("custom.example"), "https://custom.example")
+  assert.equal(canonicalSitemapOrigin("custom.example:18443"), "https://custom.example:18443")
+  for (const invalid of ["", "https://evil.example", "good.example/evil", "good.example@evil.example", "good.example?x=1", "good..example", "-bad.example"]) {
+    assert.throws(() => canonicalSitemapOrigin(invalid))
+  }
+})
+
+test("public sitemap routes do not forward signed-in cookies to their inventory", async () => {
+  for (const route of [
+    "../src/routes/sitemap.xml/+server.ts",
+    "../src/routes/sitemap_page_[n].xml/+server.ts"
+  ]) {
+    const source = await readFile(new URL(route, import.meta.url), "utf8")
+    assert.match(source, /wikidotSitemap\(siteId, (?:0|shard), \{ siteId \}\)/u, route)
+    assert.doesNotMatch(source, /sessionToken|cookies\.get/u, route)
+  }
+})
+
+test("both sitemap routes resolve the configured site domain rather than request Host", async () => {
+  for (const route of [
+    "../src/routes/sitemap.xml/+server.ts",
+    "../src/routes/sitemap_page_[n].xml/+server.ts"
+  ]) {
+    const source = await readFile(new URL(route, import.meta.url), "utf8")
+    assert.match(source, /await siteSitemapOrigin\(siteId\)/u, route)
+    assert.doesNotMatch(source, /new URL\(request\.url\)\.origin/u, route)
+  }
+  const helper = await readFile(new URL("../src/lib/server/sitemap-origin.ts", import.meta.url), "utf8")
+  assert.match(helper, /client\.request\("site_domain", \[siteId\], \{ siteId \}\)/u)
 })
