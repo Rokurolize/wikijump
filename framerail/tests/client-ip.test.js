@@ -38,10 +38,26 @@ test("requests without the header keep the socket peer", () => {
 })
 
 test("only proxy transports are trusted", () => {
-  for (const peer of ["127.0.0.1", "10.0.0.9", "172.16.0.1", "172.31.255.255", "192.168.0.1", "::1", "fd00::5", "fe80::1"]) {
+  for (const peer of [
+    "127.0.0.1",
+    "10.0.0.9",
+    "172.16.0.1",
+    "172.31.255.255",
+    "192.168.0.1",
+    "::1",
+    "fd00::5",
+    "fe80::1"
+  ]) {
     assert.ok(isTrustedProxyPeer(peer), peer)
   }
-  for (const peer of ["8.8.8.8", "172.15.0.1", "172.32.0.1", "192.167.0.1", "2001:db8::1", ""]) {
+  for (const peer of [
+    "8.8.8.8",
+    "172.15.0.1",
+    "172.32.0.1",
+    "192.167.0.1",
+    "2001:db8::1",
+    ""
+  ]) {
     assert.ok(!isTrustedProxyPeer(peer), peer)
   }
 })

@@ -13,7 +13,7 @@ import { isIP } from "node:net"
  *
  * @param {Request} request
  * @param {string} socketPeer `getClientAddress()` result
- * @returns {string} the IP to attribute the request to
+ * @returns {string} The IP to attribute the request to
  */
 export function resolveClientIp(request, socketPeer) {
   const forwardedFor = request.headers.get("x-forwarded-for")
@@ -28,7 +28,7 @@ export function resolveClientIp(request, socketPeer) {
 
 /**
  * @param {string} peer
- * @returns {boolean} whether the peer can only be our own proxy layer
+ * @returns {boolean} Whether the peer can only be our own proxy layer
  */
 export function isTrustedProxyPeer(peer) {
   const kind = isIP(peer)
