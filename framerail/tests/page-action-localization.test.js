@@ -306,9 +306,9 @@ test("Japanese catalog defines the revision banner chrome requested for found pa
     "utf8"
   )
   assert.match(wikiJa, /^wiki-page-revision-banner =$/mu)
-  assert.match(wikiJa, /^  \.title = 過去のリビジョン$/mu)
-  assert.match(wikiJa, /^  \.page = ページ$/mu)
-  assert.match(wikiJa, /^  \.close = 閉じる$/mu)
+  assert.match(wikiJa, /^ {2}\.title = 過去のリビジョン$/mu)
+  assert.match(wikiJa, /^ {2}\.page = ページ$/mu)
+  assert.match(wikiJa, /^ {2}\.close = 閉じる$/mu)
 })
 
 test("explicit user locale preferences outrank the site language", () => {
