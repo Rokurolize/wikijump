@@ -123,6 +123,11 @@
   // whose slug has recoverable deleted pages; anything else (anonymous,
   // never-existing, unauthorized) must not render the control. Fail closed.
   const canRestore = $derived(errorData.restore_available === true)
+  // The localized default message renders as one paragraph; Wikidot marks it
+  // `<p id="404-message">`.
+  const defaultMissingMessage = $derived(
+    errorData.compiled_body_html.replace(/^\s*<p>/, '<p id="404-message">')
+  )
 
   function handlePageTemplateChange() {
     if (
@@ -315,16 +320,28 @@
       </form>
     {/if}
   {:else}
-    <div id="page-content">
-      <ul id="create-it-now-link">
-        <li>
-          <a href={resolve(`/${missingPageSlug}/edit/true`, {})} onclick={startCreate}
-            >Create page</a
-          >
-        </li>
-      </ul>
-      {@html errorData.compiled_body_html}
-    </div>
+    <!--
+      A site's own missing-page template (`_404`) replaces Wikidot's default
+      state entirely. Otherwise Wikidot shows its title, the 404 message and
+      one "Create page" link, in that order.
+    -->
+    {#if errorData.missing_template}
+      <div id="page-content">
+        {@html errorData.compiled_body_html}
+      </div>
+    {:else}
+      <div id="page-title">The page does not (yet) exist.</div>
+      <div id="page-content">
+        {@html defaultMissingMessage}
+        <ul id="create-it-now-link">
+          <li>
+            <a href={resolve(`/${missingPageSlug}/edit/true`, {})} onclick={startCreate}
+              >Create page</a
+            >
+          </li>
+        </ul>
+      </div>
+    {/if}
 
     {#if canRestore}
       {#if pageLayoutContext.current === Layout.WIKIDOT}

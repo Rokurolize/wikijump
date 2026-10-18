@@ -163,8 +163,6 @@ wiki-page-parent = 父页面
 
 wiki-page-missing = 你访问的页面 //{ $slug }// 并不存在。
 
-    { " *" } [/{ $slug }/edit 创建此页]。
-
 wiki-page-private = + 私有内容
 
     该网站的这个区域是私人的，您无权访问。如果您认为您的确需要访问该区域，请联系站点管理员。
