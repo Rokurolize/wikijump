@@ -378,10 +378,11 @@
       use:editEnhance
     >
       <div class="file-form-field">
-        <label for="file">
+        <label for="file-edit-file-input">
           {data.internationalization?.["wiki-page-file-upload.select"]}
         </label>
         <input
+          id="file-edit-file-input"
           name="file"
           class="file-attribute file"
           type="file"
@@ -389,10 +390,11 @@
         />
       </div>
       <div class="file-form-field">
-        <label for="name">
+        <label for="file-edit-name-input">
           {data.internationalization?.["wiki-page-file-upload.name"]}
         </label>
         <input
+          id="file-edit-name-input"
           name="name"
           class="file-attribute file-name"
           placeholder={fileMap.get(fileEditId)?.name}
