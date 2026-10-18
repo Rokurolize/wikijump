@@ -10,6 +10,7 @@ import crypto from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
+import {isLocalWikijumpHost} from "./local-wikijump-host.mjs";
 
 import {
   assertSocketPath,
@@ -185,7 +186,7 @@ export function createSession({
         await navigate(page, url);
       }
       if (target === "candidate") {
-        if (new URL(page.url()).hostname.endsWith(".wikijump.localhost")) {
+        if (isLocalWikijumpHost(new URL(page.url()).hostname)) {
           await page.waitForFunction(() => {
             const control = document.querySelector("#history-button");
             if (!control) return true;

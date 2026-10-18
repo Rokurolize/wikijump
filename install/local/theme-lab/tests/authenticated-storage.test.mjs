@@ -39,3 +39,16 @@ test('administrator browser observation rejects guest or non-administrator sessi
   assert.equal(administratorBrowserObservationIsValid({...administrator,sign_in_link_present:true}),false);
   assert.equal(administratorBrowserObservationIsValid({...administrator,logout_link_present:false}),false);
 });
+
+test('authenticated storage accepts a local development session and rejects foreign scopes',async()=>{
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'theme-lab-auth-'));
+  try{
+    const file=path.join(dir,'storage.json');
+    for(const [domain,accepted] of [['.wikijump.dev.localhost',true],['.wikijump.com',false],['.wikijump.localhost.example',false]]){
+      const storage={cookies:[{...validStorage.cookies[0],domain}],origins:[]};
+      await fs.writeFile(file,JSON.stringify(storage),{mode:0o600});
+      if(accepted)assert.equal((await loadThemeLabAuthenticatedStorage(file)).sessionToken,validStorage.cookies[0].value);
+      else await assert.rejects(()=>loadThemeLabAuthenticatedStorage(file),/local Wikijump platform domain/u,domain);
+    }
+  }finally{await fs.rm(dir,{recursive:true,force:true})}
+});

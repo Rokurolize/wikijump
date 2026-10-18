@@ -34,7 +34,7 @@ Start one persistent session (Chromium + candidate/reference tabs):
 export DEEPWELL_RPC_TOKEN=...   # from the local dev stack
 node scripts/theme-lab.mjs serve \
   --socket /tmp/theme-lab.sock \
-  --candidate-url https://scpaiueouiuiuiui.wikijump.localhost:18443/<page> \
+  --candidate-url https://scpaiueouiuiuiui.wikijump.dev.localhost:18443/<page> \
   --asset-dir /absolute/path/to/port/assets \
   --sidebar-html /absolute/path/to/sidebar-preview.html \
   --allow-private               # only for localhost references/fixtures

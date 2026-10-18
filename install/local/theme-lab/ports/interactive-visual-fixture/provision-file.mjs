@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 const dir=path.dirname(fileURLToPath(import.meta.url));
 const require=createRequire(path.resolve(dir,'../../../../../framerail/package.json'));
 const {chromium}=require('@playwright/test');
-const origin='https://scpaiueouiuiuiui.wikijump.localhost:18443';
+const origin='https://scpaiueouiuiuiui.wikijump.dev.localhost:18443';
 const fixture=`${origin}/run-owned%3Atheme-lab-visual-acceptance-imported-20260924`;
 const filename='theme-lab-visual-fixture_日本語長名_320px_readability_and_download_controls.txt';
 if(!process.env.WIKIDOT_VERIFY_ADMIN_EMAIL||!process.env.WIKIDOT_VERIFY_ADMIN_PASS)throw new Error('Use the established local verification admin environment');

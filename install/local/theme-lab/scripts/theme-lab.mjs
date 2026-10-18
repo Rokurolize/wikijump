@@ -24,6 +24,7 @@ import {stringifyAsciiJson} from "../src/ascii-json.mjs";
 import {loadChromium} from "../src/browser-lab.mjs";
 import {stopDaemon} from "../src/daemon.mjs";
 import {createDeepwellPreviewClient} from "../src/deepwell-preview.mjs";
+import {isLocalWikijumpHost} from "../src/local-wikijump-host.mjs";
 import {ThemeLabError} from "../src/errors.mjs";
 import {ReferenceCache, defaultCacheDir} from "../src/reference-cache.mjs";
 import {startSessionServer} from "../src/session-server.mjs";
@@ -105,7 +106,7 @@ function preflightCandidateUrl(value) {
   if (typeof value !== "string" || !value) return;
   let url;
   try { url = new URL(value); } catch { throw new ThemeLabError("invalid_candidate_url", `invalid candidate URL: ${value}`); }
-  if (!url.hostname.endsWith(".wikijump.localhost")) return;
+  if (!isLocalWikijumpHost(url.hostname)) return;
   let status;
   try {
     status = Number.parseInt(execFileSync("curl", ["-ksS", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "8", value], {encoding: "utf8"}).trim(), 10);
