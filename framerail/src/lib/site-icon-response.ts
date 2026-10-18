@@ -1,3 +1,5 @@
+import { Buffer } from "node:buffer"
+
 import {
   IOS_ICON_DECLARATIONS,
   SITE_ICON_CACHE_CONTROL,
@@ -46,7 +48,7 @@ function notConfigured(): Response {
  * SHA-256 so refreshes change the cache identity.
  */
 export function storedSiteIconResponse(stored: StoredSiteIcon): Response {
-  return new Response(stored.data, {
+  return new Response(Buffer.from(stored.data), {
     status: 200,
     headers: {
       "cache-control": SITE_ICON_CACHE_CONTROL,

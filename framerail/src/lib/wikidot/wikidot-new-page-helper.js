@@ -106,13 +106,27 @@ const formToUrlSearchParams = (root, form) => {
  * @param {WikidotNewPageRoot} root
  * @param {NewPageHelperResponse} data
  */
+const navigateToSameOriginPath = (root, path) => {
+  let target
+  try {
+    target = new URL(path, root.location.href)
+  } catch {
+    return false
+  }
+  if (target.origin !== root.location.origin) return false
+
+  // Assign the original path to preserve Wikidot's encoded route shape.
+  root.location.href = path
+  return true
+}
+
 const redirectFromNewPageResponse = (root, data) => {
   if (data.goToUrl) {
     if (data.goToUrl === ".") {
       root.location.reload()
       return
     }
-    root.location.href = `/${data.goToUrl}`
+    navigateToSameOriginPath(root, `/${data.goToUrl}`)
     return
   }
 
@@ -121,7 +135,7 @@ const redirectFromNewPageResponse = (root, data) => {
   if (data.pageTitle) path += `/title/${encodeURIComponent(data.pageTitle)}`
   if (data.tags) path += `/tags/${encodeURIComponent(data.tags)}`
   if (data.parentPage) path += `/parentPage/${encodeURIComponent(data.parentPage)}`
-  root.location.href = path
+  navigateToSameOriginPath(root, path)
 }
 
 /**

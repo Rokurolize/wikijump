@@ -335,7 +335,9 @@ test("history compare labels match visible row numbers while preserving timeline
   expect(
     await fromRevision
       .locator("option")
-      .evaluateAll((options) => options.map((option) => option.value))
+      .evaluateAll((options) =>
+        options.map((option) => (option as HTMLOptionElement).value)
+      )
   ).toEqual(["1", "2"])
 
   await fromRevision.selectOption({ label: "3" })
