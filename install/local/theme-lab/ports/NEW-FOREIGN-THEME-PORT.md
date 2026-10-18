@@ -233,7 +233,7 @@ export DEEPWELL_RPC_TOKEN=...   # recover privately from the authorized local ru
 
 node install/local/theme-lab/scripts/theme-lab.mjs serve \
   --socket /tmp/theme-lab-<slug>.sock \
-  --candidate-url https://scpaiueouiuiuiui.wikijump.localhost:18443/boundary-check \
+  --candidate-url https://scpaiueouiuiuiui.wikijump.dev.localhost:18443/boundary-check \
   --asset-dir install/local/theme-lab/ports/<slug>/assets \
   --sidebar-html install/local/theme-lab/ports/<slug>/sidebar-preview.html \
   --browser-root framerail \

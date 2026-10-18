@@ -14,7 +14,7 @@ The five packaged PNG assets are the images used by the candidate. `build.mjs` w
 Run the local loop from the repository root after the local dev stack is healthy and the Deepwell RPC token is set:
 
 ```sh
-node install/local/theme-lab/scripts/theme-lab.mjs serve --socket /tmp/theme-lab-dear-dictator.sock --candidate-url https://scpaiueouiuiuiui.wikijump.localhost:18443/boundary-check --asset-dir install/local/theme-lab/ports/dear-dictator/assets --sidebar-html install/local/theme-lab/ports/dear-dictator/sidebar-preview.html --browser-root framerail --browser-executable /usr/bin/google-chrome
+node install/local/theme-lab/scripts/theme-lab.mjs serve --socket /tmp/theme-lab-dear-dictator.sock --candidate-url https://scpaiueouiuiuiui.wikijump.dev.localhost:18443/boundary-check --asset-dir install/local/theme-lab/ports/dear-dictator/assets --sidebar-html install/local/theme-lab/ports/dear-dictator/sidebar-preview.html --browser-root framerail --browser-executable /usr/bin/google-chrome
 node install/local/theme-lab/scripts/theme-lab.mjs check --socket /tmp/theme-lab-dear-dictator.sock --site-id 6000003 --wikitext install/local/theme-lab/ports/dear-dictator/candidate.wikidot.txt --css install/local/theme-lab/ports/dear-dictator/candidate.css --reference https://scpko.wikidot.com/theme:dear-dictator --offline --selectors install/local/theme-lab/ports/dear-dictator/acceptance-selectors.txt --title '敬愛する独裁者 テーマ' --compact
 node install/local/theme-lab/ports/dear-dictator/build.mjs /absolute/output.wikidot.txt
 ```
