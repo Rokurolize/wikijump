@@ -11485,7 +11485,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "f34f359cee3ae59f504ff67c2a5f928e258fd594060a34f3e05c381722f47cac"
+      "source_input_set_sha256": "864e471377f123a0d6bddf48ac277bc7b687b1f8e1f46f4becca8d059ba85e4d"
     },
     "ftml": {
       "commit": "e96ff5f80d719d5904da9e80617b2d7f9cfef509",
@@ -11650,7 +11650,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "e2496ddf36b431600e4a762dc9af693a2e8cc06ace4ef682ec4ac3f6fa811474"
+        "sha256": "8567ed0c90892fccc6df347769f55fb1f31a7e1d83ddd5c8e8862b5c2f2fc826"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11714,7 +11714,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "89b6cd484222bd20df3010406ceb3d5f2f40a2e0f75e7fb8fee6f130192670cf"
+        "sha256": "3ebce817ed9ffdbf72312cb9873fc89b11f764fd36f8d835737b6751fbe258f6"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -29378,7 +29378,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#html_block_render_leaves_image_block_include_literal"
+          "deepwell/tests/page.rs#hosted_code_blocks_serve_the_source_body_like_wikidot_local_code"
         ]
       },
       "evidence": {

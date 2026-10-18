@@ -55,6 +55,7 @@ use super::compat::color_and_inline_protection::{
     substitute_wikidot_protected_inline_dashes_with_scan_count,
     wikidot_compat_html_marker,
 };
+use super::compat::hosted_code::persist_hosted_code_blocks;
 use super::compat::link_targets::restore_compat_text_in_link_targets;
 #[cfg(test)]
 use super::compat::preparation::extract_css_modules;
@@ -69,6 +70,7 @@ use super::compat::wikidot_iframe::{
 use super::compat::wikidot_link_protection::{
     WikidotWikipediaLink, build_wikidot_wikipedia_link,
 };
+use super::compat::{CompatCodeBlock, scan_compat_code_blocks};
 use super::diagnostics::{
     CorpusRenderDimension, CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace,
     StageGuard,
@@ -153,9 +155,7 @@ use crate::services::ServiceContext;
 use crate::services::settings::{
     NavigationPageWikitext, PageRatingType, SettingsService,
 };
-use crate::services::text_block::{
-    MIME_HTML, TextBlock, TextBlockService, mime_for_language,
-};
+use crate::services::text_block::{MIME_HTML, TextBlock, TextBlockService};
 use crate::services::{
     LinkService, PageQueryService, ScoreService, SiteService, TextService,
 };
@@ -2031,6 +2031,10 @@ impl RenderService {
             }
         };
 
+        // Hosted `/local--code/` text comes from the page's own source, which
+        // include expansion and FTML preprocessing no longer show verbatim.
+        let hosted_code_source =
+            text_block_page_id.and_then(|_| scan_compat_code_blocks(&wikitext).ok());
         let expanded = Self::expand_render_wikitext(
             ctx,
             wikitext,
@@ -2064,6 +2068,7 @@ impl RenderService {
             render_current_page_id,
             viewer_user_id,
             text_block_page_id,
+            hosted_code_source,
             allow_wikidot_styleframe,
             lifecycle == RenderLifecycle::PagePreview,
             current_site,
@@ -2102,6 +2107,7 @@ impl RenderService {
             None,
             viewer_user_id,
             None,
+            None,
             true,
             true,
             Some(current_site),
@@ -2123,6 +2129,7 @@ impl RenderService {
         current_page_id: Option<i64>,
         viewer_user_id: Option<i64>,
         text_block_page_id: Option<i64>,
+        hosted_code_source: Option<Vec<CompatCodeBlock>>,
         allow_wikidot_styleframe: bool,
         page_preview: bool,
         current_site: Option<SiteModel>,
@@ -2366,26 +2373,12 @@ impl RenderService {
                 .await
                 .or_raise(make_error)?;
 
-                let code_blocks: Vec<TextBlock> = fallback_code_blocks
-                    .iter()
-                    .map(
-                        |CodeBlock {
-                             contents,
-                             language,
-                             name,
-                         }| TextBlock {
-                            text: contents,
-                            text_type: language.as_deref(),
-                            mime: mime_for_language(language),
-                            name: name.as_deref(),
-                        },
-                    )
-                    .collect();
-                TextBlockService::add_blocks(
+                persist_hosted_code_blocks(
                     ctx,
                     page_id,
-                    TextBlockType::Code,
-                    &code_blocks,
+                    &fallback_code_blocks,
+                    hosted_code_source.as_deref(),
+                    current_site.as_ref(),
                 )
                 .await
                 .or_raise(make_error)?;
@@ -2793,27 +2786,12 @@ impl RenderService {
             // [[code]]
             {
                 let _stage = StageGuard::new(trace, CorpusRenderStage::CodeBlocks);
-                let code_text_blocks: Vec<TextBlock> = code_blocks
-                    .iter()
-                    .map(
-                        |CodeBlock {
-                             contents,
-                             language,
-                             name,
-                         }| TextBlock {
-                            text: contents,
-                            text_type: language.as_deref(),
-                            mime: mime_for_language(language),
-                            name: name.as_deref(),
-                        },
-                    )
-                    .collect();
-
-                TextBlockService::add_blocks(
+                persist_hosted_code_blocks(
                     ctx,
                     page_id,
-                    TextBlockType::Code,
-                    &code_text_blocks,
+                    &code_blocks,
+                    hosted_code_source.as_deref(),
+                    current_site.as_ref(),
                 )
                 .await
                 .or_raise(make_error)?;
