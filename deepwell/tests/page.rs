@@ -417,7 +417,11 @@ async fn public_page_view_resolves_observed_url_aliases_to_the_canonical_page() 
         slug.replacen('-', "_", 1),
         slug.replacen('-', ".", 1),
         slug.replacen('-', "--", 1),
+        slug.replacen('-', "---", 1),
+        slug.replacen('-', " ", 1),
         format!("{slug}-"),
+        format!("{slug}_"),
+        format!("{slug}\t"),
         format!("{slug}."),
         format!("{slug} "),
     ];
@@ -5246,28 +5250,34 @@ async fn article_view_cache_respects_anonymous_permission_revocation() {
         );
     };
 
-    let alias = run_endpoint!(
-        runner,
-        article_view,
-        json!({
-            "site_id": site_id,
-            "session_token": null,
-            "route": {
-                "slug": "article-cache-permission-revocation:source+page",
-                "extra": "",
-            },
-            "locales": ["en-US", "en"],
-        }),
-    );
-    let GetArticleViewOutput {
-        page: GetPageViewOutput::Permissions { banned: false, .. },
-        ..
-    } = alias
-    else {
-        panic!(
-            "an observed URL alias must preserve the canonical page's view permission"
+    for alias in [
+        "article-cache-permission-revocation:source+page",
+        "article-cache-permission-revocation:source---page",
+        "article-cache-permission-revocation:source page",
+        "article-cache-permission-revocation:source-page_",
+        "article-cache-permission-revocation:source-page\t",
+    ] {
+        let view = run_endpoint!(
+            runner,
+            article_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {
+                    "slug": alias,
+                    "extra": "",
+                },
+                "locales": ["en-US", "en"],
+            }),
         );
-    };
+        assert!(
+            matches!(
+                view.page,
+                GetPageViewOutput::Permissions { banned: false, .. }
+            ),
+            "observed alias {alias:?} must keep the canonical page's revoked view permission"
+        );
+    }
 }
 
 #[tokio::test]

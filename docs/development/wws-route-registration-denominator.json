@@ -50,8 +50,8 @@
       },
       {
         "path": "deepwell/tests/page.rs",
-        "git_blob": "7493ab95374f7c3ea93a8e70ced7bc9fb5a53afb",
-        "sha256": "c1527a75d72991bf08f09e99359a94ddd6b797585811278a7fa868a738599c1a"
+        "git_blob": "5793bc62e3204ce285763537cafb754e09fa0a52",
+        "sha256": "11660a8b1280d59e572799cf0bd40ab81eff54176253cf9ea78b0884e02cd58a"
       },
       {
         "path": "wws/Cargo.lock",
@@ -100,8 +100,8 @@
       },
       {
         "path": "wws/src/handler/robots.rs",
-        "git_blob": "80d4391bffc0fa73e485e3c3c082a716d2011198",
-        "sha256": "b9bb055aadc5cb58872857c625969e3df03d3476ce500cdeb623dca3ad61a62e"
+        "git_blob": "e11bb903b9f62115141380a5cca58524bed31b0c",
+        "sha256": "3740d8a22f53dfffff23f252c48b2bcb793848e56d06e23adf3a3d677669b72c"
       },
       {
         "path": "wws/src/handler/text_block.rs",
@@ -115,8 +115,8 @@
       },
       {
         "path": "wws/src/route.rs",
-        "git_blob": "023a61878c3f4220d2386f1e4b870157873ad9cf",
-        "sha256": "27e7a8d21bc842d8822410016ce779e8423d7e73420677915dfa0eb8fed35f9b"
+        "git_blob": "ef1c0743ed39c8d075c19681e894048eaca1256b",
+        "sha256": "f7a65bbc577e5e465fb45a58b8a64e53fb700eaa71931cb59528253a96cf4d06"
       }
     ]
   },
@@ -510,7 +510,7 @@
       "registered_handler_symbol": "handle_robots_txt",
       "handler_definition_path": "wws/src/handler/robots.rs",
       "route_registration_reference": "wws/src/route.rs#L104",
-      "handler_definition_reference": "wws/src/handler/robots.rs#L34",
+      "handler_definition_reference": "wws/src/handler/robots.rs#L31",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
