@@ -61,6 +61,40 @@ unchanged. The migration condition above still applies; this repair does not
 add a new source-container allowlist entry or claim that every residual #2435
 case is resolved.
 
+The same issue also exposed runtime Rate fragments crossing Wikidot `span`,
+`size`, or link scopes. A Rate module is runtime HTML only when it occupies its
+source line; inline occurrences remain literal. For a standalone module inside
+one of those cross-tree scopes, Deepwell splits FTML's rendered inline wrapper
+around the trusted block, keeping the block outside paragraphs and preserving
+the observed wrapper before and after it. Adjacent Rate modules in the same
+scope are grouped so they keep one wrapper. Other block fragment producers keep
+the existing parent restrictions. The behavior is covered by
+`deepwell/src/services/render/service/tests.rs` and the anonymous, non-mutating
+preview records in
+`install/local/wikidot-verification/artifacts/issue2435-protection-boundaries-live-20261018.json`.
+It remains Wikijump runtime rendering behavior and does not expand the FTML
+candidate surface.
+
+The incremental block-parent reader now follows browser recovery when a
+closing tag names an open ancestor: it closes that element and its malformed
+descendants, while unmatched closing tags have no effect. This allows later
+trusted fragments to use the surviving HTML parent on pages with crossed
+markup. Invalid tag starts, opaque elements, and any context that still leaves
+an unsafe inline parent remain fail-closed; focused regressions cover both
+ancestor recovery and the unmatched-close case.
+
+Compatibility fallback and normal HTML output now perform a final residual
+protection pass. Registered fragments that could not be placed structurally
+are emitted as escaped text in visible HTML data; reserved runtime marker
+tokens whose registry was lost across an expanded fallback are removed at the
+output boundary. Attributes remain excluded from fragment expansion, and the
+marker filter only accepts complete reserved token shapes. Regressions cover
+preformatted output, opaque code, attributes, known residual fragments, and
+malformed or incomplete token text. The current diagnostic of 120 previously
+affected Standing pages produced no body markers on the v31 candidate; the
+combined repair advances the renderer epoch to v32. Full post-promotion
+Standing verification remains the acceptance gate for #2435.
+
 ## Owner
 
 Rokurolize.

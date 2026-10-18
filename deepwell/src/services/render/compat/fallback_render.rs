@@ -52,7 +52,17 @@ use ftml::data::PageInfo;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
+use std::sync::LazyLock;
 use std::time::Duration;
+
+static RESIDUAL_WIKIDOT_PROTECTION_MARKER_REGEX: LazyLock<regex::Regex> = LazyLock::new(
+    || {
+        regex::Regex::new(
+            r"(?i)WIKIJUMPWIKIDOT(?:COMPAT(?:HTML|TEXT|LINK)|INLINEHTML|COLORSPAN|LISTPAGESELLIPSIS)[0-9a-f]{32}(?:I[0-9]+)?X",
+        )
+        .expect("residual Wikidot protection marker pattern is valid")
+    },
+);
 
 #[derive(Debug, Default)]
 struct FallbackParagraph {
@@ -61,6 +71,18 @@ struct FallbackParagraph {
 }
 
 impl RenderService {
+    /// Remove only reserved runtime protection tokens that survived the
+    /// compatibility fallback's owning registries. The fallback may combine
+    /// expanded content whose registry is no longer in scope; exposing those
+    /// tokens is never useful to readers.
+    pub(in crate::services::render) fn strip_residual_wikidot_protection_markers(
+        html: &str,
+    ) -> String {
+        RESIDUAL_WIKIDOT_PROTECTION_MARKER_REGEX
+            .replace_all(html, "")
+            .into_owned()
+    }
+
     pub(in crate::services::render) fn should_use_wikidot_compatibility_fallback(
         wikitext: &str,
         page_info: &PageInfo<'_>,
@@ -1647,5 +1669,25 @@ impl RenderService {
         let rest = &marker[start..];
         let end = rest.find('"')?;
         Some(rest[..end].to_owned())
+    }
+}
+
+#[cfg(test)]
+mod residual_marker_tests {
+    use super::RenderService;
+
+    #[test]
+    fn fallback_strips_only_complete_reserved_protection_tokens() {
+        let input = concat!(
+            "before WIKIJUMPWIKIDOTCOMPATHTML0123456789abcdef0123456789abcdefI17X ",
+            "WIKIJUMPWIKIDOTINLINEHTMLabcdef0123456789abcdef0123456789X ",
+            "WIKIJUMPWIKIDOTCOMPATTEXTABCDEF0123456789ABCDEF0123456789I0X ",
+            "WIKIJUMPWIKIDOTCOMPATHTML-not-a-token after",
+        );
+
+        assert_eq!(
+            RenderService::strip_residual_wikidot_protection_markers(input),
+            "before    WIKIJUMPWIKIDOTCOMPATHTML-not-a-token after",
+        );
     }
 }

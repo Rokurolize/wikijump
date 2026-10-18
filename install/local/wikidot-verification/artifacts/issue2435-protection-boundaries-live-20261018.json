@@ -156,6 +156,56 @@
       "schema": "wikijump_syntax_differential.wikidot_reference.v1",
       "syntax_case": {
         "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "issue2435-div-span-text-rate",
+        "source": "[[div]]\n[[span id=\"owned\"]]\nBEFORE\n[[module Rate]]\nAFTER\n[[/span]]\n[[/div]]",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "wikijump-runtime",
+        "title": "Marker container observation"
+      },
+      "source_sha256": "5da02eb657d88245b5bd54a32f246c8b2cfe53d32017f8bc5ace5cf4f15b5baf",
+      "captured_at": "2026-10-18T13:03:26.592689+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n<div>\n<p><span id=\"u-owned\"><br />\nBEFORE</span></p>\n<span id=\"u-owned\"><div class=\"page-rate-widget-box\"><span class=\"rate-points\">rating:&nbsp;<span class=\"number prw54353\">0</span></span><span class=\"rateup btn btn-default\"><a title=\"I like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)\">+</a></span><span class=\"ratedown btn btn-default\"><a title=\"I don't like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)\">&#8211;</a></span><span class=\"cancel btn btn-default\"><a title=\"Cancel my vote\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)\">x</a></span></div></span>\n<p><span id=\"u-owned\">AFTER<br /></span></p>\n</div>\n",
+      "raw_html_sha256": "de3ec6a03f198840f1e6414c1e64d435ea28375eeba092a03234328af02f8e27"
+    },
+    {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "issue2435-link-class-rate",
+        "source": "[[a href=\"/other\" class=\"owned\"]]\n[[module Rate]]\n[[/a]]",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "wikijump-runtime",
+        "title": "Marker container observation"
+      },
+      "source_sha256": "9d704b8d5fd76a76551253b6d7d230b47c01bf4a647b3ab12ddff08417a56a5d",
+      "captured_at": "2026-10-18T13:03:30.167446+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n<p><a class=\"owned\" href=\"/other\"></a></p>\n<a class=\"owned\" href=\"/other\"><div class=\"page-rate-widget-box\"><span class=\"rate-points\">rating:&nbsp;<span class=\"number prw54353\">0</span></span><span class=\"rateup btn btn-default\"><a title=\"I like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)\">+</a></span><span class=\"ratedown btn btn-default\"><a title=\"I don't like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)\">&#8211;</a></span><span class=\"cancel btn btn-default\"><a title=\"Cancel my vote\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)\">x</a></span></div></a>",
+      "raw_html_sha256": "ca5148ba47772ccb1238403082ab5e633d1c8e79637436b36e4c5a1ea2d85bb0"
+    },
+    {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
         "case_id": "issue2435-link-lines-rate",
         "source": "[[a href=\"/test\"]]\n[[module Rate]]\n[[/a]]",
         "wikidot_observation_tier": "page-preview",
@@ -276,6 +326,106 @@
       },
       "raw_html": "\n\n<p><span style=\"white-space: pre-wrap;\">[[module&#32;Rate]]</span></p>\n",
       "raw_html_sha256": "a3b1b8194cb985d7ad3f4982069066729346576f15f62e5aabd34e2469702e71"
+    },
+    {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "issue2435-size-inline-rate",
+        "source": "[[size 120%]][[module Rate]][[/size]]",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "wikijump-runtime",
+        "title": "Marker container observation"
+      },
+      "source_sha256": "465f94767f827bc33013bd0cdc86526c1a8230b9add3eeca0d239e85edb8af36",
+      "captured_at": "2026-10-18T13:03:31.650693+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n<p><span style=\"font-size:120%;\">[[module Rate]]</span></p>\n",
+      "raw_html_sha256": "d05618d1895f1cd0de246b65287b62dad30c08616aeb73c2d3ae5b44cbf41e38"
+    },
+    {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "issue2435-size-lines-rate",
+        "source": "[[size 120%]]\n[[module Rate]]\n[[/size]]",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "wikijump-runtime",
+        "title": "Marker container observation"
+      },
+      "source_sha256": "3979ce129e84dcc2e775c31d8cb3631b26e0e0758144fc8b9954e70586563f4e",
+      "captured_at": "2026-10-18T13:03:31.000977+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n<span style=\"font-size:120%;\"><div class=\"page-rate-widget-box\"><span class=\"rate-points\">rating:&nbsp;<span class=\"number prw54353\">0</span></span><span class=\"rateup btn btn-default\"><a title=\"I like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)\">+</a></span><span class=\"ratedown btn btn-default\"><a title=\"I don't like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)\">&#8211;</a></span><span class=\"cancel btn btn-default\"><a title=\"Cancel my vote\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)\">x</a></span></div></span>",
+      "raw_html_sha256": "09a999811317f245a101a906c70ac2789b2d88898ea246dbc1dfdb15e0ff2ddf"
+    },
+    {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "issue2435-span-bare-rate-lines",
+        "source": "[[span]]\n[[module Rate]]\n[[/span]]",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "wikijump-runtime",
+        "title": "Marker container observation"
+      },
+      "source_sha256": "08d5011418f67ca326395b0fbe97994974203a4bafe2385aa89971e3151ea4c6",
+      "captured_at": "2026-10-18T13:03:24.732595+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n<span><div class=\"page-rate-widget-box\"><span class=\"rate-points\">rating:&nbsp;<span class=\"number prw54353\">0</span></span><span class=\"rateup btn btn-default\"><a title=\"I like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)\">+</a></span><span class=\"ratedown btn btn-default\"><a title=\"I don't like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)\">&#8211;</a></span><span class=\"cancel btn btn-default\"><a title=\"Cancel my vote\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)\">x</a></span></div></span>",
+      "raw_html_sha256": "f0cdffbc60a7a3a7afb7d36868ae06121baf5dd02571739270fd82add4d5d814"
+    },
+    {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "issue2435-span-id-two-rates",
+        "source": "[[span id=\"owned\"]]\n[[module Rate]]\n[[module Rate]]\n[[/span]]",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "wikijump-runtime",
+        "title": "Marker container observation"
+      },
+      "source_sha256": "85a2f9e7b734e944b5a90e94f1f758fbe2bca56a1b9259a70732ae78ba2570b3",
+      "captured_at": "2026-10-18T13:03:25.373503+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n<p><span id=\"u-owned\"></span></p>\n<span id=\"u-owned\"><div class=\"page-rate-widget-box\"><span class=\"rate-points\">rating:&nbsp;<span class=\"number prw54353\">0</span></span><span class=\"rateup btn btn-default\"><a title=\"I like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)\">+</a></span><span class=\"ratedown btn btn-default\"><a title=\"I don't like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)\">&#8211;</a></span><span class=\"cancel btn btn-default\"><a title=\"Cancel my vote\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)\">x</a></span></div><div class=\"page-rate-widget-box\"><span class=\"rate-points\">rating:&nbsp;<span class=\"number prw54353\">0</span></span><span class=\"rateup btn btn-default\"><a title=\"I like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)\">+</a></span><span class=\"ratedown btn btn-default\"><a title=\"I don't like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)\">&#8211;</a></span><span class=\"cancel btn btn-default\"><a title=\"Cancel my vote\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)\">x</a></span></div></span>\n<p><span id=\"u-owned\"></span></p>\n",
+      "raw_html_sha256": "33dbff490c125774b224dddc9298de53b13668032936011afd166ebdaf5ec781"
     },
     {
       "schema": "wikijump_syntax_differential.wikidot_reference.v1",
@@ -426,6 +576,31 @@
       },
       "raw_html": "\n\n<p><span id=\"u-owned\"></span></p>\n<span id=\"u-owned\"><div class=\"page-rate-widget-box\"><span class=\"rate-points\">rating:&nbsp;<span class=\"number prw54353\">0</span></span><span class=\"rateup btn btn-default\"><a title=\"I like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)\">+</a></span><span class=\"ratedown btn btn-default\"><a title=\"I don't like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)\">&#8211;</a></span><span class=\"cancel btn btn-default\"><a title=\"Cancel my vote\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)\">x</a></span></div></span>\n<p><span id=\"u-owned\"></span></p>\n",
       "raw_html_sha256": "e1507f3744758a6480ddf52780bf16f812eae56dbcad89b920d17c902c726035"
+    },
+    {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "issue2435-span-text-rate",
+        "source": "[[span id=\"owned\"]]\nBEFORE\n[[module Rate]]\nAFTER\n[[/span]]",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "wikijump-runtime",
+        "title": "Marker container observation"
+      },
+      "source_sha256": "f692762c68fd1d1866fb658a8c9698621656d93a17cf41f4a0358e8104691ee9",
+      "captured_at": "2026-10-18T13:03:26.007329+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n<p><span id=\"u-owned\"><br />\nBEFORE</span></p>\n<span id=\"u-owned\"><div class=\"page-rate-widget-box\"><span class=\"rate-points\">rating:&nbsp;<span class=\"number prw54353\">0</span></span><span class=\"rateup btn btn-default\"><a title=\"I like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)\">+</a></span><span class=\"ratedown btn btn-default\"><a title=\"I don't like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)\">&#8211;</a></span><span class=\"cancel btn btn-default\"><a title=\"Cancel my vote\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)\">x</a></span></div></span>\n<p><span id=\"u-owned\">AFTER<br /></span></p>\n",
+      "raw_html_sha256": "9d44b4dbd4bc301df89710c586b389f524c2216fcf323fd81d0c8d2b30273b40"
     },
     {
       "schema": "wikijump_syntax_differential.wikidot_reference.v1",

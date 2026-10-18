@@ -2229,6 +2229,9 @@ impl RenderService {
                     .iter()
                     .map(|html| {
                         let html = protection.compat_html().restore(html);
+                        let html = protection
+                            .compat_html()
+                            .restore_remaining_markers_as_text(&html);
                         let html = Self::restore_protected_wikidot_inline_html(
                             Self::restore_protected_wikidot_color_spans(
                                 html,
@@ -2241,7 +2244,8 @@ impl RenderService {
                             current_site.as_ref(),
                             config,
                         );
-                        protection.compat_text().restore(&html)
+                        let html = protection.compat_text().restore(&html);
+                        Self::strip_residual_wikidot_protection_markers(&html)
                     })
                     .collect();
                 let fallback_code_blocks: Vec<CodeBlock<'static>> = fallback_output
@@ -2253,13 +2257,19 @@ impl RenderService {
                              language,
                              name,
                          }| CodeBlock {
-                            contents: Cow::Owned(protection.compat_text().restore(
-                                &Self::restore_wikidot_code_block_compatibility(
-                                    &protection.compat_html().restore_plain(contents),
-                                    current_site.as_ref(),
-                                    config,
+                            contents: Cow::Owned(
+                                Self::strip_residual_wikidot_protection_markers(
+                                    &protection.compat_text().restore(
+                                        &Self::restore_wikidot_code_block_compatibility(
+                                            &protection
+                                                .compat_html()
+                                                .restore_plain(contents),
+                                            current_site.as_ref(),
+                                            config,
+                                        ),
+                                    ),
                                 ),
-                            )),
+                            ),
                             language: language
                                 .as_ref()
                                 .map(|language| Cow::Owned(language.to_string())),
@@ -2268,6 +2278,9 @@ impl RenderService {
                     )
                     .collect();
                 let body = protection.compat_html().restore(&fallback_output.body);
+                let body = protection
+                    .compat_html()
+                    .restore_remaining_markers_as_text(&body);
                 let body = Self::restore_protected_wikidot_inline_html(
                     Self::restore_protected_wikidot_color_spans(
                         body,
@@ -2281,6 +2294,7 @@ impl RenderService {
                     config,
                 );
                 let body = protection.compat_text().restore(&body);
+                let body = Self::strip_residual_wikidot_protection_markers(&body);
                 (
                     wikidot_css_modules,
                     fallback_html_block_texts,
@@ -2527,8 +2541,10 @@ impl RenderService {
                     // Optimized native lists contain the inline/color markers
                     // protected before the list was registered. Expose that
                     // trusted HTML before restoring its inline dependencies.
-                    html_output.body =
-                        protection.compat_html().restore(&html_output.body);
+                    let body = protection.compat_html().restore(&html_output.body);
+                    html_output.body = protection
+                        .compat_html()
+                        .restore_remaining_markers_as_text(&body);
                     html_output.body = Self::restore_protected_wikidot_color_spans(
                         std::mem::take(&mut html_output.body),
                         protection.color_spans(),
@@ -2572,6 +2588,11 @@ impl RenderService {
                     html_output.body = Self::restore_wikidot_include_block_break(&html_output.body);
                     html_output.body =
                         protection.compat_text().restore(&html_output.body);
+                    html_output.body =
+                        Self::strip_residual_wikidot_protection_markers(&html_output.body);
+                    for css in &mut html_output.styles {
+                        *css = Self::strip_residual_wikidot_protection_markers(css);
+                    }
                     if render_settings.layout == Layout::Wikidot {
                         legacy_action_registry
                             .remove_renderer_ids_from_wikidot_html(&mut html_output.body);
@@ -2582,12 +2603,16 @@ impl RenderService {
                         .iter()
                         .map(|html| {
                             let html = protection.compat_html().restore(html);
+                            let html = protection
+                                .compat_html()
+                                .restore_remaining_markers_as_text(&html);
                             let html = Self::localize_wikidot_local_file_urls(
                                 &html,
                                 render_current_site.as_ref(),
                                 &render_config,
                             );
-                            protection.compat_text().restore(&html)
+                            let html = protection.compat_text().restore(&html);
+                            Self::strip_residual_wikidot_protection_markers(&html)
                         })
                         .collect();
                     if render_settings.layout == Layout::Wikidot
@@ -2603,27 +2628,29 @@ impl RenderService {
                     let code_blocks = tree
                         .code_blocks
                         .iter()
-                        .map(
-                            |CodeBlock {
-                                 contents,
-                                 language,
-                                 name,
-                             }| CodeBlock {
-                                contents: Cow::Owned(protection.compat_text().restore(
-                                    &Self::restore_wikidot_code_block_compatibility(
+                        .map(|CodeBlock {
+                                  contents,
+                                  language,
+                                  name,
+                              }| {
+                            let contents = Self::restore_wikidot_code_block_compatibility(
                                         &protection.compat_html().restore_plain(contents),
                                         render_current_site.as_ref(),
                                         &render_config,
-                                    ),
-                                )),
+                                    );
+                            let contents = protection.compat_text().restore(&contents);
+                            let contents =
+                                Self::strip_residual_wikidot_protection_markers(&contents);
+                            CodeBlock {
+                                contents: Cow::Owned(contents),
                                 language: language
                                     .as_ref()
                                     .map(|language| Cow::Owned(language.to_string())),
                                 name: name
                                     .as_ref()
                                     .map(|name| Cow::Owned(name.to_string())),
-                            },
-                        )
+                            }
+                        })
                         .collect();
                     (html_block_texts, code_blocks)
                 })

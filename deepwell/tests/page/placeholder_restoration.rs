@@ -182,7 +182,7 @@ async fn bracketed_colored_spans_do_not_create_marker_link_targets() {
 
 #[tokio::test]
 async fn dangling_raw_delimiters_do_not_capture_the_next_lines_color_example() {
-    let mut runner = TestRunner::setup().await;
+    let runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded mirror site should exist")
         .site;

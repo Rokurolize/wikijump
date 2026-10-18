@@ -67,6 +67,123 @@ fn rate_module_is_inside_footnote_scope(
     count > 0 && ranges[count - 1].1 >= occurrence_end
 }
 
+fn rate_module_is_inline_source_text(
+    source: &str,
+    module_start: usize,
+    occurrence_end: usize,
+) -> bool {
+    let occurrence = &source[module_start..occurrence_end];
+    if occurrence
+        .find("]]")
+        .is_some_and(|head_end| occurrence[head_end + 2..].starts_with("[[/module]]"))
+    {
+        return true;
+    }
+    let line_start = source[..module_start]
+        .rfind('\n')
+        .map_or(0, |index| index + 1);
+    let line_end = source[occurrence_end..]
+        .find('\n')
+        .map_or(source.len(), |index| occurrence_end + index);
+    !source[line_start..module_start].trim().is_empty()
+        || !source[occurrence_end..line_end].trim().is_empty()
+}
+
+fn rate_module_cross_tree_inline_scope_ranges(
+    source: &str,
+    literal_regions: &LiteralRegionIndex,
+) -> Vec<(usize, usize)> {
+    let mut ranges = collect_unproven_scope_ranges(source, literal_regions)
+        .into_iter()
+        .filter(|range| {
+            wikidot_scope_head_name_is(source, range.start, "span")
+                || wikidot_scope_head_name_is(source, range.start, "size")
+                || wikidot_scope_head_name_is(source, range.start, "a")
+        })
+        .map(|range| (range.start, range.end))
+        .collect::<Vec<_>>();
+    ranges.sort_unstable_by_key(|(start, _)| *start);
+    let mut max_end = 0;
+    for (_, end) in &mut ranges {
+        max_end = max_end.max(*end);
+        *end = max_end;
+    }
+    ranges
+}
+
+fn wikidot_scope_head_name_is(source: &str, start: usize, expected: &str) -> bool {
+    let Some(tail) = source.get(start + 2..) else {
+        return false;
+    };
+    tail.trim_start()
+        .split(|character: char| character.is_ascii_whitespace() || character == ']')
+        .next()
+        .is_some_and(|name| name.eq_ignore_ascii_case(expected))
+}
+
+fn rate_module_is_inside_cross_tree_inline_scope(
+    ranges: &[(usize, usize)],
+    module_start: usize,
+    occurrence_end: usize,
+) -> bool {
+    let count = ranges.partition_point(|(start, _)| *start < module_start);
+    count > 0 && occurrence_end <= ranges[count - 1].1
+}
+
+fn adjacent_rate_modules_in_cross_tree_scope<'a>(
+    source: &'a str,
+    literal_regions: &LiteralRegionIndex,
+    footnote_ranges: &[(usize, usize)],
+    inline_scope_ranges: &[(usize, usize)],
+    module_start: usize,
+    occurrence_end: usize,
+    body: Option<&'a str>,
+) -> Vec<(usize, usize, Option<&'a str>)> {
+    let mut occurrences = vec![(module_start, occurrence_end, body)];
+    let scope_index =
+        inline_scope_ranges.partition_point(|(start, _)| *start < module_start);
+    let Some(&(_, scope_end)) = scope_index
+        .checked_sub(1)
+        .and_then(|index| inline_scope_ranges.get(index))
+    else {
+        return occurrences;
+    };
+    if occurrence_end > scope_end {
+        return occurrences;
+    }
+
+    let mut previous_end = occurrence_end;
+    for matched in RATE_MODULE_REGEX.find_iter(&source[occurrence_end..scope_end]) {
+        let start = occurrence_end + matched.start();
+        if !source[previous_end..start].trim().is_empty()
+            || literal_regions.contains(start)
+        {
+            break;
+        }
+        let line_start = source[..start].rfind('\n').map_or(0, |index| index + 1);
+        if source[line_start..start].trim_start().starts_with('>') {
+            break;
+        }
+        let open_end = occurrence_end + matched.end();
+        let (end, body) =
+            rate_module_occurrence_body(source, start, open_end, literal_regions);
+        if end > scope_end
+            || rate_module_is_inline_source_text(source, start, end)
+            || rate_module_is_inside_footnote_scope(footnote_ranges, start, end)
+            || !rate_module_is_inside_cross_tree_inline_scope(
+                inline_scope_ranges,
+                start,
+                end,
+            )
+        {
+            break;
+        }
+        occurrences.push((start, end, body));
+        previous_end = end;
+    }
+    occurrences
+}
+
 impl RenderService {
     /// Reconstruct the typed Rate action order using the same recognition
     /// boundaries as the runtime renderer. The saved HTML cardinality is
@@ -103,6 +220,10 @@ impl RenderService {
                 &literal_regions,
             );
             cursor = occurrence_end;
+            if rate_module_is_inline_source_text(source, matched.start(), occurrence_end)
+            {
+                continue;
+            }
             if rate_module_is_inside_footnote_scope(
                 &footnote_ranges,
                 matched.start(),
@@ -149,6 +270,15 @@ impl RenderService {
                 matched.end(),
                 &literal_regions,
             );
+            if rate_module_is_inline_source_text(
+                &wikitext,
+                matched.start(),
+                occurrence_end,
+            ) {
+                output.push_str(&wikitext[cursor..occurrence_end]);
+                cursor = occurrence_end;
+                continue;
+            }
             if rate_module_is_inside_footnote_scope(
                 &footnote_ranges,
                 matched.start(),
@@ -182,6 +312,8 @@ impl RenderService {
             LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
         let footnote_ranges =
             rate_module_footnote_scope_ends(&wikitext, &literal_regions);
+        let inline_scope_ranges =
+            rate_module_cross_tree_inline_scope_ranges(&wikitext, &literal_regions);
         let mut output = String::with_capacity(wikitext.len());
         let mut cursor = 0;
         for matched in RATE_MODULE_REGEX.find_iter(&wikitext) {
@@ -220,22 +352,71 @@ impl RenderService {
                 cursor = occurrence_end;
                 continue;
             }
-            let rendered = match rate_context.rating_type {
-                PageRatingType::Stars => render_read_only_star_rate_module(
-                    rate_context.score,
-                    rate_context.rating_votes,
-                    body.unwrap_or(""),
-                ),
-                PageRatingType::Plus | PageRatingType::PlusMinus => {
-                    render_read_only_rate_module(
-                        rate_context.score,
-                        &page_info.language,
-                        rate_context.rating_type,
-                    )
-                }
+            if rate_module_is_inline_source_text(
+                &wikitext,
+                matched.start(),
+                occurrence_end,
+            ) {
+                output.push_str(&wikitext[matched.start()..occurrence_end]);
+                cursor = occurrence_end;
+                continue;
+            }
+            let in_cross_tree_inline_scope =
+                rate_module_is_inside_cross_tree_inline_scope(
+                    &inline_scope_ranges,
+                    matched.start(),
+                    occurrence_end,
+                );
+            let occurrences = if in_cross_tree_inline_scope {
+                adjacent_rate_modules_in_cross_tree_scope(
+                    &wikitext,
+                    &literal_regions,
+                    &footnote_ranges,
+                    &inline_scope_ranges,
+                    matched.start(),
+                    occurrence_end,
+                    body,
+                )
+            } else {
+                vec![(matched.start(), occurrence_end, body)]
             };
-            output.push_str(&compat_html.push_block_html(rendered));
-            cursor = occurrence_end;
+            let mut rendered = String::new();
+            for (_, _, body) in &occurrences {
+                let block = match rate_context.rating_type {
+                    PageRatingType::Stars => render_read_only_star_rate_module(
+                        rate_context.score,
+                        rate_context.rating_votes,
+                        body.unwrap_or(""),
+                    ),
+                    PageRatingType::Plus | PageRatingType::PlusMinus => {
+                        render_read_only_rate_module(
+                            rate_context.score,
+                            &page_info.language,
+                            rate_context.rating_type,
+                        )
+                    }
+                };
+                rendered.push_str(&block);
+            }
+            let marker = if in_cross_tree_inline_scope {
+                compat_html.push_rate_block_html(rendered)
+            } else {
+                compat_html.push_block_html(rendered)
+            };
+            if in_cross_tree_inline_scope {
+                // FTML's span/size scopes are paragraph-crossing inline
+                // scopes. A runtime block is a flow break in Wikidot too;
+                // give FTML that boundary so it closes and resumes the scope
+                // around the trusted runtime element.
+                output.push_str("\n\n");
+                output.push_str(&marker);
+                output.push_str("\n\n");
+            } else {
+                output.push_str(&marker);
+            }
+            cursor = occurrences
+                .last()
+                .map_or(occurrence_end, |(_, end, _)| *end);
         }
         if cursor == 0 {
             return wikitext;
@@ -247,7 +428,11 @@ impl RenderService {
 
 #[cfg(test)]
 mod tests {
-    use super::{rate_module_is_inside_footnote_scope, rate_module_occurrence_body};
+    use super::{
+        rate_module_cross_tree_inline_scope_ranges, rate_module_is_inline_source_text,
+        rate_module_is_inside_cross_tree_inline_scope,
+        rate_module_is_inside_footnote_scope, rate_module_occurrence_body,
+    };
     use crate::services::render::literal_regions::LiteralRegionIndex;
 
     #[test]
@@ -275,5 +460,68 @@ mod tests {
             rate_module_occurrence_body(source, 0, open_end, &literal_regions),
             (open_end, None),
         );
+    }
+
+    #[test]
+    fn rate_is_runtime_content_only_when_it_occupies_its_source_line() {
+        for source in [
+            "before [[module Rate]] after",
+            "[[span]]before [[module Rate]] after[[/span]]",
+            "[[module Rate]] trailing text",
+            "leading text [[module Rate]]",
+            "[[module Rate]][[/module]]",
+            "[[span]][[module Rate]][[/module]][[/span]]",
+        ] {
+            let start = source.find("[[module Rate]]").unwrap();
+            let end = start + "[[module Rate]]".len();
+            assert!(
+                rate_module_is_inline_source_text(source, start, end),
+                "{source}"
+            );
+        }
+
+        for source in [
+            "[[module Rate]]\n",
+            "before\n  [[module Rate]]  \nafter",
+            "[[span]]\n[[module Rate]]\n[[/span]]",
+            "[[module Rate]]\nbody\n[[/module]]",
+        ] {
+            let start = source.find("[[module Rate]]").unwrap();
+            let open_end = start + "[[module Rate]]".len();
+            let end = source[open_end..]
+                .find("[[/module]]")
+                .map_or(open_end, |offset| open_end + offset + "[[/module]]".len());
+            assert!(
+                !rate_module_is_inline_source_text(source, start, end),
+                "{source}"
+            );
+        }
+    }
+
+    #[test]
+    fn attributed_span_size_and_link_scopes_are_recognized_for_runtime_blocks() {
+        for (source, expected_name) in [
+            ("[[span id=\"owned\"]]\n[[module Rate]]\n[[/span]]", "span"),
+            ("[[size 120%]]\n[[module Rate]]\n[[/size]]", "size"),
+            (
+                "[[a href=\"/target\" class=\"owned\"]]\n[[module Rate]]\n[[/a]]",
+                "a",
+            ),
+        ] {
+            let literal_regions =
+                LiteralRegionIndex::new_wikidot_module_recognition(source);
+            let ranges =
+                rate_module_cross_tree_inline_scope_ranges(source, &literal_regions);
+            let module_start = source.find("[[module Rate]]").unwrap();
+            let module_end = module_start + "[[module Rate]]".len();
+            assert!(
+                rate_module_is_inside_cross_tree_inline_scope(
+                    &ranges,
+                    module_start,
+                    module_end,
+                ),
+                "{expected_name}: {source}",
+            );
+        }
     }
 }
