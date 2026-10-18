@@ -84,3 +84,25 @@ public download. Before calling the current-head restoration portable, issue
 an independently sealed/split evidence supplement with the source manifest,
 verify its downloaded bytes against its published SHA-256, and re-run in a
 clean isolated checkout *without access to the original worktree*.
+
+## Relocating frozen BHL screenshot references
+
+The twelve frozen BHL option receipts from October 2026 record screenshots
+using their original absolute worktree paths. Those receipt bytes are
+SHA-pinned in the frozen publication set and must not be rewritten to fake a
+new capture. The verifier now recognizes only the archived
+`install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/`
+suffix and resolves that path within the current checked-out evidence root.
+It refuses symlinks, traversal, and unrelated absolute paths, then verifies
+every resolved image against the screenshot SHA-256 in the original receipt.
+
+During an isolated diagnostic replay, **82 original screenshots** were copied
+after exact hash checks (11,128,165 bytes). Once present, the current-campaign
+failure count went from 243 to 75; 164 duplicated cross-baseline screenshot
+path failures and their four derivative review failures disappeared. Remaining
+failures are 36 superseded runtime sources, 36 missing visual-review artifacts
+plus a missing Sigma-10 browser audit,
+and two stale BHL Framerail fingerprint checks. These are expected **blocking**
+current-head acceptance findings, not authorization to reuse old runtime
+observations or to repin the frozen evidence. No copied diagnostic acceptance
+artifacts are part of the PR.
