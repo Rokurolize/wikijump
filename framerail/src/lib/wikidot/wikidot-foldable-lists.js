@@ -43,7 +43,9 @@ export function wikidotFoldableLists(node) {
         initializeFoldableList(list)
       }
       const dialogOwner = container.closest("li")
-      const dialog = dialogOwner?.querySelector("#credit-view, #u-credit-view")
+      const dialog = dialogOwner?.querySelector(
+        "#credit-view, #u-credit-view, .modalcontainer"
+      )
       if (dialog) {
         dialog.setAttribute("role", "dialog")
         dialog.setAttribute("aria-modal", "true")
@@ -108,14 +110,19 @@ export function wikidotFoldableLists(node) {
           }
           if (!target) return
           const list = target.querySelector("ul")
-          if (!list) return
           const folded = target.classList.contains("folded")
           target.classList.replace(
             folded ? "folded" : "unfolded",
             folded ? "unfolded" : "folded"
           )
-          list.style.display = folded ? (originalDisplays.get(list) ?? "") : "none"
-          const dialog = target.querySelector("#credit-view, #u-credit-view")
+          // Wikidot changes the owning LI's class even when it has no UL.
+          // CSS-driven foldable components use that class to reveal siblings.
+          if (list) {
+            list.style.display = folded ? (originalDisplays.get(list) ?? "") : "none"
+          }
+          const dialog = target.querySelector(
+            "#credit-view, #u-credit-view, .modalcontainer"
+          )
           if (dialog) dialog.setAttribute("aria-hidden", String(!folded))
           for (const control of target.querySelectorAll(".creditButton")) {
             control.setAttribute("aria-expanded", String(folded))
@@ -165,7 +172,8 @@ export function wikidotFoldableLists(node) {
       const list = owner.querySelector("ul")
       owner.classList.replace("unfolded", "folded")
       if (list) list.style.display = "none"
-      dialog.closest("#credit-view, #u-credit-view")?.setAttribute("aria-hidden", "true")
+      const panel = dialog.closest("#credit-view, #u-credit-view") ?? dialog
+      panel.setAttribute("aria-hidden", "true")
       opener?.setAttribute("aria-expanded", "false")
       opener?.focus()
       return
