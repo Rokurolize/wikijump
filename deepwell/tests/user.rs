@@ -806,6 +806,7 @@ async fn basic_update() {
         json!({
             "user": USER_SLUG,
             "email": "jane@wikijump.dev",
+            "current_password": "password-fixture",
             "ip_address": common::IP_ADDRESS,
         }),
     );
@@ -823,6 +824,7 @@ async fn basic_update() {
         json!({
             "user": USER_SLUG,
             "email": "jane@spam.xxx",
+            "current_password": "password-fixture",
             "biography": "This is a spam account now",
             "ip_address": common::IP_ADDRESS,
         }),
