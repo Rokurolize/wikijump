@@ -785,3 +785,46 @@ async fn account_holders_change_their_password_with_the_current_one() {
     );
     assert!(!renewed.needs_mfa);
 }
+
+#[tokio::test]
+async fn saturated_account_bucket_does_not_lock_out_correct_password() {
+    // Regression test for #2512: flooding an account with failed logins must
+    // not prevent the real holder from logging in with the correct password.
+    // A dedicated loopback IP keeps this bucket isolated from other tests.
+    const LOCKOUT_TEST_IP: &str = "127.0.0.200";
+
+    let runner = TestRunner::setup().await;
+    let n = next_n();
+    let (name, _) = create_auth_test_user(&runner, n, false).await;
+
+    let wrong_password_params = || {
+        json!({
+            "name_or_email": name,
+            "password": "wrong-password-fixture",
+            "ip_address": LOCKOUT_TEST_IP,
+            "user_agent": "deepwell-auth-test-lockout",
+        })
+    };
+
+    // More failures than the 10-attempt / 600-second account bucket holds.
+    // Repeat the flood-then-success cycle to prove the account never gets
+    // stuck locked out.
+    for _ in 0..2 {
+        for _ in 0..11 {
+            let error = run_endpoint_err!(runner, auth_login, wrong_password_params());
+            assert_contains_error!(error, ErrorType::InvalidAuthentication);
+        }
+
+        let login = run_endpoint!(
+            runner,
+            auth_login,
+            json!({
+                "name_or_email": name,
+                "password": PASSWORD,
+                "ip_address": LOCKOUT_TEST_IP,
+                "user_agent": "deepwell-auth-test-lockout",
+            })
+        );
+        assert!(!login.needs_mfa);
+    }
+}
