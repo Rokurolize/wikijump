@@ -22,7 +22,9 @@ use super::structs::{
 use crate::constants::ADMIN_USER_ID;
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
 use crate::models::site::{Entity as Site, Model as SiteModel};
-use crate::services::action_throttle::MEMBERSHIP_SELF_JOIN_THROTTLE;
+use crate::services::action_throttle::{
+    MEMBERSHIP_PASSWORD_THROTTLE, MEMBERSHIP_SELF_JOIN_THROTTLE,
+};
 use crate::services::audit::{AuditEvent, AuditService};
 use crate::services::relation::{
     CreateSiteMember, GetSiteBan, GetSiteMember, RelationDirection, RelationObject,
@@ -555,6 +557,24 @@ WHERE invitation_id = $1 AND accepted = FALSE
         .await?;
         let site_id = site.site_id;
         if !site.membership_by_password {
+            return Err(Self::denied().into());
+        }
+
+        // The join password is a shared secret, so guesses must be bounded
+        // before verification runs. This consumes the password action's own
+        // server-owned partition, mirroring the self-join throttle: only a
+        // request that has proved its route, actor, site policy, current
+        // revision, and renderer binding can consume it, and exhaustion is
+        // indistinguishable from every other unavailable membership action.
+        if !ActionThrottleService::consume(
+            ctx,
+            MEMBERSHIP_PASSWORD_THROTTLE,
+            site_id,
+            actor_user_id,
+        )
+        .await
+        .or_raise(Self::denied)?
+        {
             return Err(Self::denied().into());
         }
         if RelationService::site_member_exists(

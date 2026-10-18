@@ -24,7 +24,7 @@ Future work can replace the local admin actor with a Wikidot-like account/permis
 
 ## Local compatibility action throttle
 
-Mutable compatibility actions use a Wikijump deployment-security throttle rather than pretending that an unobserved Wikidot threshold is known. A valid renderer-bound self-membership action and a valid renderer-bound set-tags action each permit ten dispatches per site, actor, and action in a rolling sixty-second window. The two actions use separate server-owned partitions.
+Mutable compatibility actions use a Wikijump deployment-security throttle rather than pretending that an unobserved Wikidot threshold is known. A valid renderer-bound self-membership action, a valid renderer-bound join-by-password action, and a valid renderer-bound set-tags action each permit ten dispatches per site, actor, and action in a rolling sixty-second window. The three actions use separate server-owned partitions.
 
 Malformed descriptors, route mismatches, stale revisions, failed permission checks, and unsupported site policy are rejected before the counter is touched. Throttle exhaustion uses the same non-disclosing permission boundary as an unavailable action and exposes no client-selectable partition key or retry oracle. Site, actor, action key, limit, and window are all server-owned; client page, revision, token, policy, or route fields cannot create another bucket.
 
