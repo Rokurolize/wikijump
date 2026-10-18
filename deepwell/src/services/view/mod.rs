@@ -23,7 +23,7 @@ mod backlinks;
 mod module_arguments;
 mod module_render;
 mod options;
-pub(super) mod redirect;
+pub(crate) mod redirect;
 mod service;
 mod site_tools;
 mod structs;
