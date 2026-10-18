@@ -21,7 +21,10 @@ test("no route dumps its page state except the explicit wiki-page debug view", (
     // The wiki page's /debug option is the one deliberate state dump, and
     // each occurrence sits directly under its `data.options?.debug` guard.
     assert.ok(file.endsWith("PageView.svelte"), `${file} renders a debug dump`)
-    const guarded = source.split(/\{#if data\.options\?\.debug\}\s*(?:<div[^>]*>\s*)?<textarea class="debug">/).length - 1
+    const guarded =
+      source.split(
+        /\{#if data\.options\?\.debug\}\s*(?:<div[^>]*>\s*)?<textarea class="debug">/
+      ).length - 1
     assert.equal(guarded, dumps, `${file} renders an unguarded debug dump`)
   }
 })

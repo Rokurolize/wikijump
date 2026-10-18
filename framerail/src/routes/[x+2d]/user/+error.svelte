@@ -20,4 +20,3 @@ as soon as we can figure out prettier support for it.
 {:else}
   {errorData?.internationalization?.["error-api.GENERIC"]}
 {/if}
-
