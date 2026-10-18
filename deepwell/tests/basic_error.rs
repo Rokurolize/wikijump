@@ -144,3 +144,37 @@ async fn basic_error_endpoints_generate_localized_html() {
         run_endpoint!(runner, basic_error_file_root, json!({"locales": ["en"]}));
     assert!(file_root.body.contains("wjfiles.com"));
 }
+
+#[tokio::test]
+async fn basic_error_text_block_index_renders_attacker_markup_inert() {
+    // Issue #2560: the hosted text-block index comes from the request path
+    // and is interpolated into the localized 404 body. It must render as
+    // inert text, never as live markup.
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+
+    let attack = run_endpoint!(
+        runner,
+        basic_error_text_block,
+        json!({
+            "locales": ["en"],
+            "site_id": site.site_id,
+            "index": "9999<img\tsrc=x\tonerror=alert(1)>",
+            "block_type": "code",
+            "reason": "missing",
+        }),
+    );
+    let body = without_bidi_isolates(&attack.body);
+    assert!(
+        !body.contains("<img"),
+        "attacker markup must not survive into the error body: {}",
+        attack.body,
+    );
+    assert!(
+        body.contains("9999&lt;img"),
+        "the escaped index must still be visible: {}",
+        attack.body,
+    );
+}

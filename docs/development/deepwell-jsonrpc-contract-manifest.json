@@ -752,7 +752,9 @@
       "test_witness": {
         "kind": "endpoint_behavioral",
         "reference": "deepwell/tests/basic_error.rs#basic_error_endpoints_generate_localized_html",
-        "alternatives": [],
+        "alternatives": [
+          "deepwell/tests/basic_error.rs#basic_error_text_block_index_renders_attacker_markup_inert"
+        ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
     },
