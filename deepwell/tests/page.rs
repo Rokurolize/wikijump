@@ -15394,7 +15394,8 @@ async fn hosted_code_blocks_serve_the_source_body_like_wikidot_local_code() {
         Reference::Slug(Cow::Borrowed(slug)),
     );
     // Wikidot's /local--code/ drops the newlines around the body, ends it
-    // with one newline and keeps tabs, which the rendered <pre> expands.
+    // with one newline, and keeps tabs, whitespace-only lines and blank-line
+    // runs, all of which the rendered <pre> normalizes.
     let page = run_endpoint!(
         runner,
         page_create,
@@ -15405,7 +15406,11 @@ async fn hosted_code_blocks_serve_the_source_body_like_wikidot_local_code() {
                 "\n",
                 ".a {\n",
                 "    \tfloat: none;\n",
+                " \n",
                 "}\n",
+                "\n",
+                "\n",
+                ".b {}\n",
                 "\n",
                 "[[/code]]\n",
                 "\n",
@@ -15423,7 +15428,10 @@ async fn hosted_code_blocks_serve_the_source_body_like_wikidot_local_code() {
         }),
     );
 
-    for (index, expected) in [(1, ".a {\n    \tfloat: none;\n}\n"), (2, "plain\n")] {
+    for (index, expected) in [
+        (1, ".a {\n    \tfloat: none;\n \n}\n\n\n.b {}\n"),
+        (2, "plain\n"),
+    ] {
         let block = run_endpoint!(
             runner,
             text_block_get_index,

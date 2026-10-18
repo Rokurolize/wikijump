@@ -84,9 +84,7 @@ where
             let source = raw.and_then(|raw| {
                 let localized = localize(&raw[index].contents);
                 let renders_the_same =
-                    localize(&rendered_code_body(&raw[index].contents))
-                        .trim_matches('\n')
-                        == rendered.trim_matches('\n');
+                    rendered_code_key(&localized) == rendered_code_key(rendered);
                 renders_the_same.then_some(localized)
             });
             wikidot_hosted_code(source.as_deref().unwrap_or(rendered))
@@ -101,20 +99,35 @@ fn wikidot_hosted_code(body: &str) -> String {
     hosted
 }
 
-/// A raw code body as FTML's Wikidot preprocessing leaves it: tabs become
-/// four spaces, non-breaking spaces become spaces, and the control characters
-/// Wikidot discards are dropped.
-fn rendered_code_body(body: &str) -> String {
-    let mut output = String::with_capacity(body.len());
-    for character in body.chars() {
-        match character {
-            '\t' => output.push_str("    "),
-            '\u{00a0}' => output.push(' '),
-            character if is_wikidot_discarded_control(character) => {}
-            character => output.push(character),
+/// A code body with the differences FTML's Wikidot preprocessing makes
+/// removed: tabs become four spaces, non-breaking spaces become spaces, the
+/// control characters Wikidot discards are dropped, whitespace-only lines
+/// become empty, and runs of empty lines (including leading and trailing
+/// ones) collapse. Two bodies with the same key are the same block.
+fn rendered_code_key(body: &str) -> String {
+    let mut lines = Vec::new();
+    let mut blank_run = false;
+    for line in body.split('\n') {
+        let mut normalized = String::with_capacity(line.len());
+        for character in line.chars() {
+            match character {
+                '\t' => normalized.push_str("    "),
+                '\u{00a0}' => normalized.push(' '),
+                character if is_wikidot_discarded_control(character) => {}
+                character => normalized.push(character),
+            }
+        }
+        if normalized.trim_matches(' ').is_empty() {
+            blank_run = !lines.is_empty();
+        } else {
+            if blank_run {
+                lines.push(String::new());
+            }
+            blank_run = false;
+            lines.push(normalized);
         }
     }
-    output
+    lines.join("\n")
 }
 
 fn is_wikidot_discarded_control(character: char) -> bool {
@@ -198,10 +211,24 @@ mod tests {
     }
 
     #[test]
-    fn rendered_code_body_matches_ftml_wikidot_code_normalization() {
+    fn rendered_code_key_ignores_only_ftml_whitespace_normalization() {
         assert_eq!(
-            rendered_code_body("\ta\u{00a0}b\u{0001}c\u{001b}d"),
-            "    a bc\u{001b}d",
+            rendered_code_key("\n\ta\u{00a0}b\u{0001}c\u{001b}d\n \n\n\n\te\n\n"),
+            "    a bc\u{001b}d\n\n    e",
+        );
+        assert_ne!(rendered_code_key("a b"), rendered_code_key("a  b"));
+        assert_ne!(rendered_code_key("a\nb"), rendered_code_key("a\n\nb"));
+    }
+
+    #[test]
+    fn hosted_code_keeps_source_whitespace_only_lines_and_blank_runs() {
+        // component:acs-animation keeps " " lines and theme:basalt keeps two
+        // blank lines in a row; FTML's block has neither.
+        let source = [raw("a {\n \n\tb: c;\n}\n\n\nd {}")];
+        let rendered = "a {\n\n    b: c;\n}\n\nd {}";
+        assert_eq!(
+            hosted_code_texts(&[rendered], Some(&source), identity),
+            ["a {\n \n\tb: c;\n}\n\n\nd {}\n"],
         );
     }
 }
