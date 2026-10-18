@@ -68,6 +68,24 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
       (source) => source === "https://d2qhngyckgiutd.cloudfront.net"
     )
   )
+  // Theme header logos and decorative images that live Wikidot loads from
+  // these hosts (jakstyle, al-slop, paperstack in the 2026-10-19 theme sweep).
+  for (const origin of [
+    "https://nu-scptheme.github.io",
+    "https://scpwiki.github.io",
+    "https://upload.wikimedia.org"
+  ]) {
+    assert(
+      directives["img-src"]?.some((source) => source === origin),
+      origin
+    )
+  }
+  // Typekit kits (aesthetic-theme, ouroborous-theme) need the kit host for
+  // styles and fonts, and the `p.css` import host for styles only.
+  assert(directives["style-src"]?.includes("https://use.typekit.net"))
+  assert(directives["font-src"]?.includes("https://use.typekit.net"))
+  assert(directives["style-src"]?.includes("https://p.typekit.net"))
+  assert(!directives["font-src"]?.includes("https://p.typekit.net"))
   for (const origin of [
     "https://scp-wiki.wjfiles.localhost",
     "https://scp-jp.wjfiles.localhost"

@@ -1,0 +1,103 @@
+{
+  "schema": "wikijump_local_lab.theme_sweep_external_origins.v1",
+  "captured_at": "2026-10-18T18:51:57.211398+00:00",
+  "method": "Chromium (Playwright, 1366x900) loaded the same public page on https://scp-wiki.wikidot.com and on Standing 70422e5fbd (https://scp-wiki.wikijump.localhost); anonymous read-only GETs. A resource is listed when Standing's console reported a Content Security Policy violation for it while the live page loaded it. Direct GETs record each resource host's own response.",
+  "retained_sweep_results": {
+    "path": "/home/roku/.local/state/wikijump/issue-acceptance-claude-20261019/theme-sweep/results.1366x900.json",
+    "sha256": "f360d0779b378132d4e9dfac7e3f0d08717f1ff637e45d2c9821e21d7bb088b7"
+  },
+  "retained_sweep_results_320": {
+    "path": "/home/roku/.local/state/wikijump/issue-acceptance-claude-20261019/theme-sweep/results.320x800.json",
+    "sha256": "7e63984999e4ff7b020980fc930b4af5926ce0d90c0a4af81b970444a2c10f45"
+  },
+  "harness": {
+    "path": "~/.local/state/wikijump/issue-acceptance-claude-20261019/theme-sweep.mjs",
+    "sha256": "ea67e003342f54092755ee6532b3e2b226ee865af586376056c000cba7ab8dfd"
+  },
+  "observations": [
+    {
+      "resource_kind": "image",
+      "url": "https://nu-scptheme.github.io/Black-Highlighter/img/logo.svg",
+      "blocked_by_directive_on_standing": "img-src",
+      "theme": "theme:jakstyle",
+      "page": "art:spc-4531-1",
+      "live_page_http_status": 200,
+      "live_page_listed_resource_as_failed": false,
+      "direct_get": {
+        "http_status": 200,
+        "content_type": "image/svg+xml",
+        "bytes": 1334
+      }
+    },
+    {
+      "resource_kind": "image",
+      "url": "https://scpwiki.github.io/sigma/images/header-logo.svg",
+      "blocked_by_directive_on_standing": "img-src",
+      "theme": "theme:al-slop",
+      "page": "go-white-boy-go-white-boy-go",
+      "live_page_http_status": 200,
+      "live_page_listed_resource_as_failed": false,
+      "direct_get": {
+        "http_status": 200,
+        "content_type": "image/svg+xml",
+        "bytes": 7532
+      }
+    },
+    {
+      "resource_kind": "image",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/5/59/Empty.png",
+      "blocked_by_directive_on_standing": "img-src",
+      "theme": "theme:paperstack",
+      "page": "scp-023-j",
+      "live_page_http_status": 200,
+      "live_page_listed_resource_as_failed": false,
+      "direct_get": {
+        "http_status": 200,
+        "content_type": "image/png",
+        "bytes": 142
+      }
+    },
+    {
+      "resource_kind": "stylesheet",
+      "url": "https://use.typekit.net/afb2wxe.css",
+      "blocked_by_directive_on_standing": "style-src",
+      "theme": "theme:aesthetic-theme",
+      "page": "art:a-basilisk",
+      "live_page_http_status": 200,
+      "live_page_listed_resource_as_failed": false,
+      "direct_get": {
+        "http_status": 200,
+        "content_type": "text/css;charset=utf-8",
+        "bytes": 25515
+      }
+    },
+    {
+      "resource_kind": "stylesheet",
+      "url": "https://use.typekit.net/mst2dnj.css",
+      "blocked_by_directive_on_standing": "style-src",
+      "theme": "theme:ouroborous-theme",
+      "page": "fragment:djkaktus-s-proposal-iii-21",
+      "live_page_http_status": 200,
+      "live_page_listed_resource_as_failed": false,
+      "direct_get": {
+        "http_status": 200,
+        "content_type": "text/css;charset=utf-8",
+        "bytes": 2720
+      }
+    },
+    {
+      "resource_kind": "stylesheet",
+      "url": "https://p.typekit.net/p.css?s=1&k=mst2dnj&ht=tk&f=27920.27954.28025&a=85898075&app=typekit&e=css",
+      "blocked_by_directive_on_standing": "style-src",
+      "theme": "theme:ouroborous-theme",
+      "page": "fragment:djkaktus-s-proposal-iii-21",
+      "live_page_http_status": 200,
+      "live_page_listed_resource_as_failed": false,
+      "direct_get": {
+        "http_status": 200,
+        "content_type": "text/css",
+        "bytes": 5
+      }
+    }
+  ]
+}
