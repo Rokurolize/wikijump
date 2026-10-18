@@ -24,6 +24,11 @@ mod common;
 use self::common::TestRunner;
 use serde_json::json;
 
+/// Fluent wraps placeables in Unicode bidi isolates; compare the visible text.
+fn without_bidi_isolates(text: &str) -> String {
+    text.replace(['\u{2068}', '\u{2069}'], "")
+}
+
 #[tokio::test]
 async fn basic_error_endpoints_generate_localized_html() {
     let runner = TestRunner::setup().await;
@@ -110,8 +115,30 @@ async fn basic_error_endpoints_generate_localized_html() {
             "reason": "missing",
         }),
     );
-    assert!(text_block.body.contains("code"));
-    assert!(text_block.body.contains("2"));
+    assert!(
+        without_bidi_isolates(&text_block.body)
+            .contains("No code block with index <code>2</code> exists."),
+        "the missing-block message must name the block type: {}",
+        text_block.body,
+    );
+
+    let html_block = run_endpoint!(
+        runner,
+        basic_error_text_block,
+        json!({
+            "locales": ["en"],
+            "site_id": site.site_id,
+            "index": "3",
+            "block_type": "html",
+            "reason": "missing",
+        }),
+    );
+    assert!(
+        without_bidi_isolates(&html_block.body)
+            .contains("No HTML block with index <code>3</code> exists."),
+        "the missing-block message must name the block type: {}",
+        html_block.body,
+    );
 
     let file_root =
         run_endpoint!(runner, basic_error_file_root, json!({"locales": ["en"]}));
