@@ -44,9 +44,8 @@ use crate::services::page::{
     GetDeletedPageOutput, GetPageAnyDetails, GetPageOutput, GetPageReference,
     GetPageReferenceDetails, GetPageScoreOutput, GetPageSlug, MovePage, MovePageOutput,
     PageCreatePermissionOutput, PageDeletePermissionOutput, PageEditPermissionOutput,
-    PageLifecycleIdentity,
-    PageMovePermissionOutput, RestorePage, RestorePageOutput, RollbackPage,
-    SetPageLayout,
+    PageLifecycleIdentity, PageMovePermissionOutput, RestorePage, RestorePageOutput,
+    RollbackPage, SetPageLayout,
 };
 use crate::services::page_draft::{PageDraftIdentity, PageDraftService, SavePageDraft};
 use crate::services::page_query::PageQueryService;
