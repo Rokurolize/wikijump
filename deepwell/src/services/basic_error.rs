@@ -339,7 +339,7 @@ impl BasicErrorService {
         let domain = DomainService::preferred_domain(config, &site);
         args.set("domain", fluent_str!(domain));
         args.set("index", fluent_str!(index));
-        args.set("block_type", fluent_str!(block_type));
+        args.set("type", fluent_str!(block_type));
         args.set("reason", fluent_str!(reason));
 
         let title = ctx
