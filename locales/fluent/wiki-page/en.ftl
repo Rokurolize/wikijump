@@ -22,6 +22,7 @@ wiki-page-action-append = Append
 wiki-page-action-edit-sections = Edit Sections
 wiki-page-action-edit-meta = Edit Meta
 wiki-page-action-watchers = Watchers
+wiki-page-watchers-unimported = The watcher list for this imported page is unavailable because its subscriptions were not imported.
 wiki-page-action-backlinks = Backlinks
 wiki-page-action-lock = Lock Page
 wiki-page-action-rename-move = Move

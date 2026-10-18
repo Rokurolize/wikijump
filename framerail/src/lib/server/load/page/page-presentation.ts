@@ -146,6 +146,7 @@ const foundPageTranslateKeys = (
     "wiki-page-action-edit-sections": {},
     "wiki-page-action-edit-meta": {},
     "wiki-page-action-watchers": {},
+    "wiki-page-watchers-unimported": {},
     "wiki-page-action-backlinks": {},
     "wiki-page-action-lock": {},
     "wiki-page-action-rename-move": {},

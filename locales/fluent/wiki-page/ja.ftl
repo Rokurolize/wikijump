@@ -20,6 +20,7 @@ wiki-page-action-append = 追加
 wiki-page-action-edit-sections = セクションを編集
 wiki-page-action-edit-meta = メタを編集
 wiki-page-action-watchers = ウォッチャー
+wiki-page-watchers-unimported = インポートされたページのウォッチャー一覧は、購読情報がインポートされていないため利用できません。
 wiki-page-action-backlinks = バックリンク
 wiki-page-action-lock = ページロック
 wiki-page-action-rename-move = リネーム

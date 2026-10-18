@@ -311,6 +311,31 @@ test("Japanese catalog defines the revision banner chrome requested for found pa
   assert.match(wikiJa, /^ {2}\.close = 閉じる$/mu)
 })
 
+test("Japanese catalog defines the unimported watchers notice requested for found pages", async () => {
+  // Imported pages carry no subscription graph; an empty roster would
+  // falsely assert zero subscriptions, so the pane shows an unavailable
+  // notice instead (issue #2172).
+  const keys = buildPageTranslateKeys(foundResponse, foundKeysContext)
+  assert.ok(Object.hasOwn(keys, "wiki-page-watchers-unimported"))
+
+  for (const [file, pattern] of [
+    [
+      "en",
+      /^wiki-page-watchers-unimported = The watcher list for this imported page is unavailable because its subscriptions were not imported\.$/mu
+    ],
+    [
+      "ja",
+      /^wiki-page-watchers-unimported = インポートされたページのウォッチャー一覧は、購読情報がインポートされていないため利用できません。$/mu
+    ]
+  ]) {
+    const source = await readFile(
+      new URL(`../../locales/fluent/wiki-page/${file}.ftl`, import.meta.url),
+      "utf8"
+    )
+    assert.match(source, pattern, file)
+  }
+})
+
 test("explicit user locale preferences outrank the site language", () => {
   assert.deepEqual(finalizePreloadData(preloadResponse("ja", ["ko"]), ["en"]).locales, [
     "ko",
