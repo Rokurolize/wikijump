@@ -30,3 +30,9 @@ An intentional behavior that is stricter than an established Wikidot oracle is a
   (gzip bytes SHA-256 `376ae615e4d8e31580b030e57ffc2704acba601b6e461956def6a58bd9c068cc`).
   Offline regression: `framerail/tests/wikidot-foldable-lists.spec.ts`,
   including independent dialogs with no nested list or unique panel ID.
+
+The same `info:style` corpus capture uses a 105 ms opacity/visibility
+transition. A newly unfolded dialog may still have computed hidden visibility
+in the opening event. Framerail focuses its close control after it is revealed;
+closing, replacement or action destruction must cancel pending focus work. The
+foldable browser regression retains this transition and checks cancellation.

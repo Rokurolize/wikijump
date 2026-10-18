@@ -7,6 +7,47 @@ export function wikidotFoldableLists(node) {
   const controller = new AbortController()
   const containers = new WeakSet()
   const originalDisplays = new WeakMap()
+  const pendingFocus = new Map()
+  const cancelFocus = (owner) => pendingFocus.get(owner)?.()
+  const focusRevealedDialog = (owner) => {
+    cancelFocus(owner)
+    const close = owner.querySelector(".close-credits")
+    if (!close) return
+    // A visibility transition can still be hidden in the opening event's
+    // frame. Focus after style resolution, or when its reveal finishes.
+    let frame
+    const cleanup = () => {
+      cancelAnimationFrame(frame)
+      owner.removeEventListener("transitionend", attempt)
+      owner.removeEventListener("animationend", attempt)
+      pendingFocus.delete(owner)
+    }
+    const attempt = () => {
+      if (
+        controller.signal.aborted ||
+        !node.contains(owner) ||
+        !owner.classList.contains("unfolded")
+      ) {
+        cleanup()
+        return
+      }
+      if (
+        getComputedStyle(close).visibility !== "visible" ||
+        close.getClientRects().length === 0
+      ) {
+        return
+      }
+      // Do not take focus away from someone who has already entered the dialog.
+      if (!close.closest(".modalcontainer")?.contains(document.activeElement)) {
+        close.focus()
+      }
+      cleanup()
+    }
+    pendingFocus.set(owner, cleanup)
+    owner.addEventListener("transitionend", attempt)
+    owner.addEventListener("animationend", attempt)
+    frame = requestAnimationFrame(attempt)
+  }
   const initializeFoldableList = (list) => {
     if (originalDisplays.has(list)) return
     let parent = list.parentElement
@@ -91,6 +132,7 @@ export function wikidotFoldableLists(node) {
           let target =
             event.target instanceof Element ? event.target : event.target?.parentElement
           if (!target) return
+          cancelFocus(target)
           const infoAction = target.closest(".creditButton, .fader, .close-credits")
           if (
             target.tagName === "A" &&
@@ -128,7 +170,7 @@ export function wikidotFoldableLists(node) {
             control.setAttribute("aria-expanded", String(folded))
           }
           if (folded) {
-            target.querySelector(".close-credits")?.focus()
+            focusRevealedDialog(target)
           } else if (
             event.target instanceof Element &&
             event.target.closest(".fader, .close-credits")
@@ -168,6 +210,7 @@ export function wikidotFoldableLists(node) {
     if (!owner) return
     if (event.key === "Escape") {
       event.preventDefault()
+      cancelFocus(owner)
       const opener = owner.querySelector(".creditButton")
       const list = owner.querySelector("ul")
       owner.classList.replace("unfolded", "folded")
@@ -206,6 +249,7 @@ export function wikidotFoldableLists(node) {
   return {
     destroy() {
       observer.disconnect()
+      for (const cancel of pendingFocus.values()) cancel()
       controller.abort()
     }
   }
