@@ -227,10 +227,20 @@ impl LiteralRegionIndex {
     /// A dangling raw delimiter on an earlier line cannot hide real syntax or
     /// expose escaped syntax on the next one.
     pub(super) fn new_wikidot_protection(source: &str) -> Self {
+        let mut index = Self::new_wikidot_inline_protection(source);
+        let mut ranges = Vec::new();
+        collect_html_tag_ranges(source, &mut ranges);
+        index.merge_sorted_ranges(ranges);
+        index
+    }
+
+    /// The older inline-HTML protector also formats prose inside authored
+    /// angle brackets. Keep that behavior while excluding actual Wikidot
+    /// literal owners and syntax attribute interiors.
+    pub(super) fn new_wikidot_inline_protection(source: &str) -> Self {
         let mut index = Self::new_wikidot_conditional_syntax(source);
         let mut ranges = Vec::new();
         collect_wikidot_tag_ranges(source, &mut ranges);
-        collect_html_tag_ranges(source, &mut ranges);
         index.merge_sorted_ranges(ranges);
         index
     }

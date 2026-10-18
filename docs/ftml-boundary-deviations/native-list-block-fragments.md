@@ -38,8 +38,10 @@ registry, without recursively interpreting arbitrary marker-shaped text.
 `deepwell/src/services/render/compat/color_and_inline_protection.rs` is part of
 this existing BND-09 debt. It applies the existing FTML-compatible literal index
 to each pass's exact input. Inline raw ownership ends on its physical line;
-code, HTML blocks, raw text and attribute interiors cannot acquire a generated
-inline marker. At the later HTML restoration boundary, visible Wikidot
+code, HTML blocks, raw text and Wikidot attribute interiors cannot acquire a
+generated inline marker. The color protector additionally retains its existing
+raw HTML tag boundary; inline HTML protection keeps formatting angle-bracketed
+prose as before. At the later HTML restoration boundary, visible Wikidot
 delimiter text is ordinary output, so only HTML literal/tag regions protect a
 color marker.
 

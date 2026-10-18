@@ -9613,7 +9613,8 @@
         "kind": "endpoint_behavioral",
         "reference": "deepwell/tests/page.rs#html_block_render_leaves_image_block_include_literal",
         "alternatives": [
-          "deepwell/tests/page.rs#text_block_get_index_requires_parent_page_view_permission"
+          "deepwell/tests/page.rs#text_block_get_index_requires_parent_page_view_permission",
+          "deepwell/tests/page/placeholder_restoration.rs#included_lists_restore_inline_dependencies_without_reinterpreting_html_blocks"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -11292,6 +11293,10 @@
           "deepwell/tests/page/page_modules.rs#backlinks_page_preview_controls_identity_visibility_and_scan_boundaries",
           "deepwell/tests/page/page_modules.rs#nextpreviouspage_preview_without_page_context_renders_live_range_error",
           "deepwell/tests/page/page_modules.rs#nextpreviouspage_title_tie_uses_creation_order_and_previous_stays_inclusive",
+          "deepwell/tests/page/placeholder_restoration.rs#dangling_raw_delimiters_do_not_capture_the_next_lines_color_example",
+          "deepwell/tests/page/placeholder_restoration.rs#included_lists_restore_inline_dependencies_without_reinterpreting_html_blocks",
+          "deepwell/tests/page/placeholder_restoration.rs#optimized_native_lists_restore_protected_inline_formatting",
+          "deepwell/tests/page/placeholder_restoration.rs#selected_content_and_native_lists_restore_runtime_fragments",
           "deepwell/tests/page/theme_previewer.rs#blank_theme_previewer_survives_save_and_include_but_not_preview_or_removal",
           "deepwell/tests/role.rs#ordinary_user_joins_only_the_editable_site_then_creates_a_page"
         ],

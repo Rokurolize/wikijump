@@ -140,7 +140,9 @@ fn replace_active_inline_matches(
         .replace_all(source, |captures: &regex::Captures<'_>| {
             let matched = captures.get(0).expect("inline match should exist");
             if literals
-                .get_or_insert_with(|| LiteralRegionIndex::new_wikidot_protection(source))
+                .get_or_insert_with(|| {
+                    LiteralRegionIndex::new_wikidot_inline_protection(source)
+                })
                 .contains(matched.start())
             {
                 matched.as_str().to_owned()
