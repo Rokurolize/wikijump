@@ -50,8 +50,8 @@
       },
       {
         "path": "deepwell/tests/page.rs",
-        "git_blob": "c9167575b8236edf6765464b77e5e9627b9e1941",
-        "sha256": "f2b21286da2b2ec104127f75d86e141a0ca2c76d1ced3c8a5442b3c281b50242"
+        "git_blob": "be4c2d837e1bdcd86ce3890a988bd5b7c2b2bd19",
+        "sha256": "9e9ae69b95601dbc9294aac8d8442103f1e6fab8e6113216e82e7cdf0c407d51"
       },
       {
         "path": "wws/Cargo.lock",
