@@ -15380,6 +15380,74 @@ async fn html_block_render_leaves_image_block_include_literal() {
 }
 
 #[tokio::test]
+async fn hosted_code_blocks_serve_the_source_body_like_wikidot_local_code() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let slug = "fixture-hosted-code-source-body";
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(slug)),
+    );
+    // Wikidot's /local--code/ drops the newlines around the body, ends it
+    // with one newline and keeps tabs, which the rendered <pre> expands.
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": concat!(
+                "[[code type=\"css\"]]\n",
+                "\n",
+                ".a {\n",
+                "    \tfloat: none;\n",
+                "}\n",
+                "\n",
+                "[[/code]]\n",
+                "\n",
+                "[[code]]\n",
+                "plain\n",
+                "[[/code]]\n",
+            ),
+            "title": "Fixture Hosted Code Source Body",
+            "alt_title": null,
+            "slug": slug,
+            "layout": "wikidot",
+            "revision_comments": "create hosted code fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    for (index, expected) in [(1, ".a {\n    \tfloat: none;\n}\n"), (2, "plain\n")] {
+        let block = run_endpoint!(
+            runner,
+            text_block_get_index,
+            json!({
+                "site_id": site_id,
+                "page_id": page.page_id,
+                "block_type": "code",
+                "index": index,
+            }),
+        )
+        .expect("code block should be stored");
+        let response = runner
+            .context()
+            .s3_tblocks_bucket()
+            .get_object(&block.s3_filename)
+            .await
+            .expect("code block object should be readable");
+        let code = String::from_utf8(response.into())
+            .expect("code block object should be UTF-8");
+        assert_eq!(code, expected, "hosted code block {index}");
+    }
+}
+
+#[tokio::test]
 async fn non_scp_page_render_does_not_hardcode_scp_image_block_include() {
     let runner = TestRunner::setup().await;
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
