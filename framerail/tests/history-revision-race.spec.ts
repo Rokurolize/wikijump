@@ -119,9 +119,7 @@ test("a superseded revision view cannot replace the selected revision", async ({
   const staleRevisionResponse = page.waitForResponse(
     (response) =>
       new URL(response.url()).search === "?/revision" &&
-      (response.request().postData() ?? "").includes(
-        `"revisionNumber":${REV_X.revision}`
-      )
+      (response.request().postData() ?? "").includes(`"revisionNumber":${REV_X.revision}`)
   )
   await heldRevisionForX[0].fulfill({
     status: 200,
