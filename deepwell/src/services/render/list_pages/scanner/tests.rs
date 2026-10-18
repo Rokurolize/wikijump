@@ -545,6 +545,32 @@ fn count_pages_preflight_accepts_regex_valid_mixed_whitespace() {
 }
 
 #[test]
+fn count_pages_shapes_need_the_module_name_in_any_case() {
+    assert!(list_pages_body_has_standalone_count_pages_opening(
+        "%%title%%\n[[module COUNTPAGES category=\"_default\"]]",
+    ));
+    assert!(
+        list_pages_body_inline_count_pages_legacy_tail(
+            "[[module countPages category=\"_default\"]]%%total%%[[/module]]",
+        )
+        .is_some()
+    );
+    for body in [
+        "%%title%% %%rating%%",
+        "[[module Count Pages]]\n[[/module]]",
+    ] {
+        assert!(
+            !list_pages_body_has_standalone_count_pages_opening(body),
+            "{body}"
+        );
+        assert!(
+            list_pages_body_inline_count_pages_legacy_tail(body).is_none(),
+            "{body}"
+        );
+    }
+}
+
+#[test]
 fn standalone_countpages_detector_matches_frozen_ownership_shapes() {
     // Frozen Wikidot observation: a standalone nested opening is treated as
     // the empty-row shape, while a same-line module body takes the separate

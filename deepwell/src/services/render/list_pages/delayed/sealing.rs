@@ -206,19 +206,16 @@ pub(super) fn seal_list_pages_delayed_output_with_modes(
         ),
         None => bound.render_html(page_info, &list_settings),
     };
-    let mut sealed_body = sealed.body().to_owned();
-    for fragments in &delayed_html_fragments {
-        sealed_body = fragments.restore(&sealed_body);
-    }
+    let mut sealed_body =
+        CompatHtmlFragments::restore_in_order(&delayed_html_fragments, sealed.body());
     let html_blocks = sealed
         .html_blocks()
         .iter()
         .map(|html| {
-            let mut html = html.to_string();
-            for fragments in &delayed_html_fragments {
-                html = fragments.restore(&html);
-            }
-            compat_html.restore(&html)
+            compat_html.restore(&CompatHtmlFragments::restore_in_order(
+                &delayed_html_fragments,
+                html,
+            ))
         })
         .collect::<Vec<_>>();
     sealed_body = RenderService::rewrite_wikidot_html_block_iframe_urls(

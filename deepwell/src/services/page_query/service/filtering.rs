@@ -20,6 +20,8 @@ use super::{
     parse_static_wikidot_data_form_values, score_comparison_operator,
     static_wikidot_data_form_matches, text,
 };
+use sea_query::extension::postgres::PgBinOper;
+use sea_query::{ExprTrait, Func};
 
 pub(super) fn wikidot_name_pattern(value: &str) -> String {
     let mut pattern = String::with_capacity(value.len());
@@ -38,6 +40,35 @@ pub(super) fn wikidot_name_pattern(value: &str) -> String {
         }
     }
     pattern
+}
+
+/// The slug condition for a `wikidot_name_pattern` pattern.
+///
+/// A pattern without wildcards names one page. Stored slugs are normalized to
+/// lowercase, so matching it case-insensitively is the indexed
+/// `slug = lower(name)`, while an `ILIKE` scans every page of the site for
+/// each name.
+pub(super) fn wikidot_name_condition(pattern: &str) -> SimpleExpr {
+    let slug = Expr::col((page::Entity, page::Column::Slug));
+    match like_pattern_literal(pattern) {
+        Some(name) => slug.eq(Func::lower(Expr::val(name))),
+        None => slug.binary(PgBinOper::ILike, Expr::val(pattern)),
+    }
+}
+
+/// The only string a `LIKE` pattern (backslash escapes) matches, if it has no
+/// wildcard.
+fn like_pattern_literal(pattern: &str) -> Option<String> {
+    let mut literal = String::with_capacity(pattern.len());
+    let mut characters = pattern.chars();
+    while let Some(character) = characters.next() {
+        match character {
+            '\\' => literal.push(characters.next()?),
+            '%' | '_' => return None,
+            _ => literal.push(character),
+        }
+    }
+    Some(literal)
 }
 
 pub(super) fn category_local_wikidot_name_patterns(

@@ -121,6 +121,22 @@ pub(super) async fn page_parent_condition(
     Ok(Some(condition))
 }
 
+/// The pages whose first revision one of the bound users made.
+///
+/// Uncorrelated, so Postgres evaluates it once: the correlated form
+/// `EXISTS (... WHERE pr.page_id = page.page_id ...)` probed every page of
+/// the site for its first revision, about 0.3 s for SCP Wiki, and an author
+/// page runs dozens of these queries. `page_revision.page_id` is never NULL,
+/// so `NOT IN` keeps the `NOT EXISTS` meaning.
+fn first_revision_author_page_ids_sql(placeholders: &str) -> String {
+    format!(
+        "SELECT pr.page_id FROM page_revision pr WHERE pr.user_id IN ({placeholders}) \
+         AND pr.revision_id = (SELECT pr2.revision_id FROM page_revision pr2 \
+         WHERE pr2.page_id = pr.page_id \
+         ORDER BY pr2.revision_number ASC, pr2.revision_id ASC LIMIT 1)"
+    )
+}
+
 pub(super) fn author_condition(author: AuthorSelector<'_>) -> Option<Condition> {
     if matches!(author, AuthorSelector::All) {
         return None;
@@ -148,7 +164,8 @@ pub(super) fn author_condition(author: AuthorSelector<'_>) -> Option<Condition> 
                 let placeholders = postgres_bind_placeholders(user_ids.len());
                 author_condition = author_condition.add(Expr::cust_with_values(
                     format!(
-                        "EXISTS (SELECT 1 FROM page_revision pr WHERE pr.page_id = page.page_id AND pr.user_id IN ({placeholders}) AND pr.revision_id = (SELECT pr2.revision_id FROM page_revision pr2 WHERE pr2.page_id = page.page_id ORDER BY pr2.revision_number ASC, pr2.revision_id ASC LIMIT 1))"
+                        "page.page_id IN ({})",
+                        first_revision_author_page_ids_sql(&placeholders)
                     ),
                     user_ids.iter().copied(),
                 ));
@@ -193,7 +210,8 @@ pub(super) fn author_condition(author: AuthorSelector<'_>) -> Option<Condition> 
                 let placeholders = postgres_bind_placeholders(user_ids.len());
                 condition = condition.add(Expr::cust_with_values(
                     format!(
-                        "NOT EXISTS (SELECT 1 FROM page_revision pr WHERE pr.page_id = page.page_id AND pr.user_id IN ({placeholders}) AND pr.revision_id = (SELECT pr2.revision_id FROM page_revision pr2 WHERE pr2.page_id = page.page_id ORDER BY pr2.revision_number ASC, pr2.revision_id ASC LIMIT 1))"
+                        "page.page_id NOT IN ({})",
+                        first_revision_author_page_ids_sql(&placeholders)
                     ),
                     user_ids.iter().copied(),
                 ));

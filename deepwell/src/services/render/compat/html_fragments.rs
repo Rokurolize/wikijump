@@ -208,6 +208,77 @@ impl CompatHtmlFragments {
         format!("{}{index}X", self.namespace)
     }
 
+    /// `restore` with each of `sets` in turn, in one pass.
+    ///
+    /// A ListPages block keeps one set per row, and restoring them one after
+    /// another rescanned the whole sealed block for every row: a block of 255
+    /// table rows scanned its HTML 255 times. Rows are rendered in order and
+    /// each row's markers stay inside it, so the sets are merged into one
+    /// (their markers renamed into one namespace) and restored once.
+    pub(in crate::services::render) fn restore_in_order(
+        sets: &[Self],
+        text: &str,
+    ) -> String {
+        match sets {
+            [] => text.to_owned(),
+            [set] => set.restore(text),
+            sets => {
+                let (merged, text) = Self::merge(sets, text);
+                merged.restore(&text)
+            }
+        }
+    }
+
+    /// One set holding every fragment of `sets`, and `text` with their markers
+    /// renamed to it. Markers of other sets are left alone.
+    fn merge(sets: &[Self], text: &str) -> (Self, String) {
+        let mut merged = Self::new(text);
+        let mut offsets = std::collections::HashMap::with_capacity(sets.len());
+        for set in sets {
+            offsets.insert(
+                set.namespace.as_str(),
+                (merged.fragments.len(), set.fragments.len()),
+            );
+            merged.fragments.extend(set.fragments.iter().cloned());
+            merged
+                .exact_fragments
+                .extend(set.exact_fragments.iter().cloned());
+        }
+
+        let mut output = String::with_capacity(text.len());
+        let mut cursor = 0;
+        while let Some(offset) = text[cursor..].find(COMPAT_HTML_MARKER_PREFIX) {
+            let start = cursor + offset;
+            let renamed = text
+                .get(start..start + merged.namespace.len())
+                .and_then(|namespace| offsets.get(namespace))
+                .and_then(|&(base, len)| {
+                    let suffix = &text[start + merged.namespace.len()..];
+                    let digits = suffix.bytes().take_while(u8::is_ascii_digit).count();
+                    if digits == 0 || suffix.as_bytes().get(digits) != Some(&b'X') {
+                        return None;
+                    }
+                    let index = suffix[..digits].parse::<usize>().ok()?;
+                    (index < len)
+                        .then_some((base + index, merged.namespace.len() + digits + 1))
+                });
+            output.push_str(&text[cursor..start]);
+            match renamed {
+                Some((index, marker_len)) => {
+                    write!(&mut output, "{}{index}X", merged.namespace)
+                        .expect("writing to a String cannot fail");
+                    cursor = start + marker_len;
+                }
+                None => {
+                    output.push_str(COMPAT_HTML_MARKER_PREFIX);
+                    cursor = start + COMPAT_HTML_MARKER_PREFIX.len();
+                }
+            }
+        }
+        output.push_str(&text[cursor..]);
+        (merged, output)
+    }
+
     pub(in crate::services::render) fn restore(&self, text: &str) -> String {
         let text = self.restore_exact_fragments(text);
         let text = self.restore_block_marker_paragraphs(&text);
@@ -1157,6 +1228,65 @@ mod tests {
         assert_eq!(
             fragments.restore(&format!("after<p>{trimming}</p>")),
             "after</div>",
+        );
+    }
+
+    fn restore_one_by_one(sets: &[CompatHtmlFragments], text: &str) -> String {
+        sets.iter()
+            .fold(text.to_owned(), |text, set| set.restore(&text))
+    }
+
+    #[test]
+    fn restoring_row_sets_in_one_pass_matches_restoring_them_one_by_one() {
+        let mut outer = CompatHtmlFragments::new("");
+        let foreign = outer.push_html("<em>outer</em>".to_owned());
+        let mut sets = Vec::new();
+        let mut table = String::from("<table class=\"wiki-content-table\">");
+        let mut blocks = String::new();
+        for row in 0..40 {
+            let mut set = CompatHtmlFragments::new("");
+            let title = set.push_html(format!("<a href=\"/page-{row}\">Page {row}</a>"));
+            let author = set.push_plain(&format!("author {row}"));
+            let block = set.push_block_html(format!("<div class=\"row-{row}\">x</div>"));
+            let trimmed = set
+                .push_block_html_trimming_preceding_space(format!("<div>t{row}</div>"));
+            write!(&mut table, "<tr><td>{title}</td><td>{author}</td></tr>").unwrap();
+            write!(
+                &mut blocks,
+                "<p>{block}</p>\n<p>text {foreign}</p> <p>{trimmed}</p>\n"
+            )
+            .unwrap();
+            sets.push(set);
+        }
+        table.push_str("</table>");
+
+        for (text, has_foreign) in [(table, false), (blocks, true)] {
+            let merged = CompatHtmlFragments::restore_in_order(&sets, &text);
+            assert_eq!(merged, restore_one_by_one(&sets, &text));
+            assert_eq!(
+                merged.contains(&foreign),
+                has_foreign,
+                "a foreign set's marker stays"
+            );
+            assert_eq!(
+                merged.matches(COMPAT_HTML_MARKER_PREFIX).count(),
+                usize::from(has_foreign) * 40
+            );
+        }
+    }
+
+    #[test]
+    fn row_sets_sharing_a_paragraph_restore_as_they_do_one_by_one() {
+        let mut first = CompatHtmlFragments::new("");
+        let mut second = CompatHtmlFragments::new("");
+        let first_block = first.push_block_html("<div>first</div>".to_owned());
+        let second_block = second.push_block_html("<div>second</div>".to_owned());
+        let sets = [first, second];
+        let text = format!("<p>{first_block}<br>\n{second_block}</p>");
+
+        assert_eq!(
+            CompatHtmlFragments::restore_in_order(&sets, &text),
+            restore_one_by_one(&sets, &text),
         );
     }
 
