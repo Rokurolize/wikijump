@@ -66,6 +66,10 @@ impl SessionService {
             .lock_exclusive()
     }
 
+    fn mfa_attempt_user_query(user_id: i64) -> sea_orm::Select<User> {
+        User::find_by_id(user_id).lock_exclusive()
+    }
+
     /// Creates a new session with the given parameters.
     ///
     /// # Returns
@@ -213,7 +217,10 @@ impl SessionService {
             return Ok(None);
         };
 
-        let user = User::find_by_id(session.user_id)
+        // MFA attempts can arrive on distinct restricted sessions. Lock the
+        // user row as well as the session row so recovery-code verification
+        // and consumption serialize across every session for this account.
+        let user = Self::mfa_attempt_user_query(session.user_id)
             .one(ctx.transaction())
             .await
             .or_raise(make_error)?
@@ -591,6 +598,16 @@ mod tests {
 
         assert!(statement.contains("mfa_failed_attempts"));
         assert!(statement.contains("< 5"));
+        assert!(statement.ends_with("FOR UPDATE"));
+    }
+
+    #[test]
+    fn mfa_attempt_user_lookup_is_row_locked_across_sessions() {
+        let statement = SessionService::mfa_attempt_user_query(42)
+            .build(DbBackend::Postgres)
+            .to_string();
+
+        assert!(statement.contains("user_id"));
         assert!(statement.ends_with("FOR UPDATE"));
     }
 }

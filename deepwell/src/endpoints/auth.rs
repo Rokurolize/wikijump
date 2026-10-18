@@ -68,7 +68,8 @@ pub async fn auth_login(
     // * success
     // * invalid authentication
     // * server error
-    let result = AuthenticationService::auth_password(ctx, authenticate).await;
+    let result =
+        AuthenticationService::auth_password(ctx, authenticate, ip_address).await;
     let AuthenticateUserOutput { needs_mfa, user_id } = match result {
         Ok(output) => output,
         Err(error) => match error.error_type {

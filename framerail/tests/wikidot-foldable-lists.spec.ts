@@ -36,9 +36,7 @@ test("native foldable menus preserve independent controls, replacement initializ
   await expect(page.locator(".creditRate > li")).toHaveClass("unfolded")
   await page.getByText("Navigation", { exact: true }).click()
   expect(
-    await page.evaluate(
-      () => (window as Window & { navigationPrevented: boolean }).navigationPrevented
-    )
+    await page.evaluate(() => Reflect.get(window, "navigationPrevented") as boolean)
   ).toBe(false)
   await expect(page.getByText("Navigation", { exact: true }).locator("..")).toHaveClass(
     "folded"
@@ -59,7 +57,7 @@ test("native foldable menus preserve independent controls, replacement initializ
   await page.getByText("Replacement", { exact: true }).click()
   await expect(replacement).toHaveClass("unfolded")
   await page.evaluate(() =>
-    (window as Window & { foldableAction: { destroy(): void } }).foldableAction.destroy()
+    (Reflect.get(window, "foldableAction") as { destroy(): void }).destroy()
   )
   await page.locator(".creditButton a").click()
   await expect(page.locator(".creditRate > li")).toHaveClass("unfolded")

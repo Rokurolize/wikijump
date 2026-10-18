@@ -186,3 +186,34 @@ test("NewPage save-and-go creates an empty page and navigates to it", async ({
     })
   )
 })
+
+test("NewPage save-and-go does not navigate off-origin for an unsafe goTo value", async ({
+  page
+}) => {
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/newpage-helper")
+  await waitForNewPageHelper(page)
+
+  await page.route("**/ajax-module-connector.php", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ status: "ok", goToUrl: "//attacker.example/path" })
+    })
+  )
+  await page.route("https://attacker.example/**", (route) => route.abort())
+  const originalPageUrl = page.url()
+  const unexpectedExternalRequest = page
+    .waitForRequest("https://attacker.example/**", { timeout: 1000 })
+    .catch(() => null)
+  const ajaxResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      new URL(response.url()).pathname === "/ajax-module-connector.php"
+  )
+
+  await page.locator("#autosave-newpage input[type='submit']").click()
+  await ajaxResponse
+  expect(await unexpectedExternalRequest).toBeNull()
+  await expect(page).toHaveURL(originalPageUrl)
+})

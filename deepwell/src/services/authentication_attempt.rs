@@ -1,0 +1,124 @@
+/*
+ * services/authentication_attempt.rs
+ *
+ * Persistent, shared throttles for authentication attempts.
+ */
+
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::services::ServiceContext;
+use sea_orm::{ConnectionTrait, FromQueryResult, Statement, Value};
+use sha2::{Digest, Sha256};
+
+#[derive(Debug)]
+pub struct AuthenticationAttemptService;
+
+impl AuthenticationAttemptService {
+    /// Reserve a slot in an atomic database-backed fixed-window bucket.
+    /// Reservations occur before expensive password/MFA verification, so
+    /// concurrent requests and multiple Deepwell workers share the same cap.
+    pub async fn reserve(
+        ctx: &ServiceContext<'_>,
+        bucket_key: &str,
+        max_attempts: i64,
+        window_seconds: i64,
+    ) -> Result<bool> {
+        #[derive(Debug, FromQueryResult)]
+        struct CounterRow {
+            attempts: i64,
+        }
+
+        let transaction = ctx.transaction();
+        transaction
+            .execute_unprepared(
+                "DELETE FROM authentication_attempt WHERE window_started_at < NOW() - INTERVAL '1 day'",
+            )
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to prune expired authentication attempt counters",
+                    ErrorType::DatabaseQuery,
+                )
+            })?;
+
+        let statement = Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            r#"
+INSERT INTO authentication_attempt (bucket_key, window_started_at, attempts)
+VALUES ($1, NOW(), 1)
+ON CONFLICT (bucket_key)
+DO UPDATE SET
+    window_started_at = CASE
+        WHEN authentication_attempt.window_started_at <= NOW() - ($2::bigint * INTERVAL '1 second')
+            THEN NOW()
+        ELSE authentication_attempt.window_started_at
+    END,
+    attempts = CASE
+        WHEN authentication_attempt.window_started_at <= NOW() - ($2::bigint * INTERVAL '1 second')
+            THEN 1
+        ELSE LEAST(authentication_attempt.attempts + 1, $3::bigint + 1)
+    END
+RETURNING attempts
+            "#,
+            [
+                Value::from(bucket_key.to_owned()),
+                Value::from(window_seconds),
+                Value::from(max_attempts),
+            ],
+        );
+        let row = CounterRow::find_by_statement(statement)
+            .one(transaction)
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to update authentication attempt counter",
+                    ErrorType::DatabaseQuery,
+                )
+            })?
+            .ok_or_else(|| {
+                Error::new(
+                    "authentication attempt counter returned no value",
+                    ErrorType::DatabaseQuery,
+                )
+            })?;
+
+        Ok(row.attempts <= max_attempts)
+    }
+
+    pub async fn clear(ctx: &ServiceContext<'_>, bucket_keys: &[String]) -> Result<()> {
+        if bucket_keys.is_empty() {
+            return Ok(());
+        }
+        let transaction = ctx.transaction();
+        for bucket_key in bucket_keys {
+            let statement = Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                "DELETE FROM authentication_attempt WHERE bucket_key = $1",
+                [Value::from(bucket_key.clone())],
+            );
+            transaction.execute_raw(statement).await.or_raise(|| {
+                Error::new(
+                    "failed to clear authentication attempt counters",
+                    ErrorType::DatabaseQuery,
+                )
+            })?;
+        }
+        Ok(())
+    }
+
+    /// Use a stable pseudonym rather than persisting source IP text in the key.
+    /// The bucket is still short-lived operational data, not anonymous telemetry.
+    pub fn login_ip_bucket(ip_address: &str) -> String {
+        format!(
+            "login:ip:{}",
+            hex::encode(Sha256::digest(ip_address.as_bytes()))
+        )
+    }
+
+    pub fn login_user_bucket(user_id: i64) -> String {
+        format!("login:user:{user_id}")
+    }
+
+    pub fn mfa_user_bucket(user_id: i64) -> String {
+        format!("mfa:user:{user_id}")
+    }
+}

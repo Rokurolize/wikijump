@@ -263,9 +263,9 @@ impl<'txn> ServiceContext<'txn> {
     /// Requests that the current transaction be committed before returning an
     /// expected authentication rejection to the caller.
     ///
-    /// This is intentionally limited to the terminal MFA rejection path, where
-    /// committing preserves the restricted session's failed-attempt counter.
-    /// Internal failures must leave this unset so the normal rollback path is used.
+    /// Authentication endpoints use this only after persisting expected
+    /// password or MFA rejection accounting. Internal failures must leave this
+    /// unset so the normal rollback path is used.
     pub(crate) fn commit_expected_authentication_rejection(&self) {
         self.commit_authentication_rejection
             .store(true, Ordering::Relaxed);
