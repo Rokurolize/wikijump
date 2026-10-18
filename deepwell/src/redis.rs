@@ -36,6 +36,21 @@ const RSMQ_REALTIME: bool = false;
 const LIFT_EXPIRED_PUNISHMENTS_SEED_VERSION: &str = "v1";
 const RECURRING_JOB_SEED_LOCK_SECONDS: u64 = 300;
 
+/// Valkey answers within microseconds on an idle host, but a saturated one
+/// (a render-ahead pass, the validation barrier) can hold a reply past the
+/// client library's 500 ms default. That failed renders outright, while a
+/// render that is merely slow misses its own deadline (2 s in production),
+/// which callers such as render-ahead retry. A reply this late means Valkey
+/// is unreachable, not busy.
+pub const REDIS_RESPONSE_TIMEOUT: Duration = Duration::from_secs(5);
+pub const REDIS_CONNECTION_TIMEOUT: Duration = Duration::from_secs(5);
+
+fn connection_config() -> redis::AsyncConnectionConfig {
+    redis::AsyncConnectionConfig::new()
+        .set_connection_timeout(Some(REDIS_CONNECTION_TIMEOUT))
+        .set_response_timeout(Some(REDIS_RESPONSE_TIMEOUT))
+}
+
 const STARTUP_RETRY_INITIAL_DELAY: Duration = Duration::from_millis(25);
 const STARTUP_RETRY_MAX_DELAY: Duration = Duration::from_millis(500);
 const STARTUP_RETRY_DEADLINE: Duration = Duration::from_secs(15);
@@ -175,7 +190,9 @@ async fn establish_startup_connection(
 ) -> std::result::Result<(MultiplexedConnection, Rsmq, bool), StartupAttemptError> {
     retry_startup_attempt(
         || async {
-            let connection = client.get_multiplexed_async_connection().await?;
+            let connection = client
+                .get_multiplexed_async_connection_with_config(&connection_config())
+                .await?;
             let mut rsmq = Rsmq::new_with_connection(
                 MultiplexedConnection::clone(&connection),
                 RSMQ_REALTIME,
@@ -547,5 +564,13 @@ mod tests {
         assert!(result.is_err());
         assert!(attempts.get() > 1);
         assert!(clock.elapsed.get() >= STARTUP_RETRY_DEADLINE);
+    }
+
+    #[test]
+    fn valkey_replies_outlast_a_busy_host_and_the_render_deadline() {
+        // A busy reply must leave a slow render to its deadline (2 s in
+        // production configs) instead of failing it at the 500 ms default.
+        assert!(REDIS_RESPONSE_TIMEOUT > Duration::from_secs(2));
+        assert!(REDIS_CONNECTION_TIMEOUT > Duration::from_secs(2));
     }
 }
