@@ -38,7 +38,11 @@ const WIKIDOT_LEGACY_IMAGE_SOURCES = ["https://d3g0gp89917ko0.cloudfront.net"]
 /** @type {CspSources} */
 const WIKIDOT_LEGACY_SCRIPT_SOURCES = []
 /** @type {CspSources} */
-const LOCAL_SCP_FILE_IMAGE_SOURCES = [
+// These read-only local mirrors are already trusted image sources. Included
+// components also retain their source mirror's stylesheet/font authority
+// (e.g. info:start imports scp-wiki's info:style on the local authoring site).
+// Keep this exact local allowlist; authored imports cannot grant new origins.
+const LOCAL_SCP_FILE_ASSET_SOURCES = [
   "https://scp-wiki.wjfiles.localhost",
   "https://scp-jp.wjfiles.localhost"
 ]
@@ -83,7 +87,7 @@ function imageSources() {
   ]
 
   if (deploymentEnvironment === "local") {
-    sources.push(...LOCAL_SCP_FILE_IMAGE_SOURCES)
+    sources.push(...LOCAL_SCP_FILE_ASSET_SOURCES)
     sources.push(...WIKIDOT_LEGACY_IMAGE_SOURCES)
   }
 
@@ -93,12 +97,22 @@ function imageSources() {
 /** @returns {CspSources} */
 function styleSources() {
   /** @type {CspSources} */
-  return ["self", "unsafe-inline", CURRENT_SITE_FILE_ORIGIN, ...WIKIDOT_STYLE_SOURCES]
+  const sources = [
+    "self",
+    "unsafe-inline",
+    CURRENT_SITE_FILE_ORIGIN,
+    ...WIKIDOT_STYLE_SOURCES
+  ]
+  if (deploymentEnvironment === "local") sources.push(...LOCAL_SCP_FILE_ASSET_SOURCES)
+  return sources
 }
 
 /** @returns {CspSources} */
 function fontSources() {
-  return ["self", "data:", ...WIKIDOT_FONT_SOURCES]
+  /** @type {CspSources} */
+  const sources = ["self", "data:", ...WIKIDOT_FONT_SOURCES]
+  if (deploymentEnvironment === "local") sources.push(...LOCAL_SCP_FILE_ASSET_SOURCES)
+  return sources
 }
 
 /** @returns {CspSources} */
