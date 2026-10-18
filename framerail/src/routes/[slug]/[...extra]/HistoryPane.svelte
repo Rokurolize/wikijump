@@ -117,7 +117,13 @@
   }
 
   async function fetchRevisionDiff() {
-    if (fromRevisionNumber === undefined || toRevisionNumber === undefined) return
+    if (
+      fromRevisionNumber === undefined ||
+      toRevisionNumber === undefined ||
+      fromRevisionNumber === toRevisionNumber
+    ) {
+      return
+    }
 
     const fromRevision = revisionMap.get(fromRevisionNumber)?.page_revision_number
     const toRevision = revisionMap.get(toRevisionNumber)?.page_revision_number
@@ -229,6 +235,7 @@
   let comparePairValid = $derived(
     fromRevisionNumber !== undefined &&
       toRevisionNumber !== undefined &&
+      fromRevisionNumber !== toRevisionNumber &&
       comparableTimelineNumbers.includes(fromRevisionNumber) &&
       comparableTimelineNumbers.includes(toRevisionNumber)
   )
