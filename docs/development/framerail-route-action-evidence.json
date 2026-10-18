@@ -1992,6 +1992,30 @@
         }
       ],
       "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/?/createPermission",
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/createPermission",
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
     }
   ]
 }
