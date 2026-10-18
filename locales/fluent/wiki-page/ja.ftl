@@ -1,7 +1,14 @@
+wiki-page-category = カテゴリ: { $category }
+
 wiki-page-module-new-page-name = 新しいページ名
 wiki-page-module-search-all-query = すべてのWikiを検索
 wiki-page-append-content = 追記するWikiテキスト
 wiki-page-revision-view-unavailable = 過去のページ内容を表示できません
+
+wiki-page-revision-banner =
+  .title = 過去のリビジョン
+  .page = ページ
+  .close = 閉じる
 
 wiki-page-file-upload =
   .select = ファイルを選択:
@@ -147,3 +154,15 @@ wiki-page-lock = ページロック
   .history-overridden = 上書き済み
   .history-none = このページのロック履歴はありません。
   .remove = 解除
+
+### Blueprint page fallback strings
+
+wiki-page-missing = アクセスしようとしたページ //{ $slug }// は存在しません。
+
+wiki-page-private = + プライベートコンテンツ
+
+    このエリアはプライベートであり、アクセス権がありません。アクセスが必要だと思われる場合は、サイト管理者にお問い合わせください。
+
+wiki-page-banned = + アクセスが禁止されています
+
+    このサイトから禁止されており、サイト設定では禁止されたユーザーのページ閲覧は許可されていません。
