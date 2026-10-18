@@ -56,7 +56,7 @@ export function isPageErrorData(value: unknown): value is PageErrorData {
     typeof value.options.no_redirect !== "boolean" ||
     typeof value.options.no_render !== "boolean" ||
     typeof value.options.debug !== "boolean" ||
-    typeof value.options.renderer !== "boolean" ||
+    typeof value.options.rerender !== "boolean" ||
     typeof value.options.comments !== "boolean" ||
     typeof value.options.history !== "boolean" ||
     typeof value.options.data !== "string"
