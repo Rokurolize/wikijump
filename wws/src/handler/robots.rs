@@ -30,6 +30,11 @@ use axum::response::Response;
 
 const ROBOTS_TXT_ALLOW_ALL: &str = "User-agent: *\nAllow: /\n";
 const ROBOTS_TXT_UNAVAILABLE: &str = "User-agent: *\nDisallow: /\n";
+// Crawler policy for sites with no public sitemap inventory: anonymous
+// viewers cannot view the site, so forbid crawling and advertise no sitemap
+// index. Same bytes as the degraded-service body, but a deliberate 200
+// policy for a private/non-indexable site, not an error signal.
+const ROBOTS_TXT_PRIVATE: &str = "User-agent: *\nDisallow: /\n";
 
 pub async fn handle_robots_txt(
     State(state): State<ServerState>,
@@ -44,6 +49,22 @@ pub async fn handle_robots_txt(
         return robots_response(ROBOTS_TXT_ALLOW_ALL, StatusCode::OK);
     }
     let site_id = get_site_id(&headers);
+    // Share the sitemap routes' anonymous-visibility authority: when DEEPWELL
+    // reports no public inventory for this site, crawlers get a 200 policy
+    // that forbids indexing and names no sitemap, so private/non-indexable
+    // sites cannot leak page URLs through crawler discovery. RPC failures
+    // stay fail-closed (503 + Disallow) rather than inviting crawlers in.
+    match state.deepwell.get_sitemap_presence(site_id).await {
+        Ok(false) => return robots_response(ROBOTS_TXT_PRIVATE, StatusCode::OK),
+        Ok(true) => {}
+        Err(error) => {
+            error!(site_id, "could not load sitemap presence: {error}");
+            return robots_response(
+                ROBOTS_TXT_UNAVAILABLE,
+                StatusCode::SERVICE_UNAVAILABLE,
+            );
+        }
+    }
     match state.deepwell.get_site_domain(site_id).await {
         Ok(domain) if valid_site_domain(&domain) => robots_response(
             &format!("{ROBOTS_TXT_ALLOW_ALL}Sitemap: https://{domain}/sitemap.xml\n"),
@@ -105,6 +126,24 @@ mod tests {
 
         let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
         assert_eq!(body.as_ref(), b"User-agent: *\nAllow: /\n");
+    }
+
+    #[tokio::test]
+    async fn robots_txt_private_site_denies_indexing_without_sitemap() {
+        let response = robots_response(ROBOTS_TXT_PRIVATE, StatusCode::OK);
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers()[CONTENT_TYPE],
+            "text/plain; charset=utf-8",
+        );
+
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        assert_eq!(body.as_ref(), b"User-agent: *\nDisallow: /\n");
+        assert!(
+            !body.windows(8).any(|window| window == b"Sitemap:"),
+            "a private site must not advertise a sitemap index",
+        );
     }
 
     #[tokio::test]
