@@ -39,6 +39,7 @@
     IOS_ICON_ROUTE_PREFIX,
     faviconDeclaration,
     hasIosIcons,
+    iconSiteForHead,
     windowsTileDeclaration
   } from "$lib/site-icons"
   import { installWikidotCategories } from "$lib/wikidot/wikidot-categories.js"
@@ -173,15 +174,10 @@
   const builtInThemeHtml = $derived(builtInThemeHeadHtml(effectiveTheme))
   const wikidotSiteTitle = $derived(resolveWikidotSiteTitle(viewData))
   const iconSite = $derived(
-    viewData?.site
-      ? {
-          ...viewData.site,
-          from_wikidot: viewData.site.from_wikidot || isImportedWikidotLayout
-        }
-      : null
+    iconSiteForHead(viewData?.site ?? null, isImportedWikidotLayout)
   )
   const siteFavicon = $derived(faviconDeclaration(iconSite))
-  const siteHasIosIcons = $derived(hasIosIcons(viewData?.site ?? null))
+  const siteHasIosIcons = $derived(hasIosIcons(iconSite))
   const siteWindowsTile = $derived(windowsTileDeclaration(iconSite))
   const wikidotSiteTagline = $derived(resolveWikidotSiteTagline(viewData))
   const wikidotSessionUserName = $derived(resolveWikidotSessionUserName(viewData))
