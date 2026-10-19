@@ -461,7 +461,7 @@ test("Add to All Pages sends the distinct site-wide metadata payload", async ({
   await clickAddNewMetaTag(page)
   await page.locator('input[name="metaName"]').fill("robots")
   await page.locator('input[name="metaContent"]').fill("noindex")
-  await page.locator('button:has-text("Add to All Pages")').click()
+  await page.getByRole("link", { name: "Add to All Pages", exact: true }).click()
 
   await expect(page.locator("#edit-meta-newtag-form")).toHaveCount(0)
   expect(mutations).toEqual(["saveMetaTag:true"])

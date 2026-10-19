@@ -59,7 +59,9 @@ export const handlePageLookupRpc = ({ rpcRequest, request, response }) => {
   } else if (
     rpcRequest.method === "page_edit_permission" &&
     hasExactKeys(rpcRequest.params, []) &&
-    request.headers["x-deepwell-session-token"] === "fixture-session-token" &&
+    ["fixture-session-token", "fixture-owner-session-token"].includes(
+      request.headers["x-deepwell-session-token"]
+    ) &&
     request.headers["x-deepwell-site-id"] === "6000005" &&
     typeof request.headers["x-deepwell-page"] === "string" &&
     pages[request.headers["x-deepwell-page"]]
@@ -190,7 +192,7 @@ export const handlePageLookupRpc = ({ rpcRequest, request, response }) => {
       rpcRequest.params.page_id === HISTORY_NAVIGATION_PAGE_ID) &&
     rpcRequest.params.revision_direction === "before" &&
     rpcRequest.params.revision_number === -1 &&
-    rpcRequest.params.limit === 20
+    (rpcRequest.params.limit === 20 || rpcRequest.params.limit === 1000)
   ) {
     result = [
       {

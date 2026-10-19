@@ -58,7 +58,7 @@ export const handleFileReadRpc = ({ rpcRequest, request, port }) => {
     hasExactKeys(rpcRequest.params, ["limit", "page_id", "site_id"]) &&
     rpcRequest.params.site_id === 6000005 &&
     (rpcRequest.params.page_id === 3000345 || rpcRequest.params.page_id === 3000173) &&
-    rpcRequest.params.limit === 20
+    (rpcRequest.params.limit === 20 || rpcRequest.params.limit === 1000)
   ) {
     result = { revision_count: 0, revisions: [] }
   } else if (
