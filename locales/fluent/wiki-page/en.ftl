@@ -29,6 +29,22 @@ wiki-page-action-rename-move = Move
 
 wiki-page-revision-history = Page revision history
 
+wiki-page-revision-filter-show = Show page changes:
+wiki-page-revision-filter-all = ALL
+wiki-page-revision-filter-source = source changes
+wiki-page-revision-filter-title = title changes
+wiki-page-revision-filter-move = page name changes
+wiki-page-revision-filter-tags = tags changes
+wiki-page-revision-filter-meta = metadata changes
+wiki-page-revision-filter-files = files changes
+wiki-page-revision-perpage = Revisions per page:
+wiki-page-revision-update-list = Update list
+wiki-page-revision-compare-versions = Compare versions
+wiki-page-revision-pager-page = page
+wiki-page-revision-pager-of = of
+wiki-page-revision-pager-previous = previous
+wiki-page-revision-pager-next = next
+
 wiki-page-revision-diff = Compare revisions
   .from = From revision
   .to = To revision

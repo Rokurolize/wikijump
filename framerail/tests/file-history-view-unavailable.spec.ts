@@ -50,32 +50,38 @@ test("file history without a page snapshot exposes no inert View Version action"
         status: 200,
         contentType: "application/json",
         body: successBody({
-          res: [
-            {
-              history_kind: "file",
-              history_row_id: "file-2151",
-              timeline_number: 31,
-              page_revision_number: null,
-              history_action_revision_id: null,
-              revision_id: 9002151,
-              revision_type: "regular",
-              created_at: "2026-04-21T00:00:00Z",
-              revision_number: 0,
-              page_id: 3000345,
-              site_id: 6000005,
-              user_id: 123,
-              author: null,
-              changes: ["files"],
-              comments: 'Uploaded file "ESTAB_COMMS.png"',
-              wikitext: null,
-              compiled_body_html: null,
-              compiled_body_styles: null,
-              compiled_top_bar_html: null,
-              compiled_side_bar_html: null,
-              compiled_at: null,
-              compiled_generator: null
-            }
-          ]
+          res: {
+            entries: [
+              {
+                history_kind: "file",
+                history_row_id: "file-2151",
+                timeline_number: 31,
+                page_revision_number: null,
+                history_action_revision_id: null,
+                revision_id: 9002151,
+                revision_type: "regular",
+                created_at: "2026-04-21T00:00:00Z",
+                revision_number: 0,
+                page_id: 3000345,
+                site_id: 6000005,
+                user_id: 123,
+                author: null,
+                changes: ["files"],
+                comments: 'Uploaded file "ESTAB_COMMS.png"',
+                wikitext: null,
+                compiled_body_html: null,
+                compiled_body_styles: null,
+                compiled_top_bar_html: null,
+                compiled_side_bar_html: null,
+                compiled_at: null,
+                compiled_generator: null
+              }
+            ],
+            total: 1,
+            page: 1,
+            perPage: 20,
+            totalPages: 1
+          }
         })
       })
     }

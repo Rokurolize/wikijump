@@ -11500,7 +11500,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "98a73ea590ad44283b518ccfd820cef2c0965bb54e1b3558ccf3e3c3bc52f9f9"
+      "source_input_set_sha256": "1e14470fe975fe6809cc8a3dd50016a21c32fc803ebbb56348e5388df3b380d2"
     },
     "ftml": {
       "commit": "55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221",
@@ -11757,7 +11757,7 @@
       },
       {
         "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",
-        "sha256": "03bf8790bbd004ed6094ee9c5fa043bb1241fabebbb1881f420c7363b4c2f3ee"
+        "sha256": "6dbbb85a91b21863e3dd45f8c0d3691bd37525a7c03ab96c5e590bb2dfac5517"
       },
       {
         "path": "framerail/src/lib/server/load/page/page.ts",
@@ -38912,7 +38912,7 @@
         },
         {
           "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",
-          "sha256": "03bf8790bbd004ed6094ee9c5fa043bb1241fabebbb1881f420c7363b4c2f3ee"
+          "sha256": "6dbbb85a91b21863e3dd45f8c0d3691bd37525a7c03ab96c5e590bb2dfac5517"
         }
       ],
       "specification_owner": "wikijump.registry:missing-page-control",
