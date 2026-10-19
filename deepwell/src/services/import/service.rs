@@ -27,11 +27,16 @@
 //! It is for limited use during initial setup only.
 
 use super::structs::{
-    ImportPage, ImportPageOutput, ImportPageRevision, ImportPageRevisionOutput,
-    ImportSite, ImportSiteOutput, ImportUser, ImportUserOutput, ImportedUserType,
+    ImportFile, ImportFileDelete, ImportFileDeleteOutput, ImportFileOutput, ImportPage,
+    ImportPageFilesVerify, ImportPageFilesVerifyOutput, ImportPageOutput,
+    ImportPageRevision, ImportPageRevisionOutput, ImportSite, ImportSiteOutput,
+    ImportUser, ImportUserOutput, ImportedUserType,
 };
 use crate::constants::SYSTEM_USER_ID;
-use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
+use crate::hash::{BLOB_HASH_LENGTH, slice_to_blob_hash};
+use crate::models::file::{self, Entity as File, Model as FileModel};
+use crate::models::file_revision::{self, Entity as FileRevision};
 use crate::models::page::{self, Entity as Page};
 use crate::models::page_category::Model as PageCategoryModel;
 use crate::models::page_revision::{self, Entity as PageRevision};
@@ -40,13 +45,18 @@ use crate::models::wikidot_user::{self, Entity as WikidotUser};
 use crate::services::ServiceContext;
 use crate::services::audit::{AuditEvent, AuditService};
 use crate::services::blob::{BlobService, FinalizeBlobUploadOutput};
+use crate::services::file::normalize_and_validate_file_name;
+use crate::services::file_revision::{
+    CreateFileRevision, CreateFileRevisionBody, CreateFirstFileRevision,
+    CreateTombstoneFileRevision, FileBlob, FileRevisionService,
+};
 use crate::services::page_lock::{CreatePageLockInput, PageLockService};
 use crate::services::page_revision::{
     CreateFirstPageRevision, CreateFirstPageRevisionOutput, CreatePageRevision,
     CreatePageRevisionBody, PageRevisionService,
 };
-use crate::services::{CategoryService, UserService};
-use crate::types::{Maybe, PageId, PageLockType, Reference};
+use crate::services::{CategoryService, PageService, UserService};
+use crate::types::{FileRevisionType, Maybe, PageId, PageLockType, Reference};
 use crate::utils::{get_category_name, now};
 use ftml::layout::Layout;
 use sea_orm::DatabaseTransaction;
@@ -56,6 +66,7 @@ use sea_orm::{
 };
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, UpdateResult};
 use sea_query::Expr;
+use time::OffsetDateTime;
 
 const SYNC_PAGE_REVISION_SEQUENCE_SQL: &str = "SELECT setval('page_revision_revision_id_seq', GREATEST(COALESCE((SELECT MAX(revision_id) FROM page_revision), 1), CASE WHEN seq.is_called THEN seq.last_value ELSE 1 END), COALESCE((SELECT MAX(revision_id) FROM page_revision), 0) > 0 OR seq.is_called) FROM page_revision_revision_id_seq AS seq";
 
@@ -72,6 +83,39 @@ async fn sync_page_revision_sequence(txn: &DatabaseTransaction) -> Result<()> {
             ErrorType::DatabaseImport,
         )
     })
+}
+
+/// Records the source attachment time on an imported file revision.
+///
+/// Revision creation stamps `now()`; like page revision import, file import
+/// overwrites it with the source time so provenance reflects Wikidot, not the
+/// materialization run.
+async fn set_file_revision_created_at(
+    ctx: &ServiceContext<'_>,
+    revision_id: i64,
+    created_at: OffsetDateTime,
+) -> Result<()> {
+    let txn = ctx.transaction();
+    let UpdateResult { rows_affected, .. } =
+        FileRevision::update_many()
+            .col_expr(file_revision::Column::CreatedAt, Expr::value(created_at))
+            .filter(file_revision::Column::RevisionId.eq(revision_id))
+            .exec(txn)
+            .await
+            .or_raise(|| {
+                Error::new(
+                    format!(
+                        "failed to record source time on file revision ID {revision_id}",
+                    ),
+                    ErrorType::DatabaseImport,
+                )
+            })?;
+
+    assert_eq!(
+        rows_affected, 1,
+        "More than one row updated in file_revision after revision creation",
+    );
+    Ok(())
 }
 
 #[derive(Debug)]
@@ -672,8 +716,580 @@ impl ImportService {
 
     // TODO page_vote
 
-    // TODO file
     // TODO forum
+
+    /// Imports one source attachment onto a page.
+    ///
+    /// This is the single path by which source attachments enter the
+    /// canonical inventory: the blob bytes are content-addressed into storage
+    /// and the file row plus its first (or next) file revision are created
+    /// from that same snapshot. The declared source `size` and `s3_hash` must
+    /// describe `data` exactly; any disagreement fails the whole import so a
+    /// relation can never point at different bytes than the source recorded.
+    ///
+    /// Re-importing an identical snapshot is a no-op returning the existing
+    /// rows. Re-importing changed bytes for the same name appends one
+    /// replacement revision on the same file row. Names held by local-origin
+    /// files are refused rather than claimed.
+    pub async fn add_file(
+        ctx: &ServiceContext<'_>,
+        ImportFile {
+            site_id,
+            page_id,
+            mut name,
+            data,
+            size: expected_size,
+            s3_hash: expected_hash_hex,
+            user_id,
+            created_at,
+            revision_comments,
+            ip_address,
+        }: ImportFile,
+    ) -> Result<ImportFileOutput> {
+        info!("Importing file '{name}' on page ID {page_id} on site ID {site_id}",);
+
+        let txn = ctx.transaction();
+
+        normalize_and_validate_file_name(&mut name).or_raise(|| {
+            Error::new(
+                format!(
+                    "failed to import file '{name}' on page ID {page_id} in site ID {site_id}: invalid file name",
+                ),
+                ErrorType::DatabaseImport,
+            )
+        })?;
+
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to import file '{name}' on page ID {page_id} in site ID {site_id}",
+                ),
+                ErrorType::DatabaseImport,
+            )
+        };
+
+        // The parent page must already be imported. This also scopes the
+        // page to the site the caller named.
+        PageService::get(ctx, site_id, Reference::Id(page_id))
+            .await
+            .or_raise(make_error)?;
+
+        // Decode the source-observed digest before touching storage, so a
+        // malformed snapshot cannot stage bytes.
+        let expected_hash_bytes =
+            hex::decode(expected_hash_hex.trim()).or_raise(make_error)?;
+        if expected_hash_bytes.len() != BLOB_HASH_LENGTH {
+            bail!(Error::new(
+                format!(
+                    "failed to import file '{name}' on page ID {page_id} in site ID {site_id}: source digest has {} bytes, expected {}",
+                    expected_hash_bytes.len(),
+                    BLOB_HASH_LENGTH,
+                ),
+                ErrorType::DatabaseImport,
+            ));
+        }
+        let expected_hash = slice_to_blob_hash(&expected_hash_bytes);
+
+        // Materialize the blob from the same snapshot. Content addressing
+        // derives the stored identity from these bytes alone.
+        let FinalizeBlobUploadOutput {
+            s3_hash,
+            mime,
+            size,
+            content_type,
+            created: blob_created,
+        } = BlobService::direct_upload(ctx, data)
+            .await
+            .or_raise(make_error)?;
+
+        // Atomicity: the recorded metadata must describe the staged bytes.
+        if size != expected_size || s3_hash != expected_hash {
+            bail!(Error::new(
+                format!(
+                    "failed to import file '{name}' on page ID {page_id} in site ID {site_id}: materialized bytes (size {size}) disagree with source metadata (size {expected_size})",
+                ),
+                ErrorType::DatabaseImport,
+            ));
+        }
+
+        // Reconcile against any active row holding this source identity.
+        // Soft-deleted rows do not block: like regular creation, a name freed
+        // by deletion may be taken again.
+        let existing = File::find()
+            .filter(
+                Condition::all()
+                    .add(file::Column::SiteId.eq(site_id))
+                    .add(file::Column::PageId.eq(page_id))
+                    .add(file::Column::Name.eq(&name))
+                    .add(file::Column::DeletedAt.is_null()),
+            )
+            .one(txn)
+            .await
+            .or_raise(make_error)?;
+
+        if let Some(FileModel {
+            file_id,
+            from_wikidot,
+            ..
+        }) = existing
+        {
+            // A local-origin file owns this name. Claiming it as a source
+            // attachment would falsely attribute local scaffolding to Wikidot.
+            if !from_wikidot {
+                bail!(Error::new(
+                    format!(
+                        "failed to import file '{name}' on page ID {page_id} in site ID {site_id}: name is held by local-origin file ID {file_id}",
+                    ),
+                    ErrorType::DatabaseImport,
+                ));
+            }
+
+            let latest = FileRevisionService::get_latest(ctx, site_id, page_id, file_id)
+                .await
+                .or_raise(make_error)?;
+
+            // Identical snapshot: converge without new rows.
+            if latest.s3_hash == s3_hash.to_vec()
+                && latest.size == size
+                && latest.mime == mime
+            {
+                return Ok(ImportFileOutput {
+                    site_id,
+                    page_id,
+                    file_id,
+                    file_revision_id: latest.revision_id,
+                    file_revision_number: latest.revision_number,
+                });
+            }
+
+            // Replacement bytes: one new revision on the same row.
+            let output = FileRevisionService::create(
+                ctx,
+                CreateFileRevision {
+                    site_id,
+                    page_id,
+                    file_id,
+                    user_id,
+                    revision_comments,
+                    revision_type: FileRevisionType::Regular,
+                    body: CreateFileRevisionBody {
+                        name: Maybe::Unset,
+                        blob: Maybe::Set(FileBlob {
+                            s3_hash,
+                            size,
+                            mime,
+                            content_type: Some(content_type),
+                            blob_created,
+                        }),
+                        ..Default::default()
+                    },
+                },
+                latest,
+            )
+            .await
+            .or_raise(make_error)?;
+
+            match output {
+                Some(output) => {
+                    set_file_revision_created_at(
+                        ctx,
+                        output.file_revision_id,
+                        created_at,
+                    )
+                    .await
+                    .or_raise(make_error)?;
+
+                    AuditService::log(
+                        ctx,
+                        ip_address,
+                        AuditEvent::ImportFile {
+                            site_id,
+                            page_id,
+                            file_id,
+                            file_name: &name,
+                        },
+                    )
+                    .await
+                    .or_raise(make_error)?;
+
+                    Ok(ImportFileOutput {
+                        site_id,
+                        page_id,
+                        file_id,
+                        file_revision_id: output.file_revision_id,
+                        file_revision_number: output.file_revision_number,
+                    })
+                }
+                // The blob changed, so a revision must have been recorded.
+                // Converging here would hide the replacement.
+                None => bail!(make_error()),
+            }
+        } else {
+            let file = file::ActiveModel {
+                name: Set(name.clone()),
+                site_id: Set(site_id),
+                page_id: Set(page_id),
+                from_wikidot: Set(true),
+                created_at: Set(created_at),
+                ..Default::default()
+            };
+            let FileModel { file_id, .. } =
+                file.insert(txn).await.or_raise(make_error)?;
+
+            let output = FileRevisionService::create_first(
+                ctx,
+                CreateFirstFileRevision {
+                    site_id,
+                    page_id,
+                    file_id,
+                    user_id,
+                    name: name.clone(),
+                    s3_hash,
+                    size,
+                    mime,
+                    content_type: Some(content_type),
+                    blob_created,
+                    revision_comments,
+                },
+            )
+            .await
+            .or_raise(make_error)?;
+
+            set_file_revision_created_at(ctx, output.file_revision_id, created_at)
+                .await
+                .or_raise(make_error)?;
+
+            AuditService::log(
+                ctx,
+                ip_address,
+                AuditEvent::ImportFile {
+                    site_id,
+                    page_id,
+                    file_id,
+                    file_name: &name,
+                },
+            )
+            .await
+            .or_raise(make_error)?;
+
+            Ok(ImportFileOutput {
+                site_id,
+                page_id,
+                file_id,
+                file_revision_id: output.file_revision_id,
+                file_revision_number: 0,
+            })
+        }
+    }
+
+    /// Imports a source attachment deletion onto a page.
+    ///
+    /// Only rows previously imported as source attachments are tombstoned, so
+    /// explicitly allowed local-origin files survive re-import. Deleting an
+    /// already-absent source name converges without creating new rows.
+    pub async fn delete_file(
+        ctx: &ServiceContext<'_>,
+        ImportFileDelete {
+            site_id,
+            page_id,
+            mut name,
+            user_id,
+            deleted_at,
+            revision_comments,
+            ip_address,
+        }: ImportFileDelete,
+    ) -> Result<ImportFileDeleteOutput> {
+        info!(
+            "Importing deletion of file '{name}' on page ID {page_id} on site ID {site_id}",
+        );
+
+        let txn = ctx.transaction();
+
+        normalize_and_validate_file_name(&mut name).or_raise(|| {
+            Error::new(
+                format!(
+                    "failed to import deletion of file '{name}' on page ID {page_id} in site ID {site_id}: invalid file name",
+                ),
+                ErrorType::DatabaseImport,
+            )
+        })?;
+
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to import deletion of file '{name}' on page ID {page_id} in site ID {site_id}",
+                ),
+                ErrorType::DatabaseImport,
+            )
+        };
+
+        PageService::get(ctx, site_id, Reference::Id(page_id))
+            .await
+            .or_raise(make_error)?;
+
+        let active = File::find()
+            .filter(
+                Condition::all()
+                    .add(file::Column::SiteId.eq(site_id))
+                    .add(file::Column::PageId.eq(page_id))
+                    .add(file::Column::Name.eq(&name))
+                    .add(file::Column::DeletedAt.is_null()),
+            )
+            .one(txn)
+            .await
+            .or_raise(make_error)?;
+
+        let FileModel {
+            file_id,
+            from_wikidot,
+            ..
+        } = match active {
+            Some(file) => file,
+            // No active row: converge against the tombstone left by an
+            // earlier import, if this name was ever a source attachment.
+            None => {
+                let tombstoned = File::find()
+                    .filter(
+                        Condition::all()
+                            .add(file::Column::SiteId.eq(site_id))
+                            .add(file::Column::PageId.eq(page_id))
+                            .add(file::Column::Name.eq(&name))
+                            .add(file::Column::DeletedAt.is_not_null())
+                            .add(file::Column::FromWikidot.eq(true)),
+                    )
+                    .one(txn)
+                    .await
+                    .or_raise(make_error)?
+                    .ok_or_raise(make_error)?;
+
+                let latest = FileRevisionService::get_latest(
+                    ctx,
+                    site_id,
+                    page_id,
+                    tombstoned.file_id,
+                )
+                .await
+                .or_raise(make_error)?;
+
+                return Ok(ImportFileDeleteOutput {
+                    site_id,
+                    page_id,
+                    file_id: tombstoned.file_id,
+                    file_revision_id: latest.revision_id,
+                    file_revision_number: latest.revision_number,
+                });
+            }
+        };
+
+        // Local-origin files are explicitly allowed additions, never source
+        // deletions. Refuse rather than erasing them.
+        if !from_wikidot {
+            bail!(Error::new(
+                format!(
+                    "failed to import deletion of file '{name}' on page ID {page_id} in site ID {site_id}: file ID {file_id} is local-origin",
+                ),
+                ErrorType::DatabaseImport,
+            ));
+        }
+
+        let latest = FileRevisionService::get_latest(ctx, site_id, page_id, file_id)
+            .await
+            .or_raise(make_error)?;
+
+        let output = FileRevisionService::create_tombstone(
+            ctx,
+            CreateTombstoneFileRevision {
+                site_id,
+                page_id,
+                file_id,
+                user_id,
+                revision_comments,
+                erase_s3_hash: false,
+            },
+            latest,
+        )
+        .await
+        .or_raise(make_error)?;
+
+        set_file_revision_created_at(ctx, output.file_revision_id, deleted_at)
+            .await
+            .or_raise(make_error)?;
+
+        let model = file::ActiveModel {
+            file_id: Set(file_id),
+            deleted_at: Set(Some(deleted_at)),
+            ..Default::default()
+        };
+        model.update(txn).await.or_raise(make_error)?;
+
+        AuditService::log(
+            ctx,
+            ip_address,
+            AuditEvent::ImportFileDelete {
+                site_id,
+                page_id,
+                file_id,
+                file_name: &name,
+            },
+        )
+        .await
+        .or_raise(make_error)?;
+
+        Ok(ImportFileDeleteOutput {
+            site_id,
+            page_id,
+            file_id,
+            file_revision_id: output.file_revision_id,
+            file_revision_number: output.file_revision_number,
+        })
+    }
+
+    /// Verifies one page's canonical file inventory against a source snapshot.
+    ///
+    /// Every expected attachment must resolve to an active source-origin file
+    /// row whose latest revision matches the expected size and digest, and
+    /// whose blob is materialized in storage. No other source-origin rows may
+    /// exist. Local-origin files are explicitly allowed additions and are
+    /// ignored, so source and local provenance stay distinguishable.
+    ///
+    /// Any split-brain state — a staged blob without its relation, a relation
+    /// without its blob, metadata disagreeing with either side, or an
+    /// extraneous source relation — fails instead of certifying the page.
+    pub async fn verify_page_files(
+        ctx: &ServiceContext<'_>,
+        ImportPageFilesVerify {
+            site_id,
+            page_id,
+            expected,
+        }: ImportPageFilesVerify,
+    ) -> Result<ImportPageFilesVerifyOutput> {
+        info!(
+            "Verifying {} expected file(s) on page ID {page_id} on site ID {site_id}",
+            expected.len(),
+        );
+
+        let txn = ctx.transaction();
+        let make_error = |detail: String| {
+            Error::new(
+                format!(
+                    "imported file inventory on page ID {page_id} in site ID {site_id} diverges from source: {detail}",
+                ),
+                ErrorType::DatabaseImport,
+            )
+        };
+
+        PageService::get(ctx, site_id, Reference::Id(page_id))
+            .await
+            .or_raise(|| make_error(str!("page is missing")))?;
+
+        for expectation in &expected {
+            let mut name = expectation.name.clone();
+            normalize_and_validate_file_name(&mut name)
+                .or_raise(|| make_error(format!("invalid file name '{}'", name)))?;
+
+            let expected_hash_bytes =
+                hex::decode(expectation.s3_hash.trim()).or_raise(|| {
+                    make_error(format!("invalid source digest for file '{name}'"))
+                })?;
+            if expected_hash_bytes.len() != BLOB_HASH_LENGTH {
+                bail!(make_error(format!(
+                    "source digest for file '{name}' has {} bytes, expected {}",
+                    expected_hash_bytes.len(),
+                    BLOB_HASH_LENGTH,
+                )));
+            }
+            let expected_hash = slice_to_blob_hash(&expected_hash_bytes);
+
+            let file = File::find()
+                .filter(
+                    Condition::all()
+                        .add(file::Column::SiteId.eq(site_id))
+                        .add(file::Column::PageId.eq(page_id))
+                        .add(file::Column::Name.eq(&name))
+                        .add(file::Column::DeletedAt.is_null()),
+                )
+                .one(txn)
+                .await
+                .or_raise(|| {
+                    make_error(format!(
+                        "source attachment '{name}' has no canonical file relation"
+                    ))
+                })?
+                .ok_or_raise(|| {
+                    make_error(format!(
+                        "source attachment '{name}' has no canonical file relation"
+                    ))
+                })?;
+
+            if !file.from_wikidot {
+                bail!(make_error(format!(
+                    "source attachment '{name}' resolves to local-origin file ID {}",
+                    file.file_id,
+                )));
+            }
+
+            let latest =
+                FileRevisionService::get_latest(ctx, site_id, page_id, file.file_id)
+                    .await
+                    .or_raise(|| {
+                        make_error(format!(
+                            "source attachment '{name}' has no file revision"
+                        ))
+                    })?;
+
+            if latest.size != expectation.size || latest.s3_hash != expected_hash.to_vec()
+            {
+                bail!(make_error(format!(
+                    "source attachment '{name}' revision metadata (size {}) disagrees with source snapshot (size {})",
+                    latest.size, expectation.size,
+                )));
+            }
+
+            let materialized = BlobService::blob_exists(ctx, &latest.s3_hash)
+                .await
+                .or_raise(|| {
+                    make_error(format!(
+                        "cannot prove storage for source attachment '{name}'"
+                    ))
+                })?;
+            if !materialized {
+                bail!(make_error(format!(
+                    "source attachment '{name}' relation exists but its blob is absent from storage",
+                )));
+            }
+        }
+
+        // No other source-origin rows may exist. Local-origin rows are
+        // allowed additions and stay out of this comparison.
+        let source_rows = File::find()
+            .filter(
+                Condition::all()
+                    .add(file::Column::SiteId.eq(site_id))
+                    .add(file::Column::PageId.eq(page_id))
+                    .add(file::Column::DeletedAt.is_null())
+                    .add(file::Column::FromWikidot.eq(true)),
+            )
+            .all(txn)
+            .await
+            .or_raise(|| make_error(str!("cannot list canonical file relations")))?;
+
+        for row in &source_rows {
+            if !expected.iter().any(|item| item.name == row.name) {
+                bail!(make_error(format!(
+                    "extraneous source attachment '{}' is not in the source snapshot",
+                    row.name,
+                )));
+            }
+        }
+
+        Ok(ImportPageFilesVerifyOutput {
+            site_id,
+            page_id,
+            verified_files: expected.len(),
+        })
+    }
+
+    // TODO page_vote
 }
 
 #[cfg(test)]
