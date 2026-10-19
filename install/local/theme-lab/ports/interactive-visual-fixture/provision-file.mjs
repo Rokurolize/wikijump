@@ -6,7 +6,6 @@ import {fileURLToPath} from 'node:url';
 import {fixtureRpcTarget} from '../../src/fixture-rpc-target.mjs';
 import {requireDeepwellRuntimeIdentity} from '../../src/deepwell-runtime-identity.mjs';
 import {requireRuntimeSourceSha} from '../../src/runtime-source-identity.mjs';
-import {isSiteLocalWikijumpHostname} from '../../src/local-wikijump-host.mjs';
 
 const dir=path.dirname(fileURLToPath(import.meta.url));
 const require=createRequire(path.resolve(dir,'../../../../../framerail/package.json'));
@@ -22,7 +21,7 @@ if(taskProject){
  requireRuntimeSourceSha(contract.expected_runtime_source_sha256,'attachment run contract');
  requireDeepwellRuntimeIdentity(contract.expected_backend_runtime_identity,'attachment run contract');
  const url=new URL(contract.target_site.origin);
- if(url.protocol!=='https:'||!isSiteLocalWikijumpHostname(url.hostname,'scpaiueouiuiuiui')||
+ if(url.protocol!=='https:'||url.hostname!=='scpaiueouiuiuiui.wikijump.localhost'||
     !url.port||url.port==='18443'||url.pathname!=='/'||url.search||url.hash)
   throw new Error('attachment provisioning requires a private task-owned contract HTTPS origin');
 }else if(process.env.THEME_LAB_FIXTURE_SCOPE!=='shared-development'||contractArg){
