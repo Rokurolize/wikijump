@@ -2534,6 +2534,17 @@ impl RenderService {
                     );
                     html_output.body =
                         protection.compat_html().restore(&html_output.body);
+                    // Native list runs are compat HTML fragments rendered before
+                    // FTML, so their color and inline markers only reach the body
+                    // here (`* [[[SCP-9044]]] - A ##blue|House##` on scp-series-10).
+                    html_output.body = Self::restore_protected_wikidot_color_spans(
+                        std::mem::take(&mut html_output.body),
+                        protection.color_spans(),
+                    );
+                    html_output.body = Self::restore_protected_wikidot_inline_html(
+                        std::mem::take(&mut html_output.body),
+                        protection.inline_html(),
+                    );
                     if render_page_info.page.as_ref() == "_ajax-module-connector" {
                         html_output.body = protect_ajax_module_literal_markers(
                             std::mem::take(&mut html_output.body),

@@ -114,10 +114,25 @@ pub(in crate::services::render) fn protect_wikidot_color_spans(
             ) else {
                 return captures[0].to_owned();
             };
-            // Only the span tags are protected. The body stays wikitext, so FTML
-            // renders the inline syntax Wikidot allows inside a color span, such
-            // as footnotes, `^^`, `,,`, `{{ }}`, `@@ @@` and `[[size]]`
-            // (wikidot-color-span-nested-preview-20261019.json).
+            let body = &captures["body"];
+            // A raw marker in the body could pair with one beyond the span's
+            // close, and FTML does not split long `@` runs the way Wikidot does
+            // (`##transparent|@@@@@@@@@@##` redactions). Such bodies keep the
+            // pre-rendered literal form.
+            if body.contains("@@") {
+                let html = render_wikidot_color_span_html(&color, body);
+                let marker = protected_spans.fragments.push_html(html.clone());
+                #[cfg(test)]
+                protected_spans.spans.push(ProtectedWikidotColorSpan {
+                    marker: marker.clone(),
+                    html,
+                });
+                return marker;
+            }
+            // Otherwise only the span tags are protected. The body stays
+            // wikitext, so FTML renders the inline syntax Wikidot allows inside
+            // a color span, such as footnotes, `^^`, `,,`, `{{ }}` and
+            // `[[size]]` (wikidot-color-span-nested-preview-20261019.json).
             let open_tag = format!(
                 r#"<span style="color: {}">"#,
                 escape_list_pages_html_attr(&color),
@@ -127,9 +142,9 @@ pub(in crate::services::render) fn protect_wikidot_color_spans(
             #[cfg(test)]
             protected_spans.spans.push(ProtectedWikidotColorSpan {
                 marker: open.clone(),
-                html: format!("{open_tag}{}</span>", &captures["body"]),
+                html: format!("{open_tag}{body}</span>"),
             });
-            format!("{open}{}{close}", &captures["body"])
+            format!("{open}{body}{close}")
         })
         .into_owned();
     *wikitext = protected;

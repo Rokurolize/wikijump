@@ -1,8 +1,9 @@
 {
   "schema": "wikijump_local_lab.wikidot_color_span_nested_preview_observations.v1",
-  "description": "Anonymous, non-mutating Wikidot edit/PagePreviewModule observations on scp-wiki (2026-10-19) of inline syntax nested inside ##color|...## spans (issue #2567). Each record is a sealed wikijump_syntax_differential.wikidot_reference.v1 record (source, provenance, raw_html, sha256). The color-span-*, footnote-bold-no-color and superscript-plain records were captured with the at-raw set.",
+  "description": "Anonymous, non-mutating Wikidot edit/PagePreviewModule observations on scp-wiki (2026-10-19) of inline syntax nested inside ##color|...## spans (issue #2567). Each record is a sealed wikijump_syntax_differential.wikidot_reference.v1 record (source, provenance, raw_html, sha256). The color-span-*, footnote-bold-no-color and superscript-plain records were captured with the at-raw set. Records from wikidot-color-span-raw-preview/ cover raw markers inside color spans.",
   "rules_established": [
-    "A ##color|...## span body is ordinary inline wikitext: footnotes, ^^sup^^, ,,sub,,, //em//, --strike--, {{mono}}, @@raw@@, [[size]], [[span]], single and triple links all render inside <span style=\"color: ...\">."
+    "A ##color|...## span body is ordinary inline wikitext: footnotes, ^^sup^^, ,,sub,,, //em//, --strike--, {{mono}}, @@raw@@, [[size]], [[span]], single and triple links all render inside <span style=\"color: ...\">.",
+    "Raw `@@` inside a color span body pairs per Wikidot's raw rules, including with markers past the span close; Wikijump keeps the legacy literal rendering for bodies containing `@@` (records scp-102-vn-185, scp-9698-*, time-reprise-*, scp-6276-265, color-odd-raw-then-later-raw)."
   ],
   "source_sealed_directory": "~/.local/state/wikijump/issue-acceptance-claude-20261019/wikidot-color-span-nested-preview/",
   "records": {
@@ -455,6 +456,206 @@
       },
       "raw_html": "\n\n<p>a <sup>up</sup> b</p>\n<p>z</p>\n",
       "raw_html_sha256": "14b19ca9d1f7a1e1b65f298dfed7a998d57e1a175fd85595b412081aca785c63"
+    },
+    "color-odd-raw-then-later-raw": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-color-raw-color-odd-raw-then-later-raw",
+        "source": "a ##red|x @@ y## b @@ c\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "Color span nesting observation"
+      },
+      "source_sha256": "6dac7a7f3fe89f3c92507aad28e68dd4e51789a3f3a88c1fdf212b66e148d863",
+      "captured_at": "2026-10-19T01:46:44.653052+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n<p>a ##red|x <span style=\"white-space: pre-wrap;\">&#32;y##&#32;b&#32;</span> c</p>\n<p>z</p>\n",
+      "raw_html_sha256": "056af6e71a642e01b917db773a49561a303e811ef5ab4089ad45cd3f0a46aaf8"
+    },
+    "scp-102-vn-185": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-color-raw-scp-102-vn-185",
+        "source": "**Someone:** Yeah, it's me, ##transparent|@@@@@@@@@@##. Good thing you didn't make me your wife back then.\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "Color span nesting observation"
+      },
+      "source_sha256": "63dd8821891a3d6fb1e649c47523e68bcb7e5a27f121e0842decb6c8e96b3adb",
+      "captured_at": "2026-10-19T01:46:40.685991+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n<p><strong>Someone:</strong> Yeah, it's me, <span style=\"color: transparent\">@@@@@@</span>. Good thing you didn't make me your wife back then.</p>\n<p>z</p>\n",
+      "raw_html_sha256": "f78c9f755d75c1cc32bda54287d09991eb760884ed48f832c82dab58232ccdb9"
+    },
+    "scp-6276-265": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-color-raw-scp-6276-265",
+        "source": "##7aa4eb|@sats15.00\"@@//@@##\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "Color span nesting observation"
+      },
+      "source_sha256": "fb7ec26aeac3277ca9565db71fefcbdd37ff136eb27998a0c4c7d5bc0f3c0d88",
+      "captured_at": "2026-10-19T01:46:43.513235+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n<p><span style=\"color: #7aa4eb\">@sats15.00&quot;<span style=\"white-space: pre-wrap;\">//</span></span></p>\n<p>z</p>\n",
+      "raw_html_sha256": "aa4495eb405f829185332eb26d10f18148410b1c4090856d590fb84121f287e5"
+    },
+    "scp-9698-372": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-color-raw-scp-9698-372",
+        "source": "##117743|**Anonymous**## 06/26/22(Tues)18:56:16 No.207422163 [Reply] @@>@@ ##000080|▶ **@@>>@@206345521**##\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "Color span nesting observation"
+      },
+      "source_sha256": "2213ba34b268cd45bb80f8532475f4dc5c501be50598a7879423d9fcf1832cb5",
+      "captured_at": "2026-10-19T01:46:41.239186+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n<p><span style=\"color: #117743\"><strong>Anonymous</strong></span> 06/26/22(Tues)18:56:16 No.207422163 [Reply] <span style=\"white-space: pre-wrap;\">&gt;</span> <span style=\"color: #000080\">▶ <strong><span style=\"white-space: pre-wrap;\">&gt;&gt;</span>206345521</strong></span></p>\n<p>z</p>\n",
+      "raw_html_sha256": "ca005bcc20a6db9f1f0ab8445dbd013b68d5c5a17d708eb78de3843bdbc1ace5"
+    },
+    "scp-9698-376": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-color-raw-scp-9698-376",
+        "source": "##000080|**@@>>@@206345521 (OP)**##\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "Color span nesting observation"
+      },
+      "source_sha256": "032a1ab6affc0212e44a2ed612ff2f7e4e4d331f3b5969f2125480214c566fea",
+      "captured_at": "2026-10-19T01:46:41.811446+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n<p><span style=\"color: #000080\"><strong><span style=\"white-space: pre-wrap;\">&gt;&gt;</span>206345521 (OP)</strong></span></p>\n<p>z</p>\n",
+      "raw_html_sha256": "275dfce7a87cc77d5ccda8f55c4b7a871b4c8fc1cfef9fc38a0392dafded30c5"
+    },
+    "scp-series-10-959": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-color-raw-scp-series-10-959",
+        "source": "##green|{{**REAGANPUNK**}}##\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "Color span nesting observation"
+      },
+      "source_sha256": "947151a81a5c7f66e64f0c04911dd43ce6aaf399a153e6caf245e2f2ad9d6dd8",
+      "captured_at": "2026-10-19T01:46:44.067050+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n<p><span style=\"color: green\"><tt><strong>REAGANPUNK</strong></tt></span></p>\n<p>z</p>\n",
+      "raw_html_sha256": "b16b1c95cf7c00b9695270c89070d3f16199e22f17b5ae97b7d314a118b5d1aa"
+    },
+    "time-reprise-173": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-color-raw-time-reprise-173",
+        "source": "###edeff8|@@...@@##\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "Color span nesting observation"
+      },
+      "source_sha256": "8f2d87830b42e1f3ec9237917566b96d27e85bec4846cb08af712f6ec2fb46aa",
+      "captured_at": "2026-10-19T01:46:42.385910+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n<p><span style=\"color: #edeff8\"><span style=\"white-space: pre-wrap;\">...</span></span></p>\n<p>z</p>\n",
+      "raw_html_sha256": "ce73d9765e3de2f4f810d23e19a426c0cadd6791781c41e7b23aea704824eaed"
+    },
+    "time-reprise-751": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-color-raw-time-reprise-751",
+        "source": "###edeff8|But@@...@@ Look.##\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "Color span nesting observation"
+      },
+      "source_sha256": "f241e6d0b11f54a02af841517f83bd27ecae834d459182da5c08780e095b831b",
+      "captured_at": "2026-10-19T01:46:42.937972+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n<p><span style=\"color: #edeff8\">But<span style=\"white-space: pre-wrap;\">...</span> Look.</span></p>\n<p>z</p>\n",
+      "raw_html_sha256": "367cdd338dcae13781c8033c658dabf52a13866edfce99c9c85052a24bfa16fe"
     }
   }
 }

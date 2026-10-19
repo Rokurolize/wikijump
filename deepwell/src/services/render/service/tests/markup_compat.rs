@@ -1534,11 +1534,6 @@ fn color_span_bodies_render_nested_inline_syntax_like_wikidot() {
             r#"<span style="color: red">a <tt>mono</tt> b</span>"#,
         ),
         (
-            "color-raw",
-            "##red|a @@**x**@@ b##",
-            r#"<span style="color: red">a <span style="white-space: pre-wrap;">**x**</span> b</span>"#,
-        ),
-        (
             "color-size",
             "##red|a [[size 80%]]small[[/size]] b##",
             r#"<span style="color: red">a <span style="font-size:80%;">small</span> b</span>"#,
@@ -1603,6 +1598,25 @@ fn color_span_bodies_render_nested_inline_syntax_like_wikidot() {
     }
 }
 
+#[test]
+fn color_span_bodies_with_raw_markers_keep_each_span_closed() {
+    // scp-102-vn redacts with `##transparent|@@@@…##` on several lines. A raw
+    // marker in the body must not pair with one past the span's close.
+    let html = render_wikidot_inline_markup_after_protection(concat!(
+        "it's me, ##transparent|@@@@@@@@@@##. Good thing.\n",
+        "\n",
+        "**Agent:** ##transparent|@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@##!\n",
+    ));
+
+    assert!(!html.contains("WIKIJUMP"), "{html}");
+    assert_eq!(
+        html.matches(r#"<span style="color: transparent">"#).count(),
+        2
+    );
+    assert!(html.contains("</span>. Good thing.</p>"), "{html}");
+    assert!(html.contains("</span>!</p>"), "{html}");
+}
+
 fn render_wikidot_inline_markup_after_protection(wikitext: &str) -> String {
     let page_info = fallback_test_page_info("color-span", "Color Span");
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
@@ -1636,6 +1650,14 @@ fn render_wikidot_inline_markup_after_protection(wikitext: &str) -> String {
             protection.inline_html(),
         );
         let html = protection.compat_html().restore(&html);
+        let html = RenderService::restore_protected_wikidot_color_spans(
+            html,
+            protection.color_spans(),
+        );
+        let html = RenderService::restore_protected_wikidot_inline_html(
+            html,
+            protection.inline_html(),
+        );
         protection.compat_text().restore(&html)
     })
 }
