@@ -44,3 +44,11 @@
 - Review trigger: every FTML pin bump that changes alignment block parsing,
   and every change that adds another marker-ownership rule to the render
   service.
+- Open, unevidenced behavior (not Wikidot behavior): when markers of
+  different alignments nest (e.g. `[[=]]` … `[[<]]` … `[[/=]]` … `[[/<]]`),
+  the pairing stack requires a closer to match the top-of-stack opener's
+  alignment, so a mismatched closer orphans its opener and both print as
+  authored text. No sealed record covers this input, so this LIFO-strict
+  choice is a deterministic fallback, not an observed Wikidot rule. Do not
+  freeze it in a compatibility test until sandbox evidence exists; revisit
+  it under the same review trigger.

@@ -717,7 +717,8 @@ fn render_wikidot_alignment_body(wikitext: &str) -> String {
     RenderService::normalize_wikidot_alignment_markers(&mut wikitext, &mut preserved);
     ftml::preprocess_for_layout(&mut wikitext, settings.layout);
     let tokens = ftml::tokenize(&wikitext);
-    let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
+    let (tree, errors) = ftml::parse(&tokens, &page_info, &settings).into();
+    assert!(errors.is_empty(), "{wikitext:?}: {errors:#?}");
     let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
 
     let site = wikidot_site("scp-wiki", None);
@@ -740,6 +741,11 @@ fn render_wikidot_alignment_body(wikitext: &str) -> String {
 /// Wikidot observations: anonymous PagePreviewModule, scp-wiki, 2026-10-19.
 #[test]
 fn keeps_alignment_markers_with_trailing_whitespace_literal() {
+    // Exact bodies from the #2573 issue table. Line breaks inside one
+    // paragraph serialize as `<br>\n` in this pipeline (the pinned FTML
+    // paragraph shape, also frozen by `keeps_indented_markers_after_content_literal`),
+    // while the paragraph structure — one literal paragraph plus `z` — is the
+    // evidenced Wikidot contract.
     for source in [
         "[[=]] \nA\n[[/=]]\n\nz",
         "[[=]]\t\nA\n[[/=]]\n\nz",
@@ -749,9 +755,10 @@ fn keeps_alignment_markers_with_trailing_whitespace_literal() {
     ] {
         let body = render_wikidot_alignment_body(source);
 
-        assert!(
-            body.contains("[[=]]") && body.contains("[[/=]]"),
-            "the markers must print as text: {body}",
+        assert_eq!(
+            body,
+            "<p>[[=]]<br>\nA<br>\n[[/=]]</p><p>z</p>",
+            "poisoned markers print as one literal paragraph: {source:?}",
         );
         assert!(
             !body.contains("text-align"),
@@ -760,18 +767,41 @@ fn keeps_alignment_markers_with_trailing_whitespace_literal() {
     }
 }
 
+/// Blank lines between poisoned markers split the literal paragraphs, exactly
+/// as the #2573 issue table records.
+#[test]
+fn keeps_blank_line_separated_poisoned_markers_literal() {
+    let body = render_wikidot_alignment_body("[[=]] \n\nA\n\n[[/=]]");
+
+    assert_eq!(
+        body,
+        "<p>[[=]]</p><p>A</p><p>[[/=]]</p>",
+        "blank-line separated markers print as three paragraphs: {body}",
+    );
+    assert!(
+        !body.contains("text-align"),
+        "no alignment block may be rendered: {body}",
+    );
+}
+
 /// The left and right markers keep their authored spelling as text.
 #[test]
 fn keeps_left_and_right_alignment_markers_with_trailing_whitespace_literal() {
-    for (source, marker) in [
-        ("[[<]] \nA\n[[/<]]\n\nz", "[[&lt;]]"),
-        ("[[>]] \nA\n[[/>]]\n\nz", "[[&gt;]]"),
+    for (source, expected) in [
+        (
+            "[[<]] \nA\n[[/<]]\n\nz",
+            "<p>[[&lt;]]<br>\nA<br>\n[[/&lt;]]</p><p>z</p>",
+        ),
+        (
+            "[[>]] \nA\n[[/>]]\n\nz",
+            "<p>[[&gt;]]<br>\nA<br>\n[[/&gt;]]</p><p>z</p>",
+        ),
     ] {
         let body = render_wikidot_alignment_body(source);
 
-        assert!(
-            body.contains(marker),
-            "the marker must print as text: {body}"
+        assert_eq!(
+            body, expected,
+            "the markers must print as one literal paragraph: {source:?}",
         );
         assert!(
             !body.contains("text-align"),
@@ -827,6 +857,128 @@ fn renders_paired_alignment_markers_as_a_block() {
             "the markers must not print as text: {body}",
         );
     }
+}
+
+/// Expand one include, then render through the production outer
+/// preparation, the FTML pipeline, and the Wikidot compatibility
+/// restoration. This mirrors `expand_render_wikitext` handing the expanded
+/// document to `prepare_outer_render_wikitext`, which is where alignment
+/// ownership is decided.
+fn render_wikidot_expanded_alignment_body(top: &str, fragment: &str) -> String {
+    let page_info = fallback_test_page_info("scp-7243", "SCP-7243");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+
+    // The compatibility text starts from the page source, exactly as
+    // production builds it before expansion fills the document.
+    let preserved = CompatTextFragments::new(top);
+    let (expanded, _) = ftml::include(
+        top,
+        &settings,
+        PreparedIncluder {
+            pages: vec![Some(fragment.to_owned())],
+            missing_replacements: Default::default(),
+        },
+        include_error,
+    )
+    .expect("prepared include should expand");
+
+    let outer = RenderService::prepare_outer_render_wikitext(
+        super::super::ExpandedRenderWikitext {
+            theme_previewer_blank: false,
+            wikidot_compat_html: CompatHtmlFragments::new(&expanded),
+            wikidot_compat_text: preserved,
+            wikitext: expanded,
+            included_pages: Vec::new(),
+            expanded_include_count: 1,
+            url_offset_list_pages_content_bytes: 0,
+            runtime_css_insertions: Vec::new(),
+        },
+        &page_info,
+        &settings,
+    );
+
+    let inner = RenderService::prepare_inner_render_wikitext(outer, &settings);
+    let tokens = ftml::tokenize(&inner.wikitext);
+    let (tree, errors) = ftml::parse(&tokens, &page_info, &settings).into();
+    assert!(errors.is_empty(), "{top:?} / {fragment:?}: {errors:#?}");
+    let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
+
+    let site = wikidot_site("scp-wiki", None);
+    let config = Config::integration_testing();
+    let restored =
+        RenderService::restore_wikidot_render_compatibility_for_context_with_resources(
+            &rendered,
+            Some(&site),
+            &config,
+            true,
+            &[],
+        );
+
+    inner
+        .protection
+        .restore(|protection| protection.compat_text().restore(&restored))
+}
+
+/// An opener in the page source and its closer in an included page still
+/// pair up, because ownership is decided on the expanded document through
+/// the production outer preparation below. The poisoned-split companion
+/// pins the post-expansion pass itself: without it, the pinned FTML
+/// revision builds the block from trailing-space markers.
+#[test]
+fn pairs_alignment_markers_split_across_include_boundaries() {
+    let body = render_wikidot_expanded_alignment_body(
+        "[[=]]\nA\n[[include fragment:pair-close]]\n",
+        "[[/=]]\n",
+    );
+
+    assert!(
+        body.contains("<div style=\"text-align: center;\">"),
+        "the split pair must own an alignment block: {body}",
+    );
+    assert!(
+        !body.contains("[[=]]") && !body.contains("[[/=]]"),
+        "split markers must not print as text: {body}",
+    );
+}
+
+/// Normalizing the unexpanded page source alone must not claim an opener
+/// whose closer has not arrived yet: without its pair it is protected as
+/// authored text. This guards the old unconditional-rewrite shape at the
+/// source seam, whatever phase production calls the pass from.
+#[test]
+fn leaves_unpaired_opener_in_unexpanded_source_unclaimed() {
+    let mut source = "[[=]]\nA\n[[include fragment:pair-close]]\n".to_owned();
+    let mut preserved = CompatTextFragments::new(&source);
+
+    RenderService::normalize_wikidot_alignment_markers(&mut source, &mut preserved);
+
+    assert!(
+        !source.contains("[[div style="),
+        "the lone opener must not be rewritten: {source}",
+    );
+    assert!(
+        preserved.restore(&source).contains("[[=]]"),
+        "the lone opener must survive as authored text",
+    );
+}
+
+/// A trailing-whitespace poison on either side of a split pair still owns
+/// no block: both markers print as their authored text.
+#[test]
+fn keeps_trailing_whitespace_poisoned_split_pair_literal() {
+    let body = render_wikidot_expanded_alignment_body(
+        "[[=]]\nA\n[[include fragment:pair-close]]\n",
+        "[[/=]] \n",
+    );
+
+    assert!(
+        body.contains("[[=]]") && body.contains("[[/=]]"),
+        "the poisoned split markers must print as text: {body}",
+    );
+    assert!(
+        !body.contains("text-align"),
+        "no alignment block may be rendered: {body}",
+    );
 }
 
 #[test]
