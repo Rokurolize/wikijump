@@ -446,7 +446,10 @@ async fn helper_redirect_fails_closed_without_eligible_targets() {
         "random:helper-soleself",
     ] {
         assert_eq!(
-            redirect_target(helper_view(&runner, site_id, &session_token, slug, "").await, slug),
+            redirect_target(
+                helper_view(&runner, site_id, &session_token, slug, "").await,
+                slug
+            ),
             None,
             "helper '{slug}' must not redirect without an eligible target",
         );
@@ -465,7 +468,14 @@ async fn helper_redirect_only_fires_on_the_bare_route() {
     for extra in ["noredirect/true", "history"] {
         assert_eq!(
             redirect_target(
-                helper_view(&runner, site_id, &session_token, "random:helper-main", extra).await,
+                helper_view(
+                    &runner,
+                    site_id,
+                    &session_token,
+                    "random:helper-main",
+                    extra
+                )
+                .await,
                 "random:helper-main",
             ),
             None,
