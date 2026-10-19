@@ -10,12 +10,17 @@ import {assertDeepwellRuntimeIdentity,parseCurlDeepwellRuntimeHeaders,readRunnin
 import {assertRuntimeSourceSha,parseCurlRuntimeResponseHeaders,requireRuntimeSourceSha} from '../../src/runtime-source-identity.mjs';
 
 const scriptDir=path.dirname(fileURLToPath(import.meta.url));
-const repoRoot=path.resolve(scriptDir,'../../../../../');
+const runtimeRepoArg=process.argv.find(arg=>arg.startsWith('--runtime-repo='))?.slice(15)??null;
+const defaultRepoRoot=path.resolve(scriptDir,'../../../../../');
+if(runtimeRepoArg!==null&&(!path.isAbsolute(runtimeRepoArg)||path.resolve(runtimeRepoArg)!==runtimeRepoArg))throw new Error('--runtime-repo must be a canonical absolute checkout path');
+const repoRoot=runtimeRepoArg===null?defaultRepoRoot:await fs.realpath(runtimeRepoArg);
+if(runtimeRepoArg!==null&&repoRoot!==runtimeRepoArg)throw new Error('source checkout path cannot contain symlinks');
 const framerailDir=path.join(repoRoot,'framerail');
 const namespace=process.argv.find(arg=>arg.startsWith('--namespace='))?.slice(12)??null;
 const port=Number(process.argv.find(arg=>arg.startsWith('--port='))?.slice(7)??3395);
 const runContractArg=process.argv.find(arg=>arg.startsWith('--run-contract='))?.slice(15)??null;
 if(namespace!==null&&!/^[a-z][a-z0-9-]{0,40}$/u.test(namespace))throw new Error('invalid task-owned namespace');
+if(runtimeRepoArg!==null&&namespace===null)throw new Error('--runtime-repo requires an explicit task-owned --namespace');
 if(!Number.isInteger(port)||port<1024||port>65535||namespace!==null&&port===3395)throw new Error('task-owned transport needs a distinct valid port');
 const cacheBase=process.env.THEME_LAB_BUILT_CACHE??`/tmp/wikijump-theme-lab-${namespace??'built'}-framerail`;
 const framerailContainer=`wikijump-theme-lab-${namespace??'built'}-framerail`;

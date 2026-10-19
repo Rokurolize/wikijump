@@ -65,7 +65,7 @@ for(const scenario of ['missing-dev','caddy-failure','success','isolated']) {
     process.stdout.write('HTTP/2 200\\r\\n'+headers.map(row=>keyMap[row[1]]?keyMap[row[1]]+': '+row[2]+'\\r\\n':'x-theme-lab-runtime-source-sha: '+row[2]+'\\r\\n').join('')+'\\r\\n');
    `,{mode:0o755});
    const cache=path.join(dir,'cache');
-   const result=spawnSync(process.execPath,[path.join(fixture,'ensure.mjs'),...(scenario==='isolated'?['--namespace=semantic-proof','--port=3396']:[])],{
+   const result=spawnSync(process.execPath,[path.join(fixture,'ensure.mjs'),...(scenario==='isolated'?['--namespace=semantic-proof','--port=3396',`--runtime-repo=${dir}`]:[])],{
     cwd:os.tmpdir(),encoding:'utf8',timeout:10000,
     env:{...process.env,PATH:`${bin}:${process.env.PATH}`,SCENARIO:scenario,COMMAND_LOG:log,THEME_LAB_BUILT_CACHE:cache,TMPDIR:dir}
    });
@@ -79,6 +79,9 @@ for(const scenario of ['missing-dev','caddy-failure','success','isolated']) {
     if(scenario==='isolated'){
      assert.ok(commands.every(args=>!args.includes('wikijump-theme-lab-built-framerail')&&!args.includes('wikijump-theme-lab-built-caddy')));
      assert.ok(commands.some(args=>args.includes('127.0.0.1:3396:443')));
+     const reject=spawnSync(process.execPath,[path.join(fixture,'ensure.mjs'),`--runtime-repo=${dir}`],{cwd:os.tmpdir(),encoding:'utf8',timeout:5000,env:{...process.env,PATH:`${bin}:${process.env.PATH}`,SCENARIO:scenario,COMMAND_LOG:log,THEME_LAB_BUILT_CACHE:cache,TMPDIR:dir}});
+     assert.notEqual(reject.status,0);
+     assert.match(reject.stderr,/task-owned --namespace/u);
     }
    }else{
     assert.notEqual(result.status,0);

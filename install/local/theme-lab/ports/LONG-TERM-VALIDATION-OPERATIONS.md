@@ -96,11 +96,29 @@ workflow is intentionally local-only. An automatic trusted CI workflow must
 be connected to a real object store and supplied with sufficient disk space
 and a verified network-denial mechanism before being enabled.
 
+### Source-bound capture contract preparation
+
+`scripts/prepare-current-runtime-contract.mjs` prepares a new, immutable,
+task-namespaced Sigma-9 capture contract from the exact Framerail source and
+running Deepwell's executable/image/config/source/FTML identities, after
+verifying both the source mount and an explicitly required Git commit. The
+`--check-only=true` path proves readiness without writing. A separate
+checkout can own the actual running backend; the built sidecar's
+`--runtime-repo` option selects that checkout and requires a task namespace,
+so other agents' capture containers are not replaced.
+
+The source fingerprint ignores narrowly scoped generated locale install
+directories, whose pnpm symlinks and build products can change without source
+changes. The actual locale inputs remain hashed and unfamiliar source
+symlinks remain blocking. Every capture still probes the served runtime and
+backend headers against its exact contract; contract preparation cannot itself
+authorize a fresh V/C/M browser receipt.
+
 ## Certification exit test
 
-Demonstrate repeated clean-checkout complete campaigns, including a run with no access to the
-old source tree or local blob cache, using disposable task-owned stacks.
-Both must prove complete source authority, Basalt publication inputs, all 36
+Demonstrate repeated clean-checkout complete campaigns, including a run with no
+access to the old source tree or local blob cache, using disposable task-owned
+stacks. Every run must prove complete source authority, Basalt publication inputs, all 36
 themes, Sigma-9/Sigma-10, required browsers, actions, visuals and cleanup.
 Inject a known regression and verify it still blocks after cache restore.
 Until these drills and recurring checks exist, mark the Theme Lab **not yet

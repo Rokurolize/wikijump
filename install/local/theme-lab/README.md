@@ -341,6 +341,37 @@ Existing run directories fail closed rather than overwriting the sealed
 October 7 evidence. This creates an input for review, **not a PASS**: use the
 same current run contract and fresh interactive audit for final acceptance.
 
+Generate the new run contract from **measured source and the running Deepwell**,
+rather than repinning old receipts by hand. The runtime checkout must own the
+live Deepwell source mounts, match the explicitly required Git commit, and have
+no tracked Framerail, Deepwell or locale modifications:
+
+```sh
+node scripts/prepare-current-runtime-contract.mjs \
+  --runtime-repo=/absolute/path/to/runtime-checkout \
+  --required-head=<exact-40-character-git-commit> \
+  --run-id=basalt-current-run --port=3396 --check-only=true
+# Repeat without --check-only=true to create an immutable new contract.
+
+node ports/interactive-visual-fixture/ensure-built-framerail.mjs \
+  --runtime-repo=/absolute/path/to/runtime-checkout \
+  --namespace=basalt-current-run --port=3396 \
+  --run-contract=/absolute/path/to/run-contract-basalt-current-run.json
+node ports/interactive-visual-fixture/capture-theme-matrix.mjs \
+  --theme=basalt --state=page.normal.settled \
+  --engine=chromium --viewport=desktop --anonymous \
+  --transport-origin=https://scpaiueouiuiuiui.wikijump.localhost:3396 \
+  --run-contract=/absolute/path/to/run-contract-basalt-current-run.json
+```
+
+This initial public capture is a readiness test, **not the 145-state acceptance
+or the Sigma-10 check**. The built sidecar requires a unique namespace when
+reading another checkout. A source-bound older commit also must not be passed
+off as the latest `origin/develop`. Its Deepwell source identity ignores only
+known generated locale installs (`locales/typed/node_modules` and
+`locales/validator/target`); actual locale source and unexpected symlinks
+remain strict fingerprint inputs.
+
 The regular `wikijump-local-development` development proxy does not itself
 provide the Theme Lab proof headers. `ports/interactive-visual-fixture/ensure-built-framerail.mjs`
 provisions the separate SHA-pinned built transport, and

@@ -33,9 +33,13 @@ const SOURCE_ENTRIES = [
   'install/common/deepwell/health-check.sh',
 ];
 
+// Only installed/generated locale outputs are omitted; other source symlinks still fail.
+const GENERATED_SOURCE_DIRS = new Set(['locales/typed/node_modules','locales/validator/target']);
+
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
 
-function filesBelow(entry) {
+function filesBelow(entry, root) {
+  if (GENERATED_SOURCE_DIRS.has(path.relative(root,entry).replaceAll(path.sep,'/'))) return [];
   const stat = fs.lstatSync(entry);
   if (stat.isSymbolicLink()) throw new Error(`Deepwell fingerprint input cannot be a symlink: ${entry}`);
   if (stat.isFile()) return [entry];
@@ -43,8 +47,9 @@ function filesBelow(entry) {
   const files = [];
   for (const item of fs.readdirSync(entry, {withFileTypes: true})) {
     const child = path.join(entry, item.name);
+    if (GENERATED_SOURCE_DIRS.has(path.relative(root,child).replaceAll(path.sep,'/'))) continue;
     if (item.isSymbolicLink()) throw new Error(`Deepwell fingerprint input cannot be a symlink: ${child}`);
-    if (item.isDirectory()) files.push(...filesBelow(child));
+    if (item.isDirectory()) files.push(...filesBelow(child,root));
     else if (item.isFile()) files.push(child);
   }
   return files;
@@ -55,7 +60,7 @@ export function deepwellRuntimeSourceIdentity(repoRoot) {
   const files = [];
   for (const relative of SOURCE_ENTRIES) {
     const absolute = path.join(root, relative);
-    try { files.push(...filesBelow(absolute)); }
+    try { files.push(...filesBelow(absolute,root)); }
     catch (error) { if (error.code !== 'ENOENT') throw error; }
   }
   files.sort();
