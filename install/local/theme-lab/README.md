@@ -407,6 +407,35 @@ the task backend's object/database storage remain separate. A collision with
 an existing capture sidecar is treated as an error rather than silently
 replacing another agent's environment.
 
+**Fixture provisioning is a separate mutating operation.** The four page
+writers (`scripts/provision-canonical-corpus.mjs`,
+`ports/interactive-visual-fixture/provision-fixture.mjs`, its
+`provision-credit-variants.mjs` companion, and
+`sigma10-migration/provision-fixtures.mjs`) now refuse implicit RPC fallback.
+Shared-development writes require the explicit
+`THEME_LAB_FIXTURE_SCOPE=shared-development`, still bound exclusively to
+`http://127.0.0.1:2747/jsonrpc`. For a task backend, set
+`THEME_LAB_BACKEND_PROJECT=wikijump-theme-lab-<namespace>` and
+`DEEPWELL_RPC_URL=http://wikijump-theme-lab-<namespace>-deepwell-1:2747/jsonrpc`.
+Run the writer inside a *disposable Node container attached only to that task
+project's Docker network*, with source fixtures mounted read-only and the
+task-local `DEEPWELL_RPC_TOKEN`/admin credentials in a private environment
+file. Do not execute a task-mode provisioner directly on the host against the
+shared local-development RPC port. All four writers also assert that the
+seeded `scpaiueouiuiuiui` site's ID matches the candidate Caddy's `6000003`
+before any edit. Incorrect task project, endpoint, or seeded site identity
+fails closed. These are source- and mock-tested guards, not evidence that
+the new task backend has been started or its fixtures provisioned.
+
+The fifth mutating fixture script,
+`ports/interactive-visual-fixture/provision-file.mjs`, uploads or removes a
+run-owned attachment through the browser. It likewise requires explicit
+shared-development scope, or in task mode an absolute `--run-contract=` for
+the private HTTPS transport. Before logging in or writing, it verifies the
+served Framerail source and Deepwell runtime identity response headers against
+that contract. No implicit fallback to the shared `:18443` origin is allowed
+for task-mode attachment operations.
+
 The regular `wikijump-local-development` development proxy does not itself
 provide the Theme Lab proof headers. `ports/interactive-visual-fixture/ensure-built-framerail.mjs`
 provisions the separate SHA-pinned built transport, and
