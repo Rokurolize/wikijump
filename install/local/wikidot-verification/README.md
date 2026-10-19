@@ -12,6 +12,14 @@ Run the hermetic contract/unit suite plus the checked-in syntax differential wit
 pnpm --dir install/local/wikidot-verification offline
 ```
 
+The Node test runner may execute independent test files concurrently. Mocked
+`capture-browser-rendering.mjs` CLI tests use separate, test-owned capture
+locks and request-gate state paths **only** under the repository's offline
+network guard (`WIKIJUMP_TEST_NETWORK_GUARD_ACTIVE=1`). This prevents false
+cross-test lock contention while retaining the single global capture lock
+for actual public-source acquisition. The fixture override is rejected if the
+offline guard is absent; never set it for real Wikidot browser capture.
+
 Run the product-owned WWS, Framerail, and Deepwell regression suites against
 task-owned local services with external networking denied with:
 
