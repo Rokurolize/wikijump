@@ -7,7 +7,7 @@ import test from 'node:test';
 import {createDeepwellRuntimeIdentity,deepwellRuntimeSourceIdentity} from '../src/deepwell-runtime-identity.mjs';
 import {framerailSourceFingerprintSync} from '../src/framerail-source-fingerprint.mjs';
 
-for(const scenario of ['missing-dev','caddy-failure','success','isolated']) {
+for(const scenario of ['missing-dev','caddy-failure','success','isolated','isolated-backend']) {
  test(`built transport lifecycle: ${scenario}`,async()=>{
   const dir=await fs.mkdtemp(path.join(os.tmpdir(),'built-transport-test-'));
   const fixture=path.join(dir,'install/local/theme-lab/ports/interactive-visual-fixture');
@@ -16,7 +16,7 @@ for(const scenario of ['missing-dev','caddy-failure','success','isolated']) {
   const bin=path.join(dir,'bin');
   const framerail=path.join(dir,'framerail');
   try{
-   const sourceDirs=['deepwell/src','deepwell/relation-impl-derive','deepwell/migrations','deepwell/seeder','.cargo','locales','install/local/deepwell','install/common/deepwell','framerail/src','framerail/static'];
+   const sourceDirs=['deepwell/src','deepwell/relation-impl-derive','deepwell/migrations','deepwell/seeder','.cargo','locales','install/local/deepwell','install/common/deepwell','framerail/src','framerail/static','assets'];
    for(const p of [fixture,scripts,src,bin,path.join(framerail,'node_modules/.bin'),...sourceDirs.map(value=>path.join(dir,value))])await fs.mkdir(p,{recursive:true});
    await fs.copyFile(new URL('../ports/interactive-visual-fixture/ensure-built-framerail.mjs',import.meta.url),path.join(fixture,'ensure.mjs'));
    await fs.copyFile(new URL('../ports/scripts/audit-lock.mjs',import.meta.url),path.join(scripts,'audit-lock.mjs'));
@@ -36,18 +36,20 @@ for(const scenario of ['missing-dev','caddy-failure','success','isolated']) {
    const backendIdentity=createDeepwellRuntimeIdentity({source_sha256:deepwellRuntimeSourceIdentity(dir).source_sha256,ftml_git_revision:ftmlRevision,container_id:containerId,image_id:imageId,binary_sha256:binarySha,config_sha256:configSha});
    await fs.writeFile(path.join(fixture,'acceptance-run-contract.json'),JSON.stringify({expected_runtime_source_sha256:sourceSha,expected_backend_runtime_identity:backendIdentity}));
    const deepwellMounts=[['/src/deepwell/src','deepwell/src'],['/src/deepwell/build.rs','deepwell/build.rs'],['/src/deepwell/Cargo.toml','deepwell/Cargo.toml'],['/src/deepwell/Cargo.lock','deepwell/Cargo.lock'],['/src/deepwell/askama.toml','deepwell/askama.toml'],['/src/deepwell/migrations','deepwell/migrations'],['/src/deepwell/seeder','deepwell/seeder'],['/src/.cargo/config.toml','.cargo/config.toml'],['/src/install','install'],['/opt/locales','locales']].map(([Destination,relative])=>({Destination,Source:path.join(dir,relative)}));
-   const deepwellInspect={Id:containerId,Image:imageId,Config:{Labels:{'com.docker.compose.project':'wikijump-local-development','com.docker.compose.service':'deepwell'}},Mounts:deepwellMounts,NetworkSettings:{Networks:{fixture:{Aliases:['deepwell'],IPAddress:'172.20.0.2'}}}};
+   const backendProject=scenario==='isolated-backend'?'wikijump-theme-lab-semantic-proof':'wikijump-local-development';
+   const backendName=`${backendProject}-deepwell-1`;
+   const deepwellInspect={Id:containerId,Image:imageId,Config:{Labels:{'com.docker.compose.project':backendProject,'com.docker.compose.service':'deepwell'},Env:['DEEPWELL_RPC_TOKEN=task-test-token']},Mounts:deepwellMounts,NetworkSettings:{Networks:{fixture:{Aliases:['deepwell'],IPAddress:'172.20.0.2'}}}};
    const runtimeHeaderNames={sourceSha256:'x-theme-lab-backend-source-sha',ftmlGitRevision:'x-theme-lab-backend-ftml-git-revision',containerId:'x-theme-lab-backend-container-id',imageId:'x-theme-lab-backend-image-id',binarySha256:'x-theme-lab-backend-binary-sha',configSha256:'x-theme-lab-backend-config-sha',identitySha256:'x-theme-lab-backend-identity-sha'};
    const log=path.join(dir,'commands.jsonl');
    await fs.writeFile(path.join(bin,'docker'),`#!${process.execPath}
     const fs=require('node:fs');const args=process.argv.slice(2);
     fs.appendFileSync(process.env.COMMAND_LOG,JSON.stringify(args)+'\\n');
     if(args[0]==='inspect'){
-     if(args[1]==='wikijump-local-development-deepwell-1'){console.log(${JSON.stringify(JSON.stringify(deepwellInspect))});process.exit(0)}
+     if(args[1]===${JSON.stringify(backendName)}){console.log(${JSON.stringify(JSON.stringify(deepwellInspect))});process.exit(0)}
      if(args[1]!=='wikijump-local-development-framerail-1'||process.env.SCENARIO==='missing-dev')process.exit(1);
      console.log(JSON.stringify({Config:{Env:['DEEPWELL_HOST=deepwell','PORT=3393'],Image:'fixture-image'},NetworkSettings:{Networks:{fixture:{Aliases:['framerail']}}},Mounts:[]}));
     }
-    if(args[0]==='exec'&&args[1]==='wikijump-local-development-deepwell-1'){
+    if(args[0]==='exec'&&args[1]===${JSON.stringify(backendName)}){
      if(args.includes('sha256sum')&&args.includes('/etc/deepwell.toml')){console.log('${configSha}  /etc/deepwell.toml');process.exit(0)}
      if(args.includes('sh')){console.log('${binarySha}');process.exit(0)}
     }
@@ -65,12 +67,13 @@ for(const scenario of ['missing-dev','caddy-failure','success','isolated']) {
     process.stdout.write('HTTP/2 200\\r\\n'+headers.map(row=>keyMap[row[1]]?keyMap[row[1]]+': '+row[2]+'\\r\\n':'x-theme-lab-runtime-source-sha: '+row[2]+'\\r\\n').join('')+'\\r\\n');
    `,{mode:0o755});
    const cache=path.join(dir,'cache');
-   const result=spawnSync(process.execPath,[path.join(fixture,'ensure.mjs'),...(scenario==='isolated'?['--namespace=semantic-proof','--port=3396']:[])],{
+   const isolationArgs=['--namespace=semantic-proof','--port=3396',`--runtime-repo=${dir}`];
+   const result=spawnSync(process.execPath,[path.join(fixture,'ensure.mjs'),...(['isolated','isolated-backend'].includes(scenario)?isolationArgs:[]),...(scenario==='isolated-backend'?['--backend-project=wikijump-theme-lab-semantic-proof']:[])],{
     cwd:os.tmpdir(),encoding:'utf8',timeout:10000,
     env:{...process.env,PATH:`${bin}:${process.env.PATH}`,SCENARIO:scenario,COMMAND_LOG:log,THEME_LAB_BUILT_CACHE:cache,TMPDIR:dir}
    });
    const commands=(await fs.readFile(log,'utf8')).trim().split('\n').map(JSON.parse);
-   if(scenario==='success'||scenario==='isolated'){
+   if(scenario==='success'||scenario==='isolated'||scenario==='isolated-backend'){
     assert.equal(result.status,0,result.stderr);
     const summary=JSON.parse(result.stdout);
     assert.equal(summary.restarted,true);
@@ -79,6 +82,15 @@ for(const scenario of ['missing-dev','caddy-failure','success','isolated']) {
     if(scenario==='isolated'){
      assert.ok(commands.every(args=>!args.includes('wikijump-theme-lab-built-framerail')&&!args.includes('wikijump-theme-lab-built-caddy')));
      assert.ok(commands.some(args=>args.includes('127.0.0.1:3396:443')));
+     const reject=spawnSync(process.execPath,[path.join(fixture,'ensure.mjs'),`--runtime-repo=${dir}`],{cwd:os.tmpdir(),encoding:'utf8',timeout:5000,env:{...process.env,PATH:`${bin}:${process.env.PATH}`,SCENARIO:scenario,COMMAND_LOG:log,THEME_LAB_BUILT_CACHE:cache,TMPDIR:dir}});
+     assert.notEqual(reject.status,0);
+     assert.match(reject.stderr,/task-owned --namespace/u);
+    }
+    if(scenario==='isolated-backend'){
+     assert.ok(commands.some(args=>args.includes(`${framerail}/node_modules:/app/node_modules:ro`)));
+     assert.ok(commands.some(args=>args.includes(`${dir}/assets:/app/src/assets:ro`)));
+     assert.ok(commands.some(args=>args.includes(backendName)));
+     assert.ok(commands.every(args=>!args.includes('local-framerail-node-modules:/app/node_modules')));
     }
    }else{
     assert.notEqual(result.status,0);

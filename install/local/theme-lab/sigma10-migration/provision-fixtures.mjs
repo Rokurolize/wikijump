@@ -4,14 +4,18 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {deepwellRpcAuthorization} from '../../wikidot-verification/src/deepwell-rpc-auth.mjs';
+import {fixtureRpcTarget} from '../src/fixture-rpc-target.mjs';
 
 const root=path.dirname(fileURLToPath(import.meta.url));
 const manifest=JSON.parse(await fs.readFile(path.join(root,'fixture-manifest.json'),'utf8'));
 if(!/^[0-9a-f]{64}$/u.test(process.env.DEEPWELL_RPC_TOKEN??''))throw new Error('DEEPWELL_RPC_TOKEN is required');
+if(process.env.THEME_LAB_BACKEND_PROJECT &&
+   (!process.env.WIKIDOT_VERIFY_ADMIN_EMAIL||!process.env.WIKIDOT_VERIFY_ADMIN_PASS))
+ throw new Error('task-owned Sigma-10 fixture provisioning requires explicit local-only admin credentials');
 const adminEmail=process.env.WIKIDOT_VERIFY_ADMIN_EMAIL??'admin@wikijump';
 const adminPassword=process.env.WIKIDOT_VERIFY_ADMIN_PASS??'wikijumpadmin1';
 const authorization=deepwellRpcAuthorization(process.env.DEEPWELL_RPC_TOKEN);
-const rpcUrl=process.env.DEEPWELL_RPC_URL??'http://127.0.0.1:2747/jsonrpc';
+const rpcUrl=fixtureRpcTarget().rpcUrl;
 let id=0;
 async function rpc(method,params,context={}){
  const headers={authorization,'content-type':'application/json'};
@@ -25,6 +29,7 @@ async function rpc(method,params,context={}){
 }
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const site=await rpc('site_get',{site:'scpaiueouiuiuiui'});
+if(site?.site_id!==6000003)throw new Error('Sigma-10 fixture site ID differs from source-bound Caddy contract');
 if(!Number.isSafeInteger(site?.site_id))throw new Error('local authoring site is unavailable');
 const login=await rpc('login',{name_or_email:adminEmail,password:adminPassword,ip_address:'127.0.0.1',user_agent:'theme-lab-sigma10-migration/1'});
 if(login?.needs_mfa!==false||!login.session_token)throw new Error('local administrator session unavailable');

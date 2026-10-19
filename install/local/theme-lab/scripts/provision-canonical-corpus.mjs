@@ -5,9 +5,10 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 import {deepwellRpcAuthorization} from '../../wikidot-verification/src/deepwell-rpc-auth.mjs';
+import {fixtureRpcTarget} from '../src/fixture-rpc-target.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const rpcUrl='http://127.0.0.1:2747/jsonrpc';
+const rpcUrl=fixtureRpcTarget().rpcUrl;
 const siteSlug='scpaiueouiuiuiui';
 const corpusSlug='run-owned:theme-lab-canonical-corpus-v1';
 const existingSlug='run-owned:theme-lab-corpus-existing';
@@ -17,6 +18,7 @@ if(!process.env.WIKIDOT_VERIFY_ADMIN_EMAIL||!process.env.WIKIDOT_VERIFY_ADMIN_PA
 const authorization=deepwellRpcAuthorization();let id=0;
 async function rpc(method,params,context={}){const headers={authorization,'content-type':'application/json'};if(context.sessionToken)headers['X-Deepwell-Session-Token']=context.sessionToken;if(context.siteId)headers['X-Deepwell-Site-Id']=String(context.siteId);if(context.page)headers['X-Deepwell-Page']=context.page;const response=await fetch(rpcUrl,{method:'POST',headers,body:JSON.stringify({jsonrpc:'2.0',id:++id,method,params})});const body=await response.json();if(!response.ok||body.error)throw new Error(`${method} failed: ${JSON.stringify(body.error??response.status)}`);return body.result}
 const site=await rpc('site_get',{site:siteSlug});if(!Number.isSafeInteger(site?.site_id))throw new Error('local Theme Lab site is unavailable');
+if(site.site_id!==6000003)throw new Error('canonical Theme Lab fixture site ID differs from source-bound Caddy contract');
 const login=await rpc('login',{name_or_email:process.env.WIKIDOT_VERIFY_ADMIN_EMAIL,password:process.env.WIKIDOT_VERIFY_ADMIN_PASS,ip_address:'127.0.0.1',user_agent:'theme-lab-canonical-corpus/1'});if(login?.needs_mfa!==false||typeof login.session_token!=='string')throw new Error('local admin login failed');
 const session=await rpc('session_get',[login.session_token]);if(!Number.isSafeInteger(session?.user_id))throw new Error('local admin session is unavailable');
 const context=slug=>({sessionToken:login.session_token,siteId:site.site_id,page:slug});

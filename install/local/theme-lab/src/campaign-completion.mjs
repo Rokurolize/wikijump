@@ -175,10 +175,15 @@ export function checkCampaignCompletion(root, {captureContractReader = readCurre
   let document;
   try { document = read('current-campaign-acceptance.json'); }
   catch(error) {
-    const message=error.code==='ENOENT'
+    // INCONCLUSIVE means truly absent evidence only. A present but unreadable,
+    // symlinked, corrupt or malformed receipt is a failing integrity check:
+    // treating it as absence would allow source tampering to bypass the gate.
+    const absent=error.code==='ENOENT' &&
+      fs.lstatSync(path.join(root,'current-campaign-acceptance.json'),{throwIfNoEntry:false})===undefined;
+    const message=absent
       ? 'Current campaign acceptance receipt is missing; historical integrity cannot authorize completion.'
       : `Current campaign acceptance receipt is invalid: ${error.message}; historical integrity cannot authorize completion.`;
-    return {status:'inconclusive',failures:[message,...failures]};
+    return {status:absent?'inconclusive':'fail',failures:[message,...failures]};
   }
   if (document.schema !== 'theme_lab_current_campaign_acceptance.v1') failures.push('Invalid current campaign receipt schema');
   const ledger = read('ports/adaptation-authority.json');

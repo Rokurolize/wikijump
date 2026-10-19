@@ -4,9 +4,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {deepwellRpcAuthorization} from '../../../wikidot-verification/src/deepwell-rpc-auth.mjs';
+import {fixtureRpcTarget} from '../../src/fixture-rpc-target.mjs';
 
 const dir=path.dirname(fileURLToPath(import.meta.url));
-const origin='http://127.0.0.1:2747/jsonrpc';
+const origin=fixtureRpcTarget().rpcUrl;
 const siteSlug='scpaiueouiuiuiui';
 if(!/^[0-9a-f]{64}$/u.test(process.env.DEEPWELL_RPC_TOKEN??''))throw new Error('DEEPWELL_RPC_TOKEN is required from the local-only environment');
 if(!process.env.WIKIDOT_VERIFY_ADMIN_EMAIL||!process.env.WIKIDOT_VERIFY_ADMIN_PASS)throw new Error('Use the established local verification admin environment');
@@ -21,6 +22,7 @@ async function rpc(method,params,context={}){
  const body=await response.json();if(!response.ok||body.error)throw new Error(`${method} failed: ${JSON.stringify(body.error??response.status)}`);return body.result;
 }
 const site=await rpc('site_get',{site:siteSlug});
+if(site?.site_id!==6000003)throw new Error('Theme Lab fixture site ID differs from source-bound Caddy contract');
 const login=await rpc('login',{name_or_email:process.env.WIKIDOT_VERIFY_ADMIN_EMAIL,password:process.env.WIKIDOT_VERIFY_ADMIN_PASS,ip_address:'127.0.0.1',user_agent:'theme-lab-credit-variant-fixture/1'});
 if(login?.needs_mfa!==false||typeof login.session_token!=='string')throw new Error('Local verification admin session was not established');
 const session=await rpc('session_get',[login.session_token]);

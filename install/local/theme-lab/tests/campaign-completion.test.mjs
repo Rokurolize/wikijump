@@ -25,10 +25,18 @@ test('historical integrity cannot substitute for missing current campaign accept
  try {const checked=checkCampaignCompletion(dir);assert.equal(checked.status,'inconclusive');assert.match(checked.failures[0],/historical integrity/)}
  finally {fs.rmSync(dir,{recursive:true,force:true})}
 });
+test('present but corrupt current campaign evidence is a FAIL, not missing-campaign INCONCLUSIVE',()=>{
+ const mock=mockCampaign();try{
+  fs.writeFileSync(path.join(mock.root,'current-campaign-acceptance.json'),'{not valid json');
+  const checked=checkCampaignCompletion(mock.root);
+  assert.equal(checked.status,'fail');
+  assert.ok(checked.failures.some(value=>value.includes('receipt is invalid')));
+ }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
+});
 test('current campaign acceptance cannot escape Theme Lab through a symlink',()=>{
  const mock=mockCampaign();try{
   const file=path.join(mock.root,'current-campaign-acceptance.json'),outside=path.join(mock.workspace,'outside-campaign.json');fs.copyFileSync(file,outside);fs.rmSync(file);fs.symlinkSync(outside,file);
-  const checked=checkCampaignCompletion(mock.root);assert.equal(checked.status,'inconclusive');assert.ok(checked.failures.some(value=>value.includes('escapes root')));
+  const checked=checkCampaignCompletion(mock.root);assert.equal(checked.status,'fail');assert.ok(checked.failures.some(value=>value.includes('escapes root')));
  }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
 });
 

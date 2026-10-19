@@ -80,13 +80,40 @@ class ValidationCoverageTest(unittest.TestCase):
                 "failed": receipt(TREE, {"deepwell": True}, status="fail"),
                 "checkpoint": receipt(TREE, {"deepwell": True}, mode="checkpoint"),
                 "failed-check": receipt(TREE, {"deepwell": True}, checks=[{"name": "x", "status": "failed"}]),
+                "inconclusive-check": receipt(
+                    TREE, {"theme_lab": True}, checks=[
+                        {"name": "Theme Lab tests", "status": "ok"},
+                        {"name": "Theme Lab current campaign completion", "status": "inconclusive"},
+                    ]
+                ),
+                "unrelated-inconclusive": receipt(
+                    TREE, {"theme_lab": True}, checks=[
+                        {"name": "Theme Lab tests", "status": "ok"},
+                        {"name": "source authority", "status": "inconclusive"},
+                    ]
+                ),
+                "not-theme-lab": receipt(
+                    TREE, {"verification": True}, checks=[
+                        {"name": "verification", "status": "ok"},
+                        {"name": "Theme Lab current campaign completion", "status": "inconclusive"},
+                    ]
+                ),
+                "no-passing-check": receipt(
+                    TREE, {"theme_lab": True}, checks=[
+                        {"name": "Theme Lab current campaign completion", "status": "inconclusive"},
+                    ]
+                ),
                 "no-checks": receipt(TREE, {"deepwell": True}, checks=[]),
                 "other-schema": receipt(TREE, {"deepwell": True}, schema="x"),
             }
             for name, row in rows.items():
                 (store / f"{name}.json").write_text(json.dumps(row), encoding="utf-8")
             (store / "broken.json").write_text("{", encoding="utf-8")
-            self.assertEqual([path.stem for path, _ in promote.validation_receipts(store)], ["good"])
+            # An inconclusive check (no evidence to judge) did not fail its run.
+            self.assertEqual(
+                [path.stem for path, _ in promote.validation_receipts(store)],
+                ["good", "inconclusive-check"],
+            )
 
     def test_a_missing_store_has_no_receipts(self) -> None:
         self.assertEqual(promote.validation_receipts(Path("/nonexistent/store")), [])

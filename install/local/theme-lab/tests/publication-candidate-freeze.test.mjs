@@ -4,9 +4,40 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {frozenCandidateSetSha256, validatePublicationCandidateSet} from '../src/publication-candidate-freeze.mjs';
+import {canonicalBhlScreenshotPath, frozenCandidateSetSha256, validatePublicationCandidateSet} from '../src/publication-candidate-freeze.mjs';
 
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+
+test('BHL frozen screenshot paths are portable only within their immutable capture directory', () => {
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'theme-lab-bhl-relocate-'));
+  const root = path.join(workspace, 'install/local/theme-lab');
+  const file = 'ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/rest.png';
+  const output = path.join(root, file);
+  try {
+    fs.mkdirSync(path.dirname(output), {recursive: true});
+    const original = Buffer.from('frozen screenshot bytes');
+    fs.writeFileSync(output, original);
+    const legacy = `/home/other/.devspace/worktrees/historical/install/local/theme-lab/${file}`;
+    for (const pathname of [legacy, output, file]) {
+      const portable = canonicalBhlScreenshotPath(root, pathname);
+      assert.equal(portable, file);
+      assert.equal(sha(fs.readFileSync(path.join(root, portable))), sha(original));
+    }
+    for (const invalid of [
+      '/home/other/secret.png',
+      '/home/other/install/local/theme-lab/ports/not-bhl/captures/rest.png',
+      `${legacy}/../secret.png`,
+      `${legacy.replace('rest.png', '../rest.png')}`,
+      `${file.replace('rest.png', '../../secret.png')}`,
+    ]) {
+      assert.throws(() => canonicalBhlScreenshotPath(root, invalid));
+    }
+    fs.symlinkSync(output, path.join(root, path.dirname(file), 'linked.png'));
+    assert.throws(() => canonicalBhlScreenshotPath(root, file.replace('rest.png', 'linked.png')), /symlink/u);
+  } finally {
+    fs.rmSync(workspace, {recursive: true, force: true});
+  }
+});
 
 function fixture() {
   const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'theme-lab-publication-freeze-'));

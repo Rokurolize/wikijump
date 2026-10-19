@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {isDeepStrictEqual} from 'node:util';
-import {resolveExistingContainedFile} from './package-path.mjs';
+import {resolveExistingContainedFile, resolveExistingContainedFileWithoutSymlinks} from './package-path.mjs';
 import {framerailSourceFingerprintSync} from './framerail-source-fingerprint.mjs';
 import {requireDeepwellRuntimeIdentity} from './deepwell-runtime-identity.mjs';
 
@@ -32,6 +32,39 @@ function graphNodeIdentity(node) {
 
 function containedRelative(root, file, label, baseDirectory = root) {
   return resolveExistingContainedFile(root, file, label, baseDirectory);
+}
+
+// Legacy BHL option captures record the absolute pathname of their original
+// acceptance worktree. The receipt bytes are SHA-bound by the frozen candidate
+// set, so changing those path strings would invalidate the evidence. Resolve
+// only the known BHL capture directory within the current evidence checkout;
+// the caller still verifies the captured screenshot's exact SHA-256.
+const BHL_CAPTURE_PREFIX = 'ports/black-highlighter-theme/option-scenarios/captures/';
+const LEGACY_THEME_LAB_SEPARATOR = '/install/local/theme-lab/';
+
+export function canonicalBhlScreenshotPath(root, recordedPath) {
+  if (typeof recordedPath !== 'string' || !recordedPath) {
+    throw new Error('BHL screenshot path is missing');
+  }
+  const pathFromRoot = path.isAbsolute(recordedPath)
+    ? path.relative(root, recordedPath)
+    : recordedPath;
+  const relative = pathFromRoot.startsWith(BHL_CAPTURE_PREFIX)
+    ? pathFromRoot
+    : recordedPath.startsWith('/') && recordedPath.includes(LEGACY_THEME_LAB_SEPARATOR)
+      ? recordedPath.slice(recordedPath.lastIndexOf(LEGACY_THEME_LAB_SEPARATOR) + LEGACY_THEME_LAB_SEPARATOR.length)
+      : null;
+  if (!relative?.startsWith(BHL_CAPTURE_PREFIX)) {
+    throw new Error('BHL screenshot is outside the frozen capture directory');
+  }
+  // Require a real, confined PNG. Do not normalize away traversal or follow a
+  // symlink; resolveExistingContainedFile checks each path component.
+  if (relative.split('/').some(part => part === '..' || part === '.' || part === '') ||
+      !relative.endsWith('.png')) {
+    throw new Error('BHL screenshot path is not a confined PNG');
+  }
+  resolveExistingContainedFileWithoutSymlinks(root, relative, 'BHL screenshot');
+  return relative;
 }
 
 function authorityRecordContains(value, slug, sourceSha256) {
@@ -148,7 +181,7 @@ function validateBhlTargetedEvidence(root, frozen, graph, failures) {
           if (!isDeepStrictEqual(row.option_candidates ?? [], authorityArtifact.value.option_candidates ?? []))
             failures.push(`${scenario.id}: targeted capture row has stale option candidates: ${receiptPath}/${row.state}`);
           try {
-            const screenshotPath = path.relative(root, row.screenshot);
+            const screenshotPath = canonicalBhlScreenshotPath(root, row.screenshot);
             const screenshotBytes = fs.readFileSync(containedRelative(root, screenshotPath, `${scenario.id} screenshot`));
             if (sha(screenshotBytes) !== row.screenshot_sha256) failures.push(`${scenario.id}: screenshot changed: ${row.screenshot}`);
             expectedScreenshots.push({path: screenshotPath, sha256: row.screenshot_sha256, receipt_path: receiptPath, state: row.state, baseline: receipt.baseline, browser_engine: receipt.browser_engine, viewport: row.viewport});

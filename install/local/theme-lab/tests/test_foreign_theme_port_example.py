@@ -42,11 +42,14 @@ class ForeignThemePortExampleTests(unittest.TestCase):
 
     def test_publish_template_validation_css_and_build_stay_bound(self):
         template = (PORT / "candidate-template.css").read_text()
+        authority_overrides = (PORT / "authority-overrides.css").read_text()
         validation = (PORT / "candidate.css").read_text()
         self.assertIn('{$sous-titre}', template)
         self.assertEqual(
             validation,
-            template.replace('{$sous-titre}', '夜明けまで忘れるな'),
+            (template + "\n\n" + authority_overrides).replace(
+                '{$sous-titre}', '夜明けまで忘れるな'
+            ),
         )
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -137,8 +140,16 @@ class ForeignThemePortExampleTests(unittest.TestCase):
             self.assertEqual(sha256(PORT / "artifacts" / filename), expected)
 
         current = json.loads((PORT / "acceptance-verdict.json").read_text())["result"]
-        self.assertEqual(current["verdict"], "inconclusive")
-        self.assertEqual(current["overall_acceptance"]["status"], "inconclusive")
+        self.assertEqual(current["verdict"], "warn")
+        self.assertEqual(current["status"], "warn-no-actionable-issues")
+        self.assertEqual(current["overall_acceptance"]["status"], "warn")
+        self.assertEqual(current["overall_acceptance"]["port_verdict"], "pass")
+        self.assertEqual(current["candidate_css_sha256"], sha256(PORT / "candidate.css"))
+        self.assertEqual(current["next_actions"], [])
+        self.assertEqual(
+            current["decision_authority"]["local_target_acceptance"],
+            "SCP-JP local runtime observations; not Wikidot parity evidence",
+        )
         self.assertEqual(self.receipt["adaptation_authority"]["publishable_without_authority"], 0)
         self.assertEqual(self.receipt["historical_acceptance"]["status"], "SUPERSEDED_CANDIDATE")
 

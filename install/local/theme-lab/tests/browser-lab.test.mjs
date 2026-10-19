@@ -144,8 +144,14 @@ test("Japanese glyph diagnostics use the requested font pair while unrelated fac
   }
 });
 
-test("Japanese glyph diagnostics stay bounded when the requested font never resolves", async () => {
+test("Japanese glyph diagnostics stay bounded when the requested font never resolves", async (t) => {
   const originals = {document: globalThis.document, getComputedStyle: globalThis.getComputedStyle};
+  const originalPerformance = globalThis.performance;
+  // Exercise the exact production 5s deadline with the test runner's fake
+  // clock; scheduler pressure in concurrent CI workers must not add failures.
+  t.mock.timers.enable({apis: ["setTimeout"]});
+  let simulatedNow = 0;
+  globalThis.performance = {now: () => simulatedNow};
   const probe = {id: "", style: {}, textContent: "", getBoundingClientRect: () => ({width: 120, height: 20}), remove() {}};
   globalThis.document = {
     querySelector: () => ({}), createElement: () => probe, body: {append() {}},
@@ -153,12 +159,22 @@ test("Japanese glyph diagnostics stay bounded when the requested font never reso
     getElementById: () => probe,
   };
   globalThis.getComputedStyle = () => ({fontFamily: "Noto Sans JP, sans-serif", fontSize: "16px", fontWeight: "400", fontStyle: "normal", lineHeight: "normal", letterSpacing: "normal"});
-  const started = Date.now();
   try {
-    const result = await inspectPlatformFonts({evaluate: async callback => callback("#page-content")}, "#page-content", {engine: "webkit"});
+    const pending = inspectPlatformFonts({evaluate: async callback => callback("#page-content")}, "#page-content", {engine: "webkit"});
+    let settled = false;
+    void pending.then(() => {settled = true;});
+    simulatedNow = 4999;
+    t.mock.timers.tick(4999);
+    for (let iteration = 0; iteration < 4; iteration += 1) await Promise.resolve();
+    assert.equal(settled, false, "unresolved font must remain pending before the 5-second deadline");
+    simulatedNow = 5000;
+    t.mock.timers.tick(1);
+    const result = await pending;
     assert.equal(result.portable_glyph_measurement.status, "fail");
-    assert.ok(Date.now() - started < 5_500);
+    assert.equal(simulatedNow, 5000);
   } finally {
+    t.mock.timers.reset();
+    globalThis.performance = originalPerformance;
     for (const [key, value] of Object.entries(originals)) {
       if (value === undefined) delete globalThis[key];
       else globalThis[key] = value;

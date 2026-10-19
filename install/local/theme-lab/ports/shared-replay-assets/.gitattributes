@@ -1,0 +1,3 @@
+# Content-addressed source assets must retain their SHA-256-pinned bytes,
+# including original upstream CSS whitespace.
+* -whitespace
