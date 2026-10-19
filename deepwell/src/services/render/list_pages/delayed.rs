@@ -313,25 +313,26 @@ pub(in crate::services::render) fn list_pages_runtime_container_open(
     compat_html: &mut CompatHtmlFragments,
     class: &str,
 ) -> String {
-    compat_html.push_block_html(format!(r#"<div class="{class}">"#))
+    compat_html.push_list_pages_container_open(format!(r#"<div class="{class}">"#))
 }
 
 pub(in crate::services::render) fn list_pages_runtime_container_close(
     compat_html: &mut CompatHtmlFragments,
 ) -> String {
-    compat_html.push_block_html("</div>".to_owned())
+    compat_html.push_list_pages_container_close(false)
 }
 
 pub(in crate::services::render) fn list_pages_runtime_row_container_open(
     compat_html: &mut CompatHtmlFragments,
 ) -> String {
-    compat_html.push_list_pages_row_open(r#"<div class="list-pages-item">"#.to_owned())
+    compat_html
+        .push_list_pages_container_open(r#"<div class="list-pages-item">"#.to_owned())
 }
 
 pub(in crate::services::render) fn list_pages_runtime_row_container_close(
     compat_html: &mut CompatHtmlFragments,
 ) -> String {
-    compat_html.push_list_pages_row_close("</div>".to_owned())
+    compat_html.push_list_pages_container_close(true)
 }
 
 pub(in crate::services::render) fn append_list_pages_delayed_occurrences(

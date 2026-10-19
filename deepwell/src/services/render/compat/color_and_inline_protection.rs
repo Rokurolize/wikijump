@@ -128,6 +128,31 @@ pub(in crate::services::render) fn protect_wikidot_color_spans(
     protected_spans
 }
 
+fn replace_active_inline_matches(
+    source: &str,
+    pattern: &regex::Regex,
+    mut render: impl FnMut(&regex::Captures<'_>) -> String,
+) -> String {
+    // Build the index lazily and against this pass's exact input, since an
+    // earlier inline replacement may have moved every later match.
+    let mut literals: Option<LiteralRegionIndex> = None;
+    pattern
+        .replace_all(source, |captures: &regex::Captures<'_>| {
+            let matched = captures.get(0).expect("inline match should exist");
+            if literals
+                .get_or_insert_with(|| {
+                    LiteralRegionIndex::new_wikidot_inline_protection(source)
+                })
+                .contains(matched.start())
+            {
+                matched.as_str().to_owned()
+            } else {
+                render(captures)
+            }
+        })
+        .into_owned()
+}
+
 pub(in crate::services::render) fn protect_wikidot_inline_html_spans(
     wikitext: &mut String,
     settings: &WikitextSettings,
@@ -137,18 +162,22 @@ pub(in crate::services::render) fn protect_wikidot_inline_html_spans(
     }
 
     let mut spans = Vec::new();
-    let protected = WIKIDOT_ESCAPED_NBSP_REGEX
-        .replace_all(wikitext, |captures: &regex::Captures<'_>| {
+    let protected = replace_active_inline_matches(
+        wikitext,
+        &WIKIDOT_ESCAPED_NBSP_REGEX,
+        |captures| {
             let marker = wikidot_inline_html_marker();
             spans.push(ProtectedWikidotInlineHtml {
                 marker: marker.clone(),
                 html: captures["html"].to_owned(),
             });
             marker
-        })
-        .into_owned();
-    let protected = WIKIDOT_BOLD_OUTER_COLOR_SPAN_REGEX
-        .replace_all(&protected, |captures: &regex::Captures<'_>| {
+        },
+    );
+    let protected = replace_active_inline_matches(
+        &protected,
+        &WIKIDOT_BOLD_OUTER_COLOR_SPAN_REGEX,
+        |captures| {
             if captures["body"].contains("##") {
                 return captures[0].to_owned();
             }
@@ -167,10 +196,12 @@ pub(in crate::services::render) fn protect_wikidot_inline_html_spans(
                 ),
             });
             marker
-        })
-        .into_owned();
-    let protected = WIKIDOT_BOLD_COLOR_SPAN_REGEX
-        .replace_all(&protected, |captures: &regex::Captures<'_>| {
+        },
+    );
+    let protected = replace_active_inline_matches(
+        &protected,
+        &WIKIDOT_BOLD_COLOR_SPAN_REGEX,
+        |captures| {
             if captures["body"].contains("##") {
                 return captures[0].to_owned();
             }
@@ -189,10 +220,12 @@ pub(in crate::services::render) fn protect_wikidot_inline_html_spans(
                 ),
             });
             marker
-        })
-        .into_owned();
-    let protected = WIKIDOT_BOLD_UNDERLINE_SPAN_REGEX
-        .replace_all(&protected, |captures: &regex::Captures<'_>| {
+        },
+    );
+    let protected = replace_active_inline_matches(
+        &protected,
+        &WIKIDOT_BOLD_UNDERLINE_SPAN_REGEX,
+        |captures| {
             let marker = wikidot_inline_html_marker();
             spans.push(ProtectedWikidotInlineHtml {
                 marker: marker.clone(),
@@ -202,8 +235,8 @@ pub(in crate::services::render) fn protect_wikidot_inline_html_spans(
                 ),
             });
             marker
-        })
-        .into_owned();
+        },
+    );
     *wikitext = protected;
     spans
 }
