@@ -22,7 +22,7 @@ for (const value of process.argv.slice(2)) {
   flags.set(match[1], match[2]);
 }
 const required = ["run-id", "port", "runtime-repo", "required-head"];
-const allowed = new Set([...required, "check-only"]);
+const allowed = new Set([...required, "check-only", "backend-project"]);
 if (
   [...flags.keys()].some((flag) => !allowed.has(flag)) ||
   required.some((flag) => !flags.has(flag))
@@ -71,7 +71,17 @@ if (status)
 
 // Check the checkout-independent identities before preparing any artifact.
 const localDeepwell = deepwellRuntimeSourceIdentity(runtimeRepo);
-const running = readRunningDeepwellRuntimeIdentity(runtimeRepo);
+const backendProject =
+  flags.get("backend-project") ?? "wikijump-local-development";
+if (
+  backendProject !== "wikijump-local-development" &&
+  !/^wikijump-theme-lab-[a-z][a-z0-9-]{2,30}$/u.test(backendProject)
+)
+  throw new Error("backend Compose project must be task-owned");
+const running = readRunningDeepwellRuntimeIdentity(runtimeRepo, {
+  composeProject: backendProject,
+  containerName: `${backendProject}-deepwell-1`,
+});
 if (
   localDeepwell.source_sha256 !== running.identity.source_sha256 ||
   localDeepwell.ftml_git_revision !== running.identity.ftml_git_revision

@@ -77,12 +77,15 @@ export function deepwellRuntimeSourceIdentity(repoRoot) {
   return {source_sha256: hash.digest('hex'), ftml_git_revision: ftml[1], inputs: files.length};
 }
 
-export function readRunningDeepwellRuntimeIdentity(repoRoot, {containerName = 'wikijump-local-development-deepwell-1'} = {}) {
+export function readRunningDeepwellRuntimeIdentity(repoRoot, {
+  containerName = 'wikijump-local-development-deepwell-1',
+  composeProject = 'wikijump-local-development'
+} = {}) {
   const root = path.resolve(repoRoot);
   const inspect = JSON.parse(execFileSync('docker', ['inspect', containerName, '--format', '{{json .}}'], {encoding: 'utf8'}).trim());
-  if (inspect.Config?.Labels?.['com.docker.compose.project'] !== 'wikijump-local-development' ||
+  if (inspect.Config?.Labels?.['com.docker.compose.project'] !== composeProject ||
       inspect.Config?.Labels?.['com.docker.compose.service'] !== 'deepwell')
-    throw new Error('running backend is not the expected local-development Deepwell service');
+    throw new Error('running backend is not the expected source-bound Deepwell Compose service');
   const expectedMounts = new Map([
     ['/src/deepwell/src', path.join(root, 'deepwell/src')],
     ['/src/deepwell/build.rs', path.join(root, 'deepwell/build.rs')],

@@ -372,6 +372,41 @@ known generated locale installs (`locales/typed/node_modules` and
 `locales/validator/target`); actual locale source and unexpected symlinks
 remain strict fingerprint inputs.
 
+For a backend that must run from a **different, current Git checkout**, first
+check the isolation of the intended disposable Compose project without
+starting any container:
+
+```sh
+node scripts/prepare-isolated-runtime-stack.mjs \
+  --runtime-repo=/absolute/path/to/current-checkout \
+  --required-head=<exact-40-character-git-commit> \
+  --namespace=basalt-current-unique
+```
+
+This validates an effective `docker compose config` generated from the
+checkout's base and development YAML plus a task-namespaced override. The
+configuration exposes **no host ports** and uses **no shared named volumes**,
+enabling independent database/cache/object-store data. Framerail, WWS and
+Caddy are excluded from this backend-only startup plan. Supply
+`--write=true --output-dir=/absolute/outside/repository` to write the
+verified override with exclusive creation. It does not build, start, stop or
+remove Docker resources; separately coordinate memory and source deployment
+before launching the full service set, then prove its executable provenance.
+
+When that separate backend has been built and started by its owner, bind the
+capture contract to the task-owned Deepwell Compose project rather than the
+shared local-development backend by adding
+`--backend-project=wikijump-theme-lab-<namespace>` to both
+`prepare-current-runtime-contract.mjs` and `ensure-built-framerail.mjs`.
+The built sidecar checks that its backend project matches the task namespace,
+selects the independently provisioned Docker network and mounts only
+checkout-local Framerail dependencies and assets read-only. Its Deepwell RPC
+token is read from that task backend at launch. The old shared development
+containers act only as an image/environment template; protected volumes and
+the task backend's object/database storage remain separate. A collision with
+an existing capture sidecar is treated as an error rather than silently
+replacing another agent's environment.
+
 The regular `wikijump-local-development` development proxy does not itself
 provide the Theme Lab proof headers. `ports/interactive-visual-fixture/ensure-built-framerail.mjs`
 provisions the separate SHA-pinned built transport, and
