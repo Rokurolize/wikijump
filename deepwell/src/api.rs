@@ -692,6 +692,8 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
         import_wikidot_page_files_verify
     );
     register!("import_wikidot_discussion", import_wikidot_discussion);
+    register!("mirror_scope_get", mirror_scope_get);
+    register!("mirror_scope_set", mirror_scope_set);
 
     // Return
     Ok(module)
