@@ -214,7 +214,7 @@ class FakeStanding:
             self.switched = True
         return "config: {}"
 
-    def run(self, evidence: Path, render_ahead: dict, proof=None, *, missing_parked=False):
+    def run(self, evidence: Path, render_ahead: dict, proof=None, *, missing_parked=False, gateway=None):
         new_images = {service: "sha256:" + ("b" + str(index)) * 32 for index, service in enumerate(("deepwell", "framerail", "wws"))}
         (evidence / "build").mkdir(parents=True, exist_ok=True)
         (evidence / "build" / "seal.json").write_text("{}", encoding="utf-8")
@@ -231,6 +231,7 @@ class FakeStanding:
                 )[0]
             )),
             mock.patch.object(promote.refresh, "resource_exists", return_value=not missing_parked),
+            mock.patch.object(promote, "reload_gateway", side_effect=gateway or (lambda: (self.calls.append(("gateway", self.switched)), {"status": "pass", "attempts": 1, "config_sha256": "5" * 64})[1])),
             mock.patch.object(promote, "saved_page_staleness", return_value=0),
             mock.patch.object(promote, "http_canary", return_value={"url": "u", "status": "pass", "required_markers": ["scp-9506", "page-content"]}),
             mock.patch.object(promote, "snapshot_saved_page_output", side_effect=lambda path: (self.calls.append(("snapshot",)), path.write_text("rows", encoding="utf-8"), 24573)[2]),
@@ -274,6 +275,35 @@ class ActivationTest(unittest.TestCase):
         self.assertNotIn(("snapshot",), self.standing.calls, "no generator change, nothing to keep")
         env = (self.standing.home / ".env").read_text(encoding="utf-8")
         self.assertIn("STANDING_WIKIJUMP_SHA=" + "1" * 40, env)
+
+    def test_the_gateway_reloads_from_the_new_deepwell_before_the_standing_proof(self) -> None:
+        order = []
+        result = self.standing.run(
+            self.root / "evidence", NO_RENDER,
+            lambda *a: (order.extend(call[0] for call in self.standing.calls), {"status": "pass"})[1],
+        )
+        self.assertEqual(result["gateway"]["status"], "pass")
+        self.assertIn(("gateway", True), self.standing.calls, "the gateway reloads after the new build starts")
+        self.assertLess(order.index("health"), order.index("gateway"))
+        self.assertIn("gateway", order, "the reload precedes the standing proof")
+
+    def test_a_failed_gateway_reload_restores_the_old_runtime_and_reloads_it(self) -> None:
+        def reload(standing=self.standing, attempts=[]):
+            standing.calls.append(("gateway", standing.switched))
+            attempts.append(standing.switched)
+            if len(attempts) == 1:
+                raise RuntimeError("standing Caddy did not load the Caddyfile Deepwell renders")
+            return {"status": "pass", "attempts": 1, "config_sha256": "6" * 64}
+
+        proof = mock.Mock(return_value={"status": "pass"})
+        with self.assertRaisesRegex(RuntimeError, "activation failed .*did not load.*'status': 'pass'"):
+            self.standing.run(self.root / "evidence", NO_RENDER, proof, gateway=reload)
+        proof.assert_not_called()
+        self.assertEqual(
+            [call for call in self.standing.calls if call[0] == "gateway"],
+            [("gateway", True), ("gateway", False)],
+            "rollback reloads the gateway from the restored Deepwell",
+        )
 
     def test_a_failed_standing_proof_restores_the_old_runtime_and_its_saved_pages(self) -> None:
         def failing_proof(*args):
@@ -408,6 +438,33 @@ class SavedPageStalenessTest(unittest.TestCase):
         sql = self.query(["scp-9506", "theme:it's"])
         self.assertIn("slug = 'scp-wiki'", sql)
         self.assertIn("p.slug IN ('scp-9506', 'theme:it''s')", sql)
+
+
+class GatewayReloadTest(unittest.TestCase):
+    def test_the_cron_command_runs_as_the_cron_user_in_standing_caddy(self) -> None:
+        with mock.patch.object(promote, "run", return_value=f"{'7' * 64} {'7' * 64}") as run:
+            result = promote.reload_gateway()
+        self.assertEqual(result, {"status": "pass", "attempts": 1, "config_sha256": "7" * 64})
+        args = run.call_args.args
+        self.assertEqual(args[:5], ("docker", "exec", "--user", "daemon", "wikijump-standing-caddy-1"))
+        self.assertIn("/usr/local/bin/wikijump-update-caddyfile", args[-1])
+
+    def test_a_loaded_config_that_differs_from_deepwell_fails(self) -> None:
+        with mock.patch.object(promote, "run", return_value=f"{'7' * 64} {'8' * 64}"):
+            with self.assertRaisesRegex(RuntimeError, "did not load the Caddyfile Deepwell renders"):
+                promote.reload_gateway()
+
+    def test_a_reload_that_keeps_failing_names_the_error(self) -> None:
+        failure = subprocess.CalledProcessError(1, ["docker"], stderr="curl: (7) Failed to connect to deepwell\n")
+        with mock.patch.object(promote, "run", side_effect=failure) as run, mock.patch.object(promote.time, "sleep"):
+            with self.assertRaisesRegex(RuntimeError, "gateway reload failed: curl: \\(7\\)"):
+                promote.reload_gateway(attempts=3)
+        self.assertEqual(run.call_count, 3)
+
+    def test_a_reload_succeeds_once_deepwell_answers(self) -> None:
+        failure = subprocess.CalledProcessError(1, ["docker"], stderr="curl: (7)\n")
+        with mock.patch.object(promote, "run", side_effect=[failure, f"{'9' * 64} {'9' * 64}"]), mock.patch.object(promote.time, "sleep"):
+            self.assertEqual(promote.reload_gateway()["attempts"], 2)
 
 
 class ActivationSafetyTest(unittest.TestCase):

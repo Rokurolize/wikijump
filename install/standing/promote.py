@@ -17,8 +17,9 @@ standing as it was (or restores it):
                 new images start on a copy of standing's data and must pass
                 the same freshness, HTTP and browser checks first.
 6. activation   park the old containers, start the new ones, require health,
-                zero stale saved pages, the HTTP canary and the standing
-                browser parity; restore the parked containers on any failure.
+                reload Caddy from the new Deepwell, zero stale saved pages,
+                the HTTP canary and the standing browser parity; restore the
+                parked containers (and reload Caddy from them) on any failure.
 
 The receipt records every stage's duration and result.
 """
@@ -396,6 +397,43 @@ def http_canary(url: str, resolve: str | None = None) -> dict[str, object]:
     if "scp-9506" not in body.lower() or "page-content" not in body:
         raise RuntimeError(f"canary {url} returned an unexpected document")
     return {"url": url, "status": "pass", "required_markers": ["scp-9506", "page-content"]}
+
+
+# Caddy keeps port 443 across activation, but its routes come from Deepwell's
+# `caddyfile` RPC, which its own cron only reloads every five minutes. Run the
+# cron's command as the cron's user, then compare the loaded configuration
+# with the adapted Caddyfile Deepwell renders now.
+GATEWAY_RELOAD_SCRIPT = r"""set -e
+/usr/local/bin/wikijump-update-caddyfile > /dev/null
+rendered=$(mktemp)
+trap 'rm -f "$rendered"' EXIT
+curl -fsS http://deepwell:2747/jsonrpc -X POST \
+	-H @/run/wikijump/deepwell-authorization-header \
+	--json @/etc/caddy-request.json | jq -er .result > "$rendered"
+expected=$(caddy adapt --config "$rendered" --adapter caddyfile 2> /dev/null | jq -S . | sha256sum)
+loaded=$(curl -fsS http://localhost:2019/config/ | jq -S . | sha256sum)
+echo "${expected%% *} ${loaded%% *}"
+"""
+
+
+def reload_gateway(attempts: int = 3, delay: float = 5.0) -> dict[str, object]:
+    """Load the Caddyfile the running Deepwell renders into standing Caddy."""
+    for attempt in range(1, attempts + 1):
+        try:
+            output = run(
+                "docker", "exec", "--user", "daemon", STANDING_NAMESPACE,
+                "sh", "-c", GATEWAY_RELOAD_SCRIPT,
+            )
+        except subprocess.CalledProcessError as error:
+            if attempt == attempts:
+                raise RuntimeError(f"gateway reload failed: {error.stderr.strip()}") from error
+            time.sleep(delay)
+            continue
+        expected, loaded = output.split()
+        if expected != loaded:
+            raise RuntimeError("standing Caddy did not load the Caddyfile Deepwell renders")
+        return {"status": "pass", "attempts": attempt, "config_sha256": loaded}
+    raise AssertionError("unreachable")
 
 
 def browser_canary_slugs(source_root: Path) -> list[str]:
@@ -977,6 +1015,7 @@ def activate(
             cwd=runtime_home,
         ))
         health = timed("health", lambda: refresh.wait_for_health(runtime_home, override_file, health_timeout))
+        gateway = timed("gateway", reload_gateway)
         stale = saved_page_staleness(STANDING_DATABASE, render_ahead["expected_compiled_generator"])
         if stale:
             raise RuntimeError(f"standing serves {stale} stale saved pages")
@@ -1052,7 +1091,7 @@ def activate(
         }
         path = evidence / "refresh-receipt.json"
         refresh.atomic_json_no_replace(path, refresh_receipt)
-        return {"refresh_receipt": str(path), "timings": dict(timings)}
+        return {"refresh_receipt": str(path), "timings": dict(timings), "gateway": gateway}
 
     try:
         switched_result = stages.run("activation", switch_stage)
@@ -1091,6 +1130,7 @@ def activate(
             else:
                 differential_path.write_text(previous_differential, encoding="utf-8")
             refresh.wait_for_health(runtime_home, override_file, health_timeout)
+            rollback["gateway"] = reload_gateway()
             rollback.update(status="pass", canary=http_canary(refresh.CANARY_URL))
         except BaseException as rollback_error:
             rollback["error"] = str(rollback_error)
