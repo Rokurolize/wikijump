@@ -1540,6 +1540,41 @@ mod tests {
     }
 
     #[test]
+    fn extracts_import_file_events() {
+        let raw = extract(AuditEvent::ImportFile {
+            site_id: 51,
+            page_id: 52,
+            file_id: 53,
+            file_name: "theend.jpg",
+        });
+        assert_event_type(&raw, "import.file");
+        assert_eq!(raw.user_id, None);
+        assert_eq!(raw.site_id, Some(51));
+        assert_eq!(raw.page_id, Some(52));
+        assert_eq!(raw.extra_id_1, Some(53));
+        assert_eq!(raw.extra_id_2, None);
+        assert_eq!(raw.extra_string_1.as_deref(), Some("theend.jpg"),);
+        assert_eq!(raw.extra_string_2, None);
+        assert_eq!(raw.extra_number, None);
+
+        let raw = extract(AuditEvent::ImportFileDelete {
+            site_id: 61,
+            page_id: 62,
+            file_id: 63,
+            file_name: "gone.jpg",
+        });
+        assert_event_type(&raw, "import.file-delete");
+        assert_eq!(raw.user_id, None);
+        assert_eq!(raw.site_id, Some(61));
+        assert_eq!(raw.page_id, Some(62));
+        assert_eq!(raw.extra_id_1, Some(63));
+        assert_eq!(raw.extra_id_2, None);
+        assert_eq!(raw.extra_string_1.as_deref(), Some("gone.jpg"));
+        assert_eq!(raw.extra_string_2, None);
+        assert_eq!(raw.extra_number, None);
+    }
+
+    #[test]
     fn extracts_file_undelete_event() {
         let raw = extract(AuditEvent::FileUndelete {
             user_id: 41,
