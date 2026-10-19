@@ -5238,3 +5238,57 @@ async fn listpages_content_body_supports_bounded_ordered_child_results() {
         );
     }
 }
+
+/// Live captures (`wikidot-css-listpages-preview-20261019.json`, issue #2564):
+/// a ListPages head with a whitespace-only body does not own the following
+/// close, so a line-start CSS module consumes both. A ListPages head with a body
+/// still owns its close, and the unclosed CSS module yields to it.
+#[tokio::test]
+async fn css_module_consumes_list_pages_with_a_whitespace_only_body() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let head = "[[module ListPages name=\"missing-x\"]]";
+
+    for (slug, source, list_pages_boxes) in [
+        (
+            "fixture-css-listpages-empty-body",
+            format!("[[module CSS]]\n{head}\n[[/module]]\n\nz"),
+            0,
+        ),
+        (
+            "fixture-css-listpages-blank-line-body",
+            format!("[[module CSS]]\n{head}\n\n[[/module]]\n\nz"),
+            0,
+        ),
+        (
+            "fixture-css-listpages-rule-then-empty-body",
+            format!("[[module CSS]]\n.a{{color:red}}\n{head}\n[[/module]]\n\nz"),
+            0,
+        ),
+        (
+            "fixture-css-listpages-empty-then-second",
+            format!("[[module CSS]]\n{head}\n[[/module]]\n{head}\nTWO\n[[/module]]\n\nz"),
+            1,
+        ),
+        (
+            "fixture-css-listpages-nonempty-body",
+            format!("[[module CSS]]\n{head}\nONE\n[[/module]]\n\nz"),
+            1,
+        ),
+    ] {
+        create_listpages_test_page(&mut runner, site_id, slug, slug, &source).await;
+        let html = load_listpages_test_compiled_html(&runner, site_id, slug).await;
+
+        assert_eq!(
+            html.matches(r#"<div class="list-pages-box">"#).count(),
+            list_pages_boxes,
+            "{slug}:\n{html}",
+        );
+        assert!(html.contains("<p>z</p>"), "{slug}:\n{html}");
+        for literal in ["[[/module]]", "[[module", "color:red"] {
+            assert!(!html.contains(literal), "{slug}: {literal:?}:\n{html}");
+        }
+    }
+}

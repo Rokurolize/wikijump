@@ -83,6 +83,100 @@ fn wikidot_closed_css_keeps_complete_list_pages_markers_raw() {
     assert!(index.contains(source.find("missing-two").unwrap()));
 }
 
+const MISSING_LIST_PAGES: &str = "[[module ListPages name=\"missing-x\"]]";
+
+#[test]
+fn wikidot_css_consumes_list_pages_heads_whose_whitespace_body_leaves_the_close_raw() {
+    // A ListPages body that is only whitespace leaves its close as text, so
+    // the CSS module owns that close (wikidot-css-listpages-preview-20261019.json,
+    // all five render only the trailing `z`, or nothing).
+    let head = MISSING_LIST_PAGES;
+    for (case, source) in [
+        (
+            "css-empty-body-no-tail",
+            format!("[[module CSS]]\n{head}\n[[/module]]"),
+        ),
+        (
+            "css-blank-line-body-tail",
+            format!("[[module CSS]]\n{head}\n\n[[/module]]\n\nz"),
+        ),
+        (
+            "css-space-line-body-tail",
+            format!("[[module CSS]]\n{head}\n \n[[/module]]\n\nz"),
+        ),
+        (
+            "css-head-trailing-space-empty-body",
+            format!("[[module CSS]]\n{head} \n[[/module]]\n\nz"),
+        ),
+        (
+            "css-rule-then-empty-body",
+            format!("[[module CSS]]\n.a{{color:red}}\n{head}\n[[/module]]\n\nz"),
+        ),
+    ] {
+        let close_end = source.find("[[/module]]").unwrap() + "[[/module]]".len();
+
+        assert_eq!(
+            collect_downstream_css_module_ranges(&source),
+            vec![0..close_end],
+            "{case}",
+        );
+        assert!(
+            collect_wikidot_unclosed_css_yield_openers(&source).is_empty(),
+            "{case}",
+        );
+        assert!(
+            LiteralRegionIndex::new_list_pages_syntax(&source)
+                .contains(source.find(head).unwrap()),
+            "{case}",
+        );
+    }
+}
+
+#[test]
+fn wikidot_css_yields_to_list_pages_with_a_body_or_an_inline_close() {
+    // Both render an empty list-pages-box before `z`
+    // (wikidot-css-listpages-preview-20261019.json).
+    let head = MISSING_LIST_PAGES;
+    for (case, source) in [
+        (
+            "css-nonempty-body-tail",
+            format!("[[module CSS]]\n{head}\nONE\n[[/module]]\n\nz"),
+        ),
+        (
+            "css-inline-close-tail",
+            format!("[[module CSS]]\n{head}[[/module]]\n\nz"),
+        ),
+    ] {
+        assert!(
+            collect_downstream_css_module_ranges(&source).is_empty(),
+            "{case}",
+        );
+        assert!(
+            !LiteralRegionIndex::new_list_pages_syntax(&source)
+                .contains(source.find(head).unwrap()),
+            "{case}",
+        );
+    }
+}
+
+#[test]
+fn wikidot_css_closed_by_a_raw_list_pages_close_leaves_the_next_list_pages_live() {
+    // `css-empty-body-then-second-listpages` renders one list-pages-box (the
+    // second module) and `z`.
+    let head = MISSING_LIST_PAGES;
+    let source =
+        format!("[[module CSS]]\n{head}\n[[/module]]\n{head}\nTWO\n[[/module]]\n\nz");
+    let first_close_end = source.find("[[/module]]").unwrap() + "[[/module]]".len();
+    let index = LiteralRegionIndex::new_list_pages_syntax(&source);
+
+    assert_eq!(
+        collect_downstream_css_module_ranges(&source),
+        vec![0..first_close_end],
+    );
+    assert!(index.contains(source.find(head).unwrap()));
+    assert!(!index.contains(source.rfind(head).unwrap()));
+}
+
 #[test]
 fn wikidot_unclosed_css_yields_across_a_css_comment_and_malformed_head() {
     for (source, live_sha256) in [
