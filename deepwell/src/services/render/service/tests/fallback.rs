@@ -102,15 +102,17 @@ fn corpus_replay_worker_preparation_uses_production_protection_order() {
 }
 
 #[test]
-fn corpus_replay_worker_does_not_preprocess_fallback_pages() {
+fn corpus_replay_worker_preprocesses_many_flat_collapsibles() {
+    // Flat collapsible galleries are no longer fallback pages (#2606): the
+    // replay worker runs them through the normal pipeline.
     let mut wikitext = String::new();
-    for index in 0..=MAX_FTML_COMPAT_COLLAPSIBLE_BLOCKS {
+    for index in 0..65 {
         wikitext.push_str(&format!(
             "[[collapsible show=\"+ {index}\" hide=\"- {index}\"]]\nbody\n[[/collapsible]]\n"
         ));
     }
     let input = CorpusReplayExpandedWikitext {
-        wikitext: wikitext.clone(),
+        wikitext,
         page_info: fallback_test_page_info("fallback-replay", "Fallback Replay"),
         settings: WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
         id: PageId {
@@ -125,11 +127,8 @@ fn corpus_replay_worker_does_not_preprocess_fallback_pages() {
 
     let prepared = RenderService::prepare_corpus_replay_wikitext(input);
 
-    assert!(prepared.compatibility_fallback);
-    assert!(!prepared.preprocessed);
-    assert_eq!(prepared.wikitext, wikitext);
-    assert_eq!(prepared.timings.inner_protection_us, 0);
-    assert_eq!(prepared.timings.preprocess_us, 0);
+    assert!(!prepared.compatibility_fallback);
+    assert!(prepared.preprocessed);
 }
 
 #[test]
@@ -143,7 +142,7 @@ fn component_heavy_corpus_page_stays_parse_eligible() {
 }
 
 #[test]
-fn dense_style_resource_uses_compatibility_fallback_before_ftml() {
+fn dense_style_resource_page_has_no_name_gate() {
     let mut source = String::new();
     source.push_str("[[include component:anomaly-class-bar-source]]\n");
     for index in 0..88 {
@@ -163,11 +162,14 @@ fn dense_style_resource_uses_compatibility_fallback_before_ftml() {
         source.push_str("ordinary corpus prose line\n");
     }
 
+    // The score still measures density, but it no longer routes anything to
+    // the fallback by itself, and the style-resource name buys no special
+    // treatment (#2606).
     assert!(
         RenderService::wikidot_compat_parse_complexity_score(&source)
             > MAX_FTML_COMPAT_DENSE_PARSE_SCORE
     );
-    assert!(RenderService::should_use_wikidot_compatibility_fallback(
+    assert!(!RenderService::should_use_wikidot_compatibility_fallback(
         &source,
         &fallback_test_page_info(
             "vg021-jp-scp-style-resource-769330c42a",
@@ -828,18 +830,24 @@ fn wikidot_compatibility_fallback_preserves_tabview_bodies_in_hidden_panels() {
 }
 
 #[test]
-fn many_collapsible_corpus_page_uses_compatibility_fallback_before_ftml() {
+fn many_flat_collapsibles_with_images_and_headings_stay_parse_eligible() {
+    // Gallery-shaped pages like scp-buns carry far more than 48 flat
+    // collapsibles with images and headings; they render through FTML, so
+    // the count gate must not route them to the literal fallback (#2606).
     let mut source = String::new();
-    for index in 0..=MAX_FTML_COMPAT_COLLAPSIBLE_BLOCKS {
+    for index in 0..65 {
         source.push_str(&format!(
-            "[[collapsible show=\"+ Skip {index}\" hide=\"- Skip {index}\"]]\n"
+            "[[collapsible show=\"+ Gallery {index}\" hide=\"- Gallery {index}\"]]\n"
         ));
-        source.push_str("ordinary corpus prose line\n");
+        source.push_str(&format!("++ Section {index}\n"));
+        source.push_str(&format!(
+            "[[image https://scp-wiki.wdfiles.com/local--files/gallery/image-{index}.png]]\n"
+        ));
         source.push_str("[[/collapsible]]\n");
     }
 
     assert!(source.len() < MAX_FTML_COMPAT_PARSE_BYTES);
-    assert!(RenderService::should_use_wikidot_compatibility_fallback(
+    assert!(!RenderService::should_use_wikidot_compatibility_fallback(
         &source,
         &fallback_test_page_info("the-great-hippo", "Great Hippo's Great Skippos")
     ));
@@ -905,7 +913,7 @@ fn pinned_ftml_tight_quote_cap_keeps_deepwell_parse_eligible() {
 }
 
 #[test]
-fn expanded_dense_style_resource_still_uses_compatibility_fallback() {
+fn expanded_dense_style_resource_stays_parse_eligible() {
     let mut source = String::new();
     for index in 0..180 {
         source.push_str(&format!("[[include component:expanded-{index} p=value]]\n"));
@@ -925,7 +933,7 @@ fn expanded_dense_style_resource_still_uses_compatibility_fallback() {
     }
 
     assert!(source.len() < MAX_FTML_COMPAT_PARSE_BYTES);
-    assert!(RenderService::should_use_wikidot_compatibility_fallback(
+    assert!(!RenderService::should_use_wikidot_compatibility_fallback(
         &source,
         &fallback_test_page_info(
             "vg021-jp-scp-style-resource-769330c42a",
