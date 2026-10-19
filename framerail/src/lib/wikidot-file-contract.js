@@ -51,6 +51,16 @@ export const sortFilesWikidot = (files) =>
     return left < right ? -1 : 1
   })
 
+/**
+ * Whether a page's file inventory is read-only for ordinary authoring.
+ * Fully imported mirror pages (page and site both flagged from_wikidot)
+ * show the source inventory only; their files change solely through the
+ * Wikidot import (issue #2603). Matches the both-flags predicate in
+ * Deepwell's file visibility filter and file mutation guard.
+ */
+export const isMirrorFileInventoryReadOnly = (page, site) =>
+  Boolean(page?.from_wikidot && site?.from_wikidot)
+
 /** Totals line inputs: file count and summed size. */
 export const wikidotFileTotals = (files) => ({
   count: (files ?? []).length,
