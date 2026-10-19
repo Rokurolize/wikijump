@@ -576,6 +576,149 @@ mod tests {
     }
 
     #[test]
+    fn mirror_seed_prefers_source_pages_over_generic_seed_pages() {
+        // Refs #2083: during mirror bootstrap a source-owned page from the
+        // imported corpus takes precedence over a generic seed page with the
+        // same slug. The scp-wiki mirror seed must therefore materialize the
+        // source title, tags, and wikitext for every slug the source site
+        // owns as a page, and must never reuse the generic seed file there.
+        //
+        // Source authority is the shared corpus (branch `en` == scp-wiki),
+        // run-20261011-230158, status active for each slug below:
+        // * system:join (entity ee8f6558-4ebc-471d-b293-cbc353250a59,
+        //   payload sha256:2c466eb6, title "Join the Site", tags
+        //   admin/policy, 15 KB custom membership guide with tabview);
+        // * system:members (entity a51810aa-071c-4030-96db-f8c0a71c6606,
+        //   payload sha256:5552baf0, title "Site Members", tags admin,
+        //   custom "+ Acceptance" section with [[module WhoInvited]]);
+        // * system:page-tags (entity 338ff32c-c525-46ff-acc7-f4a03c91df87,
+        //   payload sha256:dfd444df, title "Page Tags", tags admin, 2.4 KB
+        //   custom tag browser with TagCloud limit="2000").
+        // system:recent-changes is source-owned too (entity
+        // f9f2c958-e512-40d5-a9bc-5ccc753a53ce, payload sha256:3a601fe4),
+        // but its source (`[[module SiteChanges]]`) is byte-equivalent to
+        // the generic default, so sharing the generic seed file there is
+        // source-consistent and intentionally retained.
+        let seeder_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("seeder");
+        let seed = SeedData::load(&seeder_path).expect("seed data should load");
+
+        let seed_page = |site: &str, slug: &str| {
+            seed.pages
+                .get(site)
+                .unwrap_or_else(|| panic!("{site} seed pages"))
+                .iter()
+                .find(|page| page.slug == slug)
+                .unwrap_or_else(|| panic!("{site} seed page {slug}"))
+        };
+
+        // Ownership table: (slug, source title, source tags, markers only
+        // the source page carries, markers only the generic seed carries).
+        // Every entry here is page-owned by the source site, so the mirror
+        // seed must carry the source page, not the generic default.
+        let source_owned = [
+            (
+                "system:join",
+                "Join the Site",
+                vec!["admin", "policy"],
+                vec!["[[tabview]]", "Joining the Site", "Guide for Newcomers"],
+                // NOTE: the source guide itself embeds [[module
+                // MembershipApply]] inside its application tab, so only
+                // the generic starter's instruction line and its
+                // MembershipByPassword module discriminate here.
+                vec!["Please customize this page", "MembershipByPassword"],
+            ),
+            (
+                "system:members",
+                "Site Members",
+                vec!["admin"],
+                vec!["+ Acceptance", "[[module WhoInvited]]"],
+                vec!["+ Members:"],
+            ),
+            (
+                "system:page-tags",
+                "Page Tags",
+                vec!["admin"],
+                vec!["TagCloud limit=\"2000\"", "tag-list", "Tag Guide"],
+                vec![],
+            ),
+        ];
+
+        for (slug, expected_title, expected_tags, source_markers, generic_markers) in
+            source_owned
+        {
+            let generic = seed_page("template-en", slug);
+            let mirror = seed
+                .pages
+                .get("scp-wiki")
+                .expect("scp-wiki pages")
+                .iter()
+                .find(|page| page.slug == slug)
+                .unwrap_or_else(|| panic!("scp-wiki seed page {slug}"));
+
+            // The mirror must not reuse the generic seed file for a
+            // source-owned slug; it carries a mirror-specific source copy
+            // (scp-*.ftml, mirroring the scp-topbar.ftml precedent).
+            assert_ne!(
+                mirror.wikitext_filename, generic.wikitext_filename,
+                "mirror {slug} must not reuse the generic seed file",
+            );
+            assert!(
+                mirror
+                    .wikitext_filename
+                    .to_string_lossy()
+                    .starts_with("scp-"),
+                "mirror {slug} must carry a mirror-specific source copy",
+            );
+
+            // Source title and tags win over the generic seed entry.
+            assert_eq!(mirror.title, expected_title);
+            let expected_tags: Vec<String> =
+                expected_tags.into_iter().map(str::to_owned).collect();
+            assert_eq!(mirror.tags, expected_tags);
+
+            // Source content wins: source markers present, generic markers
+            // absent.
+            for marker in source_markers {
+                assert!(
+                    mirror.wikitext.contains(marker),
+                    "mirror {slug} must carry source content ({marker})",
+                );
+            }
+            for marker in generic_markers {
+                assert!(
+                    !mirror.wikitext.contains(marker),
+                    "mirror {slug} must not fall back to generic seed content ({marker})",
+                );
+            }
+            assert_ne!(
+                mirror.wikitext, generic.wikitext,
+                "mirror {slug} must differ from the generic seed page",
+            );
+        }
+
+        // system:recent-changes documents the byte-equivalent exception: the
+        // source page is `[[module SiteChanges]]`, so the shared generic
+        // seed file already materializes the source content.
+        let mirror_changes = seed_page("scp-wiki", "system:recent-changes");
+        assert_eq!(mirror_changes.wikitext.trim(), "[[module SiteChanges]]");
+
+        // Control: fresh native sites keep the generic defaults (#2066 owns
+        // their presentation, not this precedence rule).
+        for site in ["template-en", "www"] {
+            let generic_join = seed_page(site, "system:join");
+            assert_eq!(
+                generic_join.wikitext_filename.to_string_lossy(),
+                "join",
+                "{site} must retain the generic join seed file",
+            );
+            assert!(
+                generic_join.wikitext.contains("[[module MembershipApply]]"),
+                "{site} must retain the generic join starter content",
+            );
+        }
+    }
+
+    #[test]
     fn editable_site_seeds_the_public_self_join_route() {
         let seeder_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("seeder");
         let seed = SeedData::load(&seeder_path).expect("seed data should load");

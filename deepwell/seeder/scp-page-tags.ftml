@@ -1,0 +1,94 @@
+[[module CSS]]
+#page-title {
+    display: none;
+}
+
+.content-panel p {
+    padding: 0 0.75em;
+}
+
+#tagged-pages-list {
+    margin-bottom: 2.25rem;
+    column-width: 12rem;
+    column-gap: 1.25rem;
+    column-rule: 1px solid #888;
+    counter-reset: index;
+}
+
+.tag-list ol {
+    padding: 0;
+    margin-block: .25rem;
+    margin-bottom: 2.25rem;
+    column-width: 12rem;
+    column-gap: 1.25rem;
+    column-rule: 1px solid #888;
+    counter-reset: index;
+}
+.tag-list li {
+    margin-left: 40px;
+}
+.tag-list ol li {
+    list-style-type: var(--index);
+    padding-inline-start: .5ch;
+    margin-inline-start: 3.5ch;
+}
+.tag-list ol li::marker { font-size: .75em; }
+.pages-list-item {
+    margin-bottom: 0.675em;
+    line-height: 1.125;
+    display: flex;
+    align-items: baseline;
+    gap: .175rem;
+}
+.pages-list-item::before {
+    counter-increment: index;
+    content: counter(index) ".";
+    font-size: .625em;
+    text-align: end;
+    font-feature-settings: 'case','ss01','ss04','tnum';
+}
+
+.pages-tag-cloud-box {
+    margin-top: -0.125rem;
+    display: flex;
+    flex-wrap: wrap;
+    grid-gap: 0.185rem;
+    align-items: center;
+    justify-content: space-between;
+    margin-block: 1.5rem;
+}
+
+#u-hidden .pages-tag-cloud-box a:not([href^="/system:page-tags/tag/_"]) {
+    display: none;
+}
+[[/module]]
+
+[[div class="content-panel centered standalone"]]
+Welcome to the tags page! What is a tag? Find out on our [[[a-laymen-s-guide-to-tagging|Tag Guide]]]!
+
+You can browse tags with the [#toc0 tag cloud] at the bottom, or see a [https://scp-wiki.wikidot.com/tag-list comprehensive list of tags]. If you want to search for more than one tag at a time, try our advanced [[[Tag Search]]].
+[[/div]]
+
+[!-- [[module PagesByTag]] --]
+
+[[div class="tag-list"]]
+[[module ListPages category="*" order="title" separate="false" perPage="100" tags="@URL|_" prependLine="[[ol]]" appendLine="[[/ol]]" ]]
+[[li style="--index: '%%index%%.'"]]
+%%title_linked%%
+[[/li]]
+[[/module]]
+[[/div]]
+
+++ Tag Cloud:
+[[module TagCloud limit="2000" target="system:page-tags" minColor="128,128,192" maxColor="153,0,17"]]
+
+-----
+
+[[div id="hidden"]]
+[[module TagCloud limit="2000" target="system:page-tags" showHidden="true" minColor="128,128,192" maxColor="153,0,17"]]
+[[/div]]
+
+[!--
+You can edit parameters of the TagCloud module as described in http://www.wikidot.com/doc:tagcloud-module
+But if you want to keep the tag functionality working - do not remove these modules.
+--]
