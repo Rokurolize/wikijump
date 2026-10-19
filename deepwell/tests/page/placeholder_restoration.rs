@@ -3,6 +3,35 @@
 use super::*;
 
 #[tokio::test]
+async fn sequential_listpages_and_countpages_do_not_leak_html_registry_markers() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded mirror site should exist")
+        .site;
+    // This source-shaped fixture reduces the retained `workbench:flops`
+    // failure to sequential list/count modules followed by later block HTML.
+    let source = include_str!("placeholder_restoration_listpages_countpages.wikitext");
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Sequential runtime module restoration",
+            "wikitext": source,
+        })
+    );
+
+    assert!(
+        !preview
+            .body
+            .to_ascii_lowercase()
+            .contains("wikijumpwikidot"),
+        "a runtime marker reached the public preview: {}",
+        preview.body,
+    );
+}
+
+#[tokio::test]
 async fn optimized_native_lists_restore_protected_inline_formatting() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

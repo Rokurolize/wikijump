@@ -1,9 +1,24 @@
 //! Post-render Wikidot compatibility normalization helpers.
 
 use super::{
-    RenderService, WIKIDOT_EMAIL_CLASS_SPAN_REGEX, WIKIDOT_OBFUSCATED_EMAIL_BODY_REGEX,
-    WIKIDOT_RECOVERABLE_REVERSED_EMAIL_BODY_REGEX,
+    RenderProtectionBundle, RenderService, WIKIDOT_EMAIL_CLASS_SPAN_REGEX,
+    WIKIDOT_OBFUSCATED_EMAIL_BODY_REGEX, WIKIDOT_RECOVERABLE_REVERSED_EMAIL_BODY_REGEX,
 };
+
+impl RenderProtectionBundle {
+    pub(in crate::services::render) fn restore_nested_compatibility_markers(
+        &self,
+        text: &str,
+    ) -> String {
+        RenderService::restore_protected_wikidot_inline_html(
+            RenderService::restore_protected_wikidot_color_spans(
+                self.wikidot_compat_html.restore(text),
+                &self.wikidot_color_spans,
+            ),
+            &self.wikidot_inline_html,
+        )
+    }
+}
 
 impl RenderService {
     pub(in crate::services::render) fn remove_spurious_wikidot_email_classes(

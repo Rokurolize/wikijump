@@ -404,7 +404,8 @@ pub(in crate::services::render) fn protect_authored_runtime_marker_literals(
     let replacements = ranges
         .into_iter()
         .map(|range| {
-            let marker = compat_text.push(&source[range.clone()]);
+            let marker =
+                compat_text.push_authored_runtime_marker_literal(&source[range.clone()]);
             (range, marker)
         })
         .collect::<Vec<_>>();
