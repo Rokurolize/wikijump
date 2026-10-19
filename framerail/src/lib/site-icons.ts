@@ -44,6 +44,24 @@ export interface FaviconDeclaration {
   type: string
 }
 
+/**
+ * The site model the page head derives icon links from.
+ *
+ * An imported view carries the source site's configured icon links even
+ * when the site row itself is not flagged as imported, so the favicon, iOS
+ * touch icons, and Windows tile all share this one derivation. Native
+ * views keep the row's own flag, leaving unconfigured mirrors on the
+ * default fallback.
+ */
+export function iconSiteForHead(
+  site: Nullable<SiteModel>,
+  isImportedView: boolean
+): Nullable<SiteModel> {
+  if (!site) return null
+  if (site.from_wikidot || !isImportedView) return site
+  return { ...site, from_wikidot: true }
+}
+
 function extensionOf(source: string): Nullable<string> {
   const withoutQuery = source.split(/[?#]/, 1)[0]
   const lastDot = withoutQuery.lastIndexOf(".")

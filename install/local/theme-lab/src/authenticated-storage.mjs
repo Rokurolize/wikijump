@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {isLocalWikijumpHostname} from './local-wikijump-host.mjs';
 
 export async function loadThemeLabAuthenticatedStorage(storagePath) {
   const absolute=path.resolve(storagePath);
@@ -16,7 +17,7 @@ export async function loadThemeLabAuthenticatedStorage(storagePath) {
   // changing the cookie bytes passed back to the browser.
   const sessionToken=sessionCookie.value.replace(/^wj%3a/iu,'wj:');
   if(!sessionToken.startsWith('wj:'))throw new Error('Authenticated storage contains an invalid wikijump_token');
-  if(typeof sessionCookie.domain!=='string'||!sessionCookie.domain.endsWith('.wikijump.localhost'))throw new Error('Authenticated storage wikijump_token is not scoped to wikijump.localhost');
+  if(!isLocalWikijumpHostname(sessionCookie.domain))throw new Error('Authenticated storage wikijump_token is not scoped to a local Wikijump host');
   return {absolute,storage,sessionToken};
 }
 

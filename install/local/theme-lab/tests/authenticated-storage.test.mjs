@@ -32,6 +32,23 @@ test('authenticated storage accepts the URI-encoded cookie delimiter preserved b
   }finally{await fs.rm(dir,{recursive:true,force:true})}
 });
 
+test('authenticated storage accepts the development stack cookie scope and rejects foreign scopes',async()=>{
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'theme-lab-auth-'));
+  try{
+    const file=path.join(dir,'storage.json');
+    for(const domain of ['.wikijump.dev.localhost','scpaiueouiuiuiui.wikijump.dev.localhost']){
+      const storage={cookies:[{...validStorage.cookies[0],domain}],origins:[]};
+      await fs.writeFile(file,JSON.stringify(storage),{mode:0o600});
+      assert.equal((await loadThemeLabAuthenticatedStorage(file)).sessionToken,validStorage.cookies[0].value);
+    }
+    for(const domain of ['.example.com','.wikijump.localhost.example.com','wikijump.dev.localhost']){
+      const storage={cookies:[{...validStorage.cookies[0],domain}],origins:[]};
+      await fs.writeFile(file,JSON.stringify(storage),{mode:0o600});
+      await assert.rejects(()=>loadThemeLabAuthenticatedStorage(file),/not scoped to a local Wikijump host/u);
+    }
+  }finally{await fs.rm(dir,{recursive:true,force:true})}
+});
+
 test('administrator browser observation rejects guest or non-administrator sessions',()=>{
   const administrator={my_account_text:'Administrator',account_topbutton_present:true,logout_link_present:true,sign_in_link_present:false};
   assert.equal(administratorBrowserObservationIsValid(administrator),true);

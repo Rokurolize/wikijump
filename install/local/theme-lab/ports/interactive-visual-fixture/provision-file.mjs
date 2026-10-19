@@ -27,7 +27,7 @@ if(taskProject){
 }else if(process.env.THEME_LAB_FIXTURE_SCOPE!=='shared-development'||contractArg){
  throw new Error('attachment writes require explicit shared-development scope or a task-owned run contract');
 }
-const origin=contract?.target_site?.origin??'https://scpaiueouiuiuiui.wikijump.localhost:18443';
+const origin=contract?.target_site?.origin??'https://scpaiueouiuiuiui.wikijump.dev.localhost:18443';
 const fixture=`${origin}/run-owned%3Atheme-lab-visual-acceptance-imported-20260924`;
 const filename='theme-lab-visual-fixture_日本語長名_320px_readability_and_download_controls.txt';
 if(!process.env.WIKIDOT_VERIFY_ADMIN_EMAIL||!process.env.WIKIDOT_VERIFY_ADMIN_PASS)throw new Error('Use the established local verification admin environment');

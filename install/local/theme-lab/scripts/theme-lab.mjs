@@ -27,6 +27,7 @@ import {createDeepwellPreviewClient} from "../src/deepwell-preview.mjs";
 import {ThemeLabError} from "../src/errors.mjs";
 import {ReferenceCache, defaultCacheDir} from "../src/reference-cache.mjs";
 import {startSessionServer} from "../src/session-server.mjs";
+import {isLocalWikijumpHostname} from "../src/local-wikijump-host.mjs";
 import {loadCandidateStructure} from "../src/candidate-structure.mjs";
 
 function parseArgs(argv) {
@@ -105,7 +106,7 @@ function preflightCandidateUrl(value) {
   if (typeof value !== "string" || !value) return;
   let url;
   try { url = new URL(value); } catch { throw new ThemeLabError("invalid_candidate_url", `invalid candidate URL: ${value}`); }
-  if (!url.hostname.endsWith(".wikijump.localhost")) return;
+  if (!isLocalWikijumpHostname(url.hostname)) return;
   let status;
   try {
     status = Number.parseInt(execFileSync("curl", ["-ksS", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "8", value], {encoding: "utf8"}).trim(), 10);
