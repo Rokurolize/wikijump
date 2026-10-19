@@ -1,14 +1,14 @@
 {
   "schema": "wikijump.framerail_route_action_evidence.v1",
-  "source_revision": "e427ff0497235f84cf095bffc876c92103f396db",
+  "source_revision": "3163fbc351a6dadff0d59450bae7f2743f73bbf4",
   "inventory": {
     "path": "docs/development/compatibility-surface-inventory.json",
-    "sha256": "1906d7229472694d2afbbea30e65e9e33c39dbc40481f794f4676a4000ac57cb"
+    "sha256": "0501cdf2a0b7cf80aee5ac53c57a68b7557e6a5cb2f38a368035b3af90807bea"
   },
   "current_inventory": {
-    "source_revision": "1eb80c0242f7c506e19528bf9d745b46890b4f31",
+    "source_revision": "3163fbc351a6dadff0d59450bae7f2743f73bbf4",
     "path": "docs/development/compatibility-surface-inventory.json",
-    "sha256": "90f527c4bd2468d280d25074840ab121945e2cb2be6f5d5bd6c2ba6502899689"
+    "sha256": "0501cdf2a0b7cf80aee5ac53c57a68b7557e6a5cb2f38a368035b3af90807bea"
   },
   "records": [
     {
@@ -1094,6 +1094,18 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-server-action:/?/createPermission",
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-server-action:/?/delete",
       "tests": [
         "framerail/tests/page-delete-action-boundary.test.js::native Wikidot delete accepts an omitted comment"
@@ -1550,6 +1562,18 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/createPermission",
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/delete",
       "tests": [
         "framerail/tests/page-delete-action-boundary.test.js::native Wikidot delete accepts an omitted comment"
@@ -1985,30 +2009,6 @@
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/watchers",
       "tests": [
         "framerail/tests/page-watchers-public-boundary.test.js::Watchers action derives the site from trusted context and remains anonymous"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-server-action:/?/createPermission",
-      "tests": [
-        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
-      ],
-      "tracking": [
-        {
-          "issue": 1372
-        }
-      ],
-      "temporal": []
-    },
-    {
-      "surface_id": "framerail-server-action:/{slug}/{*extra}?/createPermission",
-      "tests": [
-        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
       ],
       "tracking": [
         {
