@@ -3202,6 +3202,21 @@
       "target": "wikijump.deepwell"
     },
     {
+      "source": "deepwell-jsonrpc:import_wikidot_file_delete",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:import_wikidot_file",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:import_wikidot_page_files_verify",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
       "source": "deepwell-jsonrpc:import_wikidot_page_revision",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
@@ -11500,7 +11515,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "66e917b74f19c3445567af05344aaabea732346e27ff4bdaf0774dcc1b5c143c"
+      "source_input_set_sha256": "fdcdd5d17a19a25dd518431686d799c060ada565178d4aaa20afe4ff7c56102b"
     },
     "ftml": {
       "commit": "d7727b245fd69f46d44c04592e392850ea244e13",
@@ -11517,7 +11532,7 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "e6950730355e4fa2a8cfae2e7f715079151ee50f83497c7112466ed855f5fc3c"
+        "sha256": "dab4bead9759dc487ef2e784534a47e4bd47aa014c312d65b7b85dc8c7bef1dd"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
@@ -11565,7 +11580,7 @@
       },
       {
         "path": "deepwell/src/endpoints/import.rs",
-        "sha256": "24373036dcdcb55870100716ec66a357758c75728192ba6b495a77e94c1cb0ae"
+        "sha256": "0dc0b68120a7ea0b85232958635bd197e607c45f110562625733ad36e6bd6422"
       },
       {
         "path": "deepwell/src/endpoints/info.rs",
@@ -11665,7 +11680,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "cb89d2b3869f4fed7575aa7d1295898cdcdd82a1e8cbf3545ca36738197428bd"
+        "sha256": "cdc01c11f6b78b537827a1bcde736b78383489606a41763cc76764f24e80ba4d"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11729,7 +11744,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "7468a14ddb031b44542715580592aa0f24751448a6d6fecb8eed8c291063f9b6"
+        "sha256": "82248f87f8c579997b85effce0c194b17daa5ccbea6179539021de441b3181d3"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -12108,10 +12123,10 @@
     ]
   },
   "counts": {
-    "total": 977,
+    "total": 980,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 188,
+      "deepwell_jsonrpc_method": 191,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 27,
       "framerail_route": 35,
@@ -24971,6 +24986,96 @@
       ]
     },
     {
+      "surface_id": "deepwell-jsonrpc:import_wikidot_file",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:import_wikidot_file",
+        "deepwell/src/endpoints/import.rs#import_wikidot_file"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/mutation_authorization.rs#wikidot_database_import_endpoints_require_platform_staff"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/import.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:import_wikidot_file_delete",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:import_wikidot_file_delete",
+        "deepwell/src/endpoints/import.rs#import_wikidot_file_delete"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/mutation_authorization.rs#wikidot_database_import_endpoints_require_platform_staff"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/import.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
       "surface_id": "deepwell-jsonrpc:import_wikidot_page",
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
@@ -24984,6 +25089,51 @@
         "cases": [],
         "tests": [
           "deepwell/tests/members_freshness.rs#imported_members_sources_preserve_runtime_cache_boundaries"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/import.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:import_wikidot_page_files_verify",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:import_wikidot_page_files_verify",
+        "deepwell/src/endpoints/import.rs#import_wikidot_page_files_verify"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/mutation_authorization.rs#wikidot_database_import_endpoints_require_platform_staff"
         ]
       },
       "evidence": {
@@ -26333,7 +26483,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/list_pages.rs#child_listpages_expands_site_domain_and_parent_fullname"
+          "deepwell/tests/import.rs#failed_import_rolls_back_new_known_user_with_caller_transaction"
         ]
       },
       "evidence": {
