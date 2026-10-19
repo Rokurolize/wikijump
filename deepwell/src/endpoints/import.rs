@@ -21,9 +21,11 @@
 use super::prelude::*;
 use crate::services::MutationAuthorization;
 use crate::services::import::{
-    ImportDiscussion, ImportDiscussionOutput, ImportPage, ImportPageOutput,
-    ImportPageRevision, ImportPageRevisionOutput, ImportService, ImportSite,
-    ImportSiteOutput, ImportUser, ImportUserOutput,
+    ImportDiscussion, ImportDiscussionOutput, ImportFile, ImportFileDelete,
+    ImportFileDeleteOutput, ImportFileOutput, ImportPage, ImportPageFilesVerify,
+    ImportPageFilesVerifyOutput, ImportPageOutput, ImportPageRevision,
+    ImportPageRevisionOutput, ImportService, ImportSite, ImportSiteOutput, ImportUser,
+    ImportUserOutput,
 };
 
 pub async fn import_wikidot_discussion(
@@ -88,6 +90,53 @@ pub async fn import_wikidot_page_revision(
         .or_raise(|| {
             Error::new(
                 "failed to import wikidot page revision",
+                ErrorType::DatabaseImport,
+            )
+        })
+}
+
+pub async fn import_wikidot_file(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<ImportFileOutput> {
+    MutationAuthorization::require_platform_staff(ctx, "import Wikidot file data")?;
+    let input: ImportFile = parse!(params, DatabaseImport);
+    ImportService::add_file(ctx, input).await.or_raise(|| {
+        Error::new("failed to import wikidot file", ErrorType::DatabaseImport)
+    })
+}
+
+pub async fn import_wikidot_file_delete(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<ImportFileDeleteOutput> {
+    MutationAuthorization::require_platform_staff(
+        ctx,
+        "import Wikidot file deletion data",
+    )?;
+    let input: ImportFileDelete = parse!(params, DatabaseImport);
+    ImportService::delete_file(ctx, input).await.or_raise(|| {
+        Error::new(
+            "failed to import wikidot file deletion",
+            ErrorType::DatabaseImport,
+        )
+    })
+}
+
+pub async fn import_wikidot_page_files_verify(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<ImportPageFilesVerifyOutput> {
+    MutationAuthorization::require_platform_staff(
+        ctx,
+        "verify imported Wikidot file inventory data",
+    )?;
+    let input: ImportPageFilesVerify = parse!(params, DatabaseImport);
+    ImportService::verify_page_files(ctx, input)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to verify imported wikidot file inventory",
                 ErrorType::DatabaseImport,
             )
         })

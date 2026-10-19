@@ -116,15 +116,20 @@ test("a superseded file-history response cannot replace the selected file's revi
   await page.goto("/page-workflow-probe", { waitUntil: "domcontentloaded" })
   await waitForSvelteDelegatedHandler(page, "#files-button")
   await page.locator("#files-button").click()
-  const rowFor = (file: typeof FILE_A) =>
-    page.locator(`.file-row[data-id="${file.file_id}"]`)
+  const rowFor = (file: typeof FILE_A) => page.locator(`#file-row-${file.file_id}`)
+  const openRowHistory = async (file: typeof FILE_A) => {
+    await rowFor(file).locator("a", { hasText: "Options" }).click()
+    await page
+      .locator(`#file-options-row-${file.file_id} button`, { hasText: "History" })
+      .click()
+  }
   await expect(rowFor(FILE_A)).toBeVisible()
   await expect(rowFor(FILE_B)).toBeVisible()
 
-  await rowFor(FILE_A).getByRole("link", { name: "History", exact: true }).click()
+  await openRowHistory(FILE_A)
   await expect.poll(() => heldHistoryForA.length).toBe(1)
 
-  await rowFor(FILE_B).getByRole("link", { name: "History", exact: true }).click()
+  await openRowHistory(FILE_B)
   await expect(page.locator(".revision-row")).toContainText(FILE_B.comments)
 
   // Release the earlier file-A response only after file B's revisions are shown.
@@ -182,14 +187,19 @@ test("switching files clears the previous revisions while the new ones load", as
   await page.goto("/page-workflow-probe", { waitUntil: "domcontentloaded" })
   await waitForSvelteDelegatedHandler(page, "#files-button")
   await page.locator("#files-button").click()
-  const rowFor = (file: typeof FILE_A) =>
-    page.locator(`.file-row[data-id="${file.file_id}"]`)
+  const rowFor = (file: typeof FILE_A) => page.locator(`#file-row-${file.file_id}`)
+  const openRowHistory = async (file: typeof FILE_A) => {
+    await rowFor(file).locator("a", { hasText: "Options" }).click()
+    await page
+      .locator(`#file-options-row-${file.file_id} button`, { hasText: "History" })
+      .click()
+  }
   await expect(rowFor(FILE_A)).toBeVisible()
 
-  await rowFor(FILE_A).getByRole("link", { name: "History", exact: true }).click()
+  await openRowHistory(FILE_A)
   await expect(page.locator(".revision-row")).toContainText(FILE_A.comments)
 
-  await rowFor(FILE_B).getByRole("link", { name: "History", exact: true }).click()
+  await openRowHistory(FILE_B)
   await expect.poll(() => heldHistoryForB.length).toBe(1)
   // File A's rows must vanish the moment file B is selected, instead of
   // staying on screen (with stale Revert targets) until B arrives.

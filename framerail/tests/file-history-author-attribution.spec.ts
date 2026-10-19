@@ -114,10 +114,8 @@ const openHistory = async (page: import("@playwright/test").Page) => {
   await page.goto("/page-workflow-probe", { waitUntil: "domcontentloaded" })
   await waitForSvelteDelegatedHandler(page, "#files-button")
   await page.locator("#files-button").click()
-  await page
-    .locator(".file-row")
-    .getByRole("link", { name: "history", exact: true })
-    .click()
+  await page.locator("tr[id^='file-row-'] a", { hasText: "Options" }).click()
+  await page.locator("tr[id^='file-options-row-'] button", { hasText: "History" }).click()
   await expect(page.locator(".revision-row")).toHaveCount(2)
 }
 

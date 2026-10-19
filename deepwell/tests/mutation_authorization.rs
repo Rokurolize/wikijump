@@ -147,6 +147,9 @@ async fn wikidot_database_import_endpoints_require_platform_staff() {
         run_endpoint_err!(runner, import_wikidot_site, json!({})),
         run_endpoint_err!(runner, import_wikidot_page, json!({})),
         run_endpoint_err!(runner, import_wikidot_page_revision, json!({})),
+        run_endpoint_err!(runner, import_wikidot_file, json!({})),
+        run_endpoint_err!(runner, import_wikidot_file_delete, json!({})),
+        run_endpoint_err!(runner, import_wikidot_page_files_verify, json!({})),
     ];
     for error in anonymous_errors {
         assert_contains_error!(error, ErrorType::PermissionDenied);
@@ -162,6 +165,9 @@ async fn wikidot_database_import_endpoints_require_platform_staff() {
         run_endpoint_err!(runner, import_wikidot_site, json!({})),
         run_endpoint_err!(runner, import_wikidot_page, json!({})),
         run_endpoint_err!(runner, import_wikidot_page_revision, json!({})),
+        run_endpoint_err!(runner, import_wikidot_file, json!({})),
+        run_endpoint_err!(runner, import_wikidot_file_delete, json!({})),
+        run_endpoint_err!(runner, import_wikidot_page_files_verify, json!({})),
     ];
     for error in non_staff_errors {
         assert_contains_error!(error, ErrorType::PermissionDenied);

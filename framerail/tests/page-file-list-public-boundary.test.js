@@ -83,39 +83,43 @@ test("Files SSR isolates filename cells from imported themes that style .name", 
     }
   }).body
 
-  const classLists = [...body.matchAll(/class="([^"]+)"/gu)].map((match) =>
-    match[1].split(/\s+/u)
-  )
-  const fileAttributes = classLists.filter((classes) =>
-    classes.includes("file-attribute")
-  )
-  assert.equal(
-    fileAttributes.filter((classes) => classes.includes("file-name")).length,
-    2
-  )
-  assert.equal(fileAttributes.filter((classes) => classes.includes("name")).length, 0)
-  assert.ok(classLists.some((classes) => classes.includes("file-list-header")))
-  assert.match(body, /class="[^"]*\bfile-row\b[^"]*" data-id="7"/u)
+  // Wikidot attachment table: one row per file with a stable row id, and
+  // the filename link keeps its exact file URL.
+  assert.match(body, /<tr id="file-row-7"/u)
   assert.match(
     body,
     /href="\/\/files\.wikijump\.test\/-\/file\/scp-9506\/theme-collision\.txt"/u
   )
-  assert.ok(
-    fileAttributes.some((classes) => classes.includes("created-at")),
-    "created-at cell remains public"
+
+  // Theme isolation: filename cells carry no theme-addressable class, so an
+  // imported theme styling `.name` cannot restyle them. Refs #2067.
+  const classLists = [...body.matchAll(/class="([^"]+)"/gu)].map((match) =>
+    match[1].split(/\s+/u)
   )
-  assert.ok(
-    fileAttributes.some((classes) => classes.includes("updated-at")),
-    "updated-at cell remains public"
-  )
-  assert.ok(
-    fileAttributes.some((classes) => classes.includes("size")),
-    "size cell remains public"
-  )
-  assert.ok(
-    fileAttributes.some((classes) => classes.includes("action")),
-    "action cell remains public"
-  )
-  assert.match(body, /value="Upload a file"/u)
+  assert.equal(classLists.filter((classes) => classes.includes("name")).length, 0)
+
+  // Contract columns: heading, totals, name/type/size headers. The native
+  // maintenance columns (created-at/updated-at) have no place in the
+  // Wikidot attachment list.
+  assert.match(body, /<h1[^>]*>Files<\/h1>/u)
+  assert.match(body, /Total files:\s*1/u)
+  assert.match(body, /Total size:\s*42 Bytes/u)
+  const header = body.match(/<thead[^>]*>[\s\S]*<\/thead>/u)?.[0] ?? ""
+  assert.match(header, /File name/u)
+  assert.match(header, /File type/u)
+  assert.match(header, /Size/u)
+  assert.doesNotMatch(body, /created-at/u)
+  assert.doesNotMatch(body, /updated-at/u)
+
+  // Unobserved MIME types report the MIME itself with MIME hover text, and
+  // sub-kilobyte sizes report raw bytes.
+  assert.match(body, /<span title="text\/plain"[^>]*>text\/plain<\/span>/u)
+  assert.match(body, /42 Bytes/u)
+
+  // Info/Options interaction grouping stays public on every file row, and
+  // the bottom upload affordance keeps its frozen wording.
   assert.match(body, />Info<\/a>/u)
+  assert.match(body, />Options<\/a>/u)
+  assert.match(body, /id="show-upload-button"/u)
+  assert.match(body, /Upload a file from your computer/u)
 })
