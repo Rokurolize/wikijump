@@ -85,6 +85,33 @@ an independently sealed/split evidence supplement with the source manifest,
 verify its downloaded bytes against its published SHA-256, and re-run in a
 clean isolated checkout *without access to the original worktree*.
 
+The optional `scripts/content-addressed-authority-store.py` implements the
+local import/recovery half of this requirement without producing a multi-GB
+single-file tarball. For the exact SHA-pinned inventory above, first import
+from the retained worktree to a dedicated, independently stored object pool:
+
+```sh
+python3 "$clean/install/local/theme-lab/scripts/content-addressed-authority-store.py" \
+  --mode ingest --source-root "$source" --destination-root "$clean" \
+  --store-root /path/to/independent/authority-store \
+  --inventory "$inventory" --inventory-sha256 "$inventory_sha" --apply
+```
+
+On another checkout (or another machine with the independently copied blob
+pool), restore without the original source worktree:
+
+```sh
+python3 "$clean/install/local/theme-lab/scripts/content-addressed-authority-store.py" \
+  --mode restore --destination-root "$clean" \
+  --store-root /path/to/independent/authority-store \
+  --inventory "$inventory" --inventory-sha256 "$inventory_sha" --apply
+```
+
+Omit `--apply` for a read-only plan. The store deduplicates equal SHA-256
+objects and refuses tampering, unsafe paths and overwrites; it does not fetch
+from a remote service or replace a durable, backed-up evidence store. See
+`../ports/LONG-TERM-VALIDATION-OPERATIONS.md` for the long-term requirements.
+
 ## Relocating frozen BHL screenshot references
 
 The twelve frozen BHL option receipts from October 2026 record screenshots
