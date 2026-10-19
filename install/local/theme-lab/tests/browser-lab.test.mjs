@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {exercisePreviewInteractions, inspectBrokenImages, inspectPlatformFonts, launchBrowser, loadChromium, openPage, setViewport, screenshot} from "../src/browser-lab.mjs";
+import {exercisePreviewInteractions, inspectBrokenImages, inspectPlatformFonts, launchBrowser, loadChromium, openPage, setViewport, screenshot, waitForStylesheetsReady} from "../src/browser-lab.mjs";
 
 test("browser launch forwards the explicit WebKit local transport policy", async () => {
   let received;
@@ -203,4 +203,80 @@ test("pointer and focus diagnostics search beyond the first five covered control
   } finally {
     await browser.close();
   }
+});
+
+function stylesheetReadinessPage(links, {waitForFunction = null, failedRequests = []} = {}) {
+  // Dispatch mock evaluate calls by function source the way the existing
+  // tests in this file do: the helper lists applicable sheet hrefs first and
+  // pending sheets second.
+  const evaluateState = async (callback) => {
+    const source = String(callback);
+    if (source.includes("sheet === null")) {
+      return links.filter((link) => !link.disabled && link.sheet === null).map((link) => link.href);
+    }
+    return links
+      .filter((link) => {
+        if (link.disabled) return false;
+        if (link.media === "print") return false;
+        return true;
+      })
+      .map((link) => link.href);
+  };
+  const page = {
+    waitForFunction: waitForFunction ?? (async (predicate) => {
+      const previousDocument = globalThis.document;
+      const previousWindow = globalThis.window;
+      globalThis.document = {querySelectorAll: () => links};
+      globalThis.window = {matchMedia: (query) => ({matches: query !== "print"})};
+      try {
+        if (!predicate()) throw new Error("predicate false in readiness mock");
+      } finally {
+        if (previousDocument === undefined) delete globalThis.document;
+        else globalThis.document = previousDocument;
+        if (previousWindow === undefined) delete globalThis.window;
+        else globalThis.window = previousWindow;
+      }
+    }),
+    evaluate: evaluateState,
+  };
+  if (failedRequests !== null) page.__themeLabNetwork = {failed_requests: failedRequests};
+  return page;
+}
+
+test("stylesheet readiness resolves when every screen sheet is loaded", async () => {
+  const page = stylesheetReadinessPage([
+    {disabled: false, media: "", sheet: {}, href: "http://127.0.0.1/base.css"},
+    {disabled: false, media: "screen", sheet: {}, href: "http://127.0.0.1/screen.css"},
+  ]);
+  await waitForStylesheetsReady(page, {timeout: 50});
+});
+
+test("stylesheet readiness skips disabled and non-matching media links", async () => {
+  const page = stylesheetReadinessPage([
+    {disabled: false, media: "", sheet: {}, href: "http://127.0.0.1/base.css"},
+    {disabled: true, media: "", sheet: null, href: "http://127.0.0.1/disabled.css"},
+    {disabled: false, media: "print", sheet: null, href: "http://127.0.0.1/print.css"},
+  ]);
+  await waitForStylesheetsReady(page, {timeout: 50});
+});
+
+test("stylesheet readiness rejects naming a sheet that never loads", async () => {
+  const page = stylesheetReadinessPage(
+    [{disabled: false, media: "", sheet: null, href: "http://127.0.0.1/late.css"}],
+    {waitForFunction: async () => { throw new Error("Timeout 50ms exceeded."); }},
+  );
+  await assert.rejects(waitForStylesheetsReady(page, {timeout: 50}), /late\.css/u);
+});
+
+test("stylesheet readiness rejects a recorded failed sheet without waiting", async () => {
+  let waited = false;
+  const page = stylesheetReadinessPage(
+    [{disabled: false, media: "", sheet: null, href: "http://127.0.0.1/gone.css"}],
+    {
+      failedRequests: [{url: "http://127.0.0.1/gone.css", reason: "HTTP 404"}],
+      waitForFunction: async () => { waited = true; },
+    },
+  );
+  await assert.rejects(waitForStylesheetsReady(page, {timeout: 50}), /gone\.css/u);
+  assert.equal(waited, false);
 });

@@ -281,3 +281,46 @@ test("second check is fully offline and makes no reference requests", async (t) 
     assert.ok(second.verdict);
   });
 });
+
+test("unapplied reference stylesheet fails the diff loudly instead of dropping deltas", async (t) => {
+  // If the reference stylesheet never applies, the reference inherits and its
+  // values can equal the candidate, so the delta row vanishes entirely. The
+  // diff must fail closed with stylesheets_not_ready rather than record an
+  // unstyled measurement that looks like parity.
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "theme-lab-integration-"));
+  const server = http.createServer((request, response) => {
+    if (request.url === "/reference") {
+      response.statusCode = 200;
+      response.setHeader("content-type", "text/html");
+      response.end(`<!doctype html><html><head><link rel="stylesheet" href="/missing.css"></head><body><div id="header"><h1>Foreign</h1></div></body></html>`);
+      return;
+    }
+    response.statusCode = 404;
+    response.end("no");
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const chromium = loadChromium();
+  const sessionServer = await startSessionServer({
+    socketPath: path.join(dir, "session.sock"),
+    chromium,
+    headless: true,
+    candidateUrl: `${origin}/reference`,
+    referenceAssets: new ReferenceCache({cacheDir: path.join(dir, "cache"), allowPrivate: true}),
+  });
+  t.after(async () => {
+    await sessionServer.close().catch(() => {});
+    await new Promise((resolve) => server.close(resolve));
+    await fs.rm(dir, {recursive: true, force: true});
+  });
+  await assert.rejects(
+    sessionServer.session.check({
+      referenceUrl: `${origin}/reference`,
+      selectors: ["#header h1"],
+      css: "#header h1 { color: rgb(0, 0, 0) !important; }",
+      viewports: false,
+      torture: false,
+    }),
+    (error) => error?.code === "stylesheets_not_ready",
+  );
+});
