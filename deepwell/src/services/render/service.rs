@@ -2222,8 +2222,7 @@ impl RenderService {
                     &mut backlinks,
                     &native_list_wikipedia_links,
                 );
-                let mut wikidot_css_modules =
-                    protection.take_css_modules(&strip_residual);
+                let mut wikidot_css_modules = protection.take_css_modules(strip_residual);
                 Self::localize_wikidot_generated_styles(
                     &mut wikidot_css_modules,
                     current_site.as_ref(),
@@ -2249,8 +2248,7 @@ impl RenderService {
                             current_site.as_ref(),
                             config,
                         );
-                        protection
-                            .restore_compat_text_with_cleanup(&html, &strip_residual)
+                        protection.restore_compat_text_with_cleanup(&html, strip_residual)
                     })
                     .collect();
                 let fallback_code_blocks: Vec<CodeBlock<'static>> = fallback_output
@@ -2269,7 +2267,7 @@ impl RenderService {
                                         current_site.as_ref(),
                                         config,
                                     ),
-                                    &strip_residual,
+                                    strip_residual,
                                 ),
                             ),
                             language: language
@@ -2296,7 +2294,7 @@ impl RenderService {
                     config,
                 );
                 let body =
-                    protection.restore_compat_text_with_cleanup(&body, &strip_residual);
+                    protection.restore_compat_text_with_cleanup(&body, strip_residual);
                 (
                     wikidot_css_modules,
                     fallback_html_block_texts,
@@ -2520,8 +2518,7 @@ impl RenderService {
                     // Deepwell's Wikidot compatibility scanner identifies actual CSS module
                     // syntax before raw HTML fragments are restored. Keeping that typed
                     // provenance separate ensures authored <style> HTML stays in the body.
-                    let mut wikidot_css_modules =
-                        protection.take_css_modules(&strip_residual);
+                    let mut wikidot_css_modules = protection.take_css_modules(strip_residual);
                     if !wikidot_css_modules.is_empty() {
                         wikidot_css_modules.append(&mut html_output.styles);
                         Self::localize_wikidot_generated_styles(
@@ -2590,7 +2587,7 @@ impl RenderService {
                         );
                     html_output.body = Self::restore_wikidot_include_block_break(&html_output.body);
                     html_output.body = protection
-                        .restore_compat_text_with_cleanup(&html_output.body, &strip_residual);
+                        .restore_compat_text_with_cleanup(&html_output.body, strip_residual);
                     if render_settings.layout == Layout::Wikidot {
                         legacy_action_registry
                             .remove_renderer_ids_from_wikidot_html(&mut html_output.body);
@@ -2610,7 +2607,7 @@ impl RenderService {
                                 &render_config,
                             );
                             protection
-                                .restore_compat_text_with_cleanup(&html, &strip_residual)
+                                .restore_compat_text_with_cleanup(&html, strip_residual)
                         })
                         .collect();
                     if render_settings.layout == Layout::Wikidot
@@ -2638,7 +2635,7 @@ impl RenderService {
                                     );
                             let contents = protection.restore_compat_text_with_cleanup(
                                 &contents,
-                                &strip_residual,
+                                strip_residual,
                             );
                             CodeBlock {
                                 contents: Cow::Owned(contents),
