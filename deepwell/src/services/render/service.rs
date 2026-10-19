@@ -396,19 +396,6 @@ impl RenderProtectionBundle {
     fn compat_text_mut(&mut self) -> &mut CompatTextFragments {
         &mut self.wikidot_compat_text
     }
-
-    pub(in crate::services::render) fn restore_nested_compatibility_markers(
-        &self,
-        text: &str,
-    ) -> String {
-        RenderService::restore_protected_wikidot_inline_html(
-            RenderService::restore_protected_wikidot_color_spans(
-                self.wikidot_compat_html.restore(text),
-                &self.wikidot_color_spans,
-            ),
-            &self.wikidot_inline_html,
-        )
-    }
 }
 
 impl Drop for RenderProtectionBundle {
