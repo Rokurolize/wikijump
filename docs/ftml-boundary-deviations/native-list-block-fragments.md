@@ -27,6 +27,74 @@ This is existing BND-09 debt, not a new supported Wikijump grammar. No current F
 
 Remove `NativeListSourceContext` and the trusted block-fragment pre-rendering when FTML exposes a Wikidot-layout list representation with source spans and final-parent information sufficient for Deepwell to render the list normally, with corpus and browser parity evidence proving the top-bar, inline-scope, and inline-delimiter cases.
 
+## Protection restoration repair (#2435, 2026-10-18)
+
+The existing fallback protects inline color/bold output before registering an
+optimized native list. The list registry must restore first, followed by those
+inline dependencies; restoration remains a single ownership-bound pass per
+registry, without recursively interpreting arbitrary marker-shaped text.
+
+`replace_active_inline_matches` in
+`deepwell/src/services/render/compat/color_and_inline_protection.rs` is part of
+this existing BND-09 debt. It applies the existing FTML-compatible literal index
+to each pass's exact input. Inline raw ownership ends on its physical line;
+code, HTML blocks, raw text and Wikidot attribute interiors cannot acquire a
+generated inline marker. The color protector additionally retains its existing
+raw HTML tag boundary; inline HTML protection keeps formatting angle-bracketed
+prose as before. At the later HTML restoration boundary, visible Wikidot
+delimiter text is ordinary output, so only HTML literal/tag regions protect a
+color marker.
+
+Evidence is retained in
+`install/local/wikidot-verification/artifacts/issue2435-protection-boundaries-live-20261018.json`
+(anonymous, non-mutating previews with source/HTML hashes), especially
+`issue2435-literal-line-color`. The public regressions in
+`deepwell/tests/page/placeholder_restoration.rs` vary list length and marker
+position, includes and saved/preview HTML-block lifecycle. FTML PR 741 fixes
+bracketed-span syntax at its owner instead of adding another Deepwell shim.
+
+ListPages runtime containers now retain paired closing-tag provenance and the
+structural stack at their opening boundary. A malformed selected fragment can
+no longer expose the fixed `</div>` delimiter or poison later rows. Literal
+HTML contexts, unrelated namespaces and ordinary block-parent rejection remain
+unchanged. The migration condition above still applies; this repair does not
+add a new source-container allowlist entry or claim that every residual #2435
+case is resolved.
+
+The same issue also exposed runtime Rate fragments crossing Wikidot `span`,
+`size`, or link scopes. A Rate module is runtime HTML only when it occupies its
+source line; inline occurrences remain literal. For a standalone module inside
+one of those cross-tree scopes, Deepwell splits FTML's rendered inline wrapper
+around the trusted block, keeping the block outside paragraphs and preserving
+the observed wrapper before and after it. Adjacent Rate modules in the same
+scope are grouped so they keep one wrapper. Other block fragment producers keep
+the existing parent restrictions. The behavior is covered by
+`deepwell/src/services/render/service/tests.rs` and the anonymous, non-mutating
+preview records in
+`install/local/wikidot-verification/artifacts/issue2435-protection-boundaries-live-20261018.json`.
+It remains Wikijump runtime rendering behavior and does not expand the FTML
+candidate surface.
+
+The incremental block-parent reader now follows browser recovery when a
+closing tag names an open ancestor: it closes that element and its malformed
+descendants, while unmatched closing tags have no effect. This allows later
+trusted fragments to use the surviving HTML parent on pages with crossed
+markup. Invalid tag starts, opaque elements, and any context that still leaves
+an unsafe inline parent remain fail-closed; focused regressions cover both
+ancestor recovery and the unmatched-close case.
+
+Compatibility fallback and normal HTML output now perform a final residual
+protection pass. Registered fragments that could not be placed structurally
+are emitted as escaped text in visible HTML data; reserved runtime marker
+tokens whose registry was lost across an expanded fallback are removed at the
+output boundary. Attributes remain excluded from fragment expansion, and the
+marker filter only accepts complete reserved token shapes. Regressions cover
+preformatted output, opaque code, attributes, known residual fragments, and
+malformed or incomplete token text. The current diagnostic of 120 previously
+affected Standing pages produced no body markers on the v31 candidate; the
+combined repair advances the renderer epoch to v32. Full post-promotion
+Standing verification remains the acceptance gate for #2435.
+
 ## Owner
 
 Rokurolize.
