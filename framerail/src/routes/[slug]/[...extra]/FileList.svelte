@@ -8,7 +8,10 @@
     sortFilesWikidot,
     wikidotFileSize,
     wikidotFileTotals,
-    wikidotFileTypeDescription
+    wikidotFileTypeDescription,
+    wikidotMirrorFilesReadOnlyPopup,
+    wikidotRenameDeniedPopup,
+    wikidotUploadDeniedPopup
   } from "$lib/wikidot-file-contract"
   import WikidotFileInfoModal from "./WikidotFileInfoModal.svelte"
   import type { SvelteMap } from "svelte/reactivity"
@@ -78,33 +81,12 @@
 
   function openUpload() {
     if (isMirrorFileInventoryReadOnly(data.page, data.site)) {
-      errorPopupState.current = {
-        state: true,
-        title: "PERMISSION ERROR",
-        leadIn: "Please note:",
-        message: "Files on this imported page are read-only.",
-        extraMessage:
-          "Mirror pages show the source inventory. Ask a site administrator to update their files through the Wikidot import.",
-        actionLink: null,
-        data: null
-      }
+      errorPopupState.current = wikidotMirrorFilesReadOnlyPopup()
       return
     }
 
     if (wikidot && !data.user_session) {
-      errorPopupState.current = {
-        state: true,
-        title: "PERMISSION ERROR",
-        leadIn: "Please note:",
-        message: "Sorry, you can not attach a new file to this page.",
-        extraMessage:
-          "Only owner (creator) of this page, site administrators and perhaps selected moderators are allowed to do it.",
-        actionLink: {
-          href: "#action:login",
-          label: "Sign in as Wikidot user"
-        },
-        data: null
-      }
+      errorPopupState.current = wikidotUploadDeniedPopup()
       return
     }
 
@@ -117,19 +99,7 @@
   // every ?/fileEdit POST independently.
   function openFileRename(fileId: number) {
     if (wikidot && !data.user_session) {
-      errorPopupState.current = {
-        state: true,
-        title: "PERMISSION ERROR",
-        leadIn: "Please note:",
-        message: "Sorry, you can not rename file attachment in this page.",
-        extraMessage:
-          "Only owner (creator) of this page, site administrators and perhaps selected moderators are allowed to do it.",
-        actionLink: {
-          href: "#action:login",
-          label: "Sign in as Wikidot user"
-        },
-        data: null
-      }
+      errorPopupState.current = wikidotRenameDeniedPopup()
       return
     }
 
@@ -507,7 +477,7 @@
   <div class="file-list-scroll">
     <div class="file-list">
       <div class="file-list-message">
-        {data.internationalization?.["wiki-page-file-no-files"]}
+        {localized("wiki-page-file-no-files", "No files attached to this page.")}
       </div>
     </div>
   </div>
