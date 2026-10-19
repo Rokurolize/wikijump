@@ -184,6 +184,8 @@ impl RenderContext {
             } else {
                 RenderLifecycle::SavedPage
             },
+            // The surrounding ListPages render owns any protected source markers
+            // and restores them after this selected-content render returns.
             suppress_nested_list_pages: true,
         }
     }

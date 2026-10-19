@@ -36,6 +36,9 @@ mod membership;
 #[path = "page/list_pages_runtime.rs"]
 mod list_pages_runtime;
 
+#[path = "page/placeholder_restoration.rs"]
+mod placeholder_restoration;
+
 #[path = "page/page_move.rs"]
 mod page_move;
 

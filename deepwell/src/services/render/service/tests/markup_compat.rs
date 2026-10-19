@@ -392,7 +392,7 @@ fn protects_css_before_list_pages_and_rejoins_the_outer_pipeline() {
 
     let css_modules = outer
         .protection
-        .restore(|protection| protection.take_css_modules());
+        .restore(|protection| protection.take_css_modules(|text| text.to_owned()));
     assert_eq!(
         css_modules,
         [
