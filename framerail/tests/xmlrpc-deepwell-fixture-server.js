@@ -5,10 +5,18 @@ import {
   fixtureState,
   resetRequestGroups
 } from "./xmlrpc-deepwell-fixture/context.js"
+import { pages } from "./xmlrpc-deepwell-fixture/data.js"
 import { dispatchFixtureRpc } from "./xmlrpc-deepwell-fixture/dispatch.js"
 import { sendRpcError } from "./xmlrpc-deepwell-fixture/response.js"
 
 const PORT = Number(process.env.PLAYWRIGHT_FIXTURE_PORT ?? "42747")
+const initialPageWorkflowProbe = structuredClone(pages["page-workflow-probe"])
+const initialPageWorkflowFiles = Object.fromEntries(
+  Object.entries(fixtureState.filesByPageId[3000340] ?? {}).map(([name, file]) => [
+    name,
+    { ...file, content: Buffer.from(file.content) }
+  ])
+)
 
 /**
  * @param {import("node:http").ServerResponse} response
@@ -50,6 +58,17 @@ const handleDiagnosticRequest = (request, response) => {
 
   if (request.method === "POST" && url.pathname === "/reset-authenticated-profile") {
     fixtureState.authenticatedUser = createAuthenticatedUser()
+    sendJson(response, { reset: true })
+    return true
+  }
+  if (request.method === "POST" && url.pathname === "/reset-page-workflow-probe") {
+    Object.assign(pages["page-workflow-probe"], structuredClone(initialPageWorkflowProbe))
+    fixtureState.filesByPageId[3000340] = Object.fromEntries(
+      Object.entries(initialPageWorkflowFiles).map(([name, file]) => [
+        name,
+        { ...file, content: Buffer.from(file.content) }
+      ])
+    )
     sendJson(response, { reset: true })
     return true
   }

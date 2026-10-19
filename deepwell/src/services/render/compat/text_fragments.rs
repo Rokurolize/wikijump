@@ -11,6 +11,8 @@ pub(in crate::services::render) const COMPAT_TEXT_MARKER_PREFIX: &str =
 pub(in crate::services::render) struct CompatTextFragments {
     namespace: String,
     fragments: Vec<String>,
+    #[serde(default)]
+    cleanup_exempt_fragments: BTreeSet<usize>,
 }
 
 impl CompatTextFragments {
@@ -25,6 +27,7 @@ impl CompatTextFragments {
         Self {
             namespace,
             fragments: Vec::new(),
+            cleanup_exempt_fragments: BTreeSet::new(),
         }
     }
 
@@ -38,18 +41,33 @@ impl CompatTextFragments {
         self.push_owned(text.to_owned()).0
     }
 
+    /// Keep a source-authored runtime-shaped literal verbatim when rendered
+    /// output is swept for unresolved protection markers.
+    pub(in crate::services::render) fn push_authored_runtime_marker_literal(
+        &mut self,
+        text: &str,
+    ) -> String {
+        let (marker, index) = self.push_owned(text.to_owned());
+        self.cleanup_exempt_fragments.insert(index);
+        marker
+    }
+
     pub(in crate::services::render) fn push_escaped_html_text(
         &mut self,
         text: &str,
     ) -> String {
-        self.push_owned(escape_html_text(text)).0
+        let (marker, index) = self.push_owned(escape_html_text(text));
+        self.cleanup_exempt_fragments.insert(index);
+        marker
     }
 
     pub(in crate::services::render) fn push_tracked_escaped_html_text(
         &mut self,
         text: &str,
     ) -> (String, usize) {
-        self.push_owned(escape_html_text(text))
+        let (marker, index) = self.push_owned(escape_html_text(text));
+        self.cleanup_exempt_fragments.insert(index);
+        (marker, index)
     }
 
     pub(in crate::services::render) fn logical_len_for_tracked_fragments(
@@ -113,31 +131,50 @@ impl CompatTextFragments {
     }
 
     /// Clean runtime tokens in rendered text while restoring this registry's
-    /// contents verbatim. Registered fragments may contain authored strings
-    /// that resemble runtime identifiers and must keep their literal value.
+    /// contents. Fragments explicitly marked as source text retain authored
+    /// marker-shaped strings verbatim.
     pub(in crate::services::render) fn restore_with_cleanup(
         &self,
         text: &str,
         cleanup: impl Fn(&str) -> String,
     ) -> String {
+        self.restore_with_resolver_and_cleanup(text, str::to_owned, cleanup)
+    }
+
+    /// Resolve markers owned by another registry inside each fragment before
+    /// cleaning unresolved runtime tokens. Escaped source fragments retain
+    /// their literal marker-shaped text, while registered nested runtime
+    /// fragments still get a chance to resolve through their owner.
+    pub(in crate::services::render) fn restore_with_resolver_and_cleanup(
+        &self,
+        text: &str,
+        resolve: impl Fn(&str) -> String,
+        cleanup: impl Fn(&str) -> String,
+    ) -> String {
         if self.fragments.is_empty() || !text.contains(&self.namespace) {
-            return cleanup(text);
+            return cleanup(&resolve(text));
         }
 
         let mut output = String::with_capacity(text.len());
         let mut cursor = 0;
         while let Some(offset) = text[cursor..].find(&self.namespace) {
             let start = cursor + offset;
-            output.push_str(&cleanup(&text[cursor..start]));
+            output.push_str(&cleanup(&resolve(&text[cursor..start])));
             if let Some((index, len)) = self.marker_at(&text[start..]) {
-                output.push_str(&self.fragments[index]);
+                let fragment = &self.fragments[index];
+                let fragment = resolve(fragment);
+                if self.cleanup_exempt_fragments.contains(&index) {
+                    output.push_str(&fragment);
+                } else {
+                    output.push_str(&cleanup(&fragment));
+                }
                 cursor = start + len;
             } else {
                 output.push_str(&self.namespace);
                 cursor = start + self.namespace.len();
             }
         }
-        output.push_str(&cleanup(&text[cursor..]));
+        output.push_str(&cleanup(&resolve(&text[cursor..])));
         output
     }
 
@@ -259,12 +296,56 @@ mod tests {
     #[test]
     fn cleanup_preserves_authored_marker_text_in_registered_fragments() {
         let mut fragments = CompatTextFragments::new("");
-        let marker = fragments.push("authored INTERNAL text");
+        let marker =
+            fragments.push_authored_runtime_marker_literal("authored INTERNAL text");
         let text = format!("before INTERNAL {marker} after");
 
         assert_eq!(
             fragments.restore_with_cleanup(&text, |text| text.replace("INTERNAL", "")),
             "before  authored INTERNAL text after",
+        );
+    }
+
+    #[test]
+    fn cleanup_removes_nested_runtime_markers_but_preserves_authored_literals() {
+        let nested_runtime_marker =
+            "WIKIJUMPWIKIDOTCOMPATHTML0123456789abcdef0123456789abcdefI7X";
+        let mut fragments = CompatTextFragments::new("");
+        let generated_fragment =
+            fragments.push(&format!("generated {nested_runtime_marker}"));
+        let authored_literal =
+            fragments.push_authored_runtime_marker_literal(nested_runtime_marker);
+        let text = format!("{generated_fragment}|{authored_literal}");
+
+        assert_eq!(
+            fragments.restore_with_cleanup(&text, |text| {
+                text.replace(nested_runtime_marker, "")
+            }),
+            format!("generated |{nested_runtime_marker}"),
+        );
+    }
+
+    #[test]
+    fn nested_registry_resolution_keeps_escaped_authored_marker_literals() {
+        let nested_runtime_marker =
+            "WIKIJUMPWIKIDOTCOMPATHTML0123456789abcdef0123456789abcdefI7X";
+        let authored_marker =
+            "WIKIJUMPWIKIDOTCOMPATTEXTffffffffffffffffffffffffffffffffI0X";
+        let mut fragments = CompatTextFragments::new("");
+        let nested = fragments.push(&format!("generated {nested_runtime_marker}"));
+        let authored = fragments.push_escaped_html_text(authored_marker);
+        let text = format!("{nested}|{authored}");
+
+        assert_eq!(
+            fragments.restore_with_resolver_and_cleanup(
+                &text,
+                |text| text.replace(nested_runtime_marker, "resolved HTML"),
+                |text| {
+                    text.replace(nested_runtime_marker, "")
+                        .replace(authored_marker, "")
+                },
+            ),
+            format!("generated resolved HTML|{authored_marker}"),
         );
     }
 

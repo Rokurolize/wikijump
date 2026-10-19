@@ -1,4 +1,5 @@
 import {
+  pageCreatePermissionAction,
   pageDeleteAction,
   pageDeletePermissionAction,
   pageEditAction,
@@ -53,6 +54,7 @@ export const pageActions = {
   backlinks: pageBacklinksAction,
   delete: pageDeleteAction,
   edit: pageEditAction,
+  createPermission: pageCreatePermissionAction,
   editPermission: pageEditPermissionAction,
   movePermission: pageMovePermissionAction,
   deletePermission: pageDeletePermissionAction,

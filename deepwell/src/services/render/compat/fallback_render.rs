@@ -71,7 +71,11 @@ impl RenderProtectionBundle {
         text: &str,
         cleanup: impl Fn(&str) -> String,
     ) -> String {
-        self.wikidot_compat_text.restore_with_cleanup(text, cleanup)
+        self.wikidot_compat_text.restore_with_resolver_and_cleanup(
+            text,
+            |fragment| self.restore_nested_compatibility_markers(fragment),
+            cleanup,
+        )
     }
 
     pub(in crate::services::render) fn take_css_modules(

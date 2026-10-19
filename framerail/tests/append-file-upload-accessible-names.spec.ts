@@ -10,6 +10,12 @@ const appURL = (projectName: string) =>
     ? `https://localhost:${process.env.PLAYWRIGHT_HTTPS_APP_PORT ?? "4373"}`
     : `http://localhost:${process.env.PLAYWRIGHT_APP_PORT ?? "4173"}`
 
+test.afterEach(async ({ request }, testInfo) => {
+  if (!testInfo.title.startsWith("authorized Append and Upload round-trip")) return
+  const response = await request.post(`${FIXTURE_URL}/reset-page-workflow-probe`)
+  expect(response.ok()).toBe(true)
+})
+
 const waitForPageActionsHydration = (page: import("@playwright/test").Page) =>
   page.waitForFunction(() => {
     const pageContent = document.querySelector("#page-content")

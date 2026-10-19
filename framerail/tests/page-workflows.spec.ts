@@ -319,7 +319,7 @@ test("history compare labels match visible row numbers while preserving timeline
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
   await page.goto("/authoring-history-probe")
   await waitForSvelteDelegatedHandler(page, "#history-button")
-  await page.getByRole("link", { name: "history", exact: true }).click()
+  await page.locator("#history-button").click()
 
   const table = page.locator("#action-area table.page-history")
   await expect(table.locator('tbody > tr[id^="revision-row-"]').first()).toBeVisible()
@@ -371,11 +371,13 @@ test("history ignores a stale revision diff response", async ({ page, request })
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
   await page.goto("/authoring-history-probe")
   await waitForSvelteDelegatedHandler(page, "#history-button")
-  await page.getByRole("link", { name: "history", exact: true }).click()
+  await page.locator("#history-button").click()
   await expect(page.locator(".revision-diff-controls")).toBeVisible()
 
   const fromRevision = page.locator("#revision-diff-from")
   const toRevision = page.locator("#revision-diff-to")
+  await fromRevision.selectOption({ label: "2" })
+  await toRevision.selectOption({ label: "3" })
   await page.locator(".revision-diff-controls button").nth(1).click()
   await expect
     .poll(async () => {
@@ -384,8 +386,8 @@ test("history ignores a stale revision diff response", async ({ page, request })
     })
     .toBe(1)
 
-  await fromRevision.selectOption("2")
-  await toRevision.selectOption("1")
+  await fromRevision.selectOption({ label: "3" })
+  await toRevision.selectOption({ label: "2" })
   await page.locator(".revision-diff-controls button").nth(1).click()
 
   await expect
@@ -432,7 +434,7 @@ test("WIKIDOT History View Version and View Source actions still load selected r
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
   await page.goto("/authoring-history-probe")
   await waitForSvelteDelegatedHandler(page, "#history-button")
-  await page.getByRole("link", { name: "history", exact: true }).click()
+  await page.locator("#history-button").click()
 
   const oldRevision = page.locator(
     '#action-area table.page-history tr[id="revision-row-9000341"]'
@@ -465,7 +467,7 @@ test("WIKIDOT History View Version and View Source actions still load selected r
   )
 })
 
-test("WIKIDOT Page Source links only the same-site component include target", async ({
+test("WIKIDOT Page Source links same-site and cross-site include targets", async ({
   page
 }) => {
   await page.setExtraHTTPHeaders(SITE_HEADERS)
@@ -478,11 +480,14 @@ test("WIKIDOT Page Source links only the same-site component include target", as
   expect(await source.textContent()).toBe(
     '[[include component:image-block\n|caption=fixture\n]]\n[[include component:image-block]]\n [[include component:spaced-literal]]\n[[include :scp-wiki:component:license-box]]\n@@[[include component:literal]]@@\n<img src=x onerror="alert(1)">'
   )
-  await expect(source.locator("a")).toHaveCount(2)
+  await expect(source.locator("a")).toHaveCount(3)
   const includes = source.getByRole("link", { name: "component:image-block" })
   await expect(includes).toHaveCount(2)
   await expect(includes.nth(0)).toHaveAttribute("href", "/component%3Aimage-block")
   await expect(includes.nth(1)).toHaveAttribute("href", "/component%3Aimage-block")
+  await expect(
+    source.getByRole("link", { name: ":scp-wiki:component:license-box" })
+  ).toHaveAttribute("href", "https://scp-wiki.wikidot.com/component:license-box")
   const include = includes.nth(0)
   await expect(source.locator("img")).toHaveCount(0)
   await expect(source.locator("a").nth(0)).toHaveText("component:image-block")
@@ -500,7 +505,7 @@ test("history keeps the latest selected revision when an older response arrives 
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
   await page.goto("/authoring-history-probe")
   await waitForSvelteDelegatedHandler(page, "#history-button")
-  await page.getByRole("link", { name: "history", exact: true }).click()
+  await page.locator("#history-button").click()
 
   let releaseFirst: (() => void) | undefined
   let firstRequestStarted = () => {}
@@ -556,7 +561,7 @@ test("history keeps the latest selection when the initially newer request resolv
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
   await page.goto("/authoring-history-probe")
   await waitForSvelteDelegatedHandler(page, "#history-button")
-  await page.getByRole("link", { name: "history", exact: true }).click()
+  await page.locator("#history-button").click()
 
   let releaseFirst: (() => void) | undefined
   let firstRequestStarted = () => {}
@@ -613,9 +618,9 @@ test("history diff keeps added and removed source readable against its semantic 
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
   await page.goto("/authoring-history-probe")
   await waitForSvelteDelegatedHandler(page, "#history-button")
-  await page.getByRole("link", { name: "history", exact: true }).click()
-  await page.locator("#revision-diff-from").selectOption("2")
-  await page.locator("#revision-diff-to").selectOption("1")
+  await page.locator("#history-button").click()
+  await page.locator("#revision-diff-from").selectOption({ label: "3" })
+  await page.locator("#revision-diff-to").selectOption({ label: "2" })
   await page.locator(".revision-diff-controls button").nth(1).click()
 
   const added = page.locator("#action-area .revision-diff-line.added").first()
@@ -670,7 +675,7 @@ test("WIKIDOT History keeps the seven-cell source table contract at phone widths
     await page.setViewportSize({ width, height: 844 })
     await page.goto("/authoring-history-probe")
     await waitForSvelteDelegatedHandler(page, "#history-button")
-    await page.getByRole("link", { name: "history", exact: true }).click()
+    await page.locator("#history-button").click()
     const table = page.locator("#action-area table.page-history")
     await expect(table).toBeVisible()
     const headerRow = table.locator("tbody > tr").first()
@@ -699,14 +704,34 @@ test("WIKIDOT History keeps the seven-cell source table contract at phone widths
     await expect(
       currentCells.nth(1).locator('input[type="radio"][name="to"]')
     ).toBeVisible()
-    await expect(currentCells.nth(1)).toHaveAttribute("style", "width: 5em")
-    await expect(currentCells.nth(3)).toHaveAttribute("style", "width: 5em")
-    await expect(currentCells.nth(4)).toHaveAttribute("style", "width: 15em")
-    await expect(currentCells.nth(5)).toHaveAttribute(
-      "style",
-      "padding: 0 0.5em; width: 7em;"
-    )
-    await expect(currentCells.nth(6)).toHaveAttribute("style", "font-size: 90%")
+    await expect
+      .poll(() =>
+        currentCells.nth(1).evaluate((cell) => (cell as HTMLElement).style.width)
+      )
+      .toBe("5em")
+    await expect
+      .poll(() =>
+        currentCells.nth(3).evaluate((cell) => (cell as HTMLElement).style.width)
+      )
+      .toBe("5em")
+    await expect
+      .poll(() =>
+        currentCells.nth(4).evaluate((cell) => (cell as HTMLElement).style.width)
+      )
+      .toBe("15em")
+    await expect
+      .poll(() =>
+        currentCells.nth(5).evaluate((cell) => {
+          const style = (cell as HTMLElement).style
+          return { padding: style.padding, width: style.width }
+        })
+      )
+      .toEqual({ padding: "0px 0.5em", width: "7em" })
+    await expect
+      .poll(() =>
+        currentCells.nth(6).evaluate((cell) => (cell as HTMLElement).style.fontSize)
+      )
+      .toBe("90%")
     await expect(currentCells.nth(1).locator('input[type="radio"]')).toHaveCount(2)
     const revisionId =
       (await currentRow.getAttribute("id"))?.replace("revision-row-", "") ?? ""
@@ -948,7 +973,7 @@ test("history ignores a stale successful diff after page navigation", async ({
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
   await page.goto("/authoring-history-probe")
   await waitForSvelteDelegatedHandler(page, "#history-button")
-  await page.getByRole("link", { name: "history", exact: true }).click()
+  await page.locator("#history-button").click()
   await expect(page.locator(".revision-diff-controls")).toBeVisible()
   await page.locator(".revision-diff-controls button").nth(1).click()
   await expect
@@ -979,7 +1004,7 @@ test("history ignores a stale failure after page navigation", async ({
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
   await page.goto("/authoring-history-probe")
   await waitForSvelteDelegatedHandler(page, "#history-button")
-  await page.getByRole("link", { name: "history", exact: true }).click()
+  await page.locator("#history-button").click()
   await expect(page.locator(".revision-diff-controls")).toBeVisible()
   await page.locator(".revision-diff-controls button").nth(1).click()
   await expect

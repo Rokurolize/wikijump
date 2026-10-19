@@ -1551,6 +1551,35 @@ async fn check_permission_endpoint() {
 }
 
 #[tokio::test]
+async fn page_create_permission_reports_category_create_rights() {
+    let mut runner = TestRunner::setup().await;
+    let f = PermissionFixture::setup(&runner).await;
+    let slug = format!("{TEST_CATEGORY_NAME}:create-permission-{}", next_n());
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_b),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Slug(slug.clone().into())),
+        ..Default::default()
+    });
+    assert!(
+        run_endpoint!(runner, page_create_permission).can_create,
+        "user_b should have create permission for pages in test-category"
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_c),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Slug(slug.into())),
+        ..Default::default()
+    });
+    assert!(
+        !run_endpoint!(runner, page_create_permission).can_create,
+        "user_c should NOT have create permission for pages in test-category"
+    );
+}
+
+#[tokio::test]
 async fn page_revision_visibility_requires_actual_page_category_edit_permission() {
     let mut runner = TestRunner::setup().await;
     let f = PermissionFixture::setup(&runner).await;

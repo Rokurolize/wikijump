@@ -11,6 +11,9 @@
 
   import { Layout } from "$lib/types"
   import {
+    HISTORY_PER_PAGE_OPTIONS,
+    historyPagerModel,
+    paginateHistoryEntries,
     wikidotHistoryActionTitles,
     wikidotHistoryHeaders,
     wikidotRevisionDate,
@@ -46,6 +49,56 @@
   let showRevisionSource = $state<boolean>(false)
   let fromRevisionNumber = $state<Optional<number>>(undefined)
   let toRevisionNumber = $state<Optional<number>>(undefined)
+  // Wikidot History list state. The filter checkboxes mirror the live
+  // `rev-type-*` controls; Update list always restarts at page 1 while pager
+  // navigation keeps the current filter (frozen PageHistoryModule behavior).
+  let filterAll = $state(true)
+  let filterSource = $state(false)
+  let filterTitle = $state(false)
+  let filterMove = $state(false)
+  let filterTags = $state(false)
+  let filterMeta = $state(false)
+  let filterFiles = $state(false)
+  let historyPerPage = $state(HISTORY_PER_PAGE_OPTIONS[0])
+  let historyPage = $state(1)
+  let historyTotalPages = $state(1)
+
+  const activeHistoryTypes = () => {
+    if (filterAll) return ["all"]
+    const types = []
+    if (filterSource) types.push("source")
+    if (filterTitle) types.push("title")
+    if (filterMove) types.push("move")
+    if (filterTags) types.push("tags")
+    if (filterMeta) types.push("meta")
+    if (filterFiles) types.push("files")
+    return types
+  }
+
+  // Visible page slice. Entries keep their global timeline numbers so row
+  // numbering stays continuous across pages.
+  let visibleHistoryEntries = $derived(
+    paginateHistoryEntries(
+      [...revisionMap.values()].sort((a, b) => b.timeline_number - a.timeline_number),
+      historyPage,
+      historyPerPage
+    ).entries
+  )
+
+  const historyInternationalization = (key: string, fallback: string) => {
+    const translated =
+      data.internationalization?.[
+        key as keyof NonNullable<typeof data.internationalization>
+      ]
+    return typeof translated === "string" && translated !== key ? translated : fallback
+  }
+
+  let historyPager = $derived(
+    historyPagerModel(historyPage, historyTotalPages, {
+      pageWord: historyInternationalization("wiki-page-revision-pager.page", "page"),
+      ofWord: historyInternationalization("wiki-page-revision-pager.of", "of")
+    })
+  )
   let revisionDiff = $state<Optional<PageRevisionDiffOutput>>(undefined)
   let revisionDiffLoading = $state(false)
   let revisionDiffCompareButton = $state<HTMLButtonElement | undefined>(undefined)
@@ -73,12 +126,23 @@
       body: JSON.stringify({
         siteId: data.site.site_id,
         pageId: data.page?.page_id,
-        includeFileRevisions: pageLayoutContext.current === Layout.WIKIDOT
+        includeFileRevisions: pageLayoutContext.current === Layout.WIKIDOT,
+        types: activeHistoryTypes(),
+        page: historyPage,
+        perPage: historyPerPage
       })
     }).then((res) => res.text())
 
     const result = deserialize<
-      { res: PageHistoryEntry[] },
+      {
+        res: {
+          entries: PageHistoryEntry[]
+          total: number
+          page: number
+          perPage: number
+          totalPages: number
+        }
+      },
       { message: string; code: string; data: Record<string, unknown> }
     >(res)
 
@@ -92,7 +156,7 @@
       }
     } else if (result.type === "success" && result.data?.res) {
       revisionMap.clear()
-      result.data.res.forEach((rawRevision) => {
+      result.data.res.entries.forEach((rawRevision) => {
         const rev: PageHistoryEntry = {
           ...rawRevision,
           history_kind: rawRevision.history_kind ?? "page",
@@ -107,14 +171,32 @@
         }
         revisionMap.set(rev.timeline_number, rev)
       })
-      const defaultPair = defaultHistoryComparePair([...revisionMap.values()])
-      if (fromRevisionNumber === undefined) {
-        fromRevisionNumber = defaultPair?.[0]
-      }
-      if (toRevisionNumber === undefined) {
-        toRevisionNumber = defaultPair?.[1]
-      }
+      historyTotalPages = result.data.res.totalPages
+      historyPage = result.data.res.page
+      historyPerPage = result.data.res.perPage
+      // Live Wikidot replaces the revision list DOM on every Update/pager
+      // navigation, so no comparison selection survives it. Reset to the
+      // visible page's default pair instead of pointing at hidden rows.
+      const visible = paginateHistoryEntries(
+        [...revisionMap.values()].sort((a, b) => b.timeline_number - a.timeline_number),
+        historyPage,
+        historyPerPage
+      ).entries
+      const defaultPair = defaultHistoryComparePair(visible)
+      fromRevisionNumber = defaultPair?.[0]
+      toRevisionNumber = defaultPair?.[1]
+      clearRevisionDiff()
     }
+  }
+
+  async function updateHistoryList() {
+    historyPage = 1
+    await fetchHistory()
+  }
+
+  async function updateHistoryPage(page: number) {
+    historyPage = page
+    await fetchHistory()
   }
 
   async function fetchRevisionDiff() {
@@ -360,6 +442,122 @@
   <h1 id="wikidot-history-heading" class="page-revision-header">
     {data.internationalization?.["wiki-page-revision-history"]}
   </h1>
+  <form id="history-form-1">
+    <table class="form">
+      <tbody>
+        <tr>
+          <td
+            >{historyInternationalization(
+              "wiki-page-revision-filter.show",
+              "Show page changes:"
+            )}</td
+          >
+          <td>
+            <input
+              class="checkbox"
+              type="checkbox"
+              id="rev-type-all"
+              bind:checked={filterAll}
+            />&nbsp;{historyInternationalization(
+              "wiki-page-revision-filter.all",
+              "ALL"
+            )}<br />
+            <input
+              class="checkbox"
+              type="checkbox"
+              id="rev-type-source"
+              bind:checked={filterSource}
+            />&nbsp;{historyInternationalization(
+              "wiki-page-revision-filter.source",
+              "source changes"
+            )}<br />
+            <input
+              class="checkbox"
+              type="checkbox"
+              id="rev-type-title"
+              bind:checked={filterTitle}
+            />&nbsp;{historyInternationalization(
+              "wiki-page-revision-filter.title",
+              "title changes"
+            )}<br />
+            <input
+              class="checkbox"
+              type="checkbox"
+              id="rev-type-move"
+              bind:checked={filterMove}
+            />&nbsp;{historyInternationalization(
+              "wiki-page-revision-filter.move",
+              "page name changes"
+            )}<br />
+            <input
+              class="checkbox"
+              type="checkbox"
+              id="rev-type-tags"
+              bind:checked={filterTags}
+            />&nbsp;{historyInternationalization(
+              "wiki-page-revision-filter.tags",
+              "tags changes"
+            )}<br />
+            <input
+              class="checkbox"
+              type="checkbox"
+              id="rev-type-meta"
+              bind:checked={filterMeta}
+            />&nbsp;{historyInternationalization(
+              "wiki-page-revision-filter.meta",
+              "metadata changes"
+            )}<br />
+            <input
+              class="checkbox"
+              type="checkbox"
+              id="rev-type-files"
+              bind:checked={filterFiles}
+            />&nbsp;{historyInternationalization(
+              "wiki-page-revision-filter.files",
+              "files changes"
+            )}
+          </td>
+        </tr>
+        <tr>
+          <td
+            >{historyInternationalization(
+              "wiki-page-revision-perpage",
+              "Revisions per page:"
+            )}</td
+          >
+          <td>
+            <select id="h-perpage" bind:value={historyPerPage}>
+              {#each HISTORY_PER_PAGE_OPTIONS as perPageOption (perPageOption)}
+                <option value={perPageOption}>{perPageOption}</option>
+              {/each}
+            </select>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="buttons">
+      <input
+        type="button"
+        class="btn btn-default btn-sm"
+        value={historyInternationalization(
+          "wiki-page-revision-update-list",
+          "Update list"
+        )}
+        onclick={updateHistoryList}
+      />
+      <input
+        type="button"
+        class="btn btn-default btn-sm"
+        value={historyInternationalization(
+          "wiki-page-revision-compare-versions",
+          "Compare versions"
+        )}
+        name="compare"
+        id="history-compare-button"
+        onclick={fetchRevisionDiff}
+      />
+    </div>
+  </form>
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -- the scrollable revision list must be keyboard focusable -->
   <div
     id="revision-list"
@@ -368,6 +566,49 @@
     aria-labelledby="wikidot-history-heading"
     tabindex="0"
   >
+    {#if historyTotalPages > 1}
+      {@const pagerPrev = historyPager.prev}
+      {@const pagerNext = historyPager.next}
+      <div class="pager">
+        <span class="pager-no">{historyPager.label}</span>
+        {#if pagerPrev !== null}
+          <!-- svelte-ignore a11y_invalid_attribute -->
+          <span class="target"
+            ><a href="javascript:;" onclick={() => updateHistoryPage(pagerPrev)}
+              >&laquo; {historyInternationalization(
+                "wiki-page-revision-pager.previous",
+                "previous"
+              )}</a
+            ></span
+          >
+        {/if}
+        {#each historyPager.numbers as segment (segment.kind === "dots" ? "dots" : segment.page)}
+          {#if segment.kind === "dots"}
+            <span class="dots">...</span>
+          {:else if segment.current}
+            <span class="current">{segment.page}</span>
+          {:else}
+            <!-- svelte-ignore a11y_invalid_attribute -->
+            <span class="target"
+              ><a href="javascript:;" onclick={() => updateHistoryPage(segment.page ?? 1)}
+                >{segment.page}</a
+              ></span
+            >
+          {/if}
+        {/each}
+        {#if historyPager.trailingDots}
+          <span class="dots">...</span>
+        {/if}
+        {#if pagerNext !== null}
+          <!-- svelte-ignore a11y_invalid_attribute -->
+          <span class="target"
+            ><a href="javascript:;" onclick={() => updateHistoryPage(pagerNext)}
+              >{historyInternationalization("wiki-page-revision-pager.next", "next")} &raquo;</a
+            ></span
+          >
+        {/if}
+      </div>
+    {/if}
     <table class="page-history">
       <tbody>
         <tr>
@@ -375,8 +616,10 @@
             <td>{heading || " "}</td>
           {/each}
         </tr>
-        <!-- Here we sort the list in descending order. -->
-        {#each [...revisionMap].sort((a, b) => b[0] - a[0]) as [, revisionItem] (revisionItem.timeline_number)}
+        <!-- Here we sort the list in descending order. Entries keep their
+             global timeline numbers so numbering stays continuous across
+             filter pages. -->
+        {#each visibleHistoryEntries as revisionItem (revisionItem.timeline_number)}
           {@const date = wikidotRevisionDate(revisionItem.created_at)}
           <tr id={`revision-row-${revisionItem.history_row_id}`}>
             <td>{revisionItem.timeline_number + 1}.</td>
