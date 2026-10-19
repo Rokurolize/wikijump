@@ -8,7 +8,7 @@ import {sqlInt, sqlQuote} from '../src/corpus-import-sql-values.mjs';
 const UTF8 = new TextDecoder('utf-8', {fatal: true});
 
 export function parseArgs(argv) {
-  const args = {manifest: null, siteId: 6000005, dbContainer: 'local-database-1', dbUrl: process.env.DEEPWELL_VERIFY_DB_URL ?? null, slugs: [], renderedBodySlugs: []};
+  const args = {manifest: null, siteId: 6000005, dbContainer: 'local-database-1', dbUrl: process.env.DEEPWELL_VERIFY_DB_URL ?? null, slugs: [], renderedBodySlugs: [], crossSiteCoverage: false, attribution: null};
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     const next = () => {
@@ -22,6 +22,8 @@ export function parseArgs(argv) {
     else if (arg === '--db-url') args.dbUrl = next();
     else if (arg === '--slug') args.slugs.push(next());
     else if (arg === '--require-rendered-body') args.renderedBodySlugs.push(next());
+    else if (arg === '--cross-site-coverage') args.crossSiteCoverage = true;
+    else if (arg === '--attribution') args.attribution = next();
     else if (arg === '--help' || arg === '-h') return {help: true};
     else throw new Error(`unknown argument: ${arg}`);
   }
@@ -31,7 +33,7 @@ export function parseArgs(argv) {
 }
 
 export function usage() {
-  return 'Usage: verify-corpus-import-integrity.mjs --manifest <manifest.jsonl> [--site-id <id>] [--db-container <name> | --db-url <url>] [--slug <slug>...] [--require-rendered-body <slug>...]';
+  return 'Usage: verify-corpus-import-integrity.mjs --manifest <manifest.jsonl> [--site-id <id>] [--db-container <name> | --db-url <url>] [--slug <slug>...] [--require-rendered-body <slug>...] [--cross-site-coverage --attribution <attribution.json>]';
 }
 
 export function readIntegrityManifest(manifestText, selectedSlugs = []) {
@@ -127,9 +129,85 @@ export function verifyIntegrityRows(rows, output, {renderedBodySlugs = []} = {})
   return {status: failures.length ? 'fail' : 'pass', pages, failures};
 }
 
+/**
+ * Build the materialization query for cross-site coverage mode: for each
+ * manifest row, whether a snapshot with its foreign identity is already
+ * imported on the target site.
+ */
+export function buildCrossSiteCoverageQuery(args, rows) {
+  const requested = rows.map((row) => `(${sqlQuote(row.source_site)}, ${sqlQuote(row.source_fullname ?? row.fullname)})`).join(',\n  ');
+  return `WITH requested(source_site, source_fullname) AS (VALUES\n  ${requested}\n)
+SELECT requested.source_site,
+  requested.source_fullname,
+  COUNT(snapshot.page_id)::text
+FROM requested
+LEFT JOIN page ON page.site_id = ${sqlInt(args.siteId)} AND page.deleted_at IS NULL
+LEFT JOIN wikidot_page_snapshot snapshot ON snapshot.page_id = page.page_id
+  AND snapshot.source_site = requested.source_site
+  AND snapshot.source_fullname = requested.source_fullname
+GROUP BY requested.source_site, requested.source_fullname
+ORDER BY requested.source_site, requested.source_fullname;`;
+}
+
+/**
+ * Verify cross-site coverage: pure function over manifest rows, the
+ * per-affected-page attribution map (`{ slug: { rows: ["branch:fullname"],
+ * gaps, truncated } }`), and the materialization query output. A page
+ * counts as covered when it has no gaps or truncation and every attributed
+ * row is already materialized on the target site.
+ */
+export function verifyCrossSiteCoverage(rows, attribution, output) {
+  const materialized = new Set();
+  for (const line of output.split('\n').filter(Boolean)) {
+    const fields = line.split('|');
+    if (fields.length !== 3) throw new Error('coverage query returned a malformed row');
+    if (fields[2] !== '0') materialized.add(`${fields[0]} ${fields[1]}`);
+  }
+  const rowByKey = new Map();
+  for (const row of rows) {
+    rowByKey.set(`${row.source_branch}:${row.fullname}`, row);
+  }
+  const pages = [];
+  const failures = [];
+  for (const slug of Object.keys(attribution).sort()) {
+    const claimed = attribution[slug] ?? { rows: [], gaps: 0, truncated: 0 };
+    const missing = [];
+    for (const key of claimed.rows ?? []) {
+      const row = rowByKey.get(key);
+      if (!row) {
+        missing.push({ row: key, reason: 'row_not_in_manifest' });
+        continue;
+      }
+      if (!materialized.has(`${row.source_site} ${row.source_fullname ?? row.fullname}`)) {
+        missing.push({ row: key, reason: 'not_materialized' });
+      }
+    }
+    const page = { slug, missing_dependency_count: missing.length, gap_count: claimed.gaps ?? 0, truncated_count: (claimed.truncated ?? []).length };
+    pages.push(page);
+    if (missing.length > 0) failures.push({ slug, reason: 'unresolved_dependencies', missing });
+    if ((claimed.gaps ?? 0) > 0) failures.push({ slug, reason: 'dependency_gaps', count: claimed.gaps });
+    if (((claimed.truncated ?? []).length) > 0) failures.push({ slug, reason: 'closure_truncated', count: claimed.truncated.length });
+  }
+  return { status: failures.length ? 'fail' : 'pass', pages, failures };
+}
+
 export async function main(argv) {
   const args = parseArgs(argv);
   if (args.help) { console.log(usage()); return 0; }
+  if (args.crossSiteCoverage) {
+    if (!args.attribution) throw new Error('--cross-site-coverage requires --attribution <attribution.json>');
+    const rows = readIntegrityManifest(fs.readFileSync(args.manifest, 'utf8'), args.slugs);
+    const attribution = JSON.parse(fs.readFileSync(args.attribution, 'utf8'));
+    const sqlExecutor = createSqlExecutor({dbUrl: args.dbUrl, dbContainer: args.dbContainer});
+    try {
+      const output = await sqlExecutor.runSql(buildCrossSiteCoverageQuery(args, rows), {capture: true});
+      const report = verifyCrossSiteCoverage(rows, attribution, output);
+      console.log(JSON.stringify(report, null, 2));
+      return report.status === 'pass' ? 0 : 1;
+    } finally {
+      await sqlExecutor.close();
+    }
+  }
   const rows = readIntegrityManifest(fs.readFileSync(args.manifest, 'utf8'), args.slugs);
   const selected = new Set(rows.map((row) => row.fullname));
   const invalidRenderedSlug = args.renderedBodySlugs.find((slug) => !selected.has(slug));

@@ -1,5 +1,7 @@
 // Shared Wikidot include-dependency closure for corpus import tooling.
 //
+import { sha256Hex } from './canonical-json.mjs';
+
 // A mirrored page renders through every page it includes (themes,
 // components, info blocks), so importing a page without its transitive
 // include dependencies leaves "does not exist" error blocks in otherwise
@@ -183,4 +185,225 @@ export function expandIncludeClosure({
     }
   }
   return { included, unresolved, external, dynamic, truncated };
+}
+
+/**
+ * Breadth-first transitive include closure across corpus branches.
+ *
+ * `roots` are `{ branch, site, slug }` identities on the mirror's own
+ * branch (`site` is the Wikidot site slug that branch mirrors).
+ * `branches` maps every searchable corpus branch to
+ * `{ pageExists, readSource, readProvenance }`, where
+ * `readProvenance(slug)` returns `{ path, captureId, runId, payloadSha256 }`
+ * (revision fields null when the branch carries no acquisition record).
+ * `preferredBranches` is an optional caller-supplied `{ site: branch }` map
+ * used only to break ties between divergent multi-branch hits; it is
+ * recorded, never inferred.
+ *
+ * The requesting site travels with each node, so a `:site:`-prefixed
+ * self-reference classifies as same-site with no site-to-branch map.
+ * A cross-site `site:page` identity resolves by probing every other
+ * configured branch for `page`. One hit materializes it; several hits with
+ * byte-identical sources materialize the first branch with the rest listed
+ * in `also_in` (no wrong choice is possible); several hits with divergent
+ * sources report an `ambiguous-branches` gap carrying per-branch content
+ * hashes; zero hits report an `absent-from-corpus` gap. Same-site misses
+ * report `absent-from-corpus` with their own branch. Cycles terminate
+ * through the `(branch, slug)` seen set. Traversal stops expanding past
+ * `maxDepth` (deeper identities are reported as `truncated`) and throws
+ * past `maxPages` total visited identities.
+ *
+ * Returns `{ included, gaps, dynamic, truncated }` where `included` holds
+ * `{ branch, site, slug, depth, via, also_in, resolution, provenance }` in
+ * visit order (`via` is the first-seen `branch:slug` requester, null for
+ * roots; `resolution` is `same-branch`, `unique-hit`, `identical-content`,
+ * or `preferred-branch`) and `gaps` holds
+ * `{ identity, branch, site, via, reason, detail }`.
+ */
+export function expandCrossSiteIncludeClosure({
+  roots,
+  branches,
+  preferredBranches = {},
+  maxDepth = DEFAULT_CLOSURE_MAX_DEPTH,
+  maxPages = DEFAULT_CLOSURE_MAX_PAGES,
+}) {
+  if (!Array.isArray(roots) || roots.length === 0) {
+    throw new Error('cross-site include closure requires at least one root identity');
+  }
+  if (typeof branches !== 'object' || branches === null || Array.isArray(branches)) {
+    throw new Error('cross-site include closure requires a branches map');
+  }
+  const branchNames = Object.keys(branches).sort();
+  if (branchNames.length === 0) {
+    throw new Error('cross-site include closure requires at least one searchable branch');
+  }
+  for (const name of branchNames) {
+    const access = branches[name];
+    for (const method of ['pageExists', 'readSource', 'readProvenance']) {
+      if (typeof access?.[method] !== 'function') {
+        throw new Error(`cross-site include closure branch ${name} must provide ${method}`);
+      }
+    }
+  }
+  if (!Number.isInteger(maxDepth) || maxDepth < 0) {
+    throw new Error('cross-site include closure maxDepth must be a non-negative integer');
+  }
+  if (!Number.isInteger(maxPages) || maxPages <= 0) {
+    throw new Error('cross-site include closure maxPages must be a positive integer');
+  }
+  for (const root of roots) {
+    if (typeof root?.branch !== 'string' || typeof root?.slug !== 'string' || typeof root?.site !== 'string' || root.site === '') {
+      throw new Error('cross-site include closure roots must be { branch, site, slug } identities');
+    }
+    if (!Object.hasOwn(branches, root.branch)) {
+      throw new Error(`cross-site include closure root branch is not searchable: ${root.branch}`);
+    }
+  }
+
+  const identityKey = (branch, slug) => `${branch}\0${slug}`;
+  const included = [];
+  const seen = new Set();
+  const gaps = [];
+  const seenGaps = new Set();
+  let dynamic = 0;
+  const truncated = [];
+  const seenTruncated = new Set();
+  const queue = roots.map(({ branch, site, slug }) => ({ branch, site, slug, depth: 0, via: null }));
+
+  const reportGap = (gap) => {
+    const key = `${gap.identity}\0${gap.reason}`;
+    if (seenGaps.has(key)) return;
+    seenGaps.add(key);
+    gaps.push(gap);
+  };
+
+  // A same-named page on the requesting branch belongs to another site, so
+  // it can never resolve a foreign identity; only other branches qualify.
+  // One hit resolves directly. Several hits with byte-identical sources
+  // resolve to the first branch (no wrong choice is possible). Several hits
+  // with divergent sources resolve to the caller-preferred branch for the
+  // site when one is configured and holds the page, and otherwise stay
+  // ambiguous with per-branch content hashes as evidence. The chosen rule
+  // travels on the node as `resolution` so repairs stay auditable.
+  const resolveForeign = (fromBranch, site, slug) => {
+    const hits = [];
+    for (const name of branchNames) {
+      if (name === fromBranch) continue;
+      if (branches[name].pageExists(slug)) hits.push(name);
+    }
+    if (hits.length <= 1) {
+      return { branch: hits[0] ?? null, alsoIn: [], divergent: [], resolution: hits.length === 1 ? 'unique-hit' : null };
+    }
+    const byContent = new Map();
+    for (const name of hits) {
+      const source = branches[name].readSource(slug);
+      const digest = source === null ? 'missing' : sha256Hex(source);
+      if (!byContent.has(digest)) byContent.set(digest, []);
+      byContent.get(digest).push(name);
+    }
+    if (byContent.size === 1) {
+      return { branch: hits[0], alsoIn: hits.slice(1), divergent: [], resolution: 'identical-content' };
+    }
+    const preferred = preferredBranches[site];
+    if (typeof preferred === 'string' && hits.includes(preferred)) {
+      return { branch: preferred, alsoIn: hits.filter((name) => name !== preferred), divergent: [], resolution: 'preferred-branch' };
+    }
+    return {
+      branch: null,
+      alsoIn: [],
+      divergent: [...byContent.entries()].map(([digest, names]) => `${names.join('+')}@${digest.slice(0, 12)}`),
+      resolution: null,
+    };
+  };
+
+  while (queue.length > 0) {
+    const { branch, site, slug, depth, via, alsoIn = [], resolution = null } = queue.shift();
+    const key = identityKey(branch, slug);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (seen.size > maxPages) {
+      throw new Error(`cross-site include closure exceeds maxPages ${maxPages} at ${branch}:${slug}`);
+    }
+    const access = branches[branch];
+    const source = access.readSource(slug);
+    included.push({
+      branch,
+      site,
+      slug,
+      depth,
+      via,
+      also_in: alsoIn,
+      resolution,
+      provenance: access.readProvenance(slug),
+    });
+    if (source === null) {
+      if (depth > 0) {
+        reportGap({
+          identity: `${branch}:${slug}`,
+          branch,
+          site,
+          via,
+          reason: 'absent-from-corpus',
+          detail: `corpus branch ${branch} has no source for ${slug}`,
+        });
+      }
+      continue;
+    }
+    const targets = parseIncludeTargets(source, site);
+    dynamic += targets.dynamic;
+    const enqueue = (targetBranch, targetSite, targetSlug, alsoIn = [], resolution = 'same-branch') => {
+      if (seen.has(identityKey(targetBranch, targetSlug))) return;
+      if (depth + 1 > maxDepth) {
+        const identity = `${targetBranch}:${targetSlug}`;
+        if (!seenTruncated.has(identity)) {
+          seenTruncated.add(identity);
+          truncated.push(identity);
+        }
+        return;
+      }
+      queue.push({ branch: targetBranch, site: targetSite, slug: targetSlug, depth: depth + 1, via: `${branch}:${slug}`, alsoIn, resolution });
+    };
+    for (const target of targets.sameSite) {
+      if (!branches[branch].pageExists(target)) {
+        reportGap({
+          identity: `${branch}:${target}`,
+          branch,
+          site,
+          via: `${branch}:${slug}`,
+          reason: 'absent-from-corpus',
+          detail: `corpus branch ${branch} has no source for ${target}`,
+        });
+        continue;
+      }
+      enqueue(branch, site, target);
+    }
+    for (const identity of targets.external) {
+      const separator = identity.indexOf(':');
+      const foreignSite = identity.slice(0, separator);
+      const foreignSlug = identity.slice(separator + 1);
+      const resolved = resolveForeign(branch, foreignSite, foreignSlug);
+      if (resolved.branch !== null) {
+        enqueue(resolved.branch, foreignSite, foreignSlug, resolved.alsoIn, resolved.resolution);
+      } else if (resolved.divergent.length === 0) {
+        reportGap({
+          identity,
+          branch: null,
+          site: foreignSite,
+          via: `${branch}:${slug}`,
+          reason: 'absent-from-corpus',
+          detail: `no searchable branch holds ${foreignSlug} for site ${foreignSite}`,
+        });
+      } else {
+        reportGap({
+          identity,
+          branch: null,
+          site: foreignSite,
+          via: `${branch}:${slug}`,
+          reason: 'ambiguous-branches',
+          detail: `divergent sources: ${resolved.divergent.join(', ')}`,
+        });
+      }
+    }
+  }
+  return { included, gaps, dynamic, truncated };
 }
