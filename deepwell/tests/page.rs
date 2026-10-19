@@ -28420,4 +28420,54 @@ async fn empty_link_labels_show_the_target_page_title() {
         8,
         "{html}"
     );
+
+/// Color spans inside native list runs (`scp-series-10`) and nested inline
+/// syntax inside color spans (#2567) must restore to markup, with no internal
+/// compatibility markers left in the page.
+#[tokio::test]
+async fn page_render_restores_color_spans_in_lists_and_their_nested_syntax() {
+    let runner = TestRunner::setup().await;
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let page_info = PageInfo {
+        page: Cow::Borrowed("color-span-fixture"),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Color Span Fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let source = concat!(
+        "* [[[SCP-9044]]] - A ##blue|House## with ##red|People## in it\n",
+        "* [[[SCP-9093]]] - ##red|//RIGHTEOUS JUSTICE!//##\n",
+        "\n",
+        "##white|a b[[footnote]]note text[[/footnote]] c## and ##red|^^up^^ ,,down,,##\n",
+    );
+
+    let output =
+        RenderService::render(runner.context(), source.to_owned(), &page_info, &settings)
+            .await
+            .expect("color span fixture should render");
+    let html = output.html_output.body;
+
+    assert!(!html.contains("WIKIJUMP"), "{html}");
+    assert!(
+        html.contains(r#"<span style="color: blue">House</span>"#),
+        "{html}"
+    );
+    assert!(
+        html.contains(r#"<span style="color: red">People</span>"#),
+        "{html}"
+    );
+    assert!(
+        html.contains(r#"<span style="color: red"><em>RIGHTEOUS JUSTICE!</em></span>"#),
+        "{html}"
+    );
+    assert!(
+        html.contains(r#"<span style="color: red"><sup>up</sup> <sub>down</sub></span>"#),
+        "{html}"
+    );
+    assert!(html.contains(r#"<sup class="footnoteref">"#), "{html}");
+    assert!(!html.contains("[[footnote]]"), "{html}");
 }

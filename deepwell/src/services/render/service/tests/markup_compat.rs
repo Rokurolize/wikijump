@@ -564,16 +564,25 @@ fn protects_wikidot_color_spans_before_ftml_parsing() {
     assert!(source.ends_with('\n'));
     assert!(!source.contains("<span"));
     assert!(!source.contains("##blue"));
+    // Only the span tags are protected; FTML still parses the body.
+    assert!(source.contains("**[[include :scp-wiki:component:coltop**"));
     assert_eq!(
         spans[0].html,
-        r#"<span style="color: blue"><strong>[[include :scp-wiki:component:coltop</strong></span>"#
+        r#"<span style="color: blue">**[[include :scp-wiki:component:coltop**</span>"#
     );
 
     let restored = RenderService::restore_protected_wikidot_color_spans(source, &spans);
     assert_eq!(
         restored,
-        r#"<span style="color: blue"><strong>[[include :scp-wiki:component:coltop</strong></span>"#
-            .to_owned() + "\n",
+        r#"<span style="color: blue">**[[include :scp-wiki:component:coltop**</span>"#
+            .to_owned()
+            + "\n",
+    );
+    assert_eq!(
+        render_wikidot_inline_markup_after_protection(
+            "##blue|**[[include :scp-wiki:component:coltop**##\n"
+        ),
+        r#"<p><span style="color: blue"><strong>[[include :scp-wiki:component:coltop</strong></span></p>"#,
     );
 
     let mut compat_text = CompatTextFragments::new("");
@@ -1350,4 +1359,163 @@ fn code_block_compatibility_preserves_external_css_dependencies() {
         ":root { --logo: url('https://scp-wiki-cn-corpus-scp9506-translation-seed.wjfiles.localhost/local--files/scp-9506/NFSI.png'); }\n",
     );
     assert_eq!(restored, expected);
+}
+
+#[test]
+fn color_span_bodies_render_nested_inline_syntax_like_wikidot() {
+    // Anonymous Wikidot PagePreview renders every one of these inside the
+    // color span (wikidot-color-span-nested-preview-20261019.json, #2567).
+    for (case, source, expected) in [
+        (
+            "color-sup-italic",
+            "##red|^^//a//^^##",
+            r#"<span style="color: red"><sup><em>a</em></sup></span>"#,
+        ),
+        (
+            "color-sup-plain",
+            "##red|a ^^up^^ b##",
+            r#"<span style="color: red">a <sup>up</sup> b</span>"#,
+        ),
+        (
+            "color-sub",
+            "##red|a ,,down,, b##",
+            r#"<span style="color: red">a <sub>down</sub> b</span>"#,
+        ),
+        (
+            "color-strike",
+            "##red|a --gone-- b##",
+            r#"<span style="color: red">a <span style="text-decoration: line-through;">gone</span> b</span>"#,
+        ),
+        (
+            "color-mono",
+            "##red|a {{mono}} b##",
+            r#"<span style="color: red">a <tt>mono</tt> b</span>"#,
+        ),
+        (
+            "color-size",
+            "##red|a [[size 80%]]small[[/size]] b##",
+            r#"<span style="color: red">a <span style="font-size:80%;">small</span> b</span>"#,
+        ),
+        (
+            "color-link-triple",
+            "##red|a [[[scp-173]]] b##",
+            r#"<span style="color: red">a <a href="/scp-173">scp-173</a> b</span>"#,
+        ),
+        (
+            "color-italic",
+            "##red|a //it// b##",
+            r#"<span style="color: red">a <em>it</em> b</span>"#,
+        ),
+        (
+            "color-span-bold",
+            "##white|a **bold** c##",
+            r#"<span style="color: white">a <strong>bold</strong> c</span>"#,
+        ),
+    ] {
+        assert_eq!(
+            render_wikidot_inline_markup_after_protection(&format!("{source}\n\nz")),
+            format!("<p>{expected}</p><p>z</p>"),
+            "{case}",
+        );
+    }
+
+    for (case, source, color) in [
+        (
+            "color-span-footnote-plain",
+            "##white|a b[[footnote]]note text[[/footnote]] c##",
+            "white",
+        ),
+        (
+            "color-span-footnote-bold",
+            "##white|a b[[footnote]]**Bold:** note text[[/footnote]] c##",
+            "white",
+        ),
+        (
+            "color-hex-footnote",
+            "##ff0000|a b[[footnote]]n[[/footnote]] c##",
+            "#ff0000",
+        ),
+    ] {
+        let html =
+            render_wikidot_inline_markup_after_protection(&format!("{source}\n\nz"));
+        assert!(
+            html.starts_with(&format!(
+                r#"<p><span style="color: {color}">a b<sup class="footnoteref">"#
+            )),
+            "{case}: {html}",
+        );
+        assert!(
+            html.contains("</sup> c</span></p><p>z</p>"),
+            "{case}: {html}"
+        );
+        assert!(
+            html.contains(r#"<div class="footnotes-footer">"#),
+            "{case}: {html}"
+        );
+        assert!(!html.contains("[[footnote]]"), "{case}: {html}");
+    }
+}
+
+#[test]
+fn color_span_bodies_with_raw_markers_keep_each_span_closed() {
+    // scp-102-vn redacts with `##transparent|@@@@…##` on several lines. A raw
+    // marker in the body must not pair with one past the span's close.
+    let html = render_wikidot_inline_markup_after_protection(concat!(
+        "it's me, ##transparent|@@@@@@@@@@##. Good thing.\n",
+        "\n",
+        "**Agent:** ##transparent|@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@##!\n",
+    ));
+
+    assert!(!html.contains("WIKIJUMP"), "{html}");
+    assert_eq!(
+        html.matches(r#"<span style="color: transparent">"#).count(),
+        2
+    );
+    assert!(html.contains("</span>. Good thing.</p>"), "{html}");
+    assert!(html.contains("</span>!</p>"), "{html}");
+}
+
+fn render_wikidot_inline_markup_after_protection(wikitext: &str) -> String {
+    let page_info = fallback_test_page_info("color-span", "Color Span");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let outer = RenderService::prepare_outer_render_wikitext(
+        super::super::ExpandedRenderWikitext {
+            theme_previewer_blank: false,
+            wikidot_compat_html: CompatHtmlFragments::new(wikitext),
+            wikidot_compat_text: CompatTextFragments::new(wikitext),
+            wikitext: wikitext.to_owned(),
+            included_pages: Vec::new(),
+            expanded_include_count: 0,
+            url_offset_list_pages_content_bytes: 0,
+            runtime_css_insertions: Vec::new(),
+        },
+        &page_info,
+        &settings,
+    );
+    let inner = RenderService::prepare_inner_render_wikitext(outer, &settings);
+    let tokens = ftml::tokenize(&inner.wikitext);
+    // Malformed nested syntax reports FTML errors and renders as text, as in
+    // production.
+    let (tree, _errors) = ftml::parse(&tokens, &page_info, &settings).into();
+    let html = HtmlRender.render(&tree, &page_info, &settings).body;
+    inner.protection.restore(|protection| {
+        let html = RenderService::restore_protected_wikidot_color_spans(
+            html,
+            protection.color_spans(),
+        );
+        let html = RenderService::restore_protected_wikidot_inline_html(
+            html,
+            protection.inline_html(),
+        );
+        let html = protection.compat_html().restore(&html);
+        let html = RenderService::restore_protected_wikidot_color_spans(
+            html,
+            protection.color_spans(),
+        );
+        let html = RenderService::restore_protected_wikidot_inline_html(
+            html,
+            protection.inline_html(),
+        );
+        protection.compat_text().restore(&html)
+    })
 }
