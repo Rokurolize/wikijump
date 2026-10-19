@@ -105,8 +105,8 @@
       },
       {
         "path": "wws/src/handler/text_block.rs",
-        "git_blob": "5059936f7d155547916c79823fb0761d2b3f72ae",
-        "sha256": "32ee99e3ab9a3b7718a2a4a943311aa1c53d84431a30847ee6cfff38ee3310e0"
+        "git_blob": "95ce8cca1410e984f8a2664a867ed185b31e6578",
+        "sha256": "0c62286cf7e4623e9077c235c300484a9ecf8f4184ef6c04f0eb9a45bf241e51"
       },
       {
         "path": "wws/src/handler/well_known.rs",
