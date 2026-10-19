@@ -1056,6 +1056,62 @@ fn localizes_matching_wikidot_local_file_urls() {
 }
 
 #[test]
+fn localizes_wikidot_page_code_routes_and_double_slash_code_urls_in_stylesheets() {
+    // Wikidot redirects `https://scp-wiki.wikidot.com/theme:al-slop/code/1` and
+    // `https://scp-wiki.wikidot.com//local--code/theme:much-cool/1` to
+    // `https://scp-wiki.wdfiles.com/local--code/<page>/1` (observed 2026-10-19),
+    // which is how authors import a theme's hosted CSS. Left alone they are
+    // blocked by CSP and the theme is not applied.
+    let site = wikidot_site("scp-wiki-en-corpus", Some("scp-wiki.wikidot.com"));
+    let mut config = Config::integration_testing();
+    config.files_domain = ".wjfiles.localhost".to_owned();
+    config.files_domain_no_dot = "wjfiles.localhost".to_owned();
+    let html = concat!(
+        r#"<style>@import url(https://scp-wiki.wikidot.com/theme:al-slop/code/1);</style>"#,
+        r#"<style>@import url("http://scp-wiki.wikidot.com/component:wide-image-sizer/code/12?x=1");</style>"#,
+        r#"<style>@import url(https://scp-wiki.wikidot.com//local--code/theme:much-cool/1);</style>"#,
+        r#"<link href="https://scp-wiki.wikidot.com//local--code/theme%3Amuch-cool/2">"#,
+        r#"<style>@import url(https://scp-wiki.wikidot.com/theme%3Abasalt/code/3);</style>"#,
+    );
+
+    assert_eq!(
+        RenderService::localize_wikidot_local_file_urls(html, Some(&site), &config),
+        concat!(
+            r#"<style>@import url(https://scp-wiki-en-corpus.wjfiles.localhost/local--code/theme%3Aal-slop/1);</style>"#,
+            r#"<style>@import url("https://scp-wiki-en-corpus.wjfiles.localhost/local--code/component%3Awide-image-sizer/12?x=1");</style>"#,
+            r#"<style>@import url(https://scp-wiki-en-corpus.wjfiles.localhost/local--code/theme:much-cool/1);</style>"#,
+            r#"<link href="https://scp-wiki-en-corpus.wjfiles.localhost/local--code/theme%3Amuch-cool/2">"#,
+            r#"<style>@import url(https://scp-wiki-en-corpus.wjfiles.localhost/local--code/theme%3Abasalt/3);</style>"#,
+        ),
+    );
+}
+
+#[test]
+fn leaves_other_wikidot_urls_that_only_resemble_the_page_code_route() {
+    let site = wikidot_site("scp-wiki-en-corpus", Some("scp-wiki.wikidot.com"));
+    let mut config = Config::integration_testing();
+    config.files_domain = ".wjfiles.localhost".to_owned();
+    config.files_domain_no_dot = "wjfiles.localhost".to_owned();
+    for html in [
+        // not the code route: no block index, an extra segment, a non-numeric index
+        r#"<style>@import url(https://scp-wiki.wikidot.com/theme:al-slop/code);</style>"#,
+        r#"<style>@import url(https://scp-wiki.wikidot.com/theme:al-slop/code/1/extra);</style>"#,
+        r#"<style>@import url(https://scp-wiki.wikidot.com/theme:al-slop/code/x);</style>"#,
+        // a plain page link in an attribute keeps its Wikidot target
+        r#"<a href="https://scp-wiki.wikidot.com/theme:al-slop/code/1">code</a>"#,
+        // not a Wikidot host
+        r#"<style>@import url(https://example.test/theme:al-slop/code/1);</style>"#,
+        // a Wikidot site this mirror does not host
+        r#"<style>@import url(https://another-site.wikidot.com/theme:x/code/1);</style>"#,
+    ] {
+        assert_eq!(
+            RenderService::localize_wikidot_local_file_urls(html, Some(&site), &config),
+            html,
+        );
+    }
+}
+
+#[test]
 fn renders_and_localizes_wikidot_file_attachment_link() {
     let page_info = fallback_test_page_info("scp-2276", "SCP-2276");
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
@@ -1518,4 +1574,32 @@ fn render_wikidot_inline_markup_after_protection(wikitext: &str) -> String {
         );
         protection.compat_text().restore(&html)
     })
+}
+
+#[test]
+fn div_heads_with_arguments_ignore_trailing_spaces_before_the_line_break() {
+    // Wikidot opens `[[div class="a"]]  ` + newline like the same head without
+    // trailing spaces; the pinned FTML used to leave the opener literal with a
+    // stray `[[/div]]` (`div-class-trailing-two-spaces`,
+    // `div-trailing-space-valid-style`, `div-trailing-space-then-blank`,
+    // `div-two-blocks-first-weird` in wikidot-at-raw-preview-20261019.json).
+    let page_info = fallback_test_page_info("div-head-space", "Div head space");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+
+    for original in [
+        "[[div class=\"a\"]]  \nA\n[[/div]]\n\nz",
+        "[[div style=\"border: solid 2px #000000;\"]] \nA\n[[/div]]\n\nz",
+        "[[div class=\"a\"]] \n\nA\n\n[[/div]]\n\nz",
+    ] {
+        let mut wikitext = original.to_owned();
+        ftml::preprocess_for_layout(&mut wikitext, settings.layout);
+        let tokens = ftml::tokenize(&wikitext);
+        let (tree, errors) = ftml::parse(&tokens, &page_info, &settings).into();
+        assert!(errors.is_empty(), "{original}: {errors:?}");
+
+        let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
+        assert!(rendered.starts_with("<div "), "{original}: {rendered}");
+        assert!(!rendered.contains("[["), "{original}: {rendered}");
+        assert!(!rendered.contains("[[/div]]"), "{original}: {rendered}");
+    }
 }
