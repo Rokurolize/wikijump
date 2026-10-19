@@ -65,6 +65,7 @@
     customThemeHeadHtml,
     normalizeGoogleAnalyticsSettings,
     normalizeThemeSetting,
+    resolveExternalThemeHref,
     resolveThemePreviewUrl
   } from "$lib/site-settings.js"
 
@@ -171,7 +172,17 @@
       page.url.searchParams.get("theme_url")
     )
   )
-  const customThemeHtml = $derived(customThemeHeadHtml(effectiveTheme))
+  // The local files authority and site identity are the only evidence the
+  // head may use to rewrite a WDFiles attachment URL; without them every
+  // theme and asset URL stays literal.
+  const siteFileEvidence = $derived(viewData?.site ?? null)
+  const siteFileAuthority = $derived(viewData?.site_file_domain ?? null)
+  const customThemeHtml = $derived(
+    customThemeHeadHtml(effectiveTheme, siteFileEvidence, siteFileAuthority)
+  )
+  const externalThemeHref = $derived(
+    resolveExternalThemeHref(effectiveTheme, siteFileEvidence, siteFileAuthority)
+  )
   const builtInThemeHtml = $derived(builtInThemeHeadHtml(effectiveTheme))
   const wikidotSiteTitle = $derived(resolveWikidotSiteTitle(viewData))
   const iconSite = $derived(
@@ -285,7 +296,11 @@
     {#if !viewData?.theme_previewer_blank}
       <link href="/wikidot/styles/sigma-fe5388a32e12.css" rel="stylesheet" />
       {#if effectiveTheme.type === "external"}
-        <link data-wikidot-site-theme href={effectiveTheme.url} rel="stylesheet" />
+        <link
+          data-wikidot-site-theme
+          href={externalThemeHref ?? effectiveTheme.url}
+          rel="stylesheet"
+        />
       {:else if effectiveTheme.type === "custom"}
         {@html customThemeHtml}
       {:else}

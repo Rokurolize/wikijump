@@ -153,11 +153,169 @@ export const normalizeThemePreviewUrl = (value) => {
 export const resolveThemePreviewUrl = (themePreviewerNoUi, value) =>
   themePreviewerNoUi === true ? normalizeThemePreviewUrl(value) : null
 
-export const customThemeHeadHtml = (theme) => {
+export const customThemeHeadHtml = (theme, site = null, filesAuthority = null) => {
   const normalized = normalizeThemeSetting(theme)
-  return normalized.type === "custom"
-    ? `<style data-wikidot-site-theme>${normalized.css}</style>`
-    : ""
+  if (normalized.type !== "custom") return ""
+  const css = localizeSiteFileUrlsInCss(normalized.css, site, filesAuthority)
+  return `<style data-wikidot-site-theme>${css}</style>`
+}
+
+/**
+ * Site carried by the page view, the only local-existence evidence the
+ * head may use: an imported site's own files live on its own WDFiles host.
+ *
+ * @typedef {object} LocalSiteEvidence
+ * @property {unknown} slug
+ * @property {unknown} from_wikidot
+ */
+
+const WDFILES_HOST_SUFFIXES = [".wdfiles.com", ".wikidot.com"]
+const SITE_SLUG_PATTERN = /^[a-z0-9-]+$/u
+const WIKIDOT_WWW_HOSTS = new Set(["www.wikidot.com", "www.wdfiles.com"])
+
+/**
+ * Split an absolute http(s) URL into its lowercased host and the untouched
+ * remainder (path, query, fragment), preserving the original encoding
+ * byte-for-byte. Protocol-relative URLs are read as https. Returns null
+ * for anything that is not a plain same-shape candidate.
+ *
+ * @param {unknown} rawUrl
+ * @returns {{ host: string, rest: string } | null}
+ */
+const splitAbsoluteHttpUrl = (rawUrl) => {
+  if (typeof rawUrl !== "string") return null
+  const trimmed = rawUrl.trim()
+  if (trimmed === "") return null
+  const withoutProtocol = trimmed.startsWith("//")
+    ? trimmed.slice(2)
+    : trimmed.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//u, "")
+  if (withoutProtocol === trimmed && !trimmed.includes("://")) return null
+  const scheme = trimmed.startsWith("//")
+    ? "https:"
+    : `${trimmed.slice(0, trimmed.indexOf("://")).toLowerCase()}:`
+  if (scheme !== "http:" && scheme !== "https:") return null
+  const authority = withoutProtocol.split("/", 1)[0]
+  // Userinfo and explicit ports never appear on Wikidot file hosts; treat
+  // either as a non-candidate rather than guessing intent.
+  if (authority === "" || authority.includes("@") || authority.includes(":")) {
+    return null
+  }
+  const host = authority.toLowerCase()
+  const rest = withoutProtocol.slice(authority.length)
+  if (!rest.startsWith("/")) return null
+  return { host, rest }
+}
+
+/**
+ * The viewed site's own WDFiles slug, or null when the host does not name a
+ * site file host. Mirrors the renderer's host-to-slug reading without
+ * duplicating its cross-site and lab-mirror branches, which need
+ * server-side import topology the page does not carry.
+ *
+ * @param {string} host
+ * @returns {string | null}
+ */
+const wdfilesAttachmentSiteSlug = (host) => {
+  for (const suffix of WDFILES_HOST_SUFFIXES) {
+    if (!host.endsWith(suffix)) continue
+    const slug = host.slice(0, -suffix.length)
+    if (slug !== "" && SITE_SLUG_PATTERN.test(slug)) return slug
+  }
+  return null
+}
+
+/**
+ * Whether the viewed imported site is the evidence that a WDFiles
+ * attachment URL names a local file: same-site slugs only (G06 www hosts
+ * never match). Corpus aliases, translated-branch sharing, and lab
+ * mirrors need server-side import topology and stay literal until
+ * Deepwell attests them per asset.
+ *
+ * @param {string} slug
+ * @param {LocalSiteEvidence | null | undefined} site
+ * @returns {boolean}
+ */
+const isViewedSiteWdfilesSlug = (slug, site) => {
+  if (typeof slug !== "string" || slug === "") return false
+  if (!site || site.from_wikidot !== true) return false
+  if (typeof site.slug !== "string" || !SITE_SLUG_PATTERN.test(site.slug)) {
+    return false
+  }
+  return site.slug.toLowerCase() === slug
+}
+
+/**
+ * Rewrite one WDFiles attachment URL to the local files authority when the
+ * viewed site itself is the evidence the file is local, else null (the
+ * caller keeps the source URL literal). Query, fragment, and encoding are
+ * preserved; only the origin is swapped.
+ *
+ * @param {unknown} rawUrl
+ * @param {LocalSiteEvidence | null | undefined} site
+ * @param {unknown} filesAuthority
+ * @returns {string | null}
+ */
+export const localizeSiteFileUrl = (rawUrl, site, filesAuthority) => {
+  if (
+    typeof filesAuthority !== "string" ||
+    filesAuthority.trim() === "" ||
+    filesAuthority.includes("/") ||
+    filesAuthority.includes("://")
+  ) {
+    return null
+  }
+  const split = splitAbsoluteHttpUrl(rawUrl)
+  if (!split || WIKIDOT_WWW_HOSTS.has(split.host)) return null
+  if (!split.rest.startsWith("/local--files/")) return null
+  if (split.rest.length <= "/local--files/".length) return null
+  const slug = wdfilesAttachmentSiteSlug(split.host)
+  if (!isViewedSiteWdfilesSlug(slug ?? "", site)) return null
+  return `https://${filesAuthority.trim()}${split.rest}`
+}
+
+const CSS_URL_PATTERN = /url\(\s*(['"]?)([^'")]+?)\1\s*\)/giu
+const CSS_BARE_IMPORT_PATTERN = /@import\s+(?!url\()\s*(['"])([^'"]+?)\1/giu
+
+/**
+ * Rewrite same-site WDFiles attachment URLs inside stored CSS (`url(...)`
+ * and bare `@import "..."`), keeping every other byte literal.
+ *
+ * @param {unknown} css
+ * @param {LocalSiteEvidence | null | undefined} site
+ * @param {unknown} filesAuthority
+ * @returns {string}
+ */
+export const localizeSiteFileUrlsInCss = (css, site, filesAuthority) => {
+  if (typeof css !== "string") return typeof css === "undefined" ? "" : css
+  const rewriteMatch = (match, url) => {
+    const rewritten = localizeSiteFileUrl(url, site, filesAuthority)
+    if (!rewritten || rewritten === url) return match
+    const index = match.indexOf(url)
+    return index < 0
+      ? match
+      : match.slice(0, index) + rewritten + match.slice(index + url.length)
+  }
+  return css
+    .replace(CSS_URL_PATTERN, (match, _quote, url) => rewriteMatch(match, url))
+    .replace(CSS_BARE_IMPORT_PATTERN, (match, _quote, url) => rewriteMatch(match, url))
+}
+
+/**
+ * Resolve the head `<link>` href for an external theme: the normalized
+ * source URL, rewritten to the local files authority only when the viewed
+ * site itself evidences the file is local.
+ *
+ * @param {{ type?: unknown; id?: unknown; url?: unknown; css?: unknown }
+ *   | null
+ *   | undefined} theme
+ * @param {LocalSiteEvidence | null | undefined} site
+ * @param {unknown} filesAuthority
+ * @returns {string | null}
+ */
+export const resolveExternalThemeHref = (theme, site, filesAuthority) => {
+  const normalized = normalizeThemeSetting(theme)
+  if (normalized.type !== "external") return null
+  return localizeSiteFileUrl(normalized.url, site, filesAuthority) ?? normalized.url
 }
 
 /**
