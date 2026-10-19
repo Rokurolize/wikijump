@@ -76,7 +76,15 @@ test("a superseded revision view cannot replace the selected revision", async ({
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: successBody({ res: [historyEntry(REV_X), historyEntry(REV_Y)] })
+        body: successBody({
+          res: {
+            entries: [historyEntry(REV_X), historyEntry(REV_Y)],
+            total: 2,
+            page: 1,
+            perPage: 20,
+            totalPages: 1
+          }
+        })
       })
     }
   )

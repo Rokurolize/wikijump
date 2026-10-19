@@ -205,6 +205,120 @@ export const wikidotRevisionFlags = (revision, locale) => {
   ]
 }
 
+/**
+ * Wikidot History filter keys, frozen from the live
+ * `history/PageHistoryModule` controls (`rev-type-*` checkboxes). Refs
+ * #2070.
+ */
+export const HISTORY_FILTER_TYPES = ["source", "title", "move", "tags", "meta", "files"]
+
+export const HISTORY_PER_PAGE_OPTIONS = [20, 50, 100, 200]
+
+/**
+ * Whether a history timeline entry passes the active filter set. An empty
+ * set (nothing checked) and a set containing "all" both mean unfiltered:
+ * live Wikidot answers either selection with the full list. The `meta`
+ * mapping is by elimination — source, title, page-name, tags, and files
+ * each own another key, so page-metadata (parent linkage) changes are the
+ * only remaining page revision kind; no meta-flagged row was observable on
+ * the frozen fixture page to confirm against.
+ */
+export const historyEntryMatchesTypes = (entry, activeTypes) => {
+  const active = new Set(activeTypes ?? [])
+  if (active.size === 0 || active.has("all")) return true
+  if (entry?.history_kind === "file") return active.has("files")
+  if (entry?.revision_type === "move") return active.has("move")
+  const changes = new Set(entry?.changes ?? [])
+  return (
+    (active.has("source") && changes.has("wikitext")) ||
+    (active.has("title") && (changes.has("title") || changes.has("alt_title"))) ||
+    (active.has("move") && changes.has("slug")) ||
+    (active.has("tags") && changes.has("tags")) ||
+    (active.has("meta") && changes.has("parent"))
+  )
+}
+
+/** Filter a timeline to the active Wikidot History filter set. */
+export const filterHistoryByTypes = (entries, activeTypes) =>
+  (entries ?? []).filter((entry) => historyEntryMatchesTypes(entry, activeTypes))
+
+/**
+ * Slice a filtered timeline into a 1-based page. Pages are clamped into
+ * range; the returned entries keep their global timeline numbers so row
+ * numbering stays continuous across pages.
+ */
+export const paginateHistoryEntries = (entries, page, perPage) => {
+  const list = entries ?? []
+  const size = Math.max(perPage ?? HISTORY_PER_PAGE_OPTIONS[0], 1)
+  const totalPages = Math.max(1, Math.ceil(list.length / size))
+  const current = Math.min(Math.max(page ?? 1, 1), totalPages)
+  const start = (current - 1) * size
+  return {
+    entries: list.slice(start, start + size),
+    total: list.length,
+    page: current,
+    perPage: size,
+    totalPages
+  }
+}
+
+/**
+ * Pager segments replicating the live PageRevisionListModule chrome.
+ * Frozen behavior: page 1 of a 2-page list reads "page 1 of 2" with no
+ * dots, while page 1 of a 3-page list reads bare "page 1" with trailing
+ * dots; pages past the first always read "page N of M". Numbers show every
+ * page up to 7; larger sets show the first page, a ±2 window around the
+ * current page, and the last page with dots marking undisplayed pages.
+ *
+ * @typedef {{ kind: "page"; page: number; current: boolean } | { kind: "dots" }} HistoryPagerSegment
+ * @param {number} page
+ * @param {number} totalPages
+ * @param {{ pageWord?: string; ofWord?: string }} [words]
+ * @returns {{
+ *   label: string
+ *   prev: number | null
+ *   next: number | null
+ *   numbers: HistoryPagerSegment[]
+ *   trailingDots: boolean
+ * }}
+ */
+export const historyPagerModel = (page, totalPages, words = {}) => {
+  const { pageWord = "page", ofWord = "of" } = words
+  const total = Math.max(totalPages ?? 1, 1)
+  const current = Math.min(Math.max(page ?? 1, 1), total)
+  const label =
+    current === 1 && total > 2
+      ? `${pageWord} 1`
+      : `${pageWord} ${current} ${ofWord} ${total}`
+  /** @type {HistoryPagerSegment[]} */
+  const numbers = []
+  const pushNumber = (number) => {
+    numbers.push({ kind: "page", page: number, current: number === current })
+  }
+  if (total <= 7) {
+    for (let number = 1; number <= total; number += 1) pushNumber(number)
+  } else {
+    pushNumber(1)
+    if (current - 2 > 2) numbers.push({ kind: "dots" })
+    for (
+      let number = Math.max(2, current - 2);
+      number <= Math.min(total - 1, current + 2);
+      number += 1
+    ) {
+      pushNumber(number)
+    }
+    if (current + 2 < total - 1) numbers.push({ kind: "dots" })
+    pushNumber(total)
+  }
+  return {
+    label,
+    prev: current > 1 ? current - 1 : null,
+    next: current < total ? current + 1 : null,
+    numbers,
+    trailingDots: current === 1 && total > 2 && total <= 7
+  }
+}
+
 export const wikidotRevisionDate = (createdAt) => {
   const date = new Date(createdAt)
   if (!Number.isFinite(date.getTime())) return null

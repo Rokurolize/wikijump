@@ -45,28 +45,34 @@ test("viewing a revision shows its banner and closing restores the page", async 
         status: 200,
         contentType: "application/json",
         body: successBody({
-          res: [
-            {
-              revision_id: 42420,
-              history_row_id: "banner-row-2",
-              timeline_number: 2,
-              revision_number: 42,
-              page_revision_number: 42,
-              history_kind: "page",
-              revision_type: "regular",
-              created_at: "2026-10-02T00:00:00Z",
-              user_id: 123,
-              author: {
-                "user-id": 123,
-                "user-slug": "banner-author",
-                "user-name": "Banner Author",
-                "user-karma": 5,
-                "user-avatar-data": null,
-                "user-profile-url": "https://example.invalid/user/banner-author"
-              },
-              comments: "banner file-operation context"
-            }
-          ]
+          res: {
+            entries: [
+              {
+                revision_id: 42420,
+                history_row_id: "banner-row-2",
+                timeline_number: 2,
+                revision_number: 42,
+                page_revision_number: 42,
+                history_kind: "page",
+                revision_type: "regular",
+                created_at: "2026-10-02T00:00:00Z",
+                user_id: 123,
+                author: {
+                  "user-id": 123,
+                  "user-slug": "banner-author",
+                  "user-name": "Banner Author",
+                  "user-karma": 5,
+                  "user-avatar-data": null,
+                  "user-profile-url": "https://example.invalid/user/banner-author"
+                },
+                comments: "banner file-operation context"
+              }
+            ],
+            total: 1,
+            page: 1,
+            perPage: 20,
+            totalPages: 1
+          }
         })
       })
     }
