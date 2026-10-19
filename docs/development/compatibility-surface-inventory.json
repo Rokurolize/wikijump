@@ -11515,7 +11515,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "7832f789155936ead54e027a322921b4d60b4e064a78a85343af1590258ef46e"
+      "source_input_set_sha256": "2d3c234dba48c6acc00764a3c69b70ebec73722e083d3a7d42a52b95dd0bf8eb"
     },
     "ftml": {
       "commit": "d7727b245fd69f46d44c04592e392850ea244e13",
@@ -11568,7 +11568,7 @@
       },
       {
         "path": "deepwell/src/endpoints/file.rs",
-        "sha256": "6a99fdb6a66ea3624b2f43761c63e160b0d6b80ded4c0d9968c52ffd455cc226"
+        "sha256": "0fe8753a1a727dcb2860d3a2190f49322ff53a7fd66294721a631082fc85cebf"
       },
       {
         "path": "deepwell/src/endpoints/forum_post.rs",
@@ -11680,7 +11680,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "3f64d455d87d2fa93b3389b589b88b108f8a0ac975c0ef66712eb8cf4f43d47c"
+        "sha256": "25b38113c2db6ea533b8d14154b8b694470b22379574bcbd9101efd48b08083b"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -24233,7 +24233,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#changed_file_revision_fences_but_noop_and_failed_revision_do_not"
+          "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused"
         ]
       },
       "evidence": {
@@ -24278,7 +24278,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#file_mutation_deferred_actions_fence_warm_anonymous_gallery_cache"
+          "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused"
         ]
       },
       "evidence": {
@@ -24323,7 +24323,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#changed_file_revision_fences_but_noop_and_failed_revision_do_not"
+          "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused"
         ]
       },
       "evidence": {
@@ -24413,7 +24413,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#file_mutations_require_parent_page_edit_permission"
+          "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused"
         ]
       },
       "evidence": {
@@ -24458,7 +24458,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#file_mutation_deferred_actions_fence_warm_anonymous_gallery_cache"
+          "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused"
         ]
       },
       "evidence": {
@@ -24728,7 +24728,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#file_mutations_require_parent_page_edit_permission"
+          "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused"
         ]
       },
       "evidence": {
@@ -26888,7 +26888,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/import.rs#mirror_seed_carries_source_tags_and_navigation"
+          "deepwell/tests/file_mirror_parity.rs#native_file_mutations_still_succeed"
         ]
       },
       "evidence": {
