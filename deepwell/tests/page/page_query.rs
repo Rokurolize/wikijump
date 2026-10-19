@@ -2051,7 +2051,7 @@ async fn excessive_score_selectors_preserve_listpages_and_countpages_modules() {
     let count_head = format!(r#"tags="+{target_tag}" limit="20"{excessive_selectors}"#);
     let index_slug = "fixture-score-selector-cap-index";
     let index_source = format!(
-        "[[module ListPages {list_head}]]\nSCORE_SELECTOR_CAP_LIST=%%slug%% <script>&\"' {forged_marker}\n[[/module]]\n\n[[module CountPages {count_head}]]\nSCORE_SELECTOR_CAP_COUNT=%%total%% <script>&\"' {forged_marker}\n[[/module]]",
+        "[[module ListPages {list_head}]]\nSCORE_SELECTOR_CAP_LIST=%%slug%% <script>&\"' {forged_marker}\n[[/module]]\n\n[[module CountPages {count_head}]]\nSCORE_SELECTOR_CAP_COUNT=%%total%% <script>&\"' {forged_marker}\n[[/module]]\n\nRAW_MARKER_LITERAL={forged_marker}",
     );
     create_listpages_test_page(
         &mut runner,
@@ -2100,7 +2100,7 @@ async fn excessive_score_selectors_preserve_listpages_and_countpages_modules() {
     );
     assert_eq!(
         html.matches(forged_marker).count(),
-        2,
+        3,
         "authored marker-shaped text must not resolve through the shared registry:\n{html}",
     );
 }
