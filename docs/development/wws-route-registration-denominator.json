@@ -80,8 +80,8 @@
       },
       {
         "path": "wws/src/handler/file.rs",
-        "git_blob": "7ae7eb4e29ac3a7b45ec76d9969c51e352dc459c",
-        "sha256": "718fd69d982b9f7cc44eb7a16b97d90d65c49fb32f21c8e344c3928263383449"
+        "git_blob": "063a9cb5807c7776a6f3bed0189247ac0a662ed4",
+        "sha256": "26c68e095202cca045c803f942937deb6b34f38d8be1a751313ed41dbea1eff2"
       },
       {
         "path": "wws/src/handler/misc.rs",
@@ -279,7 +279,7 @@
       "registered_handler_symbol": "handle_local_file",
       "handler_definition_path": "wws/src/handler/file.rs",
       "route_registration_reference": "wws/src/route.rs#L42",
-      "handler_definition_reference": "wws/src/handler/file.rs#L337",
+      "handler_definition_reference": "wws/src/handler/file.rs#L342",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -400,7 +400,7 @@
       "registered_handler_symbol": "handle_file_download",
       "handler_definition_path": "wws/src/handler/file.rs",
       "route_registration_reference": "wws/src/route.rs#L84",
-      "handler_definition_reference": "wws/src/handler/file.rs#L424",
+      "handler_definition_reference": "wws/src/handler/file.rs#L429",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -411,7 +411,7 @@
       "registered_handler_symbol": "handle_file_fetch",
       "handler_definition_path": "wws/src/handler/file.rs",
       "route_registration_reference": "wws/src/route.rs#L74",
-      "handler_definition_reference": "wws/src/handler/file.rs#L392",
+      "handler_definition_reference": "wws/src/handler/file.rs#L397",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
