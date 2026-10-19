@@ -10139,6 +10139,7 @@
         "kind": "endpoint_behavioral",
         "reference": "deepwell/tests/auth.rs#account_holders_change_their_password_with_the_current_one",
         "alternatives": [
+          "deepwell/tests/user.rs#avatar_changes_drop_only_that_users_wws_cache_entry",
           "deepwell/tests/user.rs#avatar_removal_is_owner_only_and_clears_only_the_association",
           "deepwell/tests/user.rs#basic_update",
           "deepwell/tests/user.rs#changing_email_clears_verified_ownership",

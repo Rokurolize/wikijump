@@ -41,6 +41,7 @@ use crate::types::{Maybe, Reference};
 use crate::utils::now;
 use crate::utils::regex_replace_in_place;
 use paste::paste;
+use redis::AsyncCommands;
 use sea_orm::sea_query::Expr;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, Condition, DbErr, EntityTrait, NotSet,
@@ -657,7 +658,32 @@ impl UserService {
 
         let txn = ctx.transaction();
         let new_user = model.update(txn).await.or_raise(make_error)?;
+        Self::invalidate_avatar_cache(ctx, user_id)
+            .await
+            .or_raise(make_error)?;
         Ok(new_user)
+    }
+
+    /// Drops WWS's cached avatar hash for a user (`user_avatar:<id>`, see
+    /// `wws/src/cache.rs`), so a changed or removed avatar stops being served
+    /// (#2556). WWS also expires the entry, which bounds a re-cache that races
+    /// this request's commit.
+    pub async fn invalidate_avatar_cache(
+        ctx: &ServiceContext<'_>,
+        user_id: i64,
+    ) -> Result<()> {
+        let mut redis = ctx.redis();
+        let _: usize =
+            redis
+                .del(format!("user_avatar:{user_id}"))
+                .await
+                .or_raise(|| {
+                    Error::new(
+                        format!("failed to invalidate cached avatar for user {user_id}"),
+                        ErrorType::RedisQuery,
+                    )
+                })?;
+        Ok(())
     }
 
     #[inline]
@@ -1060,6 +1086,7 @@ impl UserService {
             model.user_page = Set(user_page);
         }
 
+        let avatar_changed = matches!(input.avatar_uploaded_blob_id, Maybe::Set(_));
         if let Maybe::Set(uploaded_blob_id) = input.avatar_uploaded_blob_id {
             let s3_hash = match uploaded_blob_id {
                 None => None,
@@ -1096,6 +1123,11 @@ impl UserService {
             }
             Err(error) => return Err(error).or_raise(make_error),
         };
+        if avatar_changed {
+            Self::invalidate_avatar_cache(ctx, new_user.user_id)
+                .await
+                .or_raise(make_error)?;
+        }
 
         // Run verification afterwards if the slug changed
         if user.slug != new_user.slug {

@@ -32,6 +32,12 @@ use std::time::Duration;
 /// default, while a reply this late means Valkey is unreachable.
 const REDIS_TIMEOUT: Duration = Duration::from_secs(5);
 
+/// How long a cached avatar hash is trusted. DEEPWELL deletes the entry when a
+/// user's avatar changes; the expiry bounds a re-cache that races that commit
+/// and any write path that bypasses it, so a removed avatar stops being served
+/// (#2556).
+pub const AVATAR_CACHE_TTL: Duration = Duration::from_secs(60);
+
 fn connection_config() -> AsyncConnectionConfig {
     AsyncConnectionConfig::new()
         .set_connection_timeout(Some(REDIS_TIMEOUT))
@@ -105,7 +111,8 @@ impl Cache {
     pub async fn set_avatar(&self, user_id: i64, avatar_s3_hash: &str) -> Result<()> {
         let mut conn = get_connection!(self.client);
         let key = redis_key!(user_avatar => user_id);
-        set!(conn, key, avatar_s3_hash);
+        conn.set_ex::<_, _, ()>(key, avatar_s3_hash, AVATAR_CACHE_TTL.as_secs())
+            .await?;
         Ok(())
     }
 }
@@ -117,6 +124,14 @@ mod tests {
     #[test]
     fn redis_keys_include_all_identifying_parts() {
         assert_eq!(redis_key!(site_domain => 42), "site_domain:42");
+        // DEEPWELL deletes this exact key when an avatar changes (#2556).
+        assert_eq!(redis_key!(user_avatar => 7), "user_avatar:7");
+    }
+
+    #[test]
+    fn cached_avatars_expire() {
+        assert!(AVATAR_CACHE_TTL.as_secs() > 0);
+        assert!(AVATAR_CACHE_TTL <= Duration::from_secs(300));
     }
 
     #[test]
