@@ -271,7 +271,10 @@ same local stack).
 ## Tests
 
 ```sh
-node --test tests/*.test.mjs
+npm test
+# npm test runs: node --test --test-concurrency=4 --test-timeout=240000 tests/*.test.mjs
+# The finite concurrency and timeout keep the browser-heavy suite deterministic;
+# unbounded runs exhaust the host and stall instead of failing.
 ```
 
 Includes pure unit tests, a fixture HTTP server proving once-then-local
