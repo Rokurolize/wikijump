@@ -244,7 +244,7 @@ export interface PageOptions {
   no_redirect: boolean
   no_render: boolean
   debug: boolean
-  renderer: boolean
+  rerender: boolean
   comments: boolean
   history: boolean
   offset: Nullable<number>

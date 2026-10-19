@@ -22,6 +22,18 @@ navigated-to = Navigated to { $path }
 ## Generic
 
 about = About
+
+about-info = Platform information
+    .backend = Backend
+    .frontend = Frontend
+    .package-name = Package name
+    .package-description = Package description
+    .package-license = Package license
+    .package-repository = Package repository
+    .package-version = Package version
+    .rustc-version = Rustc version
+    .node-version = Node version
+    .pnpm-version = Pnpm version
 account = Account
 alt-title = Alternative Title
 applications = Applications

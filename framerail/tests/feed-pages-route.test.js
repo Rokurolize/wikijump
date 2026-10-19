@@ -59,7 +59,7 @@ const missingArticleView = {
         no_redirect: false,
         no_render: false,
         debug: false,
-        renderer: false,
+        rerender: false,
         comments: false,
         history: false,
         offset: null,

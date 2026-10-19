@@ -1,4 +1,15 @@
 export interface Locales {
+  "about-info": string
+  "about-info.backend": string
+  "about-info.frontend": string
+  "about-info.package-name": string
+  "about-info.package-description": string
+  "about-info.package-license": string
+  "about-info.package-repository": string
+  "about-info.package-version": string
+  "about-info.rustc-version": string
+  "about-info.node-version": string
+  "about-info.pnpm-version": string
   "site-info": string
   "site-info.name": string
   "site-info.slug": string

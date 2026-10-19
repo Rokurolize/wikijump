@@ -748,6 +748,7 @@ impl ViewService {
             selected_template_page_id: Option<i64>,
             data_form: Option<DataFormEditor>,
             can_create: bool,
+            missing_template: bool,
             compiled_body_html: String,
             compiled_body_styles: Vec<String>,
             compiled_top_bar_html: Option<String>,
@@ -763,6 +764,7 @@ impl ViewService {
             selected_template_page_id,
             data_form,
             can_create,
+            missing_template,
             mut compiled_body_html,
             compiled_body_styles,
             compiled_top_bar_html,
@@ -1039,6 +1041,7 @@ impl ViewService {
                         page_templates: Vec::new(),
                         selected_template_page_id: None,
                         can_create: false,
+                        missing_template: false,
                         data_form,
                         compiled_body_html,
                         compiled_body_styles,
@@ -1072,6 +1075,7 @@ impl ViewService {
 
                     let GetBlueprintPageOutput {
                         wikitext,
+                        from_site_page: _,
                         render_output,
                     } = BlueprintPageService::get(
                         ctx,
@@ -1116,6 +1120,7 @@ impl ViewService {
                         page_templates: Vec::new(),
                         selected_template_page_id: None,
                         can_create: false,
+                        missing_template: false,
                         data_form: None,
                         compiled_body_html,
                         compiled_body_styles,
@@ -1168,6 +1173,7 @@ impl ViewService {
                     };
                     let GetBlueprintPageOutput {
                         wikitext,
+                        from_site_page: _,
                         render_output,
                     } = BlueprintPageService::get(
                         ctx,
@@ -1202,6 +1208,7 @@ impl ViewService {
                         page_templates: Vec::new(),
                         selected_template_page_id: None,
                         can_create: false,
+                        missing_template: false,
                         data_form: None,
                         compiled_body_html,
                         compiled_body_styles,
@@ -1211,6 +1218,7 @@ impl ViewService {
                 } else {
                     let GetBlueprintPageOutput {
                         wikitext,
+                        from_site_page,
                         render_output,
                     } = BlueprintPageService::get(
                         ctx,
@@ -1356,6 +1364,7 @@ impl ViewService {
                         selected_template_page_id,
                         data_form,
                         can_create: user_can_create_page,
+                        missing_template: from_site_page,
                         compiled_body_html,
                         compiled_body_styles,
                         compiled_top_bar_html,
@@ -1501,6 +1510,7 @@ impl ViewService {
                 selected_template_page_id,
                 data_form,
                 can_create,
+                missing_template,
                 compiled_body_html,
                 compiled_body_styles,
                 compiled_top_bar_html,
@@ -1882,6 +1892,7 @@ ORDER BY breadcrumb_chain.depth ASC
 
         let GetBlueprintPageOutput {
             wikitext: _,
+            from_site_page: _,
             render_output,
         } = BlueprintPageService::get(
             ctx,

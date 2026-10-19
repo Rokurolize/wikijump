@@ -31,10 +31,33 @@ pub struct EmailService;
 
 impl EmailService {
     /// Validates an email through the MailCheck API.
+    ///
+    /// Fails when MailCheck cannot answer. Account creation and email changes
+    /// use [`EmailService::validate_when_available`] instead.
     pub async fn validate(
         ctx: &ServiceContext<'_>,
         email: &str,
     ) -> Result<EmailValidationOutput> {
+        match Self::validate_when_available(ctx, email).await? {
+            Some(output) => Ok(output),
+            None => bail!(Error::new(
+                format!("failed to validate email '{email}', MailCheck is unavailable"),
+                ErrorType::RateLimited,
+            )),
+        }
+    }
+
+    /// Validates an email through the MailCheck API, or returns `None` when
+    /// MailCheck cannot answer (rate limit, transport failure, server error).
+    ///
+    /// An unanswered check must not block sign-up: the caller records the
+    /// email as not validated, exactly as when validation is bypassed. A
+    /// definite verdict (a rejected address, or one that is disposable, has
+    /// no MX records or is spam) is still returned for the caller to enforce.
+    pub async fn validate_when_available(
+        ctx: &ServiceContext<'_>,
+        email: &str,
+    ) -> Result<Option<EmailValidationOutput>> {
         if email.is_empty() {
             bail!(Error::new(
                 "cannot validate empty email string",
@@ -42,87 +65,74 @@ impl EmailService {
             ));
         }
 
-        let config = ctx.config();
-        let state = ctx.state();
-        let make_error = || {
-            Error::new(
-                format!("failed to validate email '{email}'"),
-                ErrorType::EmailVerification,
-            )
-        };
+        // MailCheck may be unavailable, so the address must at least be
+        // well formed before it can be stored unvalidated.
+        if !is_well_formed_email(email) {
+            bail!(Error::new(
+                "email address is not well formed",
+                ErrorType::InvalidEmail,
+            ));
+        }
 
-        // Sends a GET request to the MailCheck API and deserializes the response.
-        let response = if config.mock_mailcheck {
+        let response = if ctx.config().mock_mailcheck {
             warn!(
                 "Using mocked MailCheck! This is fine for tests, but don't do this in prod!"
             );
             Self::mock_mailcheck(email)
         } else {
-            Self::request_mailcheck(state, email)
-                .await
-                .or_raise(make_error)?
-        };
-
-        let mailcheck = match response {
-            MailCheckResponse::Success(data) => data,
-            MailCheckResponse::Failure(MailCheckFailureResponse { status, error }) => {
-                match status {
-                    // Invalid request, bad email
-                    400 => {
-                        error!(
-                            "MailCheck API request failed with bad response: {}",
-                            error,
-                        );
-                        bail!(Error::new(
-                            format!(
-                                "failed to validate email, MailCheck API returned an error: {}",
-                                error,
-                            ),
-                            ErrorType::EmailVerification,
-                        ));
-                    }
-
-                    // Exceeded rate limit
-                    429 => {
-                        error!("MailCheck API hit ratelimit: {}", error);
-                        bail!(Error::new(
-                            "failed to validate email, MailCheck API hit ratelimit",
-                            ErrorType::RateLimited,
-                        ));
-                    }
-
-                    // Other statuses.
-                    _ => {
-                        error!(
-                            "MailCheck API returned error status {}: {}",
-                            status, error,
-                        );
-                        bail!(Error::new(
-                            format!(
-                                "failed to validate email, unexpected status {} from MailCheck: {}",
-                                status, error
-                            ),
-                            ErrorType::EmailVerification
-                        ));
-                    }
+            match Self::request_mailcheck(ctx.state(), email).await {
+                Ok(response) => response,
+                Err(error) => {
+                    warn!("MailCheck API unavailable, email not validated: {error:?}");
+                    return Ok(None);
                 }
             }
         };
 
-        if mailcheck.status != 200 {
-            error!(
-                "MailCheck API returned non-success status {} with no error message",
-                mailcheck.status,
-            );
-            bail!(Error::new(
-                format!(
-                    "failed to validate email, unexpected non-success status {} from MailCheck, but no error message",
-                    mailcheck.status,
-                ),
-                ErrorType::EmailVerification,
-            ));
-        }
+        Ok(Self::mailcheck_verdict(response)?.map(Self::classify))
+    }
 
+    /// The MailCheck answer, `None` when it is not a verdict on the email.
+    fn mailcheck_verdict(
+        response: MailCheckResponse,
+    ) -> Result<Option<MailCheckSuccessResponse>> {
+        match response {
+            MailCheckResponse::Success(data) if data.status == 200 => Ok(Some(data)),
+            MailCheckResponse::Success(data) => {
+                warn!(
+                    "MailCheck API returned non-success status {} with no error message, email not validated",
+                    data.status,
+                );
+                Ok(None)
+            }
+
+            // Invalid request, bad email
+            MailCheckResponse::Failure(MailCheckFailureResponse {
+                status: 400,
+                error,
+            }) => {
+                // MailCheck rejected the address itself: report it as the
+                // user-facing invalid-email error, not an internal failure.
+                warn!("MailCheck API rejected the email address: {}", error);
+                bail!(Error::new(
+                    format!("MailCheck API rejected the email address: {error}"),
+                    ErrorType::InvalidEmail,
+                ));
+            }
+
+            // Exceeded rate limit, or another status that says nothing
+            // about the email itself.
+            MailCheckResponse::Failure(MailCheckFailureResponse { status, error }) => {
+                warn!(
+                    "MailCheck API returned error status {}, email not validated: {}",
+                    status, error,
+                );
+                Ok(None)
+            }
+        }
+    }
+
+    fn classify(mailcheck: MailCheckSuccessResponse) -> EmailValidationOutput {
         // Prepare output fields
         let mut valid = true;
         let mut classification = EmailClassification::Normal;
@@ -173,7 +183,7 @@ impl EmailService {
         }
 
         // Move other fields to output
-        Ok(EmailValidationOutput {
+        EmailValidationOutput {
             valid,
             classification,
             provider_classification,
@@ -190,7 +200,7 @@ impl EmailService {
             role_account: mailcheck.role_account,
             spam: mailcheck.spam,
             did_you_mean: mailcheck.did_you_mean,
-        })
+        }
     }
 
     /// Actual HTTP request to MailCheck.
@@ -283,4 +293,97 @@ impl EmailService {
     // TODO (WJ-1388) email verification (checking an email belongs to you)
     // TODO (WJ-1389) password reset (verification link to begin password reset process)
     // TODO (WJ-1390) one-time code (used as substitute second factor when logging in)
+}
+
+/// A deliberately small syntax check: one `@`, a non-empty local part, and a
+/// domain of non-empty dot-separated labels, with no whitespace or control
+/// characters. Single-label domains stay valid (local accounts such as
+/// `admin@wikijump`); MailCheck, when it answers, decides deliverability.
+fn is_well_formed_email(email: &str) -> bool {
+    if email.chars().any(|c| c.is_whitespace() || c.is_control()) {
+        return false;
+    }
+    let Some((local, domain)) = email.split_once('@') else {
+        return false;
+    };
+    !local.is_empty()
+        && !domain.contains('@')
+        && domain.split('.').all(|label| !label.is_empty())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn failure(status: u16) -> MailCheckResponse {
+        MailCheckResponse::Failure(MailCheckFailureResponse {
+            status,
+            error: str!("error"),
+        })
+    }
+
+    #[test]
+    fn an_unanswered_mailcheck_leaves_the_email_unvalidated() {
+        for status in [429, 500, 503] {
+            assert!(
+                EmailService::mailcheck_verdict(failure(status))
+                    .unwrap()
+                    .is_none(),
+                "status {status}",
+            );
+        }
+
+        let MailCheckResponse::Success(mut answer) =
+            EmailService::mock_mailcheck("someone@gmail.com")
+        else {
+            unreachable!("the mock always answers");
+        };
+        answer.status = 503;
+        assert!(
+            EmailService::mailcheck_verdict(MailCheckResponse::Success(answer))
+                .unwrap()
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn only_well_formed_addresses_can_be_stored_unvalidated() {
+        for email in [
+            "someone@gmail.com",
+            "a.b+c@sub.example.org",
+            "admin@wikijump",
+        ] {
+            assert!(is_well_formed_email(email), "{email}");
+        }
+        for email in [
+            "not-an-email",
+            "@example.com",
+            "someone@",
+            "some one@example.com",
+            "a@b@example.com",
+            "someone@example..com",
+            "someone@.example.com",
+        ] {
+            assert!(!is_well_formed_email(email), "{email}");
+        }
+    }
+
+    #[test]
+    fn a_mailcheck_verdict_is_still_enforced() {
+        let rejected = EmailService::mailcheck_verdict(failure(400)).unwrap_err();
+        assert!(
+            format!("{rejected:?}").contains("MailCheck API rejected the email address")
+        );
+
+        let verdict = |email| {
+            EmailService::mailcheck_verdict(EmailService::mock_mailcheck(email))
+                .unwrap()
+                .map(EmailService::classify)
+                .expect("MailCheck answered")
+        };
+        assert!(verdict("someone@gmail.com").valid);
+        assert!(!verdict("someone@disposable.com").valid);
+        assert!(!verdict("someone@invalid.com").valid);
+        assert!(!verdict("someone@spam.xxx").valid);
+    }
 }

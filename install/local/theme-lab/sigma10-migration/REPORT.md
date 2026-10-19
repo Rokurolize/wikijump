@@ -4,6 +4,8 @@
 
 The retained local simulation is historical evidence, with a complete reviewed 36-candidate × 9-cell matrix. The Theme Lab adaptation-authority cleanup supersedes the 35 campaign candidates. Old screenshots remain bound to their archived CSS/source identities and do not accept the cleaned candidates.
 
+The `--historical-only` verification uses `historical-run-contract.json`, which preserves the exact 2026-09-27 capture contract (SHA-256 `7d2313c1d42f010bd3a893e1364ba56931b56044ba1f782ed0ee887fde6deba9`, Git revision `e3fd603356`). The maintained `run-contract.json` gained `expected_runtime_source_sha256` during the 2026-10-07 source integration and now has a different hash. Historical audit records bind the earlier bytes; the historical verifier checks those bytes without changing the current runtime identity or rewriting audit rows. A clean checkout still needs the separately stored raw evidence to complete this verification; missing captures remain failures.
+
 **Migration decision:** `SIGMA10-MOB-001` is an **unverified preview-state hypothesis**, not a required migration blocker or a required Technical Staff source change. The real saved Sigma-10 Wikidot page hides the preview notice through the later `sigma-10:info:style` stylesheet and has no 390px document overflow. Anonymous `edit/PagePreviewModule` returned real preview HTML without a lock or save, but did not establish the complete browser/editor preview stylesheet cascade. Technical Staff/manual Wikidot preview confirmation is required before proposing a source change. Search and historical local simulator findings carry no broader Wikidot parity authority.
 
 ## Authority and fixture provenance

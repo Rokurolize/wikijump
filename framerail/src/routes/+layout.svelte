@@ -118,6 +118,9 @@
   const nativeFooterLinks = $derived(
     resolveNativeFooterLinks(viewData?.native_footer_destinations)
   )
+  const SIGMA_FOOTER_ORDER = ["docs", "terms-conditions", "privacy", "security"]
+  const nativeFooterHref = (key: string) =>
+    nativeFooterLinks.find((link) => link.key === key)?.href
   const wikidotLoginLabels = $derived(buildWikidotLoginLabels(wikidotLocale))
   const wikidotAccountLabels = $derived(buildWikidotAccountLabels(wikidotLocale))
   const wikidotLicenseHtml = $derived(
@@ -415,16 +418,18 @@
         -->
         {@html wikidotFooterHtml}
       {:else}
+        <!--
+          The same instance-level destinations as the native footer, in this
+          layout's Docs | Terms | Privacy | Security order. They never resolve
+          against the viewed wiki.
+        -->
         <div class="options">
-          <a href={resolve("/", {})}>{viewData?.internationalization?.docs}</a>
-          |
-          <a href={resolve("/", {})}
-            >{viewData?.internationalization?.["terms-conditions"]}</a
-          >
-          |
-          <a href={resolve("/", {})}>{viewData?.internationalization?.privacy}</a>
-          |
-          <a href={resolve("/", {})}>{viewData?.internationalization?.security}</a>
+          {#each SIGMA_FOOTER_ORDER as key, index (key)}
+            {#if index > 0}|{/if}
+            <a href={nativeFooterHref(key)} rel="external"
+              >{viewData?.internationalization?.[key]}</a
+            >
+          {/each}
         </div>
         <div class="footer-powered-by">
           {viewData?.internationalization?.["footer-powered-by"]}

@@ -744,7 +744,7 @@ export const toArticleViewResult = (page, siteId = 6000005) => ({
         no_redirect: false,
         no_render: false,
         debug: false,
-        renderer: false,
+        rerender: false,
         comments: false,
         history: false,
         offset: null,

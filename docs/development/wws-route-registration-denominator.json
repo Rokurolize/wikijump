@@ -20,8 +20,8 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "git_blob": "e9345326b524c51b86b43523aece3feae3cb1b5b",
-        "sha256": "c4af8601d4014d3d0630fbfc728cc72b398523a458e0820a2e56743506076e49"
+        "git_blob": "821b92a055f0c184bc253b44daae13c47ecb540f",
+        "sha256": "1937ed69310c00e1353df883f8457c7790c0322da5a60be29622c2e117449bb5"
       },
       {
         "path": "deepwell/src/endpoints/text_block.rs",
@@ -50,8 +50,8 @@
       },
       {
         "path": "deepwell/tests/page.rs",
-        "git_blob": "c9167575b8236edf6765464b77e5e9627b9e1941",
-        "sha256": "f2b21286da2b2ec104127f75d86e141a0ca2c76d1ced3c8a5442b3c281b50242"
+        "git_blob": "cc7a55dcb94fa9d4502dbd38b479eb35cd4c9aae",
+        "sha256": "c29df30ca4a9d2e4cacb0a272bb046281570089d8d92bc014b2bc4314c1a5bdd"
       },
       {
         "path": "wws/Cargo.lock",

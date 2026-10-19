@@ -1737,6 +1737,30 @@ fn link_targets_keep_the_authored_text_of_protected_fragments() {
 }
 
 #[test]
+fn link_labels_keep_the_authored_text_of_protected_fragments() {
+    // Corpus Wikidot HTML: the wikiwalk footer's `[[[{$prev}|]]]` derives
+    // its empty label from the normalized target (`<a class="newpage"
+    // href="/prev">prev</a>`, blood-rivers), while fragment:antho-card's
+    // `[[[{$link}]]]` shows the variable as written (`>{$link}</a>`).
+    let source = concat!(
+        "[[span class=\"ww-{$prev}\"]]<< [[[{$prev}|]]] |[[/span]]\n\n",
+        "[[[{$link}]]]\n",
+    );
+
+    let (html, _) = render_protected_links(source, true);
+
+    assert!(html.contains(r#"href="/prev">prev</a>"#), "{html}");
+    assert!(html.contains(r#"href="/link">{$link}</a>"#), "{html}");
+    assert!(html.contains(r#"class="ww-{$prev}""#), "{html}");
+    assert!(
+        !html
+            .to_ascii_uppercase()
+            .contains(COMPAT_TEXT_MARKER_PREFIX),
+        "{html}"
+    );
+}
+
+#[test]
 fn densely_protects_and_restores_marker_class_variables() {
     let mut wikitext = String::from("[[div class=\"");
     for index in 0..10_000 {

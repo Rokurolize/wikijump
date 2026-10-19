@@ -235,6 +235,8 @@ interface PageViewMissing {
      * when this is true.
      */
     can_create: boolean
+    /** The body is the site's own missing-page template (`_404`). */
+    missing_template: boolean
   }
 }
 interface PageViewPermissions {

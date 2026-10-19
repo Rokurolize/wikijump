@@ -1,0 +1,5 @@
+To report a security problem in this [https://github.com/Rokurolize/wikijump Wikijump] instance, open an issue at [https://github.com/Rokurolize/wikijump/issues github.com/Rokurolize/wikijump/issues].
+
+If the details could help someone attack the site before it is fixed, open an issue that only asks for a private way to send them, and leave the details out.
+
+Never test against accounts or data that are not yours.

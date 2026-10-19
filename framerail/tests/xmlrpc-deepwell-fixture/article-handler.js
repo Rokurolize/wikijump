@@ -12,6 +12,7 @@ const NEW_PAGE_EDIT_EXTRA = /^edit(?:\/true)?(?:\/.*)?$/u
 const DATA_FORM_CREATE_SLUG = "data-form-create-flow:example"
 // Missing-page probes for page-create-permission.spec.ts (no edit route).
 const MISSING_PAGE_PROBE_SLUGS = new Set([
+  "site-404-template-probe",
   "create-permission-denied-probe",
   "create-permission-authorized-probe"
 ])
@@ -643,6 +644,7 @@ const fixtureCanCreatePage = (sessionToken) =>
  * @param {{ slug: string; extra: string }} route
  * @param {string | undefined | null} sessionToken
  */
+
 const missingPageArticleViewResult = (route, sessionToken) => ({
   ...siteView,
   article_page_cache_key: null,
@@ -660,7 +662,7 @@ const missingPageArticleViewResult = (route, sessionToken) => ({
         no_redirect: false,
         no_render: false,
         debug: false,
-        renderer: false,
+        rerender: false,
         comments: false,
         history: false,
         offset: null,
@@ -668,7 +670,12 @@ const missingPageArticleViewResult = (route, sessionToken) => ({
       },
       redirect_page: null,
       wikitext: "",
-      compiled_body_html: "",
+      // A site `_404` template replaces the default missing-page state.
+      missing_template: route.slug === "site-404-template-probe",
+      compiled_body_html:
+        route.slug === "site-404-template-probe"
+          ? "<p>Site 404 template for this wiki.</p>"
+          : `<p>The page <em>${route.slug}</em> you want to access does not exist.</p>`,
       compiled_body_styles: [],
       compiled_top_bar_html: null,
       compiled_side_bar_html: null,

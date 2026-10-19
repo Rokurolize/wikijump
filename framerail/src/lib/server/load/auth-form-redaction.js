@@ -19,6 +19,13 @@ export const clearRegisterPasswords = (form) => {
   return form
 }
 
+// A superform's id is how the browser matches an action result to its form.
+// A short password can occur inside it ("mm5aab" contains "ab"), and cutting
+// it out makes the page ignore the result, hiding every field error.
+/** @param {object} value */
+const isSuperForm = (value) =>
+  "id" in value && "valid" in value && "posted" in value && "data" in value
+
 /**
  * Remove submitted credentials from an action payload immediately before
  * it is returned to SvelteKit for serialization. Unrelated tokens,
@@ -46,13 +53,14 @@ export const redactAuthActionPayload = (payload, secrets) => {
     }
 
     visited.add(value)
+    const form = isSuperForm(value)
     for (const [key, nested] of Object.entries(value)) {
       value[key] =
         key === "errors"
           ? redactValidationErrors(nested)
           : key === "password" || key === "confirmPassword"
             ? ""
-            : key === "session_token"
+            : key === "session_token" || (form && key === "id")
               ? nested
               : redact(nested)
     }

@@ -59,6 +59,26 @@
             "slug": "system:page-tags",
             "title": "Page Tags",
             "wikitext": "page-tags"
+        },
+        {
+            "slug": "docs",
+            "title": "Documentation",
+            "wikitext": "docs"
+        },
+        {
+            "slug": "legal:terms-of-service",
+            "title": "Terms of Service",
+            "wikitext": "legal-terms-of-service"
+        },
+        {
+            "slug": "legal:privacy-policy",
+            "title": "Privacy Policy",
+            "wikitext": "legal-privacy-policy"
+        },
+        {
+            "slug": "legal:security",
+            "title": "Security",
+            "wikitext": "legal-security"
         }
     ],
     "test": [

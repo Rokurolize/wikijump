@@ -687,3 +687,101 @@ async fn authorization_token_issue_uses_admin_request_actor() {
         "audit metadata should include the submitted description",
     );
 }
+
+#[tokio::test]
+async fn account_holders_change_their_password_with_the_current_one() {
+    const NEW_PASSWORD: &str = "a-new-password-for-2026";
+
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let (name, user_id) = create_auth_test_user(&runner, n, false).await;
+    let current = run_endpoint!(runner, auth_login, login_params(&name));
+    let other = run_endpoint!(runner, auth_login, login_params(&name));
+    let session = SessionService::get(runner.context(), &current.session_token)
+        .await
+        .expect("the login session should exist");
+    runner.set_request_context(RequestContext {
+        session: Some(session),
+        user_id: Some(user_id),
+        ..Default::default()
+    });
+
+    // Ordinary profile editing cannot set a password without the current one.
+    let edit_error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": user_id,
+            "password": NEW_PASSWORD,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(edit_error, ErrorType::PermissionDenied);
+
+    let wrong_current = run_endpoint_err!(
+        runner,
+        user_password_change,
+        json!({
+            "current_password": "not-the-current-password",
+            "new_password": NEW_PASSWORD,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(wrong_current, ErrorType::InvalidAuthentication);
+
+    let too_short = run_endpoint_err!(
+        runner,
+        user_password_change,
+        json!({
+            "current_password": PASSWORD,
+            "new_password": "",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(
+        too_short,
+        ErrorType::UserPasswordTooShort {
+            length: 0,
+            minimum: 15,
+        },
+    );
+
+    let changed = run_endpoint!(
+        runner,
+        user_password_change,
+        json!({
+            "current_password": PASSWORD,
+            "new_password": NEW_PASSWORD,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(changed.other_sessions_revoked, 1);
+
+    // The session that changed the password stays; the other one ends.
+    assert!(
+        SessionService::get_optional(runner.context(), &current.session_token)
+            .await
+            .unwrap()
+            .is_some()
+    );
+    assert!(
+        SessionService::get_optional(runner.context(), &other.session_token)
+            .await
+            .unwrap()
+            .is_none()
+    );
+
+    runner.set_request_context(RequestContext::default());
+    run_endpoint_err!(runner, auth_login, login_params(&name));
+    let renewed = run_endpoint!(
+        runner,
+        auth_login,
+        json!({
+            "name_or_email": name,
+            "password": NEW_PASSWORD,
+            "ip_address": common::IP_ADDRESS,
+            "user_agent": "deepwell-auth-test",
+        })
+    );
+    assert!(!renewed.needs_mfa);
+}

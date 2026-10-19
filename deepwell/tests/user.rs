@@ -383,8 +383,25 @@ async fn regular_account_password_policy_rejects_short_create_passwords() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
+    // Account holders change their own password through
+    // user_password_change, which checks the current one.
     runner.set_request_context(RequestContext {
         user_id: Some(created.user_id),
+        ..Default::default()
+    });
+    let self_edit_error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": created.user_id,
+            "password": "ééééééééééééééé",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(self_edit_error, ErrorType::PermissionDenied);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
         ..Default::default()
     });
     let before_password =
@@ -812,8 +829,13 @@ async fn basic_update() {
     );
     assert_contains_error!(error, ErrorType::DisallowedEmail);
 
-    // Update password
+    // Update password (platform staff; account holders use
+    // user_password_change, which checks the current password)
 
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
     let user = run_endpoint!(
         runner,
         user_edit,

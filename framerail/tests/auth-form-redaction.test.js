@@ -111,3 +111,20 @@ test("registration field errors stay present without echoing submitted passwords
   assert.equal(payload.form.data.confirmPassword, "")
   assert.doesNotMatch(JSON.stringify(payload), /too-short/)
 })
+
+test("a password inside the form id keeps the id the browser matches results by", () => {
+  const form = {
+    id: "mm5aab",
+    valid: false,
+    posted: true,
+    data: { username: "alice", password: "ab", confirmPassword: "abc" },
+    errors: { password: ["account-password-too-short"], confirmPassword: ["mismatch"] }
+  }
+
+  const payload = redactAuthActionPayload({ form }, ["ab", "abc"])
+
+  assert.equal(payload.form.id, "mm5aab")
+  assert.equal(payload.form.data.password, "")
+  assert.equal(payload.form.data.confirmPassword, "")
+  assert.deepEqual(Object.keys(payload.form.errors), ["password", "confirmPassword"])
+})

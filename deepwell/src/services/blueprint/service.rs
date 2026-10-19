@@ -111,7 +111,7 @@ impl BlueprintPageService {
         };
 
         // Look through each option to get the blueprint page wikitext.
-        let wikitext = Self::get_wikitext(
+        let (wikitext, from_site_page) = Self::get_wikitext(
             ctx,
             &slugs,
             translate_key,
@@ -137,6 +137,7 @@ impl BlueprintPageService {
 
         Ok(GetBlueprintPageOutput {
             wikitext,
+            from_site_page,
             render_output,
         })
     }
@@ -242,7 +243,7 @@ impl BlueprintPageService {
         site_id: i64,
         locales: &[LanguageIdentifier],
         page_info: &PageInfo<'_>,
-    ) -> Result<String> {
+    ) -> Result<(String, bool)> {
         debug!(
             "Getting wikitext for blueprint page ({} slugs)",
             slugs.len(),
@@ -265,7 +266,7 @@ impl BlueprintPageService {
                     .await
                     .or_raise(make_error)?
             {
-                return Ok(text);
+                return Ok((text, true));
             }
         }
 
@@ -294,7 +295,7 @@ impl BlueprintPageService {
         // Remove control chars because this string is intended to be wikitext
         strip_fluent_control_chars(&mut wikitext);
 
-        Ok(wikitext)
+        Ok((wikitext, false))
     }
 
     async fn get_page_wikitext_optional(

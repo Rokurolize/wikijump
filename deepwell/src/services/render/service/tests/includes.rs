@@ -1746,3 +1746,38 @@ fn nested_include_preparation_skips_repeated_unbound_dynamic_iftags_resolution()
 
     assert_eq!(source, expected);
 }
+
+/// A plain comment branch (`[!-- -{$flag}` … `[!-- --]`) before an iftags
+/// gate must not cost the gate its closer: the boundary line carries the
+/// comment's `--]`, and dropping it makes the literal-region scan treat the
+/// gate opener as comment text, leaking `[[/iftags]]` into including pages
+/// (component:pride-logos-base shape behind #2353's deer-college leak).
+#[test]
+fn comment_branch_closer_does_not_swallow_a_following_iftags_gate() {
+    let source = concat!(
+        "[!-- -{$flag}\n",
+        "[[module CSS]]\n",
+        ".hidden { color: red; }\n",
+        "[[/module]]\n",
+        "[!-- --]\n",
+        "[[iftags +component]]\n",
+        "DOCS-SHOULD-HIDE\n",
+        "[[module Rate]]\n",
+        "[[module CSS]]\n",
+        ".x { color: red; }\n",
+        "[[/module]]\n",
+        "[[/iftags]]\n",
+        "AFTER-MARK",
+    );
+    for (tags, shown) in [(&[][..], false), (&["component"][..], true)] {
+        let prepared =
+            prepare_test_nested_include_conditionals(source, &[("flag", "")], tags);
+        assert!(!prepared.contains("iftags"), "tags {tags:?}: {prepared}");
+        assert_eq!(
+            prepared.contains("DOCS-SHOULD-HIDE"),
+            shown,
+            "tags {tags:?}: {prepared}"
+        );
+        assert!(prepared.contains("AFTER-MARK"), "tags {tags:?}: {prepared}");
+    }
+}
