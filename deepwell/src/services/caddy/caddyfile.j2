@@ -122,15 +122,23 @@ deploy{{ files_domain }} {
 	respond /-/health-check/caddy ✅ 200
 	respond /-/teapot             🫖 418
 
-	# The anonymous, read-only ListPages endpoint accepts Wikidot form posts without a browser Origin header; the gateway supplies the canonical Origin for SvelteKit.
+	# The anonymous, read-only ListPages endpoint accepts Wikidot form posts that carry no browser Origin header, so the gateway supplies the canonical Origin only in that case. A browser always sends Origin on a cross-site POST, so it is forwarded unchanged and SvelteKit's origin check still rejects it (issue #2497).
+	@ajax_module_no_origin {
+		path /ajax-module-connector.php
+		not header Origin *
+	}
+	handle @ajax_module_no_origin {
+		reverse_proxy framerail:3393 {
+			header_up Host {http.request.host}
+			header_up Origin https://{http.request.host}
+		}
+	}
 	@ajax_module {
 		path /ajax-module-connector.php
-
 	}
 	handle @ajax_module {
 		reverse_proxy framerail:3393 {
 			header_up Host {http.request.host}
-			header_up Origin https://{http.request.host}
 		}
 	}
 

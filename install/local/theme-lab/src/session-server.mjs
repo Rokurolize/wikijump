@@ -43,6 +43,7 @@ import {
   setViewport,
 } from "./browser-lab.mjs";
 import {cascadeDiagnosis} from "./cascade.mjs";
+import {isLocalWikijumpHostname} from "./local-wikijump-host.mjs";
 import {
   collectSelectorTexts,
   diffComputedStyles,
@@ -185,7 +186,7 @@ export function createSession({
         await navigate(page, url);
       }
       if (target === "candidate") {
-        if (new URL(page.url()).hostname.endsWith(".wikijump.localhost")) {
+        if (isLocalWikijumpHostname(new URL(page.url()).hostname)) {
           await page.waitForFunction(() => {
             const control = document.querySelector("#history-button");
             if (!control) return true;
