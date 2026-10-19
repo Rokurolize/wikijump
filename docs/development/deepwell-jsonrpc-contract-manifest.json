@@ -11365,6 +11365,7 @@
           "deepwell/tests/page/placeholder_restoration.rs#included_lists_restore_inline_dependencies_without_reinterpreting_html_blocks",
           "deepwell/tests/page/placeholder_restoration.rs#optimized_native_lists_restore_protected_inline_formatting",
           "deepwell/tests/page/placeholder_restoration.rs#selected_content_and_native_lists_restore_runtime_fragments",
+          "deepwell/tests/page/placeholder_restoration.rs#sequential_listpages_and_countpages_do_not_leak_html_registry_markers",
           "deepwell/tests/page/theme_previewer.rs#blank_theme_previewer_survives_save_and_include_but_not_preview_or_removal",
           "deepwell/tests/role.rs#ordinary_user_joins_only_the_editable_site_then_creates_a_page"
         ],
