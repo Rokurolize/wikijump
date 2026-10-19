@@ -108,6 +108,47 @@ export async function closePage(page) {
   await context?.close().catch(() => {});
 }
 
+// Wait until every screen-applicable document stylesheet has loaded before
+// computed styles are measured. Without this gate a slow stylesheet leaves
+// the reference styled by inheritance only, and deltas against it silently
+// vanish (no row) instead of failing loudly. A missing stylesheet is worse:
+// the browser keeps an empty sheet object, so sheet presence alone cannot
+// tell applied from failed — but openPage records failed requests before
+// navigation, so those fail closed here with no extra traffic (the offline
+// invariant forbids new requests). Disabled links and links whose media does
+// not match the screen never load by design and are skipped. Anything else
+// rejects so the caller can fail closed instead of recording unstyled
+// measurements.
+export async function waitForStylesheetsReady(page, {timeout = 30_000} = {}) {
+  const failedRequests = page?.__themeLabNetwork?.failed_requests ?? [];
+  if (failedRequests.length > 0) {
+    const applicable = await page.evaluate(() => [...document.querySelectorAll('link[rel="stylesheet"]')]
+      .filter((link) => {
+        if (link.disabled) return false;
+        const media = (link.media || "").trim().toLowerCase();
+        if (media !== "" && media !== "all" && (typeof window.matchMedia !== "function" || !window.matchMedia(link.media).matches)) return false;
+        return true;
+      })
+      .map((link) => link.href)).catch(() => []);
+    const failedHrefs = new Set(failedRequests.map((entry) => entry?.url).filter((url) => typeof url === "string"));
+    const failedSheets = applicable.filter((href) => failedHrefs.has(href));
+    if (failedSheets.length > 0) throw new Error(`document stylesheets failed to load: ${failedSheets.join(", ")}`);
+  }
+  try {
+    await page.waitForFunction(() => [...document.querySelectorAll('link[rel="stylesheet"]')].every((link) => {
+      if (link.disabled) return true;
+      const media = (link.media || "").trim().toLowerCase();
+      if (media !== "" && media !== "all" && (typeof window.matchMedia !== "function" || !window.matchMedia(link.media).matches)) return true;
+      return link.sheet !== null;
+    }), null, {timeout});
+  } catch (error) {
+    const pending = await page.evaluate(() => [...document.querySelectorAll('link[rel="stylesheet"]')]
+      .filter((link) => !link.disabled && link.sheet === null)
+      .map((link) => link.getAttribute("href") ?? link.href)).catch(() => []);
+    throw new Error(`document stylesheets were not ready within ${timeout}ms: ${pending.join(", ") || "unknown"}`, {cause: error});
+  }
+}
+
 export async function navigate(page, url) {
   await page.goto(url, {waitUntil: "domcontentloaded", timeout: 30_000});
   return page.url();
