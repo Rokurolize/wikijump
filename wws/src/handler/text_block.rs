@@ -444,10 +444,18 @@ async fn serve_text_block(
         return StatusCode::NOT_MODIFIED.into_response();
     }
     let body = Body::from(text_block_response_body(block_type, raw_body));
-    let result = Response::builder()
+    // Every hosted text response carries `nosniff`: stylesheets, scripts,
+    // HTML documents and plain text all have evidenced inline consumers
+    // (theme `@import`, component `<script src>`, `[[iframe]]` gadgets), so
+    // they keep the stored Content-Type exactly and stay inline.
+    let mut builder = Response::builder()
         .header(header::CONTENT_TYPE, &content_type)
         .header(header::ETAG, &etag)
-        .body(body);
+        .header(header::X_CONTENT_TYPE_OPTIONS, "nosniff");
+    if text_block_serves_as_attachment(&content_type) {
+        builder = builder.header(header::CONTENT_DISPOSITION, "attachment");
+    }
+    let result = builder.body(body);
 
     match result {
         Ok(response) => response,
@@ -456,6 +464,21 @@ async fn serve_text_block(
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }
+}
+
+/// Whether a hosted text block must download instead of rendering inline.
+///
+/// Only XML-essence payloads take this path. The rule mirrors the file
+/// lane's XML essence check without sharing it, so neither lane can change
+/// the other's behavior by editing a common helper.
+fn text_block_serves_as_attachment(content_type: &str) -> bool {
+    let essence = content_type
+        .split(';')
+        .next()
+        .unwrap_or("")
+        .trim()
+        .to_ascii_lowercase();
+    essence == "application/xml" || essence.ends_with("+xml")
 }
 
 fn text_block_response_body(block_type: TextBlockType, bytes: Vec<u8>) -> Vec<u8> {
@@ -612,6 +635,9 @@ mod tests {
     const HTML_BLOCK_SHA1: &str = "9079b854a8fdfa2328a297ff563fce21f866af0e";
     const HTML_BLOCK_S3_KEY: &str = "text-blocks/immutable-html-object";
     const CODE_BLOCK_S3_KEY: &str = "text-blocks/immutable-code-object";
+    const CODE_XML_S3_KEY: &str = "text-blocks/immutable-code-xml";
+    const CODE_CSS_S3_KEY: &str = "text-blocks/immutable-code-css";
+    const CODE_JS_S3_KEY: &str = "text-blocks/immutable-code-js";
     const MISMATCH_SHA1: &str = "1234567890abcdef1234567890abcdef12345678";
     const MISSING_SHA1: &str = "abcdef0123456789abcdef0123456789abcdef01";
 
@@ -762,7 +788,14 @@ mod tests {
                     "index": 1,
                     "s3_filename": match request["params"]["block_type"].as_str().unwrap() {
                         "html" => HTML_BLOCK_S3_KEY,
-                        "code" => CODE_BLOCK_S3_KEY,
+                        // Each code index stands in for one stored language:
+                        // plain text, XML, CSS, JavaScript.
+                        "code" => match request["params"]["index"].as_u64() {
+                            Some(2) => CODE_XML_S3_KEY,
+                            Some(3) => CODE_CSS_S3_KEY,
+                            Some(4) => CODE_JS_S3_KEY,
+                            _ => CODE_BLOCK_S3_KEY,
+                        },
                         block_type => panic!("unexpected text block type: {block_type}"),
                     },
                 }))
@@ -783,18 +816,21 @@ mod tests {
     }
 
     async fn mock_text_block_s3(Path(path): Path<String>) -> Response {
-        let is_html = path.ends_with(HTML_BLOCK_S3_KEY);
-        let body: &'static [u8] = if is_html {
-            HTML_BLOCK_BYTES
-        } else {
-            b"moved content"
-        };
+        let (content_type, body): (&'static str, &'static [u8]) =
+            if path.ends_with(HTML_BLOCK_S3_KEY) {
+                ("text/html", HTML_BLOCK_BYTES)
+            } else if path.ends_with(CODE_XML_S3_KEY) {
+                ("application/xml", b"moved content")
+            } else if path.ends_with(CODE_CSS_S3_KEY) {
+                ("text/css", b"moved content")
+            } else if path.ends_with(CODE_JS_S3_KEY) {
+                ("text/javascript", b"moved content")
+            } else {
+                ("text/plain", b"moved content")
+            };
         Response::builder()
             .status(StatusCode::OK)
-            .header(
-                header::CONTENT_TYPE,
-                if is_html { "text/html" } else { "text/plain" },
-            )
+            .header(header::CONTENT_TYPE, content_type)
             .header(header::ETAG, "\"text-block\"")
             .body(Body::from(body))
             .unwrap()
@@ -960,6 +996,133 @@ mod tests {
         assert!(response.headers().get(header::CONTENT_TYPE).is_none());
         assert!(!response.headers().contains_key(header::CACHE_CONTROL));
         assert!(response.bytes().await.unwrap().is_empty());
+    }
+
+    #[test]
+    fn xml_essence_payloads_download_instead_of_rendering_inline() {
+        for (content_type, expected) in [
+            ("application/xml", true),
+            ("application/xml; charset=utf-8", true),
+            ("Application/Atom+XML", true),
+            ("image/svg+xml", true),
+            ("text/html", false),
+            ("text/html; charset=utf-8", false),
+            ("text/css", false),
+            ("text/javascript", false),
+            ("text/plain", false),
+            ("text/x-python", false),
+            ("application/json", false),
+        ] {
+            assert_eq!(
+                text_block_serves_as_attachment(content_type),
+                expected,
+                "{content_type}",
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn code_block_serving_policy_follows_stored_mime() {
+        let app = TextBlockTestApp::spawn().await;
+
+        // Index 1 is plain text, 2 is XML, 3 is CSS, 4 is JavaScript. Only
+        // the XML essence downloads; the evidenced inline lanes keep the
+        // stored Content-Type exactly, and every response carries nosniff.
+        for (index, content_type, downloads) in [
+            ("1", "text/plain", false),
+            ("2", "application/xml", true),
+            ("3", "text/css", false),
+            ("4", "text/javascript", false),
+        ] {
+            let response = app.get(&format!("/-/code/old-page/{index}")).await;
+            assert_eq!(response.status(), StatusCode::OK, "index {index}");
+            assert_eq!(
+                response.headers().get(header::CONTENT_TYPE).unwrap(),
+                content_type,
+                "index {index}",
+            );
+            assert_eq!(
+                response
+                    .headers()
+                    .get(header::X_CONTENT_TYPE_OPTIONS)
+                    .unwrap(),
+                "nosniff",
+                "index {index}",
+            );
+            assert_eq!(
+                response.headers().contains_key(header::CONTENT_DISPOSITION),
+                downloads,
+                "index {index}",
+            );
+        }
+
+        let xml = app.get("/-/code/old-page/2").await;
+        assert_eq!(
+            xml.headers().get(header::CONTENT_DISPOSITION).unwrap(),
+            "attachment",
+        );
+    }
+
+    #[tokio::test]
+    async fn html_block_stays_inline_with_nosniff() {
+        let app = TextBlockTestApp::spawn().await;
+
+        let full = app.get("/-/html/old-page/1").await;
+        assert_eq!(full.status(), StatusCode::OK);
+        assert_eq!(
+            full.headers().get(header::CONTENT_TYPE).unwrap(),
+            "text/html",
+        );
+        assert_eq!(
+            full.headers().get(header::X_CONTENT_TYPE_OPTIONS).unwrap(),
+            "nosniff",
+        );
+        assert!(!full.headers().contains_key(header::CONTENT_DISPOSITION));
+    }
+
+    #[tokio::test]
+    async fn code_query_string_does_not_change_serving_headers() {
+        let app = TextBlockTestApp::spawn().await;
+
+        let bare = app.get("/-/code/old-page/2").await;
+        let gadget = app.get("/-/code/old-page/2?showChanges=true").await;
+        for (name, response) in [("bare", bare), ("gadget", gadget)] {
+            assert_eq!(response.status(), StatusCode::OK, "{name}");
+            assert_eq!(
+                response.headers().get(header::CONTENT_TYPE).unwrap(),
+                "application/xml",
+                "{name}",
+            );
+            assert_eq!(
+                response
+                    .headers()
+                    .get(header::CONTENT_DISPOSITION)
+                    .unwrap(),
+                "attachment",
+                "{name}",
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn local_code_redirect_path_is_unchanged() {
+        let app = TextBlockTestApp::spawn().await;
+
+        let redirect_client = reqwest::Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .unwrap();
+        let redirect = redirect_client
+            .get(format!("{}/local--code/old-page/1", app.base_url))
+            .header(crate::handler::HEADER_SITE_ID.as_str(), SITE_ID)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(redirect.status(), StatusCode::PERMANENT_REDIRECT);
+        assert_eq!(
+            redirect.headers().get(header::LOCATION).unwrap(),
+            "/-/code/old-page/1",
+        );
     }
 
     #[tokio::test]
