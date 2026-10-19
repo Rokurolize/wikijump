@@ -34,7 +34,7 @@ use super::structs::{
 };
 use crate::constants::SYSTEM_USER_ID;
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
-use crate::hash::{BLOB_HASH_LENGTH, BlobHash, sha512_hash, slice_to_blob_hash};
+use crate::hash::{BLOB_HASH_LENGTH, sha512_hash, slice_to_blob_hash};
 use crate::models::file::{self, Entity as File, Model as FileModel};
 use crate::models::file_revision::{self, Entity as FileRevision};
 use crate::models::page::{self, Entity as Page};
@@ -44,9 +44,7 @@ use crate::models::site::{self, Entity as Site};
 use crate::models::wikidot_user::{self, Entity as WikidotUser};
 use crate::services::ServiceContext;
 use crate::services::audit::{AuditEvent, AuditService};
-use crate::services::blob::{
-    BlobService, ContentTypeDescriptor, FinalizeBlobUploadOutput,
-};
+use crate::services::blob::{BlobService, FinalizeBlobUploadOutput};
 use crate::services::file::normalize_and_validate_file_name;
 use crate::services::file_revision::{
     CreateFileRevision, CreateFileRevisionBody, CreateFirstFileRevision,
@@ -83,6 +81,16 @@ const SYNC_PAGE_REVISION_SEQUENCE_SQL: &str = "SELECT setval('page_revision_revi
 /// implemented here; they fail with a clear error instead of failing
 /// opaquely at the transport layer.
 pub const MAX_IMPORT_FILE_BYTES: usize = 2 * 1024 * 1024;
+
+/// The source-recorded provenance one import snapshot carries.
+///
+/// Grouped so file-creation helpers take one provenance argument instead of
+/// parallel user/timestamp/comment parameters.
+struct SourceProvenance {
+    user_id: i64,
+    created_at: OffsetDateTime,
+    revision_comments: String,
+}
 
 /// Requires the named page to be an imported Wikidot page.
 ///
@@ -1038,14 +1046,18 @@ impl ImportService {
                             site_id,
                             page_id,
                             name,
-                            user_id,
-                            s3_hash,
-                            size,
-                            mime,
-                            content_type,
-                            blob_created,
-                            revision_comments,
-                            created_at,
+                            FinalizeBlobUploadOutput {
+                                s3_hash,
+                                mime,
+                                size,
+                                content_type,
+                                created: blob_created,
+                            },
+                            SourceProvenance {
+                                user_id,
+                                created_at,
+                                revision_comments,
+                            },
                             ip_address,
                         )
                         .await;
@@ -1194,14 +1206,8 @@ impl ImportService {
         site_id: i64,
         page_id: i64,
         name: String,
-        user_id: i64,
-        s3_hash: BlobHash,
-        size: i64,
-        mime: String,
-        content_type: ContentTypeDescriptor,
-        blob_created: bool,
-        revision_comments: String,
-        created_at: OffsetDateTime,
+        staged: FinalizeBlobUploadOutput,
+        provenance: SourceProvenance,
         ip_address: IpAddr,
     ) -> Result<ImportFileOutput> {
         let txn = ctx.transaction();
@@ -1213,6 +1219,11 @@ impl ImportService {
                 ErrorType::DatabaseImport,
             )
         };
+        let SourceProvenance {
+            user_id,
+            created_at,
+            revision_comments,
+        } = provenance;
 
         let file = file::ActiveModel {
             name: Set(name.clone()),
@@ -1232,11 +1243,11 @@ impl ImportService {
                 file_id,
                 user_id,
                 name: name.clone(),
-                s3_hash,
-                size,
-                mime,
-                content_type: Some(content_type),
-                blob_created,
+                s3_hash: staged.s3_hash,
+                size: staged.size,
+                mime: staged.mime,
+                content_type: Some(staged.content_type),
+                blob_created: staged.created,
                 revision_comments,
             },
         )
