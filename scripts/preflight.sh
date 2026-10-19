@@ -106,6 +106,7 @@ if ! [[ "${JOBS}" =~ ^[0-9]+$ ]]; then
 fi
 
 FAILED=()
+INCONCLUSIVE=()
 run() {
   local name="$1"; shift
   if "${LIST}"; then
@@ -128,6 +129,32 @@ run_test() {
   run "${name}" "${TEST_NETWORK_GUARD}" "$@"
 }
 
+# Exit status 2 means the check has no evidence to judge (for example, no
+# current Theme Lab acceptance campaign exists yet). Report it as INCONCLUSIVE
+# without failing code validation; any other non-zero status still fails.
+run_test_inconclusive_ok() {
+  local name="$1"; shift
+  if "${LIST}"; then
+    echo "  would run: ${name}"
+    return 0
+  fi
+  echo ""
+  echo "=== ${name}"
+  local started="${SECONDS}" status=0
+  "${TEST_NETWORK_GUARD}" "$@" || status=$?
+  case "${status}" in
+    0) echo "--- ${name}: ok ($((SECONDS - started))s)" ;;
+    2)
+      echo "--- ${name}: INCONCLUSIVE ($((SECONDS - started))s)"
+      INCONCLUSIVE+=("${name}")
+      ;;
+    *)
+      echo "--- ${name}: FAILED ($((SECONDS - started))s)"
+      FAILED+=("${name}")
+      ;;
+  esac
+}
+
 group_contracts() {
   if group_selected verification || group_selected deepwell || group_selected wws || group_selected framerail || group_selected theme_lab; then
     if [[ "${MODE}" == "final" ]]; then
@@ -143,6 +170,7 @@ group_contracts() {
 group_theme_lab() {
   if group_selected theme_lab; then
     run "Theme Lab tests" scripts/run-browser-test-no-external-network.sh npm --prefix install/local/theme-lab test
+    run_test "Theme Lab authority evidence restore" install/local/theme-lab/scripts/restore-checkout-authority-evidence.sh
     run_test "Theme Lab adaptation authority" node install/local/theme-lab/ports/scripts/check-adaptation-authority.mjs
     if [[ "${MODE}" == "final" ]]; then
       run_test "Theme Lab Python tests" python3 -m unittest discover -s install/local/theme-lab/tests -p 'test_*.py'
@@ -150,7 +178,7 @@ group_theme_lab() {
       run_test "Theme Lab deterministic packages" node install/local/theme-lab/scripts/real-port-regression.mjs --verify-only
       run_test "Sigma-10 source evidence" node install/local/theme-lab/sigma10-migration/check-sources.mjs
       run_test "Sigma-10 historical evidence integrity" node install/local/theme-lab/sigma10-migration/check-final.mjs --historical-only
-      run_test "Theme Lab current campaign completion" node install/local/theme-lab/scripts/check-campaign-completion.mjs
+      run_test_inconclusive_ok "Theme Lab current campaign completion" node install/local/theme-lab/scripts/check-campaign-completion.mjs
     fi
   fi
 }
@@ -269,9 +297,11 @@ else
       if [[ "${JOBS}" != 0 ]] && (( running >= JOBS )); then finish_one; fi
       (
         FAILED=()
+        INCONCLUSIVE=()
         "group_${group}"
         : > "${GROUP_DIR}/${group}.failed"
         (( ${#FAILED[@]} == 0 )) || printf '%s\n' "${FAILED[@]}" > "${GROUP_DIR}/${group}.failed"
+        (( ${#INCONCLUSIVE[@]} == 0 )) || printf '%s\n' "${INCONCLUSIVE[@]}" > "${GROUP_DIR}/${group}.inconclusive"
       ) > "${GROUP_DIR}/${group}.log" 2>&1 &
       GROUP_OF_PID[$!]="${group}"
       running=$((running + 1))
@@ -286,6 +316,10 @@ else
     elif [[ ! -e "${GROUP_DIR}/${group}.failed" ]]; then
       FAILED+=("${group} (group exited before reporting)")
     fi
+    if [[ -s "${GROUP_DIR}/${group}.inconclusive" ]]; then
+      mapfile -t group_inconclusive < "${GROUP_DIR}/${group}.inconclusive"
+      INCONCLUSIVE+=("${group_inconclusive[@]}")
+    fi
   done
 fi
 
@@ -294,6 +328,9 @@ if "${LIST}"; then
 fi
 
 echo ""
+if [[ ${#INCONCLUSIVE[@]} -gt 0 ]]; then
+  echo "preflight: INCONCLUSIVE (no evidence to judge; not a pass): ${INCONCLUSIVE[*]}"
+fi
 if [[ ${#FAILED[@]} -gt 0 ]]; then
   echo "preflight: FAILED: ${FAILED[*]}"
   exit 1

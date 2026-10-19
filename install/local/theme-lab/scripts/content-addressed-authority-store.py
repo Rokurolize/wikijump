@@ -7,6 +7,7 @@ is never read. Offline, local-only transport; a separately backed-up copy of
 the store and inventory is required for durable operational availability.
 """
 import argparse
+import errno
 import hashlib
 import importlib.util
 import json
@@ -82,9 +83,35 @@ def install_file(source, destination, digest, size):
         Path(tmp).unlink(missing_ok=True)
 
 
-def transfer(store_root, destination_root, inventory_path, expected_sha, *, mode, source_root=None, apply=False):
+def link_file(blob, destination, digest, size):
+    """Hardlink an already verified read-only blob: no copy, no overwrite.
+
+    Falls back to the checked copy when the store is on another filesystem.
+    The blob is rechecked after linking, so a blob swapped between the plan
+    and the link cannot enter the checkout.
+    """
+    if blob.stat().st_mode & 0o222:
+        raise ValueError(f'stored blob is writable, refusing to share it: {blob}')
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        os.link(blob, destination, follow_symlinks=False)
+    except OSError as error:
+        if error.errno != errno.EXDEV:
+            raise
+        install_file(blob, destination, digest, size)
+        return
+    try:
+        verify_file(destination, digest, size, 'linked evidence')
+    except ValueError:
+        destination.unlink()
+        raise
+
+
+def transfer(store_root, destination_root, inventory_path, expected_sha, *, mode, source_root=None, apply=False, link=False):
     if mode not in ('ingest', 'restore'):
         raise ValueError('mode must be ingest or restore')
+    if link and mode != 'restore':
+        raise ValueError('--link applies only to restore')
     destination = Path(destination_root).resolve(strict=True)
     store_input = Path(store_root)
     if store_input.is_symlink():
@@ -150,7 +177,10 @@ def transfer(store_root, destination_root, inventory_path, expected_sha, *, mode
                 target = authority.safe_file(destination, rel, existing=False)
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target = authority.safe_file(destination, rel, existing=False)
-                install_file(blob_path(store, digest), target, digest, size)
+                if link:
+                    link_file(blob_path(store, digest), target, digest, size)
+                else:
+                    install_file(blob_path(store, digest), target, digest, size)
 
     return {'status': 'applied' if apply else 'verified-plan', 'mode': mode,
             'inventory_sha256': expected_sha, 'inventory_files': len(entries),
@@ -169,10 +199,13 @@ def main():
     parser.add_argument('--inventory', type=Path, required=True)
     parser.add_argument('--inventory-sha256', required=True)
     parser.add_argument('--apply', action='store_true', help='default is read-only verification')
+    parser.add_argument('--link', action='store_true',
+                        help='restore by hardlinking the verified read-only blobs (no extra disk)')
     args = parser.parse_args()
     print(json.dumps(transfer(args.store_root, args.destination_root, args.inventory,
                               args.inventory_sha256, mode=args.mode,
-                              source_root=args.source_root, apply=args.apply), indent=2))
+                              source_root=args.source_root, apply=args.apply,
+                              link=args.link), indent=2))
 
 
 if __name__ == '__main__':

@@ -89,9 +89,10 @@ export function parsePreflightOutput(output) {
     const [name, value] = pair.split("=");
     if (name) groups[name] = value === "true";
   }
-  const checks = [...output.matchAll(/^--- (.+): (ok|FAILED)(?: \((\d+)s\))?$/gmu)].map((match) => ({
+  // INCONCLUSIVE: the check had no evidence to judge; it is neither a pass nor a failure.
+  const checks = [...output.matchAll(/^--- (.+): (ok|FAILED|INCONCLUSIVE)(?: \((\d+)s\))?$/gmu)].map((match) => ({
     name: match[1],
-    status: match[2] === "ok" ? "ok" : "failed",
+    status: {ok: "ok", FAILED: "failed", INCONCLUSIVE: "inconclusive"}[match[2]],
     ...(match[3] === undefined ? {} : {duration_seconds: Number(match[3])}),
   }));
   return {groups, checks};

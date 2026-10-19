@@ -55,7 +55,7 @@ class AuthorityBlobStoreTests(unittest.TestCase):
         return blobs.transfer(options.get('store', self.store), self.dest, self.inventory,
                               options.get('sha', self.inventory_sha), mode=mode,
                               source_root=options.get('source', self.source if mode == 'ingest' else None),
-                              apply=apply)
+                              apply=apply, link=options.get('link', False))
 
     def test_deduplicated_ingest_then_cleanroom_restore_without_source(self):
         plan = self.run_store('ingest')
@@ -78,6 +78,31 @@ class AuthorityBlobStoreTests(unittest.TestCase):
         self.assertEqual(self.run_store('restore', apply=True)['checkout_files_missing'], 0)
         for rel in (self.a, self.b):
             self.assertFalse((self.dest / rel).stat().st_mode & 0o222)
+
+    def test_linked_restore_shares_the_read_only_blob_without_copying(self):
+        self.run_store('ingest', apply=True)
+        result = self.run_store('restore', apply=True, source=None, link=True)
+        self.assertEqual(result['status'], 'applied')
+        blob = blobs.blob_path(self.store, self.digest)
+        for rel in (self.a, self.b):
+            restored = self.dest / rel
+            self.assertEqual(restored.read_bytes(), self.body)
+            self.assertEqual(restored.stat().st_ino, blob.stat().st_ino)
+            self.assertFalse(restored.stat().st_mode & 0o222)
+        # A second linked restore finds everything present and verified.
+        again = self.run_store('restore', apply=True, source=None, link=True)
+        self.assertEqual(again['checkout_files_missing'], 0)
+
+    def test_linked_restore_refuses_a_writable_blob(self):
+        self.run_store('ingest', apply=True)
+        blobs.blob_path(self.store, self.digest).chmod(0o644)
+        with self.assertRaisesRegex(ValueError, 'writable'):
+            self.run_store('restore', apply=True, source=None, link=True)
+        self.assertFalse((self.dest / self.a).exists())
+
+    def test_link_is_rejected_for_ingest(self):
+        with self.assertRaisesRegex(ValueError, 'only to restore'):
+            self.run_store('ingest', apply=True, link=True)
 
     def test_tamper_missing_blob_and_existing_destination_fail_closed(self):
         self.run_store('ingest', apply=True)

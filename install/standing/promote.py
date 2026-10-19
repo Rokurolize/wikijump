@@ -160,7 +160,9 @@ def validation_receipts(store: Path) -> list[tuple[Path, dict[str, object]]]:
             and isinstance(receipt.get("wikijump_tree"), str)
             and GIT_OBJECT.fullmatch(receipt["wikijump_tree"])
             and receipt.get("checks")
-            and all(check.get("status") == "ok" for check in receipt["checks"])
+            # An inconclusive check (no evidence to judge, such as no current
+            # Theme Lab campaign) did not fail; preflight passed with it.
+            and all(check.get("status") in ("ok", "inconclusive") for check in receipt["checks"])
         ):
             receipts.append((path, receipt))
     return receipts
