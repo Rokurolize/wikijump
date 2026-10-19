@@ -3352,6 +3352,11 @@
       "target": "wikijump.deepwell"
     },
     {
+      "source": "deepwell-jsonrpc:page_create_permission",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
       "source": "deepwell-jsonrpc:page_create",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
@@ -4352,6 +4357,11 @@
       "target": "wikijump.framerail"
     },
     {
+      "source": "framerail-server-action:/?/createPermission",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
       "source": "framerail-server-action:/?/deletedGet",
       "type": "implemented_by",
       "target": "wikijump.framerail"
@@ -4538,6 +4548,11 @@
     },
     {
       "source": "framerail-server-action:/{slug}/{*extra}?/backlinks",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/{slug}/{*extra}?/createPermission",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
@@ -11485,7 +11500,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "dcee32dfed89a21db3faac10ed94cda201070b253aef02a8dcb29ebc08f1f7b3"
+      "source_input_set_sha256": "28bc2f901c343f01f299d2fdccd233c7fa947f2362ece9f78f1986dd0f9508f0"
     },
     "ftml": {
       "commit": "55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221",
@@ -11502,7 +11517,7 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "7da8b1082c5a5b9d2171d38f6f94de5377c5e37780490f22d8909130e7698159"
+        "sha256": "e6950730355e4fa2a8cfae2e7f715079151ee50f83497c7112466ed855f5fc3c"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
@@ -11590,11 +11605,11 @@
       },
       {
         "path": "deepwell/src/endpoints/page.rs",
-        "sha256": "fa70fbb9dffde40ad7e8747cbf11d20f847b974dcd42466d8c5ce818a835da8d"
+        "sha256": "0ecb4dcbf53ea5d85cdebca60d95c7fcf6a456d6a1807a689d262d12541b7be8"
       },
       {
         "path": "deepwell/src/endpoints/page/permissions.rs",
-        "sha256": "34e5893429f45e68d97d9cfa8ecb6ef8d424f95719cdfba0fade8d76eb11f1d8"
+        "sha256": "91f95981c127b346e3846cf7f907ee17b86d29e891ff242c090ccc2bbdd5f754"
       },
       {
         "path": "deepwell/src/endpoints/parent.rs",
@@ -11650,7 +11665,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "23832c1955b4a436321e04030cdf19cfee2773c872759bec0451f426502061f1"
+        "sha256": "c07a00d948c125df7766c730fcba089fd1d923444e97e0d8732a21bc8158afe6"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11658,7 +11673,7 @@
       },
       {
         "path": "docs/development/framerail-route-action-evidence.json",
-        "sha256": "061d013a73bd5a874cba784b77e315efce9ecd26f9e53eac45b4c502e4d55b8a"
+        "sha256": "81ebcf1bd253514df97eac8a8ac547dd501c0be180b7802d32390f5e0aeaf64c"
       },
       {
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
@@ -11714,7 +11729,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "bd5ce134edde2459dfa91cd7f83a7510d3c17b6bf49fda674a291d5511d7c826"
+        "sha256": "3405c15f725796587fbc2797b59a41aaa114b13ecd829c80e5d1a777d62c7233"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11738,7 +11753,7 @@
       },
       {
         "path": "framerail/src/lib/server/load/page/page-actions.ts",
-        "sha256": "99a99dd3d2c2833ada833da220503a42224facb7e77cb45c1932078d6c953479"
+        "sha256": "9f86a2af75d76ffffbce84b97e153411f6117ab2b3d5f8e4544289f520485b66"
       },
       {
         "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",
@@ -11746,7 +11761,7 @@
       },
       {
         "path": "framerail/src/lib/server/load/page/page.ts",
-        "sha256": "210bf097801311046cb8f19cf1e57bd5fd7694f50852146c12bf2ef6548bac7a"
+        "sha256": "5af76e4ace7f6c32fae16a89a71f5b24dae68e337452767064d835a585c4915e"
       },
       {
         "path": "framerail/src/lib/server/wikidot-site-changes.js",
@@ -12093,14 +12108,14 @@
     ]
   },
   "counts": {
-    "total": 974,
+    "total": 977,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 187,
+      "deepwell_jsonrpc_method": 188,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 27,
       "framerail_route": 35,
-      "framerail_server_action": 112,
+      "framerail_server_action": 114,
       "framerail_xmlrpc_method": 17,
       "missing_page_control": 2,
       "open43_audit_case": 285,
@@ -26351,6 +26366,51 @@
       ]
     },
     {
+      "surface_id": "deepwell-jsonrpc:page_create_permission",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:page_create_permission",
+        "deepwell/src/endpoints/page/permissions.rs#page_create_permission"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/permission.rs#page_create_permission_reports_category_create_rights"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/page/permissions.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
       "surface_id": "deepwell-jsonrpc:page_delete",
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
@@ -34863,6 +34923,47 @@
       ]
     },
     {
+      "surface_id": "framerail-server-action:/?/createPermission",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:createPermission",
+        "framerail/src/routes/+page.server.ts#action:createPermission"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/release-route-action-boundaries.test.js#previously unattributed public route actions stay wired to their owning handlers"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-server-action:/?/delete",
       "kind": "framerail_server_action",
       "public_reference": [
@@ -36393,6 +36494,47 @@
         "cases": [],
         "tests": [
           "framerail/tests/page-append-backlinks-public-boundary.test.js#Backlinks handler delegates the current route to the typed public Deepwell view"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/createPermission",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:createPermission",
+        "framerail/src/routes/[slug]/[...extra]/+page.server.ts#action:createPermission"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/release-route-action-boundaries.test.js#previously unattributed public route actions stay wired to their owning handlers"
         ]
       },
       "evidence": {
@@ -38662,7 +38804,7 @@
         },
         {
           "path": "framerail/src/lib/server/load/page/page-actions.ts",
-          "sha256": "99a99dd3d2c2833ada833da220503a42224facb7e77cb45c1932078d6c953479"
+          "sha256": "9f86a2af75d76ffffbce84b97e153411f6117ab2b3d5f8e4544289f520485b66"
         }
       ],
       "specification_owner": "wikijump.registry:missing-page-control",
@@ -38762,11 +38904,11 @@
         },
         {
           "path": "framerail/src/lib/server/load/page/page-actions.ts",
-          "sha256": "99a99dd3d2c2833ada833da220503a42224facb7e77cb45c1932078d6c953479"
+          "sha256": "9f86a2af75d76ffffbce84b97e153411f6117ab2b3d5f8e4544289f520485b66"
         },
         {
           "path": "framerail/src/lib/server/load/page/page.ts",
-          "sha256": "210bf097801311046cb8f19cf1e57bd5fd7694f50852146c12bf2ef6548bac7a"
+          "sha256": "5af76e4ace7f6c32fae16a89a71f5b24dae68e337452767064d835a585c4915e"
         },
         {
           "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",
