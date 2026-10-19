@@ -1771,6 +1771,12 @@ impl RenderService {
                 page_info,
                 &mut wikidot_compat_text,
             );
+            // Alignment markers pair across include boundaries, so their
+            // ownership is decided on the whole expanded document.
+            Self::normalize_wikidot_alignment_markers(
+                &mut expanded.wikitext,
+                &mut wikidot_compat_text,
+            );
             Self::normalize_wikidot_cross_closed_div_collapsibles(&mut expanded.wikitext);
             Self::normalize_wikidot_div_style_url_quotes(&mut expanded.wikitext);
             Self::protect_wikidot_unbound_include_variables(
@@ -3049,7 +3055,6 @@ impl RenderService {
         Box::pin(async move {
             let mut wikitext = wikitext;
             Self::normalize_wikidot_multiline_includes(&mut wikitext);
-            Self::normalize_wikidot_alignment_markers(&mut wikitext);
             if expansion_context.settings.layout.legacy() {
                 expand_malformed_include_targets(&mut wikitext);
             }

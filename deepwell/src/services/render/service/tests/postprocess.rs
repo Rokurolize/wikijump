@@ -683,7 +683,7 @@ fn removes_list_break_before_same_line_restored_separator_content() {
 }
 
 #[test]
-fn normalizes_alignment_markers_before_include_expansion() {
+fn normalizes_alignment_markers_that_own_a_block() {
     let mut source = concat!(
         "[[=]]\n",
         "[[<]]\n",
@@ -695,13 +695,138 @@ fn normalizes_alignment_markers_before_include_expansion() {
         "[[/code]]\n",
     )
     .to_owned();
+    let mut preserved = CompatTextFragments::new(&source);
 
-    RenderService::normalize_wikidot_alignment_markers(&mut source);
+    RenderService::normalize_wikidot_alignment_markers(&mut source, &mut preserved);
 
     assert!(source.contains("[[div style=\"text-align: center;\"]]\n"));
     assert!(source.contains("[[div style=\"text-align: left;\"]]\n"));
     assert!(source.contains("[[/div]]\n[[/div]]\n"));
     assert!(source.contains("[[code]]\n[[=]]\n[[/code]]"));
+}
+
+/// Render a page body through the alignment marker normalization, the FTML
+/// pipeline, and the Wikidot compatibility restoration, in the production
+/// order.
+fn render_wikidot_alignment_body(wikitext: &str) -> String {
+    let page_info = fallback_test_page_info("scp-7243", "SCP-7243");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut wikitext = wikitext.to_owned();
+    let mut preserved = CompatTextFragments::new(&wikitext);
+
+    RenderService::normalize_wikidot_alignment_markers(&mut wikitext, &mut preserved);
+    ftml::preprocess_for_layout(&mut wikitext, settings.layout);
+    let tokens = ftml::tokenize(&wikitext);
+    let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
+    let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
+
+    let site = wikidot_site("scp-wiki", None);
+    let config = Config::integration_testing();
+    let restored =
+        RenderService::restore_wikidot_render_compatibility_for_context_with_resources(
+            &rendered,
+            Some(&site),
+            &config,
+            true,
+            &[],
+        );
+
+    preserved.restore(&restored)
+}
+
+/// An alignment marker with trailing whitespace is not a block head, so the
+/// opener and its closer both print as their authored text.
+///
+/// Wikidot observations: anonymous PagePreviewModule, scp-wiki, 2026-10-19.
+#[test]
+fn keeps_alignment_markers_with_trailing_whitespace_literal() {
+    for source in [
+        "[[=]] \nA\n[[/=]]\n\nz",
+        "[[=]]\t\nA\n[[/=]]\n\nz",
+        "[[=]]  \nA\n[[/=]]\n\nz",
+        "[[=]]\nA\n[[/=]] \n\nz",
+        "[[=]]\nA\n[[/=]]\t\n\nz",
+    ] {
+        let body = render_wikidot_alignment_body(source);
+
+        assert!(
+            body.contains("[[=]]") && body.contains("[[/=]]"),
+            "the markers must print as text: {body}",
+        );
+        assert!(
+            !body.contains("text-align"),
+            "no alignment block may be rendered: {body}",
+        );
+    }
+}
+
+/// The left and right markers keep their authored spelling as text.
+#[test]
+fn keeps_left_and_right_alignment_markers_with_trailing_whitespace_literal() {
+    for (source, marker) in [
+        ("[[<]] \nA\n[[/<]]\n\nz", "[[&lt;]]"),
+        ("[[>]] \nA\n[[/>]]\n\nz", "[[&gt;]]"),
+    ] {
+        let body = render_wikidot_alignment_body(source);
+
+        assert!(
+            body.contains(marker),
+            "the marker must print as text: {body}"
+        );
+        assert!(
+            !body.contains("text-align"),
+            "no alignment block may be rendered: {body}",
+        );
+    }
+}
+
+/// A marker that owns no block prints as its authored text, because Wikidot
+/// only renders the block when an opener and a closer pair up.
+#[test]
+fn keeps_unpaired_alignment_markers_literal() {
+    let body = render_wikidot_alignment_body("[[=]]\nA\n");
+
+    assert!(
+        body.contains("[[=]]"),
+        "the opener must print as text: {body}"
+    );
+    assert!(
+        !body.contains("text-align"),
+        "no alignment block may be rendered: {body}",
+    );
+
+    let body = render_wikidot_alignment_body("[[/=]]\n\nz");
+
+    assert!(
+        body.contains("[[/=]]"),
+        "the closer must print as text: {body}",
+    );
+    assert!(
+        !body.contains("text-align"),
+        "no alignment block may be rendered: {body}",
+    );
+}
+
+/// An opener and a closer that pair up own an alignment block, even when
+/// the marker lines carry leading whitespace.
+#[test]
+fn renders_paired_alignment_markers_as_a_block() {
+    for source in [
+        "[[=]]\nA\n[[/=]]\n\nz",
+        " [[=]]\nA\n[[/=]]\n\nz",
+        "[[=]]\nA\n [[/=]]\n\nz",
+    ] {
+        let body = render_wikidot_alignment_body(source);
+
+        assert!(
+            body.contains("<div style=\"text-align: center;\">"),
+            "the alignment block must be rendered: {body}",
+        );
+        assert!(
+            !body.contains("[[=]]") && !body.contains("[[/=]]"),
+            "the markers must not print as text: {body}",
+        );
+    }
 }
 
 #[test]
