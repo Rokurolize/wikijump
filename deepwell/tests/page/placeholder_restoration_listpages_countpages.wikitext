@@ -1,0 +1,72 @@
+[[div class="special"]]
+[[module ListPages
+|category="*"
+|created_at="older than 365 days"
+|order="random"
+|perPage="25"
+|prependLine="||~ # ||~ Title ||~ Date Posted ||~ Rating ||"
+|rating="<20"
+|separate="no"
+|tags="+scp -deletable -in-deletion -in-rewrite -unlisted -001-proposal -archived -explained -international -joke"
+|urlAttrPrefix="o1yau20"
+]]
+|| || %%title_linked%% || %%created_at%% || +%%rating%% ||
+[[/module]]
+[[module CountPages
+|category="*"
+|tags="-admin -artist -author -component -component-backend -contest -essay -forum -fragment -guide -metadata -more-by -news -policy -redirect -resource -sandbox -splash -theme -unlisted -workbench"
+]]
+**Out of %%total%% content pages on the Wiki:**
+[[/module]]
+[[module CountPages
+|category="*"
+|tags="+scp -deletable -in-deletion -in-rewrite -unlisted -001-proposal -archived -explained -international -joke"
+]]
+* **%%total%% SCPs are on the Mainlist and Lost Series**
+[[/module]]
+[[module CountPages
+|category="*"
+|tags="+scp -lost-series -deletable -in-deletion -in-rewrite -unlisted -001-proposal -archived -explained -international -joke"
+]]
+* **%%total%% SCPs are on the Mainlist (excluding Lost Series)**
+[[/module]]
+[[module CountPages
+|category="*"
+[!--|created_at="older than 365 days"--]
+|rating="<=50"
+|tags="+scp -deletable -in-deletion -in-rewrite -unlisted -001-proposal -archived -explained -international -joke"
+]]
+* **%%total%% SCPs are [!-- >1 year old and <+20 --] at ≤ +50**
+[[/module]]
+[[module CountPages
+|category="*"
+|created_at="older than 365 days"
+|rating="<20"
+|tags="+scp -deletable -in-deletion -in-rewrite -unlisted -001-proposal -archived -explained -international -joke"
+]]
+* **%%total%% SCPs are >1 year old and <+20**
+[[/module]]
+[[module ListPages
+|category="*"
+|order="size"
+|perPage="25"
+|prependLine="||~ # ||~ Title ||~ Size //(bytes)// ||~ Rating ||"
+|rating=">10"
+|separate="false"
+|tags="+scp -international -deletable -in-deletion -in-rewrite -_listpages"
+|urlAttrPrefix="short-scp"
+]]
+|| || %%title_linked%% || %%size%% || +%%rating%% ||
+[[/module]]
+[[/div]]
++ SANDBOX
+----
+= //"@@. . .@@ we usually say stories should inspire a sense of wonder @@. . .@@"//
+**[*https://w.wiki/Tp4z wonder]:** A sense of awe, astonishment, and curiosity; inspired by unexpected events, novel experiences, and inexplicable circumstances; sometimes accompanied by surprise, shock, or reverence.
+
+
+[[collapsible show="+" hide="- Thanks!"]]
+
+[[div class="special"]]
+[[/div]]
+[[/collapsible]]
