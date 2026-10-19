@@ -1321,6 +1321,20 @@ impl BlobService {
         Ok(head.is_some())
     }
 
+    /// Checks whether the content-addressed blob for this hash is materialized.
+    ///
+    /// Used by import verification to prove that a canonical file relation
+    /// points at bytes which actually exist in storage.
+    pub(crate) async fn blob_exists(
+        ctx: &ServiceContext<'_>,
+        hash: &[u8],
+    ) -> Result<bool> {
+        let hex_hash = blob_hash_to_hex(hash);
+        Self::exists(ctx, &hex_hash)
+            .await
+            .or_raise(|| Error::new("failed to check blob existence", ErrorType::Blob))
+    }
+
     pub async fn hard_delete(ctx: &ServiceContext<'_>, hash: &[u8]) -> Result<()> {
         // Special handling for empty blobs
         //

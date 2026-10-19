@@ -378,6 +378,21 @@ export interface Locales {
   "wiki-page-action-lock": string
   "wiki-page-action-rename-move": string
   "wiki-page-revision-history": string
+  "wiki-page-revision-filter.show": string
+  "wiki-page-revision-filter.all": string
+  "wiki-page-revision-filter.source": string
+  "wiki-page-revision-filter.title": string
+  "wiki-page-revision-filter.move": string
+  "wiki-page-revision-filter.tags": string
+  "wiki-page-revision-filter.meta": string
+  "wiki-page-revision-filter.files": string
+  "wiki-page-revision-perpage": string
+  "wiki-page-revision-update-list": string
+  "wiki-page-revision-compare-versions": string
+  "wiki-page-revision-pager.page": string
+  "wiki-page-revision-pager.of": string
+  "wiki-page-revision-pager.previous": string
+  "wiki-page-revision-pager.next": string
   "wiki-page-revision-diff": string
   "wiki-page-revision-diff.from": string
   "wiki-page-revision-diff.to": string
@@ -434,6 +449,29 @@ export interface Locales {
   "wiki-page-restore.toast": string
   "wiki-page-deleted": string
   "wiki-page-file-no-files": string
+  "wiki-page-file-list.title": string
+  "wiki-page-file-list.total-files": string
+  "wiki-page-file-list.total-size": string
+  "wiki-page-file-list.header-name": string
+  "wiki-page-file-list.header-type": string
+  "wiki-page-file-list.header-size": string
+  "wiki-page-file-list.info": string
+  "wiki-page-file-list.options": string
+  "wiki-page-file-list.rename": string
+  "wiki-page-file-list.move": string
+  "wiki-page-file-list.delete": string
+  "wiki-page-file-list.history": string
+  "wiki-page-file-list.upload": string
+  "wiki-page-file-info.title": string
+  "wiki-page-file-info.name": string
+  "wiki-page-file-info.url": string
+  "wiki-page-file-info.size": string
+  "wiki-page-file-info.mime": string
+  "wiki-page-file-info.content-type": string
+  "wiki-page-file-info.uploaded-by": string
+  "wiki-page-file-info.upload-date": string
+  "wiki-page-file-info.unavailable": string
+  "wiki-page-file-info.close": string
   "wiki-page-file-upload": string
   "wiki-page-file-upload.select": string
   "wiki-page-file-upload.name": string

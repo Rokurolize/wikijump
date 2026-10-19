@@ -1194,7 +1194,7 @@ impl FileService {
 /// This helper function is generally read-only, but if
 /// it finds a name which has leading or trailing whitespace,
 /// then it trims that off in-place.
-fn normalize_and_validate_file_name(name: &mut String) -> Result<()> {
+pub(crate) fn normalize_and_validate_file_name(name: &mut String) -> Result<()> {
     trim_spaces_in_place(name);
     debug!("Trimmed file name: '{name}'");
 

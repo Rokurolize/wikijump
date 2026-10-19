@@ -143,11 +143,10 @@ const openFileHistory = async (
   })
   await waitForSvelteDelegatedHandler(page, "#files-button")
   await page.locator("#files-button").click()
-  const historyControl = page
-    .locator(
-      ".file-row .file-attribute.action a, .file-row .file-attribute.action button"
-    )
-    .first()
+  await page.locator("tr[id^='file-row-'] a", { hasText: "Options" }).click()
+  const historyControl = page.locator("tr[id^='file-options-row-'] button", {
+    hasText: "History"
+  })
   await expect(historyControl).toBeVisible()
   await historyControl.click()
   await expect(page.locator(".revision-row")).toContainText(file.name)

@@ -31,6 +31,8 @@ pub use self::discussion_structs::{
 
 pub use self::service::ImportService;
 pub use self::structs::{
-    ImportPage, ImportPageOutput, ImportPageRevision, ImportPageRevisionOutput,
-    ImportSite, ImportSiteOutput, ImportUser, ImportUserOutput, ImportedUserType,
+    ImportFile, ImportFileDelete, ImportFileDeleteOutput, ImportFileExpectation,
+    ImportFileOutput, ImportPage, ImportPageFilesVerify, ImportPageFilesVerifyOutput,
+    ImportPageOutput, ImportPageRevision, ImportPageRevisionOutput, ImportSite,
+    ImportSiteOutput, ImportUser, ImportUserOutput, ImportedUserType,
 };

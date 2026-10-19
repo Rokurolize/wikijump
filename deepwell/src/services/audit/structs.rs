@@ -264,6 +264,18 @@ pub enum AuditEvent<'a> {
         page_id: i64,
         page_slug: &'a str,
     },
+    ImportFile {
+        site_id: i64,
+        page_id: i64,
+        file_id: i64,
+        file_name: &'a str,
+    },
+    ImportFileDelete {
+        site_id: i64,
+        page_id: i64,
+        file_id: i64,
+        file_name: &'a str,
+    },
 }
 
 impl<'a> AuditEvent<'a> {
@@ -988,6 +1000,40 @@ impl<'a> AuditEvent<'a> {
                 extra_string_2: None,
                 extra_number: None,
             },
+            AuditEvent::ImportFile {
+                site_id,
+                page_id,
+                file_id,
+                file_name,
+            } => RawAuditEvent {
+                event_type: "import.file",
+                ip_address,
+                user_id: None,
+                site_id: Some(site_id),
+                page_id: Some(page_id),
+                extra_id_1: Some(file_id),
+                extra_id_2: None,
+                extra_string_1: Some(Cow::Owned(str!(file_name))),
+                extra_string_2: None,
+                extra_number: None,
+            },
+            AuditEvent::ImportFileDelete {
+                site_id,
+                page_id,
+                file_id,
+                file_name,
+            } => RawAuditEvent {
+                event_type: "import.file-delete",
+                ip_address,
+                user_id: None,
+                site_id: Some(site_id),
+                page_id: Some(page_id),
+                extra_id_1: Some(file_id),
+                extra_id_2: None,
+                extra_string_1: Some(Cow::Owned(str!(file_name))),
+                extra_string_2: None,
+                extra_number: None,
+            },
         };
 
         Ok(raw_event)
@@ -1489,6 +1535,41 @@ mod tests {
         assert_eq!(raw.extra_id_1, Some(39));
         assert_eq!(raw.extra_id_2, Some(40));
         assert_eq!(raw.extra_string_1, None);
+        assert_eq!(raw.extra_string_2, None);
+        assert_eq!(raw.extra_number, None);
+    }
+
+    #[test]
+    fn extracts_import_file_events() {
+        let raw = extract(AuditEvent::ImportFile {
+            site_id: 51,
+            page_id: 52,
+            file_id: 53,
+            file_name: "theend.jpg",
+        });
+        assert_event_type(&raw, "import.file");
+        assert_eq!(raw.user_id, None);
+        assert_eq!(raw.site_id, Some(51));
+        assert_eq!(raw.page_id, Some(52));
+        assert_eq!(raw.extra_id_1, Some(53));
+        assert_eq!(raw.extra_id_2, None);
+        assert_eq!(raw.extra_string_1.as_deref(), Some("theend.jpg"),);
+        assert_eq!(raw.extra_string_2, None);
+        assert_eq!(raw.extra_number, None);
+
+        let raw = extract(AuditEvent::ImportFileDelete {
+            site_id: 61,
+            page_id: 62,
+            file_id: 63,
+            file_name: "gone.jpg",
+        });
+        assert_event_type(&raw, "import.file-delete");
+        assert_eq!(raw.user_id, None);
+        assert_eq!(raw.site_id, Some(61));
+        assert_eq!(raw.page_id, Some(62));
+        assert_eq!(raw.extra_id_1, Some(63));
+        assert_eq!(raw.extra_id_2, None);
+        assert_eq!(raw.extra_string_1.as_deref(), Some("gone.jpg"));
         assert_eq!(raw.extra_string_2, None);
         assert_eq!(raw.extra_number, None);
     }

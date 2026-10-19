@@ -411,13 +411,20 @@
         },
         {
             "slug": "system:join",
-            "title": "Join this site",
-            "wikitext": "join"
+            "title": "Join the Site",
+            "tags": [
+                "admin",
+                "policy"
+            ],
+            "wikitext": "scp-join"
         },
         {
             "slug": "system:members",
             "title": "Site Members",
-            "wikitext": "members"
+            "tags": [
+                "admin"
+            ],
+            "wikitext": "scp-members"
         },
         {
             "slug": "system:recent-changes",
@@ -427,7 +434,10 @@
         {
             "slug": "system:page-tags",
             "title": "Page Tags",
-            "wikitext": "page-tags"
+            "tags": [
+                "admin"
+            ],
+            "wikitext": "scp-page-tags"
         }
     ]
 }
