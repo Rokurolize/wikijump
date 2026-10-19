@@ -214,6 +214,52 @@ test.describe("authorized existing-page Append and Parent options", () => {
   })
 })
 
+// The visible Edit Meta option writes page metadata under the same Wikidot
+// edit-permission boundary as Append and Parent. An anonymous click answers
+// with the edit-permission dialog (issue #2336) and mounts no meta-tag form.
+test.describe("anonymous existing-page Edit Meta option", () => {
+  test("Edit Meta answers with the edit-permission dialog and opens no form", async ({
+    page
+  }) => {
+    const permissionRequests: Route[] = []
+    await openOptionsMenu(page, false, permissionRequests, SITE_HEADERS)
+
+    await page.locator("#edit-meta-button").click()
+
+    await expectEditDeniedDialog(page)
+    await expectNoWritableSurface(page, "#edit-meta-addbutton")
+    expect(permissionRequests).toHaveLength(1)
+  })
+})
+
+test.describe("authorized existing-page Edit Meta option", () => {
+  test("Edit Meta opens the meta-tag surface without a permission dialog", async ({
+    page
+  }) => {
+    const permissionRequests: Route[] = []
+    await openOptionsMenu(page, true, permissionRequests, AUTHENTICATED_HEADERS)
+    // The authorized pane reads its current rows through the EditMeta module.
+    // Answer only that read so no other connector traffic is affected.
+    await page.route("**/ajax-module-connector.php", async (route) => {
+      if ((route.request().postData() ?? "").includes("EditMetaModule")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ status: "ok", body: "" })
+        })
+      } else {
+        await route.fallback()
+      }
+    })
+
+    await page.locator("#edit-meta-button").click()
+
+    await expect(page.locator("#edit-meta-addbutton")).toBeVisible()
+    await expect(page.locator("#odialog-container")).toHaveCount(0)
+    expect(permissionRequests).toHaveLength(1)
+  })
+})
+
 // Move and Delete must obey their own Wikidot permission boundary (issue
 // #2177): an anonymous click answers with the move/delete denial dialog
 // and mounts no writable form, and each click is attributed to exactly one
