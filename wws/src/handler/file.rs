@@ -133,6 +133,11 @@ async fn serve_file(
     let last_modified = httpdate::fmt_http_date(file_info.revision_created_at.into());
     let is_head = *method == Method::HEAD;
     let content_type = response_content_type(filename, &file_info.mime);
+    // Script-capable uploads (HTML, SVG, XML) must never render inline in the
+    // files origin, so the inline routes force a download for them. Benign
+    // types (images, audio, video, PDF, plain text) keep inline behavior so
+    // normal wiki embedding is unaffected. See issue #2554.
+    let as_attachment = as_attachment || is_active_content_type(&file_info.mime);
     let params = ServeParams {
         etag: &etag,
         last_modified: &last_modified,
@@ -460,6 +465,33 @@ fn response_content_type<'a>(filename: &str, mime: &'a str) -> &'a str {
     }
 }
 
+/// Reports whether a stored file MIME type can carry active script content
+/// when navigated to directly in a browser.
+///
+/// HTML, XHTML, SVG, and other XML types execute script (or XSLT-driven
+/// behavior) in the files origin, so the inline file routes must serve them
+/// as downloads rather than inline documents. The match is on the MIME
+/// essence only (parameters such as `charset` are ignored) and covers the
+/// whole `+xml` suffix family instead of enumerating individual types.
+/// See issue #2554.
+fn is_active_content_type(mime: &str) -> bool {
+    let essence = mime
+        .split(';')
+        .next()
+        .unwrap_or("")
+        .trim()
+        .to_ascii_lowercase();
+    matches!(
+        essence.as_str(),
+        "text/html"
+            | "application/xhtml+xml"
+            | "image/svg+xml"
+            | "image/svg"
+            | "text/xml"
+            | "application/xml",
+    ) || essence.ends_with("+xml")
+}
+
 fn base_headers(
     status: StatusCode,
     etag: &str,
@@ -471,7 +503,8 @@ fn base_headers(
         .status(status)
         .header(header::ETAG, etag)
         .header(header::LAST_MODIFIED, last_modified)
-        .header(header::ACCEPT_RANGES, "bytes");
+        .header(header::ACCEPT_RANGES, "bytes")
+        .header(header::X_CONTENT_TYPE_OPTIONS, "nosniff");
 
     if as_attachment {
         builder = builder.header(
@@ -548,6 +581,7 @@ mod tests {
     use axum::http::header::{
         ACCEPT_RANGES, CACHE_CONTROL, CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_RANGE,
         CONTENT_TYPE, ETAG, IF_NONE_MATCH, IF_RANGE, LAST_MODIFIED, LOCATION, RANGE,
+        X_CONTENT_TYPE_OPTIONS,
     };
     use s3::creds::Credentials;
     use s3::region::Region;
@@ -575,6 +609,45 @@ mod tests {
             response_content_type("plain.txt", "text/plain"),
             "text/plain"
         );
+    }
+
+    #[test]
+    fn active_content_types_are_detected_by_mime_essence() {
+        for mime in [
+            "text/html",
+            "text/html; charset=utf-8",
+            "TEXT/HTML; CHARSET=UTF-8",
+            "  text/html  ",
+            "application/xhtml+xml",
+            "image/svg+xml",
+            "image/svg+xml; charset=us-ascii",
+            "image/svg",
+            "text/xml",
+            "application/xml",
+            "application/xml; charset=utf-8",
+            "application/rss+xml",
+            "application/atom+xml",
+        ] {
+            assert!(is_active_content_type(mime), "should be active: {mime}");
+        }
+
+        for mime in [
+            "",
+            "text/plain",
+            "text/plain; charset=us-ascii",
+            "text/css",
+            "image/png",
+            "image/jpeg",
+            "image/gif",
+            "audio/mpeg",
+            "video/mp4",
+            "application/pdf",
+            "application/javascript",
+            "application/octet-stream",
+            "application/x-test",
+        ] {
+            assert!(!is_active_content_type(mime), "should stay inline: {mime}");
+        }
     }
 
     async fn file_handler_rpc(body: Bytes) -> Response {
@@ -623,6 +696,18 @@ mod tests {
                     "revision_id": 17,
                     "revision_created_at": "2020-07-23T06:38:39Z",
                     "mime": "application/x-test",
+                    "size": 6,
+                    "s3_hash": "public-hash"
+                },
+                "id": id
+            }),
+            "file_get" if request["params"]["file"] == "vector.svg" => json!({
+                "jsonrpc": "2.0",
+                "result": {
+                    "file_id": 9,
+                    "revision_id": 19,
+                    "revision_created_at": "2020-07-23T06:38:39Z",
+                    "mime": "image/svg+xml; charset=us-ascii",
                     "size": 6,
                     "s3_hash": "public-hash"
                 },
@@ -915,6 +1000,57 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(&response_body[..], b"abcdef");
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn file_get_serves_active_types_as_attachment_with_nosniff() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![(200, b"abcdef"), (200, b"abcdef")]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        // Script-capable SVG upload: the inline route must force a download
+        // instead of rendering in the files origin. See issue #2554.
+        let active = handle_file_fetch(
+            State(Arc::clone(&state)),
+            Method::GET,
+            Path(("existing-page".to_owned(), "vector.svg".to_owned())),
+            site_headers(),
+        )
+        .await;
+
+        assert_eq!(active.status(), StatusCode::OK);
+        assert_eq!(
+            active.headers().get(CONTENT_TYPE).unwrap(),
+            "image/svg+xml; charset=us-ascii",
+        );
+        assert_eq!(
+            active.headers().get(CONTENT_DISPOSITION).unwrap(),
+            "attachment; filename=\"vector.svg\"",
+        );
+        assert_eq!(
+            active.headers().get(X_CONTENT_TYPE_OPTIONS).unwrap(),
+            "nosniff",
+        );
+
+        // Benign type: stays inline, but still gets nosniff.
+        let benign = handle_file_fetch(
+            State(state),
+            Method::GET,
+            Path(("existing-page".to_owned(), "present.txt".to_owned())),
+            site_headers(),
+        )
+        .await;
+
+        assert_eq!(benign.status(), StatusCode::OK);
+        assert!(benign.headers().get(CONTENT_DISPOSITION).is_none());
+        assert_eq!(
+            benign.headers().get(X_CONTENT_TYPE_OPTIONS).unwrap(),
+            "nosniff",
+        );
 
         s3_server.join();
         deepwell_server.abort();
@@ -1603,6 +1739,10 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         assert_eq!(response.headers().get(ETAG).unwrap(), "\"etag\"");
         assert_eq!(response.headers().get(ACCEPT_RANGES).unwrap(), "bytes");
+        assert_eq!(
+            response.headers().get(X_CONTENT_TYPE_OPTIONS).unwrap(),
+            "nosniff",
+        );
         assert!(response.headers().get(CONTENT_DISPOSITION).is_none());
     }
 
