@@ -145,7 +145,9 @@ test("FINAL_FROZEN verification rejects changed validation bytes and foreign ima
 test("an inconclusive preflight check is recorded and still blocks a frozen final receipt", () => {
   const parsed = parsePreflightOutput([
     "preflight: groups: theme_lab=true ",
+    "=== Theme Lab adaptation authority",
     "--- Theme Lab adaptation authority: ok (3s)",
+    "=== Theme Lab current campaign completion",
     "--- Theme Lab current campaign completion: INCONCLUSIVE (1s)",
     "preflight: INCONCLUSIVE (no evidence to judge; not a pass): Theme Lab current campaign completion",
     "preflight: all selected checks passed",
@@ -163,8 +165,11 @@ test("an inconclusive preflight check is recorded and still blocks a frozen fina
 test("preflight output yields selected groups and every check result", () => {
   const parsed = parsePreflightOutput([
     "preflight: groups: deepwell=true wws=false verification=true ",
+    "=== deepwell fmt",
     "--- deepwell fmt: ok",
+    "=== deepwell clippy",
     "--- deepwell clippy: ok (41s)",
+    "=== deepwell full tests",
     "--- deepwell full tests: FAILED (312s)",
     "preflight: FAILED: deepwell full tests",
   ].join("\n"));

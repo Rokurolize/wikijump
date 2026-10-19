@@ -81,7 +81,27 @@ class ValidationCoverageTest(unittest.TestCase):
                 "checkpoint": receipt(TREE, {"deepwell": True}, mode="checkpoint"),
                 "failed-check": receipt(TREE, {"deepwell": True}, checks=[{"name": "x", "status": "failed"}]),
                 "inconclusive-check": receipt(
-                    TREE, {"theme_lab": True}, checks=[{"name": "campaign", "status": "inconclusive"}]
+                    TREE, {"theme_lab": True}, checks=[
+                        {"name": "Theme Lab tests", "status": "ok"},
+                        {"name": "Theme Lab current campaign completion", "status": "inconclusive"},
+                    ]
+                ),
+                "unrelated-inconclusive": receipt(
+                    TREE, {"theme_lab": True}, checks=[
+                        {"name": "Theme Lab tests", "status": "ok"},
+                        {"name": "source authority", "status": "inconclusive"},
+                    ]
+                ),
+                "not-theme-lab": receipt(
+                    TREE, {"verification": True}, checks=[
+                        {"name": "verification", "status": "ok"},
+                        {"name": "Theme Lab current campaign completion", "status": "inconclusive"},
+                    ]
+                ),
+                "no-passing-check": receipt(
+                    TREE, {"theme_lab": True}, checks=[
+                        {"name": "Theme Lab current campaign completion", "status": "inconclusive"},
+                    ]
                 ),
                 "no-checks": receipt(TREE, {"deepwell": True}, checks=[]),
                 "other-schema": receipt(TREE, {"deepwell": True}, schema="x"),
