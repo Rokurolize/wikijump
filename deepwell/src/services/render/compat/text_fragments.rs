@@ -112,6 +112,35 @@ impl CompatTextFragments {
         output
     }
 
+    /// Clean runtime tokens in rendered text while restoring this registry's
+    /// contents verbatim. Registered fragments may contain authored strings
+    /// that resemble runtime identifiers and must keep their literal value.
+    pub(in crate::services::render) fn restore_with_cleanup(
+        &self,
+        text: &str,
+        cleanup: impl Fn(&str) -> String,
+    ) -> String {
+        if self.fragments.is_empty() || !text.contains(&self.namespace) {
+            return cleanup(text);
+        }
+
+        let mut output = String::with_capacity(text.len());
+        let mut cursor = 0;
+        while let Some(offset) = text[cursor..].find(&self.namespace) {
+            let start = cursor + offset;
+            output.push_str(&cleanup(&text[cursor..start]));
+            if let Some((index, len)) = self.marker_at(&text[start..]) {
+                output.push_str(&self.fragments[index]);
+                cursor = start + len;
+            } else {
+                output.push_str(&self.namespace);
+                cursor = start + self.namespace.len();
+            }
+        }
+        output.push_str(&cleanup(&text[cursor..]));
+        output
+    }
+
     /// Like `restore`, but also matches markers that were lowercased, as in
     /// page link targets FTML has already slug-normalized.
     pub(in crate::services::render) fn restore_ignoring_case(
@@ -163,6 +192,22 @@ impl CompatTextFragments {
         (index < self.fragments.len())
             .then_some((index, self.namespace.len() + digits + 1))
     }
+
+    pub(in crate::services::render) fn issued_marker_len_at(
+        &self,
+        text: &str,
+    ) -> Option<usize> {
+        self.marker_at(text).map(|(_, len)| len).or_else(|| {
+            let lowered = text.to_ascii_lowercase();
+            let namespace = self.namespace.to_ascii_lowercase();
+            let suffix = lowered.strip_prefix(&namespace)?;
+            let digits = suffix.bytes().take_while(u8::is_ascii_digit).count();
+            let index = (digits > 0 && suffix.as_bytes().get(digits) == Some(&b'x'))
+                .then(|| suffix[..digits].parse::<usize>().ok())
+                .flatten()?;
+            (index < self.fragments.len()).then_some(namespace.len() + digits + 1)
+        })
+    }
 }
 
 pub(in crate::services::render) fn escape_html_text(value: &str) -> String {
@@ -209,6 +254,18 @@ mod tests {
         assert_eq!(fragments.restore(&valid), "{$valid}");
         assert_eq!(fragments.restore(&malformed), malformed);
         assert_eq!(fragments.restore(&out_of_range), out_of_range);
+    }
+
+    #[test]
+    fn cleanup_preserves_authored_marker_text_in_registered_fragments() {
+        let mut fragments = CompatTextFragments::new("");
+        let marker = fragments.push("authored INTERNAL text");
+        let text = format!("before INTERNAL {marker} after");
+
+        assert_eq!(
+            fragments.restore_with_cleanup(&text, |text| text.replace("INTERNAL", "")),
+            "before  authored INTERNAL text after",
+        );
     }
 
     #[test]

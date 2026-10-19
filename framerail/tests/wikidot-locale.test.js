@@ -41,7 +41,8 @@ describe("Wikidot locale compatibility", () => {
       extraMessage:
         "Sorry, you can not edit this page. Only members of this site, owner (creator) of this page, site administrators and perhaps selected moderators are allowed to do it.",
       actionLink: { href: "#action:login", label: "Sign in as Wikidot user" },
-      inlineActionLink: true
+      inlineActionLink: true,
+      closeLabel: "close message"
     })
     assert.deepEqual(
       editPermissionDeniedDialog("en-US"),

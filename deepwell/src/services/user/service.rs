@@ -970,6 +970,21 @@ impl UserService {
                 ));
             }
 
+            // Verification proves mailbox ownership, so a mailbox-owning
+            // account (regular or bot) must actually hold an address.
+            // (Displaced pending claims end up with an empty address;
+            // they must set a new one before verifying.) System and site
+            // accounts have no mailbox; verifying them stays a no-op stamp.
+            if email_verified
+                && matches!(user.user_type, UserType::Regular | UserType::Bot)
+                && updated_email.is_empty()
+            {
+                bail!(Error::new(
+                    "cannot verify email, the user has no email address set",
+                    ErrorType::UserEmailEmpty,
+                ));
+            }
+
             if email_verified
                 && user.user_type == UserType::Regular
                 && Self::verified_email_owner_exists(
@@ -984,6 +999,19 @@ impl UserService {
                     "cannot verify email, another active user already owns it",
                     ErrorType::UserExists,
                 ));
+            }
+
+            // First verified proof wins the mailbox: every other live
+            // regular account still showing this address loses it, so the
+            // mailbox ends up with exactly one claimant. Registration
+            // stays open for unverified claims (blocking there would let
+            // anyone squat an address they do not own); arbitration
+            // happens here, at proof time. Displaced accounts keep
+            // name login and can set a new address afterwards.
+            if email_verified && user.user_type == UserType::Regular {
+                Self::displace_pending_email_claims(ctx, &updated_email, user.user_id)
+                    .await
+                    .or_raise(make_error)?;
             }
 
             let timestamp = if email_verified { Some(now()) } else { None };
@@ -1104,6 +1132,46 @@ impl UserService {
             .or_raise(|| {
                 Error::new("failed to check verified email ownership", ErrorType::User)
             })
+    }
+
+    async fn displace_pending_email_claims(
+        ctx: &ServiceContext<'_>,
+        email: &str,
+        keeper_user_id: i64,
+    ) -> Result<()> {
+        let txn = ctx.transaction();
+        let displaced = WikijumpUser::find()
+            .filter(
+                Condition::all()
+                    .add(user::Column::Email.eq(email))
+                    .add(user::Column::UserType.eq(UserType::Regular))
+                    .add(user::Column::DeletedAt.is_null())
+                    .add(user::Column::UserId.ne(keeper_user_id)),
+            )
+            .all(txn)
+            .await
+            .or_raise(|| {
+                Error::new("failed to list pending email claims", ErrorType::User)
+            })?;
+
+        // Any other verified owner was rejected before we get here, so every
+        // row found is an unverified pending claim on the now-proven mailbox.
+        for other in displaced {
+            let model = user::ActiveModel {
+                user_id: Set(other.user_id),
+                email: Set(String::new()),
+                email_verified_at: Set(None),
+                email_validation_at: Set(None),
+                email_validation_info: Set(None),
+                updated_at: Set(Some(now())),
+                ..Default::default()
+            };
+            model.update(txn).await.or_raise(|| {
+                Error::new("failed to displace pending email claim", ErrorType::User)
+            })?;
+        }
+
+        Ok(())
     }
 
     /// Updates the user's name, and performs the relevant accounting for it.

@@ -34,9 +34,10 @@
   interface Props extends PageProps {
     setShowRevision: (val: boolean) => void
     setRevision: (rev: Optional<PageRevisionModelFiltered>) => void
+    setRevisionContext: (context: string | null) => void
   }
 
-  let { setShowRevision, setRevision, data }: Props = $props()
+  let { setShowRevision, setRevision, setRevisionContext, data }: Props = $props()
 
   const pageLayoutContext = getPageLayoutContext()
 
@@ -117,7 +118,13 @@
   }
 
   async function fetchRevisionDiff() {
-    if (fromRevisionNumber === undefined || toRevisionNumber === undefined) return
+    if (
+      fromRevisionNumber === undefined ||
+      toRevisionNumber === undefined ||
+      fromRevisionNumber === toRevisionNumber
+    ) {
+      return
+    }
 
     const fromRevision = revisionMap.get(fromRevisionNumber)?.page_revision_number
     const toRevision = revisionMap.get(toRevisionNumber)?.page_revision_number
@@ -229,6 +236,7 @@
   let comparePairValid = $derived(
     fromRevisionNumber !== undefined &&
       toRevisionNumber !== undefined &&
+      fromRevisionNumber !== toRevisionNumber &&
       comparableTimelineNumbers.includes(fromRevisionNumber) &&
       comparableTimelineNumbers.includes(toRevisionNumber)
   )
@@ -431,6 +439,7 @@
                       return
                     }
                     if (!active) return
+                    setRevisionContext(revisionItem.comments ?? null)
                     setShowRevision(true)
                     showRevisionSource = false
                   }}
@@ -532,6 +541,7 @@
                   ) {
                     return
                   }
+                  setRevisionContext(revisionItem.comments ?? null)
                   setShowRevision(true)
                   showRevisionSource = false
                 }}

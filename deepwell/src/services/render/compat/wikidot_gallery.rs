@@ -28,7 +28,7 @@ use super::super::wikidot_hosts::local_file_host_site_slug;
 use crate::error::Result;
 use crate::models::page::Model as PageModel;
 use crate::models::site::Model as SiteModel;
-use crate::services::{FileService, PageService, ServiceContext};
+use crate::services::{DomainService, FileService, PageService, ServiceContext};
 use crate::types::Reference;
 
 const WIKIDOT_GALLERY_MARKER: &str = "wj-gallery";
@@ -106,8 +106,7 @@ enum GalleryResolution {
 struct VisibleFileLoader<'a, 'ctx> {
     ctx: &'a ServiceContext<'ctx>,
     site_id: i64,
-    site_slug: &'a str,
-    files_domain: &'a str,
+    files_authority: String,
     authorized: AuthorizedPageSelector<'a, 'ctx>,
     page_ids_by_slug: HashMap<String, Option<i64>>,
     files_by_page_id: HashMap<i64, Option<VisiblePageFiles>>,
@@ -117,15 +116,13 @@ impl<'a, 'ctx> VisibleFileLoader<'a, 'ctx> {
     fn new(
         ctx: &'a ServiceContext<'ctx>,
         site_id: i64,
-        site_slug: &'a str,
-        files_domain: &'a str,
+        site_slug: &str,
         viewer_user_id: Option<i64>,
     ) -> Self {
         Self {
             ctx,
             site_id,
-            site_slug,
-            files_domain,
+            files_authority: DomainService::get_files_authority(ctx.config(), site_slug),
             authorized: AuthorizedPageSelector::new(ctx, viewer_user_id),
             page_ids_by_slug: HashMap::new(),
             files_by_page_id: HashMap::new(),
@@ -200,15 +197,13 @@ impl<'a, 'ctx> VisibleFileLoader<'a, 'ctx> {
             visible.push(VisibleGalleryFile {
                 name: row.name.clone(),
                 original_url: format!(
-                    "https://{}{}{}",
-                    self.site_slug,
-                    self.files_domain,
+                    "https://{}{}",
+                    self.files_authority,
                     owned_file_path(&page.slug, &row.name),
                 ),
                 resized_url_prefix: format!(
-                    "https://{}{}{}",
-                    self.site_slug,
-                    self.files_domain,
+                    "https://{}{}",
+                    self.files_authority,
                     owned_resized_file_path_prefix(&page.slug, &row.name),
                 ),
                 created_at: row.created_at,
@@ -263,13 +258,7 @@ impl RenderService {
             return Ok(false);
         }
         let mut loader = context.map(|(site_id, site)| {
-            VisibleFileLoader::new(
-                ctx,
-                site_id,
-                &site.slug,
-                &ctx.config().files_domain,
-                viewer_user_id,
-            )
+            VisibleFileLoader::new(ctx, site_id, &site.slug, viewer_user_id)
         });
         let mut replacements = Vec::with_capacity(requirements.len());
         for (index, (marker, gallery)) in requirements.into_iter().enumerate() {

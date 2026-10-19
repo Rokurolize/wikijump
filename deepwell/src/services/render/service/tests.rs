@@ -1394,6 +1394,78 @@ fn render_rate_module_through_ftml(source: &str) -> String {
 }
 
 #[test]
+fn standalone_rate_breaks_cross_tree_inline_scopes_but_inline_rate_stays_literal() {
+    for source in [
+        "before [[module Rate]] after",
+        "[[span id=\"owned\"]]before [[module Rate]] after[[/span]]",
+        "[[span id=\"owned\"]][[module Rate]][[/module]][[/span]]",
+    ] {
+        let rendered = render_rate_module_through_ftml(source);
+        assert!(rendered.contains("[[module Rate]]"), "{source}\n{rendered}");
+        assert!(
+            !rendered.contains("class=\"page-rate-widget-box\""),
+            "{rendered}"
+        );
+        assert!(
+            !rendered.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX),
+            "{rendered}"
+        );
+    }
+
+    for source in [
+        "[[span id=\"owned\"]]\n[[module Rate]]\n[[/span]]",
+        "[[span id=\"owned\"]]\n[[module Rate]]\n[[module Rate]]\n[[/span]]",
+        "[[div]]\n[[span id=\"owned\"]]\nBEFORE\n[[module Rate]]\nAFTER\n[[/span]]\n[[/div]]",
+        "[[size 120%]]\n[[module Rate]]\n[[/size]]",
+        "[[a href=\"/target\" class=\"owned\"]]\n[[module Rate]]\n[[/a]]",
+    ] {
+        let rendered = render_rate_module_through_ftml(source);
+        let expected = source.matches("[[module Rate]]").count();
+        assert_eq!(
+            rendered.matches("class=\"page-rate-widget-box\"").count(),
+            expected,
+            "{source}\n{rendered}",
+        );
+        assert!(
+            !rendered.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX),
+            "{rendered}"
+        );
+        assert!(
+            !rendered.contains("<p><div class=\"page-rate-widget-box\""),
+            "{rendered}"
+        );
+    }
+
+    let rendered = render_rate_module_through_ftml(
+        "[[span id=\"owned\"]]\n[[module Rate]]\n[[/span]]",
+    );
+    assert!(
+        rendered.contains(
+            "<p><span id=\"u-owned\"></span></p><span id=\"u-owned\"><div class=\"page-rate-widget-box\">"
+        ),
+        "{rendered}"
+    );
+
+    let rendered = render_rate_module_through_ftml(
+        "[[span]]\n[[module Rate]]\n[[module Rate]]\n[[/span]]",
+    );
+    assert_eq!(
+        rendered
+            .matches("<span><div class=\"page-rate-widget-box\">")
+            .count(),
+        1,
+        "{rendered}"
+    );
+    assert_eq!(
+        rendered
+            .matches("</div><div class=\"page-rate-widget-box\">")
+            .count(),
+        1,
+        "{rendered}"
+    );
+}
+
+#[test]
 fn rate_module_renders_directly_inside_header_cells_and_list_items() {
     // Anonymous Wikidot PagePreviewModule (scp-wiki, 2026-10-11, issue #2348):
     // [[module Rate]] inside [[hcell]], [[cell]], [[ul]][[li]], and [[ol]][[li]]
@@ -1532,8 +1604,10 @@ fn rate_module_expansion_ignores_literal_and_attribute_occurrences() {
         &mut compat_text,
     );
 
-    assert_eq!(protected.matches("WIKIJUMPWIKIDOTCOMPATHTML").count(), 3);
-    assert_eq!(protected.matches("[[module Rate]]").count(), 6);
+    // Every occurrence here is inside inline source text, an attribute, a
+    // literal region, or a paired same-line module. Wikidot leaves them as
+    // source text; only a standalone module line becomes runtime HTML.
+    assert_eq!(protected, source);
 
     let mut output =
         RenderService::render_wikidot_compatibility_fallback_output_for_context(
@@ -1543,7 +1617,7 @@ fn rate_module_expansion_ignores_literal_and_attribute_occurrences() {
             None,
         );
     output.body = fragments.restore(&output.body);
-    assert_eq!(output.body.matches(r#"class="rate-points""#).count(), 3);
+    assert_eq!(output.body.matches(r#"class="rate-points""#).count(), 0);
     assert!(!output.body.contains("<p><div"));
     assert!(!output.body.contains(r#"data-rate="<div"#));
 }
@@ -1839,7 +1913,6 @@ fn multiline_page_links_respect_canonical_literal_regions() {
     let mut wikitext = concat!(
         "[[code]]\n[[[code-link|Nope\nPlease]]]\n[[/code]]\n",
         "[[html]]\n[[[html-link|Nope\nPlease]]]\n[[/html]]\n",
-        "@@[[[escape-link|Nope\nPlease]]]@@\n",
         "[!-- [[[comment-link|Nope\nPlease]]] --]\n",
         "<pre>[[[pre-link|Nope\nPlease]]]</pre>\n",
         "[[[page-link|Yes\nPlease]]]\n",
@@ -1851,7 +1924,6 @@ fn multiline_page_links_respect_canonical_literal_regions() {
     for literal in [
         "[[[code-link|Nope\nPlease]]]",
         "[[[html-link|Nope\nPlease]]]",
-        "@@[[[escape-link|Nope\nPlease]]]@@",
         "[!-- [[[comment-link|Nope\nPlease]]] --]",
         "<pre>[[[pre-link|Nope\nPlease]]]</pre>",
     ] {
@@ -1861,6 +1933,29 @@ fn multiline_page_links_respect_canonical_literal_regions() {
         );
     }
     assert!(wikitext.contains("[[[page-link|Yes Please]]]"));
+}
+
+#[test]
+fn raw_markers_on_separate_lines_do_not_protect_a_multiline_page_link() {
+    // Wikidot never pairs `@@` across lines: `@@[[[escape-link|Nope\nPlease]]]@@`
+    // renders `@@<a class="newpage" href="/escape-link">Nope Please</a>@@`
+    // (`raw-pair-across-lines-link` in wikidot-at-raw-preview-20261019.json).
+    // The marker lines are not literal, but joining them would put both `@@`
+    // on one line where the parser would pair them, so the link is left as-is.
+    let source = "@@[[[escape-link|Nope\nPlease]]]@@\n";
+    let mut wikitext = source.to_owned();
+    RenderService::normalize_wikidot_multiline_page_links(&mut wikitext);
+    assert_eq!(wikitext, source);
+
+    // Other links, including ones next to a closed pair, still normalize.
+    let mut wikitext =
+        "@@raw@@\n[[[page-link|Yes\nPlease]]]\n@@[[[escape-link|Nope Please]]]@@\n"
+            .to_owned();
+    RenderService::normalize_wikidot_multiline_page_links(&mut wikitext);
+    assert_eq!(
+        wikitext,
+        "@@raw@@\n[[[page-link|Yes Please]]]\n@@[[[escape-link|Nope Please]]]@@\n"
+    );
 }
 
 #[test]

@@ -65,6 +65,10 @@ struct CaddyTemplate<'a> {
     files_domain_no_dot: &'a str,
     main_domain: &'a str,
 
+    // Redirects name the public port (`https-port`) when it is not 443, so a
+    // deployment on another listener never redirects to a different one.
+    public_port_suffix: String,
+
     // Site and domain data
     sites: &'a [(i64, String, Option<String>)],
     domains: &'a HashMap<i64, SiteDomainData>,
@@ -172,6 +176,7 @@ impl CaddyService {
             files_domain: &config.files_domain,
             files_domain_no_dot: &config.files_domain_no_dot,
             main_domain: &config.main_domain,
+            public_port_suffix: public_port_suffix(config.https_port),
             sites,
             domains,
         };
@@ -188,6 +193,14 @@ impl CaddyService {
 }
 
 // Helper functions for rendering
+
+fn public_port_suffix(https_port: u16) -> String {
+    if https_port == 443 {
+        String::new()
+    } else {
+        format!(":{https_port}")
+    }
+}
 
 fn get_canonical_domain<'s>(config: &'s Config, site_slug: &'s str) -> Cow<'s, str> {
     if site_slug == DEFAULT_SITE_SLUG {

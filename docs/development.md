@@ -53,7 +53,7 @@ The "action" corresponds to actions that `docker-compose` can do. Some common ac
 * `stop` &mdash; Stop currently-running containers for Wikijump.
 * `down` &mdash; Stop **and delete** any containers for Wikijump.
 
-Note that in `docker-compose.yaml`, there are configuration options for the domains to use. For development purposes, these are set to `wikijump.localhost`. This is the domain you will be connecting to, e.g. `https://www.wikijump.localhost`. The TLD `.localhost` is just like the usual `localhost` domain. Even when running locally, HTTPS is used. The local Caddy certificate authority is persisted in Docker volumes; see `install/local/README.md` for trust-store setup if your browser does not already trust it.
+The local development stack is its own environment, named in every URL it serves: its platform domain is `wikijump.dev.localhost` and its files domain `wjfiles.dev.localhost` (`install/local/deepwell/config.toml`, mirrored for Framerail in `install/local/docker-compose.yaml`), served on port 18443, e.g. `https://www.wikijump.dev.localhost:18443`. The standing runtime (`install/standing`) keeps `wikijump.localhost` on 443, so the two stacks never share a hostname, a cookie, or a redirect target. Seeded loopback custom domains follow the same rule (`scp-jp.localhost` on standing is `scp-jp.dev.localhost` here). The port is configured once, as `https-port`; Deepwell refuses a domain that spells a port. The TLD `.localhost` is just like the usual `localhost` domain. Even when running locally, HTTPS is used. The local Caddy certificate authority is persisted in Docker volumes; see `install/local/README.md` for trust-store setup if your browser does not already trust it.
 
 **Thus, you can run the following to start a local instance:**
 
@@ -67,7 +67,7 @@ Because this first needs to build the images and sources, _this will take some t
 >
 > You may encounter various errors involving file permissions if using Windows-based tools alongside WSL2. It is recommend that you fix these issues by either granting the correct file permissions to any that Windows may have modified, or by re-cloning the repository purely within WSL2.
 
-**Once everything has started, you can connect to `http://www.wikijump.localhost/`.** Changes you make to the codebase should automatically be applied to the containers, as your machine's filesystem has been "bound" to the containers' filesystem (see `docker-compose.dev.yaml`). This is one-way, so a container can't modify your filesystem. Note that adding new dependencies will require a rebuild.
+**Once everything has started, you can connect to `https://www.wikijump.dev.localhost:18443/`.** Changes you make to the codebase should automatically be applied to the containers, as your machine's filesystem has been "bound" to the containers' filesystem (see `docker-compose.dev.yaml`). This is one-way, so a container can't modify your filesystem. Note that adding new dependencies will require a rebuild.
 
 You can kill the terminal (`CTRL + C` usually) when you want to stop the server.
 
@@ -114,7 +114,7 @@ $ docker exec -it [container id] sh
 
 ...where `[container id]` is the ID of the corresponding container from `docker ps`. (`sh` can be replaced with a different command.)
 
-One reason you may need to enter the container is to manually adjust the Wikijump config. For example, if you use a port other than 80 for your Docker container, you will need to edit `site.custom_domain` to add the port number (e.g. "`www.wikijump.localhost:8080`"). Alternatively, use curl to set the domain directly (e.g. "`-H 'www.wikijump.localhost'`")
+One reason you may need to enter the container is to manually adjust the Wikijump config. To serve on another public port, change `https-port` in Deepwell's `[domain]` section and `WIKIJUMP_HTTPS_PORT` for Framerail together; never add the port to a domain.
 
 ## Unhealthy Service
 
@@ -136,10 +136,10 @@ Once you have a local instance of Wikijump running, you may wish to make `curl` 
 Thus, the "standard" curl request for a web page would look something like the following:
 
 ```
-$ curl -i -H 'Host: scp-wiki.wikijump.localhost' -H 'Accept: text/html' http://localhost:18443/scp-002
+$ curl -ik -H 'Accept: text/html' https://scp-wiki.wikijump.dev.localhost:18443/scp-002
 ```
 
-The `Host` header addresses point 1, and the `Accept` header addresses point 3. This request effectively fetches `http://scp-wiki.wikijump.localhost:18443/scp-002` for you when your local proxy is bound to port 18443. Naturally, you can replace the route after `localhost:18443` with whatever you are requesting (say `/-/file/scp-001/fractal-mka.jpeg`). If your local Caddy instance is bound directly to port 80 or 443, use the same canonical host with the matching local port.
+The host addresses point 1 (`*.localhost` names resolve to the loopback interface), `-k` or a trusted local CA addresses point 2, and the `Accept` header addresses point 3. Naturally, you can replace the route with whatever you are requesting (say `/-/file/scp-001/fractal-mka.jpeg`). The same request against standing uses `https://scp-wiki.wikijump.localhost/scp-002`.
 
 ## Clock Drift
 

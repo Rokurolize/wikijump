@@ -24,7 +24,7 @@ Remember, 'git add -p' is your friend!
 }
 {% if www_redirect -%}
 www.{{ domain }} {
-	redir https://{{ domain }}{uri}
+	redir https://{{ domain }}{{ public_port_suffix }}{uri}
 }
 {% endif -%}
 {% endmacro -%}
@@ -36,7 +36,7 @@ www.{{ domain }} {
 {%- else -%}
 {{ domain }} {
 {%- endif %}
-	redir https://{{ preferred_domain }}{uri}
+	redir https://{{ preferred_domain }}{{ public_port_suffix }}{uri}
 }
 {% endmacro -%}
 
@@ -110,7 +110,7 @@ deploy{{ main_domain }} {
 }
 
 deploy{{ files_domain }} {
-	redir https://deploy{{ main_domain }}
+	redir https://deploy{{ main_domain }}{{ public_port_suffix }}
 }
 {% endif %}
 #
@@ -167,7 +167,7 @@ deploy{{ files_domain }} {
 		path /-/code/*
 		path /-/html/*
 	}
-	redir @redirect https://{vars.site_slug}{{ files_domain }}{uri}
+	redir @redirect https://{vars.site_slug}{{ files_domain }}{{ public_port_suffix }}{uri}
 
 	# Enable default compression settings
 	encode

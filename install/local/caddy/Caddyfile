@@ -9,6 +9,8 @@
 
 {
 	debug
+	http_port 18080
+	https_port 18443
 	local_certs
 	skip_install_trust
 }

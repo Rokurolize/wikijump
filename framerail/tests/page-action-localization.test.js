@@ -289,6 +289,53 @@ test("the site language defines the page interface ahead of browser preferences"
   ])
 })
 
+test("Japanese catalog defines the revision banner chrome requested for found pages", async () => {
+  // The historical-revision banner (#2151) renders through the same
+  // internationalization dictionary as the panes; without requested keys
+  // and Japanese entries it falls back to English on Japanese sites (#2178).
+  const keys = buildPageTranslateKeys(foundResponse, foundKeysContext)
+  const bannerKeys = [
+    "wiki-page-revision-banner.title",
+    "wiki-page-revision-banner.page",
+    "wiki-page-revision-banner.close"
+  ]
+  for (const key of bannerKeys) assert.ok(Object.hasOwn(keys, key), key)
+
+  const wikiJa = await readFile(
+    new URL("../../locales/fluent/wiki-page/ja.ftl", import.meta.url),
+    "utf8"
+  )
+  assert.match(wikiJa, /^wiki-page-revision-banner =$/mu)
+  assert.match(wikiJa, /^ {2}\.title = 過去のリビジョン$/mu)
+  assert.match(wikiJa, /^ {2}\.page = ページ$/mu)
+  assert.match(wikiJa, /^ {2}\.close = 閉じる$/mu)
+})
+
+test("Japanese catalog defines the unimported watchers notice requested for found pages", async () => {
+  // Imported pages carry no subscription graph; an empty roster would
+  // falsely assert zero subscriptions, so the pane shows an unavailable
+  // notice instead (issue #2172).
+  const keys = buildPageTranslateKeys(foundResponse, foundKeysContext)
+  assert.ok(Object.hasOwn(keys, "wiki-page-watchers-unimported"))
+
+  for (const [file, pattern] of [
+    [
+      "en",
+      /^wiki-page-watchers-unimported = The watcher list for this imported page is unavailable because its subscriptions were not imported\.$/mu
+    ],
+    [
+      "ja",
+      /^wiki-page-watchers-unimported = インポートされたページのウォッチャー一覧は、購読情報がインポートされていないため利用できません。$/mu
+    ]
+  ]) {
+    const source = await readFile(
+      new URL(`../../locales/fluent/wiki-page/${file}.ftl`, import.meta.url),
+      "utf8"
+    )
+    assert.match(source, pattern, file)
+  }
+})
+
 test("explicit user locale preferences outrank the site language", () => {
   assert.deepEqual(finalizePreloadData(preloadResponse("ja", ["ko"]), ["en"]).locales, [
     "ko",

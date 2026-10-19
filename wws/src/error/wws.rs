@@ -46,6 +46,9 @@ pub enum Error {
     #[error("DEEPWELL API error: {0}")]
     Deepwell(#[from] ClientError),
 
+    #[error("DEEPWELL API error: too many requests in flight")]
+    DeepwellBusy,
+
     #[error("Redis error: {0}")]
     Redis(#[from] redis::RedisError),
 

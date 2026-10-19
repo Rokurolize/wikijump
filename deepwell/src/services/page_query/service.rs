@@ -237,7 +237,8 @@ impl PageQueryService {
         let votes = votes.to_vec();
 
         let txn = ctx.transaction();
-        if !score.is_empty() || !votes.is_empty() {
+        let score_and_votes_empty = score.is_empty() && votes.is_empty();
+        if !score_and_votes_empty {
             // These queries deliberately switch between candidate-correlated and
             // site-wide score plans. PostgreSQL's generic prepared plan loses the
             // selector and candidate cardinalities after repeated executions and
@@ -501,6 +502,18 @@ impl PageQueryService {
         //      2. [ 9,  8,  7,  6,  5]
         //      3. [14, 13, 12, 11, 10]
 
+        // Tag predicates have the same problem as the score selectors above:
+        // a generic plan cannot see how rare a tag is, so after a few
+        // executions PostgreSQL walks every page in order and probes each
+        // revision's tags (a 4 ms query took 160 ms). Plan this query with its
+        // values, then return the rest of the render to cached plans.
+        let tag_custom_plan = needs_tag_filter && score_and_votes_empty;
+        if tag_custom_plan {
+            txn.execute_unprepared("SET LOCAL plan_cache_mode = force_custom_plan")
+                .await
+                .or_raise(make_error)?;
+        }
+
         // Execute it!
         let (mut pages, effective_revision_count_by_page_id) =
             if projects_effective_revision_count {
@@ -522,6 +535,11 @@ impl PageQueryService {
             } else {
                 (query.all(txn).await.or_raise(make_error)?, BTreeMap::new())
             };
+        if tag_custom_plan {
+            txn.execute_unprepared("SET LOCAL plan_cache_mode TO DEFAULT")
+                .await
+                .or_raise(make_error)?;
+        }
         if let Some(candidate_limit) = hard_candidate_limit
             && pages.len() > usize::try_from(candidate_limit).unwrap_or(usize::MAX)
         {

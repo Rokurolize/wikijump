@@ -1,4 +1,5 @@
 import { parseDeploymentEnvironment } from "./deployment-environment.js"
+import { platformDomains, platformHttpsOrigin } from "./platform-domains.js"
 
 /**
  * Authoritative platform legal destinations.
@@ -13,22 +14,16 @@ import { parseDeploymentEnvironment } from "./deployment-environment.js"
  * point an instance at its own policies with
  * `WIKIJUMP_TERMS_OF_SERVICE_URL` and `WIKIJUMP_PRIVACY_POLICY_URL`; when
  * an operator does not configure them, the documented platform
- * destinations for the deployment environment are used, which mirrors how
- * the session cookie already derives the platform host. A self-hosted
- * instance that serves its policies from another host must set the
- * environment variables instead of inheriting the public ones.
+ * destinations on the deployment's platform host are used (see
+ * `platform-domains.js`), the same host the session cookie is scoped to. A
+ * self-hosted instance that serves its policies from another host must set
+ * the environment variables instead of inheriting the public ones.
  *
  * Destinations are validated as absolute `https:` URLs. Anything else is a
  * configuration defect and fails closed, because a relative or
  * scheme-relative destination would silently resolve against the viewed
  * wiki's origin.
  */
-
-const PLATFORM_LEGAL_HOSTS = {
-  local: "wikijump.localhost",
-  dev: "wikijump.dev",
-  prod: "wikijump.com"
-}
 
 const PLATFORM_LEGAL_PATHS = {
   termsOfService: "/legal:terms-of-service",
@@ -91,7 +86,8 @@ export const legalDestinations = ({
   deploymentEnvironment?: "local" | "dev" | "prod"
   env?: Record<string, string | undefined>
 } = {}): LegalDestinations => {
-  const host = PLATFORM_LEGAL_HOSTS[deploymentEnvironment]
+  const domains = platformDomains({ deploymentEnvironment, env })
+  const origin = platformHttpsOrigin(domains.main, domains)
   const keys = Object.keys(PLATFORM_LEGAL_PATHS) as LegalDestinationKey[]
 
   return keys.reduce<LegalDestinations>((destinations, key) => {
@@ -100,7 +96,7 @@ export const legalDestinations = ({
       env[environmentVariable],
       environmentVariable
     )
-    destinations[key] = configured ?? `https://${host}${PLATFORM_LEGAL_PATHS[key]}`
+    destinations[key] = configured ?? `${origin}${PLATFORM_LEGAL_PATHS[key]}`
     return destinations
   }, {} as LegalDestinations)
 }
@@ -119,12 +115,13 @@ export const platformFooterDestinations = ({
   deploymentEnvironment?: "local" | "dev" | "prod"
   env?: Record<string, string | undefined>
 } = {}): Record<string, string> => {
-  const host = PLATFORM_LEGAL_HOSTS[deploymentEnvironment]
+  const domains = platformDomains({ deploymentEnvironment, env })
+  const origin = platformHttpsOrigin(domains.main, domains)
   const legal = legalDestinations({ deploymentEnvironment, env })
   return {
     "terms-conditions": legal.termsOfService,
     privacy: legal.privacyPolicy,
-    docs: `https://${host}${PLATFORM_FOOTER_PATHS.docs}`,
-    security: `https://${host}${PLATFORM_FOOTER_PATHS.security}`
+    docs: `${origin}${PLATFORM_FOOTER_PATHS.docs}`,
+    security: `${origin}${PLATFORM_FOOTER_PATHS.security}`
   }
 }

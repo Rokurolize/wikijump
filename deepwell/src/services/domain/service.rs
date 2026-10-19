@@ -176,10 +176,14 @@ impl DomainService {
         format!("{}{}", site_slug, config.main_domain)
     }
 
+    /// Gets the public URL authority of a site's files host.
+    ///
+    /// This is the files domain plus the configured public HTTPS port when it
+    /// is not 443, for building URLs rather than comparing hostnames.
     #[inline]
-    pub fn get_files(config: &Config, site_slug: &str) -> String {
+    pub fn get_files_authority(config: &Config, site_slug: &str) -> String {
         // 'files_domain' is already prefixed with .
-        format!("{}{}", site_slug, config.files_domain)
+        config.public_authority(&format!("{}{}", site_slug, config.files_domain))
     }
 
     /// Gets the preferred domain for the given site.
@@ -202,7 +206,18 @@ impl DomainService {
     /// port in absolute cross-site links. The persisted preferred domain is a
     /// hostname; the public listener port belongs to deployment configuration.
     pub fn preferred_https_origin(config: &Config, site: &SiteModel) -> String {
-        preferred_https_origin(&Self::preferred_domain(config, site), config.https_port)
+        Self::preferred_https_origin_for_domain(
+            config,
+            &Self::preferred_domain(config, site),
+        )
+    }
+
+    /// Gets the public URL authority of a site's preferred domain.
+    ///
+    /// This is the preferred domain plus the configured public HTTPS port when
+    /// it is not 443.
+    pub fn preferred_authority(config: &Config, site: &SiteModel) -> String {
+        config.public_authority(&Self::preferred_domain(config, site))
     }
 
     /// Gets the HTTPS origin for an already-resolved preferred domain.
@@ -211,7 +226,7 @@ impl DomainService {
     /// still use the configured public listener port without duplicating URL
     /// assembly rules.
     pub fn preferred_https_origin_for_domain(config: &Config, domain: &str) -> String {
-        preferred_https_origin(domain, config.https_port)
+        format!("https://{}", config.public_authority(domain))
     }
 
     /// Return the preferred domain for the `www` site.
@@ -249,27 +264,48 @@ impl DomainService {
     }
 }
 
-fn preferred_https_origin(domain: &str, port: u16) -> String {
-    if port == 443 {
-        format!("https://{domain}")
-    } else {
-        format!("https://{domain}:{port}")
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::preferred_https_origin;
+    use super::DomainService;
+    use crate::config::Config;
+
+    fn config_with_port(https_port: u16) -> Config {
+        Config {
+            https_port,
+            ..Config::integration_testing()
+        }
+    }
 
     #[test]
     fn preferred_https_origin_omits_the_default_port_and_keeps_custom_ports() {
         assert_eq!(
-            preferred_https_origin("platform.example.test", 443),
+            DomainService::preferred_https_origin_for_domain(
+                &config_with_port(443),
+                "platform.example.test",
+            ),
             "https://platform.example.test",
         );
         assert_eq!(
-            preferred_https_origin("platform.example.test", 18445),
+            DomainService::preferred_https_origin_for_domain(
+                &config_with_port(18445),
+                "platform.example.test",
+            ),
             "https://platform.example.test:18445",
+        );
+    }
+
+    #[test]
+    fn files_authority_carries_the_public_port_only_when_it_is_not_443() {
+        let config = config_with_port(443);
+        assert_eq!(
+            DomainService::get_files_authority(&config, "scp-wiki"),
+            format!("scp-wiki{}", config.files_domain),
+        );
+
+        let config = config_with_port(18443);
+        assert_eq!(
+            DomainService::get_files_authority(&config, "scp-wiki"),
+            format!("scp-wiki{}:18443", config.files_domain),
         );
     }
 }

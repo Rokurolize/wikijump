@@ -57,6 +57,8 @@ import {
 
 const SOURCE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_LIVE_ORIGIN = "https://scp-wiki.wikidot.com";
+// Pairing label recorded in the retained live reference, never fetched; it
+// predates the dev stack's `*.wikijump.dev.localhost` hosts (#2544).
 const REFERENCE_LOCAL_ORIGIN = "https://scp-wiki.wikijump.localhost:18443";
 const STANDING_LOCAL_ORIGIN = "https://scp-wiki.wikijump.localhost";
 const STANDING_FILES_ORIGIN = "https://scp-wiki.wjfiles.localhost";

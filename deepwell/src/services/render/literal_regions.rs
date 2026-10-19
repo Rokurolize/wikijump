@@ -223,15 +223,63 @@ impl LiteralRegionIndex {
         }
     }
 
-    /// Literal and tag regions where a pre-FTML compatibility protector must
-    /// not recognize authored syntax.
+    /// Inline protectors must follow FTML's physical-line ownership of `@@`.
+    /// A dangling raw delimiter on an earlier line cannot hide real syntax or
+    /// expose escaped syntax on the next one.
     pub(super) fn new_wikidot_protection(source: &str) -> Self {
-        let mut index = Self::build(source, false);
-        let mut ranges = Vec::new();
-        collect_wikidot_tag_ranges(source, &mut ranges);
-        index.merge_sorted_ranges(ranges);
+        let mut index = Self::new_wikidot_inline_protection(source);
         let mut ranges = Vec::new();
         collect_html_tag_ranges(source, &mut ranges);
+        index.merge_sorted_ranges(ranges);
+        index
+    }
+
+    pub(super) fn new_wikidot_module_body(source: &str) -> Self {
+        static MODULE_TAG_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+            Regex::new(r"(?is)\[\[\s*(?P<close>/)?module\b[^\]]*\]\]")
+                .expect("the Wikidot module tag regex is valid")
+        });
+
+        let literal_regions = Self::new_wikidot_syntax(source);
+        let mut depth = 0usize;
+        let mut module_start = 0usize;
+        let mut ranges = Vec::new();
+        for tag in MODULE_TAG_REGEX.find_iter(source) {
+            if literal_regions.contains(tag.start()) {
+                continue;
+            }
+            let is_close = source[tag.start()..tag.end()]
+                .to_ascii_lowercase()
+                .starts_with("[[/");
+            if is_close {
+                if depth > 0 {
+                    depth -= 1;
+                    if depth == 0 {
+                        ranges.push(module_start..tag.end());
+                    }
+                }
+            } else {
+                if depth == 0 {
+                    module_start = tag.start();
+                }
+                depth = depth.saturating_add(1);
+            }
+        }
+        if depth > 0 {
+            ranges.push(module_start..source.len());
+        }
+        Self {
+            ranges: coalesce_sorted_ranges(ranges),
+        }
+    }
+
+    /// The older inline-HTML protector also formats prose inside authored
+    /// angle brackets. Keep that behavior while excluding actual Wikidot
+    /// literal owners and syntax attribute interiors.
+    pub(super) fn new_wikidot_inline_protection(source: &str) -> Self {
+        let mut index = Self::new_wikidot_conditional_syntax(source);
+        let mut ranges = Vec::new();
+        collect_wikidot_tag_ranges(source, &mut ranges);
         index.merge_sorted_ranges(ranges);
         index
     }
@@ -286,7 +334,9 @@ impl LiteralRegionIndex {
     /// renders with color spans), never a code block, so markers inside it
     /// must restore.
     pub(super) fn new_html_color_restoration(source: &str) -> Self {
-        let mut index = Self::build(source, false);
+        // These bytes have already crossed FTML. Visible `@@` or `[[code]]`
+        // text is no longer an authored delimiter at this boundary.
+        let mut index = Self { ranges: Vec::new() };
         let mut ranges = Vec::new();
         collect_html_literal_ranges(source, &mut ranges, false, false);
         index.merge_sorted_ranges(ranges);
@@ -303,7 +353,7 @@ impl LiteralRegionIndex {
         let mut block_ranges = Vec::new();
         collect_wikidot_block_ranges(source, &mut block_ranges);
         let mut raw_ranges = Vec::new();
-        collect_paired_ranges(source, "@@", "@@", &mut raw_ranges);
+        collect_line_paired_ranges(source, "@@", &mut raw_ranges);
         let mut comment_ranges = Vec::new();
         collect_paired_ranges(source, "[!--", "--]", &mut comment_ranges);
         let mut ranges =
@@ -503,6 +553,38 @@ fn collect_html_tag_ranges(source: &str, ranges: &mut Vec<Range<usize>>) {
         };
         ranges.push(start..end);
         cursor = end;
+    }
+}
+
+/// Pairs `delimiter` occurrences left to right within each physical line.
+///
+/// Wikidot's inline raw `@@ ... @@` never spans lines: a lone `@@`, plain or
+/// inside `{{ }}`, is literal text, and `@@` on different lines or in different
+/// paragraphs never pair (anonymous `PagePreviewModule` observations,
+/// retained in
+/// `install/local/wikidot-verification/artifacts/wikidot-at-raw-preview-20261019.json`).
+/// A page that mentions one `@@` therefore must not change which later `@@`
+/// pairs own literal text; an unmatched `@@` owns no region.
+fn collect_line_paired_ranges(
+    source: &str,
+    delimiter: &str,
+    ranges: &mut Vec<Range<usize>>,
+) {
+    let mut line_start = 0usize;
+    for line in source.split_inclusive('\n') {
+        let body = wikidot::physical_line_body(line);
+        let mut cursor = 0usize;
+        while let Some(relative_start) = body[cursor..].find(delimiter) {
+            let start = cursor + relative_start;
+            let body_start = start + delimiter.len();
+            let Some(relative_end) = body[body_start..].find(delimiter) else {
+                break;
+            };
+            let end = body_start + relative_end + delimiter.len();
+            ranges.push(line_start + start..line_start + end);
+            cursor = end;
+        }
+        line_start += line.len();
     }
 }
 

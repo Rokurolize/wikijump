@@ -533,10 +533,23 @@ mod tests {
     }
 
     #[test]
+    fn raw_markers_on_separate_lines_do_not_block_list_lines() {
+        // Wikidot never pairs `@@` across lines: a bare `@@` line is literal text
+        // and the list after it is live (`lone-at-then-list` and
+        // `pair-across-lines-with-bold` in wikidot-at-raw-preview-20261019.json).
+        let source = "@@\r\n* allowed\r\n@@\r\n* also allowed\r\n";
+        let context = NativeListSourceContext::new(source);
+        for needle in ["* allowed", "* also allowed"] {
+            let offset = source.find(needle).expect("marker exists");
+            assert!(context.allows_block_run(&[offset]), "{needle}");
+        }
+    }
+
+    #[test]
     fn blocks_literal_region_lines_including_crlf_and_final_line() {
         for source in [
             "[[code]]\n* blocked\n[[/code]]\n* allowed\n",
-            "@@\r\n* blocked\r\n@@\r\n* allowed\r\n",
+            "@@* blocked@@\r\n* allowed\r\n",
             "[!--\n* blocked\n--]\n* allowed",
         ] {
             let context = NativeListSourceContext::new(source);

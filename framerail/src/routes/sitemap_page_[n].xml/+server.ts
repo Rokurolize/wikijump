@@ -1,16 +1,17 @@
 import { wikidotSitemap } from "$lib/server/deepwell/page"
 import { loadSiteInfo } from "$lib/server/load/site-info"
+import { siteSitemapOrigin } from "$lib/server/sitemap-origin"
 import {
   buildSitemapUrlsetXml,
   InvalidSitemapShardPath,
   parseSitemapShardNumber,
-  shardSitemapEntries,
+  SITEMAP_ENTRIES_PER_SHARD,
   SITEMAP_XML_HEADERS
 } from "$lib/server/sitemap"
 
 import type { RequestHandler } from "./$types"
 
-export const GET: RequestHandler = async ({ request, cookies, params }) => {
+export const GET: RequestHandler = async ({ request, params }) => {
   let shard: number
   try {
     shard = parseSitemapShardNumber(params.n)
@@ -22,20 +23,19 @@ export const GET: RequestHandler = async ({ request, cookies, params }) => {
   }
 
   const { siteId } = loadSiteInfo(request.headers)
-  const output = await wikidotSitemap(siteId, {
-    siteId,
-    sessionToken: cookies.get("wikijump_token")
-  })
+  // Child shards must use the same anonymous visibility boundary as the index.
+  const output = await wikidotSitemap(siteId, shard, { siteId })
   // A site the viewer cannot see has no public sitemap, so the route answers
   // the same way as any other missing page.
   if (!output) return new Response("Not found", { status: 404 })
 
-  const shards = shardSitemapEntries(output.entries)
-  const entries = shards[shard - 1]
-  if (!entries) return new Response("Not found", { status: 404 })
+  if (output.entries.length === 0) return new Response("Not found", { status: 404 })
+  if (output.entries.length > SITEMAP_ENTRIES_PER_SHARD) {
+    return new Response("Invalid sitemap shard size", { status: 502 })
+  }
 
-  const origin = new URL(request.url).origin
-  return new Response(buildSitemapUrlsetXml(origin, entries), {
+  const origin = await siteSitemapOrigin(siteId)
+  return new Response(buildSitemapUrlsetXml(origin, output.entries), {
     headers: SITEMAP_XML_HEADERS
   })
 }

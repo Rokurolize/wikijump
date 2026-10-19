@@ -133,7 +133,9 @@ pub use self::site_changes_feed::{
     SITE_CHANGES_FEED_ITEM_LIMIT, WikidotSiteChangesFeedItem,
     WikidotSiteChangesFeedOutput, wikidot_site_changes_change_type,
 };
-pub use self::sitemap::{SITEMAP_MAX_ENTRIES, WikidotSitemapEntry, WikidotSitemapOutput};
+pub use self::sitemap::{
+    SITEMAP_ENTRIES_PER_SHARD, WikidotSitemapEntry, WikidotSitemapOutput,
+};
 pub use self::structs::{
     RenderOutput, RenderPageOutput, WikidotListPagesFeedInput, WikidotListPagesFeedItem,
     WikidotListPagesFeedOutput,

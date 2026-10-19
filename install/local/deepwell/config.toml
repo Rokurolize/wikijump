@@ -28,10 +28,15 @@ mfa-digits = 6
 time-step = 30
 time-skew = 1
 
+# The local development stack is its own environment: every host it serves
+# is standing's host with `.localhost` replaced by `.dev.localhost`, so a URL,
+# cookie, or redirect always names the stack it belongs to. Standing keeps
+# `wikijump.localhost` on 443. The port is configured only here, never in a
+# domain; keep these values in sync with docker-compose.yaml.
 [domain]
-main = "wikijump.localhost"
+main = "wikijump.dev.localhost"
 https-port = 18443
-files = "wjfiles.localhost"
+files = "wjfiles.dev.localhost"
 
 [job]
 workers = 2
@@ -76,9 +81,9 @@ refill-name-change-days = 90
 
 [email]
 mock-mailcheck = true
-automation-address = "noreply@wikijump.localhost"
-notification-address = "notifications@wikijump.localhost"
-newsletter-address = "newsletter@wikijump.localhost"
+automation-address = "noreply@wikijump.dev.localhost"
+notification-address = "notifications@wikijump.dev.localhost"
+newsletter-address = "newsletter@wikijump.dev.localhost"
 
 [file]
 presigned-path-length = 32

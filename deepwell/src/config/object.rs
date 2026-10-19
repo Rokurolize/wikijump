@@ -261,6 +261,20 @@ impl Config {
         Ok(config)
     }
 
+    /// The public URL authority for a host on this deployment.
+    ///
+    /// Domains are configured as bare hostnames; the public HTTPS port is
+    /// configured once, as `https-port`. Any absolute URL this deployment
+    /// emits for its own hosts uses this authority, so a deployment on a
+    /// non-default port never hands the browser a link to another listener.
+    pub fn public_authority(&self, host: &str) -> String {
+        if self.https_port == 443 {
+            str!(host)
+        } else {
+            format!("{host}:{}", self.https_port)
+        }
+    }
+
     /// Caps operational logging below dependency traces that can expose authentication bearers.
     pub fn operational_logger_level(&self) -> LevelFilter {
         match self.logger_level {
