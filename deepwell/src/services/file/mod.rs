@@ -22,6 +22,7 @@ mod service;
 mod structs;
 
 pub use self::service::FileService;
+pub(crate) use self::service::normalize_and_validate_file_name;
 pub use self::structs::{
     CreateFile, CreateFileOutput, DeleteFile, DeleteFileOutput, EditFile, EditFileBody,
     EditFileOutput, GetFile, GetFileDetails, GetFileOutput, GetPageFiles, MoveFile,

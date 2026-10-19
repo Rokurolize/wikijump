@@ -685,6 +685,12 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("import_wikidot_site", import_wikidot_site);
     register!("import_wikidot_page", import_wikidot_page);
     register!("import_wikidot_page_revision", import_wikidot_page_revision);
+    register!("import_wikidot_file", import_wikidot_file);
+    register!("import_wikidot_file_delete", import_wikidot_file_delete);
+    register!(
+        "import_wikidot_page_files_verify",
+        import_wikidot_page_files_verify
+    );
     register!("import_wikidot_discussion", import_wikidot_discussion);
 
     // Return
