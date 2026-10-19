@@ -5880,6 +5880,7 @@
         "kind": "endpoint_behavioral",
         "reference": "deepwell/tests/import.rs#mirror_seed_carries_source_tags_and_navigation",
         "alternatives": [
+          "deepwell/tests/import.rs#mirror_seed_prefers_source_system_pages_over_generic_seeds",
           "deepwell/tests/list_pages.rs#imported_revision_count_current_page_only_adds_local_revisions",
           "deepwell/tests/list_pages.rs#literal_owned_registered_listpages_openers_remain_literal",
           "deepwell/tests/media.rs#embedvideo_preview_and_saved_page_share_rendered_body",
