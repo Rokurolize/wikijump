@@ -7,8 +7,18 @@
 // renders follow normally (no row rewrite). Only pages whose every revision
 // came from the mirror import or seed are touched; a page with any other
 // revision is reported and left alone. An empty corpus title keeps the local
-// title (Wikidot then shows the page name). Without --apply the command only
-// prints the plan.
+// title (Wikidot then shows the page name).
+//
+// Reconciliation (same guard): a previously imported page whose source
+// entity no longer exists in the corpus is tombstoned through the ordinary
+// page_delete, and a page whose source entity moved to a new slug is moved
+// through the ordinary page_move, so renames keep their history instead of
+// appearing as a delete plus a create. Rename pairing keys on the stable
+// corpus entity id (entity_id.txt), never on title or content similarity.
+// Tombstoned and renamed-away slugs are recorded as consumed in the site's
+// mirror_scope row so later passes never resurrect them. Corpus entities
+// with no local page are reported for the create import path; this tool
+// never creates pages. Without --apply the command only prints the plan.
 //
 // Usage:
 //   refresh-mirror-from-corpus.mjs --corpus-root <path> [--branch en] \
@@ -106,23 +116,144 @@ export function corpusReader(corpusRoot, branch) {
     try {
       run = JSON.parse(fs.readFileSync(path.join(directory, 'current.json'), 'utf8')).run_id ?? run;
     } catch {}
-    return {source: fs.readFileSync(sourcePath, 'utf8'), title: meta.title ?? '', tags: meta.tags ?? [], run};
+    return {source: fs.readFileSync(sourcePath, 'utf8'), title: meta.title ?? '', tags: meta.tags ?? [], run, entityId: readCorpusEntityId(directory)};
   };
+}
+
+/**
+ * Read the stable source entity id for one corpus page directory.
+ * Returns null when the directory predates entity inventories; callers
+ * must treat a null here as "unpairable", never as "deleted".
+ */
+export function readCorpusEntityId(directory) {
+  try {
+    const value = fs.readFileSync(path.join(directory, 'entity_id.txt'), 'utf8').trim();
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu.test(value) ? value.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Enumerate the corpus entity inventory: every page slug with its stable
+ * entity id. entityComplete is false when any page directory lacks a
+ * usable entity_id.txt, in which case absence from the inventory proves
+ * nothing and the reconciler must not plan deletes.
+ */
+export function readCorpusEntities(corpusRoot, branch) {
+  const pagesRoot = path.join(corpusRoot, branch, 'pages');
+  const slugs = fs.readdirSync(pagesRoot, {withFileTypes: true}).filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+  const entities = [];
+  let entityComplete = true;
+  for (const slug of slugs) {
+    const entityId = readCorpusEntityId(path.join(pagesRoot, slug));
+    if (!entityId) {
+      entityComplete = false;
+      continue;
+    }
+    entities.push({entityId, slug});
+  }
+  return {slugs, entities, entityComplete};
+}
+
+/**
+ * Reconcile the local inventory against the corpus entity inventory.
+ *
+ * Rename pairing keys on the stable source entity id: a local page whose
+ * entity lives on under a different corpus slug is a rename, never a
+ * delete plus a create. A delete requires the entity to be absent from a
+ * complete entity inventory AND the slug to be absent from the corpus;
+ * anything less conclusive is reported, never tombstoned. Declared scope
+ * extras are classified local content and are never delete candidates.
+ *
+ * @param {{slug: string, importOnly: boolean, sourceEntityId: string | null}[]} pages
+ * @param {{slugs: string[], entities: {entityId: string, slug: string}[], entityComplete: boolean}} corpus
+ * @param {{declaredExtras?: string[], consumedSlugs?: string[]}} scope
+ */
+export function planMirrorReconciliation(pages, corpus, scope = {}) {
+  const declaredExtras = new Set(scope.declaredExtras ?? []);
+  const consumedSlugs = new Set(scope.consumedSlugs ?? []);
+  const corpusSlugs = new Set(corpus.slugs);
+  const corpusSlugByEntity = new Map(corpus.entities.map(({entityId, slug}) => [entityId, slug]));
+  const localSlugs = new Set(pages.map((page) => page.slug));
+  const localSlugByEntity = new Map();
+  for (const page of pages) {
+    if (page.sourceEntityId && !localSlugByEntity.has(page.sourceEntityId)) localSlugByEntity.set(page.sourceEntityId, page.slug);
+  }
+  const deletes = [];
+  const renames = [];
+  const creates = [];
+  const skipped = [];
+  for (const page of pages) {
+    if (declaredExtras.has(page.slug)) {
+      skipped.push({slug: page.slug, reason: 'declared-extra'});
+      continue;
+    }
+    const corpusSlug = page.sourceEntityId ? corpusSlugByEntity.get(page.sourceEntityId) : undefined;
+    if (corpusSlugs.has(page.slug)) {
+      // The slug is still inventoried: content refresh (not reconciliation)
+      // owns it. The one exception worth reporting is a genuine slug
+      // takeover — the recorded entity is conclusively gone from a
+      // complete inventory while the slug lives on under other content.
+      if (page.sourceEntityId && corpus.entityComplete && corpusSlug === undefined) {
+        skipped.push({slug: page.slug, reason: 'slug-reassigned'});
+      }
+      continue;
+    }
+    if (!page.importOnly) {
+      skipped.push({slug: page.slug, reason: 'has-local-revisions'});
+      continue;
+    }
+    if (consumedSlugs.has(page.slug)) {
+      skipped.push({slug: page.slug, reason: 'already-consumed'});
+      continue;
+    }
+    if (corpusSlug && corpusSlug !== page.slug) {
+      if (localSlugs.has(corpusSlug)) {
+        skipped.push({slug: page.slug, reason: 'rename-target-occupied', target: corpusSlug});
+        continue;
+      }
+      renames.push({from: page.slug, to: corpusSlug, entityId: page.sourceEntityId});
+      continue;
+    }
+    if (page.sourceEntityId && corpus.entityComplete) {
+      deletes.push({slug: page.slug, entityId: page.sourceEntityId});
+      continue;
+    }
+    skipped.push({slug: page.slug, reason: 'ambiguous-absent-needs-entity'});
+  }
+  const localEntities = new Set(localSlugByEntity.keys());
+  for (const {entityId, slug} of corpus.entities) {
+    if (!localEntities.has(entityId)) creates.push({slug, entityId});
+  }
+  return {deletes, renames, creates, skipped};
 }
 
 function localPagesSql(site, slugs) {
   const filter = slugs.length ? ` AND p.slug IN (${slugs.map(sqlQuote).join(',')})` : '';
   // The seed (system user) and mirror-import revisions are the only
-  // revisions a mirror page may have for it to be refreshed.
+  // revisions a mirror page may have for it to be refreshed. The import
+  // snapshot join carries the stable source entity id used to pair
+  // renames; pages without a snapshot cannot be paired and are never
+  // delete candidates.
   return `SELECT json_build_object('slug', p.slug, 'sha', encode(sha256(convert_to(t.contents, 'UTF8')), 'hex'),
       'title', r.title, 'tags', r.tags,
-      'importOnly', bool_and(r2.user_id = -2 OR (r2.user_id = -1 AND coalesce(r2.comments, '') LIKE ${sqlQuote(`${IMPORT_COMMENT_PREFIX}%`)})))
+      'importOnly', bool_and(r2.user_id = -2 OR (r2.user_id = -1 AND coalesce(r2.comments, '') LIKE ${sqlQuote(`${IMPORT_COMMENT_PREFIX}%`)})),
+      'entityId', snap.source_entity_id)
     FROM page p JOIN site s ON s.site_id = p.site_id
     JOIN page_revision r ON r.revision_id = p.latest_revision_id
     JOIN text t ON t.hash = r.wikitext_hash
     JOIN page_revision r2 ON r2.page_id = p.page_id
+    LEFT JOIN wikidot_page_snapshot snap ON snap.page_id = p.page_id
     WHERE s.slug = ${sqlQuote(site)} AND p.deleted_at IS NULL${filter}
-    GROUP BY p.slug, t.contents, r.title, r.tags;`;
+    GROUP BY p.slug, t.contents, r.title, r.tags, snap.source_entity_id;`;
+}
+
+function mirrorScopeSql(siteId) {
+  return `SELECT COALESCE(json_build_object('scope', scope, 'sourcePin', source_pin,
+    'inventoriedSourceCount', inventoried_source_count,
+    'declaredExtras', declared_extras, 'consumedSlugs', consumed_slugs)::text, '')
+    FROM mirror_scope WHERE site_id = ${siteId};`;
 }
 
 async function rpc(rpcUrl, method, params, sessionToken) {
@@ -146,6 +277,48 @@ async function session(rpcUrl) {
   return result.session_token;
 }
 
+export function parseMirrorScopeRow(output) {
+  const line = output.split('\n').map((value) => value.trim()).filter(Boolean)[0];
+  if (!line) return null;
+  const row = JSON.parse(line);
+  return {
+    scope: row.scope,
+    sourcePin: row.sourcePin ?? null,
+    inventoriedSourceCount: row.inventoriedSourceCount ?? 0,
+    declaredExtras: row.declaredExtras ?? [],
+    consumedSlugs: row.consumedSlugs ?? [],
+  };
+}
+
+async function applyPageEdit(rpcUrl, siteId, item, token) {
+  const page = await rpc(rpcUrl, 'page_get', {site_id: siteId, page: item.slug, details: {compiled_html: false, wikitext: false}}, token);
+  const params = {
+    site_id: siteId, page: page.page_id, last_revision_id: page.revision_id, slug: page.slug,
+    user_id: -1, ip_address: '::1',
+    revision_comments: `${IMPORT_COMMENT_PREFIX} refresh from corpus ${item.run}`,
+  };
+  for (const key of ['wikitext', 'title', 'tags']) if (item[key] !== undefined) params[key] = item[key];
+  return rpc(rpcUrl, 'page_edit', params, token);
+}
+
+async function applyPageDelete(rpcUrl, siteId, item, token) {
+  const page = await rpc(rpcUrl, 'page_get', {site_id: siteId, page: item.slug, details: {compiled_html: false, wikitext: false}}, token);
+  return rpc(rpcUrl, 'page_delete', {
+    site_id: siteId, page: page.page_id, last_revision_id: page.revision_id,
+    user_id: -1, ip_address: '::1',
+    revision_comments: `${IMPORT_COMMENT_PREFIX} source page removed from corpus`,
+  }, token);
+}
+
+async function applyPageMove(rpcUrl, siteId, item, token) {
+  const page = await rpc(rpcUrl, 'page_get', {site_id: siteId, page: item.from, details: {compiled_html: false, wikitext: false}}, token);
+  return rpc(rpcUrl, 'page_move', {
+    site_id: siteId, page: page.page_id, last_revision_id: page.revision_id, new_slug: item.to,
+    user_id: -1, ip_address: '::1',
+    revision_comments: `${IMPORT_COMMENT_PREFIX} source page renamed to ${item.to}`,
+  }, token);
+}
+
 export async function main(argv = process.argv.slice(2)) {
   const args = parseArgs(argv);
   if (args.help) {
@@ -153,38 +326,87 @@ export async function main(argv = process.argv.slice(2)) {
     return 0;
   }
   const sql = createSqlExecutor({dbUrl: args.dbUrl, dbContainer: args.dbContainer});
-  const output = await sql.runSql(localPagesSql(args.site, args.slugs), {capture: true});
-  const pages = output.split('\n').filter((line) => line.startsWith('{')).map((line) => {
-    const row = JSON.parse(line);
-    return {slug: row.slug, sourceSha256: row.sha, title: row.title ?? '', tags: row.tags ?? [], importOnly: row.importOnly === true};
-  });
-  const {plan, skipped} = planMirrorRefresh(pages, corpusReader(args.corpusRoot, args.branch));
+  const readCorpus = corpusReader(args.corpusRoot, args.branch);
+  const corpus = readCorpusEntities(args.corpusRoot, args.branch);
+  const scope = parseMirrorScopeRow(await sql.runSql(mirrorScopeSql(args.siteId), {capture: true}));
+  const fetchPages = async () => {
+    const output = await sql.runSql(localPagesSql(args.site, args.slugs), {capture: true});
+    return output.split('\n').filter((line) => line.startsWith('{')).map((line) => {
+      const row = JSON.parse(line);
+      return {slug: row.slug, sourceSha256: row.sha, title: row.title ?? '', tags: row.tags ?? [], importOnly: row.importOnly === true, sourceEntityId: row.entityId ?? null};
+    });
+  };
+  const pages = await fetchPages();
+  const recon = planMirrorReconciliation(pages, corpus, {declaredExtras: scope?.declaredExtras, consumedSlugs: scope?.consumedSlugs});
+  const {plan, skipped} = planMirrorRefresh(pages, readCorpus);
   for (const item of skipped) console.log(JSON.stringify({slug: item.slug, skipped: item.reason, fields: item.fields}));
+  for (const item of recon.skipped) console.log(JSON.stringify({slug: item.slug, skipped: item.reason}));
+  if (!scope) console.log(JSON.stringify({warning: 'mirror-scope-missing', detail: `no mirror_scope row for site_id ${args.siteId}; reconciliation still plans, but consumed slugs cannot be recorded`}));
   if (!args.apply) {
     for (const item of plan) console.log(JSON.stringify({slug: item.slug, plan: Object.keys(item).filter((key) => !['slug', 'run'].includes(key))}));
-    console.log(JSON.stringify({pages: pages.length, refresh: plan.length, skipped: skipped.length, applied: false}));
+    for (const item of recon.deletes) console.log(JSON.stringify({slug: item.slug, plan: ['delete'], entityId: item.entityId}));
+    for (const item of recon.renames) console.log(JSON.stringify({slug: item.from, plan: ['rename'], to: item.to, entityId: item.entityId}));
+    for (const item of recon.creates) console.log(JSON.stringify({slug: item.slug, plan: ['create-pending'], entityId: item.entityId}));
+    console.log(JSON.stringify({pages: pages.length, refresh: plan.length, deletes: recon.deletes.length, renames: recon.renames.length, creates: recon.creates.length, skipped: skipped.length + recon.skipped.length, applied: false}));
     return 0;
   }
   let failed = 0;
   let token = null;
-  for (const [index, item] of plan.entries()) {
-    if (index % BATCH_SESSION_EDITS === 0) token = await session(args.rpcUrl);
+  let opIndex = 0;
+  const nextToken = async () => {
+    if (opIndex % BATCH_SESSION_EDITS === 0) token = await session(args.rpcUrl);
+    opIndex += 1;
+    return token;
+  };
+  const consumed = [];
+  for (const item of recon.deletes) {
     try {
-      const page = await rpc(args.rpcUrl, 'page_get', {site_id: args.siteId, page: item.slug, details: {compiled_html: false, wikitext: false}}, token);
-      const params = {
-        site_id: args.siteId, page: page.page_id, last_revision_id: page.revision_id, slug: page.slug,
-        user_id: -1, ip_address: '::1',
-        revision_comments: `${IMPORT_COMMENT_PREFIX} refresh from corpus ${item.run}`,
-      };
-      for (const key of ['wikitext', 'title', 'tags']) if (item[key] !== undefined) params[key] = item[key];
-      const result = await rpc(args.rpcUrl, 'page_edit', params, token);
+      await applyPageDelete(args.rpcUrl, args.siteId, item, await nextToken());
+      consumed.push(item.slug);
+      console.log(JSON.stringify({slug: item.slug, ok: true, op: 'delete'}));
+    } catch (error) {
+      failed += 1;
+      console.log(JSON.stringify({slug: item.slug, ok: false, op: 'delete', error: String(error.message).slice(0, 2000)}));
+    }
+  }
+  for (const item of recon.renames) {
+    try {
+      const result = await applyPageMove(args.rpcUrl, args.siteId, item, await nextToken());
+      consumed.push(item.from);
+      console.log(JSON.stringify({slug: item.from, ok: true, op: 'rename', to: item.to, revision: result?.revision_number}));
+    } catch (error) {
+      failed += 1;
+      console.log(JSON.stringify({slug: item.from, ok: false, op: 'rename', to: item.to, error: String(error.message).slice(0, 2000)}));
+    }
+  }
+  if (consumed.length && scope) {
+    try {
+      const merged = [...new Set([...scope.consumedSlugs, ...consumed])];
+      await rpc(args.rpcUrl, 'mirror_scope_set', {
+        site_id: args.siteId, scope: scope.scope, source_pin: scope.sourcePin,
+        inventoried_source_count: corpus.slugs.length, declared_extras: scope.declaredExtras, consumed_slugs: merged,
+      }, await nextToken());
+      console.log(JSON.stringify({mirrorScope: true, ok: true, consumed: merged.length}));
+    } catch (error) {
+      failed += 1;
+      console.log(JSON.stringify({mirrorScope: true, ok: false, error: String(error.message).slice(0, 2000)}));
+    }
+  } else if (consumed.length) {
+    console.log(JSON.stringify({mirrorScope: true, ok: false, error: 'mirror-scope-missing: consumed slugs not recorded; re-planning stays idempotent because tombstoned and moved slugs leave the inventory'}));
+  }
+  // Re-read the inventory: deletes and renames changed the slug set, so
+  // content refresh must plan against the post-reconciliation state.
+  const {plan: refreshPlan} = planMirrorRefresh(await fetchPages(), readCorpus);
+  for (const item of refreshPlan) {
+    try {
+      const result = await applyPageEdit(args.rpcUrl, args.siteId, item, await nextToken());
       console.log(JSON.stringify({slug: item.slug, ok: true, revision: result?.revision_number}));
     } catch (error) {
       failed += 1;
       console.log(JSON.stringify({slug: item.slug, ok: false, error: String(error.message).slice(0, 2000)}));
     }
   }
-  console.log(JSON.stringify({pages: pages.length, refresh: plan.length, skipped: skipped.length, failed, applied: true}));
+  console.log(JSON.stringify({pages: pages.length, refresh: refreshPlan.length, deletes: recon.deletes.length, renames: recon.renames.length, creates: recon.creates.length, skipped: skipped.length + recon.skipped.length, failed, applied: true}));
   return failed ? 1 : 0;
 }
 
