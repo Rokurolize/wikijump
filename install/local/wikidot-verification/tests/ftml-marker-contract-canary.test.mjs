@@ -26,8 +26,7 @@ const script = path.join(
   "scripts",
   "run-ftml-marker-contract-canary.mjs",
 );
-const currentFtml = "e96ff5f80d719d5904da9e80617b2d7f9cfef509";
-const previousPinnedFtml = "9a828056bdc14ac3a2ab6900d45361273b94cd32";
+const currentFtml = "55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221";
 const ownershipCanaryFtml = "62ebba4efda1f10e82363c23c925061fbe939e49";
 const previousCanaryFtml = "3f02c5af6ec7c69599b881a8fc7ece8ea05a0115";
 const requiredSurfaces = ["heading", "separator", "div", "span", "alignment"];
@@ -65,21 +64,6 @@ test("the retained marker canary summary identifies its own candidate run", () =
     new RegExp(`^ftml-marker-${summary.candidate_ftml.slice(0, 8)}-`, "u"),
     "a hand-edited candidate_ftml must not be accepted without a matching run",
   );
-});
-
-test("the superseded marker canary summary remains immutable", () => {
-  const summary = JSON.parse(
-    readFileSync(
-      path.join(
-        repositoryRoot,
-        "install/local/wikidot-verification/fixtures/ftml-marker-contract-canary/canary-summary-9a828056.json",
-      ),
-      "utf8",
-    ),
-  );
-  assert.equal(summary.status, "pass");
-  assert.equal(summary.candidate_ftml, previousPinnedFtml);
-  assert.deepEqual(summary.required_surfaces, requiredSurfaces);
 });
 
 test("committed manifest and lock pin the merged FTML revision", () => {

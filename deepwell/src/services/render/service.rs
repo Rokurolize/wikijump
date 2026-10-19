@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+mod local_code_urls;
 mod native_list;
 mod post_render_compat;
 mod wikidot_preprocess;
@@ -694,13 +695,13 @@ pub(super) static WIKIDOT_EMBED_PARAGRAPH_REGEX: LazyLock<Regex> = LazyLock::new
 });
 static WIKIDOT_LOCAL_FILE_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?P<quote>["'])(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/local--(?:files|code|resized-images)/[^"'<>\s]+)"#,
+        r#"(?P<quote>["'])(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/+local--(?:files|code|resized-images)/[^"'<>\s]+)"#,
     )
     .unwrap()
 });
 static WIKIDOT_LOCAL_FILE_CSS_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?i)(?P<prefix>url\(\s*["']?)(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/local--(?:files|code|resized-images)/[^"')<>\s]+)"#,
+        r#"(?i)(?P<prefix>url\(\s*["']?)(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/+local--(?:files|code|resized-images)/[^"')<>\s]+)"#,
     )
     .unwrap()
 });
@@ -2885,10 +2886,11 @@ impl RenderService {
         let html = WIKIDOT_LOCAL_FILE_URL_REGEX
             .replace_all(html, |captures: &regex::Captures<'_>| {
                 let host = &captures["host"];
-                let path = &captures["path"];
+                // Wikidot serves `//local--code/...` like `/local--code/...`.
+                let path = format!("/{}", captures["path"].trim_start_matches('/'));
                 let Some(localized) = Self::localized_wikidot_local_file_url(
                     host,
-                    path,
+                    &path,
                     current_site,
                     config,
                 ) else {
@@ -2899,13 +2901,13 @@ impl RenderService {
             })
             .into_owned();
 
-        WIKIDOT_LOCAL_FILE_CSS_URL_REGEX
+        let html = WIKIDOT_LOCAL_FILE_CSS_URL_REGEX
             .replace_all(&html, |captures: &regex::Captures<'_>| {
                 let host = &captures["host"];
-                let path = &captures["path"];
+                let path = format!("/{}", captures["path"].trim_start_matches('/'));
                 let Some(localized) = Self::localized_wikidot_local_file_url(
                     host,
-                    path,
+                    &path,
                     current_site,
                     config,
                 ) else {
@@ -2914,7 +2916,9 @@ impl RenderService {
 
                 format!("{}{}", &captures["prefix"], localized)
             })
-            .into_owned()
+            .into_owned();
+
+        local_code_urls::localize_wikidot_page_code_css_urls(&html, current_site, config)
     }
 
     fn localize_wikidot_generated_styles(
