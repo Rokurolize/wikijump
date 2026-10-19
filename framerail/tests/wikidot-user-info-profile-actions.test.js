@@ -1,5 +1,6 @@
 // @ts-nocheck
 import assert from "node:assert/strict"
+import { readFile } from "node:fs/promises"
 import { fileURLToPath } from "node:url"
 import { after, before, test } from "node:test"
 
@@ -141,6 +142,64 @@ test("a missing target renders no action row and no destination", async () => {
     assert.doesNotMatch(body, /data-action=/u)
     assert.doesNotMatch(body, /\/-\/login/u)
   }
+})
+
+test("contact and report controls keep the viewer on the profile", async () => {
+  // Live evidence (2026-10-08 commentary, #2117/#2118): activating Add to
+  // contacts or flag user as abusive while anonymous leaves the profile URL
+  // in place and opens the same-page permission guard. Only the
+  // private-message control navigates, to the sign-in surface (#2096).
+  const data = await loadFoundProfile()
+  const body = render(userInfoPage, { props: { data } }).body
+
+  for (const action of ["add-to-contacts", "flag-user-as-abusive"]) {
+    const anchor = new RegExp(`<a[^>]*data-action="${action}"[^>]*>`, "u").exec(body)
+    assert.ok(anchor, `${action} rendered`)
+    assert.match(anchor[0], /href="javascript:;"/u, `${action} does not navigate`)
+  }
+
+  const message = /<a[^>]*data-action="write-private-message"[^>]*>/.exec(body)
+  assert.ok(message, "write-private-message rendered")
+  assert.doesNotMatch(message[0], /javascript:/u, "message control is a real navigation")
+})
+
+test("no profile action URL encodes the numeric target identity", async () => {
+  // #2096: a Wikidot numeric user ID must never be encoded into a local URL.
+  // The stable target identity travels only on data-target-user-id.
+  const data = await loadFoundProfile()
+  const body = render(userInfoPage, { props: { data } }).body
+
+  for (const href of body.matchAll(/href="([^"]*)"/gu)) {
+    assert.equal(
+      href[1].includes("169306"),
+      false,
+      `numeric target ID in URL: ${href[1]}`
+    )
+  }
+})
+
+test("both same-page controls wire activation to the guard", async () => {
+  // Svelte 5 SSR drops onclick handlers from the HTML, so pin the wiring in
+  // the template: each non-navigating control must invoke the frozen
+  // permission guard instead of submitting anything.
+  const source = await readFile(
+    new URL("../src/routes/user[x+3a]info/[target]/+page.svelte", import.meta.url),
+    "utf8"
+  )
+
+  assert.ok(
+    source.includes(
+      'import { showUserProfileActionAuthenticationGuard } from "$lib/user-profile-action-auth-guard.js"'
+    ),
+    "guard module imported"
+  )
+  const activations = source.match(
+    /showUserProfileActionAuthenticationGuard\(errorPopupState\)/gu
+  )
+  assert.ok(
+    activations && activations.length >= 2,
+    "contact and report controls both invoke the guard"
+  )
 })
 
 test("the profile action guard only opens the frozen dialog", () => {
