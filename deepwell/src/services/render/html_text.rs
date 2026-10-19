@@ -57,6 +57,56 @@ pub(super) fn html_data_segments(html: &str) -> Vec<HtmlDataSegment> {
     html_data_segments_with_options(html, false)
 }
 
+/// Returns text ranges inside preformatted blocks. Compatibility fragments
+/// there must remain text, but their private marker strings must never be
+/// exposed in rendered output.
+pub(super) fn html_preformatted_content_ranges(html: &str) -> Vec<Range<usize>> {
+    let mut ranges = Vec::new();
+    let mut cursor = 0;
+    while let Some(relative_start) = html[cursor..].find('<') {
+        let start = cursor + relative_start;
+        let Some(kind) = tag_kind(&html[start..]) else {
+            cursor = start + 1;
+            continue;
+        };
+        let Some(end) = protected_construct_end(html, start, kind) else {
+            break;
+        };
+        let tag = &html[start..end];
+        let name = matches!(kind, TagKind::Element { closing: false })
+            .then(|| element_name(tag))
+            .flatten();
+        if name.as_deref() == Some("pre") && !is_foreign_self_closing("pre", tag) {
+            let Some(block_end) = opaque_element_end(html, end, "pre") else {
+                break;
+            };
+            let content_start = end;
+            let content_end = html[content_start..block_end]
+                .to_ascii_lowercase()
+                .find("</pre")
+                .map(|offset| content_start + offset);
+            if let Some(content_end) = content_end {
+                ranges.push(content_start..content_end);
+                cursor = block_end;
+                continue;
+            }
+            break;
+        }
+        if let Some(name) = name.as_deref()
+            && OPAQUE_ELEMENTS.contains(&name)
+            && !is_foreign_self_closing(name, tag)
+        {
+            let Some(block_end) = opaque_element_end(html, end, name) else {
+                break;
+            };
+            cursor = block_end;
+            continue;
+        }
+        cursor = end;
+    }
+    ranges
+}
+
 /// Discovers data ranges while allowing canonical generated inline monospace contents.
 /// Every other code element and opaque element remains protected.
 pub(super) fn html_data_segments_with_inline_code(html: &str) -> Vec<HtmlDataSegment> {
