@@ -1094,10 +1094,7 @@ mod tests {
                 "{name}",
             );
             assert_eq!(
-                response
-                    .headers()
-                    .get(header::CONTENT_DISPOSITION)
-                    .unwrap(),
+                response.headers().get(header::CONTENT_DISPOSITION).unwrap(),
                 "attachment",
                 "{name}",
             );
