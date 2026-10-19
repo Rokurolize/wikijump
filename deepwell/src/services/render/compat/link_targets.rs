@@ -184,7 +184,10 @@ fn label_derived_from_target(
     fragments: &CompatTextFragments,
 ) -> bool {
     match (label, location) {
-        (LinkLabel::Text(text), LinkLocation::Page(PageRef { site, page, .. })) => {
+        (
+            LinkLabel::Text(text) | LinkLabel::Title(text),
+            LinkLocation::Page(PageRef { site, page, .. }),
+        ) => {
             fragments.contains_marker(text)
                 && match site {
                     None => text.as_ref() == page.as_str(),
@@ -215,12 +218,17 @@ fn restore_label(
                 Some(site) => format!("{site}:{page}"),
                 None => page.clone(),
             };
-            *label = LinkLabel::Text(Cow::Owned(text));
+            // An empty label stays a title label, so an existing target still
+            // shows its page title.
+            *label = match label {
+                LinkLabel::Title(_) => LinkLabel::Title(Cow::Owned(text)),
+                _ => LinkLabel::Text(Cow::Owned(text)),
+            };
         }
         return;
     }
     match label {
-        LinkLabel::Text(text) | LinkLabel::Slug(text)
+        LinkLabel::Text(text) | LinkLabel::Slug(text) | LinkLabel::Title(text)
             if fragments.contains_marker(text) =>
         {
             *text = Cow::Owned(fragments.restore_ignoring_case(text));
