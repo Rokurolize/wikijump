@@ -365,6 +365,36 @@
             "wikitext": "scp-9506"
         },
         {
+            "slug": "random:random-art",
+            "title": "Random Art",
+            "tags": ["admin", "redirect"],
+            "wikitext": "random-random-art"
+        },
+        {
+            "slug": "random:random-goi-format",
+            "title": "Random GoI Format",
+            "tags": ["admin", "redirect"],
+            "wikitext": "random-random-goi-format"
+        },
+        {
+            "slug": "random:random-page",
+            "title": "Random Page",
+            "tags": ["admin", "redirect"],
+            "wikitext": "random-random-page"
+        },
+        {
+            "slug": "random:random-scp",
+            "title": "Random SCP",
+            "tags": ["admin", "redirect"],
+            "wikitext": "random-random-scp"
+        },
+        {
+            "slug": "random:random-tale",
+            "title": "Random Tale",
+            "tags": ["admin", "redirect"],
+            "wikitext": "random-random-tale"
+        },
+        {
             "slug": "nav:side",
             "title": "Sidebar",
             "wikitext": "scp-sidebar"
