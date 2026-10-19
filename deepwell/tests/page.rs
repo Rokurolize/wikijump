@@ -28318,3 +28318,43 @@ async fn insert_site_changes_feed_source_revisions(
         .await
         .expect("site changes feed source fixtures should be inserted");
 }
+
+/// Long bullet runs render through FTML (#2575): no Wikijump-only list markup,
+/// and Wikidot typography and nested inline syntax inside the items.
+#[tokio::test]
+async fn page_render_long_bullet_lists_through_ftml() {
+    let runner = TestRunner::setup().await;
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let page_info = PageInfo {
+        page: Cow::Borrowed("long-list-fixture"),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Long List Fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let mut source = String::from("* Murphy Law in... Type 3043 -- FOR MURDER!\n");
+    source.push_str("* Alarm clock of **{{normalcy}}**\n");
+    for index in 0..8 {
+        source.push_str(&format!("* Item {index}\n"));
+    }
+
+    let output = RenderService::render(runner.context(), source, &page_info, &settings)
+        .await
+        .expect("long list fixture should render");
+    let html = output.html_output.body;
+
+    assert!(!html.contains("data-wikijump"), "{html}");
+    assert!(!html.contains("WIKIJUMP"), "{html}");
+    assert!(
+        html.contains("<li>Murphy Law in… Type 3043 — FOR MURDER!</li>"),
+        "{html}"
+    );
+    assert!(
+        html.contains("<li>Alarm clock of <strong><tt>normalcy</tt></strong></li>"),
+        "{html}"
+    );
+    assert!(html.contains("<li>Item 7</li>"), "{html}");
+}

@@ -1,45 +1,6 @@
 use super::*;
 
 #[test]
-fn renders_long_native_list_runs_before_ftml_parsing() {
-    let source = [
-        "* [[[tokyo-incidents|東京事変]]] -- by [[*user Ryu JP]]\n",
-        "* [[[scp-2408-jp|SCP-2408-JP]]] -- by [[*user O-92_Mallet]]\n",
-        "* [*http://scp-jp.wikidot.com/example Example] -- by [[*user Example]]\n",
-        "* [[[empty-label|]]] -- by [[*user seafield13]]\n",
-        "* [[[qingtan-what-is-odse|第一級異災特区]]]\n",
-        "* [[[meltrose002|特等席より]]]\n",
-        "* [[[confessio-natorum|告解する子供たち]]]\n",
-        "* [[[souyamisaki014-12|メシがうまくて何が悪い]]]\n",
-    ]
-    .join("");
-
-    let rendered = RenderService::render_long_native_list_runs(source);
-
-    assert!(rendered.starts_with(r#"<ul data-wikijump-compat-list="1">"#));
-    assert!(rendered.contains(r#"<li><a href="/tokyo-incidents">東京事変</a> -- by "#));
-    assert!(rendered.contains(r#"<span class="printuser"><a href="https://www.wikidot.com/user:info/Ryu JP">Ryu JP</a></span>"#));
-    assert!(
-        rendered.contains(r#"<a href="http://scp-jp.wikidot.com/example">Example</a>"#)
-    );
-    assert!(rendered.contains(r#"<a href="/empty-label">Empty Label</a>"#));
-    assert!(!rendered.contains("[[*user"));
-
-    let mut protected = rendered.clone();
-    let fragments = RenderService::protect_generated_wikidot_compat_html(
-        &mut protected,
-        &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
-    );
-    assert_eq!(fragments.len(), 1);
-    assert!(protected.starts_with(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
-    let restored = RenderService::restore_protected_generated_wikidot_compat_html(
-        protected, &fragments,
-    );
-    assert!(restored.starts_with("<ul>"));
-    assert!(!restored.contains("data-wikijump-compat-list"));
-}
-
-#[test]
 fn defaults_empty_scp_style_page_link_labels_to_canonical_slug_text() {
     assert_eq!(native_list_page_link_default_label("scp-8066"), "SCP-8066");
     assert_eq!(native_list_page_link_default_label("SCP-8091"), "SCP-8091");
@@ -196,118 +157,15 @@ fn wikidot_compatibility_fallback_uses_known_target_titles_for_empty_links() {
 }
 
 #[test]
-fn renders_nested_native_list_runs_before_ftml_parsing() {
-    let source = [
-        "* About\n",
-        " * [[[about-the-scp-foundation|About Us]]]\n",
-        " * [[[Site Rules]]]\n",
-        " * [[[FAQ]]]\n",
-        "* Community\n",
-        " * [[[news|Site News]]]\n",
-        " * [[[chat-guide|IRC Chat]]]\n",
-        " * [[[artist-directory|]]]\n",
-        " * [[[http://05command.wikidot.com/staff-list | Staff List]]]\n",
-        "* [[[contact-staff | Contact Us]]]\n",
-    ]
-    .join("");
-
-    let rendered = RenderService::render_long_native_list_runs(source);
-
-    assert!(rendered.contains(
-        "<li><a href=\"javascript:;\">About\n</a><ul>\n<li><a href=\"/about-the-scp-foundation\">About Us</a></li>"
-    ));
-    assert!(rendered.contains(
-        "</ul>\n</li>\n<li><a href=\"javascript:;\">Community\n</a><ul>\n<li><a href=\"/news\">Site News</a></li>"
-    ));
-    assert!(
-        rendered
-            .contains("</ul>\n</li>\n<li><a href=\"/contact-staff\">Contact Us</a></li>")
-    );
-    assert!(rendered.contains(r#"<a href="/site-rules">Site Rules</a>"#));
-    assert!(rendered.contains(r#"<a href="/faq">FAQ</a>"#));
-    assert!(rendered.contains(r#"<a href="/artist-directory">Artist Directory</a>"#));
-    assert!(
-        rendered.contains(
-            r#"<a href="http://05command.wikidot.com/staff-list">Staff List</a>"#
-        )
-    );
-
-    let mut protected = rendered.clone();
-    let fragments = RenderService::protect_generated_wikidot_compat_html(
-        &mut protected,
-        &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
-    );
-    assert_eq!(fragments.len(), 1);
-    assert!(protected.starts_with(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
-    assert!(!protected.contains("</ul>"));
-
-    let restored = RenderService::restore_protected_generated_wikidot_compat_html(
-        protected, &fragments,
-    );
-    assert!(restored.starts_with("<ul>"));
-    assert!(restored.contains("<li><a href=\"javascript:;\">About\n</a><ul>"));
-    assert!(!restored.contains("data-wikijump-compat-list"));
-}
-
-#[test]
-fn normalizes_leading_indentation_for_native_list_runs() {
-    let source = [
-        " * Parent\n",
-        "  * Child\n",
-        "  * Another child\n",
-        " * Sibling\n",
-        " * Item 3\n",
-        " * Item 4\n",
-        " * Item 5\n",
-        " * Item 6\n",
-    ]
-    .join("");
-
-    let rendered = RenderService::render_long_native_list_runs(source);
-
-    assert!(rendered.starts_with(r#"<ul data-wikijump-compat-list="1">"#));
-    assert!(rendered.contains("<li><a href=\"javascript:;\">Parent\n</a><ul>"));
-    assert!(!rendered.contains("<ul data-wikijump-compat-list=\"1\">\n<ul>"));
-    assert!(!rendered.contains("</ul>\n</li>\n</li>"));
-}
-
-#[test]
-fn caps_native_list_compat_nesting_depth() {
-    let source = [
-        "* Root\n".to_owned(),
-        format!(
-            "{}* Deep child\n",
-            " ".repeat(MAX_NATIVE_LIST_COMPAT_DEPTH + 512)
-        ),
-        "* Sibling\n".to_owned(),
-        "* Item 4\n".to_owned(),
-        "* Item 5\n".to_owned(),
-        "* Item 6\n".to_owned(),
-        "* Item 7\n".to_owned(),
-        "* Item 8\n".to_owned(),
-    ]
-    .join("");
-
-    let rendered = RenderService::render_long_native_list_runs(source);
-
-    assert_eq!(
-        rendered.matches("<ul>\n").count(),
-        MAX_NATIVE_LIST_COMPAT_DEPTH,
-    );
-    assert!(rendered.contains("<li>Deep child</li>"));
-    assert!(find_balanced_ul_end(&rendered).is_some());
-}
-
-#[test]
 fn finds_balanced_ul_end_for_deep_lists_in_one_forward_pass() {
     let mut html = String::from(
         r#"<ul data-wikijump-compat-list="1">
 "#,
     );
-    for _ in 0..(MAX_NATIVE_LIST_COMPAT_DEPTH + 128) {
+    for _ in 0..192 {
         html.push_str("<ul>\n");
     }
-    for _ in 0..(MAX_NATIVE_LIST_COMPAT_DEPTH + 128) {
+    for _ in 0..192 {
         html.push_str("</ul>\n");
     }
     html.push_str("</ul>after");
