@@ -83,6 +83,17 @@ impl RenderService {
             .into_owned()
     }
 
+    pub(in crate::services::render) fn strip_residual_markers_if_nested(
+        html: &str,
+        nested_render: bool,
+    ) -> String {
+        if nested_render {
+            html.to_owned()
+        } else {
+            Self::strip_residual_wikidot_protection_markers(html)
+        }
+    }
+
     pub(in crate::services::render) fn should_use_wikidot_compatibility_fallback(
         wikitext: &str,
         page_info: &PageInfo<'_>,

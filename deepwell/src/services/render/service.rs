@@ -2047,7 +2047,7 @@ impl RenderService {
                 viewer_user_id,
                 current_page_data_form_values,
                 max_include_expansions,
-                render_cost_budget,
+                render_cost_budget: render_cost_budget.clone(),
                 trace,
                 url,
                 list_pages_pager_route,
@@ -2076,6 +2076,7 @@ impl RenderService {
             persist_compiled_text,
             trusted_corpus_render,
             observed_user_info,
+            render_cost_budget.has_nested_render(),
         ))
         .await
     }
@@ -2115,6 +2116,7 @@ impl RenderService {
             false,
             false,
             None,
+            false,
         )
         .await
     }
@@ -2137,8 +2139,12 @@ impl RenderService {
         persist_compiled_text: bool,
         trusted_corpus_render: bool,
         observed_user_info: Option<Vec<ftml::data::UserInfo<'static>>>,
+        defer_residual_marker_cleanup: bool,
     ) -> Result<RenderInnerOutput> {
         let config = ctx.config();
+        let strip_residual_markers = move |html: &str| {
+            Self::strip_residual_markers_if_nested(html, defer_residual_marker_cleanup)
+        };
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
         let theme_previewer_blank = expanded.theme_previewer_blank && !page_preview;
@@ -2245,7 +2251,7 @@ impl RenderService {
                             config,
                         );
                         let html = protection.compat_text().restore(&html);
-                        Self::strip_residual_wikidot_protection_markers(&html)
+                        strip_residual_markers(&html)
                     })
                     .collect();
                 let fallback_code_blocks: Vec<CodeBlock<'static>> = fallback_output
@@ -2257,19 +2263,15 @@ impl RenderService {
                              language,
                              name,
                          }| CodeBlock {
-                            contents: Cow::Owned(
-                                Self::strip_residual_wikidot_protection_markers(
-                                    &protection.compat_text().restore(
-                                        &Self::restore_wikidot_code_block_compatibility(
-                                            &protection
-                                                .compat_html()
-                                                .restore_plain(contents),
-                                            current_site.as_ref(),
-                                            config,
-                                        ),
+                            contents: Cow::Owned(strip_residual_markers(
+                                &protection.compat_text().restore(
+                                    &Self::restore_wikidot_code_block_compatibility(
+                                        &protection.compat_html().restore_plain(contents),
+                                        current_site.as_ref(),
+                                        config,
                                     ),
                                 ),
-                            ),
+                            )),
                             language: language
                                 .as_ref()
                                 .map(|language| Cow::Owned(language.to_string())),
@@ -2294,7 +2296,7 @@ impl RenderService {
                     config,
                 );
                 let body = protection.compat_text().restore(&body);
-                let body = Self::strip_residual_wikidot_protection_markers(&body);
+                let body = strip_residual_markers(&body);
                 (
                     wikidot_css_modules,
                     fallback_html_block_texts,
@@ -2588,10 +2590,9 @@ impl RenderService {
                     html_output.body = Self::restore_wikidot_include_block_break(&html_output.body);
                     html_output.body =
                         protection.compat_text().restore(&html_output.body);
-                    html_output.body =
-                        Self::strip_residual_wikidot_protection_markers(&html_output.body);
+                    html_output.body = strip_residual_markers(&html_output.body);
                     for css in &mut html_output.styles {
-                        *css = Self::strip_residual_wikidot_protection_markers(css);
+                        *css = strip_residual_markers(css);
                     }
                     if render_settings.layout == Layout::Wikidot {
                         legacy_action_registry
@@ -2612,7 +2613,7 @@ impl RenderService {
                                 &render_config,
                             );
                             let html = protection.compat_text().restore(&html);
-                            Self::strip_residual_wikidot_protection_markers(&html)
+                            strip_residual_markers(&html)
                         })
                         .collect();
                     if render_settings.layout == Layout::Wikidot
@@ -2639,8 +2640,7 @@ impl RenderService {
                                         &render_config,
                                     );
                             let contents = protection.compat_text().restore(&contents);
-                            let contents =
-                                Self::strip_residual_wikidot_protection_markers(&contents);
+                            let contents = strip_residual_markers(&contents);
                             CodeBlock {
                                 contents: Cow::Owned(contents),
                                 language: language

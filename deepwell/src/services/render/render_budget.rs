@@ -77,6 +77,10 @@ impl RenderCostBudget {
         self.exhausted.load(Ordering::Relaxed) != 0
     }
 
+    pub(super) fn has_nested_render(&self) -> bool {
+        self.nested_render_depth.load(Ordering::Relaxed) != 0
+    }
+
     pub(super) fn enter_nested_render(
         self: &SharedRenderCostBudget,
         maximum_depth: usize,
