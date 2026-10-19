@@ -27,10 +27,11 @@ use super::super::service::{
     MIN_FTML_COMPAT_TABBED_FALLBACK_BYTES, MIN_FTML_COMPAT_TABBED_FALLBACK_MARKERS,
     MIN_FTML_COMPAT_TABBED_MARKERS, MIN_FTML_COMPAT_TABBED_RENDER_BYTES,
     MIN_URL_OFFSET_LISTPAGES_CONTENT_BYTES, MIN_URL_OFFSET_LISTPAGES_RENDER_TIMEOUT_SECS,
-    RenderService, WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX, WIKIDOT_RATE_ANCHOR_REGEX,
-    WIKIDOT_RATE_ANCHOR_SENTINEL_PREFIX, WIKIDOT_TABVIEW_INIT_SCRIPT,
-    WIKIDOT_TABVIEW_SCRIPT, collect_wikidot_compat_empty_label_link_slugs,
-    escape_list_pages_html_attr, escape_list_pages_html_text, push_escaped_html,
+    RenderProtectionBundle, RenderService, WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX,
+    WIKIDOT_RATE_ANCHOR_REGEX, WIKIDOT_RATE_ANCHOR_SENTINEL_PREFIX,
+    WIKIDOT_TABVIEW_INIT_SCRIPT, WIKIDOT_TABVIEW_SCRIPT,
+    collect_wikidot_compat_empty_label_link_slugs, escape_list_pages_html_attr,
+    escape_list_pages_html_text, push_escaped_html,
     render_native_list_inline_html_with_titles, render_native_list_inline_wikidot_spans,
 };
 use super::color_and_inline_protection::substitute_wikidot_protected_inline_dashes_in_html;
@@ -63,6 +64,29 @@ static RESIDUAL_WIKIDOT_PROTECTION_MARKER_REGEX: LazyLock<regex::Regex> = LazyLo
         .expect("residual Wikidot protection marker pattern is valid")
     },
 );
+
+impl RenderProtectionBundle {
+    pub(in crate::services::render) fn restore_compat_text_with_cleanup(
+        &self,
+        text: &str,
+        cleanup: impl Fn(&str) -> String,
+    ) -> String {
+        self.wikidot_compat_text.restore_with_cleanup(text, cleanup)
+    }
+
+    pub(in crate::services::render) fn take_css_modules(
+        &mut self,
+        cleanup: impl Fn(&str) -> String,
+    ) -> Vec<String> {
+        std::mem::take(&mut self.wikidot_css_modules)
+            .into_iter()
+            .map(|css| {
+                self.wikidot_compat_text
+                    .restore_with_cleanup(&css, &cleanup)
+            })
+            .collect()
+    }
+}
 
 #[derive(Debug, Default)]
 struct FallbackParagraph {

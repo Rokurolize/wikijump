@@ -61,7 +61,8 @@ use super::compat::link_targets::restore_compat_text_in_link_targets;
 use super::compat::preparation::extract_css_modules;
 use super::compat::preparation::{
     RuntimeCssInsertion, extract_css_modules_with_runtime_insertions,
-    neutralize_authored_markers, protect_css_modules_before_first_list_pages,
+    neutralize_authored_markers, protect_authored_runtime_marker_literals,
+    protect_css_modules_before_first_list_pages,
 };
 use super::compat::text_fragments::CompatTextFragments;
 use super::compat::wikidot_iframe::{
@@ -305,11 +306,11 @@ struct ExpandedRenderWikitext {
 #[must_use = "restore the Wikidot protection bundle before dropping it"]
 #[derive(Debug)]
 pub(super) struct RenderProtectionBundle {
-    wikidot_css_modules: Vec<String>,
+    pub(in crate::services::render) wikidot_css_modules: Vec<String>,
     wikidot_inline_html: Vec<ProtectedWikidotInlineHtml>,
     wikidot_color_spans: ProtectedWikidotColorSpans,
     wikidot_compat_html: CompatHtmlFragments,
-    wikidot_compat_text: CompatTextFragments,
+    pub(in crate::services::render) wikidot_compat_text: CompatTextFragments,
     native_list_wikipedia_links: Vec<WikidotWikipediaLink>,
     restored: bool,
 }
@@ -369,13 +370,6 @@ impl RenderProtectionBundle {
                 &mut self.native_list_wikipedia_links,
             ),
         }
-    }
-
-    fn take_css_modules(&mut self) -> Vec<String> {
-        std::mem::take(&mut self.wikidot_css_modules)
-            .into_iter()
-            .map(|css| self.wikidot_compat_text.restore(&css))
-            .collect()
     }
 
     fn take_native_list_wikipedia_links(&mut self) -> Vec<WikidotWikipediaLink> {
@@ -779,7 +773,7 @@ impl RenderService {
                 viewer_user_id: None,
                 current_page_data_form_values: None,
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
-                render_cost_budget: render_cost_budget.clone(),
+                render_cost_budget,
                 trace: None,
                 persist_compiled_text: true,
                 url: UrlArguments::default(),
@@ -1500,6 +1494,10 @@ impl RenderService {
                 &mut wikidot_compat_text,
             );
             neutralize_authored_markers(&mut wikitext);
+            protect_authored_runtime_marker_literals(
+                &mut wikitext,
+                &mut wikidot_compat_text,
+            );
         }
         let mut wikidot_compat_html = CompatHtmlFragments::new(&wikitext);
         if suppress_nested_list_pages {
@@ -2076,7 +2074,7 @@ impl RenderService {
             persist_compiled_text,
             trusted_corpus_render,
             observed_user_info,
-            render_cost_budget.has_nested_render(),
+            suppress_nested_list_pages,
         ))
         .await
     }
@@ -2142,7 +2140,7 @@ impl RenderService {
         defer_residual_marker_cleanup: bool,
     ) -> Result<RenderInnerOutput> {
         let config = ctx.config();
-        let strip_residual_markers = move |html: &str| {
+        let strip_residual = move |html: &str| {
             Self::strip_residual_markers_if_nested(html, defer_residual_marker_cleanup)
         };
         let make_error =
@@ -2224,7 +2222,8 @@ impl RenderService {
                     &mut backlinks,
                     &native_list_wikipedia_links,
                 );
-                let mut wikidot_css_modules = protection.take_css_modules();
+                let mut wikidot_css_modules =
+                    protection.take_css_modules(&strip_residual);
                 Self::localize_wikidot_generated_styles(
                     &mut wikidot_css_modules,
                     current_site.as_ref(),
@@ -2250,8 +2249,8 @@ impl RenderService {
                             current_site.as_ref(),
                             config,
                         );
-                        let html = protection.compat_text().restore(&html);
-                        strip_residual_markers(&html)
+                        protection
+                            .restore_compat_text_with_cleanup(&html, &strip_residual)
                     })
                     .collect();
                 let fallback_code_blocks: Vec<CodeBlock<'static>> = fallback_output
@@ -2263,15 +2262,16 @@ impl RenderService {
                              language,
                              name,
                          }| CodeBlock {
-                            contents: Cow::Owned(strip_residual_markers(
-                                &protection.compat_text().restore(
+                            contents: Cow::Owned(
+                                protection.restore_compat_text_with_cleanup(
                                     &Self::restore_wikidot_code_block_compatibility(
                                         &protection.compat_html().restore_plain(contents),
                                         current_site.as_ref(),
                                         config,
                                     ),
+                                    &strip_residual,
                                 ),
-                            )),
+                            ),
                             language: language
                                 .as_ref()
                                 .map(|language| Cow::Owned(language.to_string())),
@@ -2295,8 +2295,8 @@ impl RenderService {
                     current_site.as_ref(),
                     config,
                 );
-                let body = protection.compat_text().restore(&body);
-                let body = strip_residual_markers(&body);
+                let body =
+                    protection.restore_compat_text_with_cleanup(&body, &strip_residual);
                 (
                     wikidot_css_modules,
                     fallback_html_block_texts,
@@ -2520,7 +2520,8 @@ impl RenderService {
                     // Deepwell's Wikidot compatibility scanner identifies actual CSS module
                     // syntax before raw HTML fragments are restored. Keeping that typed
                     // provenance separate ensures authored <style> HTML stays in the body.
-                    let mut wikidot_css_modules = protection.take_css_modules();
+                    let mut wikidot_css_modules =
+                        protection.take_css_modules(&strip_residual);
                     if !wikidot_css_modules.is_empty() {
                         wikidot_css_modules.append(&mut html_output.styles);
                         Self::localize_wikidot_generated_styles(
@@ -2588,12 +2589,8 @@ impl RenderService {
                             &wikidot_tabview_ids,
                         );
                     html_output.body = Self::restore_wikidot_include_block_break(&html_output.body);
-                    html_output.body =
-                        protection.compat_text().restore(&html_output.body);
-                    html_output.body = strip_residual_markers(&html_output.body);
-                    for css in &mut html_output.styles {
-                        *css = strip_residual_markers(css);
-                    }
+                    html_output.body = protection
+                        .restore_compat_text_with_cleanup(&html_output.body, &strip_residual);
                     if render_settings.layout == Layout::Wikidot {
                         legacy_action_registry
                             .remove_renderer_ids_from_wikidot_html(&mut html_output.body);
@@ -2612,8 +2609,8 @@ impl RenderService {
                                 render_current_site.as_ref(),
                                 &render_config,
                             );
-                            let html = protection.compat_text().restore(&html);
-                            strip_residual_markers(&html)
+                            protection
+                                .restore_compat_text_with_cleanup(&html, &strip_residual)
                         })
                         .collect();
                     if render_settings.layout == Layout::Wikidot
@@ -2639,8 +2636,10 @@ impl RenderService {
                                         render_current_site.as_ref(),
                                         &render_config,
                                     );
-                            let contents = protection.compat_text().restore(&contents);
-                            let contents = strip_residual_markers(&contents);
+                            let contents = protection.restore_compat_text_with_cleanup(
+                                &contents,
+                                &strip_residual,
+                            );
                             CodeBlock {
                                 contents: Cow::Owned(contents),
                                 language: language

@@ -50,6 +50,12 @@ static AUTHORED_WIKIDOT_COMPAT_OPEN_TAG_REGEX: LazyLock<Regex> = LazyLock::new(|
     )
     .unwrap()
 });
+static AUTHORED_RUNTIME_MARKER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r"(?i)WIKIJUMPWIKIDOT(?:COMPAT(?:HTML|TEXT|LINK)|INLINEHTML|COLORSPAN|LISTPAGESELLIPSIS)[0-9a-f]{32}(?:I[0-9]+)?X",
+    )
+    .expect("the authored runtime marker regex is valid")
+});
 
 /// Whether only spaces or tabs precede `start` on its physical line.
 ///
@@ -373,13 +379,50 @@ pub(in crate::services::render) fn neutralize_authored_markers(wikitext: &mut St
     }
 }
 
+/// Hide authored renderer-shaped strings behind the text registry so final
+/// cleanup can remove unresolved runtime tokens without deleting page content.
+pub(in crate::services::render) fn protect_authored_runtime_marker_literals(
+    wikitext: &mut String,
+    compat_text: &mut CompatTextFragments,
+) {
+    if !AUTHORED_RUNTIME_MARKER_REGEX.is_match(wikitext) {
+        return;
+    }
+
+    let source = wikitext.clone();
+    let module_regions = LiteralRegionIndex::new_wikidot_module_body(&source);
+    let ranges = AUTHORED_RUNTIME_MARKER_REGEX
+        .find_iter(&source)
+        .filter(|candidate| {
+            !module_regions.contains(candidate.start())
+                && compat_text
+                    .issued_marker_len_at(&source[candidate.start()..])
+                    .is_none()
+        })
+        .map(|candidate| candidate.range())
+        .collect::<Vec<_>>();
+    let replacements = ranges
+        .into_iter()
+        .map(|range| {
+            let marker = compat_text.push(&source[range.clone()]);
+            (range, marker)
+        })
+        .collect::<Vec<_>>();
+
+    for (range, marker) in replacements.into_iter().rev() {
+        wikitext.replace_range(range, &marker);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
         RuntimeCssInsertion, extract_css_modules_with_runtime_insertions,
-        neutralize_authored_markers, render_css_module_code_block,
+        neutralize_authored_markers, protect_authored_runtime_marker_literals,
+        render_css_module_code_block,
     };
     use crate::services::render::compat::CompatHtmlFragments;
+    use crate::services::render::compat::text_fragments::CompatTextFragments;
     use ftml::data::{PageInfo, ScoreValue};
     use ftml::layout::Layout;
     use ftml::settings::{WikitextMode, WikitextSettings};
@@ -395,6 +438,22 @@ mod tests {
         assert_eq!(
             source,
             r#"<ol data-wikijump-authored-compat-listpages="1"><li>authored</li></ol>"#,
+        );
+    }
+
+    #[test]
+    fn authored_runtime_markers_are_protected_in_text_and_html_attributes() {
+        let marker = "WIKIJUMPWIKIDOTCOMPATTEXTffffffffffffffffffffffffffffffffI0X";
+        let mut source = format!("raw {marker} <span title=\"{marker}\">text</span>");
+        let mut compat_text = CompatTextFragments::new(&source);
+
+        protect_authored_runtime_marker_literals(&mut source, &mut compat_text);
+        let rendered =
+            compat_text.restore_with_cleanup(&source, |text| text.replace(marker, ""));
+
+        assert_eq!(
+            rendered,
+            format!("raw {marker} <span title=\"{marker}\">text</span>"),
         );
     }
 

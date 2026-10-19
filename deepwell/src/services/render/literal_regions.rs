@@ -234,6 +234,45 @@ impl LiteralRegionIndex {
         index
     }
 
+    pub(super) fn new_wikidot_module_body(source: &str) -> Self {
+        static MODULE_TAG_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+            Regex::new(r"(?is)\[\[\s*(?P<close>/)?module\b[^\]]*\]\]")
+                .expect("the Wikidot module tag regex is valid")
+        });
+
+        let literal_regions = Self::new_wikidot_syntax(source);
+        let mut depth = 0usize;
+        let mut module_start = 0usize;
+        let mut ranges = Vec::new();
+        for tag in MODULE_TAG_REGEX.find_iter(source) {
+            if literal_regions.contains(tag.start()) {
+                continue;
+            }
+            let is_close = source[tag.start()..tag.end()]
+                .to_ascii_lowercase()
+                .starts_with("[[/");
+            if is_close {
+                if depth > 0 {
+                    depth -= 1;
+                    if depth == 0 {
+                        ranges.push(module_start..tag.end());
+                    }
+                }
+            } else {
+                if depth == 0 {
+                    module_start = tag.start();
+                }
+                depth = depth.saturating_add(1);
+            }
+        }
+        if depth > 0 {
+            ranges.push(module_start..source.len());
+        }
+        Self {
+            ranges: coalesce_sorted_ranges(ranges),
+        }
+    }
+
     /// The older inline-HTML protector also formats prose inside authored
     /// angle brackets. Keep that behavior while excluding actual Wikidot
     /// literal owners and syntax attribute interiors.
