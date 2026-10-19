@@ -288,6 +288,23 @@ diagnosis, a broken-CSS canary that must fail, and a zero-request offline run.
 
 ## Current campaign completion
 
+For a **PR change-impact work plan**, use
+`node scripts/plan-change-impact.mjs --base origin/develop` from this checkout.
+The planner reads the 36 maintained adaptation packages, the frozen 145-row
+policy, and the available historical theme include graph. It prints JSON
+containing mandatory coverage, an advisory priority queue, and reasons for
+any inability to narrow the run. Runtime, source, asset, or unknown changes
+conservatively require all 36 themes (5,220 canonical state obligations).
+Documentation and test-code-only changes can avoid new target captures, but
+must still pass their ordinary checks. The upstream dependency graph currently
+covers only 34 of 36 maintained themes; its priority suggestions are not a
+correctness proof. The planner cannot substitute for a current-runtime
+acceptance receipt or the final campaign gate.
+
+Choose verification cadence and evidence retention from supported revisions,
+measured cost, change rate and risk, rather than a fixed number of years.
+See `ports/LONG-TERM-VALIDATION-OPERATIONS.md`.
+
 Historical source and screenshot integrity can be inspected with
 `node sigma10-migration/check-final.mjs --historical-only`. This does not accept
 current candidates or authorize promotion.

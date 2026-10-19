@@ -20,16 +20,16 @@ Treat unknown evidence as **INCONCLUSIVE**, never PASS. A changed source hash,
 missing screenshot, changed renderer, changed browser or failed request must
 not be hidden by repinning a receipt or relaxing a threshold.
 
-## Sustained verification schedule (not yet fully implemented)
+## Sustainable verification cadence (not yet fully implemented)
 
 | Trigger | Required gate |
 | --- | --- |
 | PR | Source/package tests plus fresh impacted browser states; unknown dependency scope expands checks |
 | Release | Current built-runtime identity, all affected visual/actions and reviews bound to the exact commit |
-| Nightly | Smoke checks on every maintained theme and critical shared components, with missing runs flagged |
-| Weekly | Complete 36-theme Sigma-9/Sigma-10 browser matrix, all required Chromium, Firefox and WebKit widths/actions |
+| Frequent scheduled checks | Smoke checks on every maintained theme and critical shared components, with missing runs flagged; frequency is chosen from change rate, failure history and observed runtime cost |
+| Full campaigns | Complete 36-theme Sigma-9/Sigma-10 browser matrix across required Chromium, Firefox and WebKit widths/actions at a measured, sustainable cadence and after high-risk changes |
 | Browser/EN asset/source update | Separate versioned reference refresh and explicitly reviewed impact scope |
-| Quarterly | Clean-room recovery, without the original worktree, local cache, or a live Wikidot connection |
+| Recovery drill | Recreate from a clean checkout without the original worktree, local cache or Wikidot connection; cadence follows storage risk and the defined recovery objective |
 
 Keep the existing 145 canonical obligations per theme (5,220 for 36 themes).
 Separate ephemeral **capture identity** (container, image, executable, config,
@@ -40,7 +40,15 @@ only with proof that its exact question, reference, source and images are
 unchanged. Unknown dependencies fail closed. Test the impact graph by changing
 a single theme, a shared component, the renderer and the browser version.
 
-## Evidence distribution and two-year retention
+`scripts/plan-change-impact.mjs` now emits a conservative read-only PR plan.
+It prioritizes candidate-specific themes and known reverse includes but
+requires full scope whenever source/runtime/global inputs change because the
+upstream discovery graph has gaps. Narrow mandatory execution must wait for
+independent proof of the complete transitive CSS, assets, components, browser
+and runtime-surface dependency closure. An unknown input stays full-scope.
+This planning output cannot mint or waive an acceptance receipt.
+
+## Evidence distribution and justified retention
 
 `scripts/content-addressed-authority-store.py` imports the independently
 SHA-pinned current-head authority inventory into `objects/xx/<sha256>` under a
@@ -55,8 +63,11 @@ be rerun without invalidating already verified objects.
 The object-store directory is only a local transport, **not** a backup or an
 automated remote downloader. To make production retention reliable, replicate
 immutable objects and the externally pinned inventory into a backed-up,
-access-controlled store, with retention for at least two years, periodic
-checksum audits and quarterly independent restoration drills. CI should fetch
+access-controlled store, with retention covering supported release histories,
+the independently required upstream reference revisions, audit obligations,
+and an explicit recovery window. Configure and review this policy against
+actual storage cost, restore performance and risk, with periodic checksum
+audits and independent restoration drills. CI should fetch
 only missing hashes in a separate acquisition step; the acceptance job must
 then deny external traffic. Keep versioned schema-migration tests so old
 manifest/receipt formats remain interpretable.
@@ -87,7 +98,7 @@ and a verified network-denial mechanism before being enabled.
 
 ## Certification exit test
 
-Demonstrate two clean-checkout complete campaigns, one with no access to the
+Demonstrate repeated clean-checkout complete campaigns, including a run with no access to the
 old source tree or local blob cache, using disposable task-owned stacks.
 Both must prove complete source authority, Basalt publication inputs, all 36
 themes, Sigma-9/Sigma-10, required browsers, actions, visuals and cleanup.
