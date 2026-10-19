@@ -89,12 +89,27 @@ export function parsePreflightOutput(output) {
     const [name, value] = pair.split("=");
     if (name) groups[name] = value === "true";
   }
-  // INCONCLUSIVE: the check had no evidence to judge; it is neither a pass nor a failure.
-  const checks = [...output.matchAll(/^--- (.+): (ok|FAILED|INCONCLUSIVE)(?: \((\d+)s\))?$/gmu)].map((match) => ({
-    name: match[1],
-    status: {ok: "ok", FAILED: "failed", INCONCLUSIVE: "inconclusive"}[match[2]],
-    ...(match[3] === undefined ? {} : {duration_seconds: Number(match[3])}),
-  }));
+  // Accept only the check that preflight itself started and completed.
+  // Nested Node tests can print other '--- x: FAILED' lines as data.
+  const checks = [];
+  const activeChecks = [];
+  for (const line of output.split(/\r?\n/u)) {
+    const started = /^=== (.+)$/u.exec(line);
+    if (started) {
+      activeChecks.push(started[1]);
+      continue;
+    }
+    const result = /^--- (.+): (ok|FAILED|INCONCLUSIVE)(?: \((\d+)s\))?$/u.exec(line);
+    if (result && result[1] === activeChecks.at(-1)) {
+      activeChecks.pop();
+      if (activeChecks.length !== 0) continue;
+      checks.push({
+        name: result[1],
+        status: {ok: "ok", FAILED: "failed", INCONCLUSIVE: "inconclusive"}[result[2]],
+        ...(result[3] === undefined ? {} : {duration_seconds: Number(result[3])}),
+      });
+    }
+  }
   return {groups, checks};
 }
 

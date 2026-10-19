@@ -8,14 +8,18 @@ import test from "node:test";
 
 import {
   classifyConsolidatedChecks,
+  parsePreflightOutput,
   runConsolidatedValidation,
 } from "../scripts/run-consolidated-validation.mjs";
 import { validateConsolidatedValidation } from "../src/final-frozen-receipt-contract.mjs";
 
 const COMPATIBLE_OUTPUT = [
   "preflight: groups: deepwell=false wws=false framerail=false theme_lab=true verification=false",
+  "=== source-bound generated contracts",
   "--- source-bound generated contracts: ok (1s)",
+  "=== Theme Lab adaptation authority",
   "--- Theme Lab adaptation authority: ok (1s)",
+  "=== Theme Lab current campaign completion",
   "--- Theme Lab current campaign completion: INCONCLUSIVE (1s)",
   "preflight: INCONCLUSIVE (no current campaign): Theme Lab current campaign completion",
   "preflight: all selected checks passed",
@@ -189,4 +193,21 @@ test("a passing image build alone never passes an absent source preflight", asyn
     receipt.checks.map((row) => row.name),
     ["standing images build"],
   );
+});
+
+test("nested child preflight status lines do not contaminate the enclosing check", () => {
+  const parsed = parsePreflightOutput(
+    [
+      "preflight: groups: verification=true theme_lab=false",
+      "=== wikidot verification tests",
+      "=== Theme Lab adaptation authority",
+      "--- Theme Lab adaptation authority: FAILED (1s)",
+      "=== Theme Lab current campaign completion",
+      "--- Theme Lab current campaign completion: INCONCLUSIVE (1s)",
+      "--- wikidot verification tests: ok (63s)",
+    ].join("\n"),
+  );
+  assert.deepEqual(parsed.checks, [
+    { name: "wikidot verification tests", status: "ok", duration_seconds: 63 },
+  ]);
 });
