@@ -1885,3 +1885,85 @@ async fn self_email_change_requires_current_password_proof() {
     assert_eq!(changed.email, "after-proof@example.invalid");
     assert!(changed.email_verified_at.is_none());
 }
+
+/// WWS serves avatars from its `user_avatar:<id>` cache entry, so changing or
+/// removing an avatar must drop that entry, and only that user's (#2556).
+#[tokio::test]
+async fn avatar_changes_drop_only_that_users_wws_cache_entry() {
+    use redis::AsyncCommands;
+
+    let mut runner = TestRunner::setup().await;
+    let mut user_ids = Vec::new();
+    for (name, email) in [
+        ("Avatar Cache Owner", "avatar-cache-owner@example.invalid"),
+        (
+            "Avatar Cache Bystander",
+            "avatar-cache-bystander@example.invalid",
+        ),
+    ] {
+        let created = run_endpoint!(
+            runner,
+            user_create,
+            json!({
+                "user_type": "regular",
+                "name": name,
+                "email": email,
+                "locales": ["en"],
+                "password": "password-fixture",
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        user::ActiveModel {
+            user_id: Set(created.user_id),
+            avatar_s3_hash: Set(Some([0xab; 64].to_vec())),
+            ..Default::default()
+        }
+        .update(runner.context().transaction())
+        .await
+        .expect("avatar fixture should be stored");
+        user_ids.push(created.user_id);
+    }
+    let (owner, other) = (user_ids[0], user_ids[1]);
+    let cached = |user_id: i64| format!("user_avatar:{user_id}");
+    let mut redis = runner.context().redis();
+    for user_id in [owner, other] {
+        let _: () = redis
+            .set(cached(user_id), "stale-avatar-hash")
+            .await
+            .expect("cache fixture should be stored");
+    }
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(owner),
+        ..Default::default()
+    });
+    // An edit that leaves the avatar alone keeps the cache entry.
+    run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": owner,
+            "biography": "edited without touching the avatar",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let kept: Option<String> = redis.get(cached(owner)).await.expect("cache read");
+    assert_eq!(kept.as_deref(), Some("stale-avatar-hash"));
+
+    // Removing the avatar drops the owner's entry and no one else's.
+    run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": owner,
+            "avatar_uploaded_blob_id": null,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let removed: Option<String> = redis.get(cached(owner)).await.expect("cache read");
+    let untouched: Option<String> = redis.get(cached(other)).await.expect("cache read");
+    assert_eq!(removed, None);
+    assert_eq!(untouched.as_deref(), Some("stale-avatar-hash"));
+
+    let _: usize = redis.del(cached(other)).await.expect("cache cleanup");
+}
