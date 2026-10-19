@@ -42,6 +42,7 @@
     iconSiteForHead,
     windowsTileDeclaration
   } from "$lib/site-icons"
+  import { siteHeadFallbacks, unsupersededHeadFallbacks } from "$lib/head-metadata"
   import { installWikidotCategories } from "$lib/wikidot/wikidot-categories.js"
   import { installJavascriptAnchorGuard } from "$lib/wikidot/wikidot-javascript-anchors.js"
   import { installWikidotNewPageHelper } from "$lib/wikidot/wikidot-new-page-helper"
@@ -179,6 +180,15 @@
   const siteFavicon = $derived(faviconDeclaration(iconSite))
   const siteHasIosIcons = $derived(hasIosIcons(iconSite))
   const siteWindowsTile = $derived(windowsTileDeclaration(iconSite))
+  // Site-field head fallbacks minus any stored meta-tag row that replaces
+  // them. The page head projects the effective rows themselves, so the
+  // final head carries each text/social entry exactly once.
+  const headMetaFallbacks = $derived(
+    unsupersededHeadFallbacks(
+      siteHeadFallbacks(viewData?.site ?? null),
+      viewData?.meta_tags ?? []
+    )
+  )
   const wikidotSiteTagline = $derived(resolveWikidotSiteTagline(viewData))
   const wikidotSessionUserName = $derived(resolveWikidotSessionUserName(viewData))
   const pageLayoutContext = $state<PageLayoutContext>({
@@ -241,10 +251,9 @@
 
 <svelte:head>
   <title>{documentTitle}</title>
-  {#if viewData?.site?.description}
-    <meta name="description" content={viewData.site.description} />
-    <meta name="og:site_name" content={viewData.site.name} />
-  {/if}
+  {#each headMetaFallbacks as tag (tag.name)}
+    <meta name={tag.name} content={tag.content} />
+  {/each}
   {#if analyticsProfile}
     <meta
       name="wikidot-site-analytics-profile"
