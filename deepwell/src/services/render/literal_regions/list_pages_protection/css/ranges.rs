@@ -194,7 +194,12 @@ impl WikidotCssListPagesBoundaryIndex {
     pub(super) fn new(source: &str, module_closes: &[Range<usize>]) -> Self {
         let literal_regions = LiteralRegionIndex::new(source);
         let list_pages_heads =
-            collect_root_list_pages_head_offsets(source, &literal_regions);
+            collect_root_list_pages_head_offsets(source, &literal_regions)
+                .into_iter()
+                .filter(|head| {
+                    !list_pages_head_leaves_close_raw(source, *head, module_closes)
+                })
+                .collect::<Vec<_>>();
         let module_close_prefixes = collect_module_close_prefix_offsets(source);
         let root_tab_closes = collect_root_tab_close_offsets(source);
         let mut events = Vec::with_capacity(list_pages_heads.len() + module_closes.len());
@@ -516,6 +521,26 @@ fn collect_root_list_pages_head_offsets(
         line_start += line.len();
     }
     offsets
+}
+
+// Wikidot treats a ListPages module whose body is only whitespace (such as
+// `]]\n[[/module]]`) as an unclosed default-template invocation and leaves
+// that close as text, as the ListPages scanner does. Such a head therefore
+// does not own the close, and an enclosing CSS module consumes both.
+fn list_pages_head_leaves_close_raw(
+    source: &str,
+    head_start: usize,
+    module_closes: &[Range<usize>],
+) -> bool {
+    let line = source[head_start..].split('\n').next().unwrap_or_default();
+    let Some(head_end) = line.find("]]").map(|offset| head_start + offset + 2) else {
+        return false;
+    };
+    let close = module_closes.partition_point(|close| close.start < head_end);
+    module_closes.get(close).is_some_and(|close| {
+        let body = &source[head_end..close.start];
+        !body.is_empty() && body.trim().is_empty()
+    })
 }
 
 fn wikidot_line_starts_list_pages(line: &str) -> bool {

@@ -1,0 +1,336 @@
+{
+  "schema": "wikijump_local_lab.wikidot_css_listpages_preview_observations.v1",
+  "description": "Anonymous, non-mutating Wikidot edit/PagePreviewModule observations on scp-wiki (2026-10-19) of whether a line-start [[module CSS]] yields its first [[/module]] to a ListPages head inside its body (issue #2564). Each record is a sealed wikijump_syntax_differential.wikidot_reference.v1 record (source, provenance, raw_html, sha256). The last two records are copied from wikidot-at-raw-preview-20261019.json.",
+  "rules_established": [
+    "A ListPages head whose body before the next [[/module]] is non-empty and only whitespace (`]]\\n[[/module]]`, a blank line, a spaces-only line, or trailing spaces after the head) does not own that close: standalone, the close is rendered as text after an empty list-pages-box; inside a line-start [[module CSS]], the CSS module consumes the head and that close.",
+    "A ListPages head with a non-whitespace body (`ONE`) or an inline close (`]][[/module]]`) owns its close, and an enclosing unclosed [[module CSS]] yields to it (list-pages-box is rendered)."
+  ],
+  "source_sealed_directory": "~/.local/state/wikijump/issue-acceptance-claude-20261019/wikidot-css-listpages-preview/",
+  "records": {
+    "css-blank-line-body-tail": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-css-listpages-css-blank-line-body-tail",
+        "source": "[[module CSS]]\n[[module ListPages name=\"missing-x\"]]\n\n[[/module]]\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "CSS ListPages observation"
+      },
+      "source_sha256": "209bad3dd0086cb7434d0906ea0caed6929bc66af5ec042e647a64fb06b9633f",
+      "captured_at": "2026-10-19T00:44:00.442800+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n\n\n\n<p>z</p>\n",
+      "raw_html_sha256": "82fdd1ff9dba844666b8a4649dd902c3928d39f7c5c4d224411dc4fcd0da278a"
+    },
+    "css-empty-body-no-tail": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-css-listpages-css-empty-body-no-tail",
+        "source": "[[module CSS]]\n[[module ListPages name=\"missing-x\"]]\n[[/module]]",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "CSS ListPages observation"
+      },
+      "source_sha256": "b86c6968ba2d0290cd90e3ded5410cce780c180148df69fcfe6d874f4802b752",
+      "captured_at": "2026-10-19T00:43:59.865857+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n\n\n",
+      "raw_html_sha256": "545c38b0922de19734fbffde62792c37c2aef6a3216cfa472449173165220f7d"
+    },
+    "css-empty-body-then-second-listpages": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-css-listpages-css-empty-body-then-second-listpages",
+        "source": "[[module CSS]]\n[[module ListPages name=\"missing-x\"]]\n[[/module]]\n[[module ListPages name=\"missing-x\"]]\nTWO\n[[/module]]\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "CSS ListPages observation"
+      },
+      "source_sha256": "7cdc977f3d222e754c1733e51cbaf3f058c95d05749b04b797e1366c0e556f59",
+      "captured_at": "2026-10-19T00:44:03.359347+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n\n\n<div class=\"list-pages-box\">    \n    \n    \n    \n    </div>\n<p>z</p>\n",
+      "raw_html_sha256": "02acf96e7efe2d68203672be422917ab85d2be350ec98ad77fc7186e030bd566"
+    },
+    "css-head-trailing-space-empty-body": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-css-listpages-css-head-trailing-space-empty-body",
+        "source": "[[module CSS]]\n[[module ListPages name=\"missing-x\"]] \n[[/module]]\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "CSS ListPages observation"
+      },
+      "source_sha256": "f909f481d92f37147b0460b8d6e78dff0a887cb5b0c409812f756f909e8e4e29",
+      "captured_at": "2026-10-19T00:44:02.181221+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n\n\n\n<p>z</p>\n",
+      "raw_html_sha256": "82fdd1ff9dba844666b8a4649dd902c3928d39f7c5c4d224411dc4fcd0da278a"
+    },
+    "css-inline-close-tail": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-css-listpages-css-inline-close-tail",
+        "source": "[[module CSS]]\n[[module ListPages name=\"missing-x\"]][[/module]]\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "CSS ListPages observation"
+      },
+      "source_sha256": "06cf58321db06eb97de585edeeac273ea1c55137143084f7ddfed63cef569871",
+      "captured_at": "2026-10-19T00:44:01.612159+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n\n\n<div class=\"list-pages-box\">    \n    \n    \n    \n    </div>\n<p>z</p>\n",
+      "raw_html_sha256": "02acf96e7efe2d68203672be422917ab85d2be350ec98ad77fc7186e030bd566"
+    },
+    "css-nonempty-body-tail": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-css-listpages-css-nonempty-body-tail",
+        "source": "[[module CSS]]\n[[module ListPages name=\"missing-x\"]]\nONE\n[[/module]]\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "CSS ListPages observation"
+      },
+      "source_sha256": "ba87ecfb0f8cbf80d31f466bf03f9027793522b773ce953d366432264bac4a1c",
+      "captured_at": "2026-10-19T00:43:59.308150+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n\n\n<div class=\"list-pages-box\">    \n    \n    \n    \n    </div>\n<p>z</p>\n",
+      "raw_html_sha256": "02acf96e7efe2d68203672be422917ab85d2be350ec98ad77fc7186e030bd566"
+    },
+    "css-rule-then-empty-body": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-css-listpages-css-rule-then-empty-body",
+        "source": "[[module CSS]]\n.a{color:red}\n[[module ListPages name=\"missing-x\"]]\n[[/module]]\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "CSS ListPages observation"
+      },
+      "source_sha256": "cb4d415de6d56156cb7be4cad9a69efc2f94db8588cfb183193c0a78418e1cb7",
+      "captured_at": "2026-10-19T00:44:02.752541+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n\n\n\n<p>z</p>\n",
+      "raw_html_sha256": "82fdd1ff9dba844666b8a4649dd902c3928d39f7c5c4d224411dc4fcd0da278a"
+    },
+    "css-space-line-body-tail": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-css-listpages-css-space-line-body-tail",
+        "source": "[[module CSS]]\n[[module ListPages name=\"missing-x\"]]\n \n[[/module]]\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "CSS ListPages observation"
+      },
+      "source_sha256": "0f2aed7de7e9cfa25348098db21a719318f49287e80b9f0bdcefd76a4a45ad4d",
+      "captured_at": "2026-10-19T00:44:01.013617+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n\n\n\n<p>z</p>\n",
+      "raw_html_sha256": "82fdd1ff9dba844666b8a4649dd902c3928d39f7c5c4d224411dc4fcd0da278a"
+    },
+    "listpages-empty-body-alone": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-css-listpages-listpages-empty-body-alone",
+        "source": "[[module ListPages name=\"missing-x\"]]\n[[/module]]\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "CSS ListPages observation"
+      },
+      "source_sha256": "b56abacee6b771e70aa4db06324afac304c7bc0aec1a685d892ceb726b0938f6",
+      "captured_at": "2026-10-19T00:44:03.942771+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n<div class=\"list-pages-box\">    \n    \n    \n    \n    </div>\n<p>[[/module]]</p>\n<p>z</p>\n",
+      "raw_html_sha256": "21421d6e9ed21c829a1b2befa71f916a9ae0b928c7c0ec609792e41623e4d910"
+    },
+    "listpages-inline-close-alone": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-css-listpages-listpages-inline-close-alone",
+        "source": "[[module ListPages name=\"missing-x\"]][[/module]]\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "CSS ListPages observation"
+      },
+      "source_sha256": "0f7669e9aadfdacb2d93097b82578018fa95d79ba5be4703b0eab1397f8cb615",
+      "captured_at": "2026-10-19T00:44:04.552920+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n<div class=\"list-pages-box\">    \n    \n    \n    \n    </div>\n<p>z</p>\n",
+      "raw_html_sha256": "b384f0da34fbb73b269f3a718951235121bdf0cc20df69ce3b32b5248a4d894f"
+    },
+    "listpages-nonempty-body-alone": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-css-listpages-listpages-nonempty-body-alone",
+        "source": "[[module ListPages name=\"missing-x\"]]\nONE\n[[/module]]\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "CSS ListPages observation"
+      },
+      "source_sha256": "42e03a7fc1e88ec4e353708092d2aae4f2b35fc7812fcab5900194b3f54a11e1",
+      "captured_at": "2026-10-19T00:44:05.162744+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n<div class=\"list-pages-box\">    \n    \n    \n    \n    </div>\n<p>z</p>\n",
+      "raw_html_sha256": "b384f0da34fbb73b269f3a718951235121bdf0cc20df69ce3b32b5248a4d894f"
+    },
+    "css-module-no-at-listpages": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-at-raw-css-module-no-at-listpages",
+        "source": "[[module CSS]]\n[[module ListPages name=\"inline-raw\"]]\n[[/module]]\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "At raw observation"
+      },
+      "source_sha256": "958d968835c88875af0a0f71977fe7397c9abd86707a2019b677babeaa352822",
+      "captured_at": "2026-10-18T19:00:45.025314+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n\n\n\n<p>z</p>\n",
+      "raw_html_sha256": "82fdd1ff9dba844666b8a4649dd902c3928d39f7c5c4d224411dc4fcd0da278a"
+    },
+    "css-module-lone-at-lines-listpages": {
+      "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+      "syntax_case": {
+        "schema": "wikijump_syntax_differential.syntax_case.v1",
+        "case_id": "claude-at-raw-css-module-lone-at-lines-listpages",
+        "source": "[[module CSS]]\n@@\n[[module ListPages name=\"inline-raw\"]]\n[[/module]]\n@@\n\nz",
+        "wikidot_observation_tier": "page-preview",
+        "local_execution_tier": "ftml",
+        "title": "At raw observation"
+      },
+      "source_sha256": "d05b7b1139951553f07bc17157cf3791ae95dd367ab3baeee0cbbaa956b5bf23",
+      "captured_at": "2026-10-18T19:00:44.475615+00:00",
+      "provenance": {
+        "site": "scp-wiki",
+        "site_domain": "scpwiki.com",
+        "module": "edit/PagePreviewModule",
+        "wikidot_py_version": "4.4.1",
+        "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+        "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+        "authenticated": false,
+        "mutated": false
+      },
+      "raw_html": "\n\n\n\n\n<p>@@</p>\n<p>z</p>\n",
+      "raw_html_sha256": "2c7669d6ee2cafcf5f66fc41513793b2036049b24fc803a71fe6e647edca5025"
+    }
+  }
+}

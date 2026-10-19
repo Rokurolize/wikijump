@@ -23,12 +23,6 @@ mod native_list;
 mod post_render_compat;
 mod wikidot_preprocess;
 
-#[cfg(test)]
-use native_list::{
-    MAX_NATIVE_LIST_WIKIDOT_SPAN_NESTING, find_balanced_ul_end,
-    native_list_page_link_default_label, render_list_pages_table_inline_html,
-    render_native_list_page_link,
-};
 pub(super) use native_list::{
     collect_wikidot_compat_empty_label_link_slugs, native_list_page_link_slug,
     native_numbered_list_content, render_list_pages_numbered_rows_with_titles,
@@ -37,8 +31,10 @@ pub(super) use native_list::{
     render_native_list_inline_wikidot_strong,
     render_native_list_inline_wikidot_underlines, wikidot_inline_span_marker_open,
 };
+#[cfg(test)]
 use native_list::{
-    native_bullet_list_item, render_native_bullet_list_with_wikipedia_links,
+    find_balanced_ul_end, native_list_page_link_default_label,
+    render_list_pages_table_inline_html, render_native_list_page_link,
 };
 
 use super::compat::CompatHtmlFragments;
@@ -131,7 +127,6 @@ use super::metacomponent::{
     MetacomponentSourceContext, select_metacomponent_documentation,
 };
 use super::module_arguments::wikidot_module_argument;
-use super::native_list_context::NativeListSourceContext;
 use super::next_previous_page::NextPreviousPageExpansion;
 use super::pages::expand_page_index_modules;
 use super::percent_encoding::percent_encode_path_segment;
@@ -442,8 +437,6 @@ pub(super) const MAX_LISTPAGES_RENDER_SCAN_ROWS: u32 = 50_000;
 pub(super) const MAX_WIKIDOT_AJAX_MODULE_BODY_BYTES: usize = 65_536;
 pub(super) const MAX_WIKIDOT_AJAX_MODULE_PARAMETERS: usize = 64;
 pub(super) const MAX_WIKIDOT_AJAX_MODULE_PARAMETER_BYTES: usize = 4_096;
-const LONG_NATIVE_LIST_RENDER_MIN_ITEMS: usize = 8;
-const MAX_NATIVE_LIST_COMPAT_DEPTH: usize = 64;
 pub(super) const MAX_FTML_COMPAT_PARSE_BYTES: usize = 768_000;
 pub(super) const MAX_FTML_COMPAT_DENSE_PARSE_SCORE: usize = 180_000;
 pub(super) const MAX_FTML_COMPAT_COLLAPSIBLE_BLOCKS: usize = 48;
@@ -1793,12 +1786,6 @@ impl RenderService {
             settings,
             &mut wikidot_compat_text,
         );
-        let (rendered, native_list_wikipedia_links) =
-            Self::render_long_native_list_runs_with_registry(
-                expanded.wikitext,
-                &mut expanded.wikidot_compat_html,
-            );
-        expanded.wikitext = rendered;
         let wikidot_css_modules = extract_css_modules_with_runtime_insertions(
             &mut expanded.wikitext,
             page_info,
@@ -1827,7 +1814,9 @@ impl RenderService {
                 wikidot_color_spans,
                 expanded.wikidot_compat_html,
                 wikidot_compat_text,
-                native_list_wikipedia_links,
+                // Bullet lists render through FTML, which emits its own
+                // Wikipedia links and backlinks (#2575).
+                Vec::new(),
             ),
             compatibility_fallback,
             timings,
@@ -3460,56 +3449,6 @@ impl RenderService {
         }
         output.push_str(&wikitext[cursor..]);
         output
-    }
-
-    fn render_long_native_list_runs_with_registry(
-        wikitext: String,
-        compat_html: &mut CompatHtmlFragments,
-    ) -> (String, Vec<WikidotWikipediaLink>) {
-        let lines = wikitext.split_inclusive('\n').collect::<Vec<_>>();
-        let mut line_starts = Vec::with_capacity(lines.len());
-        let mut line_start = 0usize;
-        for line in &lines {
-            line_starts.push(line_start);
-            line_start += line.len();
-        }
-        let mut source_context = None;
-        let mut output = String::with_capacity(wikitext.len());
-        let mut wikipedia_links = Vec::new();
-        let mut index = 0;
-
-        while index < lines.len() {
-            let mut end = index;
-            while end < lines.len() && native_bullet_list_item(lines[end]).is_some() {
-                end += 1;
-            }
-
-            if end - index >= LONG_NATIVE_LIST_RENDER_MIN_ITEMS
-                && source_context
-                    .get_or_insert_with(|| NativeListSourceContext::new(&wikitext))
-                    .allows_block_run(&line_starts[index..end])
-            {
-                let rendered = render_native_bullet_list_with_wikipedia_links(
-                    &lines[index..end],
-                    &mut wikipedia_links,
-                );
-                output.push_str(&compat_html.push_block_html(rendered));
-                index = end;
-            } else {
-                output.push_str(lines[index]);
-                index += 1;
-            }
-        }
-
-        (output, wikipedia_links)
-    }
-
-    #[cfg(test)]
-    fn render_long_native_list_runs(wikitext: String) -> String {
-        let mut fragments = CompatHtmlFragments::new(&wikitext);
-        let (protected, _) =
-            Self::render_long_native_list_runs_with_registry(wikitext, &mut fragments);
-        fragments.restore(&protected)
     }
 }
 

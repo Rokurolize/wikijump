@@ -67,8 +67,7 @@ use super::{
     LiteralRegionIndex, MAX_FTML_COMPAT_COLLAPSIBLE_BLOCKS,
     MAX_FTML_COMPAT_DENSE_PARSE_SCORE, MAX_FTML_COMPAT_PARSE_BYTES,
     MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER, MAX_LISTPAGES_RENDER_OFFSET,
-    MAX_LISTPAGES_RENDER_SCAN_ROWS, MAX_NATIVE_LIST_COMPAT_DEPTH,
-    MAX_NATIVE_LIST_WIKIDOT_SPAN_NESTING, MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS,
+    MAX_LISTPAGES_RENDER_SCAN_ROWS, MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS,
     MIN_FTML_COMPAT_TABBED_FALLBACK_BYTES, MIN_FTML_COMPAT_TABBED_FALLBACK_MARKERS,
     MIN_URL_OFFSET_LISTPAGES_CONTENT_BYTES, MIN_URL_OFFSET_LISTPAGES_RENDER_TIMEOUT_SECS,
     PreparedIncluder, RenderContext, RenderService, WIKIDOT_COLOR_SPAN_SENTINEL_PREFIX,
@@ -2262,71 +2261,6 @@ fn leaves_wikidot_wikipedia_links_inside_literal_regions_unchanged() {
     assert!(code.contains("[wikipedia:Canonical_bundle Canonical Bundle]"));
 }
 
-#[test]
-fn renders_inline_wikidot_spans_inside_preprocessed_native_list_runs() {
-    let wikitext = concat!(
-        "* Item 1\n",
-        "* Item 2\n",
-        "* Item 3\n",
-        "* Item 4\n",
-        "* Item 5\n",
-        "* Item 6\n",
-        "* Safe [[span class=\"safe\" onclick=\"alert(1)\"]]span[[/span]]\n",
-        "* The Logistics Branch must maintain supply lines for transport of non-existent",
-        "[[span class=\"fnnum\"]].[[/span]]",
-        "[[span class=\"fncon\"]]For clarity: payloads will be absent.[[/span]]",
-        " effluence to Site-43;\n",
-    )
-    .to_owned();
-
-    let rendered = RenderService::render_long_native_list_runs(wikitext);
-
-    assert!(rendered.contains(r#"<li>The Logistics Branch"#));
-    assert!(rendered.contains(r#"<span class="safe">span</span>"#));
-    assert!(rendered.contains(r#"<span class="fnnum">.</span>"#));
-    assert!(
-        rendered.contains(
-            r#"<span class="fncon">For clarity: payloads will be absent.</span>"#
-        )
-    );
-    assert!(!rendered.contains("onclick"));
-    assert!(!rendered.contains("[[span"));
-}
-
-#[test]
-fn renders_wikidot_wikipedia_links_inside_preprocessed_native_list_runs() {
-    let wikitext = concat!(
-        "* Item 1\n",
-        "* Item 2\n",
-        "* Item 3\n",
-        "* Item 4\n",
-        "* Item 5\n",
-        "* Item 6\n",
-        "* Item 7\n",
-        "* Source [wikipedia:Canonical_bundle Canonical Bundle]\n",
-    )
-    .to_owned();
-
-    let mut fragments = CompatHtmlFragments::new(&wikitext);
-    let (protected, links) = RenderService::render_long_native_list_runs_with_registry(
-        wikitext,
-        &mut fragments,
-    );
-    let rendered = fragments.restore(&protected);
-    let mut backlinks = ftml::data::Backlinks::new();
-    RenderService::record_wikidot_wikipedia_backlinks(&mut backlinks, &links);
-
-    assert!(rendered.contains(r#"<li>Source <a href="http://en.wikipedia.org/wiki/Canonical_bundle" onclick="window.open(this.href, '_blank'); return false;">Canonical Bundle</a></li>"#));
-    assert!(!rendered.contains("[wikipedia:Canonical_bundle"));
-    assert_eq!(links.len(), 1);
-    assert_eq!(
-        backlinks.external_links,
-        vec![Cow::Borrowed(
-            "http://en.wikipedia.org/wiki/Canonical_bundle"
-        )],
-    );
-}
-
 fn render_native_list_page_for_regression(
     source: &str,
     require_clean_parse: bool,
@@ -2362,119 +2296,113 @@ fn render_native_list_page_for_regression(
     })
 }
 
+fn collapse_html_whitespace(html: &str) -> String {
+    html.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
 #[test]
-fn restores_long_native_list_as_direct_div_child() {
+fn long_bullet_lists_render_inline_syntax_like_wikidot() {
+    // Anonymous Wikidot PagePreview of this source
+    // (`list-typography-and-links` and `list-bold-mono` in
+    // wikidot-list-rendering-preview-20261019.json). Long runs used to be
+    // pre-rendered with a partial inline renderer (#2575).
+    let source = concat!(
+        "* [*http://scp-jp.wikidot.com/example Example] -- by x\n",
+        "* Murphy Law in... Type 3043 -- FOR MURDER!\n",
+        "* All acroamatic material //in absentia// must be voided.\n",
+        "* Source [http://example.com/a//b//c label]\n",
+        "* Nested [[span class=\"outer\"]]a [[span class=\"inner\"]]b[[/span]] c[[/span]]\n",
+        "* Safe [[span class=\"safe\" onclick=\"alert(1)\"]]span[[/span]]\n",
+        "* Alarm clock of **{{normalcy}}**\n",
+        "* **[HOMESCHOOLING]**\n",
+    );
+    let html =
+        collapse_html_whitespace(&render_native_list_page_for_regression(source, false));
+
+    for expected in [
+        r#"<li><a href="http://scp-jp.wikidot.com/example" target="_blank">Example</a> — by x</li>"#,
+        "<li>Murphy Law in… Type 3043 — FOR MURDER!</li>",
+        "<li>All acroamatic material <em>in absentia</em> must be voided.</li>",
+        r#"<li>Source <a href="http://example.com/a//b//c">label</a></li>"#,
+        r#"<li>Nested <span class="outer">a <span class="inner">b</span> c</span></li>"#,
+        r#"<li>Safe <span class="safe">span</span></li>"#,
+        "<li>Alarm clock of <strong><tt>normalcy</tt></strong></li>",
+        "<li><strong>[HOMESCHOOLING]</strong></li>",
+    ] {
+        assert!(html.contains(expected), "{expected}\n{html}");
+    }
+    assert!(html.starts_with("<ul> <li>"), "{html}");
+    assert!(!html.contains("onclick"), "{html}");
+    assert!(!html.contains("data-wikijump"), "{html}");
+}
+
+#[test]
+fn nested_top_bar_lists_keep_wikidot_server_markup() {
+    // `nested-no-link-parent` and `nav_top` in
+    // wikidot-list-rendering-preview-20261019.json: Wikidot's server HTML leaves a
+    // parent item's text bare. Its client script wraps it in a
+    // `javascript:;` anchor afterwards (fixMenuList), as Framerail does.
     let source = concat!(
         "[[div class=\"top-bar\"]]\n",
         "* About\n",
-        "* Library\n",
+        " * [[[about-the-scp-foundation|About Us]]]\n",
+        " * [[[faq|FAQ]]]\n",
         "* Community\n",
-        "* Resources\n",
-        "* Rules\n",
-        "* Contact\n",
-        "* Help\n",
-        "* News\n",
+        " * [[[news|Site News]]]\n",
+        "* Item 3\n",
+        "* Item 4\n",
+        "* Item 5\n",
+        "* Item 6\n",
+        "* Item 7\n",
+        "* Item 8\n",
         "[[/div]]",
     );
-    let restored = render_native_list_page_for_regression(source, true);
+    let html =
+        collapse_html_whitespace(&render_native_list_page_for_regression(source, true));
 
-    let top_bar_start = restored.find(r#"<div class="top-bar">"#).expect(&restored);
-    let top_bar_end = restored[top_bar_start..]
-        .find("</div>")
-        .map(|offset| top_bar_start + offset)
-        .expect(&restored);
-    let top_bar = &restored[top_bar_start..top_bar_end];
     assert!(
-        top_bar.contains(r#"<ul data-wikijump-compat-list="1">"#),
-        "{restored}"
+        html.contains(concat!(
+            r#"<div class="top-bar"><ul> <li>About <ul> "#,
+            r#"<li><a href="/about-the-scp-foundation">About Us</a></li> "#,
+            r#"<li><a href="/faq">FAQ</a></li> </ul> </li> <li>Community <ul> "#,
+        )),
+        "{html}"
     );
-    assert!(
-        restored.contains(r#"<div class="top-bar"><ul data-wikijump-compat-list="1">"#),
-        "{restored}"
-    );
-    assert!(!top_bar.contains("<p>"), "{restored}");
-    assert!(!restored.contains("<p><ul"), "{restored}");
-    assert!(
-        !restored.contains("WIKIJUMPWIKIDOTCOMPATHTML"),
-        "{restored}"
-    );
+    assert!(!html.contains("javascript:"), "{html}");
+    assert!(!html.contains("<p>"), "{html}");
+    assert!(!html.contains("data-wikijump"), "{html}");
 }
 
 #[test]
-fn keeps_long_native_lists_native_inside_cross_tree_inline_scopes() {
-    let items = concat!(
-        "* One\n",
-        "* Two\n",
-        "* Three\n",
-        "* Four\n",
-        "* Five\n",
-        "* Six\n",
-        "* Seven\n",
-        "* Eight\n",
-    );
-    for source in [
-        format!("[[span class=\"inline\"]]\n{items}[[/span]]"),
-        format!("[[div]]\n[[span]]\n{items}[[/span]]\n[[/div]]"),
-        format!("[[span class=\"inline\"]]\n{items}"),
-        format!("[[size 120%]]\n{items}[[/size]]"),
-    ] {
-        let mut fragments = CompatHtmlFragments::new(&source);
-        let (protected, links) =
-            RenderService::render_long_native_list_runs_with_registry(
-                source.clone(),
-                &mut fragments,
-            );
-
-        assert_eq!(protected, source);
-        assert!(links.is_empty());
-        assert!(!protected.contains("WIKIJUMPWIKIDOTCOMPATHTML"));
+fn indented_list_markers_after_a_block_stay_literal_in_long_runs() {
+    // Wikidot starts a list only at the root depth after another block
+    // (ftml test/list/native-wikidot-structure); an eight-item run with an
+    // indented first marker is literal text, not a pre-rendered list.
+    let mut source = String::from("Paragraph.\n\n");
+    for index in 0..8 {
+        source.push_str(&format!(" * item {index}\n"));
     }
+    let html = render_native_list_page_for_regression(&source, false);
+
+    assert!(!html.contains("<ul"), "{html}");
+    assert!(html.contains("* item 0"), "{html}");
 }
 
 #[test]
-fn keeps_long_native_lists_native_inside_unsafe_contexts() {
-    let items = concat!(
-        "* One\n",
-        "* Two\n",
-        "* Three\n",
-        "* Four\n",
-        "* Five\n",
-        "* Six\n",
-        "* Seven\n",
-        "* Eight\n",
-    );
-    for source in [
-        format!("[[hidden]]\n{items}[[/hidden]]"),
-        format!("[[invisible]]\n{items}[[/invisible]]"),
-        format!("[[b]]\n{items}[[/b]]"),
-        format!("[[bold]]\n{items}[[/b]]"),
-        format!("[[a href=\"/target\"]]\n{items}[[/a]]"),
-        format!("[[a_ href=\"/target\"]]\n{items}[[/a]]"),
-        format!("[[*a href=\"/target\"]]\n{items}[[/a]]"),
-        format!("[[*anchor href=\"/target\"]]\n{items}[[/a]]"),
-        format!("[[* a href=\"/target\"]]\n{items}[[/a]]"),
-        format!("[[* anchor href=\"/target\"]]\n{items}[[/a]]"),
-        format!("[[span_ class=\"inline\"]]\n{items}[[/span]]"),
-        format!("[[hidden]]\n{items}"),
-        format!("[[hidden]]\n[[/hidden bogus]]\n{items}"),
-        format!("**\n{items}**"),
-        format!("//\n{items}//"),
-        format!("{{{{\n{items}}}}}"),
-        format!("--\n{items}--"),
-        format!("~~\n{items}~~"),
-        format!("##red|\n{items}##"),
-    ] {
-        let mut fragments = CompatHtmlFragments::new(&source);
-        let (protected, links) =
-            RenderService::render_long_native_list_runs_with_registry(
-                source.clone(),
-                &mut fragments,
-            );
-
-        assert_eq!(protected, source);
-        assert!(links.is_empty());
-        assert!(!protected.contains("WIKIJUMPWIKIDOTCOMPATHTML"));
+fn deeply_indented_list_items_stay_bounded() {
+    let mut source = String::from("* Root\n");
+    source.push_str(&" ".repeat(576));
+    source.push_str("* Deep child\n");
+    for index in 0..8 {
+        source.push_str(&format!("* Item {index}\n"));
     }
+
+    let started = Instant::now();
+    let html = render_native_list_page_for_regression(&source, false);
+
+    assert!(started.elapsed() < Duration::from_secs(5));
+    assert!(html.contains("Root"), "{html}");
+    assert!(html.contains("Item 7"), "{html}");
 }
 
 #[test]
@@ -2527,189 +2455,6 @@ fn does_not_leak_long_native_list_markers_for_unclosed_or_aliased_inline_scopes(
 }
 
 #[test]
-fn keeps_long_native_lists_native_after_invalid_inline_close() {
-    let items = concat!(
-        "* [wikipedia:One]\n",
-        "* Two\n",
-        "* Three\n",
-        "* Four\n",
-        "* Five\n",
-        "* Six\n",
-        "* Seven\n",
-        "* Eight\n",
-    );
-    for invalid_close in ["[[/span bogus]]", "[[/span\n]]"] {
-        let source = format!("[[span]]\n{invalid_close}\n{items}[[/span]]");
-        let mut fragments = CompatHtmlFragments::new(&source);
-        let (protected, links) =
-            RenderService::render_long_native_list_runs_with_registry(
-                source.clone(),
-                &mut fragments,
-            );
-
-        assert_eq!(protected, source, "close: {invalid_close:?}");
-        assert!(links.is_empty(), "close: {invalid_close:?}");
-        assert!(!protected.contains("WIKIJUMPWIKIDOTCOMPATHTML"));
-    }
-}
-
-#[test]
-fn resumes_long_native_list_block_rendering_after_inline_span_scope_closes() {
-    let source = concat!(
-        "[[span class=\"inline\"]]label[[/span]]\n",
-        "[[div class=\"top-bar\"]]\n",
-        "* About\n",
-        "* Library\n",
-        "* Community\n",
-        "* Resources\n",
-        "* Rules\n",
-        "* Contact\n",
-        "* Help\n",
-        "* News\n",
-        "[[/div]]",
-    );
-
-    let restored = render_native_list_page_for_regression(source, true);
-    assert!(
-        restored.contains(r#"<div class="top-bar"><ul data-wikijump-compat-list="1">"#),
-        "{restored}"
-    );
-    assert!(
-        !restored.contains("WIKIJUMPWIKIDOTCOMPATHTML"),
-        "{restored}"
-    );
-}
-
-#[test]
-fn native_list_wikipedia_backlinks_follow_only_emitted_anchors() {
-    let wikitext = concat!(
-        "* Item 1\n",
-        "* Item 2\n",
-        "* Item 3\n",
-        "* Item 4\n",
-        "* Item 5\n",
-        "* Item 6\n",
-        "* Malformed [wikipedia:] and [wikipedia:Missing close\n",
-        "* Sources [wikipedia:fr:Paris Paris] [wikipedia:Rust_(lang)]\n",
-        "After [wikipedia:Not_emitted Outside]\n",
-    )
-    .to_owned();
-    let mut fragments = CompatHtmlFragments::new(&wikitext);
-
-    let (protected, links) = RenderService::render_long_native_list_runs_with_registry(
-        wikitext,
-        &mut fragments,
-    );
-    let rendered = fragments.restore(&protected);
-
-    assert_eq!(
-        links
-            .iter()
-            .map(|link| link.href.as_str())
-            .collect::<Vec<_>>(),
-        vec![
-            "http://fr.wikipedia.org/wiki/Paris",
-            "http://en.wikipedia.org/wiki/Rust_(lang)",
-        ],
-    );
-    assert!(rendered.contains(">Paris</a>"));
-    assert!(rendered.contains(">Rust (lang)</a>"));
-    assert!(rendered.contains("After [wikipedia:Not_emitted Outside]"));
-}
-
-#[test]
-fn renders_wikidot_italic_inside_preprocessed_native_list_runs() {
-    let wikitext = concat!(
-        "* Item 1\n",
-        "* Item 2\n",
-        "* Item 3\n",
-        "* Item 4\n",
-        "* Item 5\n",
-        "* Item 6\n",
-        "* Item 7\n",
-        "* All acroamatic material //in absentia// must be voided.\n",
-    )
-    .to_owned();
-
-    let rendered = RenderService::render_long_native_list_runs(wikitext);
-
-    assert!(rendered.contains(
-        r#"<li>All acroamatic material <em>in absentia</em> must be voided.</li>"#
-    ));
-    assert!(!rendered.contains("//in absentia//"));
-}
-
-#[test]
-fn leaves_double_slashes_inside_native_list_external_link_urls() {
-    let wikitext = concat!(
-        "* Item 1\n",
-        "* Item 2\n",
-        "* Item 3\n",
-        "* Item 4\n",
-        "* Item 5\n",
-        "* Item 6\n",
-        "* Item 7\n",
-        "* Source [http://example.com/a//b//c label]\n",
-    )
-    .to_owned();
-
-    let rendered = RenderService::render_long_native_list_runs(wikitext);
-
-    assert!(rendered.contains(r#"<a href="http://example.com/a//b//c">label</a>"#));
-    assert!(!rendered.contains("a<em>b</em>c"));
-    assert!(!rendered.contains("a&lt;em&gt;b&lt;/em&gt;c"));
-}
-
-#[test]
-fn renders_nested_inline_wikidot_spans_inside_preprocessed_native_list_runs() {
-    let wikitext = concat!(
-        "* Item 1\n",
-        "* Item 2\n",
-        "* Item 3\n",
-        "* Item 4\n",
-        "* Item 5\n",
-        "* Item 6\n",
-        "* Item 7\n",
-        "* Nested [[span class=\"outer\"]]a [[span class=\"inner\"]]b[[/span]] c[[/span]]\n",
-    )
-    .to_owned();
-
-    let rendered = RenderService::render_long_native_list_runs(wikitext);
-
-    assert!(
-        rendered
-            .contains(r#"<span class="outer">a <span class="inner">b</span> c</span>"#)
-    );
-    assert!(!rendered.contains("[[span"));
-    assert!(!rendered.contains("[[/span]]"));
-}
-
-#[test]
-fn caps_deep_inline_wikidot_span_nesting_inside_preprocessed_native_list_runs() {
-    let mut wikitext = concat!(
-        "* Item 1\n",
-        "* Item 2\n",
-        "* Item 3\n",
-        "* Item 4\n",
-        "* Item 5\n",
-        "* Item 6\n",
-        "* Item 7\n",
-        "* Nested ",
-    )
-    .to_owned();
-    wikitext.push_str(&"[[span]]".repeat(MAX_NATIVE_LIST_WIKIDOT_SPAN_NESTING + 1));
-    wikitext.push_str("capped");
-    wikitext.push_str(&"[[/span]]".repeat(MAX_NATIVE_LIST_WIKIDOT_SPAN_NESTING + 1));
-    wikitext.push('\n');
-
-    let rendered = RenderService::render_long_native_list_runs(wikitext);
-
-    assert!(rendered.contains("capped"));
-    assert!(rendered.contains("[[span]]"));
-    assert!(rendered.contains("[[/span]]"));
-}
-
-#[test]
 fn leaves_many_unclosed_native_list_wikidot_spans_literal() {
     let mut item = String::from("attack ");
     for _ in 0..20_000 {
@@ -2735,25 +2480,6 @@ fn leaves_an_unterminated_native_list_span_opener_literal() {
     let rendered = render_native_list_inline_wikidot_spans("prefix [[span");
 
     assert_eq!(rendered, "prefix [[span");
-}
-
-#[test]
-fn ignores_unterminated_span_like_text_before_native_list_span_close() {
-    let wikitext = concat!(
-        "* Item 1\n",
-        "* Item 2\n",
-        "* Item 3\n",
-        "* Item 4\n",
-        "* Item 5\n",
-        "* Item 6\n",
-        "* Item 7\n",
-        "* Literal [[span class=\"outer\"]]a [[span text[[/span]]\n",
-    )
-    .to_owned();
-
-    let rendered = RenderService::render_long_native_list_runs(wikitext);
-
-    assert!(rendered.contains(r#"<span class="outer">a [[span text</span>"#));
 }
 
 #[test]

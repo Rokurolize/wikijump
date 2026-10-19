@@ -1,45 +1,6 @@
 use super::*;
 
 #[test]
-fn renders_long_native_list_runs_before_ftml_parsing() {
-    let source = [
-        "* [[[tokyo-incidents|東京事変]]] -- by [[*user Ryu JP]]\n",
-        "* [[[scp-2408-jp|SCP-2408-JP]]] -- by [[*user O-92_Mallet]]\n",
-        "* [*http://scp-jp.wikidot.com/example Example] -- by [[*user Example]]\n",
-        "* [[[empty-label|]]] -- by [[*user seafield13]]\n",
-        "* [[[qingtan-what-is-odse|第一級異災特区]]]\n",
-        "* [[[meltrose002|特等席より]]]\n",
-        "* [[[confessio-natorum|告解する子供たち]]]\n",
-        "* [[[souyamisaki014-12|メシがうまくて何が悪い]]]\n",
-    ]
-    .join("");
-
-    let rendered = RenderService::render_long_native_list_runs(source);
-
-    assert!(rendered.starts_with(r#"<ul data-wikijump-compat-list="1">"#));
-    assert!(rendered.contains(r#"<li><a href="/tokyo-incidents">東京事変</a> -- by "#));
-    assert!(rendered.contains(r#"<span class="printuser"><a href="https://www.wikidot.com/user:info/Ryu JP">Ryu JP</a></span>"#));
-    assert!(
-        rendered.contains(r#"<a href="http://scp-jp.wikidot.com/example">Example</a>"#)
-    );
-    assert!(rendered.contains(r#"<a href="/empty-label">Empty Label</a>"#));
-    assert!(!rendered.contains("[[*user"));
-
-    let mut protected = rendered.clone();
-    let fragments = RenderService::protect_generated_wikidot_compat_html(
-        &mut protected,
-        &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
-    );
-    assert_eq!(fragments.len(), 1);
-    assert!(protected.starts_with(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
-    let restored = RenderService::restore_protected_generated_wikidot_compat_html(
-        protected, &fragments,
-    );
-    assert!(restored.starts_with("<ul>"));
-    assert!(!restored.contains("data-wikijump-compat-list"));
-}
-
-#[test]
 fn defaults_empty_scp_style_page_link_labels_to_canonical_slug_text() {
     assert_eq!(native_list_page_link_default_label("scp-8066"), "SCP-8066");
     assert_eq!(native_list_page_link_default_label("SCP-8091"), "SCP-8091");
@@ -196,118 +157,15 @@ fn wikidot_compatibility_fallback_uses_known_target_titles_for_empty_links() {
 }
 
 #[test]
-fn renders_nested_native_list_runs_before_ftml_parsing() {
-    let source = [
-        "* About\n",
-        " * [[[about-the-scp-foundation|About Us]]]\n",
-        " * [[[Site Rules]]]\n",
-        " * [[[FAQ]]]\n",
-        "* Community\n",
-        " * [[[news|Site News]]]\n",
-        " * [[[chat-guide|IRC Chat]]]\n",
-        " * [[[artist-directory|]]]\n",
-        " * [[[http://05command.wikidot.com/staff-list | Staff List]]]\n",
-        "* [[[contact-staff | Contact Us]]]\n",
-    ]
-    .join("");
-
-    let rendered = RenderService::render_long_native_list_runs(source);
-
-    assert!(rendered.contains(
-        "<li><a href=\"javascript:;\">About\n</a><ul>\n<li><a href=\"/about-the-scp-foundation\">About Us</a></li>"
-    ));
-    assert!(rendered.contains(
-        "</ul>\n</li>\n<li><a href=\"javascript:;\">Community\n</a><ul>\n<li><a href=\"/news\">Site News</a></li>"
-    ));
-    assert!(
-        rendered
-            .contains("</ul>\n</li>\n<li><a href=\"/contact-staff\">Contact Us</a></li>")
-    );
-    assert!(rendered.contains(r#"<a href="/site-rules">Site Rules</a>"#));
-    assert!(rendered.contains(r#"<a href="/faq">FAQ</a>"#));
-    assert!(rendered.contains(r#"<a href="/artist-directory">Artist Directory</a>"#));
-    assert!(
-        rendered.contains(
-            r#"<a href="http://05command.wikidot.com/staff-list">Staff List</a>"#
-        )
-    );
-
-    let mut protected = rendered.clone();
-    let fragments = RenderService::protect_generated_wikidot_compat_html(
-        &mut protected,
-        &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
-    );
-    assert_eq!(fragments.len(), 1);
-    assert!(protected.starts_with(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
-    assert!(!protected.contains("</ul>"));
-
-    let restored = RenderService::restore_protected_generated_wikidot_compat_html(
-        protected, &fragments,
-    );
-    assert!(restored.starts_with("<ul>"));
-    assert!(restored.contains("<li><a href=\"javascript:;\">About\n</a><ul>"));
-    assert!(!restored.contains("data-wikijump-compat-list"));
-}
-
-#[test]
-fn normalizes_leading_indentation_for_native_list_runs() {
-    let source = [
-        " * Parent\n",
-        "  * Child\n",
-        "  * Another child\n",
-        " * Sibling\n",
-        " * Item 3\n",
-        " * Item 4\n",
-        " * Item 5\n",
-        " * Item 6\n",
-    ]
-    .join("");
-
-    let rendered = RenderService::render_long_native_list_runs(source);
-
-    assert!(rendered.starts_with(r#"<ul data-wikijump-compat-list="1">"#));
-    assert!(rendered.contains("<li><a href=\"javascript:;\">Parent\n</a><ul>"));
-    assert!(!rendered.contains("<ul data-wikijump-compat-list=\"1\">\n<ul>"));
-    assert!(!rendered.contains("</ul>\n</li>\n</li>"));
-}
-
-#[test]
-fn caps_native_list_compat_nesting_depth() {
-    let source = [
-        "* Root\n".to_owned(),
-        format!(
-            "{}* Deep child\n",
-            " ".repeat(MAX_NATIVE_LIST_COMPAT_DEPTH + 512)
-        ),
-        "* Sibling\n".to_owned(),
-        "* Item 4\n".to_owned(),
-        "* Item 5\n".to_owned(),
-        "* Item 6\n".to_owned(),
-        "* Item 7\n".to_owned(),
-        "* Item 8\n".to_owned(),
-    ]
-    .join("");
-
-    let rendered = RenderService::render_long_native_list_runs(source);
-
-    assert_eq!(
-        rendered.matches("<ul>\n").count(),
-        MAX_NATIVE_LIST_COMPAT_DEPTH,
-    );
-    assert!(rendered.contains("<li>Deep child</li>"));
-    assert!(find_balanced_ul_end(&rendered).is_some());
-}
-
-#[test]
 fn finds_balanced_ul_end_for_deep_lists_in_one_forward_pass() {
     let mut html = String::from(
         r#"<ul data-wikijump-compat-list="1">
 "#,
     );
-    for _ in 0..(MAX_NATIVE_LIST_COMPAT_DEPTH + 128) {
+    for _ in 0..192 {
         html.push_str("<ul>\n");
     }
-    for _ in 0..(MAX_NATIVE_LIST_COMPAT_DEPTH + 128) {
+    for _ in 0..192 {
         html.push_str("</ul>\n");
     }
     html.push_str("</ul>after");
@@ -706,16 +564,25 @@ fn protects_wikidot_color_spans_before_ftml_parsing() {
     assert!(source.ends_with('\n'));
     assert!(!source.contains("<span"));
     assert!(!source.contains("##blue"));
+    // Only the span tags are protected; FTML still parses the body.
+    assert!(source.contains("**[[include :scp-wiki:component:coltop**"));
     assert_eq!(
         spans[0].html,
-        r#"<span style="color: blue"><strong>[[include :scp-wiki:component:coltop</strong></span>"#
+        r#"<span style="color: blue">**[[include :scp-wiki:component:coltop**</span>"#
     );
 
     let restored = RenderService::restore_protected_wikidot_color_spans(source, &spans);
     assert_eq!(
         restored,
-        r#"<span style="color: blue"><strong>[[include :scp-wiki:component:coltop</strong></span>"#
-            .to_owned() + "\n",
+        r#"<span style="color: blue">**[[include :scp-wiki:component:coltop**</span>"#
+            .to_owned()
+            + "\n",
+    );
+    assert_eq!(
+        render_wikidot_inline_markup_after_protection(
+            "##blue|**[[include :scp-wiki:component:coltop**##\n"
+        ),
+        r#"<p><span style="color: blue"><strong>[[include :scp-wiki:component:coltop</strong></span></p>"#,
     );
 
     let mut compat_text = CompatTextFragments::new("");
@@ -1548,6 +1415,165 @@ fn code_block_compatibility_preserves_external_css_dependencies() {
         ":root { --logo: url('https://scp-wiki-cn-corpus-scp9506-translation-seed.wjfiles.localhost/local--files/scp-9506/NFSI.png'); }\n",
     );
     assert_eq!(restored, expected);
+}
+
+#[test]
+fn color_span_bodies_render_nested_inline_syntax_like_wikidot() {
+    // Anonymous Wikidot PagePreview renders every one of these inside the
+    // color span (wikidot-color-span-nested-preview-20261019.json, #2567).
+    for (case, source, expected) in [
+        (
+            "color-sup-italic",
+            "##red|^^//a//^^##",
+            r#"<span style="color: red"><sup><em>a</em></sup></span>"#,
+        ),
+        (
+            "color-sup-plain",
+            "##red|a ^^up^^ b##",
+            r#"<span style="color: red">a <sup>up</sup> b</span>"#,
+        ),
+        (
+            "color-sub",
+            "##red|a ,,down,, b##",
+            r#"<span style="color: red">a <sub>down</sub> b</span>"#,
+        ),
+        (
+            "color-strike",
+            "##red|a --gone-- b##",
+            r#"<span style="color: red">a <span style="text-decoration: line-through;">gone</span> b</span>"#,
+        ),
+        (
+            "color-mono",
+            "##red|a {{mono}} b##",
+            r#"<span style="color: red">a <tt>mono</tt> b</span>"#,
+        ),
+        (
+            "color-size",
+            "##red|a [[size 80%]]small[[/size]] b##",
+            r#"<span style="color: red">a <span style="font-size:80%;">small</span> b</span>"#,
+        ),
+        (
+            "color-link-triple",
+            "##red|a [[[scp-173]]] b##",
+            r#"<span style="color: red">a <a href="/scp-173">scp-173</a> b</span>"#,
+        ),
+        (
+            "color-italic",
+            "##red|a //it// b##",
+            r#"<span style="color: red">a <em>it</em> b</span>"#,
+        ),
+        (
+            "color-span-bold",
+            "##white|a **bold** c##",
+            r#"<span style="color: white">a <strong>bold</strong> c</span>"#,
+        ),
+    ] {
+        assert_eq!(
+            render_wikidot_inline_markup_after_protection(&format!("{source}\n\nz")),
+            format!("<p>{expected}</p><p>z</p>"),
+            "{case}",
+        );
+    }
+
+    for (case, source, color) in [
+        (
+            "color-span-footnote-plain",
+            "##white|a b[[footnote]]note text[[/footnote]] c##",
+            "white",
+        ),
+        (
+            "color-span-footnote-bold",
+            "##white|a b[[footnote]]**Bold:** note text[[/footnote]] c##",
+            "white",
+        ),
+        (
+            "color-hex-footnote",
+            "##ff0000|a b[[footnote]]n[[/footnote]] c##",
+            "#ff0000",
+        ),
+    ] {
+        let html =
+            render_wikidot_inline_markup_after_protection(&format!("{source}\n\nz"));
+        assert!(
+            html.starts_with(&format!(
+                r#"<p><span style="color: {color}">a b<sup class="footnoteref">"#
+            )),
+            "{case}: {html}",
+        );
+        assert!(
+            html.contains("</sup> c</span></p><p>z</p>"),
+            "{case}: {html}"
+        );
+        assert!(
+            html.contains(r#"<div class="footnotes-footer">"#),
+            "{case}: {html}"
+        );
+        assert!(!html.contains("[[footnote]]"), "{case}: {html}");
+    }
+}
+
+#[test]
+fn color_span_bodies_with_raw_markers_keep_each_span_closed() {
+    // scp-102-vn redacts with `##transparent|@@@@…##` on several lines. A raw
+    // marker in the body must not pair with one past the span's close.
+    let html = render_wikidot_inline_markup_after_protection(concat!(
+        "it's me, ##transparent|@@@@@@@@@@##. Good thing.\n",
+        "\n",
+        "**Agent:** ##transparent|@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@##!\n",
+    ));
+
+    assert!(!html.contains("WIKIJUMP"), "{html}");
+    assert_eq!(
+        html.matches(r#"<span style="color: transparent">"#).count(),
+        2
+    );
+    assert!(html.contains("</span>. Good thing.</p>"), "{html}");
+    assert!(html.contains("</span>!</p>"), "{html}");
+}
+
+fn render_wikidot_inline_markup_after_protection(wikitext: &str) -> String {
+    let page_info = fallback_test_page_info("color-span", "Color Span");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let outer = RenderService::prepare_outer_render_wikitext(
+        super::super::ExpandedRenderWikitext {
+            theme_previewer_blank: false,
+            wikidot_compat_html: CompatHtmlFragments::new(wikitext),
+            wikidot_compat_text: CompatTextFragments::new(wikitext),
+            wikitext: wikitext.to_owned(),
+            included_pages: Vec::new(),
+            expanded_include_count: 0,
+            url_offset_list_pages_content_bytes: 0,
+            runtime_css_insertions: Vec::new(),
+        },
+        &page_info,
+        &settings,
+    );
+    let inner = RenderService::prepare_inner_render_wikitext(outer, &settings);
+    let tokens = ftml::tokenize(&inner.wikitext);
+    // Malformed nested syntax reports FTML errors and renders as text, as in
+    // production.
+    let (tree, _errors) = ftml::parse(&tokens, &page_info, &settings).into();
+    let html = HtmlRender.render(&tree, &page_info, &settings).body;
+    inner.protection.restore(|protection| {
+        let html = RenderService::restore_protected_wikidot_color_spans(
+            html,
+            protection.color_spans(),
+        );
+        let html = RenderService::restore_protected_wikidot_inline_html(
+            html,
+            protection.inline_html(),
+        );
+        let html = protection.compat_html().restore(&html);
+        let html = RenderService::restore_protected_wikidot_color_spans(
+            html,
+            protection.color_spans(),
+        );
+        let html = RenderService::restore_protected_wikidot_inline_html(
+            html,
+            protection.inline_html(),
+        );
+        protection.compat_text().restore(&html)
+    })
 }
 
 #[test]
