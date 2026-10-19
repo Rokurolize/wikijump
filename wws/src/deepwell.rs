@@ -123,6 +123,25 @@ impl Deepwell {
         Ok(domain)
     }
 
+    /// Whether DEEPWELL publishes a public sitemap inventory for this site.
+    ///
+    /// This calls the same `wikidot_sitemap` index query the `/sitemap.xml`
+    /// routes use (shard 0 returns the count only, never page bodies), so
+    /// robots.txt shares the sitemap routes' anonymous-visibility authority:
+    /// a `None` (JSON null) result means anonymous viewers cannot view the
+    /// site and crawlers must not be invited in.
+    pub async fn get_sitemap_presence(&self, site_id: i64) -> Result<bool> {
+        let params = rpc_object! {
+            "site_id" => site_id,
+            "shard" => 0,
+        };
+        // `IgnoredAny` keeps only presence: JSON null deserializes to `None`
+        // and any other value to `Some`, without allocating the payload.
+        let output: Option<serde::de::IgnoredAny> =
+            self.request("wikidot_sitemap", params).await?;
+        Ok(output.is_some())
+    }
+
     pub async fn get_page(
         &self,
         site_id: i64,
@@ -500,6 +519,7 @@ mod tests {
         let result = match method {
             "ping" => json!("pong"),
             "site_domain" => json!("scp-wiki.wikijump.local"),
+            "wikidot_sitemap" => json!({ "entries": [], "shard_count": 0 }),
             "page_get" => json!({ "page_id": 123 }),
             "file_get" => json!({
                 "file_id": 7,
@@ -642,6 +662,11 @@ mod tests {
             deepwell.get_site_domain(42).await.unwrap(),
             "scp-wiki.wikijump.local",
         );
+        assert!(deepwell.get_sitemap_presence(42).await.unwrap());
+        let presence_request = requests_by_method(&requests, "wikidot_sitemap");
+        assert_eq!(presence_request.len(), 1);
+        assert_eq!(presence_request[0]["params"]["site_id"], 42);
+        assert_eq!(presence_request[0]["params"]["shard"], 0);
         assert_eq!(
             deepwell
                 .get_page(42, "scp-173")
