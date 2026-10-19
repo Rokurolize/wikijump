@@ -28420,6 +28420,7 @@ async fn empty_link_labels_show_the_target_page_title() {
         8,
         "{html}"
     );
+}
 
 /// Color spans inside native list runs (`scp-series-10`) and nested inline
 /// syntax inside color spans (#2567) must restore to markup, with no internal
