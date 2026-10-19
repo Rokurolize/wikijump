@@ -135,7 +135,9 @@ impl Deepwell {
             "site_id" => site_id,
             "shard" => 0,
         };
-        let output: Option<serde_json::Value> =
+        // `IgnoredAny` keeps only presence: JSON null deserializes to `None`
+        // and any other value to `Some`, without allocating the payload.
+        let output: Option<serde::de::IgnoredAny> =
             self.request("wikidot_sitemap", params).await?;
         Ok(output.is_some())
     }
