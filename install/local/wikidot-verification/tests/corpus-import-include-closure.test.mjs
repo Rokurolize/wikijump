@@ -88,6 +88,31 @@ test("expandIncludeClosure reports unresolved and dynamic targets without failin
   assert.equal(closure.dynamic, 1);
 });
 
+test("expandIncludeClosure reports a present-but-sourceless page as unresolved", () => {
+  const closure = expandIncludeClosure({
+    roots: ["scp-1"],
+    readSource: (slug) => (slug === "scp-1" ? "[[include component:phantom]]" : null),
+    pageExists: (slug) => slug === "scp-1" || slug === "component:phantom",
+    sourceSite: "scp-wiki",
+  });
+  assert.deepEqual(closure.included.map((page) => page.slug), [
+    "scp-1",
+    "component:phantom",
+  ]);
+  assert.deepEqual(closure.unresolved, ["component:phantom"]);
+});
+
+test("expandIncludeClosure does not report a sourceless root as unresolved", () => {
+  const closure = expandIncludeClosure({
+    roots: ["scp-1"],
+    readSource: () => null,
+    pageExists: () => true,
+    sourceSite: "scp-wiki",
+  });
+  assert.deepEqual(closure.included.map((page) => page.slug), ["scp-1"]);
+  assert.deepEqual(closure.unresolved, []);
+});
+
 test("expandIncludeClosure truncates past maxDepth and bounds total pages", () => {
   const sources = {
     "scp-1": "[[include component:a]]",
