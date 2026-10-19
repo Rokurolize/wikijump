@@ -22,8 +22,17 @@ const waitForPageActionsHydration = (page: import("@playwright/test").Page) =>
 test.use({ locale: "ja-JP" })
 
 test("Japanese Append and Upload labels remain associated at 320px and after reopen", async ({
-  page
+  page,
+  context
 }, testInfo) => {
+  const baseURL = appURL(testInfo.project.name)
+  await context.addCookies([
+    {
+      name: "wikijump_token",
+      value: "fixture-owner-session-token",
+      url: baseURL
+    }
+  ])
   await page.setViewportSize({ width: 320, height: 812 })
   await page.setExtraHTTPHeaders({
     ...SITE_HEADERS,

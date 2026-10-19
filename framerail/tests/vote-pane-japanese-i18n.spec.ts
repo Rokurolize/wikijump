@@ -50,6 +50,11 @@ for (const [locale, expected] of Object.entries(locales) as [
       const response = await page.goto(`${baseUrl}/scp-173`)
       expect(response?.status()).toBe(200)
 
+      const clearPriorWrites = await page.request.get(
+        `http://127.0.0.1:${process.env.PLAYWRIGHT_FIXTURE_PORT ?? "42747"}/last-page-write-requests`
+      )
+      expect(clearPriorWrites.ok()).toBe(true)
+
       await waitForSvelteDelegatedHandler(page, "#pagerate-button")
       await page.locator("#pagerate-button").click()
 
