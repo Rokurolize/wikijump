@@ -61,6 +61,30 @@ only missing hashes in a separate acquisition step; the acceptance job must
 then deny external traffic. Keep versioned schema-migration tests so old
 manifest/receipt formats remain interpretable.
 
+### Explicit HTTPS acquisition and offline gate
+
+`scripts/fetch-authority-objects.py` retrieves only missing objects using the
+separately SHA-pinned inventory, from an explicitly configured HTTPS origin
+serving `/objects/<first-two-hex>/<full-sha256>`. It verifies cached objects
+before reuse, checks size and SHA-256 before atomic publication, rejects
+redirects, credentials embedded in URLs, symlinks, invalid partial responses,
+and resume-byte mismatches. Interrupted downloads have a bounded retry and
+HTTP Range resume path. Secrets, when required, come from an environment
+variable named by `--bearer-token-env`; never put them in URL parameters.
+The default dry-run performs no requests. Loopback HTTP requires an explicit
+test-only opt-in. The transport source must be backed up off-host and audited
+for private/sensitive data before any publication.
+
+After acquisition, `scripts/run-offline-authority-gate.sh
+/absolute/path/to/store` reconstructs and validates the current-head evidence
+inside a network namespace with no host/Internet egress, including all 36
+frozen package checks and the Python regression suite. It checks the pinned
+inventory hash and reports **input integrity**, never current Sigma-9/Sigma-10
+browser acceptance. The project's existing Wikidot verification GitHub
+workflow is intentionally local-only. An automatic trusted CI workflow must
+be connected to a real object store and supplied with sufficient disk space
+and a verified network-denial mechanism before being enabled.
+
 ## Certification exit test
 
 Demonstrate two clean-checkout complete campaigns, one with no access to the

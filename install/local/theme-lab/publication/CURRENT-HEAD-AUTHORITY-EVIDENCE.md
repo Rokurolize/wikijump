@@ -112,6 +112,36 @@ objects and refuses tampering, unsafe paths and overwrites; it does not fetch
 from a remote service or replace a durable, backed-up evidence store. See
 `../ports/LONG-TERM-VALIDATION-OPERATIONS.md` for the long-term requirements.
 
+## Separate HTTPS acquisition and offline verification
+
+The follow-up `fetch-authority-objects.py` fills the remote-acquisition gap.
+It accepts a separately managed HTTPS origin serving immutable content at
+`objects/<first-two-hex>/<sha256>`. **This repository does not configure or
+publish a remote store.** Once the evidence has been reviewed for sensitive
+data, a backed-up store and its read-only credentials can be configured:
+
+```sh
+python3 "$clean/install/local/theme-lab/scripts/fetch-authority-objects.py" \
+  --destination-root "$clean" --store-root /path/to/authority-store \
+  --inventory "$inventory" --inventory-sha256 "$inventory_sha" \
+  --origin 'https://your-approved-store.example/authority'
+# Default is a read-only plan, with no downloads. Run again with --apply;
+# for private stores, use --bearer-token-env NAME_OF_READ_ONLY_TOKEN_VAR.
+
+"$clean/install/local/theme-lab/scripts/run-offline-authority-gate.sh" \
+  /path/to/authority-store
+```
+
+The acquisition stage fetches only missing SHA-pinned objects, rejects host
+redirects, validates every downloaded byte and supports resumable HTTP ranges.
+The next command uses a loopback-only network namespace to restore evidence
+and execute the complete 36-theme frozen package and Python regression checks.
+It independently rejects attempts to spoof the namespace-active environment
+marker. The two commands therefore support a trusted CI pipeline **once**
+storage, retention, secrets and worker disk capacity are provisioned; the
+existing local-only Wikidot verification workflow is unchanged. Current
+Sigma-9/Sigma-10 runtime browser acceptance remains a separate mandatory gate.
+
 ## Relocating frozen BHL screenshot references
 
 The twelve frozen BHL option receipts from October 2026 record screenshots
