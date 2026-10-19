@@ -21,6 +21,7 @@
 mod local_code_urls;
 mod native_list;
 mod post_render_compat;
+mod wikidot_alignment;
 mod wikidot_preprocess;
 
 pub(super) use native_list::{
