@@ -7200,8 +7200,8 @@
   "ftml_raw_surface_manifest": {
     "schema": "wikijump.ftml_raw_surface_manifest.v1",
     "source": {
-      "commit": "55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221",
-      "tree": "008a2b80c61f0beb3e84cd3c061001549bd8b6d1"
+      "commit": "d7727b245fd69f46d44c04592e392850ea244e13",
+      "tree": "9a325c3187e2b2ee9f0ef9f9a86de53a084b437d"
     },
     "registries": [
       {
@@ -7346,8 +7346,8 @@
       },
       {
         "path": "src/render/html/element/link.rs",
-        "blob": "0657c2c8805a6d229fd5c583a4c7f2e1f6b26d31",
-        "sha256": "8d8189c69cac9a0cb9fd4254f7a42b80c03a0dcfc3d0c1c27b32b7bcde1fcd36"
+        "blob": "6c59e1239e0e906d7fbb1d5deea157b972a3bcb4",
+        "sha256": "940909d3e262f739709faaf3ad92678458e8c320d0928cfd51434ed5eae65ece"
       },
       {
         "path": "src/render/html/element/list.rs",
@@ -11500,20 +11500,20 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "5ccb2bea2c17ca024950b99a430c1f00454e96fdac06b3f6261a1c8770197236"
+      "source_input_set_sha256": "664bfc6123e1608fa5805f21635079af4d8bdbd72d7d7fa267e143e4e34cbfec"
     },
     "ftml": {
-      "commit": "55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221",
-      "tree": "008a2b80c61f0beb3e84cd3c061001549bd8b6d1"
+      "commit": "d7727b245fd69f46d44c04592e392850ea244e13",
+      "tree": "9a325c3187e2b2ee9f0ef9f9a86de53a084b437d"
     },
     "registries": [
       {
         "path": "deepwell/Cargo.lock",
-        "sha256": "6a072ce7bd0dea8b91be4ea7678d992021609c7ddaae27f92b0dadf043f2261d"
+        "sha256": "9b107b03bfd103c48cce4bf846b2c6beb99cefefb47e2b875066ef84d24b08a8"
       },
       {
         "path": "deepwell/Cargo.toml",
-        "sha256": "ba8cb505a302ec49128863da94eee9f1fda4201ceef08317497efd18c48eee75"
+        "sha256": "f60c57637bd84cc1644e9ca1e54dabcbcddc94bfdea13dccd0337c91f737c6eb"
       },
       {
         "path": "deepwell/src/api.rs",
@@ -11657,7 +11657,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "058f5b936e65c3f43045b43dd7e26cfdc6e44244c00f1f22be165626cf48b6ff"
+        "sha256": "80df49c0f9968b47edcf0819292d7f66f7b88838c39f2dd3e9d3946d93bf83ee"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -11729,7 +11729,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "3405c15f725796587fbc2797b59a41aaa114b13ecd829c80e5d1a777d62c7233"
+        "sha256": "41af2189125fd96bd39bc5a32de6f4e8a590150c6b351c86ddb910db9d147f7c"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -20462,9 +20462,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:conf/blocks.toml",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/bibliography.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:conf/blocks.toml",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/bibliography.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -20508,10 +20508,10 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:conf/blocks.toml",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/clear_float.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/container.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:conf/blocks.toml",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/clear_float.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/container.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -20555,9 +20555,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:conf/blocks.toml",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/container.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:conf/blocks.toml",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/container.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -20646,9 +20646,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:conf/blocks.toml",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/text.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:conf/blocks.toml",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/text.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -20740,7 +20740,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/parsing/lexer.pest"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/parsing/lexer.pest"
         ]
       },
       "candidate": {
@@ -20784,9 +20784,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:conf/blocks.toml",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/date.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:conf/blocks.toml",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/date.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -20830,9 +20830,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/parsing/lexer.pest",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/definition_list.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/parsing/lexer.pest",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/definition_list.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -20974,7 +20974,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/Cargo.toml#ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221\" }",
+          "deepwell/Cargo.toml#ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"d7727b245fd69f46d44c04592e392850ea244e13\" }",
           "deepwell/src/services/render/page_preview.rs#WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);",
           "deepwell/src/services/render/service.rs#pub async fn render("
         ]
@@ -21020,7 +21020,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/Cargo.toml#ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221\" }",
+          "deepwell/Cargo.toml#ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"d7727b245fd69f46d44c04592e392850ea244e13\" }",
           "deepwell/src/services/render/page_preview.rs#WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);"
         ]
       },
@@ -21066,9 +21066,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:conf/blocks.toml",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/footnotes.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:conf/blocks.toml",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/footnotes.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21112,9 +21112,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/parsing/lexer.pest",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/container.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/parsing/lexer.pest",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/container.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21158,9 +21158,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/parsing/lexer.pest",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/mod.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/parsing/lexer.pest",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/mod.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21399,10 +21399,10 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/parsing/lexer.pest",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/container.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/text.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/parsing/lexer.pest",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/container.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/text.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21493,7 +21493,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/Cargo.toml#ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221\" }",
+          "deepwell/Cargo.toml#ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"d7727b245fd69f46d44c04592e392850ea244e13\" }",
           "deepwell/src/services/render/compat/wikidot_link_protection.rs#pub(in crate::services::render) fn build_wikidot_wikipedia_link(",
           "deepwell/src/services/render/compat/wikidot_link_protection.rs#pub(in crate::services::render) fn protect_wikidot_compat_links("
         ]
@@ -21540,10 +21540,10 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:conf/blocks.toml",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/parsing/lexer.pest",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/list.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:conf/blocks.toml",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/parsing/lexer.pest",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/list.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21590,10 +21590,10 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:conf/blocks.toml",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/parsing/lexer.pest",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/text.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:conf/blocks.toml",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/parsing/lexer.pest",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/text.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21637,10 +21637,10 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:conf/blocks.toml",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/parsing/lexer.pest",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/math.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:conf/blocks.toml",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/parsing/lexer.pest",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/math.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21684,9 +21684,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:conf/blocks.toml",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/container.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:conf/blocks.toml",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/container.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21730,11 +21730,11 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:conf/blocks.toml",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/parsing/lexer.pest",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/container.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/mod.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:conf/blocks.toml",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/parsing/lexer.pest",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/container.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/mod.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21832,9 +21832,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:conf/blocks.toml",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/toc.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:conf/blocks.toml",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/toc.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21878,10 +21878,10 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:conf/blocks.toml",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/parsing/lexer.pest",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/table.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:conf/blocks.toml",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/parsing/lexer.pest",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/table.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21971,9 +21971,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:conf/blocks.toml",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/container.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:conf/blocks.toml",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/container.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -22017,9 +22017,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/parsing/lexer.pest",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/text.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/parsing/lexer.pest",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/text.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -22063,9 +22063,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/parsing/lexer.pest",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/render/html/element/text.rs",
-          "Rokurolize/ftml@55ea11ceac1d6ae71ba8566cdfdcdd18a0ff4221:src/tree/element/object.rs"
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/parsing/lexer.pest",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/render/html/element/text.rs",
+          "Rokurolize/ftml@d7727b245fd69f46d44c04592e392850ea244e13:src/tree/element/object.rs"
         ]
       },
       "candidate": {
