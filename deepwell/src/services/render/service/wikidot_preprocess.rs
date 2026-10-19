@@ -409,6 +409,21 @@ impl RenderService {
         }
     }
 
+    /// Trim the leading whitespace of a Wikidot page source.
+    ///
+    /// Wikidot trims the whitespace at the start of a page source before it
+    /// parses, so an indented first block head owns its block instead of
+    /// printing as authored text. The trim belongs to the page source, so
+    /// included text, which lands inside the document, keeps its own leading
+    /// whitespace.
+    pub(super) fn trim_wikidot_document_leading_whitespace(wikitext: &mut String) {
+        let trimmed = wikitext.trim_start_matches([' ', '\t', '\n', '\r']);
+        if trimmed.len() == wikitext.len() {
+            return;
+        }
+        *wikitext = trimmed.to_owned();
+    }
+
     pub(super) fn normalize_wikidot_alignment_markers(wikitext: &mut String) {
         let source = wikitext.clone();
         let mut output = String::with_capacity(source.len());
