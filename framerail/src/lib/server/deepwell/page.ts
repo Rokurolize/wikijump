@@ -452,6 +452,20 @@ export async function wikidotSiteChangesModule(
   )
 }
 
+export async function pageCreatePermission(
+  input: { page: string },
+  requestContext: RequestContext = {}
+): Promise<{ can_create: boolean }> {
+  return client.request(
+    "page_create_permission",
+    {},
+    {
+      ...requestContext,
+      page: input.page
+    }
+  )
+}
+
 export async function pageEditPermission(
   requestContext: RequestContext = {}
 ): Promise<{ can_edit: boolean }> {

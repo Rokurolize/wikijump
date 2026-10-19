@@ -585,6 +585,9 @@ def main() -> int:
     def identity_stage():
         identity = refresh.repository_identity(source_root)
         environment = refresh.read_environment(runtime_home / ".env")
+        # A previous failed promotion must not be mistaken for an already-current
+        # runtime or allowed to fail much later inside render-ahead.
+        refresh.require_standing_applications_running(runtime_home)
         standing_sha = environment.get("STANDING_WIKIJUMP_SHA", "")
         if not GIT_OBJECT.fullmatch(standing_sha):
             raise ValueError("the standing runtime does not record its source revision")
@@ -1070,7 +1073,9 @@ def activate(
                     rollback["restored_saved_pages"] = restore_saved_page_output(
                         snapshot, render_ahead["expected_compiled_generator"]
                     )
-            refresh.restore_parked_containers(parked, runtime_home)
+            rollback["container_recovery"] = refresh.restore_or_recreate_previous_containers(
+                parked, runtime_home, override_file, rollback_images
+            )
             if previous_differential is None:
                 differential_path.unlink(missing_ok=True)
             else:

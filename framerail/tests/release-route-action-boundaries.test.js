@@ -79,6 +79,7 @@ test("previously unattributed public route actions stay wired to their owning ha
   assert.equal(routes.register.actions.default, owners.register.registerAction)
 
   for (const action of [
+    "createPermission",
     "editPermission",
     "layout",
     "lockCreate",

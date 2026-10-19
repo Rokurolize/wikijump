@@ -1,4 +1,5 @@
 import {
+  pageCreatePermission,
   pageDelete,
   pageDeletePermission,
   pageEdit,
@@ -17,6 +18,9 @@ import {
   requirePageMutationUserId,
   resolvePageActionRequestContext
 } from "$lib/server/load/page/page-action-context"
+import { resolveLocalAuthoringMutationMarker } from "$lib/server/load/local-authoring-actor"
+import type { PageActionRequestContext } from "$lib/server/load/page/page-action-context"
+
 import {
   getPreloadBackendLocales,
   getPreloadRequestLocales
@@ -186,9 +190,37 @@ const pageDeleteNativeSchema = variant("option", [
   pageDeleteNativeDeleteSchema
 ])
 
+function applyPreflightAuthoringMarker(context: PageActionRequestContext): void {
+  if (
+    resolveLocalAuthoringMutationMarker(
+      context.sessionUserId,
+      context.siteSlug,
+      context.siteId,
+      context.siteId
+    )
+  ) {
+    context.requestContext.localPageMutationActor = true
+  }
+}
+
+export async function pageCreatePermissionAction(event: RequestEvent) {
+  try {
+    const context = await resolvePageActionRequestContext(event)
+    applyPreflightAuthoringMarker(context)
+    const res = await pageCreatePermission(
+      { page: event.params.slug ?? "" },
+      context.requestContext
+    )
+    return { res }
+  } catch (error) {
+    return failForActionError(error)
+  }
+}
+
 export async function pageEditPermissionAction(event: RequestEvent) {
   try {
     const context = await resolvePageActionRequestContext(event)
+    applyPreflightAuthoringMarker(context)
     const res = await pageEditPermission(context.requestContext)
     return { res }
   } catch (error) {
@@ -199,6 +231,7 @@ export async function pageEditPermissionAction(event: RequestEvent) {
 export async function pageMovePermissionAction(event: RequestEvent) {
   try {
     const context = await resolvePageActionRequestContext(event)
+    applyPreflightAuthoringMarker(context)
     const res = await pageMovePermission(context.requestContext)
     return { res }
   } catch (error) {
@@ -209,6 +242,7 @@ export async function pageMovePermissionAction(event: RequestEvent) {
 export async function pageDeletePermissionAction(event: RequestEvent) {
   try {
     const context = await resolvePageActionRequestContext(event)
+    applyPreflightAuthoringMarker(context)
     const res = await pageDeletePermission(context.requestContext)
     return { res }
   } catch (error) {

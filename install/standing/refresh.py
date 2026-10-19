@@ -371,6 +371,25 @@ def resource_exists(kind: str, reference: str, cwd: Path) -> bool:
     return True
 
 
+def require_standing_applications_running(runtime_home: Path) -> dict[str, dict[str, object]]:
+    """Fail before building/render-ahead if a previous promotion left apps down."""
+    try:
+        previous = runtime_containers(runtime_home)
+    except (subprocess.CalledProcessError, RuntimeError, ValueError, KeyError) as error:
+        raise RuntimeError(
+            "Standing application containers cannot be inspected; stop promotion "
+            "and recover the previous pinned app images from runtime .env before retrying"
+        ) from error
+    missing = [service for service in SERVICES
+               if service not in previous or not previous[service]["running"]]
+    if missing:
+        raise RuntimeError(
+            f"Standing applications are not running: {missing}; recover the prior "
+            "pinned app images from runtime .env before starting promotion"
+        )
+    return previous
+
+
 def parked_container_name(run_id: str, service: str) -> str:
     if not isinstance(run_id, str) or not run_id:
         raise ValueError("promotion run ID is required for container parking")
@@ -418,6 +437,64 @@ def restore_parked_containers(
             )
         restored[service] = after
     return restored
+
+
+
+def restore_or_recreate_previous_containers(
+    parked: dict[str, dict[str, object]],
+    runtime_home: Path,
+    override_file: Path,
+    rollback_images: dict[str, dict[str, object]],
+) -> dict[str, object]:
+    """Restore parked app containers, or reconstruct old images if Compose removed them.
+
+    Compose manages containers by its labels, which survive ``docker rename``.
+    During an activation ``compose up`` may therefore remove a renamed parked
+    container. Missing rollback containers must not leave Standing without app
+    services. The saved .env must already refer to the old, verified image IDs.
+    No volumes or non-application services are modified here.
+    """
+    try:
+        restored = restore_parked_containers(parked, runtime_home)
+        return {"mode": "parked", "services": restored}
+    except subprocess.CalledProcessError as restore_error:
+        # Never hide a genuine identity or rename failure by rebuilding. Only
+        # missing parked containers qualify for the pinned-image fallback.
+        missing = [
+            service for service, entry in parked.items()
+            if not resource_exists("container", entry["parked_name"], runtime_home)
+        ]
+        if not missing:
+            raise
+        actual_env = read_environment(runtime_home / ".env")
+        if actual_env.get("STANDING_PROJECT_NAME") != "wikijump-standing":
+            raise RuntimeError("rollback is not targeting the standing Compose project") from restore_error
+        expected = rollback_environment(actual_env, rollback_images)
+        for service in SERVICES:
+            key = f"STANDING_{service.upper()}_IMAGE"
+            if actual_env.get(key) != expected[key]:
+                raise RuntimeError(
+                    f"rollback image in runtime environment is not pinned for {service}"
+                ) from restore_error
+        command(
+            *compose_command(
+                runtime_home, "up", "--detach", "--no-deps", "--no-build",
+                "--pull", "never", "--force-recreate", *SERVICES,
+                override_file=override_file,
+            ),
+            cwd=runtime_home,
+        )
+        current = runtime_containers(runtime_home)
+        for service in SERVICES:
+            if (
+                current[service]["image_id"] != rollback_images[service]["id"]
+                or not current[service]["running"]
+            ):
+                raise RuntimeError(
+                    f"recreated rollback service {service} does not run its previous image"
+                ) from restore_error
+        return {"mode": "recreated-from-pinned-images", "missing_parked": missing,
+                "services": {service: current[service] for service in SERVICES}}
 
 
 def park_containers(

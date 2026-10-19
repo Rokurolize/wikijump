@@ -87,6 +87,20 @@ class RefreshStandingTest(unittest.TestCase):
                 REFRESH.atomic_json_no_replace(path, {"status": "changed"})
             self.assertEqual(path.read_text(encoding="utf-8"), original)
 
+    def test_preflight_refuses_containerless_standing_before_promotion(self) -> None:
+        running = {service: {"running": True} for service in REFRESH.SERVICES}
+        with mock.patch.object(REFRESH, "runtime_containers", return_value=running):
+            self.assertEqual(REFRESH.require_standing_applications_running(Path("/runtime")), running)
+        for service in REFRESH.SERVICES:
+            missing = {name: dict(row) for name, row in running.items()}
+            missing[service]["running"] = False
+            with mock.patch.object(REFRESH, "runtime_containers", return_value=missing):
+                with self.assertRaisesRegex(RuntimeError, "recover the prior pinned app images"):
+                    REFRESH.require_standing_applications_running(Path("/runtime"))
+        with mock.patch.object(REFRESH, "runtime_containers", side_effect=subprocess.CalledProcessError(1, ["docker", "inspect"])):
+            with self.assertRaisesRegex(RuntimeError, "cannot be inspected"):
+                REFRESH.require_standing_applications_running(Path("/runtime"))
+
     def test_rollback_restores_parked_container_identity(self) -> None:
         service = REFRESH.SERVICES[0]
         original_name = f"wikijump-standing-{service}-1"
@@ -184,6 +198,91 @@ class RefreshStandingTest(unittest.TestCase):
             all(not entry["container"]["running"] for entry in parked.values())
         )
 
+
+    def test_missing_parked_containers_recreate_previous_image_set_without_volumes(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            runtime = Path(temporary_dir)
+            images = {
+                service: {"id": "sha256:" + str(index + 1) * 64}
+                for index, service in enumerate(REFRESH.SERVICES)
+            }
+            env = {"STANDING_PROJECT_NAME": "wikijump-standing", **{
+                f"STANDING_{service.upper()}_IMAGE": image["id"]
+                for service, image in images.items()
+            }}
+            REFRESH.write_environment(runtime / ".env", env)
+            parked = {service: {"parked_name": f"rollback-{service}"} for service in REFRESH.SERVICES}
+            restored = {service: {"running": True, "image_id": image["id"]}
+                        for service, image in images.items()}
+            calls = []
+            missing = subprocess.CalledProcessError(1, ["docker", "inspect", "rollback-deepwell"])
+            def capture(*args, cwd):
+                calls.append(args)
+                return ""
+            with (
+                mock.patch.object(REFRESH, "restore_parked_containers", side_effect=missing),
+                mock.patch.object(REFRESH, "resource_exists", return_value=False),
+                mock.patch.object(REFRESH, "command", side_effect=capture),
+                mock.patch.object(REFRESH, "runtime_containers", return_value=restored),
+            ):
+                receipt = REFRESH.restore_or_recreate_previous_containers(
+                    parked, runtime, runtime / "override.yaml", images
+                )
+            self.assertEqual(receipt["mode"], "recreated-from-pinned-images")
+            self.assertEqual(sorted(receipt["missing_parked"]), sorted(REFRESH.SERVICES))
+            self.assertEqual(len(calls), 1)
+            command = calls[0]
+            self.assertIn("--force-recreate", command)
+            self.assertIn("--no-build", command)
+            self.assertIn("--no-deps", command)
+            self.assertEqual(command[command.index("--pull") + 1], "never")
+            self.assertNotIn("down", command)
+            self.assertNotIn("--volumes", command)
+            self.assertNotIn("caddy", command)
+            self.assertNotIn("database", command)
+
+    def test_missing_parked_fallback_rejects_wrong_image_or_unpinned_environment(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            images = {service: {"id": "sha256:" + str(i + 1) * 64}
+                      for i, service in enumerate(REFRESH.SERVICES)}
+            env = {"STANDING_PROJECT_NAME": "wikijump-standing", **{
+                f"STANDING_{s.upper()}_IMAGE": image["id"] for s, image in images.items()
+            }}
+            parked = {s: {"parked_name": f"parked-{s}"} for s in REFRESH.SERVICES}
+            previous = {s: {"running": True, "image_id": images[s]["id"]}
+                        for s in REFRESH.SERVICES}
+            missing = subprocess.CalledProcessError(1, ["docker", "inspect"])
+            for bad_env, bad_runtime in (
+                ({**env, "STANDING_DEEPWELL_IMAGE": "sha256:" + "f" * 64}, previous),
+                (env, {**previous, "deepwell": {"running": True, "image_id": "sha256:" + "f" * 64}}),
+            ):
+                REFRESH.write_environment(home / ".env", bad_env)
+                with (
+                    mock.patch.object(REFRESH, "restore_parked_containers", side_effect=missing),
+                    mock.patch.object(REFRESH, "resource_exists", return_value=False),
+                    mock.patch.object(REFRESH, "command", return_value="") as command,
+                    mock.patch.object(REFRESH, "runtime_containers", return_value=bad_runtime),
+                ):
+                    with self.assertRaisesRegex(RuntimeError, "rollback image|previous image"):
+                        REFRESH.restore_or_recreate_previous_containers(
+                            parked, home, home / "override.yaml", images
+                        )
+                    self.assertEqual(command.call_count, 0 if bad_env != env else 1)
+
+    def test_parked_identity_failure_never_silently_recreates(self) -> None:
+        parked = {service: {"parked_name": service} for service in REFRESH.SERVICES}
+        missing = subprocess.CalledProcessError(1, ["docker", "inspect"])
+        with (
+            mock.patch.object(REFRESH, "restore_parked_containers", side_effect=missing),
+            mock.patch.object(REFRESH, "resource_exists", return_value=True),
+            mock.patch.object(REFRESH, "command") as command,
+        ):
+            with self.assertRaises(subprocess.CalledProcessError):
+                REFRESH.restore_or_recreate_previous_containers(
+                    parked, Path("/runtime"), Path("/runtime/override.yaml"), {}
+                )
+            command.assert_not_called()
 
     def test_standing_runtime_uses_supported_release_profiles(self) -> None:
         compose = (SCRIPT.parent / "compose.yaml").read_text(encoding="utf-8")

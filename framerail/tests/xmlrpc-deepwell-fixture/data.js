@@ -615,8 +615,8 @@ x^2 + y^2 = z^2
     compiled_body_styles: [".generated-style-d { color: black; }"]
   },
   "navigation-style-duplicate": {
-    page_id: 3000395,
-    revision_id: 9000395,
+    page_id: 3000398,
+    revision_id: 9000398,
     page_created_at: "2026-08-12T00:00:00Z",
     page_updated_at: null,
     page_revision_count: 1,

@@ -188,11 +188,13 @@ class FakeStanding:
 
     def command(self, *args, cwd=None):
         self.calls.append(("command",) + args)
-        if "up" in args:
+        if "--force-recreate" in args:
+            self.switched = False
+        elif "up" in args:
             self.switched = True
         return "config: {}"
 
-    def run(self, evidence: Path, render_ahead: dict, proof=None):
+    def run(self, evidence: Path, render_ahead: dict, proof=None, *, missing_parked=False):
         new_images = {service: "sha256:" + ("b" + str(index)) * 32 for index, service in enumerate(("deepwell", "framerail", "wws"))}
         (evidence / "build").mkdir(parents=True, exist_ok=True)
         (evidence / "build" / "seal.json").write_text("{}", encoding="utf-8")
@@ -202,7 +204,13 @@ class FakeStanding:
             mock.patch.object(promote.refresh, "command", side_effect=self.command),
             mock.patch.object(promote.refresh, "wait_for_health", side_effect=lambda *a: (self.calls.append(("health",)), {s: "healthy" for s in promote.SERVICES})[1]),
             mock.patch.object(promote.refresh, "park_containers", side_effect=lambda previous, home, run_id: (self.calls.append(("park",)), {s: {"parked_name": f"parked-{s}"} for s in promote.SERVICES})[1]),
-            mock.patch.object(promote.refresh, "restore_parked_containers", side_effect=lambda parked, home: (self.calls.append(("restore-parked",)), setattr(self, "switched", False))[0]),
+            mock.patch.object(promote.refresh, "restore_parked_containers", side_effect=(
+                subprocess.CalledProcessError(1, ["docker", "inspect", "parked-deepwell"])
+                if missing_parked else lambda parked, home: (
+                    self.calls.append(("restore-parked",)), setattr(self, "switched", False)
+                )[0]
+            )),
+            mock.patch.object(promote.refresh, "resource_exists", return_value=not missing_parked),
             mock.patch.object(promote, "saved_page_staleness", return_value=0),
             mock.patch.object(promote, "http_canary", return_value={"url": "u", "status": "pass", "required_markers": ["scp-9506", "page-content"]}),
             mock.patch.object(promote, "snapshot_saved_page_output", side_effect=lambda path: (self.calls.append(("snapshot",)), path.write_text("rows", encoding="utf-8"), 24573)[2]),
@@ -259,6 +267,32 @@ class ActivationTest(unittest.TestCase):
         self.assertIn(("restore-pages", GENERATION_CHANGE["expected_compiled_generator"]), self.standing.calls)
         new_containers_removed = [call for call in self.standing.calls if call[:4] == ("subprocess", "docker", "rm", "--force")]
         self.assertEqual(len(new_containers_removed), 3)
+        env = (self.standing.home / ".env").read_text(encoding="utf-8")
+        self.assertIn("STANDING_DEEPWELL_IMAGE=sha256:" + "a0" * 32, env)
+        self.assertNotIn("STANDING_WIKIJUMP_SHA=" + "1" * 40, env)
+
+    def test_missing_parked_containers_rebuild_previous_images_after_failed_browser_proof(self) -> None:
+        def failing_proof(*args):
+            raise RuntimeError("Page.captureScreenshot failed")
+
+        with self.assertRaisesRegex(
+            RuntimeError, "activation failed .*captureScreenshot.*'status': 'pass'"
+        ) as error:
+            self.standing.run(
+                self.root / "evidence", GENERATION_CHANGE, failing_proof,
+                missing_parked=True,
+            )
+        self.assertIn("recreated-from-pinned-images", str(error.exception))
+        self.assertFalse(self.standing.switched)
+        commands = [call for call in self.standing.calls if call[0] == "command"]
+        recovered = [call for call in commands if "--force-recreate" in call]
+        self.assertEqual(len(recovered), 1)
+        self.assertIn("--no-build", recovered[0])
+        self.assertIn("--no-deps", recovered[0])
+        self.assertNotIn("--volumes", recovered[0])
+        self.assertNotIn("database", recovered[0])
+        self.assertNotIn("caddy", recovered[0])
+        self.assertIn(("restore-pages", GENERATION_CHANGE["expected_compiled_generator"]), self.standing.calls)
         env = (self.standing.home / ".env").read_text(encoding="utf-8")
         self.assertIn("STANDING_DEEPWELL_IMAGE=sha256:" + "a0" * 32, env)
         self.assertNotIn("STANDING_WIKIJUMP_SHA=" + "1" * 40, env)

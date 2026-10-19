@@ -28321,3 +28321,154 @@ async fn insert_site_changes_feed_source_revisions(
         .await
         .expect("site changes feed source fixtures should be inserted");
 }
+
+/// Long bullet runs render through FTML (#2575): no Wikijump-only list markup,
+/// and Wikidot typography and nested inline syntax inside the items.
+#[tokio::test]
+async fn page_render_long_bullet_lists_through_ftml() {
+    let runner = TestRunner::setup().await;
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let page_info = PageInfo {
+        page: Cow::Borrowed("long-list-fixture"),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Long List Fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let mut source = String::from("* Murphy Law in... Type 3043 -- FOR MURDER!\n");
+    source.push_str("* Alarm clock of **{{normalcy}}**\n");
+    for index in 0..8 {
+        source.push_str(&format!("* Item {index}\n"));
+    }
+
+    let output = RenderService::render(runner.context(), source, &page_info, &settings)
+        .await
+        .expect("long list fixture should render");
+    let html = output.html_output.body;
+
+    assert!(!html.contains("data-wikijump"), "{html}");
+    assert!(!html.contains("WIKIJUMP"), "{html}");
+    assert!(
+        html.contains("<li>Murphy Law in… Type 3043 — FOR MURDER!</li>"),
+        "{html}"
+    );
+    assert!(
+        html.contains("<li>Alarm clock of <strong><tt>normalcy</tt></strong></li>"),
+        "{html}"
+    );
+    assert!(html.contains("<li>Item 7</li>"), "{html}");
+}
+
+/// Wikidot shows an existing target's title for an empty link label
+/// (`[[[scp-series|]]]` renders "SCP Series 1"; record `empty-label-titles` in
+/// wikidot-list-rendering-preview-20261019.json) and the normalized target for
+/// a missing page.
+#[tokio::test]
+async fn empty_link_labels_show_the_target_page_title() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-empty-label-target",
+        "A Title Unlike Its Slug",
+        "target",
+    )
+    .await;
+    let mut source = String::from(
+        "[[[fixture-empty-label-target|]]] / [[[fixture-empty-label-missing|]]]\n\n",
+    );
+    for index in 0..8 {
+        source.push_str(&format!("* [[[fixture-empty-label-target|]]] {index}\n"));
+    }
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-empty-label-holder",
+        "Empty label holder",
+        &source,
+    )
+    .await;
+
+    let html =
+        load_listpages_test_compiled_html(&runner, site_id, "fixture-empty-label-holder")
+            .await;
+
+    assert!(
+        html.contains(
+            r#"<a href="/fixture-empty-label-target">A Title Unlike Its Slug</a> / "#
+        ),
+        "{html}"
+    );
+    assert!(
+        html.contains(
+            r#"<a class="newpage" href="/fixture-empty-label-missing">fixture-empty-label-missing</a>"#
+        ),
+        "{html}"
+    );
+    assert_eq!(
+        html.matches(
+            r#"<li><a href="/fixture-empty-label-target">A Title Unlike Its Slug</a> "#
+        )
+        .count(),
+        8,
+        "{html}"
+    );
+}
+
+/// Color spans inside native list runs (`scp-series-10`) and nested inline
+/// syntax inside color spans (#2567) must restore to markup, with no internal
+/// compatibility markers left in the page.
+#[tokio::test]
+async fn page_render_restores_color_spans_in_lists_and_their_nested_syntax() {
+    let runner = TestRunner::setup().await;
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let page_info = PageInfo {
+        page: Cow::Borrowed("color-span-fixture"),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Color Span Fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let source = concat!(
+        "* [[[SCP-9044]]] - A ##blue|House## with ##red|People## in it\n",
+        "* [[[SCP-9093]]] - ##red|//RIGHTEOUS JUSTICE!//##\n",
+        "\n",
+        "##white|a b[[footnote]]note text[[/footnote]] c## and ##red|^^up^^ ,,down,,##\n",
+    );
+
+    let output =
+        RenderService::render(runner.context(), source.to_owned(), &page_info, &settings)
+            .await
+            .expect("color span fixture should render");
+    let html = output.html_output.body;
+
+    assert!(!html.contains("WIKIJUMP"), "{html}");
+    assert!(
+        html.contains(r#"<span style="color: blue">House</span>"#),
+        "{html}"
+    );
+    assert!(
+        html.contains(r#"<span style="color: red">People</span>"#),
+        "{html}"
+    );
+    assert!(
+        html.contains(r#"<span style="color: red"><em>RIGHTEOUS JUSTICE!</em></span>"#),
+        "{html}"
+    );
+    assert!(
+        html.contains(r#"<span style="color: red"><sup>up</sup> <sub>down</sub></span>"#),
+        "{html}"
+    );
+    assert!(html.contains(r#"<sup class="footnoteref">"#), "{html}");
+    assert!(!html.contains("[[footnote]]"), "{html}");
+}

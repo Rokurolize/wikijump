@@ -81,6 +81,22 @@ wiki-page-deleted = { $datetime }に削除されました
 
 wiki-page-revision-history = ページの編集履歴
 
+wiki-page-revision-filter-show = ページの変更を表示：
+wiki-page-revision-filter-all = すべて
+wiki-page-revision-filter-source = ソースの変更
+wiki-page-revision-filter-title = タイトルの変更
+wiki-page-revision-filter-move = ページ名の変更
+wiki-page-revision-filter-tags = タグの変更
+wiki-page-revision-filter-meta = メタデータの変更
+wiki-page-revision-filter-files = ファイルの変更
+wiki-page-revision-perpage = ページあたりのリビジョン数：
+wiki-page-revision-update-list = リストを更新
+wiki-page-revision-compare-versions = バージョンを比較
+wiki-page-revision-pager-page = ページ
+wiki-page-revision-pager-of = /
+wiki-page-revision-pager-previous = 前のページ
+wiki-page-revision-pager-next = 次のページ
+
 wiki-page-revision-diff = バージョンを比較
   .from = 比較元リビジョン
   .to = 比較先リビジョン

@@ -189,6 +189,37 @@ pub(super) async fn ensure_page_view_permission(
     }
 }
 
+pub async fn page_create_permission(
+    ctx: &ServiceContext<'_>,
+    _params: Params<'static>,
+) -> Result<PageCreatePermissionOutput> {
+    let make_error =
+        || Error::new("failed to check page create permission", ErrorType::Page);
+    let site_id = ctx.request().site_id().or_raise(make_error)?;
+    let slug: &str = match ctx.request().page_reference().or_raise(make_error)? {
+        Reference::Slug(slug) => slug,
+        Reference::Id(_) => {
+            return Err(Error::new(
+                "page create permission requires a page slug reference",
+                ErrorType::BadRequest,
+            )
+            .into());
+        }
+    };
+    let actor = match ctx.request().user_id() {
+        Ok(user_id) => user_id,
+        Err(_) => return Ok(PageCreatePermissionOutput { can_create: false }),
+    };
+
+    match ensure_page_create_permission(ctx, site_id, slug, actor).await {
+        Ok(()) => Ok(PageCreatePermissionOutput { can_create: true }),
+        Err(error) if error.code() == ErrorType::PermissionDenied.code() => {
+            Ok(PageCreatePermissionOutput { can_create: false })
+        }
+        Err(error) => Err(error),
+    }
+}
+
 pub async fn page_edit_permission(
     ctx: &ServiceContext<'_>,
     _params: Params<'static>,

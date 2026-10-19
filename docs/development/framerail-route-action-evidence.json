@@ -6,9 +6,9 @@
     "sha256": "1906d7229472694d2afbbea30e65e9e33c39dbc40481f794f4676a4000ac57cb"
   },
   "current_inventory": {
-    "source_revision": "1eb80c0242f7c506e19528bf9d745b46890b4f31",
+    "source_revision": "850a88d0b07770c8c50eff9a7293059708b88a66",
     "path": "docs/development/compatibility-surface-inventory.json",
-    "sha256": "90f527c4bd2468d280d25074840ab121945e2cb2be6f5d5bd6c2ba6502899689"
+    "sha256": "f4568583bf0c70812efdc74b9f78159860d4a9c7dd9c3cd61e2f1f32c8a30822"
   },
   "records": [
     {
@@ -1094,6 +1094,18 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-server-action:/?/createPermission",
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-server-action:/?/delete",
       "tests": [
         "framerail/tests/page-delete-action-boundary.test.js::native Wikidot delete accepts an omitted comment"
@@ -1541,6 +1553,18 @@
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/backlinks",
       "tests": [
         "framerail/tests/page-append-backlinks-public-boundary.test.js::Backlinks handler delegates the current route to the typed public Deepwell view"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/createPermission",
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
       ],
       "tracking": [
         {

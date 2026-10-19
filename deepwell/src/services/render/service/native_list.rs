@@ -1,99 +1,15 @@
 //! Native Wikidot list compatibility helpers.
 
 use super::{
-    BTreeSet, MAX_NATIVE_LIST_COMPAT_DEPTH, MAX_WIKIDOT_COMPAT_FALLBACK_TITLE_LINKS,
-    WIKIDOT_EXTERNAL_LINK_REGEX, WIKIDOT_LABELED_LINK_REGEX, WIKIDOT_LOCAL_LINK_REGEX,
-    WIKIDOT_QUADRUPLE_LINK_REGEX, WIKIDOT_UNLABELED_LINK_REGEX,
-    WIKIDOT_USER_INLINE_REGEX, WIKIDOT_WIKIPEDIA_LINK_REGEX, WikidotCompatLinkTitleMap,
-    WikidotWikipediaLink, build_wikidot_wikipedia_link, escape_list_pages_html_attr,
+    BTreeSet, MAX_WIKIDOT_COMPAT_FALLBACK_TITLE_LINKS, WIKIDOT_EXTERNAL_LINK_REGEX,
+    WIKIDOT_LABELED_LINK_REGEX, WIKIDOT_LOCAL_LINK_REGEX, WIKIDOT_QUADRUPLE_LINK_REGEX,
+    WIKIDOT_UNLABELED_LINK_REGEX, WIKIDOT_USER_INLINE_REGEX,
+    WIKIDOT_WIKIPEDIA_LINK_REGEX, WikidotCompatLinkTitleMap, WikidotWikipediaLink,
+    build_wikidot_wikipedia_link, escape_list_pages_html_attr,
     escape_list_pages_html_text, native_list_page_link_ref,
     sanitize_wikidot_compat_inline_tag,
 };
 use crate::services::render::wikidot_user_resources::WIKIDOT_USER_INFO_URL;
-
-pub(in crate::services::render) fn render_native_bullet_list_with_wikipedia_links(
-    lines: &[&str],
-    wikipedia_links: &mut Vec<WikidotWikipediaLink>,
-) -> String {
-    let items: Vec<_> = lines
-        .iter()
-        .filter_map(|line| native_bullet_list_item(line))
-        .collect();
-    let base_depth = items.iter().map(|(depth, _)| *depth).min().unwrap_or(0);
-    let mut output = String::new();
-    let mut current_depth = 0usize;
-    let mut open_li = false;
-
-    output.push_str(r#"<ul data-wikijump-compat-list="1">"#);
-    output.push('\n');
-
-    for (index, &(raw_depth, content)) in items.iter().enumerate() {
-        let depth = raw_depth
-            .saturating_sub(base_depth)
-            .min(MAX_NATIVE_LIST_COMPAT_DEPTH);
-        let has_children = items.get(index + 1).is_some_and(|(next_depth, _)| {
-            next_depth
-                .saturating_sub(base_depth)
-                .min(MAX_NATIVE_LIST_COMPAT_DEPTH)
-                > depth
-        });
-
-        if depth > current_depth {
-            while current_depth < depth {
-                output.push_str("<ul>\n");
-                current_depth += 1;
-            }
-        } else if depth < current_depth {
-            if open_li {
-                output.push_str("</li>\n");
-            }
-
-            while current_depth > depth {
-                output.push_str("</ul>\n</li>\n");
-                current_depth -= 1;
-            }
-        } else if open_li {
-            output.push_str("</li>\n");
-        }
-
-        output.push_str("<li>");
-        output.push_str(&render_native_list_item_content(
-            content,
-            has_children,
-            wikipedia_links,
-        ));
-        open_li = true;
-    }
-
-    if open_li {
-        output.push_str("</li>\n");
-    }
-
-    while current_depth > 0 {
-        output.push_str("</ul>\n</li>\n");
-        current_depth -= 1;
-    }
-
-    output.push_str("</ul>\n");
-    output
-}
-
-fn render_native_list_item_content(
-    content: &str,
-    has_children: bool,
-    wikipedia_links: &mut Vec<WikidotWikipediaLink>,
-) -> String {
-    let rendered =
-        render_native_list_inline_html_with_wikipedia_links(content, wikipedia_links);
-    if has_children && !rendered.contains("<a ") {
-        format!(
-            r#"<a href="javascript:;">{rendered}
-</a>"#
-        )
-    } else {
-        rendered
-    }
-}
 
 #[cfg(test)]
 pub(in crate::services::render) fn find_balanced_ul_end(html: &str) -> Option<usize> {
@@ -126,20 +42,6 @@ pub(in crate::services::render) fn find_balanced_ul_end(html: &str) -> Option<us
     }
 
     None
-}
-
-pub(in crate::services::render) fn native_bullet_list_item(
-    line: &str,
-) -> Option<(usize, &str)> {
-    let trimmed_end = line.trim_end_matches(['\r', '\n']);
-    let depth = trimmed_end
-        .as_bytes()
-        .iter()
-        .take_while(|&&byte| byte == b' ')
-        .count();
-    trimmed_end[depth..]
-        .strip_prefix("* ")
-        .map(|content| (depth, content))
 }
 
 pub(in crate::services::render) fn native_numbered_list_content(
@@ -345,17 +247,6 @@ fn push_list_pages_table_inline_segment(output: &mut String, value: &str) {
 
 pub(in crate::services::render) fn render_native_list_inline_html(value: &str) -> String {
     render_native_list_inline_html_with_titles(value, None)
-}
-
-fn render_native_list_inline_html_with_wikipedia_links(
-    value: &str,
-    wikipedia_links: &mut Vec<WikidotWikipediaLink>,
-) -> String {
-    render_native_list_inline_html_with_titles_and_wikipedia_links(
-        value,
-        None,
-        Some(wikipedia_links),
-    )
 }
 
 pub(in crate::services::render) fn render_native_list_inline_html_with_titles(

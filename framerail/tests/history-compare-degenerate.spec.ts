@@ -67,7 +67,15 @@ const openHistory = async (page: import("@playwright/test").Page, entries: unkno
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: successBody({ res: entries })
+        body: successBody({
+          res: {
+            entries,
+            total: entries.length,
+            page: 1,
+            perPage: 20,
+            totalPages: 1
+          }
+        })
       })
     }
   )
@@ -91,7 +99,9 @@ test("compare stays disabled when only one revision can be compared", async ({
   // Mirrors scp-9506: a single comparable page revision among file events.
   await openHistory(page, [pageEntry(2, 7), fileEntry(5), fileEntry(9)])
 
-  const compare = page.getByRole("button", { name: /compare/i })
+  const compare = page
+    .locator("section.revision-diff-panel")
+    .getByRole("button", { name: /compare/i })
   await expect(compare).toBeDisabled()
   await expect(page.locator(".revision-diff-unavailable")).toBeVisible()
   expect(diffPosts).toEqual([])
@@ -119,7 +129,9 @@ test("compare submits two distinct revisions when both exist", async ({ page }) 
   )
   await openHistory(page, [pageEntry(2, 7), pageEntry(4, 9), fileEntry(6)])
 
-  const compare = page.getByRole("button", { name: /compare/i })
+  const compare = page
+    .locator("section.revision-diff-panel")
+    .getByRole("button", { name: /compare/i })
   await expect(compare).toBeEnabled()
   await compare.click()
   await expect.poll(() => diffPosts.length, { timeout: 10000 }).toBe(1)

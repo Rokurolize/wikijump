@@ -25,3 +25,26 @@ export function resolvePageMutationUserId(
 
   return undefined
 }
+
+// Whether a read-only permission preflight (or the missing-page create
+// decision) may carry the local actor marker so Deepwell evaluates the
+// same actor the mutation would use. Logged-in callers never need it:
+// their session already binds the request actor.
+export function resolveLocalAuthoringMutationMarker(
+  sessionUserId: number | undefined,
+  siteSlug: string,
+  requestSiteId: number,
+  mutationSiteId: number,
+  deploymentEnvironment = parseDeploymentEnvironment()
+): boolean {
+  return (
+    sessionUserId === undefined &&
+    resolvePageMutationUserId(
+      sessionUserId,
+      siteSlug,
+      requestSiteId,
+      mutationSiteId,
+      deploymentEnvironment
+    ) === LOCAL_ADMIN_USER_ID
+  )
+}

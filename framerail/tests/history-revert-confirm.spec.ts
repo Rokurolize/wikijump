@@ -79,7 +79,15 @@ const openHistory = async (
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: successBody({ res: HISTORY })
+        body: successBody({
+          res: {
+            entries: HISTORY,
+            total: HISTORY.length,
+            page: 1,
+            perPage: 20,
+            totalPages: 1
+          }
+        })
       })
     }
   )
