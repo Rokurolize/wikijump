@@ -4,7 +4,8 @@ use super::ImportService;
 #[cfg(test)]
 use super::discussion_structs::DiscussionActor;
 use super::discussion_structs::{
-    DiscussionCreator, DiscussionSource, ImportDiscussion, ImportDiscussionOutput,
+    ActorProfileGap, DiscussionCreator, DiscussionSource, ImportDiscussion,
+    ImportDiscussionOutput,
 };
 use crate::constants::SYSTEM_USER_ID;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
@@ -359,6 +360,7 @@ impl ImportService {
                 ));
             }
         }
+        let mut actors_missing_profiles = Vec::new();
         for actor in &source.actors {
             execute(
                 ctx,
@@ -368,6 +370,25 @@ impl ImportService {
             .await?;
             execute(ctx, "INSERT INTO wikidot_identity_observation(user_id,source_sha256,observed_at,name,slug,source_reference) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING",
                 vec![actor.id.into(), manifest_hash.clone().into(), source.observed_at.into(), actor.name.clone().into(), actor.slug.clone().into(), source.reference.clone().into()]).await?;
+            // Record, not fabricate: an actor banked as an observation
+            // without an imported profile row is a gap for the identity
+            // promotion path, reported here so integrity tooling can count
+            // it. Deleted source identities stay tombstoned and are not gaps.
+            let profiled = wikidot_user::Entity::find_by_id(actor.id as i32)
+                .filter(wikidot_user::Column::IsDeleted.eq(false))
+                .one(ctx.transaction())
+                .await
+                .or_raise(|| {
+                    Error::new("cannot inspect source actor profile", ErrorType::DatabaseImport)
+                })?
+                .is_some();
+            if !profiled {
+                actors_missing_profiles.push(ActorProfileGap {
+                    user_id: actor.id,
+                    name: actor.name.clone(),
+                    slug: actor.slug.clone(),
+                });
+            }
         }
         let category = forum_category::Entity::find_by_id(source.category.id)
             .one(ctx.transaction())
@@ -698,6 +719,7 @@ impl ImportService {
             created_posts,
             created_revisions,
             unchanged: last.is_some_and(|last| manifest_hash == last.manifest_sha256),
+            actors_missing_profiles,
         })
     }
 }
