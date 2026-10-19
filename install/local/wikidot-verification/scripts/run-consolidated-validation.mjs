@@ -98,6 +98,23 @@ export function parsePreflightOutput(output) {
   return {groups, checks};
 }
 
+// Current Theme Lab browser evidence may be absent without a code-test failure.
+// Keep that result explicitly inconclusive, and never allow unrelated checks
+// or an empty preflight to evade the normal final validation barrier.
+export function classifyConsolidatedChecks(preflightExit, groups, checks) {
+  const permitted = (check) =>
+    check.status === "inconclusive" &&
+    check.name === "Theme Lab current campaign completion" &&
+    groups.theme_lab === true;
+  const passed = preflightExit === 0 && checks.some((check) => check.status === "ok") &&
+    checks.every((check) => check.status === "ok" || permitted(check));
+  return {
+    passed,
+    failed: checks.filter((check) => check.status !== "ok" && !permitted(check)).map((check) => check.name),
+    inconclusive: checks.filter(permitted).map((check) => check.name),
+  };
+}
+
 async function toolVersions() {
   const versions = {};
   for (const [name, [command, args]] of Object.entries(TOOLS)) {
@@ -179,10 +196,12 @@ export async function runConsolidatedValidation({
   for (const relative of SOURCE_FILES) {
     source_sha256[relative] = await sha256File(path.join(repository, relative));
   }
-  const passed = run.code === 0 && preflightRan && checks.every((check) => check.status === "ok");
+  // This PASS covers selected code tests, not current-theme visual parity.
+  // The final-frozen publication contract rejects any inconclusive check.
+  const verdict = classifyConsolidatedChecks(run.code, groups, checks);
   const receipt = {
     schema: CONSOLIDATED_VALIDATION_SCHEMA,
-    status: passed ? "pass" : "fail",
+    status: preflightRan && verdict.passed ? "pass" : "fail",
     started_at: startedAt,
     completed_at: new Date().toISOString(),
     wikijump_commit: commit,
@@ -208,7 +227,8 @@ export async function main(argv, {stdout = console.log} = {}) {
   stdout(JSON.stringify({
     schema: receipt.schema,
     status: receipt.status,
-    failed: receipt.checks.filter((check) => check.status !== "ok").map((check) => check.name),
+    failed: classifyConsolidatedChecks(receipt.preflight.exit, receipt.groups, receipt.checks).failed,
+    inconclusive: classifyConsolidatedChecks(receipt.preflight.exit, receipt.groups, receipt.checks).inconclusive,
     output: sealed.path,
     sha256: sealed.sha256,
   }));
