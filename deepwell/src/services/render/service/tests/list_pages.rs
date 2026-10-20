@@ -4028,8 +4028,8 @@ fn substituted_issue_exact_closed_module_payloads_render_as_literal_text() {
     assert!(substituted.contains("%%content%%"), "{substituted:?}");
     assert!(substituted.contains("wjpentest"), "{substituted:?}");
 
-    let mut compat_html = CompatHtmlFragments::new("By %%created_by%% tags %%tags%%");
-    let mut compat_text = CompatTextFragments::new("By %%created_by%% tags %%tags%%");
+    let compat_html = CompatHtmlFragments::new("By %%created_by%% tags %%tags%%");
+    let compat_text = CompatTextFragments::new("By %%created_by%% tags %%tags%%");
     let mut source = substituted.clone();
     ftml::preprocess_for_layout(&mut source, Layout::Wikidot);
     let tokens = ftml::tokenize(&source);
@@ -4054,10 +4054,13 @@ fn substituted_issue_exact_closed_module_payloads_render_as_literal_text() {
 /// A double quote in a tag or name must not break out of a double-quoted
 /// module attribute such as `[[div class="%%tags%%"]]`: the substituted
 /// text carries no raw quote, and the rendered div keeps the payload inside
-/// its class value instead of gaining an injected attribute.
+/// its class value instead of gaining an injected attribute. The div uses
+/// stanza form because same-line `[[div …]]x[[/div]]` is literal text even
+/// without any payload.
 #[test]
 fn substituted_quote_breakout_values_cannot_escape_double_quoted_attributes() {
-    let template = "[[div class=\"%%tags%%\" data-author=\"%%created_by%%\"]]x[[/div]]";
+    let template =
+        "[[div class=\"%%tags%%\" data-author=\"%%created_by%%\"]]\nx\n[[/div]]";
     let page = FoundPageRow {
         page_id: 1,
         site_id: 1,
@@ -4092,11 +4095,11 @@ fn substituted_quote_breakout_values_cannot_escape_double_quoted_attributes() {
     // entity, so the template-authored attribute cannot terminate early.
     assert_eq!(
         substituted,
-        "[[div class=\"&#34; onmouseover=&#34;alert(1)\" data-author=\"WJ-PENTEST-DISPLAY\"]]x[[/div]]",
+        "[[div class=\"&#34; onmouseover=&#34;alert(1)\" data-author=\"WJ-PENTEST-DISPLAY\"]]\nx\n[[/div]]",
     );
 
-    let mut compat_html = CompatHtmlFragments::new(template);
-    let mut compat_text = CompatTextFragments::new(template);
+    let compat_html = CompatHtmlFragments::new(template);
+    let compat_text = CompatTextFragments::new(template);
     let mut source = substituted.clone();
     ftml::preprocess_for_layout(&mut source, Layout::Wikidot);
     let tokens = ftml::tokenize(&source);
@@ -4168,7 +4171,7 @@ fn substituted_ordinary_identity_and_tag_values_pass_through_verbatim() {
             1,
             &list_pages_substitution_context(20, &users, None, &BTreeMap::new()),
         ),
-        "By Lt Masipag (Lt Masipag) tags tale-of _hidden hidden _hidden",
+        "By Lt Masipag (Lt Masipag) tags tale-of hidden _hidden",
     );
 }
 
