@@ -153,21 +153,45 @@ export const normalizeThemePreviewUrl = (value) => {
 export const resolveThemePreviewUrl = (themePreviewerNoUi, value) =>
   themePreviewerNoUi === true ? normalizeThemePreviewUrl(value) : null
 
-export const customThemeHeadHtml = (theme, site = null, filesAuthority = null) => {
+export const customThemeHeadHtml = (theme, site = null, filesAuthority = null, isLocalFile = null) => {
   const normalized = normalizeThemeSetting(theme)
   if (normalized.type !== "custom") return ""
-  const css = localizeSiteFileUrlsInCss(normalized.css, site, filesAuthority)
+  const css = localizeSiteFileUrlsInCss(normalized.css, site, filesAuthority, isLocalFile)
   return `<style data-wikidot-site-theme>${css}</style>`
 }
 
 /**
- * Site carried by the page view, the only local-existence evidence the
- * head may use: an imported site's own files live on its own WDFiles host.
+ * Site carried by the page view, the first half of the local-existence
+ * evidence the head may use: an imported site's own files live on its own
+ * WDFiles host. The second half is a per-file presence check (isLocalFile):
+ * site identity alone cannot tell a materialized attachment from one the
+ * import never fetched, so a same-site URL without a positive presence
+ * answer stays literal.
  *
  * @typedef {object} LocalSiteEvidence
  * @property {unknown} slug
  * @property {unknown} from_wikidot
  */
+
+/**
+ * Separator joining a file's page and name in a presence set. Page slugs
+ * and file names never contain NUL, so the join is unambiguous.
+ */
+export const SITE_FILE_PRESENCE_SEPARATOR = "\0"
+
+/**
+ * Join a referenced page and file name into its presence-set key.
+ *
+ * @param {unknown} page
+ * @param {unknown} name
+ * @returns {string | null}
+ */
+export const siteFilePresenceKey = (page, name) => {
+  if (typeof page !== "string" || page === "" || typeof name !== "string" || name === "") {
+    return null
+  }
+  return `${page}${SITE_FILE_PRESENCE_SEPARATOR}${name}`
+}
 
 const WDFILES_HOST_SUFFIXES = [".wdfiles.com", ".wikidot.com"]
 const SITE_SLUG_PATTERN = /^[a-z0-9-]+$/u
@@ -245,17 +269,46 @@ const isViewedSiteWdfilesSlug = (slug, site) => {
 }
 
 /**
- * Rewrite one WDFiles attachment URL to the local files authority when the
- * viewed site itself is the evidence the file is local, else null (the
- * caller keeps the source URL literal). Query, fragment, and encoding are
- * preserved; only the origin is swapped.
+ * Split a same-site WDFiles attachment URL into the referenced page and
+ * file name, or null when the URL does not name exactly one page file.
+ *
+ * The shape, host, and site checks mirror the rewrite rule below, so the
+ * server can collect the same candidate references the head would rewrite
+ * without duplicating the policy. A path that does not split into exactly
+ * a page and a file is unresolvable and stays literal downstream.
+ *
+ * @param {unknown} rawUrl
+ * @param {LocalSiteEvidence | null | undefined} site
+ * @returns {{ page: string; name: string; rest: string } | null}
+ */
+export const parseSiteFileReference = (rawUrl, site) => {
+  const split = splitAbsoluteHttpUrl(rawUrl)
+  if (!split || WIKIDOT_WWW_HOSTS.has(split.host)) return null
+  if (!split.rest.startsWith("/local--files/")) return null
+  const slug = wdfilesAttachmentSiteSlug(split.host)
+  if (!isViewedSiteWdfilesSlug(slug ?? "", site)) return null
+  const barePath = split.rest.split(/[?#]/, 1)[0]
+  const segments = barePath.slice("/local--files/".length).split("/")
+  if (segments.length !== 2 || segments[0] === "" || segments[1] === "") return null
+  return { page: segments[0], name: segments[1], rest: split.rest }
+}
+
+/**
+ * Rewrite one WDFiles attachment URL to the local files authority only
+ * when the site names the file AND the per-file presence check confirms it
+ * exists locally, else null (the caller keeps the source URL literal).
+ * A missing, non-function, or non-true presence answer — absent, unknown,
+ * or unresolvable — fails closed to literal, so a partially imported
+ * mirror never turns a working hotlink into a local 404. Query, fragment,
+ * and encoding are preserved; only the origin is swapped.
  *
  * @param {unknown} rawUrl
  * @param {LocalSiteEvidence | null | undefined} site
  * @param {unknown} filesAuthority
+ * @param {(page: string, name: string) => unknown} [isLocalFile]
  * @returns {string | null}
  */
-export const localizeSiteFileUrl = (rawUrl, site, filesAuthority) => {
+export const localizeSiteFileUrl = (rawUrl, site, filesAuthority, isLocalFile) => {
   if (
     typeof filesAuthority !== "string" ||
     filesAuthority.trim() === "" ||
@@ -264,31 +317,61 @@ export const localizeSiteFileUrl = (rawUrl, site, filesAuthority) => {
   ) {
     return null
   }
-  const split = splitAbsoluteHttpUrl(rawUrl)
-  if (!split || WIKIDOT_WWW_HOSTS.has(split.host)) return null
-  if (!split.rest.startsWith("/local--files/")) return null
-  if (split.rest.length <= "/local--files/".length) return null
-  const slug = wdfilesAttachmentSiteSlug(split.host)
-  if (!isViewedSiteWdfilesSlug(slug ?? "", site)) return null
-  return `https://${filesAuthority.trim()}${split.rest}`
+  const reference = parseSiteFileReference(rawUrl, site)
+  if (!reference) return null
+  let present = false
+  try {
+    present =
+      typeof isLocalFile === "function" &&
+      isLocalFile(reference.page, reference.name) === true
+  } catch {
+    present = false
+  }
+  if (!present) return null
+  return `https://${filesAuthority.trim()}${reference.rest}`
 }
 
 const CSS_URL_PATTERN = /url\(\s*(['"]?)([^'")]+?)\1\s*\)/giu
 const CSS_BARE_IMPORT_PATTERN = /@import\s+(?!url\()\s*(['"])([^'"]+?)\1/giu
 
 /**
+ * Collect the distinct raw asset URLs inside stored custom CSS (`url(...)`
+ * and bare `@import "..."`), in first-seen order. The server resolves
+ * per-file presence for these candidates; the rewrite below consumes the
+ * answers.
+ *
+ * @param {unknown} css
+ * @returns {string[]}
+ */
+export const extractCssAssetUrls = (css) => {
+  if (typeof css !== "string") return []
+  const urls = new Set()
+  for (const pattern of [CSS_URL_PATTERN, CSS_BARE_IMPORT_PATTERN]) {
+    pattern.lastIndex = 0
+    let match
+    while ((match = pattern.exec(css)) !== null) {
+      if (typeof match[2] === "string" && match[2] !== "") urls.add(match[2])
+    }
+  }
+  return [...urls]
+}
+
+/**
  * Rewrite same-site WDFiles attachment URLs inside stored CSS (`url(...)`
- * and bare `@import "..."`), keeping every other byte literal.
+ * and bare `@import "..."`), keeping every other byte literal. Only URLs
+ * whose referenced file the presence check confirms are rewritten; every
+ * absent, unknown, or unresolvable URL stays byte-identical.
  *
  * @param {unknown} css
  * @param {LocalSiteEvidence | null | undefined} site
  * @param {unknown} filesAuthority
+ * @param {(page: string, name: string) => unknown} [isLocalFile]
  * @returns {string}
  */
-export const localizeSiteFileUrlsInCss = (css, site, filesAuthority) => {
+export const localizeSiteFileUrlsInCss = (css, site, filesAuthority, isLocalFile) => {
   if (typeof css !== "string") return typeof css === "undefined" ? "" : css
   const rewriteMatch = (match, url) => {
-    const rewritten = localizeSiteFileUrl(url, site, filesAuthority)
+    const rewritten = localizeSiteFileUrl(url, site, filesAuthority, isLocalFile)
     if (!rewritten || rewritten === url) return match
     const index = match.indexOf(url)
     return index < 0
@@ -303,19 +386,21 @@ export const localizeSiteFileUrlsInCss = (css, site, filesAuthority) => {
 /**
  * Resolve the head `<link>` href for an external theme: the normalized
  * source URL, rewritten to the local files authority only when the viewed
- * site itself evidences the file is local.
+ * site names the file AND the presence check confirms it exists locally.
+ * Absent or unknown files keep the source URL literal.
  *
  * @param {{ type?: unknown; id?: unknown; url?: unknown; css?: unknown }
  *   | null
  *   | undefined} theme
  * @param {LocalSiteEvidence | null | undefined} site
  * @param {unknown} filesAuthority
+ * @param {(page: string, name: string) => unknown} [isLocalFile]
  * @returns {string | null}
  */
-export const resolveExternalThemeHref = (theme, site, filesAuthority) => {
+export const resolveExternalThemeHref = (theme, site, filesAuthority, isLocalFile) => {
   const normalized = normalizeThemeSetting(theme)
   if (normalized.type !== "external") return null
-  return localizeSiteFileUrl(normalized.url, site, filesAuthority) ?? normalized.url
+  return localizeSiteFileUrl(normalized.url, site, filesAuthority, isLocalFile) ?? normalized.url
 }
 
 /**
