@@ -30,7 +30,8 @@ use super::structs::{
     ImportFile, ImportFileDelete, ImportFileDeleteOutput, ImportFileOutput, ImportPage,
     ImportPageFilesVerify, ImportPageFilesVerifyOutput, ImportPageOutput,
     ImportPageRevision, ImportPageRevisionOutput, ImportSite, ImportSiteOutput,
-    ImportUser, ImportUserOutput, ImportedUserType,
+    ImportUser, ImportUserOutput, ImportedUserType, PromoteObservedIdentity,
+    PromoteObservedIdentityOutput,
 };
 use crate::constants::SYSTEM_USER_ID;
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
@@ -41,6 +42,7 @@ use crate::models::page::{self, Entity as Page};
 use crate::models::page_category::Model as PageCategoryModel;
 use crate::models::page_revision::{self, Entity as PageRevision};
 use crate::models::site::{self, Entity as Site};
+use crate::models::user::{self, Entity as WikijumpUser};
 use crate::models::wikidot_user::{self, Entity as WikidotUser};
 use crate::services::ServiceContext;
 use crate::services::audit::{AuditEvent, AuditService};
@@ -57,16 +59,18 @@ use crate::services::page_revision::{
     CreatePageRevisionBody, PageRevisionService,
 };
 use crate::services::{CategoryService, PageService, UserService};
-use crate::types::{FileRevisionType, Maybe, PageId, PageLockType, Reference};
+use crate::types::{FileRevisionType, Maybe, PageId, PageLockType, Reference, UserType};
 use crate::utils::{get_category_name, now};
+use ftml::data::KarmaLevel;
 use ftml::layout::Layout;
 use sea_orm::DatabaseTransaction;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, IntoActiveModel, QueryFilter,
-    QueryOrder, Set,
+    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, FromQueryResult,
+    IntoActiveModel, QueryFilter, QueryOrder, Set,
 };
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, UpdateResult};
 use sea_query::Expr;
+use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 use std::net::IpAddr;
 use time::OffsetDateTime;
@@ -219,6 +223,14 @@ async fn correct_file_revision_provenance(
         ));
     }
     Ok(())
+}
+
+/// One banked display identity for a stable source user ID, read back from
+/// `wikidot_identity_observation` (which has no SeaORM entity).
+#[derive(FromQueryResult)]
+struct ObservedIdentity {
+    name: String,
+    slug: String,
 }
 
 #[derive(Debug)]
@@ -453,6 +465,236 @@ impl ImportService {
         }
 
         Ok(ImportUserOutput { user_id })
+    }
+
+    /// Promotes one already-observed Wikidot identity into an imported user.
+    ///
+    /// The observation (stable numeric source ID plus observed display
+    /// name/slug and its provenance) is banked idempotently alongside the
+    /// `known_user` foreign-key entry. A profile row is written only when
+    /// the caller supplies a complete evidence-backed profile snapshot,
+    /// in which case the call delegates to [`Self::add_user`] so every
+    /// identity rule (stable-ID authority, no slug merging, deleted
+    /// tombstones, strictly-newer snapshots, avatar finalization) applies
+    /// unchanged. Observations alone never rename a materialized row and
+    /// never fabricate profile fields: the call then succeeds with the
+    /// blocking fields listed in `missing_profile_fields`.
+    pub async fn promote_observed_identity(
+        ctx: &ServiceContext<'_>,
+        PromoteObservedIdentity {
+            user_id,
+            name,
+            slug,
+            observed_at,
+            source_reference,
+            profile,
+            importing_user_id,
+            ip_address,
+        }: PromoteObservedIdentity,
+    ) -> Result<PromoteObservedIdentityOutput> {
+        info!("Promoting observed Wikidot identity (user ID {user_id}, slug '{slug}')");
+
+        let txn = ctx.transaction();
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to promote observed wikidot identity (user ID {user_id})"
+                ),
+                ErrorType::DatabaseImport,
+            )
+        };
+
+        if user_id <= 0 {
+            return Err(make_error().into());
+        }
+
+        // All reads before any write, so contradictions fail closed
+        // without banking anything.
+        let existing = WikidotUser::find_by_id(user_id)
+            .one(txn)
+            .await
+            .or_raise(make_error)?;
+
+        // A materialized row settles coexistence: activation creates a
+        // native account sharing this ID and slug, so the collision guards
+        // below apply only on the first-materialization path. Observations
+        // alone never rename a live row: contradicting one fails closed.
+        // Profile snapshots always go through add_user, whose created_at,
+        // strictly-newer, and conflict rules govern renames and revivals.
+        if let Some(ref row) = existing
+            && profile.is_none()
+            && !row.is_deleted
+            && (row.name.as_deref() != Some(name.as_str())
+                || row.slug.as_deref() != Some(slug.as_str()))
+        {
+            return Err(make_error().into());
+        }
+
+        // First-materialization guards. Any existing row (checked above)
+        // already settles coexistence, including the native account
+        // activation creates, so these run only when no row exists at all.
+        if existing.is_none() {
+            // A local account owning this ID is a genuine collision.
+            // (Matches the activation guard in UserService::activate_from_wikidot.)
+            if WikijumpUser::find_by_id(i64::from(user_id))
+                .one(txn)
+                .await
+                .or_raise(make_error)?
+                .is_some()
+            {
+                return Err(make_error().into());
+            }
+
+            // A local account owning this name or slug is a genuine
+            // collision unless it is a non-authenticatable placeholder,
+            // which the user lookup order already ranks below imported
+            // identities.
+            if WikijumpUser::find()
+                .filter(
+                    Condition::any()
+                        .add(user::Column::Name.eq(name.as_str()))
+                        .add(user::Column::Slug.eq(slug.as_str())),
+                )
+                .one(txn)
+                .await
+                .or_raise(make_error)?
+                .is_some_and(|user| {
+                    !matches!(user.user_type, UserType::System | UserType::Site)
+                })
+            {
+                return Err(make_error().into());
+            }
+
+            // Another imported identity owning this name or slug is a
+            // genuine collision. Stable source ID is the authority;
+            // display names and slugs are never merged.
+            if WikidotUser::find()
+                .filter(wikidot_user::Column::UserId.ne(user_id))
+                .filter(
+                    Condition::any()
+                        .add(wikidot_user::Column::Name.eq(name.as_str()))
+                        .add(wikidot_user::Column::Slug.eq(slug.as_str())),
+                )
+                .one(txn)
+                .await
+                .or_raise(make_error)?
+                .is_some()
+            {
+                return Err(make_error().into());
+            }
+
+            // Prior observations for this ID that disagree on the display
+            // identity are a contradiction, not rename evidence. The
+            // observation table keys on (user_id, source), so this check is
+            // done in code.
+            let prior =
+                ObservedIdentity::find_by_statement(Statement::from_sql_and_values(
+                    DatabaseBackend::Postgres,
+                    "SELECT name, slug FROM wikidot_identity_observation WHERE user_id = $1",
+                    [user_id.into()],
+                ))
+                .all(txn)
+                .await
+                .or_raise(make_error)?;
+            if prior.iter().any(|row| row.name != name || row.slug != slug) {
+                return Err(make_error().into());
+            }
+        }
+
+        // Bank the foreign-key entry before the observation: the
+        // observation row references known_user(user_id), so the stable
+        // source ID must exist first. Then bank the observation
+        // idempotently (one row per source) and delegate or report the gap.
+        UserService::insert_known_user_id(ctx, i64::from(user_id))
+            .await
+            .or_raise(make_error)?;
+
+        let source_sha256 = Sha256::digest(source_reference.as_bytes()).to_vec();
+        txn.execute_raw(Statement::from_sql_and_values(
+            DatabaseBackend::Postgres,
+            "INSERT INTO wikidot_identity_observation(user_id, source_sha256, observed_at, name, slug, source_reference) VALUES($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING",
+            [
+                user_id.into(),
+                source_sha256.into(),
+                observed_at.into(),
+                name.clone().into(),
+                slug.clone().into(),
+                source_reference.into(),
+            ],
+        ))
+        .await
+        .or_raise(make_error)?;
+
+        let Some(profile) = profile else {
+            // An observation alone materializes nothing. A live row is
+            // already complete; a tombstone or a missing row still needs
+            // every blocking profile field.
+            let complete = existing.as_ref().is_some_and(|row| !row.is_deleted);
+            return Ok(PromoteObservedIdentityOutput {
+                user_id,
+                promoted: false,
+                missing_profile_fields: if complete {
+                    Vec::new()
+                } else {
+                    vec![
+                        "created_at".to_owned(),
+                        "karma".to_owned(),
+                        "is_pro".to_owned(),
+                    ]
+                },
+            });
+        };
+
+        let mut missing_profile_fields = Vec::new();
+        if profile.karma.is_none() {
+            missing_profile_fields.push("karma".to_owned());
+        }
+        if profile.is_pro.is_none() {
+            missing_profile_fields.push("is_pro".to_owned());
+        }
+        if !missing_profile_fields.is_empty() {
+            return Ok(PromoteObservedIdentityOutput {
+                user_id,
+                promoted: false,
+                missing_profile_fields,
+            });
+        }
+
+        // A new row, or a tombstone revival, materializes here. A refresh
+        // of a live row delegates to add_user but reports no promotion.
+        let materialized = match &existing {
+            None => true,
+            Some(row) => row.is_deleted,
+        };
+        Self::add_user(
+            ctx,
+            ImportUser {
+                user_id,
+                created_at: profile.created_at,
+                fetched_at: profile.fetched_at.unwrap_or(observed_at),
+                wikidot_user_type: ImportedUserType::Extant { name, slug },
+                avatar_uploaded_blob_id: profile.avatar_uploaded_blob_id,
+                real_name: profile.real_name,
+                gender: profile.gender,
+                birthday: profile.birthday,
+                location: profile.location,
+                biography: profile.biography,
+                website: profile.website,
+                // Checked non-empty above
+                karma: profile.karma.unwrap_or(KarmaLevel::Zero),
+                is_pro: profile.is_pro.unwrap_or(false),
+                importing_user_id,
+                ip_address,
+            },
+        )
+        .await
+        .or_raise(make_error)?;
+
+        Ok(PromoteObservedIdentityOutput {
+            user_id,
+            promoted: materialized,
+            missing_profile_fields: Vec::new(),
+        })
     }
 
     pub async fn add_site(

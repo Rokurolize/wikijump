@@ -51,6 +51,7 @@ STANDING_DATABASE = "wikijump-standing-database-1"
 STANDING_CACHE = "wikijump-standing-cache-1"
 STANDING_NAMESPACE = "wikijump-standing-caddy-1"
 STANDING_FILES_VOLUME = "wikijump-standing-files-data"
+TEXT_BLOCKS_BUCKET = "deepwell-text-blocks"
 RESOURCE_LIFETIME = timedelta(days=30)
 REFRESH_RECEIPT_SCHEMA_VERSION = 4
 PROMOTION_RECEIPT_SCHEMA = "wikijump.standing_promotion_receipt.v1"
@@ -269,7 +270,12 @@ def overlay_standing_files(volume: str, upper_volume: str) -> None:
     """A copy-on-write view of the standing object store.
 
     The rehearsal's writes land in `upper_volume`; standing's volume is only
-    the read-only lower layer, so nothing is copied up front."""
+    the read-only lower layer. Rendering a page replaces its hosted text
+    blocks and deletes the old objects, so standing's render-ahead and
+    ordinary edits would remove, from the shared lower layer, objects the
+    cloned database still names (#2650). The text-block bucket is small, so
+    it is copied up front and pinned to the moment of the clone; files stay
+    shared."""
     lower = run(
         "docker", "volume", "inspect", "--format", "{{.Mountpoint}}", STANDING_FILES_VOLUME
     )
@@ -281,12 +287,33 @@ def overlay_standing_files(volume: str, upper_volume: str) -> None:
         "--volume", f"{upper_volume}:/upper", helper, "/upper/data", "/upper/work",
     )
     run(
+        "docker", "run", "--rm", "--network", "none", "--entrypoint", "cp",
+        "--volume", f"{STANDING_FILES_VOLUME}:/lower:ro",
+        "--volume", f"{upper_volume}:/upper", helper,
+        "-a", f"/lower/{TEXT_BLOCKS_BUCKET}", "/upper/data/",
+    )
+    run(
         "docker", "volume", "create", "--driver", "local",
         "--label", "com.rokurolize.wikijump.owner=standing-rehearsal",
         "--opt", "type=overlay", "--opt", "device=overlay",
         "--opt", f"o=lowerdir={lower},upperdir={upper_root}/data,workdir={upper_root}/work",
         volume,
     )
+
+
+def missing_text_blocks(database_container: str, files_container: str) -> list[str]:
+    """Hosted text blocks the database names but its object store lacks.
+
+    Each key is checked as a stored object directory in the bucket; the
+    object store image has a shell but no find."""
+    keys = psql(database_container, "SELECT s3_filename FROM text_block ORDER BY 1")
+    return subprocess.run(
+        [
+            "docker", "exec", "-i", files_container, "sh", "-c",
+            f'while IFS= read -r key; do [ -f "/data/{TEXT_BLOCKS_BUCKET}/$key/xl.meta" ] || echo "$key"; done',
+        ],
+        input=keys, check=True, text=True, capture_output=True,
+    ).stdout.split()
 
 
 def remove_volumes(*names: str) -> None:
@@ -840,7 +867,8 @@ def finish(
         )
 
     # 5. rehearsal, alongside render-ahead when both are needed: neither reads
-    # the other's database.
+    # the other's database, and the rehearsal holds its own copy of the text
+    # blocks render-ahead replaces.
     if plan["render_ahead"] and plan["rehearse"]:
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
             ahead = pool.submit(stages.run, "render-ahead", render_stage)
@@ -918,6 +946,15 @@ def rehearse(source_root, evidence, stages, plan, reference, volumes, target, de
             )
             if stale:
                 raise RuntimeError(f"the rehearsal serves {stale} stale saved pages")
+            # Without its hosted text blocks the rehearsal answers
+            # local--code with 500 and parity reports unstyled geometry
+            # instead of a product difference.
+            missing = missing_text_blocks(f"{project}-database-1", f"{project}-files-1")
+            if missing:
+                raise RuntimeError(
+                    f"the rehearsal object store lacks {len(missing)} hosted text blocks "
+                    f"its database names, e.g. {', '.join(missing[:5])}"
+                )
             origin = f"scp-wiki.wikijump.localhost:{ports['public']}"
             canary = http_canary(
                 f"https://{origin}/scp-9506", f"{origin}:127.0.0.1"
