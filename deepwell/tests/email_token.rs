@@ -159,7 +159,7 @@ async fn issue_is_quiet_for_unknown_imported_and_deleted_addresses() {
         ImportUser {
             user_id: wikidot_id,
             created_at: time::OffsetDateTime::UNIX_EPOCH,
-            fetched_at: time::OffsetDateTime::UNIX_EPOCH,
+            fetched_at: time::OffsetDateTime::UNIX_EPOCH + time::Duration::seconds(1),
             wikidot_user_type: ImportedUserType::Extant {
                 name: format!("Import Token {fixture}"),
                 slug: format!("import-token-{fixture}"),
@@ -284,6 +284,19 @@ async fn reset_round_trip_sets_password_and_revokes_sessions() {
     )
     .await
     .expect("regular user should be created");
+
+    // Email login only resolves verified addresses, so the account verifies
+    // its mailbox first, exactly as the #2130 lifecycle requires before a
+    // later #2128 recovery.
+    let verify_token =
+        issue_for(&runner, created.user_id, &email, EmailTokenPurpose::VerifyEmail).await;
+    run_endpoint!(
+        runner => email_verify_redeem,
+        common::make_params(json!({
+            "token": verify_token,
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
 
     SessionService::create(
         runner.context(),
