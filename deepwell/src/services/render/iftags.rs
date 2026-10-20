@@ -101,6 +101,12 @@ fn resolve_outermost_wikidot_iftags_with_mode(
     let mut replacements = Vec::<Replacement>::new();
     let mut inactive_literal_scopes =
         HashMap::<(usize, usize), InactiveLiteralScope>::new();
+    // Whether a gate opener the scan skips (and so leaves raw) precedes the
+    // current token. A closer following such an opener may still complete a
+    // pair the pinned FTML resolves natively, so it stays raw; a closer with
+    // no visible opener anywhere before it can never pair, and escaping it
+    // keeps truly malformed closers literal without FTML parse errors.
+    let mut seen_skipped_opener = false;
 
     for captures in IFTAGS_TOKEN_REGEX.captures_iter(wikitext) {
         let token = captures.get(0).expect("iftags token");
@@ -117,6 +123,9 @@ fn resolve_outermost_wikidot_iftags_with_mode(
                 inactive_gate_closes_inside_literal(scope, token.end())
             });
         if literal.is_some() && !closes_inactive_root {
+            if captures.name("open").is_some() {
+                seen_skipped_opener = true;
+            }
             continue;
         }
 
@@ -147,13 +156,20 @@ fn resolve_outermost_wikidot_iftags_with_mode(
         }
 
         let Some(outer) = stack.pop() else {
-            // An unmatched closer stays raw. Its opener may be hidden inside
-            // a literal region the token scan skips, or may arrive from a
-            // source that has not expanded yet; escaping the closer here
-            // would freeze it as authored text and blind the pinned FTML to
-            // a pair it can still resolve natively. A closer nothing opens
-            // prints literally either way, so leaving it raw changes no
-            // evidenced output while keeping the gate recoverable.
+            // An unmatched closer stays raw when a skipped opener precedes
+            // it: the pair may still resolve natively in the pinned FTML,
+            // and escaping the closer would freeze it as authored text and
+            // blind that recovery. With no visible opener anywhere before
+            // it the closer can never pair, so Preserve keeps escaping it;
+            // that keeps truly malformed closers literal without FTML parse
+            // errors, exactly as the malformed-iftags evidence requires.
+            if unmatched_mode == UnmatchedBoundaryMode::Preserve && !seen_skipped_opener
+            {
+                replacements.push(Replacement {
+                    range: token.start()..token.end(),
+                    text: preserved.push_escaped_html_text(token.as_str()),
+                });
+            }
             continue;
         };
         let text = if !force_inactive && wikidot_tag_conditions_match(&outer.spec, tags) {
