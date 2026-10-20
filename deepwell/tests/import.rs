@@ -1683,7 +1683,9 @@ fn promote(
 fn full_profile(fixture: &str) -> ObservedUserProfile {
     ObservedUserProfile {
         created_at: OffsetDateTime::UNIX_EPOCH,
-        fetched_at: Some(OffsetDateTime::UNIX_EPOCH),
+        // The wikidot_user table requires created_at < fetched_at;
+        // a real snapshot is always fetched after the account creation.
+        fetched_at: Some(OffsetDateTime::UNIX_EPOCH + time::Duration::seconds(1)),
         avatar_uploaded_blob_id: None,
         real_name: Some(format!("Real {fixture}")),
         gender: None,
