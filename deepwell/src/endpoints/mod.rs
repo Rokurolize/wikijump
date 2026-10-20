@@ -63,6 +63,7 @@ pub mod all {
     pub use super::link::*;
     pub use super::locale::*;
     pub use super::message::*;
+    pub use super::mirror_scope::*;
     pub use super::normalize::*;
     pub use super::page::*;
     pub use super::page_attribution::*;
@@ -99,6 +100,7 @@ pub mod info;
 pub mod link;
 pub mod locale;
 pub mod message;
+pub mod mirror_scope;
 pub mod normalize;
 pub mod page;
 pub mod page_attribution;

@@ -21,6 +21,7 @@ pub use super::message_draft::Entity as MessageDraft;
 pub use super::message_recipient::Entity as MessageRecipient;
 pub use super::message_record::Entity as MessageRecord;
 pub use super::message_report::Entity as MessageReport;
+pub use super::mirror_scope::Entity as MirrorScope;
 pub use super::page::Entity as Page;
 pub use super::page_category::Entity as PageCategory;
 pub use super::page_connection::Entity as PageConnection;

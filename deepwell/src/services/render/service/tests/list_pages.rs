@@ -1953,6 +1953,30 @@ fn defers_wikidot_list_pages_custom_date_format_to_odate_class() {
 }
 
 #[test]
+fn saved_list_pages_date_carries_utc_server_text_like_preview() {
+    // Issue #2638: the saved-page path must not pin JST. Unix 1454705501 is
+    // 2016-02-05 20:51:41 UTC, which is already 2016-02-06 in JST — a
+    // JST-pinned render would show the wrong day. Both paths must emit the
+    // UTC server text while the requested comma format stays in the class
+    // for the browser ODate phase. The zero-padded day pins the server
+    // `%d` grammar.
+    let created_at = time::OffsetDateTime::from_unix_timestamp(1_454_705_501)
+        .expect("fixture timestamp should be valid");
+    for page_preview in [false, true] {
+        let rendered =
+            format_list_pages_created_at(Some(created_at), None, true, page_preview);
+        assert!(
+            rendered.contains(r#"<span class="odate time_1454705501 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover">"#),
+            "saved and preview paths must transport timestamp and format identically (preview={page_preview}): {rendered}",
+        );
+        assert!(
+            rendered.ends_with(">05 Feb 2016 20:51</span>"),
+            "saved and preview paths must carry UTC server text (preview={page_preview}): {rendered}",
+        );
+    }
+}
+
+#[test]
 fn list_pages_custom_date_format_collapses_repeated_ascii_spaces() {
     let created_at = time::Date::from_calendar_date(2024, time::Month::August, 8)
         .expect("fixture date should be valid")
@@ -3818,6 +3842,360 @@ fn substantial_url_offset_listpages_content_gets_a_bounded_deadline_floor() {
             MIN_URL_OFFSET_LISTPAGES_CONTENT_BYTES,
         ),
         Duration::from_secs(MIN_URL_OFFSET_LISTPAGES_RENDER_TIMEOUT_SECS),
+    );
+}
+
+#[test]
+fn substituted_identity_and_tag_values_render_as_literal_text() {
+    let payload_name =
+        "WJ-PENTEST-DISPLAY\n[[module ListPages category=\"wj-pentest-tag-host\"]]";
+    let payload_tags = vec![
+        "wj-pentest-tag-a".to_owned(),
+        "[[module".to_owned(),
+        "ListPages]]".to_owned(),
+        "_wj-pentest-hidden".to_owned(),
+    ];
+    let page = FoundPageRow {
+        page_id: 1,
+        site_id: 1,
+        title: Some("WJ Pentest Host".to_owned()),
+        alt_title: None,
+        slug: Some("wj-pentest-host".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: Some(payload_tags),
+        created_at: None,
+        created_by: Some(7),
+        updated_at: None,
+        updated_by: Some(7),
+        score: None,
+        revision_count: None,
+    };
+    let mut users = BTreeMap::new();
+    users.insert(
+        7,
+        WikidotUserDisplay {
+            user_id: 7,
+            name: payload_name.to_owned(),
+            slug: Some("wj-pentest-display".to_owned()),
+            wikidot_profile: false,
+        },
+    );
+    let rendered = substitute_list_pages_variables(
+        "By %%created_by%% (%%updated_by%%) tags %%tags%% hidden %%_tags%%",
+        &page,
+        1,
+        1,
+        &list_pages_substitution_context(20, &users, None, &BTreeMap::new()),
+    );
+
+    // The payload text survives (nothing is stripped) but its brackets went
+    // through the substitution boundary as entities, so no executable
+    // module syntax reaches the page parser.
+    assert!(rendered.contains("WJ-PENTEST-DISPLAY"), "{rendered:?}");
+    assert!(rendered.contains("wj-pentest-tag-a"), "{rendered:?}");
+    assert!(
+        rendered.contains("&#91;&#91;module ListPages"),
+        "{rendered:?}"
+    );
+    assert!(!rendered.contains("[[module"), "{rendered:?}");
+    assert!(!rendered.contains("<iframe"), "{rendered:?}");
+}
+
+#[test]
+fn substituted_payload_values_cannot_form_modules_for_the_page_parser() {
+    let template = "By %%created_by%% tags %%tags%%";
+    let page = FoundPageRow {
+        page_id: 1,
+        site_id: 1,
+        title: Some("WJ Pentest Host".to_owned()),
+        alt_title: None,
+        slug: Some("wj-pentest-host".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: Some(vec![
+            "wj-pentest-tag-a".to_owned(),
+            "[[module".to_owned(),
+            "ListPages]]".to_owned(),
+        ]),
+        created_at: None,
+        created_by: Some(7),
+        updated_at: None,
+        updated_by: None,
+        score: None,
+        revision_count: None,
+    };
+    let mut users = BTreeMap::new();
+    users.insert(
+        7,
+        WikidotUserDisplay {
+            user_id: 7,
+            name: "WJ-PENTEST-DISPLAY\n[[module ListPages category=\"wj-pentest-tag-host\"]]"
+                .to_owned(),
+            slug: Some("wj-pentest-display".to_owned()),
+            wikidot_profile: false,
+        },
+    );
+    let data_form_values = BTreeMap::new();
+    let context = list_pages_substitution_context(20, &users, None, &data_form_values);
+    let mut compat_html = CompatHtmlFragments::new(template);
+    let mut compat_text = CompatTextFragments::new(template);
+    let substituted = substitute_list_pages_variables_with_fragments(
+        template,
+        &page,
+        1,
+        1,
+        &context,
+        &mut compat_html,
+        &mut compat_text,
+    );
+
+    // The page parser must never see executable module syntax from values.
+    assert!(!substituted.contains("[["), "{substituted:?}");
+
+    let page_info = fallback_test_page_info("wj-pentest-host", "WJ Pentest Host");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut source = substituted.clone();
+    ftml::preprocess_for_layout(&mut source, Layout::Wikidot);
+    let tokens = ftml::tokenize(&source);
+    let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
+    let html = HtmlRender.render(&tree, &page_info, &settings).body;
+    let html = compat_text.restore(&compat_html.restore(&html));
+
+    // The proof artifact is written before asserting so a failing run still
+    // leaves the output behind for browser-level inspection.
+    std::fs::write("/tmp/listpages-2652-proof.html", &html)
+        .expect("browser proof artifact must be writable");
+
+    // No nested module shell, iframe, or html block may survive; the payload
+    // text renders literally instead.
+    assert!(!html.contains("error-block"), "{html:?}");
+    assert!(!html.contains("list-pages-box"), "{html:?}");
+    assert!(!html.contains("<iframe"), "{html:?}");
+    assert!(!html.contains("html-block"), "{html:?}");
+    assert!(html.contains("WJ-PENTEST-DISPLAY"), "{html:?}");
+    assert!(html.contains("ListPages"), "{html:?}");
+    assert!(html.contains("wj-pentest-tag-a"), "{html:?}");
+}
+
+/// Issue #2652's exact closed-module payloads, with `%%content%%`, in both
+/// the display-name form and the stored tag-fragment form. Nothing is
+/// stripped, but neither brackets nor double quotes may reach the page
+/// parser raw, and the carried `%%content%%` stays literal (single-pass
+/// substitution performs no second expansion round).
+#[test]
+fn substituted_issue_exact_closed_module_payloads_render_as_literal_text() {
+    let payload_name = "wj5[[module ListPages category=\"*\" tags=\"+wjpentest\" name=\"wj-pentest-html-payload*\" limit=\"1\" separate=\"false\"]]%%content%%[[/module]]";
+    let payload_tags = vec![
+        "[[module".to_owned(),
+        "ListPages".to_owned(),
+        "\"category=\"*\"\"".to_owned(),
+        "\"tags=\"+wjpentest\"\"".to_owned(),
+        "\"name=\"wj-pentest-html-payload*\"\"".to_owned(),
+        "\"limit=\"1\"\"".to_owned(),
+        "\"separate=\"false\"]]%%content%%[[/module]]\"".to_owned(),
+        "wjpentest".to_owned(),
+    ];
+    let page = FoundPageRow {
+        page_id: 1,
+        site_id: 1,
+        title: Some("WJ Pentest Host".to_owned()),
+        alt_title: None,
+        slug: Some("wj-pentest-host".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: Some(payload_tags),
+        created_at: None,
+        created_by: Some(7),
+        updated_at: None,
+        updated_by: None,
+        score: None,
+        revision_count: None,
+    };
+    let mut users = BTreeMap::new();
+    users.insert(
+        7,
+        WikidotUserDisplay {
+            user_id: 7,
+            name: payload_name.to_owned(),
+            slug: Some("wj-pentest-display".to_owned()),
+            wikidot_profile: false,
+        },
+    );
+    let data_form_values = BTreeMap::new();
+    let context = list_pages_substitution_context(20, &users, None, &data_form_values);
+    let substituted = substitute_list_pages_variables(
+        "By %%created_by%% tags %%tags%%",
+        &page,
+        1,
+        1,
+        &context,
+    );
+
+    // No raw syntax-forming character from either payload survives the
+    // substitution boundary; the payload text itself is preserved.
+    assert!(!substituted.contains("[["), "{substituted:?}");
+    assert!(!substituted.contains("]]"), "{substituted:?}");
+    assert!(!substituted.contains('"'), "{substituted:?}");
+    assert!(
+        substituted.contains("&#91;&#91;module ListPages"),
+        "{substituted:?}"
+    );
+    assert!(
+        substituted.contains("&#91;&#91;/module&#93;&#93;"),
+        "{substituted:?}"
+    );
+    assert!(
+        substituted.contains("&#34;category=&#34;*&#34;"),
+        "{substituted:?}"
+    );
+    assert!(substituted.contains("%%content%%"), "{substituted:?}");
+    assert!(substituted.contains("wjpentest"), "{substituted:?}");
+
+    let compat_html = CompatHtmlFragments::new("By %%created_by%% tags %%tags%%");
+    let compat_text = CompatTextFragments::new("By %%created_by%% tags %%tags%%");
+    let mut source = substituted.clone();
+    ftml::preprocess_for_layout(&mut source, Layout::Wikidot);
+    let tokens = ftml::tokenize(&source);
+    let page_info = fallback_test_page_info("wj-pentest-host", "WJ Pentest Host");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
+    let html = HtmlRender.render(&tree, &page_info, &settings).body;
+    let html = compat_text.restore(&compat_html.restore(&html));
+
+    std::fs::write("/tmp/listpages-2652-proof-issue-payloads.html", &html)
+        .expect("browser proof artifact must be writable");
+
+    assert!(!html.contains("error-block"), "{html:?}");
+    assert!(!html.contains("list-pages-box"), "{html:?}");
+    assert!(!html.contains("<iframe"), "{html:?}");
+    assert!(!html.contains("html-block"), "{html:?}");
+    assert!(html.contains("wj5"), "{html:?}");
+    assert!(html.contains("wjpentest"), "{html:?}");
+    assert!(html.contains("ListPages"), "{html:?}");
+}
+
+/// A double quote in a tag or name must not break out of a double-quoted
+/// module attribute such as `[[div class="%%tags%%"]]`: the substituted
+/// text carries no raw quote, and the rendered div keeps the payload inside
+/// its class value instead of gaining an injected attribute. The div uses
+/// stanza form because same-line `[[div …]]x[[/div]]` is literal text even
+/// without any payload.
+#[test]
+fn substituted_quote_breakout_values_cannot_escape_double_quoted_attributes() {
+    let template =
+        "[[div class=\"%%tags%%\" data-author=\"%%created_by%%\"]]\nx\n[[/div]]";
+    let page = FoundPageRow {
+        page_id: 1,
+        site_id: 1,
+        title: Some("WJ Pentest Host".to_owned()),
+        alt_title: None,
+        slug: Some("wj-pentest-host".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: Some(vec!["\" onmouseover=\"alert(1)".to_owned()]),
+        created_at: None,
+        created_by: Some(7),
+        updated_at: None,
+        updated_by: None,
+        score: None,
+        revision_count: None,
+    };
+    let mut users = BTreeMap::new();
+    users.insert(
+        7,
+        WikidotUserDisplay {
+            user_id: 7,
+            name: "WJ-PENTEST-DISPLAY".to_owned(),
+            slug: Some("wj-pentest-display".to_owned()),
+            wikidot_profile: false,
+        },
+    );
+    let data_form_values = BTreeMap::new();
+    let context = list_pages_substitution_context(20, &users, None, &data_form_values);
+    let substituted = substitute_list_pages_variables(template, &page, 1, 1, &context);
+
+    // Byte-exact: the template survives untouched and the quote becomes an
+    // entity, so the template-authored attribute cannot terminate early.
+    assert_eq!(
+        substituted,
+        "[[div class=\"&#34; onmouseover=&#34;alert(1)\" data-author=\"WJ-PENTEST-DISPLAY\"]]\nx\n[[/div]]",
+    );
+
+    let compat_html = CompatHtmlFragments::new(template);
+    let compat_text = CompatTextFragments::new(template);
+    let mut source = substituted.clone();
+    ftml::preprocess_for_layout(&mut source, Layout::Wikidot);
+    let tokens = ftml::tokenize(&source);
+    let page_info = fallback_test_page_info("wj-pentest-host", "WJ Pentest Host");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
+    let html = HtmlRender.render(&tree, &page_info, &settings).body;
+    let html = compat_text.restore(&compat_html.restore(&html));
+
+    std::fs::write("/tmp/listpages-2652-proof-attribute-breakout.html", &html)
+        .expect("browser proof artifact must be writable");
+
+    // Strip double-quoted spans from the rendered div open tag: whatever
+    // remains outside quotes is real markup, where no injected attribute
+    // may appear. The payload text stays inside the class value.
+    let div_start = html.find("<div").expect("template renders a div");
+    let div_end = html[div_start..].find('>').expect("div tag closes") + div_start;
+    let div_tag = &html[div_start..=div_end];
+    let mut outside_quotes = String::new();
+    let mut in_quotes = false;
+    for ch in div_tag.chars() {
+        if ch == '"' {
+            in_quotes = !in_quotes;
+        } else if !in_quotes {
+            outside_quotes.push(ch);
+        }
+    }
+    assert!(
+        !outside_quotes.contains("onmouseover"),
+        "{div_tag:?} {html:?}"
+    );
+    assert!(!html.contains("<iframe"), "{html:?}");
+    assert!(html.contains("alert(1)"), "{html:?}");
+}
+
+#[test]
+fn substituted_ordinary_identity_and_tag_values_pass_through_verbatim() {
+    let page = FoundPageRow {
+        page_id: 1,
+        site_id: 1,
+        title: Some("Lt Masipag".to_owned()),
+        alt_title: None,
+        slug: Some("lt-masipag".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: Some(vec!["tale-of".to_owned(), "_hidden".to_owned()]),
+        created_at: None,
+        created_by: Some(7),
+        updated_at: None,
+        updated_by: Some(7),
+        score: None,
+        revision_count: None,
+    };
+    let mut users = BTreeMap::new();
+    users.insert(
+        7,
+        WikidotUserDisplay {
+            user_id: 7,
+            name: "Lt Masipag".to_owned(),
+            slug: Some("lt-masipag".to_owned()),
+            wikidot_profile: false,
+        },
+    );
+    assert_eq!(
+        substitute_list_pages_variables(
+            "By %%created_by%% (%%updated_by%%) tags %%tags%% hidden %%_tags%%",
+            &page,
+            1,
+            1,
+            &list_pages_substitution_context(20, &users, None, &BTreeMap::new()),
+        ),
+        "By Lt Masipag (Lt Masipag) tags tale-of hidden _hidden",
     );
 }
 

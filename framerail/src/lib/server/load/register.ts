@@ -11,6 +11,7 @@ import {
   redactAuthActionPayload
 } from "$lib/server/load/auth-form-redaction.js"
 import { failForActionError } from "$lib/server/load/action-error"
+import { isRegistrationHoneypotTripped } from "$lib/server/load/register-honeypot.js"
 import { legalDestinations } from "$lib/server/legal-links"
 import { loadSiteInfo } from "$lib/server/load/site-info"
 import { fail } from "@sveltejs/kit"
@@ -114,6 +115,17 @@ export async function registerAction({ request, getClientAddress }: RequestEvent
     )
   }
 
+  // #2074 anti-bot honeypot: the off-screen blank checkbox must stay empty.
+  // Reject before userCreate so a tripped gate creates no user, session, or
+  // verification state. The failure is intentionally indistinguishable from
+  // ordinary invalid input: no classification detail is returned.
+  if (isRegistrationHoneypotTripped(form.data.leaveBlank)) {
+    return fail(
+      400,
+      redactAuthActionPayload({ form: clearRegisterPasswords(form) }, submittedPasswords)
+    )
+  }
+
   const ipAddress = getClientAddress()
   const { data } = form
 
@@ -150,6 +162,10 @@ const registerSchema = pipe(
       check(accountPasswordMeetsMinimum, ACCOUNT_PASSWORD_TOO_SHORT)
     ),
     confirmPassword: pipe(string(), minLength(1)),
+    // #2074 honeypot carrier: an unchecked checkbox submits nothing, so the
+    // field stays optional and never fails validation on its own. The trip
+    // decision lives in register-honeypot.js and is enforced above.
+    leaveBlank: optional(string()),
     locale: pipe(
       optional(array(string()), ["en"]),
       minLength(1),
