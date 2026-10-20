@@ -719,6 +719,9 @@ impl ImportService {
             created_at,
             name,
             slug,
+            tagline,
+            description,
+            license,
             locale,
             ip_address,
         }: ImportSite,
@@ -743,6 +746,9 @@ impl ImportService {
             from_wikidot: Set(true),
             name: Set(name.clone()),
             slug: Set(slug.clone()),
+            tagline: Set(tagline),
+            description: Set(description),
+            license: Set(license),
             locale: Set(locale),
             ..Default::default()
         };
