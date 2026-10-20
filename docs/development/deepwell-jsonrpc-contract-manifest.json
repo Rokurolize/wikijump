@@ -5339,7 +5339,7 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "endpoint_behavioral",
-        "reference": "deepwell/tests/import.rs#failed_import_rolls_back_new_known_user_with_caller_transaction",
+        "reference": "deepwell/tests/import.rs#import_file_requires_imported_parent_page",
         "alternatives": [
           "deepwell/tests/list_pages.rs#child_listpages_expands_site_domain_and_parent_fullname",
           "deepwell/tests/list_pages.rs#countpages_static_filter_direct_fragment_renders_zero_without_raw_markers",

@@ -38,18 +38,18 @@ use deepwell::services::blob::EMPTY_BLOB_HASH;
 use deepwell::services::file::FileService;
 use deepwell::services::file_revision::{CreateFirstFileRevision, FileRevisionService};
 use deepwell::services::import::{
-    ImportFile, ImportFileDelete, ImportFileExpectation, ImportPageFilesVerify,
-    ImportService, ImportUser, ImportedUserType,
+    ImportFile, ImportFileDelete, ImportFileExpectation, ImportPage,
+    ImportPageFilesVerify, ImportService, ImportUser, ImportedUserType,
+    MAX_IMPORT_FILE_BYTES,
 };
 use deepwell::services::user::{CreateUser, UserService};
 use deepwell::services::{RequestContext, ServiceContext};
 use deepwell::types::{FileRevisionType, UserType};
 use ftml::data::KarmaLevel;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, ConnectionTrait, EntityTrait,
-    PaginatorTrait, QueryFilter, TransactionTrait,
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, PaginatorTrait,
+    QueryFilter, TransactionTrait,
 };
-use sea_orm::{Statement, Value};
 use serde_json::json;
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -790,40 +790,31 @@ fn verify_input(
 }
 
 async fn import_attachment_page(runner: &mut TestRunner, tag: &Uuid) -> (i64, i64) {
+    // Fixture pages come through the page importer itself, so they carry
+    // source provenance natively and no test-side flag flip is needed.
     let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
         .unwrap()
         .site
         .site_id;
-    runner.set_request_context(RequestContext {
-        user_id: Some(ADMIN_USER_ID),
-        site_id: Some(site_id),
-        ..Default::default()
-    });
-    let page = run_endpoint!(
-        runner,
-        page_create,
-        json!({
-            "site_id": site_id,
-            "wikitext": "Attachment inventory fixture",
-            "title": "Attachment inventory fixture",
-            "alt_title": null,
-            "slug": format!("attachment-inventory-{tag}"),
-            "layout": "wikidot",
-            "revision_comments": "fixture",
-            "user_id": ADMIN_USER_ID,
-            "bypass_filter": true,
-            "ip_address": common::IP_ADDRESS,
-        }),
-    );
-    let db = runner.context().transaction();
-    db.execute_raw(Statement::from_sql_and_values(
-        db.get_database_backend(),
-        "UPDATE page SET from_wikidot = TRUE WHERE page_id = $1",
-        [Value::from(page.page_id)],
-    ))
+    let page_id = 3_200_000_000
+        + i64::from(
+            u32::from_be_bytes(tag.as_bytes()[..4].try_into().unwrap()) % 50_000_000,
+        );
+    ImportService::add_page(
+        runner.context(),
+        ImportPage {
+            page_id,
+            site_id,
+            created_at: OffsetDateTime::UNIX_EPOCH,
+            slug: format!("attachment-inventory-{tag}"),
+            locked: false,
+            discussion_thread_id: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
     .await
-    .expect("fixture page should be marked as imported");
-    (site_id, page.page_id)
+    .expect("fixture page should import as a Wikidot page");
+    (site_id, page_id)
 }
 
 async fn import_attachment_uploader(runner: &TestRunner, label: &str) -> i64 {
@@ -877,6 +868,19 @@ async fn cleanup_imported_blob(runner: &TestRunner, hash_hex: &str) {
         .delete_object(hash_hex)
         .await
         .expect("imported blob cleanup should succeed");
+}
+
+async fn assert_blob_absent(runner: &TestRunner, hash_hex: &str) {
+    let (_, status) = runner
+        .state()
+        .s3_files_bucket
+        .head_object(hash_hex)
+        .await
+        .expect("blob absence probe should succeed");
+    assert_eq!(
+        status, 404,
+        "rejected import must not stage bytes for {hash_hex}",
+    );
 }
 
 async fn file_row_count(runner: &TestRunner, page_id: i64) -> u64 {
@@ -987,10 +991,10 @@ async fn import_file_rejects_metadata_mismatching_materialized_bytes() {
         .expect_err("metadata disagreeing with staged bytes must fail");
     assert_contains_error!(error, ErrorType::DatabaseImport);
 
-    // Neither failed import may leave a relation behind.
+    // Neither failed import may leave a relation behind, and since
+    // validation runs before staging, no bytes may be staged either.
     assert_eq!(file_row_count(&runner, page_id).await, 0);
-
-    cleanup_imported_blob(&runner, &hash_hex).await;
+    assert_blob_absent(&runner, &hash_hex).await;
 }
 
 #[tokio::test]
@@ -1270,7 +1274,7 @@ async fn verify_page_files_ignores_local_origin_additions() {
 }
 
 #[tokio::test]
-async fn verify_page_files_rejects_staged_blob_without_relation() {
+async fn verify_page_files_rejects_missing_relation_despite_staged_bytes() {
     let mut runner = TestRunner::setup().await;
     let tag = Uuid::new_v4();
     let (site_id, page_id) = import_attachment_page(&mut runner, &tag).await;
@@ -1365,4 +1369,288 @@ async fn verify_page_files_rejects_extraneous_source_relation() {
 
     cleanup_imported_blob(&runner, &kept_hash).await;
     cleanup_imported_blob(&runner, &extra_hash).await;
+}
+
+#[tokio::test]
+async fn import_file_reimport_corrects_provenance_without_new_revision() {
+    let mut runner = TestRunner::setup().await;
+    let tag = Uuid::new_v4();
+    let (site_id, page_id) = import_attachment_page(&mut runner, &tag).await;
+    let uploader = import_attachment_uploader(&runner, "uploader").await;
+    let corrected_uploader =
+        import_attachment_uploader(&runner, "corrected-uploader").await;
+    let data = source_bytes(&tag, "provenance");
+    let hash_hex = blob_hash_to_hex(&sha512_hash(&data)).to_string();
+    let corrected_at = source_attachment_time() + time::Duration::days(7);
+
+    let first = ImportService::add_file(
+        runner.context(),
+        import_file_input(site_id, page_id, "corrected.jpg", data.clone(), uploader),
+    )
+    .await
+    .expect("first import should succeed");
+
+    // Same bytes with corrected provenance: no new revision, same rows,
+    // corrected uploader/timestamp/comments in place.
+    let mut corrected = import_file_input(
+        site_id,
+        page_id,
+        "corrected.jpg",
+        data.clone(),
+        corrected_uploader,
+    );
+    corrected.created_at = corrected_at;
+    corrected.revision_comments = "Corrected source provenance".to_owned();
+    let second = ImportService::add_file(runner.context(), corrected)
+        .await
+        .expect("provenance correction should succeed");
+    assert_eq!(first.file_id, second.file_id);
+    assert_eq!(first.file_revision_id, second.file_revision_id);
+    assert_eq!(file_revision_count(&runner, first.file_id).await, 1);
+
+    let revision = FileRevisionService::get_latest(
+        runner.context(),
+        site_id,
+        page_id,
+        first.file_id,
+    )
+    .await
+    .expect("latest revision lookup should succeed");
+    assert_eq!(revision.user_id, corrected_uploader);
+    assert_eq!(revision.created_at, corrected_at);
+    assert_eq!(revision.comments, "Corrected source provenance");
+    let file = FileTable::find_by_id(first.file_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("file lookup should succeed")
+        .expect("file row should exist");
+    assert_eq!(file.created_at, corrected_at);
+
+    // Re-importing the corrected snapshot is now a pure no-op.
+    let mut converged = import_file_input(
+        site_id,
+        page_id,
+        "corrected.jpg",
+        data.clone(),
+        corrected_uploader,
+    );
+    converged.created_at = corrected_at;
+    converged.revision_comments = "Corrected source provenance".to_owned();
+    let third = ImportService::add_file(runner.context(), converged)
+        .await
+        .expect("corrected re-import should converge");
+    assert_eq!(third.file_revision_id, second.file_revision_id);
+    assert_eq!(file_revision_count(&runner, first.file_id).await, 1);
+
+    cleanup_imported_blob(&runner, &hash_hex).await;
+}
+
+#[tokio::test]
+async fn import_file_readd_revives_tombstoned_row() {
+    let mut runner = TestRunner::setup().await;
+    let tag = Uuid::new_v4();
+    let (site_id, page_id) = import_attachment_page(&mut runner, &tag).await;
+    let uploader = import_attachment_uploader(&runner, "uploader").await;
+    let data = source_bytes(&tag, "revived");
+    let hash_hex = blob_hash_to_hex(&sha512_hash(&data)).to_string();
+    let deleted_at = source_attachment_time() + time::Duration::days(30);
+
+    let imported = ImportService::add_file(
+        runner.context(),
+        import_file_input(site_id, page_id, "revived.jpg", data.clone(), uploader),
+    )
+    .await
+    .expect("source attachment should import");
+    ImportService::delete_file(
+        runner.context(),
+        ImportFileDelete {
+            site_id,
+            page_id,
+            name: "revived.jpg".to_owned(),
+            user_id: uploader,
+            deleted_at,
+            revision_comments: "Source removal".to_owned(),
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("source deletion should import");
+
+    // Re-adding identical bytes revives the same row: no fork, history kept.
+    let revived = ImportService::add_file(
+        runner.context(),
+        import_file_input(site_id, page_id, "revived.jpg", data.clone(), uploader),
+    )
+    .await
+    .expect("re-add should revive the tombstoned row");
+    assert_eq!(revived.file_id, imported.file_id);
+    assert_eq!(file_row_count(&runner, page_id).await, 1);
+    assert_eq!(file_revision_count(&runner, imported.file_id).await, 3);
+    let latest = FileRevisionService::get_latest(
+        runner.context(),
+        site_id,
+        page_id,
+        imported.file_id,
+    )
+    .await
+    .expect("latest revision lookup should succeed");
+    assert_eq!(latest.revision_type, FileRevisionType::Undelete);
+    assert_eq!(latest.revision_number, 2);
+
+    // Re-adding changed bytes after another delete appends one replacement
+    // revision on the same revived row.
+    ImportService::delete_file(
+        runner.context(),
+        ImportFileDelete {
+            site_id,
+            page_id,
+            name: "revived.jpg".to_owned(),
+            user_id: uploader,
+            deleted_at,
+            revision_comments: "Source removal again".to_owned(),
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("second source deletion should import");
+    let replacement = source_bytes(&tag, "revived-replacement");
+    let replacement_hash = blob_hash_to_hex(&sha512_hash(&replacement)).to_string();
+    let readded = ImportService::add_file(
+        runner.context(),
+        import_file_input(
+            site_id,
+            page_id,
+            "revived.jpg",
+            replacement.clone(),
+            uploader,
+        ),
+    )
+    .await
+    .expect("changed re-add should revive and replace");
+    assert_eq!(readded.file_id, imported.file_id);
+    assert_eq!(file_row_count(&runner, page_id).await, 1);
+    let latest = FileRevisionService::get_latest(
+        runner.context(),
+        site_id,
+        page_id,
+        imported.file_id,
+    )
+    .await
+    .expect("latest revision lookup should succeed");
+    assert_eq!(latest.revision_type, FileRevisionType::Regular);
+    assert_eq!(latest.s3_hash, sha512_hash(&replacement).to_vec());
+
+    cleanup_imported_blob(&runner, &hash_hex).await;
+    cleanup_imported_blob(&runner, &replacement_hash).await;
+}
+
+#[tokio::test]
+async fn import_file_rejects_oversized_snapshot() {
+    let mut runner = TestRunner::setup().await;
+    let tag = Uuid::new_v4();
+    let (site_id, page_id) = import_attachment_page(&mut runner, &tag).await;
+    let uploader = import_attachment_uploader(&runner, "uploader").await;
+    let data = vec![0x41; MAX_IMPORT_FILE_BYTES + 1];
+    let hash_hex = blob_hash_to_hex(&sha512_hash(&data)).to_string();
+    let size = i64::try_from(data.len()).expect("fixture size should fit");
+
+    let error = ImportService::add_file(
+        runner.context(),
+        ImportFile {
+            site_id,
+            page_id,
+            name: "too-big.bin".to_owned(),
+            data,
+            size,
+            s3_hash: hash_hex.clone(),
+            user_id: uploader,
+            created_at: source_attachment_time(),
+            revision_comments: "Oversized source snapshot".to_owned(),
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect_err("oversized snapshot must fail before staging");
+    assert_contains_error!(error, ErrorType::DatabaseImport);
+    assert!(
+        format!("{error:?}").contains("exceeds the maximum import size"),
+        "oversized rejection should name the limit: {error:?}",
+    );
+    assert_eq!(file_row_count(&runner, page_id).await, 0);
+    assert_blob_absent(&runner, &hash_hex).await;
+}
+
+#[tokio::test]
+async fn import_file_requires_imported_parent_page() {
+    let mut runner = TestRunner::setup().await;
+    let tag = Uuid::new_v4();
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .unwrap()
+        .site
+        .site_id;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    // A native page: created through authoring, never flagged as imported.
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Native page, not a Wikidot import",
+            "title": "Native page",
+            "alt_title": null,
+            "slug": format!("native-import-target-{tag}"),
+            "layout": "wikidot",
+            "revision_comments": "fixture",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let uploader = import_attachment_uploader(&runner, "uploader").await;
+    let data = source_bytes(&tag, "native-target");
+
+    let error = ImportService::add_file(
+        runner.context(),
+        import_file_input(site_id, page.page_id, "native.jpg", data, uploader),
+    )
+    .await
+    .expect_err("import onto a native page must fail");
+    assert_contains_error!(error, ErrorType::DatabaseImport);
+    assert!(
+        format!("{error:?}").contains("not an imported Wikidot page"),
+        "native-page rejection should name the precondition: {error:?}",
+    );
+}
+
+#[tokio::test]
+async fn verify_page_files_tolerates_unnormalized_snapshot_names() {
+    let mut runner = TestRunner::setup().await;
+    let tag = Uuid::new_v4();
+    let (site_id, page_id) = import_attachment_page(&mut runner, &tag).await;
+    let uploader = import_attachment_uploader(&runner, "uploader").await;
+    let data = source_bytes(&tag, "padded");
+    let hash_hex = blob_hash_to_hex(&sha512_hash(&data)).to_string();
+
+    ImportService::add_file(
+        runner.context(),
+        import_file_input(site_id, page_id, "padded.jpg", data.clone(), uploader),
+    )
+    .await
+    .expect("source attachment should import");
+
+    // Snapshot padding that the row lookup tolerates must not false-fail
+    // the extraneous sweep.
+    let verified = ImportService::verify_page_files(
+        runner.context(),
+        verify_input(site_id, page_id, &[("  padded.jpg  ", &data)]),
+    )
+    .await
+    .expect("padded snapshot name should verify");
+    assert_eq!(verified.verified_files, 1);
+
+    cleanup_imported_blob(&runner, &hash_hex).await;
 }

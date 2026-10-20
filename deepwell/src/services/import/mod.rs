@@ -29,7 +29,7 @@ pub use self::discussion_structs::{
     ImportDiscussion, ImportDiscussionOutput,
 };
 
-pub use self::service::ImportService;
+pub use self::service::{ImportService, MAX_IMPORT_FILE_BYTES};
 pub use self::structs::{
     ImportFile, ImportFileDelete, ImportFileDeleteOutput, ImportFileExpectation,
     ImportFileOutput, ImportPage, ImportPageFilesVerify, ImportPageFilesVerifyOutput,

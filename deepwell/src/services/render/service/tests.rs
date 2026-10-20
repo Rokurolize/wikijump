@@ -64,8 +64,7 @@ use super::{
     COUNTPAGES_MODULE_REGEX, CodeBlock, CollectingIncluder, CompatHtmlFragments,
     CompatTextFragments, CorpusReplayExpandedWikitext, CorpusReplayPreparationStage,
     CountPagesRequiredTagBatchResult, IncludeExpansionContext, IncludeSourceCache,
-    LiteralRegionIndex, MAX_FTML_COMPAT_COLLAPSIBLE_BLOCKS,
-    MAX_FTML_COMPAT_DENSE_PARSE_SCORE, MAX_FTML_COMPAT_PARSE_BYTES,
+    LiteralRegionIndex, MAX_FTML_COMPAT_DENSE_PARSE_SCORE, MAX_FTML_COMPAT_PARSE_BYTES,
     MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER, MAX_LISTPAGES_RENDER_OFFSET,
     MAX_LISTPAGES_RENDER_SCAN_ROWS, MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS,
     MIN_FTML_COMPAT_TABBED_FALLBACK_BYTES, MIN_FTML_COMPAT_TABBED_FALLBACK_MARKERS,
@@ -363,6 +362,85 @@ fn compatibility_protection_preserves_ftml_lexical_ownership() {
             "{source:?}",
         );
     }
+}
+
+/// Render a page body through the Wikidot source trim, the render
+/// preparation, and the FTML pipeline, in the production order.
+fn render_wikidot_trimmed_page_body(wikitext: &str) -> String {
+    let page_info = fallback_test_page_info("scp-7243", "SCP-7243");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut source = wikitext.to_owned();
+    RenderService::trim_wikidot_document_leading_whitespace(&mut source);
+    let outer = RenderService::prepare_outer_render_wikitext(
+        super::ExpandedRenderWikitext {
+            theme_previewer_blank: false,
+            wikidot_compat_html: CompatHtmlFragments::new(&source),
+            wikidot_compat_text: CompatTextFragments::new(&source),
+            wikitext: source,
+            included_pages: Vec::new(),
+            expanded_include_count: 0,
+            url_offset_list_pages_content_bytes: 0,
+            runtime_css_insertions: Vec::new(),
+        },
+        &page_info,
+        &settings,
+    );
+    let inner = RenderService::prepare_inner_render_wikitext(outer, &settings);
+    let tokens = ftml::tokenize(&inner.wikitext);
+    let (tree, errors) = ftml::parse(&tokens, &page_info, &settings).into();
+    assert!(errors.is_empty(), "{wikitext:?}: {errors:#?}");
+    let html = HtmlRender.render(&tree, &page_info, &settings).body;
+    inner
+        .protection
+        .restore(|protection| protection.compat_text().restore(&html))
+}
+
+/// Wikidot trims the leading whitespace of a page source before it parses, so
+/// an indented first block head owns its block.
+///
+/// Wikidot observations: anonymous PagePreviewModule, scp-wiki, 2026-10-19.
+#[test]
+fn trims_the_leading_whitespace_of_a_page_source() {
+    for (source, expected) in [
+        (
+            " * a\n * b\n\nz",
+            "<ul>\n<li>a\n<ul>\n<li>b</li>\n</ul>\n</li>\n</ul><p>z</p>",
+        ),
+        (
+            "\n\n  \n * a\n * b\n\nz",
+            "<ul>\n<li>a\n<ul>\n<li>b</li>\n</ul>\n</li>\n</ul><p>z</p>",
+        ),
+        (
+            "  + Heading\n\nz",
+            "<h1 id=\"toc0\"><span>Heading</span></h1><p>z</p>",
+        ),
+        (
+            " > quoted\n\nz",
+            "<blockquote><p>quoted</p></blockquote><p>z</p>",
+        ),
+        ("   ----\n\nz", "<hr><p>z</p>"),
+    ] {
+        assert_eq!(
+            render_wikidot_trimmed_page_body(source),
+            expected,
+            "{source:?}",
+        );
+    }
+}
+
+/// The trim only covers the start of the page source, so an indented marker
+/// after other content stays literal text.
+#[test]
+fn keeps_indented_markers_after_content_literal() {
+    assert_eq!(
+        render_wikidot_trimmed_page_body("text\n * a\n * b\n\nz"),
+        "<p>text<br>\n* a<br>\n* b</p><p>z</p>",
+    );
+
+    assert_eq!(
+        render_wikidot_trimmed_page_body("[!-- c --]\n * a"),
+        "<p>* a</p>",
+    );
 }
 
 fn render_wikidot_fallback_after_generated_compat_restore(wikitext: &str) -> String {
@@ -2172,12 +2250,12 @@ fn protects_wikidot_wikipedia_links_before_ftml_parsing() {
         &links,
     );
 
-    assert!(html_output.body.contains(r#"<a href="http://en.wikipedia.org/wiki/Canonical_bundle" onclick="window.open(this.href, '_blank'); return false;">Canonical Bundle</a>"#));
+    assert!(html_output.body.contains(r#"<a href="https://en.wikipedia.org/wiki/Canonical_bundle" onclick="window.open(this.href, '_blank'); return false;">Canonical Bundle</a>"#));
     assert!(!html_output.body.contains("[wikipedia:Canonical_bundle"));
     assert_eq!(
         html_output.backlinks.external_links,
         vec![Cow::Borrowed(
-            "http://en.wikipedia.org/wiki/Canonical_bundle"
+            "https://en.wikipedia.org/wiki/Canonical_bundle"
         )],
     );
 }
@@ -2229,15 +2307,58 @@ fn restores_dense_wikidot_wikipedia_links_without_repeated_scans() {
 }
 
 #[test]
-fn renders_wikidot_wikipedia_links_with_language_and_default_label() {
+fn renders_wikidot_wikipedia_links_without_language_split_and_verbatim_default_label() {
+    // Live Wikidot keeps a language-looking prefix in the path of one fixed
+    // host instead of splitting it into a subdomain; see issue #2576.
     assert_eq!(
         super::build_wikidot_wikipedia_link("it:Albert_Einstein", Some("Albert")).anchor,
-        r#"<a href="http://it.wikipedia.org/wiki/Albert_Einstein" onclick="window.open(this.href, '_blank'); return false;">Albert</a>"#,
+        r#"<a href="https://en.wikipedia.org/wiki/it:Albert_Einstein" onclick="window.open(this.href, '_blank'); return false;">Albert</a>"#,
     );
     assert_eq!(
         super::build_wikidot_wikipedia_link("Canonical_bundle", None).anchor,
-        r#"<a href="http://en.wikipedia.org/wiki/Canonical_bundle" onclick="window.open(this.href, '_blank'); return false;">Canonical bundle</a>"#,
+        r#"<a href="https://en.wikipedia.org/wiki/Canonical_bundle" onclick="window.open(this.href, '_blank'); return false;">Canonical_bundle</a>"#,
     );
+}
+
+/// Sealed live contract from issue #2576 (anonymous PagePreviewModule on
+/// scp-wiki, 2026-10-19, record `list-wikipedia-links`): https on the fixed
+/// host, no language-subdomain split, underscores preserved, explicit labels
+/// passed through, and the recorded backlink follows the emitted href.
+#[test]
+fn renders_sealed_wikidot_wikipedia_link_shapes() {
+    for (target, label, href, text) in [
+        (
+            "fr:Paris",
+            Some("Paris"),
+            "https://en.wikipedia.org/wiki/fr:Paris",
+            "Paris",
+        ),
+        (
+            "Rust_(lang)",
+            None,
+            "https://en.wikipedia.org/wiki/Rust_(lang)",
+            "Rust_(lang)",
+        ),
+        (
+            "Not_emitted",
+            Some("Outside"),
+            "https://en.wikipedia.org/wiki/Not_emitted",
+            "Outside",
+        ),
+    ] {
+        let link = super::build_wikidot_wikipedia_link(target, label);
+        assert_eq!(link.href, href, "emitted href for {target:?}");
+        assert!(
+            link.anchor.contains(&format!(r#"<a href="{href}""#)),
+            "anchor href for {target:?}: {}",
+            link.anchor,
+        );
+        assert!(
+            link.anchor.ends_with(&format!(">{text}</a>")),
+            "anchor label for {target:?}: {}",
+            link.anchor,
+        );
+    }
 }
 
 #[test]
