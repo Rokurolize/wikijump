@@ -474,7 +474,7 @@ fn response_content_type<'a>(filename: &str, mime: &'a str) -> &'a str {
 /// essence only (parameters such as `charset` are ignored) and covers the
 /// whole `+xml` suffix family instead of enumerating individual types.
 /// See issue #2554.
-fn is_active_content_type(mime: &str) -> bool {
+pub(super) fn is_active_content_type(mime: &str) -> bool {
     let essence = mime
         .split(';')
         .next()
@@ -573,6 +573,7 @@ fn multipart_content_length(
 mod tests {
     use super::*;
     use crate::config::Secrets;
+    use crate::handler::handle_user_avatar;
     use crate::state::build_server_state;
     use axum::Router;
     use axum::body;
@@ -730,6 +731,17 @@ mod tests {
                     "id": id
                 })
             }
+            "user_get" if request["params"]["user"] == 20001200 => json!({
+                "jsonrpc": "2.0",
+                "result": {"avatar_s3_hash": [171, 205]},
+                "id": id
+            }),
+            "user_get" if request["params"]["user"] == 20001201 => json!({
+                "jsonrpc": "2.0",
+                "result": {"avatar_s3_hash": [222, 173]},
+                "id": id
+            }),
+            "user_get" => json!({"jsonrpc": "2.0", "result": null, "id": id}),
             "basic_error_missing_page_slug" | "basic_error_missing_file_name" => {
                 json!({
                     "jsonrpc": "2.0",
@@ -810,13 +822,24 @@ mod tests {
     }
 
     fn spawn_s3_server(responses: Vec<(u16, &'static [u8])>) -> S3Server {
+        spawn_s3_server_with_content_type(
+            responses
+                .into_iter()
+                .map(|(status, body)| (status, "application/octet-stream", body))
+                .collect(),
+        )
+    }
+
+    fn spawn_s3_server_with_content_type(
+        responses: Vec<(u16, &'static str, &'static [u8])>,
+    ) -> S3Server {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let endpoint = format!("http://{}", listener.local_addr().unwrap());
         let requests = Arc::new(Mutex::new(Vec::new()));
         let server_requests = Arc::clone(&requests);
 
         let handle = thread::spawn(move || {
-            for (status, body) in responses {
+            for (status, content_type, body) in responses {
                 let (mut stream, _) = listener.accept().unwrap();
                 stream
                     .set_read_timeout(Some(Duration::from_secs(2)))
@@ -844,13 +867,14 @@ mod tests {
                     concat!(
                         "HTTP/1.1 {status} OK\r\n",
                         "Content-Length: {length}\r\n",
-                        "Content-Type: application/octet-stream\r\n",
+                        "Content-Type: {content_type}\r\n",
                         "ETag: \"test-etag\"\r\n",
                         "Connection: close\r\n",
                         "\r\n",
                     ),
                     status = status,
                     length = body.len(),
+                    content_type = content_type,
                 );
                 stream.write_all(response.as_bytes()).unwrap();
                 stream.write_all(body).unwrap();
@@ -1051,6 +1075,89 @@ mod tests {
             benign.headers().get(X_CONTENT_TYPE_OPTIONS).unwrap(),
             "nosniff",
         );
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn avatar_serves_active_types_as_attachment_with_nosniff() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        // One head_object plus one get_object_stream per avatar fetch.
+        let svg = b"<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>";
+        let png = b"\x89PNG\r\n\x1a\n";
+        let s3_server = spawn_s3_server_with_content_type(vec![
+            (200, "image/svg+xml; charset=us-ascii", svg),
+            (200, "image/svg+xml; charset=us-ascii", svg),
+            (200, "image/png", png),
+            (200, "image/png", png),
+        ]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        // Script-capable SVG avatar: must download instead of executing
+        // in the files origin. See issue #2653.
+        let active = handle_user_avatar(
+            State(Arc::clone(&state)),
+            Path("20001200".to_owned()),
+            site_headers(),
+        )
+        .await;
+
+        assert_eq!(active.status(), StatusCode::OK);
+        assert_eq!(
+            active.headers().get(CONTENT_TYPE).unwrap(),
+            "image/svg+xml; charset=us-ascii",
+        );
+        assert_eq!(
+            active.headers().get(CONTENT_DISPOSITION).unwrap(),
+            "attachment",
+        );
+        assert_eq!(
+            active.headers().get(X_CONTENT_TYPE_OPTIONS).unwrap(),
+            "nosniff",
+        );
+
+        // Raster avatar: stays inline, but still gets nosniff.
+        let benign = handle_user_avatar(
+            State(state),
+            Path("20001201".to_owned()),
+            site_headers(),
+        )
+        .await;
+
+        assert_eq!(benign.status(), StatusCode::OK);
+        assert_eq!(
+            benign.headers().get(CONTENT_TYPE).unwrap(),
+            "image/png",
+        );
+        assert!(benign.headers().get(CONTENT_DISPOSITION).is_none());
+        assert_eq!(
+            benign.headers().get(X_CONTENT_TYPE_OPTIONS).unwrap(),
+            "nosniff",
+        );
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn avatar_missing_user_still_returns_not_found() {
+        // Removal invalidation (#2556) must keep working after the serving
+        // policy fix: no avatar means 404, not a policy response.
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let missing = handle_user_avatar(
+            State(state),
+            Path("20009999".to_owned()),
+            site_headers(),
+        )
+        .await;
+
+        assert_eq!(missing.status(), StatusCode::NOT_FOUND);
 
         s3_server.join();
         deepwell_server.abort();
