@@ -3938,6 +3938,11 @@ fn substituted_payload_values_cannot_form_modules_for_the_page_parser() {
     let html = HtmlRender.render(&tree, &page_info, &settings).body;
     let html = compat_text.restore(&compat_html.restore(&html));
 
+    // The proof artifact is written before asserting so a failing run still
+    // leaves the output behind for browser-level inspection.
+    std::fs::write("/tmp/listpages-2652-proof.html", &html)
+        .expect("browser proof artifact must be writable");
+
     // No nested module shell, iframe, or html block may survive; the payload
     // text renders literally instead.
     assert!(!html.contains("error-block"), "{html:?}");
@@ -3947,9 +3952,184 @@ fn substituted_payload_values_cannot_form_modules_for_the_page_parser() {
     assert!(html.contains("WJ-PENTEST-DISPLAY"), "{html:?}");
     assert!(html.contains("ListPages"), "{html:?}");
     assert!(html.contains("wj-pentest-tag-a"), "{html:?}");
+}
 
-    std::fs::write("/tmp/listpages-2652-proof.html", &html)
+/// Issue #2652's exact closed-module payloads, with `%%content%%`, in both
+/// the display-name form and the stored tag-fragment form. Nothing is
+/// stripped, but neither brackets nor double quotes may reach the page
+/// parser raw, and the carried `%%content%%` stays literal (single-pass
+/// substitution performs no second expansion round).
+#[test]
+fn substituted_issue_exact_closed_module_payloads_render_as_literal_text() {
+    let payload_name = "wj5[[module ListPages category=\"*\" tags=\"+wjpentest\" name=\"wj-pentest-html-payload*\" limit=\"1\" separate=\"false\"]]%%content%%[[/module]]";
+    let payload_tags = vec![
+        "[[module".to_owned(),
+        "ListPages".to_owned(),
+        "\"category=\"*\"\"".to_owned(),
+        "\"tags=\"+wjpentest\"\"".to_owned(),
+        "\"name=\"wj-pentest-html-payload*\"\"".to_owned(),
+        "\"limit=\"1\"\"".to_owned(),
+        "\"separate=\"false\"]]%%content%%[[/module]]\"".to_owned(),
+        "wjpentest".to_owned(),
+    ];
+    let page = FoundPageRow {
+        page_id: 1,
+        site_id: 1,
+        title: Some("WJ Pentest Host".to_owned()),
+        alt_title: None,
+        slug: Some("wj-pentest-host".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: Some(payload_tags),
+        created_at: None,
+        created_by: Some(7),
+        updated_at: None,
+        updated_by: None,
+        score: None,
+        revision_count: None,
+    };
+    let mut users = BTreeMap::new();
+    users.insert(
+        7,
+        WikidotUserDisplay {
+            user_id: 7,
+            name: payload_name.to_owned(),
+            slug: Some("wj-pentest-display".to_owned()),
+            wikidot_profile: false,
+        },
+    );
+    let data_form_values = BTreeMap::new();
+    let context = list_pages_substitution_context(20, &users, None, &data_form_values);
+    let substituted = substitute_list_pages_variables(
+        "By %%created_by%% tags %%tags%%",
+        &page,
+        1,
+        1,
+        &context,
+    );
+
+    // No raw syntax-forming character from either payload survives the
+    // substitution boundary; the payload text itself is preserved.
+    assert!(!substituted.contains("[["), "{substituted:?}");
+    assert!(!substituted.contains("]]"), "{substituted:?}");
+    assert!(!substituted.contains('"'), "{substituted:?}");
+    assert!(
+        substituted.contains("&#91;&#91;module ListPages"),
+        "{substituted:?}"
+    );
+    assert!(
+        substituted.contains("&#91;&#91;/module&#93;&#93;"),
+        "{substituted:?}"
+    );
+    assert!(
+        substituted.contains("&#34;category=&#34;*&#34;"),
+        "{substituted:?}"
+    );
+    assert!(substituted.contains("%%content%%"), "{substituted:?}");
+    assert!(substituted.contains("wjpentest"), "{substituted:?}");
+
+    let mut compat_html = CompatHtmlFragments::new("By %%created_by%% tags %%tags%%");
+    let mut compat_text = CompatTextFragments::new("By %%created_by%% tags %%tags%%");
+    let mut source = substituted.clone();
+    ftml::preprocess_for_layout(&mut source, Layout::Wikidot);
+    let tokens = ftml::tokenize(&source);
+    let page_info = fallback_test_page_info("wj-pentest-host", "WJ Pentest Host");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
+    let html = HtmlRender.render(&tree, &page_info, &settings).body;
+    let html = compat_text.restore(&compat_html.restore(&html));
+
+    std::fs::write("/tmp/listpages-2652-proof-issue-payloads.html", &html)
         .expect("browser proof artifact must be writable");
+
+    assert!(!html.contains("error-block"), "{html:?}");
+    assert!(!html.contains("list-pages-box"), "{html:?}");
+    assert!(!html.contains("<iframe"), "{html:?}");
+    assert!(!html.contains("html-block"), "{html:?}");
+    assert!(html.contains("wj5"), "{html:?}");
+    assert!(html.contains("wjpentest"), "{html:?}");
+    assert!(html.contains("ListPages"), "{html:?}");
+}
+
+/// A double quote in a tag or name must not break out of a double-quoted
+/// module attribute such as `[[div class="%%tags%%"]]`: the substituted
+/// text carries no raw quote, and the rendered div keeps the payload inside
+/// its class value instead of gaining an injected attribute.
+#[test]
+fn substituted_quote_breakout_values_cannot_escape_double_quoted_attributes() {
+    let template = "[[div class=\"%%tags%%\" data-author=\"%%created_by%%\"]]x[[/div]]";
+    let page = FoundPageRow {
+        page_id: 1,
+        site_id: 1,
+        title: Some("WJ Pentest Host".to_owned()),
+        alt_title: None,
+        slug: Some("wj-pentest-host".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: Some(vec!["\" onmouseover=\"alert(1)".to_owned()]),
+        created_at: None,
+        created_by: Some(7),
+        updated_at: None,
+        updated_by: None,
+        score: None,
+        revision_count: None,
+    };
+    let mut users = BTreeMap::new();
+    users.insert(
+        7,
+        WikidotUserDisplay {
+            user_id: 7,
+            name: "WJ-PENTEST-DISPLAY".to_owned(),
+            slug: Some("wj-pentest-display".to_owned()),
+            wikidot_profile: false,
+        },
+    );
+    let data_form_values = BTreeMap::new();
+    let context = list_pages_substitution_context(20, &users, None, &data_form_values);
+    let substituted = substitute_list_pages_variables(template, &page, 1, 1, &context);
+
+    // Byte-exact: the template survives untouched and the quote becomes an
+    // entity, so the template-authored attribute cannot terminate early.
+    assert_eq!(
+        substituted,
+        "[[div class=\"&#34; onmouseover=&#34;alert(1)\" data-author=\"WJ-PENTEST-DISPLAY\"]]x[[/div]]",
+    );
+
+    let mut compat_html = CompatHtmlFragments::new(template);
+    let mut compat_text = CompatTextFragments::new(template);
+    let mut source = substituted.clone();
+    ftml::preprocess_for_layout(&mut source, Layout::Wikidot);
+    let tokens = ftml::tokenize(&source);
+    let page_info = fallback_test_page_info("wj-pentest-host", "WJ Pentest Host");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
+    let html = HtmlRender.render(&tree, &page_info, &settings).body;
+    let html = compat_text.restore(&compat_html.restore(&html));
+
+    std::fs::write("/tmp/listpages-2652-proof-attribute-breakout.html", &html)
+        .expect("browser proof artifact must be writable");
+
+    // Strip double-quoted spans from the rendered div open tag: whatever
+    // remains outside quotes is real markup, where no injected attribute
+    // may appear. The payload text stays inside the class value.
+    let div_start = html.find("<div").expect("template renders a div");
+    let div_end = html[div_start..].find('>').expect("div tag closes") + div_start;
+    let div_tag = &html[div_start..=div_end];
+    let mut outside_quotes = String::new();
+    let mut in_quotes = false;
+    for ch in div_tag.chars() {
+        if ch == '"' {
+            in_quotes = !in_quotes;
+        } else if !in_quotes {
+            outside_quotes.push(ch);
+        }
+    }
+    assert!(
+        !outside_quotes.contains("onmouseover"),
+        "{div_tag:?} {html:?}"
+    );
+    assert!(!html.contains("<iframe"), "{html:?}");
+    assert!(html.contains("alert(1)"), "{html:?}");
 }
 
 #[test]
