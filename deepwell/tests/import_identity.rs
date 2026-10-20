@@ -39,6 +39,7 @@ use deepwell::services::import::{
 use deepwell::services::user::{CreateUser, User as ServiceUser, UserService};
 use deepwell::types::{Reference, UserType};
 use ftml::data::KarmaLevel;
+use std::borrow::Cow;
 use sea_orm::{
     ColumnTrait, ConnectionTrait, DatabaseBackend, EntityTrait, QueryFilter, Statement,
 };
@@ -388,7 +389,7 @@ async fn native_placeholder_slug_does_not_shadow_imported_identity() {
 
     let resolved = UserService::get_optional(
         runner.context(),
-        Reference::Slug(placeholder.slug.as_str()),
+        Reference::Slug(Cow::Borrowed(placeholder.slug.as_str())),
     )
     .await
     .expect("user lookup should succeed");
@@ -433,8 +434,10 @@ async fn native_regular_slug_keeps_precedence_over_imported_identity() {
     .await
     .expect("imported identity should materialize beside the local account");
 
-    let resolved =
-        UserService::get_optional(runner.context(), Reference::Slug(local.slug.as_str()))
+    let resolved = UserService::get_optional(
+        runner.context(),
+        Reference::Slug(Cow::Borrowed(local.slug.as_str())),
+    )
             .await
             .expect("user lookup should succeed");
     assert!(
