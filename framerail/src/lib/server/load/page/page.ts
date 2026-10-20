@@ -22,6 +22,11 @@ import {
   getPreloadRequestLocales
 } from "$lib/server/load/preload"
 import { resolvePageMutationUserId } from "$lib/server/load/local-authoring-actor"
+import {
+  collectThemeSiteFileReferences,
+  createSiteFilePresenceCache,
+  resolveSiteFilePresence
+} from "$lib/server/load/site-file-presence"
 import { loadSiteInfo } from "$lib/server/load/site-info"
 import { getRequestContext } from "$lib/server/request-context"
 import {
@@ -154,11 +159,39 @@ export async function loadPage(
     error(pageErrorStatus(response.type, slug), errorData)
   }
 
+  // Per-file presence for the page theme's site attachments: the head
+  // rewrites a WDFiles URL to the local files host only when the referenced
+  // file exists locally. Missing pages, failed listings, and non-imported
+  // sites resolve to no presence, so every such URL keeps its source
+  // literal. The lookup is request-scoped and runs only when the theme
+  // names same-site candidates.
+  let siteFilePresence: string[] = []
+  if (response.type === "found") {
+    try {
+      const references = collectThemeSiteFileReferences(
+        response.data.theme,
+        parentData.site
+      )
+      if (references.length > 0) {
+        const requestContext = locals ? getRequestContext(locals) : undefined
+        const present = await resolveSiteFilePresence(references, {
+          siteId,
+          requestContext,
+          cache: createSiteFilePresenceCache()
+        })
+        siteFilePresence = [...present]
+      }
+    } catch {
+      siteFilePresence = []
+    }
+  }
+
   const viewData = {
     ...response.data,
     view: response.type,
     internationalization,
-    ...presentation
+    ...presentation,
+    site_file_presence: siteFilePresence
   }
   runRedirect(response.data, slug, extra, request.url)
 
