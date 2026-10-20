@@ -288,8 +288,13 @@ async fn reset_round_trip_sets_password_and_revokes_sessions() {
     // Email login only resolves verified addresses, so the account verifies
     // its mailbox first, exactly as the #2130 lifecycle requires before a
     // later #2128 recovery.
-    let verify_token =
-        issue_for(&runner, created.user_id, &email, EmailTokenPurpose::VerifyEmail).await;
+    let verify_token = issue_for(
+        &runner,
+        created.user_id,
+        &email,
+        EmailTokenPurpose::VerifyEmail,
+    )
+    .await;
     run_endpoint!(
         runner => email_verify_redeem,
         common::make_params(json!({
