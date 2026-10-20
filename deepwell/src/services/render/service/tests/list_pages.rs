@@ -1953,6 +1953,30 @@ fn defers_wikidot_list_pages_custom_date_format_to_odate_class() {
 }
 
 #[test]
+fn saved_list_pages_date_carries_utc_server_text_like_preview() {
+    // Issue #2638: the saved-page path must not pin JST. Unix 1454705501 is
+    // 2016-02-05 20:51:41 UTC, which is already 2016-02-06 in JST — a
+    // JST-pinned render would show the wrong day. Both paths must emit the
+    // UTC server text while the requested comma format stays in the class
+    // for the browser ODate phase. The zero-padded day pins the server
+    // `%d` grammar.
+    let created_at = time::OffsetDateTime::from_unix_timestamp(1_454_705_501)
+        .expect("fixture timestamp should be valid");
+    for page_preview in [false, true] {
+        let rendered =
+            format_list_pages_created_at(Some(created_at), None, true, page_preview);
+        assert!(
+            rendered.contains(r#"<span class="odate time_1454705501 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover">"#),
+            "saved and preview paths must transport timestamp and format identically (preview={page_preview}): {rendered}",
+        );
+        assert!(
+            rendered.ends_with(">05 Feb 2016 20:51</span>"),
+            "saved and preview paths must carry UTC server text (preview={page_preview}): {rendered}",
+        );
+    }
+}
+
+#[test]
 fn list_pages_custom_date_format_collapses_repeated_ascii_spaces() {
     let created_at = time::Date::from_calendar_date(2024, time::Month::August, 8)
         .expect("fixture date should be valid")
