@@ -1,5 +1,11 @@
 import { fixtureState, hasExactKeys, isFixtureSiteId } from "./context.js"
-import { backlinksByPage, forumPostsByPage, pages, parentBySlug } from "./data.js"
+import {
+  backlinksByPage,
+  forumPostsByPage,
+  pages,
+  parentBySlug,
+  watchersByPageId
+} from "./data.js"
 
 /**
  * @param {{
@@ -63,6 +69,16 @@ export const handlePageRelationshipRpc = ({ rpcRequest, request }) => {
     pageReadRequests.backlinksView.push(rpcRequest.params)
     result = (backlinksByPage[rpcRequest.params.page] ?? []).map((backlink) => ({
       ...backlink
+    }))
+  } else if (
+    rpcRequest.method === "page_watchers" &&
+    hasExactKeys(rpcRequest.params, ["page_id", "site_id"]) &&
+    isFixtureSiteId(rpcRequest.params.site_id) &&
+    Number.isSafeInteger(rpcRequest.params.page_id)
+  ) {
+    pageReadRequests.watchersView.push(rpcRequest.params)
+    result = (watchersByPageId[rpcRequest.params.page_id] ?? []).map((watcher) => ({
+      ...watcher
     }))
   } else if (
     rpcRequest.method === "forum_post_page_summary" &&

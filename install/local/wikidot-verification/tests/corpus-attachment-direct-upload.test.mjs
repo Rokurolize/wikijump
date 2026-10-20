@@ -273,6 +273,63 @@ test('createHttpObjectStoreClient validates configuration and signs HEAD and PUT
   assert.match(calls[1].headers.authorization, /SignedHeaders=content-length;content-type;host;x-amz-content-sha256;x-amz-date/u);
 });
 
+test('createHttpObjectStoreClient rejects invalid configuration and keys', async () => {
+  const config = () => ({endpoint: 'http://localhost:9000', bucket: 'wikijump', accessKeyId: 'key', secretAccessKey: 'secret'});
+  assert.throws(() => createHttpObjectStoreClient({...config(), endpoint: ''}), /endpoint/);
+  assert.throws(() => createHttpObjectStoreClient({...config(), pathStyle: 'yes'}), /pathStyle/);
+  assert.throws(() => createHttpObjectStoreClient({...config(), fetchImpl: null}), /fetchImpl/);
+  assert.throws(() => createHttpObjectStoreClient({...config(), now: 0}), /now/);
+  const client = createHttpObjectStoreClient(config());
+  await assert.rejects(client.headObject('not-a-key'), /sha512 hex/);
+});
+
+test('createHttpObjectStoreClient supports virtual-hosted style object URLs', async () => {
+  const seen = [];
+  const client = createHttpObjectStoreClient({
+    endpoint: 'http://localhost:9000',
+    bucket: 'wikijump',
+    accessKeyId: 'key',
+    secretAccessKey: 'secret',
+    pathStyle: false,
+    fetchImpl: async (url, options) => {
+      seen.push([options.method, String(url)]);
+      return response(404);
+    },
+  });
+  const key = 'a'.repeat(128);
+  assert.deepEqual(await client.headObject(key), {exists: false});
+  assert.deepEqual(seen, [['HEAD', `http://wikijump.localhost:9000/${key}`]]);
+});
+
+test('object store client surfaces failure statuses and size mismatches', async () => {
+  const key = 'b'.repeat(128);
+  let behavior = 'missing-length';
+  const client = createHttpObjectStoreClient({
+    endpoint: 'http://localhost:9000',
+    bucket: 'wikijump',
+    accessKeyId: 'key',
+    secretAccessKey: 'secret',
+    fetchImpl: async (url, options) => {
+      if (options.method === 'HEAD') {
+        if (behavior === 'missing-length') return response(200, {'content-type': 'text/plain'});
+        if (behavior === 'bad-length') return response(200, {'content-length': 'many'});
+        return response(500);
+      }
+      if (options.method === 'GET') {
+        return response(200, {'content-length': '3'}, Buffer.from('five!'));
+      }
+      return response(500);
+    },
+  });
+  await assert.rejects(client.headObject(key), /did not include content-length/);
+  behavior = 'bad-length';
+  await assert.rejects(client.headObject(key), /invalid content-length many/);
+  behavior = 'error';
+  await assert.rejects(client.headObject(key), /failed with HTTP 500/);
+  await assert.rejects(client.getObject(key), /size mismatch/);
+  await assert.rejects(client.putObject(key, Buffer.from('x')), /failed with HTTP 500/);
+});
+
 function response(status, headers = {}, bytes = Buffer.alloc(0)) {
   return {
     status,

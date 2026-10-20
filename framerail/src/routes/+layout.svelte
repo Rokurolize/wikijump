@@ -65,7 +65,9 @@
     customThemeHeadHtml,
     normalizeGoogleAnalyticsSettings,
     normalizeThemeSetting,
-    resolveThemePreviewUrl
+    resolveExternalThemeHref,
+    resolveThemePreviewUrl,
+    siteFilePresenceKey
   } from "$lib/site-settings.js"
 
   const WIKIDOT_SEARCH_CHROME_HTML =
@@ -171,7 +173,40 @@
       page.url.searchParams.get("theme_url")
     )
   )
-  const customThemeHtml = $derived(customThemeHeadHtml(effectiveTheme))
+  // The head rewrites a WDFiles attachment URL only on two pieces of
+  // evidence together: the viewed site names the file, and the page loader
+  // confirmed that exact page file exists locally. Without both, every
+  // theme and asset URL stays literal, so a partially imported mirror
+  // keeps the working source hotlink instead of a local 404.
+  const siteFileEvidence = $derived(viewData?.site ?? null)
+  const siteFileAuthority = $derived(viewData?.site_file_domain ?? null)
+  const siteFilePresence = $derived(
+    new Set(
+      Array.isArray(viewData?.site_file_presence)
+        ? viewData.site_file_presence.filter((key) => typeof key === "string")
+        : []
+    )
+  )
+  const isSiteFilePresent = (page: string, name: string) => {
+    const key = siteFilePresenceKey(page, name)
+    return key !== null && siteFilePresence.has(key)
+  }
+  const customThemeHtml = $derived(
+    customThemeHeadHtml(
+      effectiveTheme,
+      siteFileEvidence,
+      siteFileAuthority,
+      isSiteFilePresent
+    )
+  )
+  const externalThemeHref = $derived(
+    resolveExternalThemeHref(
+      effectiveTheme,
+      siteFileEvidence,
+      siteFileAuthority,
+      isSiteFilePresent
+    )
+  )
   const builtInThemeHtml = $derived(builtInThemeHeadHtml(effectiveTheme))
   const wikidotSiteTitle = $derived(resolveWikidotSiteTitle(viewData))
   const iconSite = $derived(
@@ -285,7 +320,11 @@
     {#if !viewData?.theme_previewer_blank}
       <link href="/wikidot/styles/sigma-fe5388a32e12.css" rel="stylesheet" />
       {#if effectiveTheme.type === "external"}
-        <link data-wikidot-site-theme href={effectiveTheme.url} rel="stylesheet" />
+        <link
+          data-wikidot-site-theme
+          href={externalThemeHref ?? effectiveTheme.url}
+          rel="stylesheet"
+        />
       {:else if effectiveTheme.type === "custom"}
         {@html customThemeHtml}
       {:else}
