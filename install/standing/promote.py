@@ -955,7 +955,7 @@ def rehearse(source_root, evidence, stages, plan, reference, volumes, target, de
                     f"the rehearsal object store lacks {len(missing)} hosted text blocks "
                     f"its database names, e.g. {', '.join(missing[:5])}"
                 )
-            origin =f"scp-wiki.wikijump.localhost:{ports['public']}"
+            origin = f"scp-wiki.wikijump.localhost:{ports['public']}"
             canary = http_canary(
                 f"https://{origin}/scp-9506", f"{origin}:127.0.0.1"
             )
