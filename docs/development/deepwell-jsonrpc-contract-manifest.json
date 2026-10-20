@@ -6065,6 +6065,7 @@
         "kind": "endpoint_behavioral",
         "reference": "deepwell/tests/file_mirror_parity.rs#native_file_mutations_still_succeed",
         "alternatives": [
+          "deepwell/tests/import.rs#mirror_seed_carries_source_random_helper_routes",
           "deepwell/tests/import.rs#mirror_seed_carries_source_tags_and_navigation",
           "deepwell/tests/import.rs#mirror_seed_prefers_source_system_pages_over_generic_seeds",
           "deepwell/tests/list_pages.rs#imported_revision_count_current_page_only_adds_local_revisions",
@@ -6614,7 +6615,8 @@
         "kind": "endpoint_behavioral",
         "reference": "deepwell/tests/list_pages.rs#imported_rating_baseline_adds_only_local_votes",
         "alternatives": [
-          "deepwell/tests/page.rs#page_get_score_requires_view_permission_and_site_ownership"
+          "deepwell/tests/page.rs#page_get_score_requires_view_permission_and_site_ownership",
+          "deepwell/tests/vote.rs#anonymous_rate_controls_are_exposed_and_rejected_by_the_vote_endpoint"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -7363,7 +7365,8 @@
           "deepwell/tests/page/page_modules.rs#page_tree_module_renders_current_page_hierarchy_with_live_depth_dom",
           "deepwell/tests/page/page_modules.rs#pages_by_tag_module_renders_empty_list_and_preserves_unevidenced_forms",
           "deepwell/tests/page/page_modules.rs#pages_by_tag_module_renders_tagged_pages_ordered_by_title",
-          "deepwell/tests/page/page_modules.rs#wantedpages_module_groups_missing_internal_links_by_target"
+          "deepwell/tests/page/page_modules.rs#wantedpages_module_groups_missing_internal_links_by_target",
+          "deepwell/tests/vote.rs#imported_rating_baseline_refresh_shows_combined_score"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -10331,6 +10334,7 @@
           "deepwell/tests/user.rs#basic_update",
           "deepwell/tests/user.rs#changing_email_clears_verified_ownership",
           "deepwell/tests/user.rs#display_locale_preferences_round_trip_only_for_the_session_actor",
+          "deepwell/tests/user.rs#non_raster_avatar_rejection_does_not_change_target",
           "deepwell/tests/user.rs#oversized_avatar_rejection_does_not_promote_blob_or_change_target",
           "deepwell/tests/user.rs#regular_account_password_policy_rejects_short_create_passwords",
           "deepwell/tests/user.rs#self_email_change_requires_current_password_proof",
@@ -10393,6 +10397,7 @@
         "reference": "deepwell/tests/user.rs#basic_update",
         "alternatives": [
           "deepwell/tests/user.rs#display_locale_preferences_round_trip_only_for_the_session_actor",
+          "deepwell/tests/user.rs#non_raster_avatar_rejection_does_not_change_target",
           "deepwell/tests/user.rs#oversized_avatar_rejection_does_not_promote_blob_or_change_target",
           "deepwell/tests/user.rs#regular_account_password_policy_rejects_short_create_passwords",
           "deepwell/tests/user.rs#user_delete_and_its_audit_event_roll_back_together",
@@ -10813,8 +10818,9 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "endpoint_behavioral",
-        "reference": "deepwell/tests/vote.rs#registered_point_vote_lifecycle_refreshes_saved_rate_page",
+        "reference": "deepwell/tests/vote.rs#imported_rating_baseline_vote_cast_change_cancel_lifecycle",
         "alternatives": [
+          "deepwell/tests/vote.rs#registered_point_vote_lifecycle_refreshes_saved_rate_page",
           "deepwell/tests/vote.rs#registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count",
           "deepwell/tests/vote_authorization.rs#vote_mutations_require_route_target_view_permission"
         ],
@@ -10881,6 +10887,8 @@
         "reference": "deepwell/tests/list_pages.rs#imported_rating_baseline_adds_only_local_votes",
         "alternatives": [
           "deepwell/tests/mutation_authorization.rs#payload_actor_cannot_spoof_vote_or_message_attribution",
+          "deepwell/tests/vote.rs#imported_rating_baseline_refresh_shows_combined_score",
+          "deepwell/tests/vote.rs#imported_rating_baseline_vote_cast_change_cancel_lifecycle",
           "deepwell/tests/vote.rs#registered_point_vote_lifecycle_refreshes_saved_rate_page",
           "deepwell/tests/vote.rs#registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count",
           "deepwell/tests/vote.rs#vote_set_rejects_out_of_domain_values_before_persistence",

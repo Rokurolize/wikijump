@@ -164,6 +164,8 @@ class RefreshStandingTest(unittest.TestCase):
         original_command = REFRESH.command
         original_container_identity = REFRESH.container_identity
 
+        committed = {}
+
         def fake_command(*args: str, cwd: Path, capture: bool = True) -> str:
             if args[:2] == ("docker", "inspect"):
                 reference = args[-1]
@@ -177,6 +179,13 @@ class RefreshStandingTest(unittest.TestCase):
             if args[:2] == ("docker", "stop"):
                 state[args[2]]["running"] = False
                 return ""
+            if args[:3] == ("docker", "images", "--format"):
+                return ""
+            if args[:2] == ("docker", "commit"):
+                committed[args[3]] = f"sha256:committed-{args[2]}"
+                return ""
+            if args[:3] == ("docker", "image", "inspect"):
+                return committed[args[-1]]
             raise AssertionError(args)
 
         try:
@@ -197,6 +206,26 @@ class RefreshStandingTest(unittest.TestCase):
         self.assertTrue(
             all(not entry["container"]["running"] for entry in parked.values())
         )
+        for service, entry in parked.items():
+            spec = entry["parked_image"]
+            self.assertEqual(spec["tag"], REFRESH.parked_image_tag("run", service))
+            self.assertEqual(spec["image_id"], f"sha256:committed-{entry['parked_name']}")
+
+    def test_parked_names_and_snapshot_tags_share_one_run_scope(self) -> None:
+        scope = REFRESH.run_scope("run")
+        for service in REFRESH.SERVICES:
+            self.assertIn(scope, REFRESH.parked_container_name("run", service))
+            self.assertIn(scope, REFRESH.parked_image_tag("run", service))
+        self.assertTrue(
+            REFRESH.parked_image_tag("run", "deepwell").startswith(
+                REFRESH.PARKED_IMAGE_REPOSITORY + ":"
+            )
+        )
+        for bad in ("", None):
+            with self.subTest(run_id=bad), self.assertRaises(ValueError):
+                REFRESH.parked_container_name(bad, "deepwell")
+            with self.subTest(run_id=bad), self.assertRaises(ValueError):
+                REFRESH.parked_image_tag(bad, "deepwell")
 
 
     def test_missing_parked_containers_recreate_previous_image_set_without_volumes(self) -> None:
@@ -269,6 +298,222 @@ class RefreshStandingTest(unittest.TestCase):
                             parked, home, home / "override.yaml", images
                         )
                     self.assertEqual(command.call_count, 0 if bad_env != env else 1)
+
+    def test_partial_parking_restores_and_discards_snapshots(self) -> None:
+        removed = []
+        committed = {}
+        state = {}
+        previous = {}
+        for index, service in enumerate(REFRESH.SERVICES):
+            container_id = chr(97 + index) * 64
+            state[container_id] = {
+                "container_id": container_id,
+                "name": f"wikijump-standing-{service}-1",
+                "image_id": "sha256:" + chr(100 + index) * 64,
+                "running": True,
+            }
+            previous[service] = state[container_id]
+        original_command = REFRESH.command
+        original_container_identity = REFRESH.container_identity
+
+        def fake_command(*args: str, cwd: Path, capture: bool = True) -> str:
+            if args[:3] == ("docker", "images", "--format"):
+                return ""
+            if args[:2] == ("docker", "inspect"):
+                if args[-1] in state:
+                    return "present"
+                raise subprocess.CalledProcessError(1, args)
+            if args[:2] == ("docker", "rename"):
+                current, target = args[2:4]
+                state[target] = {**state.pop(current), "name": target}
+                return ""
+            if args[:2] == ("docker", "stop"):
+                state[args[2]]["running"] = False
+                return ""
+            if args[:2] == ("docker", "start"):
+                state[args[2]]["running"] = True
+                return ""
+            if args[:2] == ("docker", "commit"):
+                if "framerail" in args[2]:
+                    raise subprocess.CalledProcessError(1, args)
+                committed[args[3]] = f"sha256:tag-for-{args[2]}"
+                return ""
+            if args[:3] == ("docker", "image", "inspect"):
+                return committed[args[-1]]
+            if args[:2] == ("docker", "rmi"):
+                removed.append(args[2])
+                return ""
+            raise AssertionError(args)
+
+        try:
+            REFRESH.command = fake_command
+            REFRESH.container_identity = lambda reference, _cwd: state[reference]
+            with self.assertRaises(subprocess.CalledProcessError):
+                REFRESH.park_containers(previous, Path("/runtime"), "run")
+        finally:
+            REFRESH.command = original_command
+            REFRESH.container_identity = original_container_identity
+        # Both touched services were renamed back and started; the committed
+        # snapshot of the first service was discarded with the partial set.
+        by_name = {entry["name"]: entry for entry in state.values()}
+        for service, container_id in (("deepwell", "a" * 64), ("framerail", "b" * 64)):
+            entry = by_name[f"wikijump-standing-{service}-1"]
+            self.assertEqual(entry["container_id"], container_id)
+            self.assertTrue(entry["running"])
+        self.assertEqual(removed, [REFRESH.parked_image_tag("run", "deepwell")])
+
+    def test_successful_restore_discards_snapshot_tags(self) -> None:
+        parked = {
+            service: {"parked_image": {"tag": REFRESH.parked_image_tag("run", service)}}
+            for service in REFRESH.SERVICES
+        }
+        calls = []
+        with (
+            mock.patch.object(REFRESH, "restore_parked_containers", return_value={}),
+            mock.patch.object(REFRESH, "command", side_effect=lambda *a, cwd: calls.append(a) or ""),
+        ):
+            receipt = REFRESH.restore_or_recreate_previous_containers(
+                parked, Path("/runtime"), Path("/runtime/override.yaml"), {}
+            )
+        self.assertEqual(receipt["mode"], "parked")
+        self.assertEqual(
+            sorted(call[2] for call in calls if call[:2] == ("docker", "rmi")),
+            sorted(REFRESH.parked_image_tag("run", service) for service in REFRESH.SERVICES),
+        )
+
+    def test_missing_containers_recreate_from_verified_snapshot_tags(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            runtime = Path(temporary_dir)
+            base = {service: "sha256:" + str(index + 1) * 64 for index, service in enumerate(REFRESH.SERVICES)}
+            tags = {service: REFRESH.parked_image_tag("run", service) for service in REFRESH.SERVICES}
+            tag_ids = {service: "sha256:parked-" + service for service in REFRESH.SERVICES}
+            REFRESH.write_environment(runtime / ".env", {
+                "STANDING_PROJECT_NAME": "wikijump-standing",
+                **{f"STANDING_{service.upper()}_IMAGE": base[service] for service in REFRESH.SERVICES},
+            })
+            parked = {
+                service: {
+                    "parked_name": f"rollback-{service}",
+                    "parked_image": {"tag": tags[service], "image_id": tag_ids[service]},
+                }
+                for service in REFRESH.SERVICES
+            }
+            running = {service: {"running": True, "image_id": tag_ids[service]} for service in REFRESH.SERVICES}
+            calls = []
+            missing = subprocess.CalledProcessError(1, ["docker", "inspect", "rollback-deepwell"])
+
+            def exists(kind, reference, cwd):
+                return kind == "image"
+
+            def fake_command(*args, cwd):
+                calls.append(args)
+                if args[:3] == ("docker", "image", "inspect"):
+                    return tag_ids[[s for s in REFRESH.SERVICES if tags[s] == args[-1]][0]]
+                return ""
+
+            with (
+                mock.patch.object(REFRESH, "restore_parked_containers", side_effect=missing),
+                mock.patch.object(REFRESH, "resource_exists", side_effect=exists),
+                mock.patch.object(REFRESH, "command", side_effect=fake_command),
+                mock.patch.object(REFRESH, "runtime_containers", return_value=running),
+            ):
+                receipt = REFRESH.restore_or_recreate_previous_containers(
+                    parked, runtime, runtime / "override.yaml",
+                    {service: {"id": base[service]} for service in REFRESH.SERVICES},
+                )
+            self.assertEqual(receipt["mode"], "parked-image")
+            self.assertEqual(sorted(receipt["missing_parked"]), sorted(REFRESH.SERVICES))
+            self.assertEqual(sorted(receipt["parked_image_services"]), sorted(REFRESH.SERVICES))
+            self.assertEqual(receipt["base_image_services"], [])
+            rebased = REFRESH.read_environment(runtime / ".env")
+            for service in REFRESH.SERVICES:
+                self.assertEqual(rebased[f"STANDING_{service.upper()}_IMAGE"], tags[service])
+            up = [call for call in calls if call[:2] == ("docker", "compose")]
+            self.assertEqual(len(up), 1)
+            for flag in ("--force-recreate", "--no-build", "--no-deps"):
+                self.assertIn(flag, up[0])
+            self.assertNotIn("down", up[0])
+            self.assertNotIn("--volumes", up[0])
+
+    def test_changed_snapshot_id_fails_closed(self) -> None:
+        parked = {
+            service: {
+                "parked_name": f"rollback-{service}",
+                "parked_image": {"tag": f"tag-{service}", "image_id": "sha256:" + "a" * 64},
+            }
+            for service in REFRESH.SERVICES
+        }
+        calls = []
+        missing = subprocess.CalledProcessError(1, ["docker", "inspect"])
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            runtime = Path(temporary_dir)
+            REFRESH.write_environment(runtime / ".env", {
+                "STANDING_PROJECT_NAME": "wikijump-standing",
+                **{f"STANDING_{s.upper()}_IMAGE": "sha256:" + "a" * 64 for s in REFRESH.SERVICES},
+            })
+            with (
+                mock.patch.object(REFRESH, "restore_parked_containers", side_effect=missing),
+                mock.patch.object(
+                    REFRESH, "resource_exists",
+                    side_effect=lambda kind, reference, cwd: kind == "image",
+                ),
+                mock.patch.object(
+                    REFRESH, "command",
+                    side_effect=lambda *a, cwd: calls.append(a) or "sha256:" + "b" * 64,
+                ),
+                mock.patch.object(REFRESH, "runtime_containers", return_value={}),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "parked snapshot image changed"):
+                    REFRESH.restore_or_recreate_previous_containers(
+                        parked, runtime, runtime / "override.yaml",
+                        {s: {"id": "sha256:" + "a" * 64} for s in REFRESH.SERVICES},
+                    )
+        self.assertFalse([call for call in calls if call[:2] == ("docker", "compose")])
+
+    def test_tagged_entry_without_a_snapshot_falls_back_to_base_images(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            runtime = Path(temporary_dir)
+            images = {service: {"id": "sha256:" + str(index + 1) * 64} for index, service in enumerate(REFRESH.SERVICES)}
+            REFRESH.write_environment(runtime / ".env", {
+                "STANDING_PROJECT_NAME": "wikijump-standing",
+                **{f"STANDING_{s.upper()}_IMAGE": image["id"] for s, image in images.items()},
+            })
+            parked = {
+                service: {
+                    "parked_name": f"rollback-{service}",
+                    "parked_image": {"tag": f"tag-{service}", "image_id": "sha256:x"},
+                }
+                for service in REFRESH.SERVICES
+            }
+            restored = {service: {"running": True, "image_id": image["id"]} for service, image in images.items()}
+            missing = subprocess.CalledProcessError(1, ["docker", "inspect"])
+            with (
+                mock.patch.object(REFRESH, "restore_parked_containers", side_effect=missing),
+                mock.patch.object(REFRESH, "resource_exists", return_value=False),
+                mock.patch.object(REFRESH, "command", return_value=""),
+                mock.patch.object(REFRESH, "runtime_containers", return_value=restored),
+            ):
+                receipt = REFRESH.restore_or_recreate_previous_containers(
+                    parked, runtime, runtime / "override.yaml", images
+                )
+            self.assertEqual(receipt["mode"], "recreated-from-pinned-images")
+
+    def test_cleanup_helpers_never_raise(self) -> None:
+        parked = {"deepwell": {"parked_image": {"tag": "tag-x"}}, "framerail": {}}
+        with mock.patch.object(
+            REFRESH, "command", side_effect=subprocess.CalledProcessError(1, ["docker"])
+        ):
+            REFRESH.discard_parked_images(parked, Path("/runtime"))
+            REFRESH.prune_parked_images(Path("/runtime"))
+        with mock.patch.object(
+            REFRESH, "command",
+            side_effect=[
+                f"{REFRESH.PARKED_IMAGE_REPOSITORY}:old-a",
+                subprocess.CalledProcessError(1, ["docker", "rmi"]),
+            ],
+        ) as listed:
+            REFRESH.prune_parked_images(Path("/runtime"))
+            self.assertEqual(listed.call_count, 2)
 
     def test_parked_identity_failure_never_silently_recreates(self) -> None:
         parked = {service: {"parked_name": service} for service in REFRESH.SERVICES}

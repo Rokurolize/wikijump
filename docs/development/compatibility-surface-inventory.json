@@ -11515,7 +11515,13 @@
   },
   "provenance": {
     "wikijump": {
+<<<<<<< HEAD
       "source_input_set_sha256": "7e30c982ba92eabe3646b429207cb473a31a70063cd88d3809d292c55cb8cbd6"
+||||||| a195333f0d
+      "source_input_set_sha256": "7832f789155936ead54e027a322921b4d60b4e064a78a85343af1590258ef46e"
+=======
+      "source_input_set_sha256": "9f976d1a684165a9d99282934ab5289c5f084567235b94a7dafd9fc542bf5147"
+>>>>>>> origin/develop
     },
     "ftml": {
       "commit": "d7727b245fd69f46d44c04592e392850ea244e13",
@@ -11680,7 +11686,13 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
+<<<<<<< HEAD
         "sha256": "8b35adaa3ed881f561f4e4e5a67a34c5b7613dd0acd1da7ac711d6fe988a2115"
+||||||| a195333f0d
+        "sha256": "3f64d455d87d2fa93b3389b589b88b108f8a0ac975c0ef66712eb8cf4f43d47c"
+=======
+        "sha256": "6ca9c3d7f6385e46f63d19a97eb6c809539e63eb142d391d8c73b9b15c7b6be2"
+>>>>>>> origin/develop
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11744,7 +11756,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "0186e9f0e5d4a9c8b62d82fe1af5babe30dd4d68a229fded5382b83a4c9e305b"
+        "sha256": "cef2fa17d66fd9740982198edca9bd6fb428b2b0090a83797da627a855b152c1"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11776,7 +11788,7 @@
       },
       {
         "path": "framerail/src/lib/server/load/page/page.ts",
-        "sha256": "5af76e4ace7f6c32fae16a89a71f5b24dae68e337452767064d835a585c4915e"
+        "sha256": "8ded61c2afdaf8561114bd388b4400ca561c75247e3a72c8053cd34d277412c9"
       },
       {
         "path": "framerail/src/lib/server/wikidot-site-changes.js",
@@ -11852,7 +11864,7 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/register/+page.svelte",
-        "sha256": "9f4e905f3d36b2e4f54ed28a2e5cc0f38b820237b53a9ea1ca894c06aadb3ba1"
+        "sha256": "f77c950051bd571481f5afdc8f93e5ffb0f770fd9b3b71104de865f44e2c249c"
       },
       {
         "path": "framerail/src/routes/[x+2d]/settings/+page.server.ts",
@@ -26888,7 +26900,13 @@
         ],
         "cases": [],
         "tests": [
+<<<<<<< HEAD
           "deepwell/tests/file_mirror_parity.rs#native_file_mutations_still_succeed"
+||||||| a195333f0d
+          "deepwell/tests/import.rs#mirror_seed_carries_source_tags_and_navigation"
+=======
+          "deepwell/tests/import.rs#mirror_seed_carries_source_random_helper_routes"
+>>>>>>> origin/develop
         ]
       },
       "evidence": {
@@ -30308,7 +30326,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/vote.rs#registered_point_vote_lifecycle_refreshes_saved_rate_page"
+          "deepwell/tests/vote.rs#imported_rating_baseline_vote_cast_change_cancel_lifecycle"
         ]
       },
       "evidence": {
@@ -39058,7 +39076,7 @@
         },
         {
           "path": "framerail/src/lib/server/load/page/page.ts",
-          "sha256": "5af76e4ace7f6c32fae16a89a71f5b24dae68e337452767064d835a585c4915e"
+          "sha256": "8ded61c2afdaf8561114bd388b4400ca561c75247e3a72c8053cd34d277412c9"
         },
         {
           "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",

@@ -336,6 +336,108 @@ async fn oversized_avatar_rejection_does_not_promote_blob_or_change_target() {
 }
 
 #[tokio::test]
+async fn non_raster_avatar_rejection_does_not_change_target() {
+    // SVG (and other active document types) must not become avatars: the
+    // route serves the stored blob verbatim on the files origin, where
+    // script would execute. See issue #2653.
+    const AVATAR_DATA: &[u8] =
+        b"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\"></svg>";
+
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(SAMPLE_USER_ID),
+        ..Default::default()
+    });
+
+    let target_before =
+        run_endpoint!(runner, user_get, json!({ "user": SAMPLE_USER_ID }),)
+            .expect("sample user should exist")
+            .user
+            .unwrap_wikijump()
+            .expect("sample user should be a Wikijump user");
+
+    let pending_blob_id = cuid();
+    let s3_path = format!("uploads/{pending_blob_id}");
+    let avatar_hash = sha512_hash(AVATAR_DATA);
+    assert!(
+        BlobService::get_optional(runner.context(), &avatar_hash)
+            .await
+            .expect("avatar fixture permanent lookup should succeed")
+            .is_none(),
+        "avatar fixture hash must not already exist"
+    );
+    let upload = runner
+        .state()
+        .s3_files_bucket
+        .put_object(&s3_path, AVATAR_DATA)
+        .await
+        .expect("avatar fixture upload should succeed");
+    assert_eq!(upload.status_code(), 200);
+    let created_at = OffsetDateTime::now_utc();
+    blob_pending::ActiveModel {
+        external_id: Set(pending_blob_id.clone()),
+        created_by: Set(SAMPLE_USER_ID),
+        created_at: Set(created_at),
+        expires_at: Set(created_at + time::Duration::minutes(5)),
+        expected_length: Set(AVATAR_DATA.len().try_into().expect("fixture length fits")),
+        s3_path: Set(s3_path.clone()),
+        s3_hash: Set(None),
+        presign_url: Set("not-used-in-test".to_owned()),
+        site_id: Set(None),
+        page_id: Set(None),
+        content_type_label: Set(None),
+        content_type_description: Set(None),
+    }
+    .insert(&runner.state().database)
+    .await
+    .expect("avatar pending blob fixture should be inserted");
+
+    let error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": SAMPLE_USER_ID,
+            "avatar_uploaded_blob_id": pending_blob_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let target_after =
+        run_endpoint!(runner, user_get, json!({ "user": SAMPLE_USER_ID }),)
+            .expect("sample user should remain readable")
+            .user
+            .unwrap_wikijump()
+            .expect("sample user should remain a Wikijump user");
+
+    BlobPending::delete_by_id(&pending_blob_id)
+        .exec(&runner.state().database)
+        .await
+        .expect("avatar pending blob fixture cleanup should succeed");
+    runner
+        .state()
+        .s3_files_bucket
+        .delete_object(&s3_path)
+        .await
+        .expect("avatar temporary fixture cleanup should succeed");
+    // Unlike the oversized rejection (which fails before the move), the
+    // MIME verdict needs libmagic output over the finalized bytes, so the
+    // content-addressed object already exists when the upload is refused.
+    // The hash was absent before this fixture ran, so removing it here
+    // cannot delete another test's bytes.
+    runner
+        .state()
+        .s3_files_bucket
+        .delete_object(blob_hash_to_hex(&avatar_hash))
+        .await
+        .expect("rejected avatar permanent cleanup should succeed");
+
+    assert_contains_error!(error, ErrorType::Blob);
+    assert_eq!(
+        target_after.avatar_s3_hash, target_before.avatar_s3_hash,
+        "rejected avatar must leave the existing avatar untouched"
+    );
+}
+
+#[tokio::test]
 async fn regular_account_password_policy_rejects_short_create_passwords() {
     let mut runner = TestRunner::setup().await;
     runner.set_request_context(RequestContext {
