@@ -590,6 +590,12 @@ async fn pending_empty_blob(
 /// a replacement fixture must carry distinct content. The row is left
 /// unmoved (`s3_hash: None`) so finalization hashes the staged bytes, the
 /// same way the normal upload flow does.
+///
+/// The row is inserted through the committed pool connection, not the test
+/// transaction: blob finalization opens its own separate transaction to
+/// move the upload, which cannot see rows the test transaction has not
+/// committed yet. This mirrors
+/// `create_committed_page_pending_blob_with_data_fixture` in page.rs.
 async fn pending_data_blob(
     runner: &TestRunner,
     site_id: i64,
@@ -619,7 +625,7 @@ async fn pending_data_blob(
         content_type_label: Set(None),
         content_type_description: Set(None),
     }
-    .insert(runner.context().transaction())
+    .insert(&runner.state().database)
     .await
     .expect("data blob fixture should insert");
     pending_blob_id
