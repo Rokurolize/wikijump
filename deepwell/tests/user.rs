@@ -379,10 +379,7 @@ async fn non_raster_avatar_rejection_does_not_change_target() {
         created_by: Set(SAMPLE_USER_ID),
         created_at: Set(created_at),
         expires_at: Set(created_at + time::Duration::minutes(5)),
-        expected_length: Set(AVATAR_DATA
-            .len()
-            .try_into()
-            .expect("fixture length fits")),
+        expected_length: Set(AVATAR_DATA.len().try_into().expect("fixture length fits")),
         s3_path: Set(s3_path.clone()),
         s3_hash: Set(None),
         presign_url: Set("not-used-in-test".to_owned()),

@@ -741,6 +741,11 @@ mod tests {
                 "result": {"avatar_s3_hash": [222, 173]},
                 "id": id
             }),
+            "user_get" if request["params"]["user"] == 20001202 => json!({
+                "jsonrpc": "2.0",
+                "result": {"avatar_s3_hash": [222, 173]},
+                "id": id
+            }),
             "user_get" => json!({"jsonrpc": "2.0", "result": null, "id": id}),
             "basic_error_missing_page_slug" | "basic_error_missing_file_name" => {
                 json!({
@@ -752,6 +757,11 @@ mod tests {
             "basic_error_page_fetch" => json!({
                 "jsonrpc": "2.0",
                 "result": {"title": "fetch", "body": "backend failure"},
+                "id": id
+            }),
+            "basic_error_user_avatar" => json!({
+                "jsonrpc": "2.0",
+                "result": {"title": "user not found", "body": "user not found"},
                 "id": id
             }),
             other => panic!("unexpected JSON-RPC method: {other}"),
@@ -1091,6 +1101,11 @@ mod tests {
             (200, "image/svg+xml; charset=us-ascii", svg),
             (200, "image/png", png),
             (200, "image/png", png),
+            // Stored SVG bytes under a non-SVG MIME stay inline (same as
+            // the file lane); the nosniff assertion below is what keeps
+            // the browser from executing them.
+            (200, "application/octet-stream", svg),
+            (200, "application/octet-stream", svg),
         ]);
         let state =
             test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
@@ -1120,20 +1135,35 @@ mod tests {
 
         // Raster avatar: stays inline, but still gets nosniff.
         let benign = handle_user_avatar(
-            State(state),
+            State(Arc::clone(&state)),
             Path("20001201".to_owned()),
             site_headers(),
         )
         .await;
 
         assert_eq!(benign.status(), StatusCode::OK);
-        assert_eq!(
-            benign.headers().get(CONTENT_TYPE).unwrap(),
-            "image/png",
-        );
+        assert_eq!(benign.headers().get(CONTENT_TYPE).unwrap(), "image/png",);
         assert!(benign.headers().get(CONTENT_DISPOSITION).is_none());
         assert_eq!(
             benign.headers().get(X_CONTENT_TYPE_OPTIONS).unwrap(),
+            "nosniff",
+        );
+
+        // Mislabelled case: SVG bytes stored as application/octet-stream
+        // stay inline exactly like the file lane, so the nosniff header
+        // pinned here is the layer that stops the browser executing them.
+        let mislabelled =
+            handle_user_avatar(State(state), Path("20001202".to_owned()), site_headers())
+                .await;
+
+        assert_eq!(mislabelled.status(), StatusCode::OK);
+        assert_eq!(
+            mislabelled.headers().get(CONTENT_TYPE).unwrap(),
+            "application/octet-stream",
+        );
+        assert!(mislabelled.headers().get(CONTENT_DISPOSITION).is_none());
+        assert_eq!(
+            mislabelled.headers().get(X_CONTENT_TYPE_OPTIONS).unwrap(),
             "nosniff",
         );
 
@@ -1150,12 +1180,9 @@ mod tests {
         let state =
             test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
 
-        let missing = handle_user_avatar(
-            State(state),
-            Path("20009999".to_owned()),
-            site_headers(),
-        )
-        .await;
+        let missing =
+            handle_user_avatar(State(state), Path("20009999".to_owned()), site_headers())
+                .await;
 
         assert_eq!(missing.status(), StatusCode::NOT_FOUND);
 
