@@ -11515,7 +11515,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "94badf3b2ed409914776168ef342076f89829955e4a1440dd5256d8fbf57a5e2"
+      "source_input_set_sha256": "e3c344e0609dce90863b072d155287d5bc14078a0364592d5f214e50fd8f9a6e"
     },
     "ftml": {
       "commit": "d7727b245fd69f46d44c04592e392850ea244e13",
@@ -11680,7 +11680,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "3f64d455d87d2fa93b3389b589b88b108f8a0ac975c0ef66712eb8cf4f43d47c"
+        "sha256": "237c4c03c840f6fdf3113d1060415c88d02289a808352adc49e5addeef79bfe8"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11852,7 +11852,7 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/register/+page.svelte",
-        "sha256": "f77c950051bd571481f5afdc8f93e5ffb0f770fd9b3b71104de865f44e2c249c"
+        "sha256": "9f4e905f3d36b2e4f54ed28a2e5cc0f38b820237b53a9ea1ca894c06aadb3ba1"
       },
       {
         "path": "framerail/src/routes/[x+2d]/settings/+page.server.ts",
@@ -26888,7 +26888,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/import.rs#mirror_seed_carries_source_tags_and_navigation"
+          "deepwell/tests/import.rs#mirror_seed_carries_source_random_helper_routes"
         ]
       },
       "evidence": {

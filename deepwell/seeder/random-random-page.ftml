@@ -1,0 +1,7 @@
+[[module ListPages category="* -unlisted" order="random" limit="1"]]
+Random Page: %%title_linked%%
+[[/module]]
+
+[[module ListPages category="* -unlisted" order="random" limit="1"]]
+[[include :snippets:redirect url=%%link%%]]
+[[/module]]
