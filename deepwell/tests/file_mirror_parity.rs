@@ -89,8 +89,7 @@ async fn import_mirror_page(
 
 async fn import_uploader(runner: &TestRunner, label: &str) -> i64 {
     let tag = Uuid::new_v4();
-    let user_id =
-        15_000_000 + i32::try_from(u128::from(tag.as_u128()) % 1_000_000).unwrap();
+    let user_id = 15_000_000 + i32::try_from(tag.as_u128() % 1_000_000).unwrap();
     ImportService::add_user(
         runner.context(),
         ImportUser {
