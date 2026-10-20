@@ -1,0 +1,108 @@
+/*
+ * services/render/service/tests/alignment.rs
+ *
+ * DEEPWELL - Wikijump API provider and database manager
+ * Copyright (C) 2019-2026 Wikijump Team
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+//! Regression locks for the scp-744 epoch-38 body loss (#2573).
+//!
+//! Under the reverted #2596 pairing, the whole-article body vanished while a
+//! literal `[[>]]` printed after the header. The fixed (current) behavior is
+//! the unconditional per-source rewrite: every non-literal alignment marker
+//! line becomes a `[[div]]`, so no marker can ever leak as literal text and
+//! no pairing state can hide content. These tests lock that behavior on the
+//! exact marker shapes scp-744 carries.
+
+use super::*;
+
+fn rewrite(source: &str) -> String {
+    let mut wikitext = source.to_owned();
+    RenderService::normalize_wikidot_alignment_markers(&mut wikitext);
+    wikitext
+}
+
+#[test]
+fn scp744_rate_row_and_article_gate_rewrite_to_divs() {
+    // Mirrors the scp-744 marker shapes: the rating-widget row and the
+    // center/left article gates, with body text between and around them.
+    let source = concat!(
+        "[[>]]\n",
+        "[[module Rate]]\n",
+        "[[/>]]\n",
+        "\n",
+        "[[=]]\n",
+        "[[<]]\n",
+        "article body stays here\n",
+        "[[/<]]\n",
+        "[[/=]]\n",
+        "\n",
+        "[[=]]\n",
+        "tail block\n",
+        "[[/=]]\n",
+    );
+    let rewritten = rewrite(source);
+    assert!(
+        rewritten.contains("[[div style=\"text-align: right;\"]]"),
+        "right opener must rewrite, got:\n{rewritten}"
+    );
+    assert!(
+        rewritten.contains("[[div style=\"text-align: center;\"]]"),
+        "center opener must rewrite, got:\n{rewritten}"
+    );
+    assert!(
+        rewritten.contains("[[div style=\"text-align: left;\"]]"),
+        "left opener must rewrite, got:\n{rewritten}"
+    );
+    assert!(
+        !rewritten.contains("[[>]]")
+            && !rewritten.contains("[[/>]]")
+            && !rewritten.contains("[[=]]")
+            && !rewritten.contains("[[/=]]")
+            && !rewritten.contains("[[<]]")
+            && !rewritten.contains("[[/<]]"),
+        "no alignment marker may leak as literal text, got:\n{rewritten}"
+    );
+    assert!(
+        rewritten.contains("article body stays here")
+            && rewritten.contains("tail block"),
+        "body text must survive the rewrite, got:\n{rewritten}"
+    );
+}
+
+#[test]
+fn comment_hidden_markers_are_not_rewritten() {
+    // Markers inside a Wikidot comment are literal regions: the rewrite must
+    // leave them alone so FTML comment handling (not a div) owns them.
+    let source = "[!--\n[[>]]\nbody\n[[/>]]\n--]\n";
+    let rewritten = rewrite(source);
+    assert!(
+        rewritten.contains("[[>]]") && rewritten.contains("[[/>]]"),
+        "comment-hidden markers must stay literal, got:\n{rewritten}"
+    );
+    assert!(
+        !rewritten.contains("[[div"),
+        "no div may be emitted inside a comment, got:\n{rewritten}"
+    );
+
+    // Same for an unclosed comment: everything after the opener is hidden.
+    let source = "before\n[!--\n[[>]]\n";
+    let rewritten = rewrite(source);
+    assert!(
+        rewritten.contains("[[>]]"),
+        "marker after an unclosed comment opener must stay literal, got:\n{rewritten}"
+    );
+}
