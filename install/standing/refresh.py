@@ -390,13 +390,74 @@ def require_standing_applications_running(runtime_home: Path) -> dict[str, dict[
     return previous
 
 
-def parked_container_name(run_id: str, service: str) -> str:
+def run_scope(run_id: str) -> str:
     if not isinstance(run_id, str) or not run_id:
         raise ValueError("promotion run ID is required for container parking")
-    return (
-        f"wikijump-standing-rollback-"
-        f"{hashlib.sha256(run_id.encode('utf-8')).hexdigest()[:24]}-{service}"
-    )
+    return hashlib.sha256(run_id.encode("utf-8")).hexdigest()[:24]
+
+
+def parked_container_name(run_id: str, service: str) -> str:
+    return f"wikijump-standing-rollback-{run_scope(run_id)}-{service}"
+
+
+PARKED_IMAGE_REPOSITORY = "wikijump-standing-parked"
+
+
+def parked_image_tag(run_id: str, service: str) -> str:
+    """Run-scoped snapshot tag for a parked application container."""
+    return f"{PARKED_IMAGE_REPOSITORY}:{run_scope(run_id)}-{service}"
+
+
+def commit_parked_container(parked_name: str, tag: str, cwd: Path) -> str:
+    """Snapshot a stopped parked container's filesystem; return the image ID.
+
+    The container is stopped before the snapshot, so its filesystem is
+    quiescent. Application state lives in the database, files, and cache
+    volumes, not in the container layer, so the snapshot restores the exact
+    serving filesystem without capturing data-plane state.
+    """
+    command("docker", "commit", parked_name, tag, cwd=cwd)
+    return command("docker", "image", "inspect", "--format", "{{.Id}}", tag, cwd=cwd)
+
+
+def discard_parked_images(parked: dict[str, dict[str, object]], cwd: Path) -> None:
+    """Best-effort removal of committed parked snapshots. Never raises.
+
+    Snapshots are redundant once parked containers are restored, and stale
+    once a newer generation replaces the containers that run from them. A
+    snapshot still backing a running container cannot be removed; that
+    failure is ignored and the tag is reaped by a later run.
+    """
+    for entry in parked.values():
+        spec = entry.get("parked_image")
+        tag = spec.get("tag") if isinstance(spec, dict) else None
+        if not tag:
+            continue
+        try:
+            command("docker", "rmi", tag, cwd=cwd)
+        except subprocess.CalledProcessError:
+            continue
+
+
+def prune_parked_images(cwd: Path) -> None:
+    """Best-effort removal of parked snapshots left by earlier runs.
+
+    Runs before new snapshots are committed so one promotion never
+    accumulates more than its own generation of tags. Never raises.
+    """
+    try:
+        listing = command(
+            "docker", "images", "--format", "{{.Repository}}:{{.Tag}}",
+            "--filter", f"reference={PARKED_IMAGE_REPOSITORY}",
+            cwd=cwd,
+        )
+    except subprocess.CalledProcessError:
+        return
+    for reference in listing.split():
+        try:
+            command("docker", "rmi", reference, cwd=cwd)
+        except subprocess.CalledProcessError:
+            continue
 
 
 def restore_parked_containers(
@@ -446,20 +507,25 @@ def restore_or_recreate_previous_containers(
     override_file: Path,
     rollback_images: dict[str, dict[str, object]],
 ) -> dict[str, object]:
-    """Restore parked app containers, or reconstruct old images if Compose removed them.
+    """Restore parked app containers, or reconstruct them if Compose removed them.
 
-    Compose manages containers by its labels, which survive ``docker rename``.
-    During an activation ``compose up`` may therefore remove a renamed parked
-    container. Missing rollback containers must not leave Standing without app
-    services. The saved .env must already refer to the old, verified image IDs.
-    No volumes or non-application services are modified here.
+    Compose matches its containers by immutable labels, which survive
+    ``docker rename``, so the activation ``compose up`` removes renamed parked
+    containers whose image differs from the new desired state. Parking therefore
+    also commits each stopped container to a run-scoped snapshot tag: when the
+    container object is gone, rollback recreates the exact parked filesystem
+    through Compose from the verified tag instead of the older base image.
+    Only when a snapshot is missing too does rollback fall back to the pinned
+    base images. The saved .env must already refer to the old, verified image
+    IDs. No volumes or non-application services are modified here.
     """
     try:
         restored = restore_parked_containers(parked, runtime_home)
+        discard_parked_images(parked, runtime_home)
         return {"mode": "parked", "services": restored}
     except subprocess.CalledProcessError as restore_error:
         # Never hide a genuine identity or rename failure by rebuilding. Only
-        # missing parked containers qualify for the pinned-image fallback.
+        # missing parked containers qualify for the snapshot/image fallback.
         missing = [
             service for service, entry in parked.items()
             if not resource_exists("container", entry["parked_name"], runtime_home)
@@ -476,6 +542,33 @@ def restore_or_recreate_previous_containers(
                 raise RuntimeError(
                     f"rollback image in runtime environment is not pinned for {service}"
                 ) from restore_error
+        tagged: dict[str, str] = {}
+        tagged_ids: dict[str, str] = {}
+        for service in missing:
+            spec = parked[service].get("parked_image")
+            tag = spec.get("tag") if isinstance(spec, dict) else None
+            if tag and resource_exists("image", tag, runtime_home):
+                actual = command(
+                    "docker", "image", "inspect", "--format", "{{.Id}}", tag,
+                    cwd=runtime_home,
+                )
+                if actual != spec.get("image_id"):
+                    raise RuntimeError(
+                        f"parked snapshot image changed for {service}"
+                    ) from restore_error
+                tagged[service] = tag
+                # The runtime reports resolved image IDs, not tag refs, so the
+                # post-recreate check must compare against the snapshot's ID.
+                tagged_ids[service] = actual
+        wanted = {
+            service: tagged_ids.get(service, rollback_images[service]["id"])
+            for service in SERVICES
+        }
+        if tagged:
+            rebased = dict(actual_env)
+            for service, tag in tagged.items():
+                rebased[f"STANDING_{service.upper()}_IMAGE"] = tag
+            write_environment(runtime_home / ".env", rebased)
         command(
             *compose_command(
                 runtime_home, "up", "--detach", "--no-deps", "--no-build",
@@ -486,22 +579,32 @@ def restore_or_recreate_previous_containers(
         )
         current = runtime_containers(runtime_home)
         for service in SERVICES:
-            if (
-                current[service]["image_id"] != rollback_images[service]["id"]
-                or not current[service]["running"]
-            ):
+            if current[service]["image_id"] != wanted[service] or not current[service]["running"]:
                 raise RuntimeError(
                     f"recreated rollback service {service} does not run its previous image"
                 ) from restore_error
-        return {"mode": "recreated-from-pinned-images", "missing_parked": missing,
+        if not tagged:
+            return {"mode": "recreated-from-pinned-images", "missing_parked": missing,
+                    "services": {service: current[service] for service in SERVICES}}
+        return {"mode": "parked-image", "missing_parked": missing,
+                "parked_image_services": sorted(tagged),
+                "base_image_services": sorted(set(SERVICES) - set(tagged)),
                 "services": {service: current[service] for service in SERVICES}}
 
 
 def park_containers(
     previous: dict[str, dict[str, object]], runtime_home: Path, run_id: str
 ) -> dict[str, dict[str, object]]:
+    """Rename, stop, verify, and snapshot every application container.
+
+    The snapshot tag is the part of the parked set that survives the
+    activation ``compose up``: Compose claims containers by immutable labels
+    and removes renamed ones whose image changed, but the committed tag keeps
+    the exact stopped filesystem restorable through Compose at rollback.
+    """
     parked: dict[str, dict[str, object]] = {}
     try:
+        prune_parked_images(runtime_home)
         for service in SERVICES:
             old = previous[service]
             parked_name = parked_container_name(run_id, service)
@@ -529,9 +632,15 @@ def park_containers(
             parked[service]["container"] = container_identity(parked_name, runtime_home)
             if parked[service]["container"]["running"]:
                 raise RuntimeError(f"parked container is still running for {service}")
+            tag = parked_image_tag(run_id, service)
+            parked[service]["parked_image"] = {
+                "tag": tag,
+                "image_id": commit_parked_container(parked_name, tag, runtime_home),
+            }
     except Exception:
         try:
             restore_parked_containers(parked, runtime_home)
+            discard_parked_images(parked, runtime_home)
         except Exception as restore_error:
             raise RuntimeError(
                 "failed to restore partially parked containers"

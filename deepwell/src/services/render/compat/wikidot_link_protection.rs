@@ -447,39 +447,19 @@ pub(in crate::services::render) fn build_wikidot_wikipedia_link(
     target: &str,
     label: Option<&str>,
 ) -> WikidotWikipediaLink {
-    let (language, page) = wikidot_wikipedia_target(target);
-    let href = wikidot_wikipedia_href(language, page);
-    let label = label
-        .filter(|value| !value.is_empty())
-        .map(Cow::Borrowed)
-        .unwrap_or_else(|| Cow::Owned(page.replace('_', " ")));
+    // Live Wikidot keeps the whole target (including any language-looking
+    // prefix) in the path of one fixed host; see issue #2576. The frozen
+    // documentation's language-subdomain split is superseded.
+    let href = wikidot_wikipedia_href(target);
+    let label = label.filter(|value| !value.is_empty()).unwrap_or(target);
     let anchor = format!(
         r#"<a href="{href}" onclick="window.open(this.href, '_blank'); return false;">{label}</a>"#,
         href = escape_list_pages_html_attr(&href),
-        label = escape_list_pages_html_text(&label),
+        label = escape_list_pages_html_text(label),
     );
     WikidotWikipediaLink { anchor, href }
 }
 
-pub(in crate::services::render) fn wikidot_wikipedia_href(
-    language: &str,
-    page: &str,
-) -> String {
-    format!("http://{language}.wikipedia.org/wiki/{page}")
-}
-
-pub(in crate::services::render) fn wikidot_wikipedia_target(
-    target: &str,
-) -> (&str, &str) {
-    if let Some((language, page)) = target.split_once(':')
-        && !page.is_empty()
-        && (2..=3).contains(&language.len())
-        && language
-            .chars()
-            .all(|character| character.is_ascii_alphabetic())
-    {
-        return (language, page);
-    }
-
-    ("en", target)
+pub(in crate::services::render) fn wikidot_wikipedia_href(page: &str) -> String {
+    format!("https://en.wikipedia.org/wiki/{page}")
 }
