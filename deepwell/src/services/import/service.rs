@@ -602,8 +602,14 @@ impl ImportService {
             }
         }
 
-        // Bank the observation idempotently (one row per source) and the
-        // foreign-key entry, then either delegate or report the gap.
+        // Bank the foreign-key entry before the observation: the
+        // observation row references known_user(user_id), so the stable
+        // source ID must exist first. Then bank the observation
+        // idempotently (one row per source) and delegate or report the gap.
+        UserService::insert_known_user_id(ctx, i64::from(user_id))
+            .await
+            .or_raise(make_error)?;
+
         let source_sha256 = Sha256::digest(source_reference.as_bytes()).to_vec();
         txn.execute_raw(Statement::from_sql_and_values(
             DatabaseBackend::Postgres,
@@ -619,10 +625,6 @@ impl ImportService {
         ))
         .await
         .or_raise(make_error)?;
-
-        UserService::insert_known_user_id(ctx, i64::from(user_id))
-            .await
-            .or_raise(make_error)?;
 
         let Some(profile) = profile else {
             // An observation alone materializes nothing. A live row is
