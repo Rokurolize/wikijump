@@ -275,6 +275,46 @@ async fn scp744_full_closure_render_keeps_article_body() {
     .await
     .expect("admin should receive the reproduction role");
 
+    // Mirror the production seeder (deepwell/seeder/roles.json): nested
+    // include fetches authorize as anonymous (user_id None), which only
+    // holds view rights through the virtual anonymous/guest/everyone roles.
+    // A bare SiteService::create site has none of these, so without them
+    // every include fails closed with "does not exist".
+    for virtual_role in ["anonymous", "guest", "everyone"] {
+        let virtual_role_id = RoleService::create(
+            runner.context(),
+            InternalCreateRoleInput {
+                site_id,
+                name: virtual_role.to_owned(),
+                description: None,
+                is_virtual: true,
+                parent_role_id: None,
+                creating_user_id: SYSTEM_USER_ID,
+                ip_address: common::IP_ADDRESS,
+            },
+        )
+        .await
+        .expect("reproduction virtual role should be created")
+        .role_id;
+        PermissionService::update_permissions_for_role(
+            runner.context(),
+            UpdateRolePermissionsInput {
+                site_id,
+                role_reference: Reference::Id(virtual_role_id),
+                new_permissions: vec![Permission {
+                    resource_type: Resource::Page,
+                    resource_category: None,
+                    action: Action::View,
+                }],
+                cascade_removals: false,
+                updating_user_id: SYSTEM_USER_ID,
+                ip_address: common::IP_ADDRESS,
+            },
+        )
+        .await
+        .expect("reproduction virtual role should grant anonymous view");
+    }
+
     let mut page_id = 0;
     for (slug, source) in FIXTURES {
         // Same-site closure: the extracts address the shared mirror as
@@ -347,6 +387,30 @@ async fn scp744_full_closure_render_keeps_article_body() {
         ),
     )
     .await;
+
+    // Every include target the closure needs must exist on the render site
+    // and be viewable by the anonymous fetcher before rendering, so a
+    // systematic seeding failure trips here instead of surfacing as
+    // error-blocks in the compiled HTML.
+    for (slug, _) in FIXTURES {
+        if *slug == PAGE_SLUG {
+            continue;
+        }
+        let page = PageService::get_optional(
+            runner.context(),
+            site_id,
+            Reference::from(*slug),
+        )
+        .await
+        .expect("include target lookup should succeed")
+        .unwrap_or_else(|| panic!("include target {slug} should exist"));
+        assert!(
+            PermissionService::check_user_can_view_page(runner.context(), None, &page)
+                .await
+                .expect("include target view check should succeed"),
+            "include target {slug} must be anonymously viewable",
+        );
+    }
 
     let saved = run_endpoint!(
         runner,
