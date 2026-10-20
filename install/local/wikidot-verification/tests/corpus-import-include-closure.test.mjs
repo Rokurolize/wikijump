@@ -113,6 +113,21 @@ test("expandIncludeClosure does not report a sourceless root as unresolved", () 
   assert.deepEqual(closure.unresolved, []);
 });
 
+test("expandIncludeClosure still records external targets met at maxDepth", () => {
+  const closure = expandIncludeClosure({
+    roots: ["scp-1"],
+    ...sourceReader({
+      "scp-1": "[[include component:a]]",
+      "component:a": "[[include :other-site:shared]]\n[[include :other-site:shared]]",
+    }),
+    sourceSite: "scp-wiki",
+    maxDepth: 1,
+  });
+  assert.deepEqual(closure.included.map((page) => page.slug), ["scp-1", "component:a"]);
+  assert.deepEqual(closure.external, ["other-site:shared"]);
+  assert.deepEqual(closure.truncated, []);
+});
+
 test("expandIncludeClosure truncates past maxDepth and bounds total pages", () => {
   const sources = {
     "scp-1": "[[include component:a]]",
