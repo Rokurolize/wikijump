@@ -99,6 +99,7 @@ pub struct GetArticleViewCacheMetadataOutput {
 #[serde(rename_all = "snake_case")]
 pub enum PageRedirectKind {
     WikidotModule,
+    RandomHelper,
 }
 
 /// Yield information for a page view, depending on the status of the page.

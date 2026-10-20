@@ -514,6 +514,62 @@ async fn mirror_seed_carries_source_tags_and_navigation() {
 }
 
 #[tokio::test]
+async fn mirror_seed_carries_source_random_helper_routes() {
+    // Issue #2080: the repository-owned scp-wiki mirror bootstrap must
+    // include the source site's first-party random helper pages, because the
+    // imported navigation links them. Expected sources, titles, and tags are
+    // the authoritative shared-corpus records
+    // (corpus/en/pages/random:<name>/source.wikidot.txt and meta.json).
+    // Pages are imported because the source site defines them; their names
+    // are not special-cased anywhere else.
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki mirror site should exist");
+    let site_id = site.site.site_id;
+
+    for (slug, title) in [
+        ("random:random-art", "Random Art"),
+        ("random:random-goi-format", "Random GoI Format"),
+        ("random:random-page", "Random Page"),
+        ("random:random-scp", "Random SCP"),
+        ("random:random-tale", "Random Tale"),
+    ] {
+        let page = run_endpoint!(
+            runner,
+            page_get,
+            json!({
+                "site_id": site_id,
+                "page": slug,
+                "details": {"wikitext": true},
+            }),
+        )
+        .unwrap_or_else(|| panic!("seeded mirror helper '{slug}' should exist"));
+        assert_eq!(
+            page.title, title,
+            "seeded mirror helper '{slug}' must carry its source title",
+        );
+        let mut actual = page.tags.clone();
+        actual.sort();
+        assert_eq!(
+            actual,
+            vec!["admin".to_owned(), "redirect".to_owned()],
+            "seeded mirror helper '{slug}' must carry its source helper tags",
+        );
+        let wikitext = page.wikitext.expect("helper source should be readable");
+        assert!(
+            wikitext.contains("order=\"random\""),
+            "seeded mirror helper '{slug}' must keep its random selection:\n{wikitext}",
+        );
+        assert!(
+            wikitext.contains("[[include :snippets:redirect url=%%link%%]]"),
+            "seeded mirror helper '{slug}' must keep its redirect include:\n{wikitext}",
+        );
+    }
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
 async fn mirror_seed_prefers_source_system_pages_over_generic_seeds() {
     // Refs #2083: a source-owned system page from the imported corpus takes
     // precedence over a generic seed page with the same slug. The seeded

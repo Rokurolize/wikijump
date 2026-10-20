@@ -94,7 +94,7 @@ export interface PageRoute {
 interface PageViewDataBase {
   options: PageOptions
   redirect_page: Nullable<string>
-  redirect_kind?: Nullable<"wikidot_module">
+  redirect_kind?: Nullable<"wikidot_module" | "random_helper">
   wikitext: string
   compiled_body_html: string
   compiled_body_styles: string[]

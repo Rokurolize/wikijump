@@ -13192,7 +13192,7 @@ async fn syntax_links_match_frozen_live_semantics_with_documented_security_diver
         r#"<a href="https://example.com/" target="_blank">Example</a>"#,
         r#"<a href="javascript:;">empty link</a>"#,
         r#"<span class="wiki-email">moc.elpmaxe|troppus#em liame</span>"#,
-        r#"<a href="http://en.wikipedia.org/wiki/Albert_Einstein" onclick="window.open(this.href, '_blank'); return false;">Albert</a>"#,
+        r#"<a href="https://en.wikipedia.org/wiki/Albert_Einstein" onclick="window.open(this.href, '_blank'); return false;">Albert</a>"#,
         r##"<a href="#_editpage">edit</a>"##,
         r##"<a href="#_notawikidotcommand">unknown</a>"##,
     ] {
