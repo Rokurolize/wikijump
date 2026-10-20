@@ -41,6 +41,9 @@ import type { RequestEvent } from "@sveltejs/kit"
 // rejected with the same failure the backend would return, without an RPC.
 // The body is built lazily: clearing password fields must never run on the
 // success path.
+//
+// LOCAL DEFAULT pending Wikidot evidence: mirrors the backend
+// InvalidEmailToken message so the fast reject is indistinguishable.
 function failForMalformedToken(token: unknown, buildBody: () => Record<string, unknown>) {
   if (!isEmailTokenWellFormed(token)) {
     return fail(400, {
@@ -76,6 +79,7 @@ const newPasswordSchema = pipe(
     partialCheck(
       [["password"], ["confirmPassword"]],
       ({ password, confirmPassword }) => password === confirmPassword,
+      // LOCAL DEFAULT pending Wikidot evidence.
       "Passwords do not match"
     ),
     ["confirmPassword"]
