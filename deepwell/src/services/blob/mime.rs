@@ -116,6 +116,8 @@ impl MimeAnalyzer {
     /// and a oneshot channel to get the response.
     pub(crate) async fn analyze(&self, buffer: Vec<u8>) -> Result<ContentAnalysis> {
         let buffer_len = buffer.len();
+        // Decided before the buffer moves into the worker channel below.
+        let maybe_webp = is_webp(&buffer);
         info!("Sending content analysis request ({} bytes)", buffer_len);
 
         // Channel for getting the result
@@ -144,7 +146,7 @@ impl MimeAnalyzer {
         // so correct that specific answer from the bytes themselves instead
         // of trusting the stale database. Answers the database does
         // recognize are left untouched.
-        let mime = if mime.starts_with("application/octet-stream") && is_webp(&buffer) {
+        let mime = if mime.starts_with("application/octet-stream") && maybe_webp {
             str!("image/webp; charset=binary")
         } else {
             mime
