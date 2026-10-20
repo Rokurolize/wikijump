@@ -3,7 +3,7 @@
   "source_identities": {
     "jsonrpc_registry": {
       "path": "deepwell/src/api.rs",
-      "sha256": "41a37d2b7f7328cf4ca312a6698d59e28b4cd49b76cdb5786fb485ef8ae9a46f"
+      "sha256": "4a0a746dce555bb1de51e84cc98275ba6b6977ee9593bf620fec72e2cdc0d997"
     },
     "request_context_middleware": {
       "path": "deepwell/src/middleware.rs",
@@ -26,7 +26,7 @@
       "classification": "historical"
     }
   ],
-  "method_count": 193,
+  "method_count": 194,
   "methods": [
     {
       "method": "admin_view",
@@ -2397,8 +2397,8 @@
         "component": "deepwell",
         "handler": "file_create",
         "source": "deepwell/src/endpoints/file.rs#file_create",
-        "source_sha256": "6a99fdb6a66ea3624b2f43761c63e160b0d6b80ded4c0d9968c52ffd455cc226",
-        "function_sha256": "610351fe87dbeff7053a2fdd909cabeb2af6c93f4457622d002b48431983e640"
+        "source_sha256": "0fe8753a1a727dcb2860d3a2190f49322ff53a7fd66294721a631082fc85cebf",
+        "function_sha256": "1e56895828a3a415176f39cd60718500fbf8b0e28923dd80edc2982ef63bcfe9"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -2432,6 +2432,7 @@
           "permission_check"
         ],
         "requirement_sources": [
+          "deepwell/src/endpoints/file.rs#ensure_page_not_fully_imported",
           "deepwell/src/endpoints/file.rs#ensure_parent_page_permission",
           "deepwell/src/endpoints/file.rs#file_create",
           "deepwell/src/endpoints/file.rs#require_authenticated_file_mutation_actor"
@@ -2446,8 +2447,10 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "endpoint_behavioral",
-        "reference": "deepwell/tests/page.rs#changed_file_revision_fences_but_noop_and_failed_revision_do_not",
+        "reference": "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused",
         "alternatives": [
+          "deepwell/tests/file_mirror_parity.rs#native_file_mutations_still_succeed",
+          "deepwell/tests/page.rs#changed_file_revision_fences_but_noop_and_failed_revision_do_not",
           "deepwell/tests/page.rs#file_create_commits_only_its_actor_and_route_owned_pending_blob",
           "deepwell/tests/page.rs#file_create_public_endpoint_audits_success_once_and_not_denial",
           "deepwell/tests/page.rs#file_mutation_deferred_actions_fence_warm_anonymous_gallery_cache",
@@ -2462,8 +2465,8 @@
         "component": "deepwell",
         "handler": "file_delete",
         "source": "deepwell/src/endpoints/file.rs#file_delete",
-        "source_sha256": "6a99fdb6a66ea3624b2f43761c63e160b0d6b80ded4c0d9968c52ffd455cc226",
-        "function_sha256": "548223047d05b51cd93bc9aabe56e28ca804ae67c855880ee3075c82cb55bf98"
+        "source_sha256": "0fe8753a1a727dcb2860d3a2190f49322ff53a7fd66294721a631082fc85cebf",
+        "function_sha256": "00374a95d8f1106043c12e8bdeb7ba409c2de3adb65512c02bea7be4f7ace6ec"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -2497,6 +2500,7 @@
           "permission_check"
         ],
         "requirement_sources": [
+          "deepwell/src/endpoints/file.rs#ensure_page_not_fully_imported",
           "deepwell/src/endpoints/file.rs#ensure_parent_page_permission",
           "deepwell/src/endpoints/file.rs#file_delete",
           "deepwell/src/endpoints/file.rs#require_authenticated_file_mutation_actor"
@@ -2511,8 +2515,10 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "endpoint_behavioral",
-        "reference": "deepwell/tests/page.rs#file_mutation_deferred_actions_fence_warm_anonymous_gallery_cache",
+        "reference": "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused",
         "alternatives": [
+          "deepwell/tests/file_mirror_parity.rs#native_file_mutations_still_succeed",
+          "deepwell/tests/page.rs#file_mutation_deferred_actions_fence_warm_anonymous_gallery_cache",
           "deepwell/tests/page.rs#file_mutations_require_parent_page_edit_permission"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
@@ -2524,8 +2530,8 @@
         "component": "deepwell",
         "handler": "file_edit",
         "source": "deepwell/src/endpoints/file.rs#file_edit",
-        "source_sha256": "6a99fdb6a66ea3624b2f43761c63e160b0d6b80ded4c0d9968c52ffd455cc226",
-        "function_sha256": "d1134b300f2cdcf8b008eaefa9e374dcec6b89f375d8bfb53aec665e35854e2c"
+        "source_sha256": "0fe8753a1a727dcb2860d3a2190f49322ff53a7fd66294721a631082fc85cebf",
+        "function_sha256": "df317901c1c2864eca36f89419bb782eca6c64a3a63bfa83afd9ce6e2fb2404a"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -2559,6 +2565,7 @@
           "permission_check"
         ],
         "requirement_sources": [
+          "deepwell/src/endpoints/file.rs#ensure_page_not_fully_imported",
           "deepwell/src/endpoints/file.rs#ensure_parent_page_permission",
           "deepwell/src/endpoints/file.rs#file_edit",
           "deepwell/src/endpoints/file.rs#require_authenticated_file_mutation_actor"
@@ -2573,8 +2580,10 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "endpoint_behavioral",
-        "reference": "deepwell/tests/page.rs#changed_file_revision_fences_but_noop_and_failed_revision_do_not",
+        "reference": "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused",
         "alternatives": [
+          "deepwell/tests/file_mirror_parity.rs#native_file_mutations_still_succeed",
+          "deepwell/tests/page.rs#changed_file_revision_fences_but_noop_and_failed_revision_do_not",
           "deepwell/tests/page.rs#file_edit_public_endpoint_audits_success_once_and_not_denial",
           "deepwell/tests/page.rs#file_edit_semantic_no_op_emits_no_audit_event",
           "deepwell/tests/page.rs#file_mutations_require_parent_page_edit_permission",
@@ -2590,7 +2599,7 @@
         "component": "deepwell",
         "handler": "file_get",
         "source": "deepwell/src/endpoints/file.rs#file_get",
-        "source_sha256": "6a99fdb6a66ea3624b2f43761c63e160b0d6b80ded4c0d9968c52ffd455cc226",
+        "source_sha256": "0fe8753a1a727dcb2860d3a2190f49322ff53a7fd66294721a631082fc85cebf",
         "function_sha256": "e693425ed0ec6acf049f0eaa2c3026811482ae4ecf805aacf1a8444f486f155d"
       },
       "params_schema": {
@@ -2652,8 +2661,8 @@
         "component": "deepwell",
         "handler": "file_move",
         "source": "deepwell/src/endpoints/file.rs#file_move",
-        "source_sha256": "6a99fdb6a66ea3624b2f43761c63e160b0d6b80ded4c0d9968c52ffd455cc226",
-        "function_sha256": "60bc74aa3e48edd1f686d3f75cf84d7bb571555f54eade456623602d01b70312"
+        "source_sha256": "0fe8753a1a727dcb2860d3a2190f49322ff53a7fd66294721a631082fc85cebf",
+        "function_sha256": "411f3e64c094e90dead65bd0e0e06aefea09f28bf6dfde933621df837a2038a9"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -2687,6 +2696,7 @@
           "permission_check"
         ],
         "requirement_sources": [
+          "deepwell/src/endpoints/file.rs#ensure_page_not_fully_imported",
           "deepwell/src/endpoints/file.rs#ensure_parent_page_permission",
           "deepwell/src/endpoints/file.rs#file_move",
           "deepwell/src/endpoints/file.rs#require_authenticated_file_mutation_actor"
@@ -2701,8 +2711,11 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "endpoint_behavioral",
-        "reference": "deepwell/tests/page.rs#file_mutations_require_parent_page_edit_permission",
-        "alternatives": [],
+        "reference": "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused",
+        "alternatives": [
+          "deepwell/tests/file_mirror_parity.rs#native_file_mutations_still_succeed",
+          "deepwell/tests/page.rs#file_mutations_require_parent_page_edit_permission"
+        ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
     },
@@ -2712,8 +2725,8 @@
         "component": "deepwell",
         "handler": "file_restore",
         "source": "deepwell/src/endpoints/file.rs#file_restore",
-        "source_sha256": "6a99fdb6a66ea3624b2f43761c63e160b0d6b80ded4c0d9968c52ffd455cc226",
-        "function_sha256": "650cdc7a9fef5e63f9e302030c65b516882acccf5a948150bb539e259fb2eff0"
+        "source_sha256": "0fe8753a1a727dcb2860d3a2190f49322ff53a7fd66294721a631082fc85cebf",
+        "function_sha256": "78f0c9de18c6816f81e4c0917a2863f12a30fa202e0f6842eefbd69ec9d8d375"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -2747,6 +2760,7 @@
           "permission_check"
         ],
         "requirement_sources": [
+          "deepwell/src/endpoints/file.rs#ensure_page_not_fully_imported",
           "deepwell/src/endpoints/file.rs#ensure_parent_page_permission",
           "deepwell/src/endpoints/file.rs#file_restore",
           "deepwell/src/endpoints/file.rs#require_authenticated_file_mutation_actor"
@@ -2761,8 +2775,10 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "endpoint_behavioral",
-        "reference": "deepwell/tests/page.rs#file_mutation_deferred_actions_fence_warm_anonymous_gallery_cache",
+        "reference": "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused",
         "alternatives": [
+          "deepwell/tests/file_mirror_parity.rs#native_file_mutations_still_succeed",
+          "deepwell/tests/page.rs#file_mutation_deferred_actions_fence_warm_anonymous_gallery_cache",
           "deepwell/tests/page.rs#file_mutations_require_parent_page_edit_permission"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
@@ -3061,8 +3077,8 @@
         "component": "deepwell",
         "handler": "file_rollback",
         "source": "deepwell/src/endpoints/file.rs#file_rollback",
-        "source_sha256": "6a99fdb6a66ea3624b2f43761c63e160b0d6b80ded4c0d9968c52ffd455cc226",
-        "function_sha256": "db00301e8c0d8f34989bd28cca0b6dee4c25603ca38701b3b14397b68200b9b2"
+        "source_sha256": "0fe8753a1a727dcb2860d3a2190f49322ff53a7fd66294721a631082fc85cebf",
+        "function_sha256": "56f0816818e1c2c0305fd6c7964fea01420b2bab638ff4a30d47b61ffe70905e"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -3096,6 +3112,7 @@
           "permission_check"
         ],
         "requirement_sources": [
+          "deepwell/src/endpoints/file.rs#ensure_page_not_fully_imported",
           "deepwell/src/endpoints/file.rs#ensure_parent_page_permission",
           "deepwell/src/endpoints/file.rs#file_rollback",
           "deepwell/src/endpoints/file.rs#require_authenticated_file_mutation_actor"
@@ -3110,8 +3127,10 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "endpoint_behavioral",
-        "reference": "deepwell/tests/page.rs#file_mutations_require_parent_page_edit_permission",
+        "reference": "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused",
         "alternatives": [
+          "deepwell/tests/file_mirror_parity.rs#native_file_mutations_still_succeed",
+          "deepwell/tests/page.rs#file_mutations_require_parent_page_edit_permission",
           "deepwell/tests/page.rs#file_rollback_public_endpoint_audits_only_created_revisions"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
@@ -3338,7 +3357,7 @@
         "component": "deepwell",
         "handler": "import_wikidot_discussion",
         "source": "deepwell/src/endpoints/import.rs#import_wikidot_discussion",
-        "source_sha256": "0dc0b68120a7ea0b85232958635bd197e607c45f110562625733ad36e6bd6422",
+        "source_sha256": "e47258e72ec151e76121e9ef4b20d78335f9389184471bff590edb21dafc4730",
         "function_sha256": "10432b1db65634b2c92496b20c6461e141755fddac100e7fde37bf9736a4db3b"
       },
       "params_schema": {
@@ -3398,7 +3417,7 @@
         "component": "deepwell",
         "handler": "import_wikidot_file",
         "source": "deepwell/src/endpoints/import.rs#import_wikidot_file",
-        "source_sha256": "0dc0b68120a7ea0b85232958635bd197e607c45f110562625733ad36e6bd6422",
+        "source_sha256": "e47258e72ec151e76121e9ef4b20d78335f9389184471bff590edb21dafc4730",
         "function_sha256": "61b3761c9875a735673339c5a4349b801f4e1f1a800bc013b50efb1452be057f"
       },
       "params_schema": {
@@ -3453,7 +3472,7 @@
         "component": "deepwell",
         "handler": "import_wikidot_file_delete",
         "source": "deepwell/src/endpoints/import.rs#import_wikidot_file_delete",
-        "source_sha256": "0dc0b68120a7ea0b85232958635bd197e607c45f110562625733ad36e6bd6422",
+        "source_sha256": "e47258e72ec151e76121e9ef4b20d78335f9389184471bff590edb21dafc4730",
         "function_sha256": "b4f5d79e32c7b1b10ceb5b8959aee771e903fdb533ad0692bc768f32692fc4ad"
       },
       "params_schema": {
@@ -3508,7 +3527,7 @@
         "component": "deepwell",
         "handler": "import_wikidot_page",
         "source": "deepwell/src/endpoints/import.rs#import_wikidot_page",
-        "source_sha256": "0dc0b68120a7ea0b85232958635bd197e607c45f110562625733ad36e6bd6422",
+        "source_sha256": "e47258e72ec151e76121e9ef4b20d78335f9389184471bff590edb21dafc4730",
         "function_sha256": "da644f3051464bc6d433b51363d9d268d6beb3372d0a26045b7df3f0a9e60e91"
       },
       "params_schema": {
@@ -3569,7 +3588,7 @@
         "component": "deepwell",
         "handler": "import_wikidot_page_files_verify",
         "source": "deepwell/src/endpoints/import.rs#import_wikidot_page_files_verify",
-        "source_sha256": "0dc0b68120a7ea0b85232958635bd197e607c45f110562625733ad36e6bd6422",
+        "source_sha256": "e47258e72ec151e76121e9ef4b20d78335f9389184471bff590edb21dafc4730",
         "function_sha256": "9e8a5dc051c4454dcb500ffa213d0f228ff3a0fa5f606b9bf532f2ffba053a8c"
       },
       "params_schema": {
@@ -3624,7 +3643,7 @@
         "component": "deepwell",
         "handler": "import_wikidot_page_revision",
         "source": "deepwell/src/endpoints/import.rs#import_wikidot_page_revision",
-        "source_sha256": "0dc0b68120a7ea0b85232958635bd197e607c45f110562625733ad36e6bd6422",
+        "source_sha256": "e47258e72ec151e76121e9ef4b20d78335f9389184471bff590edb21dafc4730",
         "function_sha256": "161a3576abeb9101632a007906bbca70c72025dfc271214a4567881732f0abbc"
       },
       "params_schema": {
@@ -3685,7 +3704,7 @@
         "component": "deepwell",
         "handler": "import_wikidot_site",
         "source": "deepwell/src/endpoints/import.rs#import_wikidot_site",
-        "source_sha256": "0dc0b68120a7ea0b85232958635bd197e607c45f110562625733ad36e6bd6422",
+        "source_sha256": "e47258e72ec151e76121e9ef4b20d78335f9389184471bff590edb21dafc4730",
         "function_sha256": "d331b90f4c871cb978f761ce2a529eb964ae1de37e33fd54f98a1982ced93364"
       },
       "params_schema": {
@@ -3742,7 +3761,7 @@
         "component": "deepwell",
         "handler": "import_wikidot_user",
         "source": "deepwell/src/endpoints/import.rs#import_wikidot_user",
-        "source_sha256": "0dc0b68120a7ea0b85232958635bd197e607c45f110562625733ad36e6bd6422",
+        "source_sha256": "e47258e72ec151e76121e9ef4b20d78335f9389184471bff590edb21dafc4730",
         "function_sha256": "07634cc243555e6a4950e34f9d49a0681a2af40311bab006648fca078bc0678c"
       },
       "params_schema": {
@@ -6166,8 +6185,9 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "endpoint_behavioral",
-        "reference": "deepwell/tests/import.rs#mirror_seed_carries_source_random_helper_routes",
+        "reference": "deepwell/tests/file_mirror_parity.rs#native_file_mutations_still_succeed",
         "alternatives": [
+          "deepwell/tests/import.rs#mirror_seed_carries_source_random_helper_routes",
           "deepwell/tests/import.rs#mirror_seed_carries_source_tags_and_navigation",
           "deepwell/tests/import.rs#mirror_seed_prefers_source_system_pages_over_generic_seeds",
           "deepwell/tests/list_pages.rs#imported_revision_count_current_page_only_adds_local_revisions",
@@ -8986,6 +9006,69 @@
         "reference": "deepwell/tests/site.rs#promoted_sites_are_public_imported_sites_and_fail_closed_after_anonymous_view_revocation",
         "alternatives": [],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+      }
+    },
+    {
+      "method": "promote_observed_wikidot_identity",
+      "endpoint_owner": {
+        "component": "deepwell",
+        "handler": "promote_observed_wikidot_identity",
+        "source": "deepwell/src/endpoints/import.rs#promote_observed_wikidot_identity",
+        "source_sha256": "e47258e72ec151e76121e9ef4b20d78335f9389184471bff590edb21dafc4730",
+        "function_sha256": "18498a7f0062118b5ac265173f8b56cf5d37e71eb8b93b41c5a614f53b39c9f0"
+      },
+      "params_schema": {
+        "transport": "jsonrpsee::types::params::Params<'static>",
+        "parameter_name": "params",
+        "decoder": "parse!(params, DatabaseImport)"
+      },
+      "actor_context": {
+        "transport_authentication": {
+          "header_symbol": "AUTHORIZATION",
+          "header": "Authorization",
+          "scheme": "Bearer",
+          "token_format": "64 lowercase hexadecimal characters",
+          "duplicate_values": "rejected"
+        },
+        "request_context_headers": [
+          {
+            "header": "X-Deepwell-Session-Token",
+            "target": "session_token"
+          },
+          {
+            "header": "X-Deepwell-Site-Id",
+            "target": "site_id"
+          },
+          {
+            "header": "X-Deepwell-Page",
+            "target": "page_ref"
+          }
+        ],
+        "requirements": [
+          "mutation_authorization"
+        ],
+        "requirement_sources": [
+          "deepwell/src/endpoints/import.rs#promote_observed_wikidot_identity"
+        ]
+      },
+      "mutation_class": {
+        "classification": "mutating",
+        "source_signals": [
+          "ImportService::promote_observed_identity"
+        ]
+      },
+      "transaction_isolation": "default",
+      "test_witness": {
+        "kind": "source_contract_only",
+        "reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract",
+        "coverage_gap": {
+          "searched_root": "deepwell/tests",
+          "reason": "no direct run_endpoint handler invocation or rpc_request method invocation was found",
+          "searched_invocations": [
+            "run_endpoint!(runner, handler, ...)",
+            "rpc_request(\"method\", ...)"
+          ]
+        }
       }
     },
     {
