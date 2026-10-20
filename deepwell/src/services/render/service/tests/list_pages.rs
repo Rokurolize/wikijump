@@ -3865,22 +3865,90 @@ fn substituted_identity_and_tag_values_render_as_literal_text() {
         &list_pages_substitution_context(20, &users, None, &BTreeMap::new()),
     );
 
-    // The payload text survives literally (nothing is stripped) ...
+    // The payload text survives (nothing is stripped) but its brackets went
+    // through the substitution boundary as entities, so no executable
+    // module syntax reaches the page parser.
     assert!(rendered.contains("WJ-PENTEST-DISPLAY"), "{rendered:?}");
-    assert!(rendered.contains("[[module ListPages"), "{rendered:?}");
     assert!(rendered.contains("wj-pentest-tag-a"), "{rendered:?}");
-    // ... but it contributed no executable markup: quotes went through the
-    // protected-fragment path, and no fragment or iframe markup remains.
-    assert!(rendered.contains("&quot;"), "{rendered:?}");
     assert!(
-        !rendered.contains("category=\"wj-pentest-tag-host\""),
+        rendered.contains("&#91;&#91;module ListPages"),
         "{rendered:?}"
     );
+    assert!(!rendered.contains("[[module"), "{rendered:?}");
     assert!(!rendered.contains("<iframe"), "{rendered:?}");
-    assert!(
-        !rendered.contains("WIKIJUMPWIKIDOTCOMPATHTML"),
-        "{rendered:?}"
+}
+
+#[test]
+fn substituted_payload_values_cannot_form_modules_for_the_page_parser() {
+    let template = "By %%created_by%% tags %%tags%%";
+    let page = FoundPageRow {
+        page_id: 1,
+        site_id: 1,
+        title: Some("WJ Pentest Host".to_owned()),
+        alt_title: None,
+        slug: Some("wj-pentest-host".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: Some(vec![
+            "wj-pentest-tag-a".to_owned(),
+            "[[module".to_owned(),
+            "ListPages]]".to_owned(),
+        ]),
+        created_at: None,
+        created_by: Some(7),
+        updated_at: None,
+        updated_by: None,
+        score: None,
+        revision_count: None,
+    };
+    let mut users = BTreeMap::new();
+    users.insert(
+        7,
+        WikidotUserDisplay {
+            user_id: 7,
+            name: "WJ-PENTEST-DISPLAY\n[[module ListPages category=\"wj-pentest-tag-host\"]]"
+                .to_owned(),
+            slug: Some("wj-pentest-display".to_owned()),
+            wikidot_profile: false,
+        },
     );
+    let context = list_pages_substitution_context(20, &users, None, &BTreeMap::new());
+    let mut compat_html = CompatHtmlFragments::new(template);
+    let mut compat_text = CompatTextFragments::new(template);
+    let substituted = substitute_list_pages_variables_with_fragments(
+        template,
+        &page,
+        1,
+        1,
+        &context,
+        &mut compat_html,
+        &mut compat_text,
+    );
+
+    // The page parser must never see executable module syntax from values.
+    assert!(!substituted.contains("[["), "{substituted:?}");
+
+    let page_info = fallback_test_page_info("wj-pentest-host", "WJ Pentest Host");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut source = substituted.clone();
+    ftml::preprocess_for_layout(&mut source, Layout::Wikidot);
+    let tokens = ftml::tokenize(&source);
+    let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
+    let html = HtmlRender.render(&tree, &page_info, &settings).body;
+    let html = compat_text.restore(&compat_html.restore(&html));
+
+    // No nested module shell, iframe, or html block may survive; the payload
+    // text renders literally instead.
+    assert!(!html.contains("error-block"), "{html:?}");
+    assert!(!html.contains("list-pages-box"), "{html:?}");
+    assert!(!html.contains("<iframe"), "{html:?}");
+    assert!(!html.contains("html-block"), "{html:?}");
+    assert!(html.contains("WJ-PENTEST-DISPLAY"), "{html:?}");
+    assert!(html.contains("ListPages"), "{html:?}");
+    assert!(html.contains("wj-pentest-tag-a"), "{html:?}");
+
+    std::fs::write("/tmp/listpages-2652-proof.html", &html)
+        .expect("browser proof artifact must be writable");
 }
 
 #[test]
