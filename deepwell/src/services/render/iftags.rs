@@ -147,12 +147,13 @@ fn resolve_outermost_wikidot_iftags_with_mode(
         }
 
         let Some(outer) = stack.pop() else {
-            if unmatched_mode == UnmatchedBoundaryMode::Preserve {
-                replacements.push(Replacement {
-                    range: token.start()..token.end(),
-                    text: preserved.push_escaped_html_text(token.as_str()),
-                });
-            }
+            // An unmatched closer stays raw. Its opener may be hidden inside
+            // a literal region the token scan skips, or may arrive from a
+            // source that has not expanded yet; escaping the closer here
+            // would freeze it as authored text and blind the pinned FTML to
+            // a pair it can still resolve natively. A closer nothing opens
+            // prints literally either way, so leaving it raw changes no
+            // evidenced output while keeping the gate recoverable.
             continue;
         };
         let text = if !force_inactive && wikidot_tag_conditions_match(&outer.spec, tags) {
@@ -341,6 +342,7 @@ pub(super) fn wikidot_tag_conditions_match(spec: &str, tags: &[Cow<'_, str>]) ->
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::services::render::compat::text_fragments;
     use std::time::{Duration, Instant};
 
     fn resolve(source: &str, tags: &[&str], passes: usize) -> String {
@@ -541,6 +543,52 @@ mod tests {
                 "[[iftags +beta]]repeated\n",
             ),
         );
+    }
+
+    #[test]
+    fn skipped_opener_leaves_its_closer_raw_for_ftml_recovery() {
+        // scp-744 (issues #2573/#2577, epoch 38): a backend gate whose
+        // opener hides inside documentation while its closer scans. The
+        // closer has no stack partner, but escaping it would freeze it as
+        // authored text and blind the pinned FTML to a pair it still
+        // resolves natively; with the closer raw the gate recovers and the
+        // article body survives. A closer nothing opens prints literally
+        // either way, so leaving it raw changes no evidenced output.
+        let mut source = concat!(
+            "[!-- documentation opens\n",
+            "[[iftags +component-backend]]\n",
+            "--]\n",
+            "backend content\n",
+            "[!-- documentation reopens\n",
+            "[[/iftags]]\n",
+            "\n",
+            "article witness here\n",
+        )
+        .to_owned();
+        let mut preserved = CompatTextFragments::new(&source);
+
+        resolve_outermost_wikidot_iftags(&mut source, &[], &mut preserved);
+
+        assert!(
+            source.contains("[[/iftags]]"),
+            "the unmatched closer must stay raw: {source:?}",
+        );
+        assert!(
+            !source.contains(text_fragments::COMPAT_TEXT_MARKER_PREFIX),
+            "no token may be escaped: {source:?}",
+        );
+        let restored = preserved.restore(&source);
+        for witness in [
+            "[[iftags +component-backend]]",
+            "backend content",
+            "[[/iftags]]",
+            "article witness here",
+        ] {
+            assert!(
+                restored.contains(witness),
+                "shaped content must survive: {restored:?}",
+            );
+        }
     }
 
     #[test]
