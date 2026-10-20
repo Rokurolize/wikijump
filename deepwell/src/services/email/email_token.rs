@@ -32,7 +32,10 @@
 use std::net::IpAddr;
 
 use rand::distr::{Alphanumeric, SampleString};
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, EntityTrait, Expr, PaginatorTrait, QueryFilter,
+    QueryOrder, Set,
+};
 use serde::{Deserialize, Serialize};
 use time::Duration;
 
@@ -59,6 +62,16 @@ const DELETE_CONFIRM_TTL: Duration = Duration::hours(1);
 /// answer identically whether a token was issued or suppressed, so this
 /// cooldown never leaks account existence.
 const RESEND_COOLDOWN: Duration = Duration::seconds(60);
+
+/// Per-address issue bound: at most this many emailed-link issues per
+/// purpose inside the window below, counted over the proxy-aware client
+/// address framerail resolves.
+///
+/// LOCAL DEFAULT pending live Wikidot evidence. Throttled issues report
+/// `Suppressed`, exactly like cooldown, so the bound never oracles.
+const ISSUE_IP_MAX: u64 = 10;
+/// LOCAL DEFAULT pending live Wikidot evidence.
+const ISSUE_IP_WINDOW: Duration = Duration::minutes(15);
 
 /// Plaintext token length (alphanumeric, URL-safe without encoding).
 const TOKEN_LENGTH: usize = 48;
@@ -103,24 +116,44 @@ pub struct IssueEmailToken {
     pub ip_address: IpAddr,
 }
 
+/// An issued token with its stored expiry, so delivery logging uses the row
+/// value instead of recomputing it.
+///
+/// The plaintext token never appears in debug output.
+#[derive(PartialEq, Eq)]
+pub struct IssuedEmailToken {
+    pub token: String,
+    pub expires_at: time::OffsetDateTime,
+}
+
+impl std::fmt::Debug for IssuedEmailToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("IssuedEmailToken")
+            .field("token", &"..")
+            .field("expires_at", &self.expires_at)
+            .finish()
+    }
+}
+
 /// Outcome of an issue request.
 ///
-/// `Suppressed` means a live token is still inside its resend cooldown: the
-/// caller MUST answer exactly as if a token had been issued, so the
-/// cooldown never becomes an existence oracle.
+/// `Suppressed` means a live token is still inside its resend cooldown (or
+/// the caller address is over its issue bound): the caller MUST answer
+/// exactly as if a token had been issued, so the bound never becomes an
+/// existence oracle.
 ///
 /// The issued plaintext token never appears in debug output: `Issued`
-/// prints only its variant, never the secret it carries.
+/// prints only its redacted form, never the secret it carries.
 #[derive(PartialEq, Eq)]
 pub enum IssueEmailTokenOutcome {
-    Issued(String),
+    Issued(IssuedEmailToken),
     Suppressed,
 }
 
 impl std::fmt::Debug for IssueEmailTokenOutcome {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            IssueEmailTokenOutcome::Issued(_) => write!(f, "Issued(..)"),
+            IssueEmailTokenOutcome::Issued(issued) => write!(f, "Issued({issued:?})"),
             IssueEmailTokenOutcome::Suppressed => write!(f, "Suppressed"),
         }
     }
@@ -162,6 +195,14 @@ impl EmailTokenService {
         let now = now();
 
         Self::delete_expired(ctx, user_id, purpose).await?;
+        Self::delete_consumed(ctx, user_id, purpose).await?;
+
+        // Address-scoped bound, checked before the account cooldown so one
+        // abusive address cannot probe many mailboxes, and answered like a
+        // cooldown so the bound never oracles.
+        if Self::address_over_bound(ctx, &ip_address, purpose, now).await? {
+            return Ok(IssueEmailTokenOutcome::Suppressed);
+        }
 
         if let Some(newest) = EmailToken::find()
             .filter(email_token::Column::UserId.eq(user_id))
@@ -186,28 +227,53 @@ impl EmailTokenService {
                 .or_raise(make_error)?;
         }
 
-        let token = Self::generate();
-        let token_hash = Self::hash(&token);
-        email_token::ActiveModel {
-            user_id: Set(user_id),
-            email: Set(email),
-            purpose: Set(str!(purpose.as_str())),
-            token_hash: Set(token_hash.to_string()),
-            expires_at: Set(now + purpose.ttl()),
-            consumed_at: Set(None),
-            created_ip: Set(ip_address.to_string()),
-            ..Default::default()
-        }
-        .insert(transaction)
-        .await
-        .or_raise(make_error)?;
-
-        Ok(IssueEmailTokenOutcome::Issued(token))
+        let issued = Self::insert_token(ctx, user_id, email, purpose, ip_address).await?;
+        Ok(IssueEmailTokenOutcome::Issued(issued))
     }
 
-    /// Redeem a token, consuming it atomically. Any mismatch — unknown
-    /// token, wrong purpose, expiry, prior use — yields the same error,
-    /// so redemption never oracles which property failed.
+    /// Issue a password-set grant after a freshly consumed recovery link.
+    ///
+    /// Unlike [`Self::issue`], this never suppresses: every grant spends a
+    /// consumed single-use link, grants are never emailed, and outstanding
+    /// live grants rotate — so there is no cooldown signal to leak and no
+    /// inbox-flood vector. A recovery link therefore always yields its
+    /// grant; the link is never burned by a warm bucket.
+    pub async fn issue_grant(
+        ctx: &ServiceContext<'_>,
+        user_id: i64,
+        email: String,
+        ip_address: IpAddr,
+    ) -> Result<IssuedEmailToken> {
+        let make_error = || {
+            Error::new(
+                "failed to issue reset grant",
+                ErrorType::Email,
+            )
+        };
+        Self::delete_expired(ctx, user_id, EmailTokenPurpose::ResetGrant).await?;
+        Self::delete_consumed(ctx, user_id, EmailTokenPurpose::ResetGrant).await?;
+
+        // Rotation without cooldown: at most one live grant per account.
+        EmailToken::delete_many()
+            .filter(email_token::Column::UserId.eq(user_id))
+            .filter(
+                email_token::Column::Purpose.eq(EmailTokenPurpose::ResetGrant.as_str()),
+            )
+            .filter(email_token::Column::ConsumedAt.is_null())
+            .exec(ctx.transaction())
+            .await
+            .or_raise(make_error)?;
+
+        Self::insert_token(ctx, user_id, email, EmailTokenPurpose::ResetGrant, ip_address)
+            .await
+    }
+
+    /// Redeem a token with a single conditional write instead of
+    /// find-then-update: exactly one concurrent redeemer can flip an
+    /// unconsumed, unexpired token to consumed. Every loser observes zero
+    /// affected rows and fails exactly like a bogus token, so concurrent
+    /// double-redeem is impossible and redemption never oracles which
+    /// property failed.
     pub async fn redeem(
         ctx: &ServiceContext<'_>,
         token: &str,
@@ -218,10 +284,25 @@ impl EmailTokenService {
         let transaction = ctx.transaction();
         let now = now();
 
-        let Some(model) = EmailToken::find()
+        let affected = EmailToken::update_many()
+            .col_expr(
+                email_token::Column::ConsumedAt,
+                Expr::value(Some(now)),
+            )
             .filter(email_token::Column::TokenHash.eq(Self::hash(token).as_str()))
             .filter(email_token::Column::Purpose.eq(purpose.as_str()))
             .filter(email_token::Column::ConsumedAt.is_null())
+            .filter(email_token::Column::ExpiresAt.gt(now))
+            .exec(transaction)
+            .await
+            .or_raise(make_error)?;
+        if affected.rows_affected != 1 {
+            return Err(make_error().into());
+        }
+
+        let Some(model) = EmailToken::find()
+            .filter(email_token::Column::TokenHash.eq(Self::hash(token).as_str()))
+            .filter(email_token::Column::Purpose.eq(purpose.as_str()))
             .one(transaction)
             .await
             .or_raise(make_error)?
@@ -229,18 +310,43 @@ impl EmailTokenService {
             return Err(make_error().into());
         };
 
-        if model.expires_at <= now {
-            return Err(make_error().into());
-        }
-
-        let mut active: email_token::ActiveModel = model.clone().into();
-        active.consumed_at = Set(Some(now));
-        active.update(transaction).await.or_raise(make_error)?;
-
         Ok(RedeemedEmailToken {
             user_id: model.user_id,
             email: model.email,
         })
+    }
+
+    async fn insert_token(
+        ctx: &ServiceContext<'_>,
+        user_id: i64,
+        email: String,
+        purpose: EmailTokenPurpose,
+        ip_address: IpAddr,
+    ) -> Result<IssuedEmailToken> {
+        let make_error = || {
+            Error::new(
+                format!("failed to issue {} token", purpose.as_str()),
+                ErrorType::Email,
+            )
+        };
+        let token = Self::generate();
+        let token_hash = Self::hash(&token);
+        let expires_at = now() + purpose.ttl();
+        email_token::ActiveModel {
+            user_id: Set(user_id),
+            email: Set(email),
+            purpose: Set(str!(purpose.as_str())),
+            token_hash: Set(token_hash.to_string()),
+            expires_at: Set(expires_at),
+            consumed_at: Set(None),
+            created_ip: Set(ip_address.to_string()),
+            ..Default::default()
+        }
+        .insert(ctx.transaction())
+        .await
+        .or_raise(make_error)?;
+
+        Ok(IssuedEmailToken { token, expires_at })
     }
 
     async fn delete_expired(
@@ -261,6 +367,53 @@ impl EmailTokenService {
                 )
             })?;
         Ok(())
+    }
+
+    /// Purge spent tokens for the account and purpose. Consumed rows can
+    /// never redeem again, so dropping them on the next issue bounds
+    /// per-account row growth to live tokens plus not-yet-reaped expiries.
+    async fn delete_consumed(
+        ctx: &ServiceContext<'_>,
+        user_id: i64,
+        purpose: EmailTokenPurpose,
+    ) -> Result<()> {
+        EmailToken::delete_many()
+            .filter(email_token::Column::UserId.eq(user_id))
+            .filter(email_token::Column::Purpose.eq(purpose.as_str()))
+            .filter(email_token::Column::ConsumedAt.is_not_null())
+            .exec(ctx.transaction())
+            .await
+            .or_raise(|| {
+                Error::new(
+                    format!("failed to purge consumed {} tokens", purpose.as_str()),
+                    ErrorType::Email,
+                )
+            })?;
+        Ok(())
+    }
+
+    /// Count recent issues from one address for one purpose. The address is
+    /// the proxy-aware client IP framerail resolves, so NAT-shared and
+    /// proxied clients share one honest bucket.
+    async fn address_over_bound(
+        ctx: &ServiceContext<'_>,
+        ip_address: &IpAddr,
+        purpose: EmailTokenPurpose,
+        now: time::OffsetDateTime,
+    ) -> Result<bool> {
+        let recent = EmailToken::find()
+            .filter(email_token::Column::CreatedIp.eq(ip_address.to_string()))
+            .filter(email_token::Column::Purpose.eq(purpose.as_str()))
+            .filter(email_token::Column::CreatedAt.gt(now - ISSUE_IP_WINDOW))
+            .count(ctx.transaction())
+            .await
+            .or_raise(|| {
+                Error::new(
+                    format!("failed to count recent {} issues", purpose.as_str()),
+                    ErrorType::Email,
+                )
+            })?;
+        Ok(recent >= ISSUE_IP_MAX)
     }
 
     /// Securely generate a plaintext token. Returned to the caller exactly

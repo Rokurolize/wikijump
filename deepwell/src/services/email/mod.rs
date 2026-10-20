@@ -24,7 +24,7 @@ mod structs;
 
 pub use email_token::{
     EmailTokenPurpose, EmailTokenService, IssueEmailToken, IssueEmailTokenOutcome,
-    RedeemedEmailToken,
+    IssuedEmailToken, RedeemedEmailToken,
 };
 pub use service::EmailService;
 pub(crate) use service::is_well_formed_email;

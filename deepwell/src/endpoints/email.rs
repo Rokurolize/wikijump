@@ -46,7 +46,7 @@ struct EmailTokenIssue {
     ip_address: IpAddr,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct EmailTokenRedeem {
     token: String,
@@ -96,22 +96,17 @@ async fn issue_token_quietly(
         .await
         .or_raise(|| Error::new("failed to issue email token", ErrorType::Email))?
         {
-            IssueEmailTokenOutcome::Issued(_) => {
+            IssueEmailTokenOutcome::Issued(issued) => {
                 // The plaintext token stays server-side; only delivery
-                // metadata is recorded, never the token itself.
-                EmailService::send_token_email(&email, purpose, expires_at_of(purpose))
-                    .await;
+                // metadata is recorded, never the token itself. The expiry
+                // comes from the stored row, not a recomputation.
+                EmailService::send_token_email(&email, purpose, issued.expires_at).await;
             }
             IssueEmailTokenOutcome::Suppressed => {}
         }
     }
 
     Ok(())
-}
-
-/// Expiry for logging only; the service owns the enforced TTL.
-fn expires_at_of(purpose: EmailTokenPurpose) -> time::OffsetDateTime {
-    crate::utils::now() + purpose.ttl()
 }
 
 /// Request a verification link for an address. Authenticated or not, the
@@ -176,14 +171,16 @@ pub async fn password_reset_issue(
     issue_token_quietly(ctx, &email, EmailTokenPurpose::ResetPassword, ip_address).await
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Clone)]
 pub struct ResetGrantOutput {
     pub grant: String,
 }
 
 /// Exchange a recovery link for a one-time password-set grant. The grant,
 /// not the link, authorizes the new password, so a used or expired link
-/// can never set one.
+/// can never set one. The grant issues unconditionally once the link is
+/// consumed: it spends the link, is never emailed, and rotates, so no
+/// cooldown signal can burn a valid link.
 pub async fn password_reset_redeem(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
@@ -199,33 +196,19 @@ pub async fn password_reset_redeem(
                 )
             })?;
 
-    let grant = match EmailTokenService::issue(
+    let issued = EmailTokenService::issue_grant(
         ctx,
-        IssueEmailToken {
-            user_id: redeemed.user_id,
-            email: redeemed.email,
-            purpose: EmailTokenPurpose::ResetGrant,
-            ip_address,
-        },
+        redeemed.user_id,
+        redeemed.email,
+        ip_address,
     )
     .await
-    .or_raise(|| Error::new("failed to issue reset grant", ErrorType::Email))?
-    {
-        IssueEmailTokenOutcome::Issued(grant) => grant,
-        // A just-redeemed recovery always finds a cold grant bucket.
-        IssueEmailTokenOutcome::Suppressed => {
-            return Err(Error::new(
-                "recovery grant is cooling down, retry shortly",
-                ErrorType::RateLimited,
-            )
-            .into());
-        }
-    };
+    .or_raise(|| Error::new("failed to issue reset grant", ErrorType::Email))?;
 
-    Ok(ResetGrantOutput { grant })
+    Ok(ResetGrantOutput { grant: issued.token })
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct PasswordResetComplete {
     grant: String,

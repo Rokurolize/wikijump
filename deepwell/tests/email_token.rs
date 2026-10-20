@@ -14,25 +14,33 @@
 mod common;
 
 use self::common::TestRunner;
+use deepwell::api::ServerState;
+use deepwell::error::prelude::Result as ExnResult;
 use deepwell::error::ErrorType;
 use deepwell::models::email_token::{self, Entity as EmailTokenTable};
 use deepwell::models::user::Entity as UserTable;
 use deepwell::services::authentication::{AuthenticateUser, AuthenticationService};
 use deepwell::services::email::{
     EmailTokenPurpose, EmailTokenService, IssueEmailToken, IssueEmailTokenOutcome,
+    RedeemedEmailToken,
 };
 use deepwell::services::import::{ImportService, ImportUser, ImportedUserType};
 use deepwell::services::session::{CreateSession, SessionService};
 use deepwell::services::user::{CreateUser, UserService};
+use deepwell::services::ServiceContext;
 use deepwell::types::{Reference, UserType};
 use deepwell::utils::now;
 use ftml::data::KarmaLevel;
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, PaginatorTrait,
-    QueryFilter,
+    QueryFilter, TransactionTrait,
 };
 use serde_json::json;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::Barrier;
+use tokio::time::timeout;
 use uuid::Uuid;
 
 static FIXTURE_COUNTER: AtomicU64 = AtomicU64::new(0);
@@ -83,7 +91,7 @@ async fn issue_for(
     .await
     .expect("token issue should succeed")
     {
-        IssueEmailTokenOutcome::Issued(token) => token,
+        IssueEmailTokenOutcome::Issued(issued) => issued.token,
         IssueEmailTokenOutcome::Suppressed => {
             panic!("fresh token bucket should not be in cooldown")
         }
@@ -530,5 +538,228 @@ async fn malformed_issue_addresses_fail_loudly() {
         }))
     );
     assert_contains_error!(error, ErrorType::InvalidEmail);
+    runner.teardown().await;
+}
+
+async fn redeem_in_fresh_transaction(
+    state: ServerState,
+    token: String,
+    start: Option<Arc<Barrier>>,
+) -> ExnResult<RedeemedEmailToken> {
+    let txn = state
+        .database
+        .begin()
+        .await
+        .expect("email token redemption transaction should begin");
+
+    if let Some(start) = start {
+        start.wait().await;
+    }
+
+    let result = {
+        let ctx = ServiceContext::new(&state, &txn);
+        EmailTokenService::redeem(&ctx, &token, EmailTokenPurpose::VerifyEmail).await
+    };
+
+    match result {
+        Ok(redeemed) => {
+            txn.commit()
+                .await
+                .expect("winning email token redemption should commit");
+            Ok(redeemed)
+        }
+        Err(error) => {
+            txn.rollback()
+                .await
+                .expect("losing email token redemption should roll back");
+            Err(error)
+        }
+    }
+}
+
+#[tokio::test]
+async fn concurrent_double_redeem_leaves_exactly_one_winner() {
+    let runner = TestRunner::setup().await;
+    let state = Arc::clone(runner.state());
+    let n = next_n();
+    let email = format!("email-token-race-{n}@example.invalid");
+
+    // The raced rows must be committed to be visible across connections;
+    // the runner's own transaction stays out of this test.
+    let setup_txn = state
+        .database
+        .begin()
+        .await
+        .expect("email token race fixture transaction should begin");
+    let (user_id, token) = {
+        let ctx = ServiceContext::new(&state, &setup_txn);
+        let created = UserService::create(
+            &ctx,
+            token_user(n, UserType::Regular, email.clone()),
+        )
+        .await
+        .expect("race fixture user should be created");
+        match EmailTokenService::issue(
+            &ctx,
+            IssueEmailToken {
+                user_id: created.user_id,
+                email: email.clone(),
+                purpose: EmailTokenPurpose::VerifyEmail,
+                ip_address: common::IP_ADDRESS,
+            },
+        )
+        .await
+        .expect("race fixture token should issue")
+        {
+            IssueEmailTokenOutcome::Issued(issued) => (created.user_id, issued.token),
+            IssueEmailTokenOutcome::Suppressed => {
+                panic!("fresh race fixture bucket should not be in cooldown")
+            }
+        }
+    };
+    setup_txn
+        .commit()
+        .await
+        .expect("email token race fixture transaction should commit");
+
+    let start = Arc::new(Barrier::new(2));
+    let (left, right) = timeout(Duration::from_secs(30), async {
+        tokio::join!(
+            redeem_in_fresh_transaction(
+                Arc::clone(&state),
+                token.clone(),
+                Some(Arc::clone(&start)),
+            ),
+            redeem_in_fresh_transaction(
+                Arc::clone(&state),
+                token.clone(),
+                Some(Arc::clone(&start)),
+            ),
+        )
+    })
+    .await
+    .expect("concurrent email token redemption should not deadlock");
+
+    let concurrent_error = match (left, right) {
+        (Ok(_), Err(error)) | (Err(error), Ok(_)) => error,
+        (left, right) => {
+            panic!(
+                "exactly one concurrent redemption should succeed: {left:?}, {right:?}"
+            )
+        }
+    };
+    assert_contains_error!(concurrent_error, ErrorType::InvalidEmailToken);
+
+    let reuse = redeem_in_fresh_transaction(Arc::clone(&state), token.clone(), None).await;
+    let reuse_error =
+        reuse.expect_err("a consumed email token must fail sequential reuse");
+    assert_contains_error!(reuse_error, ErrorType::InvalidEmailToken);
+
+    // Clean up the committed fixture rows: soft-delete the user (which
+    // removes its aliases) and drop the token rows.
+    let cleanup_txn = state
+        .database
+        .begin()
+        .await
+        .expect("email token race cleanup transaction should begin");
+    {
+        let ctx = ServiceContext::new(&state, &cleanup_txn);
+        UserService::delete(&ctx, Reference::Id(user_id), user_id, common::IP_ADDRESS)
+            .await
+            .expect("race fixture user should be soft-deleted");
+        EmailTokenTable::delete_many()
+            .filter(email_token::Column::UserId.eq(user_id))
+            .exec(&cleanup_txn)
+            .await
+            .expect("race fixture tokens should be deleted");
+    }
+    cleanup_txn
+        .commit()
+        .await
+        .expect("email token race cleanup transaction should commit");
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn issue_throttle_bounds_one_address_across_accounts() {
+    let runner = TestRunner::setup().await;
+    let n = next_n();
+
+    // Eleven distinct accounts share one calling address. The per-account
+    // cooldown never fires (each account issues once); the address bound
+    // suppresses the eleventh issue exactly like a cooldown.
+    for i in 0..11_u64 {
+        let email = format!("email-token-ipthrottle-{n}-{i}@example.invalid");
+        let created = UserService::create(
+            runner.context(),
+            token_user(next_n(), UserType::Regular, email.clone()),
+        )
+        .await
+        .expect("throttle fixture user should be created");
+        let outcome = EmailTokenService::issue(
+            runner.context(),
+            IssueEmailToken {
+                user_id: created.user_id,
+                email,
+                purpose: EmailTokenPurpose::VerifyEmail,
+                ip_address: common::IP_ADDRESS,
+            },
+        )
+        .await
+        .expect("throttled issue should not error");
+        if i < 10 {
+            assert!(
+                matches!(outcome, IssueEmailTokenOutcome::Issued(_)),
+                "issue {i} from a fresh address should issue",
+            );
+        } else {
+            assert!(
+                matches!(outcome, IssueEmailTokenOutcome::Suppressed),
+                "the eleventh issue from one address should suppress",
+            );
+        }
+    }
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn consumed_tokens_are_purged_on_next_issue() {
+    let runner = TestRunner::setup().await;
+    let n = next_n();
+    let email = format!("email-token-purge-{n}@example.invalid");
+    let created = UserService::create(
+        runner.context(),
+        token_user(n, UserType::Regular, email.clone()),
+    )
+    .await
+    .expect("purge fixture user should be created");
+
+    let first = issue_for(
+        &runner,
+        created.user_id,
+        &email,
+        EmailTokenPurpose::VerifyEmail,
+    )
+    .await;
+    EmailTokenService::redeem(runner.context(), &first, EmailTokenPurpose::VerifyEmail)
+        .await
+        .expect("first token should redeem");
+    issue_for(
+        &runner,
+        created.user_id,
+        &email,
+        EmailTokenPurpose::VerifyEmail,
+    )
+    .await;
+
+    // The consumed row is gone; only the fresh live row remains.
+    let total = EmailTokenTable::find()
+        .filter(email_token::Column::UserId.eq(created.user_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("email token count should succeed");
+    assert_eq!(total, 1);
+    assert_eq!(live_token_count(&runner, created.user_id).await, 1);
     runner.teardown().await;
 }

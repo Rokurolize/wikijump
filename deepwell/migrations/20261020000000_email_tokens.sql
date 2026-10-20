@@ -21,3 +21,13 @@ CREATE TABLE email_token (
 CREATE INDEX idx_email_token_active
     ON email_token (user_id, purpose)
     WHERE consumed_at IS NULL;
+
+-- Redemption probes by hash + purpose over a growing table; without this
+-- every redeem is a full-table scan.
+CREATE INDEX idx_email_token_lookup
+    ON email_token (purpose, token_hash);
+
+-- Per-address issue accounting reads recent rows by address, purpose, and
+-- creation time.
+CREATE INDEX idx_email_token_ip_throttle
+    ON email_token (created_ip, purpose, created_at);
