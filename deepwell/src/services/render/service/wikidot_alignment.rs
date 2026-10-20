@@ -21,12 +21,6 @@ struct WikidotAlignmentMarker {
     /// Whether the marker line carries trailing whitespace, which means the
     /// line is not a block head.
     trailing_whitespace: bool,
-    /// Whether the marker sits inside a comment or another literal region.
-    /// A skipped marker never owns a block on its own, and a pair split by
-    /// a literal boundary owns no block either: both sides stay raw so the
-    /// pinned FTML still sees the pair together, exactly as it did before
-    /// the expanded-document normalization.
-    skipped: bool,
 }
 
 impl RenderService {
@@ -55,11 +49,7 @@ impl RenderService {
     /// block at all: both markers then print as their authored text.
     ///
     /// The pairing is decided on the whole expanded document, so an opener
-    /// and its closer may live in different included sources. A comment or
-    /// another literal region never splits a pair: when only one side of a
-    /// pair scans inside a literal region, both sides stay raw, so the
-    /// pinned FTML still pairs them exactly as it did before the
-    /// expanded-document normalization.
+    /// and its closer may live in different included sources.
     pub(super) fn normalize_wikidot_alignment_markers(
         wikitext: &mut String,
         preserved: &mut CompatTextFragments,
@@ -86,15 +76,9 @@ impl RenderService {
         }
 
         let mut owns_block = vec![false; markers.len()];
-        let mut split_raw = vec![false; markers.len()];
         for (opener, closer) in pairs {
             if markers[opener].trailing_whitespace || markers[closer].trailing_whitespace
             {
-                continue;
-            }
-            if markers[opener].skipped || markers[closer].skipped {
-                split_raw[opener] = true;
-                split_raw[closer] = true;
                 continue;
             }
             owns_block[opener] = true;
@@ -107,8 +91,6 @@ impl RenderService {
             output.push_str(&source[last..marker.range.start]);
             if owns_block[index] {
                 output.push_str(Self::wikidot_alignment_div(marker));
-            } else if marker.skipped || split_raw[index] {
-                output.push_str(&source[marker.range.clone()]);
             } else {
                 output.push_str(
                     &preserved.push_escaped_html_text(&source[marker.range.clone()]),
@@ -138,7 +120,9 @@ impl RenderService {
 
             let leading = line_body.len() - line_body.trim_start().len();
             let marker_start = start + leading;
-            let skipped = Self::is_inside_wikidot_literal_region(source, marker_start);
+            if Self::is_inside_wikidot_literal_region(source, marker_start) {
+                continue;
+            }
 
             let marker_end = marker_start + trimmed.len();
             let line_body_end = start + line_body.len();
@@ -147,7 +131,6 @@ impl RenderService {
                 alignment,
                 is_closer,
                 trailing_whitespace: marker_end < line_body_end,
-                skipped,
             });
         }
 
