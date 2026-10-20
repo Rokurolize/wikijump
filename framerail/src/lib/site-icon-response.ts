@@ -8,6 +8,7 @@ import {
 import {
   isSiteLocalFileSource,
   siteIconRedirectLocation,
+  siteOwnedLocalFilePath,
   type SiteIconSourceKind
 } from "./site-icon-source.ts"
 
@@ -62,9 +63,11 @@ export function storedSiteIconResponse(stored: StoredSiteIcon): Response {
  * Select the compatibility-route response for a site icon.
  *
  * Stored bytes win so imported mirrors never depend on Wikidot at request
- * time. Without bytes, only same-origin local file sources redirect; a
- * Wikidot or WDFiles source with nothing materialized is a 404 rather than
- * a hotlink back to the source origin.
+ * time. Without bytes, a same-origin local file source redirects, and a
+ * site-owned WDFiles attachment resolves to its local files path (which
+ * serves bytes when the blob is local and keeps its own source redirect
+ * otherwise). Any other source with nothing materialized is a 404 rather
+ * than a hotlink back to the source origin.
  */
 export function selectSiteIconResponse(
   site: Nullable<IconRouteSite>,
@@ -82,6 +85,19 @@ export function selectSiteIconResponse(
     return new Response(null, {
       status: 302,
       headers: { "cache-control": SITE_ICON_CACHE_CONTROL, location }
+    })
+  }
+
+  // A site-owned attachment belongs to the mirror's dependency set, so the
+  // icon route hands it to the local files path instead of 404ing. That
+  // route serves local bytes when the blob exists and keeps the source
+  // redirect otherwise.
+  const ownedLocalPath =
+    site !== null ? siteOwnedLocalFilePath(site, configuredSource) : null
+  if (ownedLocalPath !== null) {
+    return new Response(null, {
+      status: 302,
+      headers: { "cache-control": SITE_ICON_CACHE_CONTROL, location: ownedLocalPath }
     })
   }
 
