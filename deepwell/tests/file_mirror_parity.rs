@@ -26,7 +26,7 @@ use deepwell::services::import::{
 };
 use deepwell::types::Reference;
 use ftml::data::KarmaLevel;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, TransactionTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set};
 use serde_json::json;
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -137,7 +137,7 @@ async fn import_source_file(
             name: name.to_owned(),
             data,
             size,
-            s3_hash,
+            s3_hash: s3_hash.clone(),
             user_id,
             created_at: OffsetDateTime::UNIX_EPOCH,
             revision_comments: format!("Source import of {name}"),
@@ -550,6 +550,7 @@ async fn native_file_mutations_still_succeed() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
+    let renamed = renamed.expect("native rename must create a new revision");
     assert_eq!(
         renamed.file_revision_number, 1,
         "native file edit must succeed through the guarded endpoint",
@@ -570,6 +571,7 @@ async fn native_file_mutations_still_succeed() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
+    let replaced = replaced.expect("native replacement must create a new revision");
     assert_eq!(
         replaced.file_revision_number, 2,
         "native second revision must succeed through the guarded endpoint",
@@ -589,6 +591,7 @@ async fn native_file_mutations_still_succeed() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
+    let rolled_back = rolled_back.expect("native rollback must create a new revision");
     assert_eq!(
         rolled_back.file_revision_number, 3,
         "native file rollback must succeed through the guarded endpoint",
@@ -643,6 +646,7 @@ async fn native_file_mutations_still_succeed() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
+    let moved = moved.expect("native move must create a new revision");
     assert_eq!(
         moved.file_revision_number, 6,
         "native file move must succeed through the guarded endpoint",
