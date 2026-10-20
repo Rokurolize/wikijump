@@ -125,7 +125,7 @@ async fn observation_count(runner: &TestRunner, user_id: i32) -> usize {
 
 #[tokio::test]
 async fn promote_observation_without_profile_banks_and_reports_gap() {
-    let mut runner = TestRunner::setup().await;
+    let runner = TestRunner::setup().await;
     let (user_id, _, fixture) = identity_ids();
 
     let output = ImportService::promote_observed_identity(
@@ -135,7 +135,7 @@ async fn promote_observation_without_profile_banks_and_reports_gap() {
     .await
     .expect("observation without a profile should bank, not fail");
     assert!(!output.promoted);
-    assert_eq!(output.missing_profile_fields, ["created_at", "karma", "is_pro"]);
+    assert_eq!(output.missing_profile_fields, ["created_at", "karma", "is_pro"].map(str::to_owned));
 
     // The stable source ID is banked for foreign keys, but no profile row
     // is fabricated.
@@ -168,7 +168,7 @@ async fn promote_observation_without_profile_banks_and_reports_gap() {
 
 #[tokio::test]
 async fn promote_observation_with_profile_materializes_row() {
-    let mut runner = TestRunner::setup().await;
+    let runner = TestRunner::setup().await;
     let (user_id, _, fixture) = identity_ids();
 
     let output = ImportService::promote_observed_identity(
@@ -204,7 +204,7 @@ async fn promote_observation_with_profile_materializes_row() {
 
 #[tokio::test]
 async fn promote_contradicting_observation_fails_closed() {
-    let mut runner = TestRunner::setup().await;
+    let runner = TestRunner::setup().await;
     let (user_id, _, fixture) = identity_ids();
 
     ImportService::promote_observed_identity(
@@ -236,7 +236,7 @@ async fn promote_contradicting_observation_fails_closed() {
 
 #[tokio::test]
 async fn promote_observation_contradicting_live_row_fails_closed() {
-    let mut runner = TestRunner::setup().await;
+    let runner = TestRunner::setup().await;
     let (user_id, _, fixture) = identity_ids();
 
     ImportService::add_user(runner.context(), import_user(user_id, &fixture, "live"))
@@ -252,7 +252,7 @@ async fn promote_observation_contradicting_live_row_fails_closed() {
 
 #[tokio::test]
 async fn promote_observation_matching_other_identity_slug_fails() {
-    let mut runner = TestRunner::setup().await;
+    let runner = TestRunner::setup().await;
     let (first_id, second_id, fixture) = identity_ids();
 
     ImportService::add_user(runner.context(), import_user(first_id, &fixture, "owner"))
@@ -270,7 +270,7 @@ async fn promote_observation_matching_other_identity_slug_fails() {
 
 #[tokio::test]
 async fn promote_observation_colliding_with_local_account_fails() {
-    let mut runner = TestRunner::setup().await;
+    let runner = TestRunner::setup().await;
     let (user_id, _, fixture) = identity_ids();
 
     UserService::create(
@@ -300,7 +300,7 @@ async fn promote_observation_colliding_with_local_account_fails() {
 
 #[tokio::test]
 async fn promote_observation_with_partial_profile_reports_missing() {
-    let mut runner = TestRunner::setup().await;
+    let runner = TestRunner::setup().await;
     let (user_id, _, fixture) = identity_ids();
 
     let mut profile = full_profile(&fixture);
@@ -313,7 +313,7 @@ async fn promote_observation_with_partial_profile_reports_missing() {
     .await
     .expect("partial profile should report a gap, not fail");
     assert!(!output.promoted);
-    assert_eq!(output.missing_profile_fields, ["karma", "is_pro"]);
+    assert_eq!(output.missing_profile_fields, ["karma", "is_pro"].map(str::to_owned));
     assert!(
         WikidotUser::find_by_id(user_id)
             .one(runner.context().transaction())
@@ -325,7 +325,7 @@ async fn promote_observation_with_partial_profile_reports_missing() {
 
 #[tokio::test]
 async fn promote_observation_for_deleted_identity_reports_gap() {
-    let mut runner = TestRunner::setup().await;
+    let runner = TestRunner::setup().await;
     let (user_id, _, fixture) = identity_ids();
 
     ImportService::add_user(
@@ -346,12 +346,12 @@ async fn promote_observation_for_deleted_identity_reports_gap() {
     .await
     .expect("tombstoned observation should report a gap");
     assert!(!output.promoted);
-    assert_eq!(output.missing_profile_fields, ["created_at", "karma", "is_pro"]);
+    assert_eq!(output.missing_profile_fields, ["created_at", "karma", "is_pro"].map(str::to_owned));
 }
 
 #[tokio::test]
 async fn native_placeholder_slug_does_not_shadow_imported_identity() {
-    let mut runner = TestRunner::setup().await;
+    let runner = TestRunner::setup().await;
     let (user_id, _, fixture) = identity_ids();
 
     // Mirror repair residue: a system placeholder carrying the source
@@ -400,7 +400,7 @@ async fn native_placeholder_slug_does_not_shadow_imported_identity() {
 
 #[tokio::test]
 async fn native_regular_slug_keeps_precedence_over_imported_identity() {
-    let mut runner = TestRunner::setup().await;
+    let runner = TestRunner::setup().await;
     let (user_id, _, fixture) = identity_ids();
 
     let local = UserService::create(
