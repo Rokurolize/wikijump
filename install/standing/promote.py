@@ -1138,6 +1138,7 @@ def activate(
 
     for entry in parked.values():
         subprocess.run(["docker", "rm", entry["parked_name"]], capture_output=True)
+    refresh.discard_parked_images(parked, runtime_home)
     return {**switched_result, "standing_proof": proof, "rollback_images": {s: rollback_images[s]["id"] for s in SERVICES}}
 
 
