@@ -18,10 +18,12 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+mod bootstrap;
 mod icons;
 mod service;
 mod structs;
 
+pub use self::bootstrap::BootstrapNewSite;
 pub use self::service::SiteService;
 pub use self::structs::{
     CreateSite, CreateSiteOutput, EducationalUpgrade, GetSite, GetSiteIcon,

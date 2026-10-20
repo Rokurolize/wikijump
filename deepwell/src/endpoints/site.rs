@@ -24,8 +24,8 @@ use crate::services::MutationAuthorization;
 use crate::services::SettingsService;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::site::{
-    CreateSite, CreateSiteOutput, GetSite, GetSiteIcon, GetSiteIconOutput, GetSiteOutput,
-    SetSiteIcon, SetSiteIconOutput, UpdateSite,
+    BootstrapNewSite, CreateSite, CreateSiteOutput, GetSite, GetSiteIcon, GetSiteIconOutput,
+    GetSiteOutput, SetSiteIcon, SetSiteIconOutput, UpdateSite,
 };
 use crate::types::{Action, AliasType, Permission, Reference, Resource};
 
@@ -37,9 +37,26 @@ pub async fn site_create(
     let actor_user_id =
         MutationAuthorization::require_authenticated(ctx, "create a site")?;
 
-    SiteService::create(ctx, input, Some(actor_user_id))
+    // Browser creation must yield a usable site, not only a site row: the
+    // baseline role/permission graph and the creator's admin binding run in
+    // the same transaction, so a bootstrap failure rolls everything back.
+    let ip_address = input.ip_address;
+    let output = SiteService::create(ctx, input, Some(actor_user_id))
         .await
-        .or_raise(|| Error::new("failed to create site", ErrorType::Site))
+        .or_raise(|| Error::new("failed to create site", ErrorType::Site))?;
+
+    SiteService::bootstrap_site(
+        ctx,
+        BootstrapNewSite {
+            site_id: output.site_id,
+            creator_user_id: Some(actor_user_id),
+            ip_address,
+        },
+    )
+    .await
+    .or_raise(|| Error::new("failed to bootstrap site", ErrorType::Site))?;
+
+    Ok(output)
 }
 
 pub async fn site_get(
