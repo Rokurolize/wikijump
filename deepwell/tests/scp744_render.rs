@@ -35,13 +35,13 @@ mod common;
 use self::common::TestRunner;
 use deepwell::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
 use deepwell::license::License;
+use deepwell::services::RequestContext;
 use deepwell::services::page::{CreatePage, PageService};
 use deepwell::services::permission::PermissionService;
 use deepwell::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
 };
 use deepwell::services::site::{CreateSite, SiteService};
-use deepwell::services::RequestContext;
 use deepwell::types::{Action, Permission, Reference, Resource};
 use ftml::layout::Layout;
 use sea_orm::{ConnectionTrait, Statement};
@@ -56,7 +56,10 @@ const PAGE_SLUG: &str = "scp-744";
 /// stripped at seed time so the closure resolves inside the disposable site
 /// (same include graph, same marker structure).
 const FIXTURES: &[(&str, &str)] = &[
-    ("scp-744", include_str!("fixtures/scp744-render/scp-744.txt")),
+    (
+        "scp-744",
+        include_str!("fixtures/scp744-render/scp-744.txt"),
+    ),
     (
         "component:acs-animation",
         include_str!("fixtures/scp744-render/component__acs-animation.txt"),
@@ -101,7 +104,10 @@ const FIXTURES: &[(&str, &str)] = &[
         "theme:flopstyle",
         include_str!("fixtures/scp744-render/theme__flopstyle.txt"),
     ),
-    ("theme:y2k", include_str!("fixtures/scp744-render/theme__y2k.txt")),
+    (
+        "theme:y2k",
+        include_str!("fixtures/scp744-render/theme__y2k.txt"),
+    ),
     (
         "component:interwiki-style",
         include_str!("fixtures/scp744-render/component__interwiki-style.txt"),
@@ -182,7 +188,7 @@ async fn execute_sql(runner: &TestRunner, sql: &str) {
 
 #[tokio::test]
 async fn scp744_full_closure_render_keeps_article_body() {
-    let runner = TestRunner::setup().await;
+    let mut runner = TestRunner::setup().await;
     let site_slug = format!("{SITE_SLUG_PREFIX}-{}", Uuid::new_v4().simple());
     let site_id = SiteService::create(
         runner.context(),

@@ -77,8 +77,7 @@ fn scp744_rate_row_and_article_gate_rewrite_to_divs() {
         "no alignment marker may leak as literal text, got:\n{rewritten}"
     );
     assert!(
-        rewritten.contains("article body stays here")
-            && rewritten.contains("tail block"),
+        rewritten.contains("article body stays here") && rewritten.contains("tail block"),
         "body text must survive the rewrite, got:\n{rewritten}"
     );
 }
