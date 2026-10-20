@@ -73,6 +73,26 @@ pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
     pub(in crate::services::render) render_generated_html: bool,
 }
 
+/// Neutralize wikitext- and attribute-syntax-forming characters in
+/// substituted identity and tag values so they render as literal text
+/// (see #2652). `[` and `]` would let stored data form executable module
+/// syntax after substitution; `"` would let a value break out of a
+/// double-quoted module attribute (`[[div class="%%tags%%"]]`), the only
+/// attribute delimiter in the pinned FTML parser, which terminates values
+/// at `b'"'` and treats single quotes as literal text. Brackets and double
+/// quotes appear in zero of 53,066 sampled en+jp corpus display names and
+/// tags, so ordinary values pass through byte-identically (unlike full
+/// escaping, which would break values used inside attributes), while
+/// hostile values can no longer form modules, links, blocks, or injected
+/// attributes. The entities decode back to the same visible characters
+/// downstream.
+fn neutralize_list_pages_substituted_syntax(value: &str) -> String {
+    value
+        .replace('[', "&#91;")
+        .replace(']', "&#93;")
+        .replace('"', "&#34;")
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_inner(
     template: &str,
@@ -412,7 +432,9 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     .get(0)
                     .map_or("", |matched| matched.as_str())
                     .to_owned(),
-                "created_by" | "createdby" => created_by.clone(),
+                "created_by" | "createdby" => {
+                    neutralize_list_pages_substituted_syntax(&created_by)
+                }
                 "created_by_linked" | "createdbylinked" | "author" => {
                     protect_list_pages_generated_html(
                         created_by_linked.clone(),
@@ -443,7 +465,9 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                         compat_html,
                     )
                 }
-                "updated_by" | "updatedby" => updated_by.clone(),
+                "updated_by" | "updatedby" => {
+                    neutralize_list_pages_substituted_syntax(&updated_by)
+                }
                 "updated_by_linked"
                 | "updatedbylinked"
                 | "author_edited"
@@ -469,7 +493,9 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     )
                 }
                 "commented_by"
-                | "commentedby" => commented_by.clone(),
+                | "commentedby" => {
+                    neutralize_list_pages_substituted_syntax(&commented_by)
+                }
                 "commented_by_linked" | "commentedbylinked" => {
                     protect_list_pages_generated_html(
                         commented_by_linked.clone(),
@@ -499,7 +525,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                 "rating" => rating.clone(),
                 "rating_votes" | "ratingvotes" => rating_votes.clone(),
                 "comments" => comments.clone(),
-                "tags" => tags_text.clone(),
+                "tags" => neutralize_list_pages_substituted_syntax(&tags_text),
                 "tags_linked" | "tagslinked"
                     if generated_slots.is_some()
                         && captures.name("format").is_none()
@@ -550,7 +576,9 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     context.render_generated_html,
                     compat_html,
                 ),
-                "_tags" => hidden_tags.join(" "),
+                "_tags" => {
+                    neutralize_list_pages_substituted_syntax(&hidden_tags.join(" "))
+                }
                 "category" => context.category.to_owned(),
                 "size" => context
                     .page_wikitext_scalar_count

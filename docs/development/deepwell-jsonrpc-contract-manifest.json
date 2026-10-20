@@ -10619,6 +10619,7 @@
           "deepwell/tests/user.rs#basic_update",
           "deepwell/tests/user.rs#changing_email_clears_verified_ownership",
           "deepwell/tests/user.rs#display_locale_preferences_round_trip_only_for_the_session_actor",
+          "deepwell/tests/user.rs#non_raster_avatar_rejection_does_not_change_target",
           "deepwell/tests/user.rs#oversized_avatar_rejection_does_not_promote_blob_or_change_target",
           "deepwell/tests/user.rs#regular_account_password_policy_rejects_short_create_passwords",
           "deepwell/tests/user.rs#self_email_change_requires_current_password_proof",
@@ -10681,6 +10682,7 @@
         "reference": "deepwell/tests/user.rs#basic_update",
         "alternatives": [
           "deepwell/tests/user.rs#display_locale_preferences_round_trip_only_for_the_session_actor",
+          "deepwell/tests/user.rs#non_raster_avatar_rejection_does_not_change_target",
           "deepwell/tests/user.rs#oversized_avatar_rejection_does_not_promote_blob_or_change_target",
           "deepwell/tests/user.rs#regular_account_password_policy_rejects_short_create_passwords",
           "deepwell/tests/user.rs#user_delete_and_its_audit_event_roll_back_together",

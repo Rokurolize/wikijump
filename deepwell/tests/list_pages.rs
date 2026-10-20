@@ -440,8 +440,8 @@ After"#;
         .expect("compiled body should be included in page_get details");
 
     assert!(
-        html.contains("17 May 2017, 01:02"),
-        "exact-name ListPages should expand created_at in Wikidot date format:\n{html}",
+        html.contains(">16 May 2017 16:02</span>"),
+        "exact-name ListPages should expand created_at as Wikidot's UTC server text:\n{html}",
     );
     assert!(
         html.contains("+1135"),
