@@ -66,17 +66,26 @@ async function waitForEndpoint(port, deadline) {
 }
 
 let cdpId = 0;
-function cdp(socket, method, params = {}) {
+function cdp(socket, method, params = {}, deadline = Number.POSITIVE_INFINITY) {
   return new Promise((resolve, reject) => {
     const id = (cdpId += 1);
-    const onMessage = (data) => {
+    const timer = setTimeout(
+      () => {
+        socket.removeEventListener("message", onMessage);
+        reject(new Error(`CDP ${method} timed out`));
+      },
+      Math.max(0, deadline - Date.now()),
+    );
+    timer.unref?.();
+    const onMessage = (event) => {
       let message;
       try {
-        message = JSON.parse(String(data));
+        message = JSON.parse(String(event.data));
       } catch {
         return;
       }
       if (message.id !== id) return;
+      clearTimeout(timer);
       socket.removeEventListener("message", onMessage);
       if (message.error) reject(new Error(JSON.stringify(message.error)));
       else resolve(message.result);
@@ -125,29 +134,48 @@ async function main() {
     const targets = await httpJson("GET", options.port, "/json/list");
     const page = targets.find((target) => target.type === "page" && target.url === fileUrl);
     if (!page) throw new Error("proof page target did not open");
-    const socket = new WebSocket(page.webSocketDebuggerUrl, { handshakeTimeout: 10000 });
+    const socket = new WebSocket(page.webSocketDebuggerUrl);
     await new Promise((resolve, reject) => {
-      socket.addEventListener("open", resolve, { once: true });
+      const timer = setTimeout(() => reject(new Error("debugger socket did not open")), 10000);
+      timer.unref?.();
+      socket.addEventListener(
+        "open",
+        () => {
+          clearTimeout(timer);
+          resolve();
+        },
+        { once: true },
+      );
       socket.addEventListener("error", reject, { once: true });
     });
     try {
-      await cdp(socket, "Page.enable");
-      await cdp(socket, "Page.navigate", { url: fileUrl });
+      await cdp(socket, "Page.enable", {}, deadline);
+      await cdp(socket, "Page.navigate", { url: fileUrl }, deadline);
       for (;;) {
-        const state = await cdp(socket, "Runtime.evaluate", {
-          expression: "document.readyState",
-          returnByValue: true,
-        });
+        const state = await cdp(
+          socket,
+          "Runtime.evaluate",
+          {
+            expression: "document.readyState",
+            returnByValue: true,
+          },
+          deadline,
+        );
         if (state.result.value === "complete") break;
         if (Date.now() > deadline) throw new Error("proof page did not finish loading");
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
       // One extra beat so any inline script in the artifact has run already.
       await new Promise((resolve) => setTimeout(resolve, 500));
-      const evaluation = await cdp(socket, "Runtime.evaluate", {
-        expression: PROBE,
-        returnByValue: true,
-      });
+      const evaluation = await cdp(
+        socket,
+        "Runtime.evaluate",
+        {
+          expression: PROBE,
+          returnByValue: true,
+        },
+        deadline,
+      );
       const verdict = evaluation.result.value;
       process.stdout.write(`${JSON.stringify(verdict, null, 2)}\n`);
       const violations = [
