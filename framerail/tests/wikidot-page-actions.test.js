@@ -296,17 +296,11 @@ test("Discuss keeps the create-thread action without a thread or a Wikidot page 
 test("the actions rating prefers the live combined score over the imported baseline", () => {
   // SCP-9506 with the 461-vote baseline and one local upvote shows 462,
   // matching the pagerate module and the vote pane.
-  assert.equal(
-    selectWikidotPageRating({ combinedRating: 462, importedRating: 461 }),
-    462
-  )
+  assert.equal(selectWikidotPageRating({ combinedRating: 462, importedRating: 461 }), 462)
 })
 
 test("a combined score of zero wins over a nonzero imported baseline", () => {
-  assert.equal(
-    selectWikidotPageRating({ combinedRating: 0, importedRating: 461 }),
-    0
-  )
+  assert.equal(selectWikidotPageRating({ combinedRating: 0, importedRating: 461 }), 0)
 })
 
 test("the actions rating falls back to the imported baseline without a live score", () => {
@@ -347,29 +341,35 @@ test("the actions rating rejects non-numeric scores instead of displaying them",
 })
 
 test("combined live scores flow into the imported action labels", () => {
-  assert.deepEqual(buildWikidotPageActionLabels({ rating: selectWikidotPageRating({ combinedRating: 462, importedRating: 461 }), comments: 95 }), {
-    ratingText: "+462",
-    showRate: true,
-    showDiscuss: true,
-    edit: "Edit",
-    ratePrefix: "Rate",
-    rate: "Rate (+462)",
-    tags: "Tags",
-    discuss: "Discuss (95)",
-    history: "History",
-    files: "Files",
-    print: "Print",
-    siteTools: "Site tools",
-    options: "Options",
-    append: "Append",
-    backlinks: "Backlinks",
-    viewSource: "Page Source",
-    parent: "Parent",
-    rename: "Rename",
-    editSections: "Edit Sections",
-    editMeta: "Edit Meta",
-    watchers: "Watchers",
-    lock: "Lock Page",
-    delete: "Delete"
-  })
+  assert.deepEqual(
+    buildWikidotPageActionLabels({
+      rating: selectWikidotPageRating({ combinedRating: 462, importedRating: 461 }),
+      comments: 95
+    }),
+    {
+      ratingText: "+462",
+      showRate: true,
+      showDiscuss: true,
+      edit: "Edit",
+      ratePrefix: "Rate",
+      rate: "Rate (+462)",
+      tags: "Tags",
+      discuss: "Discuss (95)",
+      history: "History",
+      files: "Files",
+      print: "Print",
+      siteTools: "Site tools",
+      options: "Options",
+      append: "Append",
+      backlinks: "Backlinks",
+      viewSource: "Page Source",
+      parent: "Parent",
+      rename: "Rename",
+      editSections: "Edit Sections",
+      editMeta: "Edit Meta",
+      watchers: "Watchers",
+      lock: "Lock Page",
+      delete: "Delete"
+    }
+  )
 })

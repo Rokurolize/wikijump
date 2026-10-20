@@ -44,13 +44,23 @@ describe("theme local file URL rewriting", () => {
       "https://scp-wiki.wjfiles.localhost/local--files/a/b.png"
     )
     assert.equal(
-      localizeSiteFileUrl("//scp-wiki.wdfiles.com/local--files/a/b.css", SITE, FILES, PRESENT),
+      localizeSiteFileUrl(
+        "//scp-wiki.wdfiles.com/local--files/a/b.css",
+        SITE,
+        FILES,
+        PRESENT
+      ),
       "https://scp-wiki.wjfiles.localhost/local--files/a/b.css"
     )
     // A path that does not name exactly one page file is unresolvable, so it
     // stays literal even with a positive presence answer.
     assert.equal(
-      localizeSiteFileUrl("//scp-wiki.wdfiles.com/local--files/a.css", SITE, FILES, PRESENT),
+      localizeSiteFileUrl(
+        "//scp-wiki.wdfiles.com/local--files/a.css",
+        SITE,
+        FILES,
+        PRESENT
+      ),
       null
     )
   })
@@ -100,7 +110,12 @@ describe("theme local file URL rewriting", () => {
       null
     )
     assert.equal(
-      localizeSiteFileUrl("https://scp-wiki.wdfiles.com/local--files/x.css", null, FILES, PRESENT),
+      localizeSiteFileUrl(
+        "https://scp-wiki.wdfiles.com/local--files/x.css",
+        null,
+        FILES,
+        PRESENT
+      ),
       null
     )
     assert.equal(
@@ -113,7 +128,12 @@ describe("theme local file URL rewriting", () => {
       null
     )
     assert.equal(
-      localizeSiteFileUrl("https://scp-wiki.wdfiles.com/local--files/x.css", SITE, "", PRESENT),
+      localizeSiteFileUrl(
+        "https://scp-wiki.wdfiles.com/local--files/x.css",
+        SITE,
+        "",
+        PRESENT
+      ),
       null
     )
   })
@@ -125,7 +145,10 @@ describe("theme local file URL rewriting", () => {
     // Unknown: no presence signal was resolved for this render.
     assert.equal(localizeSiteFileUrl(url, SITE, FILES), null)
     assert.equal(localizeSiteFileUrl(url, SITE, FILES, null), null)
-    assert.equal(localizeSiteFileUrl(url, SITE, FILES, () => undefined), null)
+    assert.equal(
+      localizeSiteFileUrl(url, SITE, FILES, () => undefined),
+      null
+    )
     assert.equal(
       localizeSiteFileUrl(url, SITE, FILES, () => {
         throw new Error("lookup failed")
@@ -136,22 +159,28 @@ describe("theme local file URL rewriting", () => {
   })
 
   it("splits exactly one page file per reference", () => {
-    assert.deepEqual(parseSiteFileReference(
-      "https://scp-wiki.wdfiles.com/local--files/component:theme/font-bauhaus.css",
-      SITE
-    ), {
-      page: "component:theme",
-      name: "font-bauhaus.css",
-      rest: "/local--files/component:theme/font-bauhaus.css"
-    })
-    assert.deepEqual(parseSiteFileReference(
-      "https://scp-wiki.wdfiles.com/local--files/i/d.png?download=true#full",
-      SITE
-    ), {
-      page: "i",
-      name: "d.png",
-      rest: "/local--files/i/d.png?download=true#full"
-    })
+    assert.deepEqual(
+      parseSiteFileReference(
+        "https://scp-wiki.wdfiles.com/local--files/component:theme/font-bauhaus.css",
+        SITE
+      ),
+      {
+        page: "component:theme",
+        name: "font-bauhaus.css",
+        rest: "/local--files/component:theme/font-bauhaus.css"
+      }
+    )
+    assert.deepEqual(
+      parseSiteFileReference(
+        "https://scp-wiki.wdfiles.com/local--files/i/d.png?download=true#full",
+        SITE
+      ),
+      {
+        page: "i",
+        name: "d.png",
+        rest: "/local--files/i/d.png?download=true#full"
+      }
+    )
     for (const url of [
       "https://scp-wiki.wdfiles.com/local--files/onlypage",
       "https://scp-wiki.wdfiles.com/local--files/a/b/c.css",
@@ -188,7 +217,10 @@ describe("theme local file URL rewriting", () => {
   })
 
   it("keys presence by page and name", () => {
-    assert.equal(siteFilePresenceKey("component:theme", "font-bauhaus.css"), "component:theme\0font-bauhaus.css")
+    assert.equal(
+      siteFilePresenceKey("component:theme", "font-bauhaus.css"),
+      "component:theme\0font-bauhaus.css"
+    )
     assert.equal(siteFilePresenceKey("", "a.css"), null)
     assert.equal(siteFilePresenceKey("a", ""), null)
     assert.equal(siteFilePresenceKey(null, "a.css"), null)
@@ -280,7 +312,10 @@ describe("theme local file URL rewriting", () => {
       ),
       "https://nu-scptheme.github.io/main.css"
     )
-    assert.equal(resolveExternalThemeHref({ type: "built_in", id: 1 }, SITE, FILES, PRESENT), null)
+    assert.equal(
+      resolveExternalThemeHref({ type: "built_in", id: 1 }, SITE, FILES, PRESENT),
+      null
+    )
     assert.equal(
       resolveExternalThemeHref({ type: "custom", css: "x{}" }, SITE, FILES, PRESENT),
       null
@@ -304,6 +339,9 @@ describe("theme local file URL rewriting", () => {
       customThemeHeadHtml(theme),
       '<style data-wikidot-site-theme>.x{background:url("https://scp-wiki.wdfiles.com/local--files/i/a.png")}</style>'
     )
-    assert.equal(customThemeHeadHtml({ type: "built_in", id: 1 }, SITE, FILES, PRESENT), "")
+    assert.equal(
+      customThemeHeadHtml({ type: "built_in", id: 1 }, SITE, FILES, PRESENT),
+      ""
+    )
   })
 })

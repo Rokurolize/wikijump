@@ -6,7 +6,11 @@ import {
 import { articleRouteWithQueryNoRender } from "$lib/server/page-norender-query"
 import { resolvePageRedirect } from "$lib/server/page-redirect"
 import { authGetSession } from "$lib/server/auth/get-session"
-import { pageCreatePermission, pageDeletedGet, pageScore } from "$lib/server/deepwell/page"
+import {
+  pageCreatePermission,
+  pageDeletedGet,
+  pageScore
+} from "$lib/server/deepwell/page"
 import { pageErrorStatus } from "$lib/server/load/page/page-error-status.js"
 import { translate } from "$lib/server/deepwell/translate"
 import { articleView } from "$lib/server/deepwell/views"

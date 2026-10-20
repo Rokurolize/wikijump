@@ -131,11 +131,27 @@ test("an unconfigured site answers 404", () => {
 
 test("a site-owned WDFiles file without bytes redirects to the local files path", () => {
   const cases = [
-    ["favicon", "https://scp-wiki.wdfiles.com/local--files/site/favicon.gif", "favicon.gif"],
-    ["ios", "https://scp-wiki.wdfiles.com/local--files/site/iosicon.png", "iosicon_57.png"],
-    ["ios", "https://scp-wiki.wdfiles.com/local--files/site/iosicon.png", "iosicon_72.png"],
+    [
+      "favicon",
+      "https://scp-wiki.wdfiles.com/local--files/site/favicon.gif",
+      "favicon.gif"
+    ],
+    [
+      "ios",
+      "https://scp-wiki.wdfiles.com/local--files/site/iosicon.png",
+      "iosicon_57.png"
+    ],
+    [
+      "ios",
+      "https://scp-wiki.wdfiles.com/local--files/site/iosicon.png",
+      "iosicon_72.png"
+    ],
     ["ios", "https://scp-wiki.wdfiles.com/local--files/site/iosicon.png", "iosicon.png"],
-    ["windows", "https://scp-wiki.wdfiles.com/local--files/site/wp8icon.png", "wp8icon.png"]
+    [
+      "windows",
+      "https://scp-wiki.wdfiles.com/local--files/site/wp8icon.png",
+      "wp8icon.png"
+    ]
   ]
   for (const [kind, source, filename] of cases) {
     const response = selectSiteIconResponse(importedSite, source, null, kind, filename)

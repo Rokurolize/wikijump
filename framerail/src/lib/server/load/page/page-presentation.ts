@@ -26,9 +26,9 @@ interface WikidotPagePresentationContext {
   now?: number
   /**
    * Live combined score (imported baseline plus local votes) for the page
-   * actions row. Falls back to the imported baseline snapshot when no score
-   * was fetched, so a failed lookup keeps the baseline instead of breaking
-   * the page.
+   * actions row. Falls back to the imported baseline snapshot when no
+   * score was fetched, so a failed lookup keeps the baseline instead of
+   * breaking the page.
    */
   combinedRating?: number | null
 }
@@ -212,7 +212,12 @@ export const buildPageTranslateKeys = (
 
 export const buildWikidotPagePresentation = (
   response: PageView,
-  { hasSession, siteLocale, now = Date.now(), combinedRating = null }: WikidotPagePresentationContext
+  {
+    hasSession,
+    siteLocale,
+    now = Date.now(),
+    combinedRating = null
+  }: WikidotPagePresentationContext
 ) => {
   if (response.type !== "found") {
     return {

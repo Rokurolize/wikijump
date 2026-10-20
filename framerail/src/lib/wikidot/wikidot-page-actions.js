@@ -171,8 +171,9 @@ export const wikidotPageActionVisibility = ({
  *
  * Every rating surface shows the same number: the live combined score
  * (imported baseline plus local votes) when one was fetched, otherwise the
- * imported baseline snapshot, otherwise nothing. A combined score of zero is
- * a real score and wins over the baseline; non-numeric values never do.
+ * imported baseline snapshot, otherwise nothing. A combined score of zero
+ * is a real score and wins over the baseline; non-numeric values never
+ * do.
  *
  * @param {{
  *   combinedRating?: number | null

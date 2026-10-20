@@ -9,9 +9,7 @@ const SITE_HEADERS = {
 // control opens a printer-friendly child window, and the child exposes a
 // separate PRINT THE PAGE control. The option-bar Print button must drive
 // that same activation without printing or navigating the opener.
-test("anonymous Print opens the printer-friendly child window", async ({
-  page
-}) => {
+test("anonymous Print opens the printer-friendly child window", async ({ page }) => {
   await page.setExtraHTTPHeaders(SITE_HEADERS)
   await page.goto("/page-workflow-probe", { waitUntil: "domcontentloaded" })
   await waitForSvelteDelegatedHandler(page, "#print-button")

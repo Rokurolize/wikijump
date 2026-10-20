@@ -888,10 +888,11 @@ async fn imported_rating_score(runner: &TestRunner, site_id: i64, slug: &str) ->
 #[ignore = "pending cargo verification: no cargo in this lane"]
 async fn imported_rating_baseline_vote_cast_change_cancel_lifecycle() {
     let queue_namespace = format!("rsmq-rate-baseline-{}", Uuid::new_v4().simple());
-    let verification =
-        AssertUnwindSafe(run_imported_rating_baseline_vote_lifecycle(&queue_namespace))
-            .catch_unwind()
-            .await;
+    let verification = AssertUnwindSafe(run_imported_rating_baseline_vote_lifecycle(
+        &queue_namespace,
+    ))
+    .catch_unwind()
+    .await;
     let cleanup = AssertUnwindSafe(cleanup_job_queue_namespace(&queue_namespace))
         .catch_unwind()
         .await;
@@ -915,8 +916,10 @@ async fn run_imported_rating_baseline_vote_lifecycle(queue_namespace: &str) {
         "[[module Rate]]",
     )
     .await;
-    insert_imported_rating_snapshot(&runner, site_id, page_id, &slug, 7_701_011, BASELINE)
-        .await;
+    insert_imported_rating_snapshot(
+        &runner, site_id, page_id, &slug, 7_701_011, BASELINE,
+    )
+    .await;
 
     // The baseline is served with no synthetic vote rows: local math only.
     assert_eq!(
@@ -956,7 +959,8 @@ async fn run_imported_rating_baseline_vote_lifecycle(queue_namespace: &str) {
 #[tokio::test]
 #[ignore = "pending cargo verification: no cargo in this lane"]
 async fn imported_rating_baseline_refresh_shows_combined_score() {
-    let queue_namespace = format!("rsmq-rate-baseline-refresh-{}", Uuid::new_v4().simple());
+    let queue_namespace =
+        format!("rsmq-rate-baseline-refresh-{}", Uuid::new_v4().simple());
     let verification =
         AssertUnwindSafe(run_imported_rating_baseline_refresh(&queue_namespace))
             .catch_unwind()
@@ -984,8 +988,10 @@ async fn run_imported_rating_baseline_refresh(queue_namespace: &str) {
         "[[module Rate]]",
     )
     .await;
-    insert_imported_rating_snapshot(&runner, site_id, page_id, &slug, 7_701_012, BASELINE)
-        .await;
+    insert_imported_rating_snapshot(
+        &runner, site_id, page_id, &slug, 7_701_012, BASELINE,
+    )
+    .await;
 
     // Bake the baseline into the saved Rate page: the rerender after a local
     // vote must keep it, not reset the module to the local-only sum.

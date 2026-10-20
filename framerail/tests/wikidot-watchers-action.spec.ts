@@ -17,9 +17,7 @@ const openWatchersPane = async (page: Page) => {
   await page.locator("#watchers-button").click()
 }
 
-test("anonymous Watchers opens the pane with the watcher roster", async ({
-  page
-}) => {
+test("anonymous Watchers opens the pane with the watcher roster", async ({ page }) => {
   await page.setExtraHTTPHeaders(SITE_HEADERS)
   const watchRequests: Route[] = []
   const actionStatuses: number[] = []
@@ -50,7 +48,9 @@ test("anonymous Watchers opens the pane with the watcher roster", async ({
   // One lazy read accepted by the route action, no denial dialog, and
   // the action area stays open on the roster.
   expect(actionStatuses, "the route action must accept the lazy read").toEqual([200])
-  expect(watchRequests, "opening the pane must start exactly one lazy read").toHaveLength(1)
+  expect(watchRequests, "opening the pane must start exactly one lazy read").toHaveLength(
+    1
+  )
   await expect(page.locator("#odialog-container")).toHaveCount(0)
   await expect(page.locator("#action-area")).not.toHaveClass(/hidden/u)
 })

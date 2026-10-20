@@ -116,13 +116,14 @@ export function siteIconRedirectLocation(
  * The local files path for a site-owned WDFiles attachment, or null.
  *
  * This is the same ownership reading the head derivation uses
- * (`siteIconRedirectLocation`): an imported site's own `<slug>.wdfiles.com`
- * `/local--files/` file is part of the mirror's dependency set (the shape
- * rule from the #2094 plan), so the compatibility route resolves it to the
- * local files path instead of answering 404. The local files route serves
- * bytes from local storage when the blob exists and keeps its own redirect
- * to the source otherwise, so this mapping never hotlinks and never probes
- * per URL. `www` hosts never match: only the site's own file host counts.
+ * (`siteIconRedirectLocation`): an imported site's own
+ * `<slug>.wdfiles.com` `/local--files/` file is part of the mirror's
+ * dependency set (the shape rule from the #2094 plan), so the
+ * compatibility route resolves it to the local files path instead of
+ * answering 404. The local files route serves bytes from local storage
+ * when the blob exists and keeps its own redirect to the source otherwise,
+ * so this mapping never hotlinks and never probes per URL. `www` hosts
+ * never match: only the site's own file host counts.
  */
 export function siteOwnedLocalFilePath(
   site: SiteIconSourceSite,

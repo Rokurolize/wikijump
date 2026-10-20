@@ -343,8 +343,8 @@
    * writes under the `rename` permission and Delete under the `delete`
    * permission, each matching the authority the matching server mutation
    * enforces. The gate runs before the editable form (or protected
-   * revision data) is mounted. The server still rechecks every mutation
-   * at submission time.
+   * revision data) is mounted. The server still rechecks every mutation at
+   * submission time.
    */
   async function openPagePane(pane: PagePane) {
     if (
