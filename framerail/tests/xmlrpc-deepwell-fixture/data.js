@@ -854,6 +854,33 @@ export const backlinksByPage = {
 }
 
 /**
+ * Populated watcher rosters by numeric page id, in Deepwell's public
+ * identity shape. Pages without an entry read as an empty roster.
+ *
+ * @type {Record<number, { "user-id": number; "user-slug": string; "user-name": string; "user-karma": number; "user-avatar-data": string; "user-profile-url": string }[]>}
+ */
+export const watchersByPageId = {
+  3000340: [
+    {
+      "user-id": 19_000_001,
+      "user-slug": "watcher-fixture",
+      "user-name": "Watcher Fixture",
+      "user-karma": 0,
+      "user-avatar-data": "",
+      "user-profile-url": "/-/user/watcher-fixture"
+    },
+    {
+      "user-id": 19_000_002,
+      "user-slug": "second-watcher",
+      "user-name": "Second Watcher",
+      "user-karma": 0,
+      "user-avatar-data": "",
+      "user-profile-url": "/-/user/second-watcher"
+    }
+  ]
+}
+
+/**
  * @param {FixturePage | null} page
  * @param {PageDetails} details
  * @returns {Record<string, unknown> | null}
