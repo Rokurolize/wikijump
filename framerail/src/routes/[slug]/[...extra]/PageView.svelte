@@ -338,20 +338,15 @@
   }
 
   /**
-   * Opens a page pane after the checks its write surface requires. Append,
-   * Parent, and Edit Meta write under the page `edit` permission; Move
-   * writes under the `rename` permission and Delete under the `delete`
-   * permission, each matching the authority the matching server mutation
-   * enforces. The gate runs before the editable form (or protected
-   * revision data) is mounted. The server still rechecks every mutation
-   * at submission time.
+   * Opens a page pane after the checks its write surface requires. Append
+   * and Parent write under the page `edit` permission; Move writes under
+   * the `rename` permission and Delete under the `delete` permission, each
+   * matching the authority the matching server mutation enforces. The gate
+   * runs before the editable form (or protected revision data) is mounted.
+   * The server still rechecks every mutation at submission time.
    */
   async function openPagePane(pane: PagePane) {
-    if (
-      pane === PagePane.Append ||
-      pane === PagePane.Parent ||
-      pane === PagePane.EditMeta
-    ) {
+    if (pane === PagePane.Append || pane === PagePane.Parent) {
       if (!(await checkEditPermission())) return
     } else if (pane === PagePane.Move) {
       if (!(await checkPagePermission("move"))) return
@@ -911,7 +906,7 @@
         id="edit-meta-button"
         class="btn btn-default"
         href="javascript:;"
-        onclick={() => openPagePane(PagePane.EditMeta)}
+        onclick={() => activatePagePane(PagePane.EditMeta)}
         type={wikidotPageActions ? undefined : "button"}
       >
         {wikidotPageActions?.editMeta ??
