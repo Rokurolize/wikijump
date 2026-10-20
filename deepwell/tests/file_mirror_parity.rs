@@ -16,15 +16,14 @@ use deepwell::constants::ADMIN_USER_ID;
 use deepwell::error::ErrorType;
 use deepwell::hash::{blob_hash_to_hex, sha512_hash};
 use deepwell::models::blob_pending;
+use deepwell::services::RequestContext;
 use deepwell::services::blob::EMPTY_BLOB_HASH;
 use deepwell::services::file::{CreateFile, FileService};
 use deepwell::services::file_revision::FileRevisionService;
 use deepwell::services::import::{
     ImportFile, ImportFileDelete, ImportFileExpectation, ImportPage,
-    ImportPageFilesVerify, ImportService, ImportSite, ImportUser,
-    ImportedUserType,
+    ImportPageFilesVerify, ImportService, ImportSite, ImportUser, ImportedUserType,
 };
-use deepwell::services::RequestContext;
 use deepwell::types::Reference;
 use ftml::data::KarmaLevel;
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, TransactionTrait};
@@ -34,9 +33,7 @@ use uuid::Uuid;
 
 fn unique_site_id(tag: &Uuid) -> i64 {
     6_100_000
-        + i64::from(
-            u32::from_be_bytes(tag.as_bytes()[..4].try_into().unwrap()) % 100_000,
-        )
+        + i64::from(u32::from_be_bytes(tag.as_bytes()[..4].try_into().unwrap()) % 100_000)
 }
 
 fn unique_page_id(tag: &Uuid, salt: u32) -> i64 {
@@ -210,11 +207,7 @@ fn set_admin_context(runner: &mut TestRunner, site_id: i64, page_id: i64) {
     });
 }
 
-async fn visible_names(
-    runner: &TestRunner,
-    site_id: i64,
-    page_id: i64,
-) -> Vec<String> {
+async fn visible_names(runner: &TestRunner, site_id: i64, page_id: i64) -> Vec<String> {
     FileService::get_visible_rows(runner.context(), site_id, page_id, 100)
         .await
         .expect("visible file rows should load")
@@ -243,17 +236,9 @@ async fn mirror_files_pane_shows_source_inventory_only() {
     let data = b"mirror parity source bytes".to_vec();
 
     let data_len = i64::try_from(data.len()).expect("fixture size should fit");
-    let (source_id, source_hash) = import_source_file(
-        &runner,
-        site_id,
-        page_id,
-        "canon.jpg",
-        data,
-        uploader,
-    )
-    .await;
-    let local_id =
-        insert_local_file(&runner, site_id, page_id, "SCP.txt").await;
+    let (source_id, source_hash) =
+        import_source_file(&runner, site_id, page_id, "canon.jpg", data, uploader).await;
+    let local_id = insert_local_file(&runner, site_id, page_id, "SCP.txt").await;
     assert_ne!(source_id, local_id);
 
     // The Files pane shows the source inventory only, even though the
@@ -296,23 +281,12 @@ async fn mirror_file_mutations_are_refused() {
     let uploader = import_uploader(&runner, "refuse").await;
     let data = b"mirror parity refusal fixture".to_vec();
 
-    let (source_id, source_hash) = import_source_file(
-        &runner,
-        site_id,
-        page_id,
-        "victim.jpg",
-        data,
-        uploader,
-    )
-    .await;
-    let latest = FileRevisionService::get_latest(
-        runner.context(),
-        site_id,
-        page_id,
-        source_id,
-    )
-    .await
-    .expect("latest revision lookup should succeed");
+    let (source_id, source_hash) =
+        import_source_file(&runner, site_id, page_id, "victim.jpg", data, uploader).await;
+    let latest =
+        FileRevisionService::get_latest(runner.context(), site_id, page_id, source_id)
+            .await
+            .expect("latest revision lookup should succeed");
 
     set_admin_context(&mut runner, site_id, page_id);
     let base = json!({
@@ -394,14 +368,10 @@ async fn mirror_file_mutations_are_refused() {
     // Nothing changed: the source row keeps its single revision. This
     // assertion runs before the intentional tombstone below, which does
     // add a revision through the allowed import path.
-    let unchanged = FileRevisionService::get_latest(
-        runner.context(),
-        site_id,
-        page_id,
-        source_id,
-    )
-    .await
-    .expect("latest revision lookup should succeed");
+    let unchanged =
+        FileRevisionService::get_latest(runner.context(), site_id, page_id, source_id)
+            .await
+            .expect("latest revision lookup should succeed");
     assert_eq!(unchanged.revision_id, latest.revision_id);
 
     // Tombstone through the import path (which stays allowed), then prove
@@ -436,14 +406,10 @@ async fn mirror_file_mutations_are_refused() {
 
     // After the tombstone, the refused restore left no trace: the latest
     // revision is still the import tombstone, not a new endpoint revision.
-    let after_restore = FileRevisionService::get_latest(
-        runner.context(),
-        site_id,
-        page_id,
-        source_id,
-    )
-    .await
-    .expect("latest revision lookup should succeed");
+    let after_restore =
+        FileRevisionService::get_latest(runner.context(), site_id, page_id, source_id)
+            .await
+            .expect("latest revision lookup should succeed");
     assert_eq!(after_restore.revision_id, tombstoned.file_revision_id);
 
     cleanup_blob(&runner, &source_hash).await;
@@ -466,8 +432,7 @@ async fn source_rows_visible_on_native_and_mirror_configurations() {
         .unwrap()
         .site
         .site_id;
-    let mixed_page =
-        import_mirror_page(&runner, native_site, &tag, "mixed", 10).await;
+    let mixed_page = import_mirror_page(&runner, native_site, &tag, "mixed", 10).await;
     let mixed_data = b"transition fixture bytes on native site".to_vec();
     let (_, mixed_hash) = import_source_file(
         &runner,
@@ -480,8 +445,7 @@ async fn source_rows_visible_on_native_and_mirror_configurations() {
     .await;
 
     let mirror_site = import_mirror_site(&runner, &tag).await;
-    let mirror_page =
-        import_mirror_page(&runner, mirror_site, &tag, "full", 11).await;
+    let mirror_page = import_mirror_page(&runner, mirror_site, &tag, "full", 11).await;
     let mirror_data = b"transition fixture bytes on mirror site".to_vec();
     let (_, mirror_hash) = import_source_file(
         &runner,
@@ -591,8 +555,7 @@ async fn native_file_mutations_still_succeed() {
         "native file edit must succeed through the guarded endpoint",
     );
 
-    let second_blob =
-        pending_empty_blob(&runner, site.site_id, page.page_id, "b").await;
+    let second_blob = pending_empty_blob(&runner, site.site_id, page.page_id, "b").await;
     let replaced = run_endpoint!(
         runner,
         file_edit,

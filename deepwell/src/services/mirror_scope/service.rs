@@ -21,8 +21,8 @@
 use super::{MirrorScope, SetMirrorScope};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::mirror_scope::{self, Entity as MirrorScopeTable};
-use crate::services::site::SiteService;
 use crate::services::ServiceContext;
+use crate::services::site::SiteService;
 use crate::types::Reference;
 use crate::utils::{normalize_page_slug, now};
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
@@ -210,8 +210,7 @@ impl MirrorScopeService {
     }
 
     fn validate_pin(pin: &str) -> Result<()> {
-        let valid =
-            !pin.trim().is_empty() && pin.chars().all(|c| !c.is_control());
+        let valid = !pin.trim().is_empty() && pin.chars().all(|c| !c.is_control());
         if !valid {
             return Err(Error::new(
                 "mirror source pin must be a non-blank token",
