@@ -2397,7 +2397,7 @@
         "component": "deepwell",
         "handler": "file_create",
         "source": "deepwell/src/endpoints/file.rs#file_create",
-        "source_sha256": "0fe8753a1a727dcb2860d3a2190f49322ff53a7fd66294721a631082fc85cebf",
+        "source_sha256": "9f8a1260ee24a71a99b974b8caf4804b48dd4e7e5e07ab8b33f81d46865c1d09",
         "function_sha256": "1e56895828a3a415176f39cd60718500fbf8b0e28923dd80edc2982ef63bcfe9"
       },
       "params_schema": {
@@ -2465,7 +2465,7 @@
         "component": "deepwell",
         "handler": "file_delete",
         "source": "deepwell/src/endpoints/file.rs#file_delete",
-        "source_sha256": "0fe8753a1a727dcb2860d3a2190f49322ff53a7fd66294721a631082fc85cebf",
+        "source_sha256": "9f8a1260ee24a71a99b974b8caf4804b48dd4e7e5e07ab8b33f81d46865c1d09",
         "function_sha256": "00374a95d8f1106043c12e8bdeb7ba409c2de3adb65512c02bea7be4f7ace6ec"
       },
       "params_schema": {
@@ -2530,7 +2530,7 @@
         "component": "deepwell",
         "handler": "file_edit",
         "source": "deepwell/src/endpoints/file.rs#file_edit",
-        "source_sha256": "0fe8753a1a727dcb2860d3a2190f49322ff53a7fd66294721a631082fc85cebf",
+        "source_sha256": "9f8a1260ee24a71a99b974b8caf4804b48dd4e7e5e07ab8b33f81d46865c1d09",
         "function_sha256": "df317901c1c2864eca36f89419bb782eca6c64a3a63bfa83afd9ce6e2fb2404a"
       },
       "params_schema": {
@@ -2599,7 +2599,7 @@
         "component": "deepwell",
         "handler": "file_get",
         "source": "deepwell/src/endpoints/file.rs#file_get",
-        "source_sha256": "0fe8753a1a727dcb2860d3a2190f49322ff53a7fd66294721a631082fc85cebf",
+        "source_sha256": "9f8a1260ee24a71a99b974b8caf4804b48dd4e7e5e07ab8b33f81d46865c1d09",
         "function_sha256": "e693425ed0ec6acf049f0eaa2c3026811482ae4ecf805aacf1a8444f486f155d"
       },
       "params_schema": {
@@ -2661,8 +2661,8 @@
         "component": "deepwell",
         "handler": "file_move",
         "source": "deepwell/src/endpoints/file.rs#file_move",
-        "source_sha256": "0fe8753a1a727dcb2860d3a2190f49322ff53a7fd66294721a631082fc85cebf",
-        "function_sha256": "411f3e64c094e90dead65bd0e0e06aefea09f28bf6dfde933621df837a2038a9"
+        "source_sha256": "9f8a1260ee24a71a99b974b8caf4804b48dd4e7e5e07ab8b33f81d46865c1d09",
+        "function_sha256": "07d66b7085342c8c47ba83cc0b75a06969a8a371aa0a8ff2d21c374ce7a22849"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -2725,8 +2725,8 @@
         "component": "deepwell",
         "handler": "file_restore",
         "source": "deepwell/src/endpoints/file.rs#file_restore",
-        "source_sha256": "0fe8753a1a727dcb2860d3a2190f49322ff53a7fd66294721a631082fc85cebf",
-        "function_sha256": "78f0c9de18c6816f81e4c0917a2863f12a30fa202e0f6842eefbd69ec9d8d375"
+        "source_sha256": "9f8a1260ee24a71a99b974b8caf4804b48dd4e7e5e07ab8b33f81d46865c1d09",
+        "function_sha256": "82069b533f6ea9d8f200eee995c9d66cf4736b5cb41e853752cc5d1567c0abca"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -3077,7 +3077,7 @@
         "component": "deepwell",
         "handler": "file_rollback",
         "source": "deepwell/src/endpoints/file.rs#file_rollback",
-        "source_sha256": "0fe8753a1a727dcb2860d3a2190f49322ff53a7fd66294721a631082fc85cebf",
+        "source_sha256": "9f8a1260ee24a71a99b974b8caf4804b48dd4e7e5e07ab8b33f81d46865c1d09",
         "function_sha256": "56f0816818e1c2c0305fd6c7964fea01420b2bab638ff4a30d47b61ffe70905e"
       },
       "params_schema": {
