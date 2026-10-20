@@ -14,6 +14,7 @@ import {
   AVATAR_CACHE_TTL_SECONDS,
   PROBE_AVATAR_PNG,
   buildAvatarDrillPlan,
+  resolveRefs,
   summarizeDrillPlan,
 } from "../src/avatar-expiry-delete-drill.mjs";
 import { stableStringify } from "../src/canonical-json.mjs";
@@ -72,79 +73,94 @@ export function parseArgs(argv) {
   return args;
 }
 
-function resolveSecrets(value, env) {
-  if (Array.isArray(value)) return value.map((item) => resolveSecrets(item, env));
-  if (value !== null && typeof value === "object") {
-    if (typeof value.$secret === "string") {
-      const secret = env[value.$secret];
-      if (!secret) throw new Error(`missing required secret ${value.$secret} in the environment`);
-      return secret;
-    }
-    if (typeof value.$ref === "string") return value;
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, resolveSecrets(item, env)]));
-  }
-  if (value === "PROBE_AVATAR_PNG") return PROBE_AVATAR_PNG;
-  return value;
+function resolveRequest(request, context, env) {
+  const resolved = resolveRefs(request, context.bindings, env);
+  if (resolved.body === "PROBE_AVATAR_PNG") resolved.body = PROBE_AVATAR_PNG;
+  return resolved;
+}
+
+async function runHttp(url, { method = "GET", headers = {}, body } = {}) {
+  const response = await fetch(url, { method, headers, ...(body !== undefined ? { body } : {}) });
+  const content = Buffer.from(await response.arrayBuffer());
+  return {
+    status: response.status,
+    contentType: response.headers.get("content-type") ?? "",
+    length: content.length,
+  };
+}
+
+function runDb(container, sql) {
+  const run = spawnSync("docker", ["exec", container, "psql", "-U", "wikijump", "-d", "wikijump", "-h", "127.0.0.1", "-Atc", sql], { encoding: "utf8" });
+  if (run.status !== 0) throw new Error(`db assertion failed: ${run.stderr}`);
+  return { rows: run.stdout.trim() === "" ? [] : run.stdout.trim().split("\n") };
+}
+
+function runCache(container, command) {
+  const run = spawnSync("docker", ["exec", "-i", container, "valkey-cli", ...command.map(String)], { encoding: "utf8" });
+  if (run.status !== 0) throw new Error(`cache assertion failed: ${run.stderr}`);
+  const out = run.stdout.trim();
+  return out === "" ? null : out;
+}
+
+async function runRpc(url, stepId, method, params, env) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json", ...(env.AVATAR_DRILL_SESSION_TOKEN ? { authorization: `Bearer ${env.AVATAR_DRILL_SESSION_TOKEN}` } : {}) },
+    body: JSON.stringify({ jsonrpc: "2.0", id: stepId, method, params }),
+  });
+  const payload = await response.json();
+  if (payload.error) throw new Error(`RPC ${method} failed: ${stableStringify(payload.error)}`);
+  return payload.result;
 }
 
 /**
  * Executor (UNTESTED — it shells docker and fetches standing, so it only
  * runs in an approved live drill, never in CI). Kept next to the plan so
- * the approved run executes exactly the reviewed steps.
+ * the approved run executes exactly the reviewed steps. Every request is
+ * deep-resolved from runtime bindings just before it runs.
  */
 export async function executeStep(step, context, env) {
-  const { request } = step;
+  const request = resolveRequest(step.request, context, env);
   if (request.kind === "wait") {
     await new Promise((resolve) => setTimeout(resolve, request.seconds * 1000));
     return { elapsed: true };
   }
   if (request.kind === "http") {
-    const init = { method: request.method };
-    if (request.body !== undefined) {
-      init.body = resolveSecrets(request.body, env);
-    }
-    const response = await fetch(resolveSecrets(request.url, env), init);
-    const body = Buffer.from(await response.arrayBuffer());
-    return { status: response.status, contentType: response.headers.get("content-type") ?? "", length: body.length };
+    return runHttp(request.url, request);
   }
   if (request.kind === "rpc") {
-    const params = resolveSecrets(request.params, env);
-    for (const [key, value] of Object.entries(params)) {
-      if (value !== null && typeof value === "object" && "$ref" in value) {
-        params[key] = context.bindings[value.$ref];
-      }
-    }
-    const response = await fetch(request.url, {
-      method: "POST",
-      headers: { "content-type": "application/json", ...(env.AVATAR_DRILL_SESSION_TOKEN ? { authorization: `Bearer ${env.AVATAR_DRILL_SESSION_TOKEN}` } : {}) },
-      body: JSON.stringify({ jsonrpc: "2.0", id: step.id, method: request.method, params }),
-    });
-    const payload = await response.json();
-    if (payload.error) throw new Error(`RPC ${request.method} failed: ${stableStringify(payload.error)}`);
-    return { rpc: "ok", result: payload.result };
+    const result = await runRpc(request.url, step.id, request.method, request.params, env);
+    return { rpc: "ok", result };
   }
   if (request.kind === "db") {
-    const run = spawnSync("docker", ["exec", request.container, "psql", "-U", "wikijump", "-d", "wikijump", "-h", "127.0.0.1", "-Atc", request.sql], { encoding: "utf8" });
-    if (run.status !== 0) throw new Error(`db assertion failed: ${run.stderr}`);
-    return { rows: run.stdout.trim() === "" ? [] : run.stdout.trim().split("\n") };
+    return runDb(request.container, request.sql);
   }
   if (request.kind === "cache") {
-    const cacheRun = (command) => {
-      const run = spawnSync("docker", ["exec", "-i", request.container, "valkey-cli", ...command.map(String)], { encoding: "utf8" });
-      if (run.status !== 0) throw new Error(`cache assertion failed: ${run.stderr}`);
-      return run.stdout.trim();
-    };
-    const out = cacheRun(request.command);
-    const outcome = { value: out === "" ? null : out };
+    const outcome = { value: runCache(request.container, request.command) };
     if (request.ttlOf === true) {
-      outcome.ttl = Number(cacheRun(["TTL", request.command[request.command.length - 1]]));
+      outcome.ttl = Number(runCache(request.container, ["TTL", request.command[request.command.length - 1]]));
     }
     return outcome;
+  }
+  if (request.kind === "checklist") {
+    const dbOut = runDb(request.db.container, request.db.sql);
+    if (dbOut.rows.length !== 0) {
+      throw new Error(`cleanup-assert-gone: probe row still present: ${stableStringify(dbOut.rows)}`);
+    }
+    const httpOut = await runHttp(request.http.url, request.http);
+    if (httpOut.status !== 404) {
+      throw new Error(`cleanup-assert-gone: avatar route still serves HTTP ${httpOut.status}`);
+    }
+    const cacheOut = runCache(request.cache.container, request.cache.command);
+    if (cacheOut !== null) {
+      throw new Error(`cleanup-assert-gone: cache entry still present: ${cacheOut}`);
+    }
+    return { gone: true };
   }
   throw new Error(`unknown request kind ${(request ?? {}).kind}`);
 }
 
-function checkExpect(step, outcome) {
+export function checkExpect(step, outcome) {
   const { expect } = step;
   if (expect.rpc === "ok") return;
   if (expect.rpc === "ok-or-missing-user") return;
@@ -186,7 +202,11 @@ function checkExpect(step, outcome) {
       throw new Error(`step ${step.id}: expected TTL in [${expect.ttlSeconds.min}, ${expect.ttlSeconds.max}], got ${outcome.ttl}`);
     }
   }
-  if (expect.gone !== undefined || expect.elapsed !== undefined) return;
+  if (expect.gone !== undefined) {
+    if (outcome.gone !== true) throw new Error(`step ${step.id}: expected the probe to be gone`);
+    return { gone: true };
+  }
+  if (expect.elapsed !== undefined) return;
   return {};
 }
 

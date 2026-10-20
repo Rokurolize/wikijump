@@ -11,10 +11,11 @@ import test from "node:test";
 import {
   AVATAR_CACHE_TTL_SECONDS,
   buildAvatarDrillPlan,
+  resolveRefs,
   summarizeDrillPlan,
   validateDrillConfig,
 } from "../src/avatar-expiry-delete-drill.mjs";
-import { parseArgs } from "../scripts/avatar-expiry-delete-drill.mjs";
+import { checkExpect, parseArgs } from "../scripts/avatar-expiry-delete-drill.mjs";
 
 const BASE_CONFIG = {
   probeUsername: "avatar-drill-probe-1",
@@ -62,6 +63,50 @@ test("every mutation is flanked by read-only assertions", () => {
   assert.ok(waits[0].request.seconds > AVATAR_CACHE_TTL_SECONDS);
 });
 
+test("requests stay serializable: no [object Object] can leak into SQL, URLs, or cache commands", () => {
+  const plan = buildAvatarDrillPlan(BASE_CONFIG);
+  const dump = stableStringifyForSecrets(plan);
+  assert.ok(!dump.includes("[object Object]"), "a binding leaked into a request string");
+  const tokens = [...dump.matchAll(/\{\{([^{}]+)\}\}/g)].map((match) => match[1]);
+  assert.ok(tokens.length > 0, "expected template tokens in the plan");
+  const stepIds = new Set([...plan.steps, ...plan.cleanup].map((step) => step.id));
+  for (const token of tokens) {
+    const [stepId] = token.split(".");
+    assert.ok(stepIds.has(stepId), `template references unknown step ${token}`);
+  }
+});
+
+test("template resolution substitutes bindings and rejects the unresolvable", () => {
+  const bindings = { "create-probe-user.user_id": 4242 };
+  assert.deepEqual(
+    resolveRefs({ sql: `SELECT 1 FROM "user" WHERE user_id = {{create-probe-user.user_id}};` }, bindings),
+    { sql: 'SELECT 1 FROM "user" WHERE user_id = 4242;' },
+  );
+  assert.equal(resolveRefs({ user: { $ref: "create-probe-user.user_id" } }, bindings).user, 4242);
+  assert.equal(resolveRefs({ password: { $secret: "AVATAR_DRILL_PROBE_PASSWORD" } }, {}, { AVATAR_DRILL_PROBE_PASSWORD: "s3cret" }).password, "s3cret");
+  assert.throws(() => resolveRefs("{{missing.binding}}", bindings), /unresolved template/);
+  assert.throws(() => resolveRefs({ password: { $secret: "AVATAR_DRILL_PROBE_PASSWORD" } }, {}, {}), /missing required secret/);
+  assert.throws(() => resolveRefs("id={{create-probe-user}}", { "create-probe-user": { nested: true } }), /non-scalar/);
+});
+
+test("the cleanup checklist carries concrete sub-requests, not a bare checklist", () => {
+  const plan = buildAvatarDrillPlan(BASE_CONFIG);
+  const gone = plan.cleanup.find((step) => step.id === "cleanup-assert-gone");
+  assert.equal(gone.request.kind, "checklist");
+  assert.match(gone.request.db.sql, /SELECT user_id FROM "user"/);
+  assert.match(gone.request.db.sql, /\{\{create-probe-user\.user_id\}\}/);
+  assert.match(gone.request.http.url, /\/-\/avatar\/\{\{create-probe-user\.user_id\}\}$/);
+  assert.deepEqual(gone.request.cache.command, ["GET", "user_avatar:{{create-probe-user.user_id}}"]);
+  assert.deepEqual(checkExpect(gone, { gone: true }), { gone: true });
+  assert.throws(() => checkExpect(gone, {}), /expected the probe to be gone/);
+});
+
+test("the avatar upload states its content type", () => {
+  const plan = buildAvatarDrillPlan(BASE_CONFIG);
+  const put = plan.steps.find((step) => step.id === "upload-avatar-bytes");
+  assert.deepEqual(put.request.headers, { "content-type": "image/png" });
+});
+
 test("the plan proves expiry, deletion, and recaching in order", () => {
   const plan = buildAvatarDrillPlan(BASE_CONFIG);
   const ids = plan.steps.map((step) => step.id);
@@ -105,7 +150,10 @@ test("cleanup always runs and fully removes the probe", () => {
     .map((step) => step.request.method);
   assert.deepEqual(methods, ["user_edit", "user_delete"]);
   const gone = plan.cleanup.find((step) => step.id === "cleanup-assert-gone");
-  assert.deepEqual(gone.request.checks, ["db-row-absent", "route-404", "cache-absent"]);
+  assert.equal(gone.request.kind, "checklist");
+  for (const part of [gone.request.db.sql, gone.request.http.url, gone.request.cache.command[1]]) {
+    assert.match(part, /\{\{create-probe-user\.user_id\}\}/);
+  }
 });
 
 test("dry-run summary names every step without resolving bindings", () => {
@@ -116,6 +164,11 @@ test("dry-run summary names every step without resolving bindings", () => {
   for (const step of [...plan.steps, ...plan.cleanup]) {
     assert.match(text, new RegExp(step.id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
+  // The dry run is truthful: it prints the actual request payloads, so a
+  // reviewer approves the exact SQL, URLs, and cache commands.
+  assert.match(text, /avatar_s3_hash IS NOT NULL/);
+  assert.match(text, /\{\{create-probe-user\.user_id\}\}/);
+  assert.match(text, /"kind":"db"/);
   assert.ok(!text.includes("Bearer "));
 });
 

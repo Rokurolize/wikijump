@@ -82,15 +82,68 @@ export function validateDrillConfig(config) {
 
 const ref = (step, field) => ({ $ref: `${step}.${field}` });
 
+/**
+ * Render a `$ref` binding as a `{{step.field}}` template token. Requests
+ * stay plain JSON-serializable strings, so a dry run shows exactly what
+ * will be substituted and no `[object Object]` can leak into SQL, URLs,
+ * or cache commands. The executor resolves tokens from runtime bindings
+ * just before running each step.
+ */
+export function refToken(value) {
+  if (typeof value === "string") return value;
+  if (value !== null && typeof value === "object" && typeof value.$ref === "string") {
+    return `{{${value.$ref}}}`;
+  }
+  throw new Error(`avatar drill: cannot template a non-string, non-$ref value`);
+}
+
+/**
+ * Deep-resolve a plan value: `{$secret}` from the environment,
+ * `{$ref}` objects and `{{step.field}}` string tokens from bindings.
+ * Throws on anything unresolvable instead of sending a half-built request.
+ */
+export function resolveRefs(value, bindings, env = {}) {
+  if (value !== null && typeof value === "object" && typeof value.$secret === "string") {
+    const secret = env[value.$secret];
+    if (!secret) throw new Error(`avatar drill: missing required secret ${value.$secret} in the environment`);
+    return secret;
+  }
+  if (value !== null && typeof value === "object" && typeof value.$ref === "string") {
+    if (!Object.hasOwn(bindings, value.$ref)) {
+      throw new Error(`avatar drill: unresolved binding ${value.$ref}`);
+    }
+    return bindings[value.$ref];
+  }
+  if (typeof value === "string") {
+    return value.replace(/\{\{([^{}]+)\}\}/g, (match, path) => {
+      if (!Object.hasOwn(bindings, path)) {
+        throw new Error(`avatar drill: unresolved template ${match}`);
+      }
+      const resolved = bindings[path];
+      if (resolved !== null && typeof resolved === "object") {
+        throw new Error(`avatar drill: cannot interpolate non-scalar binding ${path}`);
+      }
+      return String(resolved);
+    });
+  }
+  if (Array.isArray(value)) return value.map((item) => resolveRefs(item, bindings, env));
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, resolveRefs(item, bindings, env)]),
+    );
+  }
+  return value;
+}
+
 function avatarRoute(gatewayBase, userId) {
-  return `${gatewayBase}/-/avatar/${userId}`;
+  return `${gatewayBase}/-/avatar/${refToken(userId)}`;
 }
 
 function dbHasAvatar(container, userId) {
   return {
     kind: "db",
     container,
-    sql: `SELECT avatar_s3_hash IS NOT NULL AS has_avatar FROM "user" WHERE user_id = ${userId};`,
+    sql: `SELECT avatar_s3_hash IS NOT NULL AS has_avatar FROM "user" WHERE user_id = ${refToken(userId)};`,
   };
 }
 
@@ -102,7 +155,7 @@ function dbHasAvatar(container, userId) {
 export function buildAvatarDrillPlan(rawConfig) {
   const config = validateDrillConfig(rawConfig);
   const { probeUsername, gatewayBase, deepwellUrl, dbContainer, cacheContainer, operatorIp, waitSeconds } = config;
-  const cacheKey = (userId) => `user_avatar:${userId}`;
+  const cacheKey = (userId) => `user_avatar:${refToken(userId)}`;
 
   const steps = [
     {
@@ -180,6 +233,7 @@ export function buildAvatarDrillPlan(rawConfig) {
         kind: "http",
         method: "PUT",
         url: ref("presign-avatar-upload", "presign_url"),
+        headers: { "content-type": "image/png" },
         body: "PROBE_AVATAR_PNG",
       },
       expect: { status: 200 },
@@ -319,7 +373,21 @@ export function buildAvatarDrillPlan(rawConfig) {
       id: "cleanup-assert-gone",
       phase: "cleanup",
       title: "Probe fully gone: no row, no route, no cache entry",
-      request: { kind: "checklist", checks: ["db-row-absent", "route-404", "cache-absent"] },
+      request: {
+        kind: "checklist",
+        db: {
+          container: dbContainer,
+          sql: `SELECT user_id FROM "user" WHERE user_id = ${refToken(ref("create-probe-user", "user_id"))};`,
+        },
+        http: {
+          method: "GET",
+          url: avatarRoute(gatewayBase, ref("create-probe-user", "user_id")),
+        },
+        cache: {
+          container: cacheContainer,
+          command: ["GET", cacheKey(ref("create-probe-user", "user_id"))],
+        },
+      },
       expect: { gone: true },
     },
   ];
@@ -336,6 +404,8 @@ export function summarizeDrillPlan(plan) {
   ];
   for (const step of [...plan.steps, ...plan.cleanup]) {
     lines.push(`[${step.phase}] ${step.id}: ${step.title}`);
+    lines.push(`    request: ${JSON.stringify(step.request)}`);
+    lines.push(`    expect: ${JSON.stringify(step.expect)}`);
   }
   lines.push("", "cleanup always runs, even when a step fails.");
   return `${lines.join("\n")}\n`;
