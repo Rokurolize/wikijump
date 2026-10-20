@@ -145,9 +145,7 @@ async fn concurrent_file_row_inserts_reject_the_second_active_name() {
             .expect("holder transaction should commit");
     };
     let (contender_result, _) = tokio::join!(contender, release);
-    let error = contender_result
-        .err()
-        .expect("second concurrent file insert should fail");
+    let error = contender_result.expect_err("second concurrent file insert should fail");
     assert!(
         is_active_unique_violation(&error),
         "loser should hit {FILE_ACTIVE_UNIQUE_INDEX}, got: {error:?}",
@@ -507,25 +505,26 @@ async fn concurrent_file_creates_leave_exactly_one_active_row() {
         );
 
         let winner_hash = sha512_hash(&fixture.uploads[winner_index].data);
-        let loser_hash = sha512_hash(&fixture.uploads[loser_index].data);
         let winner_permanent = state
             .s3_files_bucket
             .get_object(blob_hash_to_hex(&winner_hash).as_str())
             .await
             .expect("winner permanent blob state should be observable");
-        let loser_permanent = state
-            .s3_files_bucket
-            .get_object(blob_hash_to_hex(&loser_hash).as_str())
-            .await
-            .expect("loser permanent blob state should be observable");
         let winner_temporary = state
             .s3_files_bucket
             .get_object(&fixture.uploads[winner_index].temporary_path)
             .await
             .expect("winner temporary blob state should be observable");
         assert_eq!(winner_permanent.status_code(), 200);
-        assert_eq!(loser_permanent.status_code(), 404);
         assert_eq!(winner_temporary.status_code(), 404);
+        // No assertion on the loser's finalized blob: `create` promotes
+        // the upload to permanent storage before the row insert that
+        // rejects it, so the loser's bytes remain as an unreferenced
+        // orphan. That is pre-existing behavior for any post-finalize
+        // create failure, and blobs are content-addressed, so a
+        // compensating delete could remove bytes shared with the winner.
+        // #2602 guarantees a single active row plus a clean conflict
+        // error, both pinned above.
     })
     .catch_unwind()
     .await;
@@ -539,7 +538,9 @@ async fn concurrent_file_creates_leave_exactly_one_active_row() {
     let cleanup = cleanup_fixture(&state, &fixture_cleanup).await;
     if let Err(payload) = verification {
         if let Err(error) = &cleanup {
-            eprintln!("concurrent file create fixture cleanup after panic failed: {error}");
+            eprintln!(
+                "concurrent file create fixture cleanup after panic failed: {error}"
+            );
         }
         resume_unwind(payload);
     }

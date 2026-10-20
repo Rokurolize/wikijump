@@ -47,8 +47,7 @@ use paste::paste;
 use sea_orm::ActiveValue;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DbErr, EntityTrait,
-    FromQueryResult, QueryFilter, QueryOrder, QuerySelect, Set, SqlErr, Statement,
-    Value,
+    FromQueryResult, QueryFilter, QueryOrder, QuerySelect, Set, SqlErr, Statement, Value,
 };
 use std::net::IpAddr;
 use time::OffsetDateTime;
