@@ -23,7 +23,7 @@ mod icons;
 mod service;
 mod structs;
 
-pub use self::bootstrap::BootstrapNewSite;
+pub use self::bootstrap::{BootstrapNewSite, STANDARD_TEMPLATE_PAGES};
 pub use self::service::SiteService;
 pub use self::structs::{
     CreateSite, CreateSiteOutput, EducationalUpgrade, GetSite, GetSiteIcon,

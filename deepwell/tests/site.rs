@@ -724,6 +724,111 @@ async fn newsite_bootstrap_roles_roll_back_with_creation() {
     );
 }
 
+/// Refs #2052 slice 3. Browser creation seeds the Standard template's
+/// initial pages with the creator as author and lands on the start page.
+///
+/// IGNORED: slice lane has no cargo; the build lane runs this.
+#[tokio::test]
+#[ignore]
+async fn newsite_bootstrap_creates_template_pages_and_default_start() {
+    use deepwell::services::relation::{
+        GetPageAttributions, PageAttributionKind, RelationService,
+    };
+
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let actor_user_id = create_user(&runner, n, "bootstrap-pages").await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(actor_user_id),
+        ..Default::default()
+    });
+
+    let created = run_endpoint!(
+        runner,
+        site_create,
+        json!({
+            "slug": format!("bootstrap-pages-{n}"),
+            "name": format!("Bootstrap pages {n}"),
+            "tagline": "",
+            "description": "Bootstrap template pages fixture",
+            "default_page": null,
+            "layout": null,
+            "license": "cc-by-sa-4.0",
+            "locale": "en",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    for slug in [
+        "start",
+        "nav:side",
+        "nav:top",
+        "search:site",
+        "admin:manage",
+        "_admin",
+        "system:join",
+        "system:members",
+        "system:recent-changes",
+        "system:page-tags",
+        "system:list-all-pages",
+    ] {
+        let page = PageService::get(runner.context(), created.site_id, Reference::from(slug))
+            .await
+            .expect("bootstrap template page should exist");
+        assert_eq!(page.slug, slug);
+    }
+
+    let attributions = RelationService::get_page_attributions(
+        runner.context(),
+        GetPageAttributions {
+            site_id: created.site_id,
+            page: Reference::from("start"),
+        },
+    )
+    .await
+    .expect("start page attributions should list");
+    assert!(
+        attributions.iter().any(|attribution| {
+            attribution.user_id == actor_user_id
+                && attribution.metadata.attribution_type == PageAttributionKind::Author
+        }),
+        "creator must author the initial pages",
+    );
+
+    let fetched = run_endpoint!(
+        runner,
+        site_get,
+        json!({ "site": created.site_id }),
+    );
+    assert_eq!(fetched.site.default_page, "start");
+}
+
+/// Refs #2052 slice 3. The bootstrap page list must track `template-en`.
+///
+/// IGNORED: slice lane has no cargo; the build lane runs this.
+#[tokio::test]
+#[ignore]
+async fn newsite_template_pages_match_seeder_template_set() {
+    let seed: serde_json::Value =
+        serde_json::from_str(include_str!("../seeder/pages.json"))
+            .expect("seed pages should parse");
+    let entries = seed["template-en"]
+        .as_array()
+        .expect("template-en pages should list");
+    let bootstrap = deepwell::services::site::STANDARD_TEMPLATE_PAGES;
+
+    assert_eq!(
+        bootstrap.len(),
+        entries.len(),
+        "bootstrap must cover the whole template-en set",
+    );
+    for (entry, (slug, title, wikitext)) in entries.iter().zip(bootstrap.iter()) {
+        assert_eq!(entry["slug"].as_str(), Some(*slug));
+        assert_eq!(entry["title"].as_str(), Some(*title));
+        assert!(!wikitext.is_empty(), "template page {slug} must carry content");
+    }
+}
+
 #[tokio::test]
 async fn site_update_without_request_actor_does_not_reveal_site_existence() {
     let runner = TestRunner::setup().await;
