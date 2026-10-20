@@ -27,10 +27,10 @@
 //! It is for limited use during initial setup only.
 
 use super::structs::{
-    ImportFile, ImportFileDelete, ImportFileDeleteOutput, ImportFileOutput, ImportMetaTag,
-    ImportPage, ImportPageFilesVerify, ImportPageFilesVerifyOutput, ImportPageOutput,
-    ImportPageRevision, ImportPageRevisionOutput, ImportSite, ImportSiteOutput,
-    ImportUser, ImportUserOutput, ImportedUserType,
+    ImportFile, ImportFileDelete, ImportFileDeleteOutput, ImportFileOutput,
+    ImportMetaTag, ImportPage, ImportPageFilesVerify, ImportPageFilesVerifyOutput,
+    ImportPageOutput, ImportPageRevision, ImportPageRevisionOutput, ImportSite,
+    ImportSiteOutput, ImportUser, ImportUserOutput, ImportedUserType,
 };
 use crate::constants::SYSTEM_USER_ID;
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
@@ -466,7 +466,7 @@ impl ImportService {
         page_id: i64,
         all_pages: bool,
         meta_tags: &[ImportMetaTag],
-        make_error: impl Fn() -> Error,
+        make_error: &impl Fn() -> Error,
     ) -> Result<()> {
         for tag in meta_tags {
             PageMetaTagService::set(
@@ -529,7 +529,7 @@ impl ImportService {
         Site::insert(site).exec(txn).await.or_raise(make_error)?;
 
         // Record site-wide metadata tags (page_id is ignored for site scope)
-        Self::record_meta_tags(ctx, site_id, 0, true, &meta_tags, make_error).await?;
+        Self::record_meta_tags(ctx, site_id, 0, true, &meta_tags, &make_error).await?;
 
         // Add to audit log
         AuditService::log(
@@ -614,7 +614,7 @@ impl ImportService {
         }
 
         // Record page-scoped metadata tags
-        Self::record_meta_tags(ctx, site_id, page_id, false, &meta_tags, make_error)
+        Self::record_meta_tags(ctx, site_id, page_id, false, &meta_tags, &make_error)
             .await?;
 
         // Add to audit log
