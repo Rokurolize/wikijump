@@ -3912,7 +3912,8 @@ fn substituted_payload_values_cannot_form_modules_for_the_page_parser() {
             wikidot_profile: false,
         },
     );
-    let context = list_pages_substitution_context(20, &users, None, &BTreeMap::new());
+    let data_form_values = BTreeMap::new();
+    let context = list_pages_substitution_context(20, &users, None, &data_form_values);
     let mut compat_html = CompatHtmlFragments::new(template);
     let mut compat_text = CompatTextFragments::new(template);
     let substituted = substitute_list_pages_variables_with_fragments(
