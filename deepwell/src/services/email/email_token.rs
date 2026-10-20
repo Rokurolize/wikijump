@@ -244,12 +244,7 @@ impl EmailTokenService {
         email: String,
         ip_address: IpAddr,
     ) -> Result<IssuedEmailToken> {
-        let make_error = || {
-            Error::new(
-                "failed to issue reset grant",
-                ErrorType::Email,
-            )
-        };
+        let make_error = || Error::new("failed to issue reset grant", ErrorType::Email);
         Self::delete_expired(ctx, user_id, EmailTokenPurpose::ResetGrant).await?;
         Self::delete_consumed(ctx, user_id, EmailTokenPurpose::ResetGrant).await?;
 
@@ -264,8 +259,14 @@ impl EmailTokenService {
             .await
             .or_raise(make_error)?;
 
-        Self::insert_token(ctx, user_id, email, EmailTokenPurpose::ResetGrant, ip_address)
-            .await
+        Self::insert_token(
+            ctx,
+            user_id,
+            email,
+            EmailTokenPurpose::ResetGrant,
+            ip_address,
+        )
+        .await
     }
 
     /// Redeem a token with a single conditional write instead of
@@ -285,10 +286,7 @@ impl EmailTokenService {
         let now = now();
 
         let affected = EmailToken::update_many()
-            .col_expr(
-                email_token::Column::ConsumedAt,
-                Expr::value(Some(now)),
-            )
+            .col_expr(email_token::Column::ConsumedAt, Expr::value(Some(now)))
             .filter(email_token::Column::TokenHash.eq(Self::hash(token).as_str()))
             .filter(email_token::Column::Purpose.eq(purpose.as_str()))
             .filter(email_token::Column::ConsumedAt.is_null())

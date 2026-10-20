@@ -15,10 +15,11 @@ mod common;
 
 use self::common::TestRunner;
 use deepwell::api::ServerState;
-use deepwell::error::prelude::Result as ExnResult;
 use deepwell::error::ErrorType;
+use deepwell::error::prelude::Result as ExnResult;
 use deepwell::models::email_token::{self, Entity as EmailTokenTable};
 use deepwell::models::user::Entity as UserTable;
+use deepwell::services::ServiceContext;
 use deepwell::services::authentication::{AuthenticateUser, AuthenticationService};
 use deepwell::services::email::{
     EmailTokenPurpose, EmailTokenService, IssueEmailToken, IssueEmailTokenOutcome,
@@ -27,7 +28,6 @@ use deepwell::services::email::{
 use deepwell::services::import::{ImportService, ImportUser, ImportedUserType};
 use deepwell::services::session::{CreateSession, SessionService};
 use deepwell::services::user::{CreateUser, UserService};
-use deepwell::services::ServiceContext;
 use deepwell::types::{Reference, UserType};
 use deepwell::utils::now;
 use ftml::data::KarmaLevel;
@@ -36,8 +36,8 @@ use sea_orm::{
     QueryFilter, TransactionTrait,
 };
 use serde_json::json;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 use tokio::sync::Barrier;
 use tokio::time::timeout;
@@ -593,12 +593,10 @@ async fn concurrent_double_redeem_leaves_exactly_one_winner() {
         .expect("email token race fixture transaction should begin");
     let (user_id, token) = {
         let ctx = ServiceContext::new(&state, &setup_txn);
-        let created = UserService::create(
-            &ctx,
-            token_user(n, UserType::Regular, email.clone()),
-        )
-        .await
-        .expect("race fixture user should be created");
+        let created =
+            UserService::create(&ctx, token_user(n, UserType::Regular, email.clone()))
+                .await
+                .expect("race fixture user should be created");
         match EmailTokenService::issue(
             &ctx,
             IssueEmailToken {
@@ -650,7 +648,8 @@ async fn concurrent_double_redeem_leaves_exactly_one_winner() {
     };
     assert_contains_error!(concurrent_error, ErrorType::InvalidEmailToken);
 
-    let reuse = redeem_in_fresh_transaction(Arc::clone(&state), token.clone(), None).await;
+    let reuse =
+        redeem_in_fresh_transaction(Arc::clone(&state), token.clone(), None).await;
     let reuse_error =
         reuse.expect_err("a consumed email token must fail sequential reuse");
     assert_contains_error!(reuse_error, ErrorType::InvalidEmailToken);

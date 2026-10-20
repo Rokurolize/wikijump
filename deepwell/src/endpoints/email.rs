@@ -196,16 +196,14 @@ pub async fn password_reset_redeem(
                 )
             })?;
 
-    let issued = EmailTokenService::issue_grant(
-        ctx,
-        redeemed.user_id,
-        redeemed.email,
-        ip_address,
-    )
-    .await
-    .or_raise(|| Error::new("failed to issue reset grant", ErrorType::Email))?;
+    let issued =
+        EmailTokenService::issue_grant(ctx, redeemed.user_id, redeemed.email, ip_address)
+            .await
+            .or_raise(|| Error::new("failed to issue reset grant", ErrorType::Email))?;
 
-    Ok(ResetGrantOutput { grant: issued.token })
+    Ok(ResetGrantOutput {
+        grant: issued.token,
+    })
 }
 
 #[derive(Deserialize)]
