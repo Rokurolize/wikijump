@@ -126,7 +126,7 @@ async fn verify_round_trip_marks_verified_and_consumes() {
         common::make_params(json!({
             "token": token,
             "ip_address": common::IP_ADDRESS,
-        })),
+        }))
     );
 
     let user = UserService::get_real(runner.context(), Reference::Id(created.user_id))
@@ -140,7 +140,7 @@ async fn verify_round_trip_marks_verified_and_consumes() {
         common::make_params(json!({
             "token": token,
             "ip_address": common::IP_ADDRESS,
-        })),
+        }))
     );
     assert_contains_error!(error, ErrorType::InvalidEmailToken);
     runner.teardown().await;
@@ -230,14 +230,14 @@ async fn issue_is_quiet_for_unknown_imported_and_deleted_addresses() {
             common::make_params(json!({
                 "email": address,
                 "ip_address": common::IP_ADDRESS,
-            })),
+            }))
         );
         run_endpoint!(
             runner => email_verify_issue,
             common::make_params(json!({
                 "email": address,
                 "ip_address": common::IP_ADDRESS,
-            })),
+            }))
         );
     }
 
@@ -258,7 +258,7 @@ async fn issue_is_quiet_for_unknown_imported_and_deleted_addresses() {
         common::make_params(json!({
             "email": regular_email,
             "ip_address": common::IP_ADDRESS,
-        })),
+        }))
     );
     assert_eq!(live_token_count(&runner, regular.user_id).await, 1);
     runner.teardown().await;
@@ -309,7 +309,7 @@ async fn reset_round_trip_sets_password_and_revokes_sessions() {
         common::make_params(json!({
             "token": token,
             "ip_address": common::IP_ADDRESS,
-        })),
+        }))
     );
     let grant: String = grant_output.grant;
 
@@ -319,7 +319,7 @@ async fn reset_round_trip_sets_password_and_revokes_sessions() {
         common::make_params(json!({
             "token": token,
             "ip_address": common::IP_ADDRESS,
-        })),
+        }))
     );
     assert_contains_error!(error, ErrorType::InvalidEmailToken);
 
@@ -329,7 +329,7 @@ async fn reset_round_trip_sets_password_and_revokes_sessions() {
             "grant": grant,
             "new_password": "email-token-new-password",
             "ip_address": common::IP_ADDRESS,
-        })),
+        }))
     );
     assert!(
         complete.sessions_revoked >= 1,
@@ -343,7 +343,7 @@ async fn reset_round_trip_sets_password_and_revokes_sessions() {
             "grant": grant,
             "new_password": "email-token-new-password",
             "ip_address": common::IP_ADDRESS,
-        })),
+        }))
     );
     assert_contains_error!(error, ErrorType::InvalidEmailToken);
 
@@ -388,7 +388,7 @@ async fn cross_purpose_expired_and_mismatched_tokens_are_rejected() {
         common::make_params(json!({
             "token": verify_token,
             "ip_address": common::IP_ADDRESS,
-        })),
+        }))
     );
     assert_contains_error!(error, ErrorType::InvalidEmailToken);
 
@@ -404,7 +404,7 @@ async fn cross_purpose_expired_and_mismatched_tokens_are_rejected() {
         common::make_params(json!({
             "token": reset_token,
             "ip_address": common::IP_ADDRESS,
-        })),
+        }))
     );
     assert_contains_error!(error, ErrorType::InvalidEmailToken);
 
@@ -427,7 +427,7 @@ async fn cross_purpose_expired_and_mismatched_tokens_are_rejected() {
         common::make_params(json!({
             "token": reset_token,
             "ip_address": common::IP_ADDRESS,
-        })),
+        }))
     );
     assert_contains_error!(error, ErrorType::InvalidEmailToken);
 
@@ -438,7 +438,7 @@ async fn cross_purpose_expired_and_mismatched_tokens_are_rejected() {
         common::make_params(json!({
             "token": verify_token,
             "ip_address": common::IP_ADDRESS,
-        })),
+        }))
     );
     runner.teardown().await;
 }
@@ -495,7 +495,7 @@ async fn resend_cooldown_suppresses_without_signaling() {
         common::make_params(json!({
             "email": email,
             "ip_address": common::IP_ADDRESS,
-        })),
+        }))
     );
     assert_eq!(live_token_count(&runner, created.user_id).await, 1);
     runner.teardown().await;
@@ -509,7 +509,7 @@ async fn malformed_issue_addresses_fail_loudly() {
         common::make_params(json!({
             "email": "not an address",
             "ip_address": common::IP_ADDRESS,
-        })),
+        }))
     );
     assert_contains_error!(error, ErrorType::InvalidEmail);
     runner.teardown().await;
