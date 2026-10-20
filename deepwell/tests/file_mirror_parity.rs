@@ -12,12 +12,11 @@ mod common;
 
 use self::common::TestRunner;
 use cuid2::cuid;
-use deepwell::constants::ADMIN_USER_ID;
-use deepwell::error::ErrorType;
+use deepwell::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
+use deepwell::error::{Error, ErrorType};
 use deepwell::hash::{blob_hash_to_hex, sha512_hash};
 use deepwell::license::License;
 use deepwell::models::blob_pending;
-use deepwell::services::RequestContext;
 use deepwell::services::blob::EMPTY_BLOB_HASH;
 use deepwell::services::file::{CreateFile, FileService};
 use deepwell::services::file_revision::FileRevisionService;
@@ -25,7 +24,13 @@ use deepwell::services::import::{
     ImportFile, ImportFileDelete, ImportFileExpectation, ImportPage,
     ImportPageFilesVerify, ImportService, ImportSite, ImportUser, ImportedUserType,
 };
-use deepwell::types::Reference;
+use deepwell::services::permission::PermissionService;
+use deepwell::services::role::{
+    GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
+};
+use deepwell::services::{PageService, RequestContext};
+use deepwell::types::{Action, Permission, Reference, Resource};
+use exn::Exn;
 use ftml::data::KarmaLevel;
 use sea_orm::{ActiveModelTrait, ActiveValue::Set};
 use serde_json::json;
@@ -93,8 +98,7 @@ async fn import_mirror_page(
 
 async fn import_uploader(runner: &TestRunner, label: &str) -> i64 {
     let tag = Uuid::new_v4();
-    let user_id =
-        15_000_000 + i32::try_from(u128::from(tag.as_u128()) % 1_000_000).unwrap();
+    let user_id = 15_000_000 + i32::try_from(tag.as_u128() % 1_000_000).unwrap();
     ImportService::add_user(
         runner.context(),
         ImportUser {
@@ -203,6 +207,79 @@ async fn insert_local_file(
         .file_id
 }
 
+/// Grants the platform admin page-edit rights on a mirror fixture page.
+///
+/// Fresh import sites carry no seed roles, so even the admin fails the
+/// permission gate that runs before the mirror guard. Granting edit through
+/// the sanctioned role path isolates the assertions below: every refusal
+/// they observe comes from the mirror rule, not from missing rights.
+async fn grant_admin_page_edit(runner: &TestRunner, site_id: i64, page_id: i64) {
+    let page = PageService::get(runner.context(), site_id, Reference::Id(page_id))
+        .await
+        .expect("mirror fixture page should resolve");
+    let role = RoleService::create(
+        runner.context(),
+        InternalCreateRoleInput {
+            site_id,
+            name: format!("mirror-parity-editor-{page_id}"),
+            description: None,
+            is_virtual: false,
+            parent_role_id: None,
+            creating_user_id: SYSTEM_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("mirror editor role should be created");
+    PermissionService::update_permissions_for_role(
+        runner.context(),
+        UpdateRolePermissionsInput {
+            site_id,
+            role_reference: Reference::Id(role.role_id),
+            new_permissions: vec![Permission {
+                resource_type: Resource::Page,
+                resource_category: Some(Reference::Id(page.page_category_id)),
+                action: Action::Edit,
+            }],
+            cascade_removals: false,
+            updating_user_id: SYSTEM_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("mirror editor role should grant page edit");
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            role_id: role.role_id,
+            assigning_user_id: SYSTEM_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("admin should receive the mirror editor role");
+}
+
+/// Asserts a refusal came from the mirror guard specifically: the
+/// permission category plus the guard's own message naming the action.
+/// This distinguishes the mirror rule from the permission gate that runs
+/// before it.
+fn assert_mirror_refusal(error: &Exn<Error>, action: &str) {
+    assert_contains_error!(error, ErrorType::Permission);
+    let debug = format!("{error:?}");
+    assert!(
+        debug.contains("fully imported mirror pages are read-only"),
+        "refusal must come from the mirror guard, not the permission gate: {debug}",
+    );
+    assert!(
+        debug.contains(action),
+        "mirror refusal must name the refused action {action:?}: {debug}",
+    );
+}
+
 fn set_admin_context(runner: &mut TestRunner, site_id: i64, page_id: i64) {
     runner.set_request_context(RequestContext {
         session: None,
@@ -293,6 +370,7 @@ async fn mirror_file_mutations_are_refused() {
             .await
             .expect("latest revision lookup should succeed");
 
+    grant_admin_page_edit(&runner, site_id, page_id).await;
     set_admin_context(&mut runner, site_id, page_id);
     let base = json!({
         "site_id": site_id,
@@ -314,7 +392,7 @@ async fn mirror_file_mutations_are_refused() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    assert_contains_error!(error, ErrorType::Permission);
+    assert_mirror_refusal(&error, "create a file");
 
     let mut edit = base.clone();
     edit["file_id"] = json!(source_id);
@@ -322,7 +400,7 @@ async fn mirror_file_mutations_are_refused() {
     edit["revision_comments"] = json!("rename attempt");
     edit["name"] = json!("renamed.jpg");
     let error = run_endpoint_err!(runner, file_edit, edit);
-    assert_contains_error!(error, ErrorType::Permission);
+    assert_mirror_refusal(&error, "edit a file");
 
     let error = run_endpoint_err!(
         runner,
@@ -338,7 +416,7 @@ async fn mirror_file_mutations_are_refused() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    assert_contains_error!(error, ErrorType::Permission);
+    assert_mirror_refusal(&error, "move a file");
 
     let error = run_endpoint_err!(
         runner,
@@ -352,7 +430,7 @@ async fn mirror_file_mutations_are_refused() {
             "revision_comments": "delete attempt",
         }),
     );
-    assert_contains_error!(error, ErrorType::Permission);
+    assert_mirror_refusal(&error, "delete a file");
 
     let error = run_endpoint_err!(
         runner,
@@ -368,7 +446,7 @@ async fn mirror_file_mutations_are_refused() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    assert_contains_error!(error, ErrorType::Permission);
+    assert_mirror_refusal(&error, "roll back a file");
 
     // Nothing changed: the source row keeps its single revision. This
     // assertion runs before the intentional tombstone below, which does
@@ -407,7 +485,7 @@ async fn mirror_file_mutations_are_refused() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    assert_contains_error!(error, ErrorType::Permission);
+    assert_mirror_refusal(&error, "restore a file");
 
     // After the tombstone, the refused restore left no trace: the latest
     // revision is still the import tombstone, not a new endpoint revision.
@@ -505,6 +583,48 @@ async fn pending_empty_blob(
     pending_blob_id
 }
 
+/// Stages a pending blob with caller-supplied bytes in the mock bucket.
+///
+/// A replacement whose bytes are identical to the current blob is correctly
+/// a no-op (the revision service creates nothing when nothing changed), so
+/// a replacement fixture must carry distinct content. The row is left
+/// unmoved (`s3_hash: None`) so finalization hashes the staged bytes, the
+/// same way the normal upload flow does.
+async fn pending_data_blob(
+    runner: &TestRunner,
+    site_id: i64,
+    page_id: i64,
+    label: &str,
+    data: &[u8],
+) -> String {
+    let pending_blob_id = cuid();
+    let s3_path = format!("uploads/parity-{label}-{pending_blob_id}");
+    runner
+        .state()
+        .s3_files_bucket
+        .put_object(&s3_path, data)
+        .await
+        .expect("data blob fixture bytes should upload");
+    blob_pending::ActiveModel {
+        external_id: Set(pending_blob_id.clone()),
+        created_by: Set(ADMIN_USER_ID),
+        created_at: Set(OffsetDateTime::now_utc()),
+        expires_at: Set(OffsetDateTime::now_utc() + time::Duration::minutes(5)),
+        expected_length: Set(i64::try_from(data.len()).expect("fixture data should fit")),
+        s3_path: Set(s3_path),
+        s3_hash: Set(None),
+        presign_url: Set("https://uploads.example.test/parity".to_owned()),
+        site_id: Set(Some(site_id)),
+        page_id: Set(Some(page_id)),
+        content_type_label: Set(None),
+        content_type_description: Set(None),
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("data blob fixture should insert");
+    pending_blob_id
+}
+
 #[tokio::test]
 async fn native_file_mutations_still_succeed() {
     // The mirror guard must not overfire: every mutating endpoint keeps
@@ -562,7 +682,14 @@ async fn native_file_mutations_still_succeed() {
         "native file edit must succeed through the guarded endpoint",
     );
 
-    let second_blob = pending_empty_blob(&runner, site.site_id, page.page_id, "b").await;
+    let second_blob = pending_data_blob(
+        &runner,
+        site.site_id,
+        page.page_id,
+        "b",
+        b"parity native replacement bytes",
+    )
+    .await;
     let replaced = run_endpoint!(
         runner,
         file_edit,
