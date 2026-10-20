@@ -329,7 +329,7 @@ export const localizeSiteFileUrl = (rawUrl, site, filesAuthority, isLocalFile) =
   }
   const reference = parseSiteFileReference(rawUrl, site)
   if (!reference) return null
-  let present = false
+  let present
   try {
     present =
       typeof isLocalFile === "function" &&
