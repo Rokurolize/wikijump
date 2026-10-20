@@ -7,6 +7,7 @@ import {
   selectSiteIconResponse,
   storedSiteIconResponse
 } from "../src/lib/site-icon-response.ts"
+import { SITE_ICON_CACHE_CONTROL } from "../src/lib/site-icons.ts"
 
 const importedSite = { slug: "scp-wiki", from_wikidot: true }
 
@@ -126,4 +127,50 @@ test("an unconfigured site answers 404", () => {
     selectSiteIconResponse(null, null, null, "favicon", "favicon.gif").status,
     404
   )
+})
+
+test("a site-owned WDFiles file without bytes redirects to the local files path", () => {
+  const cases = [
+    ["favicon", "https://scp-wiki.wdfiles.com/local--files/site/favicon.gif", "favicon.gif"],
+    ["ios", "https://scp-wiki.wdfiles.com/local--files/site/iosicon.png", "iosicon_57.png"],
+    ["ios", "https://scp-wiki.wdfiles.com/local--files/site/iosicon.png", "iosicon_72.png"],
+    ["ios", "https://scp-wiki.wdfiles.com/local--files/site/iosicon.png", "iosicon.png"],
+    ["windows", "https://scp-wiki.wdfiles.com/local--files/site/wp8icon.png", "wp8icon.png"]
+  ]
+  for (const [kind, source, filename] of cases) {
+    const response = selectSiteIconResponse(importedSite, source, null, kind, filename)
+    assert.equal(response.status, 302, `${kind} ${filename}`)
+    assert.equal(
+      response.headers.get("location"),
+      source.slice("https://scp-wiki.wdfiles.com".length)
+    )
+    assert.equal(response.headers.get("cache-control"), SITE_ICON_CACHE_CONTROL)
+  }
+})
+
+test("stored bytes still win over a site-owned file source", async () => {
+  const data = new Uint8Array(await retainedFavicon())
+  const response = selectSiteIconResponse(
+    importedSite,
+    "https://scp-wiki.wdfiles.com/local--files/site/favicon.gif",
+    { mime: "image/gif", sha256Hex: FAVICON_SHA256, data },
+    "favicon",
+    "favicon.gif"
+  )
+  assert.equal(response.status, 200)
+})
+
+test("a non-owned file source with nothing materialized stays 404", () => {
+  const cases = [
+    "https://evil.example/local--files/site/favicon.gif",
+    "https://other-site.wdfiles.com/local--files/site/favicon.gif",
+    "https://www.wdfiles.com/local--files/site/favicon.gif"
+  ]
+  for (const source of cases) {
+    assert.equal(
+      selectSiteIconResponse(importedSite, source, null, "favicon", "favicon.gif").status,
+      404,
+      source
+    )
+  }
 })

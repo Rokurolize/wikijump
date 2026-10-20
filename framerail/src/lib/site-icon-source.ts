@@ -111,3 +111,52 @@ export function siteIconRedirectLocation(
 
   return null
 }
+
+/**
+ * The local files path for a site-owned WDFiles attachment, or null.
+ *
+ * This is the same ownership reading the head derivation uses
+ * (`siteIconRedirectLocation`): an imported site's own `<slug>.wdfiles.com`
+ * `/local--files/` file is part of the mirror's dependency set (the shape
+ * rule from the #2094 plan), so the compatibility route resolves it to the
+ * local files path instead of answering 404. The local files route serves
+ * bytes from local storage when the blob exists and keeps its own redirect
+ * to the source otherwise, so this mapping never hotlinks and never probes
+ * per URL. `www` hosts never match: only the site's own file host counts.
+ */
+export function siteOwnedLocalFilePath(
+  site: SiteIconSourceSite,
+  source: string | null
+): string | null {
+  if (!source || source.length > MAX_ICON_SOURCE_LENGTH || sourceHasUnsafeText(source)) {
+    return null
+  }
+  if (!site.from_wikidot || !SITE_SLUG.test(site.slug)) return null
+
+  let url: URL
+  try {
+    url = new URL(source)
+  } catch {
+    return null
+  }
+
+  if (
+    url.protocol !== "https:" ||
+    url.username !== "" ||
+    url.password !== "" ||
+    url.port !== "" ||
+    url.search !== "" ||
+    url.hash !== ""
+  ) {
+    return null
+  }
+
+  if (
+    url.hostname === `${site.slug.toLowerCase()}.wdfiles.com` &&
+    pathHasContent(url.pathname, "/local--files/")
+  ) {
+    return url.pathname
+  }
+
+  return null
+}
