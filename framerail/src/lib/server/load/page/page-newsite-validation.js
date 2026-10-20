@@ -33,6 +33,25 @@ export const NEW_SITE_DEFAULT_PRIVACY = "open"
 // management panel", content-licensing spec).
 export const NEW_SITE_DEFAULT_LICENSE = "cc0"
 
+/**
+ * Build the post-creation landing target from a resolved site origin. Only
+ * absolute HTTPS origins (exactly what the deployment's canonical domain
+ * source yields) are accepted, so a compromised or unexpected origin value
+ * can never turn the success redirect into an open redirect.
+ *
+ * @param {unknown} origin The site's canonical HTTPS origin, no path
+ * @returns {string} The new site's default page address
+ * @throws {NewSiteSubmissionError} When the origin is not a plain origin
+ */
+export const newSiteRedirectTarget = (origin) => {
+  if (typeof origin !== "string" || !/^https:\/\/[^/?#]+$/u.test(origin)) {
+    throw new NewSiteSubmissionError(
+      "Site creation completed but the new address is invalid."
+    )
+  }
+  return `${origin}/`
+}
+
 export class NewSiteSubmissionError extends Error {
   constructor(message) {
     super(message)

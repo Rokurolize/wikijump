@@ -1,5 +1,6 @@
 import { client } from "$lib/server/deepwell"
 import { NEW_SITE_DEFAULT_LICENSE } from "$lib/server/load/page/page-newsite-validation.js"
+import { canonicalSitemapOrigin } from "$lib/server/sitemap"
 
 import type { RequestContext } from "$lib/server/request-context"
 
@@ -21,6 +22,19 @@ export interface NewSiteCreateOutcome {
  * new-site submission. The creator comes from the authenticated session in
  * the request context; this payload carries no actor identity.
  */
+/**
+ * Resolve a site's canonical HTTPS origin through the deployment's own
+ * domain source of truth (the same `site_domain` RPC the sitemap uses), so
+ * cross-site links never duplicate host-assembly rules.
+ */
+export async function siteOrigin(
+  siteId: number,
+  context: RequestContext = {}
+): Promise<string> {
+  const authority: string = await client.request("site_domain", [siteId], context)
+  return canonicalSitemapOrigin(authority)
+}
+
 export async function siteCreate(
   input: NewSiteCreateInput,
   ipAddress: string,

@@ -13,6 +13,7 @@ import {
   NEW_SITE_DEFAULT_TEMPLATE,
   NEW_SITE_PAGE_SLUG,
   NEW_SITE_PLATFORM_SLUG,
+  newSiteRedirectTarget,
   parseNewSiteSubmission
 } from "../src/lib/server/load/page/page-newsite-validation.js"
 
@@ -105,6 +106,75 @@ test("the newSite action is session-gated and special-page scoped", async () => 
     "guarded to the www/new-site special page, not every wiki page"
   )
   assert.match(source, /formData\(\)/u, "reads the urlencoded compat form")
+})
+
+test("a created site redirects to its canonical origin", async () => {
+  const source = await readFile(
+    new URL("../src/lib/server/load/page/page-newsite-actions.ts", import.meta.url),
+    "utf8"
+  )
+  // The redirect escapes the action-error catcher so SvelteKit performs
+  // the POST-to-GET navigation instead of swallowing it as a failure.
+  assert.match(
+    source,
+    /throw redirect\(303, target\)/u,
+    "success navigates with POST redirect semantics"
+  )
+  assert.match(
+    source,
+    /newSiteRedirectTarget\(await siteOrigin\(/u,
+    "landing target comes from the canonical domain source"
+  )
+  assert.match(
+    source,
+    /catch \{\s*return result\s*\}/u,
+    "origin failure falls back to the success payload, not a broken create"
+  )
+})
+
+test("origin resolution reuses the sitemap domain source", async () => {
+  const source = await readFile(
+    new URL("../src/lib/server/deepwell/site.ts", import.meta.url),
+    "utf8"
+  )
+  assert.match(source, /"site_domain"/u, "no new RPC registration")
+  assert.match(
+    source,
+    /canonicalSitemapOrigin\(authority\)/u,
+    "no duplicated host-assembly rules"
+  )
+})
+
+test("the success target is the canonical origin's default page", () => {
+  assert.equal(
+    newSiteRedirectTarget("https://my-wiki.wikijump.localhost:18443"),
+    "https://my-wiki.wikijump.localhost:18443/"
+  )
+  assert.equal(
+    newSiteRedirectTarget("https://my-wiki.wikijump.com"),
+    "https://my-wiki.wikijump.com/"
+  )
+})
+
+test("the success target rejects non-origin values", () => {
+  for (const origin of [
+    // Built by concatenation: the literal would trip no-script-url.
+    ["java", "script:alert(1)"].join(""),
+    "/my-wiki",
+    "my-wiki.wikijump.localhost",
+    "https://my-wiki.wikijump.com/start",
+    "https://my-wiki.wikijump.com?x=1",
+    "",
+    undefined,
+    null,
+    42
+  ]) {
+    assert.throws(
+      () => newSiteRedirectTarget(origin),
+      /new address is invalid/u,
+      `rejected: ${JSON.stringify(origin)}`
+    )
+  }
 })
 
 test("the site adapter reuses site_create and adds no actor fields", async () => {
