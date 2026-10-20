@@ -756,7 +756,8 @@ fn keeps_alignment_markers_with_trailing_whitespace_literal() {
         let body = render_wikidot_alignment_body(source);
 
         assert_eq!(
-            body, "<p>[[=]]<br>\nA<br>\n[[/=]]</p><p>z</p>",
+            body,
+            "<p>[[=]]<br>\nA<br>\n[[/=]]</p><p>z</p>",
             "poisoned markers print as one literal paragraph: {source:?}",
         );
         assert!(
@@ -773,7 +774,8 @@ fn keeps_blank_line_separated_poisoned_markers_literal() {
     let body = render_wikidot_alignment_body("[[=]] \n\nA\n\n[[/=]]");
 
     assert_eq!(
-        body, "<p>[[=]]</p><p>A</p><p>[[/=]]</p>",
+        body,
+        "<p>[[=]]</p><p>A</p><p>[[/=]]</p>",
         "blank-line separated markers print as three paragraphs: {body}",
     );
     assert!(
