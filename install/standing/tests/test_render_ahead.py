@@ -565,3 +565,36 @@ class DigestTimingsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class VerifyWithCatchUpTest(unittest.TestCase):
+    def fake_render(self, stale_by_verify):
+        calls = []
+        verifies = iter(stale_by_verify)
+
+        def render(name, cutoff, pages=None, *, serial=False, extended=False, dry_run=False):
+            calls.append((name, dry_run))
+            if dry_run:
+                return {"stale_without_valid_ahead": next(verifies), "compiled_generator": "g"}
+            return {"stale_without_valid_ahead": 0, "compiled_generator": "g"}
+
+        return render, calls
+
+    def test_a_clean_verify_needs_no_catch_up(self) -> None:
+        render, calls = self.fake_render([0])
+        final = RENDER_AHEAD.verify_with_catch_up(render, "cutoff")
+        self.assertEqual(final["stale_without_valid_ahead"], 0)
+        self.assertEqual(calls, [("verify", True)])
+
+    def test_pages_written_during_the_run_are_rendered_and_verified_again(self) -> None:
+        render, calls = self.fake_render([2, 0])
+        final = RENDER_AHEAD.verify_with_catch_up(render, "cutoff")
+        self.assertEqual(final["stale_without_valid_ahead"], 0)
+        self.assertEqual(calls, [("verify", True), ("catch-up-1", False), ("verify-1", True)])
+
+    def test_catch_up_is_bounded_and_reports_what_stays_stale(self) -> None:
+        render, calls = self.fake_render([1, 1, 1, 1])
+        final = RENDER_AHEAD.verify_with_catch_up(render, "cutoff", rounds=3)
+        self.assertEqual(final["stale_without_valid_ahead"], 1)
+        self.assertEqual([name for name, _ in calls].count("verify"), 1)
+        self.assertEqual(len([c for c in calls if not c[1]]), 3)
