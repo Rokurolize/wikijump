@@ -72,11 +72,9 @@ async fn issue_token_quietly(
     let email = normalize_lookup_email(email);
     if !crate::services::email::is_well_formed_email(&email) {
         // Malformed input reveals no account state, so it may fail loudly.
-        return Err(Error::new(
-            "email address is malformed",
-            ErrorType::InvalidEmail,
-        )
-        .into());
+        return Err(
+            Error::new("email address is malformed", ErrorType::InvalidEmail).into(),
+        );
     }
 
     if let Some(user) = UserService::get_real_optional_by_email(ctx, &email)
