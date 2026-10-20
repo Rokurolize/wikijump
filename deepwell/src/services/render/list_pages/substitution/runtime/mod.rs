@@ -93,6 +93,31 @@ fn neutralize_list_pages_substituted_syntax(value: &str) -> String {
         .replace('"', "&#34;")
 }
 
+/// Render a substituted identity or tag value for the context its variable
+/// sits in (see #2667).
+///
+/// Outside `[[html]]` blocks the value is re-parsed as wikitext, so the
+/// #2652 neutralization applies and ordinary values pass through
+/// byte-identically. Inside html blocks the value is raw HTML in the
+/// files-origin iframe, so HTML-escaping applies instead: no observed
+/// real-world template puts these variables inside html blocks (53,066
+/// en+jp corpus sources scanned, zero hits), and escaping keeps visible
+/// output identical for ordinary values (of `&<>"'`, only `&` occurs in
+/// the wild — 599 tags such as `s&c-plastics` — where `&amp;` renders the
+/// same glyph). Order matters: escape first, then neutralize brackets;
+/// the reverse would double-encode the `&` in `&#91;` into visible entity
+/// text.
+fn render_list_pages_substituted_identity(
+    value: &str,
+    inside_html_block: bool,
+) -> String {
+    if inside_html_block {
+        neutralize_list_pages_substituted_syntax(&escape_html_text(value))
+    } else {
+        neutralize_list_pages_substituted_syntax(value)
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_inner(
     template: &str,
@@ -433,7 +458,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     .map_or("", |matched| matched.as_str())
                     .to_owned(),
                 "created_by" | "createdby" => {
-                    neutralize_list_pages_substituted_syntax(&created_by)
+                    render_list_pages_substituted_identity(&created_by, inside_html_block)
                 }
                 "created_by_linked" | "createdbylinked" | "author" => {
                     protect_list_pages_generated_html(
@@ -466,7 +491,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     )
                 }
                 "updated_by" | "updatedby" => {
-                    neutralize_list_pages_substituted_syntax(&updated_by)
+                    render_list_pages_substituted_identity(&updated_by, inside_html_block)
                 }
                 "updated_by_linked"
                 | "updatedbylinked"
@@ -494,7 +519,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                 }
                 "commented_by"
                 | "commentedby" => {
-                    neutralize_list_pages_substituted_syntax(&commented_by)
+                    render_list_pages_substituted_identity(&commented_by, inside_html_block)
                 }
                 "commented_by_linked" | "commentedbylinked" => {
                     protect_list_pages_generated_html(
@@ -525,7 +550,9 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                 "rating" => rating.clone(),
                 "rating_votes" | "ratingvotes" => rating_votes.clone(),
                 "comments" => comments.clone(),
-                "tags" => neutralize_list_pages_substituted_syntax(&tags_text),
+                "tags" => {
+                    render_list_pages_substituted_identity(&tags_text, inside_html_block)
+                }
                 "tags_linked" | "tagslinked"
                     if generated_slots.is_some()
                         && captures.name("format").is_none()
@@ -577,7 +604,10 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     compat_html,
                 ),
                 "_tags" => {
-                    neutralize_list_pages_substituted_syntax(&hidden_tags.join(" "))
+                    render_list_pages_substituted_identity(
+                        &hidden_tags.join(" "),
+                        inside_html_block,
+                    )
                 }
                 "category" => context.category.to_owned(),
                 "size" => context

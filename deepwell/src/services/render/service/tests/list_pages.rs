@@ -4159,6 +4159,155 @@ fn substituted_quote_breakout_values_cannot_escape_double_quoted_attributes() {
     assert!(html.contains("alert(1)"), "{html:?}");
 }
 
+/// Issue #2667: inside `[[html]]` blocks the substituted value is raw HTML
+/// in the files-origin iframe, so identity and tag values must be
+/// HTML-escaped there (with bracket neutralization kept), not passed
+/// through with raw angle brackets. Fails before the fix: the payload
+/// reaches the substituted text with executable `<script>` / `<img>`.
+#[test]
+fn substituted_identity_and_tag_values_escape_html_inside_html_blocks() {
+    let template = "[[html]]\nBy %%created_by%% (%%updated_by%%) comment %%commented_by%% tags %%tags%% hidden %%_tags%%\n[[/html]]";
+    let page = FoundPageRow {
+        page_id: 7,
+        site_id: 1,
+        title: Some("WJ HTML Host".to_owned()),
+        alt_title: None,
+        slug: Some("wj-html-host".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: Some(vec![
+            "<img src=x onerror=alert(1)>".to_owned(),
+            "wjpentest".to_owned(),
+            "_hidden".to_owned(),
+        ]),
+        created_at: None,
+        created_by: Some(7),
+        updated_at: None,
+        updated_by: Some(7),
+        score: None,
+        revision_count: None,
+    };
+    let mut users = BTreeMap::new();
+    users.insert(
+        7,
+        WikidotUserDisplay {
+            user_id: 7,
+            name: "<script>window.__listpages2667canary=\"fired\"</script>[[module ListPages]]"
+                .to_owned(),
+            slug: Some("wj-html-display".to_owned()),
+            wikidot_profile: false,
+        },
+    );
+    let stamp = time::OffsetDateTime::from_unix_timestamp(1_781_900_521)
+        .expect("fixture timestamp should be valid");
+    let mut snapshots = BTreeMap::new();
+    snapshots.insert(
+        7,
+        ListPagesSnapshotDisplay {
+            title_shown: None,
+            created_at: stamp,
+            updated_at: stamp,
+            created_by_user_id: None,
+            created_by_name: None,
+            created_by_slug: None,
+            updated_by_user_id: None,
+            updated_by_name: None,
+            updated_by_slug: None,
+            comments: 0,
+            commented_at: None,
+            commented_by_name: Some("<b onmouseover=alert(1)>commenter</b>".to_owned()),
+            rating_votes: None,
+            parent_fullname: None,
+            source_revision_count: 0,
+        },
+    );
+    let data_form_values = BTreeMap::new();
+    let context = list_pages_substitution_context_with_mode(
+        20,
+        &users,
+        &snapshots,
+        None,
+        &data_form_values,
+        false,
+    );
+    let substituted = substitute_list_pages_variables(template, &page, 1, 1, &context);
+
+    // The template survives; no raw HTML-significant character from the
+    // payloads may remain inside the html body.
+    assert!(substituted.contains("[[html]]"), "{substituted:?}");
+    assert!(substituted.contains("[[/html]]"), "{substituted:?}");
+    assert!(!substituted.contains("<script>"), "{substituted:?}");
+    assert!(!substituted.contains("<img"), "{substituted:?}");
+    assert!(!substituted.contains("<b onmouseover"), "{substituted:?}");
+    assert!(!substituted.contains("[[module"), "{substituted:?}");
+    // The payload text survives visibly, inert: HTML-escaped with bracket
+    // neutralization kept.
+    assert!(substituted.contains("&lt;script&gt;"), "{substituted:?}");
+    assert!(
+        substituted.contains("&lt;img src=x onerror=alert(1)&gt;"),
+        "{substituted:?}"
+    );
+    assert!(
+        substituted.contains("&lt;b onmouseover=alert(1)&gt;commenter&lt;/b&gt;"),
+        "{substituted:?}"
+    );
+    assert!(
+        substituted.contains("&#91;&#91;module ListPages&#93;&#93;"),
+        "{substituted:?}"
+    );
+    assert!(
+        substituted.contains("window.__listpages2667canary=&quot;fired&quot;"),
+        "{substituted:?}"
+    );
+    assert!(substituted.contains("wjpentest"), "{substituted:?}");
+}
+
+/// Ordinary identity and tag values inside `[[html]]` blocks: names pass
+/// through byte-identically (no HTML-significant characters in 103,915
+/// observed corpus names), and the only escaping is `&` → `&amp;` (599
+/// observed tags such as `s&c-plastics`), which renders the identical
+/// visible glyph. Fails before the fix, which left `&` raw.
+#[test]
+fn substituted_ordinary_values_keep_visible_output_inside_html_blocks() {
+    let template = "[[html]]\nBy %%created_by%% (%%updated_by%%) tags %%tags%% hidden %%_tags%%\n[[/html]]";
+    let page = FoundPageRow {
+        page_id: 1,
+        site_id: 1,
+        title: Some("Lt Masipag".to_owned()),
+        alt_title: None,
+        slug: Some("lt-masipag".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: Some(vec![
+            "tale-of".to_owned(),
+            "s&c-plastics".to_owned(),
+            "_hidden".to_owned(),
+        ]),
+        created_at: None,
+        created_by: Some(7),
+        updated_at: None,
+        updated_by: Some(7),
+        score: None,
+        revision_count: None,
+    };
+    let mut users = BTreeMap::new();
+    users.insert(
+        7,
+        WikidotUserDisplay {
+            user_id: 7,
+            name: "Lt Masipag".to_owned(),
+            slug: Some("lt-masipag".to_owned()),
+            wikidot_profile: false,
+        },
+    );
+    let data_form_values = BTreeMap::new();
+    let context = list_pages_substitution_context(20, &users, None, &data_form_values);
+    assert_eq!(
+        substitute_list_pages_variables(template, &page, 1, 1, &context),
+        "[[html]]\nBy Lt Masipag (Lt Masipag) tags tale-of s&amp;c-plastics hidden _hidden\n[[/html]]",
+    );
+}
+
 #[test]
 fn substituted_ordinary_identity_and_tag_values_pass_through_verbatim() {
     let page = FoundPageRow {
