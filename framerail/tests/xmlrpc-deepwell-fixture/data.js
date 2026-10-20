@@ -61,6 +61,37 @@ export const pages = {
     wikitext: "Main",
     compiled_body_html: "<p>Main</p>"
   },
+  "new-site": {
+    page_id: 30002052,
+    revision_id: 90002052,
+    page_created_at: "2026-10-19T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-10-19T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "New site",
+    slug: "new-site",
+    tags: [],
+    rating: 0,
+    wikitext: "[[module NewSite]]",
+    // Refs #2052. Field contract mirrors Deepwell's
+    // WWW_NEW_SITE_AUTHENTICATED_HTML (same fields, same ?/newSite post);
+    // this is a submission-contract fixture, not a DOM parity claim.
+    compiled_body_html: [
+      '<div id="new-site-box"><span>Get your new Wikidot site</span>',
+      '<form id="new-site-form" method="post" action="?/newSite">',
+      '<label>Title<input type="text" name="name" required></label>',
+      '<label>Tagline<input type="text" name="subtitle"></label>',
+      '<label>Web address<input type="text" name="unixname" required></label>',
+      '<label>Language<select name="language"><option value="en" selected>English</option></select></label>',
+      '<label><input type="radio" name="template" value="default" checked> Standard wiki</label>',
+      '<label><input type="radio" name="privacy" value="open" checked> Open</label>',
+      '<label><input type="checkbox" name="tos" value="1" required> I accept the Terms of Service</label>',
+      '<button type="submit">Create site</button>',
+      "</form></div>"
+    ].join("")
+  },
   "data-form-date-options-flow:example": {
     page_id: 3000400,
     revision_id: 9000400,
