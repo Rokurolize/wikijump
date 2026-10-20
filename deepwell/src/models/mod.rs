@@ -23,6 +23,7 @@ pub mod message_draft;
 pub mod message_recipient;
 pub mod message_record;
 pub mod message_report;
+pub mod mirror_scope;
 pub mod page;
 pub mod page_category;
 pub mod page_connection;
