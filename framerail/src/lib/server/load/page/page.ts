@@ -6,7 +6,7 @@ import {
 import { articleRouteWithQueryNoRender } from "$lib/server/page-norender-query"
 import { resolvePageRedirect } from "$lib/server/page-redirect"
 import { authGetSession } from "$lib/server/auth/get-session"
-import { pageCreatePermission, pageDeletedGet } from "$lib/server/deepwell/page"
+import { pageCreatePermission, pageDeletedGet, pageScore } from "$lib/server/deepwell/page"
 import { pageErrorStatus } from "$lib/server/load/page/page-error-status.js"
 import { translate } from "$lib/server/deepwell/translate"
 import { articleView } from "$lib/server/deepwell/views"
@@ -99,9 +99,28 @@ export async function loadPage(
       locales
     })
   )
+  // The actions row shows the live combined score (imported baseline plus
+  // local votes), matching the pagerate module and the vote pane. A failed
+  // lookup keeps the imported baseline instead of breaking the page.
+  let combinedRating: number | null = null
+  if (response.type === "found" && response.data.page_rating.enabled) {
+    try {
+      const score = await pageScore({
+        siteId,
+        page: response.data.page.page_id,
+        sessionToken
+      })
+      if (typeof score?.score === "number" && Number.isFinite(score.score)) {
+        combinedRating = score.score
+      }
+    } catch {
+      combinedRating = null
+    }
+  }
   const presentation = buildWikidotPagePresentation(response, {
     hasSession: !!parentData.user_session,
-    siteLocale
+    siteLocale,
+    combinedRating
   })
 
   if (response.type !== "found") {
