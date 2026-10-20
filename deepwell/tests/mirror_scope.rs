@@ -147,21 +147,15 @@ async fn mirror_scope_consumed_slugs_are_remembered_idempotently() {
             .expect("consumed lookup should succeed"),
     );
 
-    let inserted = MirrorScopeService::record_consumed_slug(
-        runner.context(),
-        site_id,
-        "Old-Name",
-    )
-    .await
-    .expect("consumed slug record should succeed");
+    let inserted =
+        MirrorScopeService::record_consumed_slug(runner.context(), site_id, "Old-Name")
+            .await
+            .expect("consumed slug record should succeed");
     assert!(inserted, "first record of a slug is new");
-    let repeated = MirrorScopeService::record_consumed_slug(
-        runner.context(),
-        site_id,
-        "old-name",
-    )
-    .await
-    .expect("repeated consumed slug record should succeed");
+    let repeated =
+        MirrorScopeService::record_consumed_slug(runner.context(), site_id, "old-name")
+            .await
+            .expect("repeated consumed slug record should succeed");
     assert!(!repeated, "second record of the same slug is not new");
     let stored = MirrorScopeService::get(runner.context(), site_id)
         .await

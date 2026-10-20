@@ -21,11 +21,11 @@
 use super::{MirrorScope, SetMirrorScope};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::mirror_scope::{self, Entity as MirrorScopeTable};
-use crate::services::site::SiteService;
 use crate::services::ServiceContext;
+use crate::services::site::SiteService;
 use crate::types::Reference;
 use crate::utils::{normalize_page_slug, now};
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+use sea_orm::{ActiveModelTrait, EntityTrait, Set};
 use std::collections::BTreeSet;
 
 pub const MIRROR_SCOPE_FULL: &str = "full";
@@ -120,7 +120,7 @@ impl MirrorScopeService {
             .into());
         }
 
-        let existing = MirrorScopeTable::find_by_id(site_id)
+        let mut existing = MirrorScopeTable::find_by_id(site_id)
             .one(ctx.transaction())
             .await
             .or_raise(Self::make_error)?
@@ -135,8 +135,9 @@ impl MirrorScopeService {
             return Ok(false);
         }
 
-        let mut consumed: BTreeSet<String> =
-            existing.consumed_slugs.into_iter().collect();
+        let mut consumed: BTreeSet<String> = std::mem::take(&mut existing.consumed_slugs)
+            .into_iter()
+            .collect();
         consumed.insert(slug);
 
         let mut model: mirror_scope::ActiveModel = existing.into();
@@ -210,8 +211,7 @@ impl MirrorScopeService {
     }
 
     fn validate_pin(pin: &str) -> Result<()> {
-        let valid =
-            !pin.trim().is_empty() && pin.chars().all(|c| !c.is_control());
+        let valid = !pin.trim().is_empty() && pin.chars().all(|c| !c.is_control());
         if !valid {
             return Err(Error::new(
                 "mirror source pin must be a non-blank token",
