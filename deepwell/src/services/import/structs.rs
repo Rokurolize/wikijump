@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use crate::license::License;
 use crate::types::PageRevisionType;
 use ftml::data::KarmaLevel;
 use std::net::IpAddr;
@@ -63,6 +64,16 @@ pub struct ImportUserOutput {
     pub user_id: i32,
 }
 
+/// One imported name/content metadata tag (Wikidot site or page `<META>`
+/// tags: description, keywords, social fields). Recorded through
+/// `PageMetaTagService`, which validates name/content limits; the import
+/// only transports validated source values, never raw head HTML.
+#[derive(Deserialize, Debug, Clone)]
+pub struct ImportMetaTag {
+    pub name: String,
+    pub content: String,
+}
+
 #[derive(Deserialize, Debug)]
 pub struct ImportSite {
     pub site_id: i64,
@@ -71,8 +82,16 @@ pub struct ImportSite {
     pub created_at: OffsetDateTime,
     pub name: String,
     pub slug: String,
+    pub tagline: String,
+    pub description: String,
     pub locale: String,
+    pub license: License,
     pub ip_address: IpAddr,
+
+    /// Site-wide tags, recorded with `all_pages`. Empty when the source
+    /// capture carries none.
+    #[serde(default)]
+    pub meta_tags: Vec<ImportMetaTag>,
 }
 
 #[derive(Serialize, Debug, Copy, Clone)]
@@ -91,6 +110,11 @@ pub struct ImportPage {
     pub locked: bool,
     pub discussion_thread_id: Option<i64>,
     pub ip_address: IpAddr,
+
+    /// Page-scoped tags, recorded with `all_pages` unset. Empty when the
+    /// source capture carries none.
+    #[serde(default)]
+    pub meta_tags: Vec<ImportMetaTag>,
 }
 
 #[derive(Serialize, Debug, Copy, Clone)]

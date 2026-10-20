@@ -25,6 +25,7 @@ use self::common::TestRunner;
 use deepwell::constants::ADMIN_USER_ID;
 use deepwell::error::ErrorType;
 use deepwell::hash::{blob_hash_to_hex, sha512_hash};
+use deepwell::license::License;
 use deepwell::models::file::{
     ActiveModel as FileActiveModel, Column as FileColumn, Entity as FileTable,
 };
@@ -38,10 +39,11 @@ use deepwell::services::blob::EMPTY_BLOB_HASH;
 use deepwell::services::file::FileService;
 use deepwell::services::file_revision::{CreateFirstFileRevision, FileRevisionService};
 use deepwell::services::import::{
-    ImportFile, ImportFileDelete, ImportFileExpectation, ImportPage,
-    ImportPageFilesVerify, ImportService, ImportUser, ImportedUserType,
+    ImportFile, ImportFileDelete, ImportFileExpectation, ImportMetaTag, ImportPage,
+    ImportPageFilesVerify, ImportService, ImportSite, ImportUser, ImportedUserType,
     MAX_IMPORT_FILE_BYTES,
 };
+use deepwell::services::page_meta_tag::{PageMetaTag, PageMetaTagService};
 use deepwell::services::user::{CreateUser, UserService};
 use deepwell::services::{RequestContext, ServiceContext};
 use deepwell::types::{FileRevisionType, UserType};
@@ -810,6 +812,7 @@ async fn import_attachment_page(runner: &mut TestRunner, tag: &Uuid) -> (i64, i6
             locked: false,
             discussion_thread_id: None,
             ip_address: common::IP_ADDRESS,
+            meta_tags: vec![],
         },
     )
     .await
@@ -1653,4 +1656,139 @@ async fn verify_page_files_tolerates_unnormalized_snapshot_names() {
     assert_eq!(verified.verified_files, 1);
 
     cleanup_imported_blob(&runner, &hash_hex).await;
+}
+
+#[tokio::test]
+async fn import_page_records_page_meta_tags() {
+    // Issue #2089: per-page source `<META>` tags (description, social
+    // fields) must land in the page-meta-tag service on import, so the
+    // head projection has page-scoped values to emit.
+    let runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .unwrap()
+        .site
+        .site_id;
+
+    let page_id = 3_250_000_011;
+    ImportService::add_page(
+        runner.context(),
+        ImportPage {
+            page_id,
+            site_id,
+            created_at: OffsetDateTime::UNIX_EPOCH,
+            slug: String::from("meta-tag-import"),
+            locked: false,
+            discussion_thread_id: None,
+            ip_address: common::IP_ADDRESS,
+            meta_tags: vec![
+                ImportMetaTag {
+                    name: String::from("description"),
+                    content: String::from("A fixture page with head metadata"),
+                },
+                ImportMetaTag {
+                    name: String::from("og:type"),
+                    content: String::from("article"),
+                },
+            ],
+        },
+    )
+    .await
+    .expect("fixture page should import with meta tags");
+
+    let tags = PageMetaTagService::effective(runner.context(), site_id, page_id)
+        .await
+        .expect("page tags should read back");
+    assert_eq!(
+        tags,
+        vec![
+            PageMetaTag {
+                name: String::from("description"),
+                content: String::from("A fixture page with head metadata"),
+                all_pages: false,
+            },
+            PageMetaTag {
+                name: String::from("og:type"),
+                content: String::from("article"),
+                all_pages: false,
+            },
+        ],
+    );
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn import_site_records_site_meta_tags_for_its_pages() {
+    // Issue #2089: site-wide source defaults must apply to the site's
+    // pages through the same service, with page tags overriding same-named
+    // site tags.
+    let runner = TestRunner::setup().await;
+    let site_id = 3_100_000_011;
+    ImportService::add_site(
+        runner.context(),
+        ImportSite {
+            site_id,
+            created_at: OffsetDateTime::UNIX_EPOCH,
+            name: String::from("Meta Tag Fixture Site"),
+            slug: String::from("meta-tag-fixture"),
+            tagline: String::from("A fixture tagline"),
+            description: String::from("A fixture site description"),
+            locale: String::from("en"),
+            license: License::CcBySa40,
+            ip_address: common::IP_ADDRESS,
+            meta_tags: vec![
+                ImportMetaTag {
+                    name: String::from("description"),
+                    content: String::from("Site default description"),
+                },
+                ImportMetaTag {
+                    name: String::from("og:site_name"),
+                    content: String::from("Fixture Foundation"),
+                },
+            ],
+        },
+    )
+    .await
+    .expect("fixture site should import with meta tags");
+
+    let page_id = 3_250_000_012;
+    ImportService::add_page(
+        runner.context(),
+        ImportPage {
+            page_id,
+            site_id,
+            created_at: OffsetDateTime::UNIX_EPOCH,
+            slug: String::from("meta-tagged"),
+            locked: false,
+            discussion_thread_id: None,
+            ip_address: common::IP_ADDRESS,
+            meta_tags: vec![ImportMetaTag {
+                name: String::from("description"),
+                content: String::from("Page override description"),
+            }],
+        },
+    )
+    .await
+    .expect("fixture page should import with a meta tag override");
+
+    let tags = PageMetaTagService::effective(runner.context(), site_id, page_id)
+        .await
+        .expect("page tags should read back");
+    assert_eq!(
+        tags,
+        vec![
+            PageMetaTag {
+                name: String::from("og:site_name"),
+                content: String::from("Fixture Foundation"),
+                all_pages: true,
+            },
+            PageMetaTag {
+                name: String::from("description"),
+                content: String::from("Page override description"),
+                all_pages: false,
+            },
+        ],
+    );
+
+    runner.teardown().await;
 }

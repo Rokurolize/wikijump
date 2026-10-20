@@ -27,8 +27,8 @@
 //! It is for limited use during initial setup only.
 
 use super::structs::{
-    ImportFile, ImportFileDelete, ImportFileDeleteOutput, ImportFileOutput, ImportPage,
-    ImportPageFilesVerify, ImportPageFilesVerifyOutput, ImportPageOutput,
+    ImportFile, ImportFileDelete, ImportFileDeleteOutput, ImportFileOutput, ImportMetaTag,
+    ImportPage, ImportPageFilesVerify, ImportPageFilesVerifyOutput, ImportPageOutput,
     ImportPageRevision, ImportPageRevisionOutput, ImportSite, ImportSiteOutput,
     ImportUser, ImportUserOutput, ImportedUserType,
 };
@@ -52,6 +52,7 @@ use crate::services::file_revision::{
     FileRevisionService,
 };
 use crate::services::page_lock::{CreatePageLockInput, PageLockService};
+use crate::services::page_meta_tag::{PageMetaTagService, SetPageMetaTag};
 use crate::services::page_revision::{
     CreateFirstPageRevision, CreateFirstPageRevisionOutput, CreatePageRevision,
     CreatePageRevisionBody, PageRevisionService,
@@ -455,6 +456,35 @@ impl ImportService {
         Ok(ImportUserOutput { user_id })
     }
 
+    /// Record imported `<META>` tags through the page-meta-tag service.
+    /// Site tags apply to all pages; page tags to one page. Validation
+    /// (name/content limits) lives in the service; failures here fail the
+    /// import rather than silently dropping head metadata.
+    async fn record_meta_tags(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        page_id: i64,
+        all_pages: bool,
+        meta_tags: &[ImportMetaTag],
+        make_error: impl Fn() -> Error,
+    ) -> Result<()> {
+        for tag in meta_tags {
+            PageMetaTagService::set(
+                ctx,
+                SetPageMetaTag {
+                    site_id,
+                    page_id,
+                    name: tag.name.clone(),
+                    content: tag.content.clone(),
+                    all_pages,
+                },
+            )
+            .await
+            .or_raise(make_error)?;
+        }
+        Ok(())
+    }
+
     pub async fn add_site(
         ctx: &ServiceContext<'_>,
         ImportSite {
@@ -462,8 +492,12 @@ impl ImportService {
             created_at,
             name,
             slug,
+            tagline,
+            description,
             locale,
+            license,
             ip_address,
+            meta_tags,
         }: ImportSite,
     ) -> Result<ImportSiteOutput> {
         info!("Importing site (name '{name}', slug '{slug}', locale '{locale}')");
@@ -486,10 +520,16 @@ impl ImportService {
             from_wikidot: Set(true),
             name: Set(name.clone()),
             slug: Set(slug.clone()),
+            tagline: Set(tagline),
+            description: Set(description),
             locale: Set(locale),
+            license: Set(license),
             ..Default::default()
         };
         Site::insert(site).exec(txn).await.or_raise(make_error)?;
+
+        // Record site-wide metadata tags (page_id is ignored for site scope)
+        Self::record_meta_tags(ctx, site_id, 0, true, &meta_tags, make_error).await?;
 
         // Add to audit log
         AuditService::log(
@@ -517,6 +557,7 @@ impl ImportService {
             locked,
             discussion_thread_id,
             ip_address,
+            meta_tags,
         }: ImportPage,
     ) -> Result<ImportPageOutput> {
         info!("Creating page '{slug}' in site ID {site_id}");
@@ -571,6 +612,10 @@ impl ImportService {
             .await
             .or_raise(make_error)?;
         }
+
+        // Record page-scoped metadata tags
+        Self::record_meta_tags(ctx, site_id, page_id, false, &meta_tags, make_error)
+            .await?;
 
         // Add to audit log
         AuditService::log(
