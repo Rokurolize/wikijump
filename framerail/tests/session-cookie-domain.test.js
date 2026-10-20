@@ -67,7 +67,10 @@ test("the session cookie is never scoped to a files host", () => {
     ["prod", "wjfiles.com"]
   ]) {
     assert.equal(
-      sessionCookieDomain(`https://scp-wiki.${files}/local--files/page/a.html`, environment),
+      sessionCookieDomain(
+        `https://scp-wiki.${files}/local--files/page/a.html`,
+        environment
+      ),
       undefined,
       `${environment} files host`
     )
@@ -77,10 +80,15 @@ test("the session cookie is never scoped to a files host", () => {
 test("no deployment puts its files domain under the cookie's main domain", async () => {
   // The parent-domain cookie is safe only while every origin under the main
   // domain is a wiki site, so the files domain must sit outside it.
-  const { platformDomains } = await vite.ssrLoadModule("/src/lib/server/platform-domains.js")
+  const { platformDomains } = await vite.ssrLoadModule(
+    "/src/lib/server/platform-domains.js"
+  )
   for (const deploymentEnvironment of ["local", "dev", "prod"]) {
     const { main, files } = platformDomains({ deploymentEnvironment })
     assert.notEqual(files, main, deploymentEnvironment)
-    assert.ok(!files.endsWith(`.${main}`), `${deploymentEnvironment}: ${files} is under ${main}`)
+    assert.ok(
+      !files.endsWith(`.${main}`),
+      `${deploymentEnvironment}: ${files} is under ${main}`
+    )
   }
 })
