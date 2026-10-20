@@ -50,6 +50,7 @@
     buildWikidotHovertipContainersHtml,
     installWikidotHovertips
   } from "$lib/wikidot/wikidot-hovertips"
+  import { installWikidotOdates } from "$lib/wikidot/wikidot-odates.js"
   import WikidotBottomToolbar from "$lib/wikidot/WikidotBottomToolbar.svelte"
   import WikidotLoginDialog from "$lib/wikidot/WikidotLoginDialog.svelte"
   import {
@@ -250,6 +251,10 @@
     const uninstallHovertips = isImportedWikidotLayout
       ? installWikidotHovertips(document)
       : () => {}
+    // Browser ODate phase (issue #2638): viewer-local text for odate spans.
+    const uninstallOdates = isImportedWikidotLayout
+      ? installWikidotOdates(document)
+      : () => {}
     const wikidotSearchForm =
       document.querySelector<HTMLFormElement>("#search-top-box-form")
     const wikidotSearchInput = document.querySelector<HTMLInputElement>(
@@ -267,6 +272,7 @@
       uninstallJavascriptAnchorGuard()
       uninstallLoginActionHandler()
       uninstallHovertips()
+      uninstallOdates()
       wikidotSearchForm?.removeEventListener("submit", submitWikidotSearch)
       wikidotSearchInput?.removeEventListener("focus", clearWikidotSearchPrompt)
     }

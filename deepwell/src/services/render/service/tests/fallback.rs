@@ -854,27 +854,91 @@ fn many_flat_collapsibles_with_images_and_headings_stay_parse_eligible() {
 }
 
 #[test]
-fn tabbed_corpus_page_uses_compatibility_fallback_before_ftml() {
+fn large_tabbed_corpus_page_stays_parse_eligible() {
+    // The removed tabview shape gate (#337: 64 KB with 12 tabs) no longer
+    // routes anything to the fallback by itself (#2606). The July 2026 hang
+    // it was measured against does not reproduce on the pinned FTML, which
+    // renders that page in 0.13 s.
     let mut source = String::new();
     source.push_str("[[tabview]]\n");
-    for index in 0..MIN_FTML_COMPAT_TABBED_FALLBACK_MARKERS {
+    for index in 0..12 {
         source.push_str(&format!("[[tab Section {index}]]\n"));
         source.push_str("ordinary author page prose\n".repeat(220).as_str());
         source.push_str("[[/tab]]\n");
     }
     source.push_str("[[/tabview]]\n");
-    while source.len() < MIN_FTML_COMPAT_TABBED_FALLBACK_BYTES {
+    while source.len() < 64_000 {
         source.push_str("ordinary author page prose\n");
     }
 
     assert!(source.len() < MAX_FTML_COMPAT_PARSE_BYTES);
-    assert!(RenderService::should_use_wikidot_compatibility_fallback(
+    assert!(!RenderService::should_use_wikidot_compatibility_fallback(
         &source,
         &fallback_test_page_info(
             "a-plague-of-philosophical-zombies",
             "A Plague of Philosophical Zombies",
         )
     ));
+}
+
+#[test]
+fn large_tabbed_page_with_collapsible_images_and_headings_stays_parse_eligible() {
+    // Gallery-shaped tabbed pages like zal-cryptid-s-artwork-hub carry a
+    // dozen tabs of collapsibles with images and headings; they render
+    // through FTML with all bodies intact, so the tabview shape must not
+    // route them to the fallback, whose line-oriented parser drops
+    // same-line collapsible bodies and shreds tab bodies (#2606).
+    let mut source = String::new();
+    source.push_str("[[tabview]]\n");
+    for tab in 0..14 {
+        source.push_str(&format!("[[tab Section {tab}]]\n"));
+        for index in 0..30 {
+            source.push_str(&format!(
+                "[[collapsible show=\"+ Gallery {tab}-{index}\" hide=\"- Gallery {tab}-{index}\"]]\n"
+            ));
+            source.push_str(&format!("++ Section {tab}-{index}\n"));
+            source.push_str(&format!(
+                "[[image https://scp-wiki.wdfiles.com/local--files/gallery/image-{tab}-{index}.png]]\n"
+            ));
+            source.push_str("[[/collapsible]]\n");
+        }
+        source.push_str("[[/tab]]\n");
+    }
+    source.push_str("[[/tabview]]\n");
+    while source.len() < 64_000 {
+        source.push_str("ordinary author page prose\n");
+    }
+
+    assert!(source.len() < MAX_FTML_COMPAT_PARSE_BYTES);
+    assert!(!RenderService::should_use_wikidot_compatibility_fallback(
+        &source,
+        &fallback_test_page_info(
+            "zal-cryptid-s-artwork-hub",
+            "Zal Cryptid's Artwork Hub",
+        )
+    ));
+
+    let input = CorpusReplayExpandedWikitext {
+        wikitext: source,
+        page_info: fallback_test_page_info(
+            "zal-cryptid-s-artwork-hub",
+            "Zal Cryptid's Artwork Hub",
+        ),
+        settings: WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+        id: PageId {
+            site_id: 1,
+            category_id: 2,
+            page_id: 3,
+        },
+        included_pages: Vec::new(),
+        wikidot_compat_html: CompatHtmlFragments::new(""),
+        wikidot_compat_text: CompatTextFragments::new(""),
+    };
+
+    let prepared = RenderService::prepare_corpus_replay_wikitext(input);
+
+    assert!(!prepared.compatibility_fallback);
+    assert!(prepared.preprocessed);
 }
 
 #[test]

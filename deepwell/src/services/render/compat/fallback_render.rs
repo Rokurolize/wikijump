@@ -23,8 +23,7 @@ use super::super::ftml_render::{
 };
 use super::super::service::{
     MAX_FTML_COMPAT_DENSE_PARSE_SCORE, MAX_FTML_COMPAT_PARSE_BYTES,
-    MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS, MIN_FTML_COMPAT_TABBED_FALLBACK_BYTES,
-    MIN_FTML_COMPAT_TABBED_FALLBACK_MARKERS, MIN_FTML_COMPAT_TABBED_MARKERS,
+    MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS, MIN_FTML_COMPAT_TABBED_MARKERS,
     MIN_FTML_COMPAT_TABBED_RENDER_BYTES, MIN_URL_OFFSET_LISTPAGES_CONTENT_BYTES,
     MIN_URL_OFFSET_LISTPAGES_RENDER_TIMEOUT_SECS, RenderProtectionBundle, RenderService,
     WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX, WIKIDOT_RATE_ANCHOR_REGEX,
@@ -129,26 +128,24 @@ impl RenderService {
             return true;
         }
 
-        if Self::wikidot_compat_has_pathological_tabview_shape(wikitext) {
-            return true;
-        }
-
         // Collapsible count and page name/title used to gate this fallback
         // (#2606). Flat collapsible galleries render normally through FTML
         // (59 Standing pages, all nesting depth 1), and page identity is
         // never a content-shape rule. The dense-parse score cannot replace
         // the name gate either: the real scp-style-resource scores 191,950
         // while 47 healthy pages score higher (up to 1,132,500), so no
-        // threshold separates them. Cost stays bounded by the byte cap above
-        // and the render timeouts; pages that genuinely cannot render fail
-        // closed per-page through the timeout path.
+        // threshold separates them. The tabview shape gate (64 KB with 12
+        // tabs, #337) is removed for the same reason: the July 2026 hang it
+        // was measured against (a-plague-of-philosophical-zombies holding a
+        // worker to a 300 s timeout) no longer reproduces on the pinned
+        // FTML, which renders that page in 0.13 s and the two remaining
+        // tabbed gallery pages (zal-cryptid-s-artwork-hub,
+        // personnel-and-character-dossier) with all bodies and images in
+        // under 0.4 s. Cost stays bounded by the byte cap above and the
+        // render timeouts (tabbed pages keep their extended deadline);
+        // pages that genuinely cannot render fail closed per-page through
+        // the timeout path.
         false
-    }
-
-    fn wikidot_compat_has_pathological_tabview_shape(wikitext: &str) -> bool {
-        wikitext.len() >= MIN_FTML_COMPAT_TABBED_FALLBACK_BYTES
-            && wikitext.matches("[[tab").count()
-                >= MIN_FTML_COMPAT_TABBED_FALLBACK_MARKERS
     }
 
     pub(in crate::services::render) fn ftml_compat_render_timeout(
