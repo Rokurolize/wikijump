@@ -70,8 +70,8 @@
       },
       {
         "path": "wws/src/handler/avatar.rs",
-        "git_blob": "a70bd29c22399d27a595badec888a75c6d3f39a7",
-        "sha256": "8209836422a5f5b689fb620ab9166ebfa5896e3c07e0fd1d78c0c0c8d0016962"
+        "git_blob": "c57f2cf5855593236ddc30535b561fc828bed09f",
+        "sha256": "aa005069d4e1112c49a0c708c0e9ee4a3dc8844409d9d31fcec3de302ae3b766"
       },
       {
         "path": "wws/src/handler/basic_error.rs",
@@ -80,8 +80,8 @@
       },
       {
         "path": "wws/src/handler/file.rs",
-        "git_blob": "063a9cb5807c7776a6f3bed0189247ac0a662ed4",
-        "sha256": "26c68e095202cca045c803f942937deb6b34f38d8be1a751313ed41dbea1eff2"
+        "git_blob": "f43829d3207fc4c67583e6b2e4873b55354a72e4",
+        "sha256": "21c2b27449840a26f79bdb1386975f79e90774de7f2fd3a7318f5678c364378f"
       },
       {
         "path": "wws/src/handler/misc.rs",
