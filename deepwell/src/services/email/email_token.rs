@@ -95,6 +95,7 @@ impl EmailTokenPurpose {
     }
 }
 
+#[derive(Debug)]
 pub struct IssueEmailToken {
     pub user_id: i64,
     pub email: String,
@@ -107,10 +108,22 @@ pub struct IssueEmailToken {
 /// `Suppressed` means a live token is still inside its resend cooldown: the
 /// caller MUST answer exactly as if a token had been issued, so the
 /// cooldown never becomes an existence oracle.
-#[derive(Debug, PartialEq, Eq)]
+///
+/// The issued plaintext token never appears in debug output: `Issued`
+/// prints only its variant, never the secret it carries.
+#[derive(PartialEq, Eq)]
 pub enum IssueEmailTokenOutcome {
     Issued(String),
     Suppressed,
+}
+
+impl std::fmt::Debug for IssueEmailTokenOutcome {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            IssueEmailTokenOutcome::Issued(_) => write!(f, "Issued(..)"),
+            IssueEmailTokenOutcome::Suppressed => write!(f, "Suppressed"),
+        }
+    }
 }
 
 /// What a successful redemption proves: the account and the exact email
