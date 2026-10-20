@@ -198,6 +198,12 @@ wiki-page-file-restore = Restore
   .new-name = New file name
   .toast = File restored.
 
+wiki-page-file-mirror-readonly =
+  .title = PERMISSION ERROR
+  .lead-in = Please note:
+  .message = Files on this imported page are read-only.
+  .extra-message = Mirror pages show the source inventory. Ask a site administrator to update their files through the Wikidot import.
+
 ### Wiki page lock
 
 wiki-page-lock = Lock Page

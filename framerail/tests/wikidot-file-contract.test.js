@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { test } from "node:test"
 
 import {
+  isMirrorFileInventoryReadOnly,
   sortFilesWikidot,
   wikidotFileSize,
   wikidotFileTotals,
@@ -54,4 +55,15 @@ test("totals count files and sum bytes", () => {
     bytes: 300
   })
   assert.deepEqual(wikidotFileTotals([]), { count: 0, bytes: 0 })
+})
+
+test("mirror inventory is read-only only when page and site are both imported", () => {
+  const imported = { from_wikidot: true }
+  const native = { from_wikidot: false }
+  assert.equal(isMirrorFileInventoryReadOnly(imported, imported), true)
+  assert.equal(isMirrorFileInventoryReadOnly(imported, native), false)
+  assert.equal(isMirrorFileInventoryReadOnly(native, imported), false)
+  assert.equal(isMirrorFileInventoryReadOnly(native, native), false)
+  assert.equal(isMirrorFileInventoryReadOnly(null, imported), false)
+  assert.equal(isMirrorFileInventoryReadOnly(imported, undefined), false)
 })

@@ -103,6 +103,11 @@ pub async fn file_create(
     .await
     .or_raise(|| Error::new("failed to check file create permission", ErrorType::File))?;
 
+    // Propagated directly (not wrapped) so the mirror refusal keeps its
+    // permission category and message for API callers.
+    ensure_page_not_fully_imported(ctx, input.site_id, input.page_id, "create a file")
+        .await?;
+
     FileService::create(ctx, input)
         .await
         .or_raise(|| Error::new("failed to create file", ErrorType::File))
@@ -134,6 +139,11 @@ pub async fn file_edit(
     .await
     .or_raise(|| Error::new("failed to check file edit permission", ErrorType::File))?;
 
+    // Propagated directly (not wrapped) so the mirror refusal keeps its
+    // permission category and message for API callers.
+    ensure_page_not_fully_imported(ctx, input.site_id, input.page_id, "edit a file")
+        .await?;
+
     FileService::edit(ctx, input)
         .await
         .or_raise(|| Error::new("failed to edit file", ErrorType::File))
@@ -164,6 +174,11 @@ pub async fn file_delete(
     )
     .await
     .or_raise(|| Error::new("failed to check file delete permission", ErrorType::File))?;
+
+    // Propagated directly (not wrapped) so the mirror refusal keeps its
+    // permission category and message for API callers.
+    ensure_page_not_fully_imported(ctx, input.site_id, input.page_id, "delete a file")
+        .await?;
 
     FileService::delete(ctx, input)
         .await
@@ -225,6 +240,13 @@ pub async fn file_move(
         )
     })?;
 
+    // A move mutates both ends: leaving a mirror and arriving on one are
+    // both refused. Propagated directly so the refusal keeps its category.
+    ensure_page_not_fully_imported(ctx, input.site_id, input.current_page_id, "move a file")
+        .await?;
+    ensure_page_not_fully_imported(ctx, input.site_id, destination.page_id, "move a file")
+        .await?;
+
     FileService::r#move(ctx, input)
         .await
         .or_raise(|| Error::new("failed to move file", ErrorType::File))
@@ -283,6 +305,23 @@ pub async fn file_restore(
         })?;
     }
 
+    // Propagated directly (not wrapped) so the mirror refusal keeps its
+    // permission category and message for API callers.
+    ensure_page_not_fully_imported(ctx, input.site_id, input.page_id, "restore a file")
+        .await?;
+    if let Some(ref new_page) = input.new_page {
+        let destination = PageService::get(ctx, input.site_id, new_page.clone())
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to load file restore destination page for mirror check",
+                    ErrorType::File,
+                )
+            })?;
+        ensure_page_not_fully_imported(ctx, input.site_id, destination.page_id, "restore a file")
+            .await?;
+    }
+
     FileService::restore(ctx, input)
         .await
         .or_raise(|| Error::new("failed to restore file", ErrorType::File))
@@ -318,6 +357,11 @@ pub async fn file_rollback(
     .or_raise(|| {
         Error::new("failed to check file rollback permission", ErrorType::File)
     })?;
+
+    // Propagated directly (not wrapped) so the mirror refusal keeps its
+    // permission category and message for API callers.
+    ensure_page_not_fully_imported(ctx, input.site_id, input.page_id, "roll back a file")
+        .await?;
 
     FileService::rollback(ctx, input)
         .await
@@ -419,6 +463,66 @@ async fn ensure_parent_page_permission(
             ErrorType::PermissionDenied,
         )
         .into())
+    }
+}
+
+/// Refuses file mutations on fully imported mirror pages.
+///
+/// Mirror pages are read-only for ordinary authoring: their inventory is
+/// the source inventory, changed only through the platform-staff import
+/// endpoints (which call `ImportService` directly and never reach this
+/// guard). The both-flags predicate below is intentionally the same
+/// condition `FileService::get_visible_rows` uses to show the source-only
+/// inventory, so the pane and the mutation surface can never disagree
+/// about which files a mirror page owns: anything the pane hides cannot
+/// be created here, and anything created here is shown there.
+///
+/// Site-flag cliff note: flagging a site `from_wikidot` while its imported
+/// pages still carry unflagged local rows hides those rows from the pane
+/// (by the visibility rule, deliberately — rows and blobs are untouched,
+/// nothing is deleted). The transition must therefore reconcile row flags
+/// first; this guard only prevents NEW local rows from appearing on fully
+/// imported pages, so the hidden set can only shrink.
+async fn ensure_page_not_fully_imported(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    page_id: i64,
+    action_name: &str,
+) -> Result<()> {
+    let page = PageService::get(ctx, site_id, Reference::Id(page_id))
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to resolve parent page for mirror mutation check",
+                ErrorType::File,
+            )
+        })?;
+
+    if !page.from_wikidot {
+        return Ok(());
+    }
+
+    let site = SiteService::get(ctx, Reference::Id(site_id))
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to resolve site for mirror mutation check",
+                ErrorType::File,
+            )
+        })?;
+
+    if site.from_wikidot {
+        Err(Error::new(
+            format!(
+                "cannot {action_name} on page ID {page_id} in site ID {site_id}: \
+                 fully imported mirror pages are read-only, change their files \
+                 through the Wikidot import instead",
+            ),
+            ErrorType::Permission,
+        )
+        .into())
+    } else {
+        Ok(())
     }
 }
 
