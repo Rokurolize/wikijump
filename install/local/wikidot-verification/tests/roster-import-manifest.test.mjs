@@ -18,6 +18,7 @@ import {
   verifyRosterManifest,
 } from "../src/roster-import-manifest.mjs";
 import { parseArgs } from "../scripts/build-roster-import-manifest.mjs";
+import { sha256Hex, stableStringify } from "../src/canonical-json.mjs";
 
 const FIXTURE_PROVENANCE = {
   capture_id: "fixture-capture-1",
@@ -128,8 +129,8 @@ test("member manifests union roles and keep the earliest join date", () => {
   };
   const manifest = buildRosterManifest(capture);
   assert.deepEqual(manifest.rows, [
-    { user: { kind: "regular", id: 101, unix_name: "alice", name: "Alice" }, roles: ["member", "moderator"], joined_at: "2020-01-02T00:00:00Z" },
-    { user: { kind: "regular", id: 202, unix_name: "bob", name: "Bob", avatar_url: "http://example.invalid/a.png" }, roles: ["member", "admin"], joined_at: "2020-12-12T00:00:00Z" },
+    { user: { kind: "regular", id: 101, unix_name: "alice", name: "Alice" }, roles: ["member", "moderator"], joined_at: "2020-01-02T00:00:00.000Z" },
+    { user: { kind: "regular", id: 202, unix_name: "bob", name: "Bob", avatar_url: "http://example.invalid/a.png" }, roles: ["member", "admin"], joined_at: "2020-12-12T00:00:00.000Z" },
   ]);
   assert.deepEqual(verifyRosterManifest(manifest, capture), { ok: true, problems: [] });
 });
@@ -150,6 +151,61 @@ test("deleted and anonymous roster entries pass through tagged, never dropped", 
     manifest.rows.map((row) => row.user.kind),
     ["anonymous", "deleted"],
   );
+});
+
+test("verify mode fails closed on malformed rows instead of throwing", () => {
+  for (const manifest of [
+    { schema: "wikijump.roster_import_manifest.v1", kind: "voters", rows: [{}, {}], row_count: 2, manifest_sha256: "x" },
+    { schema: "wikijump.roster_import_manifest.v1", kind: "watchers", rows: [null], row_count: 1, manifest_sha256: "x" },
+    { schema: "wikijump.roster_import_manifest.v1", kind: "voters", rows: [{ page: "scp-1", user: null }], row_count: 1, manifest_sha256: "x" },
+    { schema: "wikijump.roster_import_manifest.v1", kind: "members", rows: [{ user: { id: 1 }, roles: "member" }], row_count: 1, manifest_sha256: "x" },
+  ]) {
+    assert.deepEqual(verifyRosterManifest(manifest, null).ok, false);
+  }
+});
+
+test("joined_at keeps the earliest instant regardless of source spelling", () => {
+  const capture = {
+    kind: "members",
+    site: "scp-wiki",
+    branch: "en",
+    ...FIXTURE_PROVENANCE,
+    members: [{ user: { id: 101, name: "Alice" }, joined_at: "2024-06-01T00:00:00Z" }],
+    moderators: [{ user: { id: 101, name: "Alice" }, joined_at: "2024-05-31T23:00:00-05:00" }],
+    admins: [],
+  };
+  const manifest = buildRosterManifest(capture);
+  // The moderator timestamp is the later instant (2024-06-01T04:00:00Z).
+  assert.equal(manifest.rows[0].joined_at, "2024-06-01T00:00:00.000Z");
+  const respelled = {
+    ...capture,
+    members: [{ user: { id: 101, name: "Alice" }, joined_at: "2024-06-01" }],
+    moderators: [{ user: { id: 101, name: "Alice" }, joined_at: "2024-05-31T23:00:00-05:00" }],
+  };
+  assert.deepEqual(buildRosterManifest(respelled).rows, manifest.rows);
+});
+
+test("captured_at must be a datetime and roles stay canonical", () => {
+  const capture = voterCapture([{ page: "scp-1", votes: [{ user: alice, value: 1 }] }]);
+  assert.throws(() => buildRosterManifest({ ...capture, captured_at: "yesterday" }), /ISO-8601 datetime/);
+  const members = buildRosterManifest({
+    kind: "members",
+    site: "scp-wiki",
+    branch: "en",
+    ...FIXTURE_PROVENANCE,
+    members: [{ user: alice, joined_at: "2020-01-02T00:00:00Z" }],
+    moderators: [{ user: { ...alice }, joined_at: "2022-02-02T00:00:00Z" }],
+    admins: [],
+  });
+  const tamperedRoles = {
+    ...members,
+    rows: members.rows.map((row) => ({ ...row, roles: [...row.roles].reverse() })),
+  };
+  const { manifest_sha256: _dropped, ...tamperedBody } = tamperedRoles;
+  tamperedRoles.manifest_sha256 = sha256Hex(stableStringify(tamperedBody));
+  const result = verifyRosterManifest(tamperedRoles, null);
+  assert.equal(result.ok, false);
+  assert.match(result.problems.join(";"), /canonical order/);
 });
 
 test("verify mode catches tampering, reorder, and capture drift", () => {

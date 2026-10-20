@@ -19,7 +19,10 @@
  * - duplicate (page, user) vote rows with the same value collapse to one
  *   row; conflicting values fail closed instead of picking a winner;
  * - member roles are the union across the members/moderators/admins
- *   lists with the earliest joined_at kept.
+ *   lists in canonical order with the earliest joined_at kept;
+ * - datetimes are stored in canonical UTC spelling so identical instants
+ *   hash identically regardless of source spelling;
+ * - the verifier fails closed on malformed rows (problems, never throws).
  */
 
 import { codePointCompare, sha256Hex, stableStringify } from "./canonical-json.mjs";
@@ -65,6 +68,34 @@ function assertOptionalIsoDateTime(value, what) {
   if (value === undefined || value === null) return null;
   if (typeof value !== "string" || Number.isNaN(Date.parse(value))) {
     fail(`expected an ISO-8601 datetime or null for ${what}`);
+  }
+  // Canonical UTC spelling: identical instants written differently must
+  // yield identical rows, or identical rosters hash differently.
+  return new Date(value).toISOString();
+}
+
+function assertIsoDateTime(value, what) {
+  if (typeof value !== "string" || Number.isNaN(Date.parse(value))) {
+    fail(`expected an ISO-8601 datetime for ${what}`);
+  }
+  return new Date(value).toISOString();
+}
+
+/** Canonical member-role order: the build emits roles in this order, and verify asserts it. */
+const CANONICAL_ROLE_ORDER = ["member", "moderator", "admin"];
+
+function assertCanonicalRoles(value, what) {
+  if (!Array.isArray(value)) fail(`expected a roles array for ${what}`);
+  const seen = new Set();
+  for (const role of value) {
+    if (!MEMBER_ROLES.has(role) || seen.has(role)) {
+      fail(`unexpected or duplicate member role for ${what}: ${JSON.stringify(role)}`);
+    }
+    seen.add(role);
+  }
+  const canonical = CANONICAL_ROLE_ORDER.filter((role) => seen.has(role));
+  if (stableStringify(canonical) !== stableStringify(value)) {
+    fail(`member roles for ${what} are not in canonical order ${JSON.stringify(canonical)}`);
   }
   return value;
 }
@@ -242,7 +273,7 @@ export function buildRosterManifest(capture) {
   const provenance = {
     collector: assertNonEmptyString(input.collector ?? "wikidot.py", "collector"),
     capture_id: assertNonEmptyString(input.capture_id, "capture_id"),
-    captured_at: assertNonEmptyString(input.captured_at, "captured_at"),
+    captured_at: assertIsoDateTime(input.captured_at, "captured_at"),
     capture_sha256: sha256Hex(stableStringify(input)),
   };
   let rows;
@@ -274,15 +305,28 @@ export function verifyRosterManifest(manifest, capture = null) {
   check(Array.isArray(manifest.rows), "rows is not an array");
   check(manifest.row_count === (Array.isArray(manifest.rows) ? manifest.rows.length : -1), "row_count mismatch");
   if (Array.isArray(manifest.rows)) {
-    const sorted = [...manifest.rows].sort(
-      manifest.kind === "members"
-        ? (left, right) => codePointCompare(captureUserKey(left.user), captureUserKey(right.user))
-        : compareRows,
-    );
-    check(
-      stableStringify(sorted) === stableStringify(manifest.rows),
-      "rows are not in canonical order",
-    );
+    // A validator must fail closed on hostile input, never throw: validate
+    // every row shape before the comparators touch them.
+    for (const row of manifest.rows) {
+      try {
+        assertRecord(row, "row");
+        assertRecord(row.user, "row.user");
+        if (manifest.kind === "members") assertCanonicalRoles(row.roles, "row.roles");
+      } catch (error) {
+        problems.push(error.message);
+      }
+    }
+    if (problems.length === 0) {
+      const sorted = [...manifest.rows].sort(
+        manifest.kind === "members"
+          ? (left, right) => codePointCompare(captureUserKey(left.user), captureUserKey(right.user))
+          : compareRows,
+      );
+      check(
+        stableStringify(sorted) === stableStringify(manifest.rows),
+        "rows are not in canonical order",
+      );
+    }
   }
   const { manifest_sha256, ...body } = manifest;
   check(
