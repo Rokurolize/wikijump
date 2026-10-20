@@ -11515,7 +11515,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "b183d01044cad4991a97a6b281852bdf6be209d6e859dadaa77bf411a883908e"
+      "source_input_set_sha256": "103596099571d87ac77b81c745344a353084a1dbac4e4da1bbebd2ff8c0e6d08"
     },
     "ftml": {
       "commit": "d7727b245fd69f46d44c04592e392850ea244e13",
@@ -11680,7 +11680,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "fd4aecd3fba9bcbdeaf35052a9ca0878d7184813dea03ff647376ca78a7f95ed"
+        "sha256": "98a650c6194711a0ada50455b2488799b04f26f6a409292d3d42a4f690034aa0"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11776,7 +11776,7 @@
       },
       {
         "path": "framerail/src/lib/server/load/page/page.ts",
-        "sha256": "c9150b42519db06261e775e6048ef760f3d79d79b4b0d5b8516655e2abc55abc"
+        "sha256": "8ded61c2afdaf8561114bd388b4400ca561c75247e3a72c8053cd34d277412c9"
       },
       {
         "path": "framerail/src/lib/server/wikidot-site-changes.js",
@@ -11852,7 +11852,7 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/register/+page.svelte",
-        "sha256": "9f4e905f3d36b2e4f54ed28a2e5cc0f38b820237b53a9ea1ca894c06aadb3ba1"
+        "sha256": "f77c950051bd571481f5afdc8f93e5ffb0f770fd9b3b71104de865f44e2c249c"
       },
       {
         "path": "framerail/src/routes/[x+2d]/settings/+page.server.ts",
@@ -26888,7 +26888,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/import.rs#mirror_seed_carries_source_tags_and_navigation"
+          "deepwell/tests/import.rs#mirror_seed_carries_source_random_helper_routes"
         ]
       },
       "evidence": {
@@ -39058,7 +39058,7 @@
         },
         {
           "path": "framerail/src/lib/server/load/page/page.ts",
-          "sha256": "c9150b42519db06261e775e6048ef760f3d79d79b4b0d5b8516655e2abc55abc"
+          "sha256": "8ded61c2afdaf8561114bd388b4400ca561c75247e3a72c8053cd34d277412c9"
         },
         {
           "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",
