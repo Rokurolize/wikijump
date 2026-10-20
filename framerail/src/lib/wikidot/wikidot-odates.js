@@ -14,11 +14,18 @@
  *
  * Grammar coverage is deliberately bounded: the numeric EN subset the
  * render path emits (`%d %e %m %Y %H %M %S %R %%`, padding modifiers
- * `_`/`-`/`0`), EN month/weekday names (`%b %B %a %A`), the relative
- * modifier (`%O`), and numeric zone offsets (`%Z`/`%z`). A span whose
- * format uses anything else keeps its server text untouched — an
- * unspecified format needs oracle evidence, not a guess. Spans without an
- * explicit `format_` class are left alone for the same reason.
+ * `_`/`-`/`0`), EN month/weekday names (`%b %B %a %A`), and the relative
+ * modifier (`%O`). A span whose format uses anything else — including
+ * `%Z`/`%z` (the spec documents usage but no retained capture shows the
+ * rendered shape; a JST server would more likely read `JST` than `GMT+9`)
+ * and `%c` — keeps its server text untouched: an unspecified format needs
+ * oracle evidence, not a guess. Spans without an explicit `format_` class
+ * are left alone for the same reason.
+ *
+ * Two more documented choices: future timestamps clamp to "0 seconds ago"
+ * (the spec allows `%O` with future dates but defines no output shape),
+ * and the hovering text uses proper English singular/plural (Wikidot's
+ * exact pluralization needs a live oracle to confirm).
  *
  * Hover exactness gap: the spec ladder names only
  * seconds/minutes/hours/days, so the hovering text uses proper English
@@ -183,15 +190,6 @@ export function formatOdateTimestamp(
       output += `${parts.H}:${parts.M}`
     } else if (directive === "O") {
       output += agoText(nowSeconds - timestampSeconds)
-    } else if (directive === "Z" || directive === "z") {
-      const sign = utcOffsetMinutes < 0 ? "-" : "+"
-      const absolute = Math.abs(utcOffsetMinutes)
-      const hours = Math.floor(absolute / 60)
-      const minutes = absolute % 60
-      output +=
-        directive === "Z" || minutes === 0
-          ? `GMT${sign}${hours}`
-          : `GMT${sign}${pad2(hours)}:${pad2(minutes)}`
     } else if (directive in parts) {
       output += applyPad(modifier, parts[directive])
     } else {

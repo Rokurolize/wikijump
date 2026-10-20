@@ -75,9 +75,8 @@ test("format grammar covers names, padding, escapes and relative time", () => {
   assert.equal(formatOdateTimestamp(1454705501, "%_d", 1454705501, 0), " 5")
   assert.equal(formatOdateTimestamp(1454705501, "%-m", 1454705501, 0), "2")
   assert.equal(formatOdateTimestamp(TIMESTAMP, "%O", TIMESTAMP + 90, 0), "1 minute ago")
-  assert.equal(formatOdateTimestamp(TIMESTAMP, "%Z", TIMESTAMP, 540), "GMT+9")
-  assert.equal(formatOdateTimestamp(TIMESTAMP, "%Z", TIMESTAMP, 0), "GMT+0")
-  assert.equal(formatOdateTimestamp(TIMESTAMP, "%z", TIMESTAMP, 330), "GMT+05:30")
+  assert.equal(formatOdateTimestamp(TIMESTAMP, "%Z", TIMESTAMP, 540), null)
+  assert.equal(formatOdateTimestamp(TIMESTAMP, "%z", TIMESTAMP, 330), null)
 })
 
 test("unsupported formats keep the server text", () => {
