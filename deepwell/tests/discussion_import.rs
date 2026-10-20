@@ -191,12 +191,13 @@ async fn imported_discussion_user_links_follow_source_revision_scheme() {
             .await
             .unwrap()
             .unwrap();
-        let root_revision =
-            forum_post_revision::Entity::find_by_id(root_post.latest_revision_id.unwrap())
-                .one(runner.context().transaction())
-                .await
-                .unwrap()
-                .unwrap();
+        let root_revision = forum_post_revision::Entity::find_by_id(
+            root_post.latest_revision_id.unwrap(),
+        )
+        .one(runner.context().transaction())
+        .await
+        .unwrap()
+        .unwrap();
         let html = TextService::get(runner.context(), &root_revision.compiled_html_hash)
             .await
             .unwrap();
