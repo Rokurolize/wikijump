@@ -11515,7 +11515,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "06bb29ec275687abe4ced0a0941d82f1ac99c35ddceb274e44ed289bb7dd6810"
+      "source_input_set_sha256": "b183d01044cad4991a97a6b281852bdf6be209d6e859dadaa77bf411a883908e"
     },
     "ftml": {
       "commit": "d7727b245fd69f46d44c04592e392850ea244e13",
@@ -11680,7 +11680,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "3f64d455d87d2fa93b3389b589b88b108f8a0ac975c0ef66712eb8cf4f43d47c"
+        "sha256": "fd4aecd3fba9bcbdeaf35052a9ca0878d7184813dea03ff647376ca78a7f95ed"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11776,7 +11776,7 @@
       },
       {
         "path": "framerail/src/lib/server/load/page/page.ts",
-        "sha256": "5af76e4ace7f6c32fae16a89a71f5b24dae68e337452767064d835a585c4915e"
+        "sha256": "c9150b42519db06261e775e6048ef760f3d79d79b4b0d5b8516655e2abc55abc"
       },
       {
         "path": "framerail/src/lib/server/wikidot-site-changes.js",
@@ -30308,7 +30308,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/vote.rs#registered_point_vote_lifecycle_refreshes_saved_rate_page"
+          "deepwell/tests/vote.rs#imported_rating_baseline_vote_cast_change_cancel_lifecycle"
         ]
       },
       "evidence": {
@@ -39058,7 +39058,7 @@
         },
         {
           "path": "framerail/src/lib/server/load/page/page.ts",
-          "sha256": "5af76e4ace7f6c32fae16a89a71f5b24dae68e337452767064d835a585c4915e"
+          "sha256": "c9150b42519db06261e775e6048ef760f3d79d79b4b0d5b8516655e2abc55abc"
         },
         {
           "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",
