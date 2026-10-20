@@ -114,7 +114,7 @@ async fn observation_count(runner: &TestRunner, user_id: i32) -> usize {
     runner
         .context()
         .transaction()
-        .query_all(&Statement::from_sql_and_values(
+        .query_all_raw(Statement::from_sql_and_values(
             DatabaseBackend::Postgres,
             "SELECT user_id FROM wikidot_identity_observation WHERE user_id = $1",
             [user_id.into()],
