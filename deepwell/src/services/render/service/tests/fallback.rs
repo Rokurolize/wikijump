@@ -968,7 +968,10 @@ fn large_tabbed_gallery_renders_every_collapsible_body_and_image() {
     assert!(errors.is_empty(), "{errors:#?}");
     let html = HtmlRender.render(&tree, &page_info, &settings).body;
 
-    assert!(html.contains(r#"<div class="yui-navset"#));
+    // The tabview container carries an id attribute before the class, so
+    // assert the class token rather than the tag prefix.
+    assert!(html.contains(r#"class="yui-navset""#));
+    assert!(html.contains("yui-content"));
     for tab in 0..TABS {
         assert!(html.contains(&format!("<em>Tab{tab}</em>")));
     }
