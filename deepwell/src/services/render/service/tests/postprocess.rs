@@ -960,6 +960,49 @@ fn leaves_unpaired_opener_in_unexpanded_source_unclaimed() {
     );
 }
 
+/// A comment boundary must not split an alignment pair. The scp-744
+/// regression (issues #2573/#2577, epoch 38) printed a literal `[[>]]`
+/// after a documentation `[!--` idiom: the opener scanned while its
+/// closer fell inside the apparent comment, so the expanded-document
+/// normalization escaped the opener as authored text while the pinned
+/// FTML could no longer see the pair together. Both sides of a
+/// comment-split pair stay raw, exactly as before the expanded-document
+/// normalization, so the pair still owns its block and every witness
+/// line survives. The `[!--` inside the `@@` escape keeps the shape
+/// general: the expanded-document scan counts the comment open while
+/// the pinned FTML reads the escape literally and still pairs the two
+/// markers.
+#[test]
+fn keeps_comment_split_alignment_pair_raw_for_ftml() {
+    let body = render_wikidot_alignment_body(concat!(
+        "[[>]]\n",
+        "Rate module here\n",
+        "@@[!--@@\n",
+        "[[/>]]\n",
+        "--]\n",
+        "\n",
+        "article content here\n",
+    ));
+
+    assert!(
+        !body.contains("[[>]]")
+            && !body.contains("[[/>]]")
+            && !body.contains("[[&gt;]]")
+            && !body.contains("[[/&gt;]]"),
+        "no alignment marker may print as text: {body}",
+    );
+    assert!(
+        body.contains("text-align: right"),
+        "the comment-split pair must still own an alignment block: {body}",
+    );
+    for witness in ["Rate module here", "article content here"] {
+        assert!(
+            body.contains(witness),
+            "shaped content must survive: {body}",
+        );
+    }
+}
+
 /// A trailing-whitespace poison on either side of a split pair still owns
 /// no block: both markers print as their authored text.
 #[test]
