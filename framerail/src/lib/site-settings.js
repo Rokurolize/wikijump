@@ -153,7 +153,12 @@ export const normalizeThemePreviewUrl = (value) => {
 export const resolveThemePreviewUrl = (themePreviewerNoUi, value) =>
   themePreviewerNoUi === true ? normalizeThemePreviewUrl(value) : null
 
-export const customThemeHeadHtml = (theme, site = null, filesAuthority = null, isLocalFile = null) => {
+export const customThemeHeadHtml = (
+  theme,
+  site = null,
+  filesAuthority = null,
+  isLocalFile = null
+) => {
   const normalized = normalizeThemeSetting(theme)
   if (normalized.type !== "custom") return ""
   const css = localizeSiteFileUrlsInCss(normalized.css, site, filesAuthority, isLocalFile)
@@ -163,10 +168,10 @@ export const customThemeHeadHtml = (theme, site = null, filesAuthority = null, i
 /**
  * Site carried by the page view, the first half of the local-existence
  * evidence the head may use: an imported site's own files live on its own
- * WDFiles host. The second half is a per-file presence check (isLocalFile):
- * site identity alone cannot tell a materialized attachment from one the
- * import never fetched, so a same-site URL without a positive presence
- * answer stays literal.
+ * WDFiles host. The second half is a per-file presence check
+ * (isLocalFile): site identity alone cannot tell a materialized attachment
+ * from one the import never fetched, so a same-site URL without a positive
+ * presence answer stays literal.
  *
  * @typedef {object} LocalSiteEvidence
  * @property {unknown} slug
@@ -187,7 +192,12 @@ export const SITE_FILE_PRESENCE_SEPARATOR = "\0"
  * @returns {string | null}
  */
 export const siteFilePresenceKey = (page, name) => {
-  if (typeof page !== "string" || page === "" || typeof name !== "string" || name === "") {
+  if (
+    typeof page !== "string" ||
+    page === "" ||
+    typeof name !== "string" ||
+    name === ""
+  ) {
     return null
   }
   return `${page}${SITE_FILE_PRESENCE_SEPARATOR}${name}`
@@ -204,7 +214,7 @@ const WIKIDOT_WWW_HOSTS = new Set(["www.wikidot.com", "www.wdfiles.com"])
  * for anything that is not a plain same-shape candidate.
  *
  * @param {unknown} rawUrl
- * @returns {{ host: string, rest: string } | null}
+ * @returns {{ host: string; rest: string } | null}
  */
 const splitAbsoluteHttpUrl = (rawUrl) => {
   if (typeof rawUrl !== "string") return null
@@ -231,8 +241,8 @@ const splitAbsoluteHttpUrl = (rawUrl) => {
 }
 
 /**
- * The viewed site's own WDFiles slug, or null when the host does not name a
- * site file host. Mirrors the renderer's host-to-slug reading without
+ * The viewed site's own WDFiles slug, or null when the host does not name
+ * a site file host. Mirrors the renderer's host-to-slug reading without
  * duplicating its cross-site and lab-mirror branches, which need
  * server-side import topology the page does not carry.
  *
@@ -251,9 +261,9 @@ const wdfilesAttachmentSiteSlug = (host) => {
 /**
  * Whether the viewed imported site is the evidence that a WDFiles
  * attachment URL names a local file: same-site slugs only (G06 www hosts
- * never match). Corpus aliases, translated-branch sharing, and lab
- * mirrors need server-side import topology and stay literal until
- * Deepwell attests them per asset.
+ * never match). Corpus aliases, translated-branch sharing, and lab mirrors
+ * need server-side import topology and stay literal until Deepwell attests
+ * them per asset.
  *
  * @param {string} slug
  * @param {LocalSiteEvidence | null | undefined} site
@@ -261,7 +271,7 @@ const wdfilesAttachmentSiteSlug = (host) => {
  */
 const isViewedSiteWdfilesSlug = (slug, site) => {
   if (typeof slug !== "string" || slug === "") return false
-  if (!site || site.from_wikidot !== true) return false
+  if (site?.from_wikidot !== true) return false
   if (typeof site.slug !== "string" || !SITE_SLUG_PATTERN.test(site.slug)) {
     return false
   }
@@ -296,11 +306,11 @@ export const parseSiteFileReference = (rawUrl, site) => {
 /**
  * Rewrite one WDFiles attachment URL to the local files authority only
  * when the site names the file AND the per-file presence check confirms it
- * exists locally, else null (the caller keeps the source URL literal).
- * A missing, non-function, or non-true presence answer — absent, unknown,
- * or unresolvable — fails closed to literal, so a partially imported
- * mirror never turns a working hotlink into a local 404. Query, fragment,
- * and encoding are preserved; only the origin is swapped.
+ * exists locally, else null (the caller keeps the source URL literal). A
+ * missing, non-function, or non-true presence answer — absent, unknown, or
+ * unresolvable — fails closed to literal, so a partially imported mirror
+ * never turns a working hotlink into a local 404. Query, fragment, and
+ * encoding are preserved; only the origin is swapped.
  *
  * @param {unknown} rawUrl
  * @param {LocalSiteEvidence | null | undefined} site
@@ -319,7 +329,7 @@ export const localizeSiteFileUrl = (rawUrl, site, filesAuthority, isLocalFile) =
   }
   const reference = parseSiteFileReference(rawUrl, site)
   if (!reference) return null
-  let present = false
+  let present
   try {
     present =
       typeof isLocalFile === "function" &&
@@ -400,7 +410,10 @@ export const localizeSiteFileUrlsInCss = (css, site, filesAuthority, isLocalFile
 export const resolveExternalThemeHref = (theme, site, filesAuthority, isLocalFile) => {
   const normalized = normalizeThemeSetting(theme)
   if (normalized.type !== "external") return null
-  return localizeSiteFileUrl(normalized.url, site, filesAuthority, isLocalFile) ?? normalized.url
+  return (
+    localizeSiteFileUrl(normalized.url, site, filesAuthority, isLocalFile) ??
+    normalized.url
+  )
 }
 
 /**

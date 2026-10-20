@@ -55,9 +55,9 @@ export function collectThemeSiteFileReferences(
 
 /**
  * Request-scoped memo of per-page local file names. One loader creates one
- * cache per page view so repeated references to the same page cost a single
- * file listing; nothing is shared across requests, so an import that lands
- * mid-request cannot serve stale presence to a later view.
+ * cache per page view so repeated references to the same page cost a
+ * single file listing; nothing is shared across requests, so an import
+ * that lands mid-request cannot serve stale presence to a later view.
  */
 export interface SiteFilePresenceCache {
   pages: Map<string, Promise<ReadonlySet<string>>>
