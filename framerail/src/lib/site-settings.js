@@ -271,7 +271,7 @@ const wdfilesAttachmentSiteSlug = (host) => {
  */
 const isViewedSiteWdfilesSlug = (slug, site) => {
   if (typeof slug !== "string" || slug === "") return false
-  if (!site || site.from_wikidot !== true) return false
+  if (site?.from_wikidot !== true) return false
   if (typeof site.slug !== "string" || !SITE_SLUG_PATTERN.test(site.slug)) {
     return false
   }
