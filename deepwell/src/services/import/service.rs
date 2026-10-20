@@ -65,8 +65,8 @@ use ftml::data::KarmaLevel;
 use ftml::layout::Layout;
 use sea_orm::DatabaseTransaction;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, FromQueryResult,
-    IntoActiveModel, QueryFilter, QueryOrder, Set,
+    ActiveModelTrait, ColumnTrait, Condition, DbErr, EntityTrait, FromQueryResult,
+    IntoActiveModel, QueryFilter, QueryOrder, Set, SqlErr,
 };
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, UpdateResult};
 use sea_query::Expr;
@@ -76,6 +76,13 @@ use std::net::IpAddr;
 use time::OffsetDateTime;
 
 const SYNC_PAGE_REVISION_SEQUENCE_SQL: &str = "SELECT setval('page_revision_revision_id_seq', GREATEST(COALESCE((SELECT MAX(revision_id) FROM page_revision), 1), CASE WHEN seq.is_called THEN seq.last_value ELSE 1 END), COALESCE((SELECT MAX(revision_id) FROM page_revision), 0) > 0 OR seq.is_called) FROM page_revision_revision_id_seq AS seq";
+
+/// Partial unique index over live file rows (see #2602).
+///
+/// Concurrent `add_file` calls can both pass the active-row lookup before
+/// either writes, so this index is the arbiter. Unique violations naming
+/// it map to `ErrorType::DatabaseImport`.
+const FILE_ACTIVE_UNIQUE_INDEX: &str = "file_active_page_name_unique";
 
 /// Largest attachment `add_file` stages in one call, in bytes.
 ///
@@ -231,6 +238,14 @@ async fn correct_file_revision_provenance(
 struct ObservedIdentity {
     name: String,
     slug: String,
+}
+
+fn is_file_active_unique_violation(error: &DbErr) -> bool {
+    matches!(
+        error.sql_err(),
+        Some(SqlErr::UniqueConstraintViolation(message))
+            if message.contains(FILE_ACTIVE_UNIQUE_INDEX)
+    )
 }
 
 #[derive(Debug)]
@@ -1279,7 +1294,21 @@ impl ImportService {
                             deleted_at: Set(None),
                             ..Default::default()
                         };
-                        model.update(txn).await.or_raise(make_error)?;
+                        // Reviving this row races a concurrent add that won
+                        // the name: the index is the arbiter, and the loser
+                        // reports the usual import conflict.
+                        match model.update(txn).await {
+                            Ok(_) => {}
+                            Err(error) if is_file_active_unique_violation(&error) => {
+                                bail!(Error::new(
+                                    format!(
+                                        "failed to import file '{name}' on page ID {page_id} in site ID {site_id}: name is already held by another active file",
+                                    ),
+                                    ErrorType::DatabaseImport,
+                                ));
+                            }
+                            Err(error) => return Err(error).or_raise(make_error),
+                        };
                         file_id
                     }
                     None => {
@@ -1475,7 +1504,22 @@ impl ImportService {
             created_at: Set(created_at),
             ..Default::default()
         };
-        let FileModel { file_id, .. } = file.insert(txn).await.or_raise(make_error)?;
+        // The pre-insert lookup cannot see a concurrent uncommitted insert,
+        // so the losing racer reaches this insert. Map the partial unique
+        // violation to the usual import conflict rather than leaking a raw
+        // database error.
+        let FileModel { file_id, .. } = match file.insert(txn).await {
+            Ok(file) => file,
+            Err(error) if is_file_active_unique_violation(&error) => {
+                bail!(Error::new(
+                    format!(
+                        "failed to import file '{name}' on page ID {page_id} in site ID {site_id}: name is already held by another active file",
+                    ),
+                    ErrorType::DatabaseImport,
+                ));
+            }
+            Err(error) => return Err(error).or_raise(make_error),
+        };
 
         let output = FileRevisionService::create_first(
             ctx,
