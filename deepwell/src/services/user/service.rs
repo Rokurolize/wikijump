@@ -706,7 +706,33 @@ impl UserService {
         let reference = Self::resolve_user_reference(ctx, reference).await?;
         let wikijump_user = Self::get_real_optional_resolved(ctx, &reference).await?;
 
+        // An authenticatable local account is the authoritative identity
+        // for its slug and keeps precedence over everything else.
         if let Some(user) = wikijump_user {
+            if matches!(user.user_type, UserType::Regular | UserType::Bot) {
+                debug!("Found Wikijump user '{}' (ID {})", user.slug, user.user_id);
+                return Ok(Some(User::Wikijump(user)));
+            }
+
+            // A non-authenticatable native placeholder (system or site
+            // user) must not shadow an imported Wikidot identity that
+            // owns the same slug. Placeholders only satisfy foreign-key
+            // ownership; they are never source identities.
+            if let Reference::Slug(slug) = &reference {
+                let wikidot_user = WikidotUser::find()
+                    .filter(
+                        Condition::all()
+                            .add(wikidot_user::Column::Slug.eq(slug.as_ref()))
+                            .add(wikidot_user::Column::IsDeleted.eq(false)),
+                    )
+                    .one(txn)
+                    .await
+                    .or_raise(make_error)?;
+                if wikidot_user.is_some() {
+                    return Ok(wikidot_user.map(User::Wikidot));
+                }
+            }
+
             debug!("Found Wikijump user '{}' (ID {})", user.slug, user.user_id);
             return Ok(Some(User::Wikijump(user)));
         }

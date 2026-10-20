@@ -25,7 +25,7 @@ use crate::services::import::{
     ImportFileDeleteOutput, ImportFileOutput, ImportPage, ImportPageFilesVerify,
     ImportPageFilesVerifyOutput, ImportPageOutput, ImportPageRevision,
     ImportPageRevisionOutput, ImportService, ImportSite, ImportSiteOutput, ImportUser,
-    ImportUserOutput,
+    ImportUserOutput, PromoteObservedIdentity, PromoteObservedIdentityOutput,
 };
 
 pub async fn import_wikidot_discussion(
@@ -50,6 +50,26 @@ pub async fn import_wikidot_user(
     ImportService::add_user(ctx, input).await.or_raise(|| {
         Error::new("failed to import wikidot user", ErrorType::DatabaseImport)
     })
+}
+
+pub async fn promote_observed_wikidot_identity(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<PromoteObservedIdentityOutput> {
+    MutationAuthorization::require_platform_staff(
+        ctx,
+        "promote observed Wikidot identity data",
+    )?;
+    let input: PromoteObservedIdentity = parse!(params, DatabaseImport);
+    info!("Promoting observed Wikidot identity ID {}", input.user_id);
+    ImportService::promote_observed_identity(ctx, input)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to promote observed wikidot identity",
+                ErrorType::DatabaseImport,
+            )
+        })
 }
 
 pub async fn import_wikidot_site(
