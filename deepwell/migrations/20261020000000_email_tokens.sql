@@ -8,7 +8,7 @@
 -- TTLs are local defaults pending Wikidot evidence.
 CREATE TABLE email_token (
     email_token_id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES users(user_id),
+    user_id BIGINT NOT NULL REFERENCES "user" (user_id),
     email TEXT NOT NULL,
     purpose TEXT NOT NULL,
     token_hash TEXT NOT NULL,
