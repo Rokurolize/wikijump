@@ -1717,9 +1717,13 @@ async fn mirror_scope_record_coexists_with_page_import() {
         .expect("consumed slug record should succeed"),
     );
     assert!(
-        MirrorScopeService::is_consumed(runner.context(), site_id, "mirror-scope-interplay")
-            .await
-            .expect("consumed lookup should succeed"),
+        MirrorScopeService::is_consumed(
+            runner.context(),
+            site_id,
+            "mirror-scope-interplay"
+        )
+        .await
+        .expect("consumed lookup should succeed"),
     );
 
     runner.teardown().await;
@@ -1753,6 +1757,7 @@ async fn mirror_scope_set_fails_closed_for_unknown_site() {
     );
 
     runner.teardown().await;
+}
 
 fn identity_ids() -> (i32, i32, String) {
     let fixture = Uuid::new_v4();
