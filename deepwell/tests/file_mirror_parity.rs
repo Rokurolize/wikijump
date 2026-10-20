@@ -770,6 +770,26 @@ async fn native_file_mutations_still_succeed() {
         "native file restore must succeed through the guarded endpoint",
     );
 
+    // A move records a revision only when the page actually changes (the
+    // revision body carries the page switch, matching the existing
+    // authorized-move contract), so the destination is a real second page.
+    let destination = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "parity native move destination",
+            "title": "Parity Native Move Destination",
+            "alt_title": null,
+            "slug": format!("parity-native-move-dest-{first_blob}"),
+            "layout": "wikidot",
+            "revision_comments": "create parity native move destination",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(destination.parser_errors.is_empty());
+
     let moved = run_endpoint!(
         runner,
         file_move,
@@ -780,7 +800,7 @@ async fn native_file_mutations_still_succeed() {
             "last_revision_id": restored.file_revision_id,
             "revision_comments": "native move",
             "current_page_id": page.page_id,
-            "destination_page": page.page_id,
+            "destination_page": destination.page_id,
             "name": format!("parity-native-moved-{first_blob}.txt"),
             "ip_address": common::IP_ADDRESS,
         }),
