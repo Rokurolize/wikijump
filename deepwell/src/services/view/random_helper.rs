@@ -1601,7 +1601,6 @@ mod tests {
     }
 
     #[test]
-    #[test]
     fn slug_equality_uses_wikidot_normalization() {
         assert!(random_helper_slugs_equal("scp-4890", "scp-4890"));
         assert!(!random_helper_slugs_equal("scp-4890", "scp-4891"));
