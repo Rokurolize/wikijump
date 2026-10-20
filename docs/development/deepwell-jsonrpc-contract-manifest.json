@@ -5005,7 +5005,7 @@
         "component": "deepwell",
         "handler": "mirror_scope_get",
         "source": "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_get",
-        "source_sha256": "d524c6144d8620d174deb0e9a6cda651e12c06c26bc5ef2c56b16a9fcd9d7e82",
+        "source_sha256": "5a1848689fa3e33ba2605d4fed1b0e1e429d0091299b3fdcc3c71245703e6564",
         "function_sha256": "b52674ec596ad8eaa097442eaa97b790ada0c80b542df57ce69fc3d73261ff35"
       },
       "params_schema": {
@@ -5066,7 +5066,7 @@
         "component": "deepwell",
         "handler": "mirror_scope_set",
         "source": "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_set",
-        "source_sha256": "d524c6144d8620d174deb0e9a6cda651e12c06c26bc5ef2c56b16a9fcd9d7e82",
+        "source_sha256": "5a1848689fa3e33ba2605d4fed1b0e1e429d0091299b3fdcc3c71245703e6564",
         "function_sha256": "e2d76747802a77078dab98a82f7cc8e83646e31b94deabd6180a44a3b1bca5f5"
       },
       "params_schema": {
