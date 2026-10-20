@@ -103,6 +103,12 @@ async fn imported_discussion_preserves_ids_appends_revisions_and_creates_no_acco
     assert!(!html.contains("Observed User"));
     assert!(html.contains("printuser"));
     assert!(!html.contains("user does not exist"));
+    // The root post dates to 2026-01-01, before the September https
+    // transition, so its reconstructed profile link keeps http (#2380).
+    let root_slug = source["posts"][0]["observed_users"][0]["slug"]
+        .as_str()
+        .unwrap();
+    assert!(html.contains(&format!("http://www.wikidot.com/user:info/{root_slug}")));
     let post = forum_post::Entity::find_by_id(reply)
         .one(runner.context().transaction())
         .await
@@ -157,6 +163,60 @@ async fn imported_discussion_preserves_ids_appends_revisions_and_creates_no_acco
     runner.set_request_context(RequestContext::default());
     let _ = run_endpoint_err!(runner, import_wikidot_discussion, input);
     runner.teardown().await;
+}
+
+#[tokio::test]
+async fn imported_discussion_user_links_follow_source_revision_scheme() {
+    // Post-transition and in-window revisions reconstruct with https
+    // profile links; only pre-transition revisions keep http (#2380).
+    // Before the fix every revision rendered http, so the https cases
+    // below fail on the old code.
+    for (created_at, expect_https) in [
+        ("2026-10-01T00:00:00Z", true),
+        ("2026-09-21T18:00:00Z", true),
+        ("2026-09-21T15:57:59Z", false),
+    ] {
+        let mut runner = TestRunner::setup().await;
+        let mut input = fixture(&mut runner).await;
+        input["source"]["posts"][0]["created_at"] = json!(created_at);
+        let slug = input["source"]["posts"][0]["observed_users"][0]["slug"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let imported = run_endpoint!(runner, import_wikidot_discussion, input.clone());
+        assert_eq!(imported.created_revisions, 2);
+        let root_id = input["source"]["posts"][0]["id"].as_i64().unwrap();
+        let root_post = forum_post::Entity::find_by_id(root_id)
+            .one(runner.context().transaction())
+            .await
+            .unwrap()
+            .unwrap();
+        let root_revision =
+            forum_post_revision::Entity::find_by_id(root_post.latest_revision_id.unwrap())
+                .one(runner.context().transaction())
+                .await
+                .unwrap()
+                .unwrap();
+        let html = TextService::get(runner.context(), &root_revision.compiled_html_hash)
+            .await
+            .unwrap();
+        if expect_https {
+            assert!(
+                html.contains(&format!("https://www.wikidot.com/user:info/{slug}")),
+                "post created at {created_at} must reconstruct with https links"
+            );
+            assert!(
+                !html.contains("http://www.wikidot.com/user:info/"),
+                "post created at {created_at} must not keep http links"
+            );
+        } else {
+            assert!(
+                html.contains(&format!("http://www.wikidot.com/user:info/{slug}")),
+                "post created at {created_at} must keep http links"
+            );
+        }
+        runner.teardown().await;
+    }
 }
 
 #[tokio::test]
