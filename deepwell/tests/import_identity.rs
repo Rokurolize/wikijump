@@ -30,7 +30,6 @@ mod common;
 use self::common::TestRunner;
 use deepwell::constants::ADMIN_USER_ID;
 use deepwell::models::known_user::Entity as KnownUser;
-use deepwell::models::user::Entity as User;
 use deepwell::models::wikidot_user::Entity as WikidotUser;
 use deepwell::services::import::{
     ImportService, ImportUser, ImportedUserType, ObservedUserProfile,
@@ -41,7 +40,7 @@ use deepwell::types::{Reference, UserType};
 use ftml::data::KarmaLevel;
 use std::borrow::Cow;
 use sea_orm::{
-    ColumnTrait, ConnectionTrait, DatabaseBackend, EntityTrait, QueryFilter, Statement,
+    ConnectionTrait, DatabaseBackend, EntityTrait, Statement,
 };
 use time::OffsetDateTime;
 use uuid::Uuid;

@@ -30,7 +30,7 @@ use super::structs::{
     ImportFile, ImportFileDelete, ImportFileDeleteOutput, ImportFileOutput, ImportPage,
     ImportPageFilesVerify, ImportPageFilesVerifyOutput, ImportPageOutput,
     ImportPageRevision, ImportPageRevisionOutput, ImportSite, ImportSiteOutput,
-    ImportUser, ImportUserOutput, ImportedUserType, ObservedUserProfile,
+    ImportUser, ImportUserOutput, ImportedUserType,
     PromoteObservedIdentity, PromoteObservedIdentityOutput,
 };
 use crate::constants::SYSTEM_USER_ID;
