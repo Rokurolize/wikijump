@@ -139,6 +139,17 @@ impl MimeAnalyzer {
             )
         })?;
 
+        // Older libmagic databases predate WebP and report its bytes as
+        // `application/octet-stream` (8,786 such rows on Standing, #2067),
+        // so correct that specific answer from the bytes themselves instead
+        // of trusting the stale database. Answers the database does
+        // recognize are left untouched.
+        let mime = if mime.starts_with("application/octet-stream") && is_webp(&buffer) {
+            str!("image/webp; charset=binary")
+        } else {
+            mime
+        };
+
         let label = description
             .split_once(',')
             .map_or(description.as_str(), |(label, _)| label)
@@ -164,6 +175,12 @@ impl MimeAnalyzer {
     }
 }
 
+/// Whether the bytes are a WebP image: a RIFF chunk whose form type is
+/// `WEBP` in the first twelve bytes.
+fn is_webp(bytes: &[u8]) -> bool {
+    bytes.len() >= 12 && &bytes[..4] == b"RIFF" && &bytes[8..12] == b"WEBP"
+}
+
 #[tokio::test]
 async fn mime_request() {
     const PNG: &[u8] = b"\x89\x50\x4e\x47\x0d\x0a\x1a\x0a\x00\x00\x00\x0d\x49\x48\x44\x52\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\x04\x73\x42\x49\x54\x08\x08\x08\x08\x7c\x08\x64\x88\x00\x00\x00\x0b\x49\x44\x41\x54\x08\x99\x63\xf8\x0f\x04\x00\x09\xfb\x03\xfd\xe3\x55\xf2\x9c\x00\x00\x00\x00\x49\x45\x4e\x44\xae\x42\x60\x82";
@@ -185,6 +202,11 @@ async fn mime_request() {
     check!(b"Apple banana", "text/plain; charset=us-ascii");
     check!(PNG, "image/png; charset=binary");
     check!(TAR_GZIP, "application/gzip; charset=binary");
+    // Minimal WebP: RIFF chunk with WEBP form type. Passes on databases
+    // that know WebP (no correction needed) and on older ones that report
+    // `application/octet-stream` (corrected from the magic bytes).
+    const WEBP: &[u8] = b"RIFF\x1a\x00\x00\x00WEBPVP8 \x0c\x00\x00\x00\x9d\x01\x2a";
+    check!(WEBP, "image/webp; charset=binary");
 
     let png = analyzer
         .analyze(PNG.to_vec())
