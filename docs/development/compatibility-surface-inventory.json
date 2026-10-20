@@ -11515,7 +11515,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "576043a2656dd2386b51360d550e2aa6a8daa383d8cbf59775d2d5a1e56ece82"
+      "source_input_set_sha256": "b183d01044cad4991a97a6b281852bdf6be209d6e859dadaa77bf411a883908e"
     },
     "ftml": {
       "commit": "d7727b245fd69f46d44c04592e392850ea244e13",
@@ -11680,7 +11680,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "57413451587afb4ce70ccb59e3ad49be4bc9cae69d29b20753fea6688f1e8a3a"
+        "sha256": "fd4aecd3fba9bcbdeaf35052a9ca0878d7184813dea03ff647376ca78a7f95ed"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11776,7 +11776,7 @@
       },
       {
         "path": "framerail/src/lib/server/load/page/page.ts",
-        "sha256": "8ded61c2afdaf8561114bd388b4400ca561c75247e3a72c8053cd34d277412c9"
+        "sha256": "c9150b42519db06261e775e6048ef760f3d79d79b4b0d5b8516655e2abc55abc"
       },
       {
         "path": "framerail/src/lib/server/wikidot-site-changes.js",
@@ -11852,7 +11852,7 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/register/+page.svelte",
-        "sha256": "f77c950051bd571481f5afdc8f93e5ffb0f770fd9b3b71104de865f44e2c249c"
+        "sha256": "9f4e905f3d36b2e4f54ed28a2e5cc0f38b820237b53a9ea1ca894c06aadb3ba1"
       },
       {
         "path": "framerail/src/routes/[x+2d]/settings/+page.server.ts",
@@ -26888,7 +26888,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/import.rs#mirror_seed_carries_source_random_helper_routes"
+          "deepwell/tests/import.rs#mirror_seed_carries_source_tags_and_navigation"
         ]
       },
       "evidence": {
@@ -30308,7 +30308,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/vote.rs#anonymous_rate_controls_are_exposed_and_rejected_by_the_vote_endpoint"
+          "deepwell/tests/vote.rs#imported_rating_baseline_vote_cast_change_cancel_lifecycle"
         ]
       },
       "evidence": {
@@ -39058,7 +39058,7 @@
         },
         {
           "path": "framerail/src/lib/server/load/page/page.ts",
-          "sha256": "8ded61c2afdaf8561114bd388b4400ca561c75247e3a72c8053cd34d277412c9"
+          "sha256": "c9150b42519db06261e775e6048ef760f3d79d79b4b0d5b8516655e2abc55abc"
         },
         {
           "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",
