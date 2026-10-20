@@ -15,6 +15,7 @@ use cuid2::cuid;
 use deepwell::constants::ADMIN_USER_ID;
 use deepwell::error::ErrorType;
 use deepwell::hash::{blob_hash_to_hex, sha512_hash};
+use deepwell::license::License;
 use deepwell::models::blob_pending;
 use deepwell::services::RequestContext;
 use deepwell::services::blob::EMPTY_BLOB_HASH;
@@ -53,6 +54,9 @@ async fn import_mirror_site(runner: &TestRunner, tag: &Uuid) -> i64 {
             created_at: OffsetDateTime::UNIX_EPOCH,
             name: format!("Mirror parity {}", cuid()),
             slug: format!("mirror-parity-{}", cuid()),
+            tagline: format!("Mirror parity fixture {}", cuid()),
+            description: "Source-inventory parity fixture site".to_owned(),
+            license: License::CcBySa40,
             locale: "en".to_owned(),
             ip_address: common::IP_ADDRESS,
         },
@@ -96,7 +100,7 @@ async fn import_uploader(runner: &TestRunner, label: &str) -> i64 {
         ImportUser {
             user_id,
             created_at: OffsetDateTime::UNIX_EPOCH,
-            fetched_at: OffsetDateTime::UNIX_EPOCH,
+            fetched_at: OffsetDateTime::UNIX_EPOCH + time::Duration::seconds(1),
             wikidot_user_type: ImportedUserType::Extant {
                 name: format!("Mirror parity {label} {}", cuid()),
                 slug: format!("mirror-parity-{label}-{}", cuid()),
@@ -162,7 +166,8 @@ async fn insert_local_file(
     page_id: i64,
     name: &str,
 ) -> i64 {
-    let pending_blob_id = format!("parity-local-{}", cuid());
+    // cuid2 IDs are 24 characters, exactly what blob_pending_external_id_check requires.
+    let pending_blob_id = cuid();
     blob_pending::ActiveModel {
         external_id: Set(pending_blob_id.clone()),
         created_by: Set(ADMIN_USER_ID),
@@ -478,14 +483,15 @@ async fn pending_empty_blob(
     page_id: i64,
     label: &str,
 ) -> String {
-    let pending_blob_id = format!("parity-native-{label}-{}", cuid());
+    // cuid2 IDs are 24 characters, exactly what blob_pending_external_id_check requires.
+    let pending_blob_id = cuid();
     blob_pending::ActiveModel {
         external_id: Set(pending_blob_id.clone()),
         created_by: Set(ADMIN_USER_ID),
         created_at: Set(OffsetDateTime::now_utc()),
         expires_at: Set(OffsetDateTime::now_utc() + time::Duration::minutes(5)),
         expected_length: Set(0),
-        s3_path: Set(format!("uploads/{pending_blob_id}")),
+        s3_path: Set(format!("uploads/parity-{label}-{pending_blob_id}")),
         s3_hash: Set(Some(EMPTY_BLOB_HASH.to_vec())),
         presign_url: Set("https://uploads.example.test/parity".to_owned()),
         site_id: Set(Some(site_id)),

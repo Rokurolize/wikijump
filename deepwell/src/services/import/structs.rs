@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use crate::types::PageRevisionType;
+use crate::types::{License, PageRevisionType};
 use ftml::data::KarmaLevel;
 use std::net::IpAddr;
 use time::{Date, OffsetDateTime};
@@ -71,6 +71,9 @@ pub struct ImportSite {
     pub created_at: OffsetDateTime,
     pub name: String,
     pub slug: String,
+    pub tagline: String,
+    pub description: String,
+    pub license: License,
     pub locale: String,
     pub ip_address: IpAddr,
 }
