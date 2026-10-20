@@ -64,6 +64,7 @@ export const fixtureState = {
   /** @type {Record<string, unknown[]>} */
   pageReadRequests: {
     backlinksView: [],
+    watchersView: [],
     forumPostSelect: [],
     forumPostPageSummary: [],
     forumPostGet: [],
