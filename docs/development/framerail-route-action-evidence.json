@@ -1,14 +1,14 @@
 {
   "schema": "wikijump.framerail_route_action_evidence.v1",
-  "source_revision": "e427ff0497235f84cf095bffc876c92103f396db",
+  "source_revision": "ad1fc1322994234147836631d4130650f6914c2d",
   "inventory": {
     "path": "docs/development/compatibility-surface-inventory.json",
-    "sha256": "1906d7229472694d2afbbea30e65e9e33c39dbc40481f794f4676a4000ac57cb"
+    "sha256": "d4456fdd9479be19db2d8d16062178830b4ac4c65f531d1158f909324a488bdd"
   },
   "current_inventory": {
-    "source_revision": "850a88d0b07770c8c50eff9a7293059708b88a66",
+    "source_revision": "ad1fc1322994234147836631d4130650f6914c2d",
     "path": "docs/development/compatibility-surface-inventory.json",
-    "sha256": "f4568583bf0c70812efdc74b9f78159860d4a9c7dd9c3cd61e2f1f32c8a30822"
+    "sha256": "d4456fdd9479be19db2d8d16062178830b4ac4c65f531d1158f909324a488bdd"
   },
   "records": [
     {
@@ -84,6 +84,18 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-route:/-/forgot",
+      "tests": [
+        "framerail/tests/email-token.test.js::forgot load requests the recovery copy keys"
+      ],
+      "tracking": [
+        {
+          "issue": 2128
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-route:/-/login",
       "tests": [
         "framerail/tests/account-route-boundaries.test.js::account route loads expose their public SvelteKit page data"
@@ -120,6 +132,18 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-route:/-/reset/{token}",
+      "tests": [
+        "framerail/tests/email-token.test.js::reset page exchanges the link for a grant only on POST"
+      ],
+      "tracking": [
+        {
+          "issue": 2128
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-route:/-/settings",
       "tests": [
         "framerail/tests/account-route-boundaries.test.js::account route loads expose their public SvelteKit page data"
@@ -151,6 +175,30 @@
       "tracking": [
         {
           "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/-/verify-email",
+      "tests": [
+        "framerail/tests/email-token.test.js::verify resend page requests the verification copy keys"
+      ],
+      "tracking": [
+        {
+          "issue": 2130
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/-/verify-email/{token}",
+      "tests": [
+        "framerail/tests/email-token.test.js::verify link load pre-fills the token form without calling Deepwell"
+      ],
+      "tracking": [
+        {
+          "issue": 2130
         }
       ],
       "temporal": []
@@ -1006,6 +1054,18 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-server-action:/-/forgot?/default",
+      "tests": [
+        "framerail/tests/email-token.test.js::forgot issue trims the address and always reports success"
+      ],
+      "tracking": [
+        {
+          "issue": 2128
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-server-action:/-/login?/default",
       "tests": [
         "framerail/tests/account-route-boundaries.test.js::login shares a session across native Wikijump wiki hosts but not custom domains"
@@ -1037,6 +1097,30 @@
       "tracking": [
         {
           "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/-/reset/{token}?/default",
+      "tests": [
+        "framerail/tests/email-token.test.js::reset page exchanges the link for a grant only on POST"
+      ],
+      "tracking": [
+        {
+          "issue": 2128
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/-/reset/{token}?/setPassword",
+      "tests": [
+        "framerail/tests/email-token.test.js::reset completion sets the password, clears it, and reports revocation"
+      ],
+      "tracking": [
+        {
+          "issue": 2128
         }
       ],
       "temporal": []
@@ -1077,6 +1161,30 @@
       "tracking": [
         {
           "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/-/verify-email?/default",
+      "tests": [
+        "framerail/tests/email-token.test.js::verify issue uses the verify RPC, never the reset RPC"
+      ],
+      "tracking": [
+        {
+          "issue": 2130
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/-/verify-email/{token}?/default",
+      "tests": [
+        "framerail/tests/email-token.test.js::verify redemption POSTs the token; malformed tokens never reach Deepwell"
+      ],
+      "tracking": [
+        {
+          "issue": 2130
         }
       ],
       "temporal": []

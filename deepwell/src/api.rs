@@ -670,6 +670,11 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
 
     // Email
     register!("email_validate", validate_email);
+    register!("email_verify_issue", email_verify_issue);
+    register!("email_verify_redeem", email_verify_redeem);
+    register!("password_reset_issue", password_reset_issue);
+    register!("password_reset_redeem", password_reset_redeem);
+    register!("password_reset_complete", password_reset_complete);
 
     // Votes
     register!("vote_set", vote_set);

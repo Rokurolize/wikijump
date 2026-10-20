@@ -18,8 +18,13 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+mod email_token;
 mod service;
 mod structs;
 
+pub use email_token::{
+    EmailTokenPurpose, EmailTokenService, IssueEmailToken, IssueEmailTokenOutcome,
+    RedeemedEmailToken,
+};
 pub use service::EmailService;
 pub use structs::{EmailClassification, EmailValidationOutput};

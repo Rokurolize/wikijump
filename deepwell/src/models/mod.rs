@@ -7,6 +7,7 @@ pub mod audit_log;
 pub mod authorization_token;
 pub mod blob_blacklist;
 pub mod blob_pending;
+pub mod email_token;
 pub mod file;
 pub mod file_revision;
 pub mod filter;

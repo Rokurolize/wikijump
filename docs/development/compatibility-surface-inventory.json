@@ -3112,6 +3112,16 @@
       "target": "wikijump.deepwell"
     },
     {
+      "source": "deepwell-jsonrpc:email_verify_issue",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:email_verify_redeem",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
       "source": "deepwell-jsonrpc:error",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
@@ -3622,6 +3632,21 @@
       "target": "wikijump.deepwell"
     },
     {
+      "source": "deepwell-jsonrpc:password_reset_complete",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:password_reset_issue",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:password_reset_redeem",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
       "source": "deepwell-jsonrpc:ping",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
@@ -4032,6 +4057,11 @@
       "target": "wikijump.framerail"
     },
     {
+      "source": "framerail-route:/-/forgot",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
       "source": "framerail-route:/-/login",
       "type": "implemented_by",
       "target": "wikijump.framerail"
@@ -4047,6 +4077,11 @@
       "target": "wikijump.framerail"
     },
     {
+      "source": "framerail-route:/-/reset/{token}",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
       "source": "framerail-route:/-/settings",
       "type": "implemented_by",
       "target": "wikijump.framerail"
@@ -4058,6 +4093,16 @@
     },
     {
       "source": "framerail-route:/-/user",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-route:/-/verify-email/{token}",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-route:/-/verify-email",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
@@ -4337,6 +4382,11 @@
       "target": "wikijump.framerail"
     },
     {
+      "source": "framerail-server-action:/-/forgot?/default",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
       "source": "framerail-server-action:/-/login?/default",
       "type": "implemented_by",
       "target": "wikijump.framerail"
@@ -4352,6 +4402,16 @@
       "target": "wikijump.framerail"
     },
     {
+      "source": "framerail-server-action:/-/reset/{token}?/default",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/-/reset/{token}?/setPassword",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
       "source": "framerail-server-action:/-/settings?/display",
       "type": "implemented_by",
       "target": "wikijump.framerail"
@@ -4363,6 +4423,16 @@
     },
     {
       "source": "framerail-server-action:/-/user?/userEdit",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/-/verify-email?/default",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/-/verify-email/{token}?/default",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
@@ -11515,7 +11585,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "103596099571d87ac77b81c745344a353084a1dbac4e4da1bbebd2ff8c0e6d08"
+      "source_input_set_sha256": "58c422b5df673983dc99e194d3022aefc56f0c91b904c4cabbb85dc99100fe9a"
     },
     "ftml": {
       "commit": "d7727b245fd69f46d44c04592e392850ea244e13",
@@ -11532,7 +11602,7 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "dab4bead9759dc487ef2e784534a47e4bd47aa014c312d65b7b85dc8c7bef1dd"
+        "sha256": "1d45df893f5baa81fa6caeb51374d1ac1369d1f301b9e016b6747d1d2013211b"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
@@ -11560,7 +11630,7 @@
       },
       {
         "path": "deepwell/src/endpoints/email.rs",
-        "sha256": "ecee00a781663321d8e4937f92011c54ecd7125d3b9ca93cf1d11833b4f27d18"
+        "sha256": "e296cbc6b337582ccabdcf3b8dc24bc8774e10421074100de8b7d5bf715532fc"
       },
       {
         "path": "deepwell/src/endpoints/file_revision.rs",
@@ -11680,7 +11750,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "98a650c6194711a0ada50455b2488799b04f26f6a409292d3d42a4f690034aa0"
+        "sha256": "c09c0e6fe7c68c95d0135c65699c5ab082574614b2336007056574ff7922fecf"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11688,7 +11758,7 @@
       },
       {
         "path": "docs/development/framerail-route-action-evidence.json",
-        "sha256": "5040ed32056ad6688e8a94ab56b9609c47f3a586ff408c504f117304405aa0ed"
+        "sha256": "17c9e24887217b884fb46677e161b9c0554938a48f7d3b3d4814e6370fb9fdaf"
       },
       {
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
@@ -11744,7 +11814,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "9e9c767b2aefd0e79c8cd9c10b1d1b19bd6810ef7db84e28268e4d6d1d2cf7f6"
+        "sha256": "8af229fe58c5b2b7443af86428bb65ebc5ab8d4dd3be359abfefbd4f3adba44e"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11831,12 +11901,20 @@
         "sha256": "989b2320857aec2124bd4284ba4e8b2f2d64c047264e609a065de3a5d9adcd95"
       },
       {
+        "path": "framerail/src/routes/[x+2d]/forgot/+page.server.ts",
+        "sha256": "0baee4009d9387db1f77576a86d7bda8fac801f960f366e3afd3bc232b6bb905"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/forgot/+page.svelte",
+        "sha256": "3a0753d7a8b48409e3a86abb076f164be571df5fd45072e09fa50f2fefeb1970"
+      },
+      {
         "path": "framerail/src/routes/[x+2d]/login/+page.server.ts",
         "sha256": "59bc7764c36b34a46983fa99c354cb6bb57a643358cd97a8e6ff65f3f2eb8b64"
       },
       {
         "path": "framerail/src/routes/[x+2d]/login/+page.svelte",
-        "sha256": "c3e8168ef54414d7a25b8e3758148fdcf41bcec41bf53efa7e31851bc3832c2e"
+        "sha256": "2707cf8a0ec8765e0ae9f897730c77d68261d37869f29900c813bb5f3636e52e"
       },
       {
         "path": "framerail/src/routes/[x+2d]/logout/+page.server.ts",
@@ -11853,6 +11931,14 @@
       {
         "path": "framerail/src/routes/[x+2d]/register/+page.svelte",
         "sha256": "f77c950051bd571481f5afdc8f93e5ffb0f770fd9b3b71104de865f44e2c249c"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/reset/[token]/+page.server.ts",
+        "sha256": "5734acd71cd4e272954d321e86f5545ede2602180f05fcc65851cdde038c3ce5"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/reset/[token]/+page.svelte",
+        "sha256": "9512aa10b1583cd3b35f9cdb5ab3e5b42af352e67aee106a75f12d3eea99f6a0"
       },
       {
         "path": "framerail/src/routes/[x+2d]/settings/+page.server.ts",
@@ -11877,6 +11963,22 @@
       {
         "path": "framerail/src/routes/[x+2d]/user/+page.svelte",
         "sha256": "8a331c248b726fca68f0eff0e465dcb332346ff22adca680b8c2ff582dcaf7ff"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/verify-email/[token]/+page.server.ts",
+        "sha256": "a3dea7461ba4ac668361cbe164701a7f992b7191d022bdbf0048e4d602e8f12e"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/verify-email/[token]/+page.svelte",
+        "sha256": "9b9c3c95a3000ee730f766f56259069feb1d816b8249eec923d1e5ae97bd759a"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/verify-email/+page.server.ts",
+        "sha256": "be9a0b8a613918a09aef18de256de92b7235933cc914a122c2ec496e081a79b0"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/verify-email/+page.svelte",
+        "sha256": "fdd0283af6dcc09c5e9b1641ed4422b5ab821a4877e3fe7eb5f6cde064b757ec"
       },
       {
         "path": "framerail/src/routes/[x+2d]/wikidot-interwiki/interwikiFrame.html/+server.ts",
@@ -12123,14 +12225,14 @@
     ]
   },
   "counts": {
-    "total": 980,
+    "total": 994,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 191,
+      "deepwell_jsonrpc_method": 196,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 27,
-      "framerail_route": 35,
-      "framerail_server_action": 114,
+      "framerail_route": 39,
+      "framerail_server_action": 119,
       "framerail_xmlrpc_method": 17,
       "missing_page_control": 2,
       "open43_audit_case": 285,
@@ -24176,6 +24278,96 @@
       ]
     },
     {
+      "surface_id": "deepwell-jsonrpc:email_verify_issue",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:email_verify_issue",
+        "deepwell/src/endpoints/email.rs#email_verify_issue"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/email.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:email_verify_redeem",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:email_verify_redeem",
+        "deepwell/src/endpoints/email.rs#email_verify_redeem"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/email.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
       "surface_id": "deepwell-jsonrpc:error",
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
@@ -28766,6 +28958,141 @@
       ]
     },
     {
+      "surface_id": "deepwell-jsonrpc:password_reset_complete",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:password_reset_complete",
+        "deepwell/src/endpoints/email.rs#password_reset_complete"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/email.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:password_reset_issue",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:password_reset_issue",
+        "deepwell/src/endpoints/email.rs#password_reset_issue"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/email.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:password_reset_redeem",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:password_reset_redeem",
+        "deepwell/src/endpoints/email.rs#password_reset_redeem"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/email.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
       "surface_id": "deepwell-jsonrpc:ping",
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
@@ -32401,6 +32728,47 @@
       ]
     },
     {
+      "surface_id": "framerail-route:/-/forgot",
+      "kind": "framerail_route",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/forgot/+page.server.ts#methods:GET",
+        "framerail/src/routes/[x+2d]/forgot/+page.svelte#methods:GET"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#forgot load requests the recovery copy keys"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-route",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-route:/-/login",
       "kind": "framerail_route",
       "public_reference": [
@@ -32524,6 +32892,47 @@
       ]
     },
     {
+      "surface_id": "framerail-route:/-/reset/{token}",
+      "kind": "framerail_route",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/reset/[token]/+page.server.ts#methods:GET",
+        "framerail/src/routes/[x+2d]/reset/[token]/+page.svelte#methods:GET"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#reset page exchanges the link for a grant only on POST"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-route",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-route:/-/settings",
       "kind": "framerail_route",
       "public_reference": [
@@ -32619,6 +33028,88 @@
         "cases": [],
         "tests": [
           "framerail/tests/account-route-boundaries.test.js#legacy user slug route fails closed for imported profiles"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-route",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-route:/-/verify-email",
+      "kind": "framerail_route",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/verify-email/+page.server.ts#methods:GET",
+        "framerail/src/routes/[x+2d]/verify-email/+page.svelte#methods:GET"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#verify resend page requests the verification copy keys"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-route",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-route:/-/verify-email/{token}",
+      "kind": "framerail_route",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/verify-email/[token]/+page.server.ts#methods:GET",
+        "framerail/src/routes/[x+2d]/verify-email/[token]/+page.svelte#methods:GET"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#verify link load pre-fills the token form without calling Deepwell"
         ]
       },
       "evidence": {
@@ -34792,6 +35283,46 @@
       ]
     },
     {
+      "surface_id": "framerail-server-action:/-/forgot?/default",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/forgot/+page.server.ts#action:default"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#forgot issue trims the address and always reports success"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-server-action:/-/login?/default",
       "kind": "framerail_server_action",
       "public_reference": [
@@ -34912,6 +35443,86 @@
       ]
     },
     {
+      "surface_id": "framerail-server-action:/-/reset/{token}?/default",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/reset/[token]/+page.server.ts#action:default"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#reset page exchanges the link for a grant only on POST"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/-/reset/{token}?/setPassword",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/reset/[token]/+page.server.ts#action:setPassword"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#reset completion sets the password, clears it, and reports revocation"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-server-action:/-/settings?/display",
       "kind": "framerail_server_action",
       "public_reference": [
@@ -35004,6 +35615,86 @@
         "cases": [],
         "tests": [
           "framerail/tests/account-route-boundaries.test.js#logout and user-edit route actions bind mutations to the server session"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/-/verify-email?/default",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/verify-email/+page.server.ts#action:default"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#verify issue uses the verify RPC, never the reset RPC"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/-/verify-email/{token}?/default",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/verify-email/[token]/+page.server.ts#action:default"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#verify redemption POSTs the token; malformed tokens never reach Deepwell"
         ]
       },
       "evidence": {
