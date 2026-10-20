@@ -24,9 +24,9 @@ mod service;
 mod structs;
 
 pub use self::discussion_structs::{
-    DiscussionActor, DiscussionBodyUser, DiscussionCategory, DiscussionCreator,
-    DiscussionPost, DiscussionPostEdit, DiscussionSource, DiscussionThread,
-    ImportDiscussion, ImportDiscussionOutput,
+    ActorProfileGap, DiscussionActor, DiscussionBodyUser, DiscussionCategory,
+    DiscussionCreator, DiscussionPost, DiscussionPostEdit, DiscussionSource,
+    DiscussionThread, ImportDiscussion, ImportDiscussionOutput,
 };
 
 pub use self::service::{ImportService, MAX_IMPORT_FILE_BYTES};
@@ -35,5 +35,6 @@ pub use self::structs::{
     ImportFileOutput, ImportMetaTag, ImportPage, ImportPageFilesVerify,
     ImportPageFilesVerifyOutput, ImportPageOutput, ImportPageRevision,
     ImportPageRevisionOutput, ImportSite, ImportSiteOutput, ImportUser, ImportUserOutput,
-    ImportedUserType,
+    ImportedUserType, ObservedUserProfile, PromoteObservedIdentity,
+    PromoteObservedIdentityOutput,
 };

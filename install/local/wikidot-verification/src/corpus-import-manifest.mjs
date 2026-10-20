@@ -5,6 +5,7 @@ import path from 'node:path';
 import { codePointCompare, sha256Hex, stableStringify } from './canonical-json.mjs';
 import { isWikidotResourceHost } from './resource-manifest.mjs';
 import {
+  CORPUS_SITE_PREFERRED_BRANCHES,
   DEFAULT_CLOSURE_MAX_DEPTH,
   DEFAULT_CLOSURE_MAX_PAGES,
   expandCrossSiteIncludeClosure,
@@ -1053,7 +1054,7 @@ export function buildCrossSiteDependencyManifest({
   const {
     maxDepth = DEFAULT_CLOSURE_MAX_DEPTH,
     maxPages = DEFAULT_CLOSURE_MAX_PAGES,
-    preferredBranches = {},
+    preferredBranches = CORPUS_SITE_PREFERRED_BRANCHES,
   } = includeClosure;
   const branchAccess = {};
   for (const branch of [...branches].sort(codePointCompare)) {

@@ -178,6 +178,12 @@ wiki-page-file-restore = 復元
   .new-page = 移動先ページ
   .new-name = 新しいファイル名
 
+wiki-page-file-mirror-readonly =
+  .title = PERMISSION ERROR
+  .lead-in = ご注意ください:
+  .message = このインポートされたページのファイルは読み取り専用です。
+  .extra-message = ミラーページにはソースのファイル一覧が表示されます。ファイルの更新は、サイト管理者にWikidotのインポート経由で行うよう依頼してください。
+
 wiki-page-lock = ページロック
   .permission-only = 権限保持者のみ
   .author-or-permission-only = 権限保持者と作成者のみ
