@@ -30,8 +30,8 @@ use super::structs::{
     ImportFile, ImportFileDelete, ImportFileDeleteOutput, ImportFileOutput, ImportPage,
     ImportPageFilesVerify, ImportPageFilesVerifyOutput, ImportPageOutput,
     ImportPageRevision, ImportPageRevisionOutput, ImportSite, ImportSiteOutput,
-    ImportUser, ImportUserOutput, ImportedUserType,
-    PromoteObservedIdentity, PromoteObservedIdentityOutput,
+    ImportUser, ImportUserOutput, ImportedUserType, PromoteObservedIdentity,
+    PromoteObservedIdentityOutput,
 };
 use crate::constants::SYSTEM_USER_ID;
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
@@ -68,9 +68,9 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, EntityTrait, FromQueryResult,
     IntoActiveModel, QueryFilter, QueryOrder, Set,
 };
-use sha2::{Digest, Sha256};
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, UpdateResult};
 use sea_query::Expr;
+use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 use std::net::IpAddr;
 use time::OffsetDateTime;
@@ -492,14 +492,14 @@ impl ImportService {
             ip_address,
         }: PromoteObservedIdentity,
     ) -> Result<PromoteObservedIdentityOutput> {
-        info!(
-            "Promoting observed Wikidot identity (user ID {user_id}, slug '{slug}')"
-        );
+        info!("Promoting observed Wikidot identity (user ID {user_id}, slug '{slug}')");
 
         let txn = ctx.transaction();
         let make_error = || {
             Error::new(
-                format!("failed to promote observed wikidot identity (user ID {user_id})"),
+                format!(
+                    "failed to promote observed wikidot identity (user ID {user_id})"
+                ),
                 ErrorType::DatabaseImport,
             )
         };
@@ -597,10 +597,7 @@ impl ImportService {
                 .all(txn)
                 .await
                 .or_raise(make_error)?;
-            if prior
-                .iter()
-                .any(|row| row.name != name || row.slug != slug)
-            {
+            if prior.iter().any(|row| row.name != name || row.slug != slug) {
                 return Err(make_error().into());
             }
         }
@@ -631,9 +628,7 @@ impl ImportService {
             // An observation alone materializes nothing. A live row is
             // already complete; a tombstone or a missing row still needs
             // every blocking profile field.
-            let complete = existing
-                .as_ref()
-                .is_some_and(|row| !row.is_deleted);
+            let complete = existing.as_ref().is_some_and(|row| !row.is_deleted);
             return Ok(PromoteObservedIdentityOutput {
                 user_id,
                 promoted: false,

@@ -379,7 +379,10 @@ impl ImportService {
                 .one(ctx.transaction())
                 .await
                 .or_raise(|| {
-                    Error::new("cannot inspect source actor profile", ErrorType::DatabaseImport)
+                    Error::new(
+                        "cannot inspect source actor profile",
+                        ErrorType::DatabaseImport,
+                    )
                 })?
                 .is_some();
             if !profiled {
