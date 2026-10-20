@@ -3822,6 +3822,108 @@ fn substantial_url_offset_listpages_content_gets_a_bounded_deadline_floor() {
 }
 
 #[test]
+fn substituted_identity_and_tag_values_render_as_literal_text() {
+    let payload_name =
+        "WJ-PENTEST-DISPLAY\n[[module ListPages category=\"wj-pentest-tag-host\"]]";
+    let payload_tags = vec![
+        "wj-pentest-tag-a".to_owned(),
+        "[[module".to_owned(),
+        "ListPages]]".to_owned(),
+        "_wj-pentest-hidden".to_owned(),
+    ];
+    let page = FoundPageRow {
+        page_id: 1,
+        site_id: 1,
+        title: Some("WJ Pentest Host".to_owned()),
+        alt_title: None,
+        slug: Some("wj-pentest-host".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: Some(payload_tags),
+        created_at: None,
+        created_by: Some(7),
+        updated_at: None,
+        updated_by: Some(7),
+        score: None,
+        revision_count: None,
+    };
+    let mut users = BTreeMap::new();
+    users.insert(
+        7,
+        WikidotUserDisplay {
+            user_id: 7,
+            name: payload_name.to_owned(),
+            slug: Some("wj-pentest-display".to_owned()),
+            wikidot_profile: false,
+        },
+    );
+    let rendered = substitute_list_pages_variables(
+        "By %%created_by%% (%%updated_by%%) tags %%tags%% hidden %%_tags%%",
+        &page,
+        1,
+        1,
+        &list_pages_substitution_context(20, &users, None, &BTreeMap::new()),
+    );
+
+    // The payload text survives literally (nothing is stripped) ...
+    assert!(rendered.contains("WJ-PENTEST-DISPLAY"), "{rendered:?}");
+    assert!(rendered.contains("[[module ListPages"), "{rendered:?}");
+    assert!(rendered.contains("wj-pentest-tag-a"), "{rendered:?}");
+    // ... but it contributed no executable markup: quotes went through the
+    // protected-fragment path, and no fragment or iframe markup remains.
+    assert!(rendered.contains("&quot;"), "{rendered:?}");
+    assert!(
+        !rendered.contains("category=\"wj-pentest-tag-host\""),
+        "{rendered:?}"
+    );
+    assert!(!rendered.contains("<iframe"), "{rendered:?}");
+    assert!(
+        !rendered.contains("WIKIJUMPWIKIDOTCOMPATHTML"),
+        "{rendered:?}"
+    );
+}
+
+#[test]
+fn substituted_ordinary_identity_and_tag_values_pass_through_verbatim() {
+    let page = FoundPageRow {
+        page_id: 1,
+        site_id: 1,
+        title: Some("Lt Masipag".to_owned()),
+        alt_title: None,
+        slug: Some("lt-masipag".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: Some(vec!["tale-of".to_owned(), "_hidden".to_owned()]),
+        created_at: None,
+        created_by: Some(7),
+        updated_at: None,
+        updated_by: Some(7),
+        score: None,
+        revision_count: None,
+    };
+    let mut users = BTreeMap::new();
+    users.insert(
+        7,
+        WikidotUserDisplay {
+            user_id: 7,
+            name: "Lt Masipag".to_owned(),
+            slug: Some("lt-masipag".to_owned()),
+            wikidot_profile: false,
+        },
+    );
+    assert_eq!(
+        substitute_list_pages_variables(
+            "By %%created_by%% (%%updated_by%%) tags %%tags%% hidden %%_tags%%",
+            &page,
+            1,
+            1,
+            &list_pages_substitution_context(20, &users, None, &BTreeMap::new()),
+        ),
+        "By Lt Masipag (Lt Masipag) tags tale-of _hidden hidden _hidden",
+    );
+}
+
+#[test]
 fn url_offset_listpages_deadline_does_not_shorten_configured_timeout() {
     let mut config = Config::integration_testing();
     config.preprocess_timeout = Duration::from_secs(3);

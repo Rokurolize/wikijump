@@ -412,7 +412,9 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     .get(0)
                     .map_or("", |matched| matched.as_str())
                     .to_owned(),
-                "created_by" | "createdby" => created_by.clone(),
+                // Identity values render as literal text: a display name must
+                // never contribute executable wikitext (see #2652).
+                "created_by" | "createdby" => compat_html.push_plain(&created_by),
                 "created_by_linked" | "createdbylinked" | "author" => {
                     protect_list_pages_generated_html(
                         created_by_linked.clone(),
@@ -443,7 +445,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                         compat_html,
                     )
                 }
-                "updated_by" | "updatedby" => updated_by.clone(),
+                "updated_by" | "updatedby" => compat_html.push_plain(&updated_by),
                 "updated_by_linked"
                 | "updatedbylinked"
                 | "author_edited"
@@ -469,7 +471,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     )
                 }
                 "commented_by"
-                | "commentedby" => commented_by.clone(),
+                | "commentedby" => compat_html.push_plain(&commented_by),
                 "commented_by_linked" | "commentedbylinked" => {
                     protect_list_pages_generated_html(
                         commented_by_linked.clone(),
@@ -499,7 +501,8 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                 "rating" => rating.clone(),
                 "rating_votes" | "ratingvotes" => rating_votes.clone(),
                 "comments" => comments.clone(),
-                "tags" => tags_text.clone(),
+                // Tag values render as literal text, like identity values.
+                "tags" => compat_html.push_plain(&tags_text),
                 "tags_linked" | "tagslinked"
                     if generated_slots.is_some()
                         && captures.name("format").is_none()
@@ -550,7 +553,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     context.render_generated_html,
                     compat_html,
                 ),
-                "_tags" => hidden_tags.join(" "),
+                "_tags" => compat_html.push_plain(&hidden_tags.join(" ")),
                 "category" => context.category.to_owned(),
                 "size" => context
                     .page_wikitext_scalar_count
