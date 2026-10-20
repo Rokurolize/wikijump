@@ -881,22 +881,20 @@ fn large_tabbed_corpus_page_stays_parse_eligible() {
     ));
 }
 
-#[test]
-fn large_tabbed_page_with_collapsible_images_and_headings_stays_parse_eligible() {
+fn large_tabbed_gallery_source() -> String {
     // Gallery-shaped tabbed pages like zal-cryptid-s-artwork-hub carry a
-    // dozen tabs of collapsibles with images and headings; they render
-    // through FTML with all bodies intact, so the tabview shape must not
-    // route them to the fallback, whose line-oriented parser drops
-    // same-line collapsible bodies and shreds tab bodies (#2606).
+    // dozen tabs of collapsibles with images and headings. Titles and
+    // headings use no spaces so the rendered text is asserted verbatim
+    // (the renderer may encode spaces inside link labels).
     let mut source = String::new();
     source.push_str("[[tabview]]\n");
     for tab in 0..14 {
-        source.push_str(&format!("[[tab Section {tab}]]\n"));
+        source.push_str(&format!("[[tab Tab{tab}]]\n"));
         for index in 0..30 {
             source.push_str(&format!(
-                "[[collapsible show=\"+ Gallery {tab}-{index}\" hide=\"- Gallery {tab}-{index}\"]]\n"
+                "[[collapsible show=\"+ G{tab}-{index}\" hide=\"- G{tab}-{index}\"]]\n"
             ));
-            source.push_str(&format!("++ Section {tab}-{index}\n"));
+            source.push_str(&format!("++ H{tab}-{index}\n"));
             source.push_str(&format!(
                 "[[image https://scp-wiki.wdfiles.com/local--files/gallery/image-{tab}-{index}.png]]\n"
             ));
@@ -908,6 +906,15 @@ fn large_tabbed_page_with_collapsible_images_and_headings_stays_parse_eligible()
     while source.len() < 64_000 {
         source.push_str("ordinary author page prose\n");
     }
+    source
+}
+
+#[test]
+fn large_tabbed_page_with_collapsible_images_and_headings_stays_parse_eligible() {
+    // The tabview shape must not route gallery-shaped pages to the
+    // fallback, whose line-oriented parser drops same-line collapsible
+    // bodies and shreds tab bodies (#2606).
+    let source = large_tabbed_gallery_source();
 
     assert!(source.len() < MAX_FTML_COMPAT_PARSE_BYTES);
     assert!(!RenderService::should_use_wikidot_compatibility_fallback(
@@ -939,6 +946,44 @@ fn large_tabbed_page_with_collapsible_images_and_headings_stays_parse_eligible()
 
     assert!(!prepared.compatibility_fallback);
     assert!(prepared.preprocessed);
+}
+
+#[test]
+fn large_tabbed_gallery_renders_every_collapsible_body_and_image() {
+    // Routing eligibility alone does not prove the bodies survive: render
+    // the gallery fixture through FTML (the path parse-eligible pages
+    // take) and require every collapsible body and image in the output
+    // (#2606). zal-cryptid-s-artwork-hub lost all 14 tab bodies and all
+    // but 2 of its 415 images to the fallback; FTML must keep all of them.
+    const TABS: usize = 14;
+    const COLLAPSIBLES_PER_TAB: usize = 30;
+    const BODIES: usize = TABS * COLLAPSIBLES_PER_TAB;
+
+    let source = large_tabbed_gallery_source();
+    let page_info =
+        fallback_test_page_info("zal-cryptid-s-artwork-hub", "Zal Cryptid's Artwork Hub");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let tokenization = ftml::tokenize(&source);
+    let (tree, errors) = ftml::parse(&tokenization, &page_info, &settings).into();
+    assert!(errors.is_empty(), "{errors:#?}");
+    let html = HtmlRender.render(&tree, &page_info, &settings).body;
+
+    assert!(html.contains(r#"<div class="yui-navset"#));
+    for tab in 0..TABS {
+        assert!(html.contains(&format!("<em>Tab{tab}</em>")));
+    }
+    assert_eq!(html.matches("<img").count(), BODIES);
+    assert_eq!(html.matches("collapsible-block-folded").count(), BODIES);
+    for tab in 0..TABS {
+        for index in 0..COLLAPSIBLES_PER_TAB {
+            assert!(html.contains(&format!("image-{tab}-{index}.png")));
+            assert!(html.contains(&format!("H{tab}-{index}")));
+        }
+    }
+    assert!(!html.contains("wikidot-compat-fallback"));
+    assert!(!html.contains("[[tab"));
+    assert!(!html.contains("[[collapsible"));
+    assert!(!html.contains("[[image"));
 }
 
 #[test]
