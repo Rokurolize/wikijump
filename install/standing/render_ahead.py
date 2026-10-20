@@ -562,6 +562,24 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+# A live wiki keeps taking edits while render-ahead runs. A page written
+# after the cutoff has no valid ahead render yet, so verify would report it
+# stale and fail the promotion. Render just those pages and verify again,
+# a bounded number of times, before calling the run incomplete.
+CATCH_UP_ROUNDS = 3
+
+
+def verify_with_catch_up(render, cutoff, rounds: int = CATCH_UP_ROUNDS) -> dict[str, object]:
+    """Verify the whole site, rendering pages written during the run first."""
+    final = render("verify", cutoff, dry_run=True)
+    for round_number in range(1, rounds + 1):
+        if final["stale_without_valid_ahead"] == 0:
+            break
+        render(f"catch-up-{round_number}", cutoff)
+        final = render(f"verify-{round_number}", cutoff, dry_run=True)
+    return final
+
+
 def main() -> int:
     args = parse_args()
     if min(args.concurrency, args.batch_size, args.tail_render_timeout_ms, args.shards) < 1:
@@ -635,8 +653,9 @@ def main() -> int:
         readers, nondeterministic = render_until_links_settle(
             settle_render, lambda: link_digests(args.database_container), cutoff, digest_timings
         )
-        # Verify the whole site, not just the last pass's pages.
-        final = render("verify", cutoff, dry_run=True)
+        # Verify the whole site, not just the last pass's pages, after
+        # catching up on pages written while the run was in progress.
+        final = verify_with_catch_up(render, cutoff)
     finally:
         os.unlink(extended_config)
     receipt = {
