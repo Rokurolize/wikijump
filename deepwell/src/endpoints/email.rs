@@ -21,8 +21,8 @@
 use super::prelude::*;
 use crate::services::PasswordService;
 use crate::services::email::{
-    EmailService, EmailTokenPurpose, EmailTokenService, IssueEmailToken,
-    IssueEmailTokenOutcome,
+    EmailService, EmailTokenPurpose, EmailTokenService, EmailValidationOutput,
+    IssueEmailToken, IssueEmailTokenOutcome,
 };
 use crate::services::user::UpdateUserBody;
 use crate::types::{Maybe, Reference};
@@ -75,7 +75,8 @@ async fn issue_token_quietly(
         return Err(Error::new(
             "email address is malformed",
             ErrorType::InvalidEmail,
-        ));
+        )
+        .into());
     }
 
     if let Some(user) = UserService::get_real_optional_by_email(ctx, &email)
@@ -149,7 +150,8 @@ pub async fn email_verify_redeem(
         return Err(Error::new(
             "verification token no longer matches the account address",
             ErrorType::InvalidEmailToken,
-        ));
+        )
+        .into());
     }
 
     UserService::update(
@@ -176,7 +178,7 @@ pub async fn password_reset_issue(
     issue_token_quietly(ctx, &email, EmailTokenPurpose::ResetPassword, ip_address).await
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 pub struct ResetGrantOutput {
     pub grant: String,
 }
@@ -217,7 +219,8 @@ pub async fn password_reset_redeem(
             return Err(Error::new(
                 "recovery grant is cooling down, retry shortly",
                 ErrorType::RateLimited,
-            ));
+            )
+            .into());
         }
     };
 
@@ -232,7 +235,7 @@ struct PasswordResetComplete {
     ip_address: IpAddr,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 pub struct ResetCompleteOutput {
     pub sessions_revoked: u64,
 }

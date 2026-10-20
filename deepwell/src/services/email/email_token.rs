@@ -32,12 +32,12 @@
 use std::net::IpAddr;
 
 use rand::distr::{Alphanumeric, SampleString};
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set};
 use serde::{Deserialize, Serialize};
 use time::Duration;
 
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
-use crate::hash::text::{TextHexHash, k12_hash, text_hash_to_hex};
+use crate::hash::{TextHexHash, k12_hash, text_hash_to_hex};
 use crate::models::email_token::{self, Entity as EmailToken};
 use crate::services::ServiceContext;
 use crate::utils::{assert_is_csprng, now};
@@ -213,11 +213,11 @@ impl EmailTokenService {
             .await
             .or_raise(make_error)?
         else {
-            return Err(make_error());
+            return Err(make_error().into());
         };
 
         if model.expires_at <= now {
-            return Err(make_error());
+            return Err(make_error().into());
         }
 
         let mut active: email_token::ActiveModel = model.clone().into();
