@@ -405,6 +405,43 @@ test("expandCrossSiteIncludeClosure prefers the caller-configured branch for div
   assert.deepEqual(closure.gaps, []);
 });
 
+test("expandCrossSiteIncludeClosure resolves divergent hits to the target site's own branch by default", () => {
+  // Fails before own-site-wins: with no caller map the divergent hits
+  // used to report an ambiguous-branches gap. Refs #2093.
+  const branches = crossSiteReader({
+    en: { "scp-1": "[[include :scp-int:comp]]" },
+    int: { comp: "leaf int" },
+    es: { comp: "leaf es" },
+  });
+  const closure = expandCrossSiteIncludeClosure({
+    roots: [{ branch: "en", site: "scp-wiki", slug: "scp-1" }],
+    branches,
+  });
+  assert.deepEqual(closure.included.map((page) => `${page.branch}:${page.slug}`), ["en:scp-1", "int:comp"]);
+  assert.equal(closure.included[1].resolution, "preferred-branch");
+  assert.deepEqual(closure.included[1].also_in, ["es"]);
+  assert.deepEqual(closure.gaps, []);
+});
+
+test("expandCrossSiteIncludeClosure keeps an ambiguous-branches gap for sites with no corpus branch", () => {
+  // Guard test: scp-sandbox-3 has no corpus branch, so divergent hits
+  // stay a gap both before and after own-site-wins. It would fail if a
+  // future mapping over-reached. Refs #2093.
+  const branches = crossSiteReader({
+    en: { "scp-1": "[[include :scp-sandbox-3:comp]]" },
+    fr: { comp: "leaf fr" },
+    it: { comp: "leaf it" },
+  });
+  const closure = expandCrossSiteIncludeClosure({
+    roots: [{ branch: "en", site: "scp-wiki", slug: "scp-1" }],
+    branches,
+  });
+  assert.deepEqual(closure.included.map((page) => `${page.branch}:${page.slug}`), ["en:scp-1"]);
+  assert.equal(closure.gaps.length, 1);
+  assert.equal(closure.gaps[0].reason, "ambiguous-branches");
+  assert.equal(closure.gaps[0].identity, "scp-sandbox-3:comp");
+});
+
 test("expandIncludeClosure validates its depth and page bounds", () => {
   const closures = (options) =>
     expandIncludeClosure({
