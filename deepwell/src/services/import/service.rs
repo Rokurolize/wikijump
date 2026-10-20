@@ -521,14 +521,13 @@ impl ImportService {
         // alone never rename a live row: contradicting one fails closed.
         // Profile snapshots always go through add_user, whose created_at,
         // strictly-newer, and conflict rules govern renames and revivals.
-        if let Some(ref row) = existing {
-            if profile.is_none()
-                && !row.is_deleted
-                && (row.name.as_deref() != Some(name.as_str())
-                    || row.slug.as_deref() != Some(slug.as_str()))
-            {
-                return Err(make_error().into());
-            }
+        if let Some(ref row) = existing
+            && profile.is_none()
+            && !row.is_deleted
+            && (row.name.as_deref() != Some(name.as_str())
+                || row.slug.as_deref() != Some(slug.as_str()))
+        {
+            return Err(make_error().into());
         }
 
         // First-materialization guards. Any existing row (checked above)
