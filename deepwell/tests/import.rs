@@ -42,6 +42,7 @@ use deepwell::services::import::{
     ImportPageFilesVerify, ImportService, ImportUser, ImportedUserType,
     MAX_IMPORT_FILE_BYTES,
 };
+use deepwell::services::mirror_scope::{MirrorScopeService, SetMirrorScope};
 use deepwell::services::user::{CreateUser, UserService};
 use deepwell::services::{RequestContext, ServiceContext};
 use deepwell::types::{FileRevisionType, UserType};
@@ -1653,4 +1654,106 @@ async fn verify_page_files_tolerates_unnormalized_snapshot_names() {
     assert_eq!(verified.verified_files, 1);
 
     cleanup_imported_blob(&runner, &hash_hex).await;
+}
+
+#[tokio::test]
+async fn mirror_scope_record_coexists_with_page_import() {
+    // Issue #2085: the per-site scope record shares the site row with
+    // imported pages. Importing a page must neither require nor disturb
+    // the scope row, and consumed-slug memory must survive alongside
+    // import writes.
+    let runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .unwrap()
+        .site
+        .site_id;
+
+    let stored = MirrorScopeService::set(
+        runner.context(),
+        SetMirrorScope {
+            site_id,
+            scope: String::from("partial"),
+            source_pin: None,
+            inventoried_source_count: 0,
+            declared_extras: vec![String::from("local-page")],
+            consumed_slugs: vec![],
+        },
+    )
+    .await
+    .expect("mirror scope write should succeed");
+    assert_eq!(stored.declared_extras, ["local-page"]);
+
+    ImportService::add_page(
+        runner.context(),
+        ImportPage {
+            page_id: 3_250_000_001,
+            site_id,
+            created_at: OffsetDateTime::UNIX_EPOCH,
+            slug: String::from("mirror-scope-interplay"),
+            locked: false,
+            discussion_thread_id: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("fixture page should import onto the scoped site");
+
+    let fetched = MirrorScopeService::get(runner.context(), site_id)
+        .await
+        .expect("mirror scope lookup should succeed")
+        .expect("scope row should survive the page import");
+    assert_eq!(fetched.scope, "partial");
+    assert_eq!(fetched.declared_extras, ["local-page"]);
+    assert!(fetched.consumed_slugs.is_empty());
+
+    assert!(
+        MirrorScopeService::record_consumed_slug(
+            runner.context(),
+            site_id,
+            "mirror-scope-interplay",
+        )
+        .await
+        .expect("consumed slug record should succeed"),
+    );
+    assert!(
+        MirrorScopeService::is_consumed(
+            runner.context(),
+            site_id,
+            "mirror-scope-interplay"
+        )
+        .await
+        .expect("consumed lookup should succeed"),
+    );
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn mirror_scope_set_fails_closed_for_unknown_site() {
+    // Issue #2085: scope describes a real site; recording scope for a
+    // dangling ID must fail instead of inserting an orphan row.
+    let runner = TestRunner::setup().await;
+
+    let error = MirrorScopeService::set(
+        runner.context(),
+        SetMirrorScope {
+            site_id: 9_999_999_999,
+            scope: String::from("full"),
+            source_pin: None,
+            inventoried_source_count: 0,
+            declared_extras: vec![],
+            consumed_slugs: vec![],
+        },
+    )
+    .await
+    .expect_err("scope write for an unknown site should fail");
+    assert_contains_error!(error, ErrorType::Site);
+    assert!(
+        MirrorScopeService::get(runner.context(), 9_999_999_999)
+            .await
+            .expect("mirror scope lookup should succeed")
+            .is_none(),
+    );
+
+    runner.teardown().await;
 }

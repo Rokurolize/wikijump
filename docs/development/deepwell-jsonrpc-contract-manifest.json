@@ -3,7 +3,7 @@
   "source_identities": {
     "jsonrpc_registry": {
       "path": "deepwell/src/api.rs",
-      "sha256": "dab4bead9759dc487ef2e784534a47e4bd47aa014c312d65b7b85dc8c7bef1dd"
+      "sha256": "41a37d2b7f7328cf4ca312a6698d59e28b4cd49b76cdb5786fb485ef8ae9a46f"
     },
     "request_context_middleware": {
       "path": "deepwell/src/middleware.rs",
@@ -26,7 +26,7 @@
       "classification": "historical"
     }
   ],
-  "method_count": 191,
+  "method_count": 193,
   "methods": [
     {
       "method": "admin_view",
@@ -4997,6 +4997,128 @@
           "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+      }
+    },
+    {
+      "method": "mirror_scope_get",
+      "endpoint_owner": {
+        "component": "deepwell",
+        "handler": "mirror_scope_get",
+        "source": "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_get",
+        "source_sha256": "5a1848689fa3e33ba2605d4fed1b0e1e429d0091299b3fdcc3c71245703e6564",
+        "function_sha256": "b52674ec596ad8eaa097442eaa97b790ada0c80b542df57ce69fc3d73261ff35"
+      },
+      "params_schema": {
+        "transport": "jsonrpsee::types::params::Params<'static>",
+        "parameter_name": "params",
+        "decoder": "parse!(params, Site)"
+      },
+      "actor_context": {
+        "transport_authentication": {
+          "header_symbol": "AUTHORIZATION",
+          "header": "Authorization",
+          "scheme": "Bearer",
+          "token_format": "64 lowercase hexadecimal characters",
+          "duplicate_values": "rejected"
+        },
+        "request_context_headers": [
+          {
+            "header": "X-Deepwell-Session-Token",
+            "target": "session_token"
+          },
+          {
+            "header": "X-Deepwell-Site-Id",
+            "target": "site_id"
+          },
+          {
+            "header": "X-Deepwell-Page",
+            "target": "page_ref"
+          }
+        ],
+        "requirements": [
+          "mutation_authorization"
+        ],
+        "requirement_sources": [
+          "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_get"
+        ]
+      },
+      "mutation_class": {
+        "classification": "read_only",
+        "source_signals": []
+      },
+      "transaction_isolation": "default",
+      "test_witness": {
+        "kind": "source_contract_only",
+        "reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract",
+        "coverage_gap": {
+          "searched_root": "deepwell/tests",
+          "reason": "no direct run_endpoint handler invocation or rpc_request method invocation was found",
+          "searched_invocations": [
+            "run_endpoint!(runner, handler, ...)",
+            "rpc_request(\"method\", ...)"
+          ]
+        }
+      }
+    },
+    {
+      "method": "mirror_scope_set",
+      "endpoint_owner": {
+        "component": "deepwell",
+        "handler": "mirror_scope_set",
+        "source": "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_set",
+        "source_sha256": "5a1848689fa3e33ba2605d4fed1b0e1e429d0091299b3fdcc3c71245703e6564",
+        "function_sha256": "e2d76747802a77078dab98a82f7cc8e83646e31b94deabd6180a44a3b1bca5f5"
+      },
+      "params_schema": {
+        "transport": "jsonrpsee::types::params::Params<'static>",
+        "parameter_name": "params",
+        "decoder": "parse!(params, Site)"
+      },
+      "actor_context": {
+        "transport_authentication": {
+          "header_symbol": "AUTHORIZATION",
+          "header": "Authorization",
+          "scheme": "Bearer",
+          "token_format": "64 lowercase hexadecimal characters",
+          "duplicate_values": "rejected"
+        },
+        "request_context_headers": [
+          {
+            "header": "X-Deepwell-Session-Token",
+            "target": "session_token"
+          },
+          {
+            "header": "X-Deepwell-Site-Id",
+            "target": "site_id"
+          },
+          {
+            "header": "X-Deepwell-Page",
+            "target": "page_ref"
+          }
+        ],
+        "requirements": [
+          "mutation_authorization"
+        ],
+        "requirement_sources": [
+          "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_set"
+        ]
+      },
+      "mutation_class": {
+        "classification": "read_only",
+        "source_signals": []
+      },
+      "transaction_isolation": "default",
+      "test_witness": {
+        "kind": "source_contract_only",
+        "reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract",
+        "coverage_gap": {
+          "searched_root": "deepwell/tests",
+          "reason": "no direct run_endpoint handler invocation or rpc_request method invocation was found",
+          "searched_invocations": [
+            "run_endpoint!(runner, handler, ...)",
+            "rpc_request(\"method\", ...)"
+          ]
+        }
       }
     },
     {
