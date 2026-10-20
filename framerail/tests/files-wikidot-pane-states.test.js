@@ -87,14 +87,14 @@ after(async () => {
 })
 
 test("empty wikidot list keeps the frozen Files heading, message, and upload", () => {
-  // No internationalization override: the recorded English source text
-  // ("No files attached to this page.") renders as the fallback.
+  // No internationalization override: the catalog English string
+  // ("No files for this page.") renders as the fallback.
   const body = render(fileListComponent, {
     props: listProps(new SvelteMap())
   }).body
 
   assert.match(body, /<h1[^>]*>Files<\/h1>/u)
-  assert.match(body, /No files attached to this page\./u)
+  assert.match(body, /No files for this page\./u)
   assert.match(body, /id="show-upload-button"/u)
   assert.match(body, /Upload a file from your computer/u)
 })
@@ -107,7 +107,7 @@ test("empty wikidot list honors a provided no-files message", () => {
   }).body
 
   assert.match(body, /Provided empty text\./u)
-  assert.doesNotMatch(body, /No files attached to this page\./u)
+  assert.doesNotMatch(body, /No files for this page\./u)
 })
 
 test("large wikidot list renders every row with no pagination controls", () => {

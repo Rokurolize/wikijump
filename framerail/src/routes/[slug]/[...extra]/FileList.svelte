@@ -9,7 +9,6 @@
     wikidotFileSize,
     wikidotFileTotals,
     wikidotFileTypeDescription,
-    wikidotMirrorFilesReadOnlyPopup,
     wikidotRenameDeniedPopup,
     wikidotUploadDeniedPopup
   } from "$lib/wikidot-file-contract"
@@ -81,7 +80,21 @@
 
   function openUpload() {
     if (isMirrorFileInventoryReadOnly(data.page, data.site)) {
-      errorPopupState.current = wikidotMirrorFilesReadOnlyPopup()
+      errorPopupState.current = {
+        state: true,
+        title: localized("wiki-page-file-mirror-readonly.title", "PERMISSION ERROR"),
+        leadIn: localized("wiki-page-file-mirror-readonly.lead-in", "Please note:"),
+        message: localized(
+          "wiki-page-file-mirror-readonly.message",
+          "Files on this imported page are read-only."
+        ),
+        extraMessage: localized(
+          "wiki-page-file-mirror-readonly.extra-message",
+          "Mirror pages show the source inventory. Ask a site administrator to update their files through the Wikidot import."
+        ),
+        actionLink: null,
+        data: null
+      }
       return
     }
 
@@ -477,7 +490,7 @@
   <div class="file-list-scroll">
     <div class="file-list">
       <div class="file-list-message">
-        {localized("wiki-page-file-no-files", "No files attached to this page.")}
+        {localized("wiki-page-file-no-files", "No files for this page.")}
       </div>
     </div>
   </div>

@@ -117,18 +117,6 @@ const wikidotSignInAction = () => ({
   label: "Sign in as Wikidot user"
 })
 
-/** Mirror pages show the source inventory; ordinary uploads are refused. */
-export const wikidotMirrorFilesReadOnlyPopup = () => ({
-  state: true,
-  title: "PERMISSION ERROR",
-  leadIn: "Please note:",
-  message: "Files on this imported page are read-only.",
-  extraMessage:
-    "Mirror pages show the source inventory. Ask a site administrator to update their files through the Wikidot import.",
-  actionLink: null,
-  data: null
-})
-
 /** Anonymous upload denial (source `#show-upload-button` state). */
 export const wikidotUploadDeniedPopup = () => ({
   state: true,

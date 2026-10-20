@@ -8,7 +8,6 @@ import {
   wikidotFileTotals,
   wikidotFileTypeDescription,
   wikidotFileUploadDate,
-  wikidotMirrorFilesReadOnlyPopup,
   wikidotRenameDeniedPopup,
   wikidotUploadDeniedPopup
 } from "../src/lib/wikidot-file-contract.js"
@@ -109,17 +108,6 @@ test("permission denials keep the recorded PERMISSION ERROR shape", () => {
     actionLink: signIn,
     data: null
   })
-  assert.deepEqual(wikidotMirrorFilesReadOnlyPopup(), {
-    state: true,
-    title: "PERMISSION ERROR",
-    leadIn: "Please note:",
-    message: "Files on this imported page are read-only.",
-    extraMessage:
-      "Mirror pages show the source inventory. Ask a site administrator to update their files through the Wikidot import.",
-    actionLink: null,
-    data: null
-  })
-
   // Builders return fresh objects: handing one to the popup store and
   // mutating it must not change the next denial.
   const first = wikidotUploadDeniedPopup()
