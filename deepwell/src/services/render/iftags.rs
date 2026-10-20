@@ -163,8 +163,7 @@ fn resolve_outermost_wikidot_iftags_with_mode(
             // it the closer can never pair, so Preserve keeps escaping it;
             // that keeps truly malformed closers literal without FTML parse
             // errors, exactly as the malformed-iftags evidence requires.
-            if unmatched_mode == UnmatchedBoundaryMode::Preserve && !seen_skipped_opener
-            {
+            if unmatched_mode == UnmatchedBoundaryMode::Preserve && !seen_skipped_opener {
                 replacements.push(Replacement {
                     range: token.start()..token.end(),
                     text: preserved.push_escaped_html_text(token.as_str()),
