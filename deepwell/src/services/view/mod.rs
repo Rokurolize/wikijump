@@ -23,6 +23,7 @@ mod backlinks;
 mod module_arguments;
 mod module_render;
 mod options;
+pub(crate) mod random_helper;
 pub(crate) mod redirect;
 mod service;
 mod site_tools;
@@ -36,6 +37,6 @@ pub use self::site_tools::{
 pub use self::structs::{
     GetAdminView, GetAdminViewOutput, GetArticleViewCacheMetadataOutput,
     GetArticleViewOutput, GetPageView, GetPageViewOutput, GetPreloadView,
-    GetPreloadViewOutput, GetUserView, GetUserViewOutput, PageTemplateSummary, ViewType,
-    ViewerLicenseKind,
+    GetPreloadViewOutput, GetUserView, GetUserViewOutput, PageRedirectKind, PageRoute,
+    PageTemplateSummary, ViewType, ViewerLicenseKind,
 };
