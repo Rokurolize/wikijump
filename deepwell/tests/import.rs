@@ -2461,23 +2461,46 @@ async fn import_page_reimport_identical_snapshot_fails_closed_without_changing_s
     .await
     .expect("source revision should import");
 
-    // Identical retry with the same stable page ID fails closed.
+    // Identical retry with the same stable page ID fails closed. The
+    // conflicting write aborts only its savepoint (repo savepoint idiom),
+    // so the outer transaction stays usable for the unchanged-state
+    // assertions below.
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("re-import savepoint should begin");
     let error = ImportService::add_page(
-        runner.context(),
+        &ServiceContext::new(runner.state(), &transaction),
         import_idempotency_page(page_id, site_id, slug),
     )
     .await
     .expect_err("identical page re-import must fail closed");
     assert_contains_error!(error, ErrorType::DatabaseImport);
+    transaction
+        .rollback()
+        .await
+        .expect("re-import savepoint should roll back");
 
     // Same slug under a fresh stable ID also fails: never a duplicate row.
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("colliding re-import savepoint should begin");
     let error = ImportService::add_page(
-        runner.context(),
+        &ServiceContext::new(runner.state(), &transaction),
         import_idempotency_page(page_id + 1, site_id, slug),
     )
     .await
     .expect_err("slug-colliding page re-import must fail closed");
     assert_contains_error!(error, ErrorType::DatabaseImport);
+    transaction
+        .rollback()
+        .await
+        .expect("colliding re-import savepoint should roll back");
 
     // State unchanged: one page row, one revision, source content intact.
     assert_eq!(imported_page_count(&runner, site_id, slug).await, 1);
