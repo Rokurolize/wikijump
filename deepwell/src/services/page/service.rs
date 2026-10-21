@@ -53,11 +53,43 @@ use sea_orm::{
     FromQueryResult, IntoActiveModel, QueryFilter, QueryOrder, QuerySelect, Set,
     Statement, Value,
 };
+use sea_query::Expr;
 use std::net::IpAddr;
 use wikidot_normalize::normalize;
 
 #[derive(Debug)]
 pub struct PageService;
+
+/// SQL predicate fragment hiding foreign include-source snapshots from
+/// site-page queries (issue #2690).
+///
+/// A snapshot page belongs to the site when its source names the site
+/// itself or one of the corpus branches the site imports from; rows
+/// without snapshots (locally created pages) always belong. Anything else
+/// is cross-site include-source storage (for example `d3-readonly-assets`
+/// pages held inside `scp-wiki` so that
+/// `[[include :d3-readonly-assets:…]]` resolves) and must not be served as
+/// a page of the holding site — though `fetch_imported_cross_site_source`
+/// keeps resolving those rows by (`source_site`, `source_fullname`).
+///
+/// `page_id_ref` is the SQL reference to the outer page row (for example
+/// `page.page_id`); `site_id` is inlined as a literal because it is always
+/// a server-side integer, never caller input. A branch code only ever
+/// matches its own corpus branch, so foreign import runs must keep using
+/// dated one-off branch names (as the existing `d3-readonly-*` runs do)
+/// rather than the bare source site name, or their pages would read as
+/// own.
+pub(in crate::services) fn foreign_snapshot_exclusion_sql(
+    page_id_ref: &str,
+    site_id: i64,
+) -> String {
+    format!(
+        "NOT EXISTS (SELECT 1 FROM wikidot_page_snapshot snapshot \
+         WHERE snapshot.page_id = {page_id_ref} \
+         AND snapshot.source_site NOT IN (SELECT slug FROM \"site\" WHERE site_id = {site_id}) \
+         AND snapshot.source_site NOT IN (SELECT DISTINCT source_branch FROM wikidot_corpus_import_run WHERE site_id = {site_id}))"
+    )
+}
 
 impl PageService {
     /// Resolve display-name-only page lifecycle identities.
@@ -1180,7 +1212,13 @@ WHERE page.site_id = $1
                     Condition::all()
                         .add(condition)
                         .add(page::Column::SiteId.eq(site_id))
-                        .add(page::Column::DeletedAt.is_null()),
+                        .add(page::Column::DeletedAt.is_null())
+                        // Foreign include-source snapshots are storage, not
+                        // pages of this site (issue #2690).
+                        .add(Expr::cust(foreign_snapshot_exclusion_sql(
+                            "page.page_id",
+                            site_id,
+                        ))),
                 )
                 .one(txn)
                 .await

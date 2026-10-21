@@ -30,7 +30,17 @@ These seams are recommendations. The implementation agent must present and confi
 
 ## Feature-specific implementation notes
 
-- No feature-specific implementation note beyond the corpus contract.
+- Cross-site include source storage is not a page of the holding site
+  (issue #2690). A row whose snapshot source names a foreign origin must
+  not be served as an ordinary page of the mirror: direct routes serve the
+  missing-page response, and ListPages, category/site queries, the sitemap,
+  the changes feed, and backlinks exclude it, while cross-site include
+  resolution keeps finding it by (`source_site`, `source_fullname`).
+  Evidence: includes pull from *another* site (`[[include :sitename:pagename]]`,
+  L0007 above — the page belongs to the named site, not the including
+  one), and links to pages that do not exist on a site render red
+  (`content-pages.md` L0028–L0029), i.e. Wikidot shows no such foreign
+  page on the including host.
 
 ## Source inventory
 

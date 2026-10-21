@@ -32,4 +32,6 @@ Malformed descriptors, route mismatches, stale revisions, failed permission chec
 
 A slug created in `scpaiueouiuiuiui` must not appear in `scp-wiki` or `scp-jp` unless a separate explicit import step creates that page in a mirror site.
 
+Cross-site include-source rows (snapshots whose source names a foreign origin, held so `[[include :site:page]]` resolves) are storage, not pages of the holding mirror (issue #2690). They must not be served as ordinary pages, listed by site queries, or linked as local pages; include resolution keeps finding them by (`source_site`, `source_fullname`).
+
 Mirror QA should treat a missing page in `scp-wiki` as an import/data coverage gap first. Visual parity bugs should be filed only after the mirror page exists and a browser comparison can inspect real rendered content.

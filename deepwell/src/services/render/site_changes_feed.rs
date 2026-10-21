@@ -29,6 +29,7 @@
 
 use super::service::RenderService;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::services::page::foreign_snapshot_exclusion_sql;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::{ServiceContext, SiteService, TextService};
 use crate::types::{Action, Permission, Reference, Resource};
@@ -170,6 +171,9 @@ impl RenderService {
         {
             let batch_size = SITE_CHANGES_FEED_QUERY_BATCH
                 .min(SITE_CHANGES_FEED_MAX_RAW_SCAN.saturating_sub(offset));
+            // Foreign include-source snapshots are storage, not pages of
+            // this site (issue #2690).
+            let own_pages_only = foreign_snapshot_exclusion_sql("p.page_id", site_id);
             let rows = SiteChangesFeedRevisionRow::find_by_statement(
                 Statement::from_sql_and_values(
                     ctx.transaction().get_database_backend(),
@@ -200,6 +204,7 @@ impl RenderService {
                             AND local_user.deleted_at IS NULL \
                            WHERE pr.site_id = $1 \
                              AND pr.revision_type NOT IN ('delete', 'undelete') \
+                             AND {own_pages_only} \
                            UNION ALL \
                            SELECT fr.revision_id, 'file'::TEXT AS revision_type, \
                                   fr.revision_number, FALSE AS is_new_page, \
@@ -223,6 +228,7 @@ impl RenderService {
                              ON local_user.user_id = fr.user_id \
                             AND local_user.deleted_at IS NULL \
                            WHERE fr.site_id = $1 \
+                             AND {own_pages_only} \
                          ) activity \
                          ORDER BY created_at DESC, revision_id DESC \
                          LIMIT {batch_size} OFFSET {offset}"

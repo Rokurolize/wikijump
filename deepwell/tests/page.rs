@@ -30,6 +30,9 @@ mod theme_previewer;
 #[path = "page/forum.rs"]
 mod forum;
 
+#[path = "page/foreign_source.rs"]
+mod foreign_source;
+
 #[path = "page/membership.rs"]
 mod membership;
 

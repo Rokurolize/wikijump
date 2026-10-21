@@ -21,7 +21,7 @@
 mod service;
 mod structs;
 
-pub use self::service::PageService;
+pub use self::service::{PageService, foreign_snapshot_exclusion_sql};
 pub use self::structs::{
     CreatePage, CreatePageOutput, DeletePage, DeletePageOutput, EditPage, EditPageBody,
     EditPageOutput, GetDeletedPageOutput, GetPageAnyDetails, GetPageOutput,
