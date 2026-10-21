@@ -182,11 +182,16 @@ impl SiteService {
                         action: parse_or_raise!(action, Action, make_error),
                     },
                     _ => {
-                        warn!(
-                            "Skipping invalid permission format '{perm_spec}' for role '{}' in site ID {site_id}",
-                            template.name,
-                        );
-                        continue;
+                        // Templates are load-bearing: a malformed spec must
+                        // fail the bootstrap, not silently drop a permission.
+                        return Err(Error::new(
+                            format!(
+                                "invalid permission '{perm_spec}' for role '{}' in site {site_id}",
+                                template.name,
+                            ),
+                            ErrorType::Site,
+                        )
+                        .into());
                     }
                 };
                 permissions.push(input);
@@ -214,7 +219,19 @@ impl SiteService {
         // Bind the creator as administrator in the normal role model, so the
         // creator carries site:edit (and /_admin entry) without fixture-only
         // privilege grants. Seeded/system creation passes no creator.
-        if let (Some(creator), Some(admin_role_id)) = (creator_user_id, admin_role_id) {
+        // A missing admin role with a creator present is a bootstrap
+        // defect, not a skippable grant: fail closed rather than leave the
+        // creator without administration.
+        if let Some(creator) = creator_user_id {
+            let Some(admin_role_id) = admin_role_id else {
+                return Err(Error::new(
+                    format!(
+                        "no admin role in baseline roles for site ID {site_id}"
+                    ),
+                    ErrorType::Site,
+                )
+                .into());
+            };
             RoleService::grant_role_to_user(
                 ctx,
                 GrantUserRoleInput {
