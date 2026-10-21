@@ -1,8 +1,13 @@
 # Set up DNS ACME challenge providers
-FROM public.ecr.aws/docker/library/caddy:2.10-builder-alpine@sha256:4cff3ae272ea05842adb4546e35961e4947aeea65f80fa1eb62a35b960e84971 AS builder
+# Go 1.26.10 rejects the compromised eMudhra intermediates. Caddy v2.10.2
+# panics when built with Go 1.27, so it is built here on the patched 1.26 line.
+FROM public.ecr.aws/docker/library/golang:1.26.10-alpine@sha256:9ce231b28998b32e116927c61aa5c406183061d4f3f2d61b292c88e7f6bdf7ca AS builder
+RUN apk add --no-cache git libcap && \
+    go install github.com/caddyserver/xcaddy/cmd/xcaddy@v0.4.7
+ENV XCADDY_SETCAP=1
 ARG PROVIDER=digitalocean
 
-RUN xcaddy build --with github.com/caddy-dns/${PROVIDER}
+RUN xcaddy build v2.10.2 --output /usr/bin/caddy --with github.com/caddy-dns/${PROVIDER}
 
 FROM public.ecr.aws/docker/library/caddy:2.10-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
 COPY --from=builder /usr/bin/caddy /usr/bin/caddy
