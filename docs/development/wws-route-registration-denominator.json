@@ -80,8 +80,8 @@
       },
       {
         "path": "wws/src/handler/file.rs",
-        "git_blob": "b7a6a6766a0175e51c324fb762478e58aca3ba1d",
-        "sha256": "c24e4329e813c66639fe14d1a6edf32f9e338c305f6c011ff635fde99018cfb2"
+        "git_blob": "f51e1d0466be22049115043280a9e7ea5a5295cb",
+        "sha256": "23345ab3c416a84e6ad1227f99b71343056dadfbb5ba426facb0e3444192f78c"
       },
       {
         "path": "wws/src/handler/misc.rs",
