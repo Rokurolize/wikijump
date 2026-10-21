@@ -12,6 +12,9 @@
 
 //! Runtime ListPages row substitution and its focused regressions.
 
+mod value_safety;
+
+use self::value_safety::render_list_pages_substituted_identity;
 use super::{
     BTreeMap, BTreeSet, CompatHtmlFragments, CompatTextFragments, Cow, FoundPageRow,
     LISTPAGES_VARIABLE_REGEX, ListPagesDataFormDefinition, ListPagesGeneratedSlot,
@@ -71,26 +74,6 @@ pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
     pub(in crate::services::render) data_form_definition:
         Option<&'a ListPagesDataFormDefinition>,
     pub(in crate::services::render) render_generated_html: bool,
-}
-
-/// Neutralize wikitext- and attribute-syntax-forming characters in
-/// substituted identity and tag values so they render as literal text
-/// (see #2652). `[` and `]` would let stored data form executable module
-/// syntax after substitution; `"` would let a value break out of a
-/// double-quoted module attribute (`[[div class="%%tags%%"]]`), the only
-/// attribute delimiter in the pinned FTML parser, which terminates values
-/// at `b'"'` and treats single quotes as literal text. Brackets and double
-/// quotes appear in zero of 53,066 sampled en+jp corpus display names and
-/// tags, so ordinary values pass through byte-identically (unlike full
-/// escaping, which would break values used inside attributes), while
-/// hostile values can no longer form modules, links, blocks, or injected
-/// attributes. The entities decode back to the same visible characters
-/// downstream.
-fn neutralize_list_pages_substituted_syntax(value: &str) -> String {
-    value
-        .replace('[', "&#91;")
-        .replace(']', "&#93;")
-        .replace('"', "&#34;")
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -433,7 +416,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     .map_or("", |matched| matched.as_str())
                     .to_owned(),
                 "created_by" | "createdby" => {
-                    neutralize_list_pages_substituted_syntax(&created_by)
+                    render_list_pages_substituted_identity(&created_by, inside_html_block)
                 }
                 "created_by_linked" | "createdbylinked" | "author" => {
                     protect_list_pages_generated_html(
@@ -466,7 +449,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     )
                 }
                 "updated_by" | "updatedby" => {
-                    neutralize_list_pages_substituted_syntax(&updated_by)
+                    render_list_pages_substituted_identity(&updated_by, inside_html_block)
                 }
                 "updated_by_linked"
                 | "updatedbylinked"
@@ -494,7 +477,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                 }
                 "commented_by"
                 | "commentedby" => {
-                    neutralize_list_pages_substituted_syntax(&commented_by)
+                    render_list_pages_substituted_identity(&commented_by, inside_html_block)
                 }
                 "commented_by_linked" | "commentedbylinked" => {
                     protect_list_pages_generated_html(
@@ -525,7 +508,9 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                 "rating" => rating.clone(),
                 "rating_votes" | "ratingvotes" => rating_votes.clone(),
                 "comments" => comments.clone(),
-                "tags" => neutralize_list_pages_substituted_syntax(&tags_text),
+                "tags" => {
+                    render_list_pages_substituted_identity(&tags_text, inside_html_block)
+                }
                 "tags_linked" | "tagslinked"
                     if generated_slots.is_some()
                         && captures.name("format").is_none()
@@ -577,7 +562,10 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     compat_html,
                 ),
                 "_tags" => {
-                    neutralize_list_pages_substituted_syntax(&hidden_tags.join(" "))
+                    render_list_pages_substituted_identity(
+                        &hidden_tags.join(" "),
+                        inside_html_block,
+                    )
                 }
                 "category" => context.category.to_owned(),
                 "size" => context
