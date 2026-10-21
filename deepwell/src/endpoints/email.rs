@@ -176,6 +176,14 @@ pub struct ResetGrantOutput {
     pub grant: String,
 }
 
+impl std::fmt::Debug for ResetGrantOutput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ResetGrantOutput")
+            .field("grant", &"..")
+            .finish()
+    }
+}
+
 /// Exchange a recovery link for a one-time password-set grant. The grant,
 /// not the link, authorizes the new password, so a used or expired link
 /// can never set one. The grant issues unconditionally once the link is
