@@ -122,6 +122,13 @@ const handleDiagnosticRequest = (request, response) => {
     sendJson(response, snapshot)
     return true
   }
+  if (request.url === "/last-site-create-requests") {
+    const snapshot = fixtureState.siteCreateRequests.slice()
+    fixtureState.siteCreateRequests.length = 0
+    fixtureState.lastCreatedSiteSlug = null
+    sendJson(response, snapshot)
+    return true
+  }
   if (request.url === "/last-file-requests") {
     const snapshot = structuredClone(fixtureState.fileRequests)
     resetRequestGroups(fixtureState.fileRequests)

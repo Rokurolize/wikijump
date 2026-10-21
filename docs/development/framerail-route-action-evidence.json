@@ -1526,6 +1526,20 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-server-action:/?/newSite",
+      "tests": [
+        "framerail/tests/new-site-submission.test.js::pageActions exposes newSite for the compat form post",
+        "framerail/tests/new-site-submission.test.js::a created site redirects to its canonical origin",
+        "framerail/tests/newsite-create-journey.spec.ts::an authenticated submission creates the site and redirects to its origin"
+      ],
+      "tracking": [
+        {
+          "issue": 2052
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-server-action:/?/parentGet",
       "tests": [
         "framerail/tests/page-parent-action-boundary.test.js::page form initialization gives ParentPane only its parents field"
@@ -1989,6 +2003,20 @@
       "tracking": [
         {
           "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/newSite",
+      "tests": [
+        "framerail/tests/new-site-submission.test.js::pageActions exposes newSite for the compat form post",
+        "framerail/tests/new-site-submission.test.js::a created site redirects to its canonical origin",
+        "framerail/tests/newsite-create-journey.spec.ts::an authenticated submission creates the site and redirects to its origin"
+      ],
+      "tracking": [
+        {
+          "issue": 2052
         }
       ],
       "temporal": []
