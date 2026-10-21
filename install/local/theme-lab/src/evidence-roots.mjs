@@ -19,10 +19,12 @@ export function sharedEvidenceRoot(env=process.env){
 // Only the default checkout root falls back. A caller that supplies its own
 // root (tests, isolated runs) gets exactly that root unless it also names a
 // shared root explicitly (null disables the fallback).
-export function evidenceRoots(root,defaultRoot,sharedRoot){
-  const shared=sharedRoot!==undefined?sharedRoot:(root===defaultRoot?sharedEvidenceRoot():null);
+// `strip` removes a leading prefix (such as `ports/` for theme-lab-relative
+// paths) before the path is looked up in the shared root.
+export function evidenceRoots(root,defaultRoot,sharedRoot,{strip=''}={}){
+  const shared=sharedRoot!==undefined?sharedRoot:(path.resolve(root)===path.resolve(defaultRoot)?sharedEvidenceRoot():null);
   const roots=[{dir:root,strict:false}];
-  if(shared&&fs.existsSync(shared)&&fs.realpathSync(shared)!==fs.realpathSync(root))roots.push({dir:shared,strict:true});
+  if(shared&&fs.existsSync(shared)&&fs.realpathSync(shared)!==fs.realpathSync(root))roots.push({dir:shared,strict:true,strip});
   return roots;
 }
 
@@ -36,10 +38,10 @@ const missing=error=>error?.code==='ENOENT'||error?.code==='ENOTDIR';
 export function resolveEvidenceFile(roots,relative,label,expectedSha256){
   if(!/^[a-f0-9]{64}$/u.test(expectedSha256??''))throw new Error(`${label}: missing expected sha256`);
   let mismatch=null,absent=null;
-  for(const {dir,strict} of roots){
+  for(const {dir,strict,strip} of roots){
     let file;
     try{
-      file=(strict?resolveExistingContainedFileWithoutSymlinks:resolveExistingContainedFile)(dir,relative,label);
+      file=(strict?resolveExistingContainedFileWithoutSymlinks:resolveExistingContainedFile)(dir,strip&&relative.startsWith(strip)?relative.slice(strip.length):relative,label);
     }catch(error){
       if(!missing(error))throw error;
       absent??=error;
