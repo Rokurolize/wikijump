@@ -187,9 +187,11 @@ impl std::fmt::Debug for ResetGrantOutput {
 
 /// Exchange a recovery link for a one-time password-set grant. The grant,
 /// not the link, authorizes the new password, so a used or expired link
-/// can never set one. The grant issues unconditionally once the link is
-/// consumed: it spends the link, is never emailed, and rotates, so no
-/// cooldown signal can burn a valid link.
+/// can never set one. The link's email snapshot must still match the
+/// account's current address: a rotated address fails exactly like a bogus
+/// token, mirroring `email_verify_redeem` (#2693). The grant issues
+/// unconditionally once the link is consumed: it spends the link, is never
+/// emailed, and rotates, so no cooldown signal can burn a valid link.
 pub async fn password_reset_redeem(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
@@ -204,6 +206,17 @@ pub async fn password_reset_redeem(
                     ErrorType::InvalidEmailToken,
                 )
             })?;
+
+    let user = UserService::get_real(ctx, Reference::Id(redeemed.user_id))
+        .await
+        .or_raise(|| Error::new("failed to load recovery user", ErrorType::User))?;
+    if user.email != redeemed.email {
+        return Err(Error::new(
+            "recovery token no longer matches the account address",
+            ErrorType::InvalidEmailToken,
+        )
+        .into());
+    }
 
     let issued = EmailTokenService::issue_grant(
         ctx,
@@ -235,7 +248,10 @@ pub struct ResetCompleteOutput {
 
 /// Set a new password on grant authority alone: no current password, no
 /// session. The grant is single-use, the new password meets the account
-/// policy, and every session of the account is revoked.
+/// policy, and every session of the account is revoked. The grant's email
+/// snapshot must still match the account's current address: a grant
+/// obtained before an address rotation is stale and fails exactly like a
+/// bogus token (#2693).
 pub async fn password_reset_complete(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
@@ -250,6 +266,17 @@ pub async fn password_reset_complete(
         .or_raise(|| {
             Error::new("failed to redeem reset grant", ErrorType::InvalidEmailToken)
         })?;
+
+    let user = UserService::get_real(ctx, Reference::Id(redeemed.user_id))
+        .await
+        .or_raise(|| Error::new("failed to load recovery user", ErrorType::User))?;
+    if user.email != redeemed.email {
+        return Err(Error::new(
+            "reset grant no longer matches the account address",
+            ErrorType::InvalidEmailToken,
+        )
+        .into());
+    }
 
     // Policy first, exactly as the password-change endpoint does.
     PasswordService::new_account_hash(&new_password)?;

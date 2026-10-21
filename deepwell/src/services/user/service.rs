@@ -33,7 +33,9 @@ use crate::services::ServiceContext;
 use crate::services::alias::CreateAlias;
 use crate::services::audit::{AuditEvent, AuditService, ObjectScope};
 use crate::services::blob::{BlobService, FinalizeBlobUploadOutput};
-use crate::services::email::{EmailClassification, EmailService, EmailValidationOutput};
+use crate::services::email::{
+    EmailClassification, EmailService, EmailTokenService, EmailValidationOutput,
+};
 use crate::services::filter::{FilterClass, FilterType};
 use crate::services::{AliasService, FilterService, PasswordService};
 use crate::types::{AliasType, UserType};
@@ -1032,6 +1034,17 @@ impl UserService {
             // address. A separate verification step must establish that.
             if email_changed {
                 model.email_verified_at = Set(None);
+            }
+
+            // Rotating the address revokes every outstanding email token
+            // bound to the old mailbox: a reset or verification link issued
+            // for the old address must not survive the move (#2693). Same
+            // transaction as the address change, so either both land or
+            // neither does.
+            if email_changed {
+                EmailTokenService::revoke_all_for_user(ctx, user.user_id)
+                    .await
+                    .or_raise(make_error)?;
             }
         }
 
