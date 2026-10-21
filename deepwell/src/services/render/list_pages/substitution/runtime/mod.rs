@@ -660,7 +660,10 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                                 compat_html,
                             )
                         } else {
-                            value
+                            render_list_pages_substituted_identity(
+                                &value,
+                                inside_html_block,
+                            )
                         }
                     })
                     .unwrap_or_else(|| captures[0].to_owned()),
@@ -688,7 +691,10 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                                 compat_html,
                             )
                         } else {
-                            value
+                            render_list_pages_substituted_identity(
+                                &value,
+                                inside_html_block,
+                            )
                         }
                     })
                     .unwrap_or_else(|| captures[0].to_owned()),
