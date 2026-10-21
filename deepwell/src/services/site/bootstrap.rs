@@ -35,6 +35,7 @@ use std::net::IpAddr;
 
 use crate::constants::SYSTEM_USER_ID;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::services::ServiceContext;
 use crate::services::page::{CreatePage, PageService};
 use crate::services::permission::PermissionService;
 use crate::services::relation::{
@@ -44,7 +45,6 @@ use crate::services::relation::{
 use crate::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
 };
-use crate::services::ServiceContext;
 use crate::services::site::{SiteService, UpdateSiteBody};
 use crate::types::{Action, Maybe, Permission, Reference, Resource};
 use crate::utils::now;
@@ -74,8 +74,16 @@ pub const STANDARD_TEMPLATE_PAGES: &[(&str, &str, &str)] = &[
         "You've just created a new Wikijump site!",
         include_str!("../../../seeder/template-start.ftml"),
     ),
-    ("nav:side", "Sidebar", include_str!("../../../seeder/sidebar.ftml")),
-    ("nav:top", "Topbar", include_str!("../../../seeder/topbar.ftml")),
+    (
+        "nav:side",
+        "Sidebar",
+        include_str!("../../../seeder/sidebar.ftml"),
+    ),
+    (
+        "nav:top",
+        "Topbar",
+        include_str!("../../../seeder/topbar.ftml"),
+    ),
     (
         "search:site",
         "Search this site",
@@ -86,8 +94,16 @@ pub const STANDARD_TEMPLATE_PAGES: &[(&str, &str, &str)] = &[
         "Site Manager",
         include_str!("../../../seeder/admin-manage.ftml"),
     ),
-    ("_admin", "Admin Panel", include_str!("../../../seeder/_admin.ftml")),
-    ("system:join", "Join this site", include_str!("../../../seeder/join.ftml")),
+    (
+        "_admin",
+        "Admin Panel",
+        include_str!("../../../seeder/_admin.ftml"),
+    ),
+    (
+        "system:join",
+        "Join this site",
+        include_str!("../../../seeder/join.ftml"),
+    ),
     (
         "system:members",
         "Site Members",
@@ -145,10 +161,14 @@ impl SiteService {
         for template in &templates {
             let parent_role_id = match &template.parent_role {
                 Some(parent_slug) => Some(
-                    RoleService::get(ctx, site_id, Reference::Slug(Cow::Borrowed(parent_slug)))
-                        .await
-                        .or_raise(make_error)?
-                        .role_id,
+                    RoleService::get(
+                        ctx,
+                        site_id,
+                        Reference::Slug(Cow::Borrowed(parent_slug)),
+                    )
+                    .await
+                    .or_raise(make_error)?
+                    .role_id,
                 ),
                 None => None,
             };
@@ -179,7 +199,9 @@ impl SiteService {
                     },
                     [resource, category_slug, action] => Permission {
                         resource_type: parse_or_raise!(resource, Resource, make_error),
-                        resource_category: Some(Reference::Slug(Cow::Borrowed(category_slug))),
+                        resource_category: Some(Reference::Slug(Cow::Borrowed(
+                            category_slug,
+                        ))),
                         action: parse_or_raise!(action, Action, make_error),
                     },
                     _ => {
@@ -226,9 +248,7 @@ impl SiteService {
         if let Some(creator) = creator_user_id {
             let Some(admin_role_id) = admin_role_id else {
                 return Err(Error::new(
-                    format!(
-                        "no admin role in baseline roles for site ID {site_id}"
-                    ),
+                    format!("no admin role in baseline roles for site ID {site_id}"),
                     ErrorType::Site,
                 )
                 .into());

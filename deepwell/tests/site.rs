@@ -772,9 +772,10 @@ async fn newsite_bootstrap_creates_template_pages_and_default_start() {
         "system:page-tags",
         "system:list-all-pages",
     ] {
-        let page = PageService::get(runner.context(), created.site_id, Reference::from(slug))
-            .await
-            .expect("bootstrap template page should exist");
+        let page =
+            PageService::get(runner.context(), created.site_id, Reference::from(slug))
+                .await
+                .expect("bootstrap template page should exist");
         assert_eq!(page.slug, slug);
     }
 
@@ -795,11 +796,7 @@ async fn newsite_bootstrap_creates_template_pages_and_default_start() {
         "creator must author the initial pages",
     );
 
-    let fetched = run_endpoint!(
-        runner,
-        site_get,
-        json!({ "site": created.site_id }),
-    );
+    let fetched = run_endpoint!(runner, site_get, json!({ "site": created.site_id }),);
     assert_eq!(fetched.site.default_page, "start");
 }
 
@@ -825,7 +822,10 @@ async fn newsite_template_pages_match_seeder_template_set() {
     for (entry, (slug, title, wikitext)) in entries.iter().zip(bootstrap.iter()) {
         assert_eq!(entry["slug"].as_str(), Some(*slug));
         assert_eq!(entry["title"].as_str(), Some(*title));
-        assert!(!wikitext.is_empty(), "template page {slug} must carry content");
+        assert!(
+            !wikitext.is_empty(),
+            "template page {slug} must carry content"
+        );
     }
 }
 

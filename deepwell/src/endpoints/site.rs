@@ -24,8 +24,8 @@ use crate::services::MutationAuthorization;
 use crate::services::SettingsService;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::site::{
-    BootstrapNewSite, CreateSite, CreateSiteOutput, GetSite, GetSiteIcon, GetSiteIconOutput,
-    GetSiteOutput, SetSiteIcon, SetSiteIconOutput, UpdateSite,
+    BootstrapNewSite, CreateSite, CreateSiteOutput, GetSite, GetSiteIcon,
+    GetSiteIconOutput, GetSiteOutput, SetSiteIcon, SetSiteIconOutput, UpdateSite,
 };
 use crate::types::{Action, AliasType, Permission, Reference, Resource};
 
