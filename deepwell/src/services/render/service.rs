@@ -298,7 +298,10 @@ struct ExpandedRenderWikitext {
 /// The registries must stay alive until every rendered body, HTML block, and
 /// code block has crossed the Wikidot restoration boundary.  Callers borrow
 /// the registries only inside [`RenderProtectionBundle::restore`]; dropping the bundle without
-/// that consuming handoff is a programming error.
+/// that consuming handoff on the success path is a programming error.
+/// On an error path the bundle is dropped unrestored by the `?` unwinding the
+/// in-flight render state instead, which `Drop` logs without panicking so the
+/// original error propagates (see #2686).
 #[must_use = "restore the Wikidot protection bundle before dropping it"]
 #[derive(Debug)]
 pub(super) struct RenderProtectionBundle {
@@ -395,9 +398,17 @@ impl RenderProtectionBundle {
 
 impl Drop for RenderProtectionBundle {
     fn drop(&mut self) {
-        if !self.restored && !std::thread::panicking() {
-            panic!("render protection bundle dropped before restoration");
+        if self.restored || std::thread::panicking() {
+            return;
         }
+        // An unrestored bundle dropped here is almost always error-path
+        // cleanup: any `?` between bundle creation and restoration drops the
+        // in-flight render state, and panicking would mask the original error
+        // (see #2686). Log loudly instead so the real error propagates, and a
+        // genuinely forgotten restoration on the success path is still visible.
+        // The `#[must_use]` on the bundle keeps the success-path handoff a
+        // compile-time obligation.
+        error!("render protection bundle dropped before restoration");
     }
 }
 
