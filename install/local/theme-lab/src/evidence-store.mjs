@@ -157,12 +157,50 @@ export async function ingest(sourceDir, manifestPath, store) {
 }
 
 function resolveWithin(dest, rel) {
-  // Manifests are operator-supplied; never let a rel path escape dest.
+  // Manifests are operator-supplied; never let a rel path escape dest or
+  // replace the destination root itself.
   const target = path.resolve(dest, rel);
-  if (target !== dest && !target.startsWith(dest + path.sep)) {
-    throw new Error(`manifest path escapes destination: ${rel}`);
+  const relative = path.relative(dest, target);
+  if (
+    relative === '' ||
+    relative === '..' ||
+    relative.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relative)
+  ) {
+    throw new Error(`manifest path escapes destination or targets its root: ${rel}`);
   }
   return target;
+}
+
+async function assertSafeDirectoryChain(dest, relativeDirectory) {
+  // Lexical containment alone is not enough: a pre-existing symlink inside
+  // dest could redirect mkdir/rm/link into an unrelated directory. Every
+  // existing component from dest to the target's parent must be a real dir.
+  const rootStat = await fs.lstat(dest);
+  if (rootStat.isSymbolicLink() || !rootStat.isDirectory()) {
+    throw new Error(`materialize destination is not a real directory: ${dest}`);
+  }
+  if (!relativeDirectory || relativeDirectory === '.') return;
+
+  let current = dest;
+  for (const part of relativeDirectory.split(path.sep)) {
+    if (!part || part === '.') continue;
+    current = path.join(current, part);
+    let stat;
+    try {
+      stat = await fs.lstat(current);
+    } catch (error) {
+      if (error?.code === 'ENOENT') return;
+      throw error;
+    }
+    const relative = path.relative(dest, current).split(path.sep).join('/');
+    if (stat.isSymbolicLink()) {
+      throw new Error(`materialize destination path contains a symlink: ${relative}`);
+    }
+    if (!stat.isDirectory()) {
+      throw new Error(`materialize destination path is not a directory: ${relative}`);
+    }
+  }
 }
 
 export async function materialize(manifestPath, destDir, store) {
@@ -172,14 +210,25 @@ export async function materialize(manifestPath, destDir, store) {
   }
   const dest = path.resolve(destDir);
   await fs.mkdir(dest, { recursive: true });
+  await assertSafeDirectoryChain(dest, '');
   for (const rel of manifest.dirs) {
-    await fs.mkdir(resolveWithin(dest, rel), { recursive: true });
+    const targetDir = resolveWithin(dest, rel);
+    const relativeDirectory = path.relative(dest, targetDir);
+    await assertSafeDirectoryChain(dest, relativeDirectory);
+    await fs.mkdir(targetDir, { recursive: true });
+    await assertSafeDirectoryChain(dest, relativeDirectory);
   }
   let linked = 0;
   let copied = 0;
   for (const [rel, entry] of Object.entries(manifest.files)) {
     const target = resolveWithin(dest, rel);
-    await fs.mkdir(path.dirname(target), { recursive: true });
+    const parent = path.dirname(target);
+    const relativeParent = path.relative(dest, parent);
+    await assertSafeDirectoryChain(dest, relativeParent);
+    await fs.mkdir(parent, { recursive: true });
+    await assertSafeDirectoryChain(dest, relativeParent);
+    // rm removes an entry itself; the validated real-parent chain prevents
+    // it or the following link from being redirected outside dest.
     await fs.rm(target, { force: true });
     try {
       await fs.link(objectPath(store, entry.sha256), target);
@@ -235,4 +284,3 @@ export async function verify(store, manifestPath) {
   }
   return { objects, objectBytes, manifestEntries, manifestResolved };
 }
-

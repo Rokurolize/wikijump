@@ -161,10 +161,11 @@ per evidence run. Keep a single content-addressed evidence store (see
 `install/local/theme-lab/scripts/evidence-store.mjs`): each blob is
 stored once under its SHA-256, per-source manifests map original
 relative paths to hashes, and per-candidate views materialize as
-hardlinks. The store's `verify` command re-hashes every object and
-confirms each manifest resolves; run it before deleting any source
-copy, and never delete or modify an evidence source until its blobs
-are verified in the store.
+hardlinks. `materialize` rejects manifest paths outside the destination
+and existing symlinks in destination path components before writing. The
+store's `verify` command re-hashes every object and confirms each manifest
+resolves; run it before deleting any source copy, and never delete or
+modify an evidence source until its blobs are verified in the store.
 
 Once a verdict is recorded (an accept/review note with SHA references),
 keep the verdict, the final package, the final run contract, and the

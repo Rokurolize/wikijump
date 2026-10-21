@@ -89,6 +89,27 @@ test('materialize rejects manifest paths that escape the destination', async () 
   assert.ok(!fs.existsSync(path.join(view, '..', 'escape.txt')));
 });
 
+test('materialize refuses symlinked destination parents without changing outside files', async () => {
+  const { base, source, store, view } = freshDirs();
+  fs.mkdirSync(source, { recursive: true });
+  fixtureTree(source);
+  const manifestPath = path.join(base, 'manifest.json');
+  const outside = path.join(base, 'outside');
+  fs.mkdirSync(outside, { recursive: true });
+  fs.mkdirSync(view, { recursive: true });
+  fs.writeFileSync(path.join(outside, 'escape.txt'), 'sentinel\n');
+
+  await ingest(source, manifestPath, store);
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  manifest.files = { 'pivot/escape.txt': manifest.files['a.txt'] };
+  manifest.dirs = ['pivot'];
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest));
+  fs.symlinkSync(outside, path.join(view, 'pivot'), 'dir');
+
+  await assert.rejects(materialize(manifestPath, view, store), /contains a symlink/);
+  assert.equal(fs.readFileSync(path.join(outside, 'escape.txt'), 'utf8'), 'sentinel\n');
+});
+
 test('verify re-hashes objects and resolves manifests, failing closed', async () => {
   const { source, store, view } = freshDirs();
   fs.mkdirSync(source, { recursive: true });
