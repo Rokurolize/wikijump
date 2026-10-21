@@ -68,6 +68,25 @@ test('materialize rebuilds the tree as hardlinks with identical bytes', async ()
   );
   assert.ok(fs.existsSync(path.join(view, 'emptydir')));
   assert.equal(fs.statSync(path.join(view, 'a.txt')).ino, fs.statSync(path.join(view, 'nested', 'deep', 'c.txt')).ino);
+  // Linked views must not retarget the shared store object's mode.
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  for (const entry of Object.values(manifest.files)) {
+    const objectPath = path.join(store, 'objects', entry.sha256.slice(0, 2), entry.sha256);
+    assert.equal(fs.statSync(objectPath).mode & 0o777, 0o444);
+  }
+});
+
+test('materialize rejects manifest paths that escape the destination', async () => {
+  const { source, store, view } = freshDirs();
+  fs.mkdirSync(source, { recursive: true });
+  fixtureTree(source);
+  const manifestPath = path.join(source, '..', 'manifest.json');
+  await ingest(source, manifestPath, store);
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  manifest.files['../../escape.txt'] = manifest.files['a.txt'];
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest));
+  await assert.rejects(materialize(manifestPath, view, store), /escapes destination/);
+  assert.ok(!fs.existsSync(path.join(view, '..', 'escape.txt')));
 });
 
 test('verify re-hashes objects and resolves manifests, failing closed', async () => {
@@ -85,6 +104,7 @@ test('verify re-hashes objects and resolves manifests, failing closed', async ()
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   const victim = manifest.files['a.txt'].sha256;
   const victimPath = path.join(store, 'objects', victim.slice(0, 2), victim);
+  fs.rmSync(victimPath);
   fs.writeFileSync(victimPath, 'tampered\n');
   await assert.rejects(verify(store, manifestPath), /hash mismatch/);
 });

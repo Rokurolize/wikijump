@@ -16,13 +16,18 @@ const usage = `evidence-store <ingest <source-dir> --manifest <path> | materiali
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
   const { positional, flags } = parseArgs(rest);
-  const store = path.resolve(flags.store ?? DEFAULT_STORE());
+  const store = path.resolve(flags.store ?? defaultStorePath());
   if (command === 'ingest') {
     const [sourceDir] = positional;
     if (!sourceDir || !flags.manifest) {
       throw new Error(`usage: evidence-store ingest <source-dir> --manifest <path> [--store <dir>]`);
     }
-    const summary = await ingest(path.resolve(sourceDir), flags.manifest, store);
+    const source = path.resolve(sourceDir);
+    const manifestPath = path.resolve(flags.manifest);
+    if (manifestPath === source || manifestPath.startsWith(source + path.sep)) {
+      throw new Error('refusing to write the manifest inside the source tree; choose a path outside it');
+    }
+    const summary = await ingest(source, flags.manifest, store);
     console.log(JSON.stringify({ command, store, manifest: path.resolve(flags.manifest), ...summary }));
     return;
   }

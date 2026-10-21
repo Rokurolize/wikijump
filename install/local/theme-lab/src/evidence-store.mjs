@@ -156,6 +156,15 @@ export async function ingest(sourceDir, manifestPath, store) {
   };
 }
 
+function resolveWithin(dest, rel) {
+  // Manifests are operator-supplied; never let a rel path escape dest.
+  const target = path.resolve(dest, rel);
+  if (target !== dest && !target.startsWith(dest + path.sep)) {
+    throw new Error(`manifest path escapes destination: ${rel}`);
+  }
+  return target;
+}
+
 export async function materialize(manifestPath, destDir, store) {
   const manifest = JSON.parse(await fs.readFile(path.resolve(manifestPath), 'utf8'));
   if (manifest.schema !== STORE_SCHEMA) {
@@ -164,17 +173,19 @@ export async function materialize(manifestPath, destDir, store) {
   const dest = path.resolve(destDir);
   await fs.mkdir(dest, { recursive: true });
   for (const rel of manifest.dirs) {
-    await fs.mkdir(path.join(dest, rel), { recursive: true });
+    await fs.mkdir(resolveWithin(dest, rel), { recursive: true });
   }
   let linked = 0;
   let copied = 0;
   for (const [rel, entry] of Object.entries(manifest.files)) {
-    const target = path.join(dest, rel);
+    const target = resolveWithin(dest, rel);
     await fs.mkdir(path.dirname(target), { recursive: true });
     await fs.rm(target, { force: true });
     try {
       await fs.link(objectPath(store, entry.sha256), target);
       linked += 1;
+      // Linked views stay at the store object's 0o444: chmod follows the
+      // link and would retarget the shared inode's mode for every view.
     } catch (error) {
       if (error?.code !== 'EXDEV') throw error;
       await pipeline(
@@ -182,9 +193,7 @@ export async function materialize(manifestPath, destDir, store) {
         createWriteStream(target, { mode: entry.mode })
       );
       copied += 1;
-      continue;
     }
-    await fs.chmod(target, entry.mode).catch(() => {});
   }
   return { files: Object.keys(manifest.files).length, linked, copied };
 }
