@@ -1554,3 +1554,68 @@ fn direct_html_iframe_with_http_src_passes_through_verbatim() {
     assert!(rewritten.contains(block));
     assert!(!rewritten.contains("/replay/html/1"));
 }
+
+#[test]
+fn direct_html_iframe_with_embedded_allowlisted_scheme_falls_back_to_hosted_frame() {
+    // Anchoring pin: the gate is starts_with, not contains. A dangerous
+    // scheme with an allowlisted URL embedded later must still fall back.
+    let rewritten = rewrite_single_html_block_body(
+        r#"<iframe src="javascript:http://example.com/x"></iframe>"#,
+    );
+
+    assert!(rewritten.contains(r#"<iframe src="/replay/html/1""#));
+    assert!(!rewritten.contains("javascript:"));
+}
+
+#[test]
+fn direct_html_iframe_with_padded_dangerous_src_falls_back_to_hosted_frame() {
+    // No trim by design (stricter than the legacy gate): leading whitespace
+    // fails starts_with, and browsers would strip it before resolving.
+    let rewritten =
+        rewrite_single_html_block_body(r#"<iframe src=" //evil/x"></iframe>"#);
+
+    assert!(rewritten.contains(r#"<iframe src="/replay/html/1""#));
+    assert!(!rewritten.contains("//evil/x"));
+}
+
+#[test]
+fn direct_html_iframe_with_padded_legitimate_src_falls_back_to_hosted_frame() {
+    // Documents the deliberate stricter-than-legacy behavior: even a padded
+    // https URL falls back instead of passing through.
+    let rewritten = rewrite_single_html_block_body(
+        r#"<iframe src=" https://example.com/a"></iframe>"#,
+    );
+
+    assert!(rewritten.contains(r#"<iframe src="/replay/html/1""#));
+}
+
+#[test]
+fn direct_html_iframe_with_entity_encoded_scheme_falls_back_to_hosted_frame() {
+    // The raw & fails starts_with, so no decoding can smuggle a scheme past.
+    let rewritten = rewrite_single_html_block_body(
+        r#"<iframe src="&#106;avascript:alert(1)"></iframe>"#,
+    );
+
+    assert!(rewritten.contains(r#"<iframe src="/replay/html/1""#));
+    assert!(!rewritten.contains("&#106;"));
+}
+
+#[test]
+fn direct_html_iframe_with_scheme_free_src_forms_falls_back_to_hosted_frame() {
+    for block in [
+        r#"<iframe src="//evil/x"></iframe>"#,
+        r#"<iframe src=""></iframe>"#,
+        r#"<iframe src=javascript:alert(1)></iframe>"#,
+    ] {
+        let rewritten = rewrite_single_html_block_body(block);
+
+        assert!(
+            rewritten.contains(r#"<iframe src="/replay/html/1""#),
+            "scheme-free src must stay hosted: {block}"
+        );
+    }
+    assert!(
+        !rewrite_single_html_block_body(r#"<iframe src=javascript:alert(1)></iframe>"#)
+            .contains("javascript:")
+    );
+}
