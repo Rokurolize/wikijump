@@ -4,6 +4,7 @@ import { test } from "node:test"
 import {
   isMirrorFileInventoryReadOnly,
   sortFilesWikidot,
+  wikidotBareMimeType,
   wikidotFileSize,
   wikidotFileTotals,
   wikidotFileTypeDescription,
@@ -28,6 +29,32 @@ test("only fixture-observed types map to Wikidot labels", () => {
   assert.equal(wikidotFileTypeDescription("image/gif"), "GIF image data")
   assert.equal(wikidotFileTypeDescription("application/pdf"), "application/pdf")
   assert.equal(wikidotFileTypeDescription(undefined), "")
+})
+
+test("stored charset-suffixed MIME resolves to Wikidot labels", () => {
+  // Standing stores "image/png; charset=binary"; the frozen list shows
+  // "PNG image data". Refs #2067.
+  assert.equal(wikidotFileTypeDescription("image/png; charset=binary"), "PNG image data")
+  assert.equal(
+    wikidotFileTypeDescription("image/jpeg; charset=binary"),
+    "JPEG image data"
+  )
+  assert.equal(wikidotFileTypeDescription("image/gif; charset=binary"), "GIF image data")
+  assert.equal(
+    wikidotFileTypeDescription("application/octet-stream"),
+    "application/octet-stream"
+  )
+  assert.equal(
+    wikidotFileTypeDescription("application/pdf; charset=binary"),
+    "application/pdf; charset=binary"
+  )
+})
+
+test("bare MIME strips the analysis cache suffix for display", () => {
+  assert.equal(wikidotBareMimeType("image/png; charset=binary"), "image/png")
+  assert.equal(wikidotBareMimeType("image/png"), "image/png")
+  assert.equal(wikidotBareMimeType(undefined), "")
+  assert.equal(wikidotBareMimeType(""), "")
 })
 
 test("files sort case-insensitively by name like the frozen list", () => {
