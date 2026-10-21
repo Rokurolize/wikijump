@@ -84,6 +84,30 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-route:/-/delete-account",
+      "tests": [
+        "framerail/tests/email-token.test.js::delete start page needs a session, then requests the copy keys"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/-/delete-account/{token}",
+      "tests": [
+        "framerail/tests/email-token.test.js::delete link load pre-fills the token form without calling Deepwell"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-route:/-/forgot",
       "tests": [
         "framerail/tests/email-token.test.js::forgot load requests the recovery copy keys"
@@ -1045,6 +1069,42 @@
       "surface_id": "framerail-server-action:/-/admin?/toolbar",
       "tests": [
         "framerail/tests/site-settings-public-boundary.test.js::routes settings writes through the trusted site and revision-bound action seam"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/-/delete-account?/default",
+      "tests": [
+        "framerail/tests/email-token.test.js::delete issue binds the session actor and sends no identity"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/-/delete-account/{token}?/confirm",
+      "tests": [
+        "framerail/tests/email-token.test.js::delete completion deletes on grant plus password and clears both"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/-/delete-account/{token}?/default",
+      "tests": [
+        "framerail/tests/email-token.test.js::delete redemption exchanges the link for a grant only on POST"
       ],
       "tracking": [
         {

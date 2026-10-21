@@ -56,6 +56,8 @@ const RESET_PASSWORD_TTL: Duration = Duration::hours(1);
 const RESET_GRANT_TTL: Duration = Duration::minutes(15);
 /// LOCAL DEFAULT pending live Wikidot evidence.
 const DELETE_CONFIRM_TTL: Duration = Duration::hours(1);
+/// LOCAL DEFAULT pending live Wikidot evidence.
+const DELETE_GRANT_TTL: Duration = Duration::minutes(15);
 
 /// Minimum age of the newest live token before another may be issued.
 ///
@@ -87,6 +89,7 @@ pub enum EmailTokenPurpose {
     ResetPassword,
     ResetGrant,
     DeleteConfirm,
+    DeleteGrant,
 }
 
 impl EmailTokenPurpose {
@@ -96,6 +99,7 @@ impl EmailTokenPurpose {
             EmailTokenPurpose::ResetPassword => "reset_password",
             EmailTokenPurpose::ResetGrant => "reset_grant",
             EmailTokenPurpose::DeleteConfirm => "delete_confirm",
+            EmailTokenPurpose::DeleteGrant => "delete_grant",
         }
     }
 
@@ -105,6 +109,7 @@ impl EmailTokenPurpose {
             EmailTokenPurpose::ResetPassword => RESET_PASSWORD_TTL,
             EmailTokenPurpose::ResetGrant => RESET_GRANT_TTL,
             EmailTokenPurpose::DeleteConfirm => DELETE_CONFIRM_TTL,
+            EmailTokenPurpose::DeleteGrant => DELETE_GRANT_TTL,
         }
     }
 }
@@ -232,42 +237,50 @@ impl EmailTokenService {
         Ok(IssueEmailTokenOutcome::Issued(issued))
     }
 
-    /// Issue a password-set grant after a freshly consumed recovery link.
+    /// Issue a one-time mutation grant after a freshly consumed link.
     ///
     /// Unlike [`Self::issue`], this never suppresses: every grant spends a
     /// consumed single-use link, grants are never emailed, and outstanding
     /// live grants rotate — so there is no cooldown signal to leak and no
-    /// inbox-flood vector. A recovery link therefore always yields its
-    /// grant; the link is never burned by a warm bucket.
+    /// inbox-flood vector. A link therefore always yields its grant; the
+    /// link is never burned by a warm bucket.
+    ///
+    /// `grant_purpose` must be a grant purpose (`ResetGrant`,
+    /// `DeleteGrant`): links redeem under their own purpose and the grant
+    /// authorizes only the matching terminal mutation.
     pub async fn issue_grant(
         ctx: &ServiceContext<'_>,
         user_id: i64,
         email: String,
+        grant_purpose: EmailTokenPurpose,
         ip_address: IpAddr,
     ) -> Result<IssuedEmailToken> {
-        let make_error = || Error::new("failed to issue reset grant", ErrorType::Email);
-        Self::delete_expired(ctx, user_id, EmailTokenPurpose::ResetGrant).await?;
-        Self::delete_consumed(ctx, user_id, EmailTokenPurpose::ResetGrant).await?;
+        debug_assert!(
+            matches!(
+                grant_purpose,
+                EmailTokenPurpose::ResetGrant | EmailTokenPurpose::DeleteGrant,
+            ),
+            "issue_grant requires a grant purpose",
+        );
+        let make_error = || {
+            Error::new(
+                format!("failed to issue {} grant", grant_purpose.as_str()),
+                ErrorType::Email,
+            )
+        };
+        Self::delete_expired(ctx, user_id, grant_purpose).await?;
+        Self::delete_consumed(ctx, user_id, grant_purpose).await?;
 
         // Rotation without cooldown: at most one live grant per account.
         EmailToken::delete_many()
             .filter(email_token::Column::UserId.eq(user_id))
-            .filter(
-                email_token::Column::Purpose.eq(EmailTokenPurpose::ResetGrant.as_str()),
-            )
+            .filter(email_token::Column::Purpose.eq(grant_purpose.as_str()))
             .filter(email_token::Column::ConsumedAt.is_null())
             .exec(ctx.transaction())
             .await
             .or_raise(make_error)?;
 
-        Self::insert_token(
-            ctx,
-            user_id,
-            email,
-            EmailTokenPurpose::ResetGrant,
-            ip_address,
-        )
-        .await
+        Self::insert_token(ctx, user_id, email, grant_purpose, ip_address).await
     }
 
     /// Redeem a token with a single conditional write instead of

@@ -82,18 +82,24 @@ describe("email-token routes", () => {
     ;({ client } = await vite.ssrLoadModule("/src/lib/server/deepwell/index.ts"))
     originalClientRequest = client.request
     calls = []
-    client.request = async (method, params) => {
-      calls.push({ method, params })
+    client.request = async (method, params, context) => {
+      calls.push({ method, params, context })
       if (method === "translate") return {}
+      if (method === "session_get") {
+        return { user_id: 7, session_token: "delete-session" }
+      }
       if (
         method === "password_reset_issue" ||
         method === "email_verify_issue" ||
-        method === "email_verify_redeem"
+        method === "email_verify_redeem" ||
+        method === "account_delete_issue"
       ) {
         return undefined
       }
       if (method === "password_reset_redeem") return { grant: "grant-token" }
       if (method === "password_reset_complete") return { sessions_revoked: 3 }
+      if (method === "account_delete_redeem") return { grant: "delete-grant" }
+      if (method === "account_delete_complete") return { sessions_revoked: 2 }
       throw new Error(`Unexpected Deepwell method ${method}`)
     }
 
@@ -103,7 +109,13 @@ describe("email-token routes", () => {
       verifyToken: await vite.ssrLoadModule(
         "/src/routes/[x+2d]/verify-email/[token]/+page.server.ts"
       ),
-      reset: await vite.ssrLoadModule("/src/routes/[x+2d]/reset/[token]/+page.server.ts")
+      reset: await vite.ssrLoadModule("/src/routes/[x+2d]/reset/[token]/+page.server.ts"),
+      deleteAccount: await vite.ssrLoadModule(
+        "/src/routes/[x+2d]/delete-account/+page.server.ts"
+      ),
+      deleteToken: await vite.ssrLoadModule(
+        "/src/routes/[x+2d]/delete-account/[token]/+page.server.ts"
+      )
     }
   })
 
@@ -297,5 +309,162 @@ describe("email-token routes", () => {
     // receive recovery or verification tokens.
     assert.match(endpoints, /get_real_optional_by_email/u)
     assert.doesNotMatch(endpoints, /get_optional_by_email|import_wikidot/u)
+  })
+
+  test("delete start page needs a session, then requests the copy keys", async () => {
+    await assert.rejects(
+      routes.deleteAccount.load({
+        request: pageRequest("/-/delete-account"),
+        parent: async () => parentData
+      }),
+      (error) => error?.status === 303 && error?.location === "/-/login"
+    )
+
+    calls.length = 0
+    const signedIn = {
+      ...parentData,
+      user_session: { user: { user_id: 7 } }
+    }
+    const data = await routes.deleteAccount.load({
+      request: pageRequest("/-/delete-account"),
+      parent: async () => signedIn
+    })
+    assert.equal(data.sent, false)
+    const translateCall = calls.find(({ method }) => method === "translate")
+    const messages = translateCall.params.messages
+    for (const key of ["password", "confirm-password", "login", "send", "email"]) {
+      assert.ok(key in messages, `delete page requests ${key}`)
+    }
+  })
+
+  test("delete issue binds the session actor and sends no identity", async () => {
+    const sessionEvent = (request) => ({
+      request,
+      cookies: {
+        get: (name) => (name === "wikijump_token" ? "delete-session" : undefined)
+      },
+      getClientAddress: () => "192.0.2.77",
+      locals: { requestContext: { sessionToken: "delete-session" } }
+    })
+
+    calls.length = 0
+    // No cookie at all: fail closed before Deepwell.
+    const noCookie = await routes.deleteAccount.actions.default({
+      request: postRequest("/-/delete-account", {}),
+      cookies: { get: () => undefined },
+      getClientAddress: () => "192.0.2.77",
+      locals: {}
+    })
+    assert.equal(noCookie.status, 401)
+    assert.ok(!calls.some(({ method }) => method === "account_delete_issue"))
+
+    const result = await routes.deleteAccount.actions.default(
+      sessionEvent(postRequest("/-/delete-account", {}))
+    )
+    assert.equal(result.sent, true)
+    const issue = calls.find(({ method }) => method === "account_delete_issue")
+    assert.deepEqual(issue.params, { ip_address: "192.0.2.77" })
+    // Self-only: no address, user id, or token leaves framerail.
+    assert.ok(!("email" in issue.params || "user_id" in issue.params))
+    assert.equal(issue.context.sessionToken, "delete-session")
+  })
+
+  test("delete link load pre-fills the token form without calling Deepwell", async () => {
+    calls.length = 0
+    const data = await routes.deleteToken.load({
+      request: pageRequest(`/-/delete-account/${WELL_FORMED}`),
+      parent: async () => parentData,
+      params: { token: WELL_FORMED }
+    })
+    assert.equal(data.grant, null)
+    assert.equal(data.done, false)
+    assert.equal(data.tokenForm.data.token, WELL_FORMED)
+    assert.ok(!calls.some(({ method }) => method === "account_delete_redeem"))
+  })
+
+  test("delete redemption exchanges the link for a grant only on POST", async () => {
+    const sessionEvent = (request) => ({
+      request,
+      cookies: {
+        get: (name) => (name === "wikijump_token" ? "delete-session" : undefined)
+      },
+      getClientAddress: () => "192.0.2.77",
+      locals: { requestContext: { sessionToken: "delete-session" } }
+    })
+
+    calls.length = 0
+    const redeemed = await routes.deleteToken.actions.default(
+      sessionEvent(
+        postRequest(`/-/delete-account/${WELL_FORMED}`, { token: WELL_FORMED })
+      )
+    )
+    assert.equal(redeemed.grant, "delete-grant")
+    const redeem = calls.find(({ method }) => method === "account_delete_redeem")
+    assert.deepEqual(redeem.params, {
+      token: WELL_FORMED,
+      ip_address: "192.0.2.77"
+    })
+
+    calls.length = 0
+    const malformed = await routes.deleteToken.actions.default(
+      sessionEvent(postRequest("/-/delete-account/nope", { token: "nope" }))
+    )
+    assert.equal(malformed.status, 400)
+    assert.ok(!calls.some(({ method }) => method === "account_delete_redeem"))
+
+    calls.length = 0
+    const unsigned = await routes.deleteToken.actions.default({
+      request: postRequest(`/-/delete-account/${WELL_FORMED}`, { token: WELL_FORMED }),
+      cookies: { get: () => undefined },
+      getClientAddress: () => "192.0.2.77",
+      locals: {}
+    })
+    assert.equal(unsigned.status, 401)
+    assert.ok(!calls.some(({ method }) => method === "account_delete_redeem"))
+  })
+
+  test("delete completion deletes on grant plus password and clears both", async () => {
+    const sessionEvent = (request) => ({
+      request,
+      cookies: {
+        get: (name) => (name === "wikijump_token" ? "delete-session" : undefined)
+      },
+      getClientAddress: () => "192.0.2.77",
+      locals: { requestContext: { sessionToken: "delete-session" } }
+    })
+    const grant = "b".repeat(EMAIL_TOKEN_LENGTH)
+
+    calls.length = 0
+    const result = await routes.deleteToken.actions.confirm(
+      sessionEvent(
+        postRequest(`/-/delete-account/${WELL_FORMED}?/confirm`, {
+          grant,
+          password: "current-fixture-password",
+          confirmPassword: "current-fixture-password"
+        })
+      )
+    )
+    assert.equal(result.done, true)
+    assert.equal(result.sessions_revoked, 2)
+    assert.equal(result.form.data.password, "")
+    assert.equal(result.form.data.confirmPassword, "")
+    const complete = calls.find(({ method }) => method === "account_delete_complete")
+    assert.deepEqual(complete.params, {
+      grant,
+      password: "current-fixture-password",
+      ip_address: "192.0.2.77"
+    })
+    assert.ok(!("confirmPassword" in complete.params))
+
+    const mismatch = await routes.deleteToken.actions.confirm(
+      sessionEvent(
+        postRequest(`/-/delete-account/${WELL_FORMED}?/confirm`, {
+          grant,
+          password: "current-fixture-password",
+          confirmPassword: "different-password"
+        })
+      )
+    )
+    assert.equal(mismatch.status, 400)
   })
 })

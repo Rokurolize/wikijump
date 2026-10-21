@@ -2912,6 +2912,21 @@
       "target": "wikijump.deepwell"
     },
     {
+      "source": "deepwell-jsonrpc:account_delete_complete",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:account_delete_issue",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:account_delete_redeem",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
       "source": "deepwell-jsonrpc:admin_view",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
@@ -4072,6 +4087,16 @@
       "target": "wikijump.framerail"
     },
     {
+      "source": "framerail-route:/-/delete-account/{token}",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-route:/-/delete-account",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
       "source": "framerail-route:/-/forgot",
       "type": "implemented_by",
       "target": "wikijump.framerail"
@@ -4393,6 +4418,21 @@
     },
     {
       "source": "framerail-server-action:/-/admin?/toolbar",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/-/delete-account?/default",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/-/delete-account/{token}?/confirm",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/-/delete-account/{token}?/default",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
@@ -11600,7 +11640,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "edb1669b6a932208b4ef487838fa8f2fd1a2582c63bdb1cce44554e161a1a974"
+      "source_input_set_sha256": "f975543acba977eb99a9f3c0313fcd665d452073d6432ec59a98ef787ac23b5e"
     },
     "ftml": {
       "commit": "d7727b245fd69f46d44c04592e392850ea244e13",
@@ -11617,7 +11657,7 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "abf6cddc3a0bcf897b27d21199c852a8878c7087610725c7e92091623a5d8dc0"
+        "sha256": "0e5d294841698c878d90e97664a29fcab66fca07935ce467791d9ab1fb22a3cd"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
@@ -11645,7 +11685,7 @@
       },
       {
         "path": "deepwell/src/endpoints/email.rs",
-        "sha256": "6f50156aa313074764f797b86a298370adb4a2d2d0432b462f8b4d278192b77b"
+        "sha256": "5551952198bbf3f1754e06f7888ddd1655dd080a97c5cca5041879b49d31719a"
       },
       {
         "path": "deepwell/src/endpoints/file_revision.rs",
@@ -11769,7 +11809,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "10bdacb1799df6276cbf7835e3c26f75c6e9d4f6d67fcc9432d3152d423da9e0"
+        "sha256": "b80974447fc53310abbaa3ef86cc985ea9c6de7af20884a092d9e7513a538e1a"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11777,7 +11817,7 @@
       },
       {
         "path": "docs/development/framerail-route-action-evidence.json",
-        "sha256": "f349853e2e303e3bbf2d426c3b2b3d961788ee4b696469d2c553dea2e5049dbb"
+        "sha256": "1b1dd2b90812289d80af437cd703ab9dbc9f25e911ff63fa3e5802866b962768"
       },
       {
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
@@ -11833,7 +11873,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "d48e7f6c78fe4638c58fc99a3333ae9dba1248b8acc5b54962a76d93dcd11735"
+        "sha256": "c097807a47f5ea97256748d7d893359c240abed662839c1710e62503877ca064"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11918,6 +11958,22 @@
       {
         "path": "framerail/src/routes/[x+2d]/admin/+page.svelte",
         "sha256": "989b2320857aec2124bd4284ba4e8b2f2d64c047264e609a065de3a5d9adcd95"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/delete-account/[token]/+page.server.ts",
+        "sha256": "b2cde0a2f65d039ae11b0b63c7d65d6dc1343fc050726cff92c47ad701daeabd"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/delete-account/[token]/+page.svelte",
+        "sha256": "cb7a4a1d904fd0b843bf6f5c07ce06ae57f63c959e399fec517c5bce0626f143"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/delete-account/+page.server.ts",
+        "sha256": "93ff512bb2a825b980df7a109c473ab47e30e739a3b58133262190cd39494450"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/delete-account/+page.svelte",
+        "sha256": "2a563e4042ef56aef92e3ef75ec7c38eee2228e8fc93766dde1bcedfe8d62e7e"
       },
       {
         "path": "framerail/src/routes/[x+2d]/forgot/+page.server.ts",
@@ -12244,14 +12300,14 @@
     ]
   },
   "counts": {
-    "total": 997,
+    "total": 1005,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 199,
+      "deepwell_jsonrpc_method": 202,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 27,
-      "framerail_route": 39,
-      "framerail_server_action": 119,
+      "framerail_route": 41,
+      "framerail_server_action": 122,
       "framerail_xmlrpc_method": 17,
       "missing_page_control": 2,
       "open43_audit_case": 285,
@@ -22492,6 +22548,141 @@
         "references": []
       },
       "specification_owner": "catalog.feature:web-statistics",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:account_delete_complete",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:account_delete_complete",
+        "deepwell/src/endpoints/email.rs#account_delete_complete"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/email.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:account_delete_issue",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:account_delete_issue",
+        "deepwell/src/endpoints/email.rs#account_delete_issue"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/email_token.rs#delete_issue_requires_session_and_records_link"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/email.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:account_delete_redeem",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:account_delete_redeem",
+        "deepwell/src/endpoints/email.rs#account_delete_redeem"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/email.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
       "implementation_owners": [
         "wikijump.deepwell"
       ]
@@ -32882,6 +33073,88 @@
       ]
     },
     {
+      "surface_id": "framerail-route:/-/delete-account",
+      "kind": "framerail_route",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/delete-account/+page.server.ts#methods:GET",
+        "framerail/src/routes/[x+2d]/delete-account/+page.svelte#methods:GET"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#delete start page needs a session, then requests the copy keys"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-route",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-route:/-/delete-account/{token}",
+      "kind": "framerail_route",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/delete-account/[token]/+page.server.ts#methods:GET",
+        "framerail/src/routes/[x+2d]/delete-account/[token]/+page.svelte#methods:GET"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#delete link load pre-fills the token form without calling Deepwell"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-route",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-route:/-/forgot",
       "kind": "framerail_route",
       "public_reference": [
@@ -35409,6 +35682,126 @@
         "cases": [],
         "tests": [
           "framerail/tests/site-settings-public-boundary.test.js#routes settings writes through the trusted site and revision-bound action seam"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/-/delete-account?/default",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/delete-account/+page.server.ts#action:default"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#delete issue binds the session actor and sends no identity"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/-/delete-account/{token}?/confirm",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/delete-account/[token]/+page.server.ts#action:confirm"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#delete completion deletes on grant plus password and clears both"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/-/delete-account/{token}?/default",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/delete-account/[token]/+page.server.ts#action:default"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#delete redemption exchanges the link for a grant only on POST"
         ]
       },
       "evidence": {

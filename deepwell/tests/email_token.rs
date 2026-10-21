@@ -18,7 +18,9 @@ use deepwell::api::ServerState;
 use deepwell::error::ErrorType;
 use deepwell::error::prelude::Result as ExnResult;
 use deepwell::models::email_token::{self, Entity as EmailTokenTable};
+use deepwell::models::user::Column as UserColumn;
 use deepwell::models::user::Entity as UserTable;
+use deepwell::services::RequestContext;
 use deepwell::services::ServiceContext;
 use deepwell::services::authentication::{AuthenticateUser, AuthenticationService};
 use deepwell::services::email::{
@@ -27,7 +29,7 @@ use deepwell::services::email::{
 };
 use deepwell::services::import::{ImportService, ImportUser, ImportedUserType};
 use deepwell::services::session::{CreateSession, SessionService};
-use deepwell::services::user::{CreateUser, UserService};
+use deepwell::services::user::{CreateUser, CreateUserOutput, UserService};
 use deepwell::types::{Reference, UserType};
 use deepwell::utils::now;
 use ftml::data::KarmaLevel;
@@ -760,5 +762,323 @@ async fn consumed_tokens_are_purged_on_next_issue() {
         .expect("email token count should succeed");
     assert_eq!(total, 1);
     assert_eq!(live_token_count(&runner, created.user_id).await, 1);
+    runner.teardown().await;
+}
+
+async fn delete_fixture(runner: &TestRunner, n: u64) -> CreateUserOutput {
+    let email = format!("email-token-delete-{n}@example.invalid");
+    UserService::create(runner.context(), token_user(n, UserType::Regular, email))
+        .await
+        .expect("regular user should be created")
+}
+
+async fn stored_user(runner: &TestRunner, user_id: i64) -> deepwell::models::user::Model {
+    UserTable::find()
+        .filter(UserColumn::UserId.eq(user_id))
+        .one(runner.context().transaction())
+        .await
+        .expect("user lookup should succeed")
+        .expect("user row should exist")
+}
+
+fn as_actor(runner: &mut TestRunner, user_id: i64) {
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        ..Default::default()
+    });
+}
+
+#[tokio::test]
+async fn delete_issue_requires_session_and_records_link() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let created = delete_fixture(&runner, n).await;
+
+    // Anonymous callers fail closed; no link is recorded.
+    let error = run_endpoint_err!(
+        runner,
+        account_delete_issue,
+        json!({
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_eq!(live_token_count(&runner, created.user_id).await, 0);
+
+    as_actor(&mut runner, created.user_id);
+    run_endpoint!(
+        runner,
+        account_delete_issue,
+        json!({
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(live_token_count(&runner, created.user_id).await, 1);
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn delete_round_trip_removes_self_and_revokes_sessions() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let created = delete_fixture(&runner, n).await;
+    let m = next_n();
+    let other = delete_fixture(&runner, m).await;
+
+    async fn login_with(
+        runner: &TestRunner,
+        name_or_email: String,
+        password: &str,
+    ) -> bool {
+        AuthenticationService::auth_password(
+            runner.context(),
+            AuthenticateUser {
+                name_or_email,
+                password: password.to_owned(),
+            },
+            common::IP_ADDRESS,
+        )
+        .await
+        .is_ok()
+    }
+    assert!(
+        login_with(
+            &runner,
+            format!("Email Token {n}"),
+            "email-token-fixture-password",
+        )
+        .await
+    );
+
+    SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: created.user_id,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "email-token-test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("session should be created");
+
+    as_actor(&mut runner, created.user_id);
+    let token = issue_for(
+        &runner,
+        created.user_id,
+        &format!("email-token-delete-{n}@example.invalid"),
+        EmailTokenPurpose::DeleteConfirm,
+    )
+    .await;
+    let grant_output = run_endpoint!(
+        runner => account_delete_redeem,
+        common::make_params(json!({
+            "token": token,
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    let grant: String = grant_output.grant;
+
+    // The deletion link is spent; only the grant authorizes deletion.
+    let error = run_endpoint_err!(
+        runner => account_delete_redeem,
+        common::make_params(json!({
+            "token": token,
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    assert_contains_error!(error, ErrorType::InvalidEmailToken);
+
+    let complete = run_endpoint!(
+        runner => account_delete_complete,
+        common::make_params(json!({
+            "grant": grant,
+            "password": "email-token-fixture-password",
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    assert!(
+        complete.sessions_revoked >= 1,
+        "deletion should revoke the account sessions",
+    );
+
+    // The account is gone; the control account is untouched (user:2/user:19
+    // pattern from the #2129 evidence).
+    assert!(
+        stored_user(&runner, created.user_id)
+            .await
+            .deleted_at
+            .is_some()
+    );
+    assert!(
+        stored_user(&runner, other.user_id)
+            .await
+            .deleted_at
+            .is_none()
+    );
+
+    // Deleted accounts cannot log in; the replayed grant fails like a
+    // bogus one instead of deleting again.
+    assert!(
+        !login_with(
+            &runner,
+            format!("Email Token {n}"),
+            "email-token-fixture-password",
+        )
+        .await
+    );
+    let error = run_endpoint_err!(
+        runner => account_delete_complete,
+        common::make_params(json!({
+            "grant": grant,
+            "password": "email-token-fixture-password",
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    assert_contains_error!(error, ErrorType::InvalidEmailToken);
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn delete_wrong_password_keeps_account_and_burns_grant() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let created = delete_fixture(&runner, n).await;
+    as_actor(&mut runner, created.user_id);
+
+    let token = issue_for(
+        &runner,
+        created.user_id,
+        &format!("email-token-delete-{n}@example.invalid"),
+        EmailTokenPurpose::DeleteConfirm,
+    )
+    .await;
+    let grant_output = run_endpoint!(
+        runner => account_delete_redeem,
+        common::make_params(json!({
+            "token": token,
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    let grant: String = grant_output.grant;
+
+    let error = run_endpoint_err!(
+        runner => account_delete_complete,
+        common::make_params(json!({
+            "grant": grant,
+            "password": "wrong-password",
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    assert_contains_error!(error, ErrorType::InvalidAuthentication);
+    assert!(
+        stored_user(&runner, created.user_id)
+            .await
+            .deleted_at
+            .is_none()
+    );
+
+    // The spent grant cannot authorize a second attempt, even with the
+    // right password; the account holder re-runs the flow instead.
+    let error = run_endpoint_err!(
+        runner => account_delete_complete,
+        common::make_params(json!({
+            "grant": grant,
+            "password": "email-token-fixture-password",
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    assert_contains_error!(error, ErrorType::InvalidEmailToken);
+    assert!(
+        stored_user(&runner, created.user_id)
+            .await
+            .deleted_at
+            .is_none()
+    );
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn delete_cross_user_and_anonymous_links_fail_closed() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let created = delete_fixture(&runner, n).await;
+    let m = next_n();
+    let other = delete_fixture(&runner, m).await;
+
+    let token = issue_for(
+        &runner,
+        created.user_id,
+        &format!("email-token-delete-{n}@example.invalid"),
+        EmailTokenPurpose::DeleteConfirm,
+    )
+    .await;
+
+    // Signed in as someone else: the link fails exactly like a bogus one,
+    // and the target account is untouched.
+    as_actor(&mut runner, other.user_id);
+    let error = run_endpoint_err!(
+        runner => account_delete_redeem,
+        common::make_params(json!({
+            "token": token,
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    assert_contains_error!(error, ErrorType::InvalidEmailToken);
+    assert!(
+        stored_user(&runner, created.user_id)
+            .await
+            .deleted_at
+            .is_none()
+    );
+
+    // Signed out: the link fails closed to not-logged-in.
+    runner.set_request_context(RequestContext::default());
+    let error = run_endpoint_err!(
+        runner => account_delete_redeem,
+        common::make_params(json!({
+            "token": token,
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    // The account holder re-runs the flow on a fresh link and deletes.
+    as_actor(&mut runner, created.user_id);
+    let token = issue_for(
+        &runner,
+        created.user_id,
+        &format!("email-token-delete-{n}@example.invalid"),
+        EmailTokenPurpose::DeleteConfirm,
+    )
+    .await;
+    let grant_output = run_endpoint!(
+        runner => account_delete_redeem,
+        common::make_params(json!({
+            "token": token,
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    let grant: String = grant_output.grant;
+    run_endpoint!(
+        runner => account_delete_complete,
+        common::make_params(json!({
+            "grant": grant,
+            "password": "email-token-fixture-password",
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    assert!(
+        stored_user(&runner, created.user_id)
+            .await
+            .deleted_at
+            .is_some()
+    );
+    assert!(
+        stored_user(&runner, other.user_id)
+            .await
+            .deleted_at
+            .is_none()
+    );
     runner.teardown().await;
 }
