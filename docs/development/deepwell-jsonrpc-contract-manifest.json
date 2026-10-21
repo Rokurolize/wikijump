@@ -3406,6 +3406,7 @@
         "reference": "deepwell/tests/discussion_import.rs#discussion_import_rejects_foreign_threads_and_incomplete_graph_before_identity_writes",
         "alternatives": [
           "deepwell/tests/discussion_import.rs#imported_discussion_preserves_ids_appends_revisions_and_creates_no_account",
+          "deepwell/tests/discussion_import.rs#imported_discussion_user_links_follow_source_revision_scheme",
           "deepwell/tests/mutation_authorization.rs#wikidot_database_import_endpoints_require_platform_staff"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"

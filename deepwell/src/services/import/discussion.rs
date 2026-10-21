@@ -624,6 +624,7 @@ impl ImportService {
                     &source_post.title,
                     source_post.wikitext.clone(),
                     &source_post.observed_users,
+                    revision_time,
                 )
                 .await?;
                 let revision = forum_post_revision::ActiveModel {
