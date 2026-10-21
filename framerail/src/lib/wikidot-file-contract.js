@@ -19,13 +19,15 @@ export const wikidotBareMimeType = (mime) => (mime ?? "").split(";")[0].trim()
 
 /**
  * Short human-readable content type. Only the fixture-observed image types
- * map to Wikidot labels; anything else reports its MIME type, which is the
- * precise datum available. The per-file long `file(1)` descriptions (pixel
- * dimensions and encoding details) need server-side introspection data the
- * file record does not carry, so the MIME type doubles as the hover text.
+ * map to Wikidot labels; anything else reports the bare media type, which
+ * is the precise datum available without inventing a label. The per-file
+ * long `file(1)` descriptions (pixel dimensions and encoding details) need
+ * server-side introspection data the file record does not carry, so the
+ * MIME type doubles as the hover text.
  */
 export const wikidotFileTypeDescription = (mime) =>
-  FILE_TYPE_DESCRIPTIONS.get(wikidotBareMimeType(mime).toLowerCase()) ?? (mime || "")
+  FILE_TYPE_DESCRIPTIONS.get(wikidotBareMimeType(mime).toLowerCase()) ??
+  wikidotBareMimeType(mime)
 
 const FILE_SIZE_UNITS = ["Bytes", "kB", "MB", "GB"]
 
