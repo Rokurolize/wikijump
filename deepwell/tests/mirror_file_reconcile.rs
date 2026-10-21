@@ -10,15 +10,16 @@ use deepwell::error::ErrorType;
 use deepwell::hash::{blob_hash_to_hex, sha512_hash};
 use deepwell::license::License;
 use deepwell::models::blob_pending;
+use deepwell::services::RequestContext;
 use deepwell::services::blob::EMPTY_BLOB_HASH;
 use deepwell::services::file::{CreateFile, FileService};
+use deepwell::services::file_revision::FileRevisionService;
 use deepwell::services::import::{
     ImportFile, ImportPage, ImportService, ImportSite, ImportUser, ImportedUserType,
 };
 use deepwell::services::mirror_scope::{
     MirrorScopeService, ReconcileMirrorFiles, SetMirrorScope, SourceFileExpectation,
 };
-use deepwell::services::{PageRevisionService, RequestContext};
 use deepwell::types::Reference;
 use ftml::data::KarmaLevel;
 use sea_orm::{ActiveModelTrait, ActiveValue::Set};
@@ -64,6 +65,7 @@ async fn import_mirror_site(runner: &TestRunner, tag: &Uuid) -> i64 {
             description: "File reconciliation fixture site".to_owned(),
             license: License::CcBySa40,
             locale: "en".to_owned(),
+            meta_tags: vec![],
             ip_address: common::IP_ADDRESS,
         },
     )
@@ -89,6 +91,7 @@ async fn import_mirror_page(
             slug: format!("file-reconcile-{label}-{tag}"),
             locked: false,
             discussion_thread_id: None,
+            meta_tags: vec![],
             ip_address: common::IP_ADDRESS,
         },
     )
@@ -306,6 +309,14 @@ async fn reconcile_tombstones_source_removed_files_but_keeps_inventory() {
     assert_eq!(output.kept, 2);
     assert_eq!(output.failed, 0);
     assert_eq!(output.missing, vec![String::from("source-only.png")]);
+    assert!(
+        output
+            .items
+            .iter()
+            .filter(|item| item.op == "tombstone")
+            .all(|item| item.ok && item.revision_number.is_some()),
+        "tombstones must record their new revision numbers",
+    );
 
     // Tombstoned rows no longer resolve; kept rows do.
     for gone in [dropped_imported.0, _dropped_local] {
@@ -356,7 +367,7 @@ async fn reconcile_reports_changed_bytes_without_touching() {
     )
     .await;
     let before =
-        PageRevisionService::get_latest(runner.context(), site_id, page_id, changed)
+        FileRevisionService::get_latest(runner.context(), site_id, page_id, changed)
             .await
             .expect("latest revision should resolve")
             .revision_number;
@@ -382,7 +393,7 @@ async fn reconcile_reports_changed_bytes_without_touching() {
     assert_eq!(output.failed, 0);
 
     let after =
-        PageRevisionService::get_latest(runner.context(), site_id, page_id, changed)
+        FileRevisionService::get_latest(runner.context(), site_id, page_id, changed)
             .await
             .expect("latest revision should still resolve")
             .revision_number;
