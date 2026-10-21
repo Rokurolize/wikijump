@@ -110,6 +110,7 @@ pub const STANDARD_TEMPLATE_PAGES: &[(&str, &str, &str)] = &[
     ),
 ];
 
+#[derive(Debug)]
 pub struct BootstrapNewSite {
     pub site_id: i64,
     pub creator_user_id: Option<i64>,
