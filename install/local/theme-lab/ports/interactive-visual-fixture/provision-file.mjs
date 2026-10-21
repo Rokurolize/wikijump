@@ -48,8 +48,8 @@ try{
  await page.locator('#login button[type=submit]').click();
  await page.waitForFunction(()=>!document.querySelector('#login'));
  await page.goto(fixture,{waitUntil:'domcontentloaded'});await page.waitForTimeout(1100);
- await page.locator('#files-button').click();await page.locator('.file-list').waitFor();
- const row=page.locator('.file-row').filter({hasText:filename});
+ await page.locator('#files-button').click();await page.locator('.file-list, table.page-files').first().waitFor();
+ const row=page.locator('tr[id^="file-row-"], .file-row').filter({hasText:filename});
  if(process.argv.includes('--remove')){
  if(await row.count()){
    await row.locator('a').last().click();
