@@ -8,7 +8,9 @@
     sortFilesWikidot,
     wikidotFileSize,
     wikidotFileTotals,
-    wikidotFileTypeDescription
+    wikidotFileTypeDescription,
+    wikidotRenameDeniedPopup,
+    wikidotUploadDeniedPopup
   } from "$lib/wikidot-file-contract"
   import WikidotFileInfoModal from "./WikidotFileInfoModal.svelte"
   import type { SvelteMap } from "svelte/reactivity"
@@ -97,19 +99,7 @@
     }
 
     if (wikidot && !data.user_session) {
-      errorPopupState.current = {
-        state: true,
-        title: "PERMISSION ERROR",
-        leadIn: "Please note:",
-        message: "Sorry, you can not attach a new file to this page.",
-        extraMessage:
-          "Only owner (creator) of this page, site administrators and perhaps selected moderators are allowed to do it.",
-        actionLink: {
-          href: "#action:login",
-          label: "Sign in as Wikidot user"
-        },
-        data: null
-      }
+      errorPopupState.current = wikidotUploadDeniedPopup()
       return
     }
 
@@ -122,19 +112,7 @@
   // every ?/fileEdit POST independently.
   function openFileRename(fileId: number) {
     if (wikidot && !data.user_session) {
-      errorPopupState.current = {
-        state: true,
-        title: "PERMISSION ERROR",
-        leadIn: "Please note:",
-        message: "Sorry, you can not rename file attachment in this page.",
-        extraMessage:
-          "Only owner (creator) of this page, site administrators and perhaps selected moderators are allowed to do it.",
-        actionLink: {
-          href: "#action:login",
-          label: "Sign in as Wikidot user"
-        },
-        data: null
-      }
+      errorPopupState.current = wikidotRenameDeniedPopup()
       return
     }
 
@@ -512,7 +490,7 @@
   <div class="file-list-scroll">
     <div class="file-list">
       <div class="file-list-message">
-        {data.internationalization?.["wiki-page-file-no-files"]}
+        {localized("wiki-page-file-no-files", "No files for this page.")}
       </div>
     </div>
   </div>

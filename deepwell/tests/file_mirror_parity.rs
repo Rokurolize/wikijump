@@ -64,6 +64,7 @@ async fn import_mirror_site(runner: &TestRunner, tag: &Uuid) -> i64 {
             license: License::CcBySa40,
             locale: "en".to_owned(),
             ip_address: common::IP_ADDRESS,
+            meta_tags: vec![],
         },
     )
     .await
@@ -89,6 +90,7 @@ async fn import_mirror_page(
             locked: false,
             discussion_thread_id: None,
             ip_address: common::IP_ADDRESS,
+            meta_tags: vec![],
         },
     )
     .await

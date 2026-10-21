@@ -32,8 +32,9 @@ pub use self::discussion_structs::{
 pub use self::service::{ImportService, MAX_IMPORT_FILE_BYTES};
 pub use self::structs::{
     ImportFile, ImportFileDelete, ImportFileDeleteOutput, ImportFileExpectation,
-    ImportFileOutput, ImportPage, ImportPageFilesVerify, ImportPageFilesVerifyOutput,
-    ImportPageOutput, ImportPageRevision, ImportPageRevisionOutput, ImportSite,
-    ImportSiteOutput, ImportUser, ImportUserOutput, ImportedUserType,
-    ObservedUserProfile, PromoteObservedIdentity, PromoteObservedIdentityOutput,
+    ImportFileOutput, ImportMetaTag, ImportPage, ImportPageFilesVerify,
+    ImportPageFilesVerifyOutput, ImportPageOutput, ImportPageRevision,
+    ImportPageRevisionOutput, ImportSite, ImportSiteOutput, ImportUser, ImportUserOutput,
+    ImportedUserType, ObservedUserProfile, PromoteObservedIdentity,
+    PromoteObservedIdentityOutput,
 };

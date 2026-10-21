@@ -6325,7 +6325,8 @@
           "deepwell/tests/page/page_query.rs#excessive_score_selectors_preserve_listpages_and_countpages_modules",
           "deepwell/tests/page/page_query.rs#score_selectors_at_limit_render_countpages_normally",
           "deepwell/tests/page/page_query.rs#score_selectors_at_limit_render_listpages_normally",
-          "deepwell/tests/parent.rs#direct_parent_metadata_rejects_missing_deleted_and_cross_site_parents"
+          "deepwell/tests/parent.rs#direct_parent_metadata_rejects_missing_deleted_and_cross_site_parents",
+          "deepwell/tests/scp744_render.rs#scp744_full_closure_render_keeps_article_body"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -7490,6 +7491,7 @@
           "deepwell/tests/page/page_modules.rs#pages_by_tag_module_renders_empty_list_and_preserves_unevidenced_forms",
           "deepwell/tests/page/page_modules.rs#pages_by_tag_module_renders_tagged_pages_ordered_by_title",
           "deepwell/tests/page/page_modules.rs#wantedpages_module_groups_missing_internal_links_by_target",
+          "deepwell/tests/scp744_render.rs#scp744_full_closure_render_keeps_article_body",
           "deepwell/tests/vote.rs#imported_rating_baseline_refresh_shows_combined_score"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
