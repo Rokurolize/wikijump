@@ -18,15 +18,21 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::{MirrorScope, SetMirrorScope};
+use super::{
+    MirrorScope, ReconcileFileItemResult, ReconcileMirrorFiles,
+    ReconcileMirrorFilesOutput, SetMirrorScope, SourceFileExpectation,
+};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::mirror_scope::{self, Entity as MirrorScopeTable};
 use crate::services::ServiceContext;
+use crate::services::file::{DeleteFile, FileService};
+use crate::services::file_revision::FileRevisionService;
+use crate::services::page::PageService;
 use crate::services::site::SiteService;
-use crate::types::Reference;
+use crate::types::{FileOrder, Reference};
 use crate::utils::{normalize_page_slug, now};
 use sea_orm::{ActiveModelTrait, EntityTrait, Set};
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 
 pub const MIRROR_SCOPE_FULL: &str = "full";
 pub const MIRROR_SCOPE_PARTIAL: &str = "partial";
@@ -165,6 +171,185 @@ impl MirrorScopeService {
         Ok(row
             .map(|row| row.consumed_slugs.iter().any(|known| known == &slug))
             .unwrap_or(false))
+    }
+
+    fn require_scope_record(site_id: i64, exists: bool) -> Result<()> {
+        if exists {
+            return Ok(());
+        }
+        Err(Error::new(
+            "mirror scope record does not exist; set the site scope before reconciling",
+            ErrorType::Site,
+        )
+        .into())
+    }
+
+    /// Reconcile one mirror page's file inventory against the source.
+    ///
+    /// Active rows absent from `input.files` are tombstoned through the
+    /// canonical file delete, attributed to the staff actor with the
+    /// reconciliation time. Rows whose recorded bytes disagree with the
+    /// expectation and source names with no local row are reported, not
+    /// touched. Items apply best-effort; a failed item is recorded and
+    /// the pass continues. Requires an existing scope record.
+    pub async fn reconcile_files(
+        ctx: &ServiceContext<'_>,
+        actor_user_id: i64,
+        input: ReconcileMirrorFiles<'_>,
+    ) -> Result<ReconcileMirrorFilesOutput> {
+        let scope_exists = MirrorScopeTable::find_by_id(input.site_id)
+            .one(ctx.transaction())
+            .await
+            .or_raise(Self::make_error)?
+            .is_some();
+        Self::require_scope_record(input.site_id, scope_exists)?;
+
+        let page = PageService::get(ctx, input.site_id, input.page.borrow())
+            .await
+            .or_raise(Self::make_error)?;
+        let page_id = page.page_id;
+
+        let expected: HashMap<&str, &SourceFileExpectation> = input
+            .files
+            .iter()
+            .map(|file| (file.name.as_str(), file))
+            .collect();
+        let mut seen = BTreeSet::new();
+        let mut items = Vec::new();
+        let mut tombstoned = 0;
+        let mut kept = 0;
+        let mut changed = Vec::new();
+
+        for row in FileService::get_all(
+            ctx,
+            input.site_id,
+            page_id,
+            Some(false),
+            FileOrder::default(),
+        )
+        .await
+        .or_raise(Self::make_error)?
+        {
+            seen.insert(row.name.clone());
+            match expected.get(row.name.as_str()) {
+                None => {
+                    let latest = FileRevisionService::get_latest(
+                        ctx,
+                        input.site_id,
+                        page_id,
+                        row.file_id,
+                    )
+                    .await
+                    .or_raise(Self::make_error)?;
+                    match FileService::delete(
+                        ctx,
+                        DeleteFile {
+                            last_revision_id: latest.revision_id,
+                            revision_comments: format!(
+                                "source file '{}' absent from inventory; reconciled",
+                                row.name,
+                            ),
+                            site_id: input.site_id,
+                            page_id,
+                            file: Reference::Id(row.file_id),
+                            user_id: actor_user_id,
+                            ip_address: input.ip_address,
+                        },
+                    )
+                    .await
+                    {
+                        Ok(output) => {
+                            tombstoned += 1;
+                            items.push(ReconcileFileItemResult {
+                                name: row.name,
+                                op: String::from("tombstone"),
+                                ok: true,
+                                revision_number: Some(output.revision_number),
+                                error: None,
+                            });
+                        }
+                        Err(error) => items.push(ReconcileFileItemResult {
+                            name: row.name,
+                            op: String::from("tombstone"),
+                            ok: false,
+                            revision_number: None,
+                            error: Some(error.to_string()),
+                        }),
+                    }
+                }
+                Some(expectation) => {
+                    let latest = FileRevisionService::get_latest(
+                        ctx,
+                        input.site_id,
+                        page_id,
+                        row.file_id,
+                    )
+                    .await
+                    .or_raise(Self::make_error)?;
+                    if Self::bytes_differ(expectation, &latest.s3_hash, latest.size) {
+                        changed.push(row.name.clone());
+                        items.push(ReconcileFileItemResult {
+                            name: row.name,
+                            op: String::from("report-changed"),
+                            ok: true,
+                            revision_number: None,
+                            error: None,
+                        });
+                    } else {
+                        kept += 1;
+                        items.push(ReconcileFileItemResult {
+                            name: row.name,
+                            op: String::from("keep"),
+                            ok: true,
+                            revision_number: None,
+                            error: None,
+                        });
+                    }
+                }
+            }
+        }
+
+        let mut missing: Vec<String> = expected
+            .keys()
+            .filter(|name| !seen.contains(**name))
+            .map(|name| (*name).to_string())
+            .collect();
+        missing.sort();
+
+        let failed = items.iter().filter(|item| !item.ok).count();
+        Ok(ReconcileMirrorFilesOutput {
+            site_id: input.site_id,
+            page_id,
+            tombstoned,
+            kept,
+            changed,
+            missing,
+            failed,
+            items,
+        })
+    }
+
+    fn bytes_differ(
+        expectation: &SourceFileExpectation,
+        s3_hash: &[u8],
+        size: i64,
+    ) -> bool {
+        if let Some(expected_size) = expectation.size {
+            if expected_size != size {
+                return true;
+            }
+        }
+        if let Some(expected_hex) = &expectation.s3_hash_hex {
+            // An undecodable or wrong-length hash is not evidence of a
+            // difference, only of an unusable expectation; the name check
+            // still governs tombstoning, so this stays safe.
+            if let Ok(expected) = hex::decode(expected_hex.trim()) {
+                if expected.len() == s3_hash.len() && expected != s3_hash {
+                    return true;
+                }
+            }
+        }
+        false
     }
 
     fn to_output(row: mirror_scope::Model) -> MirrorScope {
