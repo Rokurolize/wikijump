@@ -188,6 +188,26 @@ export function expandIncludeClosure({
 }
 
 /**
+ * Corpus branch map for site-qualified includes: the Wikidot site slug
+ * each corpus branch mirrors. Only pairs with recorded evidence are
+ * listed (corpus branch table plus manifest-observed resolutions with
+ * language-matched titles); branches whose site slug is not evidenced
+ * in-repo stay unmapped and keep the `ambiguous-branches` gap. Refs #2093.
+ */
+export const CORPUS_SITE_PREFERRED_BRANCHES = {
+  'scp-wiki': 'en',
+  'scp-jp': 'jp',
+  'scp-wiki-cn': 'cn',
+  'scpko': 'ko',
+  'scp-int': 'int',
+  'fondazionescp': 'it',
+  'fondationscp': 'fr',
+  'lafundacionscp': 'es',
+  'destinox': 'es',
+  '05command': '05command',
+};
+
+/**
  * Breadth-first transitive include closure across corpus branches.
  *
  * `roots` are `{ branch, site, slug }` identities on the mirror's own
@@ -196,9 +216,11 @@ export function expandIncludeClosure({
  * `{ pageExists, readSource, readProvenance }`, where
  * `readProvenance(slug)` returns `{ path, captureId, runId, payloadSha256 }`
  * (revision fields null when the branch carries no acquisition record).
- * `preferredBranches` is an optional caller-supplied `{ site: branch }` map
- * used only to break ties between divergent multi-branch hits; it is
- * recorded, never inferred.
+ * `preferredBranches` is a `{ site: branch }` map used only to break ties
+ * between divergent multi-branch hits; it defaults to
+ * `CORPUS_SITE_PREFERRED_BRANCHES` (a site-qualified include resolves on
+ * the named site, per the Wikidot include specification), and callers may
+ * override it (including back to `{}`) explicitly.
  *
  * The requesting site travels with each node, so a `:site:`-prefixed
  * self-reference classifies as same-site with no site-to-branch map.
@@ -223,7 +245,7 @@ export function expandIncludeClosure({
 export function expandCrossSiteIncludeClosure({
   roots,
   branches,
-  preferredBranches = {},
+  preferredBranches = CORPUS_SITE_PREFERRED_BRANCHES,
   maxDepth = DEFAULT_CLOSURE_MAX_DEPTH,
   maxPages = DEFAULT_CLOSURE_MAX_PAGES,
 }) {

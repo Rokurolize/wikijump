@@ -660,19 +660,54 @@ impl BlobService {
         .await
     }
 
+    /// Raster avatar content types, matched on the MIME essence only
+    /// (parameters such as `charset` are ignored).
+    fn is_raster_avatar_mime(mime: &str) -> bool {
+        matches!(
+            mime.split(';')
+                .next()
+                .unwrap_or("")
+                .trim()
+                .to_ascii_lowercase()
+                .as_str(),
+            "image/png" | "image/jpeg" | "image/webp" | "image/gif"
+        )
+    }
+
     pub async fn finish_avatar_upload(
         ctx: &ServiceContext<'_>,
         user_id: i64,
         pending_blob_id: &str,
     ) -> Result<FinalizeBlobUploadOutput> {
-        Self::finish_upload(
+        let output = Self::finish_upload(
             ctx,
             user_id,
             pending_blob_id,
             PendingBlobOwner::Unscoped,
             Some(ctx.config().maximum_avatar_size),
         )
-        .await
+        .await?;
+
+        // Avatars render as <img> on profiles but are served verbatim from
+        // the files origin, so only raster image types are acceptable: SVG,
+        // HTML, and other active document types would execute script when
+        // navigated to directly (see issue #2653). The MIME type here is
+        // libmagic output over the finalized bytes, not the client-declared
+        // upload label, so it cannot be bypassed with a forged label.
+        // Wikidot avatars are raster images; no compatibility evidence
+        // requires inline SVG avatar documents.
+        if !Self::is_raster_avatar_mime(&output.mime) {
+            return Err(Error::new(
+                format!(
+                    "avatar upload has non-raster content type '{}'; avatars must be PNG, JPEG, WebP, or GIF",
+                    output.mime,
+                ),
+                ErrorType::Blob,
+            )
+            .into());
+        }
+
+        Ok(output)
     }
 
     pub async fn finish_page_upload(

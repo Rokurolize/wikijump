@@ -670,6 +670,11 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
 
     // Email
     register!("email_validate", validate_email);
+    register!("email_verify_issue", email_verify_issue);
+    register!("email_verify_redeem", email_verify_redeem);
+    register!("password_reset_issue", password_reset_issue);
+    register!("password_reset_redeem", password_reset_redeem);
+    register!("password_reset_complete", password_reset_complete);
 
     // Votes
     register!("vote_set", vote_set);
@@ -682,6 +687,10 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
 
     // Wikidot data import
     register!("import_wikidot_user", import_wikidot_user);
+    register!(
+        "promote_observed_wikidot_identity",
+        promote_observed_wikidot_identity
+    );
     register!("import_wikidot_site", import_wikidot_site);
     register!("import_wikidot_page", import_wikidot_page);
     register!("import_wikidot_page_revision", import_wikidot_page_revision);
@@ -692,6 +701,8 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
         import_wikidot_page_files_verify
     );
     register!("import_wikidot_discussion", import_wikidot_discussion);
+    register!("mirror_scope_get", mirror_scope_get);
+    register!("mirror_scope_set", mirror_scope_set);
 
     // Return
     Ok(module)

@@ -361,5 +361,240 @@ class RenderUntilLinksSettleTest(unittest.TestCase):
             RENDER_AHEAD.link_readers({"candidates": 1})
 
 
+def image_summary(**overrides):
+    """A render-ahead pass summary shaped like the image's own report."""
+    summary = {
+        "action": "render-ahead",
+        "compiled_generator": "ftml.test; deepwell-render/v99",
+        "dry_run": False,
+        "batch_size": 200,
+        "concurrency": 16,
+        "candidates": 0,
+        "rendered": 0,
+        "failed": 0,
+        "failed_page_ids": [],
+        "failures": [],
+        "link_reader_page_ids": [],
+        "stale_without_valid_ahead": 0,
+        "elapsed_ms": 0,
+        "rows_per_sec": 0.0,
+        "slow_renders": 0,
+        "slowest_renders": [],
+    }
+    summary.update(overrides)
+    return summary
+
+
+class SplitShardsTest(unittest.TestCase):
+    def test_single_shard_keeps_everything(self) -> None:
+        self.assertEqual(RENDER_AHEAD.split_shards([3, 1, 2], 1), [[3, 1, 2]])
+
+    def test_chunks_are_disjoint_complete_and_ordered(self) -> None:
+        ids = list(range(1, 26))
+        chunks = RENDER_AHEAD.split_shards(ids, 4)
+        self.assertEqual([len(chunk) for chunk in chunks], [7, 6, 6, 6])
+        self.assertEqual([page for chunk in chunks for page in chunk], ids)
+
+    def test_more_shards_than_pages_gives_singletons(self) -> None:
+        self.assertEqual(RENDER_AHEAD.split_shards([1, 2, 3], 5), [[1], [2], [3]])
+
+    def test_empty_input_never_emits_an_empty_chunk(self) -> None:
+        # The image rejects an empty page-ID list, so no chunk may be empty.
+        self.assertEqual(RENDER_AHEAD.split_shards([], 3), [])
+
+    def test_non_positive_shards_are_rejected(self) -> None:
+        for shards in (0, -2):
+            with self.subTest(shards=shards), self.assertRaises(ValueError):
+                RENDER_AHEAD.split_shards([1], shards)
+
+
+class MergeSummariesTest(unittest.TestCase):
+    def test_counts_add_and_page_sets_union(self) -> None:
+        merged = RENDER_AHEAD.merge_summaries(
+            [
+                image_summary(
+                    candidates=3, rendered=2, failed=1, failed_page_ids=[7],
+                    failures=[{"page_id": 7}], link_reader_page_ids=[5],
+                    stale_without_valid_ahead=1, elapsed_ms=1000,
+                    slow_renders=1,
+                    slowest_renders=[{"site_id": 1, "page_id": 5, "elapsed_ms": 1200}],
+                ),
+                image_summary(
+                    candidates=2, rendered=2, failed=0, link_reader_page_ids=[9, 5],
+                    elapsed_ms=2000,
+                    slowest_renders=[{"site_id": 1, "page_id": 9, "elapsed_ms": 1500}],
+                ),
+            ]
+        )
+        self.assertEqual((merged["candidates"], merged["rendered"], merged["failed"]), (5, 4, 1))
+        self.assertEqual(merged["failed_page_ids"], [7])
+        self.assertEqual(merged["link_reader_page_ids"], [5, 9])
+        self.assertEqual(merged["stale_without_valid_ahead"], 1)
+        # Concurrent shards: wall-clock is the slowest shard, not the sum.
+        self.assertEqual(merged["elapsed_ms"], 2000)
+        self.assertAlmostEqual(merged["rows_per_sec"], 2.0)
+        self.assertEqual(merged["slow_renders"], 1)
+        self.assertEqual(
+            [entry["page_id"] for entry in merged["slowest_renders"]], [9, 5]
+        )
+
+    def test_failure_details_truncate_but_ids_stay_complete(self) -> None:
+        summaries = [
+            image_summary(
+                failed=30, failed_page_ids=list(range(30)),
+                failures=[{"page_id": page} for page in range(30)],
+            ),
+            image_summary(
+                failed=30, failed_page_ids=list(range(30, 60)),
+                failures=[{"page_id": page} for page in range(30, 60)],
+            ),
+        ]
+        merged = RENDER_AHEAD.merge_summaries(summaries)
+        self.assertEqual(merged["failed"], 60)
+        self.assertEqual(merged["failed_page_ids"], list(range(60)))
+        self.assertEqual(len(merged["failures"]), RENDER_AHEAD.MAX_REPORTED_FAILURES)
+
+    def test_skewed_shards_refuse_to_merge(self) -> None:
+        good = image_summary()
+        with self.assertRaisesRegex(RuntimeError, "disagree on compiled_generator"):
+            RENDER_AHEAD.merge_summaries([good, image_summary(compiled_generator="other")])
+        with self.assertRaisesRegex(RuntimeError, "disagree on concurrency"):
+            RENDER_AHEAD.merge_summaries([good, image_summary(concurrency=1)])
+        with self.assertRaises(ValueError):
+            RENDER_AHEAD.merge_summaries([])
+
+
+class RecordPassTest(unittest.TestCase):
+    def test_overhead_splits_controller_wall_from_render_time(self) -> None:
+        passes: list = []
+        RENDER_AHEAD.record_pass(
+            passes, "full",
+            {"DEEPWELL_RUNTIME_ACTION": "render-ahead", "DEEPWELL_RENDER_AHEAD_CONCURRENCY": "16"},
+            False, 12.5, image_summary(elapsed_ms=11000),
+        )
+        (entry,) = passes
+        self.assertEqual(entry["pass"], "full")
+        self.assertAlmostEqual(entry["overhead_seconds"], 1.5)
+        self.assertNotIn("DEEPWELL_RUNTIME_ACTION", entry["settings"])
+        self.assertEqual(entry["config"], "serving")
+
+
+class FakeShards:
+    """A `render` callable over fixed chunks, recording shard calls."""
+
+    def __init__(self, readers=()):
+        self.readers = set(readers)
+        self.calls = []
+        self.fail_on: set = set()
+
+    def render(self, name, cutoff, pages=None, *, serial=False, extended=False, dry_run=False):
+        self.calls.append((name, list(pages or [])))
+        for page in pages or []:
+            if page in self.fail_on:
+                raise RuntimeError(f"shard failed on page {page}")
+        selected = list(pages or [])
+        return image_summary(
+            candidates=len(selected), rendered=len(selected),
+            link_reader_page_ids=sorted(set(selected) & self.readers),
+            elapsed_ms=100 * len(selected),
+        )
+
+
+class RenderFullShardedTest(unittest.TestCase):
+    def test_each_live_page_renders_in_exactly_one_shard(self) -> None:
+        site = FakeShards(readers=[2, 5])
+        chunks = RENDER_AHEAD.split_shards([1, 2, 3, 4, 5, 6], 2)
+        merged = RENDER_AHEAD.render_full_sharded(site.render, "full", "t-start", chunks)
+        rendered = [page for _, pages in site.calls for page in pages]
+        self.assertEqual(sorted(rendered), [1, 2, 3, 4, 5, 6])
+        self.assertEqual(sorted(call[0] for call in site.calls), ["full-shard-0", "full-shard-1"])
+        self.assertEqual((merged["candidates"], merged["rendered"]), (6, 6))
+        self.assertEqual(merged["link_reader_page_ids"], [2, 5])
+
+    def test_a_shard_failure_stops_the_run(self) -> None:
+        site = FakeShards()
+        site.fail_on = {4}
+        chunks = RENDER_AHEAD.split_shards([1, 2, 3, 4, 5, 6], 2)
+        with self.assertRaisesRegex(RuntimeError, "shard failed on page 4"):
+            RENDER_AHEAD.render_full_sharded(site.render, "full", "t-start", chunks)
+
+    def test_empty_chunks_are_rejected(self) -> None:
+        site = FakeShards()
+        with self.assertRaises(ValueError):
+            RENDER_AHEAD.render_full_sharded(site.render, "full", "t-start", [])
+        with self.assertRaises(ValueError):
+            RENDER_AHEAD.render_full_sharded(site.render, "full", "t-start", [[1], []])
+
+
+class DigestTimingsTest(unittest.TestCase):
+    def test_snapshots_are_timed_when_requested(self) -> None:
+        site = FakeSite({1: lambda links, n: "new", 2: lambda links, n: "old"})
+        timings: list = []
+        readers, nondeterministic = RENDER_AHEAD.render_until_links_settle(
+            site.render, lambda: dict(site.links), "t-start", timings
+        )
+        self.assertEqual((readers, nondeterministic), ([], []))
+        self.assertEqual(
+            [entry["stage"] for entry in timings],
+            ["links-before-full", "links-after-full"],
+        )
+        for entry in timings:
+            self.assertGreaterEqual(entry["digest_seconds"], 0.0)
+
+    def test_reader_rounds_time_every_snapshot(self) -> None:
+        site = FakeSite(
+            {3: lambda links, n: "reads-" + links["1"], 1: lambda links, n: "new"},
+            readers=[3],
+        )
+        site.produce = dict(sorted(site.produce.items()))
+        site.links = {"1": "old", "3": "old"}
+        timings: list = []
+        RENDER_AHEAD.render_until_links_settle(
+            site.render, lambda: dict(site.links), "t-start", timings
+        )
+        # Natural order renders page 1 before its reader, so the full pass
+        # already settled page 3 and one reader round suffices.
+        self.assertEqual(
+            [entry["stage"] for entry in timings],
+            [
+                "links-before-full", "links-after-full",
+                "links-before-readers-1", "links-after-readers-1",
+            ],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
+
+
+class VerifyWithCatchUpTest(unittest.TestCase):
+    def fake_render(self, stale_by_verify):
+        calls = []
+        verifies = iter(stale_by_verify)
+
+        def render(name, cutoff, pages=None, *, serial=False, extended=False, dry_run=False):
+            calls.append((name, dry_run))
+            if dry_run:
+                return {"stale_without_valid_ahead": next(verifies), "compiled_generator": "g"}
+            return {"stale_without_valid_ahead": 0, "compiled_generator": "g"}
+
+        return render, calls
+
+    def test_a_clean_verify_needs_no_catch_up(self) -> None:
+        render, calls = self.fake_render([0])
+        final = RENDER_AHEAD.verify_with_catch_up(render, "cutoff")
+        self.assertEqual(final["stale_without_valid_ahead"], 0)
+        self.assertEqual(calls, [("verify", True)])
+
+    def test_pages_written_during_the_run_are_rendered_and_verified_again(self) -> None:
+        render, calls = self.fake_render([2, 0])
+        final = RENDER_AHEAD.verify_with_catch_up(render, "cutoff")
+        self.assertEqual(final["stale_without_valid_ahead"], 0)
+        self.assertEqual(calls, [("verify", True), ("catch-up-1", False), ("verify-1", True)])
+
+    def test_catch_up_is_bounded_and_reports_what_stays_stale(self) -> None:
+        render, calls = self.fake_render([1, 1, 1, 1])
+        final = RENDER_AHEAD.verify_with_catch_up(render, "cutoff", rounds=3)
+        self.assertEqual(final["stale_without_valid_ahead"], 1)
+        self.assertEqual([name for name, _ in calls].count("verify"), 1)
+        self.assertEqual(len([c for c in calls if not c[1]]), 3)

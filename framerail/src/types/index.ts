@@ -483,6 +483,10 @@ export interface Locales {
   "wiki-page-file-delete.page": string
   "wiki-page-file-delete.confirm": string
   "wiki-page-file-move-destination-page": string
+  "wiki-page-file-mirror-readonly.title": string
+  "wiki-page-file-mirror-readonly.lead-in": string
+  "wiki-page-file-mirror-readonly.message": string
+  "wiki-page-file-mirror-readonly.extra-message": string
   "wiki-page-file": string
   "wiki-page-file.name": string
   "wiki-page-file.created-at": string

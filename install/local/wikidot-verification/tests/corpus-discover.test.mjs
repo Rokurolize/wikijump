@@ -8,6 +8,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import {
+  assertDescriptorTraversalSupport,
   createCorpusFileReader,
   openCorpusFileNoSymlinks,
 } from "../src/corpus-file-reader.mjs";
@@ -407,6 +408,111 @@ test("descriptor reader rejects a pathname swapped to a symlink of the opened fi
 
   assert.equal((await fs.lstat(targetPath)).isSymbolicLink(), true);
   assert.equal(await fs.readFile(openedPath, "utf8"), "original-safe-value\n");
+});
+
+test("descriptor support rejects platforms without descriptor traversal", async () => {
+  const descriptor = Object.getOwnPropertyDescriptor(process, "platform");
+  Object.defineProperty(process, "platform", { value: "darwin", configurable: true });
+  try {
+    await assert.rejects(
+      assertDescriptorTraversalSupport(),
+      /descriptor-relative traversal support/u,
+    );
+  } finally {
+    Object.defineProperty(process, "platform", descriptor);
+  }
+});
+
+test("descriptor reader rejects a file that grows past the byte limit", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-corpus-reader-growth-"));
+  const targetPath = path.join(root, "entity_id.txt");
+  await fs.writeFile(targetPath, "abc\n");
+  const backing = await fs.open(targetPath, fsConstants.O_RDONLY);
+  try {
+    const growingReads = createCorpusFileReader({
+      async openFile() {
+        return {
+          stat: (options) => backing.stat(options),
+          read: async (buffer, offset, length) => {
+            buffer.fill(0x78, offset, offset + length);
+            return { bytesRead: length, buffer };
+          },
+          close: () => backing.close(),
+        };
+      },
+    });
+    await assert.rejects(
+      growingReads(root, targetPath, { maxBytes: 4 }),
+      /exceeds 4 byte limit/u,
+    );
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test("descriptor reader rejects a file changed between open and finish", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-corpus-reader-swap-"));
+  const targetPath = path.join(root, "entity_id.txt");
+  await fs.writeFile(targetPath, "abc\n");
+  const backing = await fs.open(targetPath, fsConstants.O_RDONLY);
+  try {
+    const base = await backing.stat({ bigint: true });
+    let statsCalls = 0;
+    const statsOf = (size) => ({
+      isFile: () => true,
+      size,
+      mtimeNs: base.mtimeNs,
+      ctimeNs: base.ctimeNs,
+      dev: base.dev,
+      ino: base.ino,
+    });
+    const shiftingReads = createCorpusFileReader({
+      async openFile() {
+        return {
+          stat: async () => {
+            statsCalls += 1;
+            return statsCalls === 1 ? statsOf(base.size) : statsOf(base.size + 1n);
+          },
+          read: (buffer, offset, length, position) => backing.read(buffer, offset, length, position),
+          close: () => backing.close(),
+        };
+      },
+    });
+    await assert.rejects(
+      shiftingReads(root, targetPath, { maxBytes: 256 }),
+      /Corpus path changed while being read/u,
+    );
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test("descriptor opener rejects paths escaping the corpus root", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-corpus-reader-escape-"));
+  try {
+    await assert.rejects(
+      openCorpusFileNoSymlinks(root, path.join(root, "..", "escape.txt"), fsConstants.O_RDONLY),
+      /escapes corpus root/u,
+    );
+    await assert.rejects(
+      openCorpusFileNoSymlinks(root, root, fsConstants.O_RDONLY),
+      /escapes corpus root/u,
+    );
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test("corpus reader rejects an invalid byte limit before opening", async () => {
+  const readCorpusFile = createCorpusFileReader();
+  await assert.rejects(
+    readCorpusFile("/tmp/corpus", "en/pages/scp-1/source.wikidot.txt", { maxBytes: -1 }),
+    /byte limit/u,
+  );
+  await assert.rejects(
+    readCorpusFile("/tmp/corpus", "en/pages/scp-1/source.wikidot.txt", { maxBytes: 1.5 }),
+    /byte limit/u,
+  );
 });
 
 test("corpus-discover handles a corpus without pages directory", async () => {

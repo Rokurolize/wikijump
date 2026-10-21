@@ -1,7 +1,10 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { siteIconRedirectLocation } from "../src/lib/site-icon-source.ts"
+import {
+  siteIconRedirectLocation,
+  siteOwnedLocalFilePath
+} from "../src/lib/site-icon-source.ts"
 
 const importedSite = { slug: "scp-wiki", from_wikidot: true }
 const localSite = { slug: "local-wiki", from_wikidot: false }
@@ -111,4 +114,50 @@ test("local site icons redirect only to same-origin file routes", () => {
   ]) {
     assert.equal(siteIconRedirectLocation(localSite, source, "favicon"), null, source)
   }
+})
+
+test("site-owned WDFiles attachments resolve to the local files path", () => {
+  assert.equal(
+    siteOwnedLocalFilePath(
+      importedSite,
+      "https://scp-wiki.wdfiles.com/local--files/site/favicon.gif"
+    ),
+    "/local--files/site/favicon.gif"
+  )
+  assert.equal(
+    siteOwnedLocalFilePath(
+      importedSite,
+      "https://scp-wiki.wdfiles.com/local--files/site/iosicon.png"
+    ),
+    "/local--files/site/iosicon.png"
+  )
+
+  for (const source of [
+    null,
+    "",
+    "https://scp-wiki.wdfiles.com/local--files/site/favicon.gif?next=evil",
+    "https://scp-wiki.wdfiles.com/local--files/site/favicon.gif#frag",
+    "http://scp-wiki.wdfiles.com/local--files/site/favicon.gif",
+    "https://user@scp-wiki.wdfiles.com/local--files/site/favicon.gif",
+    "https://scp-wiki.wdfiles.com/not-local-files/favicon.png",
+    "https://scp-wiki.wdfiles.com/local--files/",
+    "https://other-site.wdfiles.com/local--files/site/favicon.gif",
+    "https://www.wdfiles.com/local--files/site/favicon.gif",
+    "https://scp-wiki.wikidot.com/local--iosicon/iosicon.png",
+    "https://scp-wiki.wikidot.com/local--files/site/favicon.gif",
+    "/local--files/site/favicon.gif",
+    "//scp-wiki.wdfiles.com/local--files/site/favicon.gif",
+    "https://scp-wiki.wdfiles.com/local--files/site/favicon.png\r\nLocation: https://evil.example"
+  ]) {
+    assert.equal(siteOwnedLocalFilePath(importedSite, source), null, String(source))
+  }
+
+  assert.equal(
+    siteOwnedLocalFilePath(
+      localSite,
+      "https://local-wiki.wdfiles.com/local--files/site/favicon.gif"
+    ),
+    null,
+    "local sites keep the same-origin rule only"
+  )
 })

@@ -1,0 +1,7 @@
+[[module ListPages category="*" order="random" limit="1" tag="goi-format"]]
+Random SCP: %%title_linked%%
+[[/module]]
+
+[[module ListPages category="*" order="random" limit="1" tag="goi-format"]]
+[[include :snippets:redirect url=%%link%%]]
+[[/module]]
