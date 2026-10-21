@@ -511,7 +511,7 @@ static WIKIDOT_DIRECT_HTML_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 static WIKIDOT_DIRECT_HTML_IFRAME_ATTRIBUTE_REGEX: LazyLock<Regex> = LazyLock::new(
     || {
         Regex::new(
-            r#"(?is)\s+(?P<name>[a-z][a-z0-9:-]*)(?:\s*=\s*(?:"[^"<>]*"|'[^'<>]*'|[^\s"'=<>`]+))?"#,
+            r#"(?is)\s+(?P<name>[a-z][a-z0-9:-]*)(?:\s*=\s*(?P<value>"[^"<>]*"|'[^'<>]*'|[^\s"'=<>`]+))?"#,
         )
         .expect("direct Wikidot HTML iframe attribute expression is valid")
     },
@@ -1933,6 +1933,15 @@ impl RenderService {
             .as_str();
         let mut cursor = 0;
         let mut has_attribute = false;
+        // Browsers resolve the first src attribute and treat the URL scheme
+        // case-insensitively after stripping surrounding whitespace, so every
+        // src occurrence must carry an allowlisted scheme. A missing or
+        // repeated src, or any non-http(s) scheme, falls back to the hosted
+        // files-origin html-block iframe instead of reaching the page DOM.
+        // This mirrors the legacy [[iframe]] gate, which requires an
+        // http(s) URL (compat/wikidot_iframe.rs render_wikidot_iframe).
+        let mut src_seen = false;
+        let mut src_allowed = false;
         for attribute in
             WIKIDOT_DIRECT_HTML_IFRAME_ATTRIBUTE_REGEX.captures_iter(attributes)
         {
@@ -1950,10 +1959,36 @@ impl RenderService {
             if !ALLOWED_ATTRIBUTES.contains(&name.as_str()) {
                 return None;
             }
+            if name == "src" {
+                if src_seen {
+                    return None;
+                }
+                src_seen = true;
+                // A bare src with no value carries no allowlisted scheme.
+                let Some(value) = attribute.name("value") else {
+                    return None;
+                };
+                let raw = value.as_str();
+                let unquoted = raw
+                    .strip_prefix('"')
+                    .and_then(|rest| rest.strip_suffix('"'))
+                    .or_else(|| {
+                        raw.strip_prefix('\'')
+                            .and_then(|rest| rest.strip_suffix('\''))
+                    })
+                    .unwrap_or(raw);
+                // Exact same predicate as the legacy [[iframe]] URL gate:
+                // absolute http(s) only, case-sensitive. Live Wikidot probes
+                // cover HTTP and HTTPS src values for direct emission, and
+                // list sandbox among the recognized pass-through attributes,
+                // so sandbox stays allowlisted here.
+                src_allowed =
+                    unquoted.starts_with("https://") || unquoted.starts_with("http://");
+            }
             has_attribute = true;
             cursor = whole.end();
         }
-        if !attributes[cursor..].trim().is_empty() || !has_attribute {
+        if !attributes[cursor..].trim().is_empty() || !has_attribute || !src_allowed {
             return None;
         }
         captures.name("iframe").map(|iframe| iframe.as_str())
