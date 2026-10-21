@@ -3,11 +3,27 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {planBrowserAcceptance, semanticSourceRenderings} from './semantic-browser-acceptance.mjs';
 import {NAVIGATION_OVERLAY_SOURCE} from './navigation-overlay-provenance.mjs';
+import {fileURLToPath} from 'node:url';
 import {resolveExistingContainedFile} from './package-path.mjs';
+import {evidenceRoots,resolveEvidenceFile} from './evidence-roots.mjs';
 
 const validHash = value => /^[a-f0-9]{64}$/u.test(value ?? '');
+const themeLabRoot = path.resolve(fileURLToPath(new URL('../', import.meta.url)));
 
-export function semanticSourceReferenceHtmlSha(root, audit, theme) {
+// Reads a SHA-bound artifact. Retained authority evidence may come from the
+// shared evidence cache (only for the default checkout root); every other path,
+// and every explicit root, is read from `root` alone. Returns {file,bytes}.
+function readBoundArtifact(root, binding, label, sharedRoot) {
+  const relative = binding?.path ?? '';
+  if (!(typeof relative === 'string' && relative.startsWith('ports/authority-evidence/') && validHash(binding?.sha256))) {
+    const file = resolveExistingContainedFile(root, relative, label);
+    return {file, bytes: fs.readFileSync(file)};
+  }
+  const {file, bytes} = resolveEvidenceFile(evidenceRoots(root, themeLabRoot, sharedRoot, {strip: 'ports/'}), relative, label, binding.sha256);
+  return {file, bytes};
+}
+
+export function semanticSourceReferenceHtmlSha(root, audit, theme, {sharedRoot} = {}) {
   const questions = planBrowserAcceptance(audit).visual_questions
     .filter(question => question.kind === 'source_visual_identity' && question.theme === theme);
   if (!questions.length) throw new Error(`${theme}: no current source visual identity question`);
@@ -16,8 +32,9 @@ export function semanticSourceReferenceHtmlSha(root, audit, theme) {
     const review=audit.semantic_reviews?.[question.id];
     for(const rendering of semanticSourceRenderings(question,review)){
     if (!validHash(rendering.source_html?.sha256)) throw new Error(`${theme}: source visual identity review lacks a frozen source HTML binding`);
-    const file=resolveExistingContainedFile(root,rendering.source_rendering_receipt?.path??'',`${theme}: source rendering receipt`);
-    const bytes=fs.readFileSync(file);
+    let bytes;
+    try{bytes=readBoundArtifact(root,rendering.source_rendering_receipt,`${theme}: source rendering receipt`,sharedRoot).bytes}
+    catch(error){if(/^stale authority evidence/u.test(error.message))throw new Error(`${theme}: stale source rendering receipt`);throw error}
     if(crypto.createHash('sha256').update(bytes).digest('hex')!==rendering.source_rendering_receipt?.sha256)throw new Error(`${theme}: stale source rendering receipt`);
     const document=JSON.parse(bytes), result=document.result??document;
     let value;
@@ -39,20 +56,19 @@ export function semanticSourceReferenceHtmlSha(root, audit, theme) {
 
 // Opening a hash-bound artifact is necessary but insufficient: a candidate
 // source or another theme's source must not impersonate the upstream oracle.
-export function validateSemanticSourceAuthority(root, audit) {
+export function validateSemanticSourceAuthority(root, audit, {sharedRoot} = {}) {
   const failures = [];
   const read = file => JSON.parse(fs.readFileSync(resolveExistingContainedFile(root,file,`Source authority input ${file}`), 'utf8'));
   const normalize = url => new URL(url).href.replace(/^http:/u, 'https:');
   const opened = new Map();
   const open = binding => {
-    const file = resolveExistingContainedFile(root,binding?.path??'','Source artifact');
-    if (!opened.has(file)) {
-      const bytes = fs.readFileSync(file);
-      opened.set(file, {bytes, sha256: crypto.createHash('sha256').update(bytes).digest('hex')});
-    }
-    const artifact = opened.get(file);
-    if (artifact.sha256 !== binding?.sha256) throw new Error('Stale source action artifact');
-    return artifact.bytes;
+    let artifact;
+    try { artifact = readBoundArtifact(root, binding, 'Source artifact', sharedRoot); }
+    catch (error) { if (/^stale authority evidence/u.test(error.message)) throw new Error('Stale source action artifact'); throw error; }
+    const sha256 = crypto.createHash('sha256').update(artifact.bytes).digest('hex');
+    if (!opened.has(artifact.file)) opened.set(artifact.file, {bytes: artifact.bytes, sha256});
+    if (opened.get(artifact.file).sha256 !== binding?.sha256) throw new Error('Stale source action artifact');
+    return opened.get(artifact.file).bytes;
   };
   const plan=planBrowserAcceptance(audit);
   const sourceApplicabilityRows=(audit.records??[]).filter(row=>row.action_contract_observation?.mode==='source-navigation-replaces-sidebar');
@@ -180,8 +196,9 @@ export function validateSemanticSourceAuthority(root, audit) {
       }
       for (const rendering of semanticSourceRenderings(question, review)) {
       const binding = rendering.source_rendering_receipt;
-      const file = resolveExistingContainedFile(root,binding?.path ?? '','Source rendering receipt');
-      const bytes = fs.readFileSync(file);
+      let bytes;
+      try { bytes = readBoundArtifact(root, binding, 'Source rendering receipt', sharedRoot).bytes; }
+      catch (error) { if (/^stale authority evidence/u.test(error.message)) throw new Error('Stale source rendering receipt'); throw error; }
       if (crypto.createHash('sha256').update(bytes).digest('hex') !== binding?.sha256) throw new Error('Stale source rendering receipt');
       const document = JSON.parse(bytes), result = document.result ?? document;
       const identity = result.reference_identity;
