@@ -28,6 +28,8 @@ import {openSidebar,closeSidebar,sidebarIsClosed,sidebarOccupiesViewport} from '
 import {activateNavigationControl,expandMobileTopSubmenu,expandTabletTopNavigation,hasRenderedSubmenuGeometry} from '../../src/navigation-interaction.mjs';
 import {dedupeCssLayers} from '../../src/css-layers.mjs';
 import {resolveRunContractPath as resolveBoundRunContractPath} from '../../src/run-contract-path.mjs';
+import {resolveFixtureOrigins} from '../../src/fixture-origin.mjs';
+import {resolveCaptureBackendTarget} from '../../src/capture-backend-target.mjs';
 import {candidateAssetDependencyState} from '../../src/candidate-asset-dependencies.mjs';
 import {sigma10CreditActions} from '../../src/sigma10-credit-actions.mjs';
 import {resolveExistingContainedDirectory,resolveExistingContainedFile,resolveExistingPackageDirectory,resolveExistingPackageFile} from '../../src/package-path.mjs';
@@ -45,14 +47,16 @@ const viewportArg=process.argv.find(x=>x.startsWith('--viewport='))?.slice(11)??
 const stateArg=process.argv.find(x=>x.startsWith('--state='))?.slice(8);
 const transportOriginArg=process.argv.find(x=>x.startsWith('--transport-origin='))?.slice(19);
 const runContractArg=process.argv.find(x=>x.startsWith('--run-contract='))?.slice(15);
+const runtimeRepoArg=process.argv.find(x=>x.startsWith('--runtime-repo='))?.slice(15);
+const backendProjectArg=process.argv.find(x=>x.startsWith('--backend-project='))?.slice(18);
 const stateArgs=stateArg!==undefined?new Set(stateArg.split(',')):null;
 const forceCapture=process.argv.includes('--force');
 const anonymousArg=process.argv.includes('--anonymous');
 const defaultConcurrency={chromium:6,firefox:4,webkit:6}[engineArg]??4;
 const concurrencyArg=Number(process.argv.find(x=>x.startsWith('--concurrency='))?.slice(14)??defaultConcurrency);
 const acceptedArgs=new Set(['--force','--anonymous','--help','--dump-contracts']);
-for(const arg of process.argv.slice(2)){if(acceptedArgs.has(arg)||/^--(?:theme|themes|engine|viewport|state|concurrency|transport-origin|run-contract)=/u.test(arg))continue;throw new Error(`unknown argument: ${arg}; use --help for usage`)}
-if(process.argv.includes('--help')){console.log('Usage: capture-interactive.mjs [--engine=chromium|firefox|webkit] [--viewport=desktop|laptop|tablet|mobile|narrow-mobile] [--theme=slug|--themes=slug,slug] [--state=surface.state,...] [--concurrency=1..8] [--transport-origin=https://host:port] [--run-contract=/path/to/contract.json] [--anonymous] [--force]');process.exit(0)}
+for(const arg of process.argv.slice(2)){if(acceptedArgs.has(arg)||/^--(?:theme|themes|engine|viewport|state|concurrency|transport-origin|run-contract|runtime-repo|backend-project)=/u.test(arg))continue;throw new Error(`unknown argument: ${arg}; use --help for usage`)}
+if(process.argv.includes('--help')){console.log('Usage: capture-interactive.mjs [--engine=chromium|firefox|webkit] [--viewport=desktop|laptop|tablet|mobile|narrow-mobile] [--theme=slug|--themes=slug,slug] [--state=surface.state,...] [--concurrency=1..8] [--transport-origin=https://host:port] [--run-contract=/path/to/contract.json] [--runtime-repo=/abs/checkout --backend-project=wikijump-theme-lab-NAME] [--anonymous] [--force]');process.exit(0)}
 if(!Number.isInteger(concurrencyArg)||concurrencyArg<1||concurrencyArg>8)throw new Error('--concurrency must be an integer from 1 to 8');
 if(stateArgs&&[...stateArgs].some(state=>!state.trim()))throw new Error('states must be non-empty');
 if(engineArg!=='chromium'&&!['desktop','mobile'].includes(viewportArg)){
@@ -103,12 +107,9 @@ const runtimeBaselineStylesheetHref=runContract.baseline_theme?.runtime_styleshe
 if(typeof runtimeBaselineStylesheetHref!=='string'||!runtimeBaselineStylesheetHref)throw new Error('run contract baseline theme needs a runtime stylesheet href');
 const viewports=runContract.viewports;
 if(!viewports[viewportArg])throw new Error(`unknown viewport ${viewportArg}`);
-const logicalOrigin='https://scpaiueouiuiuiui.wikijump.localhost:18443';
-if(runContract.target_site.origin!==logicalOrigin)throw new Error('acceptance run contract origin does not match the fixture target');
-const origin=transportOriginArg?new URL(transportOriginArg).origin:logicalOrigin;
-const transportUrl=new URL(origin);
-if(transportUrl.protocol!=='https:'||transportUrl.hostname!=='scpaiueouiuiuiui.wikijump.localhost')throw new Error('transport origin must be HTTPS on the authorized local authoring hostname');
+const {origin}=resolveFixtureOrigins({contractOrigin:runContract.target_site.origin,transportOrigin:transportOriginArg});
 const repoRoot=path.resolve(packageDir,'../../../../../');
+const backendTarget=resolveCaptureBackendTarget({runtimeRepo:runtimeRepoArg,backendProject:backendProjectArg,repoRoot});
 const base=`${origin}/run-owned%3Atheme-lab-visual-acceptance-imported-20260924`;
 const historyBase=`${origin}/run-owned%3Atheme-lab-visual-history-20260924`;
 const registry={chromium,firefox,webkit};
@@ -538,7 +539,7 @@ if(stateArgs){
 // live Deepwell and served transport identities.
 let preflightBackendRuntimeIdentity=null;
 if(!process.argv.includes('--dump-contracts')){
- const hostBackendRuntime=readRunningDeepwellRuntimeIdentity(repoRoot);
+ const hostBackendRuntime=readRunningDeepwellRuntimeIdentity(backendTarget.root,backendTarget.identityOptions);
  assertDeepwellRuntimeIdentity(expectedBackendRuntimeIdentity,hostBackendRuntime.identity,'current running Deepwell backend');
  const runtimePreflightHeaders=execFileSync('curl',['-ksSf','-D','-','-o','/dev/null','--max-time','5',`${origin}/run-owned%3Atheme-lab-visual-acceptance-imported-20260924`],{encoding:'utf8',timeout:10000});
  assertRuntimeSourceSha(expectedRuntimeSourceSha,parseCurlRuntimeResponseHeaders(runtimePreflightHeaders).runtimeSourceSha,`capture preflight response from ${origin}`);

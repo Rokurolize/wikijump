@@ -26,6 +26,8 @@ const viewportArg=process.argv.find(value=>value.startsWith('--viewport='))?.sli
 const jobsArg=Number(process.argv.find(value=>value.startsWith('--jobs='))?.slice(7)??2);
 const captureConcurrencyArg=Number(process.argv.find(value=>value.startsWith('--capture-concurrency='))?.slice(22)??3);
 const transportArg=process.argv.find(value=>value.startsWith('--transport='))?.slice(12)??'built';
+const runtimeRepoArg=process.argv.find(value=>value.startsWith('--runtime-repo='))?.slice(15);
+const backendProjectArg=process.argv.find(value=>value.startsWith('--backend-project='))?.slice(18);
 const transportOriginArg=process.argv.find(value=>value.startsWith('--transport-origin='))?.slice(19)??null;
 const force=process.argv.includes('--force');
 const anonymous=process.argv.includes('--anonymous');
@@ -36,8 +38,8 @@ for(const argument of process.argv.slice(2)){
  seenOptions.add(name);
 }
 const accepted=new Set(['--force','--anonymous','--help']);
-for(const arg of process.argv.slice(2)){if(accepted.has(arg)||/^--(?:theme|themes|state|engine|viewport|jobs|capture-concurrency|transport|transport-origin|run-contract)=/u.test(arg))continue;throw new Error(`unknown argument: ${arg}`)}
-if(process.argv.includes('--help')){console.log('Usage: capture-theme-matrix.mjs (--theme=slug|--themes=a,b) [--state=surface.state,...] [--engine=chromium|firefox|webkit] [--viewport=desktop|laptop|tablet|mobile|narrow-mobile] [--jobs=1..9] [--capture-concurrency=1..8] [--transport=built|dev] [--transport-origin=https://HOST:PORT] [--run-contract=/path/to/contract.json] [--anonymous] [--force]');console.log('--transport-origin uses an existing task-owned transport without bootstrapping, then probes the fixture runtime-source header against the run contract; it must use the target Wikijump hostname over HTTPS.');console.log('--anonymous only captures states that work without the authenticated administrator; admin-only states (page.edit, page.rename, page.delete) fail closed. Pass --state for a public subset.');process.exit(0)}
+for(const arg of process.argv.slice(2)){if(accepted.has(arg)||/^--(?:theme|themes|state|engine|viewport|jobs|capture-concurrency|transport|transport-origin|run-contract|runtime-repo|backend-project)=/u.test(arg))continue;throw new Error(`unknown argument: ${arg}`)}
+if(process.argv.includes('--help')){console.log('Usage: capture-theme-matrix.mjs (--theme=slug|--themes=a,b) [--state=surface.state,...] [--engine=chromium|firefox|webkit] [--viewport=desktop|laptop|tablet|mobile|narrow-mobile] [--jobs=1..9] [--capture-concurrency=1..8] [--transport=built|dev] [--transport-origin=https://HOST:PORT] [--run-contract=/path/to/contract.json] [--runtime-repo=/abs/checkout --backend-project=wikijump-theme-lab-NAME] [--anonymous] [--force]');console.log('--transport-origin uses an existing task-owned transport without bootstrapping, then probes the fixture runtime-source header against the run contract; it must use the target Wikijump hostname over HTTPS.');console.log('--anonymous only captures states that work without the authenticated administrator; admin-only states (page.edit, page.rename, page.delete) fail closed. Pass --state for a public subset.');process.exit(0)}
 if((!themeArg&&!themesArg)||(themeArg&&themesArg))throw new Error('exactly one of --theme or --themes is required');
 if(!Number.isInteger(jobsArg)||jobsArg<1||jobsArg>9)throw new Error('--jobs must be an integer from 1 to 9');
 if(!Number.isInteger(captureConcurrencyArg)||captureConcurrencyArg<1||captureConcurrencyArg>8)throw new Error('--capture-concurrency must be an integer from 1 to 8');
@@ -160,6 +162,8 @@ if(stateArg)common.push(`--state=${stateArg}`);
 if(force)common.push('--force');
 if(anonymous)common.push('--anonymous');
 if(transportOrigin)common.push(`--transport-origin=${transportOrigin}`);
+if(runtimeRepoArg!==undefined)common.push(`--runtime-repo=${runtimeRepoArg}`);
+if(backendProjectArg!==undefined)common.push(`--backend-project=${backendProjectArg}`);
 
 let next=0;
 const results=[];
@@ -210,6 +214,8 @@ for(let pass=0;pass<2;pass++){
   if(runContractPath)args.push(`--run-contract=${runContractPath}`);
   if(anonymous)args.push('--anonymous');
   if(transportOrigin)args.push(`--transport-origin=${transportOrigin}`);
+  if(runtimeRepoArg!==undefined)args.push(`--runtime-repo=${runtimeRepoArg}`);
+  if(backendProjectArg!==undefined)args.push(`--backend-project=${backendProjectArg}`);
   const seed=await writeAuditSeed(`${group.theme}__${group.engine}__${group.viewport}__retry-${pass}.json`,[group.theme],group.engine,group.viewport);
   await run(process.execPath,args,{env:{...captureEnv,THEME_LAB_AUDIT_SEED_PATH:seed}});
  }
