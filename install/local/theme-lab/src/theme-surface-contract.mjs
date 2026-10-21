@@ -6,6 +6,8 @@ import {activateNavigationControl, expandMobileTopSubmenu} from "./navigation-in
 import {openSidebar} from "./sidebar-interaction.mjs";
 
 export const SURFACE_CONTRACT_SCHEMA = "theme_lab_surface_contract.v1";
+export const FILES_PANE_SELECTOR = "#action-area .file-list-scroll, #action-area .file-list";
+export const FILES_ROW_SELECTOR = "#action-area .file-name, #action-area tr[id^='file-row-']";
 
 const PROBE_PROPERTIES = [
   "display", "visibility", "position", "width", "height", "min-width", "max-width",
@@ -171,11 +173,15 @@ export const KNOWN_THEME_SURFACES = Object.freeze([
     id: "page.files",
     selector_patterns: [/\.page-files/u, /\.file-list/u, /\.file-row/u, /\.file-name/u, /\.file-attribute/u],
     probes: [
-      {selector: "#action-area .file-list"},
+      // The Files pane is present in every attachment state. A Wikidot-layout
+      // page (since #2067) renders `div.file-list-scroll > table.page-files >
+      // tr#file-row-N`; the native layout and both empty states render
+      // `.file-list`. An absent pane matches neither, so the probe fails closed.
+      {selector: FILES_PANE_SELECTOR},
       // The maintained JP acceptance page has the real, evidenced empty-file
-      // state. Keep the list itself required while allowing its row selector
+      // state. Keep the pane itself required while allowing its row selector
       // to be absent when there are no attachments.
-      {selector: "#action-area .file-name", optional: true},
+      {selector: FILES_ROW_SELECTOR, optional: true},
     ],
     states: [{id: "attachment-list", viewports: ["desktop", "mobile"]}],
   },
@@ -309,7 +315,7 @@ export async function cleanupSurfaceState(page, surfaceId, stateId) {
     // measurement: dispatch the pane's own close handler even when another
     // fixed layer covers its button.
     if (await close.count()) await close.evaluate(element => element.click());
-    await page.locator(surfaceId === "page.history" ? "#action-area .page-history" : "#action-area .file-list").waitFor({state: "hidden", timeout: 5000});
+    await page.locator(surfaceId === "page.history" ? "#action-area .page-history" : FILES_PANE_SELECTOR).first().waitFor({state: "hidden", timeout: 5000});
   }
   await page.evaluate(async ({surfaceId: surface, stateId: state}) => {
     const settle = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -355,7 +361,7 @@ export async function applySurfaceState(page, surfaceId, stateId) {
   }
   if (["page.history", "page.files"].includes(surfaceId)) {
     await page.locator(surfaceId === "page.history" ? "#history-button" : "#files-button").click({timeout: 5000});
-    await page.locator(surfaceId === "page.history" ? "#action-area .page-history tr[id^='revision-row-']" : "#action-area .file-list").first().waitFor({state: "visible", timeout: 5000});
+    await page.locator(surfaceId === "page.history" ? "#action-area .page-history tr[id^='revision-row-']" : FILES_PANE_SELECTOR).first().waitFor({state: "visible", timeout: 5000});
     await settle(page);
     return;
   }
