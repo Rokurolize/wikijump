@@ -13,6 +13,10 @@ import {
   usage,
 } from "../scripts/verify-corpus-import-integrity.mjs";
 
+function b64(text) {
+  return Buffer.from(text, "utf8").toString("base64");
+}
+
 test("include errors extract targets from the entity-escaped compiled form", () => {
   const body =
     '<div class="error-block">Included page &quot;component:preview&quot; does not exist ' +
@@ -114,9 +118,17 @@ test("coverage annotation fails only gapless pages that still render errors", ()
     failures: [],
   };
   const bodies =
-    "fixed-page|before Included page &quot;component:x&quot; does not exist (<a>y</a>) after\n" +
-    'gapped-page|Included page "component:y" does not exist (create it now)\n' +
-    "clean-page|no errors here\n";
+    "fixed-page|" +
+    b64(
+      "before Included page &quot;component:x&quot; does not exist (<a>y</a>) after",
+    ) +
+    "\n" +
+    "gapped-page|" +
+    b64('Included page "component:y" does not exist (create it now)') +
+    "\n" +
+    "clean-page|" +
+    b64("no errors here") +
+    "\n";
   const annotated = annotateCoverageWithIncludeErrors(report, bodies);
   assert.equal(annotated.status, "fail");
   assert.deepEqual(
@@ -144,6 +156,45 @@ test("coverage annotation rejects malformed body rows", () => {
     () => annotateCoverageWithIncludeErrors(report, "no-separator-here"),
     /malformed row/,
   );
+});
+
+test("multi-line bodies with pipes stay on one row", () => {
+  const body =
+    "<p>intro | overview</p>\n" +
+    '<div class="error-block">Included page &quot;component:x&quot; does not exist ' +
+    '(<a href="/component:x/edit/true">create it now</a>)</div>\n' +
+    "<p>trailer | footer</p>\n";
+  const report = {
+    status: "pass",
+    pages: [
+      {
+        slug: "multiline",
+        missing_dependency_count: 0,
+        gap_count: 0,
+        truncated_count: 0,
+      },
+    ],
+    failures: [],
+  };
+  const annotated = annotateCoverageWithIncludeErrors(
+    report,
+    `multiline|${b64(body)}\n`,
+  );
+  assert.equal(annotated.status, "fail");
+  assert.deepEqual(annotated.pages[0].include_error_targets, ["component:x"]);
+  assert.deepEqual(annotated.failures, [
+    {
+      slug: "multiline",
+      reason: "unexpected_include_errors",
+      targets: ["component:x"],
+    },
+  ]);
+});
+
+test("bodies query transports base64, never raw text", () => {
+  const query = buildIncludeErrorBodiesQuery(6000006, ["scp-173"]);
+  assert.match(query, /encode\(convert_to\(b\.contents, 'UTF8'\), 'base64'\)/);
+  assert.doesNotMatch(query, /convert_from\(/);
 });
 
 test("verify tool accepts the include-error certification flag", () => {

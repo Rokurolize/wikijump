@@ -62,6 +62,9 @@ export function hasIncludeError(rendered) {
  * carries at least one exact include error. Postgres `~` regex replaces
  * the loose `LIKE '%does not exist%'`, which also matches story prose.
  * `[^<>]*` keeps the match on the message line without crossing markup.
+ * No cast on the body column: `text.contents` is type text (verified
+ * live via `pg_typeof` plus EXPLAIN of this exact statement), so
+ * `convert_from` would fail and the bare `~` is correct.
  */
 export function buildIncludeErrorRootsQuery(siteId) {
   if (!Number.isInteger(siteId)) {
@@ -80,7 +83,11 @@ ORDER BY 1;`;
 /**
  * SQL fetching latest rendered bodies for an explicit slug list, for
  * per-page include-error certification. Slugs are quote-escaped; an empty
- * list returns no rows.
+ * list throws. Bodies travel base64-encoded: rendered HTML is multi-line
+ * and contains `|` (formatCaptureOutput joins raw values with `|` and
+ * `\n`), so raw transport would split one body into phantom rows and
+ * misattribute fragments. Slugs cannot contain `|` or newlines, so the
+ * `slug|b64` framing stays unambiguous.
  */
 export function buildIncludeErrorBodiesQuery(siteId, slugs) {
   if (!Number.isInteger(siteId)) {
@@ -97,7 +104,7 @@ export function buildIncludeErrorBodiesQuery(siteId, slugs) {
   ${values}
 )
 SELECT requested.slug,
-  COALESCE(convert_from(b.contents, 'UTF8'), '')
+  COALESCE(encode(convert_to(b.contents, 'UTF8'), 'base64'), '')
 FROM requested
 LEFT JOIN page p ON p.site_id = ${siteId} AND p.slug = requested.slug AND p.deleted_at IS NULL
 LEFT JOIN page_revision r ON r.revision_id = p.latest_revision_id
@@ -109,11 +116,13 @@ ORDER BY requested.slug;`;
  * Annotate a cross-site coverage report with exact include-error targets.
  *
  * `bodiesOutput` is the pipe-separated output of
- * `buildIncludeErrorBodiesQuery` (`slug|body`). Pages already expected to
- * be broken (unresolved gaps, truncated closure, or unmaterialized rows)
- * keep their errors as informational `include_error_targets`. A page
- * expected clean that still renders an exact include error becomes a
- * failure, since the closure claims to have fixed it.
+ * `buildIncludeErrorBodiesQuery` (`slug|base64-body`, one row per line;
+ * the base64 alphabet contains neither `\n` nor `|`). Pages already
+ * expected to be broken (unresolved gaps, truncated closure, or
+ * unmaterialized rows) keep their errors as informational
+ * `include_error_targets`. A page expected clean that still renders an
+ * exact include error becomes a failure, since the closure claims to
+ * have fixed it.
  */
 export function annotateCoverageWithIncludeErrors(report, bodiesOutput) {
   const bodies = new Map();
@@ -122,7 +131,10 @@ export function annotateCoverageWithIncludeErrors(report, bodiesOutput) {
     if (separator === -1) {
       throw new Error("include-error body query returned a malformed row");
     }
-    bodies.set(line.slice(0, separator), line.slice(separator + 1));
+    bodies.set(
+      line.slice(0, separator),
+      Buffer.from(line.slice(separator + 1), "base64").toString("utf8"),
+    );
   }
   const pages = report.pages.map((page) => {
     const targets = findIncludeErrorTargets(bodies.get(page.slug) ?? "");
