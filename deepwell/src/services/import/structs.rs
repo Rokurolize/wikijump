@@ -63,6 +63,16 @@ pub struct ImportUserOutput {
     pub user_id: i32,
 }
 
+/// One imported name/content metadata tag (Wikidot site or page `<META>`
+/// tags: description, keywords, social fields). Recorded through
+/// `PageMetaTagService`, which validates name/content limits; the import
+/// only transports validated source values, never raw head HTML.
+#[derive(Deserialize, Debug, Clone)]
+pub struct ImportMetaTag {
+    pub name: String,
+    pub content: String,
+}
+
 /// Promotes one already-observed Wikidot identity (numeric source ID plus
 /// observed display name/slug) into a real imported user row.
 ///
@@ -133,6 +143,11 @@ pub struct ImportSite {
     pub license: License,
     pub locale: String,
     pub ip_address: IpAddr,
+
+    /// Site-wide tags, recorded with `all_pages`. Empty when the source
+    /// capture carries none.
+    #[serde(default)]
+    pub meta_tags: Vec<ImportMetaTag>,
 }
 
 #[derive(Serialize, Debug, Copy, Clone)]
@@ -151,6 +166,11 @@ pub struct ImportPage {
     pub locked: bool,
     pub discussion_thread_id: Option<i64>,
     pub ip_address: IpAddr,
+
+    /// Page-scoped tags, recorded with `all_pages` unset. Empty when the
+    /// source capture carries none.
+    #[serde(default)]
+    pub meta_tags: Vec<ImportMetaTag>,
 }
 
 #[derive(Serialize, Debug, Copy, Clone)]

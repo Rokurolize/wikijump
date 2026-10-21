@@ -27,11 +27,11 @@
 //! It is for limited use during initial setup only.
 
 use super::structs::{
-    ImportFile, ImportFileDelete, ImportFileDeleteOutput, ImportFileOutput, ImportPage,
-    ImportPageFilesVerify, ImportPageFilesVerifyOutput, ImportPageOutput,
-    ImportPageRevision, ImportPageRevisionOutput, ImportSite, ImportSiteOutput,
-    ImportUser, ImportUserOutput, ImportedUserType, PromoteObservedIdentity,
-    PromoteObservedIdentityOutput,
+    ImportFile, ImportFileDelete, ImportFileDeleteOutput, ImportFileOutput,
+    ImportMetaTag, ImportPage, ImportPageFilesVerify, ImportPageFilesVerifyOutput,
+    ImportPageOutput, ImportPageRevision, ImportPageRevisionOutput, ImportSite,
+    ImportSiteOutput, ImportUser, ImportUserOutput, ImportedUserType,
+    PromoteObservedIdentity, PromoteObservedIdentityOutput,
 };
 use crate::constants::SYSTEM_USER_ID;
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
@@ -54,6 +54,7 @@ use crate::services::file_revision::{
     FileRevisionService,
 };
 use crate::services::page_lock::{CreatePageLockInput, PageLockService};
+use crate::services::page_meta_tag::{PageMetaTagService, SetPageMetaTag};
 use crate::services::page_revision::{
     CreateFirstPageRevision, CreateFirstPageRevisionOutput, CreatePageRevision,
     CreatePageRevisionBody, PageRevisionService,
@@ -482,6 +483,35 @@ impl ImportService {
         Ok(ImportUserOutput { user_id })
     }
 
+    /// Record imported `<META>` tags through the page-meta-tag service.
+    /// Site tags apply to all pages; page tags to one page. Validation
+    /// (name/content limits) lives in the service; failures here fail the
+    /// import rather than silently dropping head metadata.
+    async fn record_meta_tags(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        page_id: i64,
+        all_pages: bool,
+        meta_tags: &[ImportMetaTag],
+        make_error: &impl Fn() -> Error,
+    ) -> Result<()> {
+        for tag in meta_tags {
+            PageMetaTagService::set(
+                ctx,
+                SetPageMetaTag {
+                    site_id,
+                    page_id,
+                    name: tag.name.clone(),
+                    content: tag.content.clone(),
+                    all_pages,
+                },
+            )
+            .await
+            .or_raise(make_error)?;
+        }
+        Ok(())
+    }
+
     /// Promotes one already-observed Wikidot identity into an imported user.
     ///
     /// The observation (stable numeric source ID plus observed display
@@ -724,6 +754,7 @@ impl ImportService {
             license,
             locale,
             ip_address,
+            meta_tags,
         }: ImportSite,
     ) -> Result<ImportSiteOutput> {
         info!("Importing site (name '{name}', slug '{slug}', locale '{locale}')");
@@ -754,6 +785,9 @@ impl ImportService {
         };
         Site::insert(site).exec(txn).await.or_raise(make_error)?;
 
+        // Record site-wide metadata tags (page_id is ignored for site scope)
+        Self::record_meta_tags(ctx, site_id, 0, true, &meta_tags, &make_error).await?;
+
         // Add to audit log
         AuditService::log(
             ctx,
@@ -780,6 +814,7 @@ impl ImportService {
             locked,
             discussion_thread_id,
             ip_address,
+            meta_tags,
         }: ImportPage,
     ) -> Result<ImportPageOutput> {
         info!("Creating page '{slug}' in site ID {site_id}");
@@ -834,6 +869,10 @@ impl ImportService {
             .await
             .or_raise(make_error)?;
         }
+
+        // Record page-scoped metadata tags
+        Self::record_meta_tags(ctx, site_id, page_id, false, &meta_tags, &make_error)
+            .await?;
 
         // Add to audit log
         AuditService::log(
