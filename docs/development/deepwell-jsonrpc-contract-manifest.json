@@ -34,8 +34,8 @@
         "component": "deepwell",
         "handler": "account_delete_complete",
         "source": "deepwell/src/endpoints/email.rs#account_delete_complete",
-        "source_sha256": "5551952198bbf3f1754e06f7888ddd1655dd080a97c5cca5041879b49d31719a",
-        "function_sha256": "27575b5e3d077ca50ed20ae85ef5bcee58495be9cb1631bb074e498b32e2852b"
+        "source_sha256": "52139547ca6e2311fdfbd0cf569eb92aa3a91a1132fa73b4431977d2bd2e9a8e",
+        "function_sha256": "d076d72429d12c2fcb6d0dd0366ede66eeea6e81bbc6b728862eee9578d39f53"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -97,8 +97,8 @@
         "component": "deepwell",
         "handler": "account_delete_issue",
         "source": "deepwell/src/endpoints/email.rs#account_delete_issue",
-        "source_sha256": "5551952198bbf3f1754e06f7888ddd1655dd080a97c5cca5041879b49d31719a",
-        "function_sha256": "cfb4206e0713079bc16139a5c4092f6510aa79ad3ce66463621a95db8f333bd1"
+        "source_sha256": "52139547ca6e2311fdfbd0cf569eb92aa3a91a1132fa73b4431977d2bd2e9a8e",
+        "function_sha256": "103adbc105ad7e9876fc5fa75c4d65ecd1159e6ffb794a1194c007fc689417cf"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -152,8 +152,8 @@
         "component": "deepwell",
         "handler": "account_delete_redeem",
         "source": "deepwell/src/endpoints/email.rs#account_delete_redeem",
-        "source_sha256": "5551952198bbf3f1754e06f7888ddd1655dd080a97c5cca5041879b49d31719a",
-        "function_sha256": "3eb15c6aaaebf837eb80f8241911a0a0285d626cfb5d020a73b1ac98f48cf2b8"
+        "source_sha256": "52139547ca6e2311fdfbd0cf569eb92aa3a91a1132fa73b4431977d2bd2e9a8e",
+        "function_sha256": "92f89fe9508dbad73ccdc561ecba6f77a8b44b99b7bc7909ef1904c5a41a0547"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -2468,7 +2468,7 @@
         "component": "deepwell",
         "handler": "validate_email",
         "source": "deepwell/src/endpoints/email.rs#validate_email",
-        "source_sha256": "5551952198bbf3f1754e06f7888ddd1655dd080a97c5cca5041879b49d31719a",
+        "source_sha256": "52139547ca6e2311fdfbd0cf569eb92aa3a91a1132fa73b4431977d2bd2e9a8e",
         "function_sha256": "f56522657080fbfbf09888f4b0216cf12babf60cb2015403e42100eff4ac2a3a"
       },
       "params_schema": {
@@ -2523,7 +2523,7 @@
         "component": "deepwell",
         "handler": "email_verify_issue",
         "source": "deepwell/src/endpoints/email.rs#email_verify_issue",
-        "source_sha256": "5551952198bbf3f1754e06f7888ddd1655dd080a97c5cca5041879b49d31719a",
+        "source_sha256": "52139547ca6e2311fdfbd0cf569eb92aa3a91a1132fa73b4431977d2bd2e9a8e",
         "function_sha256": "e47523fab9e62c08c1e337e0b781e004d97594242747661c1cb3eb6357ab0985"
       },
       "params_schema": {
@@ -2584,7 +2584,7 @@
         "component": "deepwell",
         "handler": "email_verify_redeem",
         "source": "deepwell/src/endpoints/email.rs#email_verify_redeem",
-        "source_sha256": "5551952198bbf3f1754e06f7888ddd1655dd080a97c5cca5041879b49d31719a",
+        "source_sha256": "52139547ca6e2311fdfbd0cf569eb92aa3a91a1132fa73b4431977d2bd2e9a8e",
         "function_sha256": "80a593ab2f822c82c46f494254221fb78f3be13aa5c4be2843b20a8a72ebc2c8"
       },
       "params_schema": {
@@ -9211,7 +9211,7 @@
         "component": "deepwell",
         "handler": "password_reset_complete",
         "source": "deepwell/src/endpoints/email.rs#password_reset_complete",
-        "source_sha256": "5551952198bbf3f1754e06f7888ddd1655dd080a97c5cca5041879b49d31719a",
+        "source_sha256": "52139547ca6e2311fdfbd0cf569eb92aa3a91a1132fa73b4431977d2bd2e9a8e",
         "function_sha256": "dd909c55b75f8fee90a42b86cf4599df287e543a37f53cdd9022b541dcdd6d4f"
       },
       "params_schema": {
@@ -9272,7 +9272,7 @@
         "component": "deepwell",
         "handler": "password_reset_issue",
         "source": "deepwell/src/endpoints/email.rs#password_reset_issue",
-        "source_sha256": "5551952198bbf3f1754e06f7888ddd1655dd080a97c5cca5041879b49d31719a",
+        "source_sha256": "52139547ca6e2311fdfbd0cf569eb92aa3a91a1132fa73b4431977d2bd2e9a8e",
         "function_sha256": "e7e0804e17efe637133043532779a543192d28af700a954b960918ac70ebd825"
       },
       "params_schema": {
@@ -9333,7 +9333,7 @@
         "component": "deepwell",
         "handler": "password_reset_redeem",
         "source": "deepwell/src/endpoints/email.rs#password_reset_redeem",
-        "source_sha256": "5551952198bbf3f1754e06f7888ddd1655dd080a97c5cca5041879b49d31719a",
+        "source_sha256": "52139547ca6e2311fdfbd0cf569eb92aa3a91a1132fa73b4431977d2bd2e9a8e",
         "function_sha256": "c14592b126a5f2feea77bc8166243b1f1461524f573b7a63b78a8b001d955b5f"
       },
       "params_schema": {
