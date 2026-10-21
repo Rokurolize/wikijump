@@ -107,6 +107,7 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::time::{Duration, Instant};
 
+mod alignment;
 mod fallback;
 mod includes;
 mod list_pages;
