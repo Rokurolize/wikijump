@@ -440,6 +440,60 @@ class SavedPageStalenessTest(unittest.TestCase):
         self.assertIn("p.slug IN ('scp-9506', 'theme:it''s')", sql)
 
 
+class RehearsalObjectStoreTest(unittest.TestCase):
+    def test_the_text_block_bucket_is_copied_into_the_upper_layer_read_only(self) -> None:
+        with mock.patch.object(promote, "run", return_value="/mnt/x") as run:
+            promote.overlay_standing_files("wjrehearsal-files", "wjrehearsal-files-upper")
+        calls = [call.args for call in run.call_args_list]
+        copy = next(args for args in calls if "cp" in args)
+        self.assertIn("wikijump-standing-files-data:/lower:ro", copy)
+        self.assertIn("wjrehearsal-files-upper:/upper", copy)
+        self.assertEqual(copy[-3:], ("-a", "/lower/deepwell-text-blocks", "/upper/data/"))
+        for args in calls:
+            for value in args:
+                if value.startswith("wikijump-standing-files-data:"):
+                    self.assertTrue(value.endswith(":ro"), args)
+
+    def missing(self, stored: list[str], named: str) -> list[str]:
+        with tempfile.TemporaryDirectory() as root:
+            for key in stored:
+                path = Path(root, "deepwell-text-blocks", key)
+                path.mkdir(parents=True)
+                (path / "xl.meta").write_bytes(b"")
+
+            real_run = subprocess.run
+
+            def local_exec(command, **kwargs):
+                script = command[-1].replace("/data/", f"{root}/")
+                return real_run(["sh", "-c", script], **kwargs)
+
+            with mock.patch.object(promote, "psql", return_value=named) as psql, \
+                    mock.patch.object(promote.subprocess, "run", side_effect=local_exec) as run:
+                result = promote.missing_text_blocks("rehearsal-database-1", "rehearsal-files-1")
+        self.assertEqual(psql.call_args.args[0], "rehearsal-database-1")
+        self.assertEqual(run.call_args.args[0][:4], ["docker", "exec", "-i", "rehearsal-files-1"])
+        return result
+
+    def test_every_named_text_block_present_is_not_missing(self) -> None:
+        keys = ["3000000005_code_1", "text-blocks/3000000693/code/3693aa64"]
+        self.assertEqual(self.missing(keys, "\n".join(keys) + "\n"), [])
+
+    def test_text_blocks_deleted_after_the_clone_are_reported(self) -> None:
+        named = "3000000005_code_1\ntext-blocks/3000000693/code/old-uuid\n"
+        self.assertEqual(
+            self.missing(["3000000005_code_1", "text-blocks/3000000693/code/new-uuid"], named),
+            ["text-blocks/3000000693/code/old-uuid"],
+        )
+
+    def test_the_rehearsal_checks_its_text_blocks_before_parity(self) -> None:
+        source = inspect.getsource(promote.rehearse)
+        self.assertLess(
+            source.index('missing_text_blocks(f"{project}-database-1", f"{project}-files-1")'),
+            source.index("browser_parity("),
+        )
+        self.assertIn("the rehearsal object store lacks", source)
+
+
 class GatewayReloadTest(unittest.TestCase):
     def test_the_cron_command_runs_as_the_cron_user_in_standing_caddy(self) -> None:
         with mock.patch.object(promote, "run", return_value=f"{'7' * 64} {'7' * 64}") as run:

@@ -47,9 +47,28 @@ use sea_orm::{
 };
 use sea_query::Order;
 use std::borrow::Cow;
+use time::OffsetDateTime;
 
 #[derive(Debug)]
 pub struct ForumPostRevisionService;
+
+/// Last observed Wikidot compile emitting `http` user profile links
+/// (2026-09-21T15:57:59Z), per `render::wikidot_user_resources` (#2380).
+/// The first observed `https` compile is 2026-09-21T21:45:52Z; revisions
+/// inside that ~6 h transition window take current platform behavior
+/// (`https`), since no exact instant exists in the record.
+const LAST_HTTP_USER_INFO_COMPILE_TIMESTAMP: i64 = 1_790_006_279;
+
+/// Profile-link URL for an imported reconstruction, from the source
+/// revision time: `http` at or before the last observed `http` compile,
+/// `https` after.
+fn wikidot_user_info_url(slug: &str, revision_time: OffsetDateTime) -> String {
+    if revision_time.unix_timestamp() <= LAST_HTTP_USER_INFO_COMPILE_TIMESTAMP {
+        format!("http://www.wikidot.com/user:info/{slug}")
+    } else {
+        format!("https://www.wikidot.com/user:info/{slug}")
+    }
+}
 
 impl ForumPostRevisionService {
     pub async fn create_first(
@@ -506,6 +525,7 @@ impl ForumPostRevisionService {
         title: &str,
         wikitext: String,
         observed_users: &[crate::services::import::DiscussionBodyUser],
+        revision_time: OffsetDateTime,
     ) -> Result<RenderOutput> {
         let site = SiteService::get(ctx, Reference::Id(site_id))
             .await
@@ -542,9 +562,9 @@ impl ForumPostRevisionService {
                 user_name: Cow::Owned(user.name.clone()),
                 user_karma: ftml::data::KarmaLevel::Zero,
                 user_avatar_data: Cow::Owned(user.avatar_url.clone().unwrap_or_default()),
-                user_profile_url: Cow::Owned(format!(
-                    "http://www.wikidot.com/user:info/{}",
-                    user.slug
+                user_profile_url: Cow::Owned(wikidot_user_info_url(
+                    &user.slug,
+                    revision_time,
                 )),
             })
             .collect();
@@ -587,4 +607,32 @@ fn next_revision_number(previous: &ForumPostRevisionModel, post: &ForumPostModel
     );
 
     previous.revision_number + 1
+}
+
+#[cfg(test)]
+mod user_info_url_tests {
+    use super::{LAST_HTTP_USER_INFO_COMPILE_TIMESTAMP, wikidot_user_info_url};
+    use time::OffsetDateTime;
+
+    #[test]
+    fn revision_time_selects_profile_link_scheme() {
+        let url = |timestamp: i64| {
+            wikidot_user_info_url(
+                "example-user",
+                OffsetDateTime::from_unix_timestamp(timestamp).unwrap(),
+            )
+        };
+        assert_eq!(
+            url(LAST_HTTP_USER_INFO_COMPILE_TIMESTAMP - 1),
+            "http://www.wikidot.com/user:info/example-user",
+        );
+        assert_eq!(
+            url(LAST_HTTP_USER_INFO_COMPILE_TIMESTAMP),
+            "http://www.wikidot.com/user:info/example-user",
+        );
+        assert_eq!(
+            url(LAST_HTTP_USER_INFO_COMPILE_TIMESTAMP + 1),
+            "https://www.wikidot.com/user:info/example-user",
+        );
+    }
 }

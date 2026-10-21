@@ -2,6 +2,7 @@ import defaults from "$lib/defaults"
 
 import {
   buildWikidotPageActionLabels,
+  selectWikidotPageRating,
   wikidotPageActionVisibility,
   wikidotPageDiscussHref
 } from "$lib/wikidot/wikidot-page-actions"
@@ -23,6 +24,13 @@ interface WikidotPagePresentationContext {
   hasSession: boolean
   siteLocale: string
   now?: number
+  /**
+   * Live combined score (imported baseline plus local votes) for the page
+   * actions row. Falls back to the imported baseline snapshot when no
+   * score was fetched, so a failed lookup keeps the baseline instead of
+   * breaking the page.
+   */
+  combinedRating?: number | null
 }
 
 const basePageTranslateKeys = (
@@ -142,6 +150,10 @@ const foundPageTranslateKeys = (
     "wiki-page-file-history": {},
     "wiki-page-file-restore.new-page": {},
     "wiki-page-file-restore.new-name": {},
+    "wiki-page-file-mirror-readonly.title": {},
+    "wiki-page-file-mirror-readonly.lead-in": {},
+    "wiki-page-file-mirror-readonly.message": {},
+    "wiki-page-file-mirror-readonly.extra-message": {},
     "wiki-page-action-append": {},
     "wiki-page-action-edit-sections": {},
     "wiki-page-action-edit-meta": {},
@@ -204,7 +216,12 @@ export const buildPageTranslateKeys = (
 
 export const buildWikidotPagePresentation = (
   response: PageView,
-  { hasSession, siteLocale, now = Date.now() }: WikidotPagePresentationContext
+  {
+    hasSession,
+    siteLocale,
+    now = Date.now(),
+    combinedRating = null
+  }: WikidotPagePresentationContext
 ) => {
   if (response.type !== "found") {
     return {
@@ -253,7 +270,10 @@ export const buildWikidotPagePresentation = (
     wikidot_page_info: wikidotPageInfo,
     wikidot_page_actions: {
       ...buildWikidotPageActionLabels({
-        rating: snapshot?.imported_rating ?? null,
+        rating: selectWikidotPageRating({
+          combinedRating,
+          importedRating: snapshot?.imported_rating ?? null
+        }),
         comments: sourceCommentCount,
         locale: siteLocale,
         showRate,

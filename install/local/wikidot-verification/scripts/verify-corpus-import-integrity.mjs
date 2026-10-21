@@ -8,7 +8,7 @@ import {sqlInt, sqlQuote} from '../src/corpus-import-sql-values.mjs';
 const UTF8 = new TextDecoder('utf-8', {fatal: true});
 
 export function parseArgs(argv) {
-  const args = {manifest: null, siteId: 6000005, dbContainer: 'local-database-1', dbUrl: process.env.DEEPWELL_VERIFY_DB_URL ?? null, slugs: [], renderedBodySlugs: [], crossSiteCoverage: false, attribution: null};
+  const args = {manifest: null, siteId: 6000005, dbContainer: 'local-database-1', dbUrl: process.env.DEEPWELL_VERIFY_DB_URL ?? null, slugs: [], renderedBodySlugs: [], crossSiteCoverage: false, attribution: null, mirrorScope: null};
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     const next = () => {
@@ -24,6 +24,7 @@ export function parseArgs(argv) {
     else if (arg === '--require-rendered-body') args.renderedBodySlugs.push(next());
     else if (arg === '--cross-site-coverage') args.crossSiteCoverage = true;
     else if (arg === '--attribution') args.attribution = next();
+    else if (arg === '--mirror-scope') args.mirrorScope = next();
     else if (arg === '--help' || arg === '-h') return {help: true};
     else throw new Error(`unknown argument: ${arg}`);
   }
@@ -33,7 +34,22 @@ export function parseArgs(argv) {
 }
 
 export function usage() {
-  return 'Usage: verify-corpus-import-integrity.mjs --manifest <manifest.jsonl> [--site-id <id>] [--db-container <name> | --db-url <url>] [--slug <slug>...] [--require-rendered-body <slug>...] [--cross-site-coverage --attribution <attribution.json>]';
+  return 'Usage: verify-corpus-import-integrity.mjs --manifest <manifest.jsonl> [--site-id <id>] [--db-container <name> | --db-url <url>] [--slug <slug>...] [--require-rendered-body <slug>...] [--cross-site-coverage --attribution <attribution.json>] [--mirror-scope <mirror-scope.json>]';
+}
+
+/**
+ * Read a mirror_scope row snapshot (as written by the refresh tool's
+ * mirror_scope_get, or `{declared_extras, consumed_slugs}` in either
+ * snake_case or camelCase). Consumed slugs are tombstoned or renamed-away
+ * source slugs: a manifest row that resolves to one is reconciled, not
+ * missing.
+ */
+export function readMirrorScope(text) {
+  const row = JSON.parse(text);
+  const declared = row.declared_extras ?? row.declaredExtras ?? [];
+  const consumed = row.consumed_slugs ?? row.consumedSlugs ?? [];
+  if (!Array.isArray(declared) || !Array.isArray(consumed)) throw new Error('mirror scope snapshot must carry declared_extras and consumed_slugs arrays');
+  return {declaredExtras: [...declared], consumedSlugs: [...consumed]};
 }
 
 export function readIntegrityManifest(manifestText, selectedSlugs = []) {
@@ -86,7 +102,7 @@ LEFT JOIN LATERAL (
 ORDER BY requested.slug;`;
 }
 
-export function verifyIntegrityRows(rows, output, {renderedBodySlugs = []} = {}) {
+export function verifyIntegrityRows(rows, output, {renderedBodySlugs = [], mirrorScope = null} = {}) {
   const actualBySlug = new Map();
   for (const line of output.split('\n').filter(Boolean)) {
     const fields = line.split('|');
@@ -95,12 +111,18 @@ export function verifyIntegrityRows(rows, output, {renderedBodySlugs = []} = {})
     actualBySlug.set(fields[0], fields);
   }
   const requireBody = new Set(renderedBodySlugs);
+  const consumedSlugs = new Set(mirrorScope?.consumedSlugs ?? []);
   const pages = [];
   const failures = [];
   for (const row of rows) {
     const result = {slug: row.fullname, current_source_matches_manifest: false, provenance_matches_manifest: false, rendered_body_characters: 0, import_state: null};
     const fields = actualBySlug.get(row.fullname);
     if (!fields || !fields[1]) {
+      if (consumedSlugs.has(row.fullname)) {
+        result.consumed = true;
+        pages.push(result);
+        continue;
+      }
       failures.push({slug: row.fullname, reason: 'missing_page'});
       pages.push(result);
       continue;
@@ -212,10 +234,11 @@ export async function main(argv) {
   const selected = new Set(rows.map((row) => row.fullname));
   const invalidRenderedSlug = args.renderedBodySlugs.find((slug) => !selected.has(slug));
   if (invalidRenderedSlug) throw new Error(`rendered-body check page is outside the manifest selection: ${invalidRenderedSlug}`);
+  const mirrorScope = args.mirrorScope ? readMirrorScope(fs.readFileSync(args.mirrorScope, 'utf8')) : null;
   const sqlExecutor = createSqlExecutor({dbUrl: args.dbUrl, dbContainer: args.dbContainer});
   try {
     const output = await sqlExecutor.runSql(buildIntegrityQuery(args, rows), {capture: true});
-    const report = verifyIntegrityRows(rows, output, {renderedBodySlugs: args.renderedBodySlugs});
+    const report = verifyIntegrityRows(rows, output, {renderedBodySlugs: args.renderedBodySlugs, mirrorScope});
     console.log(JSON.stringify(report, null, 2));
     return report.status === 'pass' ? 0 : 1;
   } finally {

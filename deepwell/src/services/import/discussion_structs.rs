@@ -99,6 +99,18 @@ pub struct ImportDiscussionOutput {
     pub created_posts: usize,
     pub created_revisions: usize,
     pub unchanged: bool,
+    /// Source actors banked as observations that still have no imported
+    /// profile row. Recorded, not fabricated: each entry names the
+    /// identity whose public profile snapshot is still missing.
+    pub actors_missing_profiles: Vec<ActorProfileGap>,
+}
+
+/// One observed identity with no `wikidot_user` profile row after import.
+#[derive(Clone, Debug, Serialize)]
+pub struct ActorProfileGap {
+    pub user_id: i64,
+    pub name: String,
+    pub slug: String,
 }
 
 /// Identity retained in this source revision's cached rendered user reference.

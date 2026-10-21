@@ -3342,6 +3342,16 @@
       "target": "wikijump.deepwell"
     },
     {
+      "source": "deepwell-jsonrpc:mirror_scope_get",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:mirror_scope_set",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
       "source": "deepwell-jsonrpc:normalize",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
@@ -3628,6 +3638,11 @@
     },
     {
       "source": "deepwell-jsonrpc:preload_view",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:promote_observed_wikidot_identity",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
     },
@@ -11515,7 +11530,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "184395d907b22f6e5ddef459e8e9611241a8179fba30d4f8f4a5de3eed0fa38f"
+      "source_input_set_sha256": "1a5475451e216ed5d1b18216584dc89851d967c6f04ebbcee6ea8f0279c32f47"
     },
     "ftml": {
       "commit": "d7727b245fd69f46d44c04592e392850ea244e13",
@@ -11532,7 +11547,7 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "dab4bead9759dc487ef2e784534a47e4bd47aa014c312d65b7b85dc8c7bef1dd"
+        "sha256": "4a0a746dce555bb1de51e84cc98275ba6b6977ee9593bf620fec72e2cdc0d997"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
@@ -11568,7 +11583,7 @@
       },
       {
         "path": "deepwell/src/endpoints/file.rs",
-        "sha256": "6a99fdb6a66ea3624b2f43761c63e160b0d6b80ded4c0d9968c52ffd455cc226"
+        "sha256": "9f8a1260ee24a71a99b974b8caf4804b48dd4e7e5e07ab8b33f81d46865c1d09"
       },
       {
         "path": "deepwell/src/endpoints/forum_post.rs",
@@ -11580,7 +11595,7 @@
       },
       {
         "path": "deepwell/src/endpoints/import.rs",
-        "sha256": "0dc0b68120a7ea0b85232958635bd197e607c45f110562625733ad36e6bd6422"
+        "sha256": "e47258e72ec151e76121e9ef4b20d78335f9389184471bff590edb21dafc4730"
       },
       {
         "path": "deepwell/src/endpoints/info.rs",
@@ -11597,6 +11612,10 @@
       {
         "path": "deepwell/src/endpoints/message.rs",
         "sha256": "8c59a13afd68cb2554ba9886d2f0b2d3e0888376a33b5884ef5c3ca3a397c9aa"
+      },
+      {
+        "path": "deepwell/src/endpoints/mirror_scope.rs",
+        "sha256": "5a1848689fa3e33ba2605d4fed1b0e1e429d0091299b3fdcc3c71245703e6564"
       },
       {
         "path": "deepwell/src/endpoints/normalize.rs",
@@ -11680,7 +11699,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "237c4c03c840f6fdf3113d1060415c88d02289a808352adc49e5addeef79bfe8"
+        "sha256": "817dfa8a28d046fe10a0d70063986fb3d53c0b416f54001994af10f3d9ed0c46"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11744,7 +11763,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "9e9c767b2aefd0e79c8cd9c10b1d1b19bd6810ef7db84e28268e4d6d1d2cf7f6"
+        "sha256": "d99f5eb233758dcc1002a20acb9f2c04c52d1de5f9b5f1592cbf5d0b8d075cce"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11776,7 +11795,7 @@
       },
       {
         "path": "framerail/src/lib/server/load/page/page.ts",
-        "sha256": "5af76e4ace7f6c32fae16a89a71f5b24dae68e337452767064d835a585c4915e"
+        "sha256": "8ded61c2afdaf8561114bd388b4400ca561c75247e3a72c8053cd34d277412c9"
       },
       {
         "path": "framerail/src/lib/server/wikidot-site-changes.js",
@@ -12123,10 +12142,10 @@
     ]
   },
   "counts": {
-    "total": 980,
+    "total": 983,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 191,
+      "deepwell_jsonrpc_method": 194,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 27,
       "framerail_route": 35,
@@ -24233,7 +24252,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#changed_file_revision_fences_but_noop_and_failed_revision_do_not"
+          "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused"
         ]
       },
       "evidence": {
@@ -24278,7 +24297,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#file_mutation_deferred_actions_fence_warm_anonymous_gallery_cache"
+          "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused"
         ]
       },
       "evidence": {
@@ -24323,7 +24342,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#changed_file_revision_fences_but_noop_and_failed_revision_do_not"
+          "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused"
         ]
       },
       "evidence": {
@@ -24413,7 +24432,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#file_mutations_require_parent_page_edit_permission"
+          "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused"
         ]
       },
       "evidence": {
@@ -24458,7 +24477,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#file_mutation_deferred_actions_fence_warm_anonymous_gallery_cache"
+          "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused"
         ]
       },
       "evidence": {
@@ -24728,7 +24747,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#file_mutations_require_parent_page_edit_permission"
+          "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused"
         ]
       },
       "evidence": {
@@ -26246,6 +26265,96 @@
       ]
     },
     {
+      "surface_id": "deepwell-jsonrpc:mirror_scope_get",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:mirror_scope_get",
+        "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_get"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/mirror_scope.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:mirror_scope_set",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:mirror_scope_set",
+        "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_set"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/mirror_scope.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
       "surface_id": "deepwell-jsonrpc:normalize",
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
@@ -26483,7 +26592,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/import.rs#import_file_requires_imported_parent_page"
+          "deepwell/tests/file_mirror_parity.rs#native_file_mutations_still_succeed"
         ]
       },
       "evidence": {
@@ -26888,7 +26997,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/import.rs#mirror_seed_carries_source_random_helper_routes"
+          "deepwell/tests/file_mirror_parity.rs#native_file_mutations_still_succeed"
         ]
       },
       "evidence": {
@@ -28856,6 +28965,51 @@
       ]
     },
     {
+      "surface_id": "deepwell-jsonrpc:promote_observed_wikidot_identity",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:promote_observed_wikidot_identity",
+        "deepwell/src/endpoints/import.rs#promote_observed_wikidot_identity"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/import.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
       "surface_id": "deepwell-jsonrpc:session_get",
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
@@ -30308,7 +30462,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/vote.rs#registered_point_vote_lifecycle_refreshes_saved_rate_page"
+          "deepwell/tests/vote.rs#imported_rating_baseline_vote_cast_change_cancel_lifecycle"
         ]
       },
       "evidence": {
@@ -39058,7 +39212,7 @@
         },
         {
           "path": "framerail/src/lib/server/load/page/page.ts",
-          "sha256": "5af76e4ace7f6c32fae16a89a71f5b24dae68e337452767064d835a585c4915e"
+          "sha256": "8ded61c2afdaf8561114bd388b4400ca561c75247e3a72c8053cd34d277412c9"
         },
         {
           "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",

@@ -487,6 +487,34 @@ test("descriptor reader rejects a file changed between open and finish", async (
   }
 });
 
+test("descriptor opener rejects paths escaping the corpus root", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-corpus-reader-escape-"));
+  try {
+    await assert.rejects(
+      openCorpusFileNoSymlinks(root, path.join(root, "..", "escape.txt"), fsConstants.O_RDONLY),
+      /escapes corpus root/u,
+    );
+    await assert.rejects(
+      openCorpusFileNoSymlinks(root, root, fsConstants.O_RDONLY),
+      /escapes corpus root/u,
+    );
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test("corpus reader rejects an invalid byte limit before opening", async () => {
+  const readCorpusFile = createCorpusFileReader();
+  await assert.rejects(
+    readCorpusFile("/tmp/corpus", "en/pages/scp-1/source.wikidot.txt", { maxBytes: -1 }),
+    /byte limit/u,
+  );
+  await assert.rejects(
+    readCorpusFile("/tmp/corpus", "en/pages/scp-1/source.wikidot.txt", { maxBytes: 1.5 }),
+    /byte limit/u,
+  );
+});
+
 test("corpus-discover handles a corpus without pages directory", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-corpus-discover-no-pages-"));
   const corpus = path.join(root, "corpus");

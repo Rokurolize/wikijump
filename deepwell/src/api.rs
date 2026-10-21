@@ -682,6 +682,10 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
 
     // Wikidot data import
     register!("import_wikidot_user", import_wikidot_user);
+    register!(
+        "promote_observed_wikidot_identity",
+        promote_observed_wikidot_identity
+    );
     register!("import_wikidot_site", import_wikidot_site);
     register!("import_wikidot_page", import_wikidot_page);
     register!("import_wikidot_page_revision", import_wikidot_page_revision);
@@ -692,6 +696,8 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
         import_wikidot_page_files_verify
     );
     register!("import_wikidot_discussion", import_wikidot_discussion);
+    register!("mirror_scope_get", mirror_scope_get);
+    register!("mirror_scope_set", mirror_scope_set);
 
     // Return
     Ok(module)

@@ -12,6 +12,9 @@
 
 //! Runtime ListPages row substitution and its focused regressions.
 
+mod value_safety;
+
+use self::value_safety::render_list_pages_substituted_identity;
 use super::{
     BTreeMap, BTreeSet, CompatHtmlFragments, CompatTextFragments, Cow, FoundPageRow,
     LISTPAGES_VARIABLE_REGEX, ListPagesDataFormDefinition, ListPagesGeneratedSlot,
@@ -412,7 +415,9 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     .get(0)
                     .map_or("", |matched| matched.as_str())
                     .to_owned(),
-                "created_by" | "createdby" => created_by.clone(),
+                "created_by" | "createdby" => {
+                    render_list_pages_substituted_identity(&created_by, inside_html_block)
+                }
                 "created_by_linked" | "createdbylinked" | "author" => {
                     protect_list_pages_generated_html(
                         created_by_linked.clone(),
@@ -443,7 +448,9 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                         compat_html,
                     )
                 }
-                "updated_by" | "updatedby" => updated_by.clone(),
+                "updated_by" | "updatedby" => {
+                    render_list_pages_substituted_identity(&updated_by, inside_html_block)
+                }
                 "updated_by_linked"
                 | "updatedbylinked"
                 | "author_edited"
@@ -469,7 +476,9 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     )
                 }
                 "commented_by"
-                | "commentedby" => commented_by.clone(),
+                | "commentedby" => {
+                    render_list_pages_substituted_identity(&commented_by, inside_html_block)
+                }
                 "commented_by_linked" | "commentedbylinked" => {
                     protect_list_pages_generated_html(
                         commented_by_linked.clone(),
@@ -499,7 +508,9 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                 "rating" => rating.clone(),
                 "rating_votes" | "ratingvotes" => rating_votes.clone(),
                 "comments" => comments.clone(),
-                "tags" => tags_text.clone(),
+                "tags" => {
+                    render_list_pages_substituted_identity(&tags_text, inside_html_block)
+                }
                 "tags_linked" | "tagslinked"
                     if generated_slots.is_some()
                         && captures.name("format").is_none()
@@ -550,7 +561,12 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     context.render_generated_html,
                     compat_html,
                 ),
-                "_tags" => hidden_tags.join(" "),
+                "_tags" => {
+                    render_list_pages_substituted_identity(
+                        &hidden_tags.join(" "),
+                        inside_html_block,
+                    )
+                }
                 "category" => context.category.to_owned(),
                 "size" => context
                     .page_wikitext_scalar_count
