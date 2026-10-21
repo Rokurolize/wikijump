@@ -9,6 +9,7 @@ import {
   requestWikidotPageDiscussion,
   selectWikidotPageRating,
   sourceShowsStandardWikidotPageActions,
+  wikidotOpenPanePermissionKind,
   wikidotPageActionVisibility,
   wikidotPageDiscussHref,
   wikidotPageDiscussionPath
@@ -338,6 +339,37 @@ test("the actions rating rejects non-numeric scores instead of displaying them",
     selectWikidotPageRating({ combinedRating: "462", importedRating: null }),
     null
   )
+})
+
+test("Lock mounts behind the edit gate like Append and Parent", () => {
+  assert.equal(wikidotOpenPanePermissionKind("lock"), "edit")
+  assert.equal(wikidotOpenPanePermissionKind("append"), "edit")
+  assert.equal(wikidotOpenPanePermissionKind("parent"), "edit")
+})
+
+test("Move and Delete keep their own rename and delete gates", () => {
+  assert.equal(wikidotOpenPanePermissionKind("move"), "move")
+  assert.equal(wikidotOpenPanePermissionKind("delete"), "delete")
+})
+
+test("panes outside openPagePane return no pre-check kind", () => {
+  for (const pane of [
+    "backlinks",
+    "watchers",
+    "history",
+    "file",
+    "vote",
+    "tags",
+    "edit-meta",
+    "site-tools",
+    "layout",
+    "none",
+    "no-such-pane",
+    "",
+    undefined
+  ]) {
+    assert.equal(wikidotOpenPanePermissionKind(pane), null)
+  }
 })
 
 test("combined live scores flow into the imported action labels", () => {
