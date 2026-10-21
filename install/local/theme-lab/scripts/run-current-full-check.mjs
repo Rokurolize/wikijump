@@ -5,7 +5,7 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 import {execFileSync,spawn,spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {currentFullCheckPaths} from '../src/current-full-check-options.mjs';
+import {currentFullCheckBackend,currentFullCheckPaths} from '../src/current-full-check-options.mjs';
 import {resolveExistingContainedFile} from '../src/package-path.mjs';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
@@ -14,12 +14,13 @@ const repo=path.resolve(lab,'../../..');
 const ports=path.join(lab,'ports');
 const positional=process.argv.slice(2).filter(arg=>!arg.startsWith('--'));
 const options=process.argv.slice(2).filter(arg=>arg.startsWith('--'));
-if(positional.length<1||positional.length>2||options.some(arg=>!/^--(?:run-id|run-contract)=.+/u.test(arg)))
- throw new Error('usage: run-current-full-check.mjs <package> [reference-cache-dir] --run-id=<unique-task-id> [--run-contract=<path>]');
+if(positional.length<1||positional.length>2||options.some(arg=>!/^--(?:run-id|run-contract|backend-project|rpc-url)=.+/u.test(arg)))
+ throw new Error('usage: run-current-full-check.mjs <package> [reference-cache-dir] --run-id=<unique-task-id> [--run-contract=<path>] [--backend-project=wikijump-theme-lab-NAME --rpc-url=http://127.0.0.1:PORT/jsonrpc]');
 const name=positional[0];
 const referenceCacheDir=positional[1]?path.resolve(positional[1]):null;
 const optionValue=key=>options.filter(arg=>arg.startsWith(`--${key}=`)).map(arg=>arg.slice(key.length+3));
-if(optionValue('run-id').length!==1||optionValue('run-contract').length>1)throw new Error('a single --run-id and at most one --run-contract are required');
+if(optionValue('run-id').length!==1||optionValue('run-contract').length>1||optionValue('backend-project').length>1||optionValue('rpc-url').length>1)throw new Error('a single --run-id and at most one --run-contract, --backend-project and --rpc-url are required');
+const backend=currentFullCheckBackend({backendProject:optionValue('backend-project')[0],rpcUrl:optionValue('rpc-url')[0]});
 const ledger=JSON.parse(fs.readFileSync(path.join(ports,'adaptation-authority.json'),'utf8'));
 const pkg=ledger.packages[name];
 if(!pkg)throw new Error(`unknown package: ${name}`);
@@ -65,7 +66,7 @@ function linkAssets(){
 }
 
 preflight(candidateUrl);
-const dockerEnv=execFileSync('docker',['inspect','wikijump-local-development-deepwell-1','--format','{{range .Config.Env}}{{println .}}{{end}}'],{encoding:'utf8'});
+const dockerEnv=execFileSync('docker',['inspect',backend.containerName,'--format','{{range .Config.Env}}{{println .}}{{end}}'],{encoding:'utf8'});
 const token=dockerEnv.split(/\r?\n/u).find(line=>line.startsWith('DEEPWELL_RPC_TOKEN='))?.slice('DEEPWELL_RPC_TOKEN='.length);
 if(!token)throw new Error('current local Deepwell RPC token is unavailable');
 const childEnv={...process.env,DEEPWELL_RPC_TOKEN:token};
@@ -90,6 +91,7 @@ fs.mkdirSync(artifactDir,{recursive:true});
 const assetDir=linkAssets();
 const daemonArgs=['scripts/theme-lab.mjs','serve','--socket',socket,'--candidate-url',candidateUrl,'--browser-root','../../../framerail','--asset-dir',assetDir,'--header-html','fixtures/scp-jp-header.html','--navigation-html','fixtures/scp-jp-navigation.html','--sidebar-html','fixtures/scp-jp-sidebar.html','--baseline-css','fixtures/scp-jp-sigma9-offline.css','--allow-private'];
 if(referenceCacheDir)daemonArgs.push('--cache-dir',referenceCacheDir);
+if(backend.rpcUrl)daemonArgs.push('--rpc-url',backend.rpcUrl);
 const log=fs.openSync(logFile,'a');const daemon=spawn(process.execPath,daemonArgs,{cwd:lab,env:childEnv,stdio:['ignore',log,log]});
 try{
  const started=Date.now();while(!fs.existsSync(socket)){if(daemon.exitCode!==null)throw new Error(`${name}: daemon exited ${daemon.exitCode}; see ${logFile}`);if(Date.now()-started>30000)throw new Error(`${name}: daemon socket timeout`);await new Promise(r=>setTimeout(r,150));}
