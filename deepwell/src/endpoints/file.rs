@@ -242,10 +242,20 @@ pub async fn file_move(
 
     // A move mutates both ends: leaving a mirror and arriving on one are
     // both refused. Propagated directly so the refusal keeps its category.
-    ensure_page_not_fully_imported(ctx, input.site_id, input.current_page_id, "move a file")
-        .await?;
-    ensure_page_not_fully_imported(ctx, input.site_id, destination.page_id, "move a file")
-        .await?;
+    ensure_page_not_fully_imported(
+        ctx,
+        input.site_id,
+        input.current_page_id,
+        "move a file",
+    )
+    .await?;
+    ensure_page_not_fully_imported(
+        ctx,
+        input.site_id,
+        destination.page_id,
+        "move a file",
+    )
+    .await?;
 
     FileService::r#move(ctx, input)
         .await
@@ -318,8 +328,13 @@ pub async fn file_restore(
                     ErrorType::File,
                 )
             })?;
-        ensure_page_not_fully_imported(ctx, input.site_id, destination.page_id, "restore a file")
-            .await?;
+        ensure_page_not_fully_imported(
+            ctx,
+            input.site_id,
+            destination.page_id,
+            "restore a file",
+        )
+        .await?;
     }
 
     FileService::restore(ctx, input)

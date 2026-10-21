@@ -1,0 +1,7 @@
+[[module ListPages category="*" order="random" limit="1" tag="tale"]]
+Random Tale: %%title_linked%%
+[[/module]]
+
+[[module ListPages category="*" order="random" limit="1" tag="tale"]]
+[[include :snippets:redirect url=%%link%%]]
+[[/module]]

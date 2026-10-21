@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use crate::types::PageRevisionType;
+use crate::types::{License, PageRevisionType};
 use ftml::data::KarmaLevel;
 use std::net::IpAddr;
 use time::{Date, OffsetDateTime};
@@ -63,6 +63,63 @@ pub struct ImportUserOutput {
     pub user_id: i32,
 }
 
+/// Promotes one already-observed Wikidot identity (numeric source ID plus
+/// observed display name/slug) into a real imported user row.
+///
+/// The observation alone banks the stable source ID and its provenance.
+/// A complete public profile snapshot is required before any
+/// `wikidot_user` profile row is written; when it is absent the call
+/// succeeds with the blocking fields listed and writes nothing beyond
+/// the idempotent observation and `known_user` entries. Nothing is ever
+/// merged on display name or slug, and nothing is fabricated.
+#[derive(Deserialize, Debug)]
+pub struct PromoteObservedIdentity {
+    pub user_id: i32,
+    pub name: String,
+    pub slug: String,
+    #[serde(with = "time::serde::rfc3339")]
+    pub observed_at: OffsetDateTime,
+    pub source_reference: String,
+    pub profile: Option<ObservedUserProfile>,
+    // Must be the same as the user who uploaded the avatar blob, if any
+    pub importing_user_id: i64,
+    pub ip_address: IpAddr,
+}
+
+/// An evidence-backed public profile snapshot for one observed identity.
+/// Only `created_at` is structurally required; every other profile field
+/// is genuinely optional in the source. `karma` and `is_pro` are required
+/// for a materialized row (their columns are non-nullable), so they are
+/// reported as gaps rather than defaulted when unobserved.
+#[derive(Deserialize, Debug)]
+pub struct ObservedUserProfile {
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339::option", default)]
+    pub fetched_at: Option<OffsetDateTime>,
+    pub avatar_uploaded_blob_id: Option<String>,
+    pub real_name: Option<String>,
+    pub gender: Option<String>,
+    pub birthday: Option<Date>,
+    pub location: Option<String>,
+    pub biography: Option<String>,
+    pub website: Option<String>,
+    pub karma: Option<KarmaLevel>,
+    pub is_pro: Option<bool>,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct PromoteObservedIdentityOutput {
+    pub user_id: i32,
+    /// Whether this call materialized (created or refreshed) the
+    /// `wikidot_user` profile row. False means the identity is banked as
+    /// an observation only; see `missing_profile_fields`.
+    pub promoted: bool,
+    /// Profile fields still unobserved, blocking materialization.
+    /// Empty when the profile row is (now) complete.
+    pub missing_profile_fields: Vec<String>,
+}
+
 #[derive(Deserialize, Debug)]
 pub struct ImportSite {
     pub site_id: i64,
@@ -71,6 +128,9 @@ pub struct ImportSite {
     pub created_at: OffsetDateTime,
     pub name: String,
     pub slug: String,
+    pub tagline: String,
+    pub description: String,
+    pub license: License,
     pub locale: String,
     pub ip_address: IpAddr,
 }

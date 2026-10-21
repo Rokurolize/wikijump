@@ -64,11 +64,9 @@ use super::{
     COUNTPAGES_MODULE_REGEX, CodeBlock, CollectingIncluder, CompatHtmlFragments,
     CompatTextFragments, CorpusReplayExpandedWikitext, CorpusReplayPreparationStage,
     CountPagesRequiredTagBatchResult, IncludeExpansionContext, IncludeSourceCache,
-    LiteralRegionIndex, MAX_FTML_COMPAT_COLLAPSIBLE_BLOCKS,
-    MAX_FTML_COMPAT_DENSE_PARSE_SCORE, MAX_FTML_COMPAT_PARSE_BYTES,
+    LiteralRegionIndex, MAX_FTML_COMPAT_DENSE_PARSE_SCORE, MAX_FTML_COMPAT_PARSE_BYTES,
     MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER, MAX_LISTPAGES_RENDER_OFFSET,
     MAX_LISTPAGES_RENDER_SCAN_ROWS, MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS,
-    MIN_FTML_COMPAT_TABBED_FALLBACK_BYTES, MIN_FTML_COMPAT_TABBED_FALLBACK_MARKERS,
     MIN_URL_OFFSET_LISTPAGES_CONTENT_BYTES, MIN_URL_OFFSET_LISTPAGES_RENDER_TIMEOUT_SECS,
     PreparedIncluder, RenderContext, RenderService, WIKIDOT_COLOR_SPAN_SENTINEL_PREFIX,
     WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX, WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX,
@@ -2172,12 +2170,12 @@ fn protects_wikidot_wikipedia_links_before_ftml_parsing() {
         &links,
     );
 
-    assert!(html_output.body.contains(r#"<a href="http://en.wikipedia.org/wiki/Canonical_bundle" onclick="window.open(this.href, '_blank'); return false;">Canonical Bundle</a>"#));
+    assert!(html_output.body.contains(r#"<a href="https://en.wikipedia.org/wiki/Canonical_bundle" onclick="window.open(this.href, '_blank'); return false;">Canonical Bundle</a>"#));
     assert!(!html_output.body.contains("[wikipedia:Canonical_bundle"));
     assert_eq!(
         html_output.backlinks.external_links,
         vec![Cow::Borrowed(
-            "http://en.wikipedia.org/wiki/Canonical_bundle"
+            "https://en.wikipedia.org/wiki/Canonical_bundle"
         )],
     );
 }
@@ -2229,15 +2227,58 @@ fn restores_dense_wikidot_wikipedia_links_without_repeated_scans() {
 }
 
 #[test]
-fn renders_wikidot_wikipedia_links_with_language_and_default_label() {
+fn renders_wikidot_wikipedia_links_without_language_split_and_verbatim_default_label() {
+    // Live Wikidot keeps a language-looking prefix in the path of one fixed
+    // host instead of splitting it into a subdomain; see issue #2576.
     assert_eq!(
         super::build_wikidot_wikipedia_link("it:Albert_Einstein", Some("Albert")).anchor,
-        r#"<a href="http://it.wikipedia.org/wiki/Albert_Einstein" onclick="window.open(this.href, '_blank'); return false;">Albert</a>"#,
+        r#"<a href="https://en.wikipedia.org/wiki/it:Albert_Einstein" onclick="window.open(this.href, '_blank'); return false;">Albert</a>"#,
     );
     assert_eq!(
         super::build_wikidot_wikipedia_link("Canonical_bundle", None).anchor,
-        r#"<a href="http://en.wikipedia.org/wiki/Canonical_bundle" onclick="window.open(this.href, '_blank'); return false;">Canonical bundle</a>"#,
+        r#"<a href="https://en.wikipedia.org/wiki/Canonical_bundle" onclick="window.open(this.href, '_blank'); return false;">Canonical_bundle</a>"#,
     );
+}
+
+/// Sealed live contract from issue #2576 (anonymous PagePreviewModule on
+/// scp-wiki, 2026-10-19, record `list-wikipedia-links`): https on the fixed
+/// host, no language-subdomain split, underscores preserved, explicit labels
+/// passed through, and the recorded backlink follows the emitted href.
+#[test]
+fn renders_sealed_wikidot_wikipedia_link_shapes() {
+    for (target, label, href, text) in [
+        (
+            "fr:Paris",
+            Some("Paris"),
+            "https://en.wikipedia.org/wiki/fr:Paris",
+            "Paris",
+        ),
+        (
+            "Rust_(lang)",
+            None,
+            "https://en.wikipedia.org/wiki/Rust_(lang)",
+            "Rust_(lang)",
+        ),
+        (
+            "Not_emitted",
+            Some("Outside"),
+            "https://en.wikipedia.org/wiki/Not_emitted",
+            "Outside",
+        ),
+    ] {
+        let link = super::build_wikidot_wikipedia_link(target, label);
+        assert_eq!(link.href, href, "emitted href for {target:?}");
+        assert!(
+            link.anchor.contains(&format!(r#"<a href="{href}""#)),
+            "anchor href for {target:?}: {}",
+            link.anchor,
+        );
+        assert!(
+            link.anchor.ends_with(&format!(">{text}</a>")),
+            "anchor label for {target:?}: {}",
+            link.anchor,
+        );
+    }
 }
 
 #[test]

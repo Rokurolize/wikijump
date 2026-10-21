@@ -12,7 +12,10 @@ import {
 import {parsePreflightOutput} from "../scripts/run-consolidated-validation.mjs";
 import {
   CONSOLIDATED_VALIDATION_SCHEMA,
+  FINAL_FROZEN_RECEIPT_SCHEMA,
   validateConsolidatedValidation,
+  validateFinalFrozenReceipt,
+  validateImageProducer,
   verifyFinalFrozenReceipt,
 } from "../src/final-frozen-receipt-contract.mjs";
 
@@ -73,6 +76,103 @@ async function fixture(t) {
   return {root, write};
 }
 
+function frozenReceipt(overrides = {}) {
+  const git = "d".repeat(40);
+  const sha = "a".repeat(64);
+  const ref = (name) => ({path: `/evidence/${name}`, sha256: sha});
+  return {
+    schema: FINAL_FROZEN_RECEIPT_SCHEMA,
+    status: "FINAL_FROZEN",
+    source: {
+      wikijump_commit: SOURCE.wikijump_commit,
+      wikijump_tree: SOURCE.wikijump_tree,
+      ftml_sha: SOURCE.ftml_sha,
+      lockfiles: [ref("Cargo.lock"), ref("package-lock.json")],
+    },
+    validation: {
+      base_commit: git,
+      check_count: 2,
+      groups: {deepwell: true},
+      path: "/evidence/validation.json",
+      sha256: sha,
+    },
+    images: {
+      identities: {deepwell: `sha256:${"1".repeat(64)}`},
+      producer: ref("image-producer.json"),
+    },
+    ...overrides,
+  };
+}
+
+test("FINAL_FROZEN receipt shape rejects wrong status, stale source, and malformed fields", () => {
+  const valid = validateFinalFrozenReceipt(frozenReceipt(), {source: SOURCE});
+  assert.equal(valid.status, "FINAL_FROZEN");
+  assert.equal(valid.source.lockfiles.length, 2);
+  assert.throws(
+    () => validateFinalFrozenReceipt(frozenReceipt({status: "FROZEN"}), {source: SOURCE}),
+    /not a FINAL_FROZEN/u,
+  );
+  assert.throws(
+    () => validateFinalFrozenReceipt(frozenReceipt(), {source: {...SOURCE, wikijump_commit: "f".repeat(40)}}),
+    /wikijump_commit does not match the expected source/u,
+  );
+  assert.throws(
+    () => validateFinalFrozenReceipt(frozenReceipt({images: {identities: {}, producer: {path: "/evidence/image-producer.json", sha256: "a".repeat(64)}}}), {source: SOURCE}),
+    /no identities/u,
+  );
+  assert.throws(
+    () => validateFinalFrozenReceipt(frozenReceipt({extra: true}), {source: SOURCE}),
+    /missing or unknown fields/u,
+  );
+  assert.throws(
+    () => validateFinalFrozenReceipt(frozenReceipt({source: {...frozenReceipt().source, wikijump_commit: "xyz"}}), {source: SOURCE}),
+    /full lowercase Git object id/u,
+  );
+  assert.throws(
+    () => validateFinalFrozenReceipt(frozenReceipt({source: {...frozenReceipt().source, lockfiles: []}}), {source: SOURCE}),
+    /one or more file references/u,
+  );
+  assert.throws(
+    () =>
+      validateFinalFrozenReceipt(
+        frozenReceipt({source: {...frozenReceipt().source, lockfiles: [{path: "/evidence/Cargo.lock", sha256: "a".repeat(64)}, {path: "/evidence/Cargo.lock", sha256: "b".repeat(64)}]}}),
+        {source: SOURCE},
+      ),
+    /duplicate file references/u,
+  );
+  assert.throws(
+    () => validateFinalFrozenReceipt(frozenReceipt({validation: {...frozenReceipt().validation, path: "relative/validation.json"}}), {source: SOURCE}),
+    /must be absolute/u,
+  );
+});
+
+test("FINAL_FROZEN image producer rejects failure, bad identities, and emptiness", () => {
+  assert.deepEqual(Object.keys(validateImageProducer(imageProducer(), SOURCE)), ["deepwell", "framerail", "wws"]);
+  assert.throws(
+    () => validateImageProducer({...imageProducer(), status: "fail"}, SOURCE),
+    /passing receipt/u,
+  );
+  assert.throws(
+    () => validateImageProducer({...imageProducer(), images: {deepwell: {id: "not-an-image-id"}}}, SOURCE),
+    /no immutable image ID for deepwell/u,
+  );
+  assert.throws(
+    () => validateImageProducer({...imageProducer(), images: {}}, SOURCE),
+    /must contain image identities/u,
+  );
+});
+
+test("FINAL_FROZEN consolidated shape rejects wrong schema and empty groups", () => {
+  assert.throws(
+    () => validateConsolidatedValidation(validation({schema: "wikijump.consolidated_validation_receipt.v1"}), SOURCE),
+    /unsupported schema/u,
+  );
+  assert.throws(
+    () => validateConsolidatedValidation(validation({groups: {}}), SOURCE),
+    /selected no check groups/u,
+  );
+});
+
 test("FINAL_FROZEN CLI takes only executed-evidence inputs", () => {
   const args = parseFinalFrozenArgs([
     "--source-root", "/repo",
@@ -116,6 +216,48 @@ test("FINAL_FROZEN refuses validation that failed, ran nothing, or is for anothe
   await assert.rejects(build(validation({checks: []})), /ran no checks/u);
   await assert.rejects(build(validation({wikijump_commit: "f".repeat(40)})), /source identity is stale/u);
   await assert.rejects(build(validation({mode: "checkpoint"})), /final barrier/u);
+});
+
+test("FINAL_FROZEN verification rejects summaries disagreeing with their files", async (t) => {
+  const {root, write} = await fixture(t);
+  const receipt = await buildFinalFrozenReceipt({
+    source: SOURCE,
+    sourceRoot: root,
+    validationReceiptPath: await write("validation.json", validation()),
+    imageProducerPath: await write("image-producer.json", imageProducer()),
+  });
+  await verifyFinalFrozenReceipt({receiptPath: await write("final-frozen.json", receipt), source: SOURCE});
+  await assert.rejects(
+    verifyFinalFrozenReceipt({
+      receiptPath: await write("tampered-validation.json", {
+        ...receipt,
+        validation: {...receipt.validation, base_commit: "9".repeat(40)},
+      }),
+      source: SOURCE,
+    }),
+    /validation summary disagrees with its receipt/u,
+  );
+  await assert.rejects(
+    verifyFinalFrozenReceipt({
+      receiptPath: await write("tampered-images.json", {
+        ...receipt,
+        images: {...receipt.images, identities: {deepwell: `sha256:${"9".repeat(64)}`}},
+      }),
+      source: SOURCE,
+    }),
+    /image identities are stale/u,
+  );
+});
+
+test("FINAL_FROZEN verification rejects a receipt file that is not UTF-8 JSON", async (t) => {
+  const {root} = await fixture(t);
+  const receiptPath = path.join(root, "evidence", "binary.json");
+  await fs.mkdir(path.dirname(receiptPath), {recursive: true});
+  await fs.writeFile(receiptPath, Buffer.from([0xff, 0xfe, 0x00]));
+  await assert.rejects(
+    verifyFinalFrozenReceipt({receiptPath, source: SOURCE}),
+    /must contain valid UTF-8 JSON/u,
+  );
 });
 
 test("FINAL_FROZEN verification rejects changed validation bytes and foreign images", async (t) => {

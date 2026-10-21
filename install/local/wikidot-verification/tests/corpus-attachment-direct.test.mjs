@@ -89,6 +89,22 @@ test('planDirectAttachmentMaterialization rejects stale sha256 metadata', () => 
   );
 });
 
+test('planDirectAttachmentMaterialization rejects malformed attachment metadata', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-attachment-direct-'));
+  const valid = {
+    ...writeAttachment(root, 'pixel.png', Buffer.from([1, 2, 3])),
+    content_type_description: 'PNG image data',
+  };
+  const row = (attachment) => [{ fullname: 'scp-173', attachments: [attachment] }];
+  assert.throws(() => planDirectAttachmentMaterialization(row(null)), /must be an object/u);
+  assert.throws(() => planDirectAttachmentMaterialization(row({...valid, filename: ''})), /filename must be a non-empty string/u);
+  assert.throws(() => planDirectAttachmentMaterialization(row({...valid, file_path: ''})), /file_path must be a non-empty string/u);
+  assert.throws(() => planDirectAttachmentMaterialization(row({...valid, sha256: 'xyz'})), /sha256 must be a lowercase sha256 hex string/u);
+  assert.throws(() => planDirectAttachmentMaterialization(row({...valid, size: -1})), /non-negative safe integer/u);
+  assert.throws(() => planDirectAttachmentMaterialization(row({...valid, size: 99})), /size mismatch: expected 99, got 3/u);
+  assert.throws(() => planDirectAttachmentMaterialization(row({...valid, content_type_description: ''})), /absent or invalid/u);
+});
+
 test('planDirectAttachmentMaterialization treats missing attachment arrays as empty', () => {
   const plan = planDirectAttachmentMaterialization([{ fullname: 'scp-173' }]);
 
