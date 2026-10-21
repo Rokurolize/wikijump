@@ -2,7 +2,11 @@
   import { deserialize } from "$app/forms"
   import { onMount } from "svelte"
   import WikidotRevisionAuthor from "./WikidotRevisionAuthor.svelte"
-  import { wikidotFileSize, wikidotFileTypeDescription } from "$lib/wikidot-file-contract"
+  import {
+    wikidotFileSize,
+    wikidotFileTypeDescription,
+    wikidotFileUploadDate
+  } from "$lib/wikidot-file-contract"
   import type { FileRevisionModel, Optional } from "$lib/types"
   import type { PageFile } from "$lib/server/deepwell/page-file"
 
@@ -28,32 +32,10 @@
   let earliest = $state<Optional<FileRevisionModel>>(undefined)
   let historyFailed = $state(false)
 
-  const fileUploadDate = (createdAt: string) => {
-    const date = new Date(createdAt)
-    const timestamp = Math.floor(date.getTime() / 1000)
-    const months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec"
-    ]
-    const day = String(date.getUTCDate()).padStart(2, "0")
-    const hour = String(date.getUTCHours()).padStart(2, "0")
-    const minute = String(date.getUTCMinutes()).padStart(2, "0")
-    return {
-      timestamp,
-      text: `${day} ${months[date.getUTCMonth()]} ${date.getUTCFullYear()} ${hour}:${minute}`,
-      className: `odate time_${timestamp} format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover`
-    }
-  }
+  // Upload date shape (including the comma in "21 Apr 2026, 06:01") lives
+  // in the shared contract so unit tests pin the frozen modal text.
+  // Refs #2067.
+  const fileUploadDate = wikidotFileUploadDate
 
   onMount(async () => {
     const res = await fetch("?/fileHistory", {
