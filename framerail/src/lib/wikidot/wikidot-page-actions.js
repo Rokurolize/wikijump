@@ -56,6 +56,34 @@ export const sourceShowsStandardWikidotPageActions = (sourceSite) => {
 }
 
 /**
+ * The server permission gate `openPagePane` checks before mounting a write
+ * pane. Append, Parent and Lock write under the page `edit` permission;
+ * Move writes under `rename` and Delete under `delete`, each matching the
+ * authority the matching server mutation enforces. Read panes return null
+ * and mount without a pre-check. Tags gates on `edit` through its own call
+ * site (`openEditTagsPane`) and EditMeta inside its pane, so neither is
+ * part of this mapping. Unknown panes return null and mount ungated,
+ * exactly as before.
+ *
+ * @param {string} pane
+ * @returns {"edit" | "move" | "delete" | null}
+ */
+export const wikidotOpenPanePermissionKind = (pane) => {
+  switch (pane) {
+    case "append":
+    case "parent":
+    case "lock":
+      return "edit"
+    case "move":
+      return "move"
+    case "delete":
+      return "delete"
+    default:
+      return null
+  }
+}
+
+/**
  * @typedef {{
  *   status?: string
  *   message?: string

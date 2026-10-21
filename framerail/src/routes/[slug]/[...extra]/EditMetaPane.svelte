@@ -3,6 +3,7 @@
   import { onMount } from "svelte"
 
   import { errorPopupState } from "$lib/layout/stores.svelte"
+  import { PagePane } from "$lib/types"
   import type { PageMetaTagView } from "$lib/server/deepwell/views"
   import {
     deleteWikidotMetaTag,
@@ -15,7 +16,8 @@
   } from "$lib/wikidot/wikidot-locale"
   import type { PageProps } from "./$types"
 
-  let { data }: PageProps = $props()
+  let { pagePaneState = $bindable(), data }: PageProps & { pagePaneState: PagePane } =
+    $props()
   let rows = $state<PageMetaTagView[] | null>(null)
   let adding = $state(false)
   let metaName = $state("")
@@ -106,7 +108,10 @@
         permissionState = "denied"
         // Server failures surface their own message. A clean can_edit=false
         // denial renders the retained EN Wikidot window (issue #2336);
-        // other locales keep the localized generic denial.
+        // other locales keep the localized generic denial. The denial
+        // closes the pane like the pre-mount gates do, so no empty
+        // action area stays visible; the dialog itself is global state
+        // and survives the close.
         if (result.type === "failure" && result.data?.message) {
           errorPopupState.current = {
             state: true,
@@ -123,6 +128,7 @@
                 data: null
               }
         }
+        pagePaneState = PagePane.None
       } catch {
         if (!active) return
         permissionState = "denied"
@@ -134,6 +140,7 @@
               message: editPermissionDeniedMessage(data.site.locale),
               data: null
             }
+        pagePaneState = PagePane.None
       }
     }
 
