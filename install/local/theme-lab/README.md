@@ -364,8 +364,19 @@ node ports/interactive-visual-fixture/capture-theme-matrix.mjs \
   --theme=basalt --state=page.normal.settled \
   --engine=chromium --viewport=desktop --anonymous \
   --transport-origin=https://scpaiueouiuiuiui.wikijump.localhost:3396 \
-  --run-contract=/absolute/path/to/run-contract-basalt-current-run.json
+  --run-contract=/absolute/path/to/run-contract-basalt-current-run.json \
+  --runtime-repo=/absolute/path/to/runtime-checkout \
+  --backend-project=wikijump-theme-lab-<namespace>   # task-owned backend only
 ```
+
+A task-port contract's `target_site.origin` must equal `--transport-origin`;
+only the shared development contract keeps the fixed `:18443` logical origin.
+For a task-owned backend, `--runtime-repo` and `--backend-project` (supplied
+together) make the capture measure that Compose project's Deepwell against the
+runtime checkout that owns its source mounts. The primary fixture page
+`run-owned:theme-lab-visual-acceptance-20260924` is created by
+`provision-fixture.mjs` on a fresh backend; fixture provisioning must precede
+`ensure-built-framerail.mjs` because readiness probes the imported fixture page.
 
 This initial public capture is a readiness test, **not the 145-state acceptance
 or the Sigma-10 check**. The built sidecar requires a unique namespace when
