@@ -210,6 +210,16 @@ async function revealPagePane(page){
  await page.evaluate(({top,desired})=>window.scrollTo({top:top-desired,behavior:'instant'}),{top:targetTop,desired:desiredTop});
  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
 }
+// The credit control sits below the first screenful. Bring the real control into
+// frame (below any fixed navigation) so the screenshot and the target
+// measurement actually contain it.
+async function revealCreditControl(page){
+ const control=page.locator('.creditButton a:visible').first();
+ await control.waitFor({state:'visible'});
+ await control.scrollIntoViewIfNeeded();
+ await revealBelowFixedMobileNavigation(page,control);
+ await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+}
 async function revealBelowFixedMobileNavigation(page,selectorOrLocator){
  const fixedTop=await page.evaluate(topFixedNavigationInset);
  const target=typeof selectorOrLocator==='string'?page.locator(selectorOrLocator):selectorOrLocator;
@@ -406,7 +416,7 @@ async function visualDiagnostics(page,surface){
 const states=[
   {surface:'page.normal',state:'settled',viewports:Object.keys(viewports),action:async()=>{}},
   {surface:'content.tabview',state:'second-tab-selected',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{const tab=p.getByText('詳細',{exact:true}).first();await tab.scrollIntoViewIfNeeded();await tab.click();await p.getByText('別のタブへ移動できます。',{exact:true}).waitFor({state:'visible'});await revealBelowFixedMobileNavigation(p,'.yui-navset')}} ,
-  {surface:'content.collapsible',state:'expanded',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{const toggle=p.locator('#page-content .collapsible-block-link').first();await toggle.scrollIntoViewIfNeeded();const parent=toggle.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " collapsible-block ")][1]');const unfolded=parent.locator(':scope > .collapsible-block-unfolded');if(await unfolded.evaluate(e=>getComputedStyle(e).display==='none')){await toggle.focus();await toggle.press('Enter')}await unfolded.waitFor({state:'visible'});if(await p.evaluate(()=>innerWidth<=600))await revealBelowFixedMobileNavigation(p,unfolded)}},
+  {surface:'content.collapsible',state:'expanded',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{const toggle=p.locator('#page-content .collapsible-block-link').first();await toggle.scrollIntoViewIfNeeded();const parent=toggle.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " collapsible-block ")][1]');const unfolded=parent.locator(':scope > .collapsible-block-unfolded');if(await unfolded.evaluate(e=>getComputedStyle(e).display==='none')){await toggle.focus();await toggle.press('Enter')}await unfolded.waitFor({state:'visible'});if(await p.evaluate(()=>innerWidth<=600))await revealBelowFixedMobileNavigation(p,unfolded);await movePointerToSafeArea(p);await settleFiniteVisualTransitions(p)}},
   {surface:'shell.search',state:'typed-focused',viewports:['desktop','laptop','tablet'],action:async p=>{await waitForSvelteClickHandler(p,'#history-button');await exerciseHeaderSearch(p,p.__themeLabSearchSourceAuthority)}},
   {surface:'shell.search',state:'compact-submit',viewports:['mobile','narrow-mobile'],action:async p=>{await p.locator('#search-top-box-form input[type="submit"]').waitFor({state:'visible'})}},
   {surface:'nav.desktop-top',state:'submenu-hover',viewports:['desktop'],action:async p=>{const item=p.locator('#top-bar li').filter({has:p.locator('ul')}).first();await item.scrollIntoViewIfNeeded();await item.locator('a').first().hover()}},
@@ -465,7 +475,7 @@ const states=[
     },observation);
     if(!observation?.expanded_visible||!observation?.folded_hidden||!observation?.child_visible||!observation?.sidebar_open)throw new Error(`sidebar open-submenu action did not expand the native collapsible state: ${JSON.stringify(observation)}`);
   }},
-  {surface:'credit.default',state:'normal',viewports:['desktop','mobile','narrow-mobile'],action:async()=>{}},
+  {surface:'credit.default',state:'normal',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{await revealCreditControl(p)}},
    {surface:'credit.view',state:'open',viewports:['desktop','mobile','narrow-mobile'],action:openCreditView},
    {surface:'credit.otherwise',state:'open',viewports:['desktop','mobile','narrow-mobile'],action:openCreditOtherwise},
    {surface:'credit.close-back',state:'restored',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{if(migrationFixture)await setMigrationCreditTarget(p,'u-credit-view');else{await p.locator('.creditButton a').first().click();await p.waitForFunction(()=>location.hash==='#u-credit-view')}await p.goBack();await p.waitForFunction(()=>location.hash!=='#u-credit-view')}},
@@ -478,7 +488,7 @@ const states=[
   {surface:'page.source',state:'open',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{await expandMoreOptions(p);await p.locator('#view-source-button').click();await p.locator('.page-source').waitFor();await revealPagePane(p)}},
   {surface:'page.files',state:'list',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{await p.locator('#files-button').click();await p.locator(FILES_PANE.table).waitFor();await p.locator(FILES_PANE.row).filter({hasText:'theme-lab-visual-fixture_日本語長名'}).waitFor({state:'visible'});await revealPagePane(p)}},
   {surface:'page.files',state:'horizontal-actions',viewports:['mobile','narrow-mobile'],action:async p=>{await p.locator('#files-button').click();await p.locator(FILES_PANE.table).waitFor();await p.locator(FILES_PANE.row).filter({hasText:'theme-lab-visual-fixture_日本語長名'}).waitFor({state:'visible'});await revealPagePane(p);await p.locator(FILES_PANE.scroller).evaluate(e=>e.scrollLeft=e.scrollWidth)}},
-  {surface:'shell.footer-license',state:'scrolled-bottom',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{const license=p.locator('#license-area');await license.waitFor({state:'visible'});await license.evaluate(e=>e.scrollIntoView({block:'end',behavior:'instant'}));await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await p.locator('#footer').waitFor({state:'visible'})}},
+  {surface:'shell.footer-license',state:'scrolled-bottom',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{const license=p.locator('#license-area');await license.waitFor({state:'visible'});await license.evaluate(e=>e.scrollIntoView({block:'end',behavior:'instant'}));await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await p.locator('#footer').waitFor({state:'visible'});await movePointerToSafeArea(p);await settleFiniteVisualTransitions(p)}},
   {surface:'shell.interwiki',state:'visible',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{const wrapper=p.locator('.scpnet-interwiki-wrapper').first();await wrapper.waitFor({state:'attached'});const frame=wrapper.locator('iframe.html-block-iframe').first();await frame.waitFor({state:'attached'});const contract=await p.evaluate(()=>{const wrapper=document.querySelector('.scpnet-interwiki-wrapper');const frame=wrapper?.querySelector('iframe.html-block-iframe');if(!wrapper||!frame)return null;const box=frame.getBoundingClientRect();return{wrapper_present:true,wrapper_display:getComputedStyle(wrapper).display,wrapper_rect:(()=>{const r=wrapper.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height}})(),frame_present:true,frame_display:getComputedStyle(frame).display,frame_rect:{x:box.x,y:box.y,width:box.width,height:box.height},document_width:document.documentElement.scrollWidth,viewport_width:innerWidth}});if(!contract)throw new Error('local Interwiki wrapper/frame contract is absent');await p.evaluate(value=>{window.__themeLabActionContractObservation=value;window.__themeLabActionTrace??=[];window.__themeLabActionTrace.push({type:'local-interwiki-contract'})},contract);await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))))}},
   {surface:'page.backlinks',state:'list',viewports:['desktop','mobile'],action:async p=>{await expandMoreOptions(p);await p.locator('#backlinks-button').click();await p.getByText('SCP-JP Theme Lab Backlink Fixture',{exact:true}).waitFor();await revealPagePane(p)}},
   {surface:'page.parent',state:'pane',viewports:['desktop','mobile'],action:async p=>{await expandMoreOptions(p);const parentsResponse=p.waitForResponse(response=>response.url().includes('?/parentGet')&&response.request().method()==='POST',{timeout:10000});await p.locator('#parent-page-button').click();await p.locator('#page-parent .page-parent-new-parents').waitFor({state:'visible'});const response=await parentsResponse;if(!response.ok())throw new Error(`parent lookup returned HTTP ${response.status()}`);await p.locator('#page-parent .page-parent-actions, #page-parent .buttons').first().waitFor({state:'visible'});await revealPagePane(p);await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))))}},
@@ -491,7 +501,7 @@ for(const variant of [
  {id:'heritage',slug:'run-owned:theme-lab-visual-credit-heritage-20260924'}
 ]){
  states.push(
-  {surface:`credit.variant.${variant.id}`,state:'default',fixtureSlug:variant.slug,viewports:['desktop','mobile'],action:async()=>{}},
+  {surface:`credit.variant.${variant.id}`,state:'default',fixtureSlug:variant.slug,viewports:['desktop','mobile'],action:async p=>{await revealCreditControl(p)}},
   {surface:`credit.variant.${variant.id}`,state:'view',fixtureSlug:variant.slug,viewports:['desktop','mobile'],action:async p=>{const entry=p.locator('.creditButton a:visible').first();await entry.click();await p.waitForFunction(()=>location.hash==='#u-credit-view')}}
  );
 }
@@ -598,8 +608,8 @@ function actionContractDependencies(spec){
  return{
   waitForSvelteClickHandler:actionSource.includes('waitForSvelteClickHandler'),
   revealPagePane:actionSource.includes('revealPagePane'),
-  revealBelowFixedMobileNavigation:actionSource.includes('revealBelowFixedMobileNavigation'),
-  topFixedNavigationInset:actionSource.includes('revealPagePane')||actionSource.includes('revealBelowFixedMobileNavigation'),
+  revealBelowFixedMobileNavigation:actionSource.includes('revealBelowFixedMobileNavigation')||actionSource.includes('revealCreditControl'),
+  topFixedNavigationInset:actionSource.includes('revealPagePane')||actionSource.includes('revealBelowFixedMobileNavigation')||actionSource.includes('revealCreditControl'),
   expandMoreOptions:actionSource.includes('expandMoreOptions'),
   settleFiniteVisualTransitions:spec.surface.startsWith('nav.')||actionSource.includes('settleFiniteVisualTransitions'),
   movePointerToSafeArea:actionSource.includes('movePointerToSafeArea')||(!retainsPointer&&spec.surface!=='shell.footer-license'),
@@ -629,6 +639,7 @@ function buildActionContract(spec){
  if(actionSource.includes('openSidebar')){contract.openSidebar=openSidebar.toString();contract.sidebarOccupiesViewport=sidebarOccupiesViewport.toString()}
  if(actionSource.includes('closeSidebar')){contract.closeSidebar=closeSidebar.toString();contract.sidebarIsClosed=sidebarIsClosed.toString();contract.sidebarOccupiesViewport=sidebarOccupiesViewport.toString()}
  if(actionSource.includes('exerciseHeaderSearch'))contract.exerciseHeaderSearch=exerciseHeaderSearch.toString();
+ if(actionSource.includes('revealCreditControl'))contract.revealCreditControl=revealCreditControl.toString();
  if(actionSource.includes('openCreditView'))contract.openCreditView=openCreditView.toString();
  if(actionSource.includes('openCreditOtherwise'))contract.openCreditOtherwise=openCreditOtherwise.toString();
  if(migrationFixture&&sigma10CreditActions[`${spec.surface}.${spec.state}`])contract.sigma10CreditActions=sigma10CreditActionsSha;
