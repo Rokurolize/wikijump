@@ -18,10 +18,14 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::{MirrorScope, SetMirrorScope};
+use super::{
+    MirrorScope, ReconcileItemResult, ReconcileMirrorOutput, ReconcileMirrorPages,
+    SetMirrorScope,
+};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::mirror_scope::{self, Entity as MirrorScopeTable};
 use crate::services::ServiceContext;
+use crate::services::page::{DeletePage, MovePage, PageService};
 use crate::services::site::SiteService;
 use crate::types::Reference;
 use crate::utils::{normalize_page_slug, now};
@@ -186,6 +190,128 @@ impl MirrorScopeService {
             .collect::<BTreeSet<_>>()
             .into_iter()
             .collect()
+    }
+
+    /// Apply one reconciliation pass: source deletes tombstone pages and
+    /// source renames move them, all through the canonical page
+    /// operations, so history is preserved and no manual SQL is needed.
+    ///
+    /// Items apply best-effort in order (deletes, then renames); a failed
+    /// item is recorded in the output and the pass continues, mirroring
+    /// the import refresh tooling contract. Each entry carries
+    /// `last_revision_id`, so a concurrent edit fails that item instead
+    /// of clobbering it. Renamed-away slugs are recorded as consumed.
+    /// Requires an existing scope record for the site.
+    pub async fn reconcile(
+        ctx: &ServiceContext<'_>,
+        actor_user_id: i64,
+        input: ReconcileMirrorPages<'_>,
+    ) -> Result<ReconcileMirrorOutput> {
+        MirrorScopeTable::find_by_id(input.site_id)
+            .one(ctx.transaction())
+            .await
+            .or_raise(Self::make_error)?
+            .ok_or_else(|| {
+                Error::new(
+                    "mirror scope record does not exist; set the site scope before reconciling",
+                    ErrorType::Site,
+                )
+            })?;
+
+        let mut items = Vec::new();
+        let mut applied_deletes = 0;
+        let mut applied_renames = 0;
+
+        for delete in input.deletes {
+            let slug = reference_label(&delete.page);
+            match PageService::delete(
+                ctx,
+                DeletePage {
+                    site_id: input.site_id,
+                    page: delete.page,
+                    last_revision_id: delete.last_revision_id,
+                    user_id: actor_user_id,
+                    revision_comments: delete.revision_comments,
+                    ip_address: input.ip_address,
+                },
+            )
+            .await
+            {
+                Ok(output) => {
+                    applied_deletes += 1;
+                    items.push(ReconcileItemResult {
+                        slug,
+                        op: String::from("delete"),
+                        ok: true,
+                        revision_number: Some(output.revision_number),
+                        error: None,
+                    });
+                }
+                Err(error) => items.push(ReconcileItemResult {
+                    slug,
+                    op: String::from("delete"),
+                    ok: false,
+                    revision_number: None,
+                    error: Some(error.to_string()),
+                }),
+            }
+        }
+
+        for rename in input.renames {
+            let slug = reference_label(&rename.page);
+            match PageService::r#move(
+                ctx,
+                MovePage {
+                    site_id: input.site_id,
+                    page: rename.page,
+                    last_revision_id: rename.last_revision_id,
+                    new_slug: rename.new_slug,
+                    revision_comments: rename.revision_comments,
+                    user_id: actor_user_id,
+                    ip_address: input.ip_address,
+                },
+            )
+            .await
+            {
+                Ok(output) => {
+                    // The move keeps history; remember the renamed-away
+                    // slug so later passes never recreate it.
+                    Self::record_consumed_slug(ctx, input.site_id, &output.old_slug)
+                        .await?;
+                    applied_renames += 1;
+                    items.push(ReconcileItemResult {
+                        slug,
+                        op: String::from("rename"),
+                        ok: true,
+                        revision_number: Some(output.revision_number),
+                        error: None,
+                    });
+                }
+                Err(error) => items.push(ReconcileItemResult {
+                    slug,
+                    op: String::from("rename"),
+                    ok: false,
+                    revision_number: None,
+                    error: Some(error.to_string()),
+                }),
+            }
+        }
+
+        let failed = items.iter().filter(|item| !item.ok).count();
+        Ok(ReconcileMirrorOutput {
+            site_id: input.site_id,
+            applied_deletes,
+            applied_renames,
+            failed,
+            items,
+        })
+    }
+
+    fn reference_label(reference: &Reference<'_>) -> String {
+        match reference {
+            Reference::Id(id) => id.to_string(),
+            Reference::Slug(slug) => slug.to_string(),
+        }
     }
 
     fn validate_scope(scope: &str) -> Result<()> {

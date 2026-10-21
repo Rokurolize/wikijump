@@ -3,7 +3,7 @@
   "source_identities": {
     "jsonrpc_registry": {
       "path": "deepwell/src/api.rs",
-      "sha256": "abf6cddc3a0bcf897b27d21199c852a8878c7087610725c7e92091623a5d8dc0"
+      "sha256": "14dc702d6ff26dd4ac24942b4de70ab191ca2f2d683473146daff34d0a6e2a55"
     },
     "request_context_middleware": {
       "path": "deepwell/src/middleware.rs",
@@ -26,7 +26,7 @@
       "classification": "historical"
     }
   ],
-  "method_count": 199,
+  "method_count": 200,
   "methods": [
     {
       "method": "admin_view",
@@ -5147,7 +5147,7 @@
         "component": "deepwell",
         "handler": "mirror_scope_get",
         "source": "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_get",
-        "source_sha256": "5a1848689fa3e33ba2605d4fed1b0e1e429d0091299b3fdcc3c71245703e6564",
+        "source_sha256": "4254f6c52845668b52ae871997d3f8242bef86ad714e8df05fde72a51c9785f3",
         "function_sha256": "b52674ec596ad8eaa097442eaa97b790ada0c80b542df57ce69fc3d73261ff35"
       },
       "params_schema": {
@@ -5203,12 +5203,67 @@
       }
     },
     {
+      "method": "mirror_scope_reconcile",
+      "endpoint_owner": {
+        "component": "deepwell",
+        "handler": "mirror_scope_reconcile",
+        "source": "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_reconcile",
+        "source_sha256": "4254f6c52845668b52ae871997d3f8242bef86ad714e8df05fde72a51c9785f3",
+        "function_sha256": "b85290f6bf77ac67d0d5a0580b118b9ed222b5224b2d55f5f079c0348d0908cf"
+      },
+      "params_schema": {
+        "transport": "jsonrpsee::types::params::Params<'static>",
+        "parameter_name": "params",
+        "decoder": "parse!(params, Site)"
+      },
+      "actor_context": {
+        "transport_authentication": {
+          "header_symbol": "AUTHORIZATION",
+          "header": "Authorization",
+          "scheme": "Bearer",
+          "token_format": "64 lowercase hexadecimal characters",
+          "duplicate_values": "rejected"
+        },
+        "request_context_headers": [
+          {
+            "header": "X-Deepwell-Session-Token",
+            "target": "session_token"
+          },
+          {
+            "header": "X-Deepwell-Site-Id",
+            "target": "site_id"
+          },
+          {
+            "header": "X-Deepwell-Page",
+            "target": "page_ref"
+          }
+        ],
+        "requirements": [
+          "mutation_authorization"
+        ],
+        "requirement_sources": [
+          "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_reconcile"
+        ]
+      },
+      "mutation_class": {
+        "classification": "read_only",
+        "source_signals": []
+      },
+      "transaction_isolation": "default",
+      "test_witness": {
+        "kind": "endpoint_behavioral",
+        "reference": "deepwell/tests/mirror_reconcile.rs#reconcile_endpoint_requires_platform_staff",
+        "alternatives": [],
+        "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+      }
+    },
+    {
       "method": "mirror_scope_set",
       "endpoint_owner": {
         "component": "deepwell",
         "handler": "mirror_scope_set",
         "source": "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_set",
-        "source_sha256": "5a1848689fa3e33ba2605d4fed1b0e1e429d0091299b3fdcc3c71245703e6564",
+        "source_sha256": "4254f6c52845668b52ae871997d3f8242bef86ad714e8df05fde72a51c9785f3",
         "function_sha256": "e2d76747802a77078dab98a82f7cc8e83646e31b94deabd6180a44a3b1bca5f5"
       },
       "params_schema": {

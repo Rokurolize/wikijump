@@ -22,4 +22,7 @@ mod service;
 mod structs;
 
 pub use self::service::MirrorScopeService;
-pub use self::structs::{MirrorScope, SetMirrorScope};
+pub use self::structs::{
+    MirrorScope, ReconcileItemResult, ReconcileMirrorOutput, ReconcileMirrorPages,
+    ReconcilePageDelete, ReconcilePageRename, SetMirrorScope,
+};
