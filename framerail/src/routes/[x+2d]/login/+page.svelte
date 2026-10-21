@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation"
+  import { resolve } from "$app/paths"
   import { page } from "$app/state"
   import { authCancelDestination, authReturnDestination } from "$lib/auth-cancel.js"
   import { errorPopupState } from "$lib/layout/stores.svelte"
@@ -116,6 +117,11 @@
       </button>
     </div>
   </form>
+  <p class="auth-notice">
+    <a href={resolve("/-/forgot", {})}>
+      {data.internationalization?.["forgot-password.question"]}
+    </a>
+  </p>
 {/if}
 
 <style lang="scss">
@@ -141,5 +147,9 @@
       white-space: nowrap;
       border: 0;
     }
+  }
+
+  .auth-notice {
+    text-align: center;
   }
 </style>

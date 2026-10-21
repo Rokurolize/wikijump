@@ -19,7 +19,15 @@
  */
 
 use super::prelude::*;
-use crate::services::email::{EmailService, EmailValidationOutput};
+use crate::services::PasswordService;
+use crate::services::email::{
+    EmailService, EmailTokenPurpose, EmailTokenService, EmailValidationOutput,
+    IssueEmailToken, IssueEmailTokenOutcome,
+};
+use crate::services::user::UpdateUserBody;
+use crate::types::{Maybe, Reference};
+use serde::{Deserialize, Serialize};
+use std::net::IpAddr;
 
 pub async fn validate_email(
     ctx: &ServiceContext<'_>,
@@ -29,4 +37,237 @@ pub async fn validate_email(
     EmailService::validate(ctx, &email)
         .await
         .or_raise(|| Error::new("failed to validate email", ErrorType::Request))
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+struct EmailTokenIssue {
+    email: String,
+    ip_address: IpAddr,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct EmailTokenRedeem {
+    token: String,
+    ip_address: IpAddr,
+}
+
+/// Normalize a submitted address the way the user store matches it: trim
+/// surrounding whitespace, otherwise exact (the user service performs no
+/// case folding anywhere, so recovery must not invent any).
+fn normalize_lookup_email(email: &str) -> String {
+    email.trim().to_string()
+}
+
+/// Issue a token and record its delivery without ever answering whether an
+/// account holds the address. Unknown, imported, and deleted addresses all
+/// produce the identical success response having created nothing.
+async fn issue_token_quietly(
+    ctx: &ServiceContext<'_>,
+    email: &str,
+    purpose: EmailTokenPurpose,
+    ip_address: IpAddr,
+) -> Result<()> {
+    let email = normalize_lookup_email(email);
+    if !crate::services::email::is_well_formed_email(&email) {
+        // Malformed input reveals no account state, so it may fail loudly.
+        return Err(
+            Error::new("email address is malformed", ErrorType::InvalidEmail).into(),
+        );
+    }
+
+    if let Some(user) = UserService::get_real_optional_by_email(ctx, &email)
+        .await
+        .or_raise(|| Error::new("failed to look up email owner", ErrorType::User))?
+    {
+        // #2081 boundary: get_real_optional_by_email only ever returns
+        // regular Wikijump accounts, so imported non-authenticatable
+        // identities can never receive recovery or verification tokens.
+        match EmailTokenService::issue(
+            ctx,
+            IssueEmailToken {
+                user_id: user.user_id,
+                email: email.clone(),
+                purpose,
+                ip_address,
+            },
+        )
+        .await
+        .or_raise(|| Error::new("failed to issue email token", ErrorType::Email))?
+        {
+            IssueEmailTokenOutcome::Issued(issued) => {
+                // The plaintext token stays server-side; only delivery
+                // metadata is recorded, never the token itself. The expiry
+                // comes from the stored row, not a recomputation.
+                EmailService::send_token_email(&email, purpose, issued.expires_at).await;
+            }
+            IssueEmailTokenOutcome::Suppressed => {}
+        }
+    }
+
+    Ok(())
+}
+
+/// Request a verification link for an address. Authenticated or not, the
+/// response is identical; verification completes only through the mailbox.
+pub async fn email_verify_issue(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<()> {
+    let EmailTokenIssue { email, ip_address } = parse!(params, Request);
+    issue_token_quietly(ctx, &email, EmailTokenPurpose::VerifyEmail, ip_address).await
+}
+
+/// Redeem a verification link. Succeeds only while the token's email
+/// snapshot still matches the account's current address; a rotated address
+/// fails exactly like a bogus token.
+pub async fn email_verify_redeem(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<()> {
+    let EmailTokenRedeem { token, ip_address } = parse!(params, Request);
+    let redeemed = EmailTokenService::redeem(ctx, &token, EmailTokenPurpose::VerifyEmail)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to redeem verification token",
+                ErrorType::InvalidEmailToken,
+            )
+        })?;
+
+    let user = UserService::get_real(ctx, Reference::Id(redeemed.user_id))
+        .await
+        .or_raise(|| Error::new("failed to load verified user", ErrorType::User))?;
+    if user.email != redeemed.email {
+        return Err(Error::new(
+            "verification token no longer matches the account address",
+            ErrorType::InvalidEmailToken,
+        )
+        .into());
+    }
+
+    UserService::update(
+        ctx,
+        Reference::Id(user.user_id),
+        ip_address,
+        UpdateUserBody {
+            email_verified: Maybe::Set(true),
+            ..Default::default()
+        },
+    )
+    .await
+    .or_raise(|| Error::new("failed to mark email verified", ErrorType::User))?;
+    Ok(())
+}
+
+/// Request a password-recovery link. Indistinguishable from the verify
+/// flow: unknown, imported, and deleted addresses all 200 with no effect.
+pub async fn password_reset_issue(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<()> {
+    let EmailTokenIssue { email, ip_address } = parse!(params, Request);
+    issue_token_quietly(ctx, &email, EmailTokenPurpose::ResetPassword, ip_address).await
+}
+
+#[derive(Serialize, Clone)]
+pub struct ResetGrantOutput {
+    pub grant: String,
+}
+
+impl std::fmt::Debug for ResetGrantOutput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ResetGrantOutput")
+            .field("grant", &"..")
+            .finish()
+    }
+}
+
+/// Exchange a recovery link for a one-time password-set grant. The grant,
+/// not the link, authorizes the new password, so a used or expired link
+/// can never set one. The grant issues unconditionally once the link is
+/// consumed: it spends the link, is never emailed, and rotates, so no
+/// cooldown signal can burn a valid link.
+pub async fn password_reset_redeem(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<ResetGrantOutput> {
+    let EmailTokenRedeem { token, ip_address } = parse!(params, Request);
+    let redeemed =
+        EmailTokenService::redeem(ctx, &token, EmailTokenPurpose::ResetPassword)
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to redeem recovery token",
+                    ErrorType::InvalidEmailToken,
+                )
+            })?;
+
+    let issued =
+        EmailTokenService::issue_grant(ctx, redeemed.user_id, redeemed.email, ip_address)
+            .await
+            .or_raise(|| Error::new("failed to issue reset grant", ErrorType::Email))?;
+
+    Ok(ResetGrantOutput {
+        grant: issued.token,
+    })
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PasswordResetComplete {
+    grant: String,
+    new_password: String,
+    ip_address: IpAddr,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ResetCompleteOutput {
+    pub sessions_revoked: u64,
+}
+
+/// Set a new password on grant authority alone: no current password, no
+/// session. The grant is single-use, the new password meets the account
+/// policy, and every session of the account is revoked.
+pub async fn password_reset_complete(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<ResetCompleteOutput> {
+    let PasswordResetComplete {
+        grant,
+        new_password,
+        ip_address,
+    } = parse!(params, Request);
+    let redeemed = EmailTokenService::redeem(ctx, &grant, EmailTokenPurpose::ResetGrant)
+        .await
+        .or_raise(|| {
+            Error::new("failed to redeem reset grant", ErrorType::InvalidEmailToken)
+        })?;
+
+    // Policy first, exactly as the password-change endpoint does.
+    PasswordService::new_account_hash(&new_password)?;
+
+    UserService::update(
+        ctx,
+        Reference::Id(redeemed.user_id),
+        ip_address,
+        UpdateUserBody {
+            password: Maybe::Set(new_password),
+            ..Default::default()
+        },
+    )
+    .await
+    .or_raise(|| Error::new("failed to set the new password", ErrorType::User))?;
+
+    let sessions_revoked = SessionService::invalidate_all(ctx, redeemed.user_id)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to revoke sessions after recovery",
+                ErrorType::Session,
+            )
+        })?;
+
+    Ok(ResetCompleteOutput { sessions_revoked })
 }

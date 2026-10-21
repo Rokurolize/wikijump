@@ -189,6 +189,8 @@ pub enum ErrorType {
     InsufficientNameChanges,
     DisallowedEmail,
     InvalidEmail,
+    InvalidEmailToken,
+    Email,
     UserPasswordTooShort {
         length: usize,
         minimum: usize,
@@ -494,6 +496,8 @@ impl ErrorType {
             ErrorType::InsufficientNameChanges => 4104,
             ErrorType::InvalidEmail => 4105,
             ErrorType::DisallowedEmail => 4106,
+            ErrorType::InvalidEmailToken => 4110,
+            ErrorType::Email => 4111,
             ErrorType::ExpectedWikijumpUser { .. } => 4107,
             ErrorType::ExpectedWikidotUser { .. } => 4108,
             ErrorType::UserPasswordTooShort { .. } => 4109,
@@ -754,6 +758,8 @@ impl ErrorType {
             }
             ErrorType::DisallowedEmail => "The user's email is disallowed",
             ErrorType::InvalidEmail => "The user's email is invalid",
+            ErrorType::InvalidEmailToken => "The email token is invalid or expired",
+            ErrorType::Email => "Email service error",
             ErrorType::UserPasswordTooShort { .. } => "The user's password is too short",
             ErrorType::ExpectedWikijumpUser { .. } => "Expected to be a real user",
             ErrorType::ExpectedWikidotUser { .. } => "Expected to be a Wikidot-only user",
