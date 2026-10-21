@@ -290,8 +290,25 @@ impl EmailService {
 
     // TODO (WJ-1384) add email sending helper method
 
-    // TODO (WJ-1388) email verification (checking an email belongs to you)
-    // TODO (WJ-1389) password reset (verification link to begin password reset process)
+    /// Record delivery of a token email through the local development sink.
+    ///
+    /// LOCAL DEFAULT: structured log of recipient, purpose, and expiry
+    /// only. Tokens and credentials are never logged, and nothing is sent
+    /// to a real mailbox. Real SMTP delivery is a later slice with its own
+    /// review; until then this record is the observable enqueue event.
+    pub async fn send_token_email(
+        to_email: &str,
+        purpose: super::EmailTokenPurpose,
+        expires_at: time::OffsetDateTime,
+    ) {
+        info!(
+            "Email token issued for '{}' (purpose: {}, expires: {})",
+            to_email,
+            purpose.as_str(),
+            expires_at,
+        );
+    }
+
     // TODO (WJ-1390) one-time code (used as substitute second factor when logging in)
 }
 
@@ -299,7 +316,7 @@ impl EmailService {
 /// domain of non-empty dot-separated labels, with no whitespace or control
 /// characters. Single-label domains stay valid (local accounts such as
 /// `admin@wikijump`); MailCheck, when it answers, decides deliverability.
-fn is_well_formed_email(email: &str) -> bool {
+pub(crate) fn is_well_formed_email(email: &str) -> bool {
     if email.chars().any(|c| c.is_whitespace() || c.is_control()) {
         return false;
     }

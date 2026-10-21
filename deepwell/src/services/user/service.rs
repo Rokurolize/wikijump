@@ -827,6 +827,27 @@ impl UserService {
         Self::get_real_optional_resolved(ctx, &reference).await
     }
 
+    /// Fetches the real (Wikidot-excluded) regular user holding the given
+    /// email address, if any. Recovery and verification must never resolve
+    /// imported non-authenticatable identities (#2081 boundary), so those
+    /// flows look users up only through here: exact address match, regular
+    /// accounts, ignoring deleted rows.
+    pub async fn get_real_optional_by_email(
+        ctx: &ServiceContext<'_>,
+        email: &str,
+    ) -> Result<Option<WikijumpUserModel>> {
+        WikijumpUser::find()
+            .filter(
+                Condition::all()
+                    .add(user::Column::Email.eq(email))
+                    .add(user::Column::UserType.eq(UserType::Regular))
+                    .add(user::Column::DeletedAt.is_null()),
+            )
+            .one(ctx.transaction())
+            .await
+            .or_raise(|| Error::new("failed to look up user by email", ErrorType::User))
+    }
+
     /// Fetches the real (Wikijump) user associated with the given reference, if any.
     /// This method ignores any Wikidot user records.
     #[inline]

@@ -5,6 +5,7 @@ pub use super::audit_log::Entity as AuditLog;
 pub use super::authorization_token::Entity as AuthorizationToken;
 pub use super::blob_blacklist::Entity as BlobBlacklist;
 pub use super::blob_pending::Entity as BlobPending;
+pub use super::email_token::Entity as EmailToken;
 pub use super::file::Entity as File;
 pub use super::file_revision::Entity as FileRevision;
 pub use super::filter::Entity as Filter;

@@ -42,6 +42,7 @@ export async function loadLoginPage(request: Request, preloadData: PreloadDataAs
     "password": {},
     "login.toast": {},
     "forgot-password": {},
+    "forgot-password.question": {},
     "remember-me": {},
     "create-account": {}
   }
