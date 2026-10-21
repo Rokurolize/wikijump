@@ -10628,6 +10628,105 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
 }
 
 #[tokio::test]
+async fn wikidot_user_observation_only_identity_resolves_inline_user() {
+    // Refs #2081 residual: an inline [[user]] reference must resolve to an
+    // observed source identity even when no materialized wikidot_user row
+    // exists. That is the live Standing shape (a banked observation with a
+    // stable source ID links userInfo(<id>); only genuinely unknown names
+    // keep the error-inline text). The matrix test above banks full rows
+    // for every extant case, so this test pins the sparse path instead.
+    const OBSERVED_USER_ID: i64 = 19_103_700;
+    const PAGE_SLUG: &str = "fixture-wikidot-observation-only-user";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO known_user (user_id) VALUES ($1)",
+            [Value::from(OBSERVED_USER_ID)],
+        ))
+        .await
+        .expect("observation-only known-user fixture should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO wikidot_identity_observation (user_id, source_sha256, observed_at, name, slug, source_reference) VALUES ($1, $2, NOW(), 'Observed Author', 'observed-author', 'test observation-only fixture')",
+            [
+                Value::from(OBSERVED_USER_ID),
+                Value::from(Sha256::digest("test observation-only fixture").to_vec()),
+            ],
+        ))
+        .await
+        .expect("observation-only identity fixture should be inserted");
+
+    let source = "OBS=[[user Observed Author]]\n";
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Wikidot observation-only user",
+            "wikitext": source,
+        }),
+    );
+    let html = preview.body;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PAGE_SLUG,
+        "Fixture Wikidot observation-only user",
+        &source,
+    )
+    .await;
+    let saved_page = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+        }),
+    );
+    let saved_html = match saved_page {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected saved observation-only user page, got {other:?}"),
+    };
+
+    for (label, output) in [
+        ("preview", html.as_str()),
+        ("saved page", saved_html.as_str()),
+    ] {
+        assert!(
+            output.contains("https://www.wikidot.com/user:info/observed-author")
+                && output.contains(&format!(
+                    "WIKIDOT.page.listeners.userInfo({OBSERVED_USER_ID}); return false;"
+                ))
+                && output.contains(">Observed Author</a>"),
+            "{label} observation-only identity must link the stable source ID:\n{output}",
+        );
+        assert!(
+            !output.contains("does not match any existing user name"),
+            "{label} must not error-inline a banked observation:\n{output}",
+        );
+    }
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
 async fn basalt_runtime_state_users_rerender_identity_profile_subtrees() {
     let runtime_state: serde_json::Value = serde_json::from_str(include_str!(
         "../../install/local/wikidot-verification/fixtures/open87-basalt-users/runtime-state.json"
