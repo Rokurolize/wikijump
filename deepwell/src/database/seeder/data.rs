@@ -719,6 +719,66 @@ mod tests {
     }
 
     #[test]
+    fn mirror_seed_prefers_source_pages_for_scp_jp() {
+        // Refs #2083: the scp-jp mirror seed must carry the source-owned
+        // system pages the same way the scp-wiki seed does, so a fresh JP
+        // mirror bootstrap includes them without a separate repair import.
+        // Source authority is the shared corpus (branch `jp` == scp-jp),
+        // run-xmlrpc-resume-jp-20260807-text-only-rate1, status active:
+        // * system:join (title "SCP財団参加の手引き", tags jp/管理);
+        // * system:members (title "サイトメンバー", tags jp/管理);
+        // * system:page-tags (title "Page Tags", tags jp/管理).
+        //
+        // NOTE: this test pins the open JP-bootstrap gap and is expected
+        // to fail until JP source seed content lands (the scp-jp seed
+        // currently holds only `boundary-check`). Either mirror-specific
+        // source copies (the scp-*.ftml precedent) or a checked-in
+        // bootstrap import manifest closes it; do not weaken this test to
+        // accept the generic seed there.
+        let seeder_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("seeder");
+        let seed = SeedData::load(&seeder_path).expect("seed data should load");
+
+        let source_owned = [
+            (
+                "system:join",
+                "SCP財団参加の手引き",
+                "**タイトル:** SCP財団参加の手引き",
+            ),
+            (
+                "system:members",
+                "サイトメンバー",
+                "**タイトル:** サイトメンバー",
+            ),
+            (
+                "system:page-tags",
+                "Page Tags",
+                "**タイトル:** Page Tags",
+            ),
+        ];
+
+        for (slug, expected_title, source_marker) in source_owned {
+            let mirror = seed
+                .pages
+                .get("scp-jp")
+                .expect("scp-jp pages")
+                .iter()
+                .find(|page| page.slug == slug)
+                .unwrap_or_else(|| panic!("scp-jp seed page {slug}"));
+
+            assert_eq!(mirror.title, expected_title);
+            assert_eq!(mirror.tags, ["jp", "管理"]);
+            assert!(
+                mirror.wikitext.contains(source_marker),
+                "scp-jp {slug} must carry the source page content",
+            );
+            assert!(
+                !mirror.wikitext.contains("Please customize this page"),
+                "scp-jp {slug} must not fall back to generic seed content",
+            );
+        }
+    }
+
+    #[test]
     fn editable_site_seeds_the_public_self_join_route() {
         let seeder_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("seeder");
         let seed = SeedData::load(&seeder_path).expect("seed data should load");
