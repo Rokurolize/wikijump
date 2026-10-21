@@ -2,7 +2,7 @@
 
 - Shim: `RenderService::normalize_wikidot_alignment_markers` and
   `RenderService::wikidot_alignment_markers` in
-  `deepwell/src/services/render/service/wikidot_preprocess.rs`, called from
+  `deepwell/src/services/render/service/wikidot_alignment.rs`, called from
   `RenderService::expand_render_wikitext` right after include expansion (so
   expansion-phase scope scans, notably the Rate module body scan, see the
   same divs as before) and again from

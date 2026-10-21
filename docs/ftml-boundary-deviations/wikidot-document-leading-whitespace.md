@@ -1,7 +1,7 @@
 # Deviation: Wikidot document-leading whitespace trim
 
 - Shim: `RenderService::trim_wikidot_document_leading_whitespace` in
-  `deepwell/src/services/render/service/wikidot_preprocess.rs`, called from
+  `deepwell/src/services/render/service/wikidot_alignment.rs`, called from
   `RenderService::expand_render_wikitext` and
   `RenderService::render_wikidot_syntax_inner` in
   `deepwell/src/services/render/service.rs`.
