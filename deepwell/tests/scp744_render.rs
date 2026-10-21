@@ -396,14 +396,11 @@ async fn scp744_full_closure_render_keeps_article_body() {
         if *slug == PAGE_SLUG {
             continue;
         }
-        let page = PageService::get_optional(
-            runner.context(),
-            site_id,
-            Reference::from(*slug),
-        )
-        .await
-        .expect("include target lookup should succeed")
-        .unwrap_or_else(|| panic!("include target {slug} should exist"));
+        let page =
+            PageService::get_optional(runner.context(), site_id, Reference::from(*slug))
+                .await
+                .expect("include target lookup should succeed")
+                .unwrap_or_else(|| panic!("include target {slug} should exist"));
         assert!(
             PermissionService::check_user_can_view_page(runner.context(), None, &page)
                 .await
