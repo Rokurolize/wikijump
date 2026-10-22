@@ -8,14 +8,16 @@ use cuid2::cuid;
 use deepwell::constants::ADMIN_USER_ID;
 use deepwell::error::ErrorType;
 use deepwell::license::License;
-use deepwell::services::import::{ImportPage, ImportService, ImportSite};
+use deepwell::services::import::{
+    ImportPage, ImportPageRevision, ImportService, ImportSite,
+};
 use deepwell::services::mirror_scope::{
     MirrorScopeService, ReconcileMirrorPages, ReconcilePageDelete, ReconcilePageRename,
     SetMirrorScope,
 };
 use deepwell::services::page::PageService;
 use deepwell::services::{PageRevisionService, RequestContext};
-use deepwell::types::Reference;
+use deepwell::types::{PageRevisionType, Reference};
 use serde_json::json;
 use std::borrow::Cow;
 use time::OffsetDateTime;
@@ -66,13 +68,14 @@ async fn import_mirror_page(
     salt: u32,
 ) -> i64 {
     let page_id = unique_page_id(tag, salt);
+    let slug = format!("reconcile-{label}-{tag}");
     ImportService::add_page(
         runner.context(),
         ImportPage {
             page_id,
             site_id,
             created_at: OffsetDateTime::UNIX_EPOCH,
-            slug: format!("reconcile-{label}-{tag}"),
+            slug: slug.clone(),
             locked: false,
             discussion_thread_id: None,
             meta_tags: vec![],
@@ -81,6 +84,28 @@ async fn import_mirror_page(
     )
     .await
     .expect("mirror page should import");
+    // Production import adds the page row first and its first revision
+    // second; the reconcile tests address pages through that revision.
+    ImportService::add_page_revision(
+        runner.context(),
+        ImportPageRevision {
+            revision_id: page_id + 1_000_000_000,
+            revision_type: PageRevisionType::Create,
+            created_at: OffsetDateTime::UNIX_EPOCH,
+            updated_at: None,
+            revision_number: 0,
+            page_id,
+            site_id,
+            user_id: ADMIN_USER_ID,
+            wikitext: format!("mirror fixture {label}"),
+            comments: "mirror reconcile fixture".to_owned(),
+            title: label.to_owned(),
+            slug,
+            tags: vec![],
+        },
+    )
+    .await
+    .expect("mirror page revision should import");
     page_id
 }
 
