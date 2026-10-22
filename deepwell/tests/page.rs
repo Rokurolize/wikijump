@@ -10686,7 +10686,7 @@ async fn wikidot_user_observation_only_identity_resolves_inline_user() {
         site_id,
         PAGE_SLUG,
         "Fixture Wikidot observation-only user",
-        &source,
+        source,
     )
     .await;
     let saved_page = run_endpoint!(

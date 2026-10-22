@@ -173,7 +173,7 @@ impl MirrorScopeService {
             .unwrap_or(false))
     }
 
-    fn require_scope_record(site_id: i64, exists: bool) -> Result<()> {
+    fn require_scope_record(exists: bool) -> Result<()> {
         if exists {
             return Ok(());
         }
@@ -202,7 +202,7 @@ impl MirrorScopeService {
             .await
             .or_raise(Self::make_error)?
             .is_some();
-        Self::require_scope_record(input.site_id, scope_exists)?;
+        Self::require_scope_record(scope_exists)?;
 
         let page = PageService::get(ctx, input.site_id, input.page.borrow())
             .await
@@ -253,7 +253,6 @@ impl MirrorScopeService {
                             page_id,
                             file: Reference::Id(row.file_id),
                             user_id: actor_user_id,
-                            ip_address: input.ip_address,
                         },
                     )
                     .await
@@ -264,7 +263,7 @@ impl MirrorScopeService {
                                 name: row.name,
                                 op: String::from("tombstone"),
                                 ok: true,
-                                revision_number: Some(output.revision_number),
+                                revision_number: Some(output.file_revision_number),
                                 error: None,
                             });
                         }
@@ -334,19 +333,20 @@ impl MirrorScopeService {
         s3_hash: &[u8],
         size: i64,
     ) -> bool {
-        if let Some(expected_size) = expectation.size {
-            if expected_size != size {
-                return true;
-            }
+        if let Some(expected_size) = expectation.size
+            && expected_size != size
+        {
+            return true;
         }
         if let Some(expected_hex) = &expectation.s3_hash_hex {
             // An undecodable or wrong-length hash is not evidence of a
             // difference, only of an unusable expectation; the name check
             // still governs tombstoning, so this stays safe.
-            if let Ok(expected) = hex::decode(expected_hex.trim()) {
-                if expected.len() == s3_hash.len() && expected != s3_hash {
-                    return true;
-                }
+            if let Ok(expected) = hex::decode(expected_hex.trim())
+                && expected.len() == s3_hash.len()
+                && expected != s3_hash
+            {
+                return true;
             }
         }
         false

@@ -1426,10 +1426,8 @@ fn keeps_displayed_code_asset_references_literal() {
     let mut config = Config::integration_testing();
     config.files_domain = ".wjfiles.localhost".to_owned();
     config.files_domain_no_dot = "wjfiles.localhost".to_owned();
-    let mut body = concat!(
-        r#"<span class="hl-identifier">url(&#39;https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/wl_border.png&#39;)</span>"#,
-    )
-    .to_owned();
+    let mut body = r#"<span class="hl-identifier">url(&#39;https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/wl_border.png&#39;)</span>"#
+        .to_owned();
     let mut styles: Vec<String> = vec![];
 
     RenderService::localize_wikidot_render_output_file_urls(

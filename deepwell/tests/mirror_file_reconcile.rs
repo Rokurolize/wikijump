@@ -202,22 +202,23 @@ async fn insert_local_file(
     .insert(runner.context().transaction())
     .await
     .expect("pending blob fixture should insert");
-    FileService::create(
-        runner.context(),
-        CreateFile {
-            site_id,
-            page_id,
-            name: name.to_owned(),
-            uploaded_blob_id: pending_blob_id,
-            revision_comments: "local fixture, not source data".to_owned(),
-            user_id: ADMIN_USER_ID,
-            bypass_filter: false,
-            ip_address: common::IP_ADDRESS,
-        },
-    )
-    .await
-    .expect("local file should create")
-    .file_id
+    // `CreateFile.direct_upload` is crate-private, so build the input the way
+    // the API does.
+    let input: CreateFile = serde_json::from_value(json!({
+        "site_id": site_id,
+        "page_id": page_id,
+        "name": name,
+        "uploaded_blob_id": pending_blob_id,
+        "revision_comments": "local fixture, not source data",
+        "user_id": ADMIN_USER_ID,
+        "bypass_filter": false,
+        "ip_address": common::IP_ADDRESS,
+    }))
+    .expect("local file input should deserialize");
+    FileService::create(runner.context(), input)
+        .await
+        .expect("local file should create")
+        .file_id
 }
 
 async fn set_scope(runner: &TestRunner, site_id: i64) {
