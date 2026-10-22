@@ -45,8 +45,13 @@ test("stored charset-suffixed MIME resolves to Wikidot labels", () => {
     "application/octet-stream"
   )
   assert.equal(
+    wikidotFileTypeDescription("application/octet-stream; charset=binary"),
+    "application/octet-stream"
+  )
+  assert.equal(wikidotFileTypeDescription("image/webp; charset=binary"), "image/webp")
+  assert.equal(
     wikidotFileTypeDescription("application/pdf; charset=binary"),
-    "application/pdf; charset=binary"
+    "application/pdf"
   )
 })
 
