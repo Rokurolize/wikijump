@@ -2930,10 +2930,7 @@ impl RenderService {
                             return inner.get(0).map_or("", |m| m.as_str()).to_owned();
                         };
 
-                        format!(
-                            "url({}{}){})",
-                            &inner["open"], localized, &inner["close"]
-                        )
+                        format!("url({}{}{})", &inner["open"], localized, &inner["close"])
                     })
                     .into_owned();
 

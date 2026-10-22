@@ -10696,6 +10696,7 @@ async fn wikidot_user_observation_only_identity_resolves_inline_user() {
             "site_id": site_id,
             "session_token": null,
             "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
         }),
     );
     let saved_html = match saved_page {

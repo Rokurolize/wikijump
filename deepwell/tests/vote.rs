@@ -1047,7 +1047,7 @@ async fn upsert_imported_rating_snapshot(
     execute_sql(
         runner,
         &format!(
-            r#"INSERT INTO wikidot_corpus_import_run (import_run_id, site_id, source_branch, source_site, manifest_sha256, manifest_row_count, complete_inventory, state, summary) VALUES ({import_run_id}, {site_id}, 'en', 'scp-wiki', decode(repeat('ab', 32), 'hex'), 1, false, 'done', NULL)"#
+            r#"INSERT INTO wikidot_corpus_import_run (import_run_id, site_id, source_branch, source_site, manifest_sha256, manifest_row_count, complete_inventory, state, summary) VALUES ({import_run_id}, {site_id}, 'en', 'scp-wiki', decode(repeat('ab', 32), 'hex'), 1, false, 'done', '{{}}'::jsonb)"#
         ),
     )
     .await;
@@ -1074,6 +1074,23 @@ async fn count_rows(runner: &TestRunner, table: &str, page_id: i64) -> i64 {
         .expect("row count should return a row")
         .try_get::<i64>("", "count")
         .expect("row count should parse")
+}
+
+async fn count_live_votes(runner: &TestRunner, page_id: i64) -> i64 {
+    let transaction = runner.context().transaction();
+    let statement = Statement::from_string(
+        transaction.get_database_backend(),
+        format!(
+            "SELECT count(*) AS count FROM page_vote WHERE page_id = {page_id} AND deleted_at IS NULL"
+        ),
+    );
+    transaction
+        .query_one_raw(statement)
+        .await
+        .expect("live vote count should succeed")
+        .expect("live vote count should return a row")
+        .try_get::<i64>("", "count")
+        .expect("live vote count should parse")
 }
 
 #[tokio::test]
@@ -1158,9 +1175,11 @@ async fn refresh_to_newer_aggregate_counts_local_vote_once() {
         1,
         "refresh must not append baseline rows",
     );
+    // A changed vote soft-deletes the previous row and inserts the new one,
+    // so exactly one live row remains.
     assert_eq!(
-        count_rows(&runner, "page_vote", page_id).await,
+        count_live_votes(&runner, page_id).await,
         1,
-        "one local vote row must exist",
+        "one live local vote row must exist",
     );
 }
