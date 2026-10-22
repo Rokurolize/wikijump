@@ -4075,6 +4075,70 @@ fn substituted_issue_exact_closed_module_payloads_render_as_literal_text() {
     assert!(html.contains("ListPages"), "{html:?}");
 }
 
+/// Data Form values are page-author-controlled and may be displayed by a
+/// ListPages host through `%%form_data{field}%%` or `%%form_raw{field}%%`.
+/// The #2652 closed-module payload must not reach the page parser raw from
+/// either variable; otherwise the nested ListPages can render the source
+/// page's html block and execute its script on the files origin.
+#[test]
+fn substituted_form_data_values_cannot_form_modules_for_the_page_parser() {
+    let payload = "[[module ListPages category=\"*\" tags=\"+wjpentest\" name=\"wj-pentest-html-payload*\" limit=\"1\" separate=\"false\"]]%%content%%[[/module]]";
+    let mut data_form_values = BTreeMap::new();
+    data_form_values.insert("x".to_owned(), payload.to_owned());
+
+    let page = FoundPageRow {
+        page_id: 1,
+        site_id: 1,
+        title: Some("WJ Pentest Host".to_owned()),
+        alt_title: None,
+        slug: Some("wj-pentest-host".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: None,
+        created_at: None,
+        created_by: None,
+        updated_at: None,
+        updated_by: None,
+        score: None,
+        revision_count: None,
+    };
+    let template = "%%form_data{x}%%|%%form_raw{x}%%";
+    let user_displays = BTreeMap::new();
+    let context =
+        list_pages_substitution_context(20, &user_displays, None, &data_form_values);
+    let substituted = substitute_list_pages_variables(template, &page, 1, 1, &context);
+
+    assert!(!substituted.contains("[["), "{substituted:?}");
+    assert!(!substituted.contains("]]"), "{substituted:?}");
+    assert!(!substituted.contains('"'), "{substituted:?}");
+    assert_eq!(
+        substituted.matches("&#91;&#91;module ListPages").count(),
+        2,
+        "{substituted:?}"
+    );
+    assert!(
+        substituted.contains("&#91;&#91;/module&#93;&#93;"),
+        "{substituted:?}"
+    );
+    assert!(substituted.contains("%%content%%"), "{substituted:?}");
+
+    let compat_html = CompatHtmlFragments::new(template);
+    let compat_text = CompatTextFragments::new(template);
+    let mut source = substituted.clone();
+    ftml::preprocess_for_layout(&mut source, Layout::Wikidot);
+    let tokens = ftml::tokenize(&source);
+    let page_info = fallback_test_page_info("wj-pentest-host", "WJ Pentest Host");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
+    let html = HtmlRender.render(&tree, &page_info, &settings).body;
+    let html = compat_text.restore(&compat_html.restore(&html));
+
+    assert!(!html.contains("list-pages-box"), "{html:?}");
+    assert!(!html.contains("<iframe"), "{html:?}");
+    assert!(!html.contains("html-block"), "{html:?}");
+    assert!(html.contains("ListPages"), "{html:?}");
+}
+
 /// A double quote in a tag or name must not break out of a double-quoted
 /// module attribute such as `[[div class="%%tags%%"]]`: the substituted
 /// text carries no raw quote, and the rendered div keeps the payload inside

@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {currentFullCheckPaths} from '../src/current-full-check-options.mjs';
+import fs from 'node:fs';
+import {currentFullCheckBackend,currentFullCheckPaths} from '../src/current-full-check-options.mjs';
 
 const root='/tmp/isolated-theme-lab';
 const contract={target_site:{origin:'https://scpaiueouiuiuiui.wikijump.localhost:18443'}};
@@ -38,5 +39,77 @@ test('current full check CLI fails before network or output writes without a uni
   const result=spawnSync(process.execPath,[script,...args],{encoding:'utf8',timeout:5000});
   assert.notEqual(result.status,0);
   assert.match(result.stderr,/run-id/u);
+ }
+});
+
+test('full check keeps the shared development backend by default and binds a task backend explicitly',()=>{
+ assert.deepEqual(currentFullCheckBackend({}),{containerName:'wikijump-local-development-deepwell-1',rpcUrl:null});
+ assert.deepEqual(currentFullCheckBackend({backendProject:'wikijump-theme-lab-basalt-current-20261022',rpcUrl:'http://127.0.0.1:3397/jsonrpc'}),
+  {containerName:'wikijump-theme-lab-basalt-current-20261022-deepwell-1',rpcUrl:'http://127.0.0.1:3397/jsonrpc'});
+});
+
+test('full check task backend fails closed on partial, shared, remote, or credentialed targets',()=>{
+ const project='wikijump-theme-lab-basalt-current-20261022';
+ assert.throws(()=>currentFullCheckBackend({backendProject:project}),/together/u);
+ assert.throws(()=>currentFullCheckBackend({rpcUrl:'http://127.0.0.1:3397/jsonrpc'}),/together/u);
+ for(const bad of ['wikijump-local-development','wikijump-standing','wikijump-theme-lab-A','other'])
+  assert.throws(()=>currentFullCheckBackend({backendProject:bad,rpcUrl:'http://127.0.0.1:3397/jsonrpc'}),/task-owned/u,bad);
+ for(const rpc of ['http://127.0.0.1:2747/jsonrpc','https://127.0.0.1:3397/jsonrpc','http://10.0.0.5:3397/jsonrpc','http://user:pw@127.0.0.1:3397/jsonrpc','http://127.0.0.1/jsonrpc','http://127.0.0.1:3397/other','http://127.0.0.1:3397/jsonrpc?x=1','nope'])
+  assert.throws(()=>currentFullCheckBackend({backendProject:project,rpcUrl:rpc}),/rpc-url|loopback|shared/u,rpc);
+});
+
+test('current full check reads the token from the bound backend and forwards its RPC URL to the daemon',()=>{
+ const source=fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../scripts/run-current-full-check.mjs'),'utf8');
+ assert.match(source,/execFileSync\('docker',\['inspect',backend\.containerName,/u);
+ assert.doesNotMatch(source,/'inspect','wikijump-local-development-deepwell-1'/u);
+ assert.match(source,/daemonArgs\.push\('--rpc-url',backend\.rpcUrl\)/u);
+});
+
+test('full check CLI rejects a partial or unbound backend relay before any capture work',()=>{
+ const script=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../scripts/run-current-full-check.mjs');
+ const base=['basalt','--run-id=valid-run-id'];
+ const project='--backend-project=wikijump-theme-lab-basalt-current-20261022';
+ for(const [args,pattern] of [
+  [[project],/together/u],
+  [['--rpc-url=http://127.0.0.1:3397/jsonrpc'],/together/u],
+  [[project,'--rpc-url=http://127.0.0.1:2747/jsonrpc'],/shared development Deepwell/u],
+  [[project,'--rpc-url=https://127.0.0.1:3397/jsonrpc'],/loopback/u],
+ ]){
+  const result=spawnSync(process.execPath,[script,...base,...args],{encoding:'utf8',timeout:10000});
+  assert.notEqual(result.status,0,args.join(' '));
+  assert.match(result.stderr,pattern,args.join(' '));
+ }
+});
+
+test('full check CLI accepts only the shared or a task-owned run contract',()=>{
+ const script=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../scripts/run-current-full-check.mjs');
+ const base=['basalt','--run-id=valid-run-id'];
+ for(const [contract,pattern] of [
+  ['--run-contract=/etc/hosts',/must stay inside Theme Lab/u],
+  ['--run-contract=../../../../etc/hosts',/must stay inside Theme Lab/u],
+  ['--run-contract=ports/current-acceptance/notes.json',/must be the shared/u],
+ ]){
+  const result=spawnSync(process.execPath,[script,...base,contract],{encoding:'utf8',timeout:10000});
+  assert.notEqual(result.status,0,contract);
+  assert.match(result.stderr,pattern,contract);
+ }
+});
+
+test('live-state CLI validates --rpc-url and requires --backend-project with it',()=>{
+ const script=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../scripts/theme-scenario-live-state.mjs');
+ const project='wikijump-theme-lab-basalt-current-20261022';
+ const file='/nonexistent-scenario.json';
+ for(const [args,pattern] of [
+  [['--file',file,'--rpc-url','http://127.0.0.1:3397/jsonrpc'],/together/u],
+  [['--file',file,'--backend-project',project],/together/u],
+  [['--file',file,'--backend-project',project,'--rpc-url','http://127.0.0.1:2747/jsonrpc'],/shared development Deepwell/u],
+  [['--file',file,'--backend-project',project,'--rpc-url','http://10.0.0.5:3397/jsonrpc'],/loopback/u],
+  [['--file',file,'--backend-project',project,'--rpc-url','http://user:pw@127.0.0.1:3397/jsonrpc'],/loopback/u],
+  [['--file',file,'--rpc-url'],/needs a value/u],
+  [['--file',file,'--backend-project','wikijump-local-development','--rpc-url','http://127.0.0.1:3397/jsonrpc'],/task-owned/u],
+ ]){
+  const result=spawnSync(process.execPath,[script,...args],{encoding:'utf8',timeout:10000});
+  assert.notEqual(result.status,0,args.join(' '));
+  assert.match(result.stderr,pattern,args.join(' '));
  }
 });

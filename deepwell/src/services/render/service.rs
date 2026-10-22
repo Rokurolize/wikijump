@@ -21,6 +21,8 @@
 mod local_code_urls;
 mod native_list;
 mod post_render_compat;
+mod wikidot_alignment;
+mod wikidot_direct_iframe;
 mod wikidot_preprocess;
 
 pub(super) use native_list::{
@@ -176,6 +178,7 @@ use std::ops::Range;
 use std::pin::Pin;
 use std::sync::LazyLock;
 use std::time::Instant;
+use tokio::sync::oneshot;
 use tokio::task;
 use tokio::time::timeout;
 
@@ -298,7 +301,10 @@ struct ExpandedRenderWikitext {
 /// The registries must stay alive until every rendered body, HTML block, and
 /// code block has crossed the Wikidot restoration boundary.  Callers borrow
 /// the registries only inside [`RenderProtectionBundle::restore`]; dropping the bundle without
-/// that consuming handoff is a programming error.
+/// that consuming handoff is a programming error and panics.  Error paths that
+/// abandon an unrestored bundle must call [`RenderProtectionBundle::defuse`]
+/// first, so the original error propagates instead of being masked by a Drop
+/// panic (see #2686).
 #[must_use = "restore the Wikidot protection bundle before dropping it"]
 #[derive(Debug)]
 pub(super) struct RenderProtectionBundle {
@@ -344,6 +350,14 @@ impl RenderProtectionBundle {
         let result = restore(&mut self);
         self.restored = true;
         result
+    }
+
+    /// Mark the bundle as intentionally abandoned on an error path.
+    ///
+    /// Call this before returning an error while the bundle is still unrestored,
+    /// so that dropping it does not panic and mask the original error.
+    fn defuse(&mut self) {
+        self.restored = true;
     }
 
     /// Transfer registries to the replay transport representation.
@@ -395,9 +409,12 @@ impl RenderProtectionBundle {
 
 impl Drop for RenderProtectionBundle {
     fn drop(&mut self) {
-        if !self.restored && !std::thread::panicking() {
-            panic!("render protection bundle dropped before restoration");
+        if self.restored || std::thread::panicking() {
+            return;
         }
+        // Reaching here means a success path forgot to restore the bundle.
+        // Error paths call `defuse` first, so they never reach this panic.
+        panic!("render protection bundle dropped before restoration");
     }
 }
 
@@ -504,18 +521,6 @@ pub(super) static GENERATED_LISTPAGES_HTML_REGEX: LazyLock<Regex> = LazyLock::ne
     )
     .unwrap()
 });
-static WIKIDOT_DIRECT_HTML_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?is)^\s*(?P<iframe><iframe\b(?P<attrs>[^<>]*)>\s*</iframe\s*>)\s*$"#)
-        .expect("direct Wikidot HTML iframe expression is valid")
-});
-static WIKIDOT_DIRECT_HTML_IFRAME_ATTRIBUTE_REGEX: LazyLock<Regex> = LazyLock::new(
-    || {
-        Regex::new(
-            r#"(?is)\s+(?P<name>[a-z][a-z0-9:-]*)(?:\s*=\s*(?:"[^"<>]*"|'[^'<>]*'|[^\s"'=<>`]+))?"#,
-        )
-        .expect("direct Wikidot HTML iframe attribute expression is valid")
-    },
-);
 
 #[cfg(test)]
 static GENERATED_COMPAT_TABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -1424,6 +1429,12 @@ impl RenderService {
             MetacomponentSourceContext::RootNonComponent
         };
         select_metacomponent_documentation(&mut wikitext, metacomponent_context);
+        if settings.layout.legacy() {
+            // Wikidot trims the leading whitespace of a page source before it
+            // parses. The trim belongs to the page source, so it runs before
+            // the include expansion fills the document.
+            Self::trim_wikidot_document_leading_whitespace(&mut wikitext);
+        }
         let mut wikidot_compat_text = CompatTextFragments::new(&wikitext);
         let mut included_pages = {
             let _stage = StageGuard::new(trace, CorpusRenderStage::ImagePrelude);
@@ -1462,6 +1473,16 @@ impl RenderService {
         wikitext = expanded_wikitext;
         included_pages.extend(expanded_included_pages);
         include_budget.consume(expanded_include_count);
+        // Pair alignment markers here, on the whole include-expanded
+        // document, before secondary-module expansion runs its scope scans
+        // (notably the Rate module body scan): those scans predate marker
+        // pairing and must see the same divs the pre-#2596 per-source
+        // rewrite produced. The outer-prep call below stays as the pairing
+        // point for corpus-replay documents and as a no-op second pass.
+        Self::normalize_wikidot_alignment_markers(
+            &mut wikitext,
+            &mut wikidot_compat_text,
+        );
         {
             let _stage = StageGuard::new(trace, CorpusRenderStage::PostInclude);
             // Include-branch cleanup treats a standalone `[!-- --]` line as
@@ -1762,6 +1783,12 @@ impl RenderService {
                 page_info,
                 &mut wikidot_compat_text,
             );
+            // Alignment markers pair across include boundaries, so their
+            // ownership is decided on the whole expanded document.
+            Self::normalize_wikidot_alignment_markers(
+                &mut expanded.wikitext,
+                &mut wikidot_compat_text,
+            );
             Self::normalize_wikidot_cross_closed_div_collapsibles(&mut expanded.wikitext);
             Self::normalize_wikidot_div_style_url_quotes(&mut expanded.wikitext);
             Self::protect_wikidot_unbound_include_variables(
@@ -1908,57 +1935,6 @@ impl RenderService {
         body
     }
 
-    fn wikidot_direct_html_iframe(html_block: &str) -> Option<&str> {
-        const ALLOWED_ATTRIBUTES: &[&str] = &[
-            "align",
-            "allow",
-            "allowfullscreen",
-            "class",
-            "frameborder",
-            "height",
-            "loading",
-            "referrerpolicy",
-            "sandbox",
-            "scrolling",
-            "src",
-            "style",
-            "title",
-            "width",
-        ];
-
-        let captures = WIKIDOT_DIRECT_HTML_IFRAME_REGEX.captures(html_block)?;
-        let attributes = captures
-            .name("attrs")
-            .expect("direct iframe capture has attributes")
-            .as_str();
-        let mut cursor = 0;
-        let mut has_attribute = false;
-        for attribute in
-            WIKIDOT_DIRECT_HTML_IFRAME_ATTRIBUTE_REGEX.captures_iter(attributes)
-        {
-            let whole = attribute
-                .get(0)
-                .expect("direct iframe attribute capture has whole match");
-            if !attributes[cursor..whole.start()].trim().is_empty() {
-                return None;
-            }
-            let name = attribute
-                .name("name")
-                .expect("direct iframe attribute capture has name")
-                .as_str()
-                .to_ascii_lowercase();
-            if !ALLOWED_ATTRIBUTES.contains(&name.as_str()) {
-                return None;
-            }
-            has_attribute = true;
-            cursor = whole.end();
-        }
-        if !attributes[cursor..].trim().is_empty() || !has_attribute {
-            return None;
-        }
-        captures.name("iframe").map(|iframe| iframe.as_str())
-    }
-
     pub(super) async fn render_inner(
         ctx: &ServiceContext<'_>,
         wikitext: String,
@@ -2068,13 +2044,18 @@ impl RenderService {
 
     pub(super) async fn render_wikidot_syntax_inner(
         ctx: &ServiceContext<'_>,
-        wikitext: String,
+        mut wikitext: String,
         page_info: &PageInfo<'_>,
         settings: &WikitextSettings,
         current_site_id: i64,
         viewer_user_id: Option<i64>,
         current_site: SiteModel,
     ) -> Result<RenderInnerOutput> {
+        if settings.layout.legacy() {
+            // This path renders the submitted source without expanding its
+            // includes, so the source trim belongs here as well.
+            Self::trim_wikidot_document_leading_whitespace(&mut wikitext);
+        }
         Self::render_inner_expanded(
             ctx,
             ExpandedRenderWikitext {
@@ -2161,7 +2142,7 @@ impl RenderService {
                 wikitext,
                 included_pages,
                 url_offset_list_pages_content_bytes: _,
-                protection,
+                mut protection,
                 compatibility_fallback: _,
                 timings: _,
             } = outer;
@@ -2178,7 +2159,8 @@ impl RenderService {
                         viewer_user_id,
                     )
                     .await
-                    .or_raise(make_error)?
+                    .or_raise(make_error)
+                    .inspect_err(|_| protection.defuse())?
                 } else {
                     WikidotCompatLinkTitleMap::new()
                 }
@@ -2408,7 +2390,8 @@ impl RenderService {
         let parse_settings = render_settings.clone();
         let parse_queued_at = parse_worker_trace.as_ref().map(|_| Instant::now());
         let parse_started = Instant::now();
-        let parse_task = task::spawn_blocking(move || {
+        let (parse_tx, mut parse_rx) = oneshot::channel();
+        task::spawn_blocking(move || {
             let trace = parse_worker_trace
                 .as_ref()
                 .map(|(trace, scope)| (trace, *scope));
@@ -2428,10 +2411,22 @@ impl RenderService {
                 &mut parsed.tree,
                 parsed.prepared.protection.compat_text(),
             );
-            parsed
+            // If the caller already gave up, hand the parse back so its unrestored
+            // bundle is defused here instead of being dropped by the runtime.
+            if let Err(mut parsed) = parse_tx.send(parsed) {
+                parsed.prepared.protection.defuse();
+            }
         });
-        let parsed = timeout(render_timeout, parse_task)
-            .await
+        let parse_outcome = timeout(render_timeout, &mut parse_rx).await;
+        if parse_outcome.is_err() {
+            // Close the channel, then reclaim a parse that completed just after the
+            // timeout so its unrestored bundle is defused rather than dropped.
+            parse_rx.close();
+            if let Ok(mut late) = parse_rx.try_recv() {
+                late.prepared.protection.defuse();
+            }
+        }
+        let mut parsed = parse_outcome
             .or_raise(|| {
                 Error::new("failed to parse due to timeout", ErrorType::RenderTimeout)
             })?
@@ -2449,16 +2444,16 @@ impl RenderService {
                     viewer_user_id,
                 )
                 .await
-                .or_raise(make_error)?,
+                .or_raise(make_error)
+                .inspect_err(|_| parsed.prepared.protection.defuse())?,
             ),
             None => None,
         };
         let user_info = match observed_user_info {
             Some(users) => UserInfoSnapshot::from_observed(users),
-            None => {
-                UserInfoSnapshot::load(ctx, &user_references, render_settings.layout)
-                    .await?
-            }
+            None => UserInfoSnapshot::load(ctx, &user_references, render_settings.layout)
+                .await
+                .inspect_err(|_| parsed.prepared.protection.defuse())?,
         };
         let render_queued_at = worker_trace.as_ref().map(|_| Instant::now());
         let render_task = task::spawn_blocking(move || {
@@ -3035,7 +3030,6 @@ impl RenderService {
         Box::pin(async move {
             let mut wikitext = wikitext;
             Self::normalize_wikidot_multiline_includes(&mut wikitext);
-            Self::normalize_wikidot_alignment_markers(&mut wikitext);
             if expansion_context.settings.layout.legacy() {
                 expand_malformed_include_targets(&mut wikitext);
             }

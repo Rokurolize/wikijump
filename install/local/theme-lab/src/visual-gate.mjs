@@ -129,8 +129,8 @@ export const visualGateSelectorsFor=(row,record=null)=>{
  if(key==='shell.footer-license.scrolled-bottom')return ['#footer','#license-area'];
  if(key.startsWith('page.history'))return key.endsWith('diff')?['.revision-diff']:['.page-history'];
  if(key==='page.source.open')return ['.page-source','#action-area'];
- if(key==='page.files.horizontal-actions')return ['.file-list-scroll','.file-list'];
- if(key==='page.files.list')return ['.file-list'];
+ if(key==='page.files.horizontal-actions')return ['.file-list-scroll','table.page-files'];
+ if(key==='page.files.list')return ['table.page-files'];
  if(key.startsWith('page.options.'))return ['#page-options-bottom','#page-options-bottom-2'];
  if(key.startsWith('page.tags.'))return ['#action-area','#action-area input[type="text"]'];
  if(key==='page.edit.editor')return ['#action-area','textarea.editor-wikitext','textarea[name="wikitext"]'];

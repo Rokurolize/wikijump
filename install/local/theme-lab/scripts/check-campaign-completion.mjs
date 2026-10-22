@@ -2,8 +2,9 @@
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {checkCampaignCompletion} from '../src/campaign-completion.mjs';
+import {runContractArgument} from '../src/current-run-contract-option.mjs';
 try {
-  const result = checkCampaignCompletion(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'));
+  const result = checkCampaignCompletion(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'), {sigma9RunContract: runContractArgument(process.argv.slice(2))});
   console.log(JSON.stringify({command: 'current-campaign-completion', result: result.status === 'pass' ? 'CURRENT CAMPAIGN ACCEPTED' : 'CURRENT CAMPAIGN NOT ACCEPTED', overall_acceptance: {status: result.status}, ...result}, null, 2));
   process.exitCode = result.status === 'pass' ? 0 : result.status === 'inconclusive' ? 2 : 1;
 } catch (error) {

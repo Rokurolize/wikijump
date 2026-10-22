@@ -435,6 +435,8 @@ pub struct PageData {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct FileData {
+    // Deserialized from the Deepwell response; only the test assertions read it.
+    #[cfg_attr(not(test), allow(dead_code))]
     pub file_id: i64,
     pub revision_id: i64,
     #[serde(with = "time::serde::rfc3339")]

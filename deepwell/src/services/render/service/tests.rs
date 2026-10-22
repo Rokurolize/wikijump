@@ -68,7 +68,8 @@ use super::{
     MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER, MAX_LISTPAGES_RENDER_OFFSET,
     MAX_LISTPAGES_RENDER_SCAN_ROWS, MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS,
     MIN_URL_OFFSET_LISTPAGES_CONTENT_BYTES, MIN_URL_OFFSET_LISTPAGES_RENDER_TIMEOUT_SECS,
-    PreparedIncluder, RenderContext, RenderService, WIKIDOT_COLOR_SPAN_SENTINEL_PREFIX,
+    PreparedIncluder, ProtectedWikidotColorSpans, RenderContext, RenderProtectionBundle,
+    RenderService, WIKIDOT_COLOR_SPAN_SENTINEL_PREFIX,
     WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX, WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX,
     WIKIDOT_INLINE_HTML_SENTINEL_PREFIX, WIKIDOT_WIKIPEDIA_LINK_SENTINEL_PREFIX,
     WikidotCompatLinkTitleMap, extract_css_modules as extract_css_modules_with_registry,
@@ -81,6 +82,7 @@ use super::{
 };
 use crate::config::Config;
 use crate::constants::ADMIN_USER_ID;
+use crate::error::prelude::{Error, ErrorType};
 use crate::models::site::Model as SiteModel;
 use crate::services::PageExistenceSnapshot;
 use crate::services::page_query::{
@@ -362,6 +364,85 @@ fn compatibility_protection_preserves_ftml_lexical_ownership() {
             "{source:?}",
         );
     }
+}
+
+/// Render a page body through the Wikidot source trim, the render
+/// preparation, and the FTML pipeline, in the production order.
+fn render_wikidot_trimmed_page_body(wikitext: &str) -> String {
+    let page_info = fallback_test_page_info("scp-7243", "SCP-7243");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut source = wikitext.to_owned();
+    RenderService::trim_wikidot_document_leading_whitespace(&mut source);
+    let outer = RenderService::prepare_outer_render_wikitext(
+        super::ExpandedRenderWikitext {
+            theme_previewer_blank: false,
+            wikidot_compat_html: CompatHtmlFragments::new(&source),
+            wikidot_compat_text: CompatTextFragments::new(&source),
+            wikitext: source,
+            included_pages: Vec::new(),
+            expanded_include_count: 0,
+            url_offset_list_pages_content_bytes: 0,
+            runtime_css_insertions: Vec::new(),
+        },
+        &page_info,
+        &settings,
+    );
+    let inner = RenderService::prepare_inner_render_wikitext(outer, &settings);
+    let tokens = ftml::tokenize(&inner.wikitext);
+    let (tree, errors) = ftml::parse(&tokens, &page_info, &settings).into();
+    assert!(errors.is_empty(), "{wikitext:?}: {errors:#?}");
+    let html = HtmlRender.render(&tree, &page_info, &settings).body;
+    inner
+        .protection
+        .restore(|protection| protection.compat_text().restore(&html))
+}
+
+/// Wikidot trims the leading whitespace of a page source before it parses, so
+/// an indented first block head owns its block.
+///
+/// Wikidot observations: anonymous PagePreviewModule, scp-wiki, 2026-10-19.
+#[test]
+fn trims_the_leading_whitespace_of_a_page_source() {
+    for (source, expected) in [
+        (
+            " * a\n * b\n\nz",
+            "<ul>\n<li>a\n<ul>\n<li>b</li>\n</ul>\n</li>\n</ul><p>z</p>",
+        ),
+        (
+            "\n\n  \n * a\n * b\n\nz",
+            "<ul>\n<li>a\n<ul>\n<li>b</li>\n</ul>\n</li>\n</ul><p>z</p>",
+        ),
+        (
+            "  + Heading\n\nz",
+            "<h1 id=\"toc0\"><span>Heading</span></h1><p>z</p>",
+        ),
+        (
+            " > quoted\n\nz",
+            "<blockquote><p>quoted</p></blockquote><p>z</p>",
+        ),
+        ("   ----\n\nz", "<hr><p>z</p>"),
+    ] {
+        assert_eq!(
+            render_wikidot_trimmed_page_body(source),
+            expected,
+            "{source:?}",
+        );
+    }
+}
+
+/// The trim only covers the start of the page source, so an indented marker
+/// after other content stays literal text.
+#[test]
+fn keeps_indented_markers_after_content_literal() {
+    assert_eq!(
+        render_wikidot_trimmed_page_body("text\n * a\n * b\n\nz"),
+        "<p>text<br>\n* a<br>\n* b</p><p>z</p>",
+    );
+
+    assert_eq!(
+        render_wikidot_trimmed_page_body("[!-- c --]\n * a"),
+        "<p>* a</p>",
+    );
 }
 
 fn render_wikidot_fallback_after_generated_compat_restore(wikitext: &str) -> String {
@@ -3739,4 +3820,40 @@ fn wikidot_site(slug: &str, preferred_domain: Option<&str>) -> SiteModel {
         license: License::CcBySa30,
         forum_max_nest_level: 10,
     }
+}
+
+fn empty_protection_bundle() -> RenderProtectionBundle {
+    RenderProtectionBundle::new(
+        Vec::new(),
+        Vec::new(),
+        ProtectedWikidotColorSpans::new(""),
+        CompatHtmlFragments::new(""),
+        CompatTextFragments::new(""),
+        Vec::new(),
+    )
+}
+
+#[test]
+fn render_protection_bundle_drop_propagates_errors() {
+    // Regression test for #2686: every `?` between bundle creation and
+    // restoration used to turn the original Err into a Drop panic, hiding the
+    // real failure. An error path must defuse the unrestored bundle first.
+    fn run_with_forced_error() -> Result<(), Box<Error>> {
+        let mut bundle = empty_protection_bundle();
+        Err::<(), _>(Error::new("forced render failure", ErrorType::Render))
+            .inspect_err(|_| bundle.defuse())?;
+        Ok(())
+    }
+
+    let error = run_with_forced_error()
+        .expect_err("the forced error must propagate, not panic in Drop");
+    assert_eq!(error.message, "forced render failure");
+    assert!(matches!(error.error_type, ErrorType::Render));
+}
+
+#[test]
+fn render_protection_bundle_restore_consumes_on_success_path() {
+    let restored =
+        empty_protection_bundle().restore(|protection| protection.inline_html().len());
+    assert_eq!(restored, 0);
 }

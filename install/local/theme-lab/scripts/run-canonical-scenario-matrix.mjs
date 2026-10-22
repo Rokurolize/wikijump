@@ -6,12 +6,13 @@ import {fileURLToPath} from 'node:url';
 
 import {runThemeScenarioMatrix} from '../src/theme-test-matrix.mjs';
 import {themeScenarioConfigForPackage} from '../src/theme-scenario-factory.mjs';
+import {runContractArgument} from '../src/current-run-contract-option.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const args=process.argv.slice(2);const value=name=>{const i=args.indexOf(name);return i>=0?args[i+1]:null};
 for(const key of ['--package','--generation','--site-state-receipt','--authenticated-storage','--output'])if(!value(key))throw new Error(`Missing ${key}`);
 const packageName=value('--package'),generation=value('--generation');
-const config=themeScenarioConfigForPackage(root,{generation,packageName});
+const config=themeScenarioConfigForPackage(root,{generation,packageName,runContract:runContractArgument(args)});
 const siteStateReceipt=JSON.parse(fs.readFileSync(path.resolve(value('--site-state-receipt')),'utf8'));
 const {storage:authenticatedStorage}=await loadThemeLabAuthenticatedStorage(value('--authenticated-storage'));
 const renderedShell=value('--rendered-shell')?JSON.parse(fs.readFileSync(path.resolve(value('--rendered-shell')),'utf8')):null;

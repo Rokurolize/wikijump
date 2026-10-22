@@ -120,3 +120,34 @@ test('a native target-baseline search proof applies only to its exact current mi
  document.target_baseline.source_manifest.path='source.html';save();assert.ok(validateSemanticSourceAuthority(root,audit).length);
  }finally{fs.rmSync(root,{recursive:true,force:true})}
 });
+
+test('retained source authority missing from the checkout is served from the shared root only when named', () => {
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'semantic-source-shared-'));
+  const root = path.join(base, 'theme-lab'), shared = path.join(base, 'shared');
+  const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+  const url = 'https://scp-wiki.wikidot.com/theme:example', sourceHash = 'a'.repeat(64);
+  const size = {width: 1440, height: 1000}, html = '<form>source fixture</form>', dir = 'ports/authority-evidence/search';
+  try {
+    fs.mkdirSync(path.join(root, 'ports/example'), {recursive: true});
+    fs.mkdirSync(path.join(shared, 'authority-evidence/search'), {recursive: true});
+    fs.writeFileSync(path.join(root, 'ports/example/manifest.json'), JSON.stringify({reference_url: url, en_source_sha256: sourceHash}));
+    const put = (name, content) => fs.writeFileSync(path.join(shared, 'authority-evidence/search', name), content);
+    put('source.html', html); put('measurement.mjs', 'source measurement fixture');
+    const document = {schema: 'theme_lab_wikidot_search_control.v1', theme: 'example', source_url: url, source_sha256: sourceHash,
+      public_writes: 0, external_requests_sent: 0, offline: true, original_html_sha256: sha(html), replay_entry: '/o/' + sha(html),
+      artifacts: [{path: `${dir}/source.html`, sha256: sha(html)}], measurement_programs: [{path: `${dir}/measurement.mjs`, sha256: sha('source measurement fixture')}],
+      source_measurements: [{viewport: 'desktop', viewport_size: size, source_sha256: sourceHash, original_html_sha256: sha(html), loaded: {offline: true},
+        after_focus: {display: 'none', value: 'Search this site'}, navigation: '/search:site/q/Search%20this%20site',
+        handler: {search: 'native submit', events: [{type: 'submit', fn: 'native submit'}]}}]};
+    const bytes = JSON.stringify(document); put('receipt.json', bytes);
+    const audit = {records: [{theme: 'example', viewport: 'desktop', viewport_size: size,
+      action_contract_observation: {mode: 'source-hidden-submit', source_authority: {path: `${dir}/receipt.json`, sha256: sha(bytes)}}}]};
+    assert.ok(validateSemanticSourceAuthority(root, audit).length, 'an isolated root gets no implicit fallback');
+    assert.deepEqual(validateSemanticSourceAuthority(root, audit, {sharedRoot: shared}), []);
+    put('source.html', 'changed source');
+    assert.ok(validateSemanticSourceAuthority(root, audit, {sharedRoot: shared}).length, 'a hash mismatch in the shared root is rejected');
+    put('source.html', html);
+    audit.records[0].action_contract_observation.source_authority.path = `${dir}/../../../outside.txt`;
+    assert.ok(validateSemanticSourceAuthority(root, audit, {sharedRoot: shared}).length, 'traversal is rejected');
+  } finally { fs.rmSync(base, {recursive: true, force: true}); }
+});

@@ -549,3 +549,27 @@ test('promotion rejects a maintained package directory symlink outside ports',()
   const checked=checkCampaignCompletion(mock.root);assert.equal(checked.status,'fail');assert.ok(checked.failures.some(value=>/escapes ports root|symlink/u.test(value)));
  }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
 });
+
+test('an explicit run contract that the receipt does not bind is rejected even when well formed',()=>{
+ const mock=mockCampaign();try{
+  const shared=JSON.parse(fs.readFileSync(path.join(mock.root,'ports/current-acceptance/run-contract.json'),'utf8'));
+  const taskRelative=mock.write('ports/current-acceptance/run-contract-explicit-check.json',{...shared,schema:'scp_jp_interactive_acceptance_run.v1',artifact_namespace:'current-acceptance/sigma9/explicit-check'}).path;
+  const checked=checkCampaignCompletion(mock.root,{sigma9RunContract:taskRelative});
+  assert.notEqual(checked.status,'pass');
+  assert.ok(checked.failures.some(value=>value.includes('not bound to the explicitly supplied run contract')));
+ }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
+});
+
+test('a missing explicit run contract is rejected instead of falling back to the shared contract',()=>{
+ const mock=mockCampaign();try{
+  assert.throws(()=>checkCampaignCompletion(mock.root,{sigma9RunContract:'ports/current-acceptance/run-contract-absent-check.json'}),/ENOENT|Task-owned|no such file|Current browser run contract/iu);
+ }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
+});
+
+test('a receipt bound to a task-owned run contract is rejected when no contract is named',()=>{
+ const mock=mockCampaign();try{
+  mock.document.run_contract={path:'ports/current-acceptance/run-contract-explicit-check.json',sha256:'a'.repeat(64)};
+  mock.save();
+  assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('bound to a task-owned run contract')));
+ }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
+});

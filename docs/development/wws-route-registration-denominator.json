@@ -5,8 +5,8 @@
     "inputs": [
       {
         "path": "deepwell/Cargo.lock",
-        "git_blob": "8140328883eb6dba53c83625f3ac044293520883",
-        "sha256": "9b107b03bfd103c48cce4bf846b2c6beb99cefefb47e2b875066ef84d24b08a8"
+        "git_blob": "700331cb89ce65abe76b337a1055bca35f4c1737",
+        "sha256": "d79ed6c9128bad31041999e205f3d6cbe1440136a14bfcb1c974b867665d9313"
       },
       {
         "path": "deepwell/Cargo.toml",
@@ -55,8 +55,8 @@
       },
       {
         "path": "wws/Cargo.lock",
-        "git_blob": "dba625e4bf5d89a1843b640e03ec91ff996f4464",
-        "sha256": "ef4c58f4a8516c6a3cfb916b4373574f1f7d3692f9bd569db7326aa2c0584a57"
+        "git_blob": "7652d2941125fb696f99ef34487b5c600ad681da",
+        "sha256": "d69d13d9e5323ab3109fe3caa3f0fb5fecab99eab170660681d1859ae72743eb"
       },
       {
         "path": "wws/Cargo.toml",
@@ -65,8 +65,8 @@
       },
       {
         "path": "wws/src/deepwell.rs",
-        "git_blob": "63d90d03a7eebf394cae3d54671e1842078cc7a1",
-        "sha256": "c2e522bcc5c95966565adbb7e77904f8db5e25290d26baccdc1fc089e10019f0"
+        "git_blob": "581e5abc925f18d6779a34c7b54b943887a329f0",
+        "sha256": "2d2cec493a593b0a047c7eba10415ca09c0154305a7f4d26ccd24a250ba84ddf"
       },
       {
         "path": "wws/src/handler/avatar.rs",
@@ -80,8 +80,8 @@
       },
       {
         "path": "wws/src/handler/file.rs",
-        "git_blob": "b7a6a6766a0175e51c324fb762478e58aca3ba1d",
-        "sha256": "c24e4329e813c66639fe14d1a6edf32f9e338c305f6c011ff635fde99018cfb2"
+        "git_blob": "f51e1d0466be22049115043280a9e7ea5a5295cb",
+        "sha256": "23345ab3c416a84e6ad1227f99b71343056dadfbb5ba426facb0e3444192f78c"
       },
       {
         "path": "wws/src/handler/misc.rs",
@@ -105,8 +105,8 @@
       },
       {
         "path": "wws/src/handler/text_block.rs",
-        "git_blob": "95ce8cca1410e984f8a2664a867ed185b31e6578",
-        "sha256": "0c62286cf7e4623e9077c235c300484a9ecf8f4184ef6c04f0eb9a45bf241e51"
+        "git_blob": "f9c1ad872e4fd5ead4002a5ba9f2e9517dff67d8",
+        "sha256": "56b6ad93f3632669c17ae9d1150fd4734a5f3c744c8bb00d761207315a0ebbed"
       },
       {
         "path": "wws/src/handler/well_known.rs",
@@ -389,7 +389,7 @@
       "registered_handler_symbol": "handle_code_block",
       "handler_definition_path": "wws/src/handler/text_block.rs",
       "route_registration_reference": "wws/src/route.rs#L95",
-      "handler_definition_reference": "wws/src/handler/text_block.rs#L136",
+      "handler_definition_reference": "wws/src/handler/text_block.rs#L135",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -422,7 +422,7 @@
       "registered_handler_symbol": "handle_html_block",
       "handler_definition_path": "wws/src/handler/text_block.rs",
       "route_registration_reference": "wws/src/route.rs#L97",
-      "handler_definition_reference": "wws/src/handler/text_block.rs#L46",
+      "handler_definition_reference": "wws/src/handler/text_block.rs#L45",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -488,7 +488,7 @@
       "registered_handler_symbol": "handle_html_terminal",
       "handler_definition_path": "wws/src/handler/text_block.rs",
       "route_registration_reference": "wws/src/route.rs#L50",
-      "handler_definition_reference": "wws/src/handler/text_block.rs#L68",
+      "handler_definition_reference": "wws/src/handler/text_block.rs#L67",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },

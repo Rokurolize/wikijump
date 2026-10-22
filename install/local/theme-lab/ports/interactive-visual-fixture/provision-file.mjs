@@ -48,8 +48,8 @@ try{
  await page.locator('#login button[type=submit]').click();
  await page.waitForFunction(()=>!document.querySelector('#login'));
  await page.goto(fixture,{waitUntil:'domcontentloaded'});await page.waitForTimeout(1100);
- await page.locator('#files-button').click();await page.locator('.file-list').waitFor();
- const row=page.locator('.file-row').filter({hasText:filename});
+ await page.locator('#files-button').click();await page.locator('.file-list, table.page-files').first().waitFor();
+ const row=page.locator('tr[id^="file-row-"], .file-row').filter({hasText:filename});
  if(process.argv.includes('--remove')){
  if(await row.count()){
    await row.locator('a').last().click();
@@ -57,7 +57,11 @@ try{
   }
   console.log(JSON.stringify({fixture_file:filename,operation:'removed',remaining:await row.count()}));
  }else if(!(await row.count())){
-  const uploadAction=page.locator('.file-action button.upload-file, .file-action input[type=button], .file-panel .buttons input[type=button]').first();
+  // Current Framerail exposes the form behind #show-upload-button; the legacy
+  // selectors remain for older panels (they also match the Restore button, so
+  // the explicit button must win).
+  const showUpload=page.locator('#show-upload-button');
+  const uploadAction=await showUpload.count()?showUpload:page.locator('.file-action button.upload-file, .file-action input[type=button], .file-panel .buttons input[type=button]').first();
   await uploadAction.waitFor({state:'visible'});await uploadAction.click();await page.locator('#file-upload input[type=file]').waitFor();
   await page.locator('#file-upload input[type=file]').setInputFiles({name:filename,mimeType:'text/plain',buffer:Buffer.from('日本語の長いファイル名と添付欄のcontrast、折返し、control幅を確認するrun-owned file fixtureです。\n')});
   await page.locator('#file-upload input[name=name]').fill(filename);
