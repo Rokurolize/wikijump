@@ -386,6 +386,28 @@ known generated locale installs (`locales/typed/node_modules` and
 `locales/validator/target`); actual locale source and unexpected symlinks
 remain strict fingerprint inputs.
 
+The Sigma-10 migration contract has a sibling command. It measures the same
+task runtime and writes nothing with `--check-only=true`:
+
+```sh
+node scripts/prepare-sigma10-runtime-contract.mjs \
+  --runtime-repo=/absolute/path/to/runtime-checkout \
+  --required-head=<exact-40-character-git-commit> \
+  --run-id=basalt-current-20261022 --port=3396 \
+  --backend-project=wikijump-theme-lab-<namespace> --check-only=true
+```
+
+Without `--check-only=true` it needs an explicit `--output` equal to the
+canonical `sigma10-migration/current-campaign/run-contract-<run-id>.json`
+(the only path the completion gate accepts). It creates that file exclusively,
+and removes it if `validateCurrentSigma10Contract` rejects it. The builder
+starts from the sealed `e56609...` Sigma-10 copy, regenerates candidate
+identities from current bytes, verifies frozen authority, saved Credit and
+fixture hashes against disk, and refuses when the frozen publication candidate
+set does not validate. It never re-pins a frozen hash. Its `capture_blockers`
+list records migration fixture paths that `capture-interactive.mjs` cannot
+resolve from `current-campaign/`.
+
 For a backend that must run from a **different, current Git checkout**, first
 check the isolation of the intended disposable Compose project without
 starting any container:
