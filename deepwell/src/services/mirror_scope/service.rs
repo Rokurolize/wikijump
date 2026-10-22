@@ -223,7 +223,7 @@ impl MirrorScopeService {
         let mut applied_renames = 0;
 
         for delete in input.deletes {
-            let slug = reference_label(&delete.page);
+            let slug = Self::reference_label(&delete.page);
             match PageService::delete(
                 ctx,
                 DeletePage {
@@ -258,7 +258,7 @@ impl MirrorScopeService {
         }
 
         for rename in input.renames {
-            let slug = reference_label(&rename.page);
+            let slug = Self::reference_label(&rename.page);
             match PageService::r#move(
                 ctx,
                 MovePage {
