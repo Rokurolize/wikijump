@@ -7,6 +7,7 @@ import {fileURLToPath} from 'node:url';
 
 import {framerailSourceFingerprintSync} from '../../../src/framerail-source-fingerprint.mjs';
 import {assertDeepwellRuntimeIdentity,deepwellRuntimeIdentityFromHeaders,readRunningDeepwellRuntimeIdentity,requireDeepwellRuntimeIdentity} from '../../../src/deepwell-runtime-identity.mjs';
+import {assertRunContractMatches,assertServedFramerailSource,backendTargetFor,frozenCandidateSetIdentity,intentReviewDateFor,parseCaptureArgs,resolveTransportOrigin,selectRuntimeSigmaStylesheet} from '../../../src/bhl-option-capture-contract.mjs';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const themeLab=path.resolve(here,'../../../');
@@ -15,14 +16,10 @@ const repo=path.resolve(here,'../../../../../../');
 const corpusRoot='/home/roku/src/Rokurolize/scp-wiki-translation/corpus';
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const captureRunnerSha=sha(fs.readFileSync(fileURLToPath(import.meta.url)));
-const args=process.argv.slice(2);
-const value=name=>{const i=args.indexOf(name);return i<0?null:args[i+1]??null};
-const scenario=value('--scenario');
-const baseline=value('--baseline');
-const engineName=value('--engine')??'chromium';
-if(!['combined','collapsible'].includes(scenario))throw new Error('--scenario must be combined or collapsible');
-if(!['sigma9','sigma10'].includes(baseline))throw new Error('--baseline must be sigma9 or sigma10');
-if(!['chromium','firefox','webkit'].includes(engineName))throw new Error('--engine must be chromium, firefox, or webkit');
+const options=parseCaptureArgs(process.argv.slice(2));
+const scenario=options.scenario;
+const baseline=options.baseline;
+const engineName=options.engine;
 
 const authorityPath=path.join(here,'authority.json');
 const authority=JSON.parse(fs.readFileSync(authorityPath,'utf8'));
@@ -38,7 +35,8 @@ for(const row of authority.pages){
  if(meta.revisions!==row.revision||meta.updated_at!==row.updated_at||entity!==row.entity_id||current.entity_id!==row.entity_id||sha(liveBytes)!==row.source_sha256)throw new Error(`${row.slug}: shared current corpus identity changed; refresh scenario authority first`);
 }
 const intent=authority.source_intent_review;
-if(!intent||intent.reviewed_at!=='2026-10-06')throw new Error('BHL toggle source-intent review is missing or stale');
+const intentReviewDate=intentReviewDateFor(authority,options.intentReviewDate);
+const candidateSetIdentity=frozenCandidateSetIdentity(themeLab);
 const englishDir=path.join(corpusRoot,'en','pages',intent.english_current.slug);
 const englishMeta=JSON.parse(fs.readFileSync(path.join(englishDir,'meta.json'),'utf8'));
 const englishCurrent=JSON.parse(fs.readFileSync(path.join(englishDir,'current.json'),'utf8'));
@@ -62,7 +60,8 @@ if(authority.pages.find(row=>row.slug==='theme:black-highlighter-theme')?.revisi
 const framerailSha=framerailSourceFingerprintSync(repo);
 if(framerailSha!==authority.framerail.fingerprint_sha256)throw new Error(`Framerail fingerprint changed after .close-menu fix: ${framerailSha}`);
 const expectedBackendRuntimeIdentity=requireDeepwellRuntimeIdentity(authority.backend_runtime_identity,'BHL option authority');
-const runningBackendRuntimeIdentity=readRunningDeepwellRuntimeIdentity(repo).identity;
+const backendTarget=backendTargetFor(options.backendProject);
+const runningBackendRuntimeIdentity=readRunningDeepwellRuntimeIdentity(repo,{containerName:backendTarget.containerName,composeProject:backendTarget.composeProject}).identity;
 assertDeepwellRuntimeIdentity(expectedBackendRuntimeIdentity,runningBackendRuntimeIdentity,'running local Deepwell before BHL option capture');
 
 function pageSource(slug){const row=authority.pages.find(x=>x.slug===slug);return fs.readFileSync(path.join(here,row.snapshot_path),'utf8')}
@@ -165,7 +164,7 @@ const stateSets={
 };
 let states=engineName==='chromium'?stateSets[scenario].chromium:stateSets[scenario].interaction;
 if(engineName!=='chromium'&&scenario==='combined')states=[...states,['toggle-mobile-target-open','mobile'],['toggle-mobile-close-menu','mobile']];
-const stateFilter=value('--state');
+const stateFilter=options.state;
 if(stateFilter){
  const selected=new Set(stateFilter.split(',').map(state=>state.trim()).filter(Boolean));
  if(!selected.size||stateFilter.split(',').some(state=>!state.trim()))throw new Error('--state needs one or more comma-separated non-empty state names');
@@ -182,8 +181,9 @@ const {chromium,firefox,webkit}=browserRequire('@playwright/test');
 const browserType={chromium,firefox,webkit}[engineName];
 const browserEnv=engineName==='webkit'?{...process.env,http_proxy:'',https_proxy:'',HTTP_PROXY:'',HTTPS_PROXY:'',all_proxy:'',ALL_PROXY:'',no_proxy:'*',NO_PROXY:'*'}:process.env;
 const browser=await browserType.launch({headless:true,env:browserEnv});
-const origin=authority.framerail.runtime_origin;
-if(origin!=='https://scpaiueouiuiuiui.wikijump.localhost:3395')throw new Error('BHL scenario capture must use the current task-owned Framerail runtime');
+const runContract=options.runContract?JSON.parse(fs.readFileSync(path.resolve(options.runContract),'utf8')):null;
+assertRunContractMatches(runContract,{framerailSha,backendIdentitySha256:expectedBackendRuntimeIdentity.identity_sha256});
+const origin=resolveTransportOrigin({cliOrigin:options.transportOrigin,runContract,defaultOrigin:authority.framerail.runtime_origin});
 const context=await browser.newContext({ignoreHTTPSErrors:true});
 let blockedExternal=0;
 await context.route('**/*',async route=>{
@@ -196,7 +196,7 @@ await context.route('**/*',async route=>{
  await route.continue();
 });
 const rows=[];
-const targetUrl=`${origin}/run-owned%3Atheme-lab-visual-acceptance-imported-20260924`;
+const targetUrl=`${origin}/${encodeURIComponent(options.fixtureSlug)}`;
 function rgba(s){const m=s.match(/rgba?\(([^)]+)\)/u);if(!m)return null;const a=m[1].split(/[,/ ]+/u).filter(Boolean).map(Number);return a.length>=3?[a[0],a[1],a[2],a[3]??1]:null}
 function luminance(c){const f=x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4};return .2126*f(c[0])+.7152*f(c[1])+.0722*f(c[2])}
 function contrast(a,b){const l1=luminance(a),l2=luminance(b);return(Math.max(l1,l2)+.05)/(Math.min(l1,l2)+.05)}
@@ -277,13 +277,15 @@ async function captureOne([state,viewportName]){
  const response=await page.goto(targetUrl,{waitUntil:'domcontentloaded',timeout:30000});
  if(response?.status()!==200)throw new Error(`target runtime returned HTTP ${response?.status()}`);
  const runtimeSourceHeader=await response.headerValue(authority.framerail.runtime_source_header);
- if(runtimeSourceHeader!==framerailSha)throw new Error(`target runtime source fingerprint differs: ${runtimeSourceHeader??'missing'} != ${framerailSha}`);
+ assertServedFramerailSource(runtimeSourceHeader,framerailSha);
  const backendRuntimeIdentity=deepwellRuntimeIdentityFromHeaders(response.headers());
  assertDeepwellRuntimeIdentity(expectedBackendRuntimeIdentity,backendRuntimeIdentity,'BHL option browser navigation response');
+ assertDeepwellRuntimeIdentity(runningBackendRuntimeIdentity,backendRuntimeIdentity,'BHL option served headers versus running Deepwell container');
  await page.locator('#header h1').waitFor({state:'visible',timeout:15000});
  await page.locator('#side-bar').waitFor({state:'attached',timeout:15000});
  await page.waitForTimeout(350);
- const baselineLink=page.locator('link[rel="stylesheet"][href="/wikidot/styles/sigma-fe5388a32e12.css"]');
+ const runtimeSigmaHref=selectRuntimeSigmaStylesheet(await page.locator('link[rel="stylesheet"]').evaluateAll(links=>links.map(link=>link.getAttribute('href'))),options.runtimeSigmaHref);
+ const baselineLink=page.locator(`link[rel="stylesheet"][href="${runtimeSigmaHref}"]`);
  if(await baselineLink.count())await baselineLink.evaluate(e=>{e.disabled=true;e.media='not all'});
  else throw new Error('expected current runtime Sigma stylesheet was not found');
  await addStyleAtDocumentEnd(page,baselineCss,'baseline');
@@ -424,13 +426,13 @@ if(state==='dark-hover'&&(!observed.sidebar.hovered||observed.sidebar.focusWithi
  await page.screenshot({path:screenshotPath,fullPage:false,animations:'disabled'});
  const screenshotSha=sha(fs.readFileSync(screenshotPath));
  const optionSheetDetails=await optionStyleTag.evaluate(e=>{try{const matches=[];const visit=rules=>{for(const r of [...rules]){if(r.selectorText?.includes('#side-bar'))matches.push({selector:r.selectorText,decl:r.style?.getPropertyValue('--sidebar-bg-color')??'',text:r.cssText.slice(0,500)});if(r.cssRules?.length)visit(r.cssRules)}};visit(e.sheet.cssRules);return{text_length:e.textContent.length,rule_count:e.sheet.cssRules.length,first_rules:Array.from(e.sheet.cssRules).slice(0,8).map(r=>r.cssText.slice(0,300)),matching_side_rules:matches.slice(-10),contains_dark_rule:e.textContent.includes('--sidebar-bg-color: var(--swatch-menubg-dark-color)')}}catch(error){return{error:String(error)}}});
- const row={scenario,baseline:baselineAlias,browser_engine:engineName,browser_version:browser.version(),viewport:viewportName,viewport_size:viewport,state,action,action_error:actionError,capture_runner_sha256:captureRunnerSha,option_stylesheet_rule_count:await optionStyleTag.evaluate(e=>{try{return e.sheet?.cssRules.length??-1}catch{return-2}}),option_stylesheet_details:optionSheetDetails,observation:observed,assertion_failures:failures,external_requests_sent:0,external_requests_blocked:blockedExternal-blockedBefore,screenshot:screenshotPath,screenshot_sha256:screenshotSha,candidate:{source_sha256:candidateSourceSha,css_sha256:candidateCssSha},option_candidates:authority.option_candidates??[],option_css_sha256:optionCssSha,source_authority_sha256:sha(fs.readFileSync(authorityPath)),framerail_fingerprint_sha256:framerailSha,framerail_runtime_origin:origin,framerail_response_source_sha256:runtimeSourceHeader,backend_runtime_identity:backendRuntimeIdentity,backend_runtime_identity_sha256:backendRuntimeIdentity.identity_sha256,page_errors:errors};
+ const row={scenario,baseline:baselineAlias,browser_engine:engineName,browser_version:browser.version(),viewport:viewportName,viewport_size:viewport,state,action,action_error:actionError,capture_runner_sha256:captureRunnerSha,candidate_set_sha256:candidateSetIdentity.candidate_set_sha256,runtime_sigma_stylesheet_href:runtimeSigmaHref,baseline_css_sha256:baselineSha,option_stylesheet_rule_count:await optionStyleTag.evaluate(e=>{try{return e.sheet?.cssRules.length??-1}catch{return-2}}),option_stylesheet_details:optionSheetDetails,observation:observed,assertion_failures:failures,external_requests_sent:0,external_requests_blocked:blockedExternal-blockedBefore,screenshot:screenshotPath,screenshot_sha256:screenshotSha,candidate:{source_sha256:candidateSourceSha,css_sha256:candidateCssSha},option_candidates:authority.option_candidates??[],option_css_sha256:optionCssSha,source_authority_sha256:sha(fs.readFileSync(authorityPath)),framerail_fingerprint_sha256:framerailSha,framerail_runtime_origin:origin,framerail_response_source_sha256:runtimeSourceHeader,framerail_checkout_fingerprint_sha256:framerailSha,backend_runtime_identity:backendRuntimeIdentity,backend_runtime_identity_sha256:backendRuntimeIdentity.identity_sha256,page_errors:errors};
  rows.push(row);await page.close();
 }
 try{
  for(const state of states)await captureOne(state);
 }finally{await context.close();await browser.close()}
-const base={schema:'theme_lab_bhl_option_targeted_capture.v1',scenario,baseline:baselineAlias,browser_engine:engineName,browser_version:rows[0]?.browser_version??null,source_authority_sha256:sha(fs.readFileSync(authorityPath)),candidate_source_sha256:candidateSourceSha,candidate_css_sha256:candidateCssSha,option_css_sha256:optionCssSha,framerail_fingerprint_sha256:framerailSha,framerail_runtime_origin:origin,framerail_response_source_sha256:rows[0]?.framerail_response_source_sha256??null,backend_runtime_identity:expectedBackendRuntimeIdentity,backend_runtime_identity_sha256:expectedBackendRuntimeIdentity.identity_sha256,rows};
+const base={schema:'theme_lab_bhl_option_targeted_capture.v1',scenario,baseline:baselineAlias,browser_engine:engineName,browser_version:rows[0]?.browser_version??null,candidate_set_sha256:candidateSetIdentity.candidate_set_sha256,candidate_set_state:candidateSetIdentity.state,baseline_css_sha256:baselineSha,transport_origin:origin,fixture_slug:options.fixtureSlug,intent_review_reviewed_at:intentReviewDate,backend_project:backendTarget.project,running_backend_runtime_identity_sha256:runningBackendRuntimeIdentity.identity_sha256,source_authority_sha256:sha(fs.readFileSync(authorityPath)),candidate_source_sha256:candidateSourceSha,candidate_css_sha256:candidateCssSha,option_css_sha256:optionCssSha,framerail_fingerprint_sha256:framerailSha,framerail_runtime_origin:origin,framerail_response_source_sha256:rows[0]?.framerail_response_source_sha256??null,backend_runtime_identity:expectedBackendRuntimeIdentity,backend_runtime_identity_sha256:expectedBackendRuntimeIdentity.identity_sha256,rows};
 const receipt={...base,receipt_sha256:sha(Buffer.from(JSON.stringify(base)))};
 fs.writeFileSync(outPath,JSON.stringify(receipt,null,2)+'\n');
 process.stdout.write(JSON.stringify({scenario,baseline,engine:engineName,rows:rows.length,passed:rows.filter(r=>!r.assertion_failures.length).length,failed:rows.filter(r=>r.assertion_failures.length).map(r=>({state:r.state,failures:r.assertion_failures})),external_requests_blocked:blockedExternal,framerail_fingerprint_sha256:framerailSha,receipt:outPath})+'\n');

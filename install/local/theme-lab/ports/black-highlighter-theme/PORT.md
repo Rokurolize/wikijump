@@ -39,3 +39,24 @@ The evidence-backed rules in `../TECHNICAL-LOCALIZATION-SPEC.md` apply; the fina
 - `4` unconfirmed SCP-EN site-local author identity links were localized to visible credit text; upstream EN and the original human-port source retain their link markup. The local SCP-JP account namespace is not assumed to contain foreign identities.
 - Local preview fixture expanded current JP `theme-squares` markup and `2` component CSS modules where used; `preview-fixture.json` binds its source hashes.
 - When present, named Wikidot page attachments and their hashes are in `page-assets.json` and `page-assets/`; publish the named files with the candidate source.
+
+## Option-scenario recapture (Theme Lab #2506)
+
+The twelve BHL option receipts are `option-scenarios/runs/{combined,collapsible}-{sigma9,sigma10}-{chromium,firefox,webkit}.json`, with screenshots under `option-scenarios/captures/<baseline>/<engine>/`. The procedure below is the only supported way to produce them. Nothing in it writes evidence by hand.
+
+1. **Fixture provisioning.** `ports/interactive-visual-fixture/provision-fixture.mjs` creates or refreshes the BHL fixture `run-owned:theme-lab-visual-acceptance-imported-20260924` from `interactive-visual-fixture/fixture.wikidot.txt`. It also writes the other run-owned pages. Task mode is already built in: set `THEME_LAB_BACKEND_PROJECT=wikijump-theme-lab-<namespace>` and `DEEPWELL_RPC_URL=http://wikijump-theme-lab-<namespace>-deepwell-1:2747/jsonrpc`. `src/fixture-rpc-target.mjs` refuses any other endpoint. Run it inside a disposable Node container attached only to the task project network, with the checkout mounted read-only. Put `DEEPWELL_RPC_TOKEN` and the verification admin credentials in a private env file. Do not run it on the host against `:2747`. Its site-ID guard (`6000003`) applies as usual.
+2. **Runtime.** Start the task backend and its built Framerail sidecar, following the task-mode section of `install/local/theme-lab/README.md`. The sidecar must serve `x-theme-lab-runtime-source-sha` equal to the checkout Framerail fingerprint, and Deepwell identity headers equal to the running container.
+3. **Capture.** For each of the 12 combinations, run:
+
+   ```sh
+   node install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/capture.mjs \
+     --scenario combined|collapsible --baseline sigma9|sigma10 --engine chromium|firefox|webkit \
+     --transport-origin https://scpaiueouiuiuiui.wikijump.localhost:<task-port> \
+     --backend-project wikijump-theme-lab-<namespace> \
+     [--run-contract <absolute path>] [--fixture-slug <run-owned:slug>] [--runtime-sigma-href <href>] [--intent-review-date YYYY-MM-DD]
+   ```
+
+   Every option is optional except `--scenario`, `--baseline` and `--engine` (default `chromium`). The defaults are: transport origin from the run contract's `transport_origin`, else the authority's `framerail.runtime_origin`; backend project shared (`wikijump-local-development`); fixture slug the imported BHL fixture; intent review date from the authority. `--intent-review-date` must match the authority. The runtime Sigma stylesheet is discovered from the served page and must be unique. Each receipt records `candidate_set_sha256` computed from `publication/frozen-candidate-set.json`, the baseline CSS SHA-256, the transport origin and fixture, the served and checkout Framerail fingerprints, and the running Deepwell identity. The capture refuses when served headers disagree with the checkout or the running container. It also refuses a run contract that pins a different Framerail fingerprint or backend identity.
+4. **Visual review.** A reviewer inspects every screenshot and writes an explicit decisions file: `{"schema":"theme_lab_bhl_option_visual_decisions.v1","reviewer":"...","review_method":"direct visual inspection ...","reviewed_at":"...","decisions":[{"sha256":"<screenshot sha256>","classification":"PASS_NATURAL|PASS_INTENTIONAL_DIVERGENCE|NEEDS_FIX","note":"..."}]}`. Then run `node install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/record-visual-review.mjs --decisions <absolute path> [--replace]`. It writes `runs/visual-review.json` only when every screenshot has exactly one decision, no decision names an unknown sha, no `NEEDS_FIX` remains, every receipt and screenshot hash still matches, and the candidate set, authority and runtime identities agree. Otherwise it exits non-zero and writes nothing.
+
+Current state: the checkout Framerail fingerprint (`b0036e2c...`) differs from the pinned `authority.json` fingerprint (`d67899e6...`), and the recorded Deepwell backend identity has not been re-measured. The capture therefore refuses until the owner updates the authority from a task runtime built from the current checkout. The `runs/` and `captures/` files are not in the repository.
