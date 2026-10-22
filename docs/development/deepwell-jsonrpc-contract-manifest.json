@@ -11381,6 +11381,7 @@
           "deepwell/tests/mutation_authorization.rs#payload_actor_cannot_spoof_vote_or_message_attribution",
           "deepwell/tests/vote.rs#imported_rating_baseline_refresh_shows_combined_score",
           "deepwell/tests/vote.rs#imported_rating_baseline_vote_cast_change_cancel_lifecycle",
+          "deepwell/tests/vote.rs#refresh_to_newer_aggregate_counts_local_vote_once",
           "deepwell/tests/vote.rs#registered_point_vote_lifecycle_refreshes_saved_rate_page",
           "deepwell/tests/vote.rs#registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count",
           "deepwell/tests/vote.rs#vote_set_rejects_out_of_domain_values_before_persistence",
