@@ -1498,8 +1498,26 @@ fn direct_html_iframe_with_relative_src_falls_back_to_hosted_frame() {
 }
 
 #[test]
-fn direct_html_iframe_without_src_falls_back_to_hosted_frame() {
-    let rewritten = rewrite_single_html_block_body(r#"<iframe width="500"></iframe>"#);
+fn direct_html_iframe_without_src_passes_through_verbatim() {
+    // Live Wikidot emits a src-less iframe with a recognized attribute
+    // directly; it loads nothing, so the scheme gate has nothing to vet.
+    let block = r#"<iframe title="probe"></iframe>"#;
+    let rewritten = rewrite_single_html_block_body(block);
+
+    assert!(rewritten.contains(block));
+    assert!(!rewritten.contains("/replay/html/1"));
+}
+
+#[test]
+fn direct_html_iframe_without_any_attribute_falls_back_to_hosted_frame() {
+    let rewritten = rewrite_single_html_block_body("<iframe></iframe>");
+
+    assert!(rewritten.contains(r#"<iframe src="/replay/html/1""#));
+}
+
+#[test]
+fn direct_html_iframe_with_bare_src_falls_back_to_hosted_frame() {
+    let rewritten = rewrite_single_html_block_body("<iframe src></iframe>");
 
     assert!(rewritten.contains(r#"<iframe src="/replay/html/1""#));
 }

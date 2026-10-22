@@ -22,6 +22,7 @@ mod local_code_urls;
 mod native_list;
 mod post_render_compat;
 mod wikidot_alignment;
+mod wikidot_direct_iframe;
 mod wikidot_preprocess;
 
 pub(super) use native_list::{
@@ -520,18 +521,6 @@ pub(super) static GENERATED_LISTPAGES_HTML_REGEX: LazyLock<Regex> = LazyLock::ne
     )
     .unwrap()
 });
-static WIKIDOT_DIRECT_HTML_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?is)^\s*(?P<iframe><iframe\b(?P<attrs>[^<>]*)>\s*</iframe\s*>)\s*$"#)
-        .expect("direct Wikidot HTML iframe expression is valid")
-});
-static WIKIDOT_DIRECT_HTML_IFRAME_ATTRIBUTE_REGEX: LazyLock<Regex> = LazyLock::new(
-    || {
-        Regex::new(
-            r#"(?is)\s+(?P<name>[a-z][a-z0-9:-]*)(?:\s*=\s*(?P<value>"[^"<>]*"|'[^'<>]*'|[^\s"'=<>`]+))?"#,
-        )
-        .expect("direct Wikidot HTML iframe attribute expression is valid")
-    },
-);
 
 #[cfg(test)]
 static GENERATED_COMPAT_TABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -1944,89 +1933,6 @@ impl RenderService {
             search_start = start + iframe.len();
         }
         body
-    }
-
-    fn wikidot_direct_html_iframe(html_block: &str) -> Option<&str> {
-        const ALLOWED_ATTRIBUTES: &[&str] = &[
-            "align",
-            "allow",
-            "allowfullscreen",
-            "class",
-            "frameborder",
-            "height",
-            "loading",
-            "referrerpolicy",
-            "sandbox",
-            "scrolling",
-            "src",
-            "style",
-            "title",
-            "width",
-        ];
-
-        let captures = WIKIDOT_DIRECT_HTML_IFRAME_REGEX.captures(html_block)?;
-        let attributes = captures
-            .name("attrs")
-            .expect("direct iframe capture has attributes")
-            .as_str();
-        let mut cursor = 0;
-        let mut has_attribute = false;
-        // Browsers resolve the first src attribute and treat the URL scheme
-        // case-insensitively after stripping surrounding whitespace, so every
-        // src occurrence must carry an allowlisted scheme. A missing or
-        // repeated src, or any non-http(s) scheme, falls back to the hosted
-        // files-origin html-block iframe instead of reaching the page DOM.
-        // This mirrors the legacy [[iframe]] gate, which requires an
-        // http(s) URL (compat/wikidot_iframe.rs render_wikidot_iframe).
-        let mut src_seen = false;
-        let mut src_allowed = false;
-        for attribute in
-            WIKIDOT_DIRECT_HTML_IFRAME_ATTRIBUTE_REGEX.captures_iter(attributes)
-        {
-            let whole = attribute
-                .get(0)
-                .expect("direct iframe attribute capture has whole match");
-            if !attributes[cursor..whole.start()].trim().is_empty() {
-                return None;
-            }
-            let name = attribute
-                .name("name")
-                .expect("direct iframe attribute capture has name")
-                .as_str()
-                .to_ascii_lowercase();
-            if !ALLOWED_ATTRIBUTES.contains(&name.as_str()) {
-                return None;
-            }
-            if name == "src" {
-                if src_seen {
-                    return None;
-                }
-                src_seen = true;
-                // A bare src with no value carries no allowlisted scheme.
-                let raw = attribute.name("value")?.as_str();
-                let unquoted = raw
-                    .strip_prefix('"')
-                    .and_then(|rest| rest.strip_suffix('"'))
-                    .or_else(|| {
-                        raw.strip_prefix('\'')
-                            .and_then(|rest| rest.strip_suffix('\''))
-                    })
-                    .unwrap_or(raw);
-                // Exact same predicate as the legacy [[iframe]] URL gate:
-                // absolute http(s) only, case-sensitive. Live Wikidot probes
-                // cover HTTP and HTTPS src values for direct emission, and
-                // list sandbox among the recognized pass-through attributes,
-                // so sandbox stays allowlisted here.
-                src_allowed =
-                    unquoted.starts_with("https://") || unquoted.starts_with("http://");
-            }
-            has_attribute = true;
-            cursor = whole.end();
-        }
-        if !attributes[cursor..].trim().is_empty() || !has_attribute || !src_allowed {
-            return None;
-        }
-        captures.name("iframe").map(|iframe| iframe.as_str())
     }
 
     pub(super) async fn render_inner(
