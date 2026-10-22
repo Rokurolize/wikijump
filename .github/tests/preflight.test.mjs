@@ -305,11 +305,7 @@ test("explicit groups run without a change-set and unknown groups are refused", 
   assert.doesNotMatch(result.stdout, /nothing to check/)
   assert.match(result.stdout, /^preflight: groups: .*theme_lab=true/mu)
   const steps = [...result.stdout.matchAll(/^  would run: (.+)$/gmu)].map((match) => match[1])
-  assert.ok(steps.includes("Theme Lab campaign evidence restore"), result.stdout)
-  assert.ok(
-    steps.indexOf("Theme Lab campaign evidence restore") < steps.indexOf("Theme Lab current campaign completion"),
-    steps.join("\n")
-  )
+  assert.ok(steps.includes("Theme Lab current campaign completion"), result.stdout)
 
   const unknown = createHarness(t)
   const refused = unknown.runPreflight(["--base", remoteOid, "--final", "--groups", "theme_lba", "--list"], {

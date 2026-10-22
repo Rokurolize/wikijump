@@ -188,7 +188,6 @@ group_theme_lab() {
       run_test "Theme Lab deterministic packages" node install/local/theme-lab/scripts/real-port-regression.mjs --verify-only
       run_test "Sigma-10 source evidence" node install/local/theme-lab/sigma10-migration/check-sources.mjs
       run_test "Sigma-10 historical evidence integrity" node install/local/theme-lab/sigma10-migration/check-final.mjs --historical-only
-      run_test_inconclusive_ok "Theme Lab campaign evidence restore" install/local/theme-lab/scripts/restore-checkout-campaign-evidence.sh
       run_test_inconclusive_ok "Theme Lab current campaign completion" node install/local/theme-lab/scripts/check-campaign-completion.mjs
     fi
   fi
