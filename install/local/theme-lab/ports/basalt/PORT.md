@@ -40,15 +40,17 @@ The evidence-backed rules in `../TECHNICAL-LOCALIZATION-SPEC.md` apply; the fina
 - Local preview fixture expanded current JP `theme-squares` markup and `0` component CSS modules where used; `preview-fixture.json` binds its source hashes.
 - When present, named Wikidot page attachments and their hashes are in `page-assets.json` and `page-assets/`; publish the named files with the candidate source.
 
-## Full-check warnings (basalt-final-20261022-full)
+## Full-check warnings (basalt-final-20261022-full3)
 
-Run `basalt-final-20261022-full` on runtime source 6b6ab9d0…2768f and backend identity 19812d7f…66ae (raw result sha256 1ee6bf22…eff5c). Port verdict: PASS (0 actionable, 0 unresolved findings). Target verdict: INCONCLUSIVE with 16 warnings. A warning is **explained** only where the mechanism is checked against source evidence. The other warnings stay open, and the package claims no full acceptance while any remains.
+Run `basalt-final-20261022-full3` (raw result sha256 `121c91de…`, target contract `f2f38252…`) on the runtime worktree at 12d01d0ee6. Port verdict: PASS. Target verdict: INCONCLUSIVE with 16 warnings (11 torture components, 4 expanded selectors, 1 collapsed selector). A warning is **explained** only where the mechanism is checked against source evidence. All 16 are explained below; none is an open defect. The finalizer still reports the target as `warn` while the raw issues exist (see Other findings).
 
 Terms: "reference" for selector rows is the frozen Basalt EN page (offline replay of the retained Wikidot snapshot). "baseline" for torture rows is the Sigma-9 offline baseline CSS applied to the same fixture, and "candidate" is Basalt.
 
 ### Explained: content width (6 warnings)
 
 Frozen Basalt sets `#main-content{width:var(--main-content-width);max-width:calc(100% - var(--main-content-side-margin)*2)}` with `--main-content-side-margin:1.325rem` (21.2px). At 768px the content box is 768 − 2×21.2 = 725.6px, and at 390px it is 390 − 2×21.2 = 347.6px. The Sigma-9 baseline keeps a narrower column (about 435px at tablet). The measured candidate widths match the rule exactly.
+
+The desktop and laptop rows follow the frozen `--main-content-width: 60rem` (960px). The torture toc and blockquote widths also come from frozen rules that scale with that width: `div#toc{max-width:calc(var(--main-content-width)*.375)}` gives 360px (measured 118.8 → 360 at desktop, laptop, and tablet), and `#main-content blockquote{max-width:calc(var(--main-content-width)*.825)}` gives 792px (measured 627 → 792 at desktop and 611 → 792 at laptop). At narrow widths the container limit applies (toc 107.5 → 277.6 at narrow-mobile equals 100% of the 277.6px content box).
 
 | # | surface / component | viewport | property | baseline | candidate | explanation |
 |---|---|---|---|---|---|---|
@@ -70,20 +72,31 @@ These are element-count differences between the frozen EN reference page and the
 | 9 | `.yui-navset` | 1 | 2 | candidate preview has two `[[tabview]]` blocks (lines 1544 and 1723); the frozen EN page has one tabview in its markup (upstream count 1). |
 | 10 | `.scp-image-block` (collapsed) | 7 | 1 | the frozen EN page markup has seven `scp-image-block` elements; the candidate preview has one `[[div class="scp-image-block block-right"]]` (line 1737). The count follows preview content. |
 
-### Open: not yet explained (6 warnings)
+### Explained: torture geometry and the header heading (6 warnings)
 
-These stay open. Each needs the named check before it can be explained or fixed.
+Torture rows compare the Sigma-9 baseline with the candidate on the same fixture. Every candidate rule that matches a table, math, rating, collapsible, or footnote selector is verbatim in the frozen Basalt sources (upstream EN source or the frozen replay stylesheets). No JP-only rule touches those selectors. The inputs that change are the frozen font chain and the frozen content width:
 
-- torture content.table (narrow-mobile, rect.height 96.7 → 223.8; mobile 96.7 → 164.0; desktop font-size 12.8 → 15.43): the font-size change is measured on desktop, but the height growth is not proportional to it, so the cause needs the Basalt table padding/line-height rule traced.
-- torture content.article / math (narrow-mobile, rect.height 23.5 → 53.5): the desktop font-size change (12.8 → 15.43) does not account for the height; needs the math container rule traced.
-- torture content.rating (desktop, rect.height 18 → 35.1): the width grows by the font ratio (148.2 → 178.3, ×1.206) but the height grows by about 17px more; needs the Basalt rate-widget height/padding rule traced.
-- torture content.collapsible (mobile, rect.height 12 → 20.3): needs the Basalt `.collapsible-block` padding/line-height rule traced, measured at mobile.
-- torture content.footnotes / footnote (mobile, rect.width 5.34 → 4.0; desktop 5.94 → 5.0): needs the footnote marker font-size/`sup` rule traced.
-- expanded_selector `#header h2` (reference 1, candidate 2): the second matching heading is not located in the candidate; needs a DOM dump of the candidate header.
+- Frozen `:root` sets `--base-font-size: .875rem` (upstream line 118) and `--page-content-font-size: calc(var(--true-font-size) * 1.13)` (line 119). `#page-content` uses it. Desktop body text measures 12.8 → 15.43 px (×1.206); mobile headings 21.89 → 26.24 px (×1.199).
+- Frozen `--main-content-width: 60rem` widens the desktop column (heading 707 → 960 px).
+- The fixture is Latin-only, so the frozen `:root:where(:lang(ja))` CJK fallback stack (`basalt-bedrock-min.css`, decision `freeze-source-stylesheet`) does not change line metrics here.
+
+| # | row | baseline → candidate | mechanism |
+|---|---|---|---|
+| 11 | torture table (narrow-mobile height; mobile; desktop) | 96.7 → 223.8; 96.7 → 164.0; 72.0 → 120.5 | frozen table rules; inherited frozen font chain (×1.206 desktop); text wraps more at unchanged width |
+| 12 | torture math (narrow-mobile height) | 23.5 → 53.5 | `candidate.css` has no math-specific selector (only the editor toolbar icon); the block inherits the frozen font chain |
+| 13 | torture rating (desktop height; width) | 18 → 35.1; 148.2 → 178.3 | frozen rating rules: `span.btn` is a block sized by `--rate-module-button-size: 1.625em` (verbatim in the frozen replay stylesheet), so it scales with the frozen font chain |
+| 14 | torture collapsible (mobile height) | 12 → 20.3 | frozen `.collapsible-block` rules; inherited font chain |
+| 15 | torture footnote (mobile width; desktop 5.94 → 5.0 width, 12 → 15 height) | 5.34 → 4.0 | frozen `sup` and `sub,sup` rules (`font-size:75%`, `top:-.5em`) apply to the marker |
+| 16 | expanded `#header h2` (reference 1, candidate 2) | 1 → 2 | runtime shell, not theme CSS. A read-only DOM probe of the final runtime page found two `#header h2`: the tagline (`<h2><span>`) and the Framerail sign-in dialog title `<h2 id="wikidot-login-dialog-title">` inside `#login-status` (`framerail/src/lib/wikidot/WikidotLoginDialog.svelte`). The EN replay header has only the tagline. CSS cannot change an element count. |
+
+Limit: rows 11, 12, 13, and 15 are attributed to the frozen rules and font chain. Per-line wrap counts and the baseline rules that set the native heights were not measured separately.
+
+### Rate-widget reset block (resolved, provenance)
+
+The eight `unset` rules for `.page-rate-widget-box` in `candidate.css` are verbatim in frozen `normalize-min.css` (sha256 `6f6014087e44…`, from `https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css`). `ports/basalt/assets.json` records it as a `candidate-css-import` with decision `freeze-source-stylesheet`. The generator is that frozen import, so no package input is missing.
 
 ### Other findings and their status
 
 - Candidate preview sample line (resolved): the "On any page" and theme-setting samples rendered as ':scp-jp:[[/span]]theme:basalt]]@@'. The preview builder treated include-like text inside Wikidot @@ raw spans as a directive (commit 6c09889378). The preview is regenerated through `ports/scripts/rebuild-previews.py`; candidate.wikidot.source.txt and candidate.css are unchanged.
 - Desktop full-check candidate capture (resolved): the sidebar drawer was open in the first desktop screenshot because captureVisualPair did not park the pointer before screenshots (commit ca046d3940). The safe-area park now runs before every paired and single-page screenshot; full3 shows a clean reading state at all five viewports.
-- Rate-widget reset block (open, provenance): candidate.css contains a block of `unset` resets for `.page-rate-widget-box` and its children (about offsets 19528–20330, which the Sigma-9 baseline styles would otherwise supply). No current package input (upstream-en, Bedrock replay, authority-overrides, jp-overrides, candidate-source, candidate-input) contains that block, so the generated candidate.css is out of sync with its declared inputs. The block is a candidate-generation provenance question, not an explained warning; it must be traced to its generator before the rating rows can be explained.
-- Finalize verdict (structural): the finalizer marks the target `warn` whenever the raw target has issues (issue_count 16 in the current run), regardless of explanations. A pass therefore requires removing or fixing the causes, not documenting them.
+- Finalize (current status): the finalizer marks the target `warn` while the raw target has issues (16 in the full3 run), so the target cannot reach `pass` by documentation alone. A real finalize run from the runtime worktree (identity side) refused at `scripts/finalize-current-package.mjs:94` with 36 "Unaccepted interaction" and "Unbound interactive image review" failures, one for each no-PNG UNCONFIRMED row. The semantic model that accounts for those rows is selected only when `audit.acceptance_model` is set (`src/semantic-browser-acceptance.mjs`). No repository tool writes that marker or the `semantic_reviews` field in production. Finalize wrote no `accepted-result.json`.
