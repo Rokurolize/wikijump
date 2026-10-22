@@ -15,6 +15,7 @@ import {candidateIdentity} from '../ports/scripts/candidate-identity.mjs';
 import {SEMANTIC_BROWSER_MODEL,validateSemanticBrowserAcceptance,semanticReviewArtifactBindings} from '../src/semantic-browser-acceptance.mjs';
 import {candidateAssetDependencyState} from '../src/candidate-asset-dependencies.mjs';
 import {resolveRunContractPath} from '../src/run-contract-path.mjs';
+import {auditMatchesRunContract,resolveRunContractOption} from '../src/current-run-contract-option.mjs';
 import {currentPackageFullCheckInputBindings} from '../src/full-check-input-bindings.mjs';
 import {prepareCanonicalChildOutputDirectory,prepareContainedOutputFile,resolveExistingContainedFile,resolveExistingPackageDirectory,resolveExistingPackageFile} from '../src/package-path.mjs';
 import {currentPackageBaseCss} from '../src/candidate-base-contract.mjs';
@@ -42,7 +43,8 @@ const candidate=candidateIdentity(css,base).candidateSha;
 let structurePath=null;try{structurePath=resolveExistingPackageFile(dir,'acceptance-structure.json',`${name}: acceptance structure`)}catch(error){if(error.code!=='ENOENT')throw error}
 const structureBytes=structurePath?await fs.readFile(structurePath):null;
 const candidateStructureSha=structureBytes?sha(structureBytes):null;
-const runContractPath=resolveExistingContainedFile(root,'ports/current-acceptance/run-contract.json','Current browser run contract');
+const runContractRelative=resolveRunContractOption(root,args.includes('--run-contract')?value('--run-contract'):undefined);
+const runContractPath=resolveExistingContainedFile(root,runContractRelative,'Current browser run contract');
 const runContract=JSON.parse(await fs.readFile(runContractPath,'utf8'));
 const expectedRuntimeSourceSha=requireRuntimeSourceSha(runContract.expected_runtime_source_sha256,'current Sigma-9 run contract');
 requireDeepwellRuntimeIdentity(runContract.expected_backend_runtime_identity,'current Sigma-9 run contract');
@@ -53,13 +55,14 @@ const [runtimeSupportCss,baselineCss]=await Promise.all([
 const assetDependencySha=candidateAssetDependencyState({portsDir:path.join(root,'ports'),themeDir:dir,runtimeSupportCss,baselineCss,baseCss:base,candidateCss:css,candidateSource:source}).asset_dependency_sha256;
 const fullCheckBindings=currentPackageFullCheckInputBindings(root,name);
 const browserRoot=args.includes('--browser-root')?path.resolve(value('--browser-root')):path.resolve(root,'../../../framerail');
-const canonicalScenario=validateCanonicalScenarioMatrix({root,packageName:name,generation:'sigma9',matrix:scenarioMatrix,browserVersions:playwrightBrowserVersions(browserRoot)});
+const canonicalScenario=validateCanonicalScenarioMatrix({root,packageName:name,generation:'sigma9',runContract:runContractRelative,matrix:scenarioMatrix,browserVersions:playwrightBrowserVersions(browserRoot)});
 const subset={...audit,canonical_scenario:scenarioMatrix,records:audit.records.filter(row=>row.theme===name)};
 const failures=validateBrowserCoverage(subset,[name]);
+if(runContractRelative!=='ports/current-acceptance/run-contract.json')failures.push(...auditMatchesRunContract(subset.records,await fs.readFile(runContractPath)));
 const semantic=subset.acceptance_model===SEMANTIC_BROWSER_MODEL;
 const rawResult=raw.result??raw;
 failures.push(...targetRuntimeIdentityFailures(rawResult,currentTargetRuntimeSourceSha(root),runContract.expected_backend_runtime_identity));
-const captureContracts=semantic?readCurrentBrowserContracts(root,'ports/current-acceptance/run-contract.json',{browserRoot}):null;
+const captureContracts=semantic?readCurrentBrowserContracts(root,runContractRelative,{browserRoot}):null;
 if(semantic){
  failures.push(...validateSemanticBrowserAcceptance(subset).failures, ...validateSemanticSourceAuthority(root,subset));
  try{

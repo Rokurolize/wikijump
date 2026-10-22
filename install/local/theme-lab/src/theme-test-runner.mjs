@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import {startSessionServer} from './session-server.mjs';
+import {createDeepwellPreviewClient} from './deepwell-preview.mjs';
 import {themeTestExecutionPlan} from './theme-test-execution-plan.mjs';
 import {materializeThemeSessionInputs} from './theme-test-session-inputs.mjs';
 import {themeTestMeasurementReceipt} from './theme-test-measurement-receipt.mjs';
@@ -19,7 +20,8 @@ export async function runThemeScenarioSmoke({root,config,siteStateReceipt,render
   for(const sessionProfile of measurementContract.session_profiles){
     if(!(sessionProfile in sessionStorageStates))continue;
     const inputs=materializeThemeSessionInputs(root,plan,{sessionProfile});
-    const server=await startServer({socketPath:`${socketPath}.${sessionProfile}`,chromium:browserType,browserEngine,headless,candidateStorageState:sessionStorageStates[sessionProfile],...inputs.server});
+    const previewClient=process.env.DEEPWELL_RPC_URL&&process.env.DEEPWELL_RPC_TOKEN?createDeepwellPreviewClient({rpcUrl:process.env.DEEPWELL_RPC_URL,rpcToken:process.env.DEEPWELL_RPC_TOKEN}):null;
+    const server=await startServer({socketPath:`${socketPath}.${sessionProfile}`,chromium:browserType,browserEngine,headless,candidateStorageState:sessionStorageStates[sessionProfile],...inputs.server,...(previewClient?{previewClient}:{})});
     try{
       const sessionPage=server.session.pages?.candidate;
       if(!sessionPage)throw new Error('canonical session has no opened candidate page');

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import {loadChromium} from '../src/browser-lab.mjs';
-import {applySurfaceState,cleanupSurfaceState,runKnownSurfaceContract} from '../src/theme-surface-contract.mjs';
+import {FILES_PANE_SELECTOR,FILES_ROW_SELECTOR,applySurfaceState,cleanupSurfaceState,runKnownSurfaceContract} from '../src/theme-surface-contract.mjs';
 
 test('surface acceptance opens History and Files independently and closes each pane',async()=>{
  const server=http.createServer((request,response)=>response.end(`<!doctype html><html><body>
@@ -62,9 +62,43 @@ test('Files surface accepts the maintained empty attachment list',async()=>{
   assert.equal(result.issues.filter(row=>row.severity==='error').length,0);
   const captures=result.captures.filter(capture=>capture.surface==='page.files');
   assert.equal(captures.length,4);
-  assert.ok(captures.every(capture=>capture.rows['#action-area .file-list']?.present));
-  assert.ok(captures.every(capture=>capture.rows['#action-area .file-name']?.optional===true));
-  assert.ok(captures.every(capture=>capture.rows['#action-area .file-name']?.present===false));
+  assert.ok(captures.every(capture=>capture.rows[FILES_PANE_SELECTOR]?.present));
+  assert.ok(captures.every(capture=>capture.rows[FILES_ROW_SELECTOR]?.optional===true));
+  assert.ok(captures.every(capture=>capture.rows[FILES_ROW_SELECTOR]?.present===false));
   assert.equal(await page.locator('#action-area').textContent(),'');
+ }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
+});
+
+test('Files surface accepts the Wikidot PageFilesModule DOM (table.page-files, tr#file-row-N)',async()=>{
+ const server=http.createServer((request,response)=>response.end(`<!doctype html><html><body>
+ <button id="history-button">History</button><button id="files-button">Files</button><div id="action-area"></div>
+ <script>
+ const area=document.getElementById('action-area');
+ document.getElementById('files-button').onclick=()=>{area.innerHTML='<button class="action-area-close">Close</button><h1>Files</h1><div class="file-list-scroll"><table class="table table-striped table-hover page-files"><tbody><tr id="file-row-32"><td>attachment.png</td></tr></tbody></table></div>';area.querySelector('.action-area-close').onclick=()=>area.innerHTML=''};
+ </script></body></html>`));
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ const browser=await loadChromium().launch({headless:true});
+ try {
+  const page=await browser.newPage();await page.goto(`http://127.0.0.1:${server.address().port}/`);
+  const result=await runKnownSurfaceContract(page,{css:'.page-files,.file-list{color:black}',styleId:'wikidot-files-check',contractValue:'auto'});
+  assert.equal(result.issues.filter(row=>row.severity==='error').length,0);
+  const captures=result.captures.filter(capture=>capture.surface==='page.files');
+  assert.equal(captures.length,4);
+  assert.ok(captures.every(capture=>capture.rows[FILES_PANE_SELECTOR]?.present));
+  assert.ok(captures.every(capture=>capture.rows[FILES_ROW_SELECTOR]?.present===true));
+  assert.equal(await page.locator('#action-area').textContent(),'');
+ }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
+});
+
+test('Files surface fails closed when the pane never appears',async()=>{
+ const server=http.createServer((request,response)=>response.end(`<!doctype html><html><body>
+ <button id="history-button">History</button><button id="files-button">Files</button><div id="action-area"></div>
+ <script>document.getElementById('files-button').onclick=()=>{document.getElementById('action-area').innerHTML='<h1>Files</h1><p>loading</p>'};</script></body></html>`));
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ const browser=await loadChromium().launch({headless:true});
+ try {
+  const page=await browser.newPage();await page.goto(`http://127.0.0.1:${server.address().port}/`);
+  const result=await runKnownSurfaceContract(page,{css:'.page-files{color:black}',styleId:'absent-files-check',contractValue:'auto'});
+  assert.ok(result.issues.some(row=>row.severity==='error'&&row.surface==='page.files'),'an absent Files pane must be an error finding');
  }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
 });
