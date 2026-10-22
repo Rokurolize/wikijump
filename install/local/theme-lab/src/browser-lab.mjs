@@ -6,6 +6,7 @@
 // counts, per-element geometry/computed style, and cross-origin stylesheet
 // rule extraction.
 
+import fs from "node:fs";
 import {createRequire} from "node:module";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
@@ -25,8 +26,16 @@ export function loadBrowser(engine, browserRoot = DEFAULT_BROWSER_ROOT) {
   return resolveBrowser(engine,browserRoot,['@playwright/test','playwright']);
 }
 
+// A missing or package-less browser root must fail closed. Otherwise createRequire walks up to an unrelated
+// ancestor node_modules (for example a stray /home/<user>/node_modules Playwright) and launches the wrong browser build.
+export function assertBrowserRoot(browserRoot){
+  if(typeof browserRoot!=='string'||!browserRoot)throw new Error('browser root is required');
+  if(!fs.existsSync(path.join(browserRoot,"package.json")))throw new Error(`browser root has no package.json: ${browserRoot}`);
+}
+
 function resolveBrowser(engine,browserRoot,packages){
   if(!['chromium','firefox','webkit'].includes(engine))throw new Error('unsupported browser engine');
+  assertBrowserRoot(browserRoot);
   const requireFromRoot = createRequire(path.join(browserRoot, "package.json"));
   for (const name of packages) {
     try {
