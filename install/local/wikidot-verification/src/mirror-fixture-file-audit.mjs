@@ -44,22 +44,48 @@ export function buildSeedIndex(seederFiles) {
   return index;
 }
 
+function isNonEmptyString(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
 /**
  * Index evidenced source-page attachment names (corpus attachment
  * metadata or the recorded Wikidot Files list). Entries are
  * `{site_slug, page_slug, name}` objects. Pages with at least one entry
  * count as covered; only covered pages can yield `FIXTURE` verdicts.
  *
- * @param {Array<{site_slug: string, page_slug: string, name: string}>} entries
+ * Inconclusive input fails closed rather than being read as coverage or
+ * as absence: an entry missing a non-empty site_slug, page_slug, or name
+ * throws, and so does a supplied inventory that is not an array. Nothing
+ * is indexed from a partly valid list. `null` or `undefined` means no
+ * inventory was supplied and yields an empty index, so every seed match
+ * stays UNCLASSIFIED_LOCAL.
+ *
+ * @param {Array<{site_slug: string, page_slug: string, name: string}>|null} [entries]
  * @returns {{hasPage: (siteSlug: string, pageSlug: string) => boolean, hasName: (siteSlug: string, pageSlug: string, name: string) => boolean}}
  */
 export function buildSourceInventoryIndex(entries) {
-  const pages = new Set();
-  const names = new Map();
-  for (const entry of entries ?? []) {
-    pages.add(pageKey(entry?.site_slug, entry?.page_slug));
-    names.set(seedKey(entry?.site_slug, entry?.page_slug, entry?.name), true);
+  if (entries == null) return emptySourceInventoryIndex();
+  if (!Array.isArray(entries)) {
+    throw new TypeError(
+      "source inventory must be an array of {site_slug, page_slug, name} entries; refusing inconclusive evidence",
+    );
   }
+  const pages = new Set();
+  const names = new Set();
+  entries.forEach((entry, index) => {
+    if (
+      !isNonEmptyString(entry?.site_slug) ||
+      !isNonEmptyString(entry?.page_slug) ||
+      !isNonEmptyString(entry?.name)
+    ) {
+      throw new TypeError(
+        `source inventory entry ${index} is malformed (needs non-empty site_slug, page_slug, and name); refusing inconclusive evidence`,
+      );
+    }
+    pages.add(pageKey(entry.site_slug, entry.page_slug));
+    names.add(seedKey(entry.site_slug, entry.page_slug, entry.name));
+  });
   return {
     hasPage: (siteSlug, pageSlug) => pages.has(pageKey(siteSlug, pageSlug)),
     hasName: (siteSlug, pageSlug, name) => names.has(seedKey(siteSlug, pageSlug, name)),
@@ -67,7 +93,10 @@ export function buildSourceInventoryIndex(entries) {
 }
 
 function emptySourceInventoryIndex() {
-  return buildSourceInventoryIndex([]);
+  return {
+    hasPage: () => false,
+    hasName: () => false,
+  };
 }
 
 function pageKey(siteSlug, pageSlug) {
@@ -90,9 +119,12 @@ function pageKey(siteSlug, pageSlug) {
  *   page inventory; the repair candidate.
  * - `SEED_SOURCE_MATCH`: a seeder-planted row whose name matches the
  *   source page inventory; a genuine attachment, never repair.
- * - `MIRROR_IMPORT`: genuine bulk-import inventory; never tombstone.
- * - `UNCLASSIFIED_LOCAL`: local-origin needing human review; never
- *   enters the repair manifest.
+ * - `MIRROR_IMPORT`: genuine bulk-import inventory; never tombstone. Checked
+ *   before seed matching, so a seeded name carrying this provenance stays
+ *   out of repair too.
+ * - `UNCLASSIFIED_LOCAL`: local-origin needing human review, including any
+ *   seed match whose inventory evidence is missing; never enters the
+ *   repair manifest.
  */
 export function classifyMirrorFileRow(row, seedIndex, sourceInventoryIndex = null) {
   if (!row?.page_from_wikidot) {
@@ -103,6 +135,14 @@ export function classifyMirrorFileRow(row, seedIndex, sourceInventoryIndex = nul
   }
   if (row.file_from_wikidot) {
     return {verdict: "IMPORTED", reason: "imported source row"};
+  }
+  // Checked before seed matching: genuine bulk-import provenance is never
+  // a repair candidate, even when the seeder also plants the same name.
+  if (MIRROR_IMPORT_COMMENT_PATTERN.test(row.comments ?? "")) {
+    return {
+      verdict: "MIRROR_IMPORT",
+      reason: "bulk mirror-import provenance comment",
+    };
   }
   const seed = (seedIndex ?? new Map()).get(
     seedKey(row.site_slug, row.page_slug, row.name),
@@ -134,12 +174,6 @@ export function classifyMirrorFileRow(row, seedIndex, sourceInventoryIndex = nul
       reason: `seeder plants '${row.name}' from '${seed.path ?? "unknown"}' and the source inventory for '${row.page_slug}' does not list it`,
       seed_path: seed.path,
       seed_overwrite: seed.overwrite,
-    };
-  }
-  if (MIRROR_IMPORT_COMMENT_PATTERN.test(row.comments ?? "")) {
-    return {
-      verdict: "MIRROR_IMPORT",
-      reason: "bulk mirror-import provenance comment",
     };
   }
   return {
