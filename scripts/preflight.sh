@@ -15,8 +15,10 @@
 #   --base <ref>    Compare against this ref instead of origin/develop.
 #   --final         Run the complete candidate barrier, including Clippy, full
 #                   tests, validators, and the Framerail production build.
-#   --groups <a,b>  Run only these of the selected groups (the standing
-#                   promotion runs the groups no earlier receipt covers).
+#   --groups <a,b>  Run exactly these groups, whatever the change-set selects
+#                   (the standing promotion runs the groups no earlier receipt
+#                   covers). Unknown group names are refused. Without it, the
+#                   groups come from the changes against the base.
 #   --jobs <n>      Run up to n check groups at once (0: all; the default for
 #                   --final, 1 otherwise), in two waves: the suites with
 #                   wall-clock deadlines, then the Deepwell tests beside the
@@ -73,7 +75,7 @@ if ! {
 fi
 mapfile -d '' -t CHANGED_PATHS < "${CHANGED_PATHS_FILE}"
 
-if [[ ${#CHANGED_PATHS[@]} -eq 0 ]]; then
+if [[ ${#CHANGED_PATHS[@]} -eq 0 && -z "${ONLY_GROUPS}" ]]; then
   echo "preflight: no changes against ${BASE}; nothing to check"
   exit 0
 fi
@@ -83,9 +85,17 @@ if ! SELECTED="$(printf '%s\0' "${CHANGED_PATHS[@]}" | node .github/scripts/clas
   exit 2
 fi
 if [[ -n "${ONLY_GROUPS}" ]]; then
+  # An explicit list is authoritative: the named groups run even when the
+  # change-set would not select them, and nothing else runs.
+  for requested in ${ONLY_GROUPS//,/ }; do
+    if ! grep -q "^${requested}=" <<<"${SELECTED}"; then
+      echo "preflight: unknown group in --groups: ${requested}" >&2
+      exit 2
+    fi
+  done
   RESTRICTED=""
   while IFS='=' read -r group value; do
-    [[ ",${ONLY_GROUPS}," == *",${group},"* ]] || value=false
+    [[ ",${ONLY_GROUPS}," == *",${group},"* ]] && value=true || value=false
     RESTRICTED+="${group}=${value}"$'\n'
   done <<<"${SELECTED}"
   SELECTED="${RESTRICTED%$'\n'}"

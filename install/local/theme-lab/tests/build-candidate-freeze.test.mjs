@@ -223,3 +223,93 @@ test('usage errors exit with code 2 without writing', () => {
   assert.equal(captureMain(['--check', '--expect-framerail-fingerprint', 'XYZ']).code, 2);
   assert.equal(captureMain(['--check', '--unknown']).code, 2);
 });
+
+describe('candidate freeze generator: scenario bindings, self-check, and successor audits', {skip: tagAvailable ? false : `signed tag ${TAG} is not present in this clone`}, () => {
+  let snapshot;
+  const graphPath = 'publication/dependency-graph.json';
+  const editJson = (root, relative, edit) => editInPlace(root, relative, original => {
+    const document = JSON.parse(original.toString('utf8'));
+    edit(document);
+    return `${JSON.stringify(document, null, 2)}\n`;
+  });
+
+  const scenarioFindings = result => result.findings.filter(item => item.code.startsWith('scenario-')).map(item => [item.code, item.subject]);
+
+  before(() => {
+    snapshot = createTagSnapshot();
+  });
+
+  after(() => {
+    if (snapshot) fs.rmSync(snapshot.workspace, {recursive: true, force: true});
+  });
+
+  test('a targeted scenario pinned to a stale BHL authority is a finding and a validator failure', () => {
+    const restores = [editJson(snapshot.root, graphPath, graph => {
+      graph.targeted_scenarios.find(scenario => scenario.id === 'bhl-options-toggle-header-dark').current_authority_sha256 = '0'.repeat(64);
+    })];
+    try {
+      const result = buildCandidateFreeze({root: snapshot.root});
+      // The identity changes with the pin, so evidence and readiness bindings also go stale.
+      assert.deepEqual(scenarioFindings(result), [['scenario-authority-stale', 'bhl-options-toggle-header-dark']]);
+      assert.ok(result.validation.some(failure => failure.includes('frozen scenario uses stale BHL option authority')), result.validation.join('\n'));
+      const check = captureMain(['--check', '--root', snapshot.root]);
+      assert.equal(check.code, 1);
+      assert.match(check.text, /finding scenario-authority-stale bhl-options-toggle-header-dark/u);
+    } finally {
+      restoreAll(restores);
+    }
+    assert.equal(captureMain(['--check', '--root', snapshot.root]).code, 0, 'snapshot restored');
+  });
+
+  test('a targeted scenario pinned to a stale theme candidate is a finding', () => {
+    const restores = [editJson(snapshot.root, graphPath, graph => {
+      graph.targeted_scenarios.find(scenario => scenario.id === 'bhl-options-collapsible-sidebar').theme_candidate_css_sha256 = '1'.repeat(64);
+    })];
+    try {
+      const result = buildCandidateFreeze({root: snapshot.root});
+      assert.deepEqual(scenarioFindings(result), [['scenario-candidate-stale', 'bhl-options-collapsible-sidebar']]);
+    } finally {
+      restoreAll(restores);
+    }
+  });
+
+  test('a validator-only failure makes --write exit 1 and is reported as a finding', () => {
+    const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'theme-lab-candidate-freeze-selfcheck-'));
+    const restores = [editJson(snapshot.root, 'ports/black-highlighter-theme/option-scenarios/runs/visual-review.json', review => {
+      review.review_method = 'automated pixel diff';
+    })];
+    try {
+      const result = buildCandidateFreeze({root: snapshot.root});
+      assert.deepEqual(result.findings, []);
+      assert.ok(result.validation.some(failure => failure.includes('direct human visual review is missing')), result.validation.join('\n'));
+      const written = captureMain(['--write', '--root', snapshot.root, '--output-dir', outputDir]);
+      assert.equal(written.code, 1);
+      assert.match(written.text, /finding validatePublicationCandidateSet: bhl-options-collapsible-sidebar: direct human visual review is missing/u);
+      assert.equal(captureMain(['--check', '--root', snapshot.root]).code, 1);
+    } finally {
+      restoreAll(restores);
+      fs.rmSync(outputDir, {recursive: true, force: true});
+    }
+    assert.equal(captureMain(['--check', '--root', snapshot.root]).code, 0, 'snapshot restored');
+  });
+
+  test('a successor source-dependency audit is read and recorded by path and bytes', () => {
+    const successorPath = 'publication/evidence/audits/theme-lab-source-dependency-freeze-successor-test.json';
+    const original = fs.readFileSync(path.join(snapshot.root, 'publication/evidence/audits/theme-lab-source-dependency-freeze-audit-20261006.json'), 'utf8');
+    const restores = [editInPlace(snapshot.root, successorPath, () => original.replace('"generated_at": "2026-10-06"', '"generated_at": "2026-10-23"'))];
+    try {
+      const result = buildCandidateFreeze({root: snapshot.root, sourceDependencyAudit: successorPath});
+      const artifact = result.frozen.authority.artifacts.find(item => item.id === 'source-dependency-audit');
+      assert.equal(artifact.path, successorPath);
+      assert.equal(artifact.sha256, sha(fs.readFileSync(path.join(snapshot.root, successorPath))));
+      assert.equal(result.frozen.authority.source_dependency_audit_sha256, artifact.sha256);
+      assert.notEqual(result.candidateSetSha256, JSON.parse(fs.readFileSync(path.join(snapshot.root, 'publication/frozen-candidate-set.json'), 'utf8')).candidate_set_sha256);
+      // Without the override, the committed audit is still the one read.
+      const committed = buildCandidateFreeze({root: snapshot.root});
+      assert.equal(committed.frozen.authority.artifacts.find(item => item.id === 'source-dependency-audit').path,
+        'publication/evidence/audits/theme-lab-source-dependency-freeze-audit-20261006.json');
+    } finally {
+      restoreAll(restores);
+    }
+  });
+});
