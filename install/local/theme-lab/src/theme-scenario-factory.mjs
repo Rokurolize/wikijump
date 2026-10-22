@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import {currentPackageBaseCss} from './candidate-base-contract.mjs';
 import {resolveExistingContainedFile,resolveExistingPackageDirectory,resolveExistingPackageFile} from './package-path.mjs';
-import {resolveRunContractOption} from './current-run-contract-option.mjs';
+import {DEFAULT_SIGMA10_RUN_CONTRACT,DEFAULT_SIGMA9_RUN_CONTRACT,resolveRunContractOption} from './current-run-contract-option.mjs';
 
 const templateByGeneration={
   sigma9:'scenarios/jp-sigma9-extra-black-canonical.json',
@@ -21,8 +21,12 @@ export function themeScenarioConfigForPackage(root,{generation,packageName,runCo
   const sourceFile=entry.source_file??'candidate.wikidot.source.txt';
   resolveExistingPackageFile(directory,sourceFile,`${packageName}: candidate source`);
   const config=JSON.parse(fs.readFileSync(resolveExistingContainedFile(root,templatePath,'Canonical scenario generation template'),'utf8'));
-  if(runContract!==null){
-    const contractPath=resolveRunContractOption(root,runContract,{generation});
+  // Only a task-owned contract rebinds the runtime origin; the shared default
+  // keeps the template origin so its scenario identity is unchanged.
+  const explicitContractPath=runContract===null?null:resolveRunContractOption(root,runContract,{generation});
+  const defaultContractPath=generation==='sigma10'?DEFAULT_SIGMA10_RUN_CONTRACT:DEFAULT_SIGMA9_RUN_CONTRACT;
+  if(explicitContractPath!==null&&explicitContractPath!==defaultContractPath){
+    const contractPath=explicitContractPath;
     const contract=JSON.parse(fs.readFileSync(resolveExistingContainedFile(root,contractPath,'Canonical scenario run contract'),'utf8'));
     const expectedBaseline=generation==='sigma10'?'Sigma-10':'Sigma-9';
     if(contract.baseline_theme?.name!==expectedBaseline)throw new Error(`task run contract baseline does not match ${generation}`);
