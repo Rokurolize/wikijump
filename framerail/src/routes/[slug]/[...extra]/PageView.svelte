@@ -21,6 +21,7 @@
     isWikidotFragmentPage,
     openWikidotPrinterFriendly,
     requestWikidotPageDiscussion,
+    wikidotOpenPanePermissionKind,
     wikidotPageDiscussionPath
   } from "$lib/wikidot/wikidot-page-actions"
   import {
@@ -338,21 +339,14 @@
   }
 
   /**
-   * Opens a page pane after the checks its write surface requires. Append
-   * and Parent write under the page `edit` permission; Move writes under
-   * the `rename` permission and Delete under the `delete` permission, each
-   * matching the authority the matching server mutation enforces. The gate
-   * runs before the editable form (or protected revision data) is mounted.
-   * The server still rechecks every mutation at submission time.
+   * Opens a page pane after the checks its write surface requires (see
+   * `wikidotOpenPanePermissionKind`). The gate runs before the editable
+   * form (or protected revision data) is mounted. The server still
+   * rechecks every mutation at submission time.
    */
   async function openPagePane(pane: PagePane) {
-    if (pane === PagePane.Append || pane === PagePane.Parent) {
-      if (!(await checkEditPermission())) return
-    } else if (pane === PagePane.Move) {
-      if (!(await checkPagePermission("move"))) return
-    } else if (pane === PagePane.Delete) {
-      if (!(await checkPagePermission("delete"))) return
-    }
+    const kind = wikidotOpenPanePermissionKind(pane)
+    if (kind && !(await checkPagePermission(kind))) return
     activatePagePane(pane)
   }
 
@@ -972,10 +966,7 @@
         id={wikidotPageActions ? "page-block-button" : "lock-page-button"}
         class="btn btn-default"
         href="javascript:;"
-        onclick={() => {
-          showSource = false
-          pagePaneState = PagePane.Lock
-        }}
+        onclick={() => openPagePane(PagePane.Lock)}
         type={wikidotPageActions ? undefined : "button"}
       >
         {wikidotPageActions?.lock ?? data.internationalization?.["wiki-page-action-lock"]}

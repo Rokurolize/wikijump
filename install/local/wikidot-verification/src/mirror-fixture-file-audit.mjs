@@ -5,9 +5,12 @@
  * Mirror pages must show the source inventory. Rows that are neither
  * imported source rows nor genuine mirror-import inventory are fixture
  * leakage (for example the seeder's `SCP.txt`, whose planted bytes are
- * page source) and are repair candidates. Rows carrying the bulk
- * mirror-import provenance comment are genuine inventory and must never
- * be tombstoned by this audit.
+ * page source) and are repair candidates — but only with positive
+ * evidence that the name is absent from the source page inventory.
+ * Seeder origin alone never classifies a row as leakage: the seeder
+ * also plants genuine source attachments (#2095 follow-up). Rows
+ * carrying the bulk mirror-import provenance comment are genuine
+ * inventory and must never be tombstoned by this audit.
  *
  * The classifier is pure: callers supply row objects (for example parsed
  * from a `psql -At` TSV dump) and a seed index built from
@@ -42,18 +45,56 @@ export function buildSeedIndex(seederFiles) {
 }
 
 /**
+ * Index evidenced source-page attachment names (corpus attachment
+ * metadata or the recorded Wikidot Files list). Entries are
+ * `{site_slug, page_slug, name}` objects. Pages with at least one entry
+ * count as covered; only covered pages can yield `FIXTURE` verdicts.
+ *
+ * @param {Array<{site_slug: string, page_slug: string, name: string}>} entries
+ * @returns {{hasPage: (siteSlug: string, pageSlug: string) => boolean, hasName: (siteSlug: string, pageSlug: string, name: string) => boolean}}
+ */
+export function buildSourceInventoryIndex(entries) {
+  const pages = new Set();
+  const names = new Map();
+  for (const entry of entries ?? []) {
+    pages.add(pageKey(entry?.site_slug, entry?.page_slug));
+    names.set(seedKey(entry?.site_slug, entry?.page_slug, entry?.name), true);
+  }
+  return {
+    hasPage: (siteSlug, pageSlug) => pages.has(pageKey(siteSlug, pageSlug)),
+    hasName: (siteSlug, pageSlug, name) => names.has(seedKey(siteSlug, pageSlug, name)),
+  };
+}
+
+function emptySourceInventoryIndex() {
+  return buildSourceInventoryIndex([]);
+}
+
+function pageKey(siteSlug, pageSlug) {
+  return `${siteSlug ?? ""}\u0000${pageSlug ?? ""}`;
+}
+
+/**
  * Classify one file row found on a mirror page.
+ *
+ * `sourceInventoryIndex` (built by `buildSourceInventoryIndex`) carries
+ * the evidenced source attachment names. Seeder origin alone never yields
+ * `FIXTURE`: a seed match on a page without inventory coverage, or with
+ * the name present in the inventory, stays out of the repair manifest.
  *
  * Verdicts:
  * - `OUT_OF_SCOPE`: the page is not imported; native seeding rules apply.
  * - `ALREADY_TOMBSTONED`: the row is already deleted; nothing to do.
  * - `IMPORTED`: a source row; owned by the import inventory, not repair.
- * - `FIXTURE`: a seeder-planted local row; the repair candidate.
+ * - `FIXTURE`: a seeder-planted local row absent from the covered source
+ *   page inventory; the repair candidate.
+ * - `SEED_SOURCE_MATCH`: a seeder-planted row whose name matches the
+ *   source page inventory; a genuine attachment, never repair.
  * - `MIRROR_IMPORT`: genuine bulk-import inventory; never tombstone.
- * - `UNCLASSIFIED_LOCAL`: local-origin but neither seed nor import;
- *   needs human review and never enters the repair manifest.
+ * - `UNCLASSIFIED_LOCAL`: local-origin needing human review; never
+ *   enters the repair manifest.
  */
-export function classifyMirrorFileRow(row, seedIndex) {
+export function classifyMirrorFileRow(row, seedIndex, sourceInventoryIndex = null) {
   if (!row?.page_from_wikidot) {
     return {verdict: "OUT_OF_SCOPE", reason: "page is not imported"};
   }
@@ -67,9 +108,30 @@ export function classifyMirrorFileRow(row, seedIndex) {
     seedKey(row.site_slug, row.page_slug, row.name),
   );
   if (seed) {
+    // Seeder origin alone never proves leakage: the seeder plants real
+    // source attachments too (21-row misclassification, #2095). A seed
+    // match is a repair candidate only with positive evidence that the
+    // name is absent from the source page inventory.
+    const inventory = sourceInventoryIndex ?? emptySourceInventoryIndex();
+    if (!inventory.hasPage(row.site_slug, row.page_slug)) {
+      return {
+        verdict: "UNCLASSIFIED_LOCAL",
+        reason: `seeder plants '${row.name}' but no source inventory covers '${row.page_slug}'; cannot rule out a genuine attachment`,
+        seed_path: seed.path,
+        seed_overwrite: seed.overwrite,
+      };
+    }
+    if (inventory.hasName(row.site_slug, row.page_slug, row.name)) {
+      return {
+        verdict: "SEED_SOURCE_MATCH",
+        reason: `seeder-planted '${row.name}' matches the source page inventory; genuine attachment, never repair`,
+        seed_path: seed.path,
+        seed_overwrite: seed.overwrite,
+      };
+    }
     return {
       verdict: "FIXTURE",
-      reason: `seeder plants '${row.name}' from '${seed.path ?? "unknown"}'`,
+      reason: `seeder plants '${row.name}' from '${seed.path ?? "unknown"}' and the source inventory for '${row.page_slug}' does not list it`,
       seed_path: seed.path,
       seed_overwrite: seed.overwrite,
     };

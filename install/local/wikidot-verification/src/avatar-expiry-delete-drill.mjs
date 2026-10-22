@@ -180,7 +180,18 @@ export function buildAvatarDrillPlan(rawConfig) {
         params: {
           user_type: "regular",
           name: probeUsername,
-          email: `${probeUsername}@example.invalid`,
+          // Must PASS the deepwell email validator: user_create runs
+          // EmailService::validate_when_available
+          // (deepwell/src/services/email/service.rs), which rejects a
+          // MailCheck 400 as InvalidEmail (4105), marks MX-less domains
+          // Invalid in classify(), and only lets Normal/Alias/Role verdicts
+          // past check_email_validation (deepwell/src/services/user/service.rs).
+          // gmail.com is MX-backed and never disposable/spam, so it verifies
+          // Normal; the local part is drill-unique (validateDrillConfig forces
+          // the avatar-drill- prefix), no such mailbox exists, the drill never
+          // sends mail, and cleanup deletes the probe — so this address
+          // cannot reach a real inbox.
+          email: `${probeUsername}@gmail.com`,
           locales: ["en"],
           password: { $secret: "AVATAR_DRILL_PROBE_PASSWORD" },
           ip_address: operatorIp,
