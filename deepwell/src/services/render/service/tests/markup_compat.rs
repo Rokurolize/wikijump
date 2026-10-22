@@ -1347,6 +1347,105 @@ fn keeps_wikidot_www_site_attachments_on_their_own_host_in_final_output() {
 }
 
 #[test]
+fn localizes_query_param_asset_urls_in_final_output() {
+    // Asset URLs embedded as query parameter values (e.g. the styleFrame
+    // `theme=` template parameter) have no quote or `url(` prefix, so the
+    // plain attribute and stylesheet passes miss them. They resolve through
+    // the same local-file mapping; query tails and encoding are preserved.
+    let site = wikidot_site("scp-wiki", Some("scp-wiki.wikidot.com"));
+    let mut config = Config::integration_testing();
+    config.files_domain = ".wjfiles.localhost".to_owned();
+    config.files_domain_no_dot = "wjfiles.localhost".to_owned();
+    let mut body = concat!(
+        r#"<p><iframe src="/-/wikidot-interwiki/styleFrame.html?priority=3&theme=https://scp-wiki.wdfiles.com/local--code/theme%3Abasalt/1&css={$css}" style="display: none"></iframe></p>"#,
+        r#"<p><iframe src="/-/wikidot-interwiki/styleFrame.html?theme=https://scp-wiki.wdfiles.com/local--files/scp-3922/theend.jpg"></iframe></p>"#,
+        r#"<p><iframe src="/-/wikidot-interwiki/styleFrame.html?theme=https://assets.example.test/local--files/scp-3922/external.png"></iframe></p>"#,
+        r#"<p><iframe src="/-/wikidot-interwiki/styleFrame.html?next=https://scp-wiki.wdfiles.com/lily-s-proposal"></iframe></p>"#,
+    )
+    .to_owned();
+    let mut styles: Vec<String> = vec![];
+
+    RenderService::localize_wikidot_render_output_file_urls(
+        &mut body,
+        &mut styles,
+        Some(&site),
+        &config,
+    );
+
+    assert_eq!(
+        body,
+        concat!(
+            r#"<p><iframe src="/-/wikidot-interwiki/styleFrame.html?priority=3&theme=https://scp-wiki.wjfiles.localhost/local--code/theme%3Abasalt/1&css={$css}" style="display: none"></iframe></p>"#,
+            r#"<p><iframe src="/-/wikidot-interwiki/styleFrame.html?theme=https://scp-wiki.wjfiles.localhost/local--files/scp-3922/theend.jpg"></iframe></p>"#,
+            r#"<p><iframe src="/-/wikidot-interwiki/styleFrame.html?theme=https://assets.example.test/local--files/scp-3922/external.png"></iframe></p>"#,
+            r#"<p><iframe src="/-/wikidot-interwiki/styleFrame.html?next=https://scp-wiki.wdfiles.com/lily-s-proposal"></iframe></p>"#,
+        ),
+    );
+}
+
+#[test]
+fn localizes_entity_quoted_urls_in_style_attributes() {
+    // Theme mastheads put `url(&#39;...&#39;)` references in real
+    // `style="..."` attributes. The entity quoting defeats the plain
+    // stylesheet pass, so the final output resolves them when scoped to a
+    // literal style attribute opener.
+    let site = wikidot_site("scp-wiki", Some("scp-wiki.wikidot.com"));
+    let mut config = Config::integration_testing();
+    config.files_domain = ".wjfiles.localhost".to_owned();
+    config.files_domain_no_dot = "wjfiles.localhost".to_owned();
+    let mut body = concat!(
+        r#"<div class="masthead" style="--_img: url(&#39;https://scp-wiki.wdfiles.com/local--files/theme%3Aredtape/scp_trans.png&#39;)">"#,
+        r#"<div class="masthead" style="--_img: url(&#39;https://www.wdfiles.com/local--files/files/wikidot_logo_100x30.png&#39;)">"#,
+    )
+    .to_owned();
+    let mut styles: Vec<String> = vec![];
+
+    RenderService::localize_wikidot_render_output_file_urls(
+        &mut body,
+        &mut styles,
+        Some(&site),
+        &config,
+    );
+
+    assert_eq!(
+        body,
+        concat!(
+            r#"<div class="masthead" style="--_img: url(&#39;https://scp-wiki.wjfiles.localhost/local--files/theme%3Aredtape/scp_trans.png&#39;)">"#,
+            r#"<div class="masthead" style="--_img: url(&#39;https://www.wdfiles.com/local--files/files/wikidot_logo_100x30.png&#39;)">"#,
+        ),
+    );
+}
+
+#[test]
+fn keeps_displayed_code_asset_references_literal() {
+    // Syntax-highlighted code samples escape their quotes to `&#39;`, which
+    // looks like the style-attribute shape above, but they are source text,
+    // not fetched assets: no literal `style="` opener survives highlighting,
+    // so the attribute-scoped pass leaves them alone.
+    let site = wikidot_site("scp-wiki", Some("scp-wiki.wikidot.com"));
+    let mut config = Config::integration_testing();
+    config.files_domain = ".wjfiles.localhost".to_owned();
+    config.files_domain_no_dot = "wjfiles.localhost".to_owned();
+    let mut body = concat!(
+        r#"<span class="hl-identifier">url(&#39;https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/wl_border.png&#39;)</span>"#,
+    )
+    .to_owned();
+    let mut styles: Vec<String> = vec![];
+
+    RenderService::localize_wikidot_render_output_file_urls(
+        &mut body,
+        &mut styles,
+        Some(&site),
+        &config,
+    );
+
+    assert_eq!(
+        body,
+        r#"<span class="hl-identifier">url(&#39;https://scp-wiki.wdfiles.com/local--files/theme%3Aflopstyle-dark/wl_border.png&#39;)</span>"#,
+    );
+}
+
+#[test]
 fn sends_cross_site_wikidot_attachments_directly_to_the_file_host() {
     let site = wikidot_site(
         "scp-wiki-en-corpus-scp9506-slice-v2",

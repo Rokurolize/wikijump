@@ -690,7 +690,24 @@ pub(super) static WIKIDOT_EMBED_PARAGRAPH_REGEX: LazyLock<Regex> = LazyLock::new
 });
 static WIKIDOT_LOCAL_FILE_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?P<quote>["'])(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/+local--(?:files|code|resized-images)/[^"'<>\s]+)"#,
+        r#"(?P<quote>["']|[=&?])(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/+local--(?:files|code|resized-images)/[^"'<>\s]+)"#,
+    )
+    .unwrap()
+});
+/// Entity-quoted `url(...)` asset references inside real `style="..."`
+/// attributes, e.g. `style="--_img: url(&#39;https://site.wdfiles.com/...&#39;)"`.
+/// Displayed code listings escape their quotes the same way, but a literal
+/// `style="` opener never survives code highlighting (quotes there become
+/// `&quot;`), so scoping to the attribute keeps those samples literal.
+static WIKIDOT_STYLE_ATTR_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r#"style="(?P<content>[^"]*)""#,
+    )
+    .unwrap()
+});
+static WIKIDOT_STYLE_ATTR_ENTITY_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r#"url\((?P<open>&#39;|&quot;)(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/+local--(?:files|code|resized-images)/[^"'<>\s]*?)(?P<close>&#39;|&quot;)\)"#,
     )
     .unwrap()
 });
@@ -2896,6 +2913,33 @@ impl RenderService {
                 };
 
                 format!("{}{}", &captures["prefix"], localized)
+            })
+            .into_owned();
+
+        // Entity-quoted `url(...)` references only resolve inside real
+        // `style="..."` attributes; the same `&#39;` shape in displayed code
+        // listings is source text, not a fetched asset, and stays literal.
+        let html = WIKIDOT_STYLE_ATTR_URL_REGEX
+            .replace_all(&html, |captures: &regex::Captures<'_>| {
+                let content = WIKIDOT_STYLE_ATTR_ENTITY_URL_REGEX
+                    .replace_all(&captures["content"], |inner: &regex::Captures<'_>| {
+                        let host = &inner["host"];
+                        let path =
+                            format!("/{}", inner["path"].trim_start_matches('/'));
+                        let Some(localized) = Self::localized_wikidot_local_file_url(
+                            host,
+                            &path,
+                            current_site,
+                            config,
+                        ) else {
+                            return inner.get(0).map_or("", |m| m.as_str()).to_owned();
+                        };
+
+                        format!("url({}{}){})", &inner["open"], localized, &inner["close"])
+                    })
+                    .into_owned();
+
+                format!("style=\"{content}\"")
             })
             .into_owned();
 
