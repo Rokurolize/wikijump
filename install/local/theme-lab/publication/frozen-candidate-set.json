@@ -1517,32 +1517,32 @@
       "scenario_id": "bhl-options-toggle-header-dark",
       "visual_review": {
         "path": "ports/black-highlighter-theme/option-scenarios/runs/visual-review.json",
-        "sha256": null
+        "sha256": "dea5bfd06b38003249b56307479645332c9c60f83b45063b24933c14d83f1063"
       },
       "receipts": [
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
-          "sha256": null
+          "sha256": "a806176bb3c68e0b57c218da4a15d1209c305dd88f64f0cd7c0b713051412ce0"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
-          "sha256": null
+          "sha256": "c538d69870e7990b31e9a1225fc8b5002ada206a4d0550b59d8c76a843832647"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
-          "sha256": null
+          "sha256": "262954fb599413f7f61bd59bfefbc0300b173d65fe555e21f6cc6d329c6436ee"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
-          "sha256": null
+          "sha256": "c7e58ed99bc4a040b91039001141fa2739861a413d4b91958453372a13daabd1"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
-          "sha256": null
+          "sha256": "8d76d8fbb3262a16843bc432ab73d6633129ca6ae9734d4d14cd464b8168a092"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
-          "sha256": null
+          "sha256": "7fed37289e888dc62ef1bca49fe327b30ac47d3a408f2a860211529b4e43e83d"
         }
       ]
     },
@@ -1550,32 +1550,32 @@
       "scenario_id": "bhl-options-collapsible-sidebar",
       "visual_review": {
         "path": "ports/black-highlighter-theme/option-scenarios/runs/visual-review.json",
-        "sha256": null
+        "sha256": "dea5bfd06b38003249b56307479645332c9c60f83b45063b24933c14d83f1063"
       },
       "receipts": [
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
-          "sha256": null
+          "sha256": "4521fd58879d0c9613d1f5d90eb6688ee97dc57a5806608cf232f9ebd0d9f690"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json",
-          "sha256": null
+          "sha256": "6e1e9c6c713aa1c8daeb1238b8dea4d7108a2c690a79197a5b97fa3e3e4c431e"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json",
-          "sha256": null
+          "sha256": "0abf115184c1c3b9bbfcb11090288465b6225b0566b09e430471e9b237a6a28f"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
-          "sha256": null
+          "sha256": "86355641fe2c2070f9eadec59eb15e9497f6d7d60af17186c7bcb70d71ab90e2"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json",
-          "sha256": null
+          "sha256": "78b35e3c8e1a4c9983bc868d9fc60bf5d70440fa5a9d4e3d29db023b3df5a579"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json",
-          "sha256": null
+          "sha256": "2e47ddad163936da9180c5059f4a4501b7ab788301750c4e8b1e1bf927e66af4"
         }
       ]
     }
