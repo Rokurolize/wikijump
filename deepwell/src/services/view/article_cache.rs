@@ -597,6 +597,14 @@ mod tests {
     }
 
     #[test]
+    fn article_page_cache_denies_random_redirect_helpers() {
+        // Every visit to a random helper reselects its target (#2080). A cached
+        // view would pin one pick, or a pre-redirect render, behind the route.
+        let helper = "[[module ListPages category=\"_default\" order=\"random\" limit=\"1\" tag=\"scp\"]]\n[[include :snippets:redirect url=%%link%%]]\n[[/module]]\n";
+        assert!(!anonymous_article_cache_source_eligible(helper), "{helper}");
+    }
+
+    #[test]
     fn article_page_cache_allows_the_rating_widget_for_anonymous_viewers() {
         for source in ["[[module Rate]]", "Text\n\n[[module Rate]]\n\nmore text"] {
             assert!(anonymous_article_cache_source_eligible(source), "{source}");
