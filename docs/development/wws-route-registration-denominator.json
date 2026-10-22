@@ -65,8 +65,8 @@
       },
       {
         "path": "wws/src/deepwell.rs",
-        "git_blob": "63d90d03a7eebf394cae3d54671e1842078cc7a1",
-        "sha256": "c2e522bcc5c95966565adbb7e77904f8db5e25290d26baccdc1fc089e10019f0"
+        "git_blob": "581e5abc925f18d6779a34c7b54b943887a329f0",
+        "sha256": "2d2cec493a593b0a047c7eba10415ca09c0154305a7f4d26ccd24a250ba84ddf"
       },
       {
         "path": "wws/src/handler/avatar.rs",
@@ -105,8 +105,8 @@
       },
       {
         "path": "wws/src/handler/text_block.rs",
-        "git_blob": "95ce8cca1410e984f8a2664a867ed185b31e6578",
-        "sha256": "0c62286cf7e4623e9077c235c300484a9ecf8f4184ef6c04f0eb9a45bf241e51"
+        "git_blob": "f9c1ad872e4fd5ead4002a5ba9f2e9517dff67d8",
+        "sha256": "56b6ad93f3632669c17ae9d1150fd4734a5f3c744c8bb00d761207315a0ebbed"
       },
       {
         "path": "wws/src/handler/well_known.rs",
@@ -389,7 +389,7 @@
       "registered_handler_symbol": "handle_code_block",
       "handler_definition_path": "wws/src/handler/text_block.rs",
       "route_registration_reference": "wws/src/route.rs#L95",
-      "handler_definition_reference": "wws/src/handler/text_block.rs#L136",
+      "handler_definition_reference": "wws/src/handler/text_block.rs#L135",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -422,7 +422,7 @@
       "registered_handler_symbol": "handle_html_block",
       "handler_definition_path": "wws/src/handler/text_block.rs",
       "route_registration_reference": "wws/src/route.rs#L97",
-      "handler_definition_reference": "wws/src/handler/text_block.rs#L46",
+      "handler_definition_reference": "wws/src/handler/text_block.rs#L45",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -488,7 +488,7 @@
       "registered_handler_symbol": "handle_html_terminal",
       "handler_definition_path": "wws/src/handler/text_block.rs",
       "route_registration_reference": "wws/src/route.rs#L50",
-      "handler_definition_reference": "wws/src/handler/text_block.rs#L68",
+      "handler_definition_reference": "wws/src/handler/text_block.rs#L67",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
