@@ -715,7 +715,12 @@ async function persistBatch(batch,theme){
  for(const theme of themes){
  const themeRecords=[];
   const dir=themeDirectory(theme);const cssPath=resolveExistingPackageFile(dir,'candidate.css',`${theme}: candidate CSS`);
-  const searchAuthorityPath=migrationFixture?'evidence/sigma10-baseline-search-controls-20261002/receipt.json':`evidence/search-controls-20261001/${theme}.json`;
+  // Mobile and narrow-mobile source search behaviour is measured by a sibling receipt (search-controls-20261022);
+  // the 20261001 receipt covers desktop, laptop and tablet only. The sibling is used only for those viewports and only when present.
+  const mobileSearchAuthorityPath=`evidence/search-controls-20261022/${theme}.json`;
+  let useMobileSearchAuthority=false;
+  if(!migrationFixture&&['mobile','narrow-mobile'].includes(viewportArg)){try{resolveExistingContainedFile(themeLabDir,mobileSearchAuthorityPath,`${theme}: mobile search source authority`);useMobileSearchAuthority=true}catch(error){if(error.code!=='ENOENT')throw error}}
+  const searchAuthorityPath=useMobileSearchAuthority?mobileSearchAuthorityPath:migrationFixture?'evidence/sigma10-baseline-search-controls-20261002/receipt.json':`evidence/search-controls-20261001/${theme}.json`;
   let searchAuthorityBytes=null;try{searchAuthorityBytes=await fs.readFile(resolveExistingContainedFile(themeLabDir,searchAuthorityPath,`${theme}: search source authority`))}catch(error){if(error.code!=='ENOENT')throw error}
   const searchSourceAuthority=searchAuthorityBytes?{path:searchAuthorityPath,sha256:crypto.createHash('sha256').update(searchAuthorityBytes).digest('hex')}:null;
   const candidateStructure=await loadCandidateStructure(dir);

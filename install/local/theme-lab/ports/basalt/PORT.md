@@ -39,3 +39,36 @@ The evidence-backed rules in `../TECHNICAL-LOCALIZATION-SPEC.md` apply; the fina
 - `6` unconfirmed SCP-EN site-local author identity links were localized to visible credit text; upstream EN and the original human-port source retain their link markup. The local SCP-JP account namespace is not assumed to contain foreign identities.
 - Local preview fixture expanded current JP `theme-squares` markup and `0` component CSS modules where used; `preview-fixture.json` binds its source hashes.
 - When present, named Wikidot page attachments and their hashes are in `page-assets.json` and `page-assets/`; publish the named files with the candidate source.
+
+## Full-check warnings (basalt-final-20261022-full)
+
+Run `basalt-final-20261022-full` on runtime source 6b6ab9d0…2768f and backend identity 19812d7f…66ae (raw result sha256 1ee6bf22…eff5c). Port verdict: PASS (0 actionable, 0 unresolved findings). Target verdict: INCONCLUSIVE with 16 warnings. Each warning is listed with its status. A warning is **explained** only where the mechanism was checked against the frozen Basalt CSS; the rest stay open and keep the target acceptance inconclusive.
+
+### Explained: content width (6 warnings)
+
+Frozen Basalt sets `#main-content{width:var(--main-content-width);max-width:calc(100% - var(--main-content-side-margin)*2)}` with `--main-content-side-margin:1.325rem` (21.2px). At 768px the content box is 768 − 2×21.2 = 725.6px, and at 390px it is 390 − 2×21.2 = 347.6px. The Sigma-9 baseline keeps a narrower column (about 435px at tablet). The measured "after" widths match the Basalt rule exactly.
+
+| # | surface / component | viewport | property | reference (Sigma-9 baseline) | candidate (Basalt) | explanation |
+|---|---|---|---|---|---|---|
+| 1 | content.toc / toc | mobile | rect.width | 107.5 | 347.6 | Basalt `#main-content` max-width at 390px |
+| 2 | content.blockquote / blockquote | tablet | rect.width | 355.2 | 725.6 | same rule at 768px |
+| 3 | content.article / heading | tablet | rect.width | 435.2 | 725.6 | same rule |
+| 4 | content.article / list | tablet | rect.width | 435.2 | 725.6 | same rule |
+| 5 | content.code / code | tablet | rect.width | 435.2 | 725.6 | same rule |
+| 6 | content.tabview / tabview | tablet | rect.width | 435.2 | 725.6 | same rule |
+
+### Open: not yet explained (10 warnings)
+
+These stay open. Each needs the named check before it can be explained or fixed.
+
+- torture content.table (narrow-mobile, rect.height 96.7 → 223.8): needs a check of cell wrapping under the Basalt table rule versus the baseline column width.
+- torture content.article / math (narrow-mobile, rect.height 23.5 → 53.5): needs the math container rule compared with the frozen Basalt CSS.
+- torture content.rating (desktop, rect.height 18 → 35.1): needs the Basalt `.page-rate-widget-box`/`.rate-points` rules compared with the baseline.
+- torture content.collapsible (mobile, rect.height 12 → 20.3): needs the Basalt `.collapsible-block` padding/line-height rule.
+- torture content.footnotes / footnote (mobile, rect.width 5.3 → 4.0): needs the Basalt footnote marker rule.
+- expanded_selector `#header h2` (reference 1, candidate 2): needs the second header heading traced in the Basalt header markup.
+- expanded_selector `.page-rate-widget-box` and `.page-rate-widget-box .rate-points` (reference 1, candidate 2 each): probable second rating widget inside the credit modal; needs the credit-view DOM count checked.
+- expanded_selector `.yui-navset` (reference 1, candidate 2): needs the second tabview source located in the fixture.
+- collapsed_selector `.scp-image-block` (reference 7, candidate 1): needs the image-block visibility in the candidate traced against the baseline.
+
+The package does not claim full acceptance while any open item remains.
