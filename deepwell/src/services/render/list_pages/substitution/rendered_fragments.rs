@@ -205,7 +205,27 @@ fn list_pages_rendered_fragment_has_block_root(html: &str) -> bool {
     })
 }
 
+/// Ranges whose opener and closer each occupy a complete line. The ListPages
+/// date lane depends on this strict shape, so it stays unchanged.
 pub(super) fn collect_list_pages_html_body_ranges(source: &str) -> Vec<Range<usize>> {
+    collect_html_body_ranges(source, true)
+}
+
+/// Byte ranges that FTML can render as a raw `[[html]]` body, used to choose
+/// HTML escaping for substituted identity, tag, and form values (#2667).
+///
+/// Deliberately over-inclusive: FTML's block rule accepts an opener at any
+/// position in a line, an inline body, and a closer that is not on its own
+/// line, so a block such as `Summary [[html]]<b>%%tags%%</b>[[/html]]` is raw
+/// HTML. Escaping extra text is display-neutral for ordinary values.
+pub(super) fn collect_list_pages_html_escape_ranges(source: &str) -> Vec<Range<usize>> {
+    collect_html_body_ranges(source, false)
+}
+
+fn collect_html_body_ranges(
+    source: &str,
+    complete_lines_only: bool,
+) -> Vec<Range<usize>> {
     const OPEN: &[u8] = b"[[";
     const HEAD_CLOSE: &[u8] = b"]]";
     const CLOSE: &[u8] = b"[[/html]]";
@@ -266,7 +286,7 @@ pub(super) fn collect_list_pages_html_body_ranges(source: &str) -> Vec<Range<usi
         let opener_end = head_close + HEAD_CLOSE.len();
         let head = &source[open + OPEN.len()..head_close];
         if !is_supported_html_head(head)
-            || !is_complete_block_line(source, open, opener_end)
+            || (complete_lines_only && !is_complete_block_line(source, open, opener_end))
         {
             cursor = open + OPEN.len();
             continue;
@@ -279,7 +299,7 @@ pub(super) fn collect_list_pages_html_body_ranges(source: &str) -> Vec<Range<usi
                 return ranges;
             };
             let close_end = close + CLOSE.len();
-            if is_complete_block_line(source, close, close_end) {
+            if !complete_lines_only || is_complete_block_line(source, close, close_end) {
                 break close;
             }
             close_cursor = close + OPEN.len();
@@ -288,4 +308,48 @@ pub(super) fn collect_list_pages_html_body_ranges(source: &str) -> Vec<Range<usi
         cursor = close + CLOSE.len();
     }
     ranges
+}
+
+#[cfg(test)]
+mod html_body_range_tests {
+    use super::{
+        collect_list_pages_html_body_ranges, collect_list_pages_html_escape_ranges,
+    };
+
+    #[test]
+    fn strict_ranges_keep_only_complete_line_blocks() {
+        assert_eq!(
+            collect_list_pages_html_body_ranges("[[html]]\n<b>x</b>\n[[/html]]").len(),
+            1,
+        );
+        assert!(
+            collect_list_pages_html_body_ranges("Summary [[html]]<b>x</b>[[/html]]")
+                .is_empty(),
+        );
+    }
+
+    #[test]
+    fn escape_ranges_cover_mid_line_and_closer_blocks() {
+        let source = "Summary [[html]]<b>x</b>[[/html]]";
+        let ranges = collect_list_pages_html_escape_ranges(source);
+        assert_eq!(ranges.len(), 1);
+        assert_eq!(&source[ranges[0].clone()], "<b>x</b>");
+
+        let source = "[[html]]\n<b>x</b>[[/html]]";
+        let ranges = collect_list_pages_html_escape_ranges(source);
+        assert_eq!(ranges.len(), 1);
+        assert_eq!(&source[ranges[0].clone()], "\n<b>x</b>");
+    }
+
+    #[test]
+    fn escape_ranges_ignore_closers_and_unrelated_heads() {
+        assert!(
+            collect_list_pages_html_escape_ranges("[[/html]] [[div]]x[[/div]]")
+                .is_empty()
+        );
+        assert!(
+            collect_list_pages_html_escape_ranges("[[htmlx]]<b>x</b>[[/html]]")
+                .is_empty(),
+        );
+    }
 }

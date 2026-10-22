@@ -4326,6 +4326,74 @@ fn substituted_identity_and_tag_values_escape_html_inside_html_blocks() {
     assert!(substituted.contains("wjpentest"), "{substituted:?}");
 }
 
+/// Issue #2667 residual: a `[[html]]` block need not occupy complete lines.
+/// FTML accepts an opener mid-line, an inline body, and a closer mid-line,
+/// and renders each as a raw html-block iframe. The substituted identity and
+/// tag values must be HTML-escaped in every such shape. Fails before the fix,
+/// which escaped only complete-line blocks.
+#[test]
+fn substituted_tag_values_escape_html_blocks_at_any_line_position() {
+    let templates = [
+        "[[html]]\n<b>%%tags%%</b>\n[[/html]]",
+        "Summary [[html]]<b>%%tags%%</b>[[/html]]",
+        "Summary [[html]]\n<b>%%tags%%</b>\n[[/html]]",
+        "Summary\n[[html]]\n<b>%%tags%%</b>[[/html]]",
+    ];
+    let page = FoundPageRow {
+        page_id: 7,
+        site_id: 1,
+        title: Some("WJ HTML Host".to_owned()),
+        alt_title: None,
+        slug: Some("wj-html-host".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: Some(vec!["<img src=x onerror=alert(1)>".to_owned()]),
+        created_at: None,
+        created_by: Some(7),
+        updated_at: None,
+        updated_by: Some(7),
+        score: None,
+        revision_count: None,
+    };
+    let users = BTreeMap::new();
+    let snapshots = BTreeMap::new();
+    let data_form_values = BTreeMap::new();
+    let context = list_pages_substitution_context_with_mode(
+        20,
+        &users,
+        &snapshots,
+        None,
+        &data_form_values,
+        false,
+    );
+    for template in templates {
+        let substituted =
+            substitute_list_pages_variables(template, &page, 1, 1, &context);
+        assert!(
+            !substituted.contains("<img"),
+            "{template:?} -> {substituted:?}"
+        );
+        assert!(
+            substituted.contains("&lt;img src=x onerror=alert(1)&gt;"),
+            "{template:?} -> {substituted:?}",
+        );
+
+        let mut protected = substituted.clone();
+        let page_info = fallback_test_page_info("scp-7243", "SCP-7243");
+        let mut settings =
+            WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        settings.enable_html_blocks = true;
+        ftml::preprocess_for_layout(&mut protected, settings.layout);
+        let tokens = ftml::tokenize(&protected);
+        let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
+        let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
+        assert!(
+            rendered.contains("html-block-iframe"),
+            "the shape must still be a raw html block: {template:?} -> {rendered:?}",
+        );
+    }
+}
+
 /// Ordinary identity and tag values inside `[[html]]` blocks: names pass
 /// through byte-identically (no HTML-significant characters in 103,915
 /// observed corpus names), and the only escaping is `&` → `&amp;` (599
