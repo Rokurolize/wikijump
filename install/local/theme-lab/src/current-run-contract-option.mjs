@@ -14,6 +14,26 @@ export const DEFAULT_SIGMA10_RUN_CONTRACT = 'sigma10-migration/current-campaign/
 const SIGMA9_TASK = /^ports\/current-acceptance\/run-contract-[a-z][a-z0-9-]{2,55}\.json$/u;
 const SIGMA10_TASK = /^sigma10-migration\/current-campaign\/run-contract-[a-z][a-z0-9-]{2,55}\.json$/u;
 
+// Reads the single --run-contract option from argv. Both `--run-contract <path>`
+// and `--run-contract=<path>` are accepted; a bare or repeated flag is an error
+// so a typo can never silently fall back to the shared contract.
+export function runContractArgument(args) {
+  const values = [];
+  args.forEach((arg, index) => {
+    if (arg === '--run-contract') {
+      const next = args[index + 1];
+      if (!next || next.startsWith('--')) throw new Error('--run-contract needs a path');
+      values.push(next);
+    } else if (arg.startsWith('--run-contract=')) {
+      const path = arg.slice('--run-contract='.length);
+      if (!path) throw new Error('--run-contract needs a path');
+      values.push(path);
+    }
+  });
+  if (values.length > 1) throw new Error('--run-contract may be supplied only once');
+  return values.length ? values[0] : null;
+}
+
 export function resolveRunContractOption(root, value, {generation = 'sigma9'} = {}) {
   const fallback = generation === 'sigma10' ? DEFAULT_SIGMA10_RUN_CONTRACT : DEFAULT_SIGMA9_RUN_CONTRACT;
   if (value === undefined || value === null) return fallback;
@@ -35,8 +55,10 @@ export function resolveRunContractOption(root, value, {generation = 'sigma9'} = 
 // all captured against that exact file.
 export function auditMatchesRunContract(records, contractBytes) {
   const sha = crypto.createHash('sha256').update(contractBytes).digest('hex');
+  // An empty audit binds nothing, so it cannot prove the contract was used.
+  if (!Array.isArray(records) || records.length === 0) return ['audit has no rows bound to the supplied run contract'];
   const failures = [];
-  for (const row of records ?? [])
+  for (const row of records)
     if (row.run_contract_sha256 !== sha) failures.push(`audit row was not captured against the supplied run contract: ${row.surface}.${row.state}`);
   return failures;
 }
