@@ -148,10 +148,11 @@ function verifyContractRelativeBinding(root, contractDirectory, relative, expect
   }
 }
 
-// Mirrors the capture's resolution order (contract directory, then Theme Lab
-// root). Reported as capture blockers, because the contract itself is valid.
-function captureResolves(root, contractDirectory, relative) {
-  for (const base of [contractDirectory, root]) {
+// Mirrors the capture's resolution order for a path written in a manifest:
+// the manifest's directory, then Theme Lab root. A miss is reported as a
+// capture blocker, because the contract itself is valid.
+function captureResolves(root, baseDirectory, relative) {
+  for (const base of [baseDirectory, root]) {
     try { fs.accessSync(path.resolve(base, relative)); return true; }
     catch { /* try the next base */ }
   }
@@ -226,10 +227,10 @@ export function buildSigma10RuntimeContract({
     } catch (error) {
       failures.push(`migration fixture is unavailable: ${slug}: ${error.message}`);
     }
-    // The manifest's file values are relative to sigma10-migration/. The
-    // capture resolves them from the contract directory or root, so they miss.
-    if (!captureResolves(root, contractDirectory, fixture.file))
-      captureBlockers.push(`capture-interactive.mjs resolves migration fixture ${slug} file "${fixture.file}" from the contract directory or Theme Lab root; the manifest path is relative to sigma10-migration/`);
+    // The manifest's file values are relative to sigma10-migration/, the
+    // manifest's own directory. The capture resolves them from that directory.
+    if (!captureResolves(root, migrationDirectory, fixture.file))
+      captureBlockers.push(`capture-interactive.mjs cannot resolve migration fixture ${slug} file "${fixture.file}" from the manifest directory (sigma10-migration/) or Theme Lab root`);
   }
   if (!captureResolves(root, contractDirectory, '../fixture-manifest.json'))
     captureBlockers.push('identity manifest ../fixture-manifest.json is not resolvable');

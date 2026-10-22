@@ -110,7 +110,7 @@ test('a native target-baseline search proof applies only to its exact current mi
  const source='Frozen native Sigma-10 source',css='#search-top-box-input{display:none}',html='Native source HTML',program='Executed source measurement',url='https://pseudo-scp-jp.wikidot.com/sigma-10:main';
  write('sigma10-migration/sources/main.wikidot.txt',source);write('sigma10-migration/sigma10-offline.css',css);write('source.html',html);write('measurement.mjs',program);
  write('sigma10-migration/source-manifest.json',JSON.stringify({pages:{'pseudo-scp-jp:sigma-10:main':{source_url:url,sha256:sha(source),file:'sources/main.wikidot.txt'}}}));
- write('sigma10-migration/current-campaign/run-contract.json',JSON.stringify({schema:'scp_jp_sigma10_migration_run.v1',target_site:{slug:'scpaiueouiuiuiui'},baseline_theme:{replacement_css_sha256:sha(css)}}));
+ write('sigma10-migration/current-campaign/run-contract.json',JSON.stringify({schema:'scp_jp_sigma10_migration_run.v1',target_site:{slug:'scpaiueouiuiuiui'},baseline_theme:{replacement_css_sha256:sha(css)},frozen_sigma10_authority:{source_manifest_sha256:sha(fs.readFileSync(path.join(root,'sigma10-migration/source-manifest.json')))}}));
  const size={width:1440,height:1000},document={schema:'theme_lab_wikidot_baseline_search_control.v1',source_url:url,source_sha256:sha(source),source_snapshot:binding('sigma10-migration/sources/main.wikidot.txt'),target_baseline:{name:'Sigma-10',css:binding('sigma10-migration/sigma10-offline.css'),source_manifest:binding('sigma10-migration/source-manifest.json'),run_contract_path:'sigma10-migration/current-campaign/run-contract.json'},public_writes:0,external_requests_sent:0,offline:true,original_html_sha256:sha(html),replay_entry:'/o/'+sha(html),artifacts:[binding('source.html')],measurement_programs:[binding('measurement.mjs')],source_measurements:[{viewport:'desktop',viewport_size:size,source_sha256:sha(source),original_html_sha256:sha(html),loaded:{offline:true},after_focus:{display:'none',value:'サイト検索'},navigation:'/search:site/q/'+encodeURIComponent('サイト検索'),handler:{search:'native search',events:[{type:'submit',fn:'native search'}]}}]};
  const row={theme:'example',viewport:'desktop',viewport_size:size,target_site:'scpaiueouiuiuiui',baseline_theme:'Sigma-10',baseline_theme_mode:'replacement',baseline_theme_css_sha256:sha(css)},audit={records:[row]};
  const save=()=>{write('receipt.json',JSON.stringify(document));row.action_contract_observation={mode:'source-hidden-submit',source_authority:binding('receipt.json')}};save();assert.deepEqual(validateSemanticSourceAuthority(root,audit),[]);
@@ -118,6 +118,26 @@ test('a native target-baseline search proof applies only to its exact current mi
  write('sigma10-migration/sigma10-offline.css',css+' changed');assert.ok(validateSemanticSourceAuthority(root,audit).length);write('sigma10-migration/sigma10-offline.css',css);
  write('sigma10-migration/sources/main.wikidot.txt',source+' changed');assert.ok(validateSemanticSourceAuthority(root,audit).length);write('sigma10-migration/sources/main.wikidot.txt',source);
  document.target_baseline.source_manifest.path='source.html';save();assert.ok(validateSemanticSourceAuthority(root,audit).length);
+ // The receipt keeps pinning the shared contract path. With that file absent, only an explicit task contract resolves the pin, and the receipt bytes never change.
+ document.target_baseline.source_manifest=binding('sigma10-migration/source-manifest.json');save();assert.deepEqual(validateSemanticSourceAuthority(root,audit),[]);
+ const receiptBytes=fs.readFileSync(path.join(root,'receipt.json'));
+ const shared=path.join(root,'sigma10-migration/current-campaign/run-contract.json'),task='sigma10-migration/current-campaign/run-contract-basalt-test.json',taskFile=path.join(root,task);
+ const sharedBytes=fs.readFileSync(shared);
+ fs.renameSync(shared,taskFile);
+ assert.ok(validateSemanticSourceAuthority(root,audit).length);
+ assert.deepEqual(validateSemanticSourceAuthority(root,audit,{sigma10RunContract:task}),[]);
+ assert.deepEqual(fs.readFileSync(path.join(root,'receipt.json')),receiptBytes);
+ const mutated=JSON.parse(sharedBytes);
+ for(const patch of [{baseline_theme:{replacement_css_sha256:'b'.repeat(64)}},{target_site:{slug:'scp-jp'}},{frozen_sigma10_authority:{source_manifest_sha256:'c'.repeat(64)}}]){
+  fs.writeFileSync(taskFile,JSON.stringify({...mutated,...patch}));
+  assert.ok(validateSemanticSourceAuthority(root,audit,{sigma10RunContract:task}).length,JSON.stringify(patch));
+ }
+ fs.writeFileSync(taskFile,sharedBytes);
+ assert.deepEqual(validateSemanticSourceAuthority(root,audit,{sigma10RunContract:task}),[]);
+ fs.renameSync(taskFile,shared);
+ // A receipt pin that is not the canonical shared path stays refused, even when a task contract is supplied.
+ document.target_baseline.run_contract_path=task;save();
+ assert.ok(validateSemanticSourceAuthority(root,audit,{sigma10RunContract:task}).length);
  }finally{fs.rmSync(root,{recursive:true,force:true})}
 });
 

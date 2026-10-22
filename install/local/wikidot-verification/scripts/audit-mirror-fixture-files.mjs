@@ -86,7 +86,8 @@ export async function main(argv) {
 attachment metadata or the recorded Wikidot Files list. A seed match
 becomes FIXTURE only on a covered page whose inventory omits the name.
 Without it, seed matches stay UNCLASSIFIED_LOCAL and the manifest
-stays empty by design.
+stays empty by design. A malformed inventory (not an array, or an entry
+missing site_slug, page_slug, or name) aborts the run before any output.
 
 Dump the rows first (SELECT-only):
   psql -At -F'	' -c "${DUMP_QUERY}" > dump.tsv

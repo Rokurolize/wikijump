@@ -345,7 +345,7 @@ export function checkCampaignCompletion(root, {captureContractReader = readCurre
       }catch(error){failures.push(`${row.package}: canonical scenario matrix is missing or stale: ${error.message}`)}
       const semantic = audit.acceptance_model === SEMANTIC_BROWSER_MODEL;
       if (semantic) {
-        failures.push(...validateSemanticBrowserAcceptance(audit).failures, ...validateSemanticSourceAuthority(root,audit));
+        failures.push(...validateSemanticBrowserAcceptance(audit).failures, ...validateSemanticSourceAuthority(root,audit,{sigma10RunContract:sigma10Contract}));
         try {
           const sourceHtmlSha=semanticSourceReferenceHtmlSha(root,audit,row.package);
           if(result.reference_identity?.original_html_sha256!==sourceHtmlSha)failures.push(`${row.package}: full package reference differs from current frozen source rendering`);
@@ -409,7 +409,7 @@ export function checkCampaignCompletion(root, {captureContractReader = readCurre
     }catch(error){failures.push(`Sigma-10 canonical scenario evidence is missing or stale: ${error.message}`)}
     const semantic = audit.acceptance_model === SEMANTIC_BROWSER_MODEL;
     if (semantic) {
-      failures.push(...validateSemanticBrowserAcceptance(audit).failures, ...validateSemanticSourceAuthority(root,audit));
+      failures.push(...validateSemanticBrowserAcceptance(audit).failures, ...validateSemanticSourceAuthority(root,audit,{sigma10RunContract:sigma10Contract}));
       for (const artifact of semanticReviewArtifactBindings(audit)) bind(artifact.binding, artifact.label);
     }
     failures.push(...validateBrowserCoverage(audit,[...names,'sigma10-baseline'],{migration:true}));
