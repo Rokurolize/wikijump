@@ -49,3 +49,11 @@ test("search state keeps recording the hidden-input observation and binds the fr
   assert.match(search, /source_authority: sourceAuthority/u);
   assert.match(source, /evidence\/search-controls-20261001\/\$\{theme\}\.json/u);
 });
+
+test("mobile compact-search captures execute the native submit and bind source authority", () => {
+  const compact = specLine("shell.search", "compact-submit");
+  assert.match(compact, /viewports:\['mobile','narrow-mobile'\]/u);
+  assert.match(compact, /exerciseHeaderSearch\(p,p\.__themeLabSearchSourceAuthority\)/u);
+  assert.doesNotMatch(compact, /waitFor\(\{state:'visible'\}\)\}\},$/u);
+  assert.match(source, /'shell\.search\|compact-submit'/u, 'native form submit does not need the unrelated Svelte History hydration barrier');
+});
