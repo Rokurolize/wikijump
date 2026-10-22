@@ -39,6 +39,7 @@ emit_scope() {
       ;;
     deepwell) printf '%s\\0' deepwell/src/lib.rs ;;
     deepwell_space) printf '%s\\0' 'deepwell/src/file with space.rs' ;;
+    none) ;;
     docs) printf '%s\\0' docs/development.md ;;
     specification) printf '%s\\0' docs/wikidot-specifications/specifications/module/example.md ;;
     verification) printf '%s\\0' install/local/wikidot-verification/src/example.mjs ;;
@@ -293,4 +294,34 @@ test("verification and specification inputs run only the final verification barr
       assert.deepEqual(final.commands(), finalExpected)
     })
   }
+})
+
+test("explicit groups run without a change-set and unknown groups are refused", (t) => {
+  const listed = createHarness(t)
+  const result = listed.runPreflight(["--base", remoteOid, "--final", "--groups", "theme_lab", "--list"], {
+    PREFLIGHT_REMOTE_SCOPE: "none"
+  })
+  assert.equal(result.status, 0, result.stderr)
+  assert.doesNotMatch(result.stdout, /nothing to check/)
+  assert.match(result.stdout, /^preflight: groups: .*theme_lab=true/mu)
+  const steps = [...result.stdout.matchAll(/^  would run: (.+)$/gmu)].map((match) => match[1])
+  assert.ok(steps.includes("Theme Lab campaign evidence restore"), result.stdout)
+  assert.ok(
+    steps.indexOf("Theme Lab campaign evidence restore") < steps.indexOf("Theme Lab current campaign completion"),
+    steps.join("\n")
+  )
+
+  const unknown = createHarness(t)
+  const refused = unknown.runPreflight(["--base", remoteOid, "--final", "--groups", "theme_lba", "--list"], {
+    PREFLIGHT_REMOTE_SCOPE: "none"
+  })
+  assert.equal(refused.status, 2)
+  assert.match(refused.stderr, /unknown group in --groups: theme_lba/)
+  assert.deepEqual(unknown.commands(), [])
+
+  const idle = createHarness(t)
+  const quiet = idle.runPreflight(["--base", remoteOid, "--final"], { PREFLIGHT_REMOTE_SCOPE: "none" })
+  assert.equal(quiet.status, 0, quiet.stderr)
+  assert.match(quiet.stdout, /nothing to check/)
+  assert.deepEqual(idle.commands(), [])
 })
