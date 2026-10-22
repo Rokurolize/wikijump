@@ -3,6 +3,7 @@ import path from 'node:path';
 import {createRequire} from 'node:module';
 
 export function playwrightBrowserVersions(browserRoot) {
+  if(!fs.existsSync(path.join(browserRoot,'package.json')))throw new Error(`browser root has no package.json: ${browserRoot}`);
   const fromRoot=createRequire(path.join(browserRoot,'package.json'));
   let entry=null;
   for(const name of ['@playwright/test','playwright']){
