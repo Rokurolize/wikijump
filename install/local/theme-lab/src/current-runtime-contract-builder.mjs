@@ -12,9 +12,12 @@ const THEME_LAB = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..
 // The caller separately verifies the running container and source checkout.
 //
 // candidate_set_sha256 is read from the committed frozen candidate set, not
-// carried from the template. The set must pass validatePublicationCandidateSet,
-// or the contract is refused. candidateSet.root and candidateSet.validate exist
-// for tests.
+// carried from the template. The set must pass the identity scope of
+// validatePublicationCandidateSet. Targeted BHL evidence is not required here:
+// it is captured on a runtime that itself needs this contract. The contract
+// records candidate_set_validation: "identity", and the completion gate still
+// runs full validation. candidateSet.root and candidateSet.validate exist for
+// tests.
 export function prepareCurrentRuntimeContract(
   template,
   { runId, port, framerailSourceSha, backendRuntimeIdentity, candidateSet = {} },
@@ -57,7 +60,10 @@ export function prepareCurrentRuntimeContract(
   );
   if (typeof frozen.candidate_set_sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(frozen.candidate_set_sha256))
     throw new Error("frozen candidate set has no valid candidate_set_sha256");
-  const failures = validate(root, { expectedCandidateSetSha256: frozen.candidate_set_sha256 });
+  const failures = validate(root, {
+    expectedCandidateSetSha256: frozen.candidate_set_sha256,
+    scope: "identity",
+  });
   if (failures.length)
     throw new Error(
       `run contract refused: the frozen candidate set does not validate (${failures.length} failures; first: ${failures[0]})`,
@@ -65,6 +71,7 @@ export function prepareCurrentRuntimeContract(
   return {
     ...structuredClone(template),
     candidate_set_sha256: frozen.candidate_set_sha256,
+    candidate_set_validation: "identity",
     expected_runtime_source_sha256: framerailSourceSha,
     expected_backend_runtime_identity: structuredClone(backendRuntimeIdentity),
     target_site: {

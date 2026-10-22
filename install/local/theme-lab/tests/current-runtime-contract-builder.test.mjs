@@ -142,7 +142,10 @@ test("candidate_set_sha256 comes from the frozen set and is validated before a c
   });
   assert.equal(bound.candidate_set_sha256, FROZEN_SHA);
   assert.deepEqual(seen, [
-    { root: candidateRoot, options: { expectedCandidateSetSha256: FROZEN_SHA } },
+    {
+      root: candidateRoot,
+      options: { expectedCandidateSetSha256: FROZEN_SHA, scope: "identity" },
+    },
   ]);
 });
 

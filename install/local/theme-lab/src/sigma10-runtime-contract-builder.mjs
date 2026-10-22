@@ -264,10 +264,14 @@ export function buildSigma10RuntimeContract({
   if (candidateSetSha256) {
     // Publication freeze validation runs on the in-memory draft, so a stale
     // candidate or freeze makes the builder refuse before any file exists.
+    // Identity scope: targeted BHL evidence is captured on a runtime that needs
+    // this contract. The completion gate still validates in full.
+    contract.candidate_set_validation = 'identity';
     failures.push(...validatePublication(root, {
       expectedCandidateSetSha256: candidateSetSha256,
       contract,
       label: 'Sigma-10 publication candidate set',
+      scope: 'identity',
     }));
   }
 

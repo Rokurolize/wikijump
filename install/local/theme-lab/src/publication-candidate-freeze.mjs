@@ -81,7 +81,12 @@ function authorityRecordContains(value, slug, sourceSha256) {
   return found;
 }
 
-function validateBhlTargetedEvidence(root, frozen, graph, failures) {
+// 'identity' skips only the targeted evidence section (receipts, screenshots,
+// visual reviews, and the evidence bindings). Every other check still runs.
+// 'full' is the completion-gate scope and is the default.
+export const CANDIDATE_SET_SCOPES = Object.freeze(['identity', 'full']);
+
+function validateBhlTargetedEvidence(root, frozen, graph, failures, scope = 'full') {
   const scenarios = frozen.targeted_scenarios ?? [];
   const bhlScenarios = scenarios.filter(scenario => scenario.id?.startsWith('bhl-options-'));
   if (!bhlScenarios.length) return;
@@ -126,6 +131,7 @@ function validateBhlTargetedEvidence(root, frozen, graph, failures) {
     if (scenario.current_authority_sha256 !== authoritySha) failures.push(`${scenario.id}: frozen scenario uses stale BHL option authority`);
     if (scenario.theme_candidate_source_sha256 !== frozenTheme?.source_sha256 || scenario.theme_candidate_css_sha256 !== frozenTheme?.candidate_css_sha256)
       failures.push(`${scenario.id}: frozen scenario uses a stale BHL theme candidate`);
+    if (scope === 'identity') continue;
     const evidence = frozen.targeted_evidence_bindings?.find(binding => binding.scenario_id === scenario.id);
     if (!evidence) {
       failures.push(`${scenario.id}: frozen targeted evidence bindings are missing`);
@@ -223,6 +229,7 @@ function validateBhlTargetedEvidence(root, frozen, graph, failures) {
       failures.push(`${scenario.id}: visual review is unavailable: ${error.message}`);
     }
   }
+  if (scope === 'identity') return;
   for (const binding of frozen.targeted_evidence_bindings ?? []) {
     const required = binding.scenario_id && bhlScenarios.some(scenario => scenario.id === binding.scenario_id);
     if (!required) failures.push(`Unexpected frozen targeted evidence binding: ${binding.scenario_id ?? 'missing scenario id'}`);
@@ -233,7 +240,10 @@ function validateBhlTargetedEvidence(root, frozen, graph, failures) {
 // not written yet: {frozen: {value}, graph: {value}, readiness: {bytes, value}}.
 // Byte and identity checks still run on the replacements. Omit it to validate
 // the files in the checkout.
-export function validatePublicationCandidateSet(root, {expectedCandidateSetSha256, contract, label = 'Publication candidate set', documents = null} = {}) {
+// scope 'full' (default) runs every check. scope 'identity' runs every check except
+// the targeted evidence section (receipts, screenshots, visual reviews, bindings).
+export function validatePublicationCandidateSet(root, {expectedCandidateSetSha256, contract, label = 'Publication candidate set', documents = null, scope = 'full'} = {}) {
+  if (!CANDIDATE_SET_SCOPES.includes(scope)) throw new Error(`unknown candidate-set validation scope: ${scope}`);
   const failures = [];
   const frozenArtifact = documents?.frozen ?? readJson(root, 'publication/frozen-candidate-set.json', 'Frozen publication candidate set', failures);
   if (!frozenArtifact) return failures;
@@ -397,6 +407,6 @@ export function validatePublicationCandidateSet(root, {expectedCandidateSetSha25
     }
   }
 
-  validateBhlTargetedEvidence(root, frozen, graphArtifact?.value, failures);
+  validateBhlTargetedEvidence(root, frozen, graphArtifact?.value, failures, scope);
   return failures;
 }
