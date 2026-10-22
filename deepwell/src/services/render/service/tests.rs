@@ -3837,10 +3837,11 @@ fn empty_protection_bundle() -> RenderProtectionBundle {
 fn render_protection_bundle_drop_propagates_errors() {
     // Regression test for #2686: every `?` between bundle creation and
     // restoration used to turn the original Err into a Drop panic, hiding the
-    // real failure. Dropping the bundle unrestored must only log.
+    // real failure. An error path must defuse the unrestored bundle first.
     fn run_with_forced_error() -> Result<(), Box<Error>> {
-        let _bundle = empty_protection_bundle();
-        Err(Error::new("forced render failure", ErrorType::Render))?;
+        let mut bundle = empty_protection_bundle();
+        Err::<(), _>(Error::new("forced render failure", ErrorType::Render))
+            .inspect_err(|_| bundle.defuse())?;
         Ok(())
     }
 
