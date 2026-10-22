@@ -241,26 +241,8 @@ async function settleFiniteVisualTransitions(page){return page.evaluate(async()=
 // finite CSS transitions (left/font-size/flex-grow...) on every surface; this
 // is a measurement-phase step, not part of any state's action contract.
 async function settleFiniteMeasurementTransitions(page){return page.evaluate(async()=>{await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));let finished=0;for(const animation of document.getAnimations()){if(animation.playState==='running'&&Number.isFinite(animation.effect?.getTiming().iterations)){try{animation.finish();finished++}catch{}}}await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return finished})}
-async function movePointerToSafeArea(page){
- const point=await page.evaluate(()=>{
-  const candidates=[
-   [innerWidth-3,innerHeight-3],
-   [innerWidth-3,innerHeight*.75],
-   [innerWidth-3,innerHeight*.25],
-   [innerWidth-3,3],
-   [innerWidth*.75,innerHeight-3],
-   [innerWidth*.9,innerHeight*.5],
-  ];
-  const interactive='#side-bar,#top-bar,.mobile-top-bar,#header,#footer a,a,button,input,select,textarea,[role="button"]';
-  for(const [x,y] of candidates){
-   const px=Math.max(1,Math.min(innerWidth-2,x)),py=Math.max(1,Math.min(innerHeight-2,y));
-   const hit=document.elementFromPoint(px,py);
-   if(!hit||hit===document.body||hit===document.documentElement||!hit.closest(interactive))return{x:px,y:py};
-  }
-  return{x:Math.max(1,innerWidth-2),y:Math.max(1,innerHeight-2)};
- });
- await page.mouse.move(point.x,point.y);
-}
+import {movePointerToSafeArea} from '../../src/pointer-park.mjs';
+
 async function parkPointer(page,_viewport){await movePointerToSafeArea(page)}
 function shouldParkPointer(spec){return !/(?:hover|pointerover|expanded)/iu.test(spec.state)&&spec.surface!=='nav.mobile-top'&&spec.surface!=='shell.footer-license'}
 let observedBackendRuntimeIdentity=null;
