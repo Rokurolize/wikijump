@@ -176,6 +176,7 @@ use std::ops::Range;
 use std::pin::Pin;
 use std::sync::LazyLock;
 use std::time::Instant;
+use tokio::sync::oneshot;
 use tokio::task;
 use tokio::time::timeout;
 
@@ -298,10 +299,10 @@ struct ExpandedRenderWikitext {
 /// The registries must stay alive until every rendered body, HTML block, and
 /// code block has crossed the Wikidot restoration boundary.  Callers borrow
 /// the registries only inside [`RenderProtectionBundle::restore`]; dropping the bundle without
-/// that consuming handoff on the success path is a programming error.
-/// On an error path the bundle is dropped unrestored by the `?` unwinding the
-/// in-flight render state instead, which `Drop` logs without panicking so the
-/// original error propagates (see #2686).
+/// that consuming handoff is a programming error and panics.  Error paths that
+/// abandon an unrestored bundle must call [`RenderProtectionBundle::defuse`]
+/// first, so the original error propagates instead of being masked by a Drop
+/// panic (see #2686).
 #[must_use = "restore the Wikidot protection bundle before dropping it"]
 #[derive(Debug)]
 pub(super) struct RenderProtectionBundle {
@@ -347,6 +348,14 @@ impl RenderProtectionBundle {
         let result = restore(&mut self);
         self.restored = true;
         result
+    }
+
+    /// Mark the bundle as intentionally abandoned on an error path.
+    ///
+    /// Call this before returning an error while the bundle is still unrestored,
+    /// so that dropping it does not panic and mask the original error.
+    fn defuse(&mut self) {
+        self.restored = true;
     }
 
     /// Transfer registries to the replay transport representation.
@@ -401,14 +410,9 @@ impl Drop for RenderProtectionBundle {
         if self.restored || std::thread::panicking() {
             return;
         }
-        // An unrestored bundle dropped here is almost always error-path
-        // cleanup: any `?` between bundle creation and restoration drops the
-        // in-flight render state, and panicking would mask the original error
-        // (see #2686). Log loudly instead so the real error propagates, and a
-        // genuinely forgotten restoration on the success path is still visible.
-        // The `#[must_use]` on the bundle keeps the success-path handoff a
-        // compile-time obligation.
-        error!("render protection bundle dropped before restoration");
+        // Reaching here means a success path forgot to restore the bundle.
+        // Error paths call `defuse` first, so they never reach this panic.
+        panic!("render protection bundle dropped before restoration");
     }
 }
 
@@ -2172,7 +2176,7 @@ impl RenderService {
                 wikitext,
                 included_pages,
                 url_offset_list_pages_content_bytes: _,
-                protection,
+                mut protection,
                 compatibility_fallback: _,
                 timings: _,
             } = outer;
@@ -2189,7 +2193,8 @@ impl RenderService {
                         viewer_user_id,
                     )
                     .await
-                    .or_raise(make_error)?
+                    .or_raise(make_error)
+                    .inspect_err(|_| protection.defuse())?
                 } else {
                     WikidotCompatLinkTitleMap::new()
                 }
@@ -2419,7 +2424,8 @@ impl RenderService {
         let parse_settings = render_settings.clone();
         let parse_queued_at = parse_worker_trace.as_ref().map(|_| Instant::now());
         let parse_started = Instant::now();
-        let parse_task = task::spawn_blocking(move || {
+        let (parse_tx, mut parse_rx) = oneshot::channel();
+        task::spawn_blocking(move || {
             let trace = parse_worker_trace
                 .as_ref()
                 .map(|(trace, scope)| (trace, *scope));
@@ -2439,10 +2445,22 @@ impl RenderService {
                 &mut parsed.tree,
                 parsed.prepared.protection.compat_text(),
             );
-            parsed
+            // If the caller already gave up, hand the parse back so its unrestored
+            // bundle is defused here instead of being dropped by the runtime.
+            if let Err(mut parsed) = parse_tx.send(parsed) {
+                parsed.prepared.protection.defuse();
+            }
         });
-        let parsed = timeout(render_timeout, parse_task)
-            .await
+        let parse_outcome = timeout(render_timeout, &mut parse_rx).await;
+        if parse_outcome.is_err() {
+            // Close the channel, then reclaim a parse that completed just after the
+            // timeout so its unrestored bundle is defused rather than dropped.
+            parse_rx.close();
+            if let Ok(mut late) = parse_rx.try_recv() {
+                late.prepared.protection.defuse();
+            }
+        }
+        let mut parsed = parse_outcome
             .or_raise(|| {
                 Error::new("failed to parse due to timeout", ErrorType::RenderTimeout)
             })?
@@ -2460,16 +2478,16 @@ impl RenderService {
                     viewer_user_id,
                 )
                 .await
-                .or_raise(make_error)?,
+                .or_raise(make_error)
+                .inspect_err(|_| parsed.prepared.protection.defuse())?,
             ),
             None => None,
         };
         let user_info = match observed_user_info {
             Some(users) => UserInfoSnapshot::from_observed(users),
-            None => {
-                UserInfoSnapshot::load(ctx, &user_references, render_settings.layout)
-                    .await?
-            }
+            None => UserInfoSnapshot::load(ctx, &user_references, render_settings.layout)
+                .await
+                .inspect_err(|_| parsed.prepared.protection.defuse())?,
         };
         let render_queued_at = worker_trace.as_ref().map(|_| Instant::now());
         let render_task = task::spawn_blocking(move || {
