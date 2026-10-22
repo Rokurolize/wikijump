@@ -100,17 +100,9 @@ impl ServerStateInner {
     // if not present, get it from DEEPWELL and populate it".
 
     pub async fn get_or_cache_site_domain(&self, site_id: i64) -> Result<String> {
-        match self.cache.get_site_domain(site_id).await? {
-            Some(preferred_domain) => Ok(preferred_domain),
-            None => {
-                let preferred_domain = self.deepwell.get_site_domain(site_id).await?;
-                self.cache
-                    .set_site_domain(site_id, &preferred_domain)
-                    .await?;
-
-                Ok(preferred_domain)
-            }
-        }
+        self.cache
+            .get_or_fetch_site_domain(site_id, || self.deepwell.get_site_domain(site_id))
+            .await
     }
 
     pub async fn get_site_domain_or_response(
