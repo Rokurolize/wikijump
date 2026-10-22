@@ -42,13 +42,15 @@ The evidence-backed rules in `../TECHNICAL-LOCALIZATION-SPEC.md` apply; the fina
 
 ## Full-check warnings (basalt-final-20261022-full)
 
-Run `basalt-final-20261022-full` on runtime source 6b6ab9d0…2768f and backend identity 19812d7f…66ae (raw result sha256 1ee6bf22…eff5c). Port verdict: PASS (0 actionable, 0 unresolved findings). Target verdict: INCONCLUSIVE with 16 warnings. Each warning is listed with its status. A warning is **explained** only where the mechanism was checked against the frozen Basalt CSS; the rest stay open and keep the target acceptance inconclusive.
+Run `basalt-final-20261022-full` on runtime source 6b6ab9d0…2768f and backend identity 19812d7f…66ae (raw result sha256 1ee6bf22…eff5c). Port verdict: PASS (0 actionable, 0 unresolved findings). Target verdict: INCONCLUSIVE with 16 warnings. A warning is **explained** only where the mechanism is checked against source evidence. The other warnings stay open, and the package claims no full acceptance while any remains.
+
+Terms: "reference" for selector rows is the frozen Basalt EN page (offline replay of the retained Wikidot snapshot). "baseline" for torture rows is the Sigma-9 offline baseline CSS applied to the same fixture, and "candidate" is Basalt.
 
 ### Explained: content width (6 warnings)
 
-Frozen Basalt sets `#main-content{width:var(--main-content-width);max-width:calc(100% - var(--main-content-side-margin)*2)}` with `--main-content-side-margin:1.325rem` (21.2px). At 768px the content box is 768 − 2×21.2 = 725.6px, and at 390px it is 390 − 2×21.2 = 347.6px. The Sigma-9 baseline keeps a narrower column (about 435px at tablet). The measured "after" widths match the Basalt rule exactly.
+Frozen Basalt sets `#main-content{width:var(--main-content-width);max-width:calc(100% - var(--main-content-side-margin)*2)}` with `--main-content-side-margin:1.325rem` (21.2px). At 768px the content box is 768 − 2×21.2 = 725.6px, and at 390px it is 390 − 2×21.2 = 347.6px. The Sigma-9 baseline keeps a narrower column (about 435px at tablet). The measured candidate widths match the rule exactly.
 
-| # | surface / component | viewport | property | reference (Sigma-9 baseline) | candidate (Basalt) | explanation |
+| # | surface / component | viewport | property | baseline | candidate | explanation |
 |---|---|---|---|---|---|---|
 | 1 | content.toc / toc | mobile | rect.width | 107.5 | 347.6 | Basalt `#main-content` max-width at 390px |
 | 2 | content.blockquote / blockquote | tablet | rect.width | 355.2 | 725.6 | same rule at 768px |
@@ -57,18 +59,29 @@ Frozen Basalt sets `#main-content{width:var(--main-content-width);max-width:calc
 | 5 | content.code / code | tablet | rect.width | 435.2 | 725.6 | same rule |
 | 6 | content.tabview / tabview | tablet | rect.width | 435.2 | 725.6 | same rule |
 
-### Open: not yet explained (10 warnings)
+### Explained: candidate preview content (4 warnings)
+
+These are element-count differences between the frozen EN reference page and the candidate preview source (`candidate.wikidot.txt`, which the full check renders). They come from preview content and the JP credit adaptation, not from theme CSS.
+
+| # | selector | reference (frozen EN markup) | candidate | evidence |
+|---|---|---|---|---|
+| 7 | `.page-rate-widget-box` | 1 | 2 | candidate preview has one `[[module Rate]]` (line 1362) plus the JP credit rate box `div.rate-box-with-credit-button` / `div.creditRate` (lines 1709–1711). `ports/basalt/maintenance/jp-overrides.css` targets that JP credit box, and the JP credit snapshots (credit-end, lines 16 and 20) carry the Rate module inside the credit modal. The credit modal in the captured states shows a rating widget, so the second widget is the JP credit adaptation. The mapping from widget to markup is inferred from markup, not from a DOM dump. |
+| 8 | `.page-rate-widget-box .rate-points` | 1 | 2 | same cause as row 7 |
+| 9 | `.yui-navset` | 1 | 2 | candidate preview has two `[[tabview]]` blocks (lines 1544 and 1723); the frozen EN page has one tabview in its markup (upstream count 1). |
+| 10 | `.scp-image-block` (collapsed) | 7 | 1 | the frozen EN page markup has seven `scp-image-block` elements; the candidate preview has one `[[div class="scp-image-block block-right"]]` (line 1737). The count follows preview content. |
+
+### Open: not yet explained (6 warnings)
 
 These stay open. Each needs the named check before it can be explained or fixed.
 
-- torture content.table (narrow-mobile, rect.height 96.7 → 223.8): needs a check of cell wrapping under the Basalt table rule versus the baseline column width.
-- torture content.article / math (narrow-mobile, rect.height 23.5 → 53.5): needs the math container rule compared with the frozen Basalt CSS.
-- torture content.rating (desktop, rect.height 18 → 35.1): needs the Basalt `.page-rate-widget-box`/`.rate-points` rules compared with the baseline.
-- torture content.collapsible (mobile, rect.height 12 → 20.3): needs the Basalt `.collapsible-block` padding/line-height rule.
-- torture content.footnotes / footnote (mobile, rect.width 5.3 → 4.0): needs the Basalt footnote marker rule.
-- expanded_selector `#header h2` (reference 1, candidate 2): needs the second header heading traced in the Basalt header markup.
-- expanded_selector `.page-rate-widget-box` and `.page-rate-widget-box .rate-points` (reference 1, candidate 2 each): probable second rating widget inside the credit modal; needs the credit-view DOM count checked.
-- expanded_selector `.yui-navset` (reference 1, candidate 2): needs the second tabview source located in the fixture.
-- collapsed_selector `.scp-image-block` (reference 7, candidate 1): needs the image-block visibility in the candidate traced against the baseline.
+- torture content.table (narrow-mobile, rect.height 96.7 → 223.8; mobile 96.7 → 164.0; desktop font-size 12.8 → 15.43): the font-size change is measured on desktop, but the height growth is not proportional to it, so the cause needs the Basalt table padding/line-height rule traced.
+- torture content.article / math (narrow-mobile, rect.height 23.5 → 53.5): the desktop font-size change (12.8 → 15.43) does not account for the height; needs the math container rule traced.
+- torture content.rating (desktop, rect.height 18 → 35.1): the width grows by the font ratio (148.2 → 178.3, ×1.206) but the height grows by about 17px more; needs the Basalt rate-widget height/padding rule traced.
+- torture content.collapsible (mobile, rect.height 12 → 20.3): needs the Basalt `.collapsible-block` padding/line-height rule traced, measured at mobile.
+- torture content.footnotes / footnote (mobile, rect.width 5.34 → 4.0; desktop 5.94 → 5.0): needs the footnote marker font-size/`sup` rule traced.
+- expanded_selector `#header h2` (reference 1, candidate 2): the second matching heading is not located in the candidate; needs a DOM dump of the candidate header.
 
-The package does not claim full acceptance while any open item remains.
+### Other findings (not full-check warnings)
+
+- Candidate preview markup defect (content, not CSS): the sample line "On any page" renders ':scp-jp:[[/span]]theme:basalt]]@@' at every viewport, where the frozen reference renders '[[include :scp-wiki:theme:basalt]]'. Fix belongs in `candidate.wikidot.txt`, which changes the candidate identity.
+- Desktop full-check candidate screenshot (artifacts/candidate-desktop.png) shows the Basalt sidebar drawer open over the left half of the page. That is not a reading state; it is a full-check capture-state contamination. The other four candidate viewports are clean. Desktop must be recaptured with the pointer parked before a paired review can pass.
