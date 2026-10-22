@@ -669,6 +669,18 @@ mod tests {
                 "result": {"page_id": 2117},
                 "id": id
             }),
+            "page_get" if request["params"]["page"] == "art:scp-8200:the-phantom-sea" => {
+                json!({
+                    "jsonrpc": "2.0",
+                    "result": {"page_id": 8200},
+                    "id": id
+                })
+            }
+            // The category-merged form must never resolve: it is what the
+            // old files-host lookup produced for multi-colon slugs (#2688).
+            "page_get" if request["params"]["page"] == "art-scp-8200:the-phantom-sea" => {
+                json!({"jsonrpc": "2.0", "result": null, "id": id})
+            }
             "page_get" => json!({
                 "jsonrpc": "2.0",
                 "result": {"page_id": 123},
@@ -697,6 +709,18 @@ mod tests {
                     "revision_id": 17,
                     "revision_created_at": "2020-07-23T06:38:39Z",
                     "mime": "application/x-test",
+                    "size": 6,
+                    "s3_hash": "public-hash"
+                },
+                "id": id
+            }),
+            "file_get" if request["params"]["file"] == "VYkoXf1.webp" => json!({
+                "jsonrpc": "2.0",
+                "result": {
+                    "file_id": 11,
+                    "revision_id": 21,
+                    "revision_created_at": "2020-07-23T06:38:39Z",
+                    "mime": "image/webp",
                     "size": 6,
                     "s3_hash": "public-hash"
                 },
@@ -1253,6 +1277,36 @@ mod tests {
             local.bytes().await.unwrap(),
             internal.bytes().await.unwrap()
         );
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn multicolon_page_slug_resolves_by_exact_slug() {
+        // #2688: attachments on pages whose slug holds more than one colon
+        // (category `art`, the rest is the name) must resolve locally for
+        // both the Wikidot-compat and the internal file routes, not fall
+        // back to wdfiles or a missing-file document.
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![(200, b"abcdef"), (200, b"abcdef")]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        for path in [
+            "/local--files/art%3Ascp-8200%3Athe-phantom-sea/VYkoXf1.webp",
+            "/-/file/art%3Ascp-8200%3Athe-phantom-sea/VYkoXf1.webp",
+        ] {
+            let response =
+                router_request(Arc::clone(&state), Method::GET, path, None).await;
+            assert_eq!(
+                response.status(),
+                StatusCode::OK,
+                "multi-colon slug must serve local bytes: {path}",
+            );
+            assert!(!response.headers().contains_key(LOCATION));
+            assert_eq!(response.bytes().await.unwrap(), &b"abcdef"[..]);
+        }
 
         s3_server.join();
         deepwell_server.abort();
