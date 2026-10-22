@@ -229,9 +229,13 @@ function validateBhlTargetedEvidence(root, frozen, graph, failures) {
   }
 }
 
-export function validatePublicationCandidateSet(root, {expectedCandidateSetSha256, contract, label = 'Publication candidate set'} = {}) {
+// documents, when given, replaces the publication files that the generator has
+// not written yet: {frozen: {value}, graph: {value}, readiness: {bytes, value}}.
+// Byte and identity checks still run on the replacements. Omit it to validate
+// the files in the checkout.
+export function validatePublicationCandidateSet(root, {expectedCandidateSetSha256, contract, label = 'Publication candidate set', documents = null} = {}) {
   const failures = [];
-  const frozenArtifact = readJson(root, 'publication/frozen-candidate-set.json', 'Frozen publication candidate set', failures);
+  const frozenArtifact = documents?.frozen ?? readJson(root, 'publication/frozen-candidate-set.json', 'Frozen publication candidate set', failures);
   if (!frozenArtifact) return failures;
   const frozen = frozenArtifact.value;
   const calculated = frozenCandidateSetSha256(frozen);
@@ -243,7 +247,7 @@ export function validatePublicationCandidateSet(root, {expectedCandidateSetSha25
     failures.push(`${label}: run contract candidate_set_sha256 is missing or stale`);
   if (frozen.state !== 'frozen-before-final-acceptance') failures.push(`${label}: candidate set is not frozen for final acceptance`);
 
-  const graphArtifact = readJson(root, 'publication/dependency-graph.json', 'Current publication dependency graph', failures);
+  const graphArtifact = documents?.graph ?? readJson(root, 'publication/dependency-graph.json', 'Current publication dependency graph', failures);
   if (graphArtifact) {
     const graph = graphArtifact.value;
     const freeze = graph.candidate_freeze ?? {};
@@ -385,7 +389,7 @@ export function validatePublicationCandidateSet(root, {expectedCandidateSetSha25
 
   const readinessPath = frozen.readiness_audit;
   if (readinessPath) {
-    const readiness = readJson(root, `publication/${readinessPath}`, 'Candidate freeze readiness audit', failures);
+    const readiness = documents?.readiness ?? readJson(root, `publication/${readinessPath}`, 'Candidate freeze readiness audit', failures);
     if (readiness) {
       if (frozen.readiness_audit_sha256 !== sha(readiness.bytes)) failures.push(`${label}: frozen readiness audit whole-file SHA is stale`);
       if (readiness.value.freeze_record?.candidate_set_sha256 !== frozen.candidate_set_sha256 || readiness.value.freeze_record?.manifest_sha256)

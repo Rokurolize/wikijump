@@ -18,10 +18,18 @@
 // are reported as findings (exit 1). --write still writes the output so that
 // it can be inspected. The output is acceptable only with zero findings.
 //
+// Targeted BHL scenarios are checked against the authority bytes and the theme
+// candidate hashes, so a stale scenario is a finding. The regenerated output is
+// then validated by validatePublicationCandidateSet, using the in-memory files
+// through its documents option. Its failures are reported with the findings and
+// also make the run fail.
+//
 // --check compares the regenerated files with the committed files and exits 1
 // on any difference. --write writes only the two regenerated files, into
 // --output-dir (default: a scratch directory under os.tmpdir()). It never edits
 // the committed files, so the caller must copy the output in explicitly.
+// --source-dependency-audit PATH (checkout-relative) reads a successor audit
+// in place of the committed one. Its path is recorded in the output.
 
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -33,7 +41,7 @@ import {assertPublishablePackage} from '../src/adaptation-authority.mjs';
 import {requireDeepwellRuntimeIdentity} from '../src/deepwell-runtime-identity.mjs';
 import {framerailSourceFingerprintSync} from '../src/framerail-source-fingerprint.mjs';
 import {resolveExistingContainedFile} from '../src/package-path.mjs';
-import {frozenCandidateSetSha256} from '../src/publication-candidate-freeze.mjs';
+import {frozenCandidateSetSha256, validatePublicationCandidateSet} from '../src/publication-candidate-freeze.mjs';
 
 export const THEME_LAB = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const FROZEN_FILE = 'frozen-candidate-set.json';
@@ -203,8 +211,8 @@ function buildAttachments(context, graph) {
   return attachments;
 }
 
-function buildAuthority(context, committedFrozen, ledger, bhl, framerail) {
-  const artifacts = (committedFrozen.authority?.artifacts ?? []).map(({id, path: relative}) => ({
+function buildAuthority(context, listed, ledger, bhl, framerail) {
+  const artifacts = listed.map(({id, path: relative}) => ({
     id,
     path: relative,
     sha256: sha256(readBytes(context.root, relative, `Authority artifact ${id}`)),
@@ -302,7 +310,9 @@ function buildTargetedEvidence(context, scenarios, candidateSetSha, framerail) {
 
 // Pure generation. Returns the regenerated text, the findings, and the
 // fields carried without byte evidence. It does not write anything.
-export function buildCandidateFreeze({root = THEME_LAB, generatedAt = null, readinessAudit = null, expectFramerailFingerprint = null, verifyAdaptationAuthority = false} = {}) {
+// readinessDocument, when given as {bytes, value}, replaces the readiness file
+// on disk. build-readiness-audit.mjs uses it to validate a file that is not written yet.
+export function buildCandidateFreeze({root = THEME_LAB, generatedAt = null, readinessAudit = null, readinessDocument = null, expectFramerailFingerprint = null, verifyAdaptationAuthority = false, sourceDependencyAudit = null} = {}) {
   const committedFrozen = readJson(root, path.join('publication', FROZEN_FILE), 'Committed frozen candidate set');
   const committedGraph = readJson(root, path.join('publication', GRAPH_FILE), 'Committed publication dependency graph');
   const publication = path.join(root, 'publication');
@@ -311,8 +321,10 @@ export function buildCandidateFreeze({root = THEME_LAB, generatedAt = null, read
   if (Number.isNaN(Date.parse(generated))) throw new CandidateFreezeError(`generated_at is not a date: ${generated}`);
   const context = {root, publication, sourceAudit: null, findings: [], carried: []};
 
+  const listedArtifacts = (committedFrozen.authority?.artifacts ?? []).map(artifact =>
+    artifact.id === 'source-dependency-audit' && sourceDependencyAudit ? {...artifact, path: sourceDependencyAudit} : artifact);
   const artifactPath = id => {
-    const entry = (committedFrozen.authority?.artifacts ?? []).find(artifact => artifact.id === id);
+    const entry = listedArtifacts.find(artifact => artifact.id === id);
     if (!entry) throw new CandidateFreezeError(`Committed freeze does not list the authority artifact ${id}`);
     return entry.path;
   };
@@ -347,11 +359,22 @@ export function buildCandidateFreeze({root = THEME_LAB, generatedAt = null, read
 
   const themeNodes = nodes.filter(node => node.id.startsWith('theme:')).length;
   const inventory = {theme_nodes: themeNodes, shared_nodes: nodes.length - themeNodes, total_nodes: nodes.length, edges: edges.length, attachments: attachments.length};
-  const authority = buildAuthority(context, committedFrozen, ledger, bhl, framerail);
+  const authority = buildAuthority(context, listedArtifacts, ledger, bhl, framerail);
+  for (const scenario of targetedScenarios) {
+    if (Object.hasOwn(scenario, 'current_authority_sha256') && scenario.current_authority_sha256 !== authority.bhl_option_authority_sha256) {
+      addFinding(context, 'scenario-authority-stale', scenario.id, `targeted scenario pins BHL option authority ${scenario.current_authority_sha256}; current bytes are ${authority.bhl_option_authority_sha256}`);
+    }
+    if (Object.hasOwn(scenario, 'theme_candidate_source_sha256') || Object.hasOwn(scenario, 'theme_candidate_css_sha256')) {
+      const themeNode = nodesById.get(scenario.theme ?? 'theme:black-highlighter-theme');
+      if (scenario.theme_candidate_source_sha256 !== (themeNode?.source_sha256 ?? null) || scenario.theme_candidate_css_sha256 !== (themeNode?.candidate_css_sha256 ?? null)) {
+        addFinding(context, 'scenario-candidate-stale', scenario.id, `targeted scenario pins a theme candidate that differs from the current ${themeNode?.id ?? 'theme'} bytes`);
+      }
+    }
+  }
 
   const readinessRelative = readinessAudit ?? committedFrozen.readiness_audit;
-  const readinessBytes = readBytes(root, readinessRelative, 'Readiness audit', publication);
-  const readiness = JSON.parse(readinessBytes.toString('utf8'));
+  const readinessBytes = readinessDocument ? readinessDocument.bytes : readBytes(root, readinessRelative, 'Readiness audit', publication);
+  const readiness = readinessDocument ? readinessDocument.value : JSON.parse(readinessBytes.toString('utf8'));
   const readinessSha = sha256(readinessBytes);
 
   const gateCommitted = committedFrozen['145_state_visual_gate'] ?? {};
@@ -423,14 +446,24 @@ export function buildCandidateFreeze({root = THEME_LAB, generatedAt = null, read
     readiness_audit_sha256: readinessSha,
   };
 
+  // Self-check: the written text must pass the same validator the campaign uses.
+  // The in-memory text is re-parsed so the validator sees exactly the bytes that
+  // would be written.
+  const frozenText = serialize(frozen);
+  const graphText = serialize(graph);
+  const validation = validatePublicationCandidateSet(root, {
+    documents: {frozen: {value: JSON.parse(frozenText)}, graph: {value: JSON.parse(graphText)}, readiness: {bytes: readinessBytes, value: readiness}},
+  });
+
   return {
     frozen,
     graph,
-    frozenText: serialize(frozen),
-    graphText: serialize(graph),
+    frozenText,
+    graphText,
     candidateSetSha256: candidateSetSha,
     committedCandidateSetSha256: committedFrozen.candidate_set_sha256,
     findings: context.findings,
+    validation,
     carried: context.carried,
   };
 }
@@ -459,7 +492,7 @@ export function diffValues(before, after, pathLabel = '', out = []) {
 }
 
 function parseArguments(argv) {
-  const options = {mode: null, root: THEME_LAB, outputDir: null, generatedAt: null, readinessAudit: null, expectFramerailFingerprint: null, verifyAdaptationAuthority: false};
+  const options = {mode: null, root: THEME_LAB, outputDir: null, generatedAt: null, readinessAudit: null, expectFramerailFingerprint: null, verifyAdaptationAuthority: false, sourceDependencyAudit: null};
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     const value = () => {
@@ -477,9 +510,10 @@ function parseArguments(argv) {
     else if (argument === '--readiness-audit') options.readinessAudit = value();
     else if (argument === '--expect-framerail-fingerprint') options.expectFramerailFingerprint = value();
     else if (argument === '--verify-adaptation-authority') options.verifyAdaptationAuthority = true;
+    else if (argument === '--source-dependency-audit') options.sourceDependencyAudit = value();
     else throw new CandidateFreezeError(`unknown argument: ${argument}`);
   }
-  if (!options.mode) throw new CandidateFreezeError('usage: build-candidate-freeze.mjs (--check | --write [--output-dir DIR]) [--root DIR] [--generated-at ISO] [--readiness-audit PUBLICATION_RELATIVE] [--expect-framerail-fingerprint SHA256] [--verify-adaptation-authority]');
+  if (!options.mode) throw new CandidateFreezeError('usage: build-candidate-freeze.mjs (--check | --write [--output-dir DIR]) [--root DIR] [--generated-at ISO] [--readiness-audit PUBLICATION_RELATIVE] [--source-dependency-audit ROOT_RELATIVE] [--expect-framerail-fingerprint SHA256] [--verify-adaptation-authority]');
   if (options.outputDir && options.mode !== 'write') throw new CandidateFreezeError('--output-dir is only valid with --write');
   if (options.expectFramerailFingerprint && !/^[a-f0-9]{64}$/u.test(options.expectFramerailFingerprint)) {
     throw new CandidateFreezeError('--expect-framerail-fingerprint must be a 64-character lowercase SHA-256');
@@ -489,6 +523,10 @@ function parseArguments(argv) {
 
 function printFindings(findings, log) {
   for (const item of findings) log(`  finding ${item.code} ${item.subject}: ${item.message}`);
+}
+
+function printValidation(failures, log) {
+  for (const failure of failures) log(`  finding validatePublicationCandidateSet: ${failure}`);
 }
 
 export function main(argv = process.argv.slice(2), {log = console.log, error = console.error} = {}) {
@@ -507,6 +545,7 @@ export function main(argv = process.argv.slice(2), {log = console.log, error = c
       readinessAudit: options.readinessAudit,
       expectFramerailFingerprint: options.expectFramerailFingerprint,
       verifyAdaptationAuthority: options.verifyAdaptationAuthority,
+      sourceDependencyAudit: options.sourceDependencyAudit,
     });
   } catch (failure) {
     error(`candidate freeze generation failed: ${failure.message}`);
@@ -529,8 +568,9 @@ export function main(argv = process.argv.slice(2), {log = console.log, error = c
     }
     for (const field of differences) log(`  differs ${field}`);
     printFindings(result.findings, log);
-    const ok = differences.length === 0 && result.findings.length === 0;
-    log(ok ? 'check: pass' : `check: fail (${differences.length} differing fields, ${result.findings.length} findings)`);
+    printValidation(result.validation, log);
+    const ok = differences.length === 0 && result.findings.length === 0 && result.validation.length === 0;
+    log(ok ? 'check: pass' : `check: fail (${differences.length} differing fields, ${result.findings.length} findings, ${result.validation.length} validator failures)`);
     return ok ? 0 : 1;
   }
 
@@ -541,8 +581,9 @@ export function main(argv = process.argv.slice(2), {log = console.log, error = c
   log(`wrote ${path.join(outputDir, FROZEN_FILE)}`);
   log(`wrote ${path.join(outputDir, GRAPH_FILE)}`);
   printFindings(result.findings, log);
-  if (result.findings.length) {
-    log(`not acceptable: ${result.findings.length} findings must be resolved before this freeze can validate`);
+  printValidation(result.validation, log);
+  if (result.findings.length || result.validation.length) {
+    log(`not acceptable: ${result.findings.length} findings and ${result.validation.length} validator failures must be resolved before this freeze can validate`);
     return 1;
   }
   log('no findings');
