@@ -265,6 +265,15 @@ test('a stale or changed publication freeze blocks the contract', () => {
   assert.match(result.failures.join('\n'), /candidate CSS SHA differs from the frozen node: theme:basalt/u);
 });
 
+test('the Sigma-10 contract validates the frozen set in identity scope and records that scope', () => {
+  const mock = makeMockRoot();
+  const scopes = [];
+  const result = build(mock, {validatePublication: (root, options) => (scopes.push(options.scope), [])});
+  assert.equal(result.ok, true, result.failures.join('\n'));
+  assert.deepEqual(scopes, ['identity']);
+  assert.equal(result.contract.candidate_set_validation, 'identity');
+});
+
 test('changed frozen authority or saved Credit evidence is refused, not re-pinned', () => {
   const mock = makeMockRoot();
   fs.writeFileSync(mock.creditSource, 'tampered credit style source');
