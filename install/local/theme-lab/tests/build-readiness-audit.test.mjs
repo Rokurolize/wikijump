@@ -48,9 +48,12 @@ function createTagSnapshot() {
 }
 
 describe('candidate freeze readiness audit: refusals on the checkout', () => {
-  test('refuses while the candidate inputs have identity findings', () => {
-    assert.throws(() => buildReadinessAudit({root: themeLab, generatedAt: '2026-10-23T09:00:00.000Z'}),
-      error => error instanceof ReadinessAuditError && /identity findings/u.test(error.message) && /audit-stale theme:basalt/u.test(error.message));
+  test('binds the committed candidate set identity: the checkout has no identity findings', () => {
+    const built = buildReadinessAudit({root: themeLab, generatedAt: '2026-10-23T09:00:00.000Z'});
+    const committed = JSON.parse(fs.readFileSync(path.join(themeLab, 'publication', 'frozen-candidate-set.json'), 'utf8')).candidate_set_sha256;
+    assert.equal(built.candidateSetSha256, committed);
+    assert.equal(built.record.freeze_record.candidate_set_sha256, committed);
+    assert.ok(built.pendingEvidence.every(item => /targeted|visual review|receipt|screenshot|readiness/u.test(item)));
   });
 
   test('refuses an invalid generated-at', () => {
@@ -73,8 +76,8 @@ describe('candidate freeze readiness audit: refusals on the checkout', () => {
       assert.equal(main([], capture), 2);
       assert.equal(main(['--generated-at', '2026-10-23T09:00:00.000Z'], capture), 2);
       assert.equal(main(['--generated-at', '2026-10-23T09:00:00.000Z', '--output-dir', outputDir, '--bogus', 'x'], capture), 2);
-      assert.equal(main(['--generated-at', '2026-10-23T09:00:00.000Z', '--output-dir', outputDir], capture), 2);
-      assert.match(lines.join('\n'), /readiness audit refused: candidate inputs have/u);
+      assert.equal(main(['--generated-at', '2026-10-23', '--output-dir', outputDir], capture), 2);
+      assert.match(lines.join('\n'), /readiness audit refused: generated-at must be an ISO-8601 UTC timestamp/u);
       assert.deepEqual(fs.readdirSync(outputDir), []);
     } finally {
       fs.rmSync(outputDir, {recursive: true, force: true});

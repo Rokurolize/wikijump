@@ -189,7 +189,7 @@ test("the real frozen set is what validation sees by default", () => {
   const failures = validatePublicationCandidateSet(path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
     "..",
-  ), {});
+  ), { scope: "identity" });
   if (failures.length) {
     assert.throws(
       () => prepareCurrentRuntimeContract(template, { ...input, candidateSet: {} }),

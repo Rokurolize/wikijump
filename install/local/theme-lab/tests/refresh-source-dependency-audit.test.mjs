@@ -267,8 +267,8 @@ describe('source-dependency audit refresh CLI', () => {
       assert.equal(main([], capture), 2);
       assert.equal(main(['--refreshed-at', DATE], capture), 2);
       assert.equal(main(['--refreshed-at', DATE, '--output-dir', outputDir, '--unknown', 'x'], capture), 2);
-      // No prior bytes directory: the basalt hashes differ from the audit, so the refresh is refused.
-      assert.equal(main(['--refreshed-at', DATE, '--output-dir', outputDir], capture), 2);
+      // No prior bytes directory: the basalt hashes differ from the 2026-10-06 audit, so the refresh is refused.
+      assert.equal(main(['--refreshed-at', DATE, '--output-dir', outputDir, '--audit', AUDIT], capture), 2);
       assert.match(lines.join('\n'), /--prior-bytes-dir is required/u);
       assert.deepEqual(fs.readdirSync(outputDir), []);
     } finally {
@@ -281,7 +281,7 @@ describe('source-dependency audit refresh CLI', () => {
     try {
       const forged = path.join(priorDir, audit.themes.find(row => row.theme === 'theme:basalt').candidate_source_sha256);
       fs.writeFileSync(forged, 'not the audit-era bytes');
-      assert.throws(() => refreshFromFiles({root: themeLab, refreshedAt: DATE, priorBytesDir: priorDir, outputDir: priorDir, audit: null}),
+      assert.throws(() => refreshFromFiles({root: themeLab, refreshedAt: DATE, priorBytesDir: priorDir, outputDir: priorDir, audit: AUDIT}),
         /do not hash to|unavailable/u);
     } finally {
       fs.rmSync(priorDir, {recursive: true, force: true});

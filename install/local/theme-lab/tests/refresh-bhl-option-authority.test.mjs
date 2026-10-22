@@ -55,9 +55,9 @@ describe('BHL option authority refresh', () => {
       /is not JSON/u);
   });
 
-  test('refuses the recorded identity, which was not built from this checkout', () => {
-    const recorded = JSON.parse(fs.readFileSync(AUTHORITY, 'utf8')).backend_runtime_identity;
-    assert.throws(() => refreshBhlOptionAuthority({root: themeLab, receiptText: JSON.stringify({backend_runtime_identity: recorded}), observedAt: '2026-10-23'}),
+  test('refuses an identity built from another source, which was not built from this checkout', () => {
+    const other = JSON.parse(checkoutReceipt({source_sha256: 'e'.repeat(64)}));
+    assert.throws(() => refreshBhlOptionAuthority({root: themeLab, receiptText: JSON.stringify(other), observedAt: '2026-10-23'}),
       /was not built from this checkout/u);
   });
 
