@@ -57,8 +57,9 @@ use self::query_helpers::{
     parse_list_pages_false_only_boolean_argument,
 };
 use self::rendered_fragments::{
-    collect_list_pages_html_body_ranges, push_list_pages_rendered_fragment,
-    push_list_pages_rendered_fragment_with_mode, render_list_pages_form_wiki_value,
+    collect_list_pages_html_body_ranges, collect_list_pages_html_escape_ranges,
+    push_list_pages_rendered_fragment, push_list_pages_rendered_fragment_with_mode,
+    render_list_pages_form_wiki_value,
 };
 #[cfg(test)]
 use self::rendered_fragments::{
