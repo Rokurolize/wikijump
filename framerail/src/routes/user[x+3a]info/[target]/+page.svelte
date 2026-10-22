@@ -1,6 +1,12 @@
 <script lang="ts">
   import { resolve } from "$app/paths"
   import { errorPopupState } from "$lib/layout/stores.svelte"
+  import {
+    USER_INFO_TABS,
+    initialUserInfoTabState,
+    selectUserInfoTab,
+    userInfoTabClass
+  } from "$lib/user-info-tabs.js"
   import { showUserProfileActionAuthenticationGuard } from "$lib/user-profile-action-auth-guard.js"
 
   import type { PageProps } from "./$types"
@@ -8,22 +14,12 @@
   let { data }: PageProps = $props()
 
   /**
-   * The live public tab strip, in Wikidot's order. The retained
-   * observations pin this markup for both anonymous and account-A viewers,
-   * independent of any imported membership, revision, or forum relation.
-   * The Profile tab is selected by default. Switching the selected tab in
-   * place and the content of the other tabs are not yet evidenced, so the
-   * links carry no behavior.
+   * The public tab strip. The retained observations pin this markup for
+   * both anonymous and account-A viewers, independent of imported
+   * relations. A click changes only the tab items' class attributes, in
+   * place.
    */
-  const userInfoTabs = [
-    { id: "ui-profile-b", label: "Profile" },
-    { id: "ui-member-b", label: "Member of" },
-    { id: "ui-moderator-b", label: "Moderator of" },
-    { id: "ui-admin-b", label: "Admin of" },
-    { id: "ui-contrib-b", label: "Recent contributions" },
-    { id: "ui-posts-b", label: "Recent posts and comments" }
-  ]
-  const selectedUserInfoTab = "ui-profile-b"
+  let tabState = $state(initialUserInfoTabState())
 </script>
 
 {#if data.view === "user_missing" && "error" in data}
@@ -34,10 +30,17 @@
   <div id="page-content">
     <div class="col-md-3">
       <ul id="ui-tabs" class="nav nav-pills nav-stacked">
-        {#each userInfoTabs as tab (tab.id)}
-          <li class:active={tab.id === selectedUserInfoTab}>
+        {#each USER_INFO_TABS as tab (tab.id)}
+          <li class={userInfoTabClass(tabState, tab.id)}>
             <!-- svelte-ignore a11y_invalid_attribute -->
-            <a id={tab.id} href="javascript:;">{tab.label}</a>
+            <a
+              id={tab.id}
+              href="javascript:;"
+              onclick={(event) => {
+                event.preventDefault()
+                tabState = selectUserInfoTab(tabState, tab.id)
+              }}>{tab.label}</a
+            >
           </li>
         {/each}
       </ul>
