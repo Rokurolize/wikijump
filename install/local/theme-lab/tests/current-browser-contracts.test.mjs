@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {browserEnvironmentContractHashes,observationHasCurrentActionAndFixture} from '../src/current-browser-contracts.mjs';
+import {browserEnvironmentContractHashes,contractDumpArgs,observationHasCurrentActionAndFixture} from '../src/current-browser-contracts.mjs';
+import {SHARED_LOGICAL_ORIGIN} from '../src/fixture-origin.mjs';
 import {createDeepwellRuntimeIdentity} from '../src/deepwell-runtime-identity.mjs';
 
 const backend=createDeepwellRuntimeIdentity({source_sha256:'b'.repeat(64),ftml_git_revision:'c'.repeat(40),container_id:'d'.repeat(64),image_id:`sha256:${'e'.repeat(64)}`,binary_sha256:'f'.repeat(64),config_sha256:'1'.repeat(64)});
@@ -78,4 +79,13 @@ test('environment hash binds the measured runtime source and rejects a different
   assert.equal(typeof hashes.scoped,'string');
   assert.equal(browserEnvironmentContractHashes({...row,runtime_source_sha256:'b'.repeat(64)},contracts,runContract,'run-contract-sha',{assetDependencySha:'d'.repeat(64)}),null);
   assert.equal(browserEnvironmentContractHashes({...row,backend_runtime_identity:{...backend,identity_sha256:'9'.repeat(64)}},contracts,runContract,'run-contract-sha',{assetDependencySha:'d'.repeat(64)}),null);
+});
+
+test('task-owned contracts pass their explicit transport origin to the contract dump',()=>{
+  const path='/tmp/run-contract.json';
+  const shared=contractDumpArgs(path,SHARED_LOGICAL_ORIGIN);
+  assert.deepEqual(shared,['--anonymous','--dump-contracts',`--run-contract=${path}`]);
+  const task=contractDumpArgs(path,'https://scpaiueouiuiuiui.wikijump.localhost:3396');
+  assert.deepEqual(task,['--anonymous','--dump-contracts',`--run-contract=${path}`,'--transport-origin=https://scpaiueouiuiuiui.wikijump.localhost:3396']);
+  assert.deepEqual(contractDumpArgs(path,undefined),shared);
 });
