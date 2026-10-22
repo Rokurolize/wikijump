@@ -1965,10 +1965,7 @@ impl RenderService {
                 }
                 src_seen = true;
                 // A bare src with no value carries no allowlisted scheme.
-                let Some(value) = attribute.name("value") else {
-                    return None;
-                };
-                let raw = value.as_str();
+                let raw = attribute.name("value")?.as_str();
                 let unquoted = raw
                     .strip_prefix('"')
                     .and_then(|rest| rest.strip_suffix('"'))
