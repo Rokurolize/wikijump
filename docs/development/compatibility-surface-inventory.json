@@ -11605,7 +11605,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "5046af1bacb38786f00f0dc5e34e57e001c350d6046fc755c74dd6ca9b29010c"
+      "source_input_set_sha256": "1e1e1618451d6dadc504737bf7e5deb964aa6d30e1e2c93f5ac550596d6b8fa0"
     },
     "ftml": {
       "commit": "d7727b245fd69f46d44c04592e392850ea244e13",
@@ -12030,7 +12030,7 @@
       },
       {
         "path": "framerail/src/routes/ajax-module-connector.php/+server.ts",
-        "sha256": "10ddc928d336744bec18816162b1514e9b85c15190cbf9517a5d070d24c7f924"
+        "sha256": "802aae45ef7f8acfd19dd8eb5fe7c58edf874b26fc0e146d3896f78c97753a14"
       },
       {
         "path": "framerail/src/routes/common--images/jquery-raty/[asset]/+server.ts",
@@ -12126,7 +12126,7 @@
       },
       {
         "path": "framerail/src/routes/xml-rpc-api.php/+server.ts",
-        "sha256": "33e6d044d549a792911a3bde08a43da9915461b139c3036782c43189c1d465c1"
+        "sha256": "353dab5653f74e3781ec8bb5c90f6263cf60019502a3d7bbc66fdcc711859cb0"
       },
       {
         "path": "install/local/wikidot-verification/artifacts/issue1370-live-html-hash-domain-identity-20260815/receipt.json",
