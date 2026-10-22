@@ -27,7 +27,7 @@ import {interactiveAcceptanceFixture} from '../../src/interactive-acceptance-fix
 import {openSidebar,closeSidebar,sidebarIsClosed,sidebarOccupiesViewport} from '../../src/sidebar-interaction.mjs';
 import {activateNavigationControl,expandMobileTopSubmenu,expandTabletTopNavigation,hasRenderedSubmenuGeometry} from '../../src/navigation-interaction.mjs';
 import {dedupeCssLayers} from '../../src/css-layers.mjs';
-import {resolveRunContractPath as resolveBoundRunContractPath} from '../../src/run-contract-path.mjs';
+import {resolveManifestRelativePath,resolveRunContractPath as resolveBoundRunContractPath} from '../../src/run-contract-path.mjs';
 import {resolveFixtureOrigins} from '../../src/fixture-origin.mjs';
 import {resolveCaptureBackendTarget} from '../../src/capture-backend-target.mjs';
 import {FILES_PANE} from '../../src/files-pane-selectors.mjs';
@@ -178,13 +178,16 @@ async function fixtureContractSha(spec){
   hash.update(name);hash.update('\0');hash.update(digest);
  }
  if(migrationFixture){
-  const manifestBytes=await fs.readFile(resolveRunContractPath(runContract.fixture_contract.identity_manifest,'migration fixture manifest'));
+  const identityManifestPath=resolveRunContractPath(runContract.fixture_contract.identity_manifest,'migration fixture manifest');
+  const manifestBytes=await fs.readFile(identityManifestPath);
   hash.update(crypto.createHash('sha256').update(manifestBytes).digest('hex'));
   const manifest=JSON.parse(manifestBytes);
   for(const slug of [migrationFixture.main_slug,migrationFixture.top_slug,migrationFixture.side_slug]){
    const fixture=manifest.fixtures?.find(item=>item.slug===slug);
    if(!fixture)throw new Error(`migration fixture is absent from manifest: ${slug}`);
-   const bytes=await fs.readFile(resolveRunContractPath(fixture.file,`migration fixture ${slug}`));
+   // Fixture files are written relative to the identity manifest's directory
+   // (sigma10-migration/), not to the run contract's directory (current-campaign/).
+   const bytes=await fs.readFile(resolveManifestRelativePath(themeLabDir,identityManifestPath,fixture.file,`migration fixture ${slug}`));
    const actual=crypto.createHash('sha256').update(bytes).digest('hex');
    if(actual!==fixture.sha256)throw new Error(`migration fixture drift: ${slug}`);
    hash.update(slug);hash.update('\0');hash.update(actual);

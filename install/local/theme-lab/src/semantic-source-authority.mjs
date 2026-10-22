@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import {planBrowserAcceptance, semanticSourceRenderings} from './semantic-browser-acceptance.mjs';
 import {NAVIGATION_OVERLAY_SOURCE} from './navigation-overlay-provenance.mjs';
 import {resolveExistingContainedFile} from './package-path.mjs';
+import {DEFAULT_SIGMA10_RUN_CONTRACT} from './current-run-contract-option.mjs';
 
 const validHash = value => /^[a-f0-9]{64}$/u.test(value ?? '');
 
@@ -39,7 +40,9 @@ export function semanticSourceReferenceHtmlSha(root, audit, theme) {
 
 // Opening a hash-bound artifact is necessary but insufficient: a candidate
 // source or another theme's source must not impersonate the upstream oracle.
-export function validateSemanticSourceAuthority(root, audit) {
+// sigma10RunContract names the Sigma-10 run contract the audit was reviewed
+// against (the shared contract unless --run-contract selected a task contract).
+export function validateSemanticSourceAuthority(root, audit, {sigma10RunContract = DEFAULT_SIGMA10_RUN_CONTRACT} = {}) {
   const failures = [];
   const read = file => JSON.parse(fs.readFileSync(resolveExistingContainedFile(root,file,`Source authority input ${file}`), 'utf8'));
   const normalize = url => new URL(url).href.replace(/^http:/u, 'https:');
@@ -126,9 +129,14 @@ export function validateSemanticSourceAuthority(root, audit) {
       let sourceUrl,sourceHash;
       if(baselineAuthority){
         const binding=document.target_baseline;
-        if(binding?.name!=='Sigma-10'||binding.source_manifest?.path!=='sigma10-migration/source-manifest.json'||binding.css?.path!=='sigma10-migration/sigma10-offline.css'||binding.run_contract_path!=='sigma10-migration/current-campaign/run-contract.json')throw new Error('Noncanonical baseline search authority');
-        const sources=JSON.parse(open(binding.source_manifest)),contract=read(binding.run_contract_path),source=sources.pages?.['pseudo-scp-jp:sigma-10:main'];
+        // The receipt is pinned to the shared run contract path and its bytes are
+        // never rewritten. The pin resolves to the Sigma-10 contract the audit used:
+        // the task contract when one was selected. Both must still carry the same
+        // replacement CSS, target site and frozen source manifest identity.
+        if(binding?.name!=='Sigma-10'||binding.source_manifest?.path!=='sigma10-migration/source-manifest.json'||binding.css?.path!=='sigma10-migration/sigma10-offline.css'||binding.run_contract_path!==DEFAULT_SIGMA10_RUN_CONTRACT)throw new Error('Noncanonical baseline search authority');
+        const sources=JSON.parse(open(binding.source_manifest)),contract=read(sigma10RunContract),source=sources.pages?.['pseudo-scp-jp:sigma-10:main'];
         if(!source||contract.schema!=='scp_jp_sigma10_migration_run.v1'||row.baseline_theme!=='Sigma-10'||row.baseline_theme_mode!=='replacement'||row.target_site!==contract.target_site.slug||row.baseline_theme_css_sha256!==binding.css.sha256||contract.baseline_theme.replacement_css_sha256!==binding.css.sha256)throw new Error('Hidden query authority belongs to another target baseline');
+        if(contract.frozen_sigma10_authority?.source_manifest_sha256!==binding.source_manifest.sha256)throw new Error('Baseline search source manifest is not the run contract frozen authority');
         const baselineCss=open(binding.css).toString('utf8');sourceUrl=source.source_url;sourceHash=source.sha256;
         if(document.source_snapshot?.path!=='sigma10-migration/'+source.file||document.source_snapshot.sha256!==sourceHash)throw new Error('Baseline search source snapshot differs');
         open(document.source_snapshot);

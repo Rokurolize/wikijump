@@ -199,7 +199,17 @@ test('builds a task contract bound to the measured runtime and to every current 
   for (const row of contract.current_candidate_inventory)
     assert.deepEqual(contract.additional_candidates[row.package], {directory: row.directory, candidate_sha256: row.candidate_sha256, source_sha256: row.source_sha256});
   assert.deepEqual(result.report.candidates_changed_since_sealed_template.sort(), ['alpha-theme', 'beta-theme', 'sigma10-baseline']);
-  assert.equal(result.report.capture_blockers.length, 3, 'manifest-relative fixture files are reported as capture blockers');
+  // The manifest's fixture files are relative to sigma10-migration/, where the
+  // capture now resolves them. Before the manifest-relative fix these were three blockers.
+  assert.deepEqual(result.report.capture_blockers, []);
+});
+
+test('a manifest-relative migration fixture that is absent is still reported as a capture blocker', () => {
+  const mock = makeMockRoot();
+  fs.rmSync(path.join(mock.root, 'sigma10-migration/fixtures/run-owned-sigma10-nav-side.wikidot.txt'));
+  const result = build(mock);
+  assert.equal(result.ok, false);
+  assert.ok(result.report.capture_blockers.some(message => /migration fixture run-owned:sigma10-nav-side/u.test(message)), JSON.stringify(result.report.capture_blockers));
 });
 
 test('the completion validator accepts the written contract, which is immutable and exclusively created', () => {
