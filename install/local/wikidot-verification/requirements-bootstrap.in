@@ -1,0 +1,3 @@
+# Bootstrap trust updates before installing the hash-pinned application dependencies.
+pip==26.2.2
+certifi==2026.10.19
