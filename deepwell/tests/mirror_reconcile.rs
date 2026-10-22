@@ -49,6 +49,7 @@ async fn import_mirror_site(runner: &TestRunner, tag: &Uuid) -> i64 {
             description: "Reconciliation fixture site".to_owned(),
             license: License::CcBySa40,
             locale: "en".to_owned(),
+            meta_tags: vec![],
             ip_address: common::IP_ADDRESS,
         },
     )
@@ -74,6 +75,7 @@ async fn import_mirror_page(
             slug: format!("reconcile-{label}-{tag}"),
             locked: false,
             discussion_thread_id: None,
+            meta_tags: vec![],
             ip_address: common::IP_ADDRESS,
         },
     )
