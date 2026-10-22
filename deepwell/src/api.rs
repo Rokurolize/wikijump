@@ -703,6 +703,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("import_wikidot_discussion", import_wikidot_discussion);
     register!("mirror_scope_get", mirror_scope_get);
     register!("mirror_scope_set", mirror_scope_set);
+    register!("mirror_scope_reconcile_files", mirror_scope_reconcile_files);
 
     // Return
     Ok(module)

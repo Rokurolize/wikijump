@@ -22,4 +22,7 @@ mod service;
 mod structs;
 
 pub use self::service::MirrorScopeService;
-pub use self::structs::{MirrorScope, SetMirrorScope};
+pub use self::structs::{
+    MirrorScope, ReconcileFileItemResult, ReconcileMirrorFiles,
+    ReconcileMirrorFilesOutput, SetMirrorScope, SourceFileExpectation,
+};
