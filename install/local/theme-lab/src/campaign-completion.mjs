@@ -1,4 +1,4 @@
-import {DEFAULT_SIGMA10_RUN_CONTRACT,DEFAULT_SIGMA9_RUN_CONTRACT,auditMatchesRunContract,resolveRunContractOption} from './current-run-contract-option.mjs';
+import {DEFAULT_SIGMA10_RUN_CONTRACT,DEFAULT_SIGMA9_RUN_CONTRACT,resolveRunContractOption} from './current-run-contract-option.mjs';
 import {runtimeSurfaceContractSha} from './browser-runtime-contract.mjs';
 import {observationRuntimeSourceMatchesContract,requireRuntimeSourceSha} from './runtime-source-identity.mjs';
 import {readCurrentBrowserContracts,observationHasCurrentActionAndFixture,observationHasCurrentEnvironment} from './current-browser-contracts.mjs';
@@ -197,6 +197,14 @@ export function checkCampaignCompletion(root, {captureContractReader = readCurre
   const currentRunContractPath=resolveExistingContainedFile(root,sigma9Contract,'Current browser run contract');
   const currentRunContract=fs.readFileSync(currentRunContractPath);
   const currentRunContractSha=sha(currentRunContract),currentRunSpec=JSON.parse(currentRunContract);
+  // The receipt names the run contract it was assembled against. A task-owned
+  // contract is accepted only when named explicitly and bound by exact bytes;
+  // the shared contract must not be satisfied by a task-owned receipt.
+  {
+    const bound=document.run_contract??null,explicit=sigma9Contract!==DEFAULT_SIGMA9_RUN_CONTRACT;
+    if(explicit?(bound?.path!==sigma9Contract||bound?.sha256!==currentRunContractSha):bound!==null)
+      failures.push(explicit?'Current campaign receipt is not bound to the explicitly supplied run contract':'Current campaign receipt is bound to a task-owned run contract; pass --run-contract to check it');
+  }
   try{requireRuntimeSourceSha(currentRunSpec.expected_runtime_source_sha256,'Current Sigma-9 run contract')}catch(error){failures.push(error.message)}
   try{requireDeepwellRuntimeIdentity(currentRunSpec.expected_backend_runtime_identity,'Current Sigma-9 run contract')}catch(error){failures.push(error.message)}
   failures.push(...validatePublicationCandidateSet(root,{expectedCandidateSetSha256:currentRunSpec.candidate_set_sha256,contract:currentRunSpec,label:'Sigma-9 publication candidate set'}));
