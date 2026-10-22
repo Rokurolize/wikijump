@@ -10,6 +10,7 @@ import {
   renderWikidotViewSource
 } from "$lib/server/ajax-module-connector-page-reads.js"
 import { authGetSession } from "$lib/server/auth/get-session"
+import { crossSitePostResponse } from "$lib/server/cross-site-post"
 import { client } from "$lib/server/deepwell"
 import { siteEducationalUpgrade } from "$lib/server/deepwell/admin"
 import { forumPostCreate, wikidotForumModule } from "$lib/server/deepwell/forum"
@@ -79,6 +80,9 @@ const pageSlugFromReferer = (request: Request): string | undefined => {
 }
 
 export const POST: RequestHandler = async ({ request, cookies, getClientAddress }) => {
+  const forbidden = crossSitePostResponse(request)
+  if (forbidden) return forbidden
+
   const { siteId } = loadSiteInfo(request.headers)
   const sessionToken = cookies.get("wikijump_token")
   const sourcePage = pageSlugFromReferer(request)
