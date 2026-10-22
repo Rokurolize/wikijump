@@ -8,12 +8,12 @@ import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {gunzipSync} from 'node:zlib';
 import {prepareContainedOutputFile,resolveExistingContainedFile,resolveExistingPackageDirectory,resolveExistingPackageFile} from '../src/package-path.mjs';
-import {DEFAULT_SIGMA9_RUN_CONTRACT,auditMatchesRunContract,resolveRunContractOption,runContractArgument} from '../src/current-run-contract-option.mjs';
+import {DEFAULT_SIGMA9_RUN_CONTRACT,DEFAULT_SIGMA10_RUN_CONTRACT,auditMatchesRunContract,resolveRunContractOption,runContractArgument,sigma10RunContractArgument} from '../src/current-run-contract-option.mjs';
 
 const defaultRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 
-export function assembleCurrentCampaign(root,{output='current-campaign-acceptance.json',sigma9RunContract=null}={}) {
+export function assembleCurrentCampaign(root,{output='current-campaign-acceptance.json',sigma9RunContract=null,sigma10RunContract=null}={}) {
   const absoluteRoot=path.resolve(root);
   const canonicalOutput=path.join(fs.realpathSync(absoluteRoot),'current-campaign-acceptance.json');
   if(path.resolve(absoluteRoot,output)!==canonicalOutput)throw new Error('Campaign output must be current-campaign-acceptance.json at the Theme Lab root');
@@ -23,6 +23,10 @@ export function assembleCurrentCampaign(root,{output='current-campaign-acceptanc
     const absolute=resolveExistingContainedFile(absoluteRoot,relative,'Artifact');
     const bytes=fs.readFileSync(absolute);
     return {path:path.relative(absoluteRoot,absolute),sha256:sha(bytes)};
+  };
+  const readAuditRecords=binding=>{
+    const bytes=fs.readFileSync(path.join(absoluteRoot,binding.path));
+    return JSON.parse((binding.encoding==='gzip'?gunzipSync(bytes):bytes).toString('utf8')).records??[];
   };
   const bindAudit=relative=>{
     const compressed=path.join(absoluteRoot,relative+'.gz');
@@ -57,13 +61,25 @@ export function assembleCurrentCampaign(root,{output='current-campaign-acceptanc
       const contractBytes=fs.readFileSync(resolveExistingContainedFile(absoluteRoot,contractPath,'Task-owned run contract'));
       const failures=[];
       for(const row of packages){
-        const bytes=fs.readFileSync(path.join(absoluteRoot,row.browser_audit.path));
-        const records=JSON.parse((row.browser_audit.encoding==='gzip'?gunzipSync(bytes):bytes).toString('utf8')).records??[];
+          const records=readAuditRecords(row.browser_audit);
         if(!records.length)failures.push(`${row.package}: browser audit has no records to bind to the run contract`);
         failures.push(...auditMatchesRunContract(records,contractBytes).map(message=>`${row.package}: ${message}`));
       }
       if(failures.length)throw new Error(failures[0]);
       document.run_contract={path:contractPath,sha256:sha(contractBytes)};
+    }
+  }
+  // The Sigma-10 contract is bound the same way, against the migration audit.
+  if(sigma10RunContract!==null){
+    const contractPath=resolveRunContractOption(absoluteRoot,sigma10RunContract,{generation:'sigma10'});
+    if(contractPath!==DEFAULT_SIGMA10_RUN_CONTRACT){
+      const contractBytes=fs.readFileSync(resolveExistingContainedFile(absoluteRoot,contractPath,'Task-owned Sigma-10 run contract'));
+      const records=readAuditRecords(migration.browser_audit);
+      const failures=[];
+      if(!records.length)failures.push('Sigma-10 browser audit has no records to bind to the run contract');
+      failures.push(...auditMatchesRunContract(records,contractBytes).map(message=>`Sigma-10: ${message}`));
+      if(failures.length)throw new Error(failures[0]);
+      migration.run_contract={path:contractPath,sha256:sha(contractBytes)};
     }
   }
   fs.writeFileSync(target,`${JSON.stringify(document,null,2)}\n`);
@@ -72,12 +88,13 @@ export function assembleCurrentCampaign(root,{output='current-campaign-acceptanc
 
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   const args=process.argv.slice(2);
-  const usage='Usage: node scripts/assemble-current-campaign.mjs [--run-contract=<ports/current-acceptance/run-contract-<id>.json>]\nBinds current package and Sigma-10 artifacts by exact SHA-256, then writes current-campaign-acceptance.json. A task-owned --run-contract is bound only when every package audit row was captured against it. It does not create or upgrade acceptance decisions.';
+  const usage='Usage: node scripts/assemble-current-campaign.mjs [--run-contract=<ports/current-acceptance/run-contract-<id>.json>] [--sigma10-run-contract=<sigma10-migration/current-campaign/run-contract-<id>.json>]\nBinds current package and Sigma-10 artifacts by exact SHA-256, then writes current-campaign-acceptance.json. A task-owned --run-contract or --sigma10-run-contract is bound only when every audit row was captured against it. It does not create or upgrade acceptance decisions.';
   if(args.includes('--help')){console.log(usage);process.exit(0);}
-  let sigma9RunContract;
-  try{sigma9RunContract=runContractArgument(args);}catch(error){console.error(error.message);console.error(usage);process.exit(64);}
-  const recognized=args.every((arg,index)=>arg==='--run-contract'||arg.startsWith('--run-contract=')||(index>0&&args[index-1]==='--run-contract'));
+  let sigma9RunContract,sigma10RunContract;
+  try{sigma9RunContract=runContractArgument(args);sigma10RunContract=sigma10RunContractArgument(args);}catch(error){console.error(error.message);console.error(usage);process.exit(64);}
+  const option=/^--(sigma10-)?run-contract(=|$)/u;
+  const recognized=args.every((arg,index)=>option.test(arg)||(index>0&&/^--(sigma10-)?run-contract$/u.test(args[index-1])));
   if(!recognized){console.error(usage);process.exit(64);}
-  else try{console.log(JSON.stringify(assembleCurrentCampaign(defaultRoot,{sigma9RunContract}),null,2));}
+  else try{console.log(JSON.stringify(assembleCurrentCampaign(defaultRoot,{sigma9RunContract,sigma10RunContract}),null,2));}
   catch(error){console.error(JSON.stringify({status:'incomplete',error:error.message},null,2));process.exitCode=2;}
 }

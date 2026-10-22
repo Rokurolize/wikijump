@@ -14,24 +14,34 @@ export const DEFAULT_SIGMA10_RUN_CONTRACT = 'sigma10-migration/current-campaign/
 const SIGMA9_TASK = /^ports\/current-acceptance\/run-contract-[a-z][a-z0-9-]{2,55}\.json$/u;
 const SIGMA10_TASK = /^sigma10-migration\/current-campaign\/run-contract-[a-z][a-z0-9-]{2,55}\.json$/u;
 
-// Reads the single --run-contract option from argv. Both `--run-contract <path>`
-// and `--run-contract=<path>` are accepted; a bare or repeated flag is an error
-// so a typo can never silently fall back to the shared contract.
-export function runContractArgument(args) {
+// Reads the single occurrence of one contract option from argv. Both
+// `--flag <path>` and `--flag=<path>` are accepted; a bare or repeated flag is
+// an error so a typo can never silently fall back to the shared contract.
+function optionArgument(args, flag) {
   const values = [];
   args.forEach((arg, index) => {
-    if (arg === '--run-contract') {
+    if (arg === flag) {
       const next = args[index + 1];
-      if (!next || next.startsWith('--')) throw new Error('--run-contract needs a path');
+      if (!next || next.startsWith('--')) throw new Error(`${flag} needs a path`);
       values.push(next);
-    } else if (arg.startsWith('--run-contract=')) {
-      const path = arg.slice('--run-contract='.length);
-      if (!path) throw new Error('--run-contract needs a path');
+    } else if (arg.startsWith(`${flag}=`)) {
+      const path = arg.slice(flag.length + 1);
+      if (!path) throw new Error(`${flag} needs a path`);
       values.push(path);
     }
   });
-  if (values.length > 1) throw new Error('--run-contract may be supplied only once');
+  if (values.length > 1) throw new Error(`${flag} may be supplied only once`);
   return values.length ? values[0] : null;
+}
+
+export function runContractArgument(args) {
+  return optionArgument(args, '--run-contract');
+}
+
+// The Sigma-10 option is distinct from --run-contract; a task-owned Sigma-10
+// contract is accepted only when named with this flag.
+export function sigma10RunContractArgument(args) {
+  return optionArgument(args, '--sigma10-run-contract');
 }
 
 export function resolveRunContractOption(root, value, {generation = 'sigma9'} = {}) {
