@@ -174,6 +174,14 @@ test('is idempotent: rerunning with the same decisions changes nothing and write
   assert.equal(backups(s.dir).length, 1);
 });
 
+test('records a Sigma-10 baseline question through the same recorder as a package audit', () => {
+  const s = scenario({rows: [row({theme: 'sigma10-baseline'})]});
+  const result = apply(s);
+  assert.equal(result.ok, true, result.failures?.join('\n'));
+  assert.equal(readAudit(s.auditPath).acceptance_model, SEMANTIC_BROWSER_MODEL);
+  assert.equal(readAudit(s.auditPath).semantic_reviews[s.question.id].status, 'warn');
+});
+
 test('refuses when a visual question has no decision and writes nothing', () => {
   const s = scenario({mutateDecisions: decisions => { decisions.decisions = {}; }});
   const before = fs.readFileSync(s.auditPath);

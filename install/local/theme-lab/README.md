@@ -399,7 +399,8 @@ node scripts/prepare-sigma10-runtime-contract.mjs \
 
 Without `--check-only=true` it needs an explicit `--output` equal to the
 canonical `sigma10-migration/current-campaign/run-contract-<run-id>.json`
-(the only path the completion gate accepts). It creates that file exclusively,
+(the only task-owned path the completion gate accepts, and only when it is named
+explicitly with `--sigma10-run-contract=`). It creates that file exclusively,
 and removes it if `validateCurrentSigma10Contract` rejects it. The builder
 starts from the sealed `e56609...` Sigma-10 copy, regenerates candidate
 identities from current bytes, verifies frozen authority, saved Credit and
@@ -483,9 +484,17 @@ current directory and updates its package receipt. The Sigma-10 current matrix
 owner supplies `sigma10-migration/current-campaign/browser-audit.json` and
 `accepted-result.json`; the latter must already be a
 `theme_lab_current_sigma10_acceptance.v1` decision bound to the exact audit and
-run contract. The campaign assembler only indexes these finished artifacts:
-run `node scripts/assemble-current-campaign.mjs`, then
-`node scripts/check-campaign-completion.mjs`. Assembly records exact SHA-256
+run contract. `node scripts/finalize-current-sigma10.mjs --audit=<runs audit>
+--run-contract=<sigma10 contract> --scenario-matrix=<dir of <package>.json>
+--browser-root=<framerail>` is the only writer of that decision. It applies the
+same audit checks as the completion gate, derives `overall_acceptance` from the
+evidence, and refuses with nothing written when any check fails. The campaign
+assembler only indexes these finished artifacts: run
+`node scripts/assemble-current-campaign.mjs`, then
+`node scripts/check-campaign-completion.mjs`. A task-owned Sigma-10 contract is
+named with `--sigma10-run-contract=<path>` on both commands; the assembler then
+records `migration.run_contract` with its exact path and SHA-256, and the checker
+rejects an unbound or differently named contract. Assembly records exact SHA-256
 bindings for every maintained candidate input, package result/audit, and the
 Sigma-10 result/audit. It does not create a review, infer a pass, or consult
 historical evidence. Missing inputs stop assembly; stale or incomplete evidence

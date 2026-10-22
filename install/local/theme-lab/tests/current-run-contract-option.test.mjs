@@ -10,6 +10,8 @@ import {
   DEFAULT_SIGMA9_RUN_CONTRACT,
   auditMatchesRunContract,
   resolveRunContractOption,
+  runContractArgument,
+  sigma10RunContractArgument,
 } from '../src/current-run-contract-option.mjs';
 
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -58,4 +60,15 @@ test('an alternate contract only applies to rows captured against exactly those 
     {surface: 'page.normal', state: 'settled', run_contract_sha256: current},
     {surface: 'page.edit', state: 'normal', run_contract_sha256: 'f'.repeat(64)},
   ], contract), ['audit row was not captured against the supplied run contract: page.edit.normal']);
+});
+
+test('the Sigma-10 option is parsed separately and never read as the Sigma-9 option', () => {
+  assert.equal(sigma10RunContractArgument(['--sigma10-run-contract=a/run-contract-x1.json']), 'a/run-contract-x1.json');
+  assert.equal(sigma10RunContractArgument(['--sigma10-run-contract', 'a/run-contract-x1.json']), 'a/run-contract-x1.json');
+  assert.equal(sigma10RunContractArgument(['--run-contract=a/run-contract-x1.json']), null);
+  assert.equal(runContractArgument(['--sigma10-run-contract=a/run-contract-x1.json']), null);
+  assert.equal(sigma10RunContractArgument([]), null);
+  assert.throws(() => sigma10RunContractArgument(['--sigma10-run-contract']), /needs a path/u);
+  assert.throws(() => sigma10RunContractArgument(['--sigma10-run-contract=', 'x']), /needs a path/u);
+  assert.throws(() => sigma10RunContractArgument(['--sigma10-run-contract=a', '--sigma10-run-contract=b']), /only once/u);
 });
