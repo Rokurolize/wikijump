@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   buildFixtureTombstoneManifest,
   buildSeedIndex,
+  buildSourceInventoryIndex,
   classifyMirrorFileRow,
 } from "../src/mirror-fixture-file-audit.mjs";
 
@@ -44,10 +45,43 @@ test("seed index keys site, page, and name without collisions", () => {
   assert.equal(index.get("scp-wiki\u0000scp-002 SCP\u0000txt"), undefined);
 });
 
-test("classifies the SCP.txt fixture shape as a repair candidate", () => {
-  const classification = classifyMirrorFileRow(row(), buildSeedIndex(SEEDER));
-  assert.equal(classification.verdict, "FIXTURE");
-  assert.equal(classification.seed_path, "scp-main.ftml");
+// The scp-002 source inventory, exactly the #2095 follow-up case: the
+// corpus page source references 800px-SCP002-new.jpg (image-block) and
+// never SCP.txt.
+const SCP_002_INVENTORY = buildSourceInventoryIndex([
+  {site_slug: "scp-wiki", page_slug: "scp-002", name: "800px-SCP002-new.jpg"},
+]);
+
+test("requires inventory absence for a fixture verdict, using SCP-002", () => {
+  const seed = buildSeedIndex(SEEDER);
+  // SCP.txt: seeded AND absent from the covered source inventory.
+  const fixture = classifyMirrorFileRow(row(), seed, SCP_002_INVENTORY);
+  assert.equal(fixture.verdict, "FIXTURE");
+  assert.equal(fixture.seed_path, "scp-main.ftml");
+  // 800px-SCP002-new.jpg: seeded but present in the source inventory, so
+  // it is a genuine attachment and never a repair candidate.
+  const genuine = classifyMirrorFileRow(
+    row({file_id: 23, name: "800px-SCP002-new.jpg", size: 182048, last_revision_id: 28}),
+    seed,
+    SCP_002_INVENTORY,
+  );
+  assert.equal(genuine.verdict, "SEED_SOURCE_MATCH");
+  // Seeder origin alone, without any source inventory, fails closed.
+  const undecided = classifyMirrorFileRow(row(), seed);
+  assert.equal(undecided.verdict, "UNCLASSIFIED_LOCAL");
+  assert.match(undecided.reason, /no source inventory covers/);
+});
+
+test("seed match on an uncovered page fails closed", () => {
+  const seed = buildSeedIndex({
+    "scp-wiki": {"scp-9999": [{name: "orphan.txt", path: "orphan.txt"}]},
+  });
+  const classification = classifyMirrorFileRow(
+    row({page_slug: "scp-9999", name: "orphan.txt"}),
+    seed,
+    SCP_002_INVENTORY,
+  );
+  assert.equal(classification.verdict, "UNCLASSIFIED_LOCAL");
 });
 
 test("keeps genuine mirror-import inventory out of repair", () => {
@@ -90,12 +124,21 @@ test("passes through out-of-scope, tombstoned, and imported rows", () => {
 test("manifest contains only fixture rows with delete parameters", () => {
   const seed = buildSeedIndex(SEEDER);
   const classified = [
-    {row: row(), classification: classifyMirrorFileRow(row(), seed)},
+    {row: row(), classification: classifyMirrorFileRow(row(), seed, SCP_002_INVENTORY)},
+    {
+      row: row({file_id: 23, name: "800px-SCP002-new.jpg"}),
+      classification: classifyMirrorFileRow(
+        row({file_id: 23, name: "800px-SCP002-new.jpg"}),
+        seed,
+        SCP_002_INVENTORY,
+      ),
+    },
     {
       row: row({file_id: 50000, name: "real-attachment.png"}),
       classification: classifyMirrorFileRow(
         row({file_id: 50000, name: "real-attachment.png"}),
         seed,
+        SCP_002_INVENTORY,
       ),
     },
   ];

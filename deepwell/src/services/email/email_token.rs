@@ -270,6 +270,30 @@ impl EmailTokenService {
         .await
     }
 
+    /// Revoke every outstanding (unconsumed) email token for the account,
+    /// across all purposes. Called when the account's email rotates so a
+    /// link bound to the old mailbox cannot outlive the move (#2693).
+    /// Runs in the caller's transaction: revocation lands atomically with
+    /// whatever change triggered it. Consumed rows are left alone; they
+    /// can never redeem and are purged on the next issue.
+    pub async fn revoke_all_for_user(
+        ctx: &ServiceContext<'_>,
+        user_id: i64,
+    ) -> Result<()> {
+        EmailToken::delete_many()
+            .filter(email_token::Column::UserId.eq(user_id))
+            .filter(email_token::Column::ConsumedAt.is_null())
+            .exec(ctx.transaction())
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to revoke outstanding email tokens",
+                    ErrorType::Email,
+                )
+            })?;
+        Ok(())
+    }
+
     /// Redeem a token with a single conditional write instead of
     /// find-then-update: exactly one concurrent redeemer can flip an
     /// unconsumed, unexpired token to consumed. Every loser observes zero
