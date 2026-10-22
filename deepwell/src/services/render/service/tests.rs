@@ -68,7 +68,8 @@ use super::{
     MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER, MAX_LISTPAGES_RENDER_OFFSET,
     MAX_LISTPAGES_RENDER_SCAN_ROWS, MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS,
     MIN_URL_OFFSET_LISTPAGES_CONTENT_BYTES, MIN_URL_OFFSET_LISTPAGES_RENDER_TIMEOUT_SECS,
-    PreparedIncluder, RenderContext, RenderService, WIKIDOT_COLOR_SPAN_SENTINEL_PREFIX,
+    PreparedIncluder, ProtectedWikidotColorSpans, RenderContext, RenderProtectionBundle,
+    RenderService, WIKIDOT_COLOR_SPAN_SENTINEL_PREFIX,
     WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX, WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX,
     WIKIDOT_INLINE_HTML_SENTINEL_PREFIX, WIKIDOT_WIKIPEDIA_LINK_SENTINEL_PREFIX,
     WikidotCompatLinkTitleMap, extract_css_modules as extract_css_modules_with_registry,
@@ -81,6 +82,7 @@ use super::{
 };
 use crate::config::Config;
 use crate::constants::ADMIN_USER_ID;
+use crate::error::prelude::{Error, ErrorType};
 use crate::models::site::Model as SiteModel;
 use crate::services::PageExistenceSnapshot;
 use crate::services::page_query::{
@@ -3818,4 +3820,39 @@ fn wikidot_site(slug: &str, preferred_domain: Option<&str>) -> SiteModel {
         license: License::CcBySa30,
         forum_max_nest_level: 10,
     }
+}
+
+fn empty_protection_bundle() -> RenderProtectionBundle {
+    RenderProtectionBundle::new(
+        Vec::new(),
+        Vec::new(),
+        ProtectedWikidotColorSpans::new(""),
+        CompatHtmlFragments::new(""),
+        CompatTextFragments::new(""),
+        Vec::new(),
+    )
+}
+
+#[test]
+fn render_protection_bundle_drop_propagates_errors() {
+    // Regression test for #2686: every `?` between bundle creation and
+    // restoration used to turn the original Err into a Drop panic, hiding the
+    // real failure. Dropping the bundle unrestored must only log.
+    fn run_with_forced_error() -> Result<(), Box<Error>> {
+        let _bundle = empty_protection_bundle();
+        Err(Error::new("forced render failure", ErrorType::Render))?;
+        Ok(())
+    }
+
+    let error = run_with_forced_error()
+        .expect_err("the forced error must propagate, not panic in Drop");
+    assert_eq!(error.message, "forced render failure");
+    assert!(matches!(error.error_type, ErrorType::Render));
+}
+
+#[test]
+fn render_protection_bundle_restore_consumes_on_success_path() {
+    let restored =
+        empty_protection_bundle().restore(|protection| protection.inline_html().len());
+    assert_eq!(restored, 0);
 }
