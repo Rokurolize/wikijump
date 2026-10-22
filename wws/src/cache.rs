@@ -233,9 +233,19 @@ mod tests {
                         .insert(args[1].clone(), (args[2].clone(), Some(expires_at)));
                     Ok(Value::Okay)
                 }
+                (b"SETEX", 4) => {
+                    // redis-rs `set_ex` sends `SETEX key seconds value`.
+                    let seconds: u64 =
+                        std::str::from_utf8(&args[2]).unwrap().parse().unwrap();
+                    let expires_at = now + Duration::from_secs(seconds);
+                    state
+                        .keys
+                        .insert(args[1].clone(), (args[3].clone(), Some(expires_at)));
+                    Ok(Value::Okay)
+                }
                 _ => Err(RedisError::from((
                     ErrorKind::Client,
-                    "FakeValkey implements only GET and SET ... EX",
+                    "FakeValkey implements only GET, SET and SETEX",
                 ))),
             }
         }
@@ -345,7 +355,7 @@ mod tests {
             valkey.commands(),
             [
                 "GET site_domain:42",
-                "SET site_domain:42 first.example EX 60",
+                "SETEX site_domain:42 60 first.example",
             ],
         );
     }
@@ -391,13 +401,14 @@ mod tests {
         let writes: Vec<String> = valkey
             .commands()
             .into_iter()
-            .filter(|command| command.starts_with("SET "))
+            .filter(|command| command.starts_with("SETEX "))
             .collect();
         assert_eq!(
             writes,
             [
-                "SET site_domain:42 first.example EX 60",
-                "SET site_domain:42 changed.example EX 60",
+                "SETEX site_domain:42 60 first.example",
+                "SETEX site_domain:42 60 changed.example",
+                "SETEX site_domain:42 60 changed.example",
             ],
         );
     }
