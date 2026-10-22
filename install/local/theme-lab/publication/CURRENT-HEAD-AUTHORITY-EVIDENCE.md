@@ -14,8 +14,11 @@ current-head supplemental evidence-delivery problem (issue #2506).
 `restore-authority-evidence.py` requires a separately delivered inventory
 whose **whole-file SHA-256 is known in advance** (pinned above); it does not trust filenames or
 an unchecked inventory. The inventory identifies each file's repository-relative
-path, byte count and SHA-256, plus 104 current-head adaptation ledger roots (100 authority receipts and 4
-shared-fixture receipts).
+path, byte count and SHA-256, plus 105 current-head adaptation ledger roots (101 authority receipts and 4
+shared-fixture receipts). The 2026-10-22 revision adds the Basalt direct-child
+credit compatibility receipt (`ports/authority-evidence/basalt-jp-credit-direct-child-compatibility.json`,
+SHA-256 `2a8d98da…`, tracked in Git by `b0d10fc385`) that the Basalt ledger block
+now references.
 The script verifies source file hashes, exact ledger-root hash equality, safe
 relative paths, and destination pre-existing bytes *before* it can copy anything.
 It disallows symlinked path components, different existing files and copying
@@ -28,7 +31,7 @@ Example for this workstation's measured inventory (an external supplement,
 
 ```sh
 inventory=/absolute/path/to/this-repository/install/local/theme-lab/publication/current-head-authority-supplement.json
-inventory_sha=c3281ffb59e94a0cea2f0d054617bbdf38e2b6395ebed9d8414dbdea23aa016f
+inventory_sha=1a357c04e82ee23b21296f954a128ed0938ecf762d3393c4a6ef3ef2b763829f
 source=/home/roku/.devspace/worktrees/theme-final-audit
 clean=/absolute/path/to/an/independent/disposable/develop-worktree
 python3 "$clean/install/local/theme-lab/scripts/restore-authority-evidence.py" \
@@ -47,7 +50,7 @@ frozen replay objects referenced indirectly by receipts and 22 current-head
 shared-fixture files, plus 12 native-history replay receipt/response
 artifacts explicitly bound by SHA in their parent receipts, and two
 additional native-page-preview receipt/response files. On the measured
-clean October 18 checkout, the manifest covers 2,157 files; the actual number
+clean October 18 checkout, the manifest covers 2,158 files; the actual number
 to restore depends on which validated files are already present.
 The manifest and its source are authenticated by the independent ledger-root
 checks and the exact SHA-pinned content-addressed object paths. These numbers apply to that inventory snapshot only.
