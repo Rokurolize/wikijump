@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import {execFileSync,spawn,spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {currentFullCheckBackend,currentFullCheckPaths} from '../src/current-full-check-options.mjs';
-import {resolveExistingContainedFile} from '../src/package-path.mjs';
+import {resolveRunContractOption} from '../src/current-run-contract-option.mjs';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const lab=path.resolve(here,'..');
@@ -24,9 +24,7 @@ const backend=currentFullCheckBackend({backendProject:optionValue('backend-proje
 const ledger=JSON.parse(fs.readFileSync(path.join(ports,'adaptation-authority.json'),'utf8'));
 const pkg=ledger.packages[name];
 if(!pkg)throw new Error(`unknown package: ${name}`);
-const contractPath=optionValue('run-contract')[0]
- ?resolveExistingContainedFile(lab,path.resolve(optionValue('run-contract')[0]),'current run contract')
- :path.join(ports,'current-acceptance/run-contract.json');
+const contractPath=path.join(lab,resolveRunContractOption(lab,optionValue('run-contract')[0]??null));
 const runContract=JSON.parse(fs.readFileSync(contractPath,'utf8'));
 if(!runContract.expected_runtime_source_sha256||!runContract.expected_backend_runtime_identity?.identity_sha256)throw new Error('current Sigma-9 runtime contract is incomplete');
 const paths=currentFullCheckPaths(lab,name,optionValue('run-id')[0],runContract);

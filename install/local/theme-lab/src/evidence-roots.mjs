@@ -24,7 +24,13 @@ export function sharedEvidenceRoot(env=process.env){
 export function evidenceRoots(root,defaultRoot,sharedRoot,{strip=''}={}){
   const shared=sharedRoot!==undefined?sharedRoot:(path.resolve(root)===path.resolve(defaultRoot)?sharedEvidenceRoot():null);
   const roots=[{dir:root,strict:false}];
-  if(shared&&fs.existsSync(shared)&&fs.realpathSync(shared)!==fs.realpathSync(root))roots.push({dir:shared,strict:true,strip});
+  // The shared root itself may be a symlink (or sit under a symlinked parent).
+  // Resolve that root once, so lexical paths below it match its realpath; every
+  // component below the root is still refused if it is a symlink.
+  if(shared&&fs.existsSync(shared)){
+    const realShared=fs.realpathSync(shared);
+    if(realShared!==fs.realpathSync(root))roots.push({dir:realShared,strict:true,strip});
+  }
   return roots;
 }
 

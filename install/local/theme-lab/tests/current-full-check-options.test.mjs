@@ -64,3 +64,52 @@ test('current full check reads the token from the bound backend and forwards its
  assert.doesNotMatch(source,/'inspect','wikijump-local-development-deepwell-1'/u);
  assert.match(source,/daemonArgs\.push\('--rpc-url',backend\.rpcUrl\)/u);
 });
+
+test('full check CLI rejects a partial or unbound backend relay before any capture work',()=>{
+ const script=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../scripts/run-current-full-check.mjs');
+ const base=['basalt','--run-id=valid-run-id'];
+ const project='--backend-project=wikijump-theme-lab-basalt-current-20261022';
+ for(const [args,pattern] of [
+  [[project],/together/u],
+  [['--rpc-url=http://127.0.0.1:3397/jsonrpc'],/together/u],
+  [[project,'--rpc-url=http://127.0.0.1:2747/jsonrpc'],/shared development Deepwell/u],
+  [[project,'--rpc-url=https://127.0.0.1:3397/jsonrpc'],/loopback/u],
+ ]){
+  const result=spawnSync(process.execPath,[script,...base,...args],{encoding:'utf8',timeout:10000});
+  assert.notEqual(result.status,0,args.join(' '));
+  assert.match(result.stderr,pattern,args.join(' '));
+ }
+});
+
+test('full check CLI accepts only the shared or a task-owned run contract',()=>{
+ const script=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../scripts/run-current-full-check.mjs');
+ const base=['basalt','--run-id=valid-run-id'];
+ for(const [contract,pattern] of [
+  ['--run-contract=/etc/hosts',/must stay inside Theme Lab/u],
+  ['--run-contract=../../../../etc/hosts',/must stay inside Theme Lab/u],
+  ['--run-contract=ports/current-acceptance/notes.json',/must be the shared/u],
+ ]){
+  const result=spawnSync(process.execPath,[script,...base,contract],{encoding:'utf8',timeout:10000});
+  assert.notEqual(result.status,0,contract);
+  assert.match(result.stderr,pattern,contract);
+ }
+});
+
+test('live-state CLI validates --rpc-url and requires --backend-project with it',()=>{
+ const script=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../scripts/theme-scenario-live-state.mjs');
+ const project='wikijump-theme-lab-basalt-current-20261022';
+ const file='/nonexistent-scenario.json';
+ for(const [args,pattern] of [
+  [['--file',file,'--rpc-url','http://127.0.0.1:3397/jsonrpc'],/together/u],
+  [['--file',file,'--backend-project',project],/together/u],
+  [['--file',file,'--backend-project',project,'--rpc-url','http://127.0.0.1:2747/jsonrpc'],/shared development Deepwell/u],
+  [['--file',file,'--backend-project',project,'--rpc-url','http://10.0.0.5:3397/jsonrpc'],/loopback/u],
+  [['--file',file,'--backend-project',project,'--rpc-url','http://user:pw@127.0.0.1:3397/jsonrpc'],/loopback/u],
+  [['--file',file,'--rpc-url'],/needs a value/u],
+  [['--file',file,'--backend-project','wikijump-local-development','--rpc-url','http://127.0.0.1:3397/jsonrpc'],/task-owned/u],
+ ]){
+  const result=spawnSync(process.execPath,[script,...args],{encoding:'utf8',timeout:10000});
+  assert.notEqual(result.status,0,args.join(' '));
+  assert.match(result.stderr,pattern,args.join(' '));
+ }
+});

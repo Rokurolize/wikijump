@@ -4133,9 +4133,6 @@ fn substituted_form_data_values_cannot_form_modules_for_the_page_parser() {
     let html = HtmlRender.render(&tree, &page_info, &settings).body;
     let html = compat_text.restore(&compat_html.restore(&html));
 
-    std::fs::write("/tmp/listpages-2682-proof.html", &html)
-        .expect("browser proof artifact must be writable");
-
     assert!(!html.contains("list-pages-box"), "{html:?}");
     assert!(!html.contains("<iframe"), "{html:?}");
     assert!(!html.contains("html-block"), "{html:?}");

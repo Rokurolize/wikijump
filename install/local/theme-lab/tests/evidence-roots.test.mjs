@@ -73,6 +73,48 @@ test('unsafe paths are rejected in both roots and never fall back',()=>{
   }finally{f.done()}
 });
 
+test('a symlinked shared cache root (or symlinked parent) still serves hash-matching files',()=>{
+  const f=fixture();
+  try{
+    f.put(f.shared,rel,'shared');
+    const link=path.join(f.base,'cache-link');
+    fs.symlinkSync(f.shared,link);
+    const found=resolveEvidenceFile(evidenceRoots(f.local,f.local,link),rel,'authority evidence',sha('shared'));
+    assert.equal(found.root,fs.realpathSync(f.shared));
+    assert.equal(found.bytes.toString(),'shared');
+    // A symlinked parent of the cache root is resolved the same way.
+    const realParent=path.join(f.base,'real-parent'),cache=path.join(realParent,'cache');
+    f.put(cache,rel,'nested');
+    fs.symlinkSync(realParent,path.join(f.base,'link-parent'));
+    const nested=resolveEvidenceFile(evidenceRoots(f.local,f.local,path.join(f.base,'link-parent','cache')),rel,'authority evidence',sha('nested'));
+    assert.equal(nested.bytes.toString(),'nested');
+  }finally{f.done()}
+});
+
+test('a symlinked shared cache root keeps the rules for everything below the root',()=>{
+  const f=fixture();
+  try{
+    f.put(f.shared,rel,'shared');
+    f.put(f.base,'outside.txt','shared');
+    const link=path.join(f.base,'cache-link');
+    fs.symlinkSync(f.shared,link);
+    const linked=evidenceRoots(f.local,f.local,link);
+    // Traversal and absolute paths that leave the cache are refused.
+    for(const bad of ['../outside.txt','authority-evidence/../../outside.txt',path.join(f.base,'outside.txt')])
+      assert.throws(()=>resolveEvidenceFile(linked,bad,'authority evidence',sha('shared')),/escapes root/u,bad);
+    // A symlink inside the cache is refused even when the cache root itself is a symlink.
+    fs.mkdirSync(path.join(f.shared,'real'));
+    f.put(f.shared,'real/linked.txt','shared');
+    fs.symlinkSync(path.join(f.shared,'real'),path.join(f.shared,'alias'));
+    assert.throws(()=>resolveEvidenceFile(linked,'alias/linked.txt','authority evidence',sha('shared')),/symlinks/u);
+    // A cache file that is itself a symlink to outside the cache is refused.
+    fs.symlinkSync(path.join(f.base,'outside.txt'),path.join(f.shared,'authority-evidence/proof/escape.txt'));
+    assert.throws(()=>resolveEvidenceFile(linked,'authority-evidence/proof/escape.txt','authority evidence',sha('shared')),/symlinks|escapes root/u);
+    // A hash mismatch through the symlinked root is never accepted.
+    assert.throws(()=>resolveEvidenceFile(linked,rel,'authority evidence',sha('other')),/stale authority evidence/u);
+  }finally{f.done()}
+});
+
 test('the shared root applies only to the default root unless named explicitly',()=>{
   const f=fixture();
   const saved=process.env.WIKIJUMP_THEME_EVIDENCE_ROOT,savedXdg=process.env.XDG_DATA_HOME;
