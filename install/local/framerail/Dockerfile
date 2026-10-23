@@ -4,6 +4,7 @@
 
 FROM node:24.22.1-alpine@sha256:6a1c190e17215d844926b0677f4bf87273ff7d5e54db06d3b5b5863ab0b09a3d
 
+RUN apk add --no-cache --upgrade ca-certificates ca-certificates-bundle
 RUN apk add --no-cache curl
 RUN npm install --global pnpm@11.10.0
 WORKDIR /app

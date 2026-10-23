@@ -6,12 +6,14 @@ FROM public.ecr.aws/docker/library/caddy:2.11.7-builder-alpine@sha256:d718a1d143
 ENV XCADDY_SETCAP=1
 ARG PROVIDER=digitalocean
 
-RUN xcaddy build v2.11.7 --output /usr/bin/caddy --with github.com/caddy-dns/${PROVIDER}
+RUN apk add --no-cache --upgrade ca-certificates ca-certificates-bundle && \
+    xcaddy build v2.11.7 --output /usr/bin/caddy --with github.com/caddy-dns/${PROVIDER}
 
 FROM public.ecr.aws/docker/library/caddy:2.11-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
 COPY --from=builder /usr/bin/caddy /usr/bin/caddy
 
 # Install dependencies
+RUN apk add --no-cache --upgrade ca-certificates ca-certificates-bundle
 RUN apk add --no-cache curl jq
 
 # Install files
