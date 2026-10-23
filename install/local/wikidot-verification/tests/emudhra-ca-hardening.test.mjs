@@ -105,3 +105,35 @@ test("all Deepwell and WWS image variants refresh OS roots in builder and runtim
     }
   }
 });
+
+
+test("Alpine-based infrastructure images refresh the OS CA bundle before use", () => {
+  const dockerfiles = [
+    "../../../install/prod/caddy/Dockerfile",
+    "../../../install/local/caddy/Dockerfile",
+    "../../../install/dev/caddy/Dockerfile",
+    "../../../install/prod/framerail/Dockerfile",
+    "../../../install/local/framerail/Dockerfile",
+    "../../../install/dev/framerail/Dockerfile",
+    "../../../install/local/postgres/Dockerfile",
+    "../../../install/dev/postgres/Dockerfile",
+    "../../../install/local/valkey/Dockerfile",
+    "../../../install/dev/valkey/Dockerfile",
+  ];
+  for (const relative of dockerfiles) {
+    const source = read(relative);
+    assert.match(source, /apk add --no-cache --upgrade ca-certificates ca-certificates-bundle/u, `${relative}: refreshes the pinned base image CA bundle`);
+  }
+  for (const relative of ["../../../install/prod/caddy/Dockerfile", "../../../install/local/caddy/Dockerfile", "../../../install/dev/caddy/Dockerfile"]) {
+    const source = read(relative);
+    assert.equal((source.match(/apk add --no-cache --upgrade ca-certificates ca-certificates-bundle/g) ?? []).length, 2, `${relative}: refreshes roots in both the build and runtime stages`);
+  }
+});
+
+test("Silo runtime copies the refreshed trust bundle into its package-manager-free image", () => {
+  const source = read("../../../install/local/silo/Dockerfile");
+  assert.match(source, /FROM debian:trixie-slim@sha256:[0-9a-f]{64} AS ca-bundle/u);
+  assert.match(source, /apt-get install -y --no-install-recommends ca-certificates/u);
+  assert.match(source, /update-ca-certificates/u);
+  assert.match(source, /COPY --from=ca-bundle \/etc\/ssl\/certs\/ca-certificates\.crt \/etc\/ssl\/certs\/ca-certificates\.crt/u);
+});
