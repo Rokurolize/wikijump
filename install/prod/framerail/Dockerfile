@@ -13,6 +13,7 @@ ENV FRAMERAIL_ENV=${FRAMERAIL_ENV}
 ENV FRAMERAIL_CSRF_CHECK_ORIGIN=${FRAMERAIL_CSRF_CHECK_ORIGIN}
 
 # Install dependencies
+RUN apk add --no-cache --upgrade ca-certificates ca-certificates-bundle
 RUN apk add --no-cache curl && \
     npm install --global pnpm@11.10.0
 

@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {spawn} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import {framerailEnvLabel,parseFramerailEnvOption} from '../../src/framerail-env-option.mjs';
 import {withAuditLock} from '../scripts/audit-lock.mjs';
 import {framerailSourceFingerprint} from '../../src/framerail-source-fingerprint.mjs';
 import {assertDeepwellRuntimeIdentity,parseCurlDeepwellRuntimeHeaders,readRunningDeepwellRuntimeIdentity,requireDeepwellRuntimeIdentity} from '../../src/deepwell-runtime-identity.mjs';
@@ -18,6 +19,8 @@ if(runtimeRepoArg!==null&&repoRoot!==runtimeRepoArg)throw new Error('source chec
 const framerailDir=path.join(repoRoot,'framerail');
 const namespace=process.argv.find(arg=>arg.startsWith('--namespace='))?.slice(12)??null;
 const backendProject=process.argv.find(arg=>arg.startsWith('--backend-project='))?.slice(18)??null;
+const framerailEnv=parseFramerailEnvOption({framerailEnv:process.argv.find(arg=>arg.startsWith('--framerail-env='))?.slice(16),backendProject});
+const envLabel=framerailEnvLabel(framerailEnv);
 const port=Number(process.argv.find(arg=>arg.startsWith('--port='))?.slice(7)??3395);
 const runContractArg=process.argv.find(arg=>arg.startsWith('--run-contract='))?.slice(15)??null;
 if(namespace!==null&&!/^[a-z][a-z0-9-]{0,40}$/u.test(namespace))throw new Error('invalid task-owned namespace');
@@ -95,8 +98,9 @@ async function startContainers(fingerprint,buildDir,backend){
  const currentFingerprint=running?.Config?.Labels?.['theme-lab.source-sha'];
  const currentCaddyFingerprint=runningCaddy?.Config?.Labels?.['theme-lab.source-sha'];
  const currentBackendIdentity=running?.Config?.Labels?.['theme-lab.backend-runtime-sha'];
+ const currentEnvLabel=running?.Config?.Labels?.['theme-lab.framerail-env']??'image-default';
  const currentCaddyBackendIdentity=runningCaddy?.Config?.Labels?.['theme-lab.backend-runtime-sha'];
- if(currentFingerprint===fingerprint&&currentCaddyFingerprint===fingerprint&&currentBackendIdentity===backend.identity.identity_sha256&&currentCaddyBackendIdentity===backend.identity.identity_sha256&&await isReady(fingerprint)){
+ if(currentFingerprint===fingerprint&&currentCaddyFingerprint===fingerprint&&currentBackendIdentity===backend.identity.identity_sha256&&currentCaddyBackendIdentity===backend.identity.identity_sha256&&currentEnvLabel===envLabel&&await isReady(fingerprint)){
   const probe=await probeDeepwellFromFramerail(backend);
   return{restarted:false,backendProbe:probe};
  }
@@ -125,12 +129,13 @@ async function startContainers(fingerprint,buildDir,backend){
   if(existing>=0)envLines[existing]=token;
   else envLines.push(token);
  }
+ if(framerailEnv){const at=envLines.findIndex(line=>line.startsWith('FRAMERAIL_ENV='));if(at>=0)envLines[at]=`FRAMERAIL_ENV=${framerailEnv}`;else envLines.push(`FRAMERAIL_ENV=${framerailEnv}`)}
  if(!envLines.some(line=>line.startsWith('FRAMERAIL_MODE=')))envLines.push('FRAMERAIL_MODE=built');
  if(!envLines.some(line=>line.startsWith('PORT=')))envLines.push('PORT=3393');
  await fs.writeFile(envFile,envLines.join('\n')+'\n',{mode:0o600});
  try{
   if(!envLines.some(line=>line==='DEEPWELL_HOST=deepwell'))throw new Error('built Framerail does not use the verified deepwell service alias');
-  const args=['run','-d','--rm','--name',framerailContainer,'--network',network,'--label',`theme-lab.source-sha=${fingerprint}`,'--label',`theme-lab.backend-runtime-sha=${backend.identity.identity_sha256}`,'--env-file',envFile,'-e','FRAMERAIL_MODE=built','-e','PORT=3393','-v',`${buildDir}:/app`];
+  const args=['run','-d','--rm','--name',framerailContainer,'--network',network,'--label',`theme-lab.framerail-env=${envLabel}`,'--label',`theme-lab.source-sha=${fingerprint}`,'--label',`theme-lab.backend-runtime-sha=${backend.identity.identity_sha256}`,'--env-file',envFile,'-e','FRAMERAIL_MODE=built','-e','PORT=3393','-v',`${buildDir}:/app`];
   if(backendProject){
    await fs.access(path.join(framerailDir,'node_modules'));
    await fs.access(path.join(repoRoot,'assets'));

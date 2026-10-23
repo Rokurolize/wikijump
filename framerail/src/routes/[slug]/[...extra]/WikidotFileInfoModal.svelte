@@ -3,6 +3,7 @@
   import { onMount } from "svelte"
   import WikidotRevisionAuthor from "./WikidotRevisionAuthor.svelte"
   import {
+    wikidotBareMimeType,
     wikidotFileSize,
     wikidotFileTypeDescription,
     wikidotFileUploadDate
@@ -105,7 +106,7 @@
         </tr>
         <tr>
           <td>{text("wiki-page-file-info.mime", "MIME type:")}</td>
-          <td>{file.mime}</td>
+          <td>{wikidotBareMimeType(file.mime)}</td>
         </tr>
         <tr>
           <td>{text("wiki-page-file-info.content-type", "Content type:")}</td>

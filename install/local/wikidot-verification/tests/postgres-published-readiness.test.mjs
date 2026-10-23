@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import {EventEmitter} from "node:events";
 import net from "node:net";
 import test from "node:test";
 
@@ -42,6 +43,33 @@ async function listen(handler) {
 
 async function close(server) {
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+}
+
+// Stands in for a net.Socket in scripted readiness attempts. Each write is
+// answered on a later tick by `respond`, which may emit "data" or "timeout".
+class ScriptedSocket extends EventEmitter {
+  constructor(respond) {
+    super();
+    this.respond = respond;
+    this.destroyed = false;
+  }
+
+  setTimeout() {
+    return this;
+  }
+
+  write(chunk) {
+    const request = Buffer.from(chunk);
+    process.nextTick(() => {
+      if (!this.destroyed) this.respond(this, request);
+    });
+    return true;
+  }
+
+  destroy() {
+    this.destroyed = true;
+    return this;
+  }
 }
 
 test("published PostgreSQL probe waits for a query-ready startup response", async () => {
@@ -178,33 +206,27 @@ test("published PostgreSQL readiness retries an invalid first protocol response"
   }
 });
 
-test("published PostgreSQL readiness retries a host-path timeout", async () => {
-  let connections = 0;
-  const sockets = new Set();
-  const {server, port} = await listen((socket) => {
-    connections += 1;
-    const connection = connections;
-    let responded = false;
-    sockets.add(socket);
-    socket.on("close", () => sockets.delete(socket));
-    socket.on("data", (chunk) => {
-      if (isSslRequest(chunk)) {
-        if (connection > 1) socket.write(Buffer.from("N"));
-        return;
-      }
-      if (connection > 1 && !responded) {
-        responded = true;
-        socket.end(AUTH_REQUEST);
-      }
-    });
+test("published PostgreSQL readiness retries a host-path timeout", async (t) => {
+  // Attempt 1 accepts the connection but never answers the SSLRequest, so the
+  // idle timer fires; attempt 2 is query-ready. The timeout is delivered as the
+  // scripted "timeout" event rather than by waiting on wall-clock time, so the
+  // attempt count does not depend on how loaded the host is. createConnection
+  // is stubbed, so the port is validated but never dialled.
+  const attempts = [
+    (socket) => socket.emit("timeout"),
+    (socket, request) => socket.emit("data", isSslRequest(request) ? Buffer.from("N") : AUTH_REQUEST),
+  ];
+  const sockets = [];
+  t.mock.method(net, "createConnection", () => {
+    const respond = attempts[sockets.length];
+    assert.ok(respond, `unexpected readiness connection ${sockets.length + 1}`);
+    const socket = new ScriptedSocket(respond);
+    sockets.push(socket);
+    process.nextTick(() => socket.emit("connect"));
+    return socket;
   });
-  try {
-    assert.equal(await waitForPublishedPostgres({port, attempts: 3, intervalMs: 1, timeoutMs: 20}), "N");
-    assert.equal(connections, 2);
-  } finally {
-    for (const socket of sockets) socket.destroy();
-    await close(server);
-  }
+  assert.equal(await waitForPublishedPostgres({port: 5432, attempts: 3, intervalMs: 1, timeoutMs: 20}), "N");
+  assert.equal(sockets.length, 2);
 });
 
 test("published PostgreSQL probe rejects a non-protocol byte", async () => {

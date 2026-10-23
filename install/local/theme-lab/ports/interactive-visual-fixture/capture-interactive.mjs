@@ -27,7 +27,10 @@ import {interactiveAcceptanceFixture} from '../../src/interactive-acceptance-fix
 import {openSidebar,closeSidebar,sidebarIsClosed,sidebarOccupiesViewport} from '../../src/sidebar-interaction.mjs';
 import {activateNavigationControl,expandMobileTopSubmenu,expandTabletTopNavigation,hasRenderedSubmenuGeometry} from '../../src/navigation-interaction.mjs';
 import {dedupeCssLayers} from '../../src/css-layers.mjs';
-import {resolveRunContractPath as resolveBoundRunContractPath} from '../../src/run-contract-path.mjs';
+import {resolveManifestRelativePath,resolveRunContractPath as resolveBoundRunContractPath} from '../../src/run-contract-path.mjs';
+import {resolveFixtureOrigins} from '../../src/fixture-origin.mjs';
+import {resolveCaptureBackendTarget} from '../../src/capture-backend-target.mjs';
+import {FILES_PANE} from '../../src/files-pane-selectors.mjs';
 import {candidateAssetDependencyState} from '../../src/candidate-asset-dependencies.mjs';
 import {sigma10CreditActions} from '../../src/sigma10-credit-actions.mjs';
 import {resolveExistingContainedDirectory,resolveExistingContainedFile,resolveExistingPackageDirectory,resolveExistingPackageFile} from '../../src/package-path.mjs';
@@ -45,14 +48,16 @@ const viewportArg=process.argv.find(x=>x.startsWith('--viewport='))?.slice(11)??
 const stateArg=process.argv.find(x=>x.startsWith('--state='))?.slice(8);
 const transportOriginArg=process.argv.find(x=>x.startsWith('--transport-origin='))?.slice(19);
 const runContractArg=process.argv.find(x=>x.startsWith('--run-contract='))?.slice(15);
+const runtimeRepoArg=process.argv.find(x=>x.startsWith('--runtime-repo='))?.slice(15);
+const backendProjectArg=process.argv.find(x=>x.startsWith('--backend-project='))?.slice(18);
 const stateArgs=stateArg!==undefined?new Set(stateArg.split(',')):null;
 const forceCapture=process.argv.includes('--force');
 const anonymousArg=process.argv.includes('--anonymous');
 const defaultConcurrency={chromium:6,firefox:4,webkit:6}[engineArg]??4;
 const concurrencyArg=Number(process.argv.find(x=>x.startsWith('--concurrency='))?.slice(14)??defaultConcurrency);
 const acceptedArgs=new Set(['--force','--anonymous','--help','--dump-contracts']);
-for(const arg of process.argv.slice(2)){if(acceptedArgs.has(arg)||/^--(?:theme|themes|engine|viewport|state|concurrency|transport-origin|run-contract)=/u.test(arg))continue;throw new Error(`unknown argument: ${arg}; use --help for usage`)}
-if(process.argv.includes('--help')){console.log('Usage: capture-interactive.mjs [--engine=chromium|firefox|webkit] [--viewport=desktop|laptop|tablet|mobile|narrow-mobile] [--theme=slug|--themes=slug,slug] [--state=surface.state,...] [--concurrency=1..8] [--transport-origin=https://host:port] [--run-contract=/path/to/contract.json] [--anonymous] [--force]');process.exit(0)}
+for(const arg of process.argv.slice(2)){if(acceptedArgs.has(arg)||/^--(?:theme|themes|engine|viewport|state|concurrency|transport-origin|run-contract|runtime-repo|backend-project)=/u.test(arg))continue;throw new Error(`unknown argument: ${arg}; use --help for usage`)}
+if(process.argv.includes('--help')){console.log('Usage: capture-interactive.mjs [--engine=chromium|firefox|webkit] [--viewport=desktop|laptop|tablet|mobile|narrow-mobile] [--theme=slug|--themes=slug,slug] [--state=surface.state,...] [--concurrency=1..8] [--transport-origin=https://host:port] [--run-contract=/path/to/contract.json] [--runtime-repo=/abs/checkout --backend-project=wikijump-theme-lab-NAME] [--anonymous] [--force]');process.exit(0)}
 if(!Number.isInteger(concurrencyArg)||concurrencyArg<1||concurrencyArg>8)throw new Error('--concurrency must be an integer from 1 to 8');
 if(stateArgs&&[...stateArgs].some(state=>!state.trim()))throw new Error('states must be non-empty');
 if(engineArg!=='chromium'&&!['desktop','mobile'].includes(viewportArg)){
@@ -103,12 +108,9 @@ const runtimeBaselineStylesheetHref=runContract.baseline_theme?.runtime_styleshe
 if(typeof runtimeBaselineStylesheetHref!=='string'||!runtimeBaselineStylesheetHref)throw new Error('run contract baseline theme needs a runtime stylesheet href');
 const viewports=runContract.viewports;
 if(!viewports[viewportArg])throw new Error(`unknown viewport ${viewportArg}`);
-const logicalOrigin='https://scpaiueouiuiuiui.wikijump.localhost:18443';
-if(runContract.target_site.origin!==logicalOrigin)throw new Error('acceptance run contract origin does not match the fixture target');
-const origin=transportOriginArg?new URL(transportOriginArg).origin:logicalOrigin;
-const transportUrl=new URL(origin);
-if(transportUrl.protocol!=='https:'||transportUrl.hostname!=='scpaiueouiuiuiui.wikijump.localhost')throw new Error('transport origin must be HTTPS on the authorized local authoring hostname');
+const {origin}=resolveFixtureOrigins({contractOrigin:runContract.target_site.origin,transportOrigin:transportOriginArg});
 const repoRoot=path.resolve(packageDir,'../../../../../');
+const backendTarget=resolveCaptureBackendTarget({runtimeRepo:runtimeRepoArg,backendProject:backendProjectArg,repoRoot});
 const base=`${origin}/run-owned%3Atheme-lab-visual-acceptance-imported-20260924`;
 const historyBase=`${origin}/run-owned%3Atheme-lab-visual-history-20260924`;
 const registry={chromium,firefox,webkit};
@@ -176,13 +178,16 @@ async function fixtureContractSha(spec){
   hash.update(name);hash.update('\0');hash.update(digest);
  }
  if(migrationFixture){
-  const manifestBytes=await fs.readFile(resolveRunContractPath(runContract.fixture_contract.identity_manifest,'migration fixture manifest'));
+  const identityManifestPath=resolveRunContractPath(runContract.fixture_contract.identity_manifest,'migration fixture manifest');
+  const manifestBytes=await fs.readFile(identityManifestPath);
   hash.update(crypto.createHash('sha256').update(manifestBytes).digest('hex'));
   const manifest=JSON.parse(manifestBytes);
   for(const slug of [migrationFixture.main_slug,migrationFixture.top_slug,migrationFixture.side_slug]){
    const fixture=manifest.fixtures?.find(item=>item.slug===slug);
    if(!fixture)throw new Error(`migration fixture is absent from manifest: ${slug}`);
-   const bytes=await fs.readFile(resolveRunContractPath(fixture.file,`migration fixture ${slug}`));
+   // Fixture files are written relative to the identity manifest's directory
+   // (sigma10-migration/), not to the run contract's directory (current-campaign/).
+   const bytes=await fs.readFile(resolveManifestRelativePath(themeLabDir,identityManifestPath,fixture.file,`migration fixture ${slug}`));
    const actual=crypto.createHash('sha256').update(bytes).digest('hex');
    if(actual!==fixture.sha256)throw new Error(`migration fixture drift: ${slug}`);
    hash.update(slug);hash.update('\0');hash.update(actual);
@@ -208,6 +213,16 @@ async function revealPagePane(page){
  await page.evaluate(({top,desired})=>window.scrollTo({top:top-desired,behavior:'instant'}),{top:targetTop,desired:desiredTop});
  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
 }
+// The credit control sits below the first screenful. Bring the real control into
+// frame (below any fixed navigation) so the screenshot and the target
+// measurement actually contain it.
+async function revealCreditControl(page){
+ const control=page.locator('.creditButton a:visible').first();
+ await control.waitFor({state:'visible'});
+ await control.scrollIntoViewIfNeeded();
+ await revealBelowFixedMobileNavigation(page,control);
+ await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+}
 async function revealBelowFixedMobileNavigation(page,selectorOrLocator){
  const fixedTop=await page.evaluate(topFixedNavigationInset);
  const target=typeof selectorOrLocator==='string'?page.locator(selectorOrLocator):selectorOrLocator;
@@ -226,26 +241,8 @@ async function settleFiniteVisualTransitions(page){return page.evaluate(async()=
 // finite CSS transitions (left/font-size/flex-grow...) on every surface; this
 // is a measurement-phase step, not part of any state's action contract.
 async function settleFiniteMeasurementTransitions(page){return page.evaluate(async()=>{await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));let finished=0;for(const animation of document.getAnimations()){if(animation.playState==='running'&&Number.isFinite(animation.effect?.getTiming().iterations)){try{animation.finish();finished++}catch{}}}await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return finished})}
-async function movePointerToSafeArea(page){
- const point=await page.evaluate(()=>{
-  const candidates=[
-   [innerWidth-3,innerHeight-3],
-   [innerWidth-3,innerHeight*.75],
-   [innerWidth-3,innerHeight*.25],
-   [innerWidth-3,3],
-   [innerWidth*.75,innerHeight-3],
-   [innerWidth*.9,innerHeight*.5],
-  ];
-  const interactive='#side-bar,#top-bar,.mobile-top-bar,#header,#footer a,a,button,input,select,textarea,[role="button"]';
-  for(const [x,y] of candidates){
-   const px=Math.max(1,Math.min(innerWidth-2,x)),py=Math.max(1,Math.min(innerHeight-2,y));
-   const hit=document.elementFromPoint(px,py);
-   if(!hit||hit===document.body||hit===document.documentElement||!hit.closest(interactive))return{x:px,y:py};
-  }
-  return{x:Math.max(1,innerWidth-2),y:Math.max(1,innerHeight-2)};
- });
- await page.mouse.move(point.x,point.y);
-}
+import {movePointerToSafeArea} from '../../src/pointer-park.mjs';
+
 async function parkPointer(page,_viewport){await movePointerToSafeArea(page)}
 function shouldParkPointer(spec){return !/(?:hover|pointerover|expanded)/iu.test(spec.state)&&spec.surface!=='nav.mobile-top'&&spec.surface!=='shell.footer-license'}
 let observedBackendRuntimeIdentity=null;
@@ -340,7 +337,7 @@ const hydrationIndependentStates=new Set([
  'page.normal|settled',
  'shell.search|typed-focused','shell.search|compact-submit',
  'nav.desktop-top|submenu-hover','nav.desktop-top|keyboard-focus',
- 'nav.mobile-top|submenu-expanded','nav.sidebar|open','nav.sidebar|closed-after-open',
+ 'nav.mobile-top|submenu-expanded','nav.sidebar|open','nav.sidebar|closed-after-open','shell.search|compact-submit',
  'page.options|default',
  'shell.footer-license|scrolled-bottom','shell.interwiki|visible','shell.login|account-hover',
  'content.link|hovered','content.link|focused','content.rating|focused',
@@ -404,9 +401,9 @@ async function visualDiagnostics(page,surface){
 const states=[
   {surface:'page.normal',state:'settled',viewports:Object.keys(viewports),action:async()=>{}},
   {surface:'content.tabview',state:'second-tab-selected',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{const tab=p.getByText('詳細',{exact:true}).first();await tab.scrollIntoViewIfNeeded();await tab.click();await p.getByText('別のタブへ移動できます。',{exact:true}).waitFor({state:'visible'});await revealBelowFixedMobileNavigation(p,'.yui-navset')}} ,
-  {surface:'content.collapsible',state:'expanded',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{const toggle=p.locator('#page-content .collapsible-block-link').first();await toggle.scrollIntoViewIfNeeded();const parent=toggle.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " collapsible-block ")][1]');const unfolded=parent.locator(':scope > .collapsible-block-unfolded');if(await unfolded.evaluate(e=>getComputedStyle(e).display==='none')){await toggle.focus();await toggle.press('Enter')}await unfolded.waitFor({state:'visible'});if(await p.evaluate(()=>innerWidth<=600))await revealBelowFixedMobileNavigation(p,unfolded)}},
+  {surface:'content.collapsible',state:'expanded',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{const toggle=p.locator('#page-content .collapsible-block-link').first();await toggle.scrollIntoViewIfNeeded();const parent=toggle.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " collapsible-block ")][1]');const unfolded=parent.locator(':scope > .collapsible-block-unfolded');if(await unfolded.evaluate(e=>getComputedStyle(e).display==='none')){await toggle.focus();await toggle.press('Enter')}await unfolded.waitFor({state:'visible'});if(await p.evaluate(()=>innerWidth<=600))await revealBelowFixedMobileNavigation(p,unfolded);await movePointerToSafeArea(p);await settleFiniteVisualTransitions(p)}},
   {surface:'shell.search',state:'typed-focused',viewports:['desktop','laptop','tablet'],action:async p=>{await waitForSvelteClickHandler(p,'#history-button');await exerciseHeaderSearch(p,p.__themeLabSearchSourceAuthority)}},
-  {surface:'shell.search',state:'compact-submit',viewports:['mobile','narrow-mobile'],action:async p=>{await p.locator('#search-top-box-form input[type="submit"]').waitFor({state:'visible'})}},
+  {surface:'shell.search',state:'compact-submit',viewports:['mobile','narrow-mobile'],action:async p=>{await exerciseHeaderSearch(p,p.__themeLabSearchSourceAuthority)}},
   {surface:'nav.desktop-top',state:'submenu-hover',viewports:['desktop'],action:async p=>{const item=p.locator('#top-bar li').filter({has:p.locator('ul')}).first();await item.scrollIntoViewIfNeeded();await item.locator('a').first().hover()}},
   {surface:'nav.tablet-top',state:'active-navigation-expanded',viewports:['tablet'],action:expandTabletTopNavigation},
   {surface:'nav.mobile-top',state:'submenu-expanded',viewports:['mobile','narrow-mobile'],action:expandMobileTopSubmenu},
@@ -463,7 +460,7 @@ const states=[
     },observation);
     if(!observation?.expanded_visible||!observation?.folded_hidden||!observation?.child_visible||!observation?.sidebar_open)throw new Error(`sidebar open-submenu action did not expand the native collapsible state: ${JSON.stringify(observation)}`);
   }},
-  {surface:'credit.default',state:'normal',viewports:['desktop','mobile','narrow-mobile'],action:async()=>{}},
+  {surface:'credit.default',state:'normal',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{await revealCreditControl(p)}},
    {surface:'credit.view',state:'open',viewports:['desktop','mobile','narrow-mobile'],action:openCreditView},
    {surface:'credit.otherwise',state:'open',viewports:['desktop','mobile','narrow-mobile'],action:openCreditOtherwise},
    {surface:'credit.close-back',state:'restored',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{if(migrationFixture)await setMigrationCreditTarget(p,'u-credit-view');else{await p.locator('.creditButton a').first().click();await p.waitForFunction(()=>location.hash==='#u-credit-view')}await p.goBack();await p.waitForFunction(()=>location.hash!=='#u-credit-view')}},
@@ -474,9 +471,9 @@ const states=[
   {surface:'page.history',state:'revision-row-hovered',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{await p.locator('#history-button').click();const row=p.locator('.page-history tr[id^="revision-row-"]').first();await row.waitFor();await revealPagePane(p);await row.hover()}},
   {surface:'page.history',state:'diff',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{await p.locator('#history-button').click();await p.locator('#revision-diff-from').waitFor();await p.locator('.revision-diff-controls button').last().click();await p.waitForFunction(()=>!!document.querySelector('.revision-diff')||!!document.querySelector('.revision-diff-panel p')||!!document.querySelector('#odialog-container .owindow'));await revealPagePane(p);const diff=p.locator('.revision-diff');if(await diff.count()){if(await p.evaluate(()=>innerWidth<=600))await revealBelowFixedMobileNavigation(p,'.revision-diff');else await diff.scrollIntoViewIfNeeded()}}},
   {surface:'page.source',state:'open',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{await expandMoreOptions(p);await p.locator('#view-source-button').click();await p.locator('.page-source').waitFor();await revealPagePane(p)}},
-  {surface:'page.files',state:'list',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{await p.locator('#files-button').click();await p.locator('.file-list').waitFor();await p.locator('.file-row').filter({hasText:'theme-lab-visual-fixture_日本語長名'}).waitFor({state:'visible'});await revealPagePane(p)}},
-  {surface:'page.files',state:'horizontal-actions',viewports:['mobile','narrow-mobile'],action:async p=>{await p.locator('#files-button').click();await p.locator('.file-row').filter({hasText:'theme-lab-visual-fixture_日本語長名'}).waitFor({state:'visible'});await revealPagePane(p);await p.locator('.file-list-scroll').evaluate(e=>e.scrollLeft=e.scrollWidth)}},
-  {surface:'shell.footer-license',state:'scrolled-bottom',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{const license=p.locator('#license-area');await license.waitFor({state:'visible'});await license.evaluate(e=>e.scrollIntoView({block:'end',behavior:'instant'}));await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await p.locator('#footer').waitFor({state:'visible'})}},
+  {surface:'page.files',state:'list',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{await p.locator('#files-button').click();await p.locator(FILES_PANE.table).waitFor();await p.locator(FILES_PANE.row).filter({hasText:'theme-lab-visual-fixture_日本語長名'}).waitFor({state:'visible'});await revealPagePane(p)}},
+  {surface:'page.files',state:'horizontal-actions',viewports:['mobile','narrow-mobile'],action:async p=>{await p.locator('#files-button').click();await p.locator(FILES_PANE.table).waitFor();await p.locator(FILES_PANE.row).filter({hasText:'theme-lab-visual-fixture_日本語長名'}).waitFor({state:'visible'});await revealPagePane(p);await p.locator(FILES_PANE.scroller).evaluate(e=>e.scrollLeft=e.scrollWidth)}},
+  {surface:'shell.footer-license',state:'scrolled-bottom',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{const license=p.locator('#license-area');await license.waitFor({state:'visible'});await license.evaluate(e=>e.scrollIntoView({block:'end',behavior:'instant'}));await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await p.locator('#footer').waitFor({state:'visible'});await movePointerToSafeArea(p);await settleFiniteVisualTransitions(p)}},
   {surface:'shell.interwiki',state:'visible',viewports:['desktop','mobile','narrow-mobile'],action:async p=>{const wrapper=p.locator('.scpnet-interwiki-wrapper').first();await wrapper.waitFor({state:'attached'});const frame=wrapper.locator('iframe.html-block-iframe').first();await frame.waitFor({state:'attached'});const contract=await p.evaluate(()=>{const wrapper=document.querySelector('.scpnet-interwiki-wrapper');const frame=wrapper?.querySelector('iframe.html-block-iframe');if(!wrapper||!frame)return null;const box=frame.getBoundingClientRect();return{wrapper_present:true,wrapper_display:getComputedStyle(wrapper).display,wrapper_rect:(()=>{const r=wrapper.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height}})(),frame_present:true,frame_display:getComputedStyle(frame).display,frame_rect:{x:box.x,y:box.y,width:box.width,height:box.height},document_width:document.documentElement.scrollWidth,viewport_width:innerWidth}});if(!contract)throw new Error('local Interwiki wrapper/frame contract is absent');await p.evaluate(value=>{window.__themeLabActionContractObservation=value;window.__themeLabActionTrace??=[];window.__themeLabActionTrace.push({type:'local-interwiki-contract'})},contract);await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))))}},
   {surface:'page.backlinks',state:'list',viewports:['desktop','mobile'],action:async p=>{await expandMoreOptions(p);await p.locator('#backlinks-button').click();await p.getByText('SCP-JP Theme Lab Backlink Fixture',{exact:true}).waitFor();await revealPagePane(p)}},
   {surface:'page.parent',state:'pane',viewports:['desktop','mobile'],action:async p=>{await expandMoreOptions(p);const parentsResponse=p.waitForResponse(response=>response.url().includes('?/parentGet')&&response.request().method()==='POST',{timeout:10000});await p.locator('#parent-page-button').click();await p.locator('#page-parent .page-parent-new-parents').waitFor({state:'visible'});const response=await parentsResponse;if(!response.ok())throw new Error(`parent lookup returned HTTP ${response.status()}`);await p.locator('#page-parent .page-parent-actions, #page-parent .buttons').first().waitFor({state:'visible'});await revealPagePane(p);await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))))}},
@@ -489,7 +486,7 @@ for(const variant of [
  {id:'heritage',slug:'run-owned:theme-lab-visual-credit-heritage-20260924'}
 ]){
  states.push(
-  {surface:`credit.variant.${variant.id}`,state:'default',fixtureSlug:variant.slug,viewports:['desktop','mobile'],action:async()=>{}},
+  {surface:`credit.variant.${variant.id}`,state:'default',fixtureSlug:variant.slug,viewports:['desktop','mobile'],action:async p=>{await revealCreditControl(p)}},
   {surface:`credit.variant.${variant.id}`,state:'view',fixtureSlug:variant.slug,viewports:['desktop','mobile'],action:async p=>{const entry=p.locator('.creditButton a:visible').first();await entry.click();await p.waitForFunction(()=>location.hash==='#u-credit-view')}}
  );
 }
@@ -538,7 +535,7 @@ if(stateArgs){
 // live Deepwell and served transport identities.
 let preflightBackendRuntimeIdentity=null;
 if(!process.argv.includes('--dump-contracts')){
- const hostBackendRuntime=readRunningDeepwellRuntimeIdentity(repoRoot);
+ const hostBackendRuntime=readRunningDeepwellRuntimeIdentity(backendTarget.root,backendTarget.identityOptions);
  assertDeepwellRuntimeIdentity(expectedBackendRuntimeIdentity,hostBackendRuntime.identity,'current running Deepwell backend');
  const runtimePreflightHeaders=execFileSync('curl',['-ksSf','-D','-','-o','/dev/null','--max-time','5',`${origin}/run-owned%3Atheme-lab-visual-acceptance-imported-20260924`],{encoding:'utf8',timeout:10000});
  assertRuntimeSourceSha(expectedRuntimeSourceSha,parseCurlRuntimeResponseHeaders(runtimePreflightHeaders).runtimeSourceSha,`capture preflight response from ${origin}`);
@@ -596,8 +593,8 @@ function actionContractDependencies(spec){
  return{
   waitForSvelteClickHandler:actionSource.includes('waitForSvelteClickHandler'),
   revealPagePane:actionSource.includes('revealPagePane'),
-  revealBelowFixedMobileNavigation:actionSource.includes('revealBelowFixedMobileNavigation'),
-  topFixedNavigationInset:actionSource.includes('revealPagePane')||actionSource.includes('revealBelowFixedMobileNavigation'),
+  revealBelowFixedMobileNavigation:actionSource.includes('revealBelowFixedMobileNavigation')||actionSource.includes('revealCreditControl'),
+  topFixedNavigationInset:actionSource.includes('revealPagePane')||actionSource.includes('revealBelowFixedMobileNavigation')||actionSource.includes('revealCreditControl'),
   expandMoreOptions:actionSource.includes('expandMoreOptions'),
   settleFiniteVisualTransitions:spec.surface.startsWith('nav.')||actionSource.includes('settleFiniteVisualTransitions'),
   movePointerToSafeArea:actionSource.includes('movePointerToSafeArea')||(!retainsPointer&&spec.surface!=='shell.footer-license'),
@@ -627,6 +624,7 @@ function buildActionContract(spec){
  if(actionSource.includes('openSidebar')){contract.openSidebar=openSidebar.toString();contract.sidebarOccupiesViewport=sidebarOccupiesViewport.toString()}
  if(actionSource.includes('closeSidebar')){contract.closeSidebar=closeSidebar.toString();contract.sidebarIsClosed=sidebarIsClosed.toString();contract.sidebarOccupiesViewport=sidebarOccupiesViewport.toString()}
  if(actionSource.includes('exerciseHeaderSearch'))contract.exerciseHeaderSearch=exerciseHeaderSearch.toString();
+ if(actionSource.includes('revealCreditControl'))contract.revealCreditControl=revealCreditControl.toString();
  if(actionSource.includes('openCreditView'))contract.openCreditView=openCreditView.toString();
  if(actionSource.includes('openCreditOtherwise'))contract.openCreditOtherwise=openCreditOtherwise.toString();
  if(migrationFixture&&sigma10CreditActions[`${spec.surface}.${spec.state}`])contract.sigma10CreditActions=sigma10CreditActionsSha;
@@ -699,7 +697,12 @@ async function persistBatch(batch,theme){
  for(const theme of themes){
  const themeRecords=[];
   const dir=themeDirectory(theme);const cssPath=resolveExistingPackageFile(dir,'candidate.css',`${theme}: candidate CSS`);
-  const searchAuthorityPath=migrationFixture?'evidence/sigma10-baseline-search-controls-20261002/receipt.json':`evidence/search-controls-20261001/${theme}.json`;
+  // Mobile and narrow-mobile source search behaviour is measured by a sibling receipt (search-controls-20261022);
+  // the 20261001 receipt covers desktop, laptop and tablet only. The sibling is used only for those viewports and only when present.
+  const mobileSearchAuthorityPath=`evidence/search-controls-20261022/${theme}.json`;
+  let useMobileSearchAuthority=false;
+  if(!migrationFixture&&['mobile','narrow-mobile'].includes(viewportArg)){try{resolveExistingContainedFile(themeLabDir,mobileSearchAuthorityPath,`${theme}: mobile search source authority`);useMobileSearchAuthority=true}catch(error){if(error.code!=='ENOENT')throw error}}
+  const searchAuthorityPath=useMobileSearchAuthority?mobileSearchAuthorityPath:migrationFixture?'evidence/sigma10-baseline-search-controls-20261002/receipt.json':`evidence/search-controls-20261001/${theme}.json`;
   let searchAuthorityBytes=null;try{searchAuthorityBytes=await fs.readFile(resolveExistingContainedFile(themeLabDir,searchAuthorityPath,`${theme}: search source authority`))}catch(error){if(error.code!=='ENOENT')throw error}
   const searchSourceAuthority=searchAuthorityBytes?{path:searchAuthorityPath,sha256:crypto.createHash('sha256').update(searchAuthorityBytes).digest('hex')}:null;
   const candidateStructure=await loadCandidateStructure(dir);

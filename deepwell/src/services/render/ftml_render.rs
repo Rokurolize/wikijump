@@ -119,6 +119,96 @@ pub(super) fn native_list_page_link_ref(target: &str) -> Option<PageRef> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ftml::layout::Layout;
+    use ftml::render::Render;
+    use ftml::settings::WikitextMode;
+    use std::borrow::Cow;
+
+    /// Render a source through the same FTML pipeline inputs Deepwell's
+    /// render service uses for Wikidot-layout pages.
+    fn render_wikidot(source: &str) -> String {
+        let page_info = PageInfo {
+            page: Cow::Borrowed("test-page"),
+            category: None,
+            site: Cow::Borrowed("test-site"),
+            title: Cow::Borrowed("Test page"),
+            alt_title: None,
+            score: ftml::data::ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let mut source = source.to_owned();
+        ftml::preprocess_for_layout(&mut source, settings.layout);
+        let tokenization = ftml::tokenize(&source);
+        let (tree, errors) = ftml::parse(&tokenization, &page_info, &settings).into();
+        assert!(errors.is_empty(), "{errors:?}");
+        HtmlRender.render(&tree, &page_info, &settings).body
+    }
+
+    #[test]
+    fn pinned_ftml_keeps_newline_after_aligned_image_at_paragraph_break() {
+        // FTML #733, pinned at c36bc5fe655fdb6cd41a563882194493f50008e1.
+        let html = render_wikidot(
+            "[[f>image landscape.jpg]]\n\nEXTERNAL [[image https://example.com/some-image.webp]]",
+        );
+        assert!(html.contains("</div>\nEXTERNAL "), "{html}");
+    }
+
+    #[test]
+    fn pinned_ftml_resizes_page_qualified_attachments_on_the_owning_page() {
+        // FTML #734, pinned at c36bc5fe655fdb6cd41a563882194493f50008e1.
+        let html = render_wikidot("[[image other-page/photo.jpeg]]");
+        assert!(
+            html.contains(
+                "<a href=\"https://test-site.wjfiles.com/local--files/other-page/photo.jpeg\">"
+            ),
+            "{html}"
+        );
+        assert!(
+            html.contains(
+                "https://test-site.wjfiles.com/local--resized-images/other-page/photo.jpeg/medium.jpg"
+            ),
+            "{html}"
+        );
+
+        // An original-display extension stays a plain original.
+        let html = render_wikidot("[[image other-page/photo.png]]");
+        assert!(
+            html.contains(
+                "https://test-site.wjfiles.com/local--files/other-page/photo.png"
+            ),
+            "{html}"
+        );
+        assert!(!html.contains("local--resized-images"), "{html}");
+
+        // Current-page attachments keep their existing behavior.
+        let html = render_wikidot("[[image photo.jpeg]]");
+        assert!(
+            html.contains(
+                "https://test-site.wjfiles.com/local--resized-images/test-page/photo.jpeg/medium.jpg"
+            ),
+            "{html}"
+        );
+    }
+
+    #[test]
+    fn pinned_ftml_reads_attachment_trees_serialized_before_the_page_field() {
+        // FTML #744 added an optional `page` field to implicit-attachment
+        // trees; trees serialized by the previous pin have no such field and
+        // must still deserialize.
+        let source: ftml::tree::ImageSource = serde_json::from_str(
+            r#"{"type":"implicit-attachment","data":{"file":"photo.jpeg","alt":"photo.jpeg","size":"medium"}}"#,
+        )
+        .expect("pre-#744 tree should deserialize");
+        assert!(
+            matches!(
+                source,
+                ftml::tree::ImageSource::ImplicitAttachment { page: None, .. }
+            ),
+            "{source:?}"
+        );
+    }
 
     #[test]
     fn fallback_page_references_keep_local_and_cross_site_targets() {

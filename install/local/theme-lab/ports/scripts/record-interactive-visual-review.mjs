@@ -8,8 +8,29 @@ import {candidateIdentity} from './candidate-identity.mjs';
 import {captureRunContractIsCurrent} from '../../src/scoped-run-contract.mjs';
 import {observationRuntimeSourceMatchesContract} from '../../src/runtime-source-identity.mjs';
 import {deepwellRuntimeIdentityMatchesContract,requireDeepwellRuntimeIdentity} from '../../src/deepwell-runtime-identity.mjs';
+import {DEFAULT_SIGMA9_RUN_CONTRACT,DEFAULT_SIGMA10_RUN_CONTRACT,resolveRunContractOption,runContractArgument} from '../../src/current-run-contract-option.mjs';
+import {existsSync} from 'node:fs';
 
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+
+// Chooses the run contract an audit is reviewed against. Without --run-contract
+// the maintained contracts apply: the Sigma-10 contract for an audit beneath
+// sigma10-migration/current-campaign/, otherwise the Sigma-9 contract. An
+// explicit task-owned --run-contract must be a document of the audit's own
+// generation, and the audit must sit beneath that contract's directory, so a
+// Sigma-10 audit can never be silently reviewed against a Sigma-9 label.
+export function selectReviewRunContract({themeLabRoot, auditPath, runContractOption = null}) {
+  const sigma10Directory = path.join(themeLabRoot, path.dirname(DEFAULT_SIGMA10_RUN_CONTRACT));
+  const generation = auditPath.startsWith(sigma10Directory + path.sep) ? 'sigma10' : 'sigma9';
+  const relative = resolveRunContractOption(themeLabRoot, runContractOption, {generation});
+  const contractPath = path.join(themeLabRoot, relative);
+  const shared = relative === (generation === 'sigma10' ? DEFAULT_SIGMA10_RUN_CONTRACT : DEFAULT_SIGMA9_RUN_CONTRACT);
+  if (!shared && !auditPath.startsWith(path.dirname(contractPath) + path.sep))
+    throw new Error('review audit must be below its explicit run contract directory');
+  if (shared && generation === 'sigma10' && !existsSync(contractPath))
+    throw new Error(`Sigma-10 review needs the shared run contract ${relative} or an explicit task-owned --run-contract`);
+  return {generation, relative, contractPath};
+}
 
 export function applyVisualReviews(rows, reviews, currentIdentity, reviewedAt = new Date().toISOString()) {
   const allowed = new Set(['PASS_NATURAL', 'PASS_INTENTIONAL_DIVERGENCE', 'NEEDS_FIX']);
@@ -74,9 +95,8 @@ async function main() {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const args=process.argv.slice(2);
   const input = args[0];
-  if (!input) throw new Error('usage: node record-interactive-visual-review.mjs <review-evidence.json>');
+  if (!input) throw new Error('usage: node record-interactive-visual-review.mjs <review-evidence.json> [--audit <audit.json>] [--run-contract <run-contract.json>]');
   const auditOption=args.indexOf('--audit');
-  const runContractArg=args.find(arg=>arg.startsWith('--run-contract='))?.slice('--run-contract='.length);
   const auditPath = auditOption<0 ? path.join(root, 'interactive-visual-audit.json') : path.resolve(args[auditOption+1]);
   if(!auditPath.startsWith(path.resolve(root,'..')+path.sep))throw new Error('review audit must remain inside Theme Lab');
   const evidence = JSON.parse(await fs.readFile(path.resolve(input), 'utf8'));
@@ -92,14 +112,10 @@ async function main() {
       known.set(row.theme, values);
     }
     const current = new Map();
-    const migrationContractPath=path.resolve(root,'../sigma10-migration/current-campaign/run-contract.json');
-    const sigma9ContractPath=path.resolve(root,'current-acceptance/run-contract.json');
-    let migrationContract=null;
-    if(auditPath.startsWith(path.dirname(migrationContractPath)+path.sep)){
-      try{migrationContract=JSON.parse(await fs.readFile(migrationContractPath,'utf8'))}catch{}
-    }
-    const migrationSha=migrationContract?sha(await fs.readFile(migrationContractPath)):null;
-    const runContractPath=runContractArg?path.resolve(runContractArg):migrationContract?migrationContractPath:sigma9ContractPath;
+    const selection=selectReviewRunContract({themeLabRoot:path.resolve(root,'..'),auditPath,runContractOption:runContractArgument(args)});
+    const runContractPath=selection.contractPath;
+    const migrationContract=selection.generation==='sigma10'?JSON.parse(await fs.readFile(runContractPath,'utf8')):null;
+    const migrationContractPath=migrationContract?runContractPath:null;
     const runContractBytes=await fs.readFile(runContractPath);
     const currentRunContract=JSON.parse(runContractBytes);
     const currentRunContractSha=sha(runContractBytes);

@@ -1408,13 +1408,13 @@ impl ViewService {
             ..
         } = &page_status
             && wikidot_redirect_module_allowed(page, page_revision)
+            // An imported page without a Redirect module falls through to the
+            // random-helper check below. Stopping here would leave imported
+            // `random:*` helpers (#2080) rendered instead of redirected.
+            && let Some(redirect_page) =
+                wikidot_redirect_location(&wikitext, page_full_slug, options.no_redirect)
         {
-            let redirect_page =
-                wikidot_redirect_location(&wikitext, page_full_slug, options.no_redirect);
-            let redirect_kind = redirect_page
-                .as_ref()
-                .map(|_| PageRedirectKind::WikidotModule);
-            (redirect_page, redirect_kind)
+            (Some(redirect_page), Some(PageRedirectKind::WikidotModule))
         } else if let PageStatus::Found { page, .. } = &page_status
             && page_extra.is_empty()
         {

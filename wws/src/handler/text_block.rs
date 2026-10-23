@@ -32,7 +32,6 @@ use axum::http::status::StatusCode;
 use axum::response::{IntoResponse, Response};
 use futures_util::StreamExt;
 use sha1::{Digest, Sha1};
-use std::collections::HashMap;
 
 const MAX_TEXT_BLOCK_OBJECT_BYTES: usize = 16 * 1024 * 1024;
 
@@ -582,31 +581,6 @@ enum BlockId {
     Name(String),
 }
 
-#[derive(Debug)]
-struct Headers {
-    content_type: String,
-    etag: String,
-}
-
-// Since this thing isn't returning a case-insensitive map...
-fn get_headers(headers: HashMap<String, String>) -> Headers {
-    let mut content_type = None;
-    let mut etag = None;
-
-    for (key, value) in headers.into_iter() {
-        if key.eq_ignore_ascii_case("content-type") {
-            content_type = Some(value);
-        } else if key.eq_ignore_ascii_case("etag") {
-            etag = Some(value);
-        }
-    }
-
-    Headers {
-        content_type: content_type.expect("No Content-Type header in S3 response"),
-        etag: etag.expect("No ETag header in S3 response"),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -630,6 +604,31 @@ mod tests {
     use tokio::task::JoinHandle;
 
     const SITE_ID: i64 = 10;
+
+    #[derive(Debug)]
+    struct Headers {
+        content_type: String,
+        etag: String,
+    }
+
+    // Since this thing isn't returning a case-insensitive map...
+    fn get_headers(headers: HashMap<String, String>) -> Headers {
+        let mut content_type = None;
+        let mut etag = None;
+
+        for (key, value) in headers.into_iter() {
+            if key.eq_ignore_ascii_case("content-type") {
+                content_type = Some(value);
+            } else if key.eq_ignore_ascii_case("etag") {
+                etag = Some(value);
+            }
+        }
+
+        Headers {
+            content_type: content_type.expect("No Content-Type header in S3 response"),
+            etag: etag.expect("No ETag header in S3 response"),
+        }
+    }
     const PAGE_ID: i64 = 42;
     const HTML_BLOCK_BYTES: &[u8] = b"<p>moved content</p>";
     const HTML_BLOCK_SHA1: &str = "9079b854a8fdfa2328a297ff563fce21f866af0e";

@@ -3,11 +3,28 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {planBrowserAcceptance, semanticSourceRenderings} from './semantic-browser-acceptance.mjs';
 import {NAVIGATION_OVERLAY_SOURCE} from './navigation-overlay-provenance.mjs';
+import {fileURLToPath} from 'node:url';
 import {resolveExistingContainedFile} from './package-path.mjs';
+import {evidenceRoots,resolveEvidenceFile} from './evidence-roots.mjs';
+import {DEFAULT_SIGMA10_RUN_CONTRACT} from './current-run-contract-option.mjs';
 
 const validHash = value => /^[a-f0-9]{64}$/u.test(value ?? '');
+const themeLabRoot = path.resolve(fileURLToPath(new URL('../', import.meta.url)));
 
-export function semanticSourceReferenceHtmlSha(root, audit, theme) {
+// Reads a SHA-bound artifact. Retained authority evidence may come from the
+// shared evidence cache (only for the default checkout root); every other path,
+// and every explicit root, is read from `root` alone. Returns {file,bytes}.
+function readBoundArtifact(root, binding, label, sharedRoot) {
+  const relative = binding?.path ?? '';
+  if (!(typeof relative === 'string' && relative.startsWith('ports/authority-evidence/') && validHash(binding?.sha256))) {
+    const file = resolveExistingContainedFile(root, relative, label);
+    return {file, bytes: fs.readFileSync(file)};
+  }
+  const {file, bytes} = resolveEvidenceFile(evidenceRoots(root, themeLabRoot, sharedRoot, {strip: 'ports/'}), relative, label, binding.sha256);
+  return {file, bytes};
+}
+
+export function semanticSourceReferenceHtmlSha(root, audit, theme, {sharedRoot} = {}) {
   const questions = planBrowserAcceptance(audit).visual_questions
     .filter(question => question.kind === 'source_visual_identity' && question.theme === theme);
   if (!questions.length) throw new Error(`${theme}: no current source visual identity question`);
@@ -16,8 +33,9 @@ export function semanticSourceReferenceHtmlSha(root, audit, theme) {
     const review=audit.semantic_reviews?.[question.id];
     for(const rendering of semanticSourceRenderings(question,review)){
     if (!validHash(rendering.source_html?.sha256)) throw new Error(`${theme}: source visual identity review lacks a frozen source HTML binding`);
-    const file=resolveExistingContainedFile(root,rendering.source_rendering_receipt?.path??'',`${theme}: source rendering receipt`);
-    const bytes=fs.readFileSync(file);
+    let bytes;
+    try{bytes=readBoundArtifact(root,rendering.source_rendering_receipt,`${theme}: source rendering receipt`,sharedRoot).bytes}
+    catch(error){if(/^stale authority evidence/u.test(error.message))throw new Error(`${theme}: stale source rendering receipt`);throw error}
     if(crypto.createHash('sha256').update(bytes).digest('hex')!==rendering.source_rendering_receipt?.sha256)throw new Error(`${theme}: stale source rendering receipt`);
     const document=JSON.parse(bytes), result=document.result??document;
     let value;
@@ -39,20 +57,21 @@ export function semanticSourceReferenceHtmlSha(root, audit, theme) {
 
 // Opening a hash-bound artifact is necessary but insufficient: a candidate
 // source or another theme's source must not impersonate the upstream oracle.
-export function validateSemanticSourceAuthority(root, audit) {
+// sigma10RunContract names the Sigma-10 run contract the audit was reviewed
+// against (the shared contract unless --run-contract selected a task contract).
+export function validateSemanticSourceAuthority(root, audit, {sharedRoot, sigma10RunContract = DEFAULT_SIGMA10_RUN_CONTRACT} = {}) {
   const failures = [];
   const read = file => JSON.parse(fs.readFileSync(resolveExistingContainedFile(root,file,`Source authority input ${file}`), 'utf8'));
   const normalize = url => new URL(url).href.replace(/^http:/u, 'https:');
   const opened = new Map();
   const open = binding => {
-    const file = resolveExistingContainedFile(root,binding?.path??'','Source artifact');
-    if (!opened.has(file)) {
-      const bytes = fs.readFileSync(file);
-      opened.set(file, {bytes, sha256: crypto.createHash('sha256').update(bytes).digest('hex')});
-    }
-    const artifact = opened.get(file);
-    if (artifact.sha256 !== binding?.sha256) throw new Error('Stale source action artifact');
-    return artifact.bytes;
+    let artifact;
+    try { artifact = readBoundArtifact(root, binding, 'Source artifact', sharedRoot); }
+    catch (error) { if (/^stale authority evidence/u.test(error.message)) throw new Error('Stale source action artifact'); throw error; }
+    const sha256 = crypto.createHash('sha256').update(artifact.bytes).digest('hex');
+    if (!opened.has(artifact.file)) opened.set(artifact.file, {bytes: artifact.bytes, sha256});
+    if (opened.get(artifact.file).sha256 !== binding?.sha256) throw new Error('Stale source action artifact');
+    return opened.get(artifact.file).bytes;
   };
   const plan=planBrowserAcceptance(audit);
   const sourceApplicabilityRows=(audit.records??[]).filter(row=>row.action_contract_observation?.mode==='source-navigation-replaces-sidebar');
@@ -126,9 +145,14 @@ export function validateSemanticSourceAuthority(root, audit) {
       let sourceUrl,sourceHash;
       if(baselineAuthority){
         const binding=document.target_baseline;
-        if(binding?.name!=='Sigma-10'||binding.source_manifest?.path!=='sigma10-migration/source-manifest.json'||binding.css?.path!=='sigma10-migration/sigma10-offline.css'||binding.run_contract_path!=='sigma10-migration/current-campaign/run-contract.json')throw new Error('Noncanonical baseline search authority');
-        const sources=JSON.parse(open(binding.source_manifest)),contract=read(binding.run_contract_path),source=sources.pages?.['pseudo-scp-jp:sigma-10:main'];
+        // The receipt is pinned to the shared run contract path and its bytes are
+        // never rewritten. The pin resolves to the Sigma-10 contract the audit used:
+        // the task contract when one was selected. Both must still carry the same
+        // replacement CSS, target site and frozen source manifest identity.
+        if(binding?.name!=='Sigma-10'||binding.source_manifest?.path!=='sigma10-migration/source-manifest.json'||binding.css?.path!=='sigma10-migration/sigma10-offline.css'||binding.run_contract_path!==DEFAULT_SIGMA10_RUN_CONTRACT)throw new Error('Noncanonical baseline search authority');
+        const sources=JSON.parse(open(binding.source_manifest)),contract=read(sigma10RunContract),source=sources.pages?.['pseudo-scp-jp:sigma-10:main'];
         if(!source||contract.schema!=='scp_jp_sigma10_migration_run.v1'||row.baseline_theme!=='Sigma-10'||row.baseline_theme_mode!=='replacement'||row.target_site!==contract.target_site.slug||row.baseline_theme_css_sha256!==binding.css.sha256||contract.baseline_theme.replacement_css_sha256!==binding.css.sha256)throw new Error('Hidden query authority belongs to another target baseline');
+        if(contract.frozen_sigma10_authority?.source_manifest_sha256!==binding.source_manifest.sha256)throw new Error('Baseline search source manifest is not the run contract frozen authority');
         const baselineCss=open(binding.css).toString('utf8');sourceUrl=source.source_url;sourceHash=source.sha256;
         if(document.source_snapshot?.path!=='sigma10-migration/'+source.file||document.source_snapshot.sha256!==sourceHash)throw new Error('Baseline search source snapshot differs');
         open(document.source_snapshot);
@@ -180,8 +204,9 @@ export function validateSemanticSourceAuthority(root, audit) {
       }
       for (const rendering of semanticSourceRenderings(question, review)) {
       const binding = rendering.source_rendering_receipt;
-      const file = resolveExistingContainedFile(root,binding?.path ?? '','Source rendering receipt');
-      const bytes = fs.readFileSync(file);
+      let bytes;
+      try { bytes = readBoundArtifact(root, binding, 'Source rendering receipt', sharedRoot).bytes; }
+      catch (error) { if (/^stale authority evidence/u.test(error.message)) throw new Error('Stale source rendering receipt'); throw error; }
       if (crypto.createHash('sha256').update(bytes).digest('hex') !== binding?.sha256) throw new Error('Stale source rendering receipt');
       const document = JSON.parse(bytes), result = document.result ?? document;
       const identity = result.reference_identity;

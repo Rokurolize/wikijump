@@ -1375,7 +1375,7 @@ div.miscomm_memo {
 
 [[=]]
 [[size 120%]]**任意のページで:**[[/size]]
-[[size 160%]]**{{@@@@:scp-jp:@@[[/span]]@@theme:basalt]]@@}}**[[/size]]
+[[size 160%]]**{{@@[[include @@[[span style="opacity: 70%;"]]@@:scp-jp:@@[[/span]]@@theme:basalt]]@@}}**[[/size]]
 [[/=]]
 
 [[div style="margin-top: 8rem;"]]
@@ -1393,9 +1393,9 @@ div.miscomm_memo {
 Basaltの各要素を変更するには、@@[[include]]@@モジュールに**テーマ設定**を追加します。
 @@ @@
 
-**{{@@@@:scp-jp:@@[[/span]]@@theme:basalt @@##green|themesetting##@@]]@@}}**
+**{{@@[[include @@[[span style="opacity: 70%;"]]@@:scp-jp:@@[[/span]]@@theme:basalt @@##green|themesetting##@@]]@@}}**
 
-**{{@@@@:scp-jp:@@[[/span]]@@theme:basalt @@##green|themesetting##|##purple|another-themesetting##@@]]@@}}**
+**{{@@[[include @@[[span style="opacity: 70%;"]]@@:scp-jp:@@[[/span]]@@theme:basalt @@##green|themesetting##|##purple|another-themesetting##@@]]@@}}**
 
 @@ @@
 
@@ -1702,12 +1702,19 @@ Curabitur sed dui nec libero fringilla placerat. Pellentesque imperdiet ac dolor
 
 
 
+
+
 + Theme Lab runtime fixture
 
 [[div class="creditRate"]]
 [[div class="rateBox"]]
 [[div class="rate-box-with-credit-button"]]
-[[module Rate]]
+[[div class="page-rate-widget-box"]]
+[[span class="rate-points"]]評価: +1[[/span]]
+[[span class="rateup btn btn-default"]]+[[/span]]
+[[span class="ratedown btn btn-default"]]–[[/span]]
+[[span class="cancel btn btn-default"]]x[[/span]]
+[[/div]]
 [[/div]]
 [[/div]]
 [[/div]]

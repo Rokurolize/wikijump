@@ -364,8 +364,19 @@ node ports/interactive-visual-fixture/capture-theme-matrix.mjs \
   --theme=basalt --state=page.normal.settled \
   --engine=chromium --viewport=desktop --anonymous \
   --transport-origin=https://scpaiueouiuiuiui.wikijump.localhost:3396 \
-  --run-contract=/absolute/path/to/run-contract-basalt-current-run.json
+  --run-contract=/absolute/path/to/run-contract-basalt-current-run.json \
+  --runtime-repo=/absolute/path/to/runtime-checkout \
+  --backend-project=wikijump-theme-lab-<namespace>   # task-owned backend only
 ```
+
+A task-port contract's `target_site.origin` must equal `--transport-origin`;
+only the shared development contract keeps the fixed `:18443` logical origin.
+For a task-owned backend, `--runtime-repo` and `--backend-project` (supplied
+together) make the capture measure that Compose project's Deepwell against the
+runtime checkout that owns its source mounts. The primary fixture page
+`run-owned:theme-lab-visual-acceptance-20260924` is created by
+`provision-fixture.mjs` on a fresh backend; fixture provisioning must precede
+`ensure-built-framerail.mjs` because readiness probes the imported fixture page.
 
 This initial public capture is a readiness test, **not the 145-state acceptance
 or the Sigma-10 check**. The built sidecar requires a unique namespace when
@@ -374,6 +385,29 @@ off as the latest `origin/develop`. Its Deepwell source identity ignores only
 known generated locale installs (`locales/typed/node_modules` and
 `locales/validator/target`); actual locale source and unexpected symlinks
 remain strict fingerprint inputs.
+
+The Sigma-10 migration contract has a sibling command. It measures the same
+task runtime and writes nothing with `--check-only=true`:
+
+```sh
+node scripts/prepare-sigma10-runtime-contract.mjs \
+  --runtime-repo=/absolute/path/to/runtime-checkout \
+  --required-head=<exact-40-character-git-commit> \
+  --run-id=basalt-current-20261022 --port=3396 \
+  --backend-project=wikijump-theme-lab-<namespace> --check-only=true
+```
+
+Without `--check-only=true` it needs an explicit `--output` equal to the
+canonical `sigma10-migration/current-campaign/run-contract-<run-id>.json`
+(the only task-owned path the completion gate accepts, and only when it is named
+explicitly with `--sigma10-run-contract=`). It creates that file exclusively,
+and removes it if `validateCurrentSigma10Contract` rejects it. The builder
+starts from the sealed `e56609...` Sigma-10 copy, regenerates candidate
+identities from current bytes, verifies frozen authority, saved Credit and
+fixture hashes against disk, and refuses when the frozen publication candidate
+set does not validate. It never re-pins a frozen hash. Its `capture_blockers`
+list records migration fixture paths that `capture-interactive.mjs` cannot
+resolve from `current-campaign/`.
 
 For a backend that must run from a **different, current Git checkout**, first
 check the isolation of the intended disposable Compose project without
@@ -450,9 +484,17 @@ current directory and updates its package receipt. The Sigma-10 current matrix
 owner supplies `sigma10-migration/current-campaign/browser-audit.json` and
 `accepted-result.json`; the latter must already be a
 `theme_lab_current_sigma10_acceptance.v1` decision bound to the exact audit and
-run contract. The campaign assembler only indexes these finished artifacts:
-run `node scripts/assemble-current-campaign.mjs`, then
-`node scripts/check-campaign-completion.mjs`. Assembly records exact SHA-256
+run contract. `node scripts/finalize-current-sigma10.mjs --audit=<runs audit>
+--run-contract=<sigma10 contract> --scenario-matrix=<dir of <package>.json>
+--browser-root=<framerail>` is the only writer of that decision. It applies the
+same audit checks as the completion gate, derives `overall_acceptance` from the
+evidence, and refuses with nothing written when any check fails. The campaign
+assembler only indexes these finished artifacts: run
+`node scripts/assemble-current-campaign.mjs`, then
+`node scripts/check-campaign-completion.mjs`. A task-owned Sigma-10 contract is
+named with `--sigma10-run-contract=<path>` on both commands; the assembler then
+records `migration.run_contract` with its exact path and SHA-256, and the checker
+rejects an unbound or differently named contract. Assembly records exact SHA-256
 bindings for every maintained candidate input, package result/audit, and the
 Sigma-10 result/audit. It does not create a review, infer a pass, or consult
 historical evidence. Missing inputs stop assembly; stale or incomplete evidence

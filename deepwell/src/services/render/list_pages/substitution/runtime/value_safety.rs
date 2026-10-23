@@ -10,7 +10,11 @@
  * (at your option) any later version.
  */
 
-//! Safety transforms for substituted identity and tag values.
+//! Safety transforms for substituted ListPages values.
+//!
+//! Identity, tag, and non-wiki Data Form values are page-author-controlled
+//! text, not wikitext. They share this transform so none of them can form
+//! module syntax or raw HTML after substitution (#2652, #2667, #2682).
 //!
 //! Split out of `runtime/mod.rs` to keep that file under the compatibility
 //! source-size budget; behavior is byte-identical.
@@ -18,7 +22,7 @@
 use super::escape_html_text;
 
 /// Neutralize wikitext- and attribute-syntax-forming characters in
-/// substituted identity and tag values so they render as literal text
+/// substituted ListPages values so they render as literal text
 /// (see #2652). `[` and `]` would let stored data form executable module
 /// syntax after substitution; `"` would let a value break out of a
 /// double-quoted module attribute (`[[div class="%%tags%%"]]`), the only
@@ -37,8 +41,8 @@ fn neutralize_list_pages_substituted_syntax(value: &str) -> String {
         .replace('"', "&#34;")
 }
 
-/// Render a substituted identity or tag value for the context its variable
-/// sits in (see #2667).
+/// Render a substituted ListPages text value (identity, tag, or non-wiki
+/// Data Form value) for the context its variable sits in (see #2667).
 ///
 /// Outside `[[html]]` blocks the value is re-parsed as wikitext, so the
 /// #2652 neutralization applies and ordinary values pass through

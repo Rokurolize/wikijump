@@ -1,6 +1,6 @@
 {
   "schema": "theme_lab_bhl_option_authority.v1",
-  "observed_at": "2026-10-06",
+  "observed_at": "2026-10-23",
   "authority": "shared SCP-JP corpus current snapshots plus retained exact public stylesheet response",
   "pages": [
     {
@@ -133,7 +133,7 @@
   ],
   "framerail": {
     "fingerprint_tool": "../../../../src/framerail-source-fingerprint.mjs",
-    "fingerprint_sha256": "d67899e66baa58c3504ec8d93fb81bfb31509c80eb8d4785b93fbb9974127caa",
+    "fingerprint_sha256": "b0036e2cb089c1db0dc56b36ec08a2c43a752472c3e23970b0921efc78df5600",
     "runtime_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3395",
     "runtime_source_header": "x-theme-lab-runtime-source-sha",
     "runtime_version": "captured by runner at execution"
@@ -150,12 +150,12 @@
   ],
   "backend_runtime_identity": {
     "schema": "wikijump_deepwell_runtime_identity.v1",
-    "source_sha256": "e305cb837753e27e7504ccad0e87d237a721bdd0d6fc234312e9488b94232637",
-    "ftml_git_revision": "bf49d32fe980611fed368661396a3d6c1f02c51f",
-    "container_id": "9c70840b9fb2b5f7a3ec9906a5661c69719c94152c55577418e967354a18376e",
-    "image_id": "sha256:d3f14cc0be8dc6689987564b68eb6d85078981ef33f6220f833653ed09ed6a6e",
-    "binary_sha256": "f15625c1413755e69d6e30aaad9612553c410a7bb48540181cf2166c8efbf77b",
-    "config_sha256": "46c242e2d7c63d03606647f71e038756edfef6455feb125a753dbde01426b73c",
-    "identity_sha256": "33db6564f49af2ef3afb9769ce3bcbee1f8e2cb92efd710b7e6f50c3b1bc7a2e"
+    "source_sha256": "1564072d3320033b100cab96b2e32cb03ef487802aed637bc86e5c54f9baec10",
+    "ftml_git_revision": "d7727b245fd69f46d44c04592e392850ea244e13",
+    "container_id": "63f59ac29532c7ec18a13d2557291f2e71abb162357ad02a0e01be1dd4357699",
+    "image_id": "sha256:064bd28fe8971d96496f9c4c138f93e6242917698db366944b89ae099fcf77c0",
+    "binary_sha256": "f8a10a7aa9d8c3c7a2c58063435346dc397f25aa81170f0d09393d5c9cb3ce9d",
+    "config_sha256": "6eeb5715be1ac0d72784a10eb2a821b14995e9d0e29cd886a146e489ff16f638",
+    "identity_sha256": "df081d0b4601c6511531385ea050ecf9b30f60f4fa3991e94c349fe5eb61e60e"
   }
 }

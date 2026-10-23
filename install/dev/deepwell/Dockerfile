@@ -4,6 +4,13 @@
 
 FROM rust:1.95.0@sha256:f49565f188ee00bc2a18dd418183f2c5f23ef7d6e691890517ed341a598f67c3 AS rust
 
+# The pinned image still trusts the compromised emSign ECC Root CA - G3 and
+# Comodo AAA cross-sign. Refresh the OS bundle before any HTTPS bootstrap.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates && \
+    update-ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
 # Rustup before 1.29.2 trusts a compromised eMudhra intermediate
 # (CVE-2026-111943, RUSTSEC-2026-0382,
 # https://blog.rust-lang.org/2026/10/20/Rustup-1.29.2/). The pinned base
@@ -50,8 +57,10 @@ ENV LOCALIZATION_PATH="/opt/locales"
 
 # Install system dependencies
 RUN mkdir /opt/database
-RUN apt update
-RUN apt install -y curl libmagic1 libmagic-mgc postgresql-client
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates curl libmagic1 libmagic-mgc postgresql-client && \
+    update-ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install files
 COPY --from=rust /usr/local/cargo/bin/sqlx /usr/local/cargo/bin/sqlx
