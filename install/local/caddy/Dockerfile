@@ -4,12 +4,14 @@
 FROM caddy:2.11.7-builder-alpine@sha256:d718a1d1431403c4a46698f33ad1c0f9dd5dd7fe2bae654d1027d275b6fb5fd7 AS builder
 ENV XCADDY_SETCAP=1
 
-RUN xcaddy build v2.11.7 --output /usr/bin/caddy
+RUN apk add --no-cache --upgrade ca-certificates ca-certificates-bundle && \
+    xcaddy build v2.11.7 --output /usr/bin/caddy
 
 FROM caddy:2.11-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
 COPY --from=builder /usr/bin/caddy /usr/bin/caddy
 
 # Install dependencies
+RUN apk add --no-cache --upgrade ca-certificates ca-certificates-bundle
 RUN apk add --no-cache curl jq
 
 # Install files
