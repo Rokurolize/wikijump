@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import {
+  existsSync,
   mkdirSync,
   readFileSync,
   readdirSync,
@@ -9,7 +10,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { createHash } from "node:crypto";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -184,6 +185,103 @@ for (const supplement of specSupplements.supplements) {
     `Invalid spec supplement: ${supplement.title}`,
   );
 }
+
+// Evidence availability pre-scan.
+//
+// The generator cites evidence files that live OUTSIDE this repository
+// (the oracle store, e.g. /mnt/oracle-store). Those files are evidence,
+// not source: when the store is not present in this environment, the
+// affected specifications cannot be validated at all, which is an
+// INCONCLUSIVE result (exit status 2, the preflight convention), not a
+// validation failure. Files that are present but whose hashes drifted
+// still fail in the main validation flow below, exactly as before, and
+// missing files INSIDE the repository remain hard failures there too.
+//
+// The scan enumerates every external citation the main flow consults:
+// live-observation raw captures, the external indices bound by live
+// evidence rows (SHA256SUMS, index files, and their raw entries), and
+// detailed-contract evidence aliases with external paths.
+function isExternalEvidencePath(path) {
+  return (
+    typeof path === "string" &&
+    isAbsolute(path) &&
+    path !== repositoryRoot &&
+    !path.startsWith(repositoryRoot + sep)
+  );
+}
+
+function collectMissingEvidence(paths) {
+  const missing = new Set();
+  for (const path of paths) {
+    if (isExternalEvidencePath(path) && !existsSync(path)) {
+      missing.add(path);
+    }
+  }
+  return missing;
+}
+
+function reportInconclusiveAndExit(missing) {
+  const sorted = [...missing].sort();
+  console.log(
+    `INCONCLUSIVE: ${sorted.length} cited evidence file(s) are absent from this environment, so the specifications they support cannot be validated:`,
+  );
+  for (const path of sorted.slice(0, 50)) {
+    console.log(`  missing evidence: ${path}`);
+  }
+  if (sorted.length > 50) {
+    console.log(`  ... and ${sorted.length - 50} more`);
+  }
+  console.log(
+    "Restore the cited evidence store (or a subset containing these files) and re-run to validate.",
+  );
+  process.exit(2);
+}
+
+function scanLiveObservationEvidence() {
+  const cited = [];
+  for (const observation of liveObservations.observations) {
+    for (const rawCapture of observation.raw_captures ?? []) {
+      cited.push(rawCapture.path);
+    }
+    for (const evidence of observation.evidence ?? []) {
+      const evidencePath = resolve(repositoryRoot, evidence.path);
+      if (isExternalEvidencePath(evidencePath)) {
+        // The evidence file itself lives in the external store; cite it
+        // (and, when present, the external files its rows bind).
+        cited.push(evidencePath);
+        if (!existsSync(evidencePath)) {
+          continue;
+        }
+      }
+      const rawEvidence = readFileSync(evidencePath, "utf8");
+      const rows = parseWikidotLiveEvidenceRows(
+        rawEvidence,
+        resolveWikidotLiveEvidenceFormat(evidence),
+      );
+      for (const row of rows) {
+        if (row.external_sha256s?.path) {
+          cited.push(row.external_sha256s.path);
+        }
+        for (const index of row.external_indices ?? []) {
+          cited.push(index.path);
+          if (isExternalEvidencePath(index.path) && existsSync(index.path)) {
+            const indexData = JSON.parse(readFileSync(index.path, "utf8"));
+            for (const entry of indexData.entries ?? []) {
+              cited.push(entry.path);
+            }
+          }
+        }
+      }
+    }
+  }
+  const missing = collectMissingEvidence(cited);
+  if (missing.size > 0) {
+    reportInconclusiveAndExit(missing);
+  }
+}
+
+scanLiveObservationEvidence();
+
 const liveObservationIds = new Set();
 for (const observation of liveObservations.observations) {
   invariant(
@@ -1427,6 +1525,26 @@ function validateDetailedContracts() {
     contractIds.length === detailedContracts.source_gap_snapshot.feature_count,
     "Detailed feature contract feature count does not match the source-gap snapshot",
   );
+
+// Detailed-contract evidence aliases can also cite external files; the
+// same availability rule applies (see scanLiveObservationEvidence).
+{
+  const cited = [];
+  for (const evidence of Object.values(detailedEvidenceAliases)) {
+    if (evidence && typeof evidence.path === "string") {
+      cited.push(
+        evidence.path.startsWith("/")
+          ? evidence.path
+          : join(repositoryRoot, evidence.path),
+      );
+    }
+  }
+  const missing = collectMissingEvidence(cited);
+  if (missing.size > 0) {
+    reportInconclusiveAndExit(missing);
+  }
+}
+
   const catalogIds = new Set(features.map(({ id }) => id));
   const axisIds = Object.keys(detailedContractAxes);
   let axisCount = 0;
