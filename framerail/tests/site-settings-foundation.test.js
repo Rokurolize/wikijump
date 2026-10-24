@@ -81,6 +81,16 @@ describe("Wikidot site settings foundation", () => {
       { type: "external", url: "https://cdn.scpwiki.com/a.css" }
     )
     assert.deepEqual(
+      normalizeThemeSetting({
+        type: "external",
+        url: "https://scp-jp.github.io/files/util/main/styles/sigma-9.min.css"
+      }),
+      {
+        type: "external",
+        url: "https://scp-jp.github.io/files/util/main/styles/sigma-9.min.css"
+      }
+    )
+    assert.deepEqual(
       normalizeThemeSetting({ type: "external", url: "http://themes.example/a.css" }),
       { type: "built_in", id: 1 }
     )

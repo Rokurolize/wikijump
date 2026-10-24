@@ -324,7 +324,9 @@
     <link href="/wikidot/styles/wikidot-base-165bc434fd1d.css" rel="stylesheet" />
     <link href="/wikidot/styles/pagerate-db0bffe086ed.css" rel="stylesheet" />
     {#if !viewData?.theme_previewer_blank}
-      <link href="/wikidot/styles/sigma-fe5388a32e12.css" rel="stylesheet" />
+      {#if effectiveTheme.type === "built_in"}
+        <link href="/wikidot/styles/sigma-fe5388a32e12.css" rel="stylesheet" />
+      {/if}
       {#if effectiveTheme.type === "external"}
         <link
           data-wikidot-site-theme
