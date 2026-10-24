@@ -133,6 +133,13 @@ export const AUDITED_EXTERNAL_ASSET_ORIGINS = Object.freeze([
       "SCP Wiki DigitalOcean Spaces CDN, cited by the retained Theme Lab port assets (e.g. `install/local/theme-lab/ports/basalt/assets.json`)."
   },
   {
+    origin: "https://scp-jp.github.io",
+    styles: true,
+    fonts: true,
+    evidence:
+      "SCP-JP community GitHub Pages host. Serves the production scp-jp theme stylesheet (sigma-9.min.css), the JP credit-module stylesheet that imported scp-jp articles @import, and the Bauhaus font CSS recorded as a dependency of the frozen Sigma-9 baseline (install/local/theme-lab/fixtures/scp-jp-sigma9-offline.json); retained sweep in install/local/wikidot-verification/artifacts/scp-jp-external-origins-20261025.json (issue #2759)."
+  },
+  {
     origin: "https://indestructibletype-fonthosting.github.io",
     styles: true,
     fonts: true,
