@@ -530,7 +530,9 @@ for (const fullname of syntaxPages) {
     documentationStatus:
       sourcePage.lineCount === 0 ? "partially-documented" : "documented",
     implementationNotes:
-      slug === "foldable-list" ? [
+      slug === "include" ? [
+  "Cross-site include source storage is not a page of the holding site\n  (issue #2690). A row whose snapshot source names a foreign origin must\n  not be served as an ordinary page of the mirror: direct routes serve the\n  missing-page response, and ListPages, category/site queries, the sitemap,\n  the changes feed, and backlinks exclude it, while cross-site include\n  resolution keeps finding it by (`source_site`, `source_fullname`).\n  Evidence: includes pull from *another* site (`[[include :sitename:pagename]]`,\n  L0007 above \u2014 the page belongs to the named site, not the including\n  one), and links to pages that do not exist on a site render red\n  (`content-pages.md` L0028\u2013L0029), i.e. Wikidot shows no such foreign\n  page on the including host."
+] : slug === "foldable-list" ? [
   "Frozen native `WIKIDOT.page.fixers.fixFoldableMenus` and `_foldableMenuToggle` establish browser behavior independently of the initial PagePreview DOM. The retained script object is SHA-256 `49bcabdb14d446bb93d261f9c967bedfa7cdf7b214807a8180974cbd00b21f11` in `install/local/theme-lab/ports/authority-evidence/replay/objects/49/`.",
   "The fixer hides each nested UL, remembers its authored inline display, adds `folded` to its nearest LI before the container boundary, and wraps that LI's first child in an anchor when necessary. Links to the current page unfold their ancestor list items.",
   "A container owns its click listener; the nearest authored LI owns `folded`/`unfolded` state. A control-only container can therefore operate on a surrounding LI. Real navigation links retain their navigation behavior. Fold controls toggle the first descendant UL and restore its remembered display when opened.",
