@@ -87,3 +87,10 @@ volumes, owner and expiry, plus cold/warm checks, hot rebuild, focused-test and
 restart timings, disk growth, and cache-preserving recreation evidence. A
 receipt with missing measurements is not evidence that Docker development is
 lightweight.
+
+That receipt is a historical snapshot measured at revision `2b762e15`, before
+the Node `24.22.1` pin, and it still records the superseded `24.18.0` stack
+(`historical_snapshot` in the file). Do not read its toolchain or image entries
+as current pins: those are this page and the `install/*/Dockerfile` references.
+Regenerate the receipt with a fresh measurement run before citing it as
+current evidence.
