@@ -32,4 +32,7 @@ ARG FRAMERAIL_ENV=local
 ARG FRAMERAIL_CSRF_CHECK_ORIGIN=true
 ENV FRAMERAIL_ENV=${FRAMERAIL_ENV}
 ENV FRAMERAIL_CSRF_CHECK_ORIGIN=${FRAMERAIL_CSRF_CHECK_ORIGIN}
+# 2 MiB form-body limit: a maximum-length (200,001 character) page
+# source must fit; Deepwell enforces the source limit itself.
+ENV BODY_SIZE_LIMIT=2097152
 CMD ["framerail-start"]

@@ -57,6 +57,33 @@ use sea_query::Expr;
 use std::net::IpAddr;
 use wikidot_normalize::normalize;
 
+/// Largest accepted page source, in characters (Unicode scalar values).
+///
+/// Wikidot rejects page saves whose source is longer than this. The bound
+/// was measured empirically on a Wikidot sandbox (2026-10-24, via the same
+/// save path the editor uses): a source of 200,001 characters saves and
+/// round-trips exactly, while 200,002 characters is rejected, for ASCII
+/// and multibyte sources alike (so the unit is characters, not bytes).
+/// Large real pages corroborate it: every sampled page over 190,000
+/// characters on scp-wiki / scp-jp sits just below the bound (the largest
+/// found was 199,898 characters).
+pub const MAX_PAGE_SOURCE_LENGTH: usize = 200_001;
+
+/// Reject a page source longer than Wikidot would accept.
+fn check_page_source_length(wikitext: &str) -> Result<()> {
+    let length = wikitext.chars().count();
+    if length > MAX_PAGE_SOURCE_LENGTH {
+        return Err(Error::new(
+            format!(
+                "page source is {length} characters, which exceeds the maximum of {MAX_PAGE_SOURCE_LENGTH} characters"
+            ),
+            ErrorType::Page,
+        )
+        .into());
+    }
+    Ok(())
+}
+
 #[derive(Debug)]
 pub struct PageService;
 
@@ -207,6 +234,8 @@ WHERE page.site_id = $1
             ip_address,
         }: CreatePage,
     ) -> Result<CreatePageOutput> {
+        check_page_source_length(&wikitext)?;
+
         let txn = ctx.transaction();
 
         // Ensure slug is normalized
@@ -372,6 +401,10 @@ WHERE page.site_id = $1
             ip_address,
         }: EditPage<'_>,
     ) -> Result<Option<EditPageOutput>> {
+        if let Some(wikitext) = wikitext.to_option() {
+            check_page_source_length(wikitext)?;
+        }
+
         let txn = ctx.transaction();
 
         let PageModel {
@@ -1675,4 +1708,31 @@ fn assert_latest_revision(page: &PageModel) {
         page.slug,
         page.site_id,
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{MAX_PAGE_SOURCE_LENGTH, check_page_source_length};
+
+    #[test]
+    fn page_source_length_at_max_is_accepted() {
+        let source = "x".repeat(MAX_PAGE_SOURCE_LENGTH);
+        assert!(check_page_source_length(&source).is_ok());
+    }
+
+    #[test]
+    fn page_source_length_over_max_is_rejected() {
+        let source = "x".repeat(MAX_PAGE_SOURCE_LENGTH + 1);
+        assert!(check_page_source_length(&source).is_err());
+    }
+
+    #[test]
+    fn page_source_length_counts_characters_not_bytes() {
+        // Each of these characters is three bytes in UTF-8; the limit is
+        // on the character count, as measured against Wikidot.
+        let source = "\u{3042}".repeat(MAX_PAGE_SOURCE_LENGTH);
+        assert!(check_page_source_length(&source).is_ok());
+        let source = "\u{3042}".repeat(MAX_PAGE_SOURCE_LENGTH + 1);
+        assert!(check_page_source_length(&source).is_err());
+    }
 }

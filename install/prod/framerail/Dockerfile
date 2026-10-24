@@ -39,6 +39,9 @@ RUN \
 # Run command
 USER node:node
 ENV NODE_ENV=production
+# 2 MiB form-body limit: a maximum-length (200,001 character) page
+# source must fit; Deepwell enforces the source limit itself.
+ENV BODY_SIZE_LIMIT=2097152
 ENV PORT=3393
 EXPOSE 3393
 
