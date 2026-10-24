@@ -353,14 +353,27 @@ class RefreshStandingTest(unittest.TestCase):
         finally:
             REFRESH.command = original_command
             REFRESH.container_identity = original_container_identity
-        # Both touched services were renamed back and started; the committed
-        # snapshot of the first service was discarded with the partial set.
+        # Services park concurrently, so the failure can leave any subset
+        # parked; every parked service was renamed back and started, and the
+        # committed snapshots of both services whose commits succeeded were
+        # discarded with the partial set (framerail's commit is the failure,
+        # so it has no snapshot to discard).
         by_name = {entry["name"]: entry for entry in state.values()}
-        for service, container_id in (("deepwell", "a" * 64), ("framerail", "b" * 64)):
+        for service, container_id in (
+            ("deepwell", "a" * 64),
+            ("framerail", "b" * 64),
+            ("wws", "c" * 64),
+        ):
             entry = by_name[f"wikijump-standing-{service}-1"]
             self.assertEqual(entry["container_id"], container_id)
             self.assertTrue(entry["running"])
-        self.assertEqual(removed, [REFRESH.parked_image_tag("run", "deepwell")])
+        self.assertEqual(
+            set(removed),
+            {
+                REFRESH.parked_image_tag("run", "deepwell"),
+                REFRESH.parked_image_tag("run", "wws"),
+            },
+        )
 
     def test_successful_restore_discards_snapshot_tags(self) -> None:
         parked = {
