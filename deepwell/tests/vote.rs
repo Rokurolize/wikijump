@@ -821,7 +821,7 @@ async fn insert_imported_rating_snapshot(
             ) VALUES (
                 {import_run_id},
                 {site_id},
-                'en',
+                'scp-wiki',
                 'scp-wiki',
                 decode(repeat('00', 32), 'hex'),
                 1,
@@ -852,7 +852,7 @@ async fn insert_imported_rating_snapshot(
                 last_import_run_id
             ) VALUES (
                 {page_id},
-                'en',
+                'scp-wiki',
                 'scp-wiki',
                 '{}',
                 '{slug}',
@@ -1047,14 +1047,14 @@ async fn upsert_imported_rating_snapshot(
     execute_sql(
         runner,
         &format!(
-            r#"INSERT INTO wikidot_corpus_import_run (import_run_id, site_id, source_branch, source_site, manifest_sha256, manifest_row_count, complete_inventory, state, summary) VALUES ({import_run_id}, {site_id}, 'en', 'scp-wiki', decode(repeat('ab', 32), 'hex'), 1, false, 'done', '{{}}'::jsonb)"#
+            r#"INSERT INTO wikidot_corpus_import_run (import_run_id, site_id, source_branch, source_site, manifest_sha256, manifest_row_count, complete_inventory, state, summary) VALUES ({import_run_id}, {site_id}, 'scp-wiki', 'scp-wiki', decode(repeat('ab', 32), 'hex'), 1, false, 'done', '{{}}'::jsonb)"#
         ),
     )
     .await;
     execute_sql(
         runner,
         &format!(
-            r#"INSERT INTO wikidot_page_snapshot (page_id, source_branch, source_site, source_entity_id, source_fullname, source_created_at, source_updated_at, source_revision_count, imported_rating, comments, source_sha256, meta_sha256, meta_json, last_import_run_id) VALUES ({page_id}, 'en', 'scp-wiki', '{}', '{slug}', '2026-09-01T00:00:00+00:00', '2026-10-26T00:00:00+00:00', {source_revision_count}, {imported_rating}, 95, decode(repeat('cd', 32), 'hex'), decode(repeat('cd', 32), 'hex'), '{{}}', {import_run_id}) ON CONFLICT (page_id) DO UPDATE SET source_updated_at = EXCLUDED.source_updated_at, source_revision_count = EXCLUDED.source_revision_count, imported_rating = EXCLUDED.imported_rating, comments = EXCLUDED.comments, last_import_run_id = EXCLUDED.last_import_run_id"#,
+            r#"INSERT INTO wikidot_page_snapshot (page_id, source_branch, source_site, source_entity_id, source_fullname, source_created_at, source_updated_at, source_revision_count, imported_rating, comments, source_sha256, meta_sha256, meta_json, last_import_run_id) VALUES ({page_id}, 'scp-wiki', 'scp-wiki', '{}', '{slug}', '2026-09-01T00:00:00+00:00', '2026-10-26T00:00:00+00:00', {source_revision_count}, {imported_rating}, 95, decode(repeat('cd', 32), 'hex'), decode(repeat('cd', 32), 'hex'), '{{}}', {import_run_id}) ON CONFLICT (page_id) DO UPDATE SET source_updated_at = EXCLUDED.source_updated_at, source_revision_count = EXCLUDED.source_revision_count, imported_rating = EXCLUDED.imported_rating, comments = EXCLUDED.comments, last_import_run_id = EXCLUDED.last_import_run_id"#,
             Uuid::new_v4(),
         ),
     )

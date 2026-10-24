@@ -1230,6 +1230,32 @@ WHERE page.site_id = $1
         site_id: i64,
         reference: Reference<'_>,
     ) -> Result<Option<PageModel>> {
+        Self::get_optional_impl(ctx, site_id, reference, true).await
+    }
+
+    /// Gets a page like [`Self::get_optional`], but without the foreign
+    /// snapshot exclusion.
+    ///
+    /// This is only for callers that have already established the page's
+    /// identity through the snapshot store itself: cross-site include
+    /// resolution, which finds foreign include-source snapshots by
+    /// (`source_site`, `source_fullname`) precisely so they can be read
+    /// as include sources (issue #2690). Ordinary page surfaces must use
+    /// [`Self::get_optional`] so foreign snapshots stay hidden there.
+    pub async fn get_optional_including_foreign_snapshots(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        reference: Reference<'_>,
+    ) -> Result<Option<PageModel>> {
+        Self::get_optional_impl(ctx, site_id, reference, false).await
+    }
+
+    async fn get_optional_impl(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        reference: Reference<'_>,
+        exclude_foreign_snapshots: bool,
+    ) -> Result<Option<PageModel>> {
         let txn = ctx.transaction();
         let page = {
             let condition = match reference {
@@ -1240,19 +1266,21 @@ WHERE page.site_id = $1
                 }
             };
 
+            let mut condition = Condition::all()
+                .add(condition)
+                .add(page::Column::SiteId.eq(site_id))
+                .add(page::Column::DeletedAt.is_null());
+            if exclude_foreign_snapshots {
+                // Foreign include-source snapshots are storage, not
+                // pages of this site (issue #2690).
+                condition = condition.add(Expr::cust(foreign_snapshot_exclusion_sql(
+                    "page.page_id",
+                    site_id,
+                )));
+            }
+
             Page::find()
-                .filter(
-                    Condition::all()
-                        .add(condition)
-                        .add(page::Column::SiteId.eq(site_id))
-                        .add(page::Column::DeletedAt.is_null())
-                        // Foreign include-source snapshots are storage, not
-                        // pages of this site (issue #2690).
-                        .add(Expr::cust(foreign_snapshot_exclusion_sql(
-                            "page.page_id",
-                            site_id,
-                        ))),
-                )
+                .filter(condition)
                 .one(txn)
                 .await
                 .or_raise(|| Error::new("failed to get page", ErrorType::Page))?
