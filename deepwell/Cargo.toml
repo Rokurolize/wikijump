@@ -112,6 +112,14 @@ inherits = "release"
 lto = false
 incremental = true
 
+# The deepwell crate is a single ~200k-line crate, so its full compile is
+# the serial tail of every build that touches it (source changes and
+# dependency bumps alike). More codegen units let rustc parallelize that
+# compile (-19% measured on the crate's full compile). Scoped to this
+# package so dependency artifacts and their fingerprints are unchanged.
+[profile.standing.package.deepwell]
+codegen-units = 64
+
 # Keep ordinary development and test artifacts bounded. Full debug information
 # is opt-in through `cargo --profile debugging` below.
 [profile.dev]
