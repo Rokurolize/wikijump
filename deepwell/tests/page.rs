@@ -22990,10 +22990,17 @@ async fn listpages_template_body_over_the_render_budget_remains_literal() {
     let template_body = |sentinel: &str, bytes: usize| {
         let variable = "%%title%%";
         assert!(sentinel.len() + variable.len() <= bytes);
-        format!(
-            "{sentinel}{}{variable}",
-            "x".repeat(bytes - sentinel.len() - variable.len()),
-        )
+        // The render budget counts bytes while the page-source limit
+        // counts characters (200,001 max), so the filler is multibyte:
+        // the body reaches the byte budget while the page itself stays
+        // within the source limit.
+        let fill_bytes = bytes - sentinel.len() - variable.len();
+        let fill = format!(
+            "{}{}",
+            "\u{3042}".repeat(fill_bytes / 3),
+            "x".repeat(fill_bytes % 3),
+        );
+        format!("{sentinel}{fill}{variable}")
     };
     let module_source = |body: &str| {
         format!(
