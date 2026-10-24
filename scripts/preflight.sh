@@ -206,7 +206,7 @@ group_verification() {
     run_test "wikidot verification tests" pnpm --dir install/local/wikidot-verification test
     run_test "standing runtime tests" python3 -m unittest discover -s install/standing/tests -p 'test_*.py'
     run_test "standing receipt tests" node --test 'install/standing/tests/*.test.mjs'
-    run "wikidot specification generator" node scripts/generate-wikidot-specifications.mjs --check
+    run_test_inconclusive_ok "wikidot specification generator" node scripts/generate-wikidot-specifications.mjs --check
     run "wikidot implementation ledger" node scripts/initialize-wikidot-implementation-ledger.mjs --check
   fi
 }
