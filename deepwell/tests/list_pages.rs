@@ -1666,7 +1666,7 @@ async fn imported_wikidot_size_controls_size_order_and_substitution() {
                 {IMPORT_RUN_ID},
                 {site_id},
                 'size-fixture',
-                'sandbox-for-codex',
+                'scp-wiki',
                 decode(repeat('33', 32), 'hex'),
                 2,
                 false,
@@ -1707,7 +1707,7 @@ async fn imported_wikidot_size_controls_size_order_and_substitution() {
             (
                 {},
                 'size-fixture',
-                'sandbox-for-codex',
+                'scp-wiki',
                 '22222222-2222-4222-8222-222222222222',
                 '{LARGE_SLUG}',
                 TIMESTAMPTZ '2026-05-26T00:00:00Z',
@@ -1730,7 +1730,7 @@ async fn imported_wikidot_size_controls_size_order_and_substitution() {
             (
                 {},
                 'size-fixture',
-                'sandbox-for-codex',
+                'scp-wiki',
                 '33333333-3333-4333-8333-333333333333',
                 '{SMALL_SLUG}',
                 TIMESTAMPTZ '2026-05-26T00:00:01Z',
