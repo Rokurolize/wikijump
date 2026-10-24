@@ -51,6 +51,14 @@ async function artifact(filePath, label, {executable = false} = {}) {
   return {path: filePath, bytes: stat.size, sha256: sha256Hex(await fs.readFile(filePath))};
 }
 
+/** Run independent async checks concurrently; report the first failure in
+ * declaration order, exactly as the sequential version did. */
+async function inOrder(thunks) {
+  const results = await Promise.allSettled(thunks.map((thunk) => thunk()));
+  for (const result of results) if (result.status === "rejected") throw result.reason;
+  return results.map((result) => result.value);
+}
+
 async function boundArtifact(value, label, options) {
   exactFields(value, ["path", "sha256"], label);
   const filePath = absolutePath(value.path, `${label}.path`);
@@ -127,9 +135,13 @@ async function validateManifest(value, manifestPath) {
   requireValue(captures.length > 0, "wikidot_evidence.captures must bind at least one saved-page capture");
 
   exactFields(value.executables, ["docker", "git", "node"], "executables");
-  const node = await boundArtifact(value.executables.node, "executables.node", {executable: true});
-  const git = await boundArtifact(value.executables.git, "executables.git", {executable: true});
-  const docker = await boundArtifact(value.executables.docker, "executables.docker", {executable: true});
+  // The executables are ~180 MB of hashing per verification pass; hash them
+  // concurrently (inOrder keeps which failure is reported unchanged).
+  const [node, git, docker] = await inOrder([
+    () => boundArtifact(value.executables.node, "executables.node", {executable: true}),
+    () => boundArtifact(value.executables.git, "executables.git", {executable: true}),
+    () => boundArtifact(value.executables.docker, "executables.docker", {executable: true}),
+  ]);
   requireValue(node.path === NODE && git.path === GIT && docker.path === DOCKER, "executables do not bind the closed stack interface");
   exactFields(value.channels, ["browser_intervals", "parsed_dom", "raw_html", "visible_text"], "channels");
   for (const name of ["raw_html", "parsed_dom", "visible_text"]) {
@@ -233,9 +245,9 @@ export async function main(argv, {spawn = spawnSync} = {}) {
   if (cleanup?.compose_started === true && stackLogArtifact === null) reason ??= "runtime stack log is missing although Compose started";
   if (cleanup?.compose_started === false && stackLogArtifact !== null) reason ??= "runtime stack log exists although Compose never started";
   try {
-    await unchanged(manifestIdentity, "case manifest");
-    const stableInputs = [["candidate_manifest", run.candidateManifest], ["source", run.source], ...run.stateFixtures.map((item) => ["state fixture", item]), ...run.captures.map((item) => ["capture", item]), ...run.externalReferences.map((item) => ["external reference", item]), ...Object.entries(run.executables).map(([name, item]) => [`executables.${name}`, item])];
-    for (const [label, value] of stableInputs) await unchanged(value, label, {executable: Object.values(run.executables).some((item) => item.path === value.path)});
+    const stableInputs = [["case manifest", manifestIdentity], ["candidate_manifest", run.candidateManifest], ["source", run.source], ...run.stateFixtures.map((item) => ["state fixture", item]), ...run.captures.map((item) => ["capture", item]), ...run.externalReferences.map((item) => ["external reference", item]), ...Object.entries(run.executables).map(([name, item]) => [`executables.${name}`, item])];
+    const executablePaths = new Set(Object.values(run.executables).map((item) => item.path));
+    await inOrder(stableInputs.map(([label, value]) => () => unchanged(value, label, {executable: executablePaths.has(value.path)})));
   } catch (error) {
     reason ??= error.message;
   }
