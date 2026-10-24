@@ -10,8 +10,8 @@
       },
       {
         "path": "deepwell/Cargo.toml",
-        "git_blob": "1d01fc390debd819740c79c8d85f06b1ab39ff69",
-        "sha256": "215ffe62de00cd9811109b8fa41f3666523e5ed5aa29f8af7803c2450bc8019a"
+        "git_blob": "31dcbaa1a2986f3932cb19480d6907100aa98413",
+        "sha256": "5fcf3167c541aaae96a6ef227d2786b531f32dbcfcb979dc6052ceefa528cf0c"
       },
       {
         "path": "deepwell/migrations/20260815010000_text_block_wikidot_sha1.sql",
