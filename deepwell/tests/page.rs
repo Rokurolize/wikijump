@@ -30,6 +30,9 @@ mod theme_previewer;
 #[path = "page/forum.rs"]
 mod forum;
 
+#[path = "page/foreign_source.rs"]
+mod foreign_source;
+
 #[path = "page/membership.rs"]
 mod membership;
 
@@ -24809,7 +24812,7 @@ INSERT INTO wikidot_corpus_import_run (
             [
                 Value::from(import_run_id),
                 Value::from(site_id),
-                Value::from(format!("author-selector-test-{import_run_id}")),
+                Value::from("author-selector-test"),
                 Value::from(row_count),
             ],
         ))
@@ -24858,7 +24861,7 @@ INSERT INTO wikidot_page_snapshot (
 "#,
             [
                 Value::from(page_id),
-                Value::from(format!("author-selector-test-{import_run_id}")),
+                Value::from("author-selector-test"),
                 Value::from(format!(
                     "71300000-0000-4000-8000-{source_entity_suffix:012x}"
                 )),
