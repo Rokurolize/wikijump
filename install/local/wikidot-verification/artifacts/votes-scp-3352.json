@@ -1,0 +1,2561 @@
+{
+ "site": "scp-wiki",
+ "slug": "scp-3352",
+ "page_id": 1305487917,
+ "rating": 618,
+ "votes": [
+  {
+   "user_id": 8917404,
+   "value": 1
+  },
+  {
+   "user_id": 9038648,
+   "value": 1
+  },
+  {
+   "user_id": 5267385,
+   "value": 1
+  },
+  {
+   "user_id": 2943332,
+   "value": 1
+  },
+  {
+   "user_id": 7213052,
+   "value": 1
+  },
+  {
+   "user_id": 5662806,
+   "value": 1
+  },
+  {
+   "user_id": 1396438,
+   "value": 1
+  },
+  {
+   "user_id": 8442818,
+   "value": 1
+  },
+  {
+   "user_id": 4598089,
+   "value": 1
+  },
+  {
+   "user_id": 9639337,
+   "value": 1
+  },
+  {
+   "user_id": 5337654,
+   "value": 1
+  },
+  {
+   "user_id": 8538278,
+   "value": 1
+  },
+  {
+   "user_id": 3745522,
+   "value": 1
+  },
+  {
+   "user_id": 6014679,
+   "value": 1
+  },
+  {
+   "user_id": 6817045,
+   "value": 1
+  },
+  {
+   "user_id": 7445982,
+   "value": 1
+  },
+  {
+   "user_id": 6040770,
+   "value": 1
+  },
+  {
+   "user_id": 5184766,
+   "value": 1
+  },
+  {
+   "user_id": 4115020,
+   "value": 1
+  },
+  {
+   "user_id": 10522433,
+   "value": 1
+  },
+  {
+   "user_id": 6879665,
+   "value": 1
+  },
+  {
+   "user_id": 7859463,
+   "value": 1
+  },
+  {
+   "user_id": 2364855,
+   "value": 1
+  },
+  {
+   "user_id": 4188420,
+   "value": 1
+  },
+  {
+   "user_id": 5274479,
+   "value": 1
+  },
+  {
+   "user_id": 7486442,
+   "value": 1
+  },
+  {
+   "user_id": 1841781,
+   "value": 1
+  },
+  {
+   "user_id": 8983779,
+   "value": 1
+  },
+  {
+   "user_id": 9335378,
+   "value": 1
+  },
+  {
+   "user_id": 9147995,
+   "value": -1
+  },
+  {
+   "user_id": 8157639,
+   "value": 1
+  },
+  {
+   "user_id": 8805438,
+   "value": 1
+  },
+  {
+   "user_id": 8381994,
+   "value": 1
+  },
+  {
+   "user_id": 8980215,
+   "value": 1
+  },
+  {
+   "user_id": 9716469,
+   "value": 1
+  },
+  {
+   "user_id": 9540000,
+   "value": 1
+  },
+  {
+   "user_id": 8503243,
+   "value": 1
+  },
+  {
+   "user_id": 303535,
+   "value": 1
+  },
+  {
+   "user_id": 7441932,
+   "value": 1
+  },
+  {
+   "user_id": 3465007,
+   "value": 1
+  },
+  {
+   "user_id": 9715340,
+   "value": 1
+  },
+  {
+   "user_id": 6001754,
+   "value": 1
+  },
+  {
+   "user_id": 6657366,
+   "value": 1
+  },
+  {
+   "user_id": 7852609,
+   "value": 1
+  },
+  {
+   "user_id": 4376002,
+   "value": 1
+  },
+  {
+   "user_id": 10192597,
+   "value": 1
+  },
+  {
+   "user_id": 3534136,
+   "value": 1
+  },
+  {
+   "user_id": 3993946,
+   "value": 1
+  },
+  {
+   "user_id": 673491,
+   "value": 1
+  },
+  {
+   "user_id": 5537321,
+   "value": 1
+  },
+  {
+   "user_id": 5828787,
+   "value": 1
+  },
+  {
+   "user_id": 5290808,
+   "value": 1
+  },
+  {
+   "user_id": 6914048,
+   "value": 1
+  },
+  {
+   "user_id": 1688804,
+   "value": 1
+  },
+  {
+   "user_id": 3777526,
+   "value": 1
+  },
+  {
+   "user_id": 6056417,
+   "value": 1
+  },
+  {
+   "user_id": 4673117,
+   "value": 1
+  },
+  {
+   "user_id": 8924449,
+   "value": 1
+  },
+  {
+   "user_id": 2897177,
+   "value": 1
+  },
+  {
+   "user_id": 3129564,
+   "value": 1
+  },
+  {
+   "user_id": 7519812,
+   "value": 1
+  },
+  {
+   "user_id": 5488776,
+   "value": 1
+  },
+  {
+   "user_id": 3187823,
+   "value": 1
+  },
+  {
+   "user_id": 7952177,
+   "value": 1
+  },
+  {
+   "user_id": 5045819,
+   "value": 1
+  },
+  {
+   "user_id": 1860153,
+   "value": 1
+  },
+  {
+   "user_id": 9123780,
+   "value": 1
+  },
+  {
+   "user_id": 4052714,
+   "value": 1
+  },
+  {
+   "user_id": 3440103,
+   "value": 1
+  },
+  {
+   "user_id": 5070187,
+   "value": 1
+  },
+  {
+   "user_id": 7203639,
+   "value": 1
+  },
+  {
+   "user_id": 2375337,
+   "value": 1
+  },
+  {
+   "user_id": 3352053,
+   "value": -1
+  },
+  {
+   "user_id": 6490573,
+   "value": 1
+  },
+  {
+   "user_id": 5232419,
+   "value": 1
+  },
+  {
+   "user_id": 1261509,
+   "value": 1
+  },
+  {
+   "user_id": 4557177,
+   "value": 1
+  },
+  {
+   "user_id": 8889700,
+   "value": 1
+  },
+  {
+   "user_id": 8412982,
+   "value": 1
+  },
+  {
+   "user_id": 6686553,
+   "value": -1
+  },
+  {
+   "user_id": 4579125,
+   "value": 1
+  },
+  {
+   "user_id": 1801628,
+   "value": 1
+  },
+  {
+   "user_id": 399974,
+   "value": 1
+  },
+  {
+   "user_id": 2344927,
+   "value": 1
+  },
+  {
+   "user_id": 8149323,
+   "value": 1
+  },
+  {
+   "user_id": 8262257,
+   "value": 1
+  },
+  {
+   "user_id": 7608075,
+   "value": 1
+  },
+  {
+   "user_id": 8863275,
+   "value": 1
+  },
+  {
+   "user_id": 2151433,
+   "value": 1
+  },
+  {
+   "user_id": 7851860,
+   "value": 1
+  },
+  {
+   "user_id": 9494849,
+   "value": 1
+  },
+  {
+   "user_id": 8729773,
+   "value": 1
+  },
+  {
+   "user_id": 1346995,
+   "value": 1
+  },
+  {
+   "user_id": 8937977,
+   "value": 1
+  },
+  {
+   "user_id": 5943763,
+   "value": 1
+  },
+  {
+   "user_id": 3952131,
+   "value": 1
+  },
+  {
+   "user_id": 6563256,
+   "value": 1
+  },
+  {
+   "user_id": 7507543,
+   "value": 1
+  },
+  {
+   "user_id": 5366457,
+   "value": 1
+  },
+  {
+   "user_id": 10383329,
+   "value": 1
+  },
+  {
+   "user_id": 2537768,
+   "value": 1
+  },
+  {
+   "user_id": 2142851,
+   "value": 1
+  },
+  {
+   "user_id": 5336470,
+   "value": 1
+  },
+  {
+   "user_id": 7006627,
+   "value": 1
+  },
+  {
+   "user_id": 6004508,
+   "value": 1
+  },
+  {
+   "user_id": 4823041,
+   "value": 1
+  },
+  {
+   "user_id": 2756997,
+   "value": 1
+  },
+  {
+   "user_id": 5970382,
+   "value": -1
+  },
+  {
+   "user_id": 1618786,
+   "value": 1
+  },
+  {
+   "user_id": 9321573,
+   "value": 1
+  },
+  {
+   "user_id": 3988532,
+   "value": 1
+  },
+  {
+   "user_id": 4733271,
+   "value": 1
+  },
+  {
+   "user_id": 1079711,
+   "value": 1
+  },
+  {
+   "user_id": 1721661,
+   "value": 1
+  },
+  {
+   "user_id": 7502971,
+   "value": 1
+  },
+  {
+   "user_id": 7589779,
+   "value": 1
+  },
+  {
+   "user_id": 9535341,
+   "value": 1
+  },
+  {
+   "user_id": 8589193,
+   "value": 1
+  },
+  {
+   "user_id": 6420749,
+   "value": 1
+  },
+  {
+   "user_id": 8229577,
+   "value": 1
+  },
+  {
+   "user_id": 6056124,
+   "value": 1
+  },
+  {
+   "user_id": 7676667,
+   "value": 1
+  },
+  {
+   "user_id": 6676927,
+   "value": 1
+  },
+  {
+   "user_id": 1888434,
+   "value": 1
+  },
+  {
+   "user_id": 6534493,
+   "value": 1
+  },
+  {
+   "user_id": 6030444,
+   "value": 1
+  },
+  {
+   "user_id": 7902508,
+   "value": 1
+  },
+  {
+   "user_id": 1854139,
+   "value": 1
+  },
+  {
+   "user_id": 8813830,
+   "value": 1
+  },
+  {
+   "user_id": 8924031,
+   "value": 1
+  },
+  {
+   "user_id": 5344021,
+   "value": 1
+  },
+  {
+   "user_id": 3691782,
+   "value": 1
+  },
+  {
+   "user_id": 616788,
+   "value": 1
+  },
+  {
+   "user_id": 2785951,
+   "value": 1
+  },
+  {
+   "user_id": 2887044,
+   "value": 1
+  },
+  {
+   "user_id": 8179462,
+   "value": 1
+  },
+  {
+   "user_id": 5000808,
+   "value": 1
+  },
+  {
+   "user_id": 5596963,
+   "value": 1
+  },
+  {
+   "user_id": 1440290,
+   "value": 1
+  },
+  {
+   "user_id": 8907050,
+   "value": 1
+  },
+  {
+   "user_id": 6960286,
+   "value": 1
+  },
+  {
+   "user_id": 7298344,
+   "value": 1
+  },
+  {
+   "user_id": 7131012,
+   "value": 1
+  },
+  {
+   "user_id": 4384469,
+   "value": 1
+  },
+  {
+   "user_id": 5858548,
+   "value": 1
+  },
+  {
+   "user_id": 8937948,
+   "value": 1
+  },
+  {
+   "user_id": 9624500,
+   "value": 1
+  },
+  {
+   "user_id": 2890445,
+   "value": 1
+  },
+  {
+   "user_id": 10282032,
+   "value": -1
+  },
+  {
+   "user_id": 4037075,
+   "value": 1
+  },
+  {
+   "user_id": 6729600,
+   "value": 1
+  },
+  {
+   "user_id": 3656445,
+   "value": 1
+  },
+  {
+   "user_id": 9102734,
+   "value": 1
+  },
+  {
+   "user_id": 9478840,
+   "value": 1
+  },
+  {
+   "user_id": 7018715,
+   "value": 1
+  },
+  {
+   "user_id": 2971180,
+   "value": 1
+  },
+  {
+   "user_id": 4113182,
+   "value": 1
+  },
+  {
+   "user_id": 4764105,
+   "value": 1
+  },
+  {
+   "user_id": 5844683,
+   "value": 1
+  },
+  {
+   "user_id": 7553121,
+   "value": 1
+  },
+  {
+   "user_id": 6009462,
+   "value": 1
+  },
+  {
+   "user_id": 8287746,
+   "value": 1
+  },
+  {
+   "user_id": 6949371,
+   "value": 1
+  },
+  {
+   "user_id": 8731569,
+   "value": 1
+  },
+  {
+   "user_id": 6544805,
+   "value": 1
+  },
+  {
+   "user_id": 1856658,
+   "value": 1
+  },
+  {
+   "user_id": 7566320,
+   "value": 1
+  },
+  {
+   "user_id": 1566286,
+   "value": 1
+  },
+  {
+   "user_id": 8939835,
+   "value": 1
+  },
+  {
+   "user_id": 7367930,
+   "value": 1
+  },
+  {
+   "user_id": 7495715,
+   "value": 1
+  },
+  {
+   "user_id": 8416640,
+   "value": 1
+  },
+  {
+   "user_id": 422322,
+   "value": 1
+  },
+  {
+   "user_id": 3089916,
+   "value": 1
+  },
+  {
+   "user_id": 7367724,
+   "value": 1
+  },
+  {
+   "user_id": 7912738,
+   "value": 1
+  },
+  {
+   "user_id": 9079073,
+   "value": 1
+  },
+  {
+   "user_id": 5005649,
+   "value": 1
+  },
+  {
+   "user_id": 6032389,
+   "value": 1
+  },
+  {
+   "user_id": 8497838,
+   "value": 1
+  },
+  {
+   "user_id": 2688506,
+   "value": 1
+  },
+  {
+   "user_id": 1788999,
+   "value": 1
+  },
+  {
+   "user_id": 4058612,
+   "value": 1
+  },
+  {
+   "user_id": 3046692,
+   "value": 1
+  },
+  {
+   "user_id": 8087248,
+   "value": 1
+  },
+  {
+   "user_id": 9677657,
+   "value": 1
+  },
+  {
+   "user_id": 4318285,
+   "value": 1
+  },
+  {
+   "user_id": 5007876,
+   "value": 1
+  },
+  {
+   "user_id": 4744121,
+   "value": 1
+  },
+  {
+   "user_id": 3005764,
+   "value": 1
+  },
+  {
+   "user_id": 4014086,
+   "value": 1
+  },
+  {
+   "user_id": 6371708,
+   "value": 1
+  },
+  {
+   "user_id": 6944105,
+   "value": 1
+  },
+  {
+   "user_id": 3443839,
+   "value": 1
+  },
+  {
+   "user_id": 1543083,
+   "value": 1
+  },
+  {
+   "user_id": 5376871,
+   "value": 1
+  },
+  {
+   "user_id": 5056647,
+   "value": 1
+  },
+  {
+   "user_id": 8221719,
+   "value": 1
+  },
+  {
+   "user_id": 2665552,
+   "value": 1
+  },
+  {
+   "user_id": 3573184,
+   "value": 1
+  },
+  {
+   "user_id": 9395777,
+   "value": 1
+  },
+  {
+   "user_id": 10375313,
+   "value": 1
+  },
+  {
+   "user_id": 8172455,
+   "value": 1
+  },
+  {
+   "user_id": 3680022,
+   "value": 1
+  },
+  {
+   "user_id": 9412091,
+   "value": 1
+  },
+  {
+   "user_id": 6944417,
+   "value": 1
+  },
+  {
+   "user_id": 5339216,
+   "value": 1
+  },
+  {
+   "user_id": 5550361,
+   "value": 1
+  },
+  {
+   "user_id": 2280391,
+   "value": 1
+  },
+  {
+   "user_id": 9043823,
+   "value": 1
+  },
+  {
+   "user_id": 3439649,
+   "value": 1
+  },
+  {
+   "user_id": 5287352,
+   "value": 1
+  },
+  {
+   "user_id": 6344387,
+   "value": 1
+  },
+  {
+   "user_id": 4558017,
+   "value": -1
+  },
+  {
+   "user_id": 5643605,
+   "value": 1
+  },
+  {
+   "user_id": 7101820,
+   "value": 1
+  },
+  {
+   "user_id": 3256876,
+   "value": 1
+  },
+  {
+   "user_id": 8693146,
+   "value": 1
+  },
+  {
+   "user_id": 5980889,
+   "value": 1
+  },
+  {
+   "user_id": 4595589,
+   "value": 1
+  },
+  {
+   "user_id": 2204628,
+   "value": 1
+  },
+  {
+   "user_id": 6479803,
+   "value": 1
+  },
+  {
+   "user_id": 4417248,
+   "value": 1
+  },
+  {
+   "user_id": 4998762,
+   "value": 1
+  },
+  {
+   "user_id": 9895997,
+   "value": 1
+  },
+  {
+   "user_id": 1529032,
+   "value": 1
+  },
+  {
+   "user_id": 1803227,
+   "value": 1
+  },
+  {
+   "user_id": 8937884,
+   "value": 1
+  },
+  {
+   "user_id": 7202763,
+   "value": 1
+  },
+  {
+   "user_id": 6916780,
+   "value": 1
+  },
+  {
+   "user_id": 9485393,
+   "value": 1
+  },
+  {
+   "user_id": 7849669,
+   "value": 1
+  },
+  {
+   "user_id": 4400782,
+   "value": 1
+  },
+  {
+   "user_id": 2241006,
+   "value": 1
+  },
+  {
+   "user_id": 4761754,
+   "value": 1
+  },
+  {
+   "user_id": 6002456,
+   "value": 1
+  },
+  {
+   "user_id": 9863891,
+   "value": 1
+  },
+  {
+   "user_id": 8919033,
+   "value": 1
+  },
+  {
+   "user_id": 4429840,
+   "value": 1
+  },
+  {
+   "user_id": 4955276,
+   "value": 1
+  },
+  {
+   "user_id": 8531174,
+   "value": 1
+  },
+  {
+   "user_id": 9176294,
+   "value": 1
+  },
+  {
+   "user_id": 3942052,
+   "value": 1
+  },
+  {
+   "user_id": 8221044,
+   "value": 1
+  },
+  {
+   "user_id": 10368647,
+   "value": -1
+  },
+  {
+   "user_id": 9306386,
+   "value": 1
+  },
+  {
+   "user_id": 8995755,
+   "value": 1
+  },
+  {
+   "user_id": 6937641,
+   "value": 1
+  },
+  {
+   "user_id": 5591048,
+   "value": 1
+  },
+  {
+   "user_id": 4871928,
+   "value": 1
+  },
+  {
+   "user_id": 6596793,
+   "value": 1
+  },
+  {
+   "user_id": 5352650,
+   "value": 1
+  },
+  {
+   "user_id": 6641498,
+   "value": 1
+  },
+  {
+   "user_id": 4048054,
+   "value": 1
+  },
+  {
+   "user_id": 6974210,
+   "value": 1
+  },
+  {
+   "user_id": 6250810,
+   "value": 1
+  },
+  {
+   "user_id": 5653916,
+   "value": 1
+  },
+  {
+   "user_id": 8428284,
+   "value": 1
+  },
+  {
+   "user_id": 6786468,
+   "value": 1
+  },
+  {
+   "user_id": 10209984,
+   "value": 1
+  },
+  {
+   "user_id": 7349578,
+   "value": 1
+  },
+  {
+   "user_id": 3181609,
+   "value": 1
+  },
+  {
+   "user_id": 4284264,
+   "value": 1
+  },
+  {
+   "user_id": 9777246,
+   "value": 1
+  },
+  {
+   "user_id": 3207203,
+   "value": 1
+  },
+  {
+   "user_id": 5478092,
+   "value": 1
+  },
+  {
+   "user_id": 4535677,
+   "value": 1
+  },
+  {
+   "user_id": 3382837,
+   "value": 1
+  },
+  {
+   "user_id": 6669398,
+   "value": 1
+  },
+  {
+   "user_id": 5589317,
+   "value": 1
+  },
+  {
+   "user_id": 5817443,
+   "value": 1
+  },
+  {
+   "user_id": 6682213,
+   "value": 1
+  },
+  {
+   "user_id": 1349098,
+   "value": 1
+  },
+  {
+   "user_id": 1637608,
+   "value": 1
+  },
+  {
+   "user_id": 5411217,
+   "value": 1
+  },
+  {
+   "user_id": 8698144,
+   "value": 1
+  },
+  {
+   "user_id": 4981794,
+   "value": 1
+  },
+  {
+   "user_id": 3620386,
+   "value": 1
+  },
+  {
+   "user_id": 3311023,
+   "value": 1
+  },
+  {
+   "user_id": 5575294,
+   "value": 1
+  },
+  {
+   "user_id": 5033036,
+   "value": 1
+  },
+  {
+   "user_id": 7903692,
+   "value": 1
+  },
+  {
+   "user_id": 5018858,
+   "value": 1
+  },
+  {
+   "user_id": 9629950,
+   "value": 1
+  },
+  {
+   "user_id": 2772074,
+   "value": 1
+  },
+  {
+   "user_id": 1223059,
+   "value": 1
+  },
+  {
+   "user_id": 5941791,
+   "value": 1
+  },
+  {
+   "user_id": 6679135,
+   "value": 1
+  },
+  {
+   "user_id": 4363419,
+   "value": 1
+  },
+  {
+   "user_id": 1796098,
+   "value": 1
+  },
+  {
+   "user_id": 6090817,
+   "value": 1
+  },
+  {
+   "user_id": 163438,
+   "value": 1
+  },
+  {
+   "user_id": 2808559,
+   "value": 1
+  },
+  {
+   "user_id": 6152598,
+   "value": 1
+  },
+  {
+   "user_id": 9136219,
+   "value": 1
+  },
+  {
+   "user_id": 3460794,
+   "value": 1
+  },
+  {
+   "user_id": 2264474,
+   "value": 1
+  },
+  {
+   "user_id": 3592954,
+   "value": 1
+  },
+  {
+   "user_id": 7608454,
+   "value": 1
+  },
+  {
+   "user_id": 9417989,
+   "value": 1
+  },
+  {
+   "user_id": 8652579,
+   "value": 1
+  },
+  {
+   "user_id": 9595165,
+   "value": 1
+  },
+  {
+   "user_id": 5241510,
+   "value": 1
+  },
+  {
+   "user_id": 4131716,
+   "value": 1
+  },
+  {
+   "user_id": 8298846,
+   "value": 1
+  },
+  {
+   "user_id": 1451559,
+   "value": -1
+  },
+  {
+   "user_id": 5620406,
+   "value": 1
+  },
+  {
+   "user_id": 3469391,
+   "value": 1
+  },
+  {
+   "user_id": 8374854,
+   "value": 1
+  },
+  {
+   "user_id": 4859869,
+   "value": 1
+  },
+  {
+   "user_id": 8181688,
+   "value": 1
+  },
+  {
+   "user_id": 7540369,
+   "value": 1
+  },
+  {
+   "user_id": 9136306,
+   "value": 1
+  },
+  {
+   "user_id": 10542355,
+   "value": 1
+  },
+  {
+   "user_id": 3533748,
+   "value": 1
+  },
+  {
+   "user_id": 8869264,
+   "value": 1
+  },
+  {
+   "user_id": 3325031,
+   "value": 1
+  },
+  {
+   "user_id": 6517279,
+   "value": -1
+  },
+  {
+   "user_id": 1297572,
+   "value": 1
+  },
+  {
+   "user_id": 1813809,
+   "value": 1
+  },
+  {
+   "user_id": 7168646,
+   "value": 1
+  },
+  {
+   "user_id": 1356376,
+   "value": 1
+  },
+  {
+   "user_id": 6741696,
+   "value": 1
+  },
+  {
+   "user_id": 1735419,
+   "value": 1
+  },
+  {
+   "user_id": 8273553,
+   "value": 1
+  },
+  {
+   "user_id": 5634019,
+   "value": 1
+  },
+  {
+   "user_id": 9151557,
+   "value": 1
+  },
+  {
+   "user_id": 2496620,
+   "value": 1
+  },
+  {
+   "user_id": 445900,
+   "value": 1
+  },
+  {
+   "user_id": 3030844,
+   "value": 1
+  },
+  {
+   "user_id": 2902864,
+   "value": 1
+  },
+  {
+   "user_id": 5704875,
+   "value": 1
+  },
+  {
+   "user_id": 6729551,
+   "value": 1
+  },
+  {
+   "user_id": 8290930,
+   "value": 1
+  },
+  {
+   "user_id": 9530570,
+   "value": 1
+  },
+  {
+   "user_id": 8407194,
+   "value": 1
+  },
+  {
+   "user_id": 1783333,
+   "value": 1
+  },
+  {
+   "user_id": 389536,
+   "value": 1
+  },
+  {
+   "user_id": 5308527,
+   "value": 1
+  },
+  {
+   "user_id": 7730848,
+   "value": 1
+  },
+  {
+   "user_id": 6699755,
+   "value": 1
+  },
+  {
+   "user_id": 8216454,
+   "value": 1
+  },
+  {
+   "user_id": 8781376,
+   "value": 1
+  },
+  {
+   "user_id": 7054203,
+   "value": 1
+  },
+  {
+   "user_id": 7028380,
+   "value": 1
+  },
+  {
+   "user_id": 3017470,
+   "value": 1
+  },
+  {
+   "user_id": 7622578,
+   "value": 1
+  },
+  {
+   "user_id": 7163981,
+   "value": 1
+  },
+  {
+   "user_id": 2002945,
+   "value": 1
+  },
+  {
+   "user_id": 1688142,
+   "value": 1
+  },
+  {
+   "user_id": 3710833,
+   "value": 1
+  },
+  {
+   "user_id": 9536590,
+   "value": 1
+  },
+  {
+   "user_id": 5417594,
+   "value": 1
+  },
+  {
+   "user_id": 8968142,
+   "value": 1
+  },
+  {
+   "user_id": 3153836,
+   "value": 1
+  },
+  {
+   "user_id": 5525011,
+   "value": 1
+  },
+  {
+   "user_id": 5975504,
+   "value": 1
+  },
+  {
+   "user_id": 10332800,
+   "value": 1
+  },
+  {
+   "user_id": 9577830,
+   "value": 1
+  },
+  {
+   "user_id": 2205725,
+   "value": 1
+  },
+  {
+   "user_id": 7794470,
+   "value": 1
+  },
+  {
+   "user_id": 469339,
+   "value": 1
+  },
+  {
+   "user_id": 10142699,
+   "value": 1
+  },
+  {
+   "user_id": 7558662,
+   "value": 1
+  },
+  {
+   "user_id": 3219757,
+   "value": 1
+  },
+  {
+   "user_id": 6388899,
+   "value": 1
+  },
+  {
+   "user_id": 7840289,
+   "value": 1
+  },
+  {
+   "user_id": 6613723,
+   "value": 1
+  },
+  {
+   "user_id": 3188270,
+   "value": 1
+  },
+  {
+   "user_id": 5208936,
+   "value": 1
+  },
+  {
+   "user_id": 5425127,
+   "value": 1
+  },
+  {
+   "user_id": 2258225,
+   "value": 1
+  },
+  {
+   "user_id": 3395867,
+   "value": 1
+  },
+  {
+   "user_id": 5015282,
+   "value": 1
+  },
+  {
+   "user_id": 6066628,
+   "value": 1
+  },
+  {
+   "user_id": 3464274,
+   "value": 1
+  },
+  {
+   "user_id": 5256394,
+   "value": 1
+  },
+  {
+   "user_id": 3009022,
+   "value": 1
+  },
+  {
+   "user_id": 7611098,
+   "value": 1
+  },
+  {
+   "user_id": 6898839,
+   "value": 1
+  },
+  {
+   "user_id": 9552918,
+   "value": 1
+  },
+  {
+   "user_id": 5205635,
+   "value": 1
+  },
+  {
+   "user_id": 7157531,
+   "value": 1
+  },
+  {
+   "user_id": 9527315,
+   "value": 1
+  },
+  {
+   "user_id": 2164005,
+   "value": 1
+  },
+  {
+   "user_id": 8994168,
+   "value": 1
+  },
+  {
+   "user_id": 7982659,
+   "value": 1
+  },
+  {
+   "user_id": 6944292,
+   "value": 1
+  },
+  {
+   "user_id": 1743859,
+   "value": 1
+  },
+  {
+   "user_id": 6235677,
+   "value": 1
+  },
+  {
+   "user_id": 2157431,
+   "value": 1
+  },
+  {
+   "user_id": 2018368,
+   "value": 1
+  },
+  {
+   "user_id": 492319,
+   "value": 1
+  },
+  {
+   "user_id": 3118444,
+   "value": 1
+  },
+  {
+   "user_id": 391652,
+   "value": 1
+  },
+  {
+   "user_id": 5515758,
+   "value": 1
+  },
+  {
+   "user_id": 361873,
+   "value": 1
+  },
+  {
+   "user_id": 6871182,
+   "value": 1
+  },
+  {
+   "user_id": 2616147,
+   "value": 1
+  },
+  {
+   "user_id": 5813664,
+   "value": 1
+  },
+  {
+   "user_id": 4187161,
+   "value": 1
+  },
+  {
+   "user_id": 7433992,
+   "value": 1
+  },
+  {
+   "user_id": 9406808,
+   "value": 1
+  },
+  {
+   "user_id": 8465896,
+   "value": 1
+  },
+  {
+   "user_id": 6637840,
+   "value": 1
+  },
+  {
+   "user_id": 8767723,
+   "value": 1
+  },
+  {
+   "user_id": 8588098,
+   "value": 1
+  },
+  {
+   "user_id": 5844233,
+   "value": 1
+  },
+  {
+   "user_id": 3774501,
+   "value": 1
+  },
+  {
+   "user_id": 9037093,
+   "value": 1
+  },
+  {
+   "user_id": 5991151,
+   "value": 1
+  },
+  {
+   "user_id": 3350904,
+   "value": 1
+  },
+  {
+   "user_id": 5060540,
+   "value": 1
+  },
+  {
+   "user_id": 1585502,
+   "value": 1
+  },
+  {
+   "user_id": 3050697,
+   "value": 1
+  },
+  {
+   "user_id": 8187200,
+   "value": 1
+  },
+  {
+   "user_id": 1607757,
+   "value": 1
+  },
+  {
+   "user_id": 8067412,
+   "value": 1
+  },
+  {
+   "user_id": 9301014,
+   "value": 1
+  },
+  {
+   "user_id": 5053587,
+   "value": 1
+  },
+  {
+   "user_id": 3050074,
+   "value": 1
+  },
+  {
+   "user_id": 8965290,
+   "value": 1
+  },
+  {
+   "user_id": 5986843,
+   "value": 1
+  },
+  {
+   "user_id": 380770,
+   "value": 1
+  },
+  {
+   "user_id": 1968091,
+   "value": 1
+  },
+  {
+   "user_id": 2551139,
+   "value": 1
+  },
+  {
+   "user_id": 4377609,
+   "value": 1
+  },
+  {
+   "user_id": 6938777,
+   "value": 1
+  },
+  {
+   "user_id": 4198378,
+   "value": 1
+  },
+  {
+   "user_id": 6840738,
+   "value": 1
+  },
+  {
+   "user_id": 6988804,
+   "value": 1
+  },
+  {
+   "user_id": 5432732,
+   "value": 1
+  },
+  {
+   "user_id": 8107472,
+   "value": 1
+  },
+  {
+   "user_id": 6869559,
+   "value": 1
+  },
+  {
+   "user_id": 2826105,
+   "value": 1
+  },
+  {
+   "user_id": 1302192,
+   "value": 1
+  },
+  {
+   "user_id": 1535675,
+   "value": 1
+  },
+  {
+   "user_id": 7041030,
+   "value": 1
+  },
+  {
+   "user_id": 1913982,
+   "value": 1
+  },
+  {
+   "user_id": 5700026,
+   "value": 1
+  },
+  {
+   "user_id": 7505478,
+   "value": 1
+  },
+  {
+   "user_id": 4187885,
+   "value": 1
+  },
+  {
+   "user_id": 4517625,
+   "value": 1
+  },
+  {
+   "user_id": 8457207,
+   "value": 1
+  },
+  {
+   "user_id": 10484311,
+   "value": 1
+  },
+  {
+   "user_id": 5374591,
+   "value": 1
+  },
+  {
+   "user_id": 149619,
+   "value": 1
+  },
+  {
+   "user_id": 4220994,
+   "value": 1
+  },
+  {
+   "user_id": 4001485,
+   "value": 1
+  },
+  {
+   "user_id": 5720499,
+   "value": 1
+  },
+  {
+   "user_id": 2935755,
+   "value": 1
+  },
+  {
+   "user_id": 2174506,
+   "value": 1
+  },
+  {
+   "user_id": 3007114,
+   "value": 1
+  },
+  {
+   "user_id": 7496968,
+   "value": 1
+  },
+  {
+   "user_id": 7051842,
+   "value": 1
+  },
+  {
+   "user_id": 6181171,
+   "value": 1
+  },
+  {
+   "user_id": 8586485,
+   "value": 1
+  },
+  {
+   "user_id": 8130474,
+   "value": 1
+  },
+  {
+   "user_id": 5480202,
+   "value": 1
+  },
+  {
+   "user_id": 2739935,
+   "value": 1
+  },
+  {
+   "user_id": 1918720,
+   "value": 1
+  },
+  {
+   "user_id": 316905,
+   "value": 1
+  },
+  {
+   "user_id": 6914412,
+   "value": 1
+  },
+  {
+   "user_id": 8525733,
+   "value": 1
+  },
+  {
+   "user_id": 9191007,
+   "value": 1
+  },
+  {
+   "user_id": 5575097,
+   "value": 1
+  },
+  {
+   "user_id": 8975707,
+   "value": 1
+  },
+  {
+   "user_id": 1883695,
+   "value": 1
+  },
+  {
+   "user_id": 1945066,
+   "value": 1
+  },
+  {
+   "user_id": 3394042,
+   "value": 1
+  },
+  {
+   "user_id": 4336449,
+   "value": 1
+  },
+  {
+   "user_id": 6030962,
+   "value": 1
+  },
+  {
+   "user_id": 6256824,
+   "value": 1
+  },
+  {
+   "user_id": 6438262,
+   "value": 1
+  },
+  {
+   "user_id": 7659270,
+   "value": 1
+  },
+  {
+   "user_id": 10399848,
+   "value": 1
+  },
+  {
+   "user_id": 8171222,
+   "value": 1
+  },
+  {
+   "user_id": 3336964,
+   "value": 1
+  },
+  {
+   "user_id": 8426431,
+   "value": 1
+  },
+  {
+   "user_id": 5193476,
+   "value": 1
+  },
+  {
+   "user_id": 7647102,
+   "value": 1
+  },
+  {
+   "user_id": 6023307,
+   "value": 1
+  },
+  {
+   "user_id": 1808168,
+   "value": 1
+  },
+  {
+   "user_id": 1664092,
+   "value": 1
+  },
+  {
+   "user_id": 7963207,
+   "value": 1
+  },
+  {
+   "user_id": 7441434,
+   "value": 1
+  },
+  {
+   "user_id": 4867947,
+   "value": 1
+  },
+  {
+   "user_id": 7871736,
+   "value": 1
+  },
+  {
+   "user_id": 2223005,
+   "value": 1
+  },
+  {
+   "user_id": 9449437,
+   "value": 1
+  },
+  {
+   "user_id": 3421803,
+   "value": 1
+  },
+  {
+   "user_id": 6797354,
+   "value": 1
+  },
+  {
+   "user_id": 9596624,
+   "value": 1
+  },
+  {
+   "user_id": 5849444,
+   "value": 1
+  },
+  {
+   "user_id": 2618436,
+   "value": 1
+  },
+  {
+   "user_id": 399979,
+   "value": 1
+  },
+  {
+   "user_id": 3024737,
+   "value": 1
+  },
+  {
+   "user_id": 7004941,
+   "value": 1
+  },
+  {
+   "user_id": 9381873,
+   "value": 1
+  },
+  {
+   "user_id": 3075960,
+   "value": 1
+  },
+  {
+   "user_id": 2782824,
+   "value": 1
+  },
+  {
+   "user_id": 8331283,
+   "value": 1
+  },
+  {
+   "user_id": 10133686,
+   "value": 1
+  },
+  {
+   "user_id": 5269953,
+   "value": 1
+  },
+  {
+   "user_id": 1621343,
+   "value": 1
+  },
+  {
+   "user_id": 5635953,
+   "value": 1
+  },
+  {
+   "user_id": 2768175,
+   "value": 1
+  },
+  {
+   "user_id": 5334785,
+   "value": 1
+  },
+  {
+   "user_id": 3047702,
+   "value": 1
+  },
+  {
+   "user_id": 8419663,
+   "value": 1
+  },
+  {
+   "user_id": 3481354,
+   "value": 1
+  },
+  {
+   "user_id": 7295416,
+   "value": 1
+  },
+  {
+   "user_id": 5992128,
+   "value": 1
+  },
+  {
+   "user_id": 8977009,
+   "value": 1
+  },
+  {
+   "user_id": 9890894,
+   "value": 1
+  },
+  {
+   "user_id": 5308777,
+   "value": 1
+  },
+  {
+   "user_id": 4284204,
+   "value": 1
+  },
+  {
+   "user_id": 776854,
+   "value": 1
+  },
+  {
+   "user_id": 6007442,
+   "value": 1
+  },
+  {
+   "user_id": 9357984,
+   "value": 1
+  },
+  {
+   "user_id": 6603375,
+   "value": 1
+  },
+  {
+   "user_id": 3438763,
+   "value": -1
+  },
+  {
+   "user_id": 1649421,
+   "value": 1
+  },
+  {
+   "user_id": 6355894,
+   "value": 1
+  },
+  {
+   "user_id": 7816917,
+   "value": 1
+  },
+  {
+   "user_id": 8992561,
+   "value": 1
+  },
+  {
+   "user_id": 4874276,
+   "value": 1
+  },
+  {
+   "user_id": 7182276,
+   "value": 1
+  },
+  {
+   "user_id": 8564541,
+   "value": 1
+  },
+  {
+   "user_id": 1792419,
+   "value": 1
+  },
+  {
+   "user_id": 1309285,
+   "value": 1
+  },
+  {
+   "user_id": 6121874,
+   "value": 1
+  },
+  {
+   "user_id": 5544231,
+   "value": 1
+  },
+  {
+   "user_id": 10467688,
+   "value": 1
+  },
+  {
+   "user_id": 10135958,
+   "value": 1
+  },
+  {
+   "user_id": 3369416,
+   "value": 1
+  },
+  {
+   "user_id": 3777163,
+   "value": 1
+  },
+  {
+   "user_id": 3561015,
+   "value": 1
+  },
+  {
+   "user_id": 174995,
+   "value": 1
+  },
+  {
+   "user_id": 8107759,
+   "value": 1
+  },
+  {
+   "user_id": 7001406,
+   "value": 1
+  },
+  {
+   "user_id": 8226415,
+   "value": 1
+  },
+  {
+   "user_id": 5220860,
+   "value": 1
+  },
+  {
+   "user_id": 8542177,
+   "value": 1
+  },
+  {
+   "user_id": 3981168,
+   "value": 1
+  },
+  {
+   "user_id": 5366852,
+   "value": 1
+  },
+  {
+   "user_id": 8741937,
+   "value": 1
+  },
+  {
+   "user_id": 6145665,
+   "value": 1
+  },
+  {
+   "user_id": 1304786,
+   "value": 1
+  },
+  {
+   "user_id": 3253914,
+   "value": 1
+  },
+  {
+   "user_id": 1420816,
+   "value": 1
+  },
+  {
+   "user_id": 3153718,
+   "value": 1
+  },
+  {
+   "user_id": 8030627,
+   "value": 1
+  },
+  {
+   "user_id": 5988976,
+   "value": 1
+  },
+  {
+   "user_id": 4620432,
+   "value": 1
+  },
+  {
+   "user_id": 6592606,
+   "value": 1
+  },
+  {
+   "user_id": 6617018,
+   "value": 1
+  },
+  {
+   "user_id": 3337265,
+   "value": 1
+  },
+  {
+   "user_id": 7450069,
+   "value": 1
+  },
+  {
+   "user_id": 1189559,
+   "value": 1
+  },
+  {
+   "user_id": 7859014,
+   "value": 1
+  },
+  {
+   "user_id": 8807193,
+   "value": 1
+  },
+  {
+   "user_id": 8596744,
+   "value": 1
+  },
+  {
+   "user_id": 2951719,
+   "value": 1
+  },
+  {
+   "user_id": 8905380,
+   "value": 1
+  },
+  {
+   "user_id": 2844013,
+   "value": 1
+  },
+  {
+   "user_id": 7685985,
+   "value": 1
+  },
+  {
+   "user_id": 3487700,
+   "value": 1
+  },
+  {
+   "user_id": 1806576,
+   "value": 1
+  },
+  {
+   "user_id": 7107990,
+   "value": 1
+  },
+  {
+   "user_id": 3202346,
+   "value": 1
+  },
+  {
+   "user_id": 8723932,
+   "value": 1
+  },
+  {
+   "user_id": 9632170,
+   "value": 1
+  },
+  {
+   "user_id": 2276971,
+   "value": 1
+  },
+  {
+   "user_id": 7249522,
+   "value": 1
+  },
+  {
+   "user_id": 7374837,
+   "value": 1
+  },
+  {
+   "user_id": 9578240,
+   "value": 1
+  },
+  {
+   "user_id": 6916782,
+   "value": 1
+  },
+  {
+   "user_id": 6960625,
+   "value": 1
+  },
+  {
+   "user_id": 4538622,
+   "value": 1
+  },
+  {
+   "user_id": 9512815,
+   "value": 1
+  },
+  {
+   "user_id": 3504256,
+   "value": 1
+  },
+  {
+   "user_id": 7779338,
+   "value": 1
+  },
+  {
+   "user_id": 9807102,
+   "value": 1
+  },
+  {
+   "user_id": 6998165,
+   "value": 1
+  },
+  {
+   "user_id": 8435302,
+   "value": 1
+  },
+  {
+   "user_id": 7263702,
+   "value": 1
+  },
+  {
+   "user_id": 4874299,
+   "value": 1
+  },
+  {
+   "user_id": 6798022,
+   "value": 1
+  },
+  {
+   "user_id": 1271769,
+   "value": 1
+  },
+  {
+   "user_id": 392303,
+   "value": 1
+  },
+  {
+   "user_id": 8898721,
+   "value": 1
+  },
+  {
+   "user_id": 7338137,
+   "value": 1
+  },
+  {
+   "user_id": 6403884,
+   "value": 1
+  },
+  {
+   "user_id": 5991055,
+   "value": 1
+  },
+  {
+   "user_id": 2894859,
+   "value": 1
+  },
+  {
+   "user_id": 1777811,
+   "value": 1
+  },
+  {
+   "user_id": 4314122,
+   "value": 1
+  },
+  {
+   "user_id": 3305725,
+   "value": 1
+  },
+  {
+   "user_id": 9703777,
+   "value": 1
+  },
+  {
+   "user_id": 2030383,
+   "value": 1
+  },
+  {
+   "user_id": 6414770,
+   "value": 1
+  },
+  {
+   "user_id": 2818251,
+   "value": 1
+  },
+  {
+   "user_id": 8917346,
+   "value": 1
+  },
+  {
+   "user_id": 6760712,
+   "value": 1
+  },
+  {
+   "user_id": 5162909,
+   "value": 1
+  },
+  {
+   "user_id": 2037404,
+   "value": 1
+  },
+  {
+   "user_id": 5063675,
+   "value": 1
+  },
+  {
+   "user_id": 8768711,
+   "value": 1
+  },
+  {
+   "user_id": 2199269,
+   "value": 1
+  },
+  {
+   "user_id": 5594871,
+   "value": 1
+  },
+  {
+   "user_id": 6167511,
+   "value": 1
+  },
+  {
+   "user_id": 7135425,
+   "value": 1
+  },
+  {
+   "user_id": 1887293,
+   "value": 1
+  },
+  {
+   "user_id": 5558639,
+   "value": 1
+  },
+  {
+   "user_id": 9507357,
+   "value": 1
+  },
+  {
+   "user_id": 6070624,
+   "value": 1
+  },
+  {
+   "user_id": 10411192,
+   "value": 1
+  },
+  {
+   "user_id": 8713326,
+   "value": 1
+  },
+  {
+   "user_id": 1496981,
+   "value": 1
+  },
+  {
+   "user_id": 7814775,
+   "value": 1
+  },
+  {
+   "user_id": 7526005,
+   "value": 1
+  },
+  {
+   "user_id": 8930907,
+   "value": 1
+  },
+  {
+   "user_id": 388108,
+   "value": 1
+  },
+  {
+   "user_id": 1874588,
+   "value": 1
+  },
+  {
+   "user_id": 3535580,
+   "value": 1
+  },
+  {
+   "user_id": 8969538,
+   "value": 1
+  },
+  {
+   "user_id": 4920884,
+   "value": 1
+  },
+  {
+   "user_id": 5313406,
+   "value": 1
+  },
+  {
+   "user_id": 5350155,
+   "value": 1
+  },
+  {
+   "user_id": 1267048,
+   "value": 1
+  },
+  {
+   "user_id": 9057671,
+   "value": 1
+  },
+  {
+   "user_id": 8031942,
+   "value": 1
+  },
+  {
+   "user_id": 6245062,
+   "value": 1
+  },
+  {
+   "user_id": 9023808,
+   "value": 1
+  },
+  {
+   "user_id": 9753042,
+   "value": 1
+  },
+  {
+   "user_id": 9520022,
+   "value": 1
+  },
+  {
+   "user_id": 3231512,
+   "value": 1
+  }
+ ],
+ "note": "anonymous public Who-Rated capture via wikidot.py page.votes; names omitted, user_id and value retained"
+}

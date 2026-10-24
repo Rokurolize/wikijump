@@ -3604,6 +3604,112 @@
           ]
         }
       ]
+    },
+    {
+      "id": "listpages-body-html-block-ownership-20261024",
+      "title": "Mid-body html blocks are owned by Wikidot's html pass, not only leading ones",
+      "feature_ids": [
+        "module-listpages",
+        "syntax-html-block"
+      ],
+      "classification": "documentation-omission",
+      "observed_at": "2026-10-24",
+      "analysis": "Authenticated run-owned holder pages on sandbox-for-codex, read back anonymously. A ListPages body with an [[html]] block after authored prose (one or two lines) renders the default template for every row, one hosted html-block iframe at the block's position, the authored prose as literal page text, and the closing module text as literal text. A body with no html block keeps the per-row template. An escaped @@[[html]]@@ marker is literal text and keeps the per-row template. A body whose [[code]] block follows prose also renders the default template with residual text, which conflicts with the narrower code rule currently implemented and is recorded separately.",
+      "normative_behavior": [
+        "When a ListPages body contains an [[html]] block anywhere (not only as the first body token), Wikidot's html pass owns it before ListPages evaluates. ListPages uses the default summary template and does not apply the body as a per-row template.",
+        "The authored text before and after the owned block, and the closing module text, render after the generated list as literal page text.",
+        "The owned html block renders as one html-block iframe at its source position in the residual text, not once per list row.",
+        "An escaped @@[[html]]@@ marker is literal text and does not open a block.",
+        "A body without an html block renders the per-row template for each matched row."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/listpages-html-body-live-20261024/matrix-summary.json",
+          "sha256": "e4c1e7072a8cee480efb19ff4ed89653de199fb69543985eb929af93c4ae6107",
+          "case_ids": [
+            "A-html-mid-after-prose",
+            "B-html-mid-after-two-prose-lines",
+            "C-control-no-block",
+            "D-escaped-html-marker-mid",
+            "E-code-mid-after-prose"
+          ]
+        },
+        {
+          "path": "install/local/wikidot-verification/artifacts/listpages-html-body-live-20261024/manifest.json",
+          "sha256": "451eec481a83eeadc7dcd1783d0d426ac64b5803dc4933cbaed944eb85d2e787",
+          "case_ids": [
+            "matrix-A-html-mid-after-prose.html",
+            "matrix-B-html-mid-after-two-prose-lines.html",
+            "matrix-C-control-no-block.html",
+            "matrix-D-escaped-html-marker-mid.html",
+            "matrix-E-code-mid-after-prose.html"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "listpages-body-html-block-literal-variables-20261024",
+      "title": "Identity and tag variables inside a body-owned html block stay literal",
+      "feature_ids": [
+        "module-listpages",
+        "syntax-html-block"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-10-24",
+      "analysis": "The hosted html-block document of a body-owned block (leading or mid-body) contains the authored source with %%tags%% and %%created_by%% unsubstituted. Wikidot never produces a per-row html block from a ListPages body, so ListPages variable substitution does not reach that block. Tag values containing <, >, and \" are accepted by Wikidot and read back verbatim (x<i>y and q\"t) on the same page, so tag markup characters are not rejected at tagging time.",
+      "normative_behavior": [
+        "Inside a hosted html block that Wikidot owns from a ListPages body, %%tags%%, %%created_by%% and similar ListPages variables are not substituted.",
+        "Page tags containing <, >, \" and [ characters are accepted when set through the page tag editor and are read back exactly as entered.",
+        "Identity and tag variable escaping therefore cannot be justified by a Wikidot tag or username charset rule; it applies only where a per-row template emits html, which the body-owned rule now excludes."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/listpages-html-body-live-20261024/pages/wj2680-1792846101-mid-hosted.html",
+          "sha256": "0ea8038fe02b6f045abbf806376cc58c8f53d79a4135853afc6fde2b25ac2743",
+          "case_ids": [
+            "mid-hosted-literal-tags-and-author"
+          ]
+        },
+        {
+          "path": "install/local/wikidot-verification/artifacts/listpages-html-body-live-20261024/pages/wj2680-1792846101-lead-hosted.html",
+          "sha256": "df2be845bc7fad5b0de184e002266500c08a635041a446ea94b7ccf43276d65d",
+          "case_ids": [
+            "lead-hosted-literal-tags"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pagerate-who-rated-roster-complete-20261024",
+      "title": "Who-Rated roster lists every individual voter and equals the aggregate score",
+      "feature_ids": [
+        "pagerate",
+        "module-listpages"
+      ],
+      "classification": "documentation-omission",
+      "observed_at": "2026-10-24",
+      "analysis": "Anonymous wikidot.py page.votes reads of the public scp-wiki pages scp-9506 and scp-3352 return one vote row per individual voter (486 and 638 rows). Positive votes minus negative votes equals the page's displayed rating in both cases (475-11=464 and 628-10=618). The aggregate therefore derives from the individual vote rows, and a roster cannot be reconstructed from the aggregate alone.",
+      "normative_behavior": [
+        "The Who-Rated roster lists one entry per individual voter with the voter's +1 or -1 value.",
+        "For each page, the sum of voter values equals the page rating shown to readers.",
+        "Deleted or placeholder voter accounts remain roster entries with their vote value."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/votes-scp-9506.json",
+          "sha256": "a0c1051d2029f441beba748e7bc362c1f847f9ff205f8f03b095e8d4b13988b5",
+          "case_ids": [
+            "scp-9506-who-rated"
+          ]
+        },
+        {
+          "path": "install/local/wikidot-verification/artifacts/votes-scp-3352.json",
+          "sha256": "6b1f5403ecef4237b93edb0558c2203608940d70476d1834cf517a6704f93628",
+          "case_ids": [
+            "scp-3352-who-rated"
+          ]
+        }
+      ]
     }
   ]
 }

@@ -1,0 +1,52 @@
+{
+ "A-html-mid-after-prose": {
+  "status": 200,
+  "iframes": 1,
+  "row_links": 2,
+  "rows_default_template": 2,
+  "literal_row_text": 1,
+  "literal_module_close": 1,
+  "literal_escaped_marker": 0,
+  "code_tag_visible": false
+ },
+ "B-html-mid-after-two-prose-lines": {
+  "status": 200,
+  "iframes": 1,
+  "row_links": 2,
+  "rows_default_template": 2,
+  "literal_row_text": 1,
+  "literal_module_close": 1,
+  "literal_escaped_marker": 0,
+  "code_tag_visible": false
+ },
+ "C-control-no-block": {
+  "status": 200,
+  "iframes": 0,
+  "row_links": 0,
+  "rows_default_template": 0,
+  "literal_row_text": 0,
+  "literal_module_close": 0,
+  "literal_escaped_marker": 0,
+  "code_tag_visible": false
+ },
+ "D-escaped-html-marker-mid": {
+  "status": 200,
+  "iframes": 0,
+  "row_links": 0,
+  "rows_default_template": 0,
+  "literal_row_text": 0,
+  "literal_module_close": 0,
+  "literal_escaped_marker": 0,
+  "code_tag_visible": false
+ },
+ "E-code-mid-after-prose": {
+  "status": 200,
+  "iframes": 0,
+  "row_links": 2,
+  "rows_default_template": 2,
+  "literal_row_text": 1,
+  "literal_module_close": 1,
+  "literal_escaped_marker": 0,
+  "code_tag_visible": false
+ }
+}
