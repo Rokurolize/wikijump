@@ -5,14 +5,14 @@
       "lexer_rules": 62,
       "parser_functions": 3,
       "canonical_blocks": 63,
-      "block_aliases": 47,
+      "block_aliases": 48,
       "typed_modules": 7,
       "ast_variants": 48,
       "delayed_forms": 9,
       "generated_runtime_kinds": 2,
       "renderer_modules": 30,
       "wikidot_fixtures": 138,
-      "total": 409
+      "total": 410
     },
     "raw_surface_identities": [
       {
@@ -317,6 +317,10 @@
       },
       {
         "surface_id": "ftml.block-alias:newlines->lines",
+        "kind": "block_alias"
+      },
+      {
+        "surface_id": "ftml.block-alias:note->note",
         "kind": "block_alias"
       },
       {
