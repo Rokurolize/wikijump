@@ -34,7 +34,7 @@ use deepwell::models::file_revision::{
 };
 use deepwell::models::known_user::Entity as KnownUser;
 use deepwell::models::relation::{Column as RelationColumn, Entity as RelationTable};
-use deepwell::models::role::{ActiveModel as RoleActiveModel, Entity as RoleTable};
+use deepwell::models::role::ActiveModel as RoleActiveModel;
 use deepwell::models::site::Entity as SiteTable;
 use deepwell::models::user::Entity as User;
 use deepwell::models::user_role::{Column as UserRoleColumn, Entity as UserRoleTable};
@@ -44,9 +44,9 @@ use deepwell::services::file::FileService;
 use deepwell::services::file_revision::{CreateFirstFileRevision, FileRevisionService};
 use deepwell::services::import::{
     ImportFile, ImportFileDelete, ImportFileExpectation, ImportMetaTag, ImportPage,
-    ImportPageFilesVerify, ImportService, ImportSite, ImportSiteMember,
-    ImportSiteRoster, ImportUser, ImportedSiteRole, ImportedUserType,
-    MAX_IMPORT_FILE_BYTES, ObservedUserProfile, PromoteObservedIdentity,
+    ImportPageFilesVerify, ImportService, ImportSite, ImportSiteMember, ImportSiteRoster,
+    ImportUser, ImportedSiteRole, ImportedUserType, MAX_IMPORT_FILE_BYTES,
+    ObservedUserProfile, PromoteObservedIdentity,
 };
 use deepwell::services::mirror_scope::{MirrorScopeService, SetMirrorScope};
 use deepwell::services::page_meta_tag::{PageMetaTag, PageMetaTagService};
@@ -2323,7 +2323,6 @@ async fn native_regular_slug_keeps_precedence_over_imported_identity() {
     );
 }
 
-
 fn import_site(site_id: i64, fixture: &str) -> ImportSite {
     ImportSite {
         site_id,
@@ -2395,7 +2394,8 @@ async fn import_site_roster_syncs_members_roles_and_master_admin() {
         .expect("roster site should import");
     let admin_role_id = insert_site_role(&runner, site_id, "admin").await;
     let mod_role_id = insert_site_role(&runner, site_id, "moderator").await;
-    for (user_id, label) in [(member_id, "member"), (mod_id, "mod"), (admin_id, "admin")] {
+    for (user_id, label) in [(member_id, "member"), (mod_id, "mod"), (admin_id, "admin")]
+    {
         ImportService::add_user(runner.context(), import_user(user_id, &fixture, label))
             .await
             .expect("roster user should import");
@@ -2411,7 +2411,11 @@ async fn import_site_roster_syncs_members_roles_and_master_admin() {
         ip_address: common::IP_ADDRESS,
     };
     let snapshot1 = roster(vec![
-        ImportSiteMember { user_id: member_id, joined_at: joined, roles: Vec::new() },
+        ImportSiteMember {
+            user_id: member_id,
+            joined_at: joined,
+            roles: Vec::new(),
+        },
         ImportSiteMember {
             user_id: mod_id,
             joined_at: joined,
@@ -2447,8 +2451,14 @@ async fn import_site_roster_syncs_members_roles_and_master_admin() {
             "imported identity must not gain a local account",
         );
     }
-    assert_eq!(active_staff_roles(&runner, site_id, i64::from(mod_id)).await, vec![mod_role_id]);
-    assert_eq!(active_staff_roles(&runner, site_id, i64::from(admin_id)).await, vec![admin_role_id]);
+    assert_eq!(
+        active_staff_roles(&runner, site_id, i64::from(mod_id)).await,
+        vec![mod_role_id]
+    );
+    assert_eq!(
+        active_staff_roles(&runner, site_id, i64::from(admin_id)).await,
+        vec![admin_role_id]
+    );
     let site = SiteTable::find_by_id(site_id)
         .one(runner.context().transaction())
         .await
@@ -2458,7 +2468,11 @@ async fn import_site_roster_syncs_members_roles_and_master_admin() {
 
     // An identical re-sync is a no-op.
     let snapshot2 = roster(vec![
-        ImportSiteMember { user_id: member_id, joined_at: joined, roles: Vec::new() },
+        ImportSiteMember {
+            user_id: member_id,
+            joined_at: joined,
+            roles: Vec::new(),
+        },
         ImportSiteMember {
             user_id: mod_id,
             joined_at: joined,
@@ -2484,21 +2498,48 @@ async fn import_site_roster_syncs_members_roles_and_master_admin() {
     // member, and the member's join time corrected.
     let joined_later = joined + time::Duration::days(10);
     let snapshot3 = roster(vec![
-        ImportSiteMember { user_id: member_id, joined_at: joined_later, roles: Vec::new() },
-        ImportSiteMember { user_id: admin_id, joined_at: joined, roles: Vec::new() },
+        ImportSiteMember {
+            user_id: member_id,
+            joined_at: joined_later,
+            roles: Vec::new(),
+        },
+        ImportSiteMember {
+            user_id: admin_id,
+            joined_at: joined,
+            roles: Vec::new(),
+        },
     ]);
     let out = ImportService::sync_site_roster(runner.context(), snapshot3)
         .await
         .expect("reconciling re-sync should succeed");
     assert_eq!(out.members_retired, 1, "the absent moderator is retired");
     assert_eq!(out.members_updated, 1, "the corrected join time overwrites");
-    assert_eq!(out.roles_removed, 2, "moderator role (retired) + admin role (demoted)");
+    assert_eq!(
+        out.roles_removed, 2,
+        "moderator role (retired) + admin role (demoted)"
+    );
 
-    assert!(active_member_relations(&runner, site_id, i64::from(mod_id)).await.is_empty());
-    assert!(active_staff_roles(&runner, site_id, i64::from(mod_id)).await.is_empty());
-    assert!(active_staff_roles(&runner, site_id, i64::from(admin_id)).await.is_empty());
+    assert!(
+        active_member_relations(&runner, site_id, i64::from(mod_id))
+            .await
+            .is_empty()
+    );
+    assert!(
+        active_staff_roles(&runner, site_id, i64::from(mod_id))
+            .await
+            .is_empty()
+    );
+    assert!(
+        active_staff_roles(&runner, site_id, i64::from(admin_id))
+            .await
+            .is_empty()
+    );
     let relations = active_member_relations(&runner, site_id, i64::from(member_id)).await;
-    assert_eq!(relations.len(), 1, "still exactly one active relation after overwrite");
+    assert_eq!(
+        relations.len(),
+        1,
+        "still exactly one active relation after overwrite"
+    );
     assert_eq!(relations[0].created_at, joined_later);
 }
 
@@ -2518,7 +2559,10 @@ async fn import_site_roster_rejects_non_imported_site() {
         },
     )
     .await;
-    assert!(result.is_err(), "roster sync must refuse locally owned sites");
+    assert!(
+        result.is_err(),
+        "roster sync must refuse locally owned sites"
+    );
 }
 
 #[tokio::test]
@@ -2545,9 +2589,14 @@ async fn import_site_roster_rejects_unimported_identity() {
         },
     )
     .await;
-    assert!(result.is_err(), "roster sync must require imported identities");
     assert!(
-        active_member_relations(&runner, site_id, i64::from(user_id)).await.is_empty(),
+        result.is_err(),
+        "roster sync must require imported identities"
+    );
+    assert!(
+        active_member_relations(&runner, site_id, i64::from(user_id))
+            .await
+            .is_empty(),
         "a rejected sync writes no relations",
     );
 }
