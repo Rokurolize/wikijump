@@ -247,6 +247,44 @@ async fn public_site_create_audits_authenticated_actor_and_supplied_ip_once() {
 }
 
 #[tokio::test]
+async fn site_create_with_empty_description_succeeds() {
+    // Regression: the creation form supplies no description, and the
+    // empty string must not be written as the site user's biography --
+    // the user_biography_check constraint requires NULL or non-empty,
+    // so site creation rolled back entirely.
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let actor_user_id = create_user(&runner, n, "site-creator-empty-description").await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(actor_user_id),
+        ..Default::default()
+    });
+
+    let created = run_endpoint!(
+        runner,
+        site_create,
+        json!({
+            "slug": format!("empty-description-site-{n}"),
+            "name": format!("Empty description site {n}"),
+            "tagline": "",
+            "description": "",
+            "default_page": null,
+            "layout": null,
+            "license": "cc0",
+            "locale": "en",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let site_user = UserTable::find_by_id(created.site_user_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("site user lookup should succeed")
+        .expect("site user should exist");
+    assert_eq!(site_user.biography, None);
+}
+
+#[tokio::test]
 async fn hosted_sites_keep_same_slug_page_state_isolated_at_public_endpoints() {
     let mut runner = TestRunner::setup().await;
     let n = next_n();
