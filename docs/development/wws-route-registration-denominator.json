@@ -100,8 +100,8 @@
       },
       {
         "path": "wws/src/handler/robots.rs",
-        "git_blob": "9f424f6128773f34c7c631ea7481ead68688a5d7",
-        "sha256": "b38a2a6897bcfea3c3b9341f3c59284bd89acc7326b0281ba5bdcb846ac29b9d"
+        "git_blob": "1368b028a15ad4f1ee00189e1e5db0ce0e6af358",
+        "sha256": "2de5e2af3d1718c00f3f269209e833f4cb2195b27eb8fb706b72f9251a4511cc"
       },
       {
         "path": "wws/src/handler/text_block.rs",
