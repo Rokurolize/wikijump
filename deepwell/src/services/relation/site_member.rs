@@ -38,6 +38,10 @@ pub enum SiteMemberAccepted {
     Password,
     Accepted(i64),
     Invitation(i64),
+    /// Membership materialized from an imported Wikidot roster snapshot.
+    /// The identity stays non-authenticatable; this only records the
+    /// source site's public relation state.
+    Imported,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]

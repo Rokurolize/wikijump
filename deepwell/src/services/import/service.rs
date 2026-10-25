@@ -30,8 +30,9 @@ use super::structs::{
     ImportFile, ImportFileDelete, ImportFileDeleteOutput, ImportFileOutput,
     ImportMetaTag, ImportPage, ImportPageFilesVerify, ImportPageFilesVerifyOutput,
     ImportPageOutput, ImportPageRevision, ImportPageRevisionOutput, ImportPageVote,
-    ImportPageVotes, ImportPageVotesOutput, ImportSite, ImportSiteOutput, ImportUser,
-    ImportUserOutput, ImportedUserType, PromoteObservedIdentity,
+    ImportPageVotes, ImportPageVotesOutput, ImportSite, ImportSiteMember,
+    ImportSiteOutput, ImportSiteRoster, ImportSiteRosterOutput, ImportUser,
+    ImportUserOutput, ImportedSiteRole, ImportedUserType, PromoteObservedIdentity,
     PromoteObservedIdentityOutput,
 };
 use crate::constants::SYSTEM_USER_ID;
@@ -43,7 +44,10 @@ use crate::models::page::{self, Entity as Page};
 use crate::models::page_category::Model as PageCategoryModel;
 use crate::models::page_revision::{self, Entity as PageRevision};
 use crate::models::page_vote::{self, Entity as PageVote};
+use crate::models::relation::{self, Entity as Relation};
+use crate::models::role::{self, Entity as Role};
 use crate::models::site::{self, Entity as Site};
+use crate::models::user_role::{self, Entity as UserRole};
 use crate::models::user::{self, Entity as WikijumpUser};
 use crate::models::wikidot_user::{self, Entity as WikidotUser};
 use crate::services::ServiceContext;
@@ -61,8 +65,12 @@ use crate::services::page_revision::{
     CreateFirstPageRevision, CreateFirstPageRevisionOutput, CreatePageRevision,
     CreatePageRevisionBody, PageRevisionService,
 };
+use crate::services::relation::{SiteMemberAccepted, SiteMemberData};
 use crate::services::{CategoryService, PageService, ScoreService, UserService};
-use crate::types::{FileRevisionType, Maybe, PageId, PageLockType, Reference, UserType};
+use crate::types::{
+    FileRevisionType, Maybe, PageId, PageLockType, Reference, RelationObjectType,
+    RelationType, UserType,
+};
 use crate::utils::{get_category_name, now};
 use ftml::data::KarmaLevel;
 use ftml::layout::Layout;
@@ -804,6 +812,346 @@ impl ImportService {
         .or_raise(make_error)?;
 
         Ok(ImportSiteOutput { site_id })
+    }
+
+    /// Synchronizes one imported site's public membership/role roster
+    /// with a source snapshot (see [`ImportSiteRoster`] for the exact
+    /// semantics). The directory renderer reads `SiteMember` relations
+    /// plus `admin` / `moderator` site-role assignments, so this writes
+    /// exactly those rows, keyed by the stable Wikidot user IDs.
+    ///
+    /// Relations are written directly (like the other importers write
+    /// their models) rather than through the interactive membership
+    /// service: the source join time must be preserved as the relation
+    /// `created_at`, and one batch audit event covers the sync instead
+    /// of one join event per member. Imported identities have no local
+    /// account, so no permission-cache state can exist for them.
+    pub async fn sync_site_roster(
+        ctx: &ServiceContext<'_>,
+        ImportSiteRoster {
+            site_id,
+            fetched_at: _,
+            master_admin_user_id,
+            members,
+            importing_user_id,
+            ip_address,
+        }: ImportSiteRoster,
+    ) -> Result<ImportSiteRosterOutput> {
+        info!(
+            "Syncing imported roster for site ID {} ({} members)",
+            site_id,
+            members.len(),
+        );
+
+        let txn = ctx.transaction();
+        let make_error = || {
+            Error::new(
+                format!("failed to sync imported roster for site ID {site_id}"),
+                ErrorType::DatabaseImport,
+            )
+        };
+
+        // The roster receiver only governs imported (Wikidot) sites;
+        // locally owned sites own their membership state.
+        let site = Site::find_by_id(site_id)
+            .one(txn)
+            .await
+            .or_raise(make_error)?
+            .ok_or_raise(make_error)?;
+        if !site.from_wikidot {
+            error!("Roster sync target site ID {site_id} is not an imported site");
+            bail!(make_error());
+        }
+
+        // Resolve the site's staff roles up-front so a snapshot asking
+        // for a role the site does not define fails before any writes.
+        let staff_roles = Role::find()
+            .filter(
+                Condition::all()
+                    .add(role::Column::SiteId.eq(site_id))
+                    .add(role::Column::Name.is_in(["admin", "moderator"]))
+                    .add(role::Column::IsVirtual.eq(false))
+                    .add(role::Column::DeletedAt.is_null()),
+            )
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+        let role_id_by_name: std::collections::HashMap<&str, i64> = staff_roles
+            .iter()
+            .map(|role| (role.name.as_str(), role.role_id))
+            .collect();
+        let staff_role_ids: Vec<i64> = staff_roles.iter().map(|r| r.role_id).collect();
+
+        // Every roster identity must already be imported, so the stable
+        // Wikidot identity mapping exists before relations reference it.
+        let mut snapshot: std::collections::HashMap<i64, &ImportSiteMember> =
+            std::collections::HashMap::new();
+        for member in &members {
+            if WikidotUser::find_by_id(member.user_id)
+                .one(txn)
+                .await
+                .or_raise(make_error)?
+                .is_none()
+            {
+                error!(
+                    "Roster for site ID {site_id} references un-imported Wikidot user ID {}",
+                    member.user_id,
+                );
+                bail!(make_error());
+            }
+            for role in &member.roles {
+                let name = match role {
+                    ImportedSiteRole::Admin => "admin",
+                    ImportedSiteRole::Moderator => "moderator",
+                };
+                if !role_id_by_name.contains_key(name) {
+                    error!(
+                        "Roster for site ID {site_id} needs role '{name}', which the site does not define",
+                    );
+                    bail!(make_error());
+                }
+            }
+            snapshot.insert(i64::from(member.user_id), member);
+        }
+
+        // Load the currently active member relations for this site.
+        let active_members = Relation::find()
+            .filter(
+                Condition::all()
+                    .add(relation::Column::RelationType.eq(RelationType::SiteMember))
+                    .add(relation::Column::DestType.eq(RelationObjectType::Site))
+                    .add(relation::Column::DestId.eq(site_id))
+                    .add(relation::Column::FromType.eq(RelationObjectType::User))
+                    .add(relation::Column::OverwrittenAt.is_null())
+                    .add(relation::Column::DeletedAt.is_null()),
+            )
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+        let active_by_user: std::collections::HashMap<i64, relation::Model> =
+            active_members
+                .into_iter()
+                .map(|rel| (rel.from_id, rel))
+                .collect();
+
+        // Imported scope: identities with a Wikidot profile row and no
+        // local account row. Only those may be retired by absence;
+        // snapshot upserts apply by stable ID either way, so an
+        // activated identity reconciles onto the same relation.
+        let candidate_ids: Vec<i64> = active_by_user.keys().copied().collect();
+        let mut imported_scope: std::collections::HashSet<i64> = Default::default();
+        if !candidate_ids.is_empty() {
+            let wikidot_ids: std::collections::HashSet<i64> = WikidotUser::find()
+                .filter(wikidot_user::Column::UserId.is_in(candidate_ids.clone()))
+                .all(txn)
+                .await
+                .or_raise(make_error)?
+                .into_iter()
+                .map(|user| i64::from(user.user_id))
+                .collect();
+            let local_ids: std::collections::HashSet<i64> = WikijumpUser::find()
+                .filter(user::Column::UserId.is_in(candidate_ids))
+                .all(txn)
+                .await
+                .or_raise(make_error)?
+                .into_iter()
+                .map(|user| user.user_id)
+                .collect();
+            imported_scope = wikidot_ids.difference(&local_ids).copied().collect();
+        }
+
+        let mut output = ImportSiteRosterOutput {
+            site_id,
+            members_created: 0,
+            members_updated: 0,
+            members_retired: 0,
+            roles_assigned: 0,
+            roles_removed: 0,
+            master_admin_set: false,
+        };
+        let sync_time = now();
+
+        // Upsert memberships with the source join time.
+        for (user_id, member) in &snapshot {
+            let user_id = *user_id;
+            match active_by_user.get(&user_id) {
+                Some(existing) if existing.created_at == member.joined_at => (),
+                Some(existing) => {
+                    let model = relation::ActiveModel {
+                        relation_id: Set(existing.relation_id),
+                        overwritten_at: Set(Some(sync_time)),
+                        overwritten_by: Set(Some(importing_user_id)),
+                        ..Default::default()
+                    };
+                    model.update(txn).await.or_raise(make_error)?;
+                    Self::insert_imported_member_relation(
+                        txn,
+                        site_id,
+                        user_id,
+                        member.joined_at,
+                        importing_user_id,
+                        &make_error,
+                    )
+                    .await?;
+                    output.members_updated += 1;
+                }
+                None => {
+                    Self::insert_imported_member_relation(
+                        txn,
+                        site_id,
+                        user_id,
+                        member.joined_at,
+                        importing_user_id,
+                        &make_error,
+                    )
+                    .await?;
+                    output.members_created += 1;
+                }
+            }
+
+            // Reconcile this member's staff role assignments.
+            let desired: std::collections::HashSet<i64> = member
+                .roles
+                .iter()
+                .map(|role| {
+                    role_id_by_name[match role {
+                        ImportedSiteRole::Admin => "admin",
+                        ImportedSiteRole::Moderator => "moderator",
+                    }]
+                })
+                .collect();
+            let current: Vec<user_role::Model> = if staff_role_ids.is_empty() {
+                Vec::new()
+            } else {
+                UserRole::find()
+                    .filter(
+                        Condition::all()
+                            .add(user_role::Column::SiteId.eq(site_id))
+                            .add(user_role::Column::UserId.eq(user_id))
+                            .add(user_role::Column::RoleId.is_in(staff_role_ids.clone()))
+                            .add(user_role::Column::DeletedAt.is_null()),
+                    )
+                    .all(txn)
+                    .await
+                    .or_raise(make_error)?
+            };
+            let current_ids: std::collections::HashSet<i64> =
+                current.iter().map(|row| row.role_id).collect();
+            for role_id in desired.difference(&current_ids) {
+                let model = user_role::ActiveModel {
+                    user_id: Set(user_id),
+                    role_id: Set(*role_id),
+                    site_id: Set(site_id),
+                    assigned_at: Set(sync_time),
+                    assigned_by: Set(importing_user_id),
+                    expires_at: Set(None),
+                    ..Default::default()
+                };
+                model.insert(txn).await.or_raise(make_error)?;
+                output.roles_assigned += 1;
+            }
+            for role_id in current_ids.difference(&desired) {
+                let model = user_role::ActiveModel {
+                    user_id: Set(user_id),
+                    role_id: Set(*role_id),
+                    deleted_at: Set(Some(sync_time)),
+                    ..Default::default()
+                };
+                model.update(txn).await.or_raise(make_error)?;
+                output.roles_removed += 1;
+            }
+        }
+
+        // Retire imported members absent from the snapshot, together
+        // with their staff role assignments on this site.
+        for (user_id, relation) in &active_by_user {
+            if snapshot.contains_key(user_id) || !imported_scope.contains(user_id) {
+                continue;
+            }
+            let model = relation::ActiveModel {
+                relation_id: Set(relation.relation_id),
+                deleted_at: Set(Some(sync_time)),
+                deleted_by: Set(Some(importing_user_id)),
+                ..Default::default()
+            };
+            model.update(txn).await.or_raise(make_error)?;
+            output.members_retired += 1;
+
+            if !staff_role_ids.is_empty() {
+                let stale_roles = UserRole::find()
+                    .filter(
+                        Condition::all()
+                            .add(user_role::Column::SiteId.eq(site_id))
+                            .add(user_role::Column::UserId.eq(*user_id))
+                            .add(user_role::Column::RoleId.is_in(staff_role_ids.clone()))
+                            .add(user_role::Column::DeletedAt.is_null()),
+                    )
+                    .all(txn)
+                    .await
+                    .or_raise(make_error)?;
+                for row in stale_roles {
+                    let model = user_role::ActiveModel {
+                        user_id: Set(row.user_id),
+                        role_id: Set(row.role_id),
+                        deleted_at: Set(Some(sync_time)),
+                        ..Default::default()
+                    };
+                    model.update(txn).await.or_raise(make_error)?;
+                    output.roles_removed += 1;
+                }
+            }
+        }
+
+        // Master Administrator identity, when the snapshot exposes one.
+        if let Some(master_admin_id) = master_admin_user_id {
+            let master_admin_id = i64::from(master_admin_id);
+            if site.master_admin_user_id != Some(master_admin_id) {
+                let mut model = site.into_active_model();
+                model.master_admin_user_id = Set(Some(master_admin_id));
+                model.update(txn).await.or_raise(make_error)?;
+                output.master_admin_set = true;
+            }
+        }
+
+        AuditService::log(
+            ctx,
+            ip_address,
+            AuditEvent::ImportSiteRoster {
+                site_id,
+                member_count: members.len(),
+            },
+        )
+        .await
+        .or_raise(make_error)?;
+
+        Ok(output)
+    }
+
+    async fn insert_imported_member_relation(
+        txn: &DatabaseTransaction,
+        site_id: i64,
+        user_id: i64,
+        joined_at: OffsetDateTime,
+        importing_user_id: i64,
+        make_error: &impl Fn() -> Error,
+    ) -> Result<()> {
+        let metadata = serde_json::to_value(SiteMemberData {
+            accepted: SiteMemberAccepted::Imported,
+        })
+        .or_raise(make_error)?;
+        let model = relation::ActiveModel {
+            relation_type: Set(RelationType::SiteMember),
+            dest_type: Set(RelationObjectType::Site),
+            dest_id: Set(site_id),
+            from_type: Set(RelationObjectType::User),
+            from_id: Set(user_id),
+            metadata: Set(metadata),
+            created_at: Set(joined_at),
+            created_by: Set(importing_user_id),
+            ..Default::default()
+        };
+        model.insert(txn).await.or_raise(make_error)?;
+        Ok(())
     }
 
     pub async fn add_page(

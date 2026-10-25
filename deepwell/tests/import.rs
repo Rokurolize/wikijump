@@ -33,14 +33,19 @@ use deepwell::models::file_revision::{
     Column as FileRevisionColumn, Entity as FileRevisionTable,
 };
 use deepwell::models::known_user::Entity as KnownUser;
+use deepwell::models::relation::{Column as RelationColumn, Entity as RelationTable};
+use deepwell::models::role::{ActiveModel as RoleActiveModel, Entity as RoleTable};
+use deepwell::models::site::Entity as SiteTable;
 use deepwell::models::user::Entity as User;
+use deepwell::models::user_role::{Column as UserRoleColumn, Entity as UserRoleTable};
 use deepwell::models::wikidot_user::Entity as WikidotUser;
 use deepwell::services::blob::EMPTY_BLOB_HASH;
 use deepwell::services::file::FileService;
 use deepwell::services::file_revision::{CreateFirstFileRevision, FileRevisionService};
 use deepwell::services::import::{
     ImportFile, ImportFileDelete, ImportFileExpectation, ImportMetaTag, ImportPage,
-    ImportPageFilesVerify, ImportService, ImportSite, ImportUser, ImportedUserType,
+    ImportPageFilesVerify, ImportService, ImportSite, ImportSiteMember,
+    ImportSiteRoster, ImportUser, ImportedSiteRole, ImportedUserType,
     MAX_IMPORT_FILE_BYTES, ObservedUserProfile, PromoteObservedIdentity,
 };
 use deepwell::services::mirror_scope::{MirrorScopeService, SetMirrorScope};
@@ -2315,5 +2320,234 @@ async fn native_regular_slug_keeps_precedence_over_imported_identity() {
     assert!(
         matches!(resolved, Some(ServiceUser::Wikijump(_))),
         "authenticatable local account should keep slug precedence",
+    );
+}
+
+
+fn import_site(site_id: i64, fixture: &str) -> ImportSite {
+    ImportSite {
+        site_id,
+        created_at: OffsetDateTime::UNIX_EPOCH,
+        name: format!("Roster Site {fixture}"),
+        slug: format!("roster-site-{fixture}"),
+        tagline: String::new(),
+        description: String::new(),
+        license: License::CcBySa40,
+        locale: "en".to_owned(),
+        ip_address: common::IP_ADDRESS,
+        meta_tags: Vec::new(),
+    }
+}
+
+async fn insert_site_role(runner: &TestRunner, site_id: i64, name: &str) -> i64 {
+    RoleActiveModel {
+        site_id: Set(site_id),
+        name: Set(name.to_owned()),
+        description: Set(String::new()),
+        from_wikidot: Set(true),
+        is_virtual: Set(false),
+        parent_role_id: Set(None),
+        ..Default::default()
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("site role fixture insert should succeed")
+    .role_id
+}
+
+async fn active_member_relations(
+    runner: &TestRunner,
+    site_id: i64,
+    user_id: i64,
+) -> Vec<deepwell::models::relation::Model> {
+    RelationTable::find()
+        .filter(RelationColumn::DestId.eq(site_id))
+        .filter(RelationColumn::FromId.eq(user_id))
+        .filter(RelationColumn::DeletedAt.is_null())
+        .filter(RelationColumn::OverwrittenAt.is_null())
+        .all(runner.context().transaction())
+        .await
+        .expect("member relation lookup should succeed")
+}
+
+async fn active_staff_roles(runner: &TestRunner, site_id: i64, user_id: i64) -> Vec<i64> {
+    UserRoleTable::find()
+        .filter(UserRoleColumn::SiteId.eq(site_id))
+        .filter(UserRoleColumn::UserId.eq(user_id))
+        .filter(UserRoleColumn::DeletedAt.is_null())
+        .all(runner.context().transaction())
+        .await
+        .expect("user role lookup should succeed")
+        .into_iter()
+        .map(|row| row.role_id)
+        .collect()
+}
+
+#[tokio::test]
+async fn import_site_roster_syncs_members_roles_and_master_admin() {
+    let runner = TestRunner::setup().await;
+    let (member_id, admin_id, fixture) = fixture_ids();
+    let mod_id = member_id + 2;
+    let site_id = 6_900_000 + i64::from(member_id % 10_000);
+
+    ImportService::add_site(runner.context(), import_site(site_id, &fixture))
+        .await
+        .expect("roster site should import");
+    let admin_role_id = insert_site_role(&runner, site_id, "admin").await;
+    let mod_role_id = insert_site_role(&runner, site_id, "moderator").await;
+    for (user_id, label) in [(member_id, "member"), (mod_id, "mod"), (admin_id, "admin")] {
+        ImportService::add_user(runner.context(), import_user(user_id, &fixture, label))
+            .await
+            .expect("roster user should import");
+    }
+
+    let joined = OffsetDateTime::UNIX_EPOCH + time::Duration::days(30);
+    let roster = |members: Vec<ImportSiteMember>| ImportSiteRoster {
+        site_id,
+        fetched_at: OffsetDateTime::UNIX_EPOCH + time::Duration::seconds(5),
+        master_admin_user_id: Some(admin_id),
+        members,
+        importing_user_id: ADMIN_USER_ID,
+        ip_address: common::IP_ADDRESS,
+    };
+    let snapshot1 = roster(vec![
+        ImportSiteMember { user_id: member_id, joined_at: joined, roles: Vec::new() },
+        ImportSiteMember {
+            user_id: mod_id,
+            joined_at: joined,
+            roles: vec![ImportedSiteRole::Moderator],
+        },
+        ImportSiteMember {
+            user_id: admin_id,
+            joined_at: joined,
+            roles: vec![ImportedSiteRole::Admin],
+        },
+    ]);
+    let out = ImportService::sync_site_roster(runner.context(), snapshot1)
+        .await
+        .expect("first roster sync should succeed");
+    assert_eq!(out.members_created, 3);
+    assert_eq!(out.roles_assigned, 2);
+    assert!(out.master_admin_set);
+
+    // Relations carry the source join time; roles landed; the master
+    // admin is set; and no local account exists for any imported
+    // identity (they must stay non-authenticatable).
+    for user_id in [member_id, mod_id, admin_id] {
+        let relations =
+            active_member_relations(&runner, site_id, i64::from(user_id)).await;
+        assert_eq!(relations.len(), 1, "exactly one active member relation");
+        assert_eq!(relations[0].created_at, joined);
+        assert!(
+            User::find_by_id(i64::from(user_id))
+                .one(runner.context().transaction())
+                .await
+                .expect("local user lookup should succeed")
+                .is_none(),
+            "imported identity must not gain a local account",
+        );
+    }
+    assert_eq!(active_staff_roles(&runner, site_id, i64::from(mod_id)).await, vec![mod_role_id]);
+    assert_eq!(active_staff_roles(&runner, site_id, i64::from(admin_id)).await, vec![admin_role_id]);
+    let site = SiteTable::find_by_id(site_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("site lookup should succeed")
+        .expect("site should exist");
+    assert_eq!(site.master_admin_user_id, Some(i64::from(admin_id)));
+
+    // An identical re-sync is a no-op.
+    let snapshot2 = roster(vec![
+        ImportSiteMember { user_id: member_id, joined_at: joined, roles: Vec::new() },
+        ImportSiteMember {
+            user_id: mod_id,
+            joined_at: joined,
+            roles: vec![ImportedSiteRole::Moderator],
+        },
+        ImportSiteMember {
+            user_id: admin_id,
+            joined_at: joined,
+            roles: vec![ImportedSiteRole::Admin],
+        },
+    ]);
+    let out = ImportService::sync_site_roster(runner.context(), snapshot2)
+        .await
+        .expect("idempotent re-sync should succeed");
+    assert_eq!(out.members_created, 0);
+    assert_eq!(out.members_updated, 0);
+    assert_eq!(out.members_retired, 0);
+    assert_eq!(out.roles_assigned, 0);
+    assert_eq!(out.roles_removed, 0);
+    assert!(!out.master_admin_set);
+
+    // Re-sync with the moderator gone, the admin demoted to a plain
+    // member, and the member's join time corrected.
+    let joined_later = joined + time::Duration::days(10);
+    let snapshot3 = roster(vec![
+        ImportSiteMember { user_id: member_id, joined_at: joined_later, roles: Vec::new() },
+        ImportSiteMember { user_id: admin_id, joined_at: joined, roles: Vec::new() },
+    ]);
+    let out = ImportService::sync_site_roster(runner.context(), snapshot3)
+        .await
+        .expect("reconciling re-sync should succeed");
+    assert_eq!(out.members_retired, 1, "the absent moderator is retired");
+    assert_eq!(out.members_updated, 1, "the corrected join time overwrites");
+    assert_eq!(out.roles_removed, 2, "moderator role (retired) + admin role (demoted)");
+
+    assert!(active_member_relations(&runner, site_id, i64::from(mod_id)).await.is_empty());
+    assert!(active_staff_roles(&runner, site_id, i64::from(mod_id)).await.is_empty());
+    assert!(active_staff_roles(&runner, site_id, i64::from(admin_id)).await.is_empty());
+    let relations = active_member_relations(&runner, site_id, i64::from(member_id)).await;
+    assert_eq!(relations.len(), 1, "still exactly one active relation after overwrite");
+    assert_eq!(relations[0].created_at, joined_later);
+}
+
+#[tokio::test]
+async fn import_site_roster_rejects_non_imported_site() {
+    let runner = TestRunner::setup().await;
+    // Site 6000000 is the seeded local www site (not from Wikidot).
+    let result = ImportService::sync_site_roster(
+        runner.context(),
+        ImportSiteRoster {
+            site_id: 6000000,
+            fetched_at: OffsetDateTime::UNIX_EPOCH,
+            master_admin_user_id: None,
+            members: Vec::new(),
+            importing_user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await;
+    assert!(result.is_err(), "roster sync must refuse locally owned sites");
+}
+
+#[tokio::test]
+async fn import_site_roster_rejects_unimported_identity() {
+    let runner = TestRunner::setup().await;
+    let (user_id, _, fixture) = fixture_ids();
+    let site_id = 6_950_000 + i64::from(user_id % 10_000);
+    ImportService::add_site(runner.context(), import_site(site_id, &fixture))
+        .await
+        .expect("roster site should import");
+    let result = ImportService::sync_site_roster(
+        runner.context(),
+        ImportSiteRoster {
+            site_id,
+            fetched_at: OffsetDateTime::UNIX_EPOCH,
+            master_admin_user_id: None,
+            members: vec![ImportSiteMember {
+                user_id,
+                joined_at: OffsetDateTime::UNIX_EPOCH,
+                roles: Vec::new(),
+            }],
+            importing_user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await;
+    assert!(result.is_err(), "roster sync must require imported identities");
+    assert!(
+        active_member_relations(&runner, site_id, i64::from(user_id)).await.is_empty(),
+        "a rejected sync writes no relations",
     );
 }

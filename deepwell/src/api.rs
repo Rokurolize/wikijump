@@ -695,6 +695,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
         promote_observed_wikidot_identity
     );
     register!("import_wikidot_site", import_wikidot_site);
+    register!("import_wikidot_site_roster", import_wikidot_site_roster);
     register!("import_wikidot_page", import_wikidot_page);
     register!("import_wikidot_page_revision", import_wikidot_page_revision);
     register!("import_wikidot_file", import_wikidot_file);
