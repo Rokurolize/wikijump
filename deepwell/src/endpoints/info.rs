@@ -51,6 +51,7 @@ pub struct CompileInfo {
     #[serde(with = "time::serde::rfc3339")]
     pub built_at: OffsetDateTime,
     pub rustc_version: &'static str,
+    pub cargo_version: &'static str,
     pub endian: &'static str,
     pub target: &'static str,
     pub threads: u32,
@@ -74,6 +75,7 @@ pub async fn server_info(
         compile_info: CompileInfo {
             built_at: *info::BUILT_TIME_UTC,
             rustc_version: info::RUSTC_VERSION,
+            cargo_version: info::CARGO_VERSION,
             endian: info::CFG_ENDIAN,
             target: info::TARGET,
             threads: info::NUM_JOBS,
