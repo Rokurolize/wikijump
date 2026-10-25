@@ -11,6 +11,7 @@ import {fileURLToPath} from "node:url";
 import {resolveExistingContainedFile,resolveExistingPackageDirectory,resolveExistingPackageFile} from "../src/package-path.mjs";
 import {currentPackageBaseCss} from "../src/candidate-base-contract.mjs";
 import {discoverThemePackages, loadAuthorityLedger, THEME_PACKAGE_KINDS} from "../src/theme-package.mjs";
+import {parseFailOn, runExitCode, summarizeRun} from "../src/run-summary.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../../../..");
@@ -204,6 +205,7 @@ const only = onlyIndex >= 0 ? process.argv[onlyIndex + 1] : null;
 const noVisual = process.argv.includes("--no-visual");
 const iteration = process.argv.includes("--iteration");
 const verifyOnly = process.argv.includes("--verify-only");
+const failOn = parseFailOn(process.argv);
 let selectedCases = only ? cases.filter((item) => item.slug === only || item.package.name === only) : cases;
 if (only && selectedCases.length !== 1) {
   // A package that discovery can see is runnable by --only even when it is
@@ -214,6 +216,7 @@ if (only && selectedCases.length !== 1) {
 }
 
 const failures = [];
+const inconclusives = [];
 const summaries = [];
 for (const item of selectedCases) {
   assertPublishablePackage(path.basename(item.directory), {checkOutputs: true});
@@ -305,19 +308,18 @@ for (const item of selectedCases) {
   const fontFailed = row.font_diagnostics?.status !== "measured" || !row.font_diagnostics.fonts?.some((font) => font.glyph_count > 0);
   const interactionFailed = !iteration && Object.values(row.interaction_diagnostics ?? {}).some((entry) => entry.status === "fail");
   const imageFailed = (row.image_diagnostics?.broken?.length ?? 0) > 0;
-  const failed = result.status !== 0 || row.verdict === "fail" || row.verdict === "inconclusive" || localAcceptanceStatus === "fail" || row.errors > 0 || row.next_actions > 0 || (!iteration && !["pass", "warn"].includes(row.torture)) || external !== 0 || missingAssets > 0 || viewportFailed || fontFailed || interactionFailed || imageFailed;
-  row.status = failed ? "fail" : iteration ? "iteration-verdict" : row.verdict === "warn" ? "warn-no-actionable-issues" : "pass";
-  if (failed) failures.push({...row, exit_code: result.status, stderr: result.stderr?.slice(0, 500)});
+  const failedHard = result.status !== 0 || row.verdict === "fail" || localAcceptanceStatus === "fail" || row.errors > 0 || row.next_actions > 0 || (!iteration && !["pass", "warn"].includes(row.torture)) || external !== 0 || missingAssets > 0 || viewportFailed || fontFailed || interactionFailed || imageFailed;
+  const inconclusiveOnly = !failedHard && row.verdict === "inconclusive";
+  row.status = failedHard ? "fail" : inconclusiveOnly ? "inconclusive" : iteration ? "iteration-verdict" : row.verdict === "warn" ? "warn-no-actionable-issues" : "pass";
+  if (failedHard) failures.push({...row, exit_code: result.status, stderr: result.stderr?.slice(0, 500)});
+  else if (inconclusiveOnly) inconclusives.push({...row, exit_code: result.status, stderr: result.stderr?.slice(0, 500)});
   summaries.push(row);
   process.stdout.write(`${JSON.stringify(row)}\n`);
 }
 
-process.stdout.write(`${JSON.stringify({summary: {
-  total: summaries.length,
+process.stdout.write(`${JSON.stringify({summary: summarizeRun(summaries, {
   mode: verifyOnly ? "verify-only" : iteration ? "iteration" : "full-acceptance",
-  verified: summaries.filter((row) => row.status === "verified").length,
-  pass: summaries.filter((row) => row.status === "pass").length,
-  warn_no_actionable_issues: summaries.filter((row) => row.status === "warn-no-actionable-issues").length,
-  failed: failures.length,
-}, failures})}\n`);
-process.exitCode = failures.length ? 1 : 0;
+  failures,
+  inconclusives,
+}), failures, inconclusives})}\n`);
+process.exitCode = runExitCode({failures, inconclusives}, failOn);
