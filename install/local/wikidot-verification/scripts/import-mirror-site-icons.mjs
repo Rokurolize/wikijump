@@ -72,6 +72,20 @@ export function iconMime(contentType) {
   return mime
 }
 
+/** The media type the bytes themselves declare, by magic number.
+ * Wikidot serves some icons with a content type that disagrees with
+ * the payload (the SCP Wiki favicon is PNG bytes served as
+ * `image/gif`), and Deepwell validates the stored bytes against the
+ * declared type, so the observed type must come from the bytes. */
+export function sniffIconMime(bytes) {
+  const startsWith = (...magic) => magic.every((byte, index) => bytes[index] === byte)
+  if (startsWith(0x89, 0x50, 0x4e, 0x47)) return "image/png"
+  if (startsWith(0x47, 0x49, 0x46, 0x38)) return "image/gif"
+  if (startsWith(0xff, 0xd8, 0xff)) return "image/jpeg"
+  if (startsWith(0x00, 0x00, 0x01, 0x00)) return "image/x-icon"
+  throw new Error("site icon bytes do not match a supported image type")
+}
+
 function parseArgs(argv) {
   const args = {}
   for (let index = 0; index < argv.length; index += 2) {
@@ -126,18 +140,32 @@ export async function importMirrorSiteIcons(args) {
     await installBrowserRequestGate(context, { gate, responseCache })
     const page = await context.newPage()
     // Only the documents themselves are needed; the home page's own
-    // subresources are not requested.
-    await page.route("**/*", (route) =>
-      route.request().resourceType() === "document" ? route.fallback() : route.abort("blockedbyclient")
-    )
+    // subresources are not requested. Subframe documents (the source
+    // sites embed an interwiki frame) are blocked too: they race the
+    // context close and carry nothing the icon declarations need.
+    await page.route("**/*", (route) => {
+      const request = route.request()
+      return request.resourceType() === "document" && request.frame() === page.mainFrame()
+        ? route.fallback()
+        : route.abort("blockedbyclient")
+    })
     const home = await page.goto(new URL("/", args.sourceOrigin).href, { waitUntil: "commit" })
     if (home?.status() !== 200) throw new Error(`source home answered ${home?.status()}`)
     declared = declaredSiteIcons(await home.text(), args.sourceOrigin)
     for (const [kind, url] of Object.entries(declared)) {
       const response = await page.goto(url, { waitUntil: "commit" })
       if (response?.status() !== 200) throw new Error(`${url} answered ${response?.status()}`)
-      const bytes = await response.body()
-      fetched[kind] = { url, mime: iconMime(response.headers()["content-type"]), bytes }
+      // The exact network bytes come from the response cache, not
+      // response.body(): Chromium transcodes a document whose content
+      // type carries a charset (Wikidot serves these icons as e.g.
+      // `image/png; charset=utf-8`), which mangles binary payloads.
+      // The request gate retained the untouched bytes for this
+      // navigation, keyed by the final URL after any redirects.
+      const retained = responseCache.get(response.url()) ?? responseCache.get(url)
+      if (!retained) throw new Error(`${url} was not retained by the response cache`)
+      const bytes = retained.body
+      iconMime(retained.headers["content-type"])
+      fetched[kind] = { url, mime: sniffIconMime(bytes), bytes }
     }
     await context.close()
   } finally {
@@ -148,13 +176,25 @@ export async function importMirrorSiteIcons(args) {
   const results = []
   for (const kind of ICON_KINDS) {
     const icon = fetched[kind]
+    const sha256 = icon ? crypto.createHash("sha256").update(icon.bytes).digest("hex") : null
     const params = icon
       ? { site: args.site, kind, ip_address: "127.0.0.1", source: icon.url, mime: icon.mime, data: [...icon.bytes] }
       : { site: args.site, kind, ip_address: "127.0.0.1", source: null }
-    await rpc(args, session, "site_icon_set", params)
+    let unchanged = false
+    try {
+      await rpc(args, session, "site_icon_set", params)
+    } catch (error) {
+      // Deepwell rejects an update that changes neither the source nor
+      // the bytes. That rejection is the already-imported state, so a
+      // re-run is a no-op success when the stored state matches the
+      // desired one; anything else is a real failure.
+      const current = await rpc(args, session, "site_icon_get", { site: args.site, kind })
+      unchanged = icon ? current?.sha256_hex === sha256 : current === null
+      if (!unchanged) throw error
+    }
     results.push(icon
-      ? { kind, source: icon.url, mime: icon.mime, bytes: icon.bytes.length, sha256: crypto.createHash("sha256").update(icon.bytes).digest("hex") }
-      : { kind, source: null, cleared: true })
+      ? { kind, source: icon.url, mime: icon.mime, bytes: icon.bytes.length, sha256, ...(unchanged ? { unchanged: true } : {}) }
+      : { kind, source: null, cleared: true, ...(unchanged ? { unchanged: true } : {}) })
   }
   const receipt = {
     schema: "wikijump.mirror_site_icons_receipt.v1",
