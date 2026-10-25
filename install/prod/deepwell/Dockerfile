@@ -59,6 +59,8 @@ WORKDIR /src/deepwell
 # of the cache because cache mounts are not part of the image.  Standing
 # promotion builds pass CARGO_PROFILE=standing (see deepwell/Cargo.toml).
 ARG CARGO_PROFILE=release
+# Source commit for the platform information page (WJ-1279).
+ARG WIKIJUMP_GIT_COMMIT=
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
     --mount=type=cache,target=/src/deepwell/target,id=deepwell-target,sharing=locked \
