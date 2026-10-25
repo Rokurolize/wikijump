@@ -24,8 +24,9 @@ use crate::services::import::{
     ImportDiscussion, ImportDiscussionOutput, ImportFile, ImportFileDelete,
     ImportFileDeleteOutput, ImportFileOutput, ImportPage, ImportPageFilesVerify,
     ImportPageFilesVerifyOutput, ImportPageOutput, ImportPageRevision,
-    ImportPageRevisionOutput, ImportService, ImportSite, ImportSiteOutput, ImportUser,
-    ImportUserOutput, PromoteObservedIdentity, PromoteObservedIdentityOutput,
+    ImportPageRevisionOutput, ImportPageVotes, ImportPageVotesOutput, ImportService,
+    ImportSite, ImportSiteOutput, ImportUser, ImportUserOutput, PromoteObservedIdentity,
+    PromoteObservedIdentityOutput,
 };
 
 pub async fn import_wikidot_discussion(
@@ -157,6 +158,22 @@ pub async fn import_wikidot_page_files_verify(
         .or_raise(|| {
             Error::new(
                 "failed to verify imported wikidot file inventory",
+                ErrorType::DatabaseImport,
+            )
+        })
+}
+
+pub async fn import_wikidot_page_votes(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<ImportPageVotesOutput> {
+    MutationAuthorization::require_platform_staff(ctx, "import Wikidot page vote data")?;
+    let input: ImportPageVotes = parse!(params, DatabaseImport);
+    ImportService::add_page_votes(ctx, input)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to import wikidot page votes",
                 ErrorType::DatabaseImport,
             )
         })

@@ -48,6 +48,24 @@ Evidence:
 
 - `install/local/wikidot-verification/artifacts/rate-module-live-stars-and-body.json` (SHA-256 `f04bdb74ca677d638d46dcfdbb6e5e05df72bcd85fcd3fb2f00879e8b4a3d130`), cases: `rate-star-body-zero-and-after-vote`, `rate-plusminus-body-consumed`
 
+### Who-Rated roster lists every individual voter and equals the aggregate score
+
+- Observation ID: `pagerate-who-rated-roster-complete-20261024`
+- Classification: `documentation-omission`
+- Observed at: `2026-10-24`
+- Analysis: Anonymous wikidot.py page.votes reads of the public scp-wiki pages scp-9506 and scp-3352 return one vote row per individual voter (486 and 638 rows). Positive votes minus negative votes equals the page's displayed rating in both cases (475-11=464 and 628-10=618). The aggregate therefore derives from the individual vote rows, and a roster cannot be reconstructed from the aggregate alone.
+
+Normative behavior:
+
+- The Who-Rated roster lists one entry per individual voter with the voter's +1 or -1 value.
+- For each page, the sum of voter values equals the page rating shown to readers.
+- Deleted or placeholder voter accounts remain roster entries with their vote value.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/votes-scp-9506.json` (SHA-256 `79fd94f17bd78f34435c9517a6a9631aeacc8f5bf7ad76716a00295e709b6c0b`), cases: `scp-9506-who-rated`
+- `install/local/wikidot-verification/artifacts/votes-scp-3352.json` (SHA-256 `90799760c6c3151e2d972923d9fa68ab54a6a3344f775a1a0efbe4ae0b510ba9`), cases: `scp-3352-who-rated`
+
 
 
 ## Suggested public TDD seams
