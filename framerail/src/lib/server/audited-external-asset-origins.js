@@ -140,6 +140,13 @@ export const AUDITED_EXTERNAL_ASSET_ORIGINS = Object.freeze([
       "SCP-JP community GitHub Pages host. Serves the production scp-jp theme stylesheet (sigma-9.min.css), the JP credit-module stylesheet that imported scp-jp articles @import, and the Bauhaus font CSS recorded as a dependency of the frozen Sigma-9 baseline (install/local/theme-lab/fixtures/scp-jp-sigma9-offline.json); retained sweep in install/local/wikidot-verification/artifacts/scp-jp-external-origins-20261025.json (issue #2759)."
   },
   {
+    origin: "https://cdnjs.cloudflare.com",
+    styles: true,
+    fonts: true,
+    evidence:
+      "cdnjs CDN. Imported Wikidot credit modules reference the cc-icons stylesheet (https://cdnjs.cloudflare.com/ajax/libs/cc-icons/1.2.1/css/cc-icons.min.css, 4,231 bytes, sha256 cea128bf70e5dcd2d9c9d3ded35080f775cf564ea59d1a0380375f4748526722), whose @font-face loads the icon fonts from the same origin (../fonts/cc-icons.woff, 84,416 bytes, sha256 1a9b14799594702e4d0350164623d9e71261d70042ed4b3979808b08ba6e38b6); blocked by style-src on the staff-lab mirror while live Wikidot serves it; retained sweep in install/local/wikidot-verification/artifacts/cdnjs-cc-icons-external-origin-20261025.json (issue #2765)."
+  },
+  {
     origin: "https://indestructibletype-fonthosting.github.io",
     styles: true,
     fonts: true,
