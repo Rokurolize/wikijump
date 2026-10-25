@@ -6721,6 +6721,7 @@
         "kind": "endpoint_behavioral",
         "reference": "deepwell/tests/file_mirror_parity.rs#native_file_mutations_still_succeed",
         "alternatives": [
+          "deepwell/tests/import.rs#import_site_roster_rejects_unimported_identity",
           "deepwell/tests/import.rs#mirror_seed_carries_source_random_helper_routes",
           "deepwell/tests/import.rs#mirror_seed_carries_source_tags_and_navigation",
           "deepwell/tests/import.rs#mirror_seed_prefers_source_system_pages_over_generic_seeds",
