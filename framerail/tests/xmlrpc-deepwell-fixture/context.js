@@ -113,6 +113,10 @@ export const fixtureState = {
   },
   /** @type {Record<string, unknown>[]} */
   userCreateRequests: [],
+  /** @type {Record<string, unknown>[]} */
+  siteCreateRequests: [],
+  /** @type {string | null} */
+  lastCreatedSiteSlug: null,
   /** @type {Record<string, RecordedRpcRequest[]>} */
   fileRequests: {
     blobUpload: [],
