@@ -3,7 +3,7 @@
   "source_identities": {
     "jsonrpc_registry": {
       "path": "deepwell/src/api.rs",
-      "sha256": "a8ca7a2f59e34fceda64a0119a33cf9a6614e55713a77d1d52706290acd5294d"
+      "sha256": "1d3d3a26ae6db65c2bb8aeec6132b37596621d14c9958af02867a1d3cf4cd9e6"
     },
     "request_context_middleware": {
       "path": "deepwell/src/middleware.rs",
@@ -26,7 +26,7 @@
       "classification": "historical"
     }
   ],
-  "method_count": 205,
+  "method_count": 206,
   "methods": [
     {
       "method": "account_delete_complete",
@@ -3660,7 +3660,7 @@
         "component": "deepwell",
         "handler": "import_wikidot_discussion",
         "source": "deepwell/src/endpoints/import.rs#import_wikidot_discussion",
-        "source_sha256": "ae268756c0f5e80b5e6deb02ae7bf7c225cd393935070ed7aa16c32b565b3cd6",
+        "source_sha256": "839166eece406d9a97ea0e5e8ea11e9b7ca2e4b0f30e358f2b6b02452e56b830",
         "function_sha256": "10432b1db65634b2c92496b20c6461e141755fddac100e7fde37bf9736a4db3b"
       },
       "params_schema": {
@@ -3721,7 +3721,7 @@
         "component": "deepwell",
         "handler": "import_wikidot_file",
         "source": "deepwell/src/endpoints/import.rs#import_wikidot_file",
-        "source_sha256": "ae268756c0f5e80b5e6deb02ae7bf7c225cd393935070ed7aa16c32b565b3cd6",
+        "source_sha256": "839166eece406d9a97ea0e5e8ea11e9b7ca2e4b0f30e358f2b6b02452e56b830",
         "function_sha256": "61b3761c9875a735673339c5a4349b801f4e1f1a800bc013b50efb1452be057f"
       },
       "params_schema": {
@@ -3776,7 +3776,7 @@
         "component": "deepwell",
         "handler": "import_wikidot_file_delete",
         "source": "deepwell/src/endpoints/import.rs#import_wikidot_file_delete",
-        "source_sha256": "ae268756c0f5e80b5e6deb02ae7bf7c225cd393935070ed7aa16c32b565b3cd6",
+        "source_sha256": "839166eece406d9a97ea0e5e8ea11e9b7ca2e4b0f30e358f2b6b02452e56b830",
         "function_sha256": "b4f5d79e32c7b1b10ceb5b8959aee771e903fdb533ad0692bc768f32692fc4ad"
       },
       "params_schema": {
@@ -3831,7 +3831,7 @@
         "component": "deepwell",
         "handler": "import_wikidot_page",
         "source": "deepwell/src/endpoints/import.rs#import_wikidot_page",
-        "source_sha256": "ae268756c0f5e80b5e6deb02ae7bf7c225cd393935070ed7aa16c32b565b3cd6",
+        "source_sha256": "839166eece406d9a97ea0e5e8ea11e9b7ca2e4b0f30e358f2b6b02452e56b830",
         "function_sha256": "da644f3051464bc6d433b51363d9d268d6beb3372d0a26045b7df3f0a9e60e91"
       },
       "params_schema": {
@@ -3892,7 +3892,7 @@
         "component": "deepwell",
         "handler": "import_wikidot_page_files_verify",
         "source": "deepwell/src/endpoints/import.rs#import_wikidot_page_files_verify",
-        "source_sha256": "ae268756c0f5e80b5e6deb02ae7bf7c225cd393935070ed7aa16c32b565b3cd6",
+        "source_sha256": "839166eece406d9a97ea0e5e8ea11e9b7ca2e4b0f30e358f2b6b02452e56b830",
         "function_sha256": "9e8a5dc051c4454dcb500ffa213d0f228ff3a0fa5f606b9bf532f2ffba053a8c"
       },
       "params_schema": {
@@ -3947,7 +3947,7 @@
         "component": "deepwell",
         "handler": "import_wikidot_page_revision",
         "source": "deepwell/src/endpoints/import.rs#import_wikidot_page_revision",
-        "source_sha256": "ae268756c0f5e80b5e6deb02ae7bf7c225cd393935070ed7aa16c32b565b3cd6",
+        "source_sha256": "839166eece406d9a97ea0e5e8ea11e9b7ca2e4b0f30e358f2b6b02452e56b830",
         "function_sha256": "161a3576abeb9101632a007906bbca70c72025dfc271214a4567881732f0abbc"
       },
       "params_schema": {
@@ -4008,7 +4008,7 @@
         "component": "deepwell",
         "handler": "import_wikidot_page_votes",
         "source": "deepwell/src/endpoints/import.rs#import_wikidot_page_votes",
-        "source_sha256": "ae268756c0f5e80b5e6deb02ae7bf7c225cd393935070ed7aa16c32b565b3cd6",
+        "source_sha256": "839166eece406d9a97ea0e5e8ea11e9b7ca2e4b0f30e358f2b6b02452e56b830",
         "function_sha256": "9b83a68cbfd9446897e7f8fd8d7525dcdcc90d3e9bc08d665d9a16ef901a9308"
       },
       "params_schema": {
@@ -4065,7 +4065,7 @@
         "component": "deepwell",
         "handler": "import_wikidot_site",
         "source": "deepwell/src/endpoints/import.rs#import_wikidot_site",
-        "source_sha256": "ae268756c0f5e80b5e6deb02ae7bf7c225cd393935070ed7aa16c32b565b3cd6",
+        "source_sha256": "839166eece406d9a97ea0e5e8ea11e9b7ca2e4b0f30e358f2b6b02452e56b830",
         "function_sha256": "d331b90f4c871cb978f761ce2a529eb964ae1de37e33fd54f98a1982ced93364"
       },
       "params_schema": {
@@ -4117,12 +4117,73 @@
       }
     },
     {
+      "method": "import_wikidot_site_roster",
+      "endpoint_owner": {
+        "component": "deepwell",
+        "handler": "import_wikidot_site_roster",
+        "source": "deepwell/src/endpoints/import.rs#import_wikidot_site_roster",
+        "source_sha256": "839166eece406d9a97ea0e5e8ea11e9b7ca2e4b0f30e358f2b6b02452e56b830",
+        "function_sha256": "c7cb4289ab8a6b85fe8471ac1a80d1238d1dee7654b87657bd6316d42ba333fe"
+      },
+      "params_schema": {
+        "transport": "jsonrpsee::types::params::Params<'static>",
+        "parameter_name": "params",
+        "decoder": "parse!(params, DatabaseImport)"
+      },
+      "actor_context": {
+        "transport_authentication": {
+          "header_symbol": "AUTHORIZATION",
+          "header": "Authorization",
+          "scheme": "Bearer",
+          "token_format": "64 lowercase hexadecimal characters",
+          "duplicate_values": "rejected"
+        },
+        "request_context_headers": [
+          {
+            "header": "X-Deepwell-Session-Token",
+            "target": "session_token"
+          },
+          {
+            "header": "X-Deepwell-Site-Id",
+            "target": "site_id"
+          },
+          {
+            "header": "X-Deepwell-Page",
+            "target": "page_ref"
+          }
+        ],
+        "requirements": [
+          "mutation_authorization"
+        ],
+        "requirement_sources": [
+          "deepwell/src/endpoints/import.rs#import_wikidot_site_roster"
+        ]
+      },
+      "mutation_class": {
+        "classification": "read_only",
+        "source_signals": []
+      },
+      "transaction_isolation": "default",
+      "test_witness": {
+        "kind": "source_contract_only",
+        "reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract",
+        "coverage_gap": {
+          "searched_root": "deepwell/tests",
+          "reason": "no direct run_endpoint handler invocation or rpc_request method invocation was found",
+          "searched_invocations": [
+            "run_endpoint!(runner, handler, ...)",
+            "rpc_request(\"method\", ...)"
+          ]
+        }
+      }
+    },
+    {
       "method": "import_wikidot_user",
       "endpoint_owner": {
         "component": "deepwell",
         "handler": "import_wikidot_user",
         "source": "deepwell/src/endpoints/import.rs#import_wikidot_user",
-        "source_sha256": "ae268756c0f5e80b5e6deb02ae7bf7c225cd393935070ed7aa16c32b565b3cd6",
+        "source_sha256": "839166eece406d9a97ea0e5e8ea11e9b7ca2e4b0f30e358f2b6b02452e56b830",
         "function_sha256": "07634cc243555e6a4950e34f9d49a0681a2af40311bab006648fca078bc0678c"
       },
       "params_schema": {
@@ -9672,7 +9733,7 @@
         "component": "deepwell",
         "handler": "promote_observed_wikidot_identity",
         "source": "deepwell/src/endpoints/import.rs#promote_observed_wikidot_identity",
-        "source_sha256": "ae268756c0f5e80b5e6deb02ae7bf7c225cd393935070ed7aa16c32b565b3cd6",
+        "source_sha256": "839166eece406d9a97ea0e5e8ea11e9b7ca2e4b0f30e358f2b6b02452e56b830",
         "function_sha256": "18498a7f0062118b5ac265173f8b56cf5d37e71eb8b93b41c5a614f53b39c9f0"
       },
       "params_schema": {
