@@ -3683,7 +3683,7 @@
       "id": "pagerate-who-rated-roster-complete-20261024",
       "title": "Who-Rated roster lists every individual voter and equals the aggregate score",
       "feature_ids": [
-        "pagerate",
+        "module-rate",
         "module-listpages"
       ],
       "classification": "documentation-omission",
