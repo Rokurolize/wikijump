@@ -151,42 +151,46 @@ function frameSources() {
   return ["self", CURRENT_SITE_FILE_ORIGIN, ...WIKIDOT_MEDIA_FRAME_SOURCES]
 }
 
-/** @type {import("@sveltejs/kit").Config} */
-const config = {
+/**
+ * Options for the `sveltekit()` Vite plugin (SvelteKit 3 no longer reads
+ * `svelte.config.js`). Kept in a plain module, rather than inline in
+ * `vite.config.ts`, so the CSP/CSRF policy tests can import it without
+ * loading Vite.
+ *
+ * @type {NonNullable<import("@sveltejs/kit").Config["kit"]>}
+ */
+const options = {
   // Consult https://github.com/sveltejs/svelte-preprocess
   // for more information about preprocessors
   preprocess: sveltePreprocess(),
-
-  kit: {
-    adapter: adapter(),
-    ...(testOutDir ? { outDir: testOutDir } : {}),
-    csrf: {
-      trustedOrigins: csrfTrustedOrigins({ deploymentEnvironment })
-    },
-    csp: {
-      mode: "auto",
-      directives: {
-        "default-src": ["self"],
-        "base-uri": ["self"],
-        "object-src": ["none"],
-        "frame-ancestors": ["none"],
-        "form-action": ["self"],
-        "img-src": imageSources(),
-        "font-src": fontSources(),
-        "style-src": styleSources(),
-        "script-src": scriptSources(),
-        "frame-src": frameSources(),
-        "connect-src": ["self"],
-        "worker-src": ["self", "blob:"],
-        "manifest-src": ["self"],
-        "upgrade-insecure-requests": true
-      }
-    },
-    alias: {
-      "$static": resolve(__dirname, "static"),
-      "$assets": resolveAssets()
+  adapter: adapter(),
+  ...(testOutDir ? { outDir: testOutDir } : {}),
+  csrf: {
+    trustedOrigins: csrfTrustedOrigins({ deploymentEnvironment })
+  },
+  csp: {
+    mode: "auto",
+    directives: {
+      "default-src": ["self"],
+      "base-uri": ["self"],
+      "object-src": ["none"],
+      "frame-ancestors": ["none"],
+      "form-action": ["self"],
+      "img-src": imageSources(),
+      "font-src": fontSources(),
+      "style-src": styleSources(),
+      "script-src": scriptSources(),
+      "frame-src": frameSources(),
+      "connect-src": ["self"],
+      "worker-src": ["self", "blob:"],
+      "manifest-src": ["self"],
+      "upgrade-insecure-requests": true
     }
+  },
+  alias: {
+    "$static": resolve(__dirname, "static"),
+    "$assets": resolveAssets()
   }
 }
 
-export default config
+export default options

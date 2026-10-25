@@ -26,7 +26,7 @@ export async function framerailSourceFingerprint(repoRoot){
   path.join(framerailDir,'static'),
   path.join(framerailDir,'package.json'),
   path.join(framerailDir,'server.js'),
-  path.join(framerailDir,'svelte.config.js'),
+  path.join(framerailDir,'sveltekit-options.js'),
   path.join(framerailDir,'tsconfig.json'),
   path.join(framerailDir,'vite.config.ts'),
   path.join(repoRoot,'pnpm-lock.yaml'),
@@ -59,7 +59,7 @@ export function framerailSourceFingerprintSync(repoRoot){
  const framerailDir=path.join(repoRoot,'framerail');
  const inputs=[
   path.join(framerailDir,'src'),path.join(framerailDir,'static'),path.join(framerailDir,'package.json'),
-  path.join(framerailDir,'server.js'),path.join(framerailDir,'svelte.config.js'),path.join(framerailDir,'tsconfig.json'),
+  path.join(framerailDir,'server.js'),path.join(framerailDir,'sveltekit-options.js'),path.join(framerailDir,'tsconfig.json'),
   path.join(framerailDir,'vite.config.ts'),path.join(repoRoot,'pnpm-lock.yaml'),
  ];
  const files=[];
