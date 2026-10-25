@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import {currentPackageBaseCss} from './candidate-base-contract.mjs';
+import {candidateSourceName} from './theme-package.mjs';
 import {resolveExistingContainedFile,resolveExistingPackageDirectory,resolveExistingPackageFile} from './package-path.mjs';
 import {DEFAULT_SIGMA10_RUN_CONTRACT,DEFAULT_SIGMA9_RUN_CONTRACT,resolveRunContractOption} from './current-run-contract-option.mjs';
 
@@ -18,7 +19,7 @@ export function themeScenarioConfigForPackage(root,{generation,packageName,runCo
   const entry=ledger.packages?.[packageName];if(!entry)throw new Error(`unknown maintained package: ${packageName}`);
   const directory=resolveExistingPackageDirectory(path.join(root,'ports'),packageName,`${packageName}: package directory`);
   resolveExistingPackageFile(directory,'candidate.css',`${packageName}: candidate CSS`);
-  const sourceFile=entry.source_file??'candidate.wikidot.source.txt';
+  const sourceFile=candidateSourceName(directory,entry);
   resolveExistingPackageFile(directory,sourceFile,`${packageName}: candidate source`);
   const config=JSON.parse(fs.readFileSync(resolveExistingContainedFile(root,templatePath,'Canonical scenario generation template'),'utf8'));
   // Only a task-owned contract rebinds the runtime origin; the shared default

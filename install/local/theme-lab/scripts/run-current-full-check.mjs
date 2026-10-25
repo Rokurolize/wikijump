@@ -5,6 +5,7 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 import {execFileSync,spawn,spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import {candidateSourceName} from '../src/theme-package.mjs';
 import {currentFullCheckBackend,currentFullCheckPaths} from '../src/current-full-check-options.mjs';
 import {resolveRunContractOption} from '../src/current-run-contract-option.mjs';
 
@@ -69,7 +70,7 @@ const token=dockerEnv.split(/\r?\n/u).find(line=>line.startsWith('DEEPWELL_RPC_T
 if(!token)throw new Error('current local Deepwell RPC token is unavailable');
 const childEnv={...process.env,DEEPWELL_RPC_TOKEN:token};
 const dir=path.join(ports,name),manifest=JSON.parse(fs.readFileSync(path.join(dir,'manifest.json'),'utf8'));
-const sourceFile=pkg.source_file??(fs.existsSync(path.join(dir,'candidate.wikidot.source.txt'))?'candidate.wikidot.source.txt':'candidate.wikidot.txt');
+const sourceFile=candidateSourceName(dir,pkg);
 const ref=manifest.reference_url??manifest.source_url;
 if(!ref)throw new Error(`${name}: no current reference URL`);
 const rel=p=>path.relative(lab,p);

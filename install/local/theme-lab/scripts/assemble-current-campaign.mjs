@@ -8,6 +8,7 @@ import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {gunzipSync} from 'node:zlib';
 import {prepareContainedOutputFile,resolveExistingContainedFile,resolveExistingPackageDirectory,resolveExistingPackageFile} from '../src/package-path.mjs';
+import {candidateSourceName} from '../src/theme-package.mjs';
 import {DEFAULT_SIGMA9_RUN_CONTRACT,DEFAULT_SIGMA10_RUN_CONTRACT,auditMatchesRunContract,resolveRunContractOption,runContractArgument,sigma10RunContractArgument} from '../src/current-run-contract-option.mjs';
 
 const defaultRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -41,7 +42,7 @@ export function assembleCurrentCampaign(root,{output='current-campaign-acceptanc
   if(!names.length)throw new Error('Maintained package inventory is empty');
   const packages=names.map(name=>{
     const directory=`ports/current-acceptance/${name}`;
-    const packageDir=resolveExistingPackageDirectory(path.join(absoluteRoot,'ports'),name,`${name}: package directory`),sourceFile=ledger.packages[name].source_file??'candidate.wikidot.source.txt';
+    const packageDir=resolveExistingPackageDirectory(path.join(absoluteRoot,'ports'),name,`${name}: package directory`),sourceFile=candidateSourceName(packageDir,ledger.packages[name]);
     const sourcePath=resolveExistingPackageFile(packageDir,sourceFile,`${name}: source file`);
     return {package:name,
       inputs:{css:bind(`ports/${name}/candidate.css`),source:bind(path.relative(absoluteRoot,sourcePath)),preview:bind(`ports/${name}/candidate.wikidot.txt`)},
