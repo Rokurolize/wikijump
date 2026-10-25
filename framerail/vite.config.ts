@@ -1,6 +1,7 @@
 import pkg from "./package.json" with { type: "json" }
 
 import { sveltekit } from "@sveltejs/kit/vite"
+import { execSync } from "child_process"
 import { rmSync } from "fs"
 import { tmpdir } from "os"
 import { resolve } from "path"
@@ -10,6 +11,17 @@ import type { UserConfig } from "vite"
 const pnpmVersion = pkg.packageManager?.startsWith("pnpm@")
   ? pkg.packageManager.slice("pnpm@".length)
   : null
+
+// The commit this frontend was built from, when the build runs inside
+// a git checkout. Deployed builds may not have one; the platform
+// information page (WJ-1279) omits the row when it is absent.
+let frontendGitCommit: string | null = null
+try {
+  frontendGitCommit =
+    execSync("git rev-parse HEAD", { encoding: "utf8" }).trim() || null
+} catch {
+  frontendGitCommit = null
+}
 
 const testCacheDir =
   process.env.NODE_TEST_CONTEXT || process.env.FRAMERAIL_VITE_TEST_CACHE
@@ -47,6 +59,7 @@ const config: UserConfig = {
     // also update $lib/vite-env.d.ts if these defines are changed
     serverInfo: {
       pnpmVersion,
+      frontendGitCommit,
       frontendName: pkg.name ?? null,
       frontendVersion: pkg.version ?? null,
       frontendDescription: pkg.description ?? null,
