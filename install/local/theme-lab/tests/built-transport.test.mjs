@@ -21,6 +21,7 @@ for(const scenario of ['missing-dev','caddy-failure','success','isolated','isola
    await fs.copyFile(new URL('../ports/interactive-visual-fixture/ensure-built-framerail.mjs',import.meta.url),path.join(fixture,'ensure.mjs'));
    await fs.copyFile(new URL('../ports/scripts/audit-lock.mjs',import.meta.url),path.join(scripts,'audit-lock.mjs'));
    await fs.copyFile(new URL('../src/framerail-source-fingerprint.mjs',import.meta.url),path.join(src,'framerail-source-fingerprint.mjs'));
+   await fs.copyFile(new URL('../src/framerail-env-option.mjs',import.meta.url),path.join(src,'framerail-env-option.mjs'));
    await fs.copyFile(new URL('../src/deepwell-runtime-identity.mjs',import.meta.url),path.join(src,'deepwell-runtime-identity.mjs'));
    await fs.copyFile(new URL('../src/runtime-source-identity.mjs',import.meta.url),path.join(src,'runtime-source-identity.mjs'));
    const ftmlRevision='c'.repeat(40),containerId='d'.repeat(64),imageId=`sha256:${'e'.repeat(64)}`,binarySha='f'.repeat(64),configSha='1'.repeat(64);

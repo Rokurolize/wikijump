@@ -1,6 +1,8 @@
 {
   "schema": "wikijump.local_docker_development_receipt.v1",
   "status": "pass",
+  "historical_snapshot": true,
+  "snapshot_note": "Measured at wikijump_revision, before the 2026-10-22 Node 24.22.1 pin (d3615b51ae). The node, valkey, minio and caddy entries below describe that revision's stack only. This file is not a live pin; current values are the install/*/Dockerfiles and docs/development/local-docker-development.md.",
   "wikijump_revision": "2b762e153dc9c2e59c5e1de5c5099184fad8c131",
   "wikijump_tree": "db7eba2ee3d261129906fd09fdf5cb74b4ffa68d",
   "ftml_revision": "6d1550f283f93ec3f4257ffda238a8f9003eed19",

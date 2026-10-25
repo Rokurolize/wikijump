@@ -1,0 +1,53 @@
+{
+  "captured_at": "2026-10-25T01:07:54Z",
+  "method": "Chromium (Playwright) re-probe of the staff-lab mirror of Standing (site scp-jp, page scp-002-j, desktop and mobile; WSL ~/.local/state/wikijump/sigma9-probe/run-20261025-reprobe/probe-results.json) recorded the stylesheet below as CSP-blocked while the same public page on https://scp-jp.wikidot.com loads it. Direct anonymous GETs (2026-10-25) record each resource's own live response, byte count and SHA-256, including the font files the stylesheet's @font-face references through relative ../fonts/ URLs on the same origin.",
+  "observations": [
+    {
+      "blocked_by_directive_on_standing": "style-src",
+      "direct_get": {
+        "bytes": 4231,
+        "content_type": "text/css; charset=utf-8",
+        "http_status": 200,
+        "sha256": "cea128bf70e5dcd2d9c9d3ded35080f775cf564ea59d1a0380375f4748526722"
+      },
+      "live_page_http_status": 200,
+      "live_page_listed_resource_as_failed": false,
+      "note": "Recorded as failed 3 times with reason 'csp' in the lab-desktop probe (and likewise on mobile). The stylesheet contains one @font-face whose src URLs are relative (../fonts/cc-icons.*), i.e. font files on this same origin; every other url() in the file is one of those font references.",
+      "page": "scp-002-j",
+      "resource_kind": "stylesheet",
+      "theme": "imported credit module (cc-icons license icons, referenced by imported scp-jp articles)",
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/cc-icons/1.2.1/css/cc-icons.min.css"
+    },
+    {
+      "blocked_by_directive_on_standing": "font-src (not attempted on the mirror because the referencing stylesheet is itself style-src-blocked; the origin is absent from font-src, so the font cannot load either)",
+      "direct_get": {
+        "bytes": 84416,
+        "content_type": "application/octet-stream; charset=utf-8",
+        "http_status": 200,
+        "sha256": "1a9b14799594702e4d0350164623d9e71261d70042ed4b3979808b08ba6e38b6"
+      },
+      "live_page_http_status": 200,
+      "live_page_listed_resource_as_failed": false,
+      "page": "scp-002-j",
+      "resource_kind": "font",
+      "theme": "cc-icons @font-face (WOFF, the format modern browsers select)",
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/cc-icons/1.2.1/fonts/cc-icons.woff"
+    },
+    {
+      "blocked_by_directive_on_standing": "font-src (same chain as the WOFF entry)",
+      "direct_get": {
+        "bytes": 40496,
+        "content_type": "application/octet-stream; charset=utf-8",
+        "http_status": 200,
+        "sha256": "3ee20e2529a17cdd369a6c89edb23d5662ecfa9007936786d33c22c38fac14de"
+      },
+      "live_page_http_status": 200,
+      "live_page_listed_resource_as_failed": false,
+      "page": "scp-002-j",
+      "resource_kind": "font",
+      "theme": "cc-icons @font-face (TTF fallback from the same @font-face src list)",
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/cc-icons/1.2.1/fonts/cc-icons.ttf"
+    }
+  ],
+  "schema": "wikijump_local_lab.theme_sweep_external_origins.v1"
+}

@@ -27,8 +27,8 @@ use deepwell::services::email::{
 };
 use deepwell::services::import::{ImportService, ImportUser, ImportedUserType};
 use deepwell::services::session::{CreateSession, SessionService};
-use deepwell::services::user::{CreateUser, UserService};
-use deepwell::types::{Reference, UserType};
+use deepwell::services::user::{CreateUser, UpdateUserBody, UserService};
+use deepwell::types::{Maybe, Reference, UserType};
 use deepwell::utils::now;
 use ftml::data::KarmaLevel;
 use sea_orm::{
@@ -760,5 +760,205 @@ async fn consumed_tokens_are_purged_on_next_issue() {
         .expect("email token count should succeed");
     assert_eq!(total, 1);
     assert_eq!(live_token_count(&runner, created.user_id).await, 1);
+    runner.teardown().await;
+}
+
+async fn change_email(runner: &TestRunner, user_id: i64, new_email: &str) {
+    UserService::update(
+        runner.context(),
+        Reference::Id(user_id),
+        common::IP_ADDRESS,
+        UpdateUserBody {
+            email: Maybe::Set(new_email.to_owned()),
+            bypass_filter: true,
+            ..Default::default()
+        },
+    )
+    .await
+    .expect("email change should succeed");
+}
+
+async fn user_slug(runner: &TestRunner, user_id: i64) -> String {
+    UserTable::find_by_id(user_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("user lookup should succeed")
+        .expect("user row should exist")
+        .slug
+}
+
+#[tokio::test]
+async fn reset_link_dies_with_old_email_after_rotation() {
+    let runner = TestRunner::setup().await;
+    let n = next_n();
+    let old_email = format!("email-token-old-{n}@example.invalid");
+    let new_email = format!("email-token-new-{n}@example.invalid");
+    let created = UserService::create(
+        runner.context(),
+        token_user(n, UserType::Regular, old_email.clone()),
+    )
+    .await
+    .expect("regular user should be created");
+
+    let token = issue_for(
+        &runner,
+        created.user_id,
+        &old_email,
+        EmailTokenPurpose::ResetPassword,
+    )
+    .await;
+    assert!(live_token_count(&runner, created.user_id).await >= 1);
+
+    // Rotate the address through the normal update path.
+    change_email(&runner, created.user_id, &new_email).await;
+
+    // Revocation removed the outstanding link: nothing live remains.
+    assert_eq!(live_token_count(&runner, created.user_id).await, 0);
+
+    // The old link now fails exactly like a bogus token.
+    let error = run_endpoint_err!(
+        runner => password_reset_redeem,
+        common::make_params(json!({
+            "token": token,
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    assert_contains_error!(error, ErrorType::InvalidEmailToken);
+
+    // A fresh link for the new address works normally.
+    let fresh = issue_for(
+        &runner,
+        created.user_id,
+        &new_email,
+        EmailTokenPurpose::ResetPassword,
+    )
+    .await;
+    let grant_output = run_endpoint!(
+        runner => password_reset_redeem,
+        common::make_params(json!({
+            "token": fresh,
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    assert!(!grant_output.grant.is_empty());
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn stale_grant_dies_with_old_email_after_rotation() {
+    let runner = TestRunner::setup().await;
+    let n = next_n();
+    let old_email = format!("email-token-grant-old-{n}@example.invalid");
+    let new_email = format!("email-token-grant-new-{n}@example.invalid");
+    let created = UserService::create(
+        runner.context(),
+        token_user(n, UserType::Regular, old_email.clone()),
+    )
+    .await
+    .expect("regular user should be created");
+
+    let token = issue_for(
+        &runner,
+        created.user_id,
+        &old_email,
+        EmailTokenPurpose::ResetPassword,
+    )
+    .await;
+    let grant_output = run_endpoint!(
+        runner => password_reset_redeem,
+        common::make_params(json!({
+            "token": token,
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    let grant: String = grant_output.grant;
+
+    // Rotate the address after the grant was issued but before use.
+    change_email(&runner, created.user_id, &new_email).await;
+
+    // The stale grant is rejected even though it was legitimately issued.
+    let error = run_endpoint_err!(
+        runner => password_reset_complete,
+        common::make_params(json!({
+            "grant": grant,
+            "new_password": "email-token-takeover-password",
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    assert_contains_error!(error, ErrorType::InvalidEmailToken);
+
+    // The password is unchanged: slug login with the old password works,
+    // while the attacker's password does not.
+    let slug = user_slug(&runner, created.user_id).await;
+    let login = |password: &str| {
+        AuthenticationService::auth_password(
+            runner.context(),
+            AuthenticateUser {
+                name_or_email: slug.clone(),
+                password: password.to_owned(),
+            },
+            common::IP_ADDRESS,
+        )
+    };
+    assert!(login("email-token-fixture-password").await.is_ok());
+    assert!(login("email-token-takeover-password").await.is_err());
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn rotated_email_kills_verify_link_but_fresh_link_works() {
+    let runner = TestRunner::setup().await;
+    let n = next_n();
+    let old_email = format!("email-token-verify-old-{n}@example.invalid");
+    let new_email = format!("email-token-verify-new-{n}@example.invalid");
+    let created = UserService::create(
+        runner.context(),
+        token_user(n, UserType::Regular, old_email.clone()),
+    )
+    .await
+    .expect("regular user should be created");
+
+    let stale = issue_for(
+        &runner,
+        created.user_id,
+        &old_email,
+        EmailTokenPurpose::VerifyEmail,
+    )
+    .await;
+
+    change_email(&runner, created.user_id, &new_email).await;
+    assert_eq!(live_token_count(&runner, created.user_id).await, 0);
+
+    // The pending verification link for the old address is dead.
+    let error = run_endpoint_err!(
+        runner => email_verify_redeem,
+        common::make_params(json!({
+            "token": stale,
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    assert_contains_error!(error, ErrorType::InvalidEmailToken);
+
+    // A new token for the new address issues and redeems normally.
+    let fresh = issue_for(
+        &runner,
+        created.user_id,
+        &new_email,
+        EmailTokenPurpose::VerifyEmail,
+    )
+    .await;
+    run_endpoint!(
+        runner => email_verify_redeem,
+        common::make_params(json!({
+            "token": fresh,
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    let user = UserTable::find_by_id(created.user_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("user lookup should succeed")
+        .expect("user row should exist");
+    assert!(user.email_verified_at.is_some());
     runner.teardown().await;
 }

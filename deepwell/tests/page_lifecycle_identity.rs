@@ -96,7 +96,7 @@ INSERT INTO wikidot_corpus_import_run (
             [
                 Value::from(import_run_id),
                 Value::from(site_id),
-                Value::from(format!("lifecycle-identity-{import_run_id}")),
+                Value::from("lifecycle-identity-test"),
             ],
         ),
         Statement::from_sql_and_values(
@@ -115,7 +115,7 @@ INSERT INTO wikidot_page_snapshot (
 "#,
             [
                 Value::from(page.page_id),
-                Value::from(format!("lifecycle-identity-{import_run_id}")),
+                Value::from("lifecycle-identity-test"),
                 Value::from(source_uuid.to_owned()),
                 Value::from(page.slug.to_owned()),
                 Value::from(created_by.map(str::to_owned)),

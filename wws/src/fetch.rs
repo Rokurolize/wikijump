@@ -25,18 +25,17 @@ use crate::range::ByteRange;
 use crate::state::ServerState;
 use axum::body::Body;
 use axum::http::header::HeaderMap;
+use axum::http::status::StatusCode;
 use s3::request::request_trait::ResponseDataStream;
 use wikidot_normalize::normalize;
 
-pub async fn fetch_file_info(
+async fn resolve_file_info(
     state: &ServerState,
     headers: &HeaderMap,
     site_id: i64,
-    page_slug: &mut String,
+    page_slug: &str,
     filename: &str,
 ) -> ResponseResult<FileData> {
-    normalize(page_slug);
-
     let page_id = state
         .get_page_fresh_or_response(headers, site_id, page_slug)
         .await?;
@@ -51,6 +50,35 @@ pub async fn fetch_file_info(
             get_session_token(headers),
         )
         .await
+}
+
+pub async fn fetch_file_info(
+    state: &ServerState,
+    headers: &HeaderMap,
+    site_id: i64,
+    page_slug: &mut String,
+    filename: &str,
+) -> ResponseResult<FileData> {
+    // Stored page slugs keep every colon (e.g.
+    // `art:scp-8200:the-phantom-sea`: category `art`, the rest is the
+    // name, per site-structure/page-categories.md L0044-L0046), while
+    // `normalize` merges all but the last colon into dashes for page-URL
+    // tolerance. Resolving by the exact slug first keeps multi-colon
+    // attachments on local bytes; the normalized form is only a fallback
+    // for URLs that need case, underscore, or unicode tolerance.
+    match resolve_file_info(state, headers, site_id, page_slug, filename).await {
+        Ok(info) => Ok(info),
+        Err(response) if response.status() == StatusCode::NOT_FOUND => {
+            let mut normalized = page_slug.clone();
+            normalize(&mut normalized);
+            if normalized == *page_slug {
+                return Err(response);
+            }
+            *page_slug = normalized;
+            resolve_file_info(state, headers, site_id, page_slug, filename).await
+        }
+        Err(response) => Err(response),
+    }
 }
 
 pub async fn fetch_full_body(

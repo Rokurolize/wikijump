@@ -5,13 +5,13 @@
     "inputs": [
       {
         "path": "deepwell/Cargo.lock",
-        "git_blob": "8140328883eb6dba53c83625f3ac044293520883",
-        "sha256": "9b107b03bfd103c48cce4bf846b2c6beb99cefefb47e2b875066ef84d24b08a8"
+        "git_blob": "377623ee9ce6eedda7d7c16c41193aa17f235165",
+        "sha256": "63692d8938e83f658ddd948b8cfd5eaba56deec8ab1193112a83e153c93d3ec2"
       },
       {
         "path": "deepwell/Cargo.toml",
-        "git_blob": "831b375f479c90c62a0b45798a36cd91280eb222",
-        "sha256": "f60c57637bd84cc1644e9ca1e54dabcbcddc94bfdea13dccd0337c91f737c6eb"
+        "git_blob": "686dee2c83639c5d961fa00ee34defc26ae2dc52",
+        "sha256": "1ee3649b137d49b14ac5cf791325eb94ca88957a88d0477eb7a4e4167def945f"
       },
       {
         "path": "deepwell/migrations/20260815010000_text_block_wikidot_sha1.sql",
@@ -20,8 +20,8 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "git_blob": "bc50a778512d252d7f9a472babd86f44cb322477",
-        "sha256": "abf6cddc3a0bcf897b27d21199c852a8878c7087610725c7e92091623a5d8dc0"
+        "git_blob": "2de626d8e3907c0de9e4a36df41b116eabf51602",
+        "sha256": "52b1306edcb8eb517b846ac0efe2eaa326c18eb5e98970b9133658b49ae784ea"
       },
       {
         "path": "deepwell/src/endpoints/text_block.rs",
@@ -50,23 +50,23 @@
       },
       {
         "path": "deepwell/tests/page.rs",
-        "git_blob": "2cdcc23128286b56b2c7795180de8001bc67c9d5",
-        "sha256": "23c0919375f0e6e08e19b9a7c5c3a4e5f0d75d661f25743ad88222cac8eef5d2"
+        "git_blob": "c6a4ca592a9de5c96104222ee389453cd5e59868",
+        "sha256": "cd7d3e29bc9a7f505db9b8cd57242b29b616a32f8cf3fcfb781f92c90e03a1d9"
       },
       {
         "path": "wws/Cargo.lock",
-        "git_blob": "dba625e4bf5d89a1843b640e03ec91ff996f4464",
-        "sha256": "ef4c58f4a8516c6a3cfb916b4373574f1f7d3692f9bd569db7326aa2c0584a57"
+        "git_blob": "7fbe51752c5a87cb2dd857f6faad41ffe47bc689",
+        "sha256": "85328ba200d471ee50c67ff9aa525c7c46796c7d8bfcc2a078cb3023533020e1"
       },
       {
         "path": "wws/Cargo.toml",
-        "git_blob": "aa97f0b4788ce0119895bd57b149c9d4817d215a",
-        "sha256": "72509bc80217ec07d4f539e017303bfbae7f6e06efd68cf402b1e337420f31bd"
+        "git_blob": "5fea8ca76c87763a51cd2fe850d2070da7e8d11d",
+        "sha256": "1300bef3d1128940976092d171a12a1fdaa0ce51f1348bee5f588dff2d3409ff"
       },
       {
         "path": "wws/src/deepwell.rs",
-        "git_blob": "63d90d03a7eebf394cae3d54671e1842078cc7a1",
-        "sha256": "c2e522bcc5c95966565adbb7e77904f8db5e25290d26baccdc1fc089e10019f0"
+        "git_blob": "581e5abc925f18d6779a34c7b54b943887a329f0",
+        "sha256": "2d2cec493a593b0a047c7eba10415ca09c0154305a7f4d26ccd24a250ba84ddf"
       },
       {
         "path": "wws/src/handler/avatar.rs",
@@ -80,8 +80,8 @@
       },
       {
         "path": "wws/src/handler/file.rs",
-        "git_blob": "b7a6a6766a0175e51c324fb762478e58aca3ba1d",
-        "sha256": "c24e4329e813c66639fe14d1a6edf32f9e338c305f6c011ff635fde99018cfb2"
+        "git_blob": "f51e1d0466be22049115043280a9e7ea5a5295cb",
+        "sha256": "23345ab3c416a84e6ad1227f99b71343056dadfbb5ba426facb0e3444192f78c"
       },
       {
         "path": "wws/src/handler/misc.rs",
@@ -100,13 +100,13 @@
       },
       {
         "path": "wws/src/handler/robots.rs",
-        "git_blob": "e3f79a6aa0a456d304c791a89a8ec0233b1979a9",
-        "sha256": "ee3277bf1843b323a7695ecb4b81f105f700ed13d13d45e3213a367853a16f74"
+        "git_blob": "1368b028a15ad4f1ee00189e1e5db0ce0e6af358",
+        "sha256": "2de5e2af3d1718c00f3f269209e833f4cb2195b27eb8fb706b72f9251a4511cc"
       },
       {
         "path": "wws/src/handler/text_block.rs",
-        "git_blob": "95ce8cca1410e984f8a2664a867ed185b31e6578",
-        "sha256": "0c62286cf7e4623e9077c235c300484a9ecf8f4184ef6c04f0eb9a45bf241e51"
+        "git_blob": "f9c1ad872e4fd5ead4002a5ba9f2e9517dff67d8",
+        "sha256": "56b6ad93f3632669c17ae9d1150fd4734a5f3c744c8bb00d761207315a0ebbed"
       },
       {
         "path": "wws/src/handler/well_known.rs",
@@ -115,8 +115,8 @@
       },
       {
         "path": "wws/src/route.rs",
-        "git_blob": "d7782367d9342cabeabc4c2203a958818946f571",
-        "sha256": "7d7932f8c57b439471f809aa0170c8e337b1dad8e6588e30b1818a8781fbab33"
+        "git_blob": "dc0c29fc9a5f83a430f3d863ddf8872d18606115",
+        "sha256": "fd80900327a6212c39feebacd10d55a2b414bb848569f5fab4ddb3762121b924"
       }
     ]
   },
@@ -389,7 +389,7 @@
       "registered_handler_symbol": "handle_code_block",
       "handler_definition_path": "wws/src/handler/text_block.rs",
       "route_registration_reference": "wws/src/route.rs#L95",
-      "handler_definition_reference": "wws/src/handler/text_block.rs#L136",
+      "handler_definition_reference": "wws/src/handler/text_block.rs#L135",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -422,7 +422,7 @@
       "registered_handler_symbol": "handle_html_block",
       "handler_definition_path": "wws/src/handler/text_block.rs",
       "route_registration_reference": "wws/src/route.rs#L97",
-      "handler_definition_reference": "wws/src/handler/text_block.rs#L46",
+      "handler_definition_reference": "wws/src/handler/text_block.rs#L45",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -488,7 +488,7 @@
       "registered_handler_symbol": "handle_html_terminal",
       "handler_definition_path": "wws/src/handler/text_block.rs",
       "route_registration_reference": "wws/src/route.rs#L50",
-      "handler_definition_reference": "wws/src/handler/text_block.rs#L68",
+      "handler_definition_reference": "wws/src/handler/text_block.rs#L67",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -510,7 +510,7 @@
       "registered_handler_symbol": "handle_robots_txt",
       "handler_definition_path": "wws/src/handler/robots.rs",
       "route_registration_reference": "wws/src/route.rs#L104",
-      "handler_definition_reference": "wws/src/handler/robots.rs#L39",
+      "handler_definition_reference": "wws/src/handler/robots.rs#L55",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },

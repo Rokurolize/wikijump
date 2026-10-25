@@ -598,3 +598,116 @@ class VerifyWithCatchUpTest(unittest.TestCase):
         self.assertEqual(final["stale_without_valid_ahead"], 1)
         self.assertEqual([name for name, _ in calls].count("verify"), 1)
         self.assertEqual(len([c for c in calls if not c[1]]), 3)
+
+    def fake_catch_up_site(self, *, link_change: bool, moving_reader: bool = False):
+        """A verify/catch-up world: page 9 is written during the run; the
+        catch-up render moves page 1's link digest when `link_change`.
+        Page 2 is a main-pass link reader of page 1."""
+        state = {"links": {"1": "a", "2": "reads-a"}, "rendered_readers": 0}
+        calls: list = []
+
+        def render(name, cutoff, pages=None, *, serial=False, extended=False, dry_run=False):
+            calls.append((name, dry_run, pages))
+            if dry_run:
+                stale = 1 if name == "verify" else 0
+                return {"stale_without_valid_ahead": stale, "compiled_generator": "g"}
+            if name.startswith("catch-up-link-readers"):
+                state["rendered_readers"] += 1
+                if moving_reader:
+                    state["links"]["1"] = f"moved-{state['rendered_readers']}"
+                else:
+                    state["links"]["2"] = "reads-" + state["links"]["1"]
+                return {
+                    "stale_without_valid_ahead": 0,
+                    "compiled_generator": "g",
+                    "candidates": len(pages or []),
+                    "rendered": len(pages or []),
+                    "failed": 0,
+                    "failed_page_ids": [],
+                    "link_reader_page_ids": list(pages or []),
+                }
+            # catch-up render of the edited page
+            if link_change:
+                state["links"]["1"] = "b"
+            return {
+                "stale_without_valid_ahead": 0,
+                "compiled_generator": "g",
+                "candidates": 1,
+                "rendered": 1,
+                "failed": 0,
+                "failed_page_ids": [],
+                "link_reader_page_ids": [],
+            }
+
+        def digests():
+            return dict(state["links"])
+
+        return render, digests, calls, state
+
+    def test_catch_up_link_change_rerenders_main_pass_readers(self) -> None:
+        render, digests, calls, state = self.fake_catch_up_site(link_change=True)
+        timings: list = []
+        final = RENDER_AHEAD.verify_with_catch_up(
+            render, "cutoff", digests=digests, timings=timings, readers=[2]
+        )
+        self.assertEqual(final["stale_without_valid_ahead"], 0)
+        names = [name for name, _, _ in calls]
+        self.assertEqual(
+            names,
+            [
+                "verify",
+                "catch-up-1",
+                "verify-1",
+                "catch-up-link-readers-1",
+                "catch-up-link-readers-2",
+                "verify-after-catch-up",
+            ],
+        )
+        self.assertEqual(state["links"]["2"], "reads-b")
+        stages = [entry["stage"] for entry in timings]
+        self.assertEqual(
+            stages,
+            [
+                "links-before-catch-up",
+                "links-after-catch-up",
+                "links-before-catch-up-readers-1",
+                "links-after-catch-up-readers-1",
+                "links-before-catch-up-readers-2",
+                "links-after-catch-up-readers-2",
+            ],
+        )
+
+    def test_catch_up_without_link_change_rerenders_no_readers(self) -> None:
+        render, digests, calls, _ = self.fake_catch_up_site(link_change=False)
+        final = RENDER_AHEAD.verify_with_catch_up(
+            render, "cutoff", digests=digests, readers=[2]
+        )
+        self.assertEqual(final["stale_without_valid_ahead"], 0)
+        names = [name for name, _, _ in calls]
+        self.assertEqual(names, ["verify", "catch-up-1", "verify-1"])
+
+    def test_catch_up_link_change_without_readers_needs_no_round(self) -> None:
+        render, digests, calls, _ = self.fake_catch_up_site(link_change=True)
+        final = RENDER_AHEAD.verify_with_catch_up(render, "cutoff", digests=digests)
+        self.assertEqual(final["stale_without_valid_ahead"], 0)
+        names = [name for name, _, _ in calls]
+        self.assertEqual(names, ["verify", "catch-up-1", "verify-1"])
+
+    def test_catch_up_links_that_never_settle_fail_closed(self) -> None:
+        render, digests, _, _ = self.fake_catch_up_site(link_change=True, moving_reader=True)
+        with self.assertRaisesRegex(RuntimeError, "did not settle"):
+            RENDER_AHEAD.verify_with_catch_up(
+                render, "cutoff", digests=digests, readers=[2]
+            )
+
+    def test_a_clean_verify_never_snapshots_digests(self) -> None:
+        render, calls = self.fake_render([0])
+        snapshots = []
+
+        def digests():
+            snapshots.append(1)
+            return {}
+
+        final = RENDER_AHEAD.verify_with_catch_up(render, "cutoff", digests=digests, readers=[2])
+        self.assertEqual(final["stale_without_valid_ahead"], 0)
+        self.assertEqual(snapshots, [])

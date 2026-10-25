@@ -1,0 +1,46 @@
+{
+ "schema": "wikijump.listpages_html_body_live.v1",
+ "observed_at": "2026-10-24",
+ "site": "sandbox-for-codex",
+ "authority": "authenticated run-owned holder pages (account A via private env), public anonymous GET of the rendered page and hosted html-block iframes; all pages deleted after capture",
+ "files": {
+  "matrix-A-html-mid-after-prose.html": {
+   "sha256": "6df6cae259d390a85cad936baa004576acc21ac5dbc54a8bd239ad7836e7e748",
+   "bytes": 24927
+  },
+  "matrix-B-html-mid-after-two-prose-lines.html": {
+   "sha256": "2c1da08ded48a12b016e3b4363d38ec3eeb0e8bc5124a67b9b092dff37ff0512",
+   "bytes": 24981
+  },
+  "matrix-C-control-no-block.html": {
+   "sha256": "a68ab016d585bdf1ff554875c44f9cadb32b06196268ac074a2e78b2e19e9400",
+   "bytes": 23302
+  },
+  "matrix-D-escaped-html-marker-mid.html": {
+   "sha256": "704d229d87c3d83401b96922c526ef273ca03f4d783ffd3daa2c3eb1039cee5e",
+   "bytes": 23522
+  },
+  "matrix-E-code-mid-after-prose.html": {
+   "sha256": "de7682140cdca01d4762a91ee7faa486f78287f289e711e8f4b5cf7b66911734",
+   "bytes": 24810
+  },
+  "wj2680-1792846101-lead-hosted.html": {
+   "sha256": "df2be845bc7fad5b0de184e002266500c08a635041a446ea94b7ccf43276d65d",
+   "bytes": 502
+  },
+  "wj2680-1792846101-mid-hosted.html": {
+   "sha256": "0ea8038fe02b6f045abbf806376cc58c8f53d79a4135853afc6fde2b25ac2743",
+   "bytes": 519
+  }
+ },
+ "summary_sha256": "a96ccbfc117be7e601b210f82faf0fef9c785f80fa4076e45dcc97999e10b835",
+ "case_ids": [
+  "matrix-A-html-mid-after-prose.html",
+  "matrix-B-html-mid-after-two-prose-lines.html",
+  "matrix-C-control-no-block.html",
+  "matrix-D-escaped-html-marker-mid.html",
+  "matrix-E-code-mid-after-prose.html",
+  "wj2680-1792846101-lead-hosted.html",
+  "wj2680-1792846101-mid-hosted.html"
+ ]
+}

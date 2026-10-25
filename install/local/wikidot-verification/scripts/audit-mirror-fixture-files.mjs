@@ -6,7 +6,8 @@
  * Reads a TSV dump of file rows on imported pages (SELECT-only; the exact
  * query is printed with --help) plus `deepwell/seeder/files.json`, and
  * writes a classification report and a tombstone manifest covering ONLY
- * seeder-matched fixture rows. Never mutates anything.
+ * seeder-matched rows that a source inventory (--source-inventory)
+ * proves absent from the source page. Never mutates anything.
  */
 
 import {readFileSync, writeFileSync} from "node:fs";
@@ -15,6 +16,7 @@ import {runCliIfMain} from "../src/cli-entry.mjs";
 import {
   buildFixtureTombstoneManifest,
   buildSeedIndex,
+  buildSourceInventoryIndex,
   classifyMirrorFileRow,
 } from "../src/mirror-fixture-file-audit.mjs";
 
@@ -78,7 +80,14 @@ function parseRow(line) {
 export async function main(argv) {
   const args = parseArgs(argv);
   if (args.help || !args.rows || !args.seeder_files) {
-    console.log(`usage: audit-mirror-fixture-files.mjs --rows <dump.tsv> --seeder-files <deepwell/seeder/files.json> [--classification-out <path>] [--manifest-out <path>]
+    console.log(`usage: audit-mirror-fixture-files.mjs --rows <dump.tsv> --seeder-files <deepwell/seeder/files.json> [--source-inventory <inventory.json>] [--classification-out <path>] [--manifest-out <path>]
+
+<inventory.json> is [{site_slug, page_slug, name}, ...] from corpus
+attachment metadata or the recorded Wikidot Files list. A seed match
+becomes FIXTURE only on a covered page whose inventory omits the name.
+Without it, seed matches stay UNCLASSIFIED_LOCAL and the manifest
+stays empty by design. A malformed inventory (not an array, or an entry
+missing site_slug, page_slug, or name) aborts the run before any output.
 
 Dump the rows first (SELECT-only):
   psql -At -F'	' -c "${DUMP_QUERY}" > dump.tsv
@@ -89,6 +98,13 @@ Dump the rows first (SELECT-only):
   const seedIndex = buildSeedIndex(
     JSON.parse(readFileSync(args.seeder_files, "utf8")),
   );
+  // Source inventory (corpus attachment metadata or the recorded Wikidot
+  // Files list, as JSON [{site_slug, page_slug, name}, ...]) is what lets
+  // a seed match become FIXTURE. Without it the classifier fails closed:
+  // seed matches stay UNCLASSIFIED_LOCAL and the manifest stays empty.
+  const sourceInventoryIndex = args.source_inventory
+    ? buildSourceInventoryIndex(JSON.parse(readFileSync(args.source_inventory, "utf8")))
+    : null;
   const lines = readFileSync(args.rows, "utf8")
     .split("\n")
     .map((line) => line.replace(/\r$/u, ""))
@@ -98,7 +114,7 @@ Dump the rows first (SELECT-only):
   const verdictCounts = {};
   for (const line of lines) {
     const row = parseRow(line);
-    const classification = classifyMirrorFileRow(row, seedIndex);
+    const classification = classifyMirrorFileRow(row, seedIndex, sourceInventoryIndex);
     verdictCounts[classification.verdict] = (verdictCounts[classification.verdict] ?? 0) + 1;
     classified.push({row, classification});
   }

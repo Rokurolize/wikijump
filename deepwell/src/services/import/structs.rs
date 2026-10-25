@@ -309,3 +309,32 @@ pub struct ImportPageFilesVerifyOutput {
     pub page_id: i64,
     pub verified_files: usize,
 }
+
+/// One individually sourced vote on an imported page, as the source
+/// Who-Rated roster lists it.
+#[derive(Deserialize, Debug, Clone, Copy)]
+pub struct ImportPageVote {
+    pub user_id: i64,
+    pub value: i16,
+}
+
+/// The complete source Who-Rated roster of one imported page.
+///
+/// The roster is an import of individual vote rows. It is not derived from
+/// the aggregate: the aggregate baseline is imported separately (#2078), and
+/// the sum of these rows must equal that baseline when it is present.
+#[derive(Deserialize, Debug)]
+pub struct ImportPageVotes {
+    pub site_id: i64,
+    pub page_id: i64,
+    pub rating_system: String,
+    pub votes: Vec<ImportPageVote>,
+}
+
+#[derive(Serialize, Debug, Copy, Clone)]
+pub struct ImportPageVotesOutput {
+    pub site_id: i64,
+    pub page_id: i64,
+    pub inserted: usize,
+    pub unchanged: usize,
+}

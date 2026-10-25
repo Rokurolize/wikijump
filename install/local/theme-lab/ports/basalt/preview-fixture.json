@@ -1,9 +1,8 @@
 {
-  "source_sha256": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df",
+  "source_sha256": "7167897315929a07f31f9008682a529351686d51ddab7a8569f6e6d06ca021d5",
   "squares_source_sha256": "85c7b8294847156d8e2ccc1dd79591d4c83db1f2cf767747d4fb59fc80ec42c0",
   "expanded_theme_squares": 0,
   "omitted_unseeded_includes": [
-    "@@[[span",
     "component:acs-animation",
     "component:betterfootnotes",
     "component:image-block",

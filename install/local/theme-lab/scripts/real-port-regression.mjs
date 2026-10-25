@@ -10,6 +10,10 @@ import {spawnSync} from "node:child_process";
 import {fileURLToPath} from "node:url";
 import {resolveExistingContainedFile,resolveExistingPackageDirectory,resolveExistingPackageFile} from "../src/package-path.mjs";
 import {currentPackageBaseCss} from "../src/candidate-base-contract.mjs";
+import {discoverThemePackages, loadAuthorityLedger, THEME_PACKAGE_KINDS} from "../src/theme-package.mjs";
+import {parseFailOn, runExitCode, summarizeRun} from "../src/run-summary.mjs";
+import {defaultStorePath} from "../src/evidence-store.mjs";
+import {storeRunArtifacts} from "../src/evidence-run.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../../../..");
@@ -69,10 +73,10 @@ function verifyFrozenPackage(item, {requireDaemonAssets = true} = {}) {
   // dear-dictator and quand-le-soleil-se-couche keep their own packaged assets
   // and are served by dedicated daemons, so their frozen pool is the daemon's
   // asset dir by construction and there is no second pool to reconcile.
-  if (item.slug === "theme:dear-dictator (SCP-KO)") return;
-  if (path.basename(item.directory) === "quand-le-soleil-se-couche") {
-    const foreign = JSON.parse(fs.readFileSync(resolveExistingPackageFile(item.directory,"manifest.json","FR manifest"),"utf8"));
-    if (sha256(resolveExistingPackageFile(item.directory,"upstream-fr.wikidot.txt","FR frozen source")) !== foreign.source_sha256) throw new Error("FR frozen source identity mismatch");
+  if (item.package.kind === THEME_PACKAGE_KINDS.RETAINED_AUTHORITY) return;
+  if (item.package.kind === THEME_PACKAGE_KINDS.FOREIGN_PORT) {
+    const foreign = item.package.manifest;
+    if (!item.package.upstreamSourceFile || sha256(item.package.upstreamSourceFile) !== foreign.source_sha256) throw new Error("FR frozen source identity mismatch");
     for (const asset of foreign.assets) if (sha256(resolveExistingPackageFile(item.directory,path.join("assets",asset.name),`FR frozen asset ${asset.name}`)) !== asset.sha256) throw new Error(`FR frozen asset mismatch: ${asset.name}`);
     return;
   }
@@ -86,7 +90,7 @@ function verifyFrozenPackage(item, {requireDaemonAssets = true} = {}) {
       throw new Error(`${item.slug}: frozen ${key.toUpperCase()} source identity mismatch`);
     }
   }
-  const candidateSource = fs.readFileSync(resolveExistingPackageFile(item.directory,"candidate.wikidot.source.txt",`${item.slug}: candidate source`), "utf8");
+  const candidateSource = fs.readFileSync(resolveExistingPackageFile(item.directory,item.package.sourceName,`${item.slug}: candidate source`), "utf8");
   const allowlistPath = path.join(item.directory, "confirmed-jp-user-links.json");
   const confirmedJpUsers = new Set(fs.existsSync(allowlistPath)
     ? JSON.parse(fs.readFileSync(resolveExistingPackageFile(item.directory,"confirmed-jp-user-links.json",`${item.slug}: confirmed JP users`), "utf8")).users.map((name) => name.toLowerCase()) : []);
@@ -155,50 +159,79 @@ function verifyFrozenPackage(item, {requireDaemonAssets = true} = {}) {
   }
 }
 
-const cases = manifest.themes.map((theme) => {
-  const name=theme.slug.replace(/^theme:/u,"");
-  const expected=resolveExistingPackageDirectory(ports,name,`${theme.slug}: package directory`);
-  const declared=fs.realpathSync(path.resolve(root,theme.port_package_path));
-  if(declared!==expected)throw new Error(`${theme.slug}: campaign package path does not match canonical maintained package`);
-  const selectorPath=path.join(declared,"acceptance-selectors.txt");
+const packageLedger = loadAuthorityLedger(path.join(root, "install/local/theme-lab"));
+const packageByName = new Map(discoverThemePackages(ports, {ledger: packageLedger}).map((pkg) => [pkg.name, pkg]));
+function packageFor(name, label) {
+  const pkg = packageByName.get(name);
+  if (!pkg) throw new Error(`${label}: package is not discoverable under ports/`);
+  return pkg;
+}
+function caseFor(pkg, overrides = {}) {
   return {
-    slug: theme.slug,
-    directory: declared,
-    candidate: "candidate.wikidot.txt",
-    css: "candidate.css",
-    reference: `https://scp-wiki.wikidot.com/${theme.slug}`,
-    selectors: fs.existsSync(selectorPath)?resolveExistingPackageFile(declared,"acceptance-selectors.txt",`${theme.slug}: acceptance selectors`):sharedSelectors,
-    title: theme.slug,
+    slug: pkg.slug,
+    directory: pkg.directory,
+    candidate: pkg.previewName,
+    css: pkg.cssName,
+    reference: pkg.referenceUrl,
+    selectors: pkg.selectorsFile ?? sharedSelectors,
+    title: pkg.slug,
+    package: pkg,
+    ...overrides,
   };
+}
+
+const cases = manifest.themes.map((theme) => {
+  const pkg = packageFor(theme.slug.replace(/^theme:/u, ""), theme.slug);
+  const declared = fs.realpathSync(path.resolve(root, theme.port_package_path));
+  if (declared !== pkg.directory) throw new Error(`${theme.slug}: campaign package path does not match canonical maintained package`);
+  return caseFor(pkg);
 });
 
-const dear = resolveExistingPackageDirectory(ports,"dear-dictator","dear-dictator package directory");
-const dearReference = JSON.parse(fs.readFileSync(resolveExistingPackageFile(dear,"reference.json","dear-dictator reference"), "utf8"));
-cases.push({
+cases.push(caseFor(packageFor("dear-dictator", "dear-dictator"), {
   slug: "theme:dear-dictator (SCP-KO)",
-  directory: dear,
-  candidate: "candidate.wikidot.txt",
-  css: "candidate.css",
-  reference: dearReference.reference_url,
-  selectors: resolveExistingPackageFile(dear,"acceptance-selectors.txt","dear-dictator acceptance selectors"),
   title: "敬愛する独裁者 テーマ",
   socket: dearSocket,
-});
+}));
 
 if (process.argv.includes("--maintained")) {
-  const directory = resolveExistingPackageDirectory(ports,"quand-le-soleil-se-couche","SCP-FR package directory");
-  const foreign = JSON.parse(fs.readFileSync(resolveExistingPackageFile(directory,"manifest.json","SCP-FR manifest"),"utf8"));
-  cases.push({slug:"theme:quand-le-soleil-se-couche (SCP-FR)",directory,candidate:"candidate.wikidot.txt",css:"candidate.css",reference:foreign.source_url,selectors:resolveExistingPackageFile(directory,"acceptance-selectors.txt","SCP-FR acceptance selectors"),surfaceContract:resolveExistingPackageFile(directory,"surface-contract.json","SCP-FR surface contract"),title:"Quand le Soleil se couche",socket:process.env.THEME_LAB_FR_SOCKET ?? socket});
+  const pkg = packageFor("quand-le-soleil-se-couche", "SCP-FR");
+  cases.push(caseFor(pkg, {
+    slug: "theme:quand-le-soleil-se-couche (SCP-FR)",
+    surfaceContract: pkg.surfaceContractFile,
+    title: "Quand le Soleil se couche",
+    socket: process.env.THEME_LAB_FR_SOCKET ?? socket,
+  }));
 }
 const onlyIndex = process.argv.indexOf("--only");
 const only = onlyIndex >= 0 ? process.argv[onlyIndex + 1] : null;
 const noVisual = process.argv.includes("--no-visual");
 const iteration = process.argv.includes("--iteration");
 const verifyOnly = process.argv.includes("--verify-only");
-const selectedCases = only ? cases.filter((item) => item.slug === only) : cases;
-if (only && selectedCases.length !== 1) throw new Error(`unknown --only theme: ${only}`);
+const failOn = parseFailOn(process.argv);
+// Evidence storage (#2752): by default a run's artifacts land in a
+// per-run directory inside the content-addressed evidence store and are
+// ingested + hardlink-materialized after each case, so identical
+// captures across runs cost no extra blobs and the package tree stays
+// bounded. THEME_LAB_RUN_ARTIFACT_DIR keeps the operator-managed
+// location (no store wiring); --no-store restores the historical
+// in-package artifacts/ default; THEME_LAB_EVIDENCE_STORE relocates
+// the store.
+const noStore = process.argv.includes("--no-store");
+const evidenceStoreDir = process.env.THEME_LAB_EVIDENCE_STORE ? path.resolve(process.env.THEME_LAB_EVIDENCE_STORE) : defaultStorePath();
+const storeRunRoot = path.join(evidenceStoreDir, "runs", new Date().toISOString().replace(/[:.]/gu, "-"));
+const useStore = !runArtifactRoot && !noStore && !verifyOnly;
+const artifactDirFor = (item) => runArtifactRoot ? path.join(runArtifactRoot, path.basename(item.directory)) : noStore ? path.join(item.directory, "artifacts") : path.join(storeRunRoot, path.basename(item.directory));
+let selectedCases = only ? cases.filter((item) => item.slug === only || item.package.name === only) : cases;
+if (only && selectedCases.length !== 1) {
+  // A package that discovery can see is runnable by --only even when it is
+  // not part of the default campaign selection (#2753).
+  const discovered = packageByName.get(only) ?? [...packageByName.values()].find((pkg) => pkg.slug === only);
+  if (!discovered) throw new Error(`unknown --only theme: ${only}`);
+  selectedCases = [caseFor(discovered)];
+}
 
 const failures = [];
+const inconclusives = [];
 const summaries = [];
 for (const item of selectedCases) {
   assertPublishablePackage(path.basename(item.directory), {checkOutputs: true});
@@ -208,10 +241,9 @@ for (const item of selectedCases) {
     process.stdout.write(`${JSON.stringify(summaries.at(-1))}\n`);
     continue;
   }
+  const caseArtifactDir = artifactDirFor(item);
   const candidateFile=resolveExistingPackageFile(item.directory,item.candidate,`${item.slug}: candidate preview`);
-  const sourceFile=resolveExistingPackageFile(item.directory,
-    path.basename(item.directory)==="dear-dictator"||path.basename(item.directory)==="quand-le-soleil-se-couche" ? "candidate.wikidot.txt" : "candidate.wikidot.source.txt",
-    `${item.slug}: candidate source identity`);
+  const sourceFile=resolveExistingPackageFile(item.directory,item.package.sourceName,`${item.slug}: candidate source identity`);
   const cssFile=resolveExistingPackageFile(item.directory,item.css,`${item.slug}: candidate CSS`);
   const args = [
     lab, "check", "--socket", item.socket ?? socket, "--site-id", String(siteId),
@@ -219,7 +251,7 @@ for (const item of selectedCases) {
     "--source", sourceFile,
     "--css", cssFile,
     "--reference", item.reference, "--offline", "--selectors", item.selectors,
-    "--title", item.title, "--compact", ...(noVisual ? [] : ["--visual"]), "--artifact-dir", runArtifactRoot ? path.join(runArtifactRoot, path.basename(item.directory)) : path.join(item.directory, "artifacts"),
+    "--title", item.title, "--compact", ...(noVisual ? [] : ["--visual"]), "--artifact-dir", caseArtifactDir,
   ];
   if (item.surfaceContract) args.push("--surface-contract",item.surfaceContract);
   const structureFile=path.join(item.directory,"acceptance-structure.json");
@@ -243,8 +275,8 @@ for (const item of selectedCases) {
     failures.push(row); summaries.push(row); process.stdout.write(`${JSON.stringify(row)}\n`); continue;
   }
   const verdict = output.result ?? output;
-  if (runArtifactRoot) {
-    const rawResultPath = path.join(runArtifactRoot, path.basename(item.directory), "raw-result.json");
+  if (runArtifactRoot || useStore) {
+    const rawResultPath = path.join(caseArtifactDir, "raw-result.json");
     fs.mkdirSync(path.dirname(rawResultPath), {recursive: true});
     fs.writeFileSync(rawResultPath, `${JSON.stringify({schema: "theme_lab_full_check_result.v1", result: verdict})}\n`);
   }
@@ -292,19 +324,30 @@ for (const item of selectedCases) {
   const fontFailed = row.font_diagnostics?.status !== "measured" || !row.font_diagnostics.fonts?.some((font) => font.glyph_count > 0);
   const interactionFailed = !iteration && Object.values(row.interaction_diagnostics ?? {}).some((entry) => entry.status === "fail");
   const imageFailed = (row.image_diagnostics?.broken?.length ?? 0) > 0;
-  const failed = result.status !== 0 || row.verdict === "fail" || row.verdict === "inconclusive" || localAcceptanceStatus === "fail" || row.errors > 0 || row.next_actions > 0 || (!iteration && !["pass", "warn"].includes(row.torture)) || external !== 0 || missingAssets > 0 || viewportFailed || fontFailed || interactionFailed || imageFailed;
-  row.status = failed ? "fail" : iteration ? "iteration-verdict" : row.verdict === "warn" ? "warn-no-actionable-issues" : "pass";
-  if (failed) failures.push({...row, exit_code: result.status, stderr: result.stderr?.slice(0, 500)});
+  const failedHard = result.status !== 0 || row.verdict === "fail" || localAcceptanceStatus === "fail" || row.errors > 0 || row.next_actions > 0 || (!iteration && !["pass", "warn"].includes(row.torture)) || external !== 0 || missingAssets > 0 || viewportFailed || fontFailed || interactionFailed || imageFailed;
+  const inconclusiveOnly = !failedHard && row.verdict === "inconclusive";
+  row.status = failedHard ? "fail" : inconclusiveOnly ? "inconclusive" : iteration ? "iteration-verdict" : row.verdict === "warn" ? "warn-no-actionable-issues" : "pass";
+  if (failedHard) failures.push({...row, exit_code: result.status, stderr: result.stderr?.slice(0, 500)});
+  else if (inconclusiveOnly) inconclusives.push({...row, exit_code: result.status, stderr: result.stderr?.slice(0, 500)});
+  if (useStore) {
+    try {
+      row.evidence_store = await storeRunArtifacts(caseArtifactDir, {
+        store: evidenceStoreDir,
+        manifestPath: path.join(storeRunRoot, `${path.basename(item.directory)}.manifest.json`),
+      });
+    } catch (error) {
+      // Storage must never lose a run's evidence or fail its verdict:
+      // the raw artifacts stay in place and the row records the error.
+      row.evidence_store_error = error instanceof Error ? error.message : String(error);
+    }
+  }
   summaries.push(row);
   process.stdout.write(`${JSON.stringify(row)}\n`);
 }
 
-process.stdout.write(`${JSON.stringify({summary: {
-  total: summaries.length,
+process.stdout.write(`${JSON.stringify({summary: summarizeRun(summaries, {
   mode: verifyOnly ? "verify-only" : iteration ? "iteration" : "full-acceptance",
-  verified: summaries.filter((row) => row.status === "verified").length,
-  pass: summaries.filter((row) => row.status === "pass").length,
-  warn_no_actionable_issues: summaries.filter((row) => row.status === "warn-no-actionable-issues").length,
-  failed: failures.length,
-}, failures})}\n`);
-process.exitCode = failures.length ? 1 : 0;
+  failures,
+  inconclusives,
+}), failures, inconclusives, ...(useStore ? {evidence_store: {store: evidenceStoreDir, run_root: storeRunRoot}} : {})})}\n`);
+process.exitCode = runExitCode({failures, inconclusives}, failOn);

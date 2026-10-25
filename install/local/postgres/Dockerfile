@@ -6,9 +6,11 @@ EXPOSE 5432
 RUN adduser -S wikijump
 
 # Install dependencies
+RUN apk add --no-cache --upgrade ca-certificates ca-certificates-bundle
+
 RUN apk add --no-cache \
     musl-locales \
-    postgresql-contrib \
+    postgresql17-contrib \
     sudo
 
 # Install files

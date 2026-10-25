@@ -125,7 +125,7 @@
     {/if}
   {:else if pagePaneState === PagePane.EditMeta}
     {#if EditMetaPane}
-      <EditMetaPane {...props} />
+      <EditMetaPane bind:pagePaneState {...props} />
     {:else}
       <p class="pane-loading" aria-live="polite">Loading…</p>
     {/if}

@@ -6,6 +6,28 @@
 
 FROM rust:1.95.0@sha256:f49565f188ee00bc2a18dd418183f2c5f23ef7d6e691890517ed341a598f67c3 AS rust
 
+# The pinned image still trusts the compromised emSign ECC Root CA - G3 and
+# Comodo AAA cross-sign. Refresh the OS bundle before any HTTPS bootstrap.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates && \
+    update-ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Rustup before 1.29.2 trusts a compromised eMudhra intermediate
+# (CVE-2026-111943, RUSTSEC-2026-0382,
+# https://blog.rust-lang.org/2026/10/20/Rustup-1.29.2/). The pinned base
+# image still ships rustup 1.29.0 and has not been rebuilt upstream, so a
+# re-pin does not fix it. Replace the image's rustup with 1.29.2 here,
+# before any rustup or cargo network use. The Rust toolchain itself stays
+# 1.95.0 per rust-toolchain.toml.
+RUN set -eux; \
+    curl -fsSL -o /tmp/rustup-init https://static.rust-lang.org/rustup/archive/1.29.2/x86_64-unknown-linux-gnu/rustup-init; \
+    printf '%s  %s\n' "5be191e8c70a5007074254cb74d78dbfdd25cd5a61c27de7b8e5410122ec24f4" /tmp/rustup-init | sha256sum -c -; \
+    chmod +x /tmp/rustup-init; \
+    cp /tmp/rustup-init "$(command -v rustup)"; \
+    rm /tmp/rustup-init; \
+    rustup --version | grep -F "1.29.2"
+
 # Install system dependencies
 RUN apt update
 RUN apt install -y build-essential libmagic-dev pkg-config musl-tools
@@ -55,8 +77,10 @@ FROM debian:trixie-slim@sha256:020c0d20b9880058cbe785a9db107156c3c75c2ac944a6aa7
 
 ENV LOCALIZATION_PATH="/opt/locales"
 
-RUN apt update
-RUN apt install -y curl libmagic1 libmagic-mgc
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates curl libmagic1 libmagic-mgc && \
+    update-ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 COPY --from=rust /out/deepwell /usr/local/bin/deepwell
 COPY --from=rust /tmp/sqlx-root/bin/sqlx /usr/local/bin/sqlx
 COPY ./deepwell/migrations /opt/deepwell/migrations

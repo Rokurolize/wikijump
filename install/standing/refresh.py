@@ -7,10 +7,12 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import re
 import subprocess
 import tempfile
+import threading
 import time
 import tomllib
 
@@ -235,7 +237,7 @@ def wait_for_health(
             raise RuntimeError(
                 f"standing service stopped before becoming healthy: {final}"
             )
-        time.sleep(5)
+        time.sleep(1)
     raise TimeoutError(
         f"standing services did not become healthy within {timeout_seconds}s: {final}"
     )
@@ -592,6 +594,54 @@ def restore_or_recreate_previous_containers(
                 "services": {service: current[service] for service in SERVICES}}
 
 
+def _park_one_container(
+    service: str,
+    old: dict[str, object],
+    runtime_home: Path,
+    run_id: str,
+    parked: dict[str, dict[str, object]],
+    lock: threading.Lock,
+) -> None:
+    """Rename, stop, verify, and snapshot one application container.
+
+    The entry is registered in ``parked`` at the same point as the serial
+    implementation registered it, so a failure partway still leaves the
+    container listed for the restore path.
+    """
+    parked_name = parked_container_name(run_id, service)
+    if resource_exists("container", parked_name, runtime_home):
+        raise RuntimeError(f"rollback container already exists: {parked_name}")
+    command(
+        "docker",
+        "rename",
+        old["container_id"],
+        parked_name,
+        cwd=runtime_home,
+    )
+    renamed = container_identity(parked_name, runtime_home)
+    if renamed["container_id"] != old["container_id"]:
+        raise RuntimeError(f"parked container identity changed for {service}")
+    entry: dict[str, object] = {
+        "service": service,
+        "original_name": old["name"],
+        "parked_name": parked_name,
+        "was_running": old["running"],
+        "container": renamed,
+    }
+    with lock:
+        parked[service] = entry
+    if old["running"]:
+        command("docker", "stop", parked_name, cwd=runtime_home)
+    entry["container"] = container_identity(parked_name, runtime_home)
+    if entry["container"]["running"]:
+        raise RuntimeError(f"parked container is still running for {service}")
+    tag = parked_image_tag(run_id, service)
+    entry["parked_image"] = {
+        "tag": tag,
+        "image_id": commit_parked_container(parked_name, tag, runtime_home),
+    }
+
+
 def park_containers(
     previous: dict[str, dict[str, object]], runtime_home: Path, run_id: str
 ) -> dict[str, dict[str, object]]:
@@ -601,42 +651,31 @@ def park_containers(
     activation ``compose up``: Compose claims containers by immutable labels
     and removes renamed ones whose image changed, but the committed tag keeps
     the exact stopped filesystem restorable through Compose at rollback.
+
+    The services park concurrently: each touches only its own container and
+    image tag, and serial parking (stop grace plus a filesystem commit per
+    service) was most of the activation stage's unexplained time. A failure
+    restores whatever was parked, as the serial version did.
     """
     parked: dict[str, dict[str, object]] = {}
+    lock = threading.Lock()
     try:
         prune_parked_images(runtime_home)
-        for service in SERVICES:
-            old = previous[service]
-            parked_name = parked_container_name(run_id, service)
-            if resource_exists("container", parked_name, runtime_home):
-                raise RuntimeError(f"rollback container already exists: {parked_name}")
-            command(
-                "docker",
-                "rename",
-                old["container_id"],
-                parked_name,
-                cwd=runtime_home,
-            )
-            renamed = container_identity(parked_name, runtime_home)
-            if renamed["container_id"] != old["container_id"]:
-                raise RuntimeError(f"parked container identity changed for {service}")
-            parked[service] = {
-                "service": service,
-                "original_name": old["name"],
-                "parked_name": parked_name,
-                "was_running": old["running"],
-                "container": renamed,
-            }
-            if old["running"]:
-                command("docker", "stop", parked_name, cwd=runtime_home)
-            parked[service]["container"] = container_identity(parked_name, runtime_home)
-            if parked[service]["container"]["running"]:
-                raise RuntimeError(f"parked container is still running for {service}")
-            tag = parked_image_tag(run_id, service)
-            parked[service]["parked_image"] = {
-                "tag": tag,
-                "image_id": commit_parked_container(parked_name, tag, runtime_home),
-            }
+        with ThreadPoolExecutor(max_workers=len(SERVICES)) as pool:
+            futures = [
+                pool.submit(
+                    _park_one_container,
+                    service,
+                    previous[service],
+                    runtime_home,
+                    run_id,
+                    parked,
+                    lock,
+                )
+                for service in SERVICES
+            ]
+            for future in futures:
+                future.result()
     except Exception:
         try:
             restore_parked_containers(parked, runtime_home)

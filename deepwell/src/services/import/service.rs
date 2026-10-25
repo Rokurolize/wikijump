@@ -29,9 +29,10 @@
 use super::structs::{
     ImportFile, ImportFileDelete, ImportFileDeleteOutput, ImportFileOutput,
     ImportMetaTag, ImportPage, ImportPageFilesVerify, ImportPageFilesVerifyOutput,
-    ImportPageOutput, ImportPageRevision, ImportPageRevisionOutput, ImportSite,
-    ImportSiteOutput, ImportUser, ImportUserOutput, ImportedUserType,
-    PromoteObservedIdentity, PromoteObservedIdentityOutput,
+    ImportPageOutput, ImportPageRevision, ImportPageRevisionOutput, ImportPageVote,
+    ImportPageVotes, ImportPageVotesOutput, ImportSite, ImportSiteOutput, ImportUser,
+    ImportUserOutput, ImportedUserType, PromoteObservedIdentity,
+    PromoteObservedIdentityOutput,
 };
 use crate::constants::SYSTEM_USER_ID;
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
@@ -41,6 +42,7 @@ use crate::models::file_revision::{self, Entity as FileRevision};
 use crate::models::page::{self, Entity as Page};
 use crate::models::page_category::Model as PageCategoryModel;
 use crate::models::page_revision::{self, Entity as PageRevision};
+use crate::models::page_vote::{self, Entity as PageVote};
 use crate::models::site::{self, Entity as Site};
 use crate::models::user::{self, Entity as WikijumpUser};
 use crate::models::wikidot_user::{self, Entity as WikidotUser};
@@ -59,7 +61,7 @@ use crate::services::page_revision::{
     CreateFirstPageRevision, CreateFirstPageRevisionOutput, CreatePageRevision,
     CreatePageRevisionBody, PageRevisionService,
 };
-use crate::services::{CategoryService, PageService, UserService};
+use crate::services::{CategoryService, PageService, ScoreService, UserService};
 use crate::types::{FileRevisionType, Maybe, PageId, PageLockType, Reference, UserType};
 use crate::utils::{get_category_name, now};
 use ftml::data::KarmaLevel;
@@ -72,7 +74,7 @@ use sea_orm::{
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, UpdateResult};
 use sea_query::Expr;
 use sha2::{Digest, Sha256};
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::net::IpAddr;
 use time::OffsetDateTime;
 
@@ -1119,8 +1121,6 @@ impl ImportService {
         })
     }
 
-    // TODO page_vote
-
     // TODO forum
 
     /// Imports one source attachment onto a page.
@@ -1935,12 +1935,225 @@ impl ImportService {
         })
     }
 
-    // TODO page_vote
+    /// Imports the source Who-Rated roster of one imported page.
+    ///
+    /// Each source vote becomes a current `page_vote` row flagged
+    /// `from_wikidot`. When the imported aggregate baseline is present, score
+    /// evaluation already counts only local rows, so the roster and the
+    /// aggregate do not add the same votes twice. The import is idempotent:
+    /// a row that already matches the source is left alone, while a conflicting
+    /// local or differing row fails the import instead of being overwritten.
+    pub async fn add_page_votes(
+        ctx: &ServiceContext<'_>,
+        ImportPageVotes {
+            site_id,
+            page_id,
+            rating_system,
+            votes,
+        }: ImportPageVotes,
+    ) -> Result<ImportPageVotesOutput> {
+        info!(
+            "Importing {} source vote(s) on page ID {page_id} on site ID {site_id}",
+            votes.len(),
+        );
+
+        let txn = ctx.transaction();
+        let make_error = |detail: String| {
+            Error::new(
+                format!(
+                    "imported vote roster on page ID {page_id} in site ID {site_id} is invalid: {detail}",
+                ),
+                ErrorType::DatabaseImport,
+            )
+        };
+
+        require_imported_page(ctx, site_id, page_id)
+            .await
+            .or_raise(|| make_error(str!("page is not an imported Wikidot page")))?;
+
+        if let Err(detail) = validate_imported_votes(&rating_system, &votes) {
+            bail!(make_error(detail));
+        }
+
+        // The aggregate baseline is only authoritative once it has been
+        // imported; a missing snapshot skips the cross-check rather than
+        // guessing at the source total.
+        if let Some(imported_rating) =
+            ScoreService::imported_rating(ctx, page_id)
+                .await
+                .or_raise(|| make_error(str!("failed to read the imported aggregate")))?
+        {
+            let source_total: i64 = votes.iter().map(|vote| i64::from(vote.value)).sum();
+            if source_total != imported_rating {
+                bail!(make_error(format!(
+                    "source votes total {source_total} but the imported aggregate is {imported_rating}",
+                )));
+            }
+        }
+
+        let existing = PageVote::find()
+            .filter(page_vote::Column::PageId.eq(page_id))
+            .filter(page_vote::Column::RatingSystem.eq(rating_system.as_str()))
+            .filter(page_vote::Column::DeletedAt.is_null())
+            .all(txn)
+            .await
+            .or_raise(|| make_error(str!("failed to load current votes")))?;
+        let mut existing_by_user = BTreeMap::new();
+        for vote in existing {
+            existing_by_user.insert(vote.user_id, vote);
+        }
+
+        let mut inserted = 0;
+        let mut unchanged = 0;
+        for ImportPageVote { user_id, value } in votes {
+            match existing_by_user.get(&user_id) {
+                Some(vote) if vote.from_wikidot && vote.value == value => {
+                    unchanged += 1;
+                }
+                Some(vote) => {
+                    bail!(make_error(format!(
+                        "user ID {user_id} already has a current vote (value {}, from_wikidot {}) that differs from the source value {value}",
+                        vote.value, vote.from_wikidot,
+                    )));
+                }
+                None => {
+                    let model = page_vote::ActiveModel {
+                        page_id: Set(page_id),
+                        user_id: Set(user_id),
+                        rating_system: Set(rating_system.clone()),
+                        value: Set(value),
+                        from_wikidot: Set(true),
+                        ..Default::default()
+                    };
+                    model.insert(txn).await.or_raise(|| {
+                        make_error(format!("failed to insert user ID {user_id}"))
+                    })?;
+                    inserted += 1;
+                }
+            }
+        }
+
+        Ok(ImportPageVotesOutput {
+            site_id,
+            page_id,
+            inserted,
+            unchanged,
+        })
+    }
+}
+
+/// Checks a source roster before any row is written. Only the plus/minus
+/// rating (`points`) is evidenced by the source roster, so other systems are
+/// rejected rather than guessed.
+fn validate_imported_votes(
+    rating_system: &str,
+    votes: &[ImportPageVote],
+) -> std::result::Result<(), String> {
+    if rating_system != "points" {
+        return Err(format!("unsupported rating system '{rating_system}'"));
+    }
+
+    let mut seen = HashSet::new();
+    for vote in votes {
+        if vote.user_id <= 0 {
+            return Err(format!("invalid user ID {}", vote.user_id));
+        }
+        if vote.value != 1 && vote.value != -1 {
+            return Err(format!(
+                "user ID {} has value {}, expected +1 or -1",
+                vote.user_id, vote.value,
+            ));
+        }
+        if !seen.insert(vote.user_id) {
+            return Err(format!("user ID {} is listed more than once", vote.user_id));
+        }
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::SYNC_PAGE_REVISION_SEQUENCE_SQL;
+    use super::{
+        ImportPageVote, SYNC_PAGE_REVISION_SEQUENCE_SQL, validate_imported_votes,
+    };
+    use serde::Deserialize;
+
+    /// A captured anonymous Who-Rated roster (see the artifact's capture
+    /// script). Only the fields the import reads are declared.
+    #[derive(Deserialize)]
+    struct CapturedRoster {
+        rating: i64,
+        votes: Vec<ImportPageVote>,
+    }
+
+    fn captured_roster(json: &str) -> CapturedRoster {
+        serde_json::from_str(json).expect("captured roster should parse")
+    }
+
+    #[test]
+    fn source_votes_accept_only_plus_minus_points_once_per_user() {
+        let votes = [
+            ImportPageVote {
+                user_id: 1,
+                value: 1,
+            },
+            ImportPageVote {
+                user_id: 2,
+                value: -1,
+            },
+        ];
+        assert!(validate_imported_votes("points", &votes).is_ok());
+        assert!(validate_imported_votes("stars", &votes).is_err());
+
+        let out_of_range = [ImportPageVote {
+            user_id: 1,
+            value: 5,
+        }];
+        assert!(validate_imported_votes("points", &out_of_range).is_err());
+
+        let invalid_user = [ImportPageVote {
+            user_id: 0,
+            value: 1,
+        }];
+        assert!(validate_imported_votes("points", &invalid_user).is_err());
+
+        let duplicate = [
+            ImportPageVote {
+                user_id: 1,
+                value: 1,
+            },
+            ImportPageVote {
+                user_id: 1,
+                value: -1,
+            },
+        ];
+        assert!(validate_imported_votes("points", &duplicate).is_err());
+    }
+
+    #[test]
+    fn captured_scp_9506_roster_validates_and_sums_to_the_source_aggregate() {
+        // #2205: 486 individual voters (475 plus, 11 minus) whose sum is the
+        // page's displayed rating of 464.
+        let roster = captured_roster(include_str!(
+            "../../../../install/local/wikidot-verification/artifacts/votes-scp-9506.json"
+        ));
+        assert_eq!(roster.votes.len(), 486);
+        assert!(validate_imported_votes("points", &roster.votes).is_ok());
+        let total: i64 = roster.votes.iter().map(|vote| i64::from(vote.value)).sum();
+        assert_eq!(total, roster.rating);
+    }
+
+    #[test]
+    fn captured_scp_3352_roster_validates_and_sums_to_the_source_aggregate() {
+        let roster = captured_roster(include_str!(
+            "../../../../install/local/wikidot-verification/artifacts/votes-scp-3352.json"
+        ));
+        assert_eq!(roster.votes.len(), 638);
+        assert!(validate_imported_votes("points", &roster.votes).is_ok());
+        let total: i64 = roster.votes.iter().map(|vote| i64::from(vote.value)).sum();
+        assert_eq!(total, roster.rating);
+    }
 
     #[test]
     fn revision_sequence_sync_sql_uses_imported_max_and_current_sequence_state() {

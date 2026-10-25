@@ -7,6 +7,7 @@ import path from 'node:path';
 import {CANONICAL_INTERACTION_STATES,CANONICAL_SEMANTIC_PROBES} from './theme-canonical-execution.mjs';
 import {playwrightBrowserVersions} from './playwright-browser-versions.mjs';
 import {themeScenarioConfigForPackage} from './theme-scenario-factory.mjs';
+import {resolveRunContractOption} from './current-run-contract-option.mjs';
 import {materializeThemeTestScenario} from './theme-test-scenario-config.mjs';
 import {themeTestMeasurementReceipt} from './theme-test-measurement-receipt.mjs';
 
@@ -29,9 +30,10 @@ function validateCanonicalExecution(execution,{scenarioSha256,profile,expectedBa
 }
 
 const runContractByGeneration={sigma9:'ports/current-acceptance/run-contract.json',sigma10:'sigma10-migration/current-campaign/run-contract.json'};
-export function validateCanonicalScenarioMatrix({root,packageName,generation,matrix,browserVersions=null}){
-  const expectedBackendRuntimeIdentity=JSON.parse(fs.readFileSync(path.join(root,runContractByGeneration[generation]??'missing-run-contract'),'utf8')).expected_backend_runtime_identity;
-  const config=themeScenarioConfigForPackage(root,{generation,packageName});
+export function validateCanonicalScenarioMatrix({root,packageName,generation,matrix,browserVersions=null,runContract=null}){
+  const contractPath=runContract===null?(runContractByGeneration[generation]??'missing-run-contract'):resolveRunContractOption(root,runContract,{generation});
+  const expectedBackendRuntimeIdentity=JSON.parse(fs.readFileSync(path.join(root,contractPath),'utf8')).expected_backend_runtime_identity;
+  const config=themeScenarioConfigForPackage(root,{generation,packageName,runContract});
   const materialized=materializeThemeTestScenario(root,config);
   if(matrix?.schema!=='theme_lab_scenario_matrix.v1')throw new Error('invalid canonical scenario matrix schema');
   if(matrix.scenario_sha256!==materialized.scenario_sha256)throw new Error(`${packageName}: canonical matrix uses a superseded scenario`);

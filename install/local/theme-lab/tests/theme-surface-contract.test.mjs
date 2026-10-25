@@ -113,3 +113,22 @@ test('surface contract retains reviewed exceptions as explicit evidence rather t
   assert.equal(contract.reviewed_exceptions.length,1);
   assert.match(contract.reviewed_exceptions[0].rationale,/paired screenshots/u);
 });
+
+test('basalt responsive exception is scoped to one measured declaration',()=>{
+  const raw=JSON.parse(fs.readFileSync(path.join(root,'ports/basalt/surface-contract.json'),'utf8'));
+  const contract=normalizeSurfaceContract(raw);
+  assert.equal(contract.schema,SURFACE_CONTRACT_SCHEMA);
+  assert.equal(contract.strict,true);
+  assert.deepEqual(contract.custom_selectors,[]);
+  assert.equal(contract.reviewed_exceptions.length,1);
+  const [exception]=contract.reviewed_exceptions;
+  assert.equal(exception.kind,'baseline_responsive_behavior_flattened');
+  assert.equal(exception.surface,'shell.container');
+  assert.equal(exception.selector,'#main-content');
+  assert.equal(exception.property,'max-width');
+  // A declaration-level exception is only auditable when it names the exact
+  // property; a kind/surface match alone would hide any later flattened rule.
+  for(const key of ['kind','surface','selector','property'])assert.ok(exception[key],`missing ${key}`);
+  assert.match(exception.rationale,/347\.59375px/u);
+  assert.match(exception.rationale,/Sigma-9/u);
+});
