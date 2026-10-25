@@ -2608,6 +2608,7 @@ async fn import_site_roster_rejects_unimported_identity() {
             .is_empty(),
         "a rejected sync writes no relations",
     );
+}
 
 async fn imported_page_count(runner: &TestRunner, site_id: i64, slug: &str) -> u64 {
     PageTable::find()
