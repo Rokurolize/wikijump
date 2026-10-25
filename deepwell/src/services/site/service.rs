@@ -89,7 +89,7 @@ impl SiteIconSourceKind {
         match self {
             Self::Favicon => Some("/local--favicon/"),
             Self::Ios => Some("/local--iosicon/"),
-            Self::Windows => None,
+            Self::Windows => Some("/local--wp8icon/"),
         }
     }
 }
@@ -1090,7 +1090,9 @@ pub(crate) fn is_reserved_platform_hostname_slug(slug: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::is_reserved_platform_hostname_slug;
+    use super::{
+        SiteIconSourceKind, is_reserved_platform_hostname_slug, is_site_owned_icon_source,
+    };
     use wikidot_normalize::normalize;
 
     #[test]
@@ -1120,5 +1122,39 @@ mod tests {
 
         assert_eq!(slug, "dns");
         assert!(is_reserved_platform_hostname_slug(&slug));
+    }
+
+    #[test]
+    fn wikidot_windows_tile_source_is_site_owned() {
+        // Refs #2086: Wikidot sites declare their Windows tile under
+        // /local--wp8icon/ (msapplication-TileImage); an imported site's
+        // tile source on its own Wikidot host is a site-owned imported
+        // resource, like the favicon and iOS routes.
+        assert!(is_site_owned_icon_source(
+            "scp-jp",
+            true,
+            "https://scp-jp.wikidot.com/local--wp8icon/wp8icon.png",
+            SiteIconSourceKind::Windows,
+        ));
+        // Another site's tile, a non-tile path, and non-imported sites
+        // stay rejected.
+        assert!(!is_site_owned_icon_source(
+            "scp-jp",
+            true,
+            "https://scp-wiki.wikidot.com/local--wp8icon/wp8icon.png",
+            SiteIconSourceKind::Windows,
+        ));
+        assert!(!is_site_owned_icon_source(
+            "scp-jp",
+            true,
+            "https://scp-jp.wikidot.com/local--files/wp8icon.png",
+            SiteIconSourceKind::Windows,
+        ));
+        assert!(!is_site_owned_icon_source(
+            "scp-jp",
+            false,
+            "https://scp-jp.wikidot.com/local--wp8icon/wp8icon.png",
+            SiteIconSourceKind::Windows,
+        ));
     }
 }
