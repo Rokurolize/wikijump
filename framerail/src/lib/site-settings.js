@@ -79,6 +79,7 @@ const EXTERNAL_THEME_HOSTS = new Set([
   "maxcdn.bootstrapcdn.com",
   "nu-scptheme.github.io",
   "rsms.me",
+  "scp-jp.github.io",
   "scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com"
 ])
 

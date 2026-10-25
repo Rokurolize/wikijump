@@ -140,6 +140,7 @@
           "deepwell/tests/page.rs#article_view_cache_respects_anonymous_permission_revocation",
           "deepwell/tests/page.rs#article_view_uses_category_license_and_site_fallback",
           "deepwell/tests/page.rs#article_view_uses_effective_page_discussion_policy_and_stored_nesting",
+          "deepwell/tests/page.rs#category_theme_change_invalidates_article_view_cache",
           "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page",
           "deepwell/tests/page.rs#failed_page_create_rolls_back_its_allocated_number",
           "deepwell/tests/page.rs#imported_redirect_noredirect_renders_live_error_block",
@@ -208,6 +209,7 @@
         "reference": "deepwell/tests/members_freshness.rs#imported_members_sources_preserve_runtime_cache_boundaries",
         "alternatives": [
           "deepwell/tests/page.rs#article_cache_and_include_dependencies_use_exact_template_source",
+          "deepwell/tests/page.rs#category_theme_change_invalidates_article_view_cache",
           "deepwell/tests/page.rs#imported_countpages_sources_are_excluded_from_article_view_cache_metadata",
           "deepwell/tests/page.rs#renderer_epoch_invalidates_pre_freeze_compiled_artifacts",
           "deepwell/tests/page.rs#saved_tagcloud_page_view_follows_independent_tag_mutations",

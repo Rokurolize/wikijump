@@ -62,9 +62,12 @@ const WIKIDOT_IMAGE_SOURCES = [
   "https://d2qhngyckgiutd.cloudfront.net",
   // Header logos and decorative images that theme stylesheets reference from
   // their GitHub Pages hosts and from Wikimedia Commons. Live Wikidot loads
-  // each (retained observation:
-  // install/local/wikidot-verification/artifacts/theme-sweep-external-origins-20261019.json).
+  // each (retained observations:
+  // install/local/wikidot-verification/artifacts/theme-sweep-external-origins-20261019.json
+  // and, for the SCP-JP host,
+  // install/local/wikidot-verification/artifacts/scp-jp-external-origins-20261025.json).
   "https://nu-scptheme.github.io",
+  "https://scp-jp.github.io",
   "https://scpwiki.github.io",
   "https://upload.wikimedia.org"
 ]

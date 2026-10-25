@@ -136,6 +136,35 @@ impl ArticlePageCache {
         let template_source =
             BlueprintPageService::get_page_template(ctx, input.site_id, category, page)
                 .await?;
+
+        // The cached view embeds the theme that SettingsService::get_theme
+        // resolves from the page's category (falling back to `_default`), so
+        // the key must change whenever those stored theme fields change.
+        let own_category_slug = category.unwrap_or("_default");
+        let theme_statement = Statement::from_sql_and_values(
+            DatabaseBackend::Postgres,
+            str!(
+                "
+                SELECT slug, theme_kind, theme_builtin_id, theme_external_url,
+                    theme_custom_css
+                FROM page_category
+                WHERE site_id = $1
+                AND slug IN ($2, '_default')
+                "
+            ),
+            [Value::from(input.site_id), Value::from(own_category_slug)],
+        );
+        let theme_rows = CategoryThemeRow::find_by_statement(theme_statement)
+            .all(ctx.transaction())
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to load article page cache theme rows",
+                    ErrorType::DatabaseQuery,
+                )
+            })?;
+        let theme_fingerprint =
+            category_theme_fingerprint(&theme_rows, own_category_slug);
         let template_source_hash = template_source
             .as_deref()
             .map(|source| Sha256::digest(source.as_bytes()).to_vec());
@@ -170,6 +199,7 @@ impl ArticlePageCache {
                 route_slug,
                 page_extra,
                 locales: &locales,
+                theme_fingerprint: &theme_fingerprint,
             },
         )
         .map(|cache_key| ArticlePageCacheMetadata {
@@ -231,6 +261,45 @@ fn optional_hash_hex(hash: Option<&[u8]>) -> String {
     hash.map(hex::encode).unwrap_or_default()
 }
 
+#[derive(Debug, FromQueryResult)]
+struct CategoryThemeRow {
+    slug: String,
+    theme_kind: String,
+    theme_builtin_id: Option<i64>,
+    theme_external_url: Option<String>,
+    theme_custom_css: Option<String>,
+}
+
+/// Fingerprint of the stored theme state an article view's resolved theme
+/// depends on: the page category's own row, then the `_default` row that
+/// `SettingsService::get_theme` falls back to when the category inherits.
+/// Any change to these fields must yield a different fingerprint so cached
+/// article views are not served with a stale theme (issue #2764).
+fn category_theme_fingerprint(rows: &[CategoryThemeRow], own_slug: &str) -> Vec<u8> {
+    let mut hasher = Sha256::new();
+    let mut slugs = vec![own_slug];
+    if own_slug != "_default" {
+        slugs.push("_default");
+    }
+    for slug in slugs {
+        hasher.update(slug.as_bytes());
+        hasher.update([0]);
+        match rows.iter().find(|row| row.slug == slug) {
+            Some(row) => {
+                hasher.update(row.theme_kind.as_bytes());
+                hasher.update([0]);
+                hasher.update(row.theme_builtin_id.unwrap_or_default().to_be_bytes());
+                hasher.update(row.theme_external_url.as_deref().unwrap_or("").as_bytes());
+                hasher.update([0]);
+                hasher.update(row.theme_custom_css.as_deref().unwrap_or("").as_bytes());
+                hasher.update([0]);
+            }
+            None => hasher.update(b"absent\0"),
+        }
+    }
+    hasher.finalize().to_vec()
+}
+
 struct ArticlePageCacheKeyParts<'a> {
     site_id: i64,
     page_id: i64,
@@ -246,6 +315,7 @@ struct ArticlePageCacheKeyParts<'a> {
     route_slug: &'a str,
     page_extra: &'a str,
     locales: &'a str,
+    theme_fingerprint: &'a [u8],
 }
 
 fn format_article_page_cache_key(parts: ArticlePageCacheKeyParts<'_>) -> String {
@@ -254,9 +324,10 @@ fn format_article_page_cache_key(parts: ArticlePageCacheKeyParts<'_>) -> String 
     let top_bar_hash = optional_hash_hex(parts.compiled_top_bar_html_hash);
     let side_bar_hash = optional_hash_hex(parts.compiled_side_bar_html_hash);
     let template_hash = optional_hash_hex(parts.template_source_hash);
+    let theme_hash = hex::encode(parts.theme_fingerprint);
 
     format!(
-        "{ARTICLE_VIEW_PAGE_CACHE_PREFIX}:v{DEEPWELL_RENDERER_EPOCH}:site={}:page={}:rev={}:updated={}:public={}:permission={}:template={}:body={}:styles={}:top={}:side={}:slug={}:extra={}:locales={}",
+        "{ARTICLE_VIEW_PAGE_CACHE_PREFIX}:v{DEEPWELL_RENDERER_EPOCH}:site={}:page={}:rev={}:updated={}:public={}:permission={}:template={}:body={}:styles={}:top={}:side={}:slug={}:extra={}:locales={}:theme={}",
         parts.site_id,
         parts.page_id,
         parts.latest_revision_id,
@@ -271,6 +342,7 @@ fn format_article_page_cache_key(parts: ArticlePageCacheKeyParts<'_>) -> String 
         hex::encode(parts.route_slug),
         hex::encode(parts.page_extra),
         hex::encode(parts.locales),
+        theme_hash,
     )
 }
 
@@ -327,12 +399,13 @@ mod tests {
             route_slug: "start",
             page_extra: "noredirect",
             locales: "en,ja",
+            theme_fingerprint: &[0xaa],
         });
 
         assert_eq!(
             key,
             format!(
-                "deepwell:article-view:page:v{DEEPWELL_RENDERER_EPOCH}:site=7:page=11:rev=13:updated=17:public=29:permission=site=19,user=23:template=89ab:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61"
+                "deepwell:article-view:page:v{DEEPWELL_RENDERER_EPOCH}:site=7:page=11:rev=13:updated=17:public=29:permission=site=19,user=23:template=89ab:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61:theme=aa"
             ),
         );
     }
@@ -355,6 +428,7 @@ mod tests {
                 route_slug: "category:article",
                 page_extra: "",
                 locales: "en",
+                theme_fingerprint: &[0xaa],
             })
         };
 
@@ -383,6 +457,7 @@ mod tests {
                     route_slug: "category:article",
                     page_extra: "",
                     locales: "en",
+                    theme_fingerprint: &[0xaa],
                 },
             )
             .expect("static imported article source must remain cache-eligible")
@@ -420,13 +495,14 @@ mod tests {
                     route_slug: "start",
                     page_extra: "noredirect",
                     locales: "en,ja",
+                    theme_fingerprint: &[0xaa],
                 },
             );
 
             assert_eq!(
                 key.as_deref(),
                 Some(
-                    format!("deepwell:article-view:page:v{DEEPWELL_RENDERER_EPOCH}:site=7:page=11:rev=13:updated=17:public=29:permission=site=19,user=23:template=:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61")
+                    format!("deepwell:article-view:page:v{DEEPWELL_RENDERER_EPOCH}:site=7:page=11:rev=13:updated=17:public=29:permission=site=19,user=23:template=:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61:theme=aa")
                 ).as_deref(),
                 "{source}",
             );
@@ -450,6 +526,7 @@ mod tests {
             route_slug: "start",
             page_extra: "",
             locales: "en",
+            theme_fingerprint: &[0xaa],
         };
 
         assert_eq!(
@@ -485,6 +562,7 @@ mod tests {
                 route_slug: "start",
                 page_extra: "",
                 locales: "en",
+                theme_fingerprint: &[0xaa],
             };
 
             assert_eq!(
@@ -516,6 +594,7 @@ mod tests {
             route_slug: "category:article",
             page_extra: "",
             locales: "en",
+            theme_fingerprint: &[0xaa],
         };
         let request_dependent_list_pages =
             "[[module ListPages offset=\"@URL|1\"]]%%title_linked%%[[/module]]";
@@ -612,5 +691,95 @@ mod tests {
         for source in ["[[module Rate]]\n[[module NewPage]]", "[[module NewPage]]"] {
             assert!(!anonymous_article_cache_source_eligible(source), "{source}");
         }
+    }
+
+    #[test]
+    fn article_page_cache_key_changes_with_theme_fingerprint() {
+        let key = |theme_fingerprint: &[u8]| {
+            format_article_page_cache_key(ArticlePageCacheKeyParts {
+                site_id: 7,
+                page_id: 11,
+                latest_revision_id: 13,
+                page_updated_at: 17,
+                public_content_cache_fence: "29",
+                permission_fence: "site=19,user=23",
+                template_source_hash: None,
+                compiled_body_html_hash: Some(&[0x01, 0x23]),
+                compiled_body_styles_hash: Some(&[0x34]),
+                compiled_top_bar_html_hash: Some(&[0x45]),
+                compiled_side_bar_html_hash: Some(&[0x67]),
+                route_slug: "category:article",
+                page_extra: "",
+                locales: "en",
+                theme_fingerprint,
+            })
+        };
+
+        assert_ne!(key(&[0x01]), key(&[0x02]));
+    }
+
+    #[test]
+    fn category_theme_fingerprint_tracks_stored_theme_fields() {
+        let row = |slug: &str, kind: &str, url: Option<&str>, css: Option<&str>| {
+            CategoryThemeRow {
+                slug: slug.to_owned(),
+                theme_kind: kind.to_owned(),
+                theme_builtin_id: None,
+                theme_external_url: url.map(|v| v.to_owned()),
+                theme_custom_css: css.map(|v| v.to_owned()),
+            }
+        };
+        let base = vec![
+            row("news", "inherit", None, None),
+            row("_default", "built_in", None, None),
+        ];
+        let base_fp = category_theme_fingerprint(&base, "news");
+
+        // Same stored state -> same fingerprint.
+        assert_eq!(base_fp, category_theme_fingerprint(&base, "news"));
+
+        // Theme kind change on the page's own category.
+        let kind_changed = vec![
+            row(
+                "news",
+                "external",
+                Some("https://example.com/theme.css"),
+                None,
+            ),
+            row("_default", "built_in", None, None),
+        ];
+        assert_ne!(base_fp, category_theme_fingerprint(&kind_changed, "news"));
+
+        // External URL change only.
+        let url_changed = vec![
+            row(
+                "news",
+                "external",
+                Some("https://example.com/other.css"),
+                None,
+            ),
+            row("_default", "built_in", None, None),
+        ];
+        assert_ne!(
+            category_theme_fingerprint(&kind_changed, "news"),
+            category_theme_fingerprint(&url_changed, "news"),
+        );
+
+        // Custom CSS change on the `_default` fallback category.
+        let default_css_changed = vec![
+            row("news", "inherit", None, None),
+            row("_default", "custom", None, Some("body { color: red; }")),
+        ];
+        assert_ne!(
+            base_fp,
+            category_theme_fingerprint(&default_css_changed, "news"),
+        );
+
+        // A page in `_default` itself is fingerprinted from that row alone.
+        let default_only = vec![row("_default", "built_in", None, None)];
+        assert_eq!(
+            category_theme_fingerprint(&default_only, "_default"),
+            category_theme_fingerprint(&base, "_default"),
+        );
     }
 }
