@@ -2639,31 +2639,35 @@ fn import_idempotency_page(runner_page_id: i64, site_id: i64, slug: &str) -> Imp
     }
 }
 
-fn import_idempotency_revision(
+struct ImportIdempotencyRevision<'a> {
     revision_id: i64,
     revision_number: i32,
     page_id: i64,
     site_id: i64,
     author_id: i64,
-    slug: &str,
-    title: &str,
-    wikitext: &str,
-    tags: &[&str],
+    slug: &'a str,
+    title: &'a str,
+    wikitext: &'a str,
+    tags: &'a [&'a str],
+}
+
+fn import_idempotency_revision(
+    params: ImportIdempotencyRevision<'_>,
 ) -> ImportPageRevision {
     ImportPageRevision {
-        revision_id,
+        revision_id: params.revision_id,
         revision_type: PageRevisionType::Regular,
         created_at: OffsetDateTime::UNIX_EPOCH,
         updated_at: None,
-        revision_number,
-        page_id,
-        site_id,
-        user_id: author_id,
-        wikitext: String::from(wikitext),
+        revision_number: params.revision_number,
+        page_id: params.page_id,
+        site_id: params.site_id,
+        user_id: params.author_id,
+        wikitext: String::from(params.wikitext),
         comments: String::from("source import"),
-        title: String::from(title),
-        slug: String::from(slug),
-        tags: tags.iter().map(ToString::to_string).collect(),
+        title: String::from(params.title),
+        slug: String::from(params.slug),
+        tags: params.tags.iter().map(ToString::to_string).collect(),
     }
 }
 
@@ -2680,7 +2684,11 @@ async fn import_idempotency_author(runner: &TestRunner) -> i64 {
     i64::from(user_id)
 }
 
-async fn import_idempotency_current(runner: &TestRunner, site_id: i64, slug: &str) -> (String, Vec<String>, String) {
+async fn import_idempotency_current(
+    runner: &TestRunner,
+    site_id: i64,
+    slug: &str,
+) -> (String, Vec<String>, String) {
     let fetched = run_endpoint!(
         runner,
         page_get,
@@ -2694,7 +2702,9 @@ async fn import_idempotency_current(runner: &TestRunner, site_id: i64, slug: &st
     (
         fetched.title,
         fetched.tags,
-        fetched.wikitext.expect("imported source should be readable"),
+        fetched
+            .wikitext
+            .expect("imported source should be readable"),
     )
 }
 
@@ -2722,43 +2732,67 @@ async fn import_page_reimport_identical_snapshot_fails_closed_without_changing_s
     .expect("source page should import");
     ImportService::add_page_revision(
         runner.context(),
-        import_idempotency_revision(
-            4_260_000_011,
-            0,
+        import_idempotency_revision(ImportIdempotencyRevision {
+            revision_id: 4_260_000_011,
+            revision_number: 0,
             page_id,
             site_id,
             author_id,
             slug,
-            "Source Title",
-            "Source v0 body with [[tabview]].\n",
-            &["admin"],
-        ),
+            title: "Source Title",
+            wikitext: "Source v0 body with [[tabview]].\n",
+            tags: &["admin"],
+        }),
     )
     .await
     .expect("source revision should import");
 
-    // Identical retry with the same stable page ID fails closed.
+    // Identical retry with the same stable page ID fails closed. The
+    // conflicting write aborts only its savepoint (repo savepoint idiom),
+    // so the outer transaction stays usable for the unchanged-state
+    // assertions below.
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("re-import savepoint should begin");
     let error = ImportService::add_page(
-        runner.context(),
+        &ServiceContext::new(runner.state(), &transaction),
         import_idempotency_page(page_id, site_id, slug),
     )
     .await
     .expect_err("identical page re-import must fail closed");
     assert_contains_error!(error, ErrorType::DatabaseImport);
+    transaction
+        .rollback()
+        .await
+        .expect("re-import savepoint should roll back");
 
     // Same slug under a fresh stable ID also fails: never a duplicate row.
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("colliding re-import savepoint should begin");
     let error = ImportService::add_page(
-        runner.context(),
+        &ServiceContext::new(runner.state(), &transaction),
         import_idempotency_page(page_id + 1, site_id, slug),
     )
     .await
     .expect_err("slug-colliding page re-import must fail closed");
     assert_contains_error!(error, ErrorType::DatabaseImport);
+    transaction
+        .rollback()
+        .await
+        .expect("colliding re-import savepoint should roll back");
 
     // State unchanged: one page row, one revision, source content intact.
     assert_eq!(imported_page_count(&runner, site_id, slug).await, 1);
     assert_eq!(imported_revision_count(&runner, page_id).await, 1);
-    let (title, tags, wikitext) = import_idempotency_current(&runner, site_id, slug).await;
+    let (title, tags, wikitext) =
+        import_idempotency_current(&runner, site_id, slug).await;
     assert_eq!(title, "Source Title");
     assert_eq!(tags, ["admin"]);
     assert!(
@@ -2795,34 +2829,34 @@ async fn import_page_source_update_appends_single_deterministic_revision() {
     .expect("source page should import");
     ImportService::add_page_revision(
         runner.context(),
-        import_idempotency_revision(
-            4_260_000_021,
-            0,
+        import_idempotency_revision(ImportIdempotencyRevision {
+            revision_id: 4_260_000_021,
+            revision_number: 0,
             page_id,
             site_id,
             author_id,
             slug,
-            "Source Title v0",
-            "Source v0 body.\n",
-            &["admin"],
-        ),
+            title: "Source Title v0",
+            wikitext: "Source v0 body.\n",
+            tags: &["admin"],
+        }),
     )
     .await
     .expect("source revision should import");
 
     let output = ImportService::add_page_revision(
         runner.context(),
-        import_idempotency_revision(
-            4_260_000_022,
-            1,
+        import_idempotency_revision(ImportIdempotencyRevision {
+            revision_id: 4_260_000_022,
+            revision_number: 1,
             page_id,
             site_id,
             author_id,
             slug,
-            "Source Title v1",
-            "Source v1 body with the updated guide.\n",
-            &["admin", "updated"],
-        ),
+            title: "Source Title v1",
+            wikitext: "Source v1 body with the updated guide.\n",
+            tags: &["admin", "updated"],
+        }),
     )
     .await
     .expect("source update should import");
@@ -2831,17 +2865,17 @@ async fn import_page_source_update_appends_single_deterministic_revision() {
     // Skipping a revision number is rejected: the sequence is deterministic.
     let error = ImportService::add_page_revision(
         runner.context(),
-        import_idempotency_revision(
-            4_260_000_023,
-            5,
+        import_idempotency_revision(ImportIdempotencyRevision {
+            revision_id: 4_260_000_023,
+            revision_number: 5,
             page_id,
             site_id,
             author_id,
             slug,
-            "Source Title v5",
-            "Skipped sequence body.\n",
-            &["admin"],
-        ),
+            title: "Source Title v5",
+            wikitext: "Skipped sequence body.\n",
+            tags: &["admin"],
+        }),
     )
     .await
     .expect_err("out-of-sequence source revision must fail closed");
@@ -2850,7 +2884,8 @@ async fn import_page_source_update_appends_single_deterministic_revision() {
     // Exactly one page row, exactly two revisions, latest content wins.
     assert_eq!(imported_page_count(&runner, site_id, slug).await, 1);
     assert_eq!(imported_revision_count(&runner, page_id).await, 2);
-    let (title, tags, wikitext) = import_idempotency_current(&runner, site_id, slug).await;
+    let (title, tags, wikitext) =
+        import_idempotency_current(&runner, site_id, slug).await;
     assert_eq!(title, "Source Title v1");
     assert_eq!(tags, ["admin", "updated"]);
     assert!(

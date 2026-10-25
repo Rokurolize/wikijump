@@ -749,11 +749,7 @@ mod tests {
                 "サイトメンバー",
                 "**タイトル:** サイトメンバー",
             ),
-            (
-                "system:page-tags",
-                "Page Tags",
-                "**タイトル:** Page Tags",
-            ),
+            ("system:page-tags", "Page Tags", "**タイトル:** Page Tags"),
         ];
 
         for (slug, expected_title, source_marker) in source_owned {
