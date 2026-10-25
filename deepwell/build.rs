@@ -7,6 +7,15 @@ fn main() {
     // report the full toolchain that produced this binary.
     println!("cargo:rustc-env=DEEPWELL_CARGO_VERSION={}", cargo_version());
 
+    // The promotion builder passes the source commit explicitly because
+    // Docker build contexts exclude the .git directory, which is where
+    // the `built` crate would otherwise read it from (WJ-1279).
+    println!(
+        "cargo:rustc-env=DEEPWELL_GIT_COMMIT={}",
+        std::env::var("WIKIJUMP_GIT_COMMIT").unwrap_or_default(),
+    );
+    println!("cargo:rerun-if-env-changed=WIKIJUMP_GIT_COMMIT");
+
     // Trigger recompilation when a new migration is added.
     println!("cargo:rerun-if-changed=migrations");
 }

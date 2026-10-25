@@ -67,8 +67,19 @@ pub static VERSION: LazyLock<String> =
 pub static FULL_VERSION: LazyLock<String> =
     LazyLock::new(|| format!("{}\n\n{}", *VERSION, *COMPILE_INFO));
 
+/// The git commit this binary was built from. The `built` crate reads
+/// the .git directory, which Docker build contexts exclude, so the
+/// promotion builder passes the source commit explicitly and build.rs
+/// bakes it in as DEEPWELL_GIT_COMMIT (WJ-1279). The explicit value
+/// wins; local builds fall back to the `built` crate's reading.
+pub static GIT_COMMIT: LazyLock<Option<&'static str>> =
+    LazyLock::new(|| match option_env!("DEEPWELL_GIT_COMMIT") {
+        Some(commit) if !commit.is_empty() => Some(commit),
+        _ => build::GIT_COMMIT_HASH,
+    });
+
 pub static GIT_COMMIT_HASH_SHORT: LazyLock<Option<&'static str>> =
-    LazyLock::new(|| build::GIT_COMMIT_HASH.map(|s| &s[..8]));
+    LazyLock::new(|| GIT_COMMIT.map(|s| &s[..usize::min(8, s.len())]));
 
 pub static HOSTNAME: LazyLock<String> = LazyLock::new(|| {
     // According to the gethostname(3p) man page,

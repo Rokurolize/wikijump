@@ -79,7 +79,7 @@ pub async fn server_info(
             endian: info::CFG_ENDIAN,
             target: info::TARGET,
             threads: info::NUM_JOBS,
-            git_commit: info::GIT_COMMIT_HASH,
+            git_commit: *info::GIT_COMMIT,
         },
         config_path: config.raw_toml_path.clone(),
         hostname: &info::HOSTNAME,
