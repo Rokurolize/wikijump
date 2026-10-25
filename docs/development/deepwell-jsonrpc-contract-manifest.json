@@ -3,7 +3,7 @@
   "source_identities": {
     "jsonrpc_registry": {
       "path": "deepwell/src/api.rs",
-      "sha256": "52b1306edcb8eb517b846ac0efe2eaa326c18eb5e98970b9133658b49ae784ea"
+      "sha256": "a8ca7a2f59e34fceda64a0119a33cf9a6614e55713a77d1d52706290acd5294d"
     },
     "request_context_middleware": {
       "path": "deepwell/src/middleware.rs",
@@ -26,8 +26,187 @@
       "classification": "historical"
     }
   ],
-  "method_count": 202,
+  "method_count": 205,
   "methods": [
+    {
+      "method": "account_delete_complete",
+      "endpoint_owner": {
+        "component": "deepwell",
+        "handler": "account_delete_complete",
+        "source": "deepwell/src/endpoints/email.rs#account_delete_complete",
+        "source_sha256": "055c63c0233a174de808e5eb6cc1b92f337b405a62d7df4f16c24852133aefb6",
+        "function_sha256": "d076d72429d12c2fcb6d0dd0366ede66eeea6e81bbc6b728862eee9578d39f53"
+      },
+      "params_schema": {
+        "transport": "jsonrpsee::types::params::Params<'static>",
+        "parameter_name": "params",
+        "decoder": "parse!(params, Request)"
+      },
+      "actor_context": {
+        "transport_authentication": {
+          "header_symbol": "AUTHORIZATION",
+          "header": "Authorization",
+          "scheme": "Bearer",
+          "token_format": "64 lowercase hexadecimal characters",
+          "duplicate_values": "rejected"
+        },
+        "request_context_headers": [
+          {
+            "header": "X-Deepwell-Session-Token",
+            "target": "session_token"
+          },
+          {
+            "header": "X-Deepwell-Site-Id",
+            "target": "site_id"
+          },
+          {
+            "header": "X-Deepwell-Page",
+            "target": "page_ref"
+          }
+        ],
+        "requirements": [
+          "mutation_authorization"
+        ],
+        "requirement_sources": [
+          "deepwell/src/endpoints/email.rs#account_delete_complete"
+        ]
+      },
+      "mutation_class": {
+        "classification": "mutating",
+        "source_signals": [
+          "UserService::delete"
+        ]
+      },
+      "transaction_isolation": "default",
+      "test_witness": {
+        "kind": "source_contract_only",
+        "reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract",
+        "coverage_gap": {
+          "searched_root": "deepwell/tests",
+          "reason": "no direct run_endpoint handler invocation or rpc_request method invocation was found",
+          "searched_invocations": [
+            "run_endpoint!(runner, handler, ...)",
+            "rpc_request(\"method\", ...)"
+          ]
+        }
+      }
+    },
+    {
+      "method": "account_delete_issue",
+      "endpoint_owner": {
+        "component": "deepwell",
+        "handler": "account_delete_issue",
+        "source": "deepwell/src/endpoints/email.rs#account_delete_issue",
+        "source_sha256": "055c63c0233a174de808e5eb6cc1b92f337b405a62d7df4f16c24852133aefb6",
+        "function_sha256": "103adbc105ad7e9876fc5fa75c4d65ecd1159e6ffb794a1194c007fc689417cf"
+      },
+      "params_schema": {
+        "transport": "jsonrpsee::types::params::Params<'static>",
+        "parameter_name": "params",
+        "decoder": "parse!(params, Request)"
+      },
+      "actor_context": {
+        "transport_authentication": {
+          "header_symbol": "AUTHORIZATION",
+          "header": "Authorization",
+          "scheme": "Bearer",
+          "token_format": "64 lowercase hexadecimal characters",
+          "duplicate_values": "rejected"
+        },
+        "request_context_headers": [
+          {
+            "header": "X-Deepwell-Session-Token",
+            "target": "session_token"
+          },
+          {
+            "header": "X-Deepwell-Site-Id",
+            "target": "site_id"
+          },
+          {
+            "header": "X-Deepwell-Page",
+            "target": "page_ref"
+          }
+        ],
+        "requirements": [
+          "mutation_authorization"
+        ],
+        "requirement_sources": [
+          "deepwell/src/endpoints/email.rs#account_delete_issue"
+        ]
+      },
+      "mutation_class": {
+        "classification": "read_only",
+        "source_signals": []
+      },
+      "transaction_isolation": "default",
+      "test_witness": {
+        "kind": "endpoint_behavioral",
+        "reference": "deepwell/tests/email_token.rs#delete_issue_requires_session_and_records_link",
+        "alternatives": [],
+        "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+      }
+    },
+    {
+      "method": "account_delete_redeem",
+      "endpoint_owner": {
+        "component": "deepwell",
+        "handler": "account_delete_redeem",
+        "source": "deepwell/src/endpoints/email.rs#account_delete_redeem",
+        "source_sha256": "055c63c0233a174de808e5eb6cc1b92f337b405a62d7df4f16c24852133aefb6",
+        "function_sha256": "92f89fe9508dbad73ccdc561ecba6f77a8b44b99b7bc7909ef1904c5a41a0547"
+      },
+      "params_schema": {
+        "transport": "jsonrpsee::types::params::Params<'static>",
+        "parameter_name": "params",
+        "decoder": "parse!(params, Request)"
+      },
+      "actor_context": {
+        "transport_authentication": {
+          "header_symbol": "AUTHORIZATION",
+          "header": "Authorization",
+          "scheme": "Bearer",
+          "token_format": "64 lowercase hexadecimal characters",
+          "duplicate_values": "rejected"
+        },
+        "request_context_headers": [
+          {
+            "header": "X-Deepwell-Session-Token",
+            "target": "session_token"
+          },
+          {
+            "header": "X-Deepwell-Site-Id",
+            "target": "site_id"
+          },
+          {
+            "header": "X-Deepwell-Page",
+            "target": "page_ref"
+          }
+        ],
+        "requirements": [
+          "mutation_authorization"
+        ],
+        "requirement_sources": [
+          "deepwell/src/endpoints/email.rs#account_delete_redeem"
+        ]
+      },
+      "mutation_class": {
+        "classification": "read_only",
+        "source_signals": []
+      },
+      "transaction_isolation": "default",
+      "test_witness": {
+        "kind": "source_contract_only",
+        "reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract",
+        "coverage_gap": {
+          "searched_root": "deepwell/tests",
+          "reason": "no direct run_endpoint handler invocation or rpc_request method invocation was found",
+          "searched_invocations": [
+            "run_endpoint!(runner, handler, ...)",
+            "rpc_request(\"method\", ...)"
+          ]
+        }
+      }
+    },
     {
       "method": "admin_view",
       "endpoint_owner": {
@@ -2291,7 +2470,7 @@
         "component": "deepwell",
         "handler": "validate_email",
         "source": "deepwell/src/endpoints/email.rs#validate_email",
-        "source_sha256": "115c219f29928d61790bf07425f5f4cbfc5b7dd22d39d5d83ed5a4c0f84fb16e",
+        "source_sha256": "055c63c0233a174de808e5eb6cc1b92f337b405a62d7df4f16c24852133aefb6",
         "function_sha256": "f56522657080fbfbf09888f4b0216cf12babf60cb2015403e42100eff4ac2a3a"
       },
       "params_schema": {
@@ -2346,7 +2525,7 @@
         "component": "deepwell",
         "handler": "email_verify_issue",
         "source": "deepwell/src/endpoints/email.rs#email_verify_issue",
-        "source_sha256": "115c219f29928d61790bf07425f5f4cbfc5b7dd22d39d5d83ed5a4c0f84fb16e",
+        "source_sha256": "055c63c0233a174de808e5eb6cc1b92f337b405a62d7df4f16c24852133aefb6",
         "function_sha256": "e47523fab9e62c08c1e337e0b781e004d97594242747661c1cb3eb6357ab0985"
       },
       "params_schema": {
@@ -2407,7 +2586,7 @@
         "component": "deepwell",
         "handler": "email_verify_redeem",
         "source": "deepwell/src/endpoints/email.rs#email_verify_redeem",
-        "source_sha256": "115c219f29928d61790bf07425f5f4cbfc5b7dd22d39d5d83ed5a4c0f84fb16e",
+        "source_sha256": "055c63c0233a174de808e5eb6cc1b92f337b405a62d7df4f16c24852133aefb6",
         "function_sha256": "80a593ab2f822c82c46f494254221fb78f3be13aa5c4be2843b20a8a72ebc2c8"
       },
       "params_schema": {
@@ -9204,7 +9383,7 @@
         "component": "deepwell",
         "handler": "password_reset_complete",
         "source": "deepwell/src/endpoints/email.rs#password_reset_complete",
-        "source_sha256": "115c219f29928d61790bf07425f5f4cbfc5b7dd22d39d5d83ed5a4c0f84fb16e",
+        "source_sha256": "055c63c0233a174de808e5eb6cc1b92f337b405a62d7df4f16c24852133aefb6",
         "function_sha256": "3ded0af184b1e54121414abe5007fbb61c9b502f6ece7b5f6b9c577557e68235"
       },
       "params_schema": {
@@ -9265,7 +9444,7 @@
         "component": "deepwell",
         "handler": "password_reset_issue",
         "source": "deepwell/src/endpoints/email.rs#password_reset_issue",
-        "source_sha256": "115c219f29928d61790bf07425f5f4cbfc5b7dd22d39d5d83ed5a4c0f84fb16e",
+        "source_sha256": "055c63c0233a174de808e5eb6cc1b92f337b405a62d7df4f16c24852133aefb6",
         "function_sha256": "e7e0804e17efe637133043532779a543192d28af700a954b960918ac70ebd825"
       },
       "params_schema": {
@@ -9326,8 +9505,8 @@
         "component": "deepwell",
         "handler": "password_reset_redeem",
         "source": "deepwell/src/endpoints/email.rs#password_reset_redeem",
-        "source_sha256": "115c219f29928d61790bf07425f5f4cbfc5b7dd22d39d5d83ed5a4c0f84fb16e",
-        "function_sha256": "baac825d44e7d05814fbd3cd55d52063cc20bd20e67e7b18914baa006fc0ffc6"
+        "source_sha256": "055c63c0233a174de808e5eb6cc1b92f337b405a62d7df4f16c24852133aefb6",
+        "function_sha256": "3d9cb4018ce94add903fa04e982b3991a09c32b27062d69d46451d0258a5ea3c"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
