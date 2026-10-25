@@ -113,6 +113,48 @@ impl UserService {
         Ok(identities)
     }
 
+    /// Which of the given user IDs belong to a deleted account, in
+    /// either user table. Deleted accounts have no public identity
+    /// (see `User::into_public_identity`), but list endpoints that
+    /// mirror Wikidot's "(account deleted)" placeholders still need
+    /// to tell a deleted voter apart from an identity that was
+    /// never imported.
+    pub async fn get_deleted_user_ids(
+        ctx: &ServiceContext<'_>,
+        user_ids: &BTreeSet<i64>,
+    ) -> Result<BTreeSet<i64>> {
+        if user_ids.is_empty() {
+            return Ok(BTreeSet::new());
+        }
+
+        let txn = ctx.transaction();
+        let make_error =
+            || Error::new("failed to get deleted user identities", ErrorType::User);
+        let mut deleted = BTreeSet::new();
+        let wikijump_users = WikijumpUser::find()
+            .filter(user::Column::UserId.is_in(user_ids.iter().copied()))
+            .filter(user::Column::DeletedAt.is_not_null())
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+        deleted.extend(wikijump_users.iter().map(|user| user.user_id));
+
+        let wikidot_ids = user_ids
+            .iter()
+            .filter_map(|user_id| i32::try_from(*user_id).ok())
+            .collect::<Vec<_>>();
+        if !wikidot_ids.is_empty() {
+            let wikidot_users = WikidotUser::find()
+                .filter(wikidot_user::Column::UserId.is_in(wikidot_ids))
+                .filter(wikidot_user::Column::IsDeleted.eq(true))
+                .all(txn)
+                .await
+                .or_raise(make_error)?;
+            deleted.extend(wikidot_users.iter().map(|user| i64::from(user.user_id)));
+        }
+        Ok(deleted)
+    }
+
     pub async fn create(
         ctx: &ServiceContext<'_>,
         input: CreateUser,
