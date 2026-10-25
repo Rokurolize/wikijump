@@ -9,6 +9,7 @@ import {validateFrozenHistoryResponse} from './frozen-history-replay.mjs';
 import {validateFrozenPagePreview} from './frozen-page-preview-replay.mjs';
 import {evidenceRoots,resolveEvidenceFile} from './evidence-roots.mjs';
 import {resolveExistingContainedFile,resolveExistingPackageDirectory,resolveExistingPackageFile} from './package-path.mjs';
+import {adaptationInputNames} from './theme-package.mjs';
 
 export function verifyGeneratedLineAuthority(receipt) {
   const captures = receipt.rows?.filter(row => row.state === 'header-line-layout') ?? [];
@@ -208,6 +209,7 @@ export function authorityInventory(name, root = ports) {
 
 export function assertPublishablePackage(name, {checkOutputs = false, portsRoot = ports, verifyAuthorityEvidence = true, sharedEvidenceRoot} = {}) {
   const pkg = authorityInventory(name,portsRoot), dir = resolveExistingPackageDirectory(portsRoot,name,`${name}: package directory`);
+  const {sourceInputName, publicationSourceNames} = adaptationInputNames(dir);
   if(verifyAuthorityEvidence)verifyEvidence(pkg.blocks,portsRoot,{sharedRoot:sharedEvidenceRoot});
   for(const block of pkg.blocks) if(block.diagnostic_file && digest(fs.readFileSync(resolveExistingPackageFile(dir,block.diagnostic_file,`${name}: diagnostic file`)))!==block.diagnostic_file_sha256) throw new Error(`${name}: historical diagnostic evidence changed: ${block.marker}`);
   for (const [file, sha] of Object.entries(pkg.inputs)) {
@@ -231,7 +233,7 @@ export function assertPublishablePackage(name, {checkOutputs = false, portsRoot 
     }
   }
   const sourceDisposition=pkg.blocks.find(row=>row.origin==='preserved-source');
-  if(!sourceDisposition || sourceDisposition.sha256!==pkg.inputs[name==='quand-le-soleil-se-couche'?'candidate-template.css':'candidate-input.css']) throw new Error(`${name}: source input lacks matching authority disposition`);
+  if(!sourceDisposition || sourceDisposition.sha256!==pkg.inputs[sourceInputName]) throw new Error(`${name}: source input lacks matching authority disposition`);
   const sourceFile = pkg.source_file;
   const manifestFile=resolveExistingPackageFile(dir,'manifest.json',`${name}: manifest`);
   if(fs.existsSync(manifestFile)) {
@@ -252,7 +254,7 @@ export function assertPublishablePackage(name, {checkOutputs = false, portsRoot 
     if(source!==expected) throw new Error(`${name}: candidate source is not the authority-bound composition`);
   }
   const publicationSources=[source];
-  if(checkOutputs && name==='quand-le-soleil-se-couche')publicationSources.push(fs.readFileSync(resolveExistingPackageFile(dir,'publishable-theme.wikidot.txt',`${name}: publishable theme`),'utf8'));
+  if(checkOutputs)for(const extra of publicationSourceNames)publicationSources.push(fs.readFileSync(resolveExistingPackageFile(dir,extra,`${name}: publishable theme`),'utf8'));
   for (const block of publicationSources.flatMap(extractSCPJPAdaptationBlocks)) {
     const disposition = pkg.blocks.find(r=>r.sha256===block.sha256 && r.marker===block.marker);
     if (!disposition || !PUBLISHABLE_AUTHORITIES.has(disposition.authority)) throw new Error(`${name}: unauthorized publishable adaptation: ${block.marker}`);

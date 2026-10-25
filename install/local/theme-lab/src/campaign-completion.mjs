@@ -18,6 +18,7 @@ import {TARGET_ACCEPTANCE_CONTRACT_SHA256} from './target-acceptance-contract.mj
 import {candidateAssetDependencyState} from './candidate-asset-dependencies.mjs';
 import {resolveRunContractPath} from './run-contract-path.mjs';
 import {currentPackageFullCheckInputBindings} from './full-check-input-bindings.mjs';
+import {candidateSourceName, declaredCandidateSourceName} from './theme-package.mjs';
 import {resolveExistingContainedDirectory,resolveExistingContainedFile,resolveExistingPackageDirectory,resolveExistingPackageFile} from './package-path.mjs';
 import {currentPackageBaseCss} from './candidate-base-contract.mjs';
 import {validateCanonicalScenarioMatrix} from './theme-test-matrix-evidence.mjs';
@@ -79,7 +80,7 @@ export function validateCurrentSigma10Contract(root,sigma10Contract=DEFAULT_SIGM
    if(dir!==expectedDir){failures.push(`${row.package}: current Sigma-10 inventory points at the wrong package directory`);continue;}
    const base=(row.package==='sigma10-baseline'?optionalPackageBytes(dir,'candidate-base.css',`${row.package}: Sigma-10 base CSS`):currentPackageBaseCss(dir,row.package))??Buffer.alloc(0);
    const css=fs.readFileSync(resolveExistingPackageFile(dir,'candidate.css',`${row.package}: Sigma-10 candidate CSS`));
-   const sourceFile=ledger.packages[row.package]?.source_file??'candidate.wikidot.source.txt';
+   const sourceFile=candidateSourceName(dir,ledger.packages[row.package]);
    let source;
    try{source=fs.readFileSync(resolveExistingPackageFile(dir,sourceFile,`${row.package}: Sigma-10 source file`))}
    catch(error){
@@ -206,7 +207,7 @@ export function validateSigma10MigrationAudit(root,{sigma10Contract=DEFAULT_SIGM
     if(!binding)continue;
     const relative=typeof binding==='string'?binding:binding.directory;
     const dir=resolveRunContractPath(root,path.dirname(contractPath),relative,`Sigma-10 candidate directory for ${name}`);
-    const sourceName=ledger.packages[name]?.source_file??'candidate.wikidot.source.txt';
+    const sourceName=candidateSourceName(dir,ledger.packages[name]);
     assetDependencies.set(name,candidateAssetDependencySha(root,ledger,name,dir,sourceName,baselineCss));
     let structureSha=null;try{structureSha=sha(fs.readFileSync(resolveExistingPackageFile(dir,'acceptance-structure.json',`${name}: acceptance structure`)))}catch{}
     structureShas.set(name,structureSha);
@@ -261,7 +262,7 @@ export function validateSigma10MigrationAudit(root,{sigma10Contract=DEFAULT_SIGM
     const records=audit.records?.filter(record=>record.theme===name)??[];
     if(!records.length)failures.push(`${name}: missing current Sigma-10 migration evidence`);
     const packageDir=resolveExistingPackageDirectory(path.join(root,'ports'),name,`${name}: package directory`);
-    const sourceName=ledger.packages[name]?.source_file??'candidate.wikidot.source.txt';
+    const sourceName=candidateSourceName(packageDir,ledger.packages[name]);
     const base=currentPackageBaseCss(packageDir,name)??Buffer.alloc(0);
     const currentCandidate=candidateIdentity(fs.readFileSync(resolveExistingPackageFile(packageDir,'candidate.css',`${name}: candidate CSS`)),base).candidateSha;
     const currentSource=sha(fs.readFileSync(resolveExistingPackageFile(packageDir,sourceName,`${name}: Sigma-10 source file`)));
@@ -349,7 +350,7 @@ export function checkCampaignCompletion(root, {captureContractReader = readCurre
   const inventoryByName=new Map(currentInventory.map(item=>[item.package,item]));
   for(const name of expectedMigrationNames){
     const item=inventoryByName.get(name);if(!item)continue;
-    const sourceName=ledger.packages[name]?.source_file??'candidate.wikidot.source.txt';
+    const sourceName=declaredCandidateSourceName(ledger.packages[name]);
     try{
       const dir=name==='sigma10-baseline'?resolveExistingContainedDirectory(root,'sigma10-migration/baseline-probe','Sigma-10 baseline directory'):packageDirectory(name);
       const base=(name==='sigma10-baseline'
@@ -387,7 +388,7 @@ export function checkCampaignCompletion(root, {captureContractReader = readCurre
   for (const row of rows) {
     try {
       const currentDirectory=`ports/current-acceptance/${row.package}`;
-      const sourceName=ledger.packages[row.package]?.source_file ?? 'candidate.wikidot.source.txt';
+      const sourceName=declaredCandidateSourceName(ledger.packages[row.package]);
       const expectedBindings={
         receipt:`${currentDirectory}/accepted-result.json`,
         browser_audit:`${currentDirectory}/browser-audit.json`,
@@ -469,7 +470,7 @@ export function checkCampaignCompletion(root, {captureContractReader = readCurre
       const base=currentPackageBaseCss(packageDir,row.package)??Buffer.alloc(0);
       const currentCandidate=candidateIdentity(fs.readFileSync(resolveExistingPackageFile(packageDir,'candidate.css',`${row.package}: candidate CSS`)),base).candidateSha;
       let currentStructureSha=null;try{currentStructureSha=sha(fs.readFileSync(resolveExistingPackageFile(packageDir,'acceptance-structure.json',`${row.package}: acceptance structure`)))}catch{}
-      const currentAssetDependencySha=assetDependency(row.package,packageDir,ledger.packages[row.package]?.source_file??'candidate.wikidot.source.txt',currentRunBaselineCss);
+      const currentAssetDependencySha=assetDependency(row.package,packageDir,candidateSourceName(packageDir,ledger.packages[row.package]),currentRunBaselineCss);
       for (const record of records) {
         failures.push(...validateVisualGateRecord(record));
         const screenshotRequired=visualGateNeedsScreenshot(record,{failure:!!record.failure});
