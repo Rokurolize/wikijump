@@ -205,6 +205,19 @@ To inspect a stored run, read the files in its run directory directly
 `scripts/evidence-store.mjs materialize --manifest <run>/<package>.manifest.json --dest <dir>`.
 Run `scripts/evidence-store.mjs verify` before deleting any source copy.
 
+Audit history: the interactive visual audit keeps only active records
+in `ports/interactive-visual-audit.json`. When superseded records
+accumulate, run `ports/scripts/split-interactive-audit-history.mjs
+--audit=ports/interactive-visual-audit.json`: it moves
+`superseded_records` into `interactive-visual-audit.superseded-history/`
+as hash-named JSONL shards and writes
+`interactive-visual-audit.superseded-history.json`, a manifest binding
+the pre-split file's SHA-256 and every shard. The active file then
+carries a `superseded_history` reference instead of the records
+themselves; readers resolve history through the manifest, and the
+pre-split bytes remain reproducible from git plus the manifest's
+recorded hash.
+
 Retention for run directories: keep the current paired set and every run
 a receipt or publication identity references. Older run *views* may be
 deleted freely — keep their manifests; a view is re-materializable from
