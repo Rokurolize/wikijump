@@ -9,7 +9,9 @@
 <p class="platform-blurb">{data.internationalization?.["about-info.blurb"]}</p>
 
 <p class="platform-links">
-  <a href={data.blog_url} rel="external">{data.internationalization?.["about-info.blog"]}</a>
+  <a href={data.blog_url} rel="external"
+    >{data.internationalization?.["about-info.blog"]}</a
+  >
 </p>
 
 <table class="platform-info">

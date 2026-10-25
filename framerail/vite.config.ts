@@ -17,8 +17,7 @@ const pnpmVersion = pkg.packageManager?.startsWith("pnpm@")
 // information page (WJ-1279) omits the row when it is absent.
 let frontendGitCommit: string | null = null
 try {
-  frontendGitCommit =
-    execSync("git rev-parse HEAD", { encoding: "utf8" }).trim() || null
+  frontendGitCommit = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim() || null
 } catch {
   frontendGitCommit = null
 }
