@@ -4544,14 +4544,8 @@ async fn category_theme_change_invalidates_article_view_cache() {
     let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
         .expect("seeded test site should exist");
     let site_id = site.site.site_id;
-    create_listpages_test_page(
-        &mut runner,
-        site_id,
-        SLUG,
-        "Theme cache fixture",
-        BODY,
-    )
-    .await;
+    create_listpages_test_page(&mut runner, site_id, SLUG, "Theme cache fixture", BODY)
+        .await;
 
     let page = PageTable::find()
         .filter(
@@ -4581,7 +4575,8 @@ async fn category_theme_change_invalidates_article_view_cache() {
     });
 
     // First view populates the anonymous article-view cache.
-    let metadata_before = run_endpoint!(runner, article_view_cache_metadata, input.clone());
+    let metadata_before =
+        run_endpoint!(runner, article_view_cache_metadata, input.clone());
     let key_before = metadata_before
         .article_page_cache_key
         .expect("imported static page should have an anonymous cache key");
@@ -4591,7 +4586,11 @@ async fn category_theme_change_invalidates_article_view_cache() {
     );
     let view_before = run_endpoint!(runner, article_view, input.clone());
     let GetArticleViewOutput {
-        page: GetPageViewOutput::Found { theme: theme_before, .. },
+        page:
+            GetPageViewOutput::Found {
+                theme: theme_before,
+                ..
+            },
         article_page_cache_key: Some(served_key_before),
         ..
     } = view_before
@@ -4629,7 +4628,8 @@ async fn category_theme_change_invalidates_article_view_cache() {
 
     // The cache key must change, and the next view must serve the new theme
     // instead of the previously cached view (issue #2764).
-    let metadata_after = run_endpoint!(runner, article_view_cache_metadata, input.clone());
+    let metadata_after =
+        run_endpoint!(runner, article_view_cache_metadata, input.clone());
     let key_after = metadata_after
         .article_page_cache_key
         .expect("page should still have an anonymous cache key after the theme change");
@@ -4637,12 +4637,16 @@ async fn category_theme_change_invalidates_article_view_cache() {
 
     let view_after = run_endpoint!(runner, article_view, input);
     let GetArticleViewOutput {
-        page: GetPageViewOutput::Found { theme: theme_after, .. },
+        page: GetPageViewOutput::Found {
+            theme: theme_after, ..
+        },
         article_page_cache_key: Some(served_key_after),
         ..
     } = view_after
     else {
-        panic!("theme cache fixture should return an article view after the theme change");
+        panic!(
+            "theme cache fixture should return an article view after the theme change"
+        );
     };
     assert_eq!(served_key_after, key_after);
     assert!(
