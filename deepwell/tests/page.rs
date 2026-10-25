@@ -16346,7 +16346,10 @@ async fn page_who_rated_returns_only_current_typed_votes_in_creation_order() {
     assert_eq!(output[0]["value"], 1);
     assert_eq!(output[1]["user"]["user-name"], "User");
     assert_eq!(output[1]["value"], -1);
-    assert!(output[0].get("user_id").is_none());
+    // Each vote also carries its raw user ID: the deleted-account
+    // placeholder Wikidot renders is keyed by it (as in page history).
+    assert_eq!(output[0]["user_id"], ADMIN_USER_ID);
+    assert_eq!(output[1]["user_id"], SAMPLE_USER_ID);
 
     let malformed = run_endpoint_err!(
         runner,
@@ -16358,6 +16361,48 @@ async fn page_who_rated_returns_only_current_typed_votes_in_creation_order() {
         "JSONRPC InvalidParams error not returned:\n{:?}",
         malformed,
     );
+
+    // A voter whose source account is deleted renders as a tombstone
+    // (null identity), exactly as Wikidot's "(account deleted)" rows,
+    // instead of failing the whole list.
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_string(
+            sea_orm::DatabaseBackend::Postgres,
+            "INSERT INTO known_user (user_id) VALUES (19000002)",
+        ))
+        .await
+        .expect("deleted WhoRated known user should insert");
+    transaction
+        .execute_raw(Statement::from_string(
+            sea_orm::DatabaseBackend::Postgres,
+            concat!(
+                "INSERT INTO wikidot_user ",
+                "(user_id, created_at, fetched_at, is_deleted, karma, is_pro) ",
+                "VALUES (19000002, NOW() - INTERVAL '1 day', NOW(), true, 0, false)",
+            ),
+        ))
+        .await
+        .expect("deleted WhoRated identity should insert");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            sea_orm::DatabaseBackend::Postgres,
+            "INSERT INTO page_vote (from_wikidot, page_id, user_id, rating_system, value) VALUES (true, $1, 19000002, 'points', 1)",
+            [Value::from(target.page_id)],
+        ))
+        .await
+        .expect("deleted WhoRated vote should insert");
+    let with_deleted = run_endpoint!(
+        runner,
+        page_who_rated,
+        json!({"site_id": site.site_id, "page_id": target.page_id}),
+    );
+    let with_deleted =
+        serde_json::to_value(with_deleted).expect("WhoRated output should serialize");
+    assert_eq!(with_deleted.as_array().map(Vec::len), Some(3));
+    assert_eq!(with_deleted[2]["user_id"], 19000002);
+    assert!(with_deleted[2]["user"].is_null());
+    assert_eq!(with_deleted[2]["value"], 1);
 
     let transaction = runner.context().transaction();
     transaction
