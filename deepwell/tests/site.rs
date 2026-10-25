@@ -413,6 +413,10 @@ async fn educational_upgrade_is_site_scoped_and_master_admin_only() {
     grant_site_edit(&runner, created.site_id, master_admin, n).await;
     grant_site_edit(&runner, created.site_id, ordinary_admin, n + 100_000).await;
 
+    let fetched = run_endpoint!(runner, site_get, json!({ "site": created.site_id }))
+        .expect("educational site should be fetchable");
+    let base_revision = fetched.site.settings_revision;
+
     runner.set_request_context(RequestContext {
         user_id: Some(ordinary_admin),
         site_id: Some(created.site_id),
@@ -424,7 +428,7 @@ async fn educational_upgrade_is_site_scoped_and_master_admin_only() {
         json!({
             "site": created.site_id,
             "user_id": ordinary_admin,
-            "expected_settings_revision": 0,
+            "expected_settings_revision": base_revision,
             "educational_upgrade": {
                 "organization": "Run Owned University",
                 "purpose": "Research and teaching",
@@ -445,7 +449,7 @@ async fn educational_upgrade_is_site_scoped_and_master_admin_only() {
         json!({
             "site": created.site_id,
             "user_id": master_admin,
-            "expected_settings_revision": 0,
+            "expected_settings_revision": base_revision,
             "educational_upgrade": {
                 "organization": "Run Owned University",
                 "purpose": "Research and teaching",
@@ -455,7 +459,7 @@ async fn educational_upgrade_is_site_scoped_and_master_admin_only() {
     );
     let public_site = serde_json::to_value(&upgraded).expect("site should serialize");
     assert_eq!(public_site["educational"], true);
-    assert_eq!(public_site["settings_revision"], 1);
+    assert_eq!(public_site["settings_revision"], base_revision + 1);
     assert!(public_site.get("master_admin_user_id").is_none());
     assert!(public_site.get("educational_organization").is_none());
     assert!(public_site.get("educational_purpose").is_none());
@@ -466,7 +470,7 @@ async fn educational_upgrade_is_site_scoped_and_master_admin_only() {
         json!({
             "site": created.site_id,
             "user_id": master_admin,
-            "expected_settings_revision": 1,
+            "expected_settings_revision": base_revision + 1,
             "educational_upgrade": {
                 "organization": "Run Owned University",
                 "purpose": "Research and teaching",
