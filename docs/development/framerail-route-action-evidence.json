@@ -6,9 +6,9 @@
     "sha256": "1906d7229472694d2afbbea30e65e9e33c39dbc40481f794f4676a4000ac57cb"
   },
   "current_inventory": {
-    "source_revision": "225c453615a0d4c49b4b7bee2017dec9e56d92e2",
+    "source_revision": "e43b6bed3cb9066b621646ebd612cca101bc4b4c",
     "path": "docs/development/compatibility-surface-inventory.json",
-    "sha256": "6de812b640a33a92a5e8c4da9de4ce11f997d8e5dd5d20c7e3711b1c6337585c"
+    "sha256": "071f451b9f509dddece5821ae541484ca44afced607114ff2c1a54772118746b"
   },
   "records": [
     {
