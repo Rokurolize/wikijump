@@ -186,6 +186,33 @@ per-day generated directories, and intermediate rebind steps (keep the
 latest). Keep the accepted ordinary campaign and migration evidence as
 separate dimensions over the same store, not two copies.
 
+### Regression runs and the store (runbook)
+
+`scripts/real-port-regression.mjs` writes run artifacts through the store
+by default (#2752): each run gets `<store>/runs/<timestamp>/<package>/`
+plus a `<package>.manifest.json` beside it, the run's files are ingested
+into the object pool (identical captures across runs add no new blobs)
+and materialized back as hardlinks, and each result row records the
+ingest under `evidence_store`. The default store is
+`~/.local/state/wikijump/theme-lab-store` (`THEME_LAB_EVIDENCE_STORE`
+relocates it). Two escapes keep the old behaviors:
+`THEME_LAB_RUN_ARTIFACT_DIR=<dir>` writes to an operator-managed
+directory with no store wiring, and `--no-store` restores the historical
+in-package `ports/<theme>/artifacts` default.
+
+To inspect a stored run, read the files in its run directory directly
+(they are hardlink views), or re-materialize the view anywhere with
+`scripts/evidence-store.mjs materialize --manifest <run>/<package>.manifest.json --dest <dir>`.
+Run `scripts/evidence-store.mjs verify` before deleting any source copy.
+
+Retention for run directories: keep the current paired set and every run
+a receipt or publication identity references. Older run *views* may be
+deleted freely — keep their manifests; a view is re-materializable from
+its manifest while its blobs survive. Never delete objects from
+`<store>/objects` directly, and never delete a blob that any kept
+manifest or receipt references; there is no garbage collector, so object
+pruning is a deliberate, verified act, not a routine cleanup.
+
 ## Completion boundary
 
 A new port is not complete when “the CSS looks approximately right.” Complete
