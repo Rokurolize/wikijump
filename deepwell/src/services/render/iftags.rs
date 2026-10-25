@@ -101,6 +101,12 @@ fn resolve_outermost_wikidot_iftags_with_mode(
     let mut replacements = Vec::<Replacement>::new();
     let mut inactive_literal_scopes =
         HashMap::<(usize, usize), InactiveLiteralScope>::new();
+    // Whether a gate opener the scan skips (and so leaves raw) precedes the
+    // current token. A closer following such an opener may still complete a
+    // pair the pinned FTML resolves natively, so it stays raw; a closer with
+    // no visible opener anywhere before it can never pair, and escaping it
+    // keeps truly malformed closers literal without FTML parse errors.
+    let mut seen_skipped_opener = false;
 
     for captures in IFTAGS_TOKEN_REGEX.captures_iter(wikitext) {
         let token = captures.get(0).expect("iftags token");
@@ -117,6 +123,9 @@ fn resolve_outermost_wikidot_iftags_with_mode(
                 inactive_gate_closes_inside_literal(scope, token.end())
             });
         if literal.is_some() && !closes_inactive_root {
+            if captures.name("open").is_some() {
+                seen_skipped_opener = true;
+            }
             continue;
         }
 
@@ -147,7 +156,14 @@ fn resolve_outermost_wikidot_iftags_with_mode(
         }
 
         let Some(outer) = stack.pop() else {
-            if unmatched_mode == UnmatchedBoundaryMode::Preserve {
+            // An unmatched closer stays raw when a skipped opener precedes
+            // it: the pair may still resolve natively in the pinned FTML,
+            // and escaping the closer would freeze it as authored text and
+            // blind that recovery. With no visible opener anywhere before
+            // it the closer can never pair, so Preserve keeps escaping it;
+            // that keeps truly malformed closers literal without FTML parse
+            // errors, exactly as the malformed-iftags evidence requires.
+            if unmatched_mode == UnmatchedBoundaryMode::Preserve && !seen_skipped_opener {
                 replacements.push(Replacement {
                     range: token.start()..token.end(),
                     text: preserved.push_escaped_html_text(token.as_str()),
@@ -341,6 +357,7 @@ pub(super) fn wikidot_tag_conditions_match(spec: &str, tags: &[Cow<'_, str>]) ->
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::services::render::compat::text_fragments;
     use std::time::{Duration, Instant};
 
     fn resolve(source: &str, tags: &[&str], passes: usize) -> String {
@@ -541,6 +558,52 @@ mod tests {
                 "[[iftags +beta]]repeated\n",
             ),
         );
+    }
+
+    #[test]
+    fn skipped_opener_leaves_its_closer_raw_for_ftml_recovery() {
+        // scp-744 (issues #2573/#2577, epoch 38): a backend gate whose
+        // opener hides inside documentation while its closer scans. The
+        // closer has no stack partner, but escaping it would freeze it as
+        // authored text and blind the pinned FTML to a pair it still
+        // resolves natively; with the closer raw the gate recovers and the
+        // article body survives. A closer nothing opens prints literally
+        // either way, so leaving it raw changes no evidenced output.
+        let mut source = concat!(
+            "[!-- documentation opens\n",
+            "[[iftags +component-backend]]\n",
+            "--]\n",
+            "backend content\n",
+            "[!-- documentation reopens\n",
+            "[[/iftags]]\n",
+            "\n",
+            "article witness here\n",
+        )
+        .to_owned();
+        let mut preserved = CompatTextFragments::new(&source);
+
+        resolve_outermost_wikidot_iftags(&mut source, &[], &mut preserved);
+
+        assert!(
+            source.contains("[[/iftags]]"),
+            "the unmatched closer must stay raw: {source:?}",
+        );
+        assert!(
+            !source.contains(text_fragments::COMPAT_TEXT_MARKER_PREFIX),
+            "no token may be escaped: {source:?}",
+        );
+        let restored = preserved.restore(&source);
+        for witness in [
+            "[[iftags +component-backend]]",
+            "backend content",
+            "[[/iftags]]",
+            "article witness here",
+        ] {
+            assert!(
+                restored.contains(witness),
+                "shaped content must survive: {restored:?}",
+            );
+        }
     }
 
     #[test]

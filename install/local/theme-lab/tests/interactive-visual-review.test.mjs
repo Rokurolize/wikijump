@@ -1,6 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {applyVisualReviews} from '../ports/scripts/record-interactive-visual-review.mjs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {applyVisualReviews, selectReviewRunContract} from '../ports/scripts/record-interactive-visual-review.mjs';
+import {DEFAULT_SIGMA9_RUN_CONTRACT, DEFAULT_SIGMA10_RUN_CONTRACT} from '../src/current-run-contract-option.mjs';
+
+// A Theme Lab-shaped tree with one task-owned Sigma-10 contract and no shared Sigma-10 contract.
+function taskContractTree(schema = 'scp_jp_sigma10_migration_run.v1') {
+  const themeLabRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'review-run-contract-'));
+  const campaign = path.join(themeLabRoot, 'sigma10-migration/current-campaign');
+  fs.mkdirSync(campaign, {recursive: true});
+  fs.writeFileSync(path.join(campaign, 'run-contract-basalt-test.json'), JSON.stringify({schema}));
+  return {themeLabRoot, audit: path.join(campaign, 'runs/basalt-test/interactive-visual-audit.json')};
+}
 
 const hash = 'a'.repeat(64);
 const identity = new Map([['site', {candidate_sha256:'css-current', candidate_source_sha256:'source-current'}]]);
@@ -43,4 +56,50 @@ test('visual review cannot erase capture failures or publish a finding-free NEED
     assert.equal(rows[0].classification,'UNCONFIRMED');
   }
   assert.throws(()=>applyVisualReviews([row()],[{...review,classification:'NEEDS_FIX'}],identity),/concrete finding/);
+});
+
+test('an explicit task-owned Sigma-10 run contract is selected for an audit beneath its directory', () => {
+  const {themeLabRoot, audit} = taskContractTree();
+  try {
+    const selection = selectReviewRunContract({themeLabRoot, auditPath: audit, runContractOption: 'sigma10-migration/current-campaign/run-contract-basalt-test.json'});
+    assert.equal(selection.generation, 'sigma10');
+    assert.equal(selection.relative, 'sigma10-migration/current-campaign/run-contract-basalt-test.json');
+    assert.equal(selection.contractPath, path.join(themeLabRoot, selection.relative));
+  } finally {
+    fs.rmSync(themeLabRoot, {recursive: true, force: true});
+  }
+});
+
+test('without --run-contract a Sigma-10 audit needs the shared contract and never falls back to the Sigma-9 label', () => {
+  const {themeLabRoot, audit} = taskContractTree();
+  try {
+    assert.throws(() => selectReviewRunContract({themeLabRoot, auditPath: audit}), /shared run contract .* or an explicit task-owned --run-contract/u);
+    // With the shared contract present, the unchanged default is selected.
+    fs.writeFileSync(path.join(themeLabRoot, DEFAULT_SIGMA10_RUN_CONTRACT), JSON.stringify({schema: 'scp_jp_sigma10_migration_run.v1'}));
+    assert.equal(selectReviewRunContract({themeLabRoot, auditPath: audit}).relative, DEFAULT_SIGMA10_RUN_CONTRACT);
+  } finally {
+    fs.rmSync(themeLabRoot, {recursive: true, force: true});
+  }
+});
+
+test('an explicit run contract must match the audit generation and the audit must live beneath it', () => {
+  const {themeLabRoot, audit} = taskContractTree();
+  try {
+    const task = 'sigma10-migration/current-campaign/run-contract-basalt-test.json';
+    // The audit sits in ports/, not beneath the task contract directory.
+    assert.throws(() => selectReviewRunContract({themeLabRoot, auditPath: path.join(themeLabRoot, 'ports/interactive-visual-audit.json'), runContractOption: task}), /sigma9|shared|task-owned|below its explicit run contract/u);
+    // A Sigma-9 task path cannot be used for an audit of the Sigma-10 generation.
+    assert.throws(() => selectReviewRunContract({themeLabRoot, auditPath: audit, runContractOption: 'ports/current-acceptance/run-contract-basalt-test.json'}), /task-owned|shared/u);
+    // A wrong-schema task document is rejected rather than trusted by name.
+    const other = taskContractTree('scp_jp_interactive_acceptance_run.v1');
+    try {
+      assert.throws(() => selectReviewRunContract({themeLabRoot: other.themeLabRoot, auditPath: other.audit, runContractOption: task}), /scp_jp_sigma10_migration_run\.v1/u);
+    } finally {
+      fs.rmSync(other.themeLabRoot, {recursive: true, force: true});
+    }
+    // The shared Sigma-9 default is unchanged when no option is given.
+    assert.equal(selectReviewRunContract({themeLabRoot, auditPath: path.join(themeLabRoot, 'ports/interactive-visual-audit.json')}).relative, DEFAULT_SIGMA9_RUN_CONTRACT);
+  } finally {
+    fs.rmSync(themeLabRoot, {recursive: true, force: true});
+  }
 });

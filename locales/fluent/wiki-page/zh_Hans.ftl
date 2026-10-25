@@ -112,8 +112,6 @@ wiki-page-file = 页面附件
   .page = 页面
 
 wiki-page-file-revision-type = 类型
-
-wiki-page-file-history = 文件历史
   .create = 创建
   .regular = 编辑
   .move = 移动
@@ -121,6 +119,8 @@ wiki-page-file-history = 文件历史
   .rollback = 回滚
   .undelete = 恢复
   .undo = 撤消
+
+wiki-page-file-history = 文件历史
 
 wiki-page-file-restore = 恢复
   .new-page = 新页面网址
@@ -130,7 +130,6 @@ wiki-page-file-restore = 恢复
 ### 维基页面锁定
 
 wiki-page-lock = 锁定页面
-wiki-page-action-lock = 锁定页面
   .permission-only = 仅权限用户
   .author-or-permission-only = 仅权限用户或发布者
   .permission-only-text = 仅具有越过锁定权限的用户可以编辑。
@@ -163,8 +162,6 @@ wiki-page-parent = 父页面
 ### 蓝图页面
 
 wiki-page-missing = 你访问的页面 //{ $slug }// 并不存在。
-
-    { " *" } [/{ $slug }/edit 创建此页]。
 
 wiki-page-private = + 私有内容
 

@@ -47,6 +47,32 @@ test("candidate Deepwell production image contains the immutable seeder payload"
   assert.match(dockerfile, /COPY \.\/deepwell\/seeder \/opt\/deepwell\/seeder/u);
 });
 
+test("a rehearsal candidate attaches prepared copies of standing data and does not seed them", async () => {
+  const compose = candidateCompose({
+    project: "wjcand-rehearsal-test",
+    source: {wikijump_commit: "a".repeat(40), wikijump_tree: "b".repeat(40), ftml_sha: "c".repeat(40)},
+    images: Object.fromEntries(["cache", "caddy", "database", "deepwell", "files", "framerail", "wws"].map((role) => [role, `sha256:${"1".repeat(64)}`])),
+    artifactKey: "d".repeat(64),
+    overlaySha256: "e".repeat(64),
+    effectiveSha256: "f".repeat(64),
+    expiry: "2026-10-18T00:00:00Z",
+    publicPort: 20443,
+    rpcPort: 20444,
+    objectStorePort: 20445,
+    deepwellConfigPath: "/tmp/config.toml",
+    caddyRequestPath: "/tmp/request.json",
+    caddyGeneratorPath: "/tmp/generate.sh",
+    dataVolumes: {database: "wjrehearsal-test-postgres", files: "wjrehearsal-test-files"},
+  });
+  assert.deepEqual(compose.volumes["database-data"], {external: true, name: "wjrehearsal-test-postgres"});
+  assert.deepEqual(compose.volumes["files-data"], {external: true, name: "wjrehearsal-test-files"});
+  assert.deepEqual(compose.volumes["cache-data"], {});
+
+  const sourceConfig = await fs.readFile(path.join(repositoryRoot, "install/prod/deepwell/config.toml"), "utf8");
+  assert.match(candidateDeepwellConfig(sourceConfig, 20443, {seed: false}), /run-seeder = false/u);
+  assert.match(candidateDeepwellConfig(sourceConfig, 20443), /run-seeder = true/u);
+});
+
 test("promotion candidate makes public registration deterministic", async () => {
   const sourceConfig = await fs.readFile(path.join(repositoryRoot, "install/prod/deepwell/config.toml"), "utf8");
   const candidateConfig = candidateDeepwellConfig(sourceConfig, 20443);
@@ -54,6 +80,8 @@ test("promotion candidate makes public registration deterministic", async () => 
   assert.doesNotMatch(candidateConfig, /mock-mailcheck = false/u);
   assert.match(candidateConfig, /main = "wikijump\.localhost"/u);
   assert.match(candidateConfig, /https-port = 20443/u);
+  // The port is configured once, as https-port; a domain is a bare hostname.
+  assert.match(candidateConfig, /files = "wjfiles\.localhost"\n/u);
 });
 
 test("one sealed candidate runtime can expose independent site-bound endpoint projections", () => {

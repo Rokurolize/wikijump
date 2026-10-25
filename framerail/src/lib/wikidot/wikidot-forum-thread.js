@@ -118,8 +118,9 @@ export const wikidotForumThread = (root, parameters) => {
       }
     } else if (onclick === `${THREAD_LISTENERS}.unfoldAll(event)`) {
       action = () => {
-        for (const post of root.querySelectorAll("div.post"))
+        for (const post of root.querySelectorAll("div.post")) {
           post.classList.remove("folded")
+        }
       }
     } else if (onclick === `${THREAD_LISTENERS}.toggleThreadOptions(event)`) {
       action = () => toggleThreadOptions(control)

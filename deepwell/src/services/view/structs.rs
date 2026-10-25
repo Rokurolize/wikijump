@@ -99,6 +99,7 @@ pub struct GetArticleViewCacheMetadataOutput {
 #[serde(rename_all = "snake_case")]
 pub enum PageRedirectKind {
     WikidotModule,
+    RandomHelper,
 }
 
 /// Yield information for a page view, depending on the status of the page.
@@ -166,6 +167,11 @@ pub enum GetPageViewOutput {
         /// `page_create`; when false, no template or data-form source is returned.
         #[serde(default)]
         can_create: bool,
+        /// Whether the body is the site's own missing-page template (`_404`).
+        /// Wikidot then shows only that template; otherwise it shows its
+        /// default message and a "Create page" link.
+        #[serde(default)]
+        missing_template: bool,
         compiled_body_html: String,
         compiled_body_styles: Vec<String>,
         compiled_top_bar_html: Option<String>,
@@ -256,6 +262,8 @@ pub struct Viewer {
     pub site: SiteModel,
     pub site_settings: crate::services::settings::SiteSettings,
     pub promoted_sites: Vec<PromotedSiteView>,
+    /// URL authority of the site's files host: the files domain, plus the
+    /// public HTTPS port when it is not 443.
     pub site_file_domain: String,
     pub license_name: String,
     pub license_url: &'static str,

@@ -4,25 +4,36 @@ import os from 'node:os';
 import path from 'node:path';
 import {spawn} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import {framerailEnvLabel,parseFramerailEnvOption} from '../../src/framerail-env-option.mjs';
 import {withAuditLock} from '../scripts/audit-lock.mjs';
 import {framerailSourceFingerprint} from '../../src/framerail-source-fingerprint.mjs';
 import {assertDeepwellRuntimeIdentity,parseCurlDeepwellRuntimeHeaders,readRunningDeepwellRuntimeIdentity,requireDeepwellRuntimeIdentity} from '../../src/deepwell-runtime-identity.mjs';
 import {assertRuntimeSourceSha,parseCurlRuntimeResponseHeaders,requireRuntimeSourceSha} from '../../src/runtime-source-identity.mjs';
 
 const scriptDir=path.dirname(fileURLToPath(import.meta.url));
-const repoRoot=path.resolve(scriptDir,'../../../../../');
+const runtimeRepoArg=process.argv.find(arg=>arg.startsWith('--runtime-repo='))?.slice(15)??null;
+const defaultRepoRoot=path.resolve(scriptDir,'../../../../../');
+if(runtimeRepoArg!==null&&(!path.isAbsolute(runtimeRepoArg)||path.resolve(runtimeRepoArg)!==runtimeRepoArg))throw new Error('--runtime-repo must be a canonical absolute checkout path');
+const repoRoot=runtimeRepoArg===null?defaultRepoRoot:await fs.realpath(runtimeRepoArg);
+if(runtimeRepoArg!==null&&repoRoot!==runtimeRepoArg)throw new Error('source checkout path cannot contain symlinks');
 const framerailDir=path.join(repoRoot,'framerail');
 const namespace=process.argv.find(arg=>arg.startsWith('--namespace='))?.slice(12)??null;
+const backendProject=process.argv.find(arg=>arg.startsWith('--backend-project='))?.slice(18)??null;
+const framerailEnv=parseFramerailEnvOption({framerailEnv:process.argv.find(arg=>arg.startsWith('--framerail-env='))?.slice(16),backendProject});
+const envLabel=framerailEnvLabel(framerailEnv);
 const port=Number(process.argv.find(arg=>arg.startsWith('--port='))?.slice(7)??3395);
 const runContractArg=process.argv.find(arg=>arg.startsWith('--run-contract='))?.slice(15)??null;
 if(namespace!==null&&!/^[a-z][a-z0-9-]{0,40}$/u.test(namespace))throw new Error('invalid task-owned namespace');
+if(runtimeRepoArg!==null&&namespace===null)throw new Error('--runtime-repo requires an explicit task-owned --namespace');
+if(backendProject!==null&&(namespace===null||runtimeRepoArg===null||backendProject!==`wikijump-theme-lab-${namespace}`))
+ throw new Error('isolated backend Compose project must match the task namespace and explicit source checkout');
 if(!Number.isInteger(port)||port<1024||port>65535||namespace!==null&&port===3395)throw new Error('task-owned transport needs a distinct valid port');
 const cacheBase=process.env.THEME_LAB_BUILT_CACHE??`/tmp/wikijump-theme-lab-${namespace??'built'}-framerail`;
 const framerailContainer=`wikijump-theme-lab-${namespace??'built'}-framerail`;
 const caddyContainer=`wikijump-theme-lab-${namespace??'built'}-caddy`;
 const transportOrigin=`https://scpaiueouiuiuiui.wikijump.localhost:${port}`;
 const devContainer='wikijump-local-development-framerail-1';
-const deepwellContainer='wikijump-local-development-deepwell-1';
+const deepwellContainer=`${backendProject??'wikijump-local-development'}-deepwell-1`;
 const defaultRunContract=path.join(scriptDir,'acceptance-run-contract.json');
 const runContractPath=runContractArg?path.resolve(runContractArg):defaultRunContract;
 const runContract=JSON.parse(await fs.readFile(runContractPath,'utf8'));
@@ -87,35 +98,50 @@ async function startContainers(fingerprint,buildDir,backend){
  const currentFingerprint=running?.Config?.Labels?.['theme-lab.source-sha'];
  const currentCaddyFingerprint=runningCaddy?.Config?.Labels?.['theme-lab.source-sha'];
  const currentBackendIdentity=running?.Config?.Labels?.['theme-lab.backend-runtime-sha'];
+ const currentEnvLabel=running?.Config?.Labels?.['theme-lab.framerail-env']??'image-default';
  const currentCaddyBackendIdentity=runningCaddy?.Config?.Labels?.['theme-lab.backend-runtime-sha'];
- if(currentFingerprint===fingerprint&&currentCaddyFingerprint===fingerprint&&currentBackendIdentity===backend.identity.identity_sha256&&currentCaddyBackendIdentity===backend.identity.identity_sha256&&await isReady(fingerprint)){
+ if(currentFingerprint===fingerprint&&currentCaddyFingerprint===fingerprint&&currentBackendIdentity===backend.identity.identity_sha256&&currentCaddyBackendIdentity===backend.identity.identity_sha256&&currentEnvLabel===envLabel&&await isReady(fingerprint)){
   const probe=await probeDeepwellFromFramerail(backend);
   return{restarted:false,backendProbe:probe};
  }
+ if(running||runningCaddy)throw new Error('task-owned built transport already exists with different provenance; choose a new namespace rather than replace it');
 
  const dev=await inspectContainer(devContainer);
  if(!dev)throw new Error(`required local-development container ${devContainer} is not running`);
- const network=Object.keys(dev.NetworkSettings?.Networks??{})[0];
+ const network=backendProject?backend.network:Object.keys(dev.NetworkSettings?.Networks??{})[0];
  if(!network)throw new Error('could not determine the local-development Docker network');
  if(network!==backend.network)throw new Error('built Framerail and current Deepwell are not attached to the same Docker network');
- await run('docker',['rm','-f',caddyContainer,framerailContainer]).catch(()=>{});
  const created=[];
  try{
 
  const envFile=path.join(os.tmpdir(),`theme-lab-built-env-${process.pid}`);
- const envLines=(dev.Config?.Env??[]).filter(value=>value.includes('=')).map(value=>{
+ const safeTaskKeys=new Set(['DEEPWELL_HOST','FRAMERAIL_MODE','PORT','REDIS_URL','PNPM_HOME','PNPM_STORE_DIR']);
+ const envLines=(dev.Config?.Env??[]).filter(value=>value.includes('=')&&(!backendProject||safeTaskKeys.has(value.split('=')[0]))).map(value=>{
   const [key,...rest]=value.split('=');
   if(key==='FRAMERAIL_MODE')return 'FRAMERAIL_MODE=built';
   if(key==='PORT')return 'PORT=3393';
   return `${key}=${rest.join('=')}`;
  });
+ if(backendProject){
+  const token=(backend.container.Config?.Env??[]).find(value=>value.startsWith('DEEPWELL_RPC_TOKEN='));
+  if(!token||token.length<= 'DEEPWELL_RPC_TOKEN='.length)throw new Error('task backend lacks the RPC authentication token');
+  const existing=envLines.findIndex(line=>line.startsWith('DEEPWELL_RPC_TOKEN='));
+  if(existing>=0)envLines[existing]=token;
+  else envLines.push(token);
+ }
+ if(framerailEnv){const at=envLines.findIndex(line=>line.startsWith('FRAMERAIL_ENV='));if(at>=0)envLines[at]=`FRAMERAIL_ENV=${framerailEnv}`;else envLines.push(`FRAMERAIL_ENV=${framerailEnv}`)}
  if(!envLines.some(line=>line.startsWith('FRAMERAIL_MODE=')))envLines.push('FRAMERAIL_MODE=built');
  if(!envLines.some(line=>line.startsWith('PORT=')))envLines.push('PORT=3393');
  await fs.writeFile(envFile,envLines.join('\n')+'\n',{mode:0o600});
  try{
   if(!envLines.some(line=>line==='DEEPWELL_HOST=deepwell'))throw new Error('built Framerail does not use the verified deepwell service alias');
-  const args=['run','-d','--rm','--name',framerailContainer,'--network',network,'--label',`theme-lab.source-sha=${fingerprint}`,'--label',`theme-lab.backend-runtime-sha=${backend.identity.identity_sha256}`,'--env-file',envFile,'-e','FRAMERAIL_MODE=built','-e','PORT=3393','-v',`${buildDir}:/app`];
-  for(const mount of dev.Mounts??[]){
+  const args=['run','-d','--rm','--name',framerailContainer,'--network',network,'--label',`theme-lab.framerail-env=${envLabel}`,'--label',`theme-lab.source-sha=${fingerprint}`,'--label',`theme-lab.backend-runtime-sha=${backend.identity.identity_sha256}`,'--env-file',envFile,'-e','FRAMERAIL_MODE=built','-e','PORT=3393','-v',`${buildDir}:/app`];
+  if(backendProject){
+   await fs.access(path.join(framerailDir,'node_modules'));
+   await fs.access(path.join(repoRoot,'assets'));
+   args.push('-v',`${path.join(framerailDir,'node_modules')}:/app/node_modules:ro`);
+   args.push('-v',`${path.join(repoRoot,'assets')}:/app/src/assets:ro`);
+  }else for(const mount of dev.Mounts??[]){
    if(mount.Destination==='/app/node_modules'&&mount.Type==='volume')args.push('-v',`${mount.Name}:/app/node_modules`);
    if(mount.Destination==='/pnpm'&&mount.Type==='volume')args.push('-v',`${mount.Name}:/pnpm`);
    if(mount.Destination==='/app/src/assets'&&mount.Type==='bind')args.push('-v',`${mount.Source}:/app/src/assets:ro`);
@@ -175,7 +201,7 @@ while(true){
  const fingerprint=await framerailSourceFingerprint(repoRoot);
  try{
   assertRuntimeSourceSha(expectedRuntimeSourceSha,fingerprint,'current Framerail source');
-  const backend=readRunningDeepwellRuntimeIdentity(repoRoot,{containerName:deepwellContainer});
+  const backend=readRunningDeepwellRuntimeIdentity(repoRoot,{containerName:deepwellContainer,composeProject:backendProject??'wikijump-local-development'});
   assertDeepwellRuntimeIdentity(expectedBackendRuntimeIdentity,backend.identity,'current Deepwell runtime');
   const build=await buildSource(fingerprint);
   const containers=await startContainers(fingerprint,build.buildDir,backend);

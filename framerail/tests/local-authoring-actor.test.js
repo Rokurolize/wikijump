@@ -1,7 +1,10 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { resolvePageMutationUserId } from "../src/lib/server/load/local-authoring-actor.ts"
+import {
+  resolveLocalAuthoringMutationMarker,
+  resolvePageMutationUserId
+} from "../src/lib/server/load/local-authoring-actor.ts"
 
 const LOCAL_SITE = "scpaiueouiuiuiui"
 
@@ -17,4 +20,24 @@ test("the local admin actor is available only for a bound local-site mutation", 
   // Both canonical mirrors stay read-only: authoring into scp-jp corrupts
   // the comparison baseline exactly like scp-wiki does.
   assert.equal(resolvePageMutationUserId(undefined, "scp-jp", 7, 7, "local"), undefined)
+})
+
+test("the mutation marker is sent only for anonymous bound local-site reads", () => {
+  assert.equal(
+    resolveLocalAuthoringMutationMarker(undefined, LOCAL_SITE, 7, 7, "local"),
+    true
+  )
+  assert.equal(resolveLocalAuthoringMutationMarker(42, LOCAL_SITE, 7, 7, "local"), false)
+  assert.equal(
+    resolveLocalAuthoringMutationMarker(undefined, LOCAL_SITE, 7, 7, "prod"),
+    false
+  )
+  assert.equal(
+    resolveLocalAuthoringMutationMarker(undefined, LOCAL_SITE, 7, 8, "local"),
+    false
+  )
+  assert.equal(
+    resolveLocalAuthoringMutationMarker(undefined, "scp-wiki", 7, 7, "local"),
+    false
+  )
 })

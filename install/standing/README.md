@@ -36,60 +36,55 @@ stale application routes, and false 200s are not.
 
 There are two operational tiers. Routine application refreshes use Tier 1. Tier 2 is reserved for operations that can change a named volume attachment, the Compose project name, the network name, or edge routing.
 
-## Tier 1: routine merged-head refresh
+## Tier 1: promote the merged develop head
 
-Tier 1 is the expected default after a change merges to `develop`. It activates the immutable Deepwell, Framerail, and WWS images that already passed the sealed pre-merge candidate. Preparation verifies and binds those exact image IDs to the normal two-parent merge whose tree equals the candidate tree; it does not rebuild them. Activation never compiles Rust or bundles JavaScript. It does not stop Caddy, database, files, or cache; it does not run `down`; and its command-line parser has no volume-removal or Compose passthrough option.
-
-A Tier 1 refresh is required before anyone asserts that a browser-visible, chrome, layout, or DOM defect is fixed or still present in the standing runtime. A browser claim against an older standing SHA is not evidence about current code.
-
-Start from a clean checkout whose `HEAD` equals the fetched `origin/develop` head. Bind the three exact candidate application images to that merged source:
+Tier 1 is the routine step after a change merges to `develop`, and it is one command. A browser-visible, chrome, layout, or DOM claim about standing needs the current merged head on standing first: a claim against an older standing SHA is not evidence about current code.
 
 ```sh
-git fetch origin develop
-runtime_home="${XDG_STATE_HOME:-$HOME/.local/state}/wikijump/standing"
-mkdir -p "$runtime_home"
-python install/standing/prepare.py \
-  --source-root "$PWD" \
-  --promotion-precondition /secure/promotion/promotion-precondition.json \
-  --output "$runtime_home/prepared-<wikijump-sha>.json"
+python3 install/standing/promote.py
 ```
 
-Then activate that receipt without a build:
+It fetches `origin/develop`, moves its own worktree `${XDG_STATE_HOME:-$HOME/.local/state}/wikijump/promotion-checkout` there (creating it the first time), and continues with that checkout's `promote.py`, so the orchestrator is always the one the promoted source ships. The worktree keeps its Cargo target directories and `node_modules` between promotions, so checks that must run compile incrementally. It must stay clean and is never reset; local changes in it stop the promotion. `--source-root <clean checkout of the fetched origin/develop>` promotes from another checkout instead.
 
-```sh
-python install/standing/refresh.py \
-  --source-root "$PWD" \
-  --runtime-home "$runtime_home" \
-  --prepared-receipt "$runtime_home/prepared-<wikijump-sha>.json"
-```
+It stops at the first failing stage, leaves standing as it was or restores it, and writes `promotion-receipt.json` with every stage's duration and result under `${XDG_STATE_HOME:-$HOME/.local/state}/wikijump/promotions/<sha>-<time>/`. The stages:
 
-Preparation records the candidate-image verification duration and exact image IDs. Activation performs one fixed sequence:
+1. **identity** — the checkout is clean and exactly the fetched `origin/develop`; the standing runtime records the revision it serves. Nothing runs when standing already serves this head.
+2. **plan** — the change since the standing revision selects `scripts/preflight.sh` check groups (the same classifier), counts saved pages the new renderer generation makes stale, and lists migration changes.
+3. **validation** — every selected group needs a passing `preflight.sh --final` receipt (from `run-consolidated-validation.mjs`, kept in `${XDG_STATE_HOME:-$HOME/.local/state}/wikijump/validation/`) for this tree, or for a tree whose difference from this one does not select that group. A pull request's own final barrier normally provides it. Groups without one run now (`preflight.sh --final --groups`, the groups side by side), alongside the build; a failing check stops the promotion by name. A missing **current Theme Lab browser campaign** is explicitly recorded as `INCONCLUSIVE`, not as a completed parity check. The consolidated source-code validation receipt may pass with only that named check inconclusive, when all executed checks pass; Standing admission does not accept arbitrary inconclusive checks, and the final-frozen publication contract still refuses any inconclusive current-campaign evidence. A code-validation receipt never substitutes for fresh browser acceptance.
+4. **build** — the Deepwell, Framerail, and WWS production images, side by side, from BuildKit caches (cargo registry and target directories, the pnpm store). Deepwell uses the `standing` cargo profile: release optimisation without the whole-program LTO that alone took about 14 minutes, and incremental, so a source change rebuilds in about four minutes. The database, files, cache, and Caddy images are standing's own (they change only in Tier 2).
+5. **render-ahead** — when saved pages are stale to the new renderer generation, `render_ahead.py` renders them with the new image while the old one serves (below).
+6. **rehearsal** — only when migrations change. They cannot be undone: the old build's migration check refuses a schema it does not know, so its parked containers would not start again. The new images start on a copy of standing's data — a `pg_basebackup` of the database (about a minute) and a copy-on-write overlay of the object store (standing's volume is only the read-only lower layer; the ~100 MB hosted text-block bucket is copied into the upper layer, because rendering deletes replaced text blocks and render-ahead would otherwise remove objects the cloned database names, #2650) — and must pass zero stale saved pages, every hosted text block its database names present in its object store, the HTTP canary, and the candidate browser parity. The copy is removed afterwards.
+7. **activation** — park the serving Deepwell, Framerail, and WWS containers, record the new image IDs and revision in the runtime `.env`, `docker compose up --no-deps --no-build` the three services, and require health, a gateway reload, zero stale saved pages, the SCP-9506 HTTP canary, and the standing browser parity. Any failure removes the new containers and restores the parked ones; after a renderer generation change it first puts back the saved-page output it replaced (snapshotted just before parking), so the old build serves current pages again. On success the parked containers are removed, `runtime-differential-identity.json` is updated, and `refresh-receipt.json` (schema 4) binds the activation to the sealed build.
 
-1. Verify the source checkout is clean and exactly matches `origin/develop`, then read the exact Wikijump tree and FTML pin.
-2. Verify that the promotion candidate is a parent of the normal two-parent merge, its tree and FTML pin equal the merged source, and the prepared receipt reuses the exact sealed candidate image IDs. Verify the production Dockerfile hashes, immutable references, profiles, and candidate provenance labels, then inspect each local image ID again immediately before activation.
-3. Atomically update the three `STANDING_*_IMAGE` values, `STANDING_WIKIJUMP_SHA`, `STANDING_FTML_SHA`, and the prepared resource expiry in the runtime `.env`. Deepwell reads the locales packaged in its immutable production image.
-4. Run `docker compose --project-name wikijump-standing up --detach --no-deps --no-build deepwell framerail wws` with the checked-in refresh label overlay. The overlay adds owner and expiry labels to the three recreated containers and has no volume declarations.
-5. Wait for all three services to become healthy, fetch `http://scp-wiki.wikijump.localhost/scp-9506`, require the expected document markers, update `runtime-differential-identity.json`, and seal a revision-specific `refresh-receipt-<wikijump-sha>.json` with the preparation receipt, exact source, FTML pin, dependency lock, application image IDs, effective Compose configuration, phase timings, health, canary, and resource-disposition record.
+Rollback cannot assume renamed containers survive `docker compose up`: Compose retains container-management labels across `docker rename` and may remove those parked containers while reconciling the service. If the original parked app containers have vanished, rollback now recreates **only Deepwell, Framerail and WWS** from the previously verified immutable image IDs after restoring the original `.env` and saved-page output. The recovery refuses image substitution and verifies every recreated app runs the pinned image; it never pulls images or touches shared named volumes, Caddy, the database, files or cache. If the old applications are already missing when a new promotion starts, promotion fails early with a recovery diagnostic rather than proceeding into render-ahead or falsely reporting that Standing is current.
+
+Caddy keeps port 443 and is never recreated, but its routes come from Deepwell's `caddyfile` RPC, which the Caddy container's own cron reloads only every five minutes. Activation therefore runs that cron's `wikijump-update-caddyfile` (as the cron's `daemon` user) once the new Deepwell is healthy, and requires the configuration Caddy then reports on its admin API to equal the adapted Caddyfile Deepwell renders; a rollback reloads it the same way from the restored Deepwell. Without this, the standing proof could pass against the previous build's gateway routes (#2598).
+
+Activation never compiles, never stops Caddy, the database, files, or cache, never runs `down`, and has no volume or Compose passthrough option. The browser parity compares against the retained live Wikidot reference in `${XDG_STATE_HOME:-$HOME/.local/state}/wikijump/standing-browser-reference/reference.json` (policy, reference ledger and its SHA-256, response cache, browser); it is captured once with `run-standing-browser-parity.mjs --mode live-reference` and recaptured only when the canary contract or the live pages change, never as part of a promotion.
+
+Measured on this workstation (16 cores) on 2026-10-17: a Deepwell source change rebuilds in about 4 minutes (the old uncached fat-LTO build took about 22), the database copy takes about a minute, each browser parity about 40 seconds, and activation about a minute. Routine promotions therefore finish within ten minutes; a renderer generation change adds its render-ahead.
 
 ### Renderer generation switches: render ahead
 
-Deepwell refuses saved output whose `compiled_generator` is not its own (`ftml vX; deepwell-render/vN`), so a release that bumps the renderer epoch or FTML makes every saved page stale at activation. Rerendering after activation means the site is unavailable for the whole rerender (about two hours for the standing corpus). Render ahead instead, while the current build keeps serving, immediately before activation:
+Deepwell refuses saved output whose `compiled_generator` is not its own (`ftml vX; deepwell-render/vN`), so a release that bumps the renderer epoch or FTML makes every saved page stale at activation. `promote.py` renders them first, while the old runtime keeps serving. For diagnostics, run it alone:
 
 ```sh
-python install/standing/render_ahead.py \
-  --prepared-receipt "$runtime_home/prepared-<wikijump-sha>.json" \
+python3 install/standing/render_ahead.py \
+  --image <deepwell image ID> \
   --output-dir "$runtime_home/render-ahead-<wikijump-sha>"
 ```
 
-The command runs the prepared Deepwell image's `render-ahead` runtime action as a one-off container in the serving Deepwell's network namespace, with its environment and configuration. It creates the `page_revision_render_ahead` table from the image's idempotent migration without recording the migration, so the serving build (and a rollback to it) still passes its own migration check. Each stale page's latest revision is rendered into that table; `page_revision` is untouched. Rendering refreshes link rows, and query modules read them. After each full pass, the pages whose link content (endpoints, type, count; not row timestamps) changed are rendered once more: a page that changes again links differently on every render (random ListPages, #2435) and is recorded in the receipt; if any other page changed, every page is rendered again, up to three full passes. `--rerender-all` ignores rows from an earlier run that could not establish this. Pages that miss the serving render deadline under load are retried alone, then once with a one-shot `--tail-render-timeout-ms` deadline. The receipt `render-ahead-receipt.json` records the image, generator, per-pass timings and counts, and `stale_without_valid_ahead`, which must be `0`.
+The command runs the image's `render-ahead` runtime action as a one-off container in the serving Deepwell's network namespace, with its environment and configuration. It creates the `page_revision_render_ahead` table from the image's idempotent migration without recording the migration, so the serving build (and a rollback to it) still passes its own migration check. Each stale page's latest revision is rendered into that table in its own task; `page_revision` is untouched.
 
-The new Deepwell promotes valid rows in one statement when it starts, before it accepts requests. A row is valid only while its revision is still the page's latest, with the same source, and has not been rerendered by the serving build since the row's inputs were read. Pages that changed after the run therefore stay stale; the run is incremental, so rerun it right before `refresh.py` if time has passed. `refresh.py` then finds `stale_pages_remaining: 0`, and activation costs only the container restart.
+Rendering refreshes link rows. Backlinks, OrphanedPages, WantedPages, and ListPages/CountPages queries with `link_to=` read the link graph. Deepwell reports every page whose render read it (`link_reader_page_ids`), including queries expanded from included source. A link reader rendered early in a full pass may have read links a later render changed, so readers are rendered again until a round leaves every link unchanged. If links keep moving at the round limit, promotion is blocked: without the individual reader-to-writer dependencies, a randomly changing reader may leave another page's saved output based on old links. The 2026-10-16 standing run spent 37 of its 54 minutes re-rendering about 3,700 deterministic pages eight times and then every page again; standing had two readers under the then-current classifier, which did not include `link_to=` queries. Each run renders every stale page itself, because only its own passes know which pages read links.
+
+Pages that miss the serving render deadline under load are retried alone, then with a one-shot `--tail-render-timeout-ms` deadline; any other failure stops the run. The receipt `render-ahead-receipt.json` records the image, generator, per-pass timings and counts, the link readers, and `stale_without_valid_ahead`, which must be `0`. A run that exits nonzero without a passing receipt has **stopped**: inspect its saved pass logs rather than waiting or promoting.
+
+The new Deepwell promotes valid rows in one statement when it starts, before it accepts requests. A row is valid only while its revision is still the page's latest, with the same source, and has not been rerendered by the serving build since the row's inputs were read. Pages that changed after the run therefore stay stale and fail activation's freshness check, which restores the old runtime.
 
 The candidate Framerail image is built from the production Dockerfile with origin checks enabled by default, and the standing Compose environment repeats `FRAMERAIL_CSRF_CHECK_ORIGIN=true` so the runtime cannot silently disable the check.
 
-The standing image tier is deliberately separate from `install/local`: local images retain bind mounts and watch-mode startup for source iteration, while the sealed candidate images are already-built production artifacts. Deepwell's candidate image contains the pinned `sqlx-cli` and migrations and runs `sqlx migrate run` before the binary; migration handling is therefore explicit rather than silently lost when the local startup script is removed.
-
-The script refuses unknown arguments, including `-v`, `--volumes`, and `--remove-volumes`. There is no argument that is forwarded to Docker or Docker Compose.
+The standing image tier is deliberately separate from `install/local`: local images retain bind mounts and watch-mode startup for source iteration, while the promoted images are already-built production artifacts. Deepwell's image contains the pinned `sqlx-cli` and migrations and runs `sqlx migrate run` before the binary; migration handling is therefore explicit rather than silently lost when the local startup script is removed.
 
 ## Rendering the canonical home
 
@@ -106,7 +101,7 @@ Tier 2 is the controlled maintenance ceremony for changes to named volume attach
 1. Record the current container identities, image digests, mounted volumes, network, edge owner, and passing canaries as rollback evidence. Verify the five named persistent volumes and their consumers before changing anything.
 2. Build the exact merged-head images under the required lease, render a staging home bound to those identities, and validate it before touching the canonical home.
 3. Activate the bounded explicit 503 maintenance response. Connection refusal, a generic 5xx, or silently serving an old candidate is not an acceptable maintenance state.
-4. Stop the old standing containers without `-v`, start the reviewed topology, and verify that every named volume survives. Never prune or recreate a named data volume as part of this ceremony.
+4. Stop the old standing containers without `-v`, start the merged-head topology, and verify that every named volume survives. Never prune or recreate a named data volume as part of this ceremony.
 5. Verify one port-443 owner, expected project and network identities, service health, HTTP and assets, WIKIREQUEST metadata, AJAX ListPages, DOM, and unmodified `wikidot.py` lookup canaries.
 6. On failure, restore the saved topology without `-v`, restore normal edge routing, and seal a failed receipt. On success, seal the promotion receipt, retain the immediate rollback image, and remove only superseded images whose lifecycle closure is proven.
 
@@ -139,7 +134,7 @@ is never deleted by the migration command. If an interrupted run leaves a
 partial durable destination, inspect its consumers first and rerun explicitly
 with `--replace-destinations`.
 
-After the verified copy exists, activate the reviewed/merged standing topology
+After the verified copy exists, activate the merged standing topology
 whose Compose file names the durable volumes. Then prove that the running
 database, files, and cache containers mount only the durable names while all
 three legacy rollback inputs still exist:
@@ -219,31 +214,6 @@ volumes. This is the same archive-hash, extraction, ownership/xattr, sparse-file
 and deterministic-tree verification path used by a clean-host restore; it does
 not read from the live source volumes.
 
-## Sealed Tier 2 receipt verifiers
+## Historical receipt verifiers
 
-`install/local/wikidot-verification/scripts/verify-standing-candidate-parity-admission.mjs` and `install/standing/scripts/verify-promotion-precondition.mjs` are real, side-effect-free receipt verifiers for Tier 2. They validate browser-parity evidence, candidate identity, exact final-frozen inputs, the sealed build inventory, and the rendered staging-home binding. `install/standing/promote.mjs` chains the admission CLI, canonical promotion validator, image preparation, and standing refresh. Refresh owns activation, rollback, and failure receipts; the controller does not remove those artifacts or forward arbitrary Compose arguments. They do not build images, render or replace the canonical home, enter maintenance, run Compose, or change routing.
-
-Use `promote.mjs` for the complete post-merge sequence. Its explicit paths are the candidate receipt, final-frozen receipt, candidate identity, live reference, live completion policy, sealed build evidence, rendered staging home, admission output, promotion precondition, prepared receipt, standing runtime home, and standing receipt. The standalone commands below remain available for receipt-only validation:
-
-```sh
-node install/local/wikidot-verification/scripts/verify-standing-candidate-parity-admission.mjs \
-  --receipt /secure/candidate/standing-candidate-parity-receipt.json \
-  --candidate-identity /secure/candidate/candidate-parity-identity.json \
-  --live-reference /secure/live/standing-browser-live-reference.json \
-  --live-completion-policy /secure/live/standing-live-completion-policy.json \
-  --output /secure/candidate/standing-candidate-parity-admission.json
-```
-
-```sh
-node install/standing/scripts/verify-promotion-precondition.mjs \
-  --receipt /secure/candidate/standing-candidate-parity-receipt.json \
-  --final-frozen-receipt /secure/candidate/final-frozen-receipt.json \
-  --candidate-identity /secure/candidate/candidate-parity-identity.json \
-  --live-reference /secure/live/standing-browser-live-reference.json \
-  --live-completion-policy /secure/live/standing-live-completion-policy.json \
-  --build-evidence /secure/build/sealed-build \
-  --staging-home /secure/runtime/wikijump-standing.stage \
-  --output /secure/promotion/candidate-parity-admission.json
-```
-
-The live completion policy and isolated candidate capsule remain explicit Tier 2 inputs. These verifiers are unrelated to the retired CWG01 admission harness.
+`install/local/wikidot-verification/scripts/verify-standing-candidate-parity-admission.mjs`, `install/standing/scripts/verify-promotion-precondition.mjs`, and `emit-final-frozen-receipt.mjs` validate the receipts of the retired multi-step promotion chain (candidate parity admission, promotion precondition, final-frozen receipt, prepared receipt). Promotion no longer produces or reads them: `promote.py` runs the same checks itself in one process and records them in one receipt. They remain only because historical final-zero inputs (`verify-final-zero.mjs`, `build-compatibility-standing-matrix.mjs`) reference schema-3 refresh receipts bound to that chain.

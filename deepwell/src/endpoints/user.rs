@@ -22,13 +22,18 @@ use super::prelude::*;
 use crate::constants::ADMIN_USER_ID;
 use crate::models::user::Model as UserModel;
 use crate::models::wikidot_user::Entity as WikidotUser;
-use crate::services::MutationAuthorization;
+use crate::services::authentication::AuthenticateUser;
 use crate::services::user::{
     ActivateUserFromWikidot, CreateUser, CreateUserOutput, DeleteUser, GetUser,
-    GetUserOutput, UpdateUser, User,
+    GetUserOutput, UpdateUser, UpdateUserBody, User,
 };
-use crate::types::{AliasType, Reference, UserType};
+use crate::services::{
+    AuthenticationService, MutationAuthorization, PasswordService, SessionService,
+};
+
+use crate::types::{AliasType, Maybe, Reference, UserType};
 use sea_orm::EntityTrait;
+use std::net::IpAddr;
 
 pub async fn user_create(
     ctx: &ServiceContext<'_>,
@@ -163,6 +168,7 @@ pub async fn user_edit(
         user: reference,
         ip_address,
         body,
+        current_password,
     } = parse!(params, User);
 
     let target = UserService::get_real(ctx, reference)
@@ -173,14 +179,49 @@ pub async fn user_edit(
         target.user_id,
         "update this user",
     )?;
+    // A password set through ordinary profile editing would skip the
+    // current-password check; account holders use user_password_change.
     if actor_user_id != ADMIN_USER_ID
-        && (body.email_verified.is_set() || body.bypass_filter)
+        && (body.email_verified.is_set() || body.bypass_filter || body.password.is_set())
     {
         return Err(Error::new(
-            "only platform staff may set user verification or filter bypass fields",
+            "only platform staff may set user verification, filter bypass or password fields",
             ErrorType::PermissionDenied,
         )
         .into());
+    }
+
+    // Changing the account email re-points password reset and recovery, so
+    // a hijacked session must not be able to do it silently: the account
+    // holder first proves the current password. Platform staff editing
+    // another account, and edits that keep the current email, need no
+    // proof. Missing and wrong proofs are indistinguishable.
+    let email_changing = match &body.email {
+        Maybe::Set(new_email) => {
+            !new_email.trim().eq_ignore_ascii_case(target.email.trim())
+        }
+        _ => false,
+    };
+    if email_changing && actor_user_id == target.user_id && actor_user_id != ADMIN_USER_ID
+    {
+        let proof = current_password
+            .as_deref()
+            .map(str::trim)
+            .filter(|proof| !proof.is_empty())
+            .ok_or_else(|| {
+                Error::new(
+                    "current password verification failed",
+                    ErrorType::InvalidAuthentication,
+                )
+            })?;
+        PasswordService::verify_sleep(ctx, proof, &target.password, true)
+            .await
+            .map_err(|_| {
+                Error::new(
+                    "current password verification failed",
+                    ErrorType::InvalidAuthentication,
+                )
+            })?;
     }
 
     info!("Updating user ID {}", target.user_id);
@@ -239,4 +280,94 @@ pub async fn user_add_name_change(
     UserService::add_name_change_token(ctx, &user)
         .await
         .or_raise(make_error)
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+struct ChangeUserPassword {
+    current_password: String,
+    new_password: String,
+    ip_address: IpAddr,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ChangeUserPasswordOutput {
+    pub other_sessions_revoked: u64,
+}
+
+/// Changes the signed-in account's own password.
+///
+/// The current password is checked under the same rate limits as a login,
+/// the new one under the account password policy, and every other session of
+/// the account is revoked, so a password change ends access obtained with the
+/// old credentials. The session making the change stays signed in.
+pub async fn user_password_change(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<ChangeUserPasswordOutput> {
+    let ChangeUserPassword {
+        current_password,
+        new_password,
+        ip_address,
+    } = parse!(params, User);
+    let session = ctx
+        .request()
+        .user_session()
+        .or_raise(|| {
+            Error::new(
+                "changing a password requires a signed-in session",
+                ErrorType::PermissionDenied,
+            )
+        })?
+        .clone();
+    let user = UserService::get_real(ctx, Reference::Id(session.user_id))
+        .await
+        .or_raise(|| Error::new("failed to load the signed-in user", ErrorType::User))?;
+
+    let authenticated = AuthenticationService::auth_password(
+        ctx,
+        AuthenticateUser {
+            name_or_email: user.name.clone(),
+            password: current_password,
+        },
+        ip_address,
+    )
+    .await?;
+    if authenticated.user_id != user.user_id {
+        bail!(Error::new(
+            "the current password belongs to another account",
+            ErrorType::InvalidAuthentication,
+        ));
+    }
+
+    // Policy first: an empty password would otherwise disable the account's
+    // password login instead of being rejected.
+    PasswordService::new_account_hash(&new_password)?;
+
+    info!("Changing the password of user ID {}", user.user_id);
+    UserService::update(
+        ctx,
+        Reference::Id(user.user_id),
+        ip_address,
+        UpdateUserBody {
+            password: Maybe::Set(new_password),
+            ..Default::default()
+        },
+    )
+    .await
+    .or_raise(|| Error::new("failed to change the password", ErrorType::User))?;
+
+    let other_sessions_revoked =
+        SessionService::invalidate_others(ctx, &session.session_token, user.user_id)
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to revoke the account's other sessions",
+                    ErrorType::User,
+                )
+            })?;
+
+    Ok(ChangeUserPasswordOutput {
+        other_sessions_revoked,
+    })
 }

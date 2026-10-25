@@ -18,18 +18,20 @@ The current local development model uses a local admin actor so the WSL owner ca
 
 That local authority must remain behind a replaceable seam. Page mutation code should continue to go through service/API boundaries and permission-aware paths. Do not add permanent deep bypasses inside page creation, page editing, revision persistence, or mirror import code.
 
-For the anonymous page mutation seam, Framerail may send the local actor marker only after resolving the actor for a `FRAMERAIL_ENV=local` request on this site and matching the request and mutation site IDs. Deepwell honors that marker only when its configured main domain is `wikijump.localhost`, the current database row for this exact site slug matches the request site ID, and the RPC is one of the page create/edit/delete/move or file restore/rollback methods. The normal trusted RPC credential and Deepwell's request-actor/attribution equality check remain required. Mirrors, other sites, and non-local deployments never receive this actor.
+For the anonymous page mutation seam, Framerail may send the local actor marker only after resolving the actor for a `FRAMERAIL_ENV=local` request on this site and matching the request and mutation site IDs. Deepwell honors that marker only when its configured main domain is a loopback-only `.localhost` name (`wikijump.localhost` on standing, `wikijump.dev.localhost` on the local development stack), the current database row for this exact site slug matches the request site ID, and the RPC is one of the page create/edit/delete/move or file restore/rollback methods, or one of the read-only permission preflights for the page create/edit/move/delete mutations (which report booleans for the bound actor; the mutations still enforce). The normal trusted RPC credential and Deepwell's request-actor/attribution equality check remain required. Mirrors, other sites, and non-local deployments never receive this actor.
 
 Future work can replace the local admin actor with a Wikidot-like account/permission provider without changing which site owns editable drafts.
 
 ## Local compatibility action throttle
 
-Mutable compatibility actions use a Wikijump deployment-security throttle rather than pretending that an unobserved Wikidot threshold is known. A valid renderer-bound self-membership action and a valid renderer-bound set-tags action each permit ten dispatches per site, actor, and action in a rolling sixty-second window. The two actions use separate server-owned partitions.
+Mutable compatibility actions use a Wikijump deployment-security throttle rather than pretending that an unobserved Wikidot threshold is known. A valid renderer-bound self-membership action, a valid renderer-bound join-by-password action, and a valid renderer-bound set-tags action each permit ten dispatches per site, actor, and action in a rolling sixty-second window. The three actions use separate server-owned partitions.
 
 Malformed descriptors, route mismatches, stale revisions, failed permission checks, and unsupported site policy are rejected before the counter is touched. Throttle exhaustion uses the same non-disclosing permission boundary as an unavailable action and exposes no client-selectable partition key or retry oracle. Site, actor, action key, limit, and window are all server-owned; client page, revision, token, policy, or route fields cannot create another bucket.
 
 ## Isolation rules
 
 A slug created in `scpaiueouiuiuiui` must not appear in `scp-wiki` or `scp-jp` unless a separate explicit import step creates that page in a mirror site.
+
+Cross-site include-source rows (snapshots whose source names a foreign origin, held so `[[include :site:page]]` resolves) are storage, not pages of the holding mirror (issue #2690). They must not be served as ordinary pages, listed by site queries, or linked as local pages; include resolution keeps finding them by (`source_site`, `source_fullname`).
 
 Mirror QA should treat a missing page in `scp-wiki` as an import/data coverage gap first. Visual parity bugs should be filed only after the mirror page exists and a browser comparison can inspect real rendered content.

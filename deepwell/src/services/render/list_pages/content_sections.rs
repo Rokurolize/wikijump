@@ -139,10 +139,23 @@ mod tests {
         for source in [
             "[!--\n=====\n[[include component:cell]]\n--]\n",
             "[[code]]\n=====\n[[include component:cell]]\n[[/code]]\n",
-            "@@raw\n=====\n[[include component:cell]]\n@@\n",
         ] {
             assert_eq!(isolate_wikidot_content_section(source, 2), None, "{source}");
         }
+    }
+
+    #[test]
+    fn raw_markers_on_separate_lines_do_not_make_a_section_boundary_literal() {
+        // Wikidot never pairs `@@` across lines (`pair-across-lines-with-bold`
+        // in wikidot-at-raw-preview-20261019.json), so these markers own nothing.
+        assert_eq!(
+            isolate_wikidot_content_section(
+                "@@raw\n=====\n[[include component:cell]]\n@@\n",
+                2
+            )
+            .as_deref(),
+            Some("[[include component:cell]]\n@@\n"),
+        );
     }
 
     #[test]

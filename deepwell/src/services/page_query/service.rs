@@ -36,6 +36,7 @@ use crate::models::page_connection::{self, Entity as PageConnection};
 use crate::models::page_parent::{self, Entity as PageParent};
 use crate::models::{page_revision, text};
 use crate::services::ServiceContext;
+use crate::services::page::foreign_snapshot_exclusion_sql;
 use crate::services::{PageService, ParentService, ScoreService};
 use crate::types::{ConnectionType, Reference};
 use sea_orm::FromQueryResult;
@@ -59,7 +60,8 @@ use self::filtering::date_span_bounds;
 use self::filtering::{
     category_local_wikidot_name_patterns, date_selector_condition,
     filter_pages_by_data_form_fields, load_pages_static_data_form_values,
-    postgres_bind_placeholders, vote_selectors_condition, wikidot_name_pattern,
+    postgres_bind_placeholders, vote_selectors_condition, wikidot_name_condition,
+    wikidot_name_pattern,
 };
 
 use self::ordering::{
@@ -236,7 +238,8 @@ impl PageQueryService {
         let votes = votes.to_vec();
 
         let txn = ctx.transaction();
-        if !score.is_empty() || !votes.is_empty() {
+        let score_and_votes_empty = score.is_empty() && votes.is_empty();
+        if !score_and_votes_empty {
             // These queries deliberately switch between candidate-correlated and
             // site-wide score plans. PostgreSQL's generic prepared plan loses the
             // selector and candidate cardinalities after repeated executions and
@@ -250,6 +253,14 @@ impl PageQueryService {
         let mut condition = Condition::all();
 
         condition = condition.add(page::Column::SiteId.eq(queried_site_id));
+
+        // Foreign include-source snapshots are storage, not pages of this
+        // site (issue #2690): hide them from every ListPages selection the
+        // same way direct routes hide them.
+        condition = condition.add(Expr::cust(foreign_snapshot_exclusion_sql(
+            "page.page_id",
+            queried_site_id,
+        )));
 
         let hidden_condition = Expr::cust_with_expr(
             r#"regexp_replace($1, '^.*:', '') LIKE '\_%' ESCAPE '\'"#,
@@ -336,10 +347,8 @@ impl PageQueryService {
             {
                 let mut local_slug_condition = Condition::any();
                 for pattern in patterns {
-                    local_slug_condition = local_slug_condition.add(
-                        Expr::col((Page, page::Column::Slug))
-                            .binary(PgBinOper::ILike, Expr::val(pattern)),
-                    );
+                    local_slug_condition =
+                        local_slug_condition.add(wikidot_name_condition(&pattern));
                 }
                 condition = condition.add(local_slug_condition);
             } else {
@@ -356,18 +365,13 @@ impl PageQueryService {
             {
                 let mut local_slug_condition = Condition::any();
                 for pattern in patterns {
-                    local_slug_condition = local_slug_condition.add(
-                        Expr::col((Page, page::Column::Slug))
-                            .binary(PgBinOper::ILike, Expr::val(pattern)),
-                    );
+                    local_slug_condition =
+                        local_slug_condition.add(wikidot_name_condition(&pattern));
                 }
                 condition = condition.add(local_slug_condition);
             } else {
                 let pattern = wikidot_name_pattern(name.as_ref());
-                condition = condition.add(
-                    Expr::col((Page, page::Column::Slug))
-                        .binary(PgBinOper::ILike, Expr::val(pattern)),
-                );
+                condition = condition.add(wikidot_name_condition(&pattern));
             }
         }
 
@@ -507,6 +511,18 @@ impl PageQueryService {
         //      2. [ 9,  8,  7,  6,  5]
         //      3. [14, 13, 12, 11, 10]
 
+        // Tag predicates have the same problem as the score selectors above:
+        // a generic plan cannot see how rare a tag is, so after a few
+        // executions PostgreSQL walks every page in order and probes each
+        // revision's tags (a 4 ms query took 160 ms). Plan this query with its
+        // values, then return the rest of the render to cached plans.
+        let tag_custom_plan = needs_tag_filter && score_and_votes_empty;
+        if tag_custom_plan {
+            txn.execute_unprepared("SET LOCAL plan_cache_mode = force_custom_plan")
+                .await
+                .or_raise(make_error)?;
+        }
+
         // Execute it!
         let (mut pages, effective_revision_count_by_page_id) =
             if projects_effective_revision_count {
@@ -528,6 +544,11 @@ impl PageQueryService {
             } else {
                 (query.all(txn).await.or_raise(make_error)?, BTreeMap::new())
             };
+        if tag_custom_plan {
+            txn.execute_unprepared("SET LOCAL plan_cache_mode TO DEFAULT")
+                .await
+                .or_raise(make_error)?;
+        }
         if let Some(candidate_limit) = hard_candidate_limit
             && pages.len() > usize::try_from(candidate_limit).unwrap_or(usize::MAX)
         {
@@ -644,6 +665,9 @@ impl PageQueryService {
             })
     }
 }
+
+#[cfg(test)]
+mod score_filter_tests;
 
 #[cfg(test)]
 mod tests;

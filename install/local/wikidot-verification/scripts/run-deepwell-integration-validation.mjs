@@ -1,13 +1,46 @@
 #!/usr/bin/env node
 
+import {spawn} from "node:child_process";
 import process from "node:process";
+import {fileURLToPath} from "node:url";
 
 import {
   deepwellNextestPartition,
+  deepwellTestShards,
   deepwellTestThreads,
   runValidationCommand,
-  withDeepwellIntegrationStack,
+  withProvisionedDeepwellStack,
 } from "../src/deepwell-integration-stack.mjs";
+
+/** Run `shards` copies of this script, each on one nextest partition and its
+ * own task-owned stack, and fail if any fails. Output lines carry the shard.
+ * Partitions hash test names: `count:` restarts at shard 1 in every test
+ * binary, so shard 1 received a test from each small binary and ran longest. */
+async function runShards(shards, argv) {
+  const script = fileURLToPath(import.meta.url);
+  const results = await Promise.all(Array.from({length: shards}, (_, index) => new Promise((resolve, reject) => {
+    const label = `[shard ${index + 1}/${shards}] `;
+    const env = {...process.env, WIKIJUMP_DEEPWELL_NEXTEST_PARTITION: `hash:${index + 1}/${shards}`};
+    delete env.WIKIJUMP_DEEPWELL_TEST_SHARDS;
+    const child = spawn(process.execPath, [script, ...argv], {env, stdio: ["ignore", "pipe", "pipe"]});
+    for (const [stream, sink] of [[child.stdout, process.stdout], [child.stderr, process.stderr]]) {
+      let pending = "";
+      stream.setEncoding("utf8");
+      stream.on("data", (chunk) => {
+        const lines = (pending + chunk).split("\n");
+        pending = lines.pop();
+        for (const line of lines) sink.write(`${label}${line}\n`);
+      });
+      stream.on("end", () => { if (pending) sink.write(`${label}${pending}\n`); });
+    }
+    child.on("error", reject);
+    child.on("exit", (code, signal) => resolve({shard: index + 1, code, signal}));
+  })));
+  const failed = results.filter(({code}) => code !== 0);
+  if (failed.length > 0) {
+    throw new Error(`Deepwell test shards failed: ${failed.map(({shard, code, signal}) => `${shard} (${signal ?? code})`).join(", ")}`);
+  }
+}
 
 async function run() {
   if (process.argv.slice(2).some((argument) => argument === "--help" || argument === "-h")) {
@@ -21,17 +54,23 @@ async function run() {
         "Set WIKIJUMP_DEEPWELL_TEST_THREADS=1..16 to select task-owned integration-test concurrency.",
         "Set WIKIJUMP_DEEPWELL_NEXTEST_PARTITION=hash:I/N to run one independently provisioned",
         "nextest shard; each shard still defaults to one active test so task-owned state is isolated.",
+        "Set WIKIJUMP_DEEPWELL_TEST_SHARDS=N to run N such shards side by side.",
         "",
       ].join("\n"),
     );
     return;
   }
 
+  const shards = deepwellTestShards(process.env);
+  if (shards > 1 && !deepwellNextestPartition(process.env)) {
+    await runShards(shards, process.argv.slice(2));
+    return;
+  }
   const separator = process.argv.indexOf("--", 2);
   const cargoTestArgs = process.argv.slice(2, separator === -1 ? undefined : separator);
   const harnessArgs = separator === -1 ? [] : process.argv.slice(separator + 1);
 
-  await withDeepwellIntegrationStack(async ({env, cargo}) => {
+  await withProvisionedDeepwellStack(async ({env, cargo}) => {
     const partition = deepwellNextestPartition(env);
     if (partition) {
       await runValidationCommand(cargo, [

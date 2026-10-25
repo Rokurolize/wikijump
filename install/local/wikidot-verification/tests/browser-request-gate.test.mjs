@@ -9,6 +9,7 @@ import {
   createBrowserRequestGate,
   createBrowserResponseCache,
   createPersistentBrowserRequestGate,
+  isInterwikiTranslationLookup,
   isWikidotCapturePublicOrigin,
   installBrowserRequestGate,
   isCaptureDependencyResourceType,
@@ -242,6 +243,15 @@ test("the public gate admits Wikidot and css.wikidot.com but blocks unrelated pu
   assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/interwiki.js", "script", "GET"), true);
   assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/resizeIframe.js", "script", "GET", null), true);
   assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/resizeIframe.js", "script", "GET", ""), true);
+  const translations = "https://api.crom.avn.sh/graphql?query=q&variables=%7B%22url%22%3A%22http%3A%2F%2Fscp-wiki.wikidot.com%2Fscp-9506%22%7D";
+  assert.equal(isInterwikiTranslationLookup(translations, "xhr", "GET"), true);
+  assert.equal(isWikidotCapturePublicOrigin(translations, "xhr", "GET"), true);
+  assert.equal(isInterwikiTranslationLookup(translations, "script", "GET"), false);
+  assert.equal(isInterwikiTranslationLookup(translations, "xhr", "POST"), false);
+  assert.equal(isInterwikiTranslationLookup("https://api.crom.avn.sh/other?variables=%7B%22url%22%3A%22https%3A%2F%2Fscp-wiki.wikidot.com%2F%22%7D", "xhr", "GET"), false);
+  assert.equal(isInterwikiTranslationLookup("https://api.crom.avn.sh/graphql?variables=%7B%22url%22%3A%22https%3A%2F%2Fexample.com%2Fx%22%7D", "xhr", "GET"), false);
+  assert.equal(isInterwikiTranslationLookup("https://api.crom.avn.sh/graphql?variables=not-json", "xhr", "GET"), false);
+  assert.equal(isInterwikiTranslationLookup("https://api.crom.avn.sh/graphql?variables=%7B%22url%22%3A%22not%20a%20url%22%7D", "xhr", "GET"), false);
   assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/interwiki.js", "script", "GET", "https://scp-wiki.wikidot.com/scp-173"), false);
   assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/other.js", "script", "GET"), false);
   assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/other.html", "document", "GET"), false);
@@ -1100,7 +1110,9 @@ test("distinct persistent misses can acquire concurrently without losing evidenc
   try {
     await Promise.race([
       waitForBoth,
-      new Promise((_, reject) => { timeout = setTimeout(() => reject(new Error("distinct fills serialized through acquisition")), 1_000); }),
+      // A serialized acquisition never starts the second fill, so this only
+      // bounds a deadlock; it must not race scheduling on a loaded host.
+      new Promise((_, reject) => { timeout = setTimeout(() => reject(new Error("distinct fills serialized through acquisition")), 15_000); }),
     ]);
     assert.equal(peakActive, 2);
   } finally {

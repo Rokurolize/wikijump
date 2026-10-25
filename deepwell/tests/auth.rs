@@ -286,7 +286,7 @@ async fn restricted_mfa_session_has_a_shared_five_failure_budget() {
     assert_contains_error!(locked_out_error, ErrorType::InvalidAuthentication);
 
     let fresh_login = run_endpoint!(runner, auth_login, login_params(&name));
-    let fresh_normal_token = run_endpoint!(
+    let fresh_session_error = run_endpoint_err!(
         runner,
         auth_mfa_verify,
         json!({
@@ -296,10 +296,7 @@ async fn restricted_mfa_session_has_a_shared_five_failure_budget() {
             "user_agent": "deepwell-auth-test-mfa-fresh-session",
         }),
     );
-    assert!(
-        run_endpoint!(runner, auth_session_get, json!([fresh_normal_token])).is_some(),
-        "a fresh restricted session should have a fresh MFA attempt budget",
-    );
+    assert_contains_error!(fresh_session_error, ErrorType::InvalidAuthentication);
 }
 
 #[tokio::test]
@@ -689,4 +686,145 @@ async fn authorization_token_issue_uses_admin_request_actor() {
         ),
         "audit metadata should include the submitted description",
     );
+}
+
+#[tokio::test]
+async fn account_holders_change_their_password_with_the_current_one() {
+    const NEW_PASSWORD: &str = "a-new-password-for-2026";
+
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let (name, user_id) = create_auth_test_user(&runner, n, false).await;
+    let current = run_endpoint!(runner, auth_login, login_params(&name));
+    let other = run_endpoint!(runner, auth_login, login_params(&name));
+    let session = SessionService::get(runner.context(), &current.session_token)
+        .await
+        .expect("the login session should exist");
+    runner.set_request_context(RequestContext {
+        session: Some(session),
+        user_id: Some(user_id),
+        ..Default::default()
+    });
+
+    // Ordinary profile editing cannot set a password without the current one.
+    let edit_error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": user_id,
+            "password": NEW_PASSWORD,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(edit_error, ErrorType::PermissionDenied);
+
+    let wrong_current = run_endpoint_err!(
+        runner,
+        user_password_change,
+        json!({
+            "current_password": "not-the-current-password",
+            "new_password": NEW_PASSWORD,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(wrong_current, ErrorType::InvalidAuthentication);
+
+    let too_short = run_endpoint_err!(
+        runner,
+        user_password_change,
+        json!({
+            "current_password": PASSWORD,
+            "new_password": "",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(
+        too_short,
+        ErrorType::UserPasswordTooShort {
+            length: 0,
+            minimum: 15,
+        },
+    );
+
+    let changed = run_endpoint!(
+        runner,
+        user_password_change,
+        json!({
+            "current_password": PASSWORD,
+            "new_password": NEW_PASSWORD,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(changed.other_sessions_revoked, 1);
+
+    // The session that changed the password stays; the other one ends.
+    assert!(
+        SessionService::get_optional(runner.context(), &current.session_token)
+            .await
+            .unwrap()
+            .is_some()
+    );
+    assert!(
+        SessionService::get_optional(runner.context(), &other.session_token)
+            .await
+            .unwrap()
+            .is_none()
+    );
+
+    runner.set_request_context(RequestContext::default());
+    run_endpoint_err!(runner, auth_login, login_params(&name));
+    let renewed = run_endpoint!(
+        runner,
+        auth_login,
+        json!({
+            "name_or_email": name,
+            "password": NEW_PASSWORD,
+            "ip_address": common::IP_ADDRESS,
+            "user_agent": "deepwell-auth-test",
+        })
+    );
+    assert!(!renewed.needs_mfa);
+}
+
+#[tokio::test]
+async fn saturated_account_bucket_does_not_lock_out_correct_password() {
+    // Regression test for #2512: flooding an account with failed logins must
+    // not prevent the real holder from logging in with the correct password.
+    // A dedicated loopback IP keeps this bucket isolated from other tests.
+    const LOCKOUT_TEST_IP: &str = "127.0.0.200";
+
+    let runner = TestRunner::setup().await;
+    let n = next_n();
+    let (name, _) = create_auth_test_user(&runner, n, false).await;
+
+    let wrong_password_params = || {
+        json!({
+            "name_or_email": name,
+            "password": "wrong-password-fixture",
+            "ip_address": LOCKOUT_TEST_IP,
+            "user_agent": "deepwell-auth-test-lockout",
+        })
+    };
+
+    // More failures than the 10-attempt / 600-second account bucket holds.
+    // Repeat the flood-then-success cycle to prove the account never gets
+    // stuck locked out.
+    for _ in 0..2 {
+        for _ in 0..11 {
+            let error = run_endpoint_err!(runner, auth_login, wrong_password_params());
+            assert_contains_error!(error, ErrorType::InvalidAuthentication);
+        }
+
+        let login = run_endpoint!(
+            runner,
+            auth_login,
+            json!({
+                "name_or_email": name,
+                "password": PASSWORD,
+                "ip_address": LOCKOUT_TEST_IP,
+                "user_agent": "deepwell-auth-test-lockout",
+            })
+        );
+        assert!(!login.needs_mfa);
+    }
 }

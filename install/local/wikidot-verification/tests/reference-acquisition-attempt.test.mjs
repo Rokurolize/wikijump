@@ -16,6 +16,8 @@ import {
 import {
   buildReferenceAcquisitionWorkTarget,
   createReferenceAcquisitionContext,
+  normalizeReferenceAcquisitionProducer,
+  referenceAcquisitionInventoryBinding,
   validateReferenceAcquisitionContext,
 } from "../src/reference-acquisition-work-target.mjs";
 import {referenceObjectRelativePath} from "../src/reference-object-store.mjs";
@@ -74,6 +76,33 @@ test("work targets are derived only from a pinned inventory context", () => {
       }),
     /not requested/u,
   );
+});
+
+test("acquisition producer and inventory binding reject malformed inputs", () => {
+  const inventory = buildInventory();
+  const context = createContext(inventory);
+  const producer = {
+    contract: "wikijump_full_parity.wikidot_xmlrpc_acquirer.v1",
+    identity: {algorithm: "sha256", bytes: 17, sha256: "c".repeat(64)},
+  };
+  const normalized = normalizeReferenceAcquisitionProducer(producer);
+  assert.equal(normalized.contract, producer.contract);
+  assert(Object.isFrozen(normalized));
+  assert.throws(() => normalizeReferenceAcquisitionProducer(null), /must be an object/u);
+  assert.throws(
+    () => normalizeReferenceAcquisitionProducer({contract: producer.contract}),
+    /unexpected fields/u,
+  );
+  assert.throws(
+    () => normalizeReferenceAcquisitionProducer({...producer, contract: "Bad Contract!"}),
+    /stable identifier/u,
+  );
+  const binding = referenceAcquisitionInventoryBinding(context, 0);
+  assert.equal(binding.ordinal, 0);
+  assert(Object.isFrozen(binding));
+  assert.throws(() => referenceAcquisitionInventoryBinding({}, 0), /context/u);
+  assert.throws(() => referenceAcquisitionInventoryBinding(context, -1), /outside the inventory/u);
+  assert.throws(() => referenceAcquisitionInventoryBinding(context, 1), /outside the inventory/u);
 });
 
 test("canonical complete attempts round-trip through the content store", async (t) => {

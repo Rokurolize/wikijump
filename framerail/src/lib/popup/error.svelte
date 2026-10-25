@@ -120,7 +120,8 @@
           onkeydown={escKeydown}
           role="button"
           tabindex="0"
-          >{page.data?.internationalization?.close ??
+          >{errorPopupState.current.closeLabel ??
+            page.data?.internationalization?.close ??
             page.error?.internationalization?.close}</a
         >
       </div>

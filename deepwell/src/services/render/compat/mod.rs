@@ -2,8 +2,10 @@ pub(super) mod color_and_inline_protection;
 mod fallback_code;
 mod fallback_render;
 pub(super) mod footnote_dom;
+pub(super) mod hosted_code;
 mod html_fragments;
 pub(super) mod issued_markers;
+pub(super) mod link_targets;
 pub(super) mod preparation;
 pub(super) mod text_fragments;
 pub(super) mod wikidot_compat_restore;
@@ -18,6 +20,6 @@ pub(super) mod wikidot_social;
 
 pub(super) use self::color_and_inline_protection::sanitize_wikidot_compat_inline_tag;
 pub(super) use self::fallback_code::{
-    WikidotCompatibilityFallbackOutput, scan_compat_code_blocks,
+    CompatCodeBlock, WikidotCompatibilityFallbackOutput, scan_compat_code_blocks,
 };
 pub(super) use self::html_fragments::CompatHtmlFragments;

@@ -1,0 +1,561 @@
+{
+ "schema": "wikijump_local_lab.wikidot_at_raw_preview_observations.v1",
+ "description": "Anonymous, non-mutating Wikidot edit/PagePreviewModule observations on scp-wiki (2026-10-19) of how inline raw `@@` pairs and where `[[module CSS]]` is recognized. Each record is a sealed wikidot_syntax_differential.wikidot_reference.v1 record (source, provenance, raw_html, sha256).",
+ "rules_established": [
+  "Inline raw `@@ ... @@` pairs only within one physical line: a lone `@@` (plain or inside {{ }}) is literal; `@@` on different lines or paragraphs never pair.",
+  "`[[module CSS]]` is recognized only at the start of a line (leading spaces allowed); mid-line, including inside {{ }}, it is plain text and consumes nothing."
+ ],
+ "source_sealed_directory": "~/.local/state/wikijump/issue-acceptance-claude-20261019/wikidot-at-raw-preview/",
+ "records": {
+  "atat-space-then-code": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-atat-space-then-code",
+    "source": "@@ @@\n\n[[code type=\"CSS\"]]\n.a{color:red}\n[[/code]]\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "96d65ce4fa86403bbfc3ae1a29360b9a4ceb1524960422aa59738f5c96906b84",
+   "captured_at": "2026-10-18T18:36:36.847349+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n<p><span style=\"white-space: pre-wrap;\">&#32;</span></p>\n<div class=\"code\">\n<div class=\"hl-main\">\n<pre><span class=\"hl-identifier\">.a</span><span class=\"hl-brackets\">{</span><span class=\"hl-reserved\">color:</span><span class=\"hl-var\">red</span><span class=\"hl-brackets\">}</span></pre></div>\n</div>\n<p>z</p>\n",
+   "raw_html_sha256": "a682537d4243dbd300eede53c16466a7e9a1a7981f9d8aa66add2e0eb16f13a0"
+  },
+  "braces-lone-at-then-atat-then-collapsible-code": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-braces-lone-at-then-atat-then-collapsible-code",
+    "source": "x {{@@}} y\n\n@@ @@\n\n[[collapsible show=\"s\" hide=\"h\"]]\n\n[[code type=\"CSS\"]]\n.a{color:red}\n[[/code]]\n\n[[/collapsible]]\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "65b8ae66dfed78d72acd9b3cb90aae5b07399738a8370d6296ed4c4cf497afa0",
+   "captured_at": "2026-10-18T18:36:37.391176+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n<p>x <tt>@@</tt> y</p>\n<p><span style=\"white-space: pre-wrap;\">&#32;</span></p>\n<div class=\"collapsible-block\">\n<div class=\"collapsible-block-folded\"><a class=\"collapsible-block-link\" href=\"javascript:;\">s</a></div>\n<div class=\"collapsible-block-unfolded\" style=\"display:none\">\n<div class=\"collapsible-block-unfolded-link\"><a class=\"collapsible-block-link\" href=\"javascript:;\">h</a></div>\n<div class=\"collapsible-block-content\">\n<div class=\"code\">\n<div class=\"hl-main\">\n<pre><span class=\"hl-identifier\">.a</span><span class=\"hl-brackets\">{</span><span class=\"hl-reserved\">color:</span><span class=\"hl-var\">red</span><span class=\"hl-brackets\">}</span></pre></div>\n</div>\n</div>\n</div>\n</div>\n<p>z</p>\n",
+   "raw_html_sha256": "8a0d7fefedfe7c2ceba880a554346f3c96bde87fb20e840bc33ff26562b08fd7"
+  },
+  "braces-lone-at-then-code": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-braces-lone-at-then-code",
+    "source": "before {{@@}} after\n\n[[code type=\"CSS\"]]\n.a{color:red}\n[[/code]]\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "75609e8a372fef76a3d08f9c857be04ad9c022e14e416d6656de29bee38ef8fa",
+   "captured_at": "2026-10-18T18:36:34.210468+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n<p>before <tt>@@</tt> after</p>\n<div class=\"code\">\n<div class=\"hl-main\">\n<pre><span class=\"hl-identifier\">.a</span><span class=\"hl-brackets\">{</span><span class=\"hl-reserved\">color:</span><span class=\"hl-var\">red</span><span class=\"hl-brackets\">}</span></pre></div>\n</div>\n<p>z</p>\n",
+   "raw_html_sha256": "2c326a0bedcc56b7268f33557577e9fc597b5d978c16b515ff5adf50c6ea6ec0"
+  },
+  "css-indented-opener": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-css-indented-opener",
+    "source": " [[module CSS]]\n.b{color:blue}\n[[/module]]\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "a0e9ac6e6fd562e5010daa925a8c7ac6c2f3ed723ee6fcb81da6dafae00e7c14",
+   "captured_at": "2026-10-18T20:36:00.010787+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n\n\n\n<p>z</p>\n",
+   "raw_html_sha256": "82fdd1ff9dba844666b8a4649dd902c3928d39f7c5c4d224411dc4fcd0da278a"
+  },
+  "css-line-start-control": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-css-line-start-control",
+    "source": "[[module CSS]]\n.b{color:blue}\n[[/module]]\n\n[[code type=\"CSS\"]]\n.a{color:red}\n[[/code]]\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "1d676e45052c411932778a08ae61b3d13d112ca13317ff629646ef8da5294a54",
+   "captured_at": "2026-10-18T20:35:59.485956+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n\n\n\n<div class=\"code\">\n<div class=\"hl-main\">\n<pre><span class=\"hl-identifier\">.a</span><span class=\"hl-brackets\">{</span><span class=\"hl-reserved\">color:</span><span class=\"hl-var\">red</span><span class=\"hl-brackets\">}</span></pre></div>\n</div>\n<p>z</p>\n",
+   "raw_html_sha256": "4027f143425ba0a5ce87cb941f947cc35fdcb0c5d6c50d521ce44ce4e41cdbf9"
+  },
+  "css-mid-line-braces-then-real-module": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-css-mid-line-braces-then-real-module",
+    "source": "text {{[[module CSS]]}} more\n\n[[code type=\"CSS\"]]\n.a{color:red}\n[[/code]]\n\n[[module CSS]]\n.b{color:blue}\n[[/module]]\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "e53c985f873fa9525c894305bcf6789580d72c47ef6942372c6a366b9f20d3c2",
+   "captured_at": "2026-10-18T20:35:58.437558+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n<p>text <tt>[[module CSS]]</tt> more</p>\n<div class=\"code\">\n<div class=\"hl-main\">\n<pre><span class=\"hl-identifier\">.a</span><span class=\"hl-brackets\">{</span><span class=\"hl-reserved\">color:</span><span class=\"hl-var\">red</span><span class=\"hl-brackets\">}</span></pre></div>\n</div>\n\n\n\n<p>z</p>\n",
+   "raw_html_sha256": "5bb27b90d27493a08523e1584426c30d0952bba841d506b94955fd0749fde5a1"
+  },
+  "css-mid-line-opener-line-start-closer": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-css-mid-line-opener-line-start-closer",
+    "source": "a [[module CSS]]\n.x{color:red}\n[[/module]]\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "a414b471ac01ad8bdc00e030967523d4a412526fdc341fa5c7dc9135612f253c",
+   "captured_at": "2026-10-18T20:36:01.052944+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n<p>a [[module CSS]]<br />\n.x{color:red}<br />\n[[/module]]</p>\n<p>z</p>\n",
+   "raw_html_sha256": "4e3d0a580fa5872d06de8316cdee1bf1e7127ab1468c02490379fee9eeba4fe2"
+  },
+  "css-mid-line-plain-then-real-module": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-css-mid-line-plain-then-real-module",
+    "source": "text [[module CSS]] more\n\n[[code type=\"CSS\"]]\n.a{color:red}\n[[/code]]\n\n[[module CSS]]\n.b{color:blue}\n[[/module]]\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "fcfddad10d332d5c63a5c812f8bf3bdc19d1013583499a63f847a4cf57d5f088",
+   "captured_at": "2026-10-18T20:35:58.963298+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n<p>text [[module CSS]] more</p>\n<div class=\"code\">\n<div class=\"hl-main\">\n<pre><span class=\"hl-identifier\">.a</span><span class=\"hl-brackets\">{</span><span class=\"hl-reserved\">color:</span><span class=\"hl-var\">red</span><span class=\"hl-brackets\">}</span></pre></div>\n</div>\n\n\n\n<p>z</p>\n",
+   "raw_html_sha256": "14703d98f3864ce2e146769d9b1e0d7dbeb56763e89c25d0b2a2a85adfbd2430"
+  },
+  "css-module-lone-at-lines-listpages": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-css-module-lone-at-lines-listpages",
+    "source": "[[module CSS]]\n@@\n[[module ListPages name=\"inline-raw\"]]\n[[/module]]\n@@\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "d05b7b1139951553f07bc17157cf3791ae95dd367ab3baeee0cbbaa956b5bf23",
+   "captured_at": "2026-10-18T19:00:44.475615+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n\n\n\n<p>@@</p>\n<p>z</p>\n",
+   "raw_html_sha256": "2c7669d6ee2cafcf5f66fc41513793b2036049b24fc803a71fe6e647edca5025"
+  },
+  "css-module-no-at-listpages": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-css-module-no-at-listpages",
+    "source": "[[module CSS]]\n[[module ListPages name=\"inline-raw\"]]\n[[/module]]\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "958d968835c88875af0a0f71977fe7397c9abd86707a2019b677babeaa352822",
+   "captured_at": "2026-10-18T19:00:45.025314+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n\n\n\n<p>z</p>\n",
+   "raw_html_sha256": "82fdd1ff9dba844666b8a4649dd902c3928d39f7c5c4d224411dc4fcd0da278a"
+  },
+  "css-same-line-open-close-mid": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-css-same-line-open-close-mid",
+    "source": "a [[module CSS]].x{color:red}[[/module]] b\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "c066ff79e60cbfa46eba4c996e55ba7a10c33e7c331170541418739afe52c563",
+   "captured_at": "2026-10-18T20:36:00.529871+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n<p>a [[module CSS]].x{color:red}[[/module]] b</p>\n<p>z</p>\n",
+   "raw_html_sha256": "a3c95ca693d35c9719ca163f3ed94dad1e509cc76f32d35f81299e83a9da65b2"
+  },
+  "lone-at-then-atat-then-collapsible-code": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-lone-at-then-atat-then-collapsible-code",
+    "source": "x @@ y\n\n@@ @@\n\n[[collapsible show=\"s\" hide=\"h\"]]\n\n[[code type=\"CSS\"]]\n.a{color:red}\n[[/code]]\n\n[[/collapsible]]\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "53afad2449a27e9f74966872fcff0bca2875ed72e3ec115d81eda1fd093afec9",
+   "captured_at": "2026-10-18T18:36:37.931778+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n<p>x @@ y</p>\n<p><span style=\"white-space: pre-wrap;\">&#32;</span></p>\n<div class=\"collapsible-block\">\n<div class=\"collapsible-block-folded\"><a class=\"collapsible-block-link\" href=\"javascript:;\">s</a></div>\n<div class=\"collapsible-block-unfolded\" style=\"display:none\">\n<div class=\"collapsible-block-unfolded-link\"><a class=\"collapsible-block-link\" href=\"javascript:;\">h</a></div>\n<div class=\"collapsible-block-content\">\n<div class=\"code\">\n<div class=\"hl-main\">\n<pre><span class=\"hl-identifier\">.a</span><span class=\"hl-brackets\">{</span><span class=\"hl-reserved\">color:</span><span class=\"hl-var\">red</span><span class=\"hl-brackets\">}</span></pre></div>\n</div>\n</div>\n</div>\n</div>\n<p>z</p>\n",
+   "raw_html_sha256": "bf932f9561a75b7d25eb889a9b0b4b908c67fc601332450977da223e4565cfe0"
+  },
+  "lone-at-then-list": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-lone-at-then-list",
+    "source": "before @@ after\n\n[[ul]]\n[[li]]one[[/li]]\n[[/ul]]\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "32045eafd79dcec72b8d1f3c5729a156e9f74a5fff96ab77e50b31b7730dabf4",
+   "captured_at": "2026-10-18T19:00:00.608022+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n<p>before @@ after</p>\n<ul>\n<li>one</li>\n</ul>\n<br />\nz",
+   "raw_html_sha256": "bb90bccb689628d5dce98ffc300a5eba41326aa2021efa5b73d5e0aae6d04bc1"
+  },
+  "lone-at-then-module-next-line": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-lone-at-then-module-next-line",
+    "source": "before @@ after\n\n[[module Rate]]\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "b8cee04c6fd9480ca3696205b54ee94db132ac711c9f104e7ea2359419a6a5e8",
+   "captured_at": "2026-10-18T18:59:59.529469+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n<p>before @@ after</p>\n<div class=\"page-rate-widget-box\"><span class=\"rate-points\">rating:&nbsp;<span class=\"number prw54353\">0</span></span><span class=\"rateup btn btn-default\"><a title=\"I like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)\">+</a></span><span class=\"ratedown btn btn-default\"><a title=\"I don't like it\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)\">&#8211;</a></span><span class=\"cancel btn btn-default\"><a title=\"Cancel my vote\" href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)\">x</a></span></div>\n<p>z</p>\n",
+   "raw_html_sha256": "76e69e36c6afb5594ec8bdb5e2d6959bacbbd85e98d174161f15b3102db0e430"
+  },
+  "lone-at-then-module-same-line": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-lone-at-then-module-same-line",
+    "source": "before @@ [[module Rate]] after\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "0c449511153382365b28ddc1a50cfd9b62cf0f1e1f0446d41afe1803a87d3b8c",
+   "captured_at": "2026-10-18T18:59:58.980979+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n<p>before @@ [[module Rate]] after</p>\n<p>z</p>\n",
+   "raw_html_sha256": "48dc5b116a963ac60b35f09ad2bca09c06db10829f7df89586fa3953017d4b18"
+  },
+  "lone-at-two-lines-then-code": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-lone-at-two-lines-then-code",
+    "source": "before @@ after\nmiddle @@ end\n\n[[code type=\"CSS\"]]\n.a{color:red}\n[[/code]]\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "a2cc70e4ac91eef7c0b29a88921a22b83591baa6fd83b62f9f7408286cb84fd6",
+   "captured_at": "2026-10-18T18:36:35.776572+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n<p>before @@ after<br />\nmiddle @@ end</p>\n<div class=\"code\">\n<div class=\"hl-main\">\n<pre><span class=\"hl-identifier\">.a</span><span class=\"hl-brackets\">{</span><span class=\"hl-reserved\">color:</span><span class=\"hl-var\">red</span><span class=\"hl-brackets\">}</span></pre></div>\n</div>\n<p>z</p>\n",
+   "raw_html_sha256": "3164f357ebb62e67a0416481d39d0a04e10978e528b3a02c19a630e6d4e2278d"
+  },
+  "lone-at-two-paragraphs-then-code": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-lone-at-two-paragraphs-then-code",
+    "source": "before @@ after\n\nmiddle @@ end\n\n[[code type=\"CSS\"]]\n.a{color:red}\n[[/code]]\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "6148203ff55f13651a0d59efc36e293042c56f7cec65f1b052ed2de47e5589f7",
+   "captured_at": "2026-10-18T18:36:35.263984+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n<p>before @@ after</p>\n<p>middle @@ end</p>\n<div class=\"code\">\n<div class=\"hl-main\">\n<pre><span class=\"hl-identifier\">.a</span><span class=\"hl-brackets\">{</span><span class=\"hl-reserved\">color:</span><span class=\"hl-var\">red</span><span class=\"hl-brackets\">}</span></pre></div>\n</div>\n<p>z</p>\n",
+   "raw_html_sha256": "ca2a77f662911ac8d1f3d860974dcceb22511ee500ef9c5c761c8edb9f724e04"
+  },
+  "pair-across-lines-with-bold": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-pair-across-lines-with-bold",
+    "source": "@@ a\n**bold** b @@\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "12510925636a96858b7f7094ed13d8ebd44b94a4e0533c854686cf4763069b96",
+   "captured_at": "2026-10-18T19:00:00.074161+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n<p>@@ a<br />\n<strong>bold</strong> b @@</p>\n<p>z</p>\n",
+   "raw_html_sha256": "af9bc2b57450f2e77d7c26bd4531fe8fa0866ee9e9200a45dcc2a46702f81dc9"
+  },
+  "plain-lone-at-then-code": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-plain-lone-at-then-code",
+    "source": "before @@ after\n\n[[code type=\"CSS\"]]\n.a{color:red}\n[[/code]]\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "fe3294dd343361d922bce9b0c19cd54acdf2393ccf831ee9af63339d59ee72b7",
+   "captured_at": "2026-10-18T18:36:34.739344+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n<p>before @@ after</p>\n<div class=\"code\">\n<div class=\"hl-main\">\n<pre><span class=\"hl-identifier\">.a</span><span class=\"hl-brackets\">{</span><span class=\"hl-reserved\">color:</span><span class=\"hl-var\">red</span><span class=\"hl-brackets\">}</span></pre></div>\n</div>\n<p>z</p>\n",
+   "raw_html_sha256": "20e286626c5e8149ad2ecd62cc178a80332a34fbb950130add8efa31da3a453f"
+  },
+  "raw-pair-across-lines-link": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-raw-pair-across-lines-link",
+    "source": "@@[[[escape-link|Nope\nPlease]]]@@\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "e048753a40f89d3c774df9772cbf6ef00eb8dc66d8a5af5de88abc12d3891229",
+   "captured_at": "2026-10-18T18:59:57.928338+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n<p>@@<a class=\"newpage\" href=\"/escape-link\">Nope Please</a>@@</p>\n<p>z</p>\n",
+   "raw_html_sha256": "fbfa6107917d8e3da2740d5831982ac6749d8c3bbe45691fea0ea204b06f15bf"
+  },
+  "same-line-pair-then-code": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-same-line-pair-then-code",
+    "source": "a @@ b @@ c\n\n[[code type=\"CSS\"]]\n.a{color:red}\n[[/code]]\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "41bfc94ff0f21655153d45e3b847159b6802c2b4498fdf4ff5ff5a1b59582ac2",
+   "captured_at": "2026-10-18T18:36:36.309717+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n<p>a <span style=\"white-space: pre-wrap;\">&#32;b&#32;</span> c</p>\n<div class=\"code\">\n<div class=\"hl-main\">\n<pre><span class=\"hl-identifier\">.a</span><span class=\"hl-brackets\">{</span><span class=\"hl-reserved\">color:</span><span class=\"hl-var\">red</span><span class=\"hl-brackets\">}</span></pre></div>\n</div>\n<p>z</p>\n",
+   "raw_html_sha256": "9bfbcfb4d96e15a865718b85e98af67cff5ebb3342c8f978bbf8b39018d87673"
+  },
+  "six-at-then-bold": {
+   "schema": "wikijump_syntax_differential.wikidot_reference.v1",
+   "syntax_case": {
+    "schema": "wikijump_syntax_differential.syntax_case.v1",
+    "case_id": "claude-at-raw-six-at-then-bold",
+    "source": "@@@@@@ live **bold** text\n\nz",
+    "wikidot_observation_tier": "page-preview",
+    "local_execution_tier": "ftml",
+    "title": "At raw observation"
+   },
+   "source_sha256": "628f72317da8b6f75d4c69cea8692632f4511de2cc55692b11f010d8f63f2aca",
+   "captured_at": "2026-10-18T18:59:58.463409+00:00",
+   "provenance": {
+    "site": "scp-wiki",
+    "site_domain": "scpwiki.com",
+    "module": "edit/PagePreviewModule",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "501b56c7d04008234216fad2e8c19c5dd9bec6b4",
+    "requirements_sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f",
+    "authenticated": false,
+    "mutated": false
+   },
+   "raw_html": "\n\n<p>@@ live <strong>bold</strong> text</p>\n<p>z</p>\n",
+   "raw_html_sha256": "3492a6f8f4360da006d84aed0b3072738943af52db8b322c95c8d7efdc06cdd2"
+  }
+ }
+}

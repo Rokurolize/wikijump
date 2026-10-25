@@ -49,14 +49,15 @@ async function readJson(filePath) {
   return JSON.parse(await fs.readFile(filePath, "utf8"));
 }
 
-export function candidateDeepwellConfig(source, port) {
+export function candidateDeepwellConfig(source, port, {seed = true} = {}) {
   let config = source;
   for (const [before, after] of [
-    ["run-seeder = false", "run-seeder = true"],
+    // A candidate started on a copy of standing data keeps it as standing has it.
+    ["run-seeder = false", seed ? "run-seeder = true" : "run-seeder = false"],
     ['seeder-path = "seeder"', 'seeder-path = "/opt/deepwell/seeder"'],
     ['main = "wikijump.com"', 'main = "wikijump.localhost"'],
     ["https-port = 443", `https-port = ${port}`],
-    ['files = "wjfiles.com"', `files = "wjfiles.localhost:${port}"`],
+    ['files = "wjfiles.com"', 'files = "wjfiles.localhost"'],
     ["mock-mailcheck = false", "mock-mailcheck = true"],
   ]) {
     if (!config.includes(before)) fail(`candidate Deepwell config source does not contain ${before}`);
@@ -159,6 +160,7 @@ export function candidateCompose({
   deepwellConfigPath,
   caddyRequestPath,
   caddyGeneratorPath,
+  dataVolumes = {},
 }) {
   const common = (role) => ({
     image: images[role],
@@ -242,7 +244,20 @@ export function candidateCompose({
       depends_on: {framerail: {condition: "service_healthy"}, wws: {condition: "service_healthy"}},
     },
   };
-  return {name: project, services, volumes: {"database-data": {}, "files-data": {}, "cache-data": {}, "caddy-data": {}, "caddy-config": {}}};
+  // `dataVolumes` attaches volumes prepared before the start (a copy of
+  // standing data) instead of empty project volumes.
+  const volume = (name) => (name ? {external: true, name} : {});
+  return {
+    name: project,
+    services,
+    volumes: {
+      "database-data": volume(dataVolumes.database),
+      "files-data": volume(dataVolumes.files),
+      "cache-data": {},
+      "caddy-data": {},
+      "caddy-config": {},
+    },
+  };
 }
 
 async function dockerCompose(composePath, project, token, args) {
@@ -318,7 +333,7 @@ async function buildEvidence(buildEvidencePath) {
   };
 }
 
-export async function prepareCandidateFiles({sourceRoot, candidateRoot, publicPort, build, source, token, stagingHome, project, expiry, rpcPort, objectStorePort}) {
+export async function prepareCandidateFiles({sourceRoot, candidateRoot, publicPort, build, source, token, stagingHome, project, expiry, rpcPort, objectStorePort, seed = true}) {
   await fs.mkdir(candidateRoot, {recursive: false, mode: 0o700});
   const deepwellConfigPath = path.join(candidateRoot, "deepwell", "config.toml");
   const caddyRequestPath = path.join(candidateRoot, "caddy", "request.json");
@@ -329,7 +344,7 @@ export async function prepareCandidateFiles({sourceRoot, candidateRoot, publicPo
   ]);
   await fs.mkdir(path.dirname(deepwellConfigPath), {recursive: true, mode: 0o700});
   await fs.mkdir(path.dirname(caddyRequestPath), {recursive: true, mode: 0o700});
-  await fs.writeFile(deepwellConfigPath, candidateDeepwellConfig(prodDeepwellConfig, publicPort), {mode: 0o644});
+  await fs.writeFile(deepwellConfigPath, candidateDeepwellConfig(prodDeepwellConfig, publicPort, {seed}), {mode: 0o644});
   await writeJson(caddyRequestPath, candidateCaddyRequest(), 0o644);
   await fs.writeFile(caddyGeneratorPath, candidateCaddyGenerator(publicPort), {mode: 0o755});
   const overlayManifest = {
@@ -370,18 +385,20 @@ export async function prepareCandidateFiles({sourceRoot, candidateRoot, publicPo
   };
 }
 
-export async function startPromotionCandidate({sourceRoot, buildEvidencePath, candidateRoot, stagingHome, publicPort, rpcPort, objectStorePort, project, expiry}) {
+export async function startPromotionCandidate({sourceRoot, buildEvidencePath, candidateRoot, stagingHome, publicPort, rpcPort, objectStorePort, project, expiry, dataVolumes = {}}) {
   const source = await promotionSourceIdentity(sourceRoot);
   const build = await buildEvidence(buildEvidencePath);
   if (build.verdict.wikijump_commit !== source.wikijump_commit || build.verdict.wikijump_tree !== source.wikijump_tree || build.verdict.ftml_sha !== source.ftml_sha) fail("candidate build evidence source identity is stale");
   const token = randomBytes(32).toString("hex");
-  const files = await prepareCandidateFiles({sourceRoot, candidateRoot, publicPort, build, source, token, stagingHome, project, expiry, rpcPort, objectStorePort});
+  const seed = !dataVolumes.database;
+  const files = await prepareCandidateFiles({sourceRoot, candidateRoot, publicPort, build, source, token, stagingHome, project, expiry, rpcPort, objectStorePort, seed});
   const composePath = path.join(candidateRoot, "compose.json");
   const placeholderEffectiveSha256 = "0".repeat(64);
   const composeInput = (effectiveSha256) => candidateCompose({
     project, source, images: build.images, artifactKey: files.artifactKey, overlaySha256: files.overlaySha256,
     effectiveSha256, expiry, publicPort, rpcPort, objectStorePort,
     deepwellConfigPath: files.deepwellConfigPath, caddyRequestPath: files.caddyRequestPath, caddyGeneratorPath: files.caddyGeneratorPath,
+    dataVolumes,
   });
   await writeJson(composePath, composeInput(placeholderEffectiveSha256));
   let finalStarted = false;
@@ -485,7 +502,8 @@ function parseInteger(value, name) {
 }
 
 function parseArgs(argv) {
-  const allowed = new Set(["source-root", "build-evidence", "candidate-root", "staging-home", "public-port", "rpc-port", "object-store-port", "project", "expires-at"]);
+  const required = ["source-root", "build-evidence", "candidate-root", "staging-home", "public-port", "rpc-port", "object-store-port", "project", "expires-at"];
+  const allowed = new Set([...required, "database-volume", "files-volume"]);
   const args = {};
   for (let index = 0; index < argv.length; index += 2) {
     const flag = argv[index];
@@ -494,7 +512,8 @@ function parseArgs(argv) {
     if (!allowed.has(name) || Object.hasOwn(args, name) || !value || value.startsWith("--")) fail(`unknown or duplicate option: ${flag}`);
     args[name] = value;
   }
-  for (const name of allowed) if (!args[name]) fail(`--${name} is required`);
+  for (const name of required) if (!args[name]) fail(`--${name} is required`);
+  if (Boolean(args["database-volume"]) !== Boolean(args["files-volume"])) fail("--database-volume and --files-volume go together");
   return args;
 }
 
@@ -511,6 +530,7 @@ export async function main(argv, {stdout = console.log} = {}) {
     objectStorePort: parseInteger(args["object-store-port"], "--object-store-port"),
     project: args.project,
     expiry: args["expires-at"],
+    dataVolumes: args["database-volume"] ? {database: args["database-volume"], files: args["files-volume"]} : {},
   });
   stdout(JSON.stringify(result));
   return 0;

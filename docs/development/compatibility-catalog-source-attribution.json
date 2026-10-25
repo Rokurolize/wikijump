@@ -904,7 +904,7 @@
     {
       "surface_id": "catalog-feature:syntax-engine",
       "sources": [
-        { "path": "deepwell/Cargo.toml", "anchor": "ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"17dbc236a5bc879c1bcd451e2308bb080d854f15\" }" },
+        { "path": "deepwell/Cargo.toml", "anchor": "ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"c36bc5fe655fdb6cd41a563882194493f50008e1\" }" },
         { "path": "deepwell/src/services/render/service.rs", "anchor": "pub async fn render(" },
         { "path": "deepwell/src/services/render/page_preview.rs", "anchor": "WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);" }
       ],
@@ -930,7 +930,7 @@
     {
       "surface_id": "catalog-feature:syntax-foldable-list",
       "sources": [
-        { "path": "deepwell/Cargo.toml", "anchor": "ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"17dbc236a5bc879c1bcd451e2308bb080d854f15\" }" },
+        { "path": "deepwell/Cargo.toml", "anchor": "ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"c36bc5fe655fdb6cd41a563882194493f50008e1\" }" },
         { "path": "deepwell/src/services/render/page_preview.rs", "anchor": "WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);" }
       ],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "foldable_list_initial_dom_matches_frozen_live_page_preview" }]
@@ -938,7 +938,7 @@
     {
       "surface_id": "catalog-feature:syntax-links",
       "sources": [
-        { "path": "deepwell/Cargo.toml", "anchor": "ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"17dbc236a5bc879c1bcd451e2308bb080d854f15\" }" },
+        { "path": "deepwell/Cargo.toml", "anchor": "ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"c36bc5fe655fdb6cd41a563882194493f50008e1\" }" },
         { "path": "deepwell/src/services/render/compat/wikidot_link_protection.rs", "anchor": "pub(in crate::services::render) fn protect_wikidot_compat_links(" },
         { "path": "deepwell/src/services/render/compat/wikidot_link_protection.rs", "anchor": "pub(in crate::services::render) fn build_wikidot_wikipedia_link(" }
       ],
@@ -1020,7 +1020,7 @@
     {
       "surface_id": "catalog-feature:site-https",
       "sources": [
-        { "path": "deepwell/src/services/caddy/caddyfile.j2", "anchor": "redir https://{{ domain }}{uri}" },
+        { "path": "deepwell/src/services/caddy/caddyfile.j2", "anchor": "redir https://{{ domain }}{{ public_port_suffix }}{uri}" },
         { "path": "deepwell/src/services/caddy/service.rs", "anchor": "should_use_wildcard: wildcard_cert.is_some() || *local" }
       ],
       "tests": [

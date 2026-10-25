@@ -35,3 +35,30 @@ test('package scenario factory fails closed on unknown packages and generations'
   assert.throws(()=>themeScenarioConfigForPackage(root,{generation:'sigma11',packageName:'bedrock'}),/unsupported canonical scenario generation/u);
   assert.throws(()=>themeScenarioConfigForPackage(root,{generation:'sigma9',packageName:'not-a-real-theme'}),/unknown maintained package/u);
 });
+
+
+test('package scenario factory binds an explicit task-owned run contract origin',()=>{
+  const contractRoot=path.join(root,'ports/current-acceptance');fs.mkdirSync(contractRoot,{recursive:true});
+  const contractPath=path.join(contractRoot,`run-contract-scenario-factory-${process.pid}-sigma9.json`);
+  assert.equal(fs.existsSync(contractPath),false);
+  try{
+    const contract=JSON.parse(fs.readFileSync(path.join(root,'ports/current-acceptance/run-contract.json'),'utf8'));
+    contract.target_site={...contract.target_site,origin:'https://scpaiueouiuiuiui.wikijump.localhost:3396',slug:'scpaiueouiuiuiui',locale:'ja'};
+    contract.baseline_theme={...contract.baseline_theme,name:'Sigma-9'};
+    fs.writeFileSync(contractPath,JSON.stringify(contract));
+    const relative=path.relative(root,contractPath).split(path.sep).join('/');
+    const config=themeScenarioConfigForPackage(root,{generation:'sigma9',packageName:'bedrock',runContract:relative});
+    const materialized=materializeThemeTestScenario(root,config);
+    assert.equal(config.runtime.origin,'https://scpaiueouiuiuiui.wikijump.localhost:3396');
+    assert.equal(materialized.scenario.runtime.origin,'https://scpaiueouiuiuiui.wikijump.localhost:3396');
+    const wrongSite={...contract,target_site:{...contract.target_site,slug:'scp-jp'}};
+    fs.writeFileSync(contractPath,JSON.stringify(wrongSite));
+    assert.throws(()=>themeScenarioConfigForPackage(root,{generation:'sigma9',packageName:'bedrock',runContract:relative}),/does not match the scenario branch profile/u);
+    const wrongBaseline={...contract,baseline_theme:{...contract.baseline_theme,name:'Sigma-10'}};
+    fs.writeFileSync(contractPath,JSON.stringify(wrongBaseline));
+    assert.throws(()=>themeScenarioConfigForPackage(root,{generation:'sigma9',packageName:'bedrock',runContract:relative}),/baseline does not match sigma9/u);
+    const badOrigin={...contract,target_site:{...contract.target_site,origin:'https://example.com:3396'}};
+    fs.writeFileSync(contractPath,JSON.stringify(badOrigin));
+    assert.throws(()=>themeScenarioConfigForPackage(root,{generation:'sigma9',packageName:'bedrock',runContract:relative}),/origin must be the HTTPS local Wikijump site/u);
+  }finally{fs.rmSync(contractPath,{force:true})}
+});

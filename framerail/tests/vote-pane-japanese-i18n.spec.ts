@@ -28,9 +28,10 @@ const locales = {
   }
 } as const
 
-for (const [locale, expected] of Object.entries(locales) as Array<
-  [keyof typeof locales, (typeof locales)[keyof typeof locales]]
->) {
+for (const [locale, expected] of Object.entries(locales) as [
+  keyof typeof locales,
+  (typeof locales)[keyof typeof locales]
+][]) {
   test.describe(`Vote pane labels (${locale})`, () => {
     test.use({ locale })
 
@@ -48,6 +49,11 @@ for (const [locale, expected] of Object.entries(locales) as Array<
         testInfo.project.name === "webkit-https-edit-meta" ? HTTPS_APP_URL : APP_URL
       const response = await page.goto(`${baseUrl}/scp-173`)
       expect(response?.status()).toBe(200)
+
+      const clearPriorWrites = await page.request.get(
+        `http://127.0.0.1:${process.env.PLAYWRIGHT_FIXTURE_PORT ?? "42747"}/last-page-write-requests`
+      )
+      expect(clearPriorWrites.ok()).toBe(true)
 
       await waitForSvelteDelegatedHandler(page, "#pagerate-button")
       await page.locator("#pagerate-button").click()

@@ -1,3 +1,4 @@
+/* eslint-disable no-script-url -- Wikidot footer and fixture markup use javascript:; no-op links that parity requires */
 import { expect, test, waitForSvelteDelegatedHandler } from "./hermetic-playwright"
 
 const SITE_HEADERS = {
@@ -23,13 +24,13 @@ const interceptEditMetaModule = async (
 ) => {
   const mutations: string[] = []
   const writeRequests: string[] = []
-  const mutationPayloads: Array<{
+  const mutationPayloads: {
     event: string | null
     pageId: string | null
     metaName: string | null
     metaContent: string | null
     allPages: string | null
-  }> = []
+  }[] = []
   // This per-test fixture is the authoritative persisted state for the
   // intercepted module, and survives pane remounts and page reloads.
   const persistedRows = [
@@ -265,12 +266,8 @@ test("Edit Meta new-tag form stays bounded at 320px and sends no mutation on can
   await addAllPages.click()
   await addThisPage.click()
   await expect(page.locator("#edit-meta-newtag-form")).toBeVisible()
-  expect(mutations, "blank Add actions must not mutate persisted metadata").toEqual(
-    []
-  )
-  expect(writeRequests, "blank Add actions must not issue a write request").toEqual(
-    []
-  )
+  expect(mutations, "blank Add actions must not mutate persisted metadata").toEqual([])
+  expect(writeRequests, "blank Add actions must not issue a write request").toEqual([])
 
   // Fields remain operable through the keyboard.
   await page.locator('input[name="metaName"]').focus()
@@ -464,7 +461,7 @@ test("Add to All Pages sends the distinct site-wide metadata payload", async ({
   await clickAddNewMetaTag(page)
   await page.locator('input[name="metaName"]').fill("robots")
   await page.locator('input[name="metaContent"]').fill("noindex")
-  await page.locator('button:has-text("Add to All Pages")').click()
+  await page.getByRole("link", { name: "Add to All Pages", exact: true }).click()
 
   await expect(page.locator("#edit-meta-newtag-form")).toHaveCount(0)
   expect(mutations).toEqual(["saveMetaTag:true"])

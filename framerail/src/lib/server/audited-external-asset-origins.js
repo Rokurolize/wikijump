@@ -98,6 +98,20 @@ export const AUDITED_EXTERNAL_ASSET_ORIGINS = Object.freeze([
       "Legacy Bootstrap CDN, cited by the retained Theme Lab port manifests (e.g. `install/local/theme-lab/ports/site/manifest.json`)."
   },
   {
+    origin: "https://use.typekit.net",
+    styles: true,
+    fonts: true,
+    evidence:
+      "Adobe Fonts (Typekit) kit stylesheets and font files, cited by the retained Theme Lab port manifests (`install/local/theme-lab/ports/aesthetic-theme/manifest.json`, `install/local/theme-lab/ports/ouroborous-theme/manifest.json`) and observed loading on live Wikidot in `install/local/wikidot-verification/artifacts/theme-sweep-external-origins-20261019.json`."
+  },
+  {
+    origin: "https://p.typekit.net",
+    styles: true,
+    fonts: false,
+    evidence:
+      "Typekit's kit stylesheets begin with `@import url(https://p.typekit.net/p.css?...)`, a near-empty stylesheet, so a kit that is allowed must be able to complete that import (retained observation in `install/local/wikidot-verification/artifacts/theme-sweep-external-origins-20261019.json`)."
+  },
+  {
     origin: "https://nu-scptheme.github.io",
     styles: true,
     fonts: true,
@@ -117,6 +131,13 @@ export const AUDITED_EXTERNAL_ASSET_ORIGINS = Object.freeze([
     fonts: true,
     evidence:
       "SCP Wiki DigitalOcean Spaces CDN, cited by the retained Theme Lab port assets (e.g. `install/local/theme-lab/ports/basalt/assets.json`)."
+  },
+  {
+    origin: "https://scp-jp.github.io",
+    styles: true,
+    fonts: true,
+    evidence:
+      "SCP-JP community GitHub Pages host. Serves the production scp-jp theme stylesheet (sigma-9.min.css), the JP credit-module stylesheet that imported scp-jp articles @import, and the Bauhaus font CSS recorded as a dependency of the frozen Sigma-9 baseline (install/local/theme-lab/fixtures/scp-jp-sigma9-offline.json); retained sweep in install/local/wikidot-verification/artifacts/scp-jp-external-origins-20261025.json (issue #2759)."
   },
   {
     origin: "https://indestructibletype-fonthosting.github.io",

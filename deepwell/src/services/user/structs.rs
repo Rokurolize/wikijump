@@ -291,6 +291,11 @@ pub struct UpdateUser<'a> {
     #[serde(flatten)]
     pub body: UpdateUserBody,
     pub ip_address: IpAddr,
+
+    /// Fresh password proof. Required when the account holder changes
+    /// their own email address; never persisted.
+    #[serde(default)]
+    pub current_password: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Default, Clone)]

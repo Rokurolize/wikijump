@@ -31,6 +31,7 @@ use deepwell::types::{Action, Permission, Reference, RerenderDepth, Resource};
 use futures::FutureExt;
 use redis::AsyncCommands;
 use rsmq_async::RsmqConnection;
+use sea_orm::{ConnectionTrait, Statement};
 use serde_json::json;
 use std::env;
 use std::panic::{AssertUnwindSafe, resume_unwind};
@@ -784,4 +785,401 @@ async fn run_anonymous_rate_control_exposure(queue_namespace: &str) {
         }),
     );
     assert_contains_error!(rejected, ErrorType::PermissionDenied);
+}
+
+async fn execute_sql(runner: &TestRunner, sql: &str) {
+    let transaction = runner.context().transaction();
+    let statement =
+        Statement::from_string(transaction.get_database_backend(), sql.to_owned());
+    transaction
+        .execute_raw(statement)
+        .await
+        .expect("failed to execute test SQL");
+}
+
+async fn insert_imported_rating_snapshot(
+    runner: &TestRunner,
+    site_id: i64,
+    page_id: i64,
+    slug: &str,
+    import_run_id: i64,
+    imported_rating: i64,
+) {
+    execute_sql(
+        runner,
+        &format!(
+            r#"INSERT INTO wikidot_corpus_import_run (
+                import_run_id,
+                site_id,
+                source_branch,
+                source_site,
+                manifest_sha256,
+                manifest_row_count,
+                complete_inventory,
+                state,
+                summary
+            ) VALUES (
+                {import_run_id},
+                {site_id},
+                'scp-wiki',
+                'scp-wiki',
+                decode(repeat('00', 32), 'hex'),
+                1,
+                false,
+                'metadata_done',
+                '{{}}'::jsonb
+            )"#,
+        ),
+    )
+    .await;
+    execute_sql(
+        runner,
+        &format!(
+            r#"INSERT INTO wikidot_page_snapshot (
+                page_id,
+                source_branch,
+                source_site,
+                source_entity_id,
+                source_fullname,
+                source_created_at,
+                source_updated_at,
+                source_revision_count,
+                imported_rating,
+                comments,
+                source_sha256,
+                meta_sha256,
+                meta_json,
+                last_import_run_id
+            ) VALUES (
+                {page_id},
+                'scp-wiki',
+                'scp-wiki',
+                '{}',
+                '{slug}',
+                NOW(),
+                NOW(),
+                49,
+                {imported_rating},
+                95,
+                decode(repeat('aa', 32), 'hex'),
+                decode(repeat('bb', 32), 'hex'),
+                '{{}}'::jsonb,
+                {import_run_id}
+            )"#,
+            Uuid::new_v4(),
+        ),
+    )
+    .await;
+}
+
+async fn imported_rating_score(runner: &TestRunner, site_id: i64, slug: &str) -> i64 {
+    let output = run_endpoint!(
+        runner,
+        page_get_score,
+        json!({"site_id": site_id, "page": slug}),
+    );
+    match output.score {
+        deepwell::services::score::ScoreValue::Integer(value) => value,
+        score => panic!("expected an integer combined score, got {score:?}"),
+    }
+}
+
+#[tokio::test]
+async fn imported_rating_baseline_vote_cast_change_cancel_lifecycle() {
+    let queue_namespace = format!("rsmq-rate-baseline-{}", Uuid::new_v4().simple());
+    let verification = AssertUnwindSafe(run_imported_rating_baseline_vote_lifecycle(
+        &queue_namespace,
+    ))
+    .catch_unwind()
+    .await;
+    let cleanup = AssertUnwindSafe(cleanup_job_queue_namespace(&queue_namespace))
+        .catch_unwind()
+        .await;
+    if let Err(payload) = verification {
+        resume_unwind(payload);
+    }
+    if let Err(payload) = cleanup {
+        resume_unwind(payload);
+    }
+}
+
+async fn run_imported_rating_baseline_vote_lifecycle(queue_namespace: &str) {
+    const CATEGORY: &str = "fixture-vote-baseline-lifecycle";
+    const BASELINE: i64 = 461;
+
+    let mut runner = TestRunner::setup_with_job_queue_namespace(queue_namespace).await;
+    let (site_id, slug, _category_id, page_id) = create_registered_rate_page(
+        &mut runner,
+        CATEGORY,
+        "plus_minus",
+        "[[module Rate]]",
+    )
+    .await;
+    insert_imported_rating_snapshot(
+        &runner, site_id, page_id, &slug, 7_701_011, BASELINE,
+    )
+    .await;
+
+    // The baseline is served with no synthetic vote rows: local math only.
+    assert_eq!(
+        imported_rating_score(&runner, site_id, &slug).await,
+        BASELINE,
+    );
+
+    // Cast: a local upvote adds its delta onto the baseline, never a row set.
+    let set = run_endpoint!(runner, vote_set, json!({"page_id": page_id, "value": 1}),)
+        .expect("baseline vote should be stored");
+    assert_eq!(set.value, 1);
+    assert_eq!(
+        imported_rating_score(&runner, site_id, &slug).await,
+        BASELINE + 1,
+    );
+
+    // Change: replacing the vote swaps the delta, the baseline is untouched.
+    let changed =
+        run_endpoint!(runner, vote_set, json!({"page_id": page_id, "value": -1}),)
+            .expect("changed baseline vote should be stored");
+    assert_eq!(changed.value, -1);
+    assert_eq!(
+        imported_rating_score(&runner, site_id, &slug).await,
+        BASELINE - 1,
+    );
+
+    // Cancel: removing the only local vote restores the bare baseline.
+    // (vote_remove returns the removed model directly, not an Option.)
+    let removed = run_endpoint!(runner, vote_remove, json!({"page_id": page_id}),);
+    assert_eq!(removed.value, -1);
+    assert_eq!(
+        imported_rating_score(&runner, site_id, &slug).await,
+        BASELINE,
+    );
+}
+
+#[tokio::test]
+async fn imported_rating_baseline_refresh_shows_combined_score() {
+    let queue_namespace =
+        format!("rsmq-rate-baseline-refresh-{}", Uuid::new_v4().simple());
+    let verification =
+        AssertUnwindSafe(run_imported_rating_baseline_refresh(&queue_namespace))
+            .catch_unwind()
+            .await;
+    let cleanup = AssertUnwindSafe(cleanup_job_queue_namespace(&queue_namespace))
+        .catch_unwind()
+        .await;
+    if let Err(payload) = verification {
+        resume_unwind(payload);
+    }
+    if let Err(payload) = cleanup {
+        resume_unwind(payload);
+    }
+}
+
+async fn run_imported_rating_baseline_refresh(queue_namespace: &str) {
+    const CATEGORY: &str = "fixture-vote-baseline-refresh";
+    const BASELINE: i64 = 461;
+
+    let mut runner = TestRunner::setup_with_job_queue_namespace(queue_namespace).await;
+    let (site_id, slug, category_id, page_id) = create_registered_rate_page(
+        &mut runner,
+        CATEGORY,
+        "plus_minus",
+        "[[module Rate]]",
+    )
+    .await;
+    insert_imported_rating_snapshot(
+        &runner, site_id, page_id, &slug, 7_701_012, BASELINE,
+    )
+    .await;
+
+    // Bake the baseline into the saved Rate page: the rerender after a local
+    // vote must keep it, not reset the module to the local-only sum.
+    run_endpoint!(
+        runner,
+        page_rerender,
+        json!({
+            "site_id": site_id,
+            "category_id": category_id,
+            "page_id": page_id,
+        }),
+    );
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("baseline rerender post-commit work should succeed");
+    clear_job_queue(&runner).await;
+    assert!(
+        saved_rate_html(&runner, site_id, &slug)
+            .await
+            .contains(r#"<span class="number prw54353">+461</span>"#)
+    );
+
+    run_endpoint!(runner, vote_set, json!({"page_id": page_id, "value": 1}),)
+        .expect("baseline refresh vote should be stored");
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("baseline vote post-commit work should succeed");
+    consume_rate_rerender(&runner, site_id, category_id, page_id).await;
+    assert!(
+        saved_rate_html(&runner, site_id, &slug)
+            .await
+            .contains(r#"<span class="number prw54353">+462</span>"#)
+    );
+}
+
+/// Re-import and refresh entry point the way the mirror uses it.
+///
+/// The bulk import writes exactly one `wikidot_page_snapshot` row per
+/// page (PRIMARY KEY `page_id`): a re-import upserts that row with the
+/// new run id, it never appends baseline rows and never fabricates
+/// `page_vote` rows. This helper performs that same upsert.
+async fn upsert_imported_rating_snapshot(
+    runner: &TestRunner,
+    site_id: i64,
+    page_id: i64,
+    slug: &str,
+    import_run_id: i64,
+    imported_rating: i64,
+    source_revision_count: i64,
+) {
+    execute_sql(
+        runner,
+        &format!(
+            r#"INSERT INTO wikidot_corpus_import_run (import_run_id, site_id, source_branch, source_site, manifest_sha256, manifest_row_count, complete_inventory, state, summary) VALUES ({import_run_id}, {site_id}, 'scp-wiki', 'scp-wiki', decode(repeat('ab', 32), 'hex'), 1, false, 'done', '{{}}'::jsonb)"#
+        ),
+    )
+    .await;
+    execute_sql(
+        runner,
+        &format!(
+            r#"INSERT INTO wikidot_page_snapshot (page_id, source_branch, source_site, source_entity_id, source_fullname, source_created_at, source_updated_at, source_revision_count, imported_rating, comments, source_sha256, meta_sha256, meta_json, last_import_run_id) VALUES ({page_id}, 'scp-wiki', 'scp-wiki', '{}', '{slug}', '2026-09-01T00:00:00+00:00', '2026-10-26T00:00:00+00:00', {source_revision_count}, {imported_rating}, 95, decode(repeat('cd', 32), 'hex'), decode(repeat('cd', 32), 'hex'), '{{}}', {import_run_id}) ON CONFLICT (page_id) DO UPDATE SET source_updated_at = EXCLUDED.source_updated_at, source_revision_count = EXCLUDED.source_revision_count, imported_rating = EXCLUDED.imported_rating, comments = EXCLUDED.comments, last_import_run_id = EXCLUDED.last_import_run_id"#,
+            Uuid::new_v4(),
+        ),
+    )
+    .await;
+}
+
+async fn count_rows(runner: &TestRunner, table: &str, page_id: i64) -> i64 {
+    let transaction = runner.context().transaction();
+    let statement = Statement::from_string(
+        transaction.get_database_backend(),
+        format!("SELECT count(*) AS count FROM {table} WHERE page_id = {page_id}"),
+    );
+    transaction
+        .query_one_raw(statement)
+        .await
+        .expect("row count should succeed")
+        .expect("row count should return a row")
+        .try_get::<i64>("", "count")
+        .expect("row count should parse")
+}
+
+async fn count_live_votes(runner: &TestRunner, page_id: i64) -> i64 {
+    let transaction = runner.context().transaction();
+    let statement = Statement::from_string(
+        transaction.get_database_backend(),
+        format!(
+            "SELECT count(*) AS count FROM page_vote WHERE page_id = {page_id} AND deleted_at IS NULL"
+        ),
+    );
+    transaction
+        .query_one_raw(statement)
+        .await
+        .expect("live vote count should succeed")
+        .expect("live vote count should return a row")
+        .try_get::<i64>("", "count")
+        .expect("live vote count should parse")
+}
+
+#[tokio::test]
+async fn reimport_of_unchanged_snapshot_leaves_score_unchanged() {
+    let mut runner = TestRunner::setup().await;
+    let (site_id, slug, _, page_id) = create_registered_rate_page(
+        &mut runner,
+        "reimport",
+        "plus_minus",
+        "[[module Rate]]",
+    )
+    .await;
+
+    upsert_imported_rating_snapshot(&runner, site_id, page_id, &slug, 7_701_101, 461, 49)
+        .await;
+    assert_eq!(
+        imported_rating_score(&runner, site_id, &slug).await,
+        461,
+        "first import should serve the baseline",
+    );
+
+    // Re-import of the identical snapshot under a new run: the single
+    // snapshot row is replaced, never duplicated, and no vote rows appear.
+    upsert_imported_rating_snapshot(&runner, site_id, page_id, &slug, 7_701_102, 461, 49)
+        .await;
+    assert_eq!(
+        imported_rating_score(&runner, site_id, &slug).await,
+        461,
+        "re-import must not double the baseline",
+    );
+    assert_eq!(
+        count_rows(&runner, "wikidot_page_snapshot", page_id).await,
+        1,
+        "re-import must not append baseline rows",
+    );
+    assert_eq!(
+        count_rows(&runner, "page_vote", page_id).await,
+        0,
+        "re-import must not fabricate vote rows",
+    );
+}
+
+#[tokio::test]
+async fn refresh_to_newer_aggregate_counts_local_vote_once() {
+    let mut runner = TestRunner::setup().await;
+    let (site_id, slug, _, page_id) = create_registered_rate_page(
+        &mut runner,
+        "refresh",
+        "plus_minus",
+        "[[module Rate]]",
+    )
+    .await;
+
+    upsert_imported_rating_snapshot(&runner, site_id, page_id, &slug, 7_701_103, 461, 49)
+        .await;
+    run_endpoint!(runner, vote_set, json!({"page_id": page_id, "value": 1}),);
+    assert_eq!(
+        imported_rating_score(&runner, site_id, &slug).await,
+        462,
+        "local vote should add to the baseline",
+    );
+
+    // Refresh to a newer source aggregate: the baseline moves, the one
+    // local vote is counted exactly once against it.
+    upsert_imported_rating_snapshot(&runner, site_id, page_id, &slug, 7_701_104, 470, 50)
+        .await;
+    assert_eq!(
+        imported_rating_score(&runner, site_id, &slug).await,
+        471,
+        "refresh must move the baseline and count the local vote once",
+    );
+
+    // Changing the vote afterwards swaps the delta, still counted once.
+    run_endpoint!(runner, vote_set, json!({"page_id": page_id, "value": -1}),);
+    assert_eq!(
+        imported_rating_score(&runner, site_id, &slug).await,
+        469,
+        "vote change after refresh must swap the delta",
+    );
+    assert_eq!(
+        count_rows(&runner, "wikidot_page_snapshot", page_id).await,
+        1,
+        "refresh must not append baseline rows",
+    );
+    // A changed vote soft-deletes the previous row and inserts the new one,
+    // so exactly one live row remains.
+    assert_eq!(
+        count_live_votes(&runner, page_id).await,
+        1,
+        "one live local vote row must exist",
+    );
 }

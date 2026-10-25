@@ -378,6 +378,11 @@ pub struct PageEditPermissionOutput {
 }
 
 #[derive(Serialize, Debug, Clone)]
+pub struct PageCreatePermissionOutput {
+    pub can_create: bool,
+}
+
+#[derive(Serialize, Debug, Clone)]
 pub struct PageMovePermissionOutput {
     pub can_move: bool,
 }

@@ -13,3 +13,59 @@ Two mechanisms keep it out. FTML branches on `Layout::Wikidot` and emits the nat
 `pnpm --dir install/local/wikidot-verification wikijump-identifier-leaks -- --site <slug>` renders a battery of constructs through the local runtime and fails on any such identifier. It needs a running local stack and creates no page. Run it when adding or changing a rendered construct; a hand-written negative assertion per construct only guards the constructs somebody remembered.
 
 An intentional behavior that is stricter than an established Wikidot oracle is a product divergence, not compatibility. For this local-only compatibility target, such a divergence requires an explicit product decision; security or robustness alone is not sufficient reason to keep it. Concerning Wikidot behavior should instead be recorded with provenance in `wikidot-compatibility-security.md` and covered by regression evidence so future maintainers do not "fix" the emulator away from its oracle.
+
+
+## Foldable components with CSS-controlled sibling content
+
+- Foldable controls toggle the owning `li` between `folded` and `unfolded`
+  even when the content is styled through sibling `div` elements rather than
+  a nested `ul`. The retained Wikidot `_foldableMenuToggle` changes the class
+  before looking up the first descendant list. The shared corpus's
+  `en/pages/info:start/source.wikidot.txt` (capture
+  `0cb35933824447284e15a1dcaa29e1c32f150f44b7233662268b07d88f808b21`,
+  run `run-20261011-230158`) uses precisely this sibling structure. This
+  class transition is what lets the component stylesheet reveal its modal
+  and fader. Browser state and keyboard handling belong to Framerail.
+  Retained script: `/home/roku/.cache/wikijump-verification/manual-public-evidence/WIKIDOT.combined-v--7690939296dc.js`
+  (gzip bytes SHA-256 `376ae615e4d8e31580b030e57ffc2704acba601b6e461956def6a58bd9c068cc`).
+  Offline regression: `framerail/tests/wikidot-foldable-lists.spec.ts`,
+  including independent dialogs with no nested list or unique panel ID.
+
+The same `info:style` corpus capture uses a 105 ms opacity/visibility
+transition. A newly unfolded dialog may still have computed hidden visibility
+in the opening event. Framerail focuses its close control after it is revealed;
+closing, replacement or action destruction must cancel pending focus work. The
+foldable browser regression retains this transition and checks cancellation.
+
+Local includes can reference a different mirrored site's CSS and fonts. The
+local deployment therefore grants the existing reviewed SCP mirror file
+origins to style and font loading as well as images. This is an exact local
+asset allowlist: it neither adds executable/connection/frame sources nor grants
+arbitrary authored origins or production exceptions. A run-owned page including
+`info:start` twice reproduced the denied `scp-wiki.wjfiles.localhost` stylesheet
+under another site's CSP; the mirrored CSS itself returns 200 with CSS MIME.
+
+## Reopening read-only page actions after a failed request
+
+The retained Wikidot `backlinksClick` and `watchersClick` handlers dispatch a
+new `OZONE.ajax.requestModule` call on every activation, with no existing-pane
+or failed-state shortcut. They request `backlinks/BacklinksModule` and
+`watch/WhoWatchesModule` respectively. Evidence: the same retained compressed
+`WIKIDOT.combined-v--7690939296dc.js` and SHA-256 recorded above. Matched
+HTTP 503 observations on SCP-3922 and SCP-9506 are recorded in issue #2241:
+the failed result area is hidden and empty, with no new error/retry widget.
+
+Reactivating either action must therefore start another read without a full
+page reload. Framerail gives each activation a new pane instance, aborting
+the superseded read and discarding its local failure/result state. The
+offline `backlinks-watchers-failure.spec.ts` regression clicks the same
+action after a failed read and requires a second request and populated result.
+
+The shared source callback `WIKIDOT.page.callbacks.backlinksClick` first checks
+the successful result, inserts its body into `action-area`, and only then sets
+`display="block"` and adds Close. Consequently, the initial pending action area
+must stay hidden and have no element children, including during lazy browser
+module loading. Keep the read mounted so changing pages or selecting another
+action can invalidate it; the source does not expose Close before a result.
+Offline regressions hold both the module script and the read response and
+require empty DOM until success. Native-layout loading controls are separate.

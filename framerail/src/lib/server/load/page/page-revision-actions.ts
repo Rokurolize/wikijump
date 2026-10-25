@@ -15,27 +15,62 @@ import {
 import { resolvePageActionRequestContext } from "$lib/server/load/page/page-action-context"
 import { fail, superValidate } from "sveltekit-superforms"
 import { valibot } from "sveltekit-superforms/adapters"
-import { boolean, number, object, optional, string } from "valibot"
+import { array, boolean, number, object, optional, string } from "valibot"
+import {
+  filterHistoryByTypes,
+  paginateHistoryEntries
+} from "$lib/wikidot-history-contract"
 import type { RequestEvent } from "@sveltejs/kit"
+
+// Upper bound for one history fetch. Filtering and paging need the whole
+// timeline in hand; revision windows stay capped here instead of growing
+// without bound on long histories. Refs #2070.
+const HISTORY_WINDOW_LIMIT = 1_000
 
 export async function pageHistoryAction(event: RequestEvent) {
   const { request } = event
   try {
     const requestData = await readActionJson(request, pageHistorySchema)
 
-    const { siteId, pageId, revisionNumber, limit, includeFileRevisions } = requestData
+    const { siteId, pageId, revisionNumber, includeFileRevisions, types, page, perPage } =
+      requestData
     const context = await resolvePageActionRequestContext(event, {
       submittedSiteId: siteId
     })
-    const res = await pageHistory(
+    const window = await pageHistory(
       siteId,
       pageId,
       revisionNumber,
-      limit,
+      HISTORY_WINDOW_LIMIT,
       context.requestContext,
       includeFileRevisions ?? false
     )
-    return { res }
+    const normalized = window.map((rawRevision) => ({
+      ...rawRevision,
+      history_kind: rawRevision.history_kind ?? "page",
+      history_row_id: rawRevision.history_row_id ?? String(rawRevision.revision_id),
+      timeline_number: rawRevision.timeline_number ?? rawRevision.revision_number,
+      page_revision_number:
+        rawRevision.page_revision_number === undefined
+          ? rawRevision.history_kind === "file"
+            ? null
+            : rawRevision.revision_number
+          : rawRevision.page_revision_number
+    }))
+    // The pane keeps the whole filtered timeline for the comparison selects
+    // and row actions, and slices the visible page itself. The window stays
+    // capped at HISTORY_WINDOW_LIMIT rows.
+    const filtered = filterHistoryByTypes(normalized, types ?? [])
+    const paged = paginateHistoryEntries(filtered, page ?? 1, perPage ?? 20)
+    return {
+      res: {
+        entries: filtered,
+        total: paged.total,
+        page: paged.page,
+        perPage: paged.perPage,
+        totalPages: paged.totalPages
+      }
+    }
   } catch (error) {
     return failForActionError(error)
   }
@@ -45,7 +80,10 @@ const pageHistorySchema = object({
   ...pageActionBaseSchema,
   revisionNumber: optional(number()),
   limit: optional(number()),
-  includeFileRevisions: optional(boolean())
+  includeFileRevisions: optional(boolean()),
+  types: optional(array(string())),
+  page: optional(number()),
+  perPage: optional(number())
 })
 
 export async function pageRevisionAction(event: RequestEvent) {

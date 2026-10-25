@@ -41,8 +41,10 @@ import {
   restorePristineContent,
   screenshot,
   setViewport,
+  waitForStylesheetsReady,
 } from "./browser-lab.mjs";
 import {cascadeDiagnosis} from "./cascade.mjs";
+import {isLocalWikijumpHostname} from "./local-wikijump-host.mjs";
 import {
   collectSelectorTexts,
   diffComputedStyles,
@@ -185,7 +187,7 @@ export function createSession({
         await navigate(page, url);
       }
       if (target === "candidate") {
-        if (new URL(page.url()).hostname.endsWith(".wikijump.localhost")) {
+        if (isLocalWikijumpHostname(new URL(page.url()).hostname)) {
           await page.waitForFunction(() => {
             const control = document.querySelector("#history-button");
             if (!control) return true;
@@ -358,6 +360,16 @@ export function createSession({
       const compareViewport = {width: 1440, height: 1000};
       await setViewport(pages.reference, compareViewport);
       await setViewport(pages.candidate, compareViewport);
+      // Stylesheets load after domcontentloaded; measuring before they apply
+      // silently drops deltas (an unstyled reference inherits, so values can
+      // equal the candidate and produce no row at all). Fail closed instead.
+      for (const [name, measured] of [["reference", pages.reference], ["candidate", pages.candidate]]) {
+        try {
+          await waitForStylesheetsReady(measured, {timeout: 30_000});
+        } catch (error) {
+          fail("stylesheets_not_ready", `${name} page stylesheets were not ready before measurement at ${measured.url()}`, {cause: String(error?.message ?? error)});
+        }
+      }
       const currentReferenceUrl = pages.reference.url();
       const selectorsKey = selectors?.length ? JSON.stringify(selectors) : null;
       const propertiesKey = properties.join(",");

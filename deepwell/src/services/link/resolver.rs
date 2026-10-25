@@ -21,6 +21,7 @@
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::alias::{self, Entity as Alias};
 use crate::models::page::{self, Entity as Page};
+use crate::models::page_revision::{self, Entity as PageRevision};
 use crate::models::site::{self, Entity as Site};
 use crate::services::ServiceContext;
 use crate::services::render::AuthorizedPageSelector;
@@ -28,7 +29,7 @@ use crate::types::{AliasType, ConnectionType};
 use crate::utils::trim_default;
 use ftml::data::PageRef;
 use ftml::render::PageExistenceResolver;
-use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter};
+use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter, QuerySelect};
 use std::collections::{HashMap, HashSet};
 
 const CROSS_SITE_MISSING_PREFIX: &str = "\u{1f}wikijump-cross-site\u{1f}";
@@ -56,6 +57,9 @@ impl ReferenceLookup {
 #[derive(Debug, Clone, Default)]
 pub(crate) struct PageExistenceSnapshot {
     pages: HashMap<(String, String), bool>,
+    /// Latest-revision titles of the existing pages, for Wikidot's empty link
+    /// labels (`[[[target|]]]` shows the target's title).
+    titles: HashMap<(String, String), String>,
 }
 
 impl PageExistenceSnapshot {
@@ -71,6 +75,7 @@ impl PageExistenceSnapshot {
     ) -> Self {
         Self {
             pages: pages.into_iter().collect(),
+            titles: HashMap::new(),
         }
     }
 }
@@ -78,6 +83,12 @@ impl PageExistenceSnapshot {
 impl PageExistenceResolver for PageExistenceSnapshot {
     fn page_exists(&self, site: &str, page: &str) -> bool {
         self.known_page_exists(site, page).unwrap_or(false)
+    }
+
+    fn page_title(&self, site: &str, page: &str) -> Option<String> {
+        self.titles
+            .get(&(str!(site), str!(trim_default(page))))
+            .cloned()
     }
 }
 
@@ -223,6 +234,7 @@ pub(super) async fn resolve_page_existence(
     let pages = resolve_pages(ctx, page_slugs_by_site).await?;
     let mut authorized_selector = AuthorizedPageSelector::new(ctx, viewer_user_id);
     let pages = authorized_selector.filter_models(pages).await?;
+    let titles = resolve_latest_titles(ctx, &pages).await?;
     let pages = pages
         .into_iter()
         .map(|page| ((page.site_id, page.slug), page.page_id))
@@ -234,7 +246,43 @@ pub(super) async fn resolve_page_existence(
         lookups,
         &explicit_sites,
         &pages,
+        &titles,
     ))
+}
+
+/// Non-empty latest-revision titles keyed by `(site_id, slug)`.
+async fn resolve_latest_titles(
+    ctx: &ServiceContext<'_>,
+    pages: &[page::Model],
+) -> Result<HashMap<(i64, String), String>> {
+    let revision_ids = pages
+        .iter()
+        .filter_map(|page| page.latest_revision_id)
+        .collect::<Vec<_>>();
+    if revision_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+    let titles = PageRevision::find()
+        .select_only()
+        .column(page_revision::Column::RevisionId)
+        .column(page_revision::Column::Title)
+        .filter(page_revision::Column::RevisionId.is_in(revision_ids))
+        .into_tuple::<(i64, String)>()
+        .all(ctx.transaction())
+        .await
+        .or_raise(|| {
+            Error::new("failed to load linked page titles", ErrorType::PageRevision)
+        })?
+        .into_iter()
+        .collect::<HashMap<_, _>>();
+    Ok(pages
+        .iter()
+        .filter_map(|page| {
+            let title = titles.get(&page.latest_revision_id?)?.trim();
+            (!title.is_empty())
+                .then(|| ((page.site_id, page.slug.clone()), title.to_owned()))
+        })
+        .collect())
 }
 
 fn finish_page_existence(
@@ -243,7 +291,9 @@ fn finish_page_existence(
     lookups: HashSet<ReferenceLookup>,
     explicit_sites: &HashMap<String, Option<i64>>,
     pages: &HashMap<(i64, String), i64>,
+    page_titles: &HashMap<(i64, String), String>,
 ) -> PageExistenceSnapshot {
+    let mut titles = HashMap::new();
     let pages = lookups
         .into_iter()
         .map(|lookup| {
@@ -255,10 +305,18 @@ fn finish_page_existence(
             let exists = resolved_site_id.is_some_and(|site_id| {
                 pages.contains_key(&(site_id, lookup.page_slug.clone()))
             });
+            if let Some(title) = resolved_site_id
+                .and_then(|site_id| page_titles.get(&(site_id, lookup.page_slug.clone())))
+            {
+                titles.insert(
+                    (str!(rendered_site), lookup.page_slug.clone()),
+                    title.clone(),
+                );
+            }
             ((str!(rendered_site), lookup.page_slug), exists)
         })
         .collect();
-    PageExistenceSnapshot { pages }
+    PageExistenceSnapshot { pages, titles }
 }
 
 pub(super) async fn resolve_connection_counts<'a>(
@@ -430,8 +488,14 @@ mod tests {
             ((9, str!("remote")), 3),
         ]);
 
-        let snapshot =
-            finish_page_existence(3, "source", lookups, &explicit_sites, &pages);
+        let snapshot = finish_page_existence(
+            3,
+            "source",
+            lookups,
+            &explicit_sites,
+            &pages,
+            &HashMap::new(),
+        );
 
         assert!(snapshot.page_exists("source", "local"));
         assert!(snapshot.page_exists("source", "_default:default"));

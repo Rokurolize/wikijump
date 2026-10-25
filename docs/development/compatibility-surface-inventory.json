@@ -3112,6 +3112,16 @@
       "target": "wikijump.deepwell"
     },
     {
+      "source": "deepwell-jsonrpc:email_verify_issue",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:email_verify_redeem",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
       "source": "deepwell-jsonrpc:error",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
@@ -3198,6 +3208,21 @@
     },
     {
       "source": "deepwell-jsonrpc:import_wikidot_discussion",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:import_wikidot_file_delete",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:import_wikidot_file",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:import_wikidot_page_files_verify",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
     },
@@ -3327,6 +3352,21 @@
       "target": "wikijump.deepwell"
     },
     {
+      "source": "deepwell-jsonrpc:mirror_scope_get",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:mirror_scope_reconcile_files",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:mirror_scope_set",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
       "source": "deepwell-jsonrpc:normalize",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
@@ -3352,7 +3392,17 @@
       "target": "wikijump.deepwell"
     },
     {
+      "source": "deepwell-jsonrpc:page_create_permission",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
       "source": "deepwell-jsonrpc:page_create",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:page_delete_permission",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
     },
@@ -3468,6 +3518,11 @@
     },
     {
       "source": "deepwell-jsonrpc:page_meta_tags",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:page_move_permission",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
     },
@@ -3592,12 +3647,32 @@
       "target": "wikijump.deepwell"
     },
     {
+      "source": "deepwell-jsonrpc:password_reset_complete",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:password_reset_issue",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:password_reset_redeem",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
       "source": "deepwell-jsonrpc:ping",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
     },
     {
       "source": "deepwell-jsonrpc:preload_view",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:promote_observed_wikidot_identity",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
     },
@@ -3648,6 +3723,16 @@
     },
     {
       "source": "deepwell-jsonrpc:site_get",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:site_icon_get",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:site_icon_set",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
     },
@@ -3718,6 +3803,11 @@
     },
     {
       "source": "deepwell-jsonrpc:user_get",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:user_password_change",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
     },
@@ -3813,6 +3903,11 @@
     },
     {
       "source": "deepwell-jsonrpc:wikidot_site_changes_module",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:wikidot_sitemap",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
     },
@@ -3982,6 +4077,11 @@
       "target": "wikijump.framerail"
     },
     {
+      "source": "framerail-route:/-/forgot",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
       "source": "framerail-route:/-/login",
       "type": "implemented_by",
       "target": "wikijump.framerail"
@@ -3997,6 +4097,11 @@
       "target": "wikijump.framerail"
     },
     {
+      "source": "framerail-route:/-/reset/{token}",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
       "source": "framerail-route:/-/settings",
       "type": "implemented_by",
       "target": "wikijump.framerail"
@@ -4008,6 +4113,16 @@
     },
     {
       "source": "framerail-route:/-/user",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-route:/-/verify-email/{token}",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-route:/-/verify-email",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
@@ -4113,6 +4228,16 @@
     },
     {
       "source": "framerail-route:/printer--friendly/{*path}",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-route:/sitemap_page_{n}.xml",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-route:/sitemap.xml",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
@@ -4277,6 +4402,11 @@
       "target": "wikijump.framerail"
     },
     {
+      "source": "framerail-server-action:/-/forgot?/default",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
       "source": "framerail-server-action:/-/login?/default",
       "type": "implemented_by",
       "target": "wikijump.framerail"
@@ -4292,7 +4422,22 @@
       "target": "wikijump.framerail"
     },
     {
+      "source": "framerail-server-action:/-/reset/{token}?/default",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/-/reset/{token}?/setPassword",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
       "source": "framerail-server-action:/-/settings?/display",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/-/settings?/password",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
@@ -4302,7 +4447,22 @@
       "target": "wikijump.framerail"
     },
     {
+      "source": "framerail-server-action:/-/verify-email?/default",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/-/verify-email/{token}?/default",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
       "source": "framerail-server-action:/?/backlinks",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/?/createPermission",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
@@ -4313,6 +4473,11 @@
     },
     {
       "source": "framerail-server-action:/?/delete",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/?/deletePermission",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
@@ -4427,6 +4592,11 @@
       "target": "wikijump.framerail"
     },
     {
+      "source": "framerail-server-action:/?/movePermission",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
       "source": "framerail-server-action:/?/parentGet",
       "type": "implemented_by",
       "target": "wikijump.framerail"
@@ -4487,12 +4657,22 @@
       "target": "wikijump.framerail"
     },
     {
+      "source": "framerail-server-action:/{slug}/{*extra}?/createPermission",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
       "source": "framerail-server-action:/{slug}/{*extra}?/deletedGet",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
     {
       "source": "framerail-server-action:/{slug}/{*extra}?/delete",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/{slug}/{*extra}?/deletePermission",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
@@ -4603,6 +4783,11 @@
     },
     {
       "source": "framerail-server-action:/{slug}/{*extra}?/move",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/{slug}/{*extra}?/movePermission",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
@@ -7120,8 +7305,8 @@
   "ftml_raw_surface_manifest": {
     "schema": "wikijump.ftml_raw_surface_manifest.v1",
     "source": {
-      "commit": "17dbc236a5bc879c1bcd451e2308bb080d854f15",
-      "tree": "ae5288146ee1d0ea2c93f113a249436bd39120c9"
+      "commit": "c36bc5fe655fdb6cd41a563882194493f50008e1",
+      "tree": "ccc7b43cfb60050c921d3033d021df1dfed392b6"
     },
     "registries": [
       {
@@ -7251,8 +7436,8 @@
       },
       {
         "path": "src/render/html/element/image.rs",
-        "blob": "1960e86a7badd662250bc106742c551cd618bcb0",
-        "sha256": "c0ed63e7493511f3b5d993c6686c4e7bae1ddc63041ba2a661e5ac8376671666"
+        "blob": "4f23d847ecbd18cb9396f470204c5039755ad00e",
+        "sha256": "a732bc9b9b2d7601adcd9b6a4d9267a02cdc1437518601dc84e1adc7ab06b6de"
       },
       {
         "path": "src/render/html/element/include.rs",
@@ -7266,8 +7451,8 @@
       },
       {
         "path": "src/render/html/element/link.rs",
-        "blob": "0657c2c8805a6d229fd5c583a4c7f2e1f6b26d31",
-        "sha256": "8d8189c69cac9a0cb9fd4254f7a42b80c03a0dcfc3d0c1c27b32b7bcde1fcd36"
+        "blob": "6c59e1239e0e906d7fbb1d5deea157b972a3bcb4",
+        "sha256": "940909d3e262f739709faaf3ad92678458e8c320d0928cfd51434ed5eae65ece"
       },
       {
         "path": "src/render/html/element/list.rs",
@@ -7596,8 +7781,8 @@
       },
       {
         "path": "test/image/basic/wikidot.html",
-        "blob": "2eadeb41c2c13f070e2e5dd19f9822a48742d09d",
-        "sha256": "84fa175d9ce235ef680b446f441c1af119e06ce1a08c8d329017c7ae514e3d7c"
+        "blob": "af3ca03c7bb28f42fe6f3956e47eb8c513917e28",
+        "sha256": "1b981be2922b17dc60009b32767d94957694503174866f0a841fe21f727ba1cf"
       },
       {
         "path": "test/invisible/basic/wikidot.html",
@@ -11420,28 +11605,28 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "e101d39f1c65658d925ef48eaea35f202bb973434e699e74a88d3d6cdf4a1385"
+      "source_input_set_sha256": "0298fca8bbf03b80e94a082699b5c95f1cef69498748671add70532cc21d318c"
     },
     "ftml": {
-      "commit": "17dbc236a5bc879c1bcd451e2308bb080d854f15",
-      "tree": "ae5288146ee1d0ea2c93f113a249436bd39120c9"
+      "commit": "c36bc5fe655fdb6cd41a563882194493f50008e1",
+      "tree": "ccc7b43cfb60050c921d3033d021df1dfed392b6"
     },
     "registries": [
       {
         "path": "deepwell/Cargo.lock",
-        "sha256": "72f714917bfd92cfa5da38a87805d9012c16de59b18cb21fc6cbaa16b7f28e0a"
+        "sha256": "63692d8938e83f658ddd948b8cfd5eaba56deec8ab1193112a83e153c93d3ec2"
       },
       {
         "path": "deepwell/Cargo.toml",
-        "sha256": "94d9f0f39184f4bb13719cefe0ee2b1f5f1e9e75d02f6ea9a5de42bbbcec07f1"
+        "sha256": "1ee3649b137d49b14ac5cf791325eb94ca88957a88d0477eb7a4e4167def945f"
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "bf4d26f45298a35a97f971770e68914924ef1e841750770d85d72d448b3a62d3"
+        "sha256": "dff1a3e1976916bdd1ca909d657cb5f1088c8b7b7e82851dccbe214793d87c44"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
-        "sha256": "798b280788f4c91d5cbfdce01473302dc718c71880db1875393ccd2e3fb12340"
+        "sha256": "2096a2bc7ffeffacdfc4af5f94604c0f810b0adddea673414a727845a2e04d32"
       },
       {
         "path": "deepwell/src/endpoints/basic_error.rs",
@@ -11461,19 +11646,19 @@
       },
       {
         "path": "deepwell/src/endpoints/domain.rs",
-        "sha256": "c76b8a81e003b0358bfe25e8af9ffeb5c336258b818df4d604f9f159910891f7"
+        "sha256": "de30b748f3eeb7f50a506b2820f99ec8d034aa1ea2986bbadb38d6a9a1bd01b3"
       },
       {
         "path": "deepwell/src/endpoints/email.rs",
-        "sha256": "ecee00a781663321d8e4937f92011c54ecd7125d3b9ca93cf1d11833b4f27d18"
+        "sha256": "115c219f29928d61790bf07425f5f4cbfc5b7dd22d39d5d83ed5a4c0f84fb16e"
       },
       {
         "path": "deepwell/src/endpoints/file_revision.rs",
-        "sha256": "2e02b6c45fb78c4e8028d45b333eff9fd7ca3cd5122fc6be8e5dc246264d74eb"
+        "sha256": "c33aa99210e43f8efe49643923e04c4cb7f1e77cfeeb6858fbd5fb37a2aece95"
       },
       {
         "path": "deepwell/src/endpoints/file.rs",
-        "sha256": "6a99fdb6a66ea3624b2f43761c63e160b0d6b80ded4c0d9968c52ffd455cc226"
+        "sha256": "9f8a1260ee24a71a99b974b8caf4804b48dd4e7e5e07ab8b33f81d46865c1d09"
       },
       {
         "path": "deepwell/src/endpoints/forum_post.rs",
@@ -11485,7 +11670,7 @@
       },
       {
         "path": "deepwell/src/endpoints/import.rs",
-        "sha256": "24373036dcdcb55870100716ec66a357758c75728192ba6b495a77e94c1cb0ae"
+        "sha256": "e47258e72ec151e76121e9ef4b20d78335f9389184471bff590edb21dafc4730"
       },
       {
         "path": "deepwell/src/endpoints/info.rs",
@@ -11497,11 +11682,15 @@
       },
       {
         "path": "deepwell/src/endpoints/locale.rs",
-        "sha256": "f72fedb64bd32c46adde0a184cce7b962e4f8eacdf421f497a32717e652d9cbf"
+        "sha256": "a7727e0dbac698ad3ed149b66814305b70a012a4b33355e786b17588726ccfe1"
       },
       {
         "path": "deepwell/src/endpoints/message.rs",
         "sha256": "8c59a13afd68cb2554ba9886d2f0b2d3e0888376a33b5884ef5c3ca3a397c9aa"
+      },
+      {
+        "path": "deepwell/src/endpoints/mirror_scope.rs",
+        "sha256": "1f07f9a201d21f4d13ab4d5c7f25947a1ce222a96d4502b4ae10158b6e2180a0"
       },
       {
         "path": "deepwell/src/endpoints/normalize.rs",
@@ -11525,7 +11714,11 @@
       },
       {
         "path": "deepwell/src/endpoints/page.rs",
-        "sha256": "70855644fc67125870138c6dccb34609101881c53877ab15b4a03db74fe90d5e"
+        "sha256": "0ecb4dcbf53ea5d85cdebca60d95c7fcf6a456d6a1807a689d262d12541b7be8"
+      },
+      {
+        "path": "deepwell/src/endpoints/page/permissions.rs",
+        "sha256": "91f95981c127b346e3846cf7f907ee17b86d29e891ff242c090ccc2bbdd5f754"
       },
       {
         "path": "deepwell/src/endpoints/parent.rs",
@@ -11545,7 +11738,7 @@
       },
       {
         "path": "deepwell/src/endpoints/site.rs",
-        "sha256": "90571957a7060b00f5782a3db428d3644e51c8babffb66c1f6a621122f1db49f"
+        "sha256": "fe88eb98e88ce8686ceed7b34a7288d5350e20a2bd3751378849b93d2f807e0b"
       },
       {
         "path": "deepwell/src/endpoints/text_block.rs",
@@ -11561,7 +11754,7 @@
       },
       {
         "path": "deepwell/src/endpoints/user.rs",
-        "sha256": "095b85b48560c19fc7b7afda8ead5d95cef7341ed12353d207cd08f5d2ebd81c"
+        "sha256": "e7ac2f98c2de1b72454776219617557f0a225f4f6aebe72ceffde60b6174ade5"
       },
       {
         "path": "deepwell/src/endpoints/view.rs",
@@ -11573,7 +11766,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "2709ecafd1dfba9872772d0ca96acaf39c04c49e4c5362b42ace2ffab65c1c46"
+        "sha256": "850840821e9606f81d0a30d724793346db5d1e73c7b4167efd047370ec486c48"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -11581,7 +11774,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "2b79380441c089ec28fda2db73265e46f11ca79cda831a4105d5be531ee8fb86"
+        "sha256": "8cd848a9c245f7655551986126d2b365e7d6205d28b26713c34e9e3dd3fb0719"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11589,7 +11782,7 @@
       },
       {
         "path": "docs/development/framerail-route-action-evidence.json",
-        "sha256": "b0d7bc32164841bdb8c3f00060b238c19c8e0e3fb3116f37f3c75f423e8457d2"
+        "sha256": "f349853e2e303e3bbf2d426c3b2b3d961788ee4b696469d2c553dea2e5049dbb"
       },
       {
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
@@ -11629,7 +11822,7 @@
       },
       {
         "path": "docs/development/wikidot-page-action-surfaces.json",
-        "sha256": "7bbaa2b0c18372aed724c48c5a880c0fc55123feec72793076fcb0ea0a89ecb4"
+        "sha256": "1517015d3fe44f359d8e46a5c1a9d9713955955d7cbec80a3c663cbb3a1712ad"
       },
       {
         "path": "docs/development/wikidot-py-amc-client-parity.json",
@@ -11645,7 +11838,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "6f7101d9bf81bb26e930c8993a5f27581631d1e645dac4193fab7ce2fa004408"
+        "sha256": "ce337c6746b41384589169b1dfadf56edbffcfe546372396398e772eef1b7478"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11657,7 +11850,7 @@
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
-        "sha256": "8620a546b10837b8a05bf886580be73933f5fc3ec1fb5ecb71b8e509a8c10146"
+        "sha256": "accbc415e44604acc39c2194204da975203acf6baf7ceb114e02835907c1d686"
       },
       {
         "path": "docs/wikidot-specifications/source-coverage.json",
@@ -11669,19 +11862,19 @@
       },
       {
         "path": "framerail/src/lib/server/load/page/page-actions.ts",
-        "sha256": "13bfc494f60d509442ab91ae58fdfc0b8509c281bb992d78cdfea4ea55adf813"
+        "sha256": "9f86a2af75d76ffffbce84b97e153411f6117ab2b3d5f8e4544289f520485b66"
       },
       {
         "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",
-        "sha256": "03bf8790bbd004ed6094ee9c5fa043bb1241fabebbb1881f420c7363b4c2f3ee"
+        "sha256": "6dbbb85a91b21863e3dd45f8c0d3691bd37525a7c03ab96c5e590bb2dfac5517"
       },
       {
         "path": "framerail/src/lib/server/load/page/page.ts",
-        "sha256": "210bf097801311046cb8f19cf1e57bd5fd7694f50852146c12bf2ef6548bac7a"
+        "sha256": "8ded61c2afdaf8561114bd388b4400ca561c75247e3a72c8053cd34d277412c9"
       },
       {
         "path": "framerail/src/lib/server/wikidot-site-changes.js",
-        "sha256": "f32cc924612ba4231fc07de1808324bb27e8a3ecafd56d249a42cd8011834092"
+        "sha256": "2faf6bebd3d9481b4fe1ba865adc3f23b2ecfea08fac988eac08d975bdb4ee4d"
       },
       {
         "path": "framerail/src/lib/server/xmlrpc/methods.ts",
@@ -11721,7 +11914,7 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/about/+page.svelte",
-        "sha256": "36bb002e403f139d41ed530fbe3407d79ceadacd0a2fe333e94e9eed2a9a6321"
+        "sha256": "029b3d2d9354f4a6753fe5b259c980ea3533e473b5dd77e1e366e9447908be48"
       },
       {
         "path": "framerail/src/routes/[x+2d]/admin/+page.server.ts",
@@ -11732,12 +11925,20 @@
         "sha256": "989b2320857aec2124bd4284ba4e8b2f2d64c047264e609a065de3a5d9adcd95"
       },
       {
+        "path": "framerail/src/routes/[x+2d]/forgot/+page.server.ts",
+        "sha256": "0baee4009d9387db1f77576a86d7bda8fac801f960f366e3afd3bc232b6bb905"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/forgot/+page.svelte",
+        "sha256": "3a0753d7a8b48409e3a86abb076f164be571df5fd45072e09fa50f2fefeb1970"
+      },
+      {
         "path": "framerail/src/routes/[x+2d]/login/+page.server.ts",
         "sha256": "59bc7764c36b34a46983fa99c354cb6bb57a643358cd97a8e6ff65f3f2eb8b64"
       },
       {
         "path": "framerail/src/routes/[x+2d]/login/+page.svelte",
-        "sha256": "e46f7ff61479c50023a2f49f3e7a276ebef165e141021f1985c5bd06ed673857"
+        "sha256": "2707cf8a0ec8765e0ae9f897730c77d68261d37869f29900c813bb5f3636e52e"
       },
       {
         "path": "framerail/src/routes/[x+2d]/logout/+page.server.ts",
@@ -11753,15 +11954,23 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/register/+page.svelte",
-        "sha256": "6e3b2193ca0ea83026f6b5246e69c871a0d9ca5ac9683b1d787f24d4e2220835"
+        "sha256": "f77c950051bd571481f5afdc8f93e5ffb0f770fd9b3b71104de865f44e2c249c"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/reset/[token]/+page.server.ts",
+        "sha256": "5734acd71cd4e272954d321e86f5545ede2602180f05fcc65851cdde038c3ce5"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/reset/[token]/+page.svelte",
+        "sha256": "9512aa10b1583cd3b35f9cdb5ab3e5b42af352e67aee106a75f12d3eea99f6a0"
       },
       {
         "path": "framerail/src/routes/[x+2d]/settings/+page.server.ts",
-        "sha256": "8680e1ec7232676a33bcd4dd468746828a763d8f98e73150f388e00232b9edb2"
+        "sha256": "d13f34526a1f240c806f710f2ba4de2183cce1deb878480a2955ed6fe9518bdd"
       },
       {
         "path": "framerail/src/routes/[x+2d]/settings/+page.svelte",
-        "sha256": "d9c5296c4037e2f6772625e11153bce32a88d09e67cd834f86e313c53c574aa3"
+        "sha256": "86d7a4ffec3eb87f18a58ac0ae71eb4fdf9e821ae18bddd85158938e06fbfb62"
       },
       {
         "path": "framerail/src/routes/[x+2d]/user/[slug]/+page.server.ts",
@@ -11777,7 +11986,23 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/user/+page.svelte",
-        "sha256": "a7c0e1f4a9424f8af1af8f4af44fc9b01d12347b6b4af8939ea4a305ad4c5a34"
+        "sha256": "8a331c248b726fca68f0eff0e465dcb332346ff22adca680b8c2ff582dcaf7ff"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/verify-email/[token]/+page.server.ts",
+        "sha256": "a3dea7461ba4ac668361cbe164701a7f992b7191d022bdbf0048e4d602e8f12e"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/verify-email/[token]/+page.svelte",
+        "sha256": "9b9c3c95a3000ee730f766f56259069feb1d816b8249eec923d1e5ae97bd759a"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/verify-email/+page.server.ts",
+        "sha256": "be9a0b8a613918a09aef18de256de92b7235933cc914a122c2ec496e081a79b0"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/verify-email/+page.svelte",
+        "sha256": "fdd0283af6dcc09c5e9b1641ed4422b5ab821a4877e3fe7eb5f6cde064b757ec"
       },
       {
         "path": "framerail/src/routes/[x+2d]/wikidot-interwiki/interwikiFrame.html/+server.ts",
@@ -11805,7 +12030,7 @@
       },
       {
         "path": "framerail/src/routes/ajax-module-connector.php/+server.ts",
-        "sha256": "756a488d3ab89089e8bcdbb2f08f8337a816e59c6d8ece48edfbc0193bd37d16"
+        "sha256": "802aae45ef7f8acfd19dd8eb5fe7c58edf874b26fc0e146d3896f78c97753a14"
       },
       {
         "path": "framerail/src/routes/common--images/jquery-raty/[asset]/+server.ts",
@@ -11813,7 +12038,7 @@
       },
       {
         "path": "framerail/src/routes/common--theme/base/images/feed/feed-icon-14x14.png/+server.ts",
-        "sha256": "38f86d15abb60e92ee1b53856073c8d261593bb1217a551af00ba97ee03ed6b5"
+        "sha256": "957ffd131ebaa76cfadc8e673fd37dd14666b421d9591d2f641e6f4bbcd4aa22"
       },
       {
         "path": "framerail/src/routes/feed/forum/[feed]/+server.ts",
@@ -11833,7 +12058,7 @@
       },
       {
         "path": "framerail/src/routes/forum/[fallback]/[...extra]/+page.svelte",
-        "sha256": "8cd1a3519308a05f55611a940c6e79e6af82ba45095abd3825b82f7362a63dc0"
+        "sha256": "4b44665e6b44c726d4555b5204e74700f92e2ac445c1fe11f97fdd3f9b2c9ff9"
       },
       {
         "path": "framerail/src/routes/forum/c-[category=id]/[...name]/+page.server.ts",
@@ -11861,15 +12086,15 @@
       },
       {
         "path": "framerail/src/routes/local--favicon/[filename]/+server.ts",
-        "sha256": "24736c9ddd3ed65195ad15d011c75ff75b1c8f594929e63a0c5597357239b28b"
+        "sha256": "f9cdd7d232973b3c3b344b1547063e0221a32ee2fc07e4880295796cb6c21a82"
       },
       {
         "path": "framerail/src/routes/local--iosicon/[filename]/+server.ts",
-        "sha256": "9c5542121551d475bd64195ade3ef4b3cab7a08c6f0f6b6ee956f62dbc688ae6"
+        "sha256": "c12811963a8e5a8684300e147bfe59b8de44ed00595a199f850a7ea293b29d17"
       },
       {
         "path": "framerail/src/routes/local--wp8icon/[filename]/+server.ts",
-        "sha256": "f77680d24f23cd6bb3ab5ea1f4e37b31505af6c2bcf4a1755aba40245620b6da"
+        "sha256": "97ae66228abbb5916d75a338aef30bc179c489e85827e15f340623fa4a3aa7c0"
       },
       {
         "path": "framerail/src/routes/printer--friendly/[...path]/+page.server.ts",
@@ -11880,20 +12105,28 @@
         "sha256": "48ea625cdf3e2eeb0dece65b257e1c2d806dde855391125bcd82cf677fa66478"
       },
       {
+        "path": "framerail/src/routes/sitemap_page_[n].xml/+server.ts",
+        "sha256": "ea04b21938572828fafedaabaeb66d557a2e5fa1e5dfb465417e74bc7f836ba1"
+      },
+      {
+        "path": "framerail/src/routes/sitemap.xml/+server.ts",
+        "sha256": "738527aa0b2612a3b7ecab0f3d7123bb656e1539edadc5f8018f2ad507229ecf"
+      },
+      {
         "path": "framerail/src/routes/user[x+3a]info/[target]/+page.server.ts",
         "sha256": "8b19f2be3aaf05717b90b1707fc234aef18f155b493f3f1356c10257e1158740"
       },
       {
         "path": "framerail/src/routes/user[x+3a]info/[target]/+page.svelte",
-        "sha256": "5bece1e685485b05c1c66df9170b063c8cde09b992056f1090fa3f05f7ed4e64"
+        "sha256": "316e20b4e5b5a29c2fc2baf04c05a75a3964f0e85ded6d4c1d3559fa4a0a920a"
       },
       {
         "path": "framerail/src/routes/WikiPageError.svelte",
-        "sha256": "fa24a16b8638b6e27603d79c50be4bafd59913558bc52767c193d9c2412f098c"
+        "sha256": "fe20a4367423b53a28b3e91fce30edbd5a8f0db441715c49266974e41cc54bb1"
       },
       {
         "path": "framerail/src/routes/xml-rpc-api.php/+server.ts",
-        "sha256": "33e6d044d549a792911a3bde08a43da9915461b139c3036782c43189c1d465c1"
+        "sha256": "353dab5653f74e3781ec8bb5c90f6263cf60019502a3d7bbc66fdcc711859cb0"
       },
       {
         "path": "install/local/wikidot-verification/artifacts/issue1370-live-html-hash-domain-identity-20260815/receipt.json",
@@ -11929,7 +12162,7 @@
       },
       {
         "path": "wws/src/route.rs",
-        "sha256": "f7a65bbc577e5e465fb45a58b8a64e53fb700eaa71931cb59528253a96cf4d06"
+        "sha256": "7d7932f8c57b439471f809aa0170c8e337b1dad8e6588e30b1818a8781fbab33"
       }
     ]
   },
@@ -12016,14 +12249,14 @@
     ]
   },
   "counts": {
-    "total": 961,
+    "total": 998,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 181,
+      "deepwell_jsonrpc_method": 200,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 27,
-      "framerail_route": 33,
-      "framerail_server_action": 107,
+      "framerail_route": 39,
+      "framerail_server_action": 119,
       "framerail_xmlrpc_method": 17,
       "missing_page_control": 2,
       "open43_audit_case": 285,
@@ -19920,7 +20153,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/caddy/caddyfile.j2#redir https://{{ domain }}{uri}",
+          "deepwell/src/services/caddy/caddyfile.j2#redir https://{{ domain }}{{ public_port_suffix }}{uri}",
           "deepwell/src/services/caddy/service.rs#should_use_wildcard: wildcard_cert.is_some() || *local"
         ]
       },
@@ -20370,9 +20603,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:conf/blocks.toml",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/bibliography.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:conf/blocks.toml",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/bibliography.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -20416,10 +20649,10 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:conf/blocks.toml",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/clear_float.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/container.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:conf/blocks.toml",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/clear_float.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/container.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -20463,9 +20696,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:conf/blocks.toml",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/container.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:conf/blocks.toml",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/container.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -20554,9 +20787,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:conf/blocks.toml",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/text.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:conf/blocks.toml",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/text.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -20648,7 +20881,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/parsing/lexer.pest"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/parsing/lexer.pest"
         ]
       },
       "candidate": {
@@ -20692,9 +20925,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:conf/blocks.toml",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/date.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:conf/blocks.toml",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/date.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -20738,9 +20971,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/parsing/lexer.pest",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/definition_list.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/parsing/lexer.pest",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/definition_list.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -20882,7 +21115,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/Cargo.toml#ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"17dbc236a5bc879c1bcd451e2308bb080d854f15\" }",
+          "deepwell/Cargo.toml#ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"c36bc5fe655fdb6cd41a563882194493f50008e1\" }",
           "deepwell/src/services/render/page_preview.rs#WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);",
           "deepwell/src/services/render/service.rs#pub async fn render("
         ]
@@ -20928,7 +21161,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/Cargo.toml#ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"17dbc236a5bc879c1bcd451e2308bb080d854f15\" }",
+          "deepwell/Cargo.toml#ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"c36bc5fe655fdb6cd41a563882194493f50008e1\" }",
           "deepwell/src/services/render/page_preview.rs#WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);"
         ]
       },
@@ -20974,9 +21207,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:conf/blocks.toml",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/footnotes.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:conf/blocks.toml",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/footnotes.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21020,9 +21253,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/parsing/lexer.pest",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/container.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/parsing/lexer.pest",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/container.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21066,9 +21299,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/parsing/lexer.pest",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/mod.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/parsing/lexer.pest",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/mod.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21307,10 +21540,10 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/parsing/lexer.pest",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/container.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/text.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/parsing/lexer.pest",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/container.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/text.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21401,7 +21634,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/Cargo.toml#ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"17dbc236a5bc879c1bcd451e2308bb080d854f15\" }",
+          "deepwell/Cargo.toml#ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"c36bc5fe655fdb6cd41a563882194493f50008e1\" }",
           "deepwell/src/services/render/compat/wikidot_link_protection.rs#pub(in crate::services::render) fn build_wikidot_wikipedia_link(",
           "deepwell/src/services/render/compat/wikidot_link_protection.rs#pub(in crate::services::render) fn protect_wikidot_compat_links("
         ]
@@ -21448,10 +21681,10 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:conf/blocks.toml",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/parsing/lexer.pest",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/list.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:conf/blocks.toml",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/parsing/lexer.pest",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/list.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21498,10 +21731,10 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:conf/blocks.toml",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/parsing/lexer.pest",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/text.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:conf/blocks.toml",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/parsing/lexer.pest",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/text.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21545,10 +21778,10 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:conf/blocks.toml",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/parsing/lexer.pest",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/math.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:conf/blocks.toml",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/parsing/lexer.pest",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/math.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21592,9 +21825,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:conf/blocks.toml",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/container.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:conf/blocks.toml",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/container.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21638,11 +21871,11 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:conf/blocks.toml",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/parsing/lexer.pest",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/container.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/mod.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:conf/blocks.toml",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/parsing/lexer.pest",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/container.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/mod.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21740,9 +21973,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:conf/blocks.toml",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/toc.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:conf/blocks.toml",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/toc.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21786,10 +22019,10 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:conf/blocks.toml",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/parsing/lexer.pest",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/table.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:conf/blocks.toml",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/parsing/lexer.pest",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/table.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21879,9 +22112,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:conf/blocks.toml",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/container.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:conf/blocks.toml",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/container.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21925,9 +22158,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/parsing/lexer.pest",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/text.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/parsing/lexer.pest",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/text.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -21971,9 +22204,9 @@
       "source": {
         "status": "implemented",
         "references": [
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/parsing/lexer.pest",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/render/html/element/text.rs",
-          "Rokurolize/ftml@17dbc236a5bc879c1bcd451e2308bb080d854f15:src/tree/element/object.rs"
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/parsing/lexer.pest",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/render/html/element/text.rs",
+          "Rokurolize/ftml@c36bc5fe655fdb6cd41a563882194493f50008e1:src/tree/element/object.rs"
         ]
       },
       "candidate": {
@@ -24069,6 +24302,96 @@
       ]
     },
     {
+      "surface_id": "deepwell-jsonrpc:email_verify_issue",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:email_verify_issue",
+        "deepwell/src/endpoints/email.rs#email_verify_issue"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/email.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:email_verify_redeem",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:email_verify_redeem",
+        "deepwell/src/endpoints/email.rs#email_verify_redeem"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/email.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
       "surface_id": "deepwell-jsonrpc:error",
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
@@ -24126,7 +24449,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#changed_file_revision_fences_but_noop_and_failed_revision_do_not"
+          "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused"
         ]
       },
       "evidence": {
@@ -24171,7 +24494,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#file_mutation_deferred_actions_fence_warm_anonymous_gallery_cache"
+          "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused"
         ]
       },
       "evidence": {
@@ -24216,7 +24539,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#changed_file_revision_fences_but_noop_and_failed_revision_do_not"
+          "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused"
         ]
       },
       "evidence": {
@@ -24306,7 +24629,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#file_mutations_require_parent_page_edit_permission"
+          "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused"
         ]
       },
       "evidence": {
@@ -24351,7 +24674,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#file_mutation_deferred_actions_fence_warm_anonymous_gallery_cache"
+          "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused"
         ]
       },
       "evidence": {
@@ -24621,7 +24944,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#file_mutations_require_parent_page_edit_permission"
+          "deepwell/tests/file_mirror_parity.rs#mirror_file_mutations_are_refused"
         ]
       },
       "evidence": {
@@ -24879,6 +25202,96 @@
       ]
     },
     {
+      "surface_id": "deepwell-jsonrpc:import_wikidot_file",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:import_wikidot_file",
+        "deepwell/src/endpoints/import.rs#import_wikidot_file"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/mutation_authorization.rs#wikidot_database_import_endpoints_require_platform_staff"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/import.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:import_wikidot_file_delete",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:import_wikidot_file_delete",
+        "deepwell/src/endpoints/import.rs#import_wikidot_file_delete"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/mutation_authorization.rs#wikidot_database_import_endpoints_require_platform_staff"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/import.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
       "surface_id": "deepwell-jsonrpc:import_wikidot_page",
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
@@ -24892,6 +25305,51 @@
         "cases": [],
         "tests": [
           "deepwell/tests/members_freshness.rs#imported_members_sources_preserve_runtime_cache_boundaries"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/import.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:import_wikidot_page_files_verify",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:import_wikidot_page_files_verify",
+        "deepwell/src/endpoints/import.rs#import_wikidot_page_files_verify"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/mutation_authorization.rs#wikidot_database_import_endpoints_require_platform_staff"
         ]
       },
       "evidence": {
@@ -25161,7 +25619,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
+          "deepwell/tests/rpc_boundary.rs#production_rpc_serializes_recovery_code_use_across_sessions"
         ]
       },
       "evidence": {
@@ -25926,7 +26384,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
+          "deepwell/tests/rpc_boundary.rs#production_rpc_serializes_recovery_code_use_across_sessions"
         ]
       },
       "evidence": {
@@ -25971,7 +26429,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
+          "deepwell/tests/rpc_boundary.rs#production_rpc_serializes_recovery_code_use_across_sessions"
         ]
       },
       "evidence": {
@@ -25984,6 +26442,141 @@
         "status": "implemented",
         "references": [
           "deepwell/src/endpoints/auth.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:mirror_scope_get",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:mirror_scope_get",
+        "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_get"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/mirror_scope.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:mirror_scope_reconcile_files",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:mirror_scope_reconcile_files",
+        "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_reconcile_files"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/mirror_file_reconcile.rs#reconcile_files_endpoint_requires_platform_staff"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/mirror_scope.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:mirror_scope_set",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:mirror_scope_set",
+        "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_set"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/mirror_scope.rs"
         ]
       },
       "candidate": {
@@ -26241,7 +26834,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/list_pages.rs#child_listpages_expands_site_domain_and_parent_fullname"
+          "deepwell/tests/file_mirror_parity.rs#native_file_mutations_still_succeed"
         ]
       },
       "evidence": {
@@ -26254,6 +26847,51 @@
         "status": "implemented",
         "references": [
           "deepwell/src/endpoints/page.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:page_create_permission",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:page_create_permission",
+        "deepwell/src/endpoints/page/permissions.rs#page_create_permission"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/permission.rs#page_create_permission_reports_category_create_rights"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/page/permissions.rs"
         ]
       },
       "candidate": {
@@ -26299,6 +26937,51 @@
         "status": "implemented",
         "references": [
           "deepwell/src/endpoints/page.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:page_delete_permission",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:page_delete_permission",
+        "deepwell/src/endpoints/page/permissions.rs#page_delete_permission"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/page/permissions.rs"
         ]
       },
       "candidate": {
@@ -26503,7 +27186,7 @@
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
         "deepwell/src/api.rs#register:page_edit_permission",
-        "deepwell/src/endpoints/page.rs#page_edit_permission"
+        "deepwell/src/endpoints/page/permissions.rs#page_edit_permission"
       ],
       "existing_refs": {
         "issues": [
@@ -26523,7 +27206,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/endpoints/page.rs"
+          "deepwell/src/endpoints/page/permissions.rs"
         ]
       },
       "candidate": {
@@ -26556,7 +27239,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/list_pages.rs#imported_revision_count_current_page_only_adds_local_revisions"
+          "deepwell/tests/file_mirror_parity.rs#native_file_mutations_still_succeed"
         ]
       },
       "evidence": {
@@ -27334,6 +28017,51 @@
         "status": "implemented",
         "references": [
           "deepwell/src/endpoints/page.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:page_move_permission",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:page_move_permission",
+        "deepwell/src/endpoints/page/permissions.rs#page_move_permission"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/page/permissions.rs"
         ]
       },
       "candidate": {
@@ -28389,6 +29117,141 @@
       ]
     },
     {
+      "surface_id": "deepwell-jsonrpc:password_reset_complete",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:password_reset_complete",
+        "deepwell/src/endpoints/email.rs#password_reset_complete"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/email.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:password_reset_issue",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:password_reset_issue",
+        "deepwell/src/endpoints/email.rs#password_reset_issue"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/email.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:password_reset_redeem",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:password_reset_redeem",
+        "deepwell/src/endpoints/email.rs#password_reset_redeem"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/email.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
       "surface_id": "deepwell-jsonrpc:ping",
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
@@ -28459,6 +29322,51 @@
         "status": "implemented",
         "references": [
           "deepwell/src/endpoints/view.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:promote_observed_wikidot_identity",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:promote_observed_wikidot_identity",
+        "deepwell/src/endpoints/import.rs#promote_observed_wikidot_identity"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/import.rs"
         ]
       },
       "candidate": {
@@ -28929,6 +29837,96 @@
       ]
     },
     {
+      "surface_id": "deepwell-jsonrpc:site_icon_get",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:site_icon_get",
+        "deepwell/src/endpoints/site.rs#site_icon_get"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/site.rs#site_icon_endpoints_roundtrip_as_staff_and_anonymous"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/site.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:site_icon_set",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:site_icon_set",
+        "deepwell/src/endpoints/site.rs#site_icon_set"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/site.rs#site_icon_endpoints_roundtrip_as_staff_and_anonymous"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/site.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
       "surface_id": "deepwell-jsonrpc:site_tools_list_drafts",
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
@@ -29121,7 +30119,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#html_block_render_leaves_image_block_include_literal"
+          "deepwell/tests/page.rs#hosted_code_blocks_serve_the_source_body_like_wikidot_local_code"
         ]
       },
       "evidence": {
@@ -29391,7 +30389,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/rpc_boundary.rs#production_rpc_stack_commits_terminal_mfa_rejection_state"
+          "deepwell/tests/rpc_boundary.rs#production_rpc_serializes_recovery_code_use_across_sessions"
         ]
       },
       "evidence": {
@@ -29481,7 +30479,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/user.rs#avatar_removal_is_owner_only_and_clears_only_the_association"
+          "deepwell/tests/auth.rs#account_holders_change_their_password_with_the_current_one"
         ]
       },
       "evidence": {
@@ -29527,6 +30525,51 @@
         "cases": [],
         "tests": [
           "deepwell/tests/user.rs#basic_update"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/user.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:user_password_change",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:user_password_change",
+        "deepwell/src/endpoints/user.rs#user_password_change"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/auth.rs#account_holders_change_their_password_with_the_current_one"
         ]
       },
       "evidence": {
@@ -29796,7 +30839,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/vote.rs#registered_point_vote_lifecycle_refreshes_saved_rate_page"
+          "deepwell/tests/vote.rs#imported_rating_baseline_vote_cast_change_cancel_lifecycle"
         ]
       },
       "evidence": {
@@ -30382,6 +31425,51 @@
         "cases": [],
         "tests": [
           "deepwell/tests/page.rs#wikidot_site_changes_ajax_endpoint_filters_before_pagination_and_matches_observed_reads"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/page.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:wikidot_sitemap",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:wikidot_sitemap",
+        "deepwell/src/endpoints/page.rs#wikidot_sitemap"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/page.rs#sitemap_never_publishes_authenticated_only_site_pages"
         ]
       },
       "evidence": {
@@ -31844,6 +32932,47 @@
       ]
     },
     {
+      "surface_id": "framerail-route:/-/forgot",
+      "kind": "framerail_route",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/forgot/+page.server.ts#methods:GET",
+        "framerail/src/routes/[x+2d]/forgot/+page.svelte#methods:GET"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#forgot load requests the recovery copy keys"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-route",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-route:/-/login",
       "kind": "framerail_route",
       "public_reference": [
@@ -31967,6 +33096,47 @@
       ]
     },
     {
+      "surface_id": "framerail-route:/-/reset/{token}",
+      "kind": "framerail_route",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/reset/[token]/+page.server.ts#methods:GET",
+        "framerail/src/routes/[x+2d]/reset/[token]/+page.svelte#methods:GET"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#reset page exchanges the link for a grant only on POST"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-route",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-route:/-/settings",
       "kind": "framerail_route",
       "public_reference": [
@@ -32062,6 +33232,88 @@
         "cases": [],
         "tests": [
           "framerail/tests/account-route-boundaries.test.js#legacy user slug route fails closed for imported profiles"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-route",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-route:/-/verify-email",
+      "kind": "framerail_route",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/verify-email/+page.server.ts#methods:GET",
+        "framerail/src/routes/[x+2d]/verify-email/+page.svelte#methods:GET"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#verify resend page requests the verification copy keys"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-route",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-route:/-/verify-email/{token}",
+      "kind": "framerail_route",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/verify-email/[token]/+page.server.ts#methods:GET",
+        "framerail/src/routes/[x+2d]/verify-email/[token]/+page.svelte#methods:GET"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#verify link load pre-fills the token form without calling Deepwell"
         ]
       },
       "evidence": {
@@ -32830,6 +34082,87 @@
         "tests": [
           "framerail/tests/hooks-reroute.test.ts#printer-friendly doubled slash resolves to the single-slash route",
           "framerail/tests/wikidot-print-view.test.js#printer-friendly URL preserves the live doubled slash"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-route",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-route:/sitemap_page_{n}.xml",
+      "kind": "framerail_route",
+      "public_reference": [
+        "framerail/src/routes/sitemap_page_[n].xml/+server.ts#methods:GET"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/sitemap.test.ts#builds a shard urlset with escaped locations and lastmod dates",
+          "framerail/tests/sitemap.test.ts#parses shard numbers starting at 1 and rejects anything else"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-route",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-route:/sitemap.xml",
+      "kind": "framerail_route",
+      "public_reference": [
+        "framerail/src/routes/sitemap.xml/+server.ts#methods:GET"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/sitemap.test.ts#builds a sitemap index pointing at each shard page"
         ]
       },
       "evidence": {
@@ -34154,6 +35487,46 @@
       ]
     },
     {
+      "surface_id": "framerail-server-action:/-/forgot?/default",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/forgot/+page.server.ts#action:default"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#forgot issue trims the address and always reports success"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-server-action:/-/login?/default",
       "kind": "framerail_server_action",
       "public_reference": [
@@ -34274,6 +35647,86 @@
       ]
     },
     {
+      "surface_id": "framerail-server-action:/-/reset/{token}?/default",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/reset/[token]/+page.server.ts#action:default"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#reset page exchanges the link for a grant only on POST"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/-/reset/{token}?/setPassword",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/reset/[token]/+page.server.ts#action:setPassword"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#reset completion sets the password, clears it, and reports revocation"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-server-action:/-/settings?/display",
       "kind": "framerail_server_action",
       "public_reference": [
@@ -34286,6 +35739,46 @@
         "cases": [],
         "tests": [
           "framerail/tests/user-settings-action-boundary.test.js#user settings bind persistence to the server session actor"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/-/settings?/password",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/settings/+page.server.ts#action:password"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/user-settings-password-change.spec.ts#account settings change the password with the current one"
         ]
       },
       "evidence": {
@@ -34354,6 +35847,86 @@
       ]
     },
     {
+      "surface_id": "framerail-server-action:/-/verify-email?/default",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/verify-email/+page.server.ts#action:default"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#verify issue uses the verify RPC, never the reset RPC"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/-/verify-email/{token}?/default",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/routes/[x+2d]/verify-email/[token]/+page.server.ts#action:default"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/email-token.test.js#verify redemption POSTs the token; malformed tokens never reach Deepwell"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-server-action:/?/backlinks",
       "kind": "framerail_server_action",
       "public_reference": [
@@ -34367,6 +35940,47 @@
         "cases": [],
         "tests": [
           "framerail/tests/page-append-backlinks-public-boundary.test.js#Backlinks handler delegates the current route to the typed public Deepwell view"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/?/createPermission",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:createPermission",
+        "framerail/src/routes/+page.server.ts#action:createPermission"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/release-route-action-boundaries.test.js#previously unattributed public route actions stay wired to their owning handlers"
         ]
       },
       "evidence": {
@@ -34449,6 +36063,47 @@
         "cases": [],
         "tests": [
           "framerail/tests/page-deleted-authorization.test.js#deleted-page actions use the authenticated route context"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/?/deletePermission",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:deletePermission",
+        "framerail/src/routes/+page.server.ts#action:deletePermission"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/page-option-form-permission.spec.ts#Delete answers with the delete-permission dialog and opens no form"
         ]
       },
       "evidence": {
@@ -35379,6 +37034,47 @@
       ]
     },
     {
+      "surface_id": "framerail-server-action:/?/movePermission",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:movePermission",
+        "framerail/src/routes/+page.server.ts#action:movePermission"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/page-option-form-permission.spec.ts#Move answers with the move-permission dialog and opens no form"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-server-action:/?/parentGet",
       "kind": "framerail_server_action",
       "public_reference": [
@@ -35871,6 +37567,47 @@
       ]
     },
     {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/createPermission",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:createPermission",
+        "framerail/src/routes/[slug]/[...extra]/+page.server.ts#action:createPermission"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/release-route-action-boundaries.test.js#previously unattributed public route actions stay wired to their owning handlers"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/delete",
       "kind": "framerail_server_action",
       "public_reference": [
@@ -35925,6 +37662,47 @@
         "cases": [],
         "tests": [
           "framerail/tests/page-deleted-authorization.test.js#deleted-page actions use the authenticated route context"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/deletePermission",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:deletePermission",
+        "framerail/src/routes/[slug]/[...extra]/+page.server.ts#action:deletePermission"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/page-option-form-permission.spec.ts#Delete answers with the delete-permission dialog and opens no form"
         ]
       },
       "evidence": {
@@ -36827,6 +38605,47 @@
         "cases": [],
         "tests": [
           "framerail/tests/page-move-action-boundary.test.js#native page move resolves the routed page before moving it"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/movePermission",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:movePermission",
+        "framerail/src/routes/[slug]/[...extra]/+page.server.ts#action:movePermission"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/page-option-form-permission.spec.ts#Move answers with the move-permission dialog and opens no form"
         ]
       },
       "evidence": {
@@ -38022,7 +39841,7 @@
       "source_identities": [
         {
           "path": "framerail/src/routes/WikiPageError.svelte",
-          "sha256": "fa24a16b8638b6e27603d79c50be4bafd59913558bc52767c193d9c2412f098c"
+          "sha256": "fe20a4367423b53a28b3e91fce30edbd5a8f0db441715c49266974e41cc54bb1"
         },
         {
           "path": "framerail/src/routes/+error.svelte",
@@ -38030,7 +39849,7 @@
         },
         {
           "path": "framerail/src/lib/server/load/page/page-actions.ts",
-          "sha256": "13bfc494f60d509442ab91ae58fdfc0b8509c281bb992d78cdfea4ea55adf813"
+          "sha256": "9f86a2af75d76ffffbce84b97e153411f6117ab2b3d5f8e4544289f520485b66"
         }
       ],
       "specification_owner": "wikijump.registry:missing-page-control",
@@ -38122,7 +39941,7 @@
       "source_identities": [
         {
           "path": "framerail/src/routes/WikiPageError.svelte",
-          "sha256": "fa24a16b8638b6e27603d79c50be4bafd59913558bc52767c193d9c2412f098c"
+          "sha256": "fe20a4367423b53a28b3e91fce30edbd5a8f0db441715c49266974e41cc54bb1"
         },
         {
           "path": "framerail/src/routes/+error.svelte",
@@ -38130,15 +39949,15 @@
         },
         {
           "path": "framerail/src/lib/server/load/page/page-actions.ts",
-          "sha256": "13bfc494f60d509442ab91ae58fdfc0b8509c281bb992d78cdfea4ea55adf813"
+          "sha256": "9f86a2af75d76ffffbce84b97e153411f6117ab2b3d5f8e4544289f520485b66"
         },
         {
           "path": "framerail/src/lib/server/load/page/page.ts",
-          "sha256": "210bf097801311046cb8f19cf1e57bd5fd7694f50852146c12bf2ef6548bac7a"
+          "sha256": "8ded61c2afdaf8561114bd388b4400ca561c75247e3a72c8053cd34d277412c9"
         },
         {
           "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",
-          "sha256": "03bf8790bbd004ed6094ee9c5fa043bb1241fabebbb1881f420c7363b4c2f3ee"
+          "sha256": "6dbbb85a91b21863e3dd45f8c0d3691bd37525a7c03ab96c5e590bb2dfac5517"
         }
       ],
       "specification_owner": "wikijump.registry:missing-page-control",

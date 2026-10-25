@@ -33,6 +33,7 @@ use super::article_cache::ArticlePageCache;
 use super::module_arguments::PageModuleArguments;
 use super::module_render::render_body_for_module_arguments;
 use super::options::PageOptions;
+use super::random_helper::{find_random_helper_selector, resolve_random_helper_redirect};
 use super::redirect::{wikidot_redirect_location, wikidot_redirect_noredirect_body_html};
 use super::structs::{
     GetAdminView, GetAdminViewOutput, GetArticleViewCacheMetadataOutput,
@@ -370,10 +371,18 @@ impl ViewService {
         }
 
         let page_view = Self::page(ctx, input).await?;
-        if let (Some(cache_key), GetPageViewOutput::Found { page, .. }) = (
+        if let (Some(cache_key), GetPageViewOutput::Found {
+            page,
+            redirect_kind,
+            ..
+        }) = (
             cache_metadata.as_ref().map(|metadata| &metadata.cache_key),
             &page_view,
         ) && page.from_wikidot
+            // Random helper targets are reselected on every view. Caching
+            // the view would pin one random pick (or a stale one) behind
+            // the helper's otherwise stable body hash.
+            && !matches!(redirect_kind, Some(PageRedirectKind::RandomHelper))
         {
             ArticlePageCache::set(ctx, cache_key, &page_view).await?;
         }
@@ -748,6 +757,7 @@ impl ViewService {
             selected_template_page_id: Option<i64>,
             data_form: Option<DataFormEditor>,
             can_create: bool,
+            missing_template: bool,
             compiled_body_html: String,
             compiled_body_styles: Vec<String>,
             compiled_top_bar_html: Option<String>,
@@ -763,6 +773,7 @@ impl ViewService {
             selected_template_page_id,
             data_form,
             can_create,
+            missing_template,
             mut compiled_body_html,
             compiled_body_styles,
             compiled_top_bar_html,
@@ -1039,6 +1050,7 @@ impl ViewService {
                         page_templates: Vec::new(),
                         selected_template_page_id: None,
                         can_create: false,
+                        missing_template: false,
                         data_form,
                         compiled_body_html,
                         compiled_body_styles,
@@ -1072,6 +1084,7 @@ impl ViewService {
 
                     let GetBlueprintPageOutput {
                         wikitext,
+                        from_site_page: _,
                         render_output,
                     } = BlueprintPageService::get(
                         ctx,
@@ -1116,6 +1129,7 @@ impl ViewService {
                         page_templates: Vec::new(),
                         selected_template_page_id: None,
                         can_create: false,
+                        missing_template: false,
                         data_form: None,
                         compiled_body_html,
                         compiled_body_styles,
@@ -1168,6 +1182,7 @@ impl ViewService {
                     };
                     let GetBlueprintPageOutput {
                         wikitext,
+                        from_site_page: _,
                         render_output,
                     } = BlueprintPageService::get(
                         ctx,
@@ -1202,6 +1217,7 @@ impl ViewService {
                         page_templates: Vec::new(),
                         selected_template_page_id: None,
                         can_create: false,
+                        missing_template: false,
                         data_form: None,
                         compiled_body_html,
                         compiled_body_styles,
@@ -1211,6 +1227,7 @@ impl ViewService {
                 } else {
                     let GetBlueprintPageOutput {
                         wikitext,
+                        from_site_page,
                         render_output,
                     } = BlueprintPageService::get(
                         ctx,
@@ -1356,6 +1373,7 @@ impl ViewService {
                         selected_template_page_id,
                         data_form,
                         can_create: user_can_create_page,
+                        missing_template: from_site_page,
                         compiled_body_html,
                         compiled_body_styles,
                         compiled_top_bar_html,
@@ -1390,12 +1408,40 @@ impl ViewService {
             ..
         } = &page_status
             && wikidot_redirect_module_allowed(page, page_revision)
+            // An imported page without a Redirect module falls through to the
+            // random-helper check below. Stopping here would leave imported
+            // `random:*` helpers (#2080) rendered instead of redirected.
+            && let Some(redirect_page) =
+                wikidot_redirect_location(&wikitext, page_full_slug, options.no_redirect)
         {
-            let redirect_page =
-                wikidot_redirect_location(&wikitext, page_full_slug, options.no_redirect);
+            (Some(redirect_page), Some(PageRedirectKind::WikidotModule))
+        } else if let PageStatus::Found { page, .. } = &page_status
+            && page_extra.is_empty()
+        {
+            // Source-defined random helper pages (such as the `random:*`
+            // routes) select one eligible same-site page and redirect to it.
+            // Only the bare route redirects; suffixed views (including
+            // `/noredirect/true`) render the helper itself.
+            let (category_slug, _) = split_category(page_full_slug);
+            let redirect_page = match find_random_helper_selector(
+                &wikitext,
+                category_slug.unwrap_or("_default"),
+            ) {
+                Some(selector) => resolve_random_helper_redirect(
+                    ctx,
+                    site_id,
+                    user_session.as_ref().map(|session| session.user.user_id),
+                    page.page_id,
+                    page_full_slug,
+                    &selector,
+                )
+                .await
+                .or_raise(make_error)?,
+                None => None,
+            };
             let redirect_kind = redirect_page
                 .as_ref()
-                .map(|_| PageRedirectKind::WikidotModule);
+                .map(|_| PageRedirectKind::RandomHelper);
             (redirect_page, redirect_kind)
         } else {
             (None, None)
@@ -1501,6 +1547,7 @@ impl ViewService {
                 selected_template_page_id,
                 data_form,
                 can_create,
+                missing_template,
                 compiled_body_html,
                 compiled_body_styles,
                 compiled_top_bar_html,
@@ -1882,6 +1929,7 @@ ORDER BY breadcrumb_chain.depth ASC
 
         let GetBlueprintPageOutput {
             wikitext: _,
+            from_site_page: _,
             render_output,
         } = BlueprintPageService::get(
             ctx,
@@ -2026,7 +2074,7 @@ ORDER BY breadcrumb_chain.depth ASC
         } else {
             Vec::new()
         };
-        let site_file_domain = DomainService::get_files(config, &site.slug);
+        let site_file_domain = DomainService::get_files_authority(config, &site.slug);
         let license_name = site.license.translate(ctx.localization(), &locales)?;
         let license_url = site.license.url();
 

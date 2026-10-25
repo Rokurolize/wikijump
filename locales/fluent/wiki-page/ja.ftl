@@ -1,7 +1,14 @@
+wiki-page-category = カテゴリ: { $category }
+
 wiki-page-module-new-page-name = 新しいページ名
 wiki-page-module-search-all-query = すべてのWikiを検索
 wiki-page-append-content = 追記するWikiテキスト
 wiki-page-revision-view-unavailable = 過去のページ内容を表示できません
+
+wiki-page-revision-banner =
+  .title = 過去のリビジョン
+  .page = ページ
+  .close = 閉じる
 
 wiki-page-file-upload =
   .select = ファイルを選択:
@@ -13,6 +20,7 @@ wiki-page-action-append = 追加
 wiki-page-action-edit-sections = セクションを編集
 wiki-page-action-edit-meta = メタを編集
 wiki-page-action-watchers = ウォッチャー
+wiki-page-watchers-unimported = インポートされたページのウォッチャー一覧は、購読情報がインポートされていないため利用できません。
 wiki-page-action-backlinks = バックリンク
 wiki-page-action-lock = ページロック
 wiki-page-action-rename-move = リネーム
@@ -40,6 +48,32 @@ wiki-page-file-delete =
   .filename = ファイル
   .page = ページ
   .confirm = 削除する
+
+wiki-page-file-list =
+  .title = ファイル
+  .total-files = 総ファイル数：
+  .total-size = 合計サイズ：
+  .header-name = ファイル名
+  .header-type = ファイルの種類
+  .header-size = サイズ
+  .info = 情報
+  .options = オプション
+  .rename = 名前を変更
+  .move = 移動
+  .delete = 削除
+  .history = 履歴
+  .upload = コンピューターからファイルをアップロード
+wiki-page-file-info =
+  .title = ファイル情報
+  .name = ファイル名：
+  .url = ファイルの完全URL：
+  .size = ファイルサイズ：
+  .mime = MIMEタイプ：
+  .content-type = コンテンツタイプ：
+  .uploaded-by = アップロード者：
+  .upload-date = アップロード日：
+  .unavailable = 不明
+  .close = 閉じる
 
 wiki-page-file-history = ファイル履歴
 
@@ -72,6 +106,24 @@ wiki-page-restore = ページを復元
 wiki-page-deleted = { $datetime }に削除されました
 
 wiki-page-revision-history = ページの編集履歴
+
+wiki-page-revision-filter =
+  .show = ページの変更を表示：
+  .all = すべて
+  .source = ソースの変更
+  .title = タイトルの変更
+  .move = ページ名の変更
+  .tags = タグの変更
+  .meta = メタデータの変更
+  .files = ファイルの変更
+wiki-page-revision-perpage = ページあたりのリビジョン数：
+wiki-page-revision-update-list = リストを更新
+wiki-page-revision-compare-versions = バージョンを比較
+wiki-page-revision-pager =
+  .page = ページ
+  .of = /
+  .previous = 前のページ
+  .next = 次のページ
 
 wiki-page-revision-diff = バージョンを比較
   .from = 比較元リビジョン
@@ -126,6 +178,12 @@ wiki-page-file-restore = 復元
   .new-page = 移動先ページ
   .new-name = 新しいファイル名
 
+wiki-page-file-mirror-readonly =
+  .title = PERMISSION ERROR
+  .lead-in = ご注意ください:
+  .message = このインポートされたページのファイルは読み取り専用です。
+  .extra-message = ミラーページにはソースのファイル一覧が表示されます。ファイルの更新は、サイト管理者にWikidotのインポート経由で行うよう依頼してください。
+
 wiki-page-lock = ページロック
   .permission-only = 権限保持者のみ
   .author-or-permission-only = 権限保持者と作成者のみ
@@ -147,3 +205,15 @@ wiki-page-lock = ページロック
   .history-overridden = 上書き済み
   .history-none = このページのロック履歴はありません。
   .remove = 解除
+
+### Blueprint page fallback strings
+
+wiki-page-missing = アクセスしようとしたページ //{ $slug }// は存在しません。
+
+wiki-page-private = + プライベートコンテンツ
+
+    このエリアはプライベートであり、アクセス権がありません。アクセスが必要だと思われる場合は、サイト管理者にお問い合わせください。
+
+wiki-page-banned = + アクセスが禁止されています
+
+    このサイトから禁止されており、サイト設定では禁止されたユーザーのページ閲覧は許可されていません。

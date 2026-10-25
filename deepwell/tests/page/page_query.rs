@@ -171,6 +171,97 @@ async fn page_query_orders_by_page_slug_without_category_prefix() {
 }
 
 #[tokio::test]
+async fn tag_page_queries_plan_with_their_values_and_leave_the_render_on_cached_plans() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let tag = "verification-tag-custom-plan";
+    let slug = "verification-tag-custom-plan-page";
+    let revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        slug,
+        "Tag custom plan",
+        "Tag custom plan marker.",
+    )
+    .await;
+    set_listpages_test_tags(&mut runner, site_id, slug, revision, &[tag]).await;
+
+    let any_tags = [Cow::Borrowed(tag)];
+    let pages = PageQueryService::find(
+        runner.context(),
+        PageQuery {
+            current_page_id: 0,
+            current_site_id: site_id,
+            queried_site_id: Some(site_id),
+            page_type: PageTypeSelector::All,
+            categories: CategoriesSelector {
+                included_categories: IncludedCategories::All,
+                excluded_categories: &[],
+            },
+            tags: TagCondition {
+                any_present: &any_tags,
+                all_present: &[],
+                none_present: &[],
+                untagged: false,
+            },
+            page_parent: PageParentSelector::All,
+            contains_outgoing_links: &[],
+            creation_date: DateSelector::FromPresent {
+                start: OffsetDateTime::UNIX_EPOCH,
+            },
+            update_date: DateSelector::FromPresent {
+                start: OffsetDateTime::UNIX_EPOCH,
+            },
+            author: AuthorSelector::All,
+            score: &[],
+            votes: &[],
+            offset: 0,
+            range: RangeSelector::Current,
+            name: None,
+            slug: None,
+            slugs: &[],
+            data_form_fields: &[],
+            order: None,
+            candidate_limit: None,
+            pagination: PaginationSelector {
+                limit: Some(10),
+                ..Default::default()
+            },
+            variables: &[],
+            fields: FoundPageFields {
+                slug: true,
+                ..Default::default()
+            },
+        },
+    )
+    .await
+    .expect("tag page query should not fail");
+    let slugs = pages
+        .pages
+        .into_iter()
+        .map(|row| row.slug.expect("slug field should be requested"))
+        .collect::<Vec<_>>();
+    assert_eq!(slugs, [slug]);
+
+    // The custom plan is for the tag query only; the rest of the render
+    // transaction keeps PostgreSQL's cached plans.
+    let txn = runner.context().transaction();
+    let setting = txn
+        .query_one_raw(Statement::from_string(
+            txn.get_database_backend(),
+            "SELECT current_setting('plan_cache_mode') AS mode",
+        ))
+        .await
+        .expect("plan_cache_mode should be readable")
+        .expect("current_setting returns a row")
+        .try_get::<String>("", "mode")
+        .expect("plan_cache_mode is text");
+    assert_eq!(setting, "auto");
+}
+
+#[tokio::test]
 async fn page_query_revision_order_keeps_unrequested_count_out_of_results() {
     const LOW_SLUG: &str = "page-query-revision-order-low";
     const HIGH_SLUG: &str = "page-query-revision-order-high";
@@ -1960,7 +2051,7 @@ async fn excessive_score_selectors_preserve_listpages_and_countpages_modules() {
     let count_head = format!(r#"tags="+{target_tag}" limit="20"{excessive_selectors}"#);
     let index_slug = "fixture-score-selector-cap-index";
     let index_source = format!(
-        "[[module ListPages {list_head}]]\nSCORE_SELECTOR_CAP_LIST=%%slug%% <script>&\"' {forged_marker}\n[[/module]]\n\n[[module CountPages {count_head}]]\nSCORE_SELECTOR_CAP_COUNT=%%total%% <script>&\"' {forged_marker}\n[[/module]]",
+        "[[module ListPages {list_head}]]\nSCORE_SELECTOR_CAP_LIST=%%slug%% <script>&\"' {forged_marker}\n[[/module]]\n\n[[module CountPages {count_head}]]\nSCORE_SELECTOR_CAP_COUNT=%%total%% <script>&\"' {forged_marker}\n[[/module]]\n\nRAW_MARKER_LITERAL={forged_marker}",
     );
     create_listpages_test_page(
         &mut runner,
@@ -2009,7 +2100,7 @@ async fn excessive_score_selectors_preserve_listpages_and_countpages_modules() {
     );
     assert_eq!(
         html.matches(forged_marker).count(),
-        2,
+        3,
         "authored marker-shaped text must not resolve through the shared registry:\n{html}",
     );
 }

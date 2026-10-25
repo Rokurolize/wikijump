@@ -33,7 +33,9 @@ use crate::services::ServiceContext;
 use crate::services::alias::CreateAlias;
 use crate::services::audit::{AuditEvent, AuditService, ObjectScope};
 use crate::services::blob::{BlobService, FinalizeBlobUploadOutput};
-use crate::services::email::{EmailClassification, EmailService, EmailValidationOutput};
+use crate::services::email::{
+    EmailClassification, EmailService, EmailTokenService, EmailValidationOutput,
+};
 use crate::services::filter::{FilterClass, FilterType};
 use crate::services::{AliasService, FilterService, PasswordService};
 use crate::types::{AliasType, UserType};
@@ -41,6 +43,7 @@ use crate::types::{Maybe, Reference};
 use crate::utils::now;
 use crate::utils::regex_replace_in_place;
 use paste::paste;
+use redis::AsyncCommands;
 use sea_orm::sea_query::Expr;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, Condition, DbErr, EntityTrait, NotSet,
@@ -435,15 +438,21 @@ impl UserService {
         // We've already checked for empty emails above (e.g. system users can have empty emails).
         let (email_validation_json, email_validation_at) =
             if !bypass_email_verification && !email.is_empty() {
-                let email_validation_output = EmailService::validate(ctx, &email)
+                // MailCheck being unavailable leaves the email recorded as
+                // not validated instead of refusing the account.
+                match EmailService::validate_when_available(ctx, &email)
                     .await
-                    .or_raise(make_error)?;
+                    .or_raise(make_error)?
+                {
+                    Some(email_validation_output) => {
+                        let email_validation_json =
+                            check_email_validation(&slug, &email_validation_output)
+                                .or_raise(make_error)?;
 
-                let email_validation_json =
-                    check_email_validation(&slug, &email_validation_output)
-                        .or_raise(make_error)?;
-
-                (Some(email_validation_json), Some(now()))
+                        (Some(email_validation_json), Some(now()))
+                    }
+                    None => (None, None),
+                }
             } else {
                 // Skipping email validation
                 (None, None)
@@ -651,7 +660,32 @@ impl UserService {
 
         let txn = ctx.transaction();
         let new_user = model.update(txn).await.or_raise(make_error)?;
+        Self::invalidate_avatar_cache(ctx, user_id)
+            .await
+            .or_raise(make_error)?;
         Ok(new_user)
+    }
+
+    /// Drops WWS's cached avatar hash for a user (`user_avatar:<id>`, see
+    /// `wws/src/cache.rs`), so a changed or removed avatar stops being served
+    /// (#2556). WWS also expires the entry, which bounds a re-cache that races
+    /// this request's commit.
+    pub async fn invalidate_avatar_cache(
+        ctx: &ServiceContext<'_>,
+        user_id: i64,
+    ) -> Result<()> {
+        let mut redis = ctx.redis();
+        let _: usize =
+            redis
+                .del(format!("user_avatar:{user_id}"))
+                .await
+                .or_raise(|| {
+                    Error::new(
+                        format!("failed to invalidate cached avatar for user {user_id}"),
+                        ErrorType::RedisQuery,
+                    )
+                })?;
+        Ok(())
     }
 
     #[inline]
@@ -674,7 +708,33 @@ impl UserService {
         let reference = Self::resolve_user_reference(ctx, reference).await?;
         let wikijump_user = Self::get_real_optional_resolved(ctx, &reference).await?;
 
+        // An authenticatable local account is the authoritative identity
+        // for its slug and keeps precedence over everything else.
         if let Some(user) = wikijump_user {
+            if matches!(user.user_type, UserType::Regular | UserType::Bot) {
+                debug!("Found Wikijump user '{}' (ID {})", user.slug, user.user_id);
+                return Ok(Some(User::Wikijump(user)));
+            }
+
+            // A non-authenticatable native placeholder (system or site
+            // user) must not shadow an imported Wikidot identity that
+            // owns the same slug. Placeholders only satisfy foreign-key
+            // ownership; they are never source identities.
+            if let Reference::Slug(slug) = &reference {
+                let wikidot_user = WikidotUser::find()
+                    .filter(
+                        Condition::all()
+                            .add(wikidot_user::Column::Slug.eq(slug.as_ref()))
+                            .add(wikidot_user::Column::IsDeleted.eq(false)),
+                    )
+                    .one(txn)
+                    .await
+                    .or_raise(make_error)?;
+                if wikidot_user.is_some() {
+                    return Ok(wikidot_user.map(User::Wikidot));
+                }
+            }
+
             debug!("Found Wikijump user '{}' (ID {})", user.slug, user.user_id);
             return Ok(Some(User::Wikijump(user)));
         }
@@ -767,6 +827,27 @@ impl UserService {
     ) -> Result<Option<WikijumpUserModel>> {
         let reference = Self::resolve_user_reference(ctx, reference).await?;
         Self::get_real_optional_resolved(ctx, &reference).await
+    }
+
+    /// Fetches the real (Wikidot-excluded) regular user holding the given
+    /// email address, if any. Recovery and verification must never resolve
+    /// imported non-authenticatable identities (#2081 boundary), so those
+    /// flows look users up only through here: exact address match, regular
+    /// accounts, ignoring deleted rows.
+    pub async fn get_real_optional_by_email(
+        ctx: &ServiceContext<'_>,
+        email: &str,
+    ) -> Result<Option<WikijumpUserModel>> {
+        WikijumpUser::find()
+            .filter(
+                Condition::all()
+                    .add(user::Column::Email.eq(email))
+                    .add(user::Column::UserType.eq(UserType::Regular))
+                    .add(user::Column::DeletedAt.is_null()),
+            )
+            .one(ctx.transaction())
+            .await
+            .or_raise(|| Error::new("failed to look up user by email", ErrorType::User))
     }
 
     /// Fetches the real (Wikijump) user associated with the given reference, if any.
@@ -932,22 +1013,38 @@ impl UserService {
             }
 
             // Validate email
-            let email_validation_output = EmailService::validate(ctx, &email)
-                .await
-                .or_raise(make_error)?;
-
             let email_validation_json =
-                check_email_validation(&user.slug, &email_validation_output)
-                    .or_raise(make_error)?;
+                match EmailService::validate_when_available(ctx, &email)
+                    .await
+                    .or_raise(make_error)?
+                {
+                    Some(email_validation_output) => Some(
+                        check_email_validation(&user.slug, &email_validation_output)
+                            .or_raise(make_error)?,
+                    ),
+                    None => None,
+                };
 
             model.email = Set(email);
-            model.email_validation_info = Set(Some(email_validation_json));
-            model.email_validation_at = Set(Some(now()));
+            model.email_validation_at =
+                Set(email_validation_json.as_ref().map(|_| now()));
+            model.email_validation_info = Set(email_validation_json);
 
             // Deliverability validation does not prove ownership of the new
             // address. A separate verification step must establish that.
             if email_changed {
                 model.email_verified_at = Set(None);
+            }
+
+            // Rotating the address revokes every outstanding email token
+            // bound to the old mailbox: a reset or verification link issued
+            // for the old address must not survive the move (#2693). Same
+            // transaction as the address change, so either both land or
+            // neither does.
+            if email_changed {
+                EmailTokenService::revoke_all_for_user(ctx, user.user_id)
+                    .await
+                    .or_raise(make_error)?;
             }
         }
 
@@ -956,6 +1053,21 @@ impl UserService {
                 bail!(Error::new(
                     "cannot change and verify an email in the same update",
                     ErrorType::BadRequest,
+                ));
+            }
+
+            // Verification proves mailbox ownership, so a mailbox-owning
+            // account (regular or bot) must actually hold an address.
+            // (Displaced pending claims end up with an empty address;
+            // they must set a new one before verifying.) System and site
+            // accounts have no mailbox; verifying them stays a no-op stamp.
+            if email_verified
+                && matches!(user.user_type, UserType::Regular | UserType::Bot)
+                && updated_email.is_empty()
+            {
+                bail!(Error::new(
+                    "cannot verify email, the user has no email address set",
+                    ErrorType::UserEmailEmpty,
                 ));
             }
 
@@ -973,6 +1085,19 @@ impl UserService {
                     "cannot verify email, another active user already owns it",
                     ErrorType::UserExists,
                 ));
+            }
+
+            // First verified proof wins the mailbox: every other live
+            // regular account still showing this address loses it, so the
+            // mailbox ends up with exactly one claimant. Registration
+            // stays open for unverified claims (blocking there would let
+            // anyone squat an address they do not own); arbitration
+            // happens here, at proof time. Displaced accounts keep
+            // name login and can set a new address afterwards.
+            if email_verified && user.user_type == UserType::Regular {
+                Self::displace_pending_email_claims(ctx, &updated_email, user.user_id)
+                    .await
+                    .or_raise(make_error)?;
             }
 
             let timestamp = if email_verified { Some(now()) } else { None };
@@ -1021,6 +1146,7 @@ impl UserService {
             model.user_page = Set(user_page);
         }
 
+        let avatar_changed = matches!(input.avatar_uploaded_blob_id, Maybe::Set(_));
         if let Maybe::Set(uploaded_blob_id) = input.avatar_uploaded_blob_id {
             let s3_hash = match uploaded_blob_id {
                 None => None,
@@ -1057,6 +1183,11 @@ impl UserService {
             }
             Err(error) => return Err(error).or_raise(make_error),
         };
+        if avatar_changed {
+            Self::invalidate_avatar_cache(ctx, new_user.user_id)
+                .await
+                .or_raise(make_error)?;
+        }
 
         // Run verification afterwards if the slug changed
         if user.slug != new_user.slug {
@@ -1093,6 +1224,46 @@ impl UserService {
             .or_raise(|| {
                 Error::new("failed to check verified email ownership", ErrorType::User)
             })
+    }
+
+    async fn displace_pending_email_claims(
+        ctx: &ServiceContext<'_>,
+        email: &str,
+        keeper_user_id: i64,
+    ) -> Result<()> {
+        let txn = ctx.transaction();
+        let displaced = WikijumpUser::find()
+            .filter(
+                Condition::all()
+                    .add(user::Column::Email.eq(email))
+                    .add(user::Column::UserType.eq(UserType::Regular))
+                    .add(user::Column::DeletedAt.is_null())
+                    .add(user::Column::UserId.ne(keeper_user_id)),
+            )
+            .all(txn)
+            .await
+            .or_raise(|| {
+                Error::new("failed to list pending email claims", ErrorType::User)
+            })?;
+
+        // Any other verified owner was rejected before we get here, so every
+        // row found is an unverified pending claim on the now-proven mailbox.
+        for other in displaced {
+            let model = user::ActiveModel {
+                user_id: Set(other.user_id),
+                email: Set(String::new()),
+                email_verified_at: Set(None),
+                email_validation_at: Set(None),
+                email_validation_info: Set(None),
+                updated_at: Set(Some(now())),
+                ..Default::default()
+            };
+            model.update(txn).await.or_raise(|| {
+                Error::new("failed to displace pending email claim", ErrorType::User)
+            })?;
+        }
+
+        Ok(())
     }
 
     /// Updates the user's name, and performs the relevant accounting for it.

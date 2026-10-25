@@ -22,11 +22,30 @@ wiki-page-action-append = Append
 wiki-page-action-edit-sections = Edit Sections
 wiki-page-action-edit-meta = Edit Meta
 wiki-page-action-watchers = Watchers
+wiki-page-watchers-unimported = The watcher list for this imported page is unavailable because its subscriptions were not imported.
 wiki-page-action-backlinks = Backlinks
 wiki-page-action-lock = Lock Page
 wiki-page-action-rename-move = Move
 
 wiki-page-revision-history = Page revision history
+
+wiki-page-revision-filter =
+  .show = Show page changes:
+  .all = ALL
+  .source = source changes
+  .title = title changes
+  .move = page name changes
+  .tags = tags changes
+  .meta = metadata changes
+  .files = files changes
+wiki-page-revision-perpage = Revisions per page:
+wiki-page-revision-update-list = Update list
+wiki-page-revision-compare-versions = Compare versions
+wiki-page-revision-pager =
+  .page = page
+  .of = of
+  .previous = previous
+  .next = next
 
 wiki-page-revision-diff = Compare revisions
   .from = From revision
@@ -38,6 +57,11 @@ wiki-page-revision-diff = Compare revisions
   .unavailable = There are not two page revisions available to compare
 
 wiki-page-revision-view-unavailable = Historical page snapshot unavailable
+
+wiki-page-revision-banner =
+  .title = Historical revision
+  .page = Page
+  .close = Close
 
 wiki-page-revision-number = Revision #
 
@@ -132,6 +156,32 @@ wiki-page-file = Page files
   .size = File size
   .page = Page
 
+wiki-page-file-list =
+  .title = Files
+  .total-files = Total files:
+  .total-size = Total size:
+  .header-name = File name
+  .header-type = File type
+  .header-size = Size
+  .info = Info
+  .options = Options
+  .rename = Rename
+  .move = Move
+  .delete = Delete
+  .history = History
+  .upload = Upload a file from your computer
+wiki-page-file-info =
+  .title = File Information
+  .name = File name:
+  .url = Full file URL:
+  .size = File size:
+  .mime = MIME type:
+  .content-type = Content type:
+  .uploaded-by = Uploaded by:
+  .upload-date = Upload date:
+  .unavailable = Unavailable
+  .close = Close
+
 wiki-page-file-history = File history
 
 wiki-page-file-revision-type = Type
@@ -147,6 +197,12 @@ wiki-page-file-restore = Restore
   .new-page = Destination page
   .new-name = New file name
   .toast = File restored.
+
+wiki-page-file-mirror-readonly =
+  .title = PERMISSION ERROR
+  .lead-in = Please note:
+  .message = Files on this imported page are read-only.
+  .extra-message = Mirror pages show the source inventory. Ask a site administrator to update their files through the Wikidot import.
 
 ### Wiki page lock
 
@@ -183,8 +239,6 @@ wiki-page-parent = Page parents
 ### Blueprint page fallback strings
 
 wiki-page-missing = The page //{ $slug }// you want to access does not exist.
-
-    { " *" } [/{ $slug }/edit create this page].
 
 wiki-page-private = + Private content
 

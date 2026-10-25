@@ -34,7 +34,7 @@ Start one persistent session (Chromium + candidate/reference tabs):
 export DEEPWELL_RPC_TOKEN=...   # from the local dev stack
 node scripts/theme-lab.mjs serve \
   --socket /tmp/theme-lab.sock \
-  --candidate-url https://scpaiueouiuiuiui.wikijump.localhost:18443/<page> \
+  --candidate-url https://scpaiueouiuiuiui.wikijump.dev.localhost:18443/<page> \
   --asset-dir /absolute/path/to/port/assets \
   --sidebar-html /absolute/path/to/sidebar-preview.html \
   --allow-private               # only for localhost references/fixtures
@@ -271,7 +271,10 @@ same local stack).
 ## Tests
 
 ```sh
-node --test tests/*.test.mjs
+npm test
+# npm test runs: node --test --test-concurrency=4 --test-timeout=240000 tests/*.test.mjs
+# The finite concurrency and timeout keep the browser-heavy suite deterministic;
+# unbounded runs exhaust the host and stall instead of failing.
 ```
 
 Includes pure unit tests, a fixture HTTP server proving once-then-local
@@ -287,6 +290,23 @@ diagnosis, a broken-CSS canary that must fail, and a zero-request offline run.
   the stack dependency becomes an agent-session obstacle.
 
 ## Current campaign completion
+
+For a **PR change-impact work plan**, use
+`node scripts/plan-change-impact.mjs --base origin/develop` from this checkout.
+The planner reads the 36 maintained adaptation packages, the frozen 145-row
+policy, and the available historical theme include graph. It prints JSON
+containing mandatory coverage, an advisory priority queue, and reasons for
+any inability to narrow the run. Runtime, source, asset, or unknown changes
+conservatively require all 36 themes (5,220 canonical state obligations).
+Documentation and test-code-only changes can avoid new target captures, but
+must still pass their ordinary checks. The upstream dependency graph currently
+covers only 34 of 36 maintained themes; its priority suggestions are not a
+correctness proof. The planner cannot substitute for a current-runtime
+acceptance receipt or the final campaign gate.
+
+Choose verification cadence and evidence retention from supported revisions,
+measured cost, change rate and risk, rather than a fixed number of years.
+See `ports/LONG-TERM-VALIDATION-OPERATIONS.md`.
 
 Historical source and screenshot integrity can be inspected with
 `node sigma10-migration/check-final.mjs --historical-only`. This does not accept
@@ -311,14 +331,170 @@ inspection success never means campaign acceptance.
 After current browser evidence and direct reviews are complete, finalize each
 package with `node scripts/finalize-current-package.mjs --package NAME
 --result PATH --review PATH --audit PATH --output ports/current-acceptance/NAME`.
+
+For a fresh **Sigma-9 full-check capture**, use
+`node scripts/run-current-full-check.mjs basalt /path/to/frozen-reference-cache --run-id=basalt-YYYYMMDD-new-runtime`
+from the Theme Lab directory after provisioning a task-owned built Framerail
+transport with a current SHA-pinned run contract. If the new contract is at a
+different path, supply `--run-contract=/absolute/path/to/current-run-contract.json`
+(inside the Theme Lab tree). The capture reads `target_site.origin` from that
+contract, probes the required runtime/backend identity headers, and writes its
+result and artifacts under `ports/current-acceptance/basalt/runs/<run-id>/`.
+Existing run directories fail closed rather than overwriting the sealed
+October 7 evidence. This creates an input for review, **not a PASS**: use the
+same current run contract and fresh interactive audit for final acceptance.
+
+Generate the new run contract from **measured source and the running Deepwell**,
+rather than repinning old receipts by hand. The runtime checkout must own the
+live Deepwell source mounts, match the explicitly required Git commit, and have
+no tracked Framerail, Deepwell or locale modifications:
+
+```sh
+node scripts/prepare-current-runtime-contract.mjs \
+  --runtime-repo=/absolute/path/to/runtime-checkout \
+  --required-head=<exact-40-character-git-commit> \
+  --run-id=basalt-current-run --port=3396 --check-only=true
+# Repeat without --check-only=true to create an immutable new contract.
+
+node ports/interactive-visual-fixture/ensure-built-framerail.mjs \
+  --runtime-repo=/absolute/path/to/runtime-checkout \
+  --namespace=basalt-current-run --port=3396 \
+  --run-contract=/absolute/path/to/run-contract-basalt-current-run.json
+node ports/interactive-visual-fixture/capture-theme-matrix.mjs \
+  --theme=basalt --state=page.normal.settled \
+  --engine=chromium --viewport=desktop --anonymous \
+  --transport-origin=https://scpaiueouiuiuiui.wikijump.localhost:3396 \
+  --run-contract=/absolute/path/to/run-contract-basalt-current-run.json \
+  --runtime-repo=/absolute/path/to/runtime-checkout \
+  --backend-project=wikijump-theme-lab-<namespace>   # task-owned backend only
+```
+
+A task-port contract's `target_site.origin` must equal `--transport-origin`;
+only the shared development contract keeps the fixed `:18443` logical origin.
+For a task-owned backend, `--runtime-repo` and `--backend-project` (supplied
+together) make the capture measure that Compose project's Deepwell against the
+runtime checkout that owns its source mounts. The primary fixture page
+`run-owned:theme-lab-visual-acceptance-20260924` is created by
+`provision-fixture.mjs` on a fresh backend; fixture provisioning must precede
+`ensure-built-framerail.mjs` because readiness probes the imported fixture page.
+
+This initial public capture is a readiness test, **not the 145-state acceptance
+or the Sigma-10 check**. The built sidecar requires a unique namespace when
+reading another checkout. A source-bound older commit also must not be passed
+off as the latest `origin/develop`. Its Deepwell source identity ignores only
+known generated locale installs (`locales/typed/node_modules` and
+`locales/validator/target`); actual locale source and unexpected symlinks
+remain strict fingerprint inputs.
+
+The Sigma-10 migration contract has a sibling command. It measures the same
+task runtime and writes nothing with `--check-only=true`:
+
+```sh
+node scripts/prepare-sigma10-runtime-contract.mjs \
+  --runtime-repo=/absolute/path/to/runtime-checkout \
+  --required-head=<exact-40-character-git-commit> \
+  --run-id=basalt-current-20261022 --port=3396 \
+  --backend-project=wikijump-theme-lab-<namespace> --check-only=true
+```
+
+Without `--check-only=true` it needs an explicit `--output` equal to the
+canonical `sigma10-migration/current-campaign/run-contract-<run-id>.json`
+(the only task-owned path the completion gate accepts, and only when it is named
+explicitly with `--sigma10-run-contract=`). It creates that file exclusively,
+and removes it if `validateCurrentSigma10Contract` rejects it. The builder
+starts from the sealed `e56609...` Sigma-10 copy, regenerates candidate
+identities from current bytes, verifies frozen authority, saved Credit and
+fixture hashes against disk, and refuses when the frozen publication candidate
+set does not validate. It never re-pins a frozen hash. Its `capture_blockers`
+list records migration fixture paths that `capture-interactive.mjs` cannot
+resolve from `current-campaign/`.
+
+For a backend that must run from a **different, current Git checkout**, first
+check the isolation of the intended disposable Compose project without
+starting any container:
+
+```sh
+node scripts/prepare-isolated-runtime-stack.mjs \
+  --runtime-repo=/absolute/path/to/current-checkout \
+  --required-head=<exact-40-character-git-commit> \
+  --namespace=basalt-current-unique
+```
+
+This validates an effective `docker compose config` generated from the
+checkout's base and development YAML plus a task-namespaced override. The
+configuration exposes **no host ports** and uses **no shared named volumes**,
+enabling independent database/cache/object-store data. Framerail, WWS and
+Caddy are excluded from this backend-only startup plan. Supply
+`--write=true --output-dir=/absolute/outside/repository` to write the
+verified override with exclusive creation. It does not build, start, stop or
+remove Docker resources; separately coordinate memory and source deployment
+before launching the full service set, then prove its executable provenance.
+
+When that separate backend has been built and started by its owner, bind the
+capture contract to the task-owned Deepwell Compose project rather than the
+shared local-development backend by adding
+`--backend-project=wikijump-theme-lab-<namespace>` to both
+`prepare-current-runtime-contract.mjs` and `ensure-built-framerail.mjs`.
+The built sidecar checks that its backend project matches the task namespace,
+selects the independently provisioned Docker network and mounts only
+checkout-local Framerail dependencies and assets read-only. Its Deepwell RPC
+token is read from that task backend at launch. The old shared development
+containers act only as an image/environment template; protected volumes and
+the task backend's object/database storage remain separate. A collision with
+an existing capture sidecar is treated as an error rather than silently
+replacing another agent's environment.
+
+**Fixture provisioning is a separate mutating operation.** The four page
+writers (`scripts/provision-canonical-corpus.mjs`,
+`ports/interactive-visual-fixture/provision-fixture.mjs`, its
+`provision-credit-variants.mjs` companion, and
+`sigma10-migration/provision-fixtures.mjs`) now refuse implicit RPC fallback.
+Shared-development writes require the explicit
+`THEME_LAB_FIXTURE_SCOPE=shared-development`, still bound exclusively to
+`http://127.0.0.1:2747/jsonrpc`. For a task backend, set
+`THEME_LAB_BACKEND_PROJECT=wikijump-theme-lab-<namespace>` and
+`DEEPWELL_RPC_URL=http://wikijump-theme-lab-<namespace>-deepwell-1:2747/jsonrpc`.
+Run the writer inside a *disposable Node container attached only to that task
+project's Docker network*, with source fixtures mounted read-only and the
+task-local `DEEPWELL_RPC_TOKEN`/admin credentials in a private environment
+file. Do not execute a task-mode provisioner directly on the host against the
+shared local-development RPC port. All four writers also assert that the
+seeded `scpaiueouiuiuiui` site's ID matches the candidate Caddy's `6000003`
+before any edit. Incorrect task project, endpoint, or seeded site identity
+fails closed. These are source- and mock-tested guards, not evidence that
+the new task backend has been started or its fixtures provisioned.
+
+The fifth mutating fixture script,
+`ports/interactive-visual-fixture/provision-file.mjs`, uploads or removes a
+run-owned attachment through the browser. It likewise requires explicit
+shared-development scope, or in task mode an absolute `--run-contract=` for
+the private HTTPS transport. Before logging in or writing, it verifies the
+served Framerail source and Deepwell runtime identity response headers against
+that contract. No implicit fallback to the shared `:18443` origin is allowed
+for task-mode attachment operations.
+
+The regular `wikijump-local-development` development proxy does not itself
+provide the Theme Lab proof headers. `ports/interactive-visual-fixture/ensure-built-framerail.mjs`
+provisions the separate SHA-pinned built transport, and
+`ports/interactive-visual-fixture/capture-theme-matrix.mjs` verifies it before
+running interactive states. Neither operation can reuse the older runtime
+fingerprint or an unreviewed historical browser receipt as current acceptance.
 This writes `accepted-result.json` and `browser-audit.json` under that package's
 current directory and updates its package receipt. The Sigma-10 current matrix
 owner supplies `sigma10-migration/current-campaign/browser-audit.json` and
 `accepted-result.json`; the latter must already be a
 `theme_lab_current_sigma10_acceptance.v1` decision bound to the exact audit and
-run contract. The campaign assembler only indexes these finished artifacts:
-run `node scripts/assemble-current-campaign.mjs`, then
-`node scripts/check-campaign-completion.mjs`. Assembly records exact SHA-256
+run contract. `node scripts/finalize-current-sigma10.mjs --audit=<runs audit>
+--run-contract=<sigma10 contract> --scenario-matrix=<dir of <package>.json>
+--browser-root=<framerail>` is the only writer of that decision. It applies the
+same audit checks as the completion gate, derives `overall_acceptance` from the
+evidence, and refuses with nothing written when any check fails. The campaign
+assembler only indexes these finished artifacts: run
+`node scripts/assemble-current-campaign.mjs`, then
+`node scripts/check-campaign-completion.mjs`. A task-owned Sigma-10 contract is
+named with `--sigma10-run-contract=<path>` on both commands; the assembler then
+records `migration.run_contract` with its exact path and SHA-256, and the checker
+rejects an unbound or differently named contract. Assembly records exact SHA-256
 bindings for every maintained candidate input, package result/audit, and the
 Sigma-10 result/audit. It does not create a review, infer a pass, or consult
 historical evidence. Missing inputs stop assembly; stale or incomplete evidence

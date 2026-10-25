@@ -57,6 +57,8 @@ import {
 
 const SOURCE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_LIVE_ORIGIN = "https://scp-wiki.wikidot.com";
+// Pairing label recorded in the retained live reference, never fetched; it
+// predates the dev stack's `*.wikijump.dev.localhost` hosts (#2544).
 const REFERENCE_LOCAL_ORIGIN = "https://scp-wiki.wikijump.localhost:18443";
 const STANDING_LOCAL_ORIGIN = "https://scp-wiki.wikijump.localhost";
 const STANDING_FILES_ORIGIN = "https://scp-wiki.wjfiles.localhost";
@@ -240,13 +242,24 @@ async function readStandingRefresh(filePath) {
   };
 }
 
+// Local captures are independent pages in one browser context, each with
+// its own page and per-capture state, so a small worker pool cuts the
+// standing proof's serial page-by-page wall time without changing any
+// observation. Live captures stay serial: they may miss the retained
+// response cache and request Wikidot directly, where bursts are unwelcome.
+const LOCAL_CAPTURE_CONCURRENCY = 4;
+
 async function captureSet({ browser, pairs, label, args }) {
-  const captures = [];
-  for (const [index, pair] of pairs.entries()) {
-    const url = label === "live" ? pair.live_url : pair.local_url;
-    const contract = canaryForUrl(url);
-    captures.push(
-      await captureBrowserParityObservation({
+  const captures = new Array(pairs.length);
+  let next = 0;
+  async function worker() {
+    while (next < pairs.length) {
+      const index = next;
+      next += 1;
+      const pair = pairs[index];
+      const url = label === "live" ? pair.live_url : pair.local_url;
+      const contract = canaryForUrl(url);
+      captures[index] = await captureBrowserParityObservation({
         context: browser.context,
         url,
         label,
@@ -257,9 +270,11 @@ async function captureSet({ browser, pairs, label, args }) {
         timeoutMs: args.timeoutMs,
         settleMs: args.settleMs,
         requestGateAttribution: browser.requestGateAttribution,
-      }),
-    );
+      });
+    }
   }
+  const concurrency = label === "live" ? 1 : Math.min(LOCAL_CAPTURE_CONCURRENCY, pairs.length);
+  await Promise.all(Array.from({length: concurrency}, () => worker()));
   return captures;
 }
 

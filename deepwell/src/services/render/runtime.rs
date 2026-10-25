@@ -249,9 +249,15 @@ impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
             cache.imported_cross_site_sources.insert(cache_key, None);
             return Ok(None);
         };
-        let Some(page) =
-            PageService::get_optional(self.ctx, current_site_id, Reference::Id(page_id))
-                .await?
+        // The snapshot match above is the authorization for this read:
+        // the page is an include source, not an ordinary page of this
+        // site, so the foreign-snapshot exclusion must not apply (#2690).
+        let Some(page) = PageService::get_optional_including_foreign_snapshots(
+            self.ctx,
+            current_site_id,
+            Reference::Id(page_id),
+        )
+        .await?
         else {
             cache.imported_cross_site_sources.insert(cache_key, None);
             return Ok(None);

@@ -10,8 +10,8 @@ not rebuild an image or reinstall dependencies.
 
 Rust is selected by `rust-toolchain.toml` (`1.95.0`). The local Rust images are
 pinned to `rust:1.95.0@sha256:f49565f188ee00bc2a18dd418183f2c5f23ef7d6e691890517ed341a598f67c3`.
-Node and pnpm are pinned to `24.18.0` and `11.10.0`; the local Node image is
-`node:24.18.0-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd`.
+Node and pnpm are pinned to `24.22.1` and `11.10.0`; the local Node image is
+`node:24.22.1-alpine@sha256:6a1c190e17215d844926b0677f4bf87273ff7d5e54db06d3b5b5863ab0b09a3d`.
 The Rust watcher helpers are `cargo-watch 8.5.3` and `sqlx-cli 0.9.0`.
 Postgres, Valkey, MinIO, and Caddy use the digest-pinned references in their
 local Dockerfiles. The exact values and host tool versions are copied into
@@ -24,8 +24,8 @@ Inside local Rust containers that path is `/src/target`, backed by the named
 volume `local-rust-1-95-0-target`. Registry and Git caches use
 `local-rust-1-95-0-cargo-registry` and `local-rust-1-95-0-cargo-git`. Deepwell
 and WWS mount the same three volumes. No checkout `target/` directory is
-mounted into a container, and candidate/rollback builders continue to use
-revision-specific external `CARGO_TARGET_DIR` paths.
+mounted into a container. Promotion images build in Docker with their own
+BuildKit cache mounts (`docs/development/cargo-target-policy.md`).
 
 Normal `debug`/`test` commands use the compact profiles from
 `docs/development/cargo-target-policy.md`: line tables for the local package,
@@ -87,3 +87,10 @@ volumes, owner and expiry, plus cold/warm checks, hot rebuild, focused-test and
 restart timings, disk growth, and cache-preserving recreation evidence. A
 receipt with missing measurements is not evidence that Docker development is
 lightweight.
+
+That receipt is a historical snapshot measured at revision `2b762e15`, before
+the Node `24.22.1` pin, and it still records the superseded `24.18.0` stack
+(`historical_snapshot` in the file). Do not read its toolchain or image entries
+as current pins: those are this page and the `install/*/Dockerfile` references.
+Regenerate the receipt with a fresh measurement run before citing it as
+current evidence.

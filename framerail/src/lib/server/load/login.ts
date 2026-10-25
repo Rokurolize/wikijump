@@ -9,6 +9,7 @@ import {
   clearLoginPassword,
   redactAuthActionPayload
 } from "$lib/server/load/auth-form-redaction.js"
+import { resolveClientIp } from "$lib/server/client-ip.js"
 import { failForActionError, requireActionSession } from "$lib/server/load/action-error"
 import { loadSiteInfo } from "$lib/server/load/site-info"
 import { translateMfaCodeLabel } from "./login-translation"
@@ -41,6 +42,7 @@ export async function loadLoginPage(request: Request, preloadData: PreloadDataAs
     "password": {},
     "login.toast": {},
     "forgot-password": {},
+    "forgot-password.question": {},
     "remember-me": {},
     "create-account": {}
   }
@@ -57,7 +59,9 @@ export async function loadLoginPage(request: Request, preloadData: PreloadDataAs
 
 export async function loginAction({ request, getClientAddress, cookies }: RequestEvent) {
   const userAgent: string = request.headers.get("User-Agent") ?? ""
-  const ipAddress: string = getClientAddress()
+  // Attribute the attempt to the real client, not the proxy socket peer, so
+  // each client gets its own login IP bucket (#2513).
+  const ipAddress: string = resolveClientIp(request, getClientAddress())
   const formData = await request.formData()
   const mfaSessionToken = formData.get("mfaSessionToken")
   const totpOrCode = formData.get("totpOrCode")

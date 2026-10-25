@@ -157,7 +157,12 @@ test("English fallback and Japanese catalogs define the exact page action labels
     assert.match(wikiEn, new RegExp(`^${key} = .+$`, "mu"), `en: ${key}`)
     assert.match(wikiJa, new RegExp(`^${key} = ${label}$`, "mu"), `ja: ${key}`)
   }
-  assert.match(wikiZhHans, /^wiki-page-action-lock = 锁定页面$/mu)
+  // zh-Hans localizes the existing lock pane; its action-button label falls
+  // back to English. Do not reintroduce the extra action-lock message that
+  // Fluent's parent-catalog validation rejected (#2500).
+  assert.match(wikiZhHans, /^wiki-page-lock = 锁定页面$/mu)
+  assert.match(wikiZhHans, /^ {2}\.permission-only = 仅权限用户$/mu)
+  assert.doesNotMatch(wikiZhHans, /^wiki-page-action-lock\s*=/mu)
   assert.match(wikiZhHans, /^wiki-page-action-rename-move = 移动$/mu)
 })
 
@@ -282,6 +287,53 @@ test("the site language defines the page interface ahead of browser preferences"
     "en",
     "ja"
   ])
+})
+
+test("Japanese catalog defines the revision banner chrome requested for found pages", async () => {
+  // The historical-revision banner (#2151) renders through the same
+  // internationalization dictionary as the panes; without requested keys
+  // and Japanese entries it falls back to English on Japanese sites (#2178).
+  const keys = buildPageTranslateKeys(foundResponse, foundKeysContext)
+  const bannerKeys = [
+    "wiki-page-revision-banner.title",
+    "wiki-page-revision-banner.page",
+    "wiki-page-revision-banner.close"
+  ]
+  for (const key of bannerKeys) assert.ok(Object.hasOwn(keys, key), key)
+
+  const wikiJa = await readFile(
+    new URL("../../locales/fluent/wiki-page/ja.ftl", import.meta.url),
+    "utf8"
+  )
+  assert.match(wikiJa, /^wiki-page-revision-banner =$/mu)
+  assert.match(wikiJa, /^ {2}\.title = 過去のリビジョン$/mu)
+  assert.match(wikiJa, /^ {2}\.page = ページ$/mu)
+  assert.match(wikiJa, /^ {2}\.close = 閉じる$/mu)
+})
+
+test("Japanese catalog defines the unimported watchers notice requested for found pages", async () => {
+  // Imported pages carry no subscription graph; an empty roster would
+  // falsely assert zero subscriptions, so the pane shows an unavailable
+  // notice instead (issue #2172).
+  const keys = buildPageTranslateKeys(foundResponse, foundKeysContext)
+  assert.ok(Object.hasOwn(keys, "wiki-page-watchers-unimported"))
+
+  for (const [file, pattern] of [
+    [
+      "en",
+      /^wiki-page-watchers-unimported = The watcher list for this imported page is unavailable because its subscriptions were not imported\.$/mu
+    ],
+    [
+      "ja",
+      /^wiki-page-watchers-unimported = インポートされたページのウォッチャー一覧は、購読情報がインポートされていないため利用できません。$/mu
+    ]
+  ]) {
+    const source = await readFile(
+      new URL(`../../locales/fluent/wiki-page/${file}.ftl`, import.meta.url),
+      "utf8"
+    )
+    assert.match(source, pattern, file)
+  }
 })
 
 test("explicit user locale preferences outrank the site language", () => {

@@ -17,17 +17,33 @@ after(async () => {
 
 test("legal destinations default to the platform host for the deployment", () => {
   assert.deepEqual(legalDestinations({ deploymentEnvironment: "local" }), {
-    termsOfService: "https://wikijump.localhost/legal/terms-of-service",
-    privacyPolicy: "https://wikijump.localhost/legal/privacy-policy"
+    termsOfService: "https://wikijump.localhost/legal:terms-of-service",
+    privacyPolicy: "https://wikijump.localhost/legal:privacy-policy"
   })
   assert.deepEqual(legalDestinations({ deploymentEnvironment: "dev" }), {
-    termsOfService: "https://wikijump.dev/legal/terms-of-service",
-    privacyPolicy: "https://wikijump.dev/legal/privacy-policy"
+    termsOfService: "https://wikijump.dev/legal:terms-of-service",
+    privacyPolicy: "https://wikijump.dev/legal:privacy-policy"
   })
   assert.deepEqual(legalDestinations({ deploymentEnvironment: "prod" }), {
-    termsOfService: "https://wikijump.com/legal/terms-of-service",
-    privacyPolicy: "https://wikijump.com/legal/privacy-policy"
+    termsOfService: "https://wikijump.com/legal:terms-of-service",
+    privacyPolicy: "https://wikijump.com/legal:privacy-policy"
   })
+})
+
+test("the local development stack links to its own platform host and port", () => {
+  assert.deepEqual(
+    legalDestinations({
+      deploymentEnvironment: "local",
+      env: {
+        WIKIJUMP_MAIN_DOMAIN: "wikijump.dev.localhost",
+        WIKIJUMP_HTTPS_PORT: "18443"
+      }
+    }),
+    {
+      termsOfService: "https://wikijump.dev.localhost:18443/legal:terms-of-service",
+      privacyPolicy: "https://wikijump.dev.localhost:18443/legal:privacy-policy"
+    }
+  )
 })
 
 test("a self-hosted instance configures its own legal destinations", () => {
@@ -46,12 +62,12 @@ test("legal destinations never resolve against the viewed wiki", () => {
   // A blank or path-only configuration is not a legal destination: it would
   // silently point at whatever wiki the reader is currently viewing.
   assert.deepEqual(legalDestinations({ env: {} }), {
-    termsOfService: "https://wikijump.localhost/legal/terms-of-service",
-    privacyPolicy: "https://wikijump.localhost/legal/privacy-policy"
+    termsOfService: "https://wikijump.localhost/legal:terms-of-service",
+    privacyPolicy: "https://wikijump.localhost/legal:privacy-policy"
   })
   assert.deepEqual(legalDestinations({ env: { WIKIJUMP_TERMS_OF_SERVICE_URL: "  " } }), {
-    termsOfService: "https://wikijump.localhost/legal/terms-of-service",
-    privacyPolicy: "https://wikijump.localhost/legal/privacy-policy"
+    termsOfService: "https://wikijump.localhost/legal:terms-of-service",
+    privacyPolicy: "https://wikijump.localhost/legal:privacy-policy"
   })
   const destinationVariables = [
     ["termsOfService", "WIKIJUMP_TERMS_OF_SERVICE_URL"],
@@ -75,4 +91,24 @@ test("legal destinations never resolve against the viewed wiki", () => {
       )
     }
   }
+})
+
+test("footer destinations name the platform wiki's own pages for the deployment", async () => {
+  const { platformFooterDestinations } = await import("../src/lib/server/legal-links.ts")
+  assert.deepEqual(
+    platformFooterDestinations({ deploymentEnvironment: "local", env: {} }),
+    {
+      "terms-conditions": "https://wikijump.localhost/legal:terms-of-service",
+      privacy: "https://wikijump.localhost/legal:privacy-policy",
+      docs: "https://wikijump.localhost/docs",
+      security: "https://wikijump.localhost/legal:security"
+    }
+  )
+  // The registration disclosure and the footer share one Terms/Privacy source.
+  const configured = platformFooterDestinations({
+    deploymentEnvironment: "prod",
+    env: { WIKIJUMP_TERMS_OF_SERVICE_URL: "https://policies.example.org/terms" }
+  })
+  assert.equal(configured["terms-conditions"], "https://policies.example.org/terms")
+  assert.equal(configured.docs, "https://wikijump.com/docs")
 })

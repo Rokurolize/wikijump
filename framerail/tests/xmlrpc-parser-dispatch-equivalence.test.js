@@ -26,6 +26,21 @@ const current = await jiti.import(
   fileURLToPath(new URL("../src/lib/server/xmlrpc/protocol.ts", import.meta.url))
 )
 
+test("XML-RPC strips long interior whitespace in bounded time", () => {
+  const xml = `<methodCall><methodName> ${" ".repeat(150_000)}accounts.getInfo</methodName><params></params></methodCall>`
+  const start = performance.now()
+  assert.equal(current.parseXmlRpcCall(xml).methodName, "accounts.getInfo")
+  assert.ok(performance.now() - start < 2_000, "whitespace parsing must remain bounded")
+})
+
+test("XML-RPC rejects repeatedly unterminated nested tag openers without excessive work", () => {
+  const malformedValue = "<string ".repeat(15_000)
+  const xml = `<methodCall><methodName>accounts.getInfo</methodName><params><param><value>${malformedValue}</value></param></params></methodCall>`
+  const start = performance.now()
+  assert.throws(() => current.parseXmlRpcCall(xml))
+  assert.ok(performance.now() - start < 2_000, "tag scanning must remain bounded")
+})
+
 /** Outcome of a parse attempt, reduced to a comparable shape. */
 const outcome = (fn, xml) => {
   try {

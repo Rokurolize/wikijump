@@ -4,12 +4,14 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {deepwellRpcAuthorization} from '../../../wikidot-verification/src/deepwell-rpc-auth.mjs';
+import {fixtureRpcTarget} from '../../src/fixture-rpc-target.mjs';
 
 const root=path.dirname(fileURLToPath(import.meta.url));
-const rpcUrl='http://127.0.0.1:2747/jsonrpc';
+const rpcUrl=fixtureRpcTarget().rpcUrl;
 const siteSlug='scpaiueouiuiuiui';
+const primarySlug='run-owned:theme-lab-visual-acceptance-20260924';
 const pages=[
-  {slug:'run-owned:theme-lab-visual-acceptance-20260924',title:'SCP-JP Theme Lab Interactive Visual Fixture',file:'fixture.wikidot.txt',tags:['theme-lab-visual-acceptance','jp','日本語']},
+  {slug:primarySlug,title:'SCP-JP Theme Lab Interactive Visual Fixture',file:'fixture.wikidot.txt',tags:['theme-lab-visual-acceptance','jp','日本語']},
   {slug:'nav:top',title:'Nav Top',file:'nav-top.wikidot.txt'},
   {slug:'nav:side',title:'Nav Side',file:'nav-side.wikidot.txt'},
   {slug:'nav:interwiki',title:'Nav Interwiki',file:'nav-interwiki.wikidot.txt'},
@@ -28,6 +30,7 @@ async function rpc(method,params,context={}){
   const body=await response.json();if(!response.ok||body.error)throw new Error(`${method} failed: ${JSON.stringify(body.error??response.status)}`);return body.result;
 }
 const site=await rpc('site_get',{site:siteSlug});if(!Number.isSafeInteger(site?.site_id))throw new Error('Local authoring site identity is unavailable');
+if(site.site_id!==6000003)throw new Error('Theme Lab fixture site ID differs from source-bound Caddy contract');
 const login=await rpc('login',{name_or_email:process.env.WIKIDOT_VERIFY_ADMIN_EMAIL,password:process.env.WIKIDOT_VERIFY_ADMIN_PASS,ip_address:'127.0.0.1',user_agent:'theme-lab-interactive-fixture/1'});
 if(login?.needs_mfa!==false||typeof login.session_token!=='string')throw new Error('Local verification admin session was not established');
 const session=await rpc('session_get',[login.session_token]);if(!Number.isSafeInteger(session?.user_id))throw new Error('Local session actor could not be verified');
@@ -43,8 +46,11 @@ for(const spec of pages){
       const revisionDate=`${createdAt.slice(0,10)} ${createdAt.slice(11,19)}.0 +00:00:00`;
       await rpc('import_wikidot_page_revision',{revision_id:2_100_000_000+crypto.randomInt(0,100_000_000),revision_type:'create',created_at:revisionDate,updated_at:null,revision_number:0,page_id:pageId,site_id:site.site_id,user_id:session.user_id,wikitext:source,comments:'Create run-owned backlink source fixture',title:spec.title,slug:spec.slug,tags:spec.tags??[]},{sessionToken:login.session_token,siteId:site.site_id,page:spec.slug});
     }else{
-    if(!spec.slug.startsWith('nav:')&&spec.slug!=='run-owned:theme-lab-visual-backlink-20260924')throw new Error(`Run-owned local fixture page is missing: ${spec.slug}`);
-    const created=await rpc('page_create',{site_id:site.site_id,wikitext:source,title:spec.title,alt_title:null,slug:spec.slug,layout:'wikidot',revision_comments:'Create run-owned SCP-JP theme navigation fixture',user_id:session.user_id,ip_address:'127.0.0.1',tags:[]},{sessionToken:login.session_token,siteId:site.site_id,page:spec.slug});
+    // A fresh task backend has none of these pages. The primary fixture is
+    // bootstrapped with the same page_create as the navigation pages; any other
+    // missing page still fails closed.
+    if(!spec.slug.startsWith('nav:')&&spec.slug!==primarySlug&&spec.slug!=='run-owned:theme-lab-visual-backlink-20260924')throw new Error(`Run-owned local fixture page is missing: ${spec.slug}`);
+    const created=await rpc('page_create',{site_id:site.site_id,wikitext:source,title:spec.title,alt_title:null,slug:spec.slug,layout:'wikidot',revision_comments:spec.slug===primarySlug?'Create run-owned SCP-JP interactive visual fixture':'Create run-owned SCP-JP theme navigation fixture',user_id:session.user_id,ip_address:'127.0.0.1',tags:spec.tags??[]},{sessionToken:login.session_token,siteId:site.site_id,page:spec.slug});
     if(!Number.isSafeInteger(created?.page_id)||!Number.isSafeInteger(created?.revision_id))throw new Error(`Run-owned navigation fixture creation failed: ${spec.slug}`);
     }
   }

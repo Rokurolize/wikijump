@@ -64,12 +64,15 @@ for (const localeCase of [
   test.describe(`page option controls (${localeCase.locale})`, () => {
     test.use({ locale: localeCase.locale })
 
-    test("expose localized accessible names", async ({ page }, testInfo) => {
+    test("expose localized accessible names", async ({ page, request }, testInfo) => {
       test.skip(
         testInfo.project.name === "webkit",
         "WebKit runs this acceptance case against the HTTPS fixture"
       )
       await page.setViewportSize({ width: 320, height: 640 })
+      await request.get(
+        `http://127.0.0.1:${process.env.PLAYWRIGHT_FIXTURE_PORT ?? "42747"}/last-page-write-requests`
+      )
       await page.setExtraHTTPHeaders(SITE_HEADERS)
       const baseUrl =
         testInfo.project.name === "webkit-https-edit-meta" ? HTTPS_APP_URL : APP_URL
@@ -129,6 +132,7 @@ for (const localeCase of [
         parentGetAll: [],
         parentUpdate: [],
         sessionGet: [],
+        userEdit: [],
         userGet: [],
         voteSet: [],
         voteRemove: []

@@ -141,6 +141,7 @@ pub struct ServiceContext<'txn> {
     user_permissions: OnceCell<HashSet<Permission<'static>>>,
     post_commit_actions: Mutex<Vec<PostCommitAction>>,
     commit_authentication_rejection: AtomicBool,
+    link_graph_read: AtomicBool,
 }
 
 #[derive(Debug)]
@@ -170,6 +171,15 @@ pub(crate) enum PostCommitAction {
     },
 }
 
+impl PostCommitAction {
+    pub(crate) fn is_page_rerender(&self) -> bool {
+        matches!(
+            self,
+            Self::RerenderPage { .. } | Self::RerenderPageImmediate { .. },
+        )
+    }
+}
+
 /// Who committed the transaction whose post-commit actions are running.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum PostCommitRerenderTrust {
@@ -193,6 +203,7 @@ impl<'txn> ServiceContext<'txn> {
             user_permissions: OnceCell::new(),
             post_commit_actions: Mutex::new(Vec::new()),
             commit_authentication_rejection: AtomicBool::new(false),
+            link_graph_read: AtomicBool::new(false),
         }
     }
 
@@ -252,9 +263,9 @@ impl<'txn> ServiceContext<'txn> {
     /// Requests that the current transaction be committed before returning an
     /// expected authentication rejection to the caller.
     ///
-    /// This is intentionally limited to the terminal MFA rejection path, where
-    /// committing preserves the restricted session's failed-attempt counter.
-    /// Internal failures must leave this unset so the normal rollback path is used.
+    /// Authentication endpoints use this only after persisting expected
+    /// password or MFA rejection accounting. Internal failures must leave this
+    /// unset so the normal rollback path is used.
     pub(crate) fn commit_expected_authentication_rejection(&self) {
         self.commit_authentication_rejection
             .store(true, Ordering::Relaxed);
@@ -262,6 +273,18 @@ impl<'txn> ServiceContext<'txn> {
 
     pub(crate) fn should_commit_authentication_rejection(&self) -> bool {
         self.commit_authentication_rejection.load(Ordering::Relaxed)
+    }
+
+    /// Records that a render in this context read the page link graph
+    /// (`page_connection`, `page_connection_missing`), whose rows other renders
+    /// write. Render-ahead uses it to know which pages to render again once
+    /// every other page's links are current.
+    pub(crate) fn note_link_graph_read(&self) {
+        self.link_graph_read.store(true, Ordering::Relaxed);
+    }
+
+    pub(crate) fn link_graph_was_read(&self) -> bool {
+        self.link_graph_read.load(Ordering::Relaxed)
     }
 
     pub fn defer_permission_cache_invalidate_user(

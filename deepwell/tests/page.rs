@@ -30,11 +30,17 @@ mod theme_previewer;
 #[path = "page/forum.rs"]
 mod forum;
 
+#[path = "page/foreign_source.rs"]
+mod foreign_source;
+
 #[path = "page/membership.rs"]
 mod membership;
 
 #[path = "page/list_pages_runtime.rs"]
 mod list_pages_runtime;
+
+#[path = "page/placeholder_restoration.rs"]
+mod placeholder_restoration;
 
 #[path = "page/page_move.rs"]
 mod page_move;
@@ -101,7 +107,9 @@ use deepwell::services::relation::{
     RelationObject, RelationReference, RemovePageWatch, SiteMemberAccepted,
     SiteMemberData,
 };
-use deepwell::services::render::{LegacyActionRegistry, UrlArgumentPair, UrlArguments};
+use deepwell::services::render::{
+    DEEPWELL_RENDERER_EPOCH, LegacyActionRegistry, UrlArgumentPair, UrlArguments,
+};
 use deepwell::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
 };
@@ -415,7 +423,11 @@ async fn public_page_view_resolves_observed_url_aliases_to_the_canonical_page() 
         slug.replacen('-', "_", 1),
         slug.replacen('-', ".", 1),
         slug.replacen('-', "--", 1),
+        slug.replacen('-', "---", 1),
+        slug.replacen('-', " ", 1),
         format!("{slug}-"),
+        format!("{slug}_"),
+        format!("{slug}\t"),
         format!("{slug}."),
         format!("{slug} "),
     ];
@@ -3665,7 +3677,7 @@ async fn rerender_uses_latest_navigation_page_revision() {
     assert!(
         rerendered_home
             .compiled_generator
-            .ends_with("; deepwell-render/v23")
+            .ends_with(&format!("; deepwell-render/v{DEEPWELL_RENDERER_EPOCH}"))
     );
 }
 
@@ -4482,11 +4494,13 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
         .article_page_cache_key
         .expect("imported static page should have an anonymous cache key");
     assert!(
-        current_key.starts_with("deepwell:article-view:page:v23:"),
+        current_key.starts_with(&format!(
+            "deepwell:article-view:page:v{DEEPWELL_RENDERER_EPOCH}:"
+        )),
         "source-freeze cache key must carry the final renderer epoch: {current_key}",
     );
     let stale_key = current_key.replacen(
-        "deepwell:article-view:page:v23:",
+        &format!("deepwell:article-view:page:v{DEEPWELL_RENDERER_EPOCH}:"),
         "deepwell:article-view:page:v11:",
         1,
     );
@@ -4616,7 +4630,7 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
     assert!(
         page_revision
             .compiled_generator
-            .ends_with("; deepwell-render/v23")
+            .ends_with(&format!("; deepwell-render/v{DEEPWELL_RENDERER_EPOCH}"))
     );
     assert!(compiled_body_html.contains(CURRENT_BODY));
     assert!(!compiled_body_html.contains(STALE_BODY));
@@ -4641,7 +4655,7 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
     assert!(
         page_revision
             .compiled_generator
-            .ends_with("; deepwell-render/v23"),
+            .ends_with(&format!("; deepwell-render/v{DEEPWELL_RENDERER_EPOCH}")),
         "page view must expose the current compiled generator",
     );
     assert!(compiled_body_html.contains(CURRENT_BODY));
@@ -4655,7 +4669,7 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
     assert!(
         persisted
             .compiled_generator
-            .ends_with("; deepwell-render/v23"),
+            .ends_with(&format!("; deepwell-render/v{DEEPWELL_RENDERER_EPOCH}")),
         "read-time refresh should persist the current compiled generator",
     );
     let persisted_body =
@@ -4664,6 +4678,412 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
             .expect("rerendered compiled body should be readable");
     assert!(persisted_body.contains(CURRENT_BODY));
     assert!(!persisted_body.contains(STALE_BODY));
+}
+
+#[tokio::test]
+async fn sitemap_paged_rpc_includes_more_than_fifty_thousand_public_pages() {
+    const PUBLIC_PAGE_COUNT: i32 = 50_100;
+    const TAIL: &str = "sitemap-paged-public-tail";
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let public_category_id =
+        CategoryService::get_or_create(runner.context(), site_id, "_default")
+            .await
+            .expect("default category should exist")
+            .category_id;
+    let tx = runner.context().transaction();
+    tx.execute_raw(Statement::from_sql_and_values(
+        tx.get_database_backend(),
+        "INSERT INTO page \
+         (created_at, updated_at, deleted_at, from_wikidot, site_id, \
+          latest_revision_id, page_category_id, slug, discussion_thread_id, layout) \
+         SELECT NOW(), NULL, NULL, false, $1, NULL, $2, \
+                'sitemap-paged-public-' || series, NULL, 'wikidot' \
+         FROM generate_series(1, $3) AS series",
+        [
+            Value::from(site_id),
+            Value::from(public_category_id),
+            Value::from(PUBLIC_PAGE_COUNT),
+        ],
+    ))
+    .await
+    .expect("large public sitemap page set should be inserted");
+    create_listpages_test_page(&mut runner, site_id, TAIL, "Public last page", "tail")
+        .await;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+
+    let index = run_endpoint!(
+        runner,
+        wikidot_sitemap,
+        json!({"site_id": site_id, "shard": 0})
+    )
+    .expect("index should count all public pages");
+    assert!(
+        index.entries.is_empty(),
+        "index RPC must never return a large URL list"
+    );
+    let count = index.shard_count.expect("index must have a shard count");
+    assert!(
+        count >= 51,
+        "more than 50,000 eligible pages require 51+ bounded shards"
+    );
+    let first = run_endpoint!(
+        runner,
+        wikidot_sitemap,
+        json!({"site_id": site_id, "shard": 1})
+    )
+    .expect("first public sitemap shard should exist");
+    assert_eq!(first.entries.len(), 1_000);
+    assert_eq!(first.shard_count, None);
+
+    let last_shard = run_endpoint!(
+        runner,
+        wikidot_sitemap,
+        json!({"site_id": site_id, "shard": count})
+    )
+    .expect("last public sitemap shard should exist");
+    assert!(
+        last_shard.entries.len() <= 1_000,
+        "child response must be bounded"
+    );
+    assert_eq!(last_shard.shard_count, None);
+    assert!(last_shard.entries.iter().any(|entry| entry.slug == TAIL));
+    let beyond_last = run_endpoint!(
+        runner,
+        wikidot_sitemap,
+        json!({"site_id": site_id, "shard": count + 1})
+    )
+    .expect("out-of-range shard should have empty entries");
+    assert!(beyond_last.entries.is_empty());
+}
+
+#[tokio::test]
+async fn sitemap_scans_past_fifty_thousand_private_pages_for_public_tail() {
+    const HIDDEN_CATEGORY: &str = "sitemap-keyset-hidden";
+    const PUBLIC_TAIL_SLUG: &str = "sitemap-keyset-public-tail";
+    const PRIVATE_PAGE_COUNT: i32 = 50_100;
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, HIDDEN_CATEGORY).await;
+    let hidden_category_id =
+        CategoryService::get_or_create(runner.context(), site_id, HIDDEN_CATEGORY)
+            .await
+            .expect("private sitemap category should exist")
+            .category_id;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO page \
+             (created_at, updated_at, deleted_at, from_wikidot, site_id, \
+              latest_revision_id, page_category_id, slug, discussion_thread_id, layout) \
+             SELECT NOW(), NULL, NULL, false, $1, NULL, $2, \
+                    'sitemap-keyset-hidden-' || series, NULL, 'wikidot' \
+             FROM generate_series(1, $3) AS series",
+            [
+                Value::from(site_id),
+                Value::from(hidden_category_id),
+                Value::from(PRIVATE_PAGE_COUNT),
+            ],
+        ))
+        .await
+        .expect("private pages beyond the old raw-scan cap should be inserted");
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PUBLIC_TAIL_SLUG,
+        "Sitemap public tail",
+        "public tail",
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let output = run_endpoint!(
+        runner,
+        wikidot_sitemap,
+        json!({"site_id": site_id, "shard": 1})
+    )
+    .expect("the public sitemap must be complete despite private rows");
+    assert!(
+        output
+            .entries
+            .iter()
+            .any(|entry| entry.slug == PUBLIC_TAIL_SLUG),
+        "a public page after 50,100 hidden pages must not be discarded by a raw SQL LIMIT"
+    );
+    assert!(
+        output
+            .entries
+            .iter()
+            .all(|entry| !entry.slug.starts_with("sitemap-keyset-hidden-")),
+        "private pages must not appear among the discovered public entries"
+    );
+}
+
+#[tokio::test]
+async fn sitemap_never_publishes_authenticated_only_site_pages() {
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site must exist")
+        .site
+        .site_id;
+
+    // A page in a category with admin-only view permission must not enter a
+    // public sitemap even when the requester is logged in as its author.
+    let private_category = "sitemap-visibility-private";
+    let private_slug = "sitemap-visibility-private:author-only";
+    let private_category_id =
+        CategoryService::get_or_create(runner.context(), site_id, private_category)
+            .await
+            .expect("private sitemap test category should be created")
+            .category_id;
+    let root_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("root")),
+    )
+    .await
+    .expect("root role should exist");
+    role_permission::ActiveModel {
+        role_id: Set(root_role.role_id),
+        site_id: Set(site_id),
+        resource_type: Set(Resource::Page),
+        resource_category_id: Set(Some(private_category_id)),
+        action: Set(Action::View),
+        ..Default::default()
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("root-only sitemap page permission should be created");
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            role_id: root_role.role_id,
+            assigning_user_id: SYSTEM_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("authenticated sitemap test viewer should receive the root role");
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("new category permissions must be visible");
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(private_slug)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Private sitemap control",
+            "title": "Private sitemap control",
+            "alt_title": null,
+            "slug": private_slug,
+            "layout": "wikidot",
+            "revision_comments": "private sitemap regression fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let guest_can_view_private_page = PermissionService::check_user_can(
+        runner.context(),
+        &CheckPermissionContext {
+            user_id: None,
+            site_id,
+            page_reference: Some(Reference::Id(created.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(private_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+    .expect("anonymous private page access should be checked");
+    assert!(
+        !guest_can_view_private_page,
+        "the fixture page must be genuinely private to anonymous visitors"
+    );
+    let admin_can_view_private_page = PermissionService::check_user_can(
+        runner.context(),
+        &CheckPermissionContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id,
+            page_reference: Some(Reference::Id(created.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(private_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+    .expect("administrator private page access should be checked");
+    assert!(
+        admin_can_view_private_page,
+        "the fixture page must remain visible to its authenticated admin"
+    );
+
+    let sitemap_request = json!({"site_id": site_id, "shard": 1});
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let anonymous = run_endpoint!(runner, wikidot_sitemap, sitemap_request.clone())
+        .expect("a public site should expose an anonymous sitemap");
+    assert!(
+        !anonymous
+            .entries
+            .iter()
+            .any(|entry| entry.slug == private_slug),
+        "public site sitemap must exclude private category pages"
+    );
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let authenticated = run_endpoint!(runner, wikidot_sitemap, sitemap_request.clone())
+        .expect("a signed-in user should see the same public sitemap");
+    assert_eq!(
+        serde_json::to_value(&anonymous).expect("serialize guest sitemap"),
+        serde_json::to_value(&authenticated).expect("serialize signed-in sitemap"),
+        "logging in must not expand a crawler-visible page inventory"
+    );
+
+    // An earlier response must not be reused after a category permission
+    // grant or revocation. No shared snapshot can keep newly private URLs.
+    let guest_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("guest")),
+    )
+    .await
+    .expect("guest role should exist");
+    role_permission::ActiveModel {
+        role_id: Set(guest_role.role_id),
+        site_id: Set(site_id),
+        resource_type: Set(Resource::Page),
+        resource_category_id: Set(Some(private_category_id)),
+        action: Set(Action::View),
+        ..Default::default()
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("temporary guest category permission should be granted");
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("grant should invalidate cached permissions");
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let newly_public = run_endpoint!(runner, wikidot_sitemap, sitemap_request.clone())
+        .expect("public sitemap must reflect category grant");
+    assert!(
+        newly_public
+            .entries
+            .iter()
+            .any(|entry| entry.slug == private_slug),
+        "the category permission grant must make its page public"
+    );
+    RolePermissionTable::delete_many()
+        .filter(role_permission::Column::RoleId.eq(guest_role.role_id))
+        .filter(role_permission::Column::SiteId.eq(site_id))
+        .filter(role_permission::Column::ResourceType.eq(Resource::Page))
+        .filter(role_permission::Column::ResourceCategoryId.eq(private_category_id))
+        .filter(role_permission::Column::Action.eq(Action::View))
+        .exec(runner.context().transaction())
+        .await
+        .expect("temporary guest category permission should be revoked");
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("revocation should invalidate cached permissions");
+    let newly_private = run_endpoint!(runner, wikidot_sitemap, sitemap_request.clone())
+        .expect("public site still exposes a sitemap after category revocation");
+    assert!(
+        newly_private
+            .entries
+            .iter()
+            .all(|entry| entry.slug != private_slug),
+        "a revoked category must disappear immediately from the next sitemap"
+    );
+
+    let roles = ["guest", "anonymous", "everyone"];
+    for role_slug in roles {
+        let role = RoleService::get(
+            runner.context(),
+            site_id,
+            Reference::Slug(Cow::Borrowed(role_slug)),
+        )
+        .await
+        .expect("site role should exist");
+        RolePermissionTable::delete_many()
+            .filter(role_permission::Column::RoleId.eq(role.role_id))
+            .filter(role_permission::Column::SiteId.eq(site_id))
+            .filter(role_permission::Column::ResourceType.eq(Resource::Page))
+            .filter(role_permission::Column::ResourceCategoryId.is_null())
+            .filter(role_permission::Column::Action.eq(Action::View))
+            .exec(runner.context().transaction())
+            .await
+            .expect("public view permission should be revoked");
+    }
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("site permission cache should be invalidated");
+
+    let admin_can_view = PermissionService::check_user_can(
+        runner.context(),
+        &CheckPermissionContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id,
+            page_reference: None,
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: None,
+            action: Action::View,
+        },
+    )
+    .await
+    .expect("admin page permission should be checked");
+    assert!(
+        admin_can_view,
+        "the admin must still be able to view the site"
+    );
+
+    assert!(
+        run_endpoint!(runner, wikidot_sitemap, sitemap_request.clone()).is_none(),
+        "even the site admin must not publish a sitemap for a private site"
+    );
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    assert!(
+        run_endpoint!(runner, wikidot_sitemap, sitemap_request).is_none(),
+        "anonymous private-site sitemap should also be absent"
+    );
 }
 
 #[tokio::test]
@@ -4836,28 +5256,34 @@ async fn article_view_cache_respects_anonymous_permission_revocation() {
         );
     };
 
-    let alias = run_endpoint!(
-        runner,
-        article_view,
-        json!({
-            "site_id": site_id,
-            "session_token": null,
-            "route": {
-                "slug": "article-cache-permission-revocation:source+page",
-                "extra": "",
-            },
-            "locales": ["en-US", "en"],
-        }),
-    );
-    let GetArticleViewOutput {
-        page: GetPageViewOutput::Permissions { banned: false, .. },
-        ..
-    } = alias
-    else {
-        panic!(
-            "an observed URL alias must preserve the canonical page's view permission"
+    for alias in [
+        "article-cache-permission-revocation:source+page",
+        "article-cache-permission-revocation:source---page",
+        "article-cache-permission-revocation:source page",
+        "article-cache-permission-revocation:source-page_",
+        "article-cache-permission-revocation:source-page\t",
+    ] {
+        let view = run_endpoint!(
+            runner,
+            article_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {
+                    "slug": alias,
+                    "extra": "",
+                },
+                "locales": ["en-US", "en"],
+            }),
         );
-    };
+        assert!(
+            matches!(
+                view.page,
+                GetPageViewOutput::Permissions { banned: false, .. }
+            ),
+            "observed alias {alias:?} must keep the canonical page's revoked view permission"
+        );
+    }
 }
 
 #[tokio::test]
@@ -10205,6 +10631,106 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
 }
 
 #[tokio::test]
+async fn wikidot_user_observation_only_identity_resolves_inline_user() {
+    // Refs #2081 residual: an inline [[user]] reference must resolve to an
+    // observed source identity even when no materialized wikidot_user row
+    // exists. That is the live Standing shape (a banked observation with a
+    // stable source ID links userInfo(<id>); only genuinely unknown names
+    // keep the error-inline text). The matrix test above banks full rows
+    // for every extant case, so this test pins the sparse path instead.
+    const OBSERVED_USER_ID: i64 = 19_103_700;
+    const PAGE_SLUG: &str = "fixture-wikidot-observation-only-user";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO known_user (user_id) VALUES ($1)",
+            [Value::from(OBSERVED_USER_ID)],
+        ))
+        .await
+        .expect("observation-only known-user fixture should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO wikidot_identity_observation (user_id, source_sha256, observed_at, name, slug, source_reference) VALUES ($1, $2, NOW(), 'Observed Author', 'observed-author', 'test observation-only fixture')",
+            [
+                Value::from(OBSERVED_USER_ID),
+                Value::from(Sha256::digest("test observation-only fixture").to_vec()),
+            ],
+        ))
+        .await
+        .expect("observation-only identity fixture should be inserted");
+
+    let source = "OBS=[[user Observed Author]]\n";
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Wikidot observation-only user",
+            "wikitext": source,
+        }),
+    );
+    let html = preview.body;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PAGE_SLUG,
+        "Fixture Wikidot observation-only user",
+        source,
+    )
+    .await;
+    let saved_page = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let saved_html = match saved_page {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected saved observation-only user page, got {other:?}"),
+    };
+
+    for (label, output) in [
+        ("preview", html.as_str()),
+        ("saved page", saved_html.as_str()),
+    ] {
+        assert!(
+            output.contains("https://www.wikidot.com/user:info/observed-author")
+                && output.contains(&format!(
+                    "WIKIDOT.page.listeners.userInfo({OBSERVED_USER_ID}); return false;"
+                ))
+                && output.contains(">Observed Author</a>"),
+            "{label} observation-only identity must link the stable source ID:\n{output}",
+        );
+        assert!(
+            !output.contains("does not match any existing user name"),
+            "{label} must not error-inline a banked observation:\n{output}",
+        );
+    }
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
 async fn basalt_runtime_state_users_rerender_identity_profile_subtrees() {
     let runtime_state: serde_json::Value = serde_json::from_str(include_str!(
         "../../install/local/wikidot-verification/fixtures/open87-basalt-users/runtime-state.json"
@@ -12769,7 +13295,7 @@ async fn syntax_links_match_frozen_live_semantics_with_documented_security_diver
         r#"<a href="https://example.com/" target="_blank">Example</a>"#,
         r#"<a href="javascript:;">empty link</a>"#,
         r#"<span class="wiki-email">moc.elpmaxe|troppus#em liame</span>"#,
-        r#"<a href="http://en.wikipedia.org/wiki/Albert_Einstein" onclick="window.open(this.href, '_blank'); return false;">Albert</a>"#,
+        r#"<a href="https://en.wikipedia.org/wiki/Albert_Einstein" onclick="window.open(this.href, '_blank'); return false;">Albert</a>"#,
         r##"<a href="#_editpage">edit</a>"##,
         r##"<a href="#_notawikidotcommand">unknown</a>"##,
     ] {
@@ -14957,6 +15483,82 @@ async fn html_block_render_leaves_image_block_include_literal() {
         html.contains("[[include component:image-block name=raw-html.jpg]]"),
         "HTML block should retain the literal image-block include:\n{html}"
     );
+}
+
+#[tokio::test]
+async fn hosted_code_blocks_serve_the_source_body_like_wikidot_local_code() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let slug = "fixture-hosted-code-source-body";
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(slug)),
+    );
+    // Wikidot's /local--code/ drops the newlines around the body, ends it
+    // with one newline, and keeps tabs, whitespace-only lines and blank-line
+    // runs, all of which the rendered <pre> normalizes.
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": concat!(
+                "[[code type=\"css\"]]\n",
+                "\n",
+                ".a {\n",
+                "    \tfloat: none;\n",
+                " \n",
+                "}\n",
+                "\n",
+                "\n",
+                ".b {}\n",
+                "\n",
+                "[[/code]]\n",
+                "\n",
+                "[[code]]\n",
+                "plain\n",
+                "[[/code]]\n",
+            ),
+            "title": "Fixture Hosted Code Source Body",
+            "alt_title": null,
+            "slug": slug,
+            "layout": "wikidot",
+            "revision_comments": "create hosted code fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    for (index, expected) in [
+        (1, ".a {\n    \tfloat: none;\n \n}\n\n\n.b {}\n"),
+        (2, "plain\n"),
+    ] {
+        let block = run_endpoint!(
+            runner,
+            text_block_get_index,
+            json!({
+                "site_id": site_id,
+                "page_id": page.page_id,
+                "block_type": "code",
+                "index": index,
+            }),
+        )
+        .expect("code block should be stored");
+        let response = runner
+            .context()
+            .s3_tblocks_bucket()
+            .get_object(&block.s3_filename)
+            .await
+            .expect("code block object should be readable");
+        let code = String::from_utf8(response.into())
+            .expect("code block object should be UTF-8");
+        assert_eq!(code, expected, "hosted code block {index}");
+    }
 }
 
 #[tokio::test]
@@ -21706,8 +22308,10 @@ async fn listpages_plain_content_shares_the_outer_include_budget() {
     const INCLUDES_PER_SOURCE: usize = 128;
 
     let mut runner = TestRunner::setup().await;
-    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
-        .expect("seeded SCP Wiki site should exist");
+    // The local test site keeps the ordinary include ceiling (mirror
+    // sites use the corpus ceiling).
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
     let site_id = site.site.site_id;
 
     create_listpages_test_page(
@@ -21813,7 +22417,7 @@ async fn listpages_plain_content_shares_the_outer_include_budget() {
     let page_info = PageInfo {
         page: Cow::Borrowed(INDEX_SLUG),
         category: None,
-        site: Cow::Borrowed("scp-wiki"),
+        site: Cow::Borrowed("test"),
         title: Cow::Borrowed("ListPages Include Budget Index"),
         alt_title: None,
         score: ScoreValue::Integer(0),
@@ -22386,10 +22990,17 @@ async fn listpages_template_body_over_the_render_budget_remains_literal() {
     let template_body = |sentinel: &str, bytes: usize| {
         let variable = "%%title%%";
         assert!(sentinel.len() + variable.len() <= bytes);
-        format!(
-            "{sentinel}{}{variable}",
-            "x".repeat(bytes - sentinel.len() - variable.len()),
-        )
+        // The render budget counts bytes while the page-source limit
+        // counts characters (200,001 max), so the filler is multibyte:
+        // the body reaches the byte budget while the page itself stays
+        // within the source limit.
+        let fill_bytes = bytes - sentinel.len() - variable.len();
+        let fill = format!(
+            "{}{}",
+            "\u{3042}".repeat(fill_bytes / 3),
+            "x".repeat(fill_bytes % 3),
+        );
+        format!("{sentinel}{fill}{variable}")
     };
     let module_source = |body: &str| {
         format!(
@@ -23073,7 +23684,7 @@ async fn random_countpages_capped_sample_does_not_reveal_private_matches() {
 }
 
 #[tokio::test]
-async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
+async fn mirror_and_corpus_renders_support_dense_includes() {
     const COMPONENT_SLUG: &str = "component:dense-include-cell";
     const PAGE_SLUG: &str = "fixture-dense-includes";
     const CHILD_SLUG: &str = "fixture-dense-listpages-child";
@@ -23151,7 +23762,9 @@ async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
         page_id: page.page_id,
     };
 
-    let public_error = RenderService::render_page(
+    // scp-wiki is a Wikidot mirror: its source-owned pages render with the
+    // corpus ceiling, as Wikidot renders them.
+    let mirror_output = RenderService::render_page(
         runner.context(),
         wikitext.clone(),
         &page_info,
@@ -23160,10 +23773,10 @@ async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
         UrlArguments::default(),
     )
     .await
-    .expect_err("ordinary render must retain the public include ceiling");
-    assert!(
-        format!("{public_error:?}")
-            .contains("include expansion exceeded maximum total includes 256")
+    .expect("a mirror page should render its evidenced dense include shape");
+    assert_eq!(
+        mirror_output.html_output.body.matches(MARKER).count(),
+        INCLUDE_COUNT
     );
 
     let output = RenderService::render_corpus_page(
@@ -23188,7 +23801,7 @@ async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
         "[[/module]]",
     )
     .to_owned();
-    let public_list_pages_error = RenderService::render_page(
+    let mirror_list_pages_output = RenderService::render_page(
         runner.context(),
         list_pages_wikitext.clone(),
         &page_info,
@@ -23197,11 +23810,14 @@ async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
         UrlArguments::default(),
     )
     .await
-    .expect_err("ordinary ListPages content must enforce the public include ceiling");
-    assert!(
-        format!("{public_list_pages_error:?}")
-            .contains("include expansion exceeded maximum total includes 256"),
-        "the public ListPages failure must identify the ordinary include ceiling: {public_list_pages_error:?}",
+    .expect("mirror ListPages content should execute the dense include shape");
+    assert_eq!(
+        mirror_list_pages_output
+            .html_output
+            .body
+            .matches(MARKER)
+            .count(),
+        INCLUDE_COUNT
     );
 
     let list_pages_output = RenderService::render_corpus_page(
@@ -23226,6 +23842,60 @@ async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
         list_pages_output.html_output.body.matches(MARKER).count(),
         INCLUDE_COUNT,
         "trusted plain content must execute every selected include within its corpus budget",
+    );
+}
+
+#[tokio::test]
+async fn locally_authored_sites_keep_the_ordinary_include_ceiling() {
+    const COMPONENT_SLUG: &str = "component:dense-include-cell";
+    const PAGE_SLUG: &str = "fixture-dense-includes";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+    create_listpages_test_page(&mut runner, site_id, COMPONENT_SLUG, "Cell", "CELL")
+        .await;
+    create_listpages_test_page(&mut runner, site_id, PAGE_SLUG, "Dense", "placeholder")
+        .await;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": PAGE_SLUG,
+        }),
+    )
+    .expect("dense include fixture should exist");
+    let page_info = PageInfo {
+        page: Cow::Borrowed(PAGE_SLUG),
+        category: None,
+        site: Cow::Borrowed("test"),
+        title: Cow::Borrowed("Dense"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+
+    let error = RenderService::render_page(
+        runner.context(),
+        format!("[[include {COMPONENT_SLUG}]]\n").repeat(300),
+        &page_info,
+        Layout::Wikidot,
+        PageId {
+            site_id,
+            category_id: page.page_category_id,
+            page_id: page.page_id,
+        },
+        UrlArguments::default(),
+    )
+    .await
+    .expect_err("a locally authored page must keep the ordinary include ceiling");
+    assert!(
+        format!("{error:?}")
+            .contains("include expansion exceeded maximum total includes 256"),
+        "{error:?}"
     );
 }
 
@@ -24149,7 +24819,7 @@ INSERT INTO wikidot_corpus_import_run (
             [
                 Value::from(import_run_id),
                 Value::from(site_id),
-                Value::from(format!("author-selector-test-{import_run_id}")),
+                Value::from("author-selector-test"),
                 Value::from(row_count),
             ],
         ))
@@ -24198,7 +24868,7 @@ INSERT INTO wikidot_page_snapshot (
 "#,
             [
                 Value::from(page_id),
-                Value::from(format!("author-selector-test-{import_run_id}")),
+                Value::from("author-selector-test"),
                 Value::from(format!(
                     "71300000-0000-4000-8000-{source_entity_suffix:012x}"
                 )),
@@ -27760,4 +28430,155 @@ async fn insert_site_changes_feed_source_revisions(
         ))
         .await
         .expect("site changes feed source fixtures should be inserted");
+}
+
+/// Long bullet runs render through FTML (#2575): no Wikijump-only list markup,
+/// and Wikidot typography and nested inline syntax inside the items.
+#[tokio::test]
+async fn page_render_long_bullet_lists_through_ftml() {
+    let runner = TestRunner::setup().await;
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let page_info = PageInfo {
+        page: Cow::Borrowed("long-list-fixture"),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Long List Fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let mut source = String::from("* Murphy Law in... Type 3043 -- FOR MURDER!\n");
+    source.push_str("* Alarm clock of **{{normalcy}}**\n");
+    for index in 0..8 {
+        source.push_str(&format!("* Item {index}\n"));
+    }
+
+    let output = RenderService::render(runner.context(), source, &page_info, &settings)
+        .await
+        .expect("long list fixture should render");
+    let html = output.html_output.body;
+
+    assert!(!html.contains("data-wikijump"), "{html}");
+    assert!(!html.contains("WIKIJUMP"), "{html}");
+    assert!(
+        html.contains("<li>Murphy Law in… Type 3043 — FOR MURDER!</li>"),
+        "{html}"
+    );
+    assert!(
+        html.contains("<li>Alarm clock of <strong><tt>normalcy</tt></strong></li>"),
+        "{html}"
+    );
+    assert!(html.contains("<li>Item 7</li>"), "{html}");
+}
+
+/// Wikidot shows an existing target's title for an empty link label
+/// (`[[[scp-series|]]]` renders "SCP Series 1"; record `empty-label-titles` in
+/// wikidot-list-rendering-preview-20261019.json) and the normalized target for
+/// a missing page.
+#[tokio::test]
+async fn empty_link_labels_show_the_target_page_title() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-empty-label-target",
+        "A Title Unlike Its Slug",
+        "target",
+    )
+    .await;
+    let mut source = String::from(
+        "[[[fixture-empty-label-target|]]] / [[[fixture-empty-label-missing|]]]\n\n",
+    );
+    for index in 0..8 {
+        source.push_str(&format!("* [[[fixture-empty-label-target|]]] {index}\n"));
+    }
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-empty-label-holder",
+        "Empty label holder",
+        &source,
+    )
+    .await;
+
+    let html =
+        load_listpages_test_compiled_html(&runner, site_id, "fixture-empty-label-holder")
+            .await;
+
+    assert!(
+        html.contains(
+            r#"<a href="/fixture-empty-label-target">A Title Unlike Its Slug</a> / "#
+        ),
+        "{html}"
+    );
+    assert!(
+        html.contains(
+            r#"<a class="newpage" href="/fixture-empty-label-missing">fixture-empty-label-missing</a>"#
+        ),
+        "{html}"
+    );
+    assert_eq!(
+        html.matches(
+            r#"<li><a href="/fixture-empty-label-target">A Title Unlike Its Slug</a> "#
+        )
+        .count(),
+        8,
+        "{html}"
+    );
+}
+
+/// Color spans inside native list runs (`scp-series-10`) and nested inline
+/// syntax inside color spans (#2567) must restore to markup, with no internal
+/// compatibility markers left in the page.
+#[tokio::test]
+async fn page_render_restores_color_spans_in_lists_and_their_nested_syntax() {
+    let runner = TestRunner::setup().await;
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let page_info = PageInfo {
+        page: Cow::Borrowed("color-span-fixture"),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Color Span Fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let source = concat!(
+        "* [[[SCP-9044]]] - A ##blue|House## with ##red|People## in it\n",
+        "* [[[SCP-9093]]] - ##red|//RIGHTEOUS JUSTICE!//##\n",
+        "\n",
+        "##white|a b[[footnote]]note text[[/footnote]] c## and ##red|^^up^^ ,,down,,##\n",
+    );
+
+    let output =
+        RenderService::render(runner.context(), source.to_owned(), &page_info, &settings)
+            .await
+            .expect("color span fixture should render");
+    let html = output.html_output.body;
+
+    assert!(!html.contains("WIKIJUMP"), "{html}");
+    assert!(
+        html.contains(r#"<span style="color: blue">House</span>"#),
+        "{html}"
+    );
+    assert!(
+        html.contains(r#"<span style="color: red">People</span>"#),
+        "{html}"
+    );
+    assert!(
+        html.contains(r#"<span style="color: red"><em>RIGHTEOUS JUSTICE!</em></span>"#),
+        "{html}"
+    );
+    assert!(
+        html.contains(r#"<span style="color: red"><sup>up</sup> <sub>down</sub></span>"#),
+        "{html}"
+    );
+    assert!(html.contains(r#"<sup class="footnoteref">"#), "{html}");
+    assert!(!html.contains("[[footnote]]"), "{html}");
 }

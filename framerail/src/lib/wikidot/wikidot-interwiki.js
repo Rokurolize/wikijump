@@ -394,6 +394,7 @@ export const buildWikidotInterwikiFrameHtml = ({
       };
       addEventListener("DOMContentLoaded", resizeLocalInterwikiFrame);
       addEventListener("load", resizeLocalInterwikiFrame);
+      addEventListener("wikijump-themes-settled", resizeLocalInterwikiFrame);
       (${installWikidotInterwikiStyleRuntime.toString()})(window, ${styleRuntimeConfig}, ${localizeWikidotThemeUrl.toString()});
     </script>
   </head>

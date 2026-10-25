@@ -11,6 +11,7 @@ import {
   summarizeIncludeClosure,
 } from "../src/corpus-import-manifest.mjs";
 import {
+  expandCrossSiteIncludeClosure,
   expandIncludeClosure,
   includeTargetSlug,
   parseIncludeTargets,
@@ -85,6 +86,46 @@ test("expandIncludeClosure reports unresolved and dynamic targets without failin
   assert.deepEqual(closure.included.map((page) => page.slug), ["scp-1"]);
   assert.deepEqual(closure.unresolved, ["component:gone"]);
   assert.equal(closure.dynamic, 1);
+});
+
+test("expandIncludeClosure reports a present-but-sourceless page as unresolved", () => {
+  const closure = expandIncludeClosure({
+    roots: ["scp-1"],
+    readSource: (slug) => (slug === "scp-1" ? "[[include component:phantom]]" : null),
+    pageExists: (slug) => slug === "scp-1" || slug === "component:phantom",
+    sourceSite: "scp-wiki",
+  });
+  assert.deepEqual(closure.included.map((page) => page.slug), [
+    "scp-1",
+    "component:phantom",
+  ]);
+  assert.deepEqual(closure.unresolved, ["component:phantom"]);
+});
+
+test("expandIncludeClosure does not report a sourceless root as unresolved", () => {
+  const closure = expandIncludeClosure({
+    roots: ["scp-1"],
+    readSource: () => null,
+    pageExists: () => true,
+    sourceSite: "scp-wiki",
+  });
+  assert.deepEqual(closure.included.map((page) => page.slug), ["scp-1"]);
+  assert.deepEqual(closure.unresolved, []);
+});
+
+test("expandIncludeClosure still records external targets met at maxDepth", () => {
+  const closure = expandIncludeClosure({
+    roots: ["scp-1"],
+    ...sourceReader({
+      "scp-1": "[[include component:a]]",
+      "component:a": "[[include :other-site:shared]]\n[[include :other-site:shared]]",
+    }),
+    sourceSite: "scp-wiki",
+    maxDepth: 1,
+  });
+  assert.deepEqual(closure.included.map((page) => page.slug), ["scp-1", "component:a"]);
+  assert.deepEqual(closure.external, ["other-site:shared"]);
+  assert.deepEqual(closure.truncated, []);
 });
 
 test("expandIncludeClosure truncates past maxDepth and bounds total pages", () => {
@@ -230,4 +271,268 @@ test("manifest CLI parses closure flags and guards their scope", () => {
     () => parseArgs(["--corpus-root", "/corpus", "--allow-unresolved-closure", "--output", "o", "--summary", "s"]),
     /require --include-closure/u,
   );
+});
+
+const crossSiteReader = (branches) => {
+  const access = {};
+  for (const [branch, pages] of Object.entries(branches)) {
+    access[branch] = {
+      pageExists: (slug) => slug in pages,
+      readSource: (slug) => (slug in pages ? pages[slug] : null),
+      readProvenance: (slug) => ({ path: `${branch}/pages/${slug}/source.wikidot.txt`, captureId: `${branch}-capture`, runId: `${branch}-run`, payloadSha256: null }),
+    };
+  }
+  return access;
+};
+
+test("expandCrossSiteIncludeClosure follows foreign identities through the supplying branch", () => {
+  const branches = crossSiteReader({
+    en: {
+      "scp-1": "[[include :snippets:comp]]\n[[include component:a]]",
+      "component:a": "plain",
+    },
+    snippets: { comp: "[[include component:inner]]", "component:inner": "leaf" },
+  });
+  const closure = expandCrossSiteIncludeClosure({
+    roots: [{ branch: "en", site: "scp-wiki", slug: "scp-1" }],
+    branches,
+  });
+  assert.deepEqual(closure.included.map((page) => `${page.branch}:${page.slug}`), [
+    "en:scp-1",
+    "en:component:a",
+    "snippets:comp",
+    "snippets:component:inner",
+  ]);
+  assert.deepEqual(closure.included.map((page) => page.depth), [0, 1, 1, 2]);
+  assert.equal(closure.included[2].site, "snippets");
+  assert.equal(closure.included[2].via, "en:scp-1");
+  assert.equal(closure.included[2].provenance.captureId, "snippets-capture");
+  assert.deepEqual(closure.gaps, []);
+  assert.deepEqual(closure.truncated, []);
+});
+
+test("expandCrossSiteIncludeClosure reports absent, ambiguous, and same-site gaps without failing", () => {
+  const branches = crossSiteReader({
+    en: { "scp-1": "[[include :nosuchsite:gone]]\n[[include :shared:both]]\n[[include component:missing]]" },
+    aaa: { both: "leaf aaa" },
+    zzz: { both: "leaf zzz" },
+  });
+  const closure = expandCrossSiteIncludeClosure({
+    roots: [{ branch: "en", site: "scp-wiki", slug: "scp-1" }],
+    branches,
+  });
+  assert.deepEqual(closure.gaps.map((gap) => gap.reason).sort(), ["absent-from-corpus", "absent-from-corpus", "ambiguous-branches"]);
+  const byReason = Object.fromEntries(closure.gaps.map((gap) => [gap.reason + ":" + gap.identity, gap]));
+  assert.equal(byReason["absent-from-corpus:nosuchsite:gone"].via, "en:scp-1");
+  assert.equal(byReason["absent-from-corpus:nosuchsite:gone"].branch, null);
+  assert.match(byReason["ambiguous-branches:shared:both"].detail, /divergent sources/u);
+  assert.equal(byReason["absent-from-corpus:en:component:missing"].branch, "en");
+  assert.deepEqual(closure.included.map((page) => page.slug), ["scp-1"]);
+});
+
+test("expandCrossSiteIncludeClosure resolves byte-identical multi-branch hits without choosing", () => {
+  const branches = crossSiteReader({
+    en: { "scp-1": "[[include :shared:both]]" },
+    aaa: { both: "same leaf" },
+    zzz: { both: "same leaf" },
+  });
+  const closure = expandCrossSiteIncludeClosure({
+    roots: [{ branch: "en", site: "scp-wiki", slug: "scp-1" }],
+    branches,
+  });
+  assert.deepEqual(closure.included.map((page) => `${page.branch}:${page.slug}`), ["en:scp-1", "aaa:both"]);
+  assert.deepEqual(closure.included[1].also_in, ["zzz"]);
+  assert.deepEqual(closure.gaps, []);
+});
+
+test("expandCrossSiteIncludeClosure terminates cross-branch cycles and honors the requesting branch", () => {
+  const branches = crossSiteReader({
+    en: { "scp-1": "[[include :other:loop]]" },
+    other: { loop: "[[include :scp-wiki:scp-1]]\n[[include :other:loop]]" },
+  });
+  const closure = expandCrossSiteIncludeClosure({
+    roots: [{ branch: "en", site: "scp-wiki", slug: "scp-1" }],
+    branches,
+  });
+  assert.deepEqual(closure.included.map((page) => `${page.branch}:${page.slug}`), ["en:scp-1", "other:loop"]);
+  assert.deepEqual(closure.gaps, []);
+});
+
+test("expandCrossSiteIncludeClosure never resolves a foreign identity to the requesting branch", () => {
+  const branches = crossSiteReader({
+    en: { "scp-1": "[[include :snippets:comp]]", comp: "wrong-site decoy" },
+    snippets: { comp: "leaf" },
+  });
+  const closure = expandCrossSiteIncludeClosure({
+    roots: [{ branch: "en", site: "scp-wiki", slug: "scp-1" }],
+    branches,
+  });
+  assert.deepEqual(closure.included.map((page) => `${page.branch}:${page.slug}`), ["en:scp-1", "snippets:comp"]);
+});
+
+test("expandCrossSiteIncludeClosure truncates past maxDepth and validates its inputs", () => {
+  const branches = crossSiteReader({
+    en: { "scp-1": "[[include :snippets:comp]]" },
+    snippets: { comp: "leaf [[include component:deep]]", "component:deep": "leaf" },
+  });
+  const closure = expandCrossSiteIncludeClosure({
+    roots: [{ branch: "en", site: "scp-wiki", slug: "scp-1" }],
+    branches,
+    maxDepth: 1,
+  });
+  assert.deepEqual(closure.included.map((page) => page.slug), ["scp-1", "comp"]);
+  assert.deepEqual(closure.truncated, ["snippets:component:deep"]);
+  assert.throws(() => expandCrossSiteIncludeClosure({ roots: [], branches }), /at least one root/u);
+  assert.throws(() => expandCrossSiteIncludeClosure({ roots: [{ branch: "en", site: "scp-wiki", slug: "x" }], branches: {} }), /at least one searchable branch/u);
+  assert.throws(() => expandCrossSiteIncludeClosure({ roots: [{ branch: "nope", site: "s", slug: "x" }], branches }), /not searchable/u);
+  assert.throws(() => expandCrossSiteIncludeClosure({ roots: [{ branch: "en", slug: "x" }], branches }), /branch, site, slug/u);
+});
+
+test("expandCrossSiteIncludeClosure prefers the caller-configured branch for divergent hits", () => {
+  const branches = crossSiteReader({
+    en: { "scp-1": "[[include :shared:both]]" },
+    aaa: { both: "leaf aaa" },
+    zzz: { both: "leaf zzz" },
+  });
+  const closure = expandCrossSiteIncludeClosure({
+    roots: [{ branch: "en", site: "scp-wiki", slug: "scp-1" }],
+    branches,
+    preferredBranches: { shared: "zzz" },
+  });
+  assert.deepEqual(closure.included.map((page) => `${page.branch}:${page.slug}`), ["en:scp-1", "zzz:both"]);
+  assert.equal(closure.included[1].resolution, "preferred-branch");
+  assert.deepEqual(closure.included[1].also_in, ["aaa"]);
+  assert.deepEqual(closure.gaps, []);
+});
+
+test("expandCrossSiteIncludeClosure resolves divergent hits to the target site's own branch by default", () => {
+  // Fails before own-site-wins: with no caller map the divergent hits
+  // used to report an ambiguous-branches gap. Refs #2093.
+  const branches = crossSiteReader({
+    en: { "scp-1": "[[include :scp-int:comp]]" },
+    int: { comp: "leaf int" },
+    es: { comp: "leaf es" },
+  });
+  const closure = expandCrossSiteIncludeClosure({
+    roots: [{ branch: "en", site: "scp-wiki", slug: "scp-1" }],
+    branches,
+  });
+  assert.deepEqual(closure.included.map((page) => `${page.branch}:${page.slug}`), ["en:scp-1", "int:comp"]);
+  assert.equal(closure.included[1].resolution, "preferred-branch");
+  assert.deepEqual(closure.included[1].also_in, ["es"]);
+  assert.deepEqual(closure.gaps, []);
+});
+
+test("expandCrossSiteIncludeClosure keeps an ambiguous-branches gap for sites with no corpus branch", () => {
+  // Guard test: scp-sandbox-3 has no corpus branch, so divergent hits
+  // stay a gap both before and after own-site-wins. It would fail if a
+  // future mapping over-reached. Refs #2093.
+  const branches = crossSiteReader({
+    en: { "scp-1": "[[include :scp-sandbox-3:comp]]" },
+    fr: { comp: "leaf fr" },
+    it: { comp: "leaf it" },
+  });
+  const closure = expandCrossSiteIncludeClosure({
+    roots: [{ branch: "en", site: "scp-wiki", slug: "scp-1" }],
+    branches,
+  });
+  assert.deepEqual(closure.included.map((page) => `${page.branch}:${page.slug}`), ["en:scp-1"]);
+  assert.equal(closure.gaps.length, 1);
+  assert.equal(closure.gaps[0].reason, "ambiguous-branches");
+  assert.equal(closure.gaps[0].identity, "scp-sandbox-3:comp");
+});
+
+test("expandIncludeClosure validates its depth and page bounds", () => {
+  const closures = (options) =>
+    expandIncludeClosure({
+      roots: ["scp-1"],
+      readSource: () => "plain",
+      pageExists: () => true,
+      sourceSite: "scp-wiki",
+      ...options,
+    });
+  assert.throws(() => closures({ maxDepth: -1 }), /maxDepth must be a non-negative integer/u);
+  assert.throws(() => closures({ maxDepth: 1.5 }), /maxDepth must be a non-negative integer/u);
+  assert.throws(() => closures({ maxPages: 0 }), /maxPages must be a positive integer/u);
+  assert.equal(closures({}).included.length, 1);
+});
+
+test("expandCrossSiteIncludeClosure validates its branches map and bounds", () => {
+  const branches = crossSiteReader({ en: { "scp-1": "plain" } });
+  const roots = [{ branch: "en", site: "scp-wiki", slug: "scp-1" }];
+  assert.throws(() => expandCrossSiteIncludeClosure({ roots, branches: null }), /branches map/u);
+  assert.throws(() => expandCrossSiteIncludeClosure({ roots, branches: [] }), /branches map/u);
+  assert.throws(
+    () =>
+      expandCrossSiteIncludeClosure({
+        roots,
+        branches: { en: { pageExists: () => true, readSource: () => null } },
+      }),
+    /must provide readProvenance/u,
+  );
+  assert.throws(() => expandCrossSiteIncludeClosure({ roots, branches, maxDepth: -1 }), /maxDepth/u);
+  assert.throws(() => expandCrossSiteIncludeClosure({ roots, branches, maxPages: 0 }), /maxPages/u);
+});
+
+test("expandCrossSiteIncludeClosure throws past maxPages", () => {
+  const branches = crossSiteReader({
+    en: { "scp-1": "[[include component:a]]", "component:a": "plain" },
+  });
+  assert.throws(
+    () =>
+      expandCrossSiteIncludeClosure({
+        roots: [{ branch: "en", site: "scp-wiki", slug: "scp-1" }],
+        branches,
+        maxPages: 1,
+      }),
+    /exceeds maxPages 1 at en:component:a/u,
+  );
+});
+
+test("expandCrossSiteIncludeClosure gaps a sourceless page but not a sourceless root", () => {
+  const provenance = () => ({ path: "en/pages/x/source.wikidot.txt", captureId: null, runId: null, payloadSha256: null });
+  const gapped = expandCrossSiteIncludeClosure({
+    roots: [{ branch: "en", site: "scp-wiki", slug: "scp-1" }],
+    branches: {
+      en: {
+        pageExists: () => true,
+        readSource: (slug) => (slug === "scp-1" ? "[[include component:phantom]]" : null),
+        readProvenance: provenance,
+      },
+    },
+  });
+  assert.deepEqual(gapped.included.map((page) => page.slug), ["scp-1", "component:phantom"]);
+  assert.deepEqual(gapped.gaps, [
+    {
+      identity: "en:component:phantom",
+      branch: "en",
+      site: "scp-wiki",
+      via: "en:scp-1",
+      reason: "absent-from-corpus",
+      detail: "corpus branch en has no source for component:phantom",
+    },
+  ]);
+  const rooted = expandCrossSiteIncludeClosure({
+    roots: [{ branch: "en", site: "scp-wiki", slug: "scp-1" }],
+    branches: {
+      en: { pageExists: () => true, readSource: () => null, readProvenance: provenance },
+    },
+  });
+  assert.deepEqual(rooted.included.map((page) => page.slug), ["scp-1"]);
+  assert.deepEqual(rooted.gaps, []);
+});
+
+test("expandCrossSiteIncludeClosure records unique-hit and same-branch resolutions", () => {
+  const branches = crossSiteReader({
+    en: { "scp-1": "[[include :snippets:comp]]\n[[include component:a]]", "component:a": "plain" },
+    snippets: { comp: "leaf" },
+  });
+  const closure = expandCrossSiteIncludeClosure({
+    roots: [{ branch: "en", site: "scp-wiki", slug: "scp-1" }],
+    branches,
+  });
+  const bySlug = Object.fromEntries(closure.included.map((page) => [page.slug, page]));
+  assert.equal(bySlug["scp-1"].resolution, null);
+  assert.equal(bySlug["component:a"].resolution, "same-branch");
+  assert.equal(bySlug["comp"].resolution, "unique-hit");
 });

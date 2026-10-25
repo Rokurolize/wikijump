@@ -33,5 +33,8 @@ pub enum BlueprintPageType {
 #[derive(Serialize, Debug)]
 pub struct GetBlueprintPageOutput {
     pub wikitext: String,
+    /// Whether a site page (such as `_404`) supplied the wikitext, rather
+    /// than the localized fallback.
+    pub from_site_page: bool,
     pub render_output: RenderOutput,
 }

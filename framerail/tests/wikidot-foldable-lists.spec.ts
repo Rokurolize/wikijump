@@ -36,9 +36,7 @@ test("native foldable menus preserve independent controls, replacement initializ
   await expect(page.locator(".creditRate > li")).toHaveClass("unfolded")
   await page.getByText("Navigation", { exact: true }).click()
   expect(
-    await page.evaluate(
-      () => (window as Window & { navigationPrevented: boolean }).navigationPrevented
-    )
+    await page.evaluate(() => Reflect.get(window, "navigationPrevented") as boolean)
   ).toBe(false)
   await expect(page.getByText("Navigation", { exact: true }).locator("..")).toHaveClass(
     "folded"
@@ -59,7 +57,7 @@ test("native foldable menus preserve independent controls, replacement initializ
   await page.getByText("Replacement", { exact: true }).click()
   await expect(replacement).toHaveClass("unfolded")
   await page.evaluate(() =>
-    (window as Window & { foldableAction: { destroy(): void } }).foldableAction.destroy()
+    (Reflect.get(window, "foldableAction") as { destroy(): void }).destroy()
   )
   await page.locator(".creditButton a").click()
   await expect(page.locator(".creditRate > li")).toHaveClass("unfolded")
@@ -131,6 +129,82 @@ test("Info/Credit controls keep the panel hidden until opened and support keyboa
   await page.keyboard.press("Escape")
   await expect(otherOwner).toHaveClass("rateBox folded")
   await expect(otherOwner.locator("ul").first()).toBeHidden()
+})
+
+test("CSS-driven Info controls toggle their owning LI without a nested UL or credit-view ID", async ({
+  page
+}) => {
+  // The saved SCP-3352/5382/7000 structure has sibling DIVs inside rateBox,
+  // unlike the nested UL fixture above. Wikidot toggles the LI class first;
+  // info:style then reveals the modal and fader through that class.
+  const infoBox =
+    '<li class="rateBox folded"><div class="rate-box-with-credit-button">' +
+    '<div class="creditButton foldable-list-container"><p><a href="javascript:;">Info</a></p></div></div>' +
+    '<div><div class="fader foldable-list-container"><a href="javascript:;">close</a></div>' +
+    '<div class="modalcontainer"><div class="modalbox">' +
+    '<div class="close-credits foldable-list-container"><a href="javascript:;">X</a></div>' +
+    '<div class="credit">Author credits</div></div></div></div></li>'
+  await page.setContent(
+    "<style>.modalcontainer {transition:opacity 0.105s linear,visibility 0.105s}" +
+      ".folded .modalcontainer {opacity:0}" +
+      ".unfolded .modalcontainer {opacity:1}" +
+      ".folded .modalcontainer,.folded .fader {visibility:hidden}" +
+      ".unfolded .modalcontainer,.unfolded .fader {visibility:visible}</style>" +
+      `<main><ul class="creditRate">${infoBox}${infoBox}</ul></main>`
+  )
+  await page.addScriptTag({
+    content: `window.foldableAction = (${wikidotFoldableLists.toString()})(document.querySelector("main"));`
+  })
+  const owners = page.locator(".creditRate > li")
+  const first = owners.nth(0)
+  const second = owners.nth(1)
+  const opener = first.getByRole("button", { name: "Info", exact: true })
+  const dialog = first.locator(".modalcontainer")
+  await expect(dialog).toBeHidden()
+  await expect(dialog).toHaveAttribute("aria-hidden", "true")
+  await opener.click()
+  await expect(dialog).toBeVisible()
+  await expect(dialog).toHaveAttribute("aria-hidden", "false")
+  await expect(opener).toHaveAttribute("aria-expanded", "true")
+  await expect(first.locator(".close-credits")).toBeFocused()
+  await expect(second.locator(".modalcontainer")).toBeHidden()
+  await page.keyboard.press("Escape")
+  await expect(dialog).toBeHidden()
+  await expect(opener).toBeFocused()
+  for (const close of [".fader", ".close-credits"]) {
+    await opener.press("Space")
+    await expect(dialog).toBeVisible()
+    await first.locator(close).click()
+    await expect(dialog).toBeHidden()
+    await expect(opener).toBeFocused()
+  }
+  await second.getByRole("button", { name: "Info", exact: true }).press("Enter")
+  await expect(second.locator(".modalcontainer")).toBeVisible()
+  await expect(dialog).toBeHidden()
+
+  // A reveal callback must not steal focus after closing or unmounting.
+  await expect(second.locator(".close-credits")).toBeFocused()
+  await page.keyboard.press("Escape")
+  await opener.evaluate((element) => {
+    ;(element as HTMLElement).click()
+    ;(element as HTMLElement).click()
+  })
+  await expect(dialog).toBeHidden()
+  const otherOpener = second.getByRole("button", { name: "Info", exact: true })
+  await otherOpener.focus()
+  await first.evaluate((owner) => {
+    owner.dispatchEvent(new Event("transitionend", { bubbles: true }))
+  })
+  await expect(otherOpener).toBeFocused()
+  await opener.evaluate((element) => {
+    ;(element as HTMLElement).click()
+    ;(Reflect.get(window, "foldableAction") as { destroy(): void }).destroy()
+  })
+  await otherOpener.focus()
+  await first.evaluate((owner) => {
+    owner.dispatchEvent(new Event("transitionend", { bubbles: true }))
+  })
+  await expect(otherOpener).toBeFocused()
 })
 
 test("PageView initializes replacement menus and unfolds ancestors of the current page", async ({

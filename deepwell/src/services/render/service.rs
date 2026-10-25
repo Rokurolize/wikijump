@@ -18,16 +18,13 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+mod local_code_urls;
 mod native_list;
 mod post_render_compat;
+mod wikidot_alignment;
+mod wikidot_direct_iframe;
 mod wikidot_preprocess;
 
-#[cfg(test)]
-use native_list::{
-    MAX_NATIVE_LIST_WIKIDOT_SPAN_NESTING, find_balanced_ul_end,
-    native_list_page_link_default_label, render_list_pages_table_inline_html,
-    render_native_list_page_link,
-};
 pub(super) use native_list::{
     collect_wikidot_compat_empty_label_link_slugs, native_list_page_link_slug,
     native_numbered_list_content, render_list_pages_numbered_rows_with_titles,
@@ -36,8 +33,10 @@ pub(super) use native_list::{
     render_native_list_inline_wikidot_strong,
     render_native_list_inline_wikidot_underlines, wikidot_inline_span_marker_open,
 };
+#[cfg(test)]
 use native_list::{
-    native_bullet_list_item, render_native_bullet_list_with_wikipedia_links,
+    find_balanced_ul_end, native_list_page_link_default_label,
+    render_list_pages_table_inline_html, render_native_list_page_link,
 };
 
 use super::compat::CompatHtmlFragments;
@@ -55,11 +54,14 @@ use super::compat::color_and_inline_protection::{
     substitute_wikidot_protected_inline_dashes_with_scan_count,
     wikidot_compat_html_marker,
 };
+use super::compat::hosted_code::persist_hosted_code_blocks;
+use super::compat::link_targets::restore_compat_text_in_link_targets;
 #[cfg(test)]
 use super::compat::preparation::extract_css_modules;
 use super::compat::preparation::{
     RuntimeCssInsertion, extract_css_modules_with_runtime_insertions,
-    neutralize_authored_markers, protect_css_modules_before_first_list_pages,
+    neutralize_authored_markers, protect_authored_runtime_marker_literals,
+    protect_css_modules_before_first_list_pages,
 };
 use super::compat::text_fragments::CompatTextFragments;
 use super::compat::wikidot_iframe::{
@@ -68,6 +70,7 @@ use super::compat::wikidot_iframe::{
 use super::compat::wikidot_link_protection::{
     WikidotWikipediaLink, build_wikidot_wikipedia_link,
 };
+use super::compat::{CompatCodeBlock, scan_compat_code_blocks};
 use super::diagnostics::{
     CorpusRenderDimension, CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace,
     StageGuard,
@@ -126,7 +129,6 @@ use super::metacomponent::{
     MetacomponentSourceContext, select_metacomponent_documentation,
 };
 use super::module_arguments::wikidot_module_argument;
-use super::native_list_context::NativeListSourceContext;
 use super::next_previous_page::NextPreviousPageExpansion;
 use super::pages::expand_page_index_modules;
 use super::percent_encoding::percent_encode_path_segment;
@@ -152,11 +154,9 @@ use crate::services::ServiceContext;
 use crate::services::settings::{
     NavigationPageWikitext, PageRatingType, SettingsService,
 };
-use crate::services::text_block::{
-    MIME_HTML, TextBlock, TextBlockService, mime_for_language,
-};
+use crate::services::text_block::{MIME_HTML, TextBlock, TextBlockService};
 use crate::services::{
-    LinkService, PageQueryService, ScoreService, SiteService, TextService,
+    DomainService, LinkService, PageQueryService, ScoreService, SiteService, TextService,
 };
 use crate::types::Reference;
 use crate::types::{PageId, TextBlockType};
@@ -178,6 +178,7 @@ use std::ops::Range;
 use std::pin::Pin;
 use std::sync::LazyLock;
 use std::time::Instant;
+use tokio::sync::oneshot;
 use tokio::task;
 use tokio::time::timeout;
 
@@ -300,15 +301,18 @@ struct ExpandedRenderWikitext {
 /// The registries must stay alive until every rendered body, HTML block, and
 /// code block has crossed the Wikidot restoration boundary.  Callers borrow
 /// the registries only inside [`RenderProtectionBundle::restore`]; dropping the bundle without
-/// that consuming handoff is a programming error.
+/// that consuming handoff is a programming error and panics.  Error paths that
+/// abandon an unrestored bundle must call [`RenderProtectionBundle::defuse`]
+/// first, so the original error propagates instead of being masked by a Drop
+/// panic (see #2686).
 #[must_use = "restore the Wikidot protection bundle before dropping it"]
 #[derive(Debug)]
 pub(super) struct RenderProtectionBundle {
-    wikidot_css_modules: Vec<String>,
+    pub(in crate::services::render) wikidot_css_modules: Vec<String>,
     wikidot_inline_html: Vec<ProtectedWikidotInlineHtml>,
     wikidot_color_spans: ProtectedWikidotColorSpans,
     wikidot_compat_html: CompatHtmlFragments,
-    wikidot_compat_text: CompatTextFragments,
+    pub(in crate::services::render) wikidot_compat_text: CompatTextFragments,
     native_list_wikipedia_links: Vec<WikidotWikipediaLink>,
     restored: bool,
 }
@@ -348,6 +352,14 @@ impl RenderProtectionBundle {
         result
     }
 
+    /// Mark the bundle as intentionally abandoned on an error path.
+    ///
+    /// Call this before returning an error while the bundle is still unrestored,
+    /// so that dropping it does not panic and mask the original error.
+    fn defuse(&mut self) {
+        self.restored = true;
+    }
+
     /// Transfer registries to the replay transport representation.
     ///
     /// Replay preparation serializes these registries for a later worker, so
@@ -368,13 +380,6 @@ impl RenderProtectionBundle {
                 &mut self.native_list_wikipedia_links,
             ),
         }
-    }
-
-    fn take_css_modules(&mut self) -> Vec<String> {
-        std::mem::take(&mut self.wikidot_css_modules)
-            .into_iter()
-            .map(|css| self.wikidot_compat_text.restore(&css))
-            .collect()
     }
 
     fn take_native_list_wikipedia_links(&mut self) -> Vec<WikidotWikipediaLink> {
@@ -404,9 +409,12 @@ impl RenderProtectionBundle {
 
 impl Drop for RenderProtectionBundle {
     fn drop(&mut self) {
-        if !self.restored && !std::thread::panicking() {
-            panic!("render protection bundle dropped before restoration");
+        if self.restored || std::thread::panicking() {
+            return;
         }
+        // Reaching here means a success path forgot to restore the bundle.
+        // Error paths call `defuse` first, so they never reach this panic.
+        panic!("render protection bundle dropped before restoration");
     }
 }
 
@@ -422,9 +430,11 @@ struct OuterPreparedRenderWikitext {
 
 pub(super) const MAX_INCLUDE_EXPANSION_DEPTH: usize = 8;
 pub(super) const MAX_INCLUDE_EXPANSION_TOTAL: usize = 256;
-// The frozen EN corpus contains a page with 1,266 direct includes. Only the
-// trusted corpus finalizer receives this higher ceiling; user-controlled
-// render paths retain the ordinary limit above.
+// The frozen EN corpus contains a page with 1,266 direct includes. The
+// trusted corpus finalizer and pages of Wikidot mirror sites (source-owned,
+// read-only content that Wikidot renders) receive this higher ceiling;
+// locally authored sites retain the ordinary limit above. The render
+// deadline still bounds the cost of every render.
 const MAX_CORPUS_INCLUDE_EXPANSION_TOTAL: usize = 4096;
 pub(super) const DEFAULT_LISTPAGES_PER_PAGE: u64 = 20;
 pub(super) const MAX_LISTPAGES_RENDER_LIMIT: u64 = 250;
@@ -444,13 +454,8 @@ pub(super) const MAX_LISTPAGES_RENDER_SCAN_ROWS: u32 = 50_000;
 pub(super) const MAX_WIKIDOT_AJAX_MODULE_BODY_BYTES: usize = 65_536;
 pub(super) const MAX_WIKIDOT_AJAX_MODULE_PARAMETERS: usize = 64;
 pub(super) const MAX_WIKIDOT_AJAX_MODULE_PARAMETER_BYTES: usize = 4_096;
-const LONG_NATIVE_LIST_RENDER_MIN_ITEMS: usize = 8;
-const MAX_NATIVE_LIST_COMPAT_DEPTH: usize = 64;
 pub(super) const MAX_FTML_COMPAT_PARSE_BYTES: usize = 768_000;
 pub(super) const MAX_FTML_COMPAT_DENSE_PARSE_SCORE: usize = 180_000;
-pub(super) const MAX_FTML_COMPAT_COLLAPSIBLE_BLOCKS: usize = 48;
-pub(super) const MIN_FTML_COMPAT_TABBED_FALLBACK_BYTES: usize = 64_000;
-pub(super) const MIN_FTML_COMPAT_TABBED_FALLBACK_MARKERS: usize = 12;
 pub(super) const MIN_FTML_COMPAT_TABBED_RENDER_BYTES: usize = 100_000;
 pub(super) const MIN_FTML_COMPAT_TABBED_MARKERS: usize = 10;
 pub(super) const MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS: u64 = 150;
@@ -516,18 +521,6 @@ pub(super) static GENERATED_LISTPAGES_HTML_REGEX: LazyLock<Regex> = LazyLock::ne
     )
     .unwrap()
 });
-static WIKIDOT_DIRECT_HTML_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?is)^\s*(?P<iframe><iframe\b(?P<attrs>[^<>]*)>\s*</iframe\s*>)\s*$"#)
-        .expect("direct Wikidot HTML iframe expression is valid")
-});
-static WIKIDOT_DIRECT_HTML_IFRAME_ATTRIBUTE_REGEX: LazyLock<Regex> = LazyLock::new(
-    || {
-        Regex::new(
-            r#"(?is)\s+(?P<name>[a-z][a-z0-9:-]*)(?:\s*=\s*(?:"[^"<>]*"|'[^'<>]*'|[^\s"'=<>`]+))?"#,
-        )
-        .expect("direct Wikidot HTML iframe attribute expression is valid")
-    },
-);
 
 #[cfg(test)]
 static GENERATED_COMPAT_TABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -697,13 +690,26 @@ pub(super) static WIKIDOT_EMBED_PARAGRAPH_REGEX: LazyLock<Regex> = LazyLock::new
 });
 static WIKIDOT_LOCAL_FILE_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?P<quote>["'])(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/local--(?:files|code|resized-images)/[^"'<>\s]+)"#,
+        r#"(?P<quote>["']|[=&?])(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/+local--(?:files|code|resized-images)/[^"'<>\s]+)"#,
+    )
+    .unwrap()
+});
+/// Entity-quoted `url(...)` asset references inside real `style="..."`
+/// attributes, e.g. `style="--_img: url(&#39;https://site.wdfiles.com/...&#39;)"`.
+/// Displayed code listings escape their quotes the same way, but a literal
+/// `style="` opener never survives code highlighting (quotes there become
+/// `&quot;`), so scoping to the attribute keeps those samples literal.
+static WIKIDOT_STYLE_ATTR_URL_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"style="(?P<content>[^"]*)""#).unwrap());
+static WIKIDOT_STYLE_ATTR_ENTITY_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r#"url\((?P<open>&#39;|&quot;)(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/+local--(?:files|code|resized-images)/[^"'<>\s]*?)(?P<close>&#39;|&quot;)\)"#,
     )
     .unwrap()
 });
 static WIKIDOT_LOCAL_FILE_CSS_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?i)(?P<prefix>url\(\s*["']?)(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/local--(?:files|code|resized-images)/[^"')<>\s]+)"#,
+        r#"(?i)(?P<prefix>url\(\s*["']?)(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/+local--(?:files|code|resized-images)/[^"')<>\s]+)"#,
     )
     .unwrap()
 });
@@ -776,7 +782,7 @@ impl RenderService {
                 viewer_user_id: None,
                 current_page_data_form_values: None,
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
-                render_cost_budget: render_cost_budget.clone(),
+                render_cost_budget,
                 trace: None,
                 persist_compiled_text: true,
                 url: UrlArguments::default(),
@@ -1091,6 +1097,16 @@ impl RenderService {
             trace,
         }: RenderPageOptions<'_>,
     ) -> Result<RenderPageOutput> {
+        let max_include_expansions = if max_include_expansions
+            < MAX_CORPUS_INCLUDE_EXPANSION_TOTAL
+            && SiteService::get_optional(ctx, Reference::Id(site_id))
+                .await?
+                .is_some_and(|site| site_is_wikidot_local_asset_mirror(&site))
+        {
+            MAX_CORPUS_INCLUDE_EXPANSION_TOTAL
+        } else {
+            max_include_expansions
+        };
         let page_settings = WikitextSettings::from_mode(WikitextMode::Page, layout);
         let nav_settings = WikitextSettings::from_mode(WikitextMode::PageNav, layout);
 
@@ -1426,6 +1442,12 @@ impl RenderService {
             MetacomponentSourceContext::RootNonComponent
         };
         select_metacomponent_documentation(&mut wikitext, metacomponent_context);
+        if settings.layout.legacy() {
+            // Wikidot trims the leading whitespace of a page source before it
+            // parses. The trim belongs to the page source, so it runs before
+            // the include expansion fills the document.
+            Self::trim_wikidot_document_leading_whitespace(&mut wikitext);
+        }
         let mut wikidot_compat_text = CompatTextFragments::new(&wikitext);
         let mut included_pages = {
             let _stage = StageGuard::new(trace, CorpusRenderStage::ImagePrelude);
@@ -1464,6 +1486,16 @@ impl RenderService {
         wikitext = expanded_wikitext;
         included_pages.extend(expanded_included_pages);
         include_budget.consume(expanded_include_count);
+        // Pair alignment markers here, on the whole include-expanded
+        // document, before secondary-module expansion runs its scope scans
+        // (notably the Rate module body scan): those scans predate marker
+        // pairing and must see the same divs the pre-#2596 per-source
+        // rewrite produced. The outer-prep call below stays as the pairing
+        // point for corpus-replay documents and as a no-op second pass.
+        Self::normalize_wikidot_alignment_markers(
+            &mut wikitext,
+            &mut wikidot_compat_text,
+        );
         {
             let _stage = StageGuard::new(trace, CorpusRenderStage::PostInclude);
             // Include-branch cleanup treats a standalone `[!-- --]` line as
@@ -1487,6 +1519,10 @@ impl RenderService {
                 &mut wikidot_compat_text,
             );
             neutralize_authored_markers(&mut wikitext);
+            protect_authored_runtime_marker_literals(
+                &mut wikitext,
+                &mut wikidot_compat_text,
+            );
         }
         let mut wikidot_compat_html = CompatHtmlFragments::new(&wikitext);
         if suppress_nested_list_pages {
@@ -1760,6 +1796,12 @@ impl RenderService {
                 page_info,
                 &mut wikidot_compat_text,
             );
+            // Alignment markers pair across include boundaries, so their
+            // ownership is decided on the whole expanded document.
+            Self::normalize_wikidot_alignment_markers(
+                &mut expanded.wikitext,
+                &mut wikidot_compat_text,
+            );
             Self::normalize_wikidot_cross_closed_div_collapsibles(&mut expanded.wikitext);
             Self::normalize_wikidot_div_style_url_quotes(&mut expanded.wikitext);
             Self::protect_wikidot_unbound_include_variables(
@@ -1781,12 +1823,6 @@ impl RenderService {
             settings,
             &mut wikidot_compat_text,
         );
-        let (rendered, native_list_wikipedia_links) =
-            Self::render_long_native_list_runs_with_registry(
-                expanded.wikitext,
-                &mut expanded.wikidot_compat_html,
-            );
-        expanded.wikitext = rendered;
         let wikidot_css_modules = extract_css_modules_with_runtime_insertions(
             &mut expanded.wikitext,
             page_info,
@@ -1815,7 +1851,9 @@ impl RenderService {
                 wikidot_color_spans,
                 expanded.wikidot_compat_html,
                 wikidot_compat_text,
-                native_list_wikipedia_links,
+                // Bullet lists render through FTML, which emits its own
+                // Wikipedia links and backlinks (#2575).
+                Vec::new(),
             ),
             compatibility_fallback,
             timings,
@@ -1910,57 +1948,6 @@ impl RenderService {
         body
     }
 
-    fn wikidot_direct_html_iframe(html_block: &str) -> Option<&str> {
-        const ALLOWED_ATTRIBUTES: &[&str] = &[
-            "align",
-            "allow",
-            "allowfullscreen",
-            "class",
-            "frameborder",
-            "height",
-            "loading",
-            "referrerpolicy",
-            "sandbox",
-            "scrolling",
-            "src",
-            "style",
-            "title",
-            "width",
-        ];
-
-        let captures = WIKIDOT_DIRECT_HTML_IFRAME_REGEX.captures(html_block)?;
-        let attributes = captures
-            .name("attrs")
-            .expect("direct iframe capture has attributes")
-            .as_str();
-        let mut cursor = 0;
-        let mut has_attribute = false;
-        for attribute in
-            WIKIDOT_DIRECT_HTML_IFRAME_ATTRIBUTE_REGEX.captures_iter(attributes)
-        {
-            let whole = attribute
-                .get(0)
-                .expect("direct iframe attribute capture has whole match");
-            if !attributes[cursor..whole.start()].trim().is_empty() {
-                return None;
-            }
-            let name = attribute
-                .name("name")
-                .expect("direct iframe attribute capture has name")
-                .as_str()
-                .to_ascii_lowercase();
-            if !ALLOWED_ATTRIBUTES.contains(&name.as_str()) {
-                return None;
-            }
-            has_attribute = true;
-            cursor = whole.end();
-        }
-        if !attributes[cursor..].trim().is_empty() || !has_attribute {
-            return None;
-        }
-        captures.name("iframe").map(|iframe| iframe.as_str())
-    }
-
     pub(super) async fn render_inner(
         ctx: &ServiceContext<'_>,
         wikitext: String,
@@ -2018,6 +2005,10 @@ impl RenderService {
             }
         };
 
+        // Hosted `/local--code/` text comes from the page's own source, which
+        // include expansion and FTML preprocessing no longer show verbatim.
+        let hosted_code_source =
+            text_block_page_id.and_then(|_| scan_compat_code_blocks(&wikitext).ok());
         let expanded = Self::expand_render_wikitext(
             ctx,
             wikitext,
@@ -2030,7 +2021,7 @@ impl RenderService {
                 viewer_user_id,
                 current_page_data_form_values,
                 max_include_expansions,
-                render_cost_budget,
+                render_cost_budget: render_cost_budget.clone(),
                 trace,
                 url,
                 list_pages_pager_route,
@@ -2051,6 +2042,7 @@ impl RenderService {
             render_current_page_id,
             viewer_user_id,
             text_block_page_id,
+            hosted_code_source,
             allow_wikidot_styleframe,
             lifecycle == RenderLifecycle::PagePreview,
             current_site,
@@ -2058,19 +2050,25 @@ impl RenderService {
             persist_compiled_text,
             trusted_corpus_render,
             observed_user_info,
+            suppress_nested_list_pages,
         ))
         .await
     }
 
     pub(super) async fn render_wikidot_syntax_inner(
         ctx: &ServiceContext<'_>,
-        wikitext: String,
+        mut wikitext: String,
         page_info: &PageInfo<'_>,
         settings: &WikitextSettings,
         current_site_id: i64,
         viewer_user_id: Option<i64>,
         current_site: SiteModel,
     ) -> Result<RenderInnerOutput> {
+        if settings.layout.legacy() {
+            // This path renders the submitted source without expanding its
+            // includes, so the source trim belongs here as well.
+            Self::trim_wikidot_document_leading_whitespace(&mut wikitext);
+        }
         Self::render_inner_expanded(
             ctx,
             ExpandedRenderWikitext {
@@ -2089,6 +2087,7 @@ impl RenderService {
             None,
             viewer_user_id,
             None,
+            None,
             true,
             true,
             Some(current_site),
@@ -2096,6 +2095,7 @@ impl RenderService {
             false,
             false,
             None,
+            false,
         )
         .await
     }
@@ -2110,6 +2110,7 @@ impl RenderService {
         current_page_id: Option<i64>,
         viewer_user_id: Option<i64>,
         text_block_page_id: Option<i64>,
+        hosted_code_source: Option<Vec<CompatCodeBlock>>,
         allow_wikidot_styleframe: bool,
         page_preview: bool,
         current_site: Option<SiteModel>,
@@ -2117,8 +2118,12 @@ impl RenderService {
         persist_compiled_text: bool,
         trusted_corpus_render: bool,
         observed_user_info: Option<Vec<ftml::data::UserInfo<'static>>>,
+        defer_residual_marker_cleanup: bool,
     ) -> Result<RenderInnerOutput> {
         let config = ctx.config();
+        let strip_residual = move |html: &str| {
+            Self::strip_residual_markers_if_nested(html, defer_residual_marker_cleanup)
+        };
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
         let theme_previewer_blank = expanded.theme_previewer_blank && !page_preview;
@@ -2150,7 +2155,7 @@ impl RenderService {
                 wikitext,
                 included_pages,
                 url_offset_list_pages_content_bytes: _,
-                protection,
+                mut protection,
                 compatibility_fallback: _,
                 timings: _,
             } = outer;
@@ -2167,7 +2172,8 @@ impl RenderService {
                         viewer_user_id,
                     )
                     .await
-                    .or_raise(make_error)?
+                    .or_raise(make_error)
+                    .inspect_err(|_| protection.defuse())?
                 } else {
                     WikidotCompatLinkTitleMap::new()
                 }
@@ -2198,7 +2204,7 @@ impl RenderService {
                     &mut backlinks,
                     &native_list_wikipedia_links,
                 );
-                let mut wikidot_css_modules = protection.take_css_modules();
+                let mut wikidot_css_modules = protection.take_css_modules(strip_residual);
                 Self::localize_wikidot_generated_styles(
                     &mut wikidot_css_modules,
                     current_site.as_ref(),
@@ -2209,6 +2215,9 @@ impl RenderService {
                     .iter()
                     .map(|html| {
                         let html = protection.compat_html().restore(html);
+                        let html = protection
+                            .compat_html()
+                            .restore_remaining_markers_as_text(&html);
                         let html = Self::restore_protected_wikidot_inline_html(
                             Self::restore_protected_wikidot_color_spans(
                                 html,
@@ -2221,7 +2230,7 @@ impl RenderService {
                             current_site.as_ref(),
                             config,
                         );
-                        protection.compat_text().restore(&html)
+                        protection.restore_compat_text_with_cleanup(&html, strip_residual)
                     })
                     .collect();
                 let fallback_code_blocks: Vec<CodeBlock<'static>> = fallback_output
@@ -2233,13 +2242,16 @@ impl RenderService {
                              language,
                              name,
                          }| CodeBlock {
-                            contents: Cow::Owned(protection.compat_text().restore(
-                                &Self::restore_wikidot_code_block_compatibility(
-                                    &protection.compat_html().restore_plain(contents),
-                                    current_site.as_ref(),
-                                    config,
+                            contents: Cow::Owned(
+                                protection.restore_compat_text_with_cleanup(
+                                    &Self::restore_wikidot_code_block_compatibility(
+                                        &protection.compat_html().restore_plain(contents),
+                                        current_site.as_ref(),
+                                        config,
+                                    ),
+                                    strip_residual,
                                 ),
-                            )),
+                            ),
                             language: language
                                 .as_ref()
                                 .map(|language| Cow::Owned(language.to_string())),
@@ -2248,6 +2260,9 @@ impl RenderService {
                     )
                     .collect();
                 let body = protection.compat_html().restore(&fallback_output.body);
+                let body = protection
+                    .compat_html()
+                    .restore_remaining_markers_as_text(&body);
                 let body = Self::restore_protected_wikidot_inline_html(
                     Self::restore_protected_wikidot_color_spans(
                         body,
@@ -2260,7 +2275,8 @@ impl RenderService {
                     current_site.as_ref(),
                     config,
                 );
-                let body = protection.compat_text().restore(&body);
+                let body =
+                    protection.restore_compat_text_with_cleanup(&body, strip_residual);
                 (
                     wikidot_css_modules,
                     fallback_html_block_texts,
@@ -2353,26 +2369,12 @@ impl RenderService {
                 .await
                 .or_raise(make_error)?;
 
-                let code_blocks: Vec<TextBlock> = fallback_code_blocks
-                    .iter()
-                    .map(
-                        |CodeBlock {
-                             contents,
-                             language,
-                             name,
-                         }| TextBlock {
-                            text: contents,
-                            text_type: language.as_deref(),
-                            mime: mime_for_language(language),
-                            name: name.as_deref(),
-                        },
-                    )
-                    .collect();
-                TextBlockService::add_blocks(
+                persist_hosted_code_blocks(
                     ctx,
                     page_id,
-                    TextBlockType::Code,
-                    &code_blocks,
+                    &fallback_code_blocks,
+                    hosted_code_source.as_deref(),
+                    current_site.as_ref(),
                 )
                 .await
                 .or_raise(make_error)?;
@@ -2401,7 +2403,8 @@ impl RenderService {
         let parse_settings = render_settings.clone();
         let parse_queued_at = parse_worker_trace.as_ref().map(|_| Instant::now());
         let parse_started = Instant::now();
-        let parse_task = task::spawn_blocking(move || {
+        let (parse_tx, mut parse_rx) = oneshot::channel();
+        task::spawn_blocking(move || {
             let trace = parse_worker_trace
                 .as_ref()
                 .map(|(trace, scope)| (trace, *scope));
@@ -2417,10 +2420,26 @@ impl RenderService {
             );
             resolve_typed_root_site_grid_runtime_modules(&mut parsed.tree);
             resolve_typed_root_recent_threads_runtime_modules(&mut parsed.tree);
-            parsed
+            restore_compat_text_in_link_targets(
+                &mut parsed.tree,
+                parsed.prepared.protection.compat_text(),
+            );
+            // If the caller already gave up, hand the parse back so its unrestored
+            // bundle is defused here instead of being dropped by the runtime.
+            if let Err(mut parsed) = parse_tx.send(parsed) {
+                parsed.prepared.protection.defuse();
+            }
         });
-        let parsed = timeout(render_timeout, parse_task)
-            .await
+        let parse_outcome = timeout(render_timeout, &mut parse_rx).await;
+        if parse_outcome.is_err() {
+            // Close the channel, then reclaim a parse that completed just after the
+            // timeout so its unrestored bundle is defused rather than dropped.
+            parse_rx.close();
+            if let Ok(mut late) = parse_rx.try_recv() {
+                late.prepared.protection.defuse();
+            }
+        }
+        let mut parsed = parse_outcome
             .or_raise(|| {
                 Error::new("failed to parse due to timeout", ErrorType::RenderTimeout)
             })?
@@ -2438,16 +2457,16 @@ impl RenderService {
                     viewer_user_id,
                 )
                 .await
-                .or_raise(make_error)?,
+                .or_raise(make_error)
+                .inspect_err(|_| parsed.prepared.protection.defuse())?,
             ),
             None => None,
         };
         let user_info = match observed_user_info {
             Some(users) => UserInfoSnapshot::from_observed(users),
-            None => {
-                UserInfoSnapshot::load(ctx, &user_references, render_settings.layout)
-                    .await?
-            }
+            None => UserInfoSnapshot::load(ctx, &user_references, render_settings.layout)
+                .await
+                .inspect_err(|_| parsed.prepared.protection.defuse())?,
         };
         let render_queued_at = worker_trace.as_ref().map(|_| Instant::now());
         let render_task = task::spawn_blocking(move || {
@@ -2494,7 +2513,7 @@ impl RenderService {
                     // Deepwell's Wikidot compatibility scanner identifies actual CSS module
                     // syntax before raw HTML fragments are restored. Keeping that typed
                     // provenance separate ensures authored <style> HTML stays in the body.
-                    let mut wikidot_css_modules = protection.take_css_modules();
+                    let mut wikidot_css_modules = protection.take_css_modules(strip_residual);
                     if !wikidot_css_modules.is_empty() {
                         wikidot_css_modules.append(&mut html_output.styles);
                         Self::localize_wikidot_generated_styles(
@@ -2514,6 +2533,13 @@ impl RenderService {
                         std::mem::take(&mut html_output.body),
                         &wikidot_embed_iframes,
                     );
+                    // Optimized native lists contain the inline/color markers
+                    // protected before the list was registered. Expose that
+                    // trusted HTML before restoring its inline dependencies.
+                    let body = protection.compat_html().restore(&html_output.body);
+                    html_output.body = protection
+                        .compat_html()
+                        .restore_remaining_markers_as_text(&body);
                     html_output.body = Self::restore_protected_wikidot_color_spans(
                         std::mem::take(&mut html_output.body),
                         protection.color_spans(),
@@ -2522,8 +2548,6 @@ impl RenderService {
                         std::mem::take(&mut html_output.body),
                         protection.inline_html(),
                     );
-                    html_output.body =
-                        protection.compat_html().restore(&html_output.body);
                     if render_page_info.page.as_ref() == "_ajax-module-connector" {
                         html_output.body = protect_ajax_module_literal_markers(
                             std::mem::take(&mut html_output.body),
@@ -2557,8 +2581,8 @@ impl RenderService {
                             &wikidot_tabview_ids,
                         );
                     html_output.body = Self::restore_wikidot_include_block_break(&html_output.body);
-                    html_output.body =
-                        protection.compat_text().restore(&html_output.body);
+                    html_output.body = protection
+                        .restore_compat_text_with_cleanup(&html_output.body, strip_residual);
                     if render_settings.layout == Layout::Wikidot {
                         legacy_action_registry
                             .remove_renderer_ids_from_wikidot_html(&mut html_output.body);
@@ -2569,12 +2593,16 @@ impl RenderService {
                         .iter()
                         .map(|html| {
                             let html = protection.compat_html().restore(html);
+                            let html = protection
+                                .compat_html()
+                                .restore_remaining_markers_as_text(&html);
                             let html = Self::localize_wikidot_local_file_urls(
                                 &html,
                                 render_current_site.as_ref(),
                                 &render_config,
                             );
-                            protection.compat_text().restore(&html)
+                            protection
+                                .restore_compat_text_with_cleanup(&html, strip_residual)
                         })
                         .collect();
                     if render_settings.layout == Layout::Wikidot
@@ -2590,27 +2618,30 @@ impl RenderService {
                     let code_blocks = tree
                         .code_blocks
                         .iter()
-                        .map(
-                            |CodeBlock {
-                                 contents,
-                                 language,
-                                 name,
-                             }| CodeBlock {
-                                contents: Cow::Owned(protection.compat_text().restore(
-                                    &Self::restore_wikidot_code_block_compatibility(
+                        .map(|CodeBlock {
+                                  contents,
+                                  language,
+                                  name,
+                              }| {
+                            let contents = Self::restore_wikidot_code_block_compatibility(
                                         &protection.compat_html().restore_plain(contents),
                                         render_current_site.as_ref(),
                                         &render_config,
-                                    ),
-                                )),
+                                    );
+                            let contents = protection.restore_compat_text_with_cleanup(
+                                &contents,
+                                strip_residual,
+                            );
+                            CodeBlock {
+                                contents: Cow::Owned(contents),
                                 language: language
                                     .as_ref()
                                     .map(|language| Cow::Owned(language.to_string())),
                                 name: name
                                     .as_ref()
                                     .map(|name| Cow::Owned(name.to_string())),
-                            },
-                        )
+                            }
+                        })
                         .collect();
                     (html_block_texts, code_blocks)
                 })
@@ -2773,27 +2804,12 @@ impl RenderService {
             // [[code]]
             {
                 let _stage = StageGuard::new(trace, CorpusRenderStage::CodeBlocks);
-                let code_text_blocks: Vec<TextBlock> = code_blocks
-                    .iter()
-                    .map(
-                        |CodeBlock {
-                             contents,
-                             language,
-                             name,
-                         }| TextBlock {
-                            text: contents,
-                            text_type: language.as_deref(),
-                            mime: mime_for_language(language),
-                            name: name.as_deref(),
-                        },
-                    )
-                    .collect();
-
-                TextBlockService::add_blocks(
+                persist_hosted_code_blocks(
                     ctx,
                     page_id,
-                    TextBlockType::Code,
-                    &code_text_blocks,
+                    &code_blocks,
+                    hosted_code_source.as_deref(),
+                    current_site.as_ref(),
                 )
                 .await
                 .or_raise(make_error)?;
@@ -2864,10 +2880,11 @@ impl RenderService {
         let html = WIKIDOT_LOCAL_FILE_URL_REGEX
             .replace_all(html, |captures: &regex::Captures<'_>| {
                 let host = &captures["host"];
-                let path = &captures["path"];
+                // Wikidot serves `//local--code/...` like `/local--code/...`.
+                let path = format!("/{}", captures["path"].trim_start_matches('/'));
                 let Some(localized) = Self::localized_wikidot_local_file_url(
                     host,
-                    path,
+                    &path,
                     current_site,
                     config,
                 ) else {
@@ -2878,13 +2895,13 @@ impl RenderService {
             })
             .into_owned();
 
-        WIKIDOT_LOCAL_FILE_CSS_URL_REGEX
+        let html = WIKIDOT_LOCAL_FILE_CSS_URL_REGEX
             .replace_all(&html, |captures: &regex::Captures<'_>| {
                 let host = &captures["host"];
-                let path = &captures["path"];
+                let path = format!("/{}", captures["path"].trim_start_matches('/'));
                 let Some(localized) = Self::localized_wikidot_local_file_url(
                     host,
-                    path,
+                    &path,
                     current_site,
                     config,
                 ) else {
@@ -2893,7 +2910,35 @@ impl RenderService {
 
                 format!("{}{}", &captures["prefix"], localized)
             })
-            .into_owned()
+            .into_owned();
+
+        // Entity-quoted `url(...)` references only resolve inside real
+        // `style="..."` attributes; the same `&#39;` shape in displayed code
+        // listings is source text, not a fetched asset, and stays literal.
+        let html = WIKIDOT_STYLE_ATTR_URL_REGEX
+            .replace_all(&html, |captures: &regex::Captures<'_>| {
+                let content = WIKIDOT_STYLE_ATTR_ENTITY_URL_REGEX
+                    .replace_all(&captures["content"], |inner: &regex::Captures<'_>| {
+                        let host = &inner["host"];
+                        let path = format!("/{}", inner["path"].trim_start_matches('/'));
+                        let Some(localized) = Self::localized_wikidot_local_file_url(
+                            host,
+                            &path,
+                            current_site,
+                            config,
+                        ) else {
+                            return inner.get(0).map_or("", |m| m.as_str()).to_owned();
+                        };
+
+                        format!("url({}{}{})", &inner["open"], localized, &inner["close"])
+                    })
+                    .into_owned();
+
+                format!("style=\"{content}\"")
+            })
+            .into_owned();
+
+        local_code_urls::localize_wikidot_page_code_css_urls(&html, current_site, config)
     }
 
     fn localize_wikidot_generated_styles(
@@ -2935,8 +2980,9 @@ impl RenderService {
             };
 
         Some(format!(
-            "https://{}{}{}",
-            target_site_slug, config.files_domain, path,
+            "https://{}{}",
+            DomainService::get_files_authority(config, target_site_slug),
+            path,
         ))
     }
 
@@ -3023,7 +3069,6 @@ impl RenderService {
         Box::pin(async move {
             let mut wikitext = wikitext;
             Self::normalize_wikidot_multiline_includes(&mut wikitext);
-            Self::normalize_wikidot_alignment_markers(&mut wikitext);
             if expansion_context.settings.layout.legacy() {
                 expand_malformed_include_targets(&mut wikitext);
             }
@@ -3434,56 +3479,6 @@ impl RenderService {
         }
         output.push_str(&wikitext[cursor..]);
         output
-    }
-
-    fn render_long_native_list_runs_with_registry(
-        wikitext: String,
-        compat_html: &mut CompatHtmlFragments,
-    ) -> (String, Vec<WikidotWikipediaLink>) {
-        let lines = wikitext.split_inclusive('\n').collect::<Vec<_>>();
-        let mut line_starts = Vec::with_capacity(lines.len());
-        let mut line_start = 0usize;
-        for line in &lines {
-            line_starts.push(line_start);
-            line_start += line.len();
-        }
-        let mut source_context = None;
-        let mut output = String::with_capacity(wikitext.len());
-        let mut wikipedia_links = Vec::new();
-        let mut index = 0;
-
-        while index < lines.len() {
-            let mut end = index;
-            while end < lines.len() && native_bullet_list_item(lines[end]).is_some() {
-                end += 1;
-            }
-
-            if end - index >= LONG_NATIVE_LIST_RENDER_MIN_ITEMS
-                && source_context
-                    .get_or_insert_with(|| NativeListSourceContext::new(&wikitext))
-                    .allows_block_run(&line_starts[index..end])
-            {
-                let rendered = render_native_bullet_list_with_wikipedia_links(
-                    &lines[index..end],
-                    &mut wikipedia_links,
-                );
-                output.push_str(&compat_html.push_block_html(rendered));
-                index = end;
-            } else {
-                output.push_str(lines[index]);
-                index += 1;
-            }
-        }
-
-        (output, wikipedia_links)
-    }
-
-    #[cfg(test)]
-    fn render_long_native_list_runs(wikitext: String) -> String {
-        let mut fragments = CompatHtmlFragments::new(&wikitext);
-        let (protected, _) =
-            Self::render_long_native_list_runs_with_registry(wikitext, &mut fragments);
-        fragments.restore(&protected)
     }
 }
 

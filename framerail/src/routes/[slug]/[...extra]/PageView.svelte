@@ -21,6 +21,7 @@
     isWikidotFragmentPage,
     openWikidotPrinterFriendly,
     requestWikidotPageDiscussion,
+    wikidotOpenPanePermissionKind,
     wikidotPageDiscussionPath
   } from "$lib/wikidot/wikidot-page-actions"
   import {
@@ -55,6 +56,7 @@
   import CurrentPageActions from "./CurrentPageActions.svelte"
   import CurrentPageMetadata from "./CurrentPageMetadata.svelte"
   import PageHead from "./PageHead.svelte"
+  import RevisionBanner from "./RevisionBanner.svelte"
   import PagePaneContent from "./PagePaneContent.svelte"
   import WikidotFoundPageTags from "./WikidotFoundPageTags.svelte"
   import WikidotPageInfoBreak from "./WikidotPageInfoBreak.svelte"
@@ -73,27 +75,25 @@
   let showPageOptions = $state<boolean>(false)
   let showRevision = $state<boolean>(false)
   let revision = $state<Optional<PageRevisionModelFiltered>>(undefined)
+  let revisionContext = $state<string | null>(null)
   let pagePaneState = $state<PagePane>(PagePane.None)
   // Wikidot does not reveal its Files action area while the first file-list
   // request is pending or has failed (source SCP-9506, issue #2273).
   let wikidotFilesListReady = $state(false)
   let wikidotFilesPrefetched = $state<PageFile[] | null>(null)
   let wikidotFilesRequestId = 0
-  // Wikidot leaves #action-area hidden and empty when a read-only Backlinks
-  // or WhoWatches request fails (issue #2241): no result list, no error
-  // dialog, no retry control. Each pane reports its read state; only a
-  // reported failure hides the area. While the read is in flight the area
-  // keeps its loading state and close control, preserving the abort-on-close
-  // contract for hung reads.
-  let wikidotBacklinksFailed = $state(false)
-  let wikidotWatchersFailed = $state(false)
+  // The source Backlinks/WhoWatches callback inserts the result and reveals
+  // #action-area only after success. Keep both pending and failed reads empty.
+  let wikidotBacklinksReady = $state(false)
+  let wikidotWatchersReady = $state(false)
+  let auxPaneRequestId = $state(0)
 
   function onAuxPaneReadStateChange(
     pane: "backlinks" | "watchers",
     readState: "loading" | "success" | "failure"
   ) {
-    if (pane === "backlinks") wikidotBacklinksFailed = readState === "failure"
-    else wikidotWatchersFailed = readState === "failure"
+    if (pane === "backlinks") wikidotBacklinksReady = readState === "success"
+    else wikidotWatchersReady = readState === "success"
   }
 
   async function preloadWikidotFiles() {
@@ -140,8 +140,8 @@
   let actionAreaHidden = $derived(
     (!showSource && pagePaneState === PagePane.None && !editSection) ||
       (pagePaneState === PagePane.File && !wikidotFilesListReady) ||
-      (pagePaneState === PagePane.Backlinks && wikidotBacklinksFailed) ||
-      (pagePaneState === PagePane.Watchers && wikidotWatchersFailed)
+      (pagePaneState === PagePane.Backlinks && !wikidotBacklinksReady) ||
+      (pagePaneState === PagePane.Watchers && !wikidotWatchersReady)
   )
   let isDirectWikidotFragmentPage = $derived(
     pageLayoutContext.current === Layout.WIKIDOT &&
@@ -301,6 +301,15 @@
     revision = rev
   }
 
+  function setRevisionContext(context: string | null) {
+    revisionContext = context
+  }
+
+  function closeRevision() {
+    showRevision = false
+    setRevisionContext(null)
+  }
+
   async function ensureEditorPane() {
     EditorPane ??= (await import("./EditorPane.svelte")).default
   }
@@ -319,27 +328,25 @@
     }
     // A newly opened Backlinks/Watchers pane starts a fresh read, clearing
     // any failure inherited from its previous mount.
-    if (pane === PagePane.Backlinks) wikidotBacklinksFailed = false
-    if (pane === PagePane.Watchers) wikidotWatchersFailed = false
+    if (pane === PagePane.Backlinks) wikidotBacklinksReady = false
+    if (pane === PagePane.Watchers) wikidotWatchersReady = false
+    // Clicking a read action again starts a new module request, even when
+    // its previous failure hid the pane and left the same selection active.
+    if (pane === PagePane.Backlinks || pane === PagePane.Watchers) {
+      auxPaneRequestId += 1
+    }
     pagePaneState = pane
   }
 
   /**
-   * Opens a page pane after the checks its write surface requires. Append
-   * and Parent write under the page `edit` permission; Move writes under
-   * the `rename` permission and Delete under the `delete` permission, each
-   * matching the authority the matching server mutation enforces. The gate
-   * runs before the editable form (or protected revision data) is mounted.
-   * The server still rechecks every mutation at submission time.
+   * Opens a page pane after the checks its write surface requires (see
+   * `wikidotOpenPanePermissionKind`). The gate runs before the editable
+   * form (or protected revision data) is mounted. The server still
+   * rechecks every mutation at submission time.
    */
   async function openPagePane(pane: PagePane) {
-    if (pane === PagePane.Append || pane === PagePane.Parent) {
-      if (!(await checkEditPermission())) return
-    } else if (pane === PagePane.Move) {
-      if (!(await checkPagePermission("move"))) return
-    } else if (pane === PagePane.Delete) {
-      if (!(await checkPagePermission("delete"))) return
-    }
+    const kind = wikidotOpenPanePermissionKind(pane)
+    if (kind && !(await checkPagePermission(kind))) return
     activatePagePane(pane)
   }
 
@@ -626,9 +633,17 @@
   metaTags={showRevision ? [] : (data.meta_tags ?? [])}
 />
 
+<RevisionBanner
+  {data}
+  {revision}
+  {showRevision}
+  {revisionContext}
+  onClose={closeRevision}
+/>
+
 {#if pageLayoutContext.current === Layout.WIKIDOT}
   {#if data.options?.debug}
-    <h2 class:hidden={dataFormEditing}>UNTRANSLATED:Debug Response</h2>
+    <h2 class:hidden={dataFormEditing}>Debug response</h2>
   {:else if showRevision}
     <div id="page-title" class:hidden={dataFormEditing}>{revision?.title}</div>
   {:else}
@@ -951,10 +966,7 @@
         id={wikidotPageActions ? "page-block-button" : "lock-page-button"}
         class="btn btn-default"
         href="javascript:;"
-        onclick={() => {
-          showSource = false
-          pagePaneState = PagePane.Lock
-        }}
+        onclick={() => openPagePane(PagePane.Lock)}
         type={wikidotPageActions ? undefined : "button"}
       >
         {wikidotPageActions?.lock ?? data.internationalization?.["wiki-page-action-lock"]}
@@ -988,7 +1000,7 @@
       class:hidden={actionAreaHidden}
       style:display={actionAreaHidden ? "none" : undefined}
     >
-      {#if (showSource || pagePaneState !== PagePane.None || editSection) && (pagePaneState !== PagePane.File || wikidotFilesListReady) && (pagePaneState !== PagePane.Backlinks || !wikidotBacklinksFailed) && (pagePaneState !== PagePane.Watchers || !wikidotWatchersFailed)}
+      {#if (showSource || pagePaneState !== PagePane.None || editSection) && (pagePaneState !== PagePane.File || wikidotFilesListReady) && (pagePaneState !== PagePane.Backlinks || wikidotBacklinksReady) && (pagePaneState !== PagePane.Watchers || wikidotWatchersReady)}
         <!-- svelte-ignore a11y_invalid_attribute -->
         <a
           class="action-area-close btn btn-danger"
@@ -1019,11 +1031,13 @@
           {props}
           {setRevision}
           {setShowRevision}
+          {setRevisionContext}
           {showSource}
           wikidot
           initialFileList={wikidotFilesPrefetched}
           onFileListVisibilityChange={(ready) => (wikidotFilesListReady = ready)}
           onPaneReadStateChange={onAuxPaneReadStateChange}
+          {auxPaneRequestId}
           bind:pagePaneState
         />
       {/if}
@@ -1031,7 +1045,7 @@
   {/if}
 {:else}
   {#if data.options?.debug}
-    <h2>UNTRANSLATED:Debug Response</h2>
+    <h2>Debug response</h2>
   {:else if showRevision}
     <h2 class="page-title">{revision?.title}</h2>
   {:else}

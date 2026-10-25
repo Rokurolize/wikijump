@@ -5,8 +5,10 @@ import path from 'node:path';
 import { codePointCompare, sha256Hex, stableStringify } from './canonical-json.mjs';
 import { isWikidotResourceHost } from './resource-manifest.mjs';
 import {
+  CORPUS_SITE_PREFERRED_BRANCHES,
   DEFAULT_CLOSURE_MAX_DEPTH,
   DEFAULT_CLOSURE_MAX_PAGES,
+  expandCrossSiteIncludeClosure,
   expandIncludeClosure,
 } from './corpus-include-closure.mjs';
 
@@ -958,5 +960,293 @@ export function buildManifestSummary(rows, jsonl) {
     source_browser_visibility_counts: sourceBrowserVisibilityCounts,
     first_fullname: rows[0]?.fullname ?? null,
     last_fullname: rows.at(-1)?.fullname ?? null,
+  };
+}
+
+/**
+ * Filesystem-backed branch access for `expandCrossSiteIncludeClosure`.
+ *
+ * `readProvenance` returns `{ path, captureId, runId, payloadSha256 }`,
+ * reading the branch's `current.json` acquisition record when present and
+ * reporting null revision fields when the branch carries none (several
+ * translation branches store only source, meta, and entity files).
+ */
+export function corpusBranchAccess(pagesRoot) {
+  const pageFile = (slug, name) => path.join(pagesRoot, slug, name);
+  return {
+    pageExists: (slug) => fs.existsSync(pageFile(slug, 'source.wikidot.txt')),
+    readSource: (slug) => {
+      const sourcePath = pageFile(slug, 'source.wikidot.txt');
+      if (!fs.existsSync(sourcePath)) return null;
+      return readUtf8File(sourcePath).text;
+    },
+    readProvenance: (slug) => {
+      const provenance = {
+        path: pageFile(slug, 'source.wikidot.txt'),
+        captureId: null,
+        runId: null,
+        payloadSha256: null,
+      };
+      let current = null;
+      try {
+        current = JSON.parse(fs.readFileSync(pageFile(slug, 'current.json'), 'utf8'));
+      } catch (error) {
+        if (error?.code !== 'ENOENT' && !(error instanceof SyntaxError)) throw error;
+        return provenance;
+      }
+      if (current !== null && typeof current === 'object') {
+        if (typeof current.capture_id === 'string') provenance.captureId = current.capture_id;
+        if (typeof current.run_id === 'string') provenance.runId = current.run_id;
+        if (typeof current.payload_sha256 === 'string') provenance.payloadSha256 = current.payload_sha256;
+      }
+      return provenance;
+    },
+  };
+}
+
+/**
+ * Build an import manifest for the cross-site dependencies of mirror pages.
+ *
+ * Runs `expandCrossSiteIncludeClosure` from `roots` (slugs on
+ * `targetBranch`, whose Wikidot site is `targetSite`) across every branch
+ * directory in `branches`, then emits one row per included page that lives
+ * outside the target branch. Same-branch dependencies belong to the
+ * same-site manifest and are counted, not emitted. Rows reuse
+ * `rowFromRecord` plus `closure_depth`/`closure_via` and the corpus
+ * provenance of their source file (`source_current_*`, null when the
+ * branch carries no acquisition record); attachments are not materialized
+ * for cross-site rows because foreign branches carry no by-uuid file
+ * provenance.
+ *
+ * Fail-closed rules: requested roots absent from the target branch throw;
+ * foreign records with missing or malformed meta/entity files, duplicate
+ * entity ids, metadata mismatches, and local-slug collisions with the
+ * target branch become `gaps` entries (never silent renames or drops).
+ * Returns `{ rows, gaps, summary }`.
+ */
+export function buildCrossSiteDependencyManifest({
+  corpusRoot,
+  targetBranch,
+  targetSite,
+  roots,
+  branches,
+  targetPageSlugs = null,
+  includeClosure = {},
+}) {
+  if (typeof corpusRoot !== 'string' || corpusRoot === '') {
+    throw new Error('cross-site dependency manifest requires corpusRoot');
+  }
+  if (typeof targetBranch !== 'string' || targetBranch === '') {
+    throw new Error('cross-site dependency manifest requires targetBranch');
+  }
+  if (typeof targetSite !== 'string' || targetSite === '') {
+    throw new Error('cross-site dependency manifest requires targetSite');
+  }
+  if (!Array.isArray(roots) || roots.length === 0) {
+    throw new Error('cross-site dependency manifest requires at least one root slug');
+  }
+  if (!Array.isArray(branches) || branches.length === 0) {
+    throw new Error('cross-site dependency manifest requires at least one searchable branch');
+  }
+  if (!branches.includes(targetBranch)) {
+    throw new Error(`searchable branches must include the target branch ${targetBranch}`);
+  }
+  const {
+    maxDepth = DEFAULT_CLOSURE_MAX_DEPTH,
+    maxPages = DEFAULT_CLOSURE_MAX_PAGES,
+    preferredBranches = CORPUS_SITE_PREFERRED_BRANCHES,
+  } = includeClosure;
+  const branchAccess = {};
+  for (const branch of [...branches].sort(codePointCompare)) {
+    branchAccess[branch] = corpusBranchAccess(path.join(corpusRoot, branch, 'pages'));
+  }
+  const targetSlugs = targetPageSlugs ?? new Set(
+    fs.readdirSync(path.join(corpusRoot, targetBranch, 'pages'), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name),
+  );
+  for (const root of roots) {
+    if (!targetSlugs.has(root)) {
+      throw new Error(`root ${root} not found in corpus branch ${targetBranch}`);
+    }
+  }
+  const closure = expandCrossSiteIncludeClosure({
+    roots: roots.map((slug) => ({ branch: targetBranch, site: targetSite, slug })),
+    branches: branchAccess,
+    preferredBranches,
+    maxDepth,
+    maxPages,
+  });
+  const rows = [];
+  const gaps = [...closure.gaps];
+  const entityIds = new Map();
+  const emittedSlugs = new Map();
+  let sameSiteDependencyCount = 0;
+  for (const node of closure.included) {
+    if (node.branch === targetBranch) {
+      if (node.depth > 0) sameSiteDependencyCount += 1;
+      continue;
+    }
+    const pageDir = path.join(corpusRoot, node.branch, 'pages', node.slug);
+    const record = readCrossSitePageRecord(pageDir);
+    if (record.error !== null) {
+      gaps.push({
+        identity: `${node.branch}:${node.slug}`,
+        branch: node.branch,
+        site: node.site,
+        via: node.via,
+        reason: 'invalid-corpus-record',
+        detail: record.error,
+      });
+      continue;
+    }
+    const { meta, entityId, sourceFile, metaFile, entityIdPath } = record;
+    if (entityIds.has(entityId)) {
+      gaps.push({
+        identity: `${node.branch}:${node.slug}`,
+        branch: node.branch,
+        site: node.site,
+        via: node.via,
+        reason: 'duplicate-entity',
+        detail: `source_entity_id also used by ${entityIds.get(entityId)}`,
+      });
+      continue;
+    }
+    if (targetSlugs.has(node.slug)) {
+      gaps.push({
+        identity: `${node.branch}:${node.slug}`,
+        branch: node.branch,
+        site: node.site,
+        via: node.via,
+        reason: 'slug-collision',
+        detail: `target branch ${targetBranch} already has a page named ${node.slug}`,
+      });
+      continue;
+    }
+    if (emittedSlugs.has(node.slug)) {
+      gaps.push({
+        identity: `${node.branch}:${node.slug}`,
+        branch: node.branch,
+        site: node.site,
+        via: node.via,
+        reason: 'slug-collision',
+        detail: `local slug ${node.slug} already emitted for ${emittedSlugs.get(node.slug)}`,
+      });
+      continue;
+    }
+    entityIds.set(entityId, `${node.branch}:${node.slug}`);
+    emittedSlugs.set(node.slug, `${node.branch}:${node.slug}`);
+    const sourcePath = path.join(pageDir, 'source.wikidot.txt');
+    const row = rowFromRecord({
+      sourceSite: node.site,
+      sourceBranch: node.branch,
+      sourceEntityId: entityId,
+      sourcePath,
+      sourceFile,
+      metaPath: path.join(pageDir, 'meta.json'),
+      metaFile,
+      entityIdPath,
+      meta,
+      attachments: [],
+    });
+    row.closure_depth = node.depth;
+    row.closure_via = node.via;
+    row.closure_resolution = node.resolution;
+    if (node.also_in.length > 0) {
+      row.source_also_in_branches = [...node.also_in].sort(codePointCompare);
+    }
+    row.source_current_path = node.provenance.path;
+    row.source_current_capture_id = node.provenance.captureId;
+    row.source_current_run_id = node.provenance.runId;
+    row.source_current_payload_sha256 = node.provenance.payloadSha256;
+    rows.push(row);
+  }
+  rows.sort((a, b) => codePointCompare(a.source_branch, b.source_branch) || codePointCompare(a.fullname, b.fullname));
+  const gapsByReason = {};
+  for (const gap of gaps) {
+    gapsByReason[gap.reason] = (gapsByReason[gap.reason] ?? 0) + 1;
+  }
+  return {
+    rows,
+    gaps: gaps.sort((a, b) => codePointCompare(a.identity, b.identity) || codePointCompare(a.reason, b.reason)),
+    summary: {
+      root_count: roots.length,
+      same_site_dependency_count: sameSiteDependencyCount,
+      cross_site_row_count: rows.length,
+      gap_count: gaps.length,
+      gaps_by_reason: gapsByReason,
+      max_depth: closure.included.reduce((max, page) => Math.max(max, page.depth), 0),
+      dynamic_target_count: closure.dynamic,
+      truncated: [...closure.truncated].sort(codePointCompare),
+      cross_site_attachments: 'not-materialized',
+    },
+  };
+}
+
+function readCrossSitePageRecord(pageDir) {
+  const sourcePath = path.join(pageDir, 'source.wikidot.txt');
+  const metaPath = path.join(pageDir, 'meta.json');
+  const entityIdPath = path.join(pageDir, 'entity_id.txt');
+  for (const requiredPath of [sourcePath, metaPath, entityIdPath]) {
+    if (!fs.existsSync(requiredPath)) {
+      return { error: `${pageDir}: missing ${path.basename(requiredPath)}`, meta: null };
+    }
+  }
+  let sourceFile = null;
+  let metaFile = null;
+  let meta = null;
+  try {
+    sourceFile = readUtf8File(sourcePath);
+    metaFile = readUtf8File(metaPath);
+    meta = JSON.parse(metaFile.text);
+    validateMeta(meta, pageDir);
+  } catch (error) {
+    return { error: `${pageDir}: invalid record: ${error.message}`, meta: null };
+  }
+  const slug = path.basename(pageDir);
+  if (meta.fullname !== slug) {
+    return { error: `${pageDir}: meta.fullname ${meta.fullname} does not match directory name ${slug}`, meta: null };
+  }
+  let entityId = null;
+  try {
+    entityId = readText(entityIdPath).trim();
+    validateEntityId(entityId, pageDir);
+  } catch (error) {
+    return { error: `${pageDir}: invalid entity id: ${error.message}`, meta: null };
+  }
+  return { error: null, meta, entityId, sourceFile, metaFile, entityIdPath };
+}
+
+/**
+ * Summarize cross-site coverage for a set of affected mirror pages.
+ *
+ * `verdicts` maps each affected slug to `{ fixed, gaps, truncated }` as
+ * computed per-root by the dry-run driver; `manifest` is the merged
+ * `buildCrossSiteDependencyManifest` output those verdicts were aggregated
+ * from. Pure function over committed shapes so the integrity report and the
+ * tests share it.
+ */
+export function summarizeCrossSiteCoverage({ affectedSlugs, verdicts, manifest }) {
+  const fixed = [];
+  const stillBroken = [];
+  for (const slug of affectedSlugs) {
+    const verdict = verdicts[slug] ?? { fixed: false, gaps: [], truncated: [] };
+    if (verdict.fixed && verdict.truncated.length === 0) {
+      fixed.push(slug);
+    } else {
+      stillBroken.push(slug);
+    }
+  }
+  fixed.sort(codePointCompare);
+  stillBroken.sort(codePointCompare);
+  return {
+    affected_count: affectedSlugs.length,
+    would_fix_count: fixed.length,
+    still_broken_count: stillBroken.length,
+    still_broken: stillBroken,
+    manifest_row_count: manifest.rows.length,
+    manifest_gap_count: manifest.gaps.length,
+    manifest_gaps_by_reason: { ...manifest.summary.gaps_byReason },
+    manifest_truncated: [...manifest.summary.truncated],
   };
 }

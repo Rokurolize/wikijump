@@ -1,3 +1,4 @@
+/* eslint-disable no-script-url -- Wikidot footer and fixture markup use javascript:; no-op links that parity requires */
 import { strict as assert } from "node:assert"
 import test from "node:test"
 
@@ -11,10 +12,10 @@ import {
 } from "../src/lib/platform-footer-links.js"
 
 const KEYS_AND_DEFAULT_HREFS = [
-  ["terms-conditions", "https://wikijump.com/legal/terms-of-service"],
-  ["privacy", "https://wikijump.com/legal/privacy-policy"],
+  ["terms-conditions", "https://wikijump.com/legal:terms-of-service"],
+  ["privacy", "https://wikijump.com/legal:privacy-policy"],
   ["docs", "https://wikijump.com/docs"],
-  ["security", "https://wikijump.com/legal/security"]
+  ["security", "https://wikijump.com/legal:security"]
 ]
 
 test("keeps the native footer order and its internationalization keys", () => {

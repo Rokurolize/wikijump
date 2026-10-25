@@ -64,7 +64,7 @@ impl TextTokenIndex {
         while cursor < bytes.len() {
             if bytes[cursor].is_ascii_alphanumeric() {
                 if matches!(bytes[cursor], b'f' | b'h' | b'm')
-                    && let Some(end) = scan_url(bytes, cursor)
+                    && let Some(end) = scan_url(source, cursor)
                 {
                     ranges.push(cursor..end);
                     cursor = end;
@@ -229,7 +229,11 @@ fn scan_email_dotted(bytes: &[u8], start: usize, part: fn(u8) -> bool) -> usize 
     end
 }
 
-fn scan_url(bytes: &[u8], start: usize) -> Option<usize> {
+/// Like FTML's scanner: takes the `str` the caller already holds, because
+/// validating the whole input again for each URL made a long page with many
+/// URLs quadratic.
+fn scan_url(source: &str, start: usize) -> Option<usize> {
+    let bytes = source.as_bytes();
     let body_start = if bytes[start..].starts_with(b"http://") {
         start + 7
     } else if bytes[start..].starts_with(b"https://") {
@@ -241,7 +245,6 @@ fn scan_url(bytes: &[u8], start: usize) -> Option<usize> {
     } else {
         return None;
     };
-    let source = std::str::from_utf8(bytes).ok()?;
     let mut end = body_start;
     while end < bytes.len() {
         let character = source[end..].chars().next()?;
@@ -1027,6 +1030,27 @@ mod tests {
             assert_eq!(actual_whole_head_value, whole_head_value, "{source:?}");
             assert_eq!(name_end, source.find(' ').unwrap(), "{source:?}");
         }
+    }
+
+    #[test]
+    fn many_urls_in_a_long_page_index_in_linear_time() {
+        // Each URL once validated the whole page again: SCP-9317 with its
+        // includes (750 KB) spent most of a 1.8 s render building this index.
+        let source =
+            "see https://scp-wiki.wikidot.com/scp-173 and ü日本\n".repeat(32_768);
+        let started = std::time::Instant::now();
+        let index = TextTokenIndex::new(&source);
+
+        assert_eq!(index.ranges.len(), 32_768);
+        assert_eq!(
+            &source[index.ranges[1].clone()],
+            "https://scp-wiki.wikidot.com/scp-173",
+        );
+        assert!(
+            started.elapsed() < std::time::Duration::from_secs(5),
+            "{:?}",
+            started.elapsed(),
+        );
     }
 
     #[test]

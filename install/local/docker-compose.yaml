@@ -30,8 +30,8 @@ services:
       - "INITIAL_BUCKETS=deepwell-files deepwell-text-blocks"
       - "DATA_DIR=/data"
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     volumes:
       - local-minio-data:/data
     healthcheck:
@@ -46,7 +46,7 @@ services:
     build: valkey
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - local-valkey-data:/data
     healthcheck:
@@ -104,11 +104,18 @@ services:
       context: ../..
       dockerfile: install/local/framerail/Dockerfile
     ports:
-      - "3393:3393"
+      - "127.0.0.1:3393:3393"
     environment:
       - "DEEPWELL_HOST=deepwell"
       - "DEEPWELL_RPC_TOKEN=${DEEPWELL_RPC_TOKEN:?set DEEPWELL_RPC_TOKEN to 64 lowercase hex characters}"
+      # See install/standing/compose.yaml: 2 MiB so a maximum-length
+      # (200,001 character) page source always fits the form body.
+      - "BODY_SIZE_LIMIT=2097152"
       - "FRAMERAIL_MODE=${FRAMERAIL_MODE:-dev}"
+      # Platform hosts and public port; must match deepwell/config.toml [domain].
+      - "WIKIJUMP_MAIN_DOMAIN=wikijump.dev.localhost"
+      - "WIKIJUMP_FILES_DOMAIN=wjfiles.dev.localhost"
+      - "WIKIJUMP_HTTPS_PORT=18443"
       - "REDIS_URL=redis://cache"
       - "PNPM_HOME=/pnpm"
       - "PNPM_STORE_DIR=/pnpm/store"
@@ -134,7 +141,7 @@ services:
       context: ../..
       dockerfile: install/local/wws/Dockerfile
     ports:
-      - "3466:3466"
+      - "127.0.0.1:3466:3466"
     environment:
       - "ADDRESS=[::]:3466"
       - "DEEPWELL_URL=http://deepwell:2747"
@@ -179,10 +186,12 @@ services:
     volumes:
       - local-caddy-data:/data
       - local-caddy-config:/config
+    # Standing owns 127.0.0.1:80/443. This stack's hosts are its own
+    # (*.wikijump.dev.localhost), served on 18080/18443 so both can run.
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
+      - "127.0.0.1:18080:18080"
+      - "127.0.0.1:18443:18443"
+      - "127.0.0.1:18443:18443/udp"
     environment:
       - "DEEPWELL_RPC_TOKEN=${DEEPWELL_RPC_TOKEN:?set DEEPWELL_RPC_TOKEN to 64 lowercase hex characters}"
     restart: unless-stopped

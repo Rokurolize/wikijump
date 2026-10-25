@@ -94,7 +94,7 @@ export interface PageRoute {
 interface PageViewDataBase {
   options: PageOptions
   redirect_page: Nullable<string>
-  redirect_kind?: Nullable<"wikidot_module">
+  redirect_kind?: Nullable<"wikidot_module" | "random_helper">
   wikitext: string
   compiled_body_html: string
   compiled_body_styles: string[]
@@ -235,6 +235,8 @@ interface PageViewMissing {
      * when this is true.
      */
     can_create: boolean
+    /** The body is the site's own missing-page template (`_404`). */
+    missing_template: boolean
   }
 }
 interface PageViewPermissions {

@@ -43,7 +43,10 @@ test("site changes RSS reports the frozen channel and newest-first bounded rows"
     new Date("2026-10-07T16:54:02Z")
   )
 
-  assert.match(xml, /^<\?xml version="1\.0" encoding="UTF-8" \?>\n<rss version="2\.0" xmlns:content=/)
+  assert.match(
+    xml,
+    /^<\?xml version="1\.0" encoding="UTF-8" \?>\n<rss version="2\.0" xmlns:content=/
+  )
   assert.match(
     xml,
     /<title>Recent page changes from site "SCP &amp; &quot;Test&quot;" \(a Wikidot site\)<\/title>/
@@ -56,7 +59,10 @@ test("site changes RSS reports the frozen channel and newest-first bounded rows"
     xml,
     /<guid>http:\/\/scp-wiki\.wikijump\.localhost\/forum:page-discussion#revision-3000000123<\/guid>/
   )
-  assert.match(xml, /<title>\&quot;A \&quot;page\&quot; \&amp; \&lt;title\&gt;\&quot; - source change<\/title>/)
+  assert.match(
+    xml,
+    /<title>&quot;A &quot;page&quot; &amp; &lt;title&gt;&quot; - source change<\/title>/
+  )
   assert.match(
     xml,
     /<link>https:\/\/scp-wiki\.wikijump\.localhost\/forum:page-discussion<\/link>/
@@ -85,9 +91,12 @@ test("site changes RSS item titles use the per-row change type", () => {
     new Date("2026-10-07T16:54:02Z")
   )
 
-  assert.match(xml, /<title>\&quot;New page\&quot; - new page change<\/title>/)
+  assert.match(xml, /<title>&quot;New page&quot; - new page change<\/title>/)
   assert.match(xml, /Current revision number: new/)
-  assert.match(xml, /<guid>http:\/\/scp-wiki\.wikijump\.localhost\/new-page#revision-3000000124<\/guid>/)
+  assert.match(
+    xml,
+    /<guid>http:\/\/scp-wiki\.wikijump\.localhost\/new-page#revision-3000000124<\/guid>/
+  )
   assert.match(xml, /By: Another &lt;author&gt;/)
 })
 
@@ -99,7 +108,10 @@ test("an empty site still produces the frozen channel shape", () => {
   )
 
   assert.equal((xml.match(/<item>/gu) ?? []).length, 0)
-  assert.match(xml, /<title>Recent page changes from site "Empty" \(a Wikidot site\)<\/title>/)
+  assert.match(
+    xml,
+    /<title>Recent page changes from site "Empty" \(a Wikidot site\)<\/title>/
+  )
   // the shared Wikidot RSS date format is reused by the site changes feed
   assert.equal(
     formatWikidotFeedDate(new Date("2026-10-07T16:53:08Z")),

@@ -37,6 +37,32 @@
       .join(", ")}`
   }
 
+  let passwordStatus = $state("")
+  const {
+    form: passwordForm,
+    enhance: passwordEnhance,
+    errors: passwordErrors
+  } = superForm(
+    untrack(() => data.passwordChangeForm),
+    {
+      onResult: async ({ result }) => {
+        passwordStatus = ""
+        if (result.type === "success" && result.data?.passwordChanged) {
+          const revoked = Number(result.data.otherSessionsRevoked ?? 0)
+          passwordStatus = `Password changed. ${revoked} other session${
+            revoked === 1 ? " was" : "s were"
+          } signed out.`
+        } else if (result.type === "failure" && result.data?.message) {
+          errorPopupState.current = {
+            state: true,
+            message: result.data.message,
+            data: result.data
+          }
+        }
+      }
+    }
+  )
+
   const { form, enhance } = superForm(
     untrack(() => data.displaySettingsForm),
     {
@@ -153,8 +179,69 @@
   </div>
 </form>
 
+<h2 id="user-password-heading">Change password</h2>
+<form
+  id="user-password-form"
+  action="?/password"
+  method="POST"
+  aria-labelledby="user-password-heading"
+  use:passwordEnhance
+>
+  <label for="user-current-password">Current password</label>
+  <input
+    id="user-current-password"
+    name="currentPassword"
+    type="password"
+    autocomplete="current-password"
+    required
+    aria-invalid={$passwordErrors.currentPassword ? "true" : undefined}
+    bind:value={$passwordForm.currentPassword}
+  />
+  <label for="user-new-password">New password</label>
+  <input
+    id="user-new-password"
+    name="newPassword"
+    type="password"
+    autocomplete="new-password"
+    required
+    aria-invalid={$passwordErrors.newPassword ? "true" : undefined}
+    aria-describedby="user-new-password-note"
+    bind:value={$passwordForm.newPassword}
+  />
+  <p id="user-new-password-note" class="settings-note">
+    {$passwordErrors.newPassword
+      ? "Password must contain at least 15 characters."
+      : "At least 15 characters. Other signed-in sessions will be signed out."}
+  </p>
+  <label for="user-confirm-password">Confirm new password</label>
+  <input
+    id="user-confirm-password"
+    name="confirmPassword"
+    type="password"
+    autocomplete="new-password"
+    required
+    aria-invalid={$passwordErrors.confirmPassword ? "true" : undefined}
+    aria-describedby={$passwordErrors.confirmPassword
+      ? "user-confirm-password-error"
+      : undefined}
+    bind:value={$passwordForm.confirmPassword}
+  />
+  {#if $passwordErrors.confirmPassword}
+    <p id="user-confirm-password-error" class="settings-note">
+      The new passwords do not match.
+    </p>
+  {/if}
+  <p role="status" aria-live="polite">{passwordStatus}</p>
+  <div class="action-row user-password-actions">
+    <button class="action-button button-save clickable" type="submit">
+      Change password
+    </button>
+  </div>
+</form>
+
 <style lang="scss">
-  #user-settings-form {
+  #user-settings-form,
+  #user-password-form {
     display: grid;
     gap: 0.75rem;
     max-width: 40rem;
@@ -164,7 +251,8 @@
     min-height: 7rem;
   }
 
-  .user-settings-actions {
+  .user-settings-actions,
+  .user-password-actions {
     display: flex;
     gap: 0.5rem;
   }

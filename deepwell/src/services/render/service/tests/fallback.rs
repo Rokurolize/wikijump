@@ -102,15 +102,17 @@ fn corpus_replay_worker_preparation_uses_production_protection_order() {
 }
 
 #[test]
-fn corpus_replay_worker_does_not_preprocess_fallback_pages() {
+fn corpus_replay_worker_preprocesses_many_flat_collapsibles() {
+    // Flat collapsible galleries are no longer fallback pages (#2606): the
+    // replay worker runs them through the normal pipeline.
     let mut wikitext = String::new();
-    for index in 0..=MAX_FTML_COMPAT_COLLAPSIBLE_BLOCKS {
+    for index in 0..65 {
         wikitext.push_str(&format!(
             "[[collapsible show=\"+ {index}\" hide=\"- {index}\"]]\nbody\n[[/collapsible]]\n"
         ));
     }
     let input = CorpusReplayExpandedWikitext {
-        wikitext: wikitext.clone(),
+        wikitext,
         page_info: fallback_test_page_info("fallback-replay", "Fallback Replay"),
         settings: WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
         id: PageId {
@@ -125,11 +127,8 @@ fn corpus_replay_worker_does_not_preprocess_fallback_pages() {
 
     let prepared = RenderService::prepare_corpus_replay_wikitext(input);
 
-    assert!(prepared.compatibility_fallback);
-    assert!(!prepared.preprocessed);
-    assert_eq!(prepared.wikitext, wikitext);
-    assert_eq!(prepared.timings.inner_protection_us, 0);
-    assert_eq!(prepared.timings.preprocess_us, 0);
+    assert!(!prepared.compatibility_fallback);
+    assert!(prepared.preprocessed);
 }
 
 #[test]
@@ -143,7 +142,7 @@ fn component_heavy_corpus_page_stays_parse_eligible() {
 }
 
 #[test]
-fn dense_style_resource_uses_compatibility_fallback_before_ftml() {
+fn dense_style_resource_page_has_no_name_gate() {
     let mut source = String::new();
     source.push_str("[[include component:anomaly-class-bar-source]]\n");
     for index in 0..88 {
@@ -163,11 +162,14 @@ fn dense_style_resource_uses_compatibility_fallback_before_ftml() {
         source.push_str("ordinary corpus prose line\n");
     }
 
+    // The score still measures density, but it no longer routes anything to
+    // the fallback by itself, and the style-resource name buys no special
+    // treatment (#2606).
     assert!(
         RenderService::wikidot_compat_parse_complexity_score(&source)
             > MAX_FTML_COMPAT_DENSE_PARSE_SCORE
     );
-    assert!(RenderService::should_use_wikidot_compatibility_fallback(
+    assert!(!RenderService::should_use_wikidot_compatibility_fallback(
         &source,
         &fallback_test_page_info(
             "vg021-jp-scp-style-resource-769330c42a",
@@ -828,45 +830,163 @@ fn wikidot_compatibility_fallback_preserves_tabview_bodies_in_hidden_panels() {
 }
 
 #[test]
-fn many_collapsible_corpus_page_uses_compatibility_fallback_before_ftml() {
+fn many_flat_collapsibles_with_images_and_headings_stay_parse_eligible() {
+    // Gallery-shaped pages like scp-buns carry far more than 48 flat
+    // collapsibles with images and headings; they render through FTML, so
+    // the count gate must not route them to the literal fallback (#2606).
     let mut source = String::new();
-    for index in 0..=MAX_FTML_COMPAT_COLLAPSIBLE_BLOCKS {
+    for index in 0..65 {
         source.push_str(&format!(
-            "[[collapsible show=\"+ Skip {index}\" hide=\"- Skip {index}\"]]\n"
+            "[[collapsible show=\"+ Gallery {index}\" hide=\"- Gallery {index}\"]]\n"
         ));
-        source.push_str("ordinary corpus prose line\n");
+        source.push_str(&format!("++ Section {index}\n"));
+        source.push_str(&format!(
+            "[[image https://scp-wiki.wdfiles.com/local--files/gallery/image-{index}.png]]\n"
+        ));
         source.push_str("[[/collapsible]]\n");
     }
 
     assert!(source.len() < MAX_FTML_COMPAT_PARSE_BYTES);
-    assert!(RenderService::should_use_wikidot_compatibility_fallback(
+    assert!(!RenderService::should_use_wikidot_compatibility_fallback(
         &source,
         &fallback_test_page_info("the-great-hippo", "Great Hippo's Great Skippos")
     ));
 }
 
 #[test]
-fn tabbed_corpus_page_uses_compatibility_fallback_before_ftml() {
+fn large_tabbed_corpus_page_stays_parse_eligible() {
+    // The removed tabview shape gate (#337: 64 KB with 12 tabs) no longer
+    // routes anything to the fallback by itself (#2606). The July 2026 hang
+    // it was measured against does not reproduce on the pinned FTML, which
+    // renders that page in 0.13 s.
     let mut source = String::new();
     source.push_str("[[tabview]]\n");
-    for index in 0..MIN_FTML_COMPAT_TABBED_FALLBACK_MARKERS {
+    for index in 0..12 {
         source.push_str(&format!("[[tab Section {index}]]\n"));
         source.push_str("ordinary author page prose\n".repeat(220).as_str());
         source.push_str("[[/tab]]\n");
     }
     source.push_str("[[/tabview]]\n");
-    while source.len() < MIN_FTML_COMPAT_TABBED_FALLBACK_BYTES {
+    while source.len() < 64_000 {
         source.push_str("ordinary author page prose\n");
     }
 
     assert!(source.len() < MAX_FTML_COMPAT_PARSE_BYTES);
-    assert!(RenderService::should_use_wikidot_compatibility_fallback(
+    assert!(!RenderService::should_use_wikidot_compatibility_fallback(
         &source,
         &fallback_test_page_info(
             "a-plague-of-philosophical-zombies",
             "A Plague of Philosophical Zombies",
         )
     ));
+}
+
+fn large_tabbed_gallery_source() -> String {
+    // Gallery-shaped tabbed pages like zal-cryptid-s-artwork-hub carry a
+    // dozen tabs of collapsibles with images and headings. Titles and
+    // headings use no spaces so the rendered text is asserted verbatim
+    // (the renderer may encode spaces inside link labels).
+    let mut source = String::new();
+    source.push_str("[[tabview]]\n");
+    for tab in 0..14 {
+        source.push_str(&format!("[[tab Tab{tab}]]\n"));
+        for index in 0..30 {
+            source.push_str(&format!(
+                "[[collapsible show=\"+ G{tab}-{index}\" hide=\"- G{tab}-{index}\"]]\n"
+            ));
+            source.push_str(&format!("++ H{tab}-{index}\n"));
+            source.push_str(&format!(
+                "[[image https://scp-wiki.wdfiles.com/local--files/gallery/image-{tab}-{index}.png]]\n"
+            ));
+            source.push_str("[[/collapsible]]\n");
+        }
+        source.push_str("[[/tab]]\n");
+    }
+    source.push_str("[[/tabview]]\n");
+    while source.len() < 64_000 {
+        source.push_str("ordinary author page prose\n");
+    }
+    source
+}
+
+#[test]
+fn large_tabbed_page_with_collapsible_images_and_headings_stays_parse_eligible() {
+    // The tabview shape must not route gallery-shaped pages to the
+    // fallback, whose line-oriented parser drops same-line collapsible
+    // bodies and shreds tab bodies (#2606).
+    let source = large_tabbed_gallery_source();
+
+    assert!(source.len() < MAX_FTML_COMPAT_PARSE_BYTES);
+    assert!(!RenderService::should_use_wikidot_compatibility_fallback(
+        &source,
+        &fallback_test_page_info(
+            "zal-cryptid-s-artwork-hub",
+            "Zal Cryptid's Artwork Hub",
+        )
+    ));
+
+    let input = CorpusReplayExpandedWikitext {
+        wikitext: source,
+        page_info: fallback_test_page_info(
+            "zal-cryptid-s-artwork-hub",
+            "Zal Cryptid's Artwork Hub",
+        ),
+        settings: WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
+        id: PageId {
+            site_id: 1,
+            category_id: 2,
+            page_id: 3,
+        },
+        included_pages: Vec::new(),
+        wikidot_compat_html: CompatHtmlFragments::new(""),
+        wikidot_compat_text: CompatTextFragments::new(""),
+    };
+
+    let prepared = RenderService::prepare_corpus_replay_wikitext(input);
+
+    assert!(!prepared.compatibility_fallback);
+    assert!(prepared.preprocessed);
+}
+
+#[test]
+fn large_tabbed_gallery_renders_every_collapsible_body_and_image() {
+    // Routing eligibility alone does not prove the bodies survive: render
+    // the gallery fixture through FTML (the path parse-eligible pages
+    // take) and require every collapsible body and image in the output
+    // (#2606). zal-cryptid-s-artwork-hub lost all 14 tab bodies and all
+    // but 2 of its 415 images to the fallback; FTML must keep all of them.
+    const TABS: usize = 14;
+    const COLLAPSIBLES_PER_TAB: usize = 30;
+    const BODIES: usize = TABS * COLLAPSIBLES_PER_TAB;
+
+    let source = large_tabbed_gallery_source();
+    let page_info =
+        fallback_test_page_info("zal-cryptid-s-artwork-hub", "Zal Cryptid's Artwork Hub");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let tokenization = ftml::tokenize(&source);
+    let (tree, errors) = ftml::parse(&tokenization, &page_info, &settings).into();
+    assert!(errors.is_empty(), "{errors:#?}");
+    let html = HtmlRender.render(&tree, &page_info, &settings).body;
+
+    // The tabview container carries an id attribute before the class, so
+    // assert the class token rather than the tag prefix.
+    assert!(html.contains(r#"class="yui-navset""#));
+    assert!(html.contains("yui-content"));
+    for tab in 0..TABS {
+        assert!(html.contains(&format!("<em>Tab{tab}</em>")));
+    }
+    assert_eq!(html.matches("<img").count(), BODIES);
+    assert_eq!(html.matches("collapsible-block-folded").count(), BODIES);
+    for tab in 0..TABS {
+        for index in 0..COLLAPSIBLES_PER_TAB {
+            assert!(html.contains(&format!("image-{tab}-{index}.png")));
+            assert!(html.contains(&format!("H{tab}-{index}")));
+        }
+    }
+    assert!(!html.contains("wikidot-compat-fallback"));
+    assert!(!html.contains("[[tab"));
+    assert!(!html.contains("[[collapsible"));
+    assert!(!html.contains("[[image"));
 }
 
 #[test]
@@ -905,7 +1025,7 @@ fn pinned_ftml_tight_quote_cap_keeps_deepwell_parse_eligible() {
 }
 
 #[test]
-fn expanded_dense_style_resource_still_uses_compatibility_fallback() {
+fn expanded_dense_style_resource_stays_parse_eligible() {
     let mut source = String::new();
     for index in 0..180 {
         source.push_str(&format!("[[include component:expanded-{index} p=value]]\n"));
@@ -925,7 +1045,7 @@ fn expanded_dense_style_resource_still_uses_compatibility_fallback() {
     }
 
     assert!(source.len() < MAX_FTML_COMPAT_PARSE_BYTES);
-    assert!(RenderService::should_use_wikidot_compatibility_fallback(
+    assert!(!RenderService::should_use_wikidot_compatibility_fallback(
         &source,
         &fallback_test_page_info(
             "vg021-jp-scp-style-resource-769330c42a",
@@ -1320,4 +1440,200 @@ fn leaves_unsupported_embed_literal_in_compat_fallback() {
         r#"&lt;iframe src="//example.com/widget" style="display: none"&gt;&lt;/iframe&gt;"#
     ));
     assert!(!rendered.contains(r#"<iframe src="//example.com/widget""#));
+}
+
+fn rewrite_single_html_block_body(html_block: &str) -> String {
+    let page_info = fallback_test_page_info("replay", "Replay");
+    let body = concat!(
+        "<p>",
+        r#"<iframe src="https://example.com/" allowtransparency="true" frameborder="0" class="html-block-iframe"></iframe>"#,
+        "</p>",
+    )
+    .to_owned();
+    RenderService::rewrite_wikidot_html_block_iframe_urls(
+        body,
+        &page_info,
+        &[html_block.to_owned()],
+    )
+}
+
+#[test]
+fn direct_html_iframe_with_javascript_src_falls_back_to_hosted_frame() {
+    let rewritten =
+        rewrite_single_html_block_body(r#"<iframe src="javascript:alert(1)"></iframe>"#);
+
+    assert_eq!(
+        rewritten,
+        concat!(
+            "<p>",
+            r#"<iframe src="/replay/html/1" allowtransparency="true" frameborder="0" class="html-block-iframe"></iframe>"#,
+            "</p>",
+        ),
+    );
+    assert!(!rewritten.contains("javascript:"));
+}
+
+#[test]
+fn direct_html_iframe_with_data_src_falls_back_to_hosted_frame() {
+    let rewritten = rewrite_single_html_block_body(
+        r#"<iframe src="data:text/html,<script>alert(1)</script>"></iframe>"#,
+    );
+
+    // The data URL contains angle brackets, so the direct-iframe shape
+    // rejects it before the scheme gate; either way it must stay hosted.
+    assert!(rewritten.contains(r#"<iframe src="/replay/html/1""#));
+    assert!(!rewritten.contains("data:text/html"));
+}
+
+#[test]
+fn direct_html_iframe_with_relative_src_falls_back_to_hosted_frame() {
+    let rewritten = rewrite_single_html_block_body(
+        r#"<iframe src="/local/path" sandbox="allow-scripts allow-same-origin"></iframe>"#,
+    );
+
+    // A relative src would resolve against the wiki page origin, so it must
+    // not reach the page DOM even with an attacker-chosen sandbox value.
+    assert!(rewritten.contains(r#"<iframe src="/replay/html/1""#));
+    assert!(!rewritten.contains("allow-scripts"));
+}
+
+#[test]
+fn direct_html_iframe_without_src_passes_through_verbatim() {
+    // Live Wikidot emits a src-less iframe with a recognized attribute
+    // directly; it loads nothing, so the scheme gate has nothing to vet.
+    let block = r#"<iframe title="probe"></iframe>"#;
+    let rewritten = rewrite_single_html_block_body(block);
+
+    assert!(rewritten.contains(block));
+    assert!(!rewritten.contains("/replay/html/1"));
+}
+
+#[test]
+fn direct_html_iframe_without_any_attribute_falls_back_to_hosted_frame() {
+    let rewritten = rewrite_single_html_block_body("<iframe></iframe>");
+
+    assert!(rewritten.contains(r#"<iframe src="/replay/html/1""#));
+}
+
+#[test]
+fn direct_html_iframe_with_bare_src_falls_back_to_hosted_frame() {
+    let rewritten = rewrite_single_html_block_body("<iframe src></iframe>");
+
+    assert!(rewritten.contains(r#"<iframe src="/replay/html/1""#));
+}
+
+#[test]
+fn direct_html_iframe_with_repeated_src_falls_back_to_hosted_frame() {
+    let rewritten = rewrite_single_html_block_body(
+        r#"<iframe src="https://example.com/a" src="javascript:alert(1)"></iframe>"#,
+    );
+
+    // Browsers resolve the first src, so the second occurrence must not
+    // smuggle a scheme past the gate.
+    assert!(rewritten.contains(r#"<iframe src="/replay/html/1""#));
+    assert!(!rewritten.contains("javascript:"));
+}
+
+#[test]
+fn direct_html_iframe_with_uppercase_scheme_falls_back_to_hosted_frame() {
+    let rewritten = rewrite_single_html_block_body(
+        r#"<iframe src="HTTPS://example.com/a"></iframe>"#,
+    );
+
+    // Matches the legacy [[iframe]] gate, which is case-sensitive.
+    assert!(rewritten.contains(r#"<iframe src="/replay/html/1""#));
+}
+
+#[test]
+fn direct_html_iframe_with_uppercase_src_name_is_still_gated() {
+    let rewritten =
+        rewrite_single_html_block_body(r#"<iframe SRC="javascript:alert(1)"></iframe>"#);
+
+    assert!(rewritten.contains(r#"<iframe src="/replay/html/1""#));
+    assert!(!rewritten.contains("javascript:"));
+}
+
+#[test]
+fn direct_html_iframe_with_https_src_and_sandbox_passes_through_verbatim() {
+    let block = r#"<iframe src="https://example.com/embed" width="500" sandbox="allow-scripts" allowfullscreen></iframe>"#;
+    let rewritten = rewrite_single_html_block_body(block);
+
+    // Live Wikidot probes list sandbox among the recognized pass-through
+    // attributes, so it stays allowlisted; the scheme gate is the boundary.
+    assert!(rewritten.contains(block));
+    assert!(!rewritten.contains("/replay/html/1"));
+}
+
+#[test]
+fn direct_html_iframe_with_http_src_passes_through_verbatim() {
+    let block = r#"<iframe src='http://example.com/embed'></iframe>"#;
+    let rewritten = rewrite_single_html_block_body(block);
+
+    assert!(rewritten.contains(block));
+    assert!(!rewritten.contains("/replay/html/1"));
+}
+
+#[test]
+fn direct_html_iframe_with_embedded_allowlisted_scheme_falls_back_to_hosted_frame() {
+    // Anchoring pin: the gate is starts_with, not contains. A dangerous
+    // scheme with an allowlisted URL embedded later must still fall back.
+    let rewritten = rewrite_single_html_block_body(
+        r#"<iframe src="javascript:http://example.com/x"></iframe>"#,
+    );
+
+    assert!(rewritten.contains(r#"<iframe src="/replay/html/1""#));
+    assert!(!rewritten.contains("javascript:"));
+}
+
+#[test]
+fn direct_html_iframe_with_padded_dangerous_src_falls_back_to_hosted_frame() {
+    // No trim by design (stricter than the legacy gate): leading whitespace
+    // fails starts_with, and browsers would strip it before resolving.
+    let rewritten =
+        rewrite_single_html_block_body(r#"<iframe src=" //evil/x"></iframe>"#);
+
+    assert!(rewritten.contains(r#"<iframe src="/replay/html/1""#));
+    assert!(!rewritten.contains("//evil/x"));
+}
+
+#[test]
+fn direct_html_iframe_with_padded_legitimate_src_falls_back_to_hosted_frame() {
+    // Documents the deliberate stricter-than-legacy behavior: even a padded
+    // https URL falls back instead of passing through.
+    let rewritten = rewrite_single_html_block_body(
+        r#"<iframe src=" https://example.com/a"></iframe>"#,
+    );
+
+    assert!(rewritten.contains(r#"<iframe src="/replay/html/1""#));
+}
+
+#[test]
+fn direct_html_iframe_with_entity_encoded_scheme_falls_back_to_hosted_frame() {
+    // The raw & fails starts_with, so no decoding can smuggle a scheme past.
+    let rewritten = rewrite_single_html_block_body(
+        r#"<iframe src="&#106;avascript:alert(1)"></iframe>"#,
+    );
+
+    assert!(rewritten.contains(r#"<iframe src="/replay/html/1""#));
+    assert!(!rewritten.contains("&#106;"));
+}
+
+#[test]
+fn direct_html_iframe_with_scheme_free_src_forms_falls_back_to_hosted_frame() {
+    for block in [
+        r#"<iframe src="//evil/x"></iframe>"#,
+        r#"<iframe src=""></iframe>"#,
+        r#"<iframe src=javascript:alert(1)></iframe>"#,
+    ] {
+        let rewritten = rewrite_single_html_block_body(block);
+
+        assert!(
+            rewritten.contains(r#"<iframe src="/replay/html/1""#),
+            "scheme-free src must stay hosted: {block}"
+        );
+    }
+    assert!(
+        !rewrite_single_html_block_body(r#"<iframe src=javascript:alert(1)></iframe>"#)
+            .contains("javascript:")
+    );
 }

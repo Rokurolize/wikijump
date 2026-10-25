@@ -22,12 +22,11 @@ use super::super::ftml_render::{
     WikidotCompatLinkTitleMap, collect_fallback_page_references,
 };
 use super::super::service::{
-    MAX_FTML_COMPAT_COLLAPSIBLE_BLOCKS, MAX_FTML_COMPAT_DENSE_PARSE_SCORE,
-    MAX_FTML_COMPAT_PARSE_BYTES, MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS,
-    MIN_FTML_COMPAT_TABBED_FALLBACK_BYTES, MIN_FTML_COMPAT_TABBED_FALLBACK_MARKERS,
-    MIN_FTML_COMPAT_TABBED_MARKERS, MIN_FTML_COMPAT_TABBED_RENDER_BYTES,
-    MIN_URL_OFFSET_LISTPAGES_CONTENT_BYTES, MIN_URL_OFFSET_LISTPAGES_RENDER_TIMEOUT_SECS,
-    RenderService, WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX, WIKIDOT_RATE_ANCHOR_REGEX,
+    MAX_FTML_COMPAT_DENSE_PARSE_SCORE, MAX_FTML_COMPAT_PARSE_BYTES,
+    MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS, MIN_FTML_COMPAT_TABBED_MARKERS,
+    MIN_FTML_COMPAT_TABBED_RENDER_BYTES, MIN_URL_OFFSET_LISTPAGES_CONTENT_BYTES,
+    MIN_URL_OFFSET_LISTPAGES_RENDER_TIMEOUT_SECS, RenderProtectionBundle, RenderService,
+    WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX, WIKIDOT_RATE_ANCHOR_REGEX,
     WIKIDOT_RATE_ANCHOR_SENTINEL_PREFIX, WIKIDOT_TABVIEW_INIT_SCRIPT,
     WIKIDOT_TABVIEW_SCRIPT, collect_wikidot_compat_empty_label_link_slugs,
     escape_list_pages_html_attr, escape_list_pages_html_text, push_escaped_html,
@@ -52,7 +51,44 @@ use ftml::data::PageInfo;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
+use std::sync::LazyLock;
 use std::time::Duration;
+
+static RESIDUAL_WIKIDOT_PROTECTION_MARKER_REGEX: LazyLock<regex::Regex> = LazyLock::new(
+    || {
+        regex::Regex::new(
+            r"(?i)WIKIJUMPWIKIDOT(?:COMPAT(?:HTML|TEXT|LINK)|INLINEHTML|COLORSPAN|LISTPAGESELLIPSIS)[0-9a-f]{32}(?:I[0-9]+)?X",
+        )
+        .expect("residual Wikidot protection marker pattern is valid")
+    },
+);
+
+impl RenderProtectionBundle {
+    pub(in crate::services::render) fn restore_compat_text_with_cleanup(
+        &self,
+        text: &str,
+        cleanup: impl Fn(&str) -> String,
+    ) -> String {
+        self.wikidot_compat_text.restore_with_resolver_and_cleanup(
+            text,
+            |fragment| self.restore_nested_compatibility_markers(fragment),
+            cleanup,
+        )
+    }
+
+    pub(in crate::services::render) fn take_css_modules(
+        &mut self,
+        cleanup: impl Fn(&str) -> String,
+    ) -> Vec<String> {
+        std::mem::take(&mut self.wikidot_css_modules)
+            .into_iter()
+            .map(|css| {
+                self.wikidot_compat_text
+                    .restore_with_cleanup(&css, &cleanup)
+            })
+            .collect()
+    }
+}
 
 #[derive(Debug, Default)]
 struct FallbackParagraph {
@@ -61,42 +97,55 @@ struct FallbackParagraph {
 }
 
 impl RenderService {
+    /// Remove only reserved runtime protection tokens that survived the
+    /// compatibility fallback's owning registries. The fallback may combine
+    /// expanded content whose registry is no longer in scope; exposing those
+    /// tokens is never useful to readers.
+    pub(in crate::services::render) fn strip_residual_wikidot_protection_markers(
+        html: &str,
+    ) -> String {
+        RESIDUAL_WIKIDOT_PROTECTION_MARKER_REGEX
+            .replace_all(html, "")
+            .into_owned()
+    }
+
+    pub(in crate::services::render) fn strip_residual_markers_if_nested(
+        html: &str,
+        nested_render: bool,
+    ) -> String {
+        if nested_render {
+            html.to_owned()
+        } else {
+            Self::strip_residual_wikidot_protection_markers(html)
+        }
+    }
+
     pub(in crate::services::render) fn should_use_wikidot_compatibility_fallback(
         wikitext: &str,
-        page_info: &PageInfo<'_>,
+        _page_info: &PageInfo<'_>,
     ) -> bool {
         if wikitext.len() > MAX_FTML_COMPAT_PARSE_BYTES {
             return true;
         }
 
-        if Self::wikidot_compat_has_many_collapsible_blocks(wikitext) {
-            return true;
-        }
-
-        if Self::wikidot_compat_has_pathological_tabview_shape(wikitext) {
-            return true;
-        }
-
-        let page_name = page_info.page.as_ref();
-        let title = page_info.title.as_ref();
-        if !page_name.contains("scp-style-resource")
-            && !title.contains("スタイルリソース")
-        {
-            return false;
-        }
-
-        Self::wikidot_compat_parse_complexity_score(wikitext)
-            > MAX_FTML_COMPAT_DENSE_PARSE_SCORE
-    }
-
-    fn wikidot_compat_has_many_collapsible_blocks(wikitext: &str) -> bool {
-        wikitext.matches("[[collapsible").count() > MAX_FTML_COMPAT_COLLAPSIBLE_BLOCKS
-    }
-
-    fn wikidot_compat_has_pathological_tabview_shape(wikitext: &str) -> bool {
-        wikitext.len() >= MIN_FTML_COMPAT_TABBED_FALLBACK_BYTES
-            && wikitext.matches("[[tab").count()
-                >= MIN_FTML_COMPAT_TABBED_FALLBACK_MARKERS
+        // Collapsible count and page name/title used to gate this fallback
+        // (#2606). Flat collapsible galleries render normally through FTML
+        // (59 Standing pages, all nesting depth 1), and page identity is
+        // never a content-shape rule. The dense-parse score cannot replace
+        // the name gate either: the real scp-style-resource scores 191,950
+        // while 47 healthy pages score higher (up to 1,132,500), so no
+        // threshold separates them. The tabview shape gate (64 KB with 12
+        // tabs, #337) is removed for the same reason: the July 2026 hang it
+        // was measured against (a-plague-of-philosophical-zombies holding a
+        // worker to a 300 s timeout) no longer reproduces on the pinned
+        // FTML, which renders that page in 0.13 s and the two remaining
+        // tabbed gallery pages (zal-cryptid-s-artwork-hub,
+        // personnel-and-character-dossier) with all bodies and images in
+        // under 0.4 s. Cost stays bounded by the byte cap above and the
+        // render timeouts (tabbed pages keep their extended deadline);
+        // pages that genuinely cannot render fail closed per-page through
+        // the timeout path.
+        false
     }
 
     pub(in crate::services::render) fn ftml_compat_render_timeout(
@@ -1647,5 +1696,25 @@ impl RenderService {
         let rest = &marker[start..];
         let end = rest.find('"')?;
         Some(rest[..end].to_owned())
+    }
+}
+
+#[cfg(test)]
+mod residual_marker_tests {
+    use super::RenderService;
+
+    #[test]
+    fn fallback_strips_only_complete_reserved_protection_tokens() {
+        let input = concat!(
+            "before WIKIJUMPWIKIDOTCOMPATHTML0123456789abcdef0123456789abcdefI17X ",
+            "WIKIJUMPWIKIDOTINLINEHTMLabcdef0123456789abcdef0123456789X ",
+            "WIKIJUMPWIKIDOTCOMPATTEXTABCDEF0123456789ABCDEF0123456789I0X ",
+            "WIKIJUMPWIKIDOTCOMPATHTML-not-a-token after",
+        );
+
+        assert_eq!(
+            RenderService::strip_residual_wikidot_protection_markers(input),
+            "before    WIKIJUMPWIKIDOTCOMPATHTML-not-a-token after",
+        );
     }
 }

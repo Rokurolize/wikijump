@@ -9,6 +9,10 @@ import {
   parseDeploymentEnvironment
 } from "./src/lib/server/deployment-environment.js"
 import { auditedExternalAssetOrigins } from "./src/lib/server/audited-external-asset-origins.js"
+import {
+  platformDomains,
+  platformHttpsOrigin
+} from "./src/lib/server/platform-domains.js"
 
 // The former only works on node 20.11+
 const __dirname = import.meta.dirname ?? dirname(fileURLToPath(import.meta.url))
@@ -38,10 +42,14 @@ const WIKIDOT_LEGACY_IMAGE_SOURCES = ["https://d3g0gp89917ko0.cloudfront.net"]
 /** @type {CspSources} */
 const WIKIDOT_LEGACY_SCRIPT_SOURCES = []
 /** @type {CspSources} */
-const LOCAL_SCP_FILE_IMAGE_SOURCES = [
-  "https://scp-wiki.wjfiles.localhost",
-  "https://scp-jp.wjfiles.localhost"
-]
+// These read-only local mirrors are already trusted image sources. Included
+// components also retain their source mirror's stylesheet/font authority
+// (e.g. info:start imports scp-wiki's info:style on the local authoring site).
+// Keep this exact local allowlist; authored imports cannot grant new origins.
+// The mirrors are this local environment's own file hosts (standing:
+// `scp-wiki.wjfiles.localhost`; local development:
+// `scp-wiki.wjfiles.dev.localhost:18443`).
+const LOCAL_SCP_FILE_ASSET_SITES = ["scp-wiki", "scp-jp"]
 /** @type {CspSources} */
 const WIKIDOT_IMAGE_SOURCES = [
   "https://scp-wiki.wikidot.com",
@@ -51,7 +59,17 @@ const WIKIDOT_IMAGE_SOURCES = [
   "https://*.wdfiles.com",
   "https://cdn.scpwiki.com",
   "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com",
-  "https://d2qhngyckgiutd.cloudfront.net"
+  "https://d2qhngyckgiutd.cloudfront.net",
+  // Header logos and decorative images that theme stylesheets reference from
+  // their GitHub Pages hosts and from Wikimedia Commons. Live Wikidot loads
+  // each (retained observations:
+  // install/local/wikidot-verification/artifacts/theme-sweep-external-origins-20261019.json
+  // and, for the SCP-JP host,
+  // install/local/wikidot-verification/artifacts/scp-jp-external-origins-20261025.json).
+  "https://nu-scptheme.github.io",
+  "https://scp-jp.github.io",
+  "https://scpwiki.github.io",
+  "https://upload.wikimedia.org"
 ]
 /** @type {CspSources} */
 const WIKIDOT_MEDIA_FRAME_SOURCES = ["https://www.youtube.com", "https://embed.acast.com"]
@@ -63,6 +81,12 @@ const WIKIDOT_STYLE_SOURCES = auditedExternalAssetOrigins("styles")
 const WIKIDOT_FONT_SOURCES = auditedExternalAssetOrigins("fonts")
 
 const deploymentEnvironment = parseDeploymentEnvironment()
+const domains = platformDomains({ deploymentEnvironment })
+const LOCAL_SCP_FILE_ASSET_SOURCES = /** @type {CspSources} */ (
+  LOCAL_SCP_FILE_ASSET_SITES.map((site) =>
+    platformHttpsOrigin(`${site}.${domains.files}`, domains)
+  )
+)
 const testOutDir = process.env.NODE_TEST_CONTEXT
   ? resolve(tmpdir(), `wikijump-framerail-svelte-kit-test-${process.pid}`)
   : null
@@ -83,7 +107,7 @@ function imageSources() {
   ]
 
   if (deploymentEnvironment === "local") {
-    sources.push(...LOCAL_SCP_FILE_IMAGE_SOURCES)
+    sources.push(...LOCAL_SCP_FILE_ASSET_SOURCES)
     sources.push(...WIKIDOT_LEGACY_IMAGE_SOURCES)
   }
 
@@ -93,12 +117,22 @@ function imageSources() {
 /** @returns {CspSources} */
 function styleSources() {
   /** @type {CspSources} */
-  return ["self", "unsafe-inline", CURRENT_SITE_FILE_ORIGIN, ...WIKIDOT_STYLE_SOURCES]
+  const sources = [
+    "self",
+    "unsafe-inline",
+    CURRENT_SITE_FILE_ORIGIN,
+    ...WIKIDOT_STYLE_SOURCES
+  ]
+  if (deploymentEnvironment === "local") sources.push(...LOCAL_SCP_FILE_ASSET_SOURCES)
+  return sources
 }
 
 /** @returns {CspSources} */
 function fontSources() {
-  return ["self", "data:", ...WIKIDOT_FONT_SOURCES]
+  /** @type {CspSources} */
+  const sources = ["self", "data:", ...WIKIDOT_FONT_SOURCES]
+  if (deploymentEnvironment === "local") sources.push(...LOCAL_SCP_FILE_ASSET_SOURCES)
+  return sources
 }
 
 /** @returns {CspSources} */
@@ -108,7 +142,13 @@ function scriptSources() {
 
 /** @returns {CspSources} */
 function frameSources() {
-  return ["self", ...WIKIDOT_MEDIA_FRAME_SOURCES]
+  // The [[html]] block fallback iframe is emitted with a same-origin src
+  // (`/<slug>/html/<n>`) that redirects to the site's file origin, where the
+  // block is hosted. Chromium re-checks frame-src on every redirect hop, so
+  // without the per-site file origin (materialized per response by
+  // `materializeSiteCsp`) every html block fails with `ERR_BLOCKED_BY_CSP`.
+  // YouTube/Acast remain the only external embeds.
+  return ["self", CURRENT_SITE_FILE_ORIGIN, ...WIKIDOT_MEDIA_FRAME_SOURCES]
 }
 
 /** @type {import("@sveltejs/kit").Config} */

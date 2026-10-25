@@ -1,22 +1,20 @@
-#!/usr/bin/env python3
-"""Activate already-prepared standing application images without compiling."""
+"""Standing runtime helpers: source and container identity, container parking
+and restore, health, saved-page freshness and receipts. `promote.py` drives
+the promotion with them."""
 
 from __future__ import annotations
 
-import argparse
-from datetime import UTC, datetime
 import hashlib
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import re
 import subprocess
 import tempfile
+import threading
 import time
 import tomllib
-
-from merge_identity import validate_candidate_merge
-from volume_contract import PROTECTED_VOLUMES
 
 
 SERVICES = ("deepwell", "framerail", "wws")
@@ -26,7 +24,6 @@ RUNTIME_SERVICES = (
     "wws",
     "caddy",
 )
-PROMOTION_PRECONDITION_SCHEMA = "wikijump.standing_promotion_precondition.v1"
 
 
 def default_runtime_home() -> Path:
@@ -47,10 +44,6 @@ FTML_SOURCE = re.compile(
     r'source = "git\+https://github\.com/Rokurolize/ftml[^\"]*#([0-9a-f]{40})"'
 )
 ENVIRONMENT_KEY = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
-RESOURCE_EXPIRY = re.compile(
-    r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"
-    r"(?:\.[0-9]{1,6})?\+00:00"
-)
 CONTAINER_ID = re.compile(r"[0-9a-f]{64}")
 IMAGE_ID = re.compile(r"sha256:[0-9a-f]{64}")
 
@@ -244,7 +237,7 @@ def wait_for_health(
             raise RuntimeError(
                 f"standing service stopped before becoming healthy: {final}"
             )
-        time.sleep(5)
+        time.sleep(1)
     raise TimeoutError(
         f"standing services did not become healthy within {timeout_seconds}s: {final}"
     )
@@ -380,13 +373,93 @@ def resource_exists(kind: str, reference: str, cwd: Path) -> bool:
     return True
 
 
-def parked_container_name(run_id: str, service: str) -> str:
+def require_standing_applications_running(runtime_home: Path) -> dict[str, dict[str, object]]:
+    """Fail before building/render-ahead if a previous promotion left apps down."""
+    try:
+        previous = runtime_containers(runtime_home)
+    except (subprocess.CalledProcessError, RuntimeError, ValueError, KeyError) as error:
+        raise RuntimeError(
+            "Standing application containers cannot be inspected; stop promotion "
+            "and recover the previous pinned app images from runtime .env before retrying"
+        ) from error
+    missing = [service for service in SERVICES
+               if service not in previous or not previous[service]["running"]]
+    if missing:
+        raise RuntimeError(
+            f"Standing applications are not running: {missing}; recover the prior "
+            "pinned app images from runtime .env before starting promotion"
+        )
+    return previous
+
+
+def run_scope(run_id: str) -> str:
     if not isinstance(run_id, str) or not run_id:
         raise ValueError("promotion run ID is required for container parking")
-    return (
-        f"wikijump-standing-rollback-"
-        f"{hashlib.sha256(run_id.encode('utf-8')).hexdigest()[:24]}-{service}"
-    )
+    return hashlib.sha256(run_id.encode("utf-8")).hexdigest()[:24]
+
+
+def parked_container_name(run_id: str, service: str) -> str:
+    return f"wikijump-standing-rollback-{run_scope(run_id)}-{service}"
+
+
+PARKED_IMAGE_REPOSITORY = "wikijump-standing-parked"
+
+
+def parked_image_tag(run_id: str, service: str) -> str:
+    """Run-scoped snapshot tag for a parked application container."""
+    return f"{PARKED_IMAGE_REPOSITORY}:{run_scope(run_id)}-{service}"
+
+
+def commit_parked_container(parked_name: str, tag: str, cwd: Path) -> str:
+    """Snapshot a stopped parked container's filesystem; return the image ID.
+
+    The container is stopped before the snapshot, so its filesystem is
+    quiescent. Application state lives in the database, files, and cache
+    volumes, not in the container layer, so the snapshot restores the exact
+    serving filesystem without capturing data-plane state.
+    """
+    command("docker", "commit", parked_name, tag, cwd=cwd)
+    return command("docker", "image", "inspect", "--format", "{{.Id}}", tag, cwd=cwd)
+
+
+def discard_parked_images(parked: dict[str, dict[str, object]], cwd: Path) -> None:
+    """Best-effort removal of committed parked snapshots. Never raises.
+
+    Snapshots are redundant once parked containers are restored, and stale
+    once a newer generation replaces the containers that run from them. A
+    snapshot still backing a running container cannot be removed; that
+    failure is ignored and the tag is reaped by a later run.
+    """
+    for entry in parked.values():
+        spec = entry.get("parked_image")
+        tag = spec.get("tag") if isinstance(spec, dict) else None
+        if not tag:
+            continue
+        try:
+            command("docker", "rmi", tag, cwd=cwd)
+        except subprocess.CalledProcessError:
+            continue
+
+
+def prune_parked_images(cwd: Path) -> None:
+    """Best-effort removal of parked snapshots left by earlier runs.
+
+    Runs before new snapshots are committed so one promotion never
+    accumulates more than its own generation of tags. Never raises.
+    """
+    try:
+        listing = command(
+            "docker", "images", "--format", "{{.Repository}}:{{.Tag}}",
+            "--filter", f"reference={PARKED_IMAGE_REPOSITORY}",
+            cwd=cwd,
+        )
+    except subprocess.CalledProcessError:
+        return
+    for reference in listing.split():
+        try:
+            command("docker", "rmi", reference, cwd=cwd)
+        except subprocess.CalledProcessError:
+            continue
 
 
 def restore_parked_containers(
@@ -429,41 +502,184 @@ def restore_parked_containers(
     return restored
 
 
+
+def restore_or_recreate_previous_containers(
+    parked: dict[str, dict[str, object]],
+    runtime_home: Path,
+    override_file: Path,
+    rollback_images: dict[str, dict[str, object]],
+) -> dict[str, object]:
+    """Restore parked app containers, or reconstruct them if Compose removed them.
+
+    Compose matches its containers by immutable labels, which survive
+    ``docker rename``, so the activation ``compose up`` removes renamed parked
+    containers whose image differs from the new desired state. Parking therefore
+    also commits each stopped container to a run-scoped snapshot tag: when the
+    container object is gone, rollback recreates the exact parked filesystem
+    through Compose from the verified tag instead of the older base image.
+    Only when a snapshot is missing too does rollback fall back to the pinned
+    base images. The saved .env must already refer to the old, verified image
+    IDs. No volumes or non-application services are modified here.
+    """
+    try:
+        restored = restore_parked_containers(parked, runtime_home)
+        discard_parked_images(parked, runtime_home)
+        return {"mode": "parked", "services": restored}
+    except subprocess.CalledProcessError as restore_error:
+        # Never hide a genuine identity or rename failure by rebuilding. Only
+        # missing parked containers qualify for the snapshot/image fallback.
+        missing = [
+            service for service, entry in parked.items()
+            if not resource_exists("container", entry["parked_name"], runtime_home)
+        ]
+        if not missing:
+            raise
+        actual_env = read_environment(runtime_home / ".env")
+        if actual_env.get("STANDING_PROJECT_NAME") != "wikijump-standing":
+            raise RuntimeError("rollback is not targeting the standing Compose project") from restore_error
+        expected = rollback_environment(actual_env, rollback_images)
+        for service in SERVICES:
+            key = f"STANDING_{service.upper()}_IMAGE"
+            if actual_env.get(key) != expected[key]:
+                raise RuntimeError(
+                    f"rollback image in runtime environment is not pinned for {service}"
+                ) from restore_error
+        tagged: dict[str, str] = {}
+        tagged_ids: dict[str, str] = {}
+        for service in missing:
+            spec = parked[service].get("parked_image")
+            tag = spec.get("tag") if isinstance(spec, dict) else None
+            if tag and resource_exists("image", tag, runtime_home):
+                actual = command(
+                    "docker", "image", "inspect", "--format", "{{.Id}}", tag,
+                    cwd=runtime_home,
+                )
+                if actual != spec.get("image_id"):
+                    raise RuntimeError(
+                        f"parked snapshot image changed for {service}"
+                    ) from restore_error
+                tagged[service] = tag
+                # The runtime reports resolved image IDs, not tag refs, so the
+                # post-recreate check must compare against the snapshot's ID.
+                tagged_ids[service] = actual
+        wanted = {
+            service: tagged_ids.get(service, rollback_images[service]["id"])
+            for service in SERVICES
+        }
+        if tagged:
+            rebased = dict(actual_env)
+            for service, tag in tagged.items():
+                rebased[f"STANDING_{service.upper()}_IMAGE"] = tag
+            write_environment(runtime_home / ".env", rebased)
+        command(
+            *compose_command(
+                runtime_home, "up", "--detach", "--no-deps", "--no-build",
+                "--pull", "never", "--force-recreate", *SERVICES,
+                override_file=override_file,
+            ),
+            cwd=runtime_home,
+        )
+        current = runtime_containers(runtime_home)
+        for service in SERVICES:
+            if current[service]["image_id"] != wanted[service] or not current[service]["running"]:
+                raise RuntimeError(
+                    f"recreated rollback service {service} does not run its previous image"
+                ) from restore_error
+        if not tagged:
+            return {"mode": "recreated-from-pinned-images", "missing_parked": missing,
+                    "services": {service: current[service] for service in SERVICES}}
+        return {"mode": "parked-image", "missing_parked": missing,
+                "parked_image_services": sorted(tagged),
+                "base_image_services": sorted(set(SERVICES) - set(tagged)),
+                "services": {service: current[service] for service in SERVICES}}
+
+
+def _park_one_container(
+    service: str,
+    old: dict[str, object],
+    runtime_home: Path,
+    run_id: str,
+    parked: dict[str, dict[str, object]],
+    lock: threading.Lock,
+) -> None:
+    """Rename, stop, verify, and snapshot one application container.
+
+    The entry is registered in ``parked`` at the same point as the serial
+    implementation registered it, so a failure partway still leaves the
+    container listed for the restore path.
+    """
+    parked_name = parked_container_name(run_id, service)
+    if resource_exists("container", parked_name, runtime_home):
+        raise RuntimeError(f"rollback container already exists: {parked_name}")
+    command(
+        "docker",
+        "rename",
+        old["container_id"],
+        parked_name,
+        cwd=runtime_home,
+    )
+    renamed = container_identity(parked_name, runtime_home)
+    if renamed["container_id"] != old["container_id"]:
+        raise RuntimeError(f"parked container identity changed for {service}")
+    entry: dict[str, object] = {
+        "service": service,
+        "original_name": old["name"],
+        "parked_name": parked_name,
+        "was_running": old["running"],
+        "container": renamed,
+    }
+    with lock:
+        parked[service] = entry
+    if old["running"]:
+        command("docker", "stop", parked_name, cwd=runtime_home)
+    entry["container"] = container_identity(parked_name, runtime_home)
+    if entry["container"]["running"]:
+        raise RuntimeError(f"parked container is still running for {service}")
+    tag = parked_image_tag(run_id, service)
+    entry["parked_image"] = {
+        "tag": tag,
+        "image_id": commit_parked_container(parked_name, tag, runtime_home),
+    }
+
+
 def park_containers(
     previous: dict[str, dict[str, object]], runtime_home: Path, run_id: str
 ) -> dict[str, dict[str, object]]:
+    """Rename, stop, verify, and snapshot every application container.
+
+    The snapshot tag is the part of the parked set that survives the
+    activation ``compose up``: Compose claims containers by immutable labels
+    and removes renamed ones whose image changed, but the committed tag keeps
+    the exact stopped filesystem restorable through Compose at rollback.
+
+    The services park concurrently: each touches only its own container and
+    image tag, and serial parking (stop grace plus a filesystem commit per
+    service) was most of the activation stage's unexplained time. A failure
+    restores whatever was parked, as the serial version did.
+    """
     parked: dict[str, dict[str, object]] = {}
+    lock = threading.Lock()
     try:
-        for service in SERVICES:
-            old = previous[service]
-            parked_name = parked_container_name(run_id, service)
-            if resource_exists("container", parked_name, runtime_home):
-                raise RuntimeError(f"rollback container already exists: {parked_name}")
-            command(
-                "docker",
-                "rename",
-                old["container_id"],
-                parked_name,
-                cwd=runtime_home,
-            )
-            renamed = container_identity(parked_name, runtime_home)
-            if renamed["container_id"] != old["container_id"]:
-                raise RuntimeError(f"parked container identity changed for {service}")
-            parked[service] = {
-                "service": service,
-                "original_name": old["name"],
-                "parked_name": parked_name,
-                "was_running": old["running"],
-                "container": renamed,
-            }
-            if old["running"]:
-                command("docker", "stop", parked_name, cwd=runtime_home)
-            parked[service]["container"] = container_identity(parked_name, runtime_home)
-            if parked[service]["container"]["running"]:
-                raise RuntimeError(f"parked container is still running for {service}")
+        prune_parked_images(runtime_home)
+        with ThreadPoolExecutor(max_workers=len(SERVICES)) as pool:
+            futures = [
+                pool.submit(
+                    _park_one_container,
+                    service,
+                    previous[service],
+                    runtime_home,
+                    run_id,
+                    parked,
+                    lock,
+                )
+                for service in SERVICES
+            ]
+            for future in futures:
+                future.result()
     except Exception:
         try:
             restore_parked_containers(parked, runtime_home)
+            discard_parked_images(parked, runtime_home)
         except Exception as restore_error:
             raise RuntimeError(
                 "failed to restore partially parked containers"
@@ -472,160 +688,8 @@ def park_containers(
     return parked
 
 
-def remove_candidate_resources(
-    candidate: dict[str, dict[str, object]] | None,
-    candidate_images: dict[str, dict[str, object]],
-    rollback_images: dict[str, dict[str, object]],
-    runtime_home: Path,
-) -> dict[str, object]:
-    if candidate is None or any(service not in candidate for service in SERVICES):
-        raise RuntimeError("candidate container inventory is unavailable")
-    removed_containers = []
-    for service in SERVICES:
-        container_id = candidate[service]["container_id"]
-        command("docker", "rm", "--force", container_id, cwd=runtime_home)
-        if resource_exists("container", container_id, runtime_home):
-            raise RuntimeError(
-                f"candidate container remains after cleanup for {service}"
-            )
-        removed_containers.append({"service": service, "container_id": container_id})
-    rollback_ids = {image["id"] for image in rollback_images.values()}
-    removed_images = []
-    retained_images = []
-    processed_images = set()
-    for service in SERVICES:
-        image_id = candidate_images[service]["id"]
-        if image_id in processed_images:
-            continue
-        processed_images.add(image_id)
-        if image_id in rollback_ids:
-            retained_images.append(
-                {
-                    "service": service,
-                    "image_id": image_id,
-                    "disposition": "rollback-image",
-                }
-            )
-            continue
-        command("docker", "image", "rm", image_id, cwd=runtime_home)
-        if resource_exists("image", image_id, runtime_home):
-            raise RuntimeError(f"candidate image remains after cleanup for {service}")
-        removed_images.append({"service": service, "image_id": image_id})
-    return {
-        "status": "pass",
-        "containers_removed": removed_containers,
-        "images_removed": removed_images,
-        "images_retained_as_rollback": retained_images,
-    }
-
-
 def file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def prepared_resource_expiry(receipt: dict[str, object]) -> str:
-    disposition = receipt.get("resource_disposition")
-    if not isinstance(disposition, dict):
-        raise ValueError("prepared receipt resource expiry is invalid")
-    expiry = disposition.get("expiry")
-    if not isinstance(expiry, str) or RESOURCE_EXPIRY.fullmatch(expiry) is None:
-        raise ValueError("prepared receipt resource expiry is invalid")
-    try:
-        datetime.fromisoformat(expiry)
-    except ValueError as error:
-        raise ValueError("prepared receipt resource expiry is invalid") from error
-    return expiry
-
-
-def load_prepared_receipt(
-    path: Path, source_root: Path, identity: dict[str, str]
-) -> tuple[dict[str, object], str, dict[str, object]]:
-    receipt = json.loads(path.read_text(encoding="utf-8"))
-    if (
-        receipt.get("schema_version") != 1
-        or receipt.get("kind") != "standing-image-preparation"
-    ):
-        raise ValueError("prepared receipt is not a standing image preparation receipt")
-    if receipt.get("status") != "pass":
-        raise ValueError("prepared receipt is not successful")
-    proof_ref = receipt.get("promotion_precondition")
-    if (
-        not isinstance(proof_ref, dict)
-        or not isinstance(proof_ref.get("path"), str)
-        or not isinstance(proof_ref.get("sha256"), str)
-    ):
-        raise ValueError("prepared receipt has no promotion precondition")
-    proof_path = Path(proof_ref["path"])
-    if (
-        not proof_path.is_file()
-        or proof_path.is_symlink()
-        or file_sha256(proof_path) != proof_ref["sha256"]
-    ):
-        raise ValueError("prepared receipt promotion precondition is stale")
-    proof = json.loads(proof_path.read_text(encoding="utf-8"))
-    if (
-        proof.get("schema") != PROMOTION_PRECONDITION_SCHEMA
-        or proof.get("status") != "pass"
-        or not isinstance(proof.get("run_id"), str)
-    ):
-        raise ValueError(
-            "prepared receipt promotion precondition is not a passing canonical receipt"
-        )
-    if receipt.get("run_id") != proof.get("run_id"):
-        raise ValueError(
-            "prepared receipt run ID does not match its promotion precondition"
-        )
-    validate_candidate_merge(
-        source_root,
-        identity,
-        proof.get("candidate"),
-        proof.get("build"),
-        command,
-    )
-    for key in ("wikijump_sha", "wikijump_tree", "ftml_sha", "dependency_lock_sha256"):
-        if receipt.get(key) != identity[key]:
-            raise ValueError(
-                f"prepared receipt {key} does not match the source checkout"
-            )
-    images = receipt.get("images")
-    if not isinstance(images, dict) or set(images) != set(SERVICES):
-        raise ValueError(
-            "prepared receipt must contain exactly the three application images"
-        )
-    profiles = {"deepwell": "release", "framerail": "built", "wws": "release"}
-    dockerfiles = receipt.get("dockerfiles")
-    sealed_images = proof.get("build", {}).get("images")
-    for service in SERVICES:
-        image = images.get(service)
-        if not isinstance(image, dict):
-            raise ValueError(f"prepared receipt image {service} is invalid")
-        reference = image.get("reference")
-        image_id = image.get("id")
-        if not isinstance(image_id, str) or not re.fullmatch(
-            r"sha256:[0-9a-f]{64}", image_id
-        ):
-            raise ValueError(
-                f"prepared image {service} is not bound to an image digest"
-            )
-        if reference != image_id:
-            raise ValueError(
-                f"prepared image {service} does not use its immutable image ID"
-            )
-        if not isinstance(sealed_images, dict) or sealed_images.get(service) != image_id:
-            raise ValueError(
-                f"prepared image {service} does not match the sealed candidate build"
-            )
-        if image.get("profile") != profiles[service]:
-            raise ValueError(
-                f"prepared image {service} profile is not {profiles[service]}"
-            )
-        dockerfile = source_root / "install" / "prod" / service / "Dockerfile"
-        if not isinstance(dockerfiles, dict) or dockerfiles.get(service) != file_sha256(
-            dockerfile
-        ):
-            raise ValueError(f"prepared image {service} Dockerfile identity is stale")
-    prepared_resource_expiry(receipt)
-    return receipt, file_sha256(path), proof
 
 
 def runtime_differential_identity(
@@ -685,403 +749,3 @@ def atomic_json_no_replace(path: Path, value: dict[str, object]) -> None:
             os.close(directory_fd)
     finally:
         temporary_path.unlink(missing_ok=True)
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--source-root", type=Path, default=Path(__file__).resolve().parents[2]
-    )
-    parser.add_argument("--runtime-home", type=Path, default=DEFAULT_RUNTIME_HOME)
-    parser.add_argument("--prepared-receipt", type=Path, required=True)
-    parser.add_argument("--receipt", type=Path)
-    parser.add_argument("--health-timeout-seconds", type=int, default=1800)
-    return parser.parse_args()
-
-
-def main() -> int:
-    args = parse_args()
-    source_root = args.source_root.resolve()
-    runtime_home = args.runtime_home.resolve()
-    requested_receipt_path = args.receipt.resolve() if args.receipt else None
-    override_file = source_root / "install" / "standing" / "refresh.compose.yaml"
-    if args.health_timeout_seconds <= 0:
-        raise ValueError("--health-timeout-seconds must be positive")
-    for required in (
-        runtime_home / ".env",
-        runtime_home / "compose.yaml",
-        override_file,
-    ):
-        if not required.is_file():
-            raise ValueError(f"required standing runtime file is missing: {required}")
-
-    started_at = datetime.now(UTC)
-    activation_started = time.monotonic()
-    identity = repository_identity(source_root)
-    receipt_path = (
-        requested_receipt_path
-        or runtime_home / f"refresh-receipt-{identity['wikijump_sha']}.json"
-    )
-    failure_receipt_path = receipt_path.with_name(
-        f"{receipt_path.stem}-failure{receipt_path.suffix}"
-    )
-    if (
-        receipt_path.exists()
-        or receipt_path.is_symlink()
-        or failure_receipt_path.exists()
-        or failure_receipt_path.is_symlink()
-    ):
-        raise ValueError(
-            "promotion receipt path already exists; use a fresh receipt path"
-        )
-    prepared_receipt_path = args.prepared_receipt.resolve()
-    prepared_receipt, prepared_receipt_sha256, promotion_precondition = load_prepared_receipt(
-        prepared_receipt_path, source_root, identity
-    )
-    environment = read_environment(runtime_home / ".env")
-    previous_environment = dict(environment)
-    if environment.get("STANDING_PROJECT_NAME") != "wikijump-standing":
-        raise ValueError("runtime home is not the wikijump-standing project")
-    rpc_token = environment.get("DEEPWELL_RPC_TOKEN", "")
-    if not re.fullmatch(r"[0-9a-f]{64}", rpc_token):
-        raise ValueError(
-            "standing runtime environment must contain DEEPWELL_RPC_TOKEN as 64 lowercase hexadecimal characters"
-        )
-    network_name = environment.get("STANDING_NETWORK_NAME")
-    if not network_name:
-        raise ValueError("runtime environment does not name its standing network")
-    command("docker", "network", "inspect", "--", network_name, cwd=runtime_home)
-    previous_runtime = runtime_containers(runtime_home)
-    previous_runtime_images = runtime_images(previous_runtime, runtime_home)
-    previous_port_443_owner = port_443_owner(previous_runtime)
-    rollback_images = {
-        service: previous_runtime_images[service] for service in SERVICES
-    }
-
-    prepared_images = prepared_receipt["images"]
-    if not isinstance(prepared_images, dict):
-        raise ValueError("prepared receipt images are invalid")
-    images = {
-        service: image_identity(prepared_images[service]["reference"], runtime_home)
-        for service in SERVICES
-    }
-    for service in SERVICES:
-        expected = prepared_images[service]["id"]
-        if images[service]["id"] != expected:
-            raise RuntimeError(
-                f"prepared image {service} changed: expected {expected}, got {images[service]['id']}"
-            )
-        labels = images[service].get("labels")
-        candidate = promotion_precondition["candidate"]
-        if (
-            not isinstance(labels, dict)
-            or labels.get("com.rokurolize.wikijump.sha")
-            != candidate["wikijump_commit"]
-            or labels.get("com.rokurolize.wikijump.tree")
-            != candidate["wikijump_tree"]
-            or labels.get("com.rokurolize.wikijump.ftml_sha")
-            != candidate["ftml_sha"]
-        ):
-            raise RuntimeError(
-                f"prepared image {service} is not labelled for the sealed candidate source"
-            )
-
-    expiry = prepared_resource_expiry(prepared_receipt)
-    activation_verified_at = time.monotonic()
-    differential_identity_path = runtime_home / RUNTIME_DIFFERENTIAL_IDENTITY
-    previous_differential = None
-    if differential_identity_path.exists():
-        previous_differential = json.loads(
-            differential_identity_path.read_text(encoding="utf-8")
-        )
-    parked: dict[str, dict[str, object]] = {}
-    candidate_runtime = None
-    candidate_runtime_images = None
-    candidate_port_443_owner = None
-    differential_identity_published = False
-    switched = False
-    try:
-        parked = park_containers(
-            previous_runtime, runtime_home, prepared_receipt_sha256
-        )
-        environment.update(
-            {
-                "STANDING_DEEPWELL_IMAGE": prepared_images["deepwell"]["reference"],
-                "STANDING_FRAMERAIL_IMAGE": prepared_images["framerail"]["reference"],
-                "STANDING_WWS_IMAGE": prepared_images["wws"]["reference"],
-                "STANDING_WIKIJUMP_SHA": identity["wikijump_sha"],
-                "STANDING_FTML_SHA": identity["ftml_sha"],
-                "STANDING_RESOURCE_EXPIRY": expiry,
-            }
-        )
-        write_environment(runtime_home / ".env", environment)
-        switched = True
-        compose_started = time.monotonic()
-        command(
-            *compose_command(
-                runtime_home,
-                "up",
-                "--detach",
-                "--no-deps",
-                "--no-build",
-                *SERVICES,
-                override_file=override_file,
-            ),
-            cwd=runtime_home,
-        )
-        health_started = time.monotonic()
-        health = wait_for_health(
-            runtime_home, override_file, args.health_timeout_seconds
-        )
-        health_completed = time.monotonic()
-        stale_pages_remaining, expected_generator = standing_stale_saved_pages(
-            runtime_home, source_root
-        )
-        if stale_pages_remaining != 0:
-            raise RuntimeError(
-                f"standing contains stale saved-page renders: {stale_pages_remaining}"
-            )
-        saved_page_render_freshness = {
-            "status": "pass",
-            "expected_compiled_generator": expected_generator,
-            "stale_pages_remaining": stale_pages_remaining,
-        }
-        canary_started = time.monotonic()
-        body = command(
-            "curl",
-            "--silent",
-            "--show-error",
-            "--fail",
-            "--location",
-            "--insecure",
-            "--max-time",
-            "30",
-            CANARY_URL,
-            cwd=runtime_home,
-        )
-        if "scp-9506" not in body.lower() or "page-content" not in body:
-            raise RuntimeError(
-                "standing scp-9506 canary returned an unexpected document"
-            )
-        canary_completed = time.monotonic()
-        candidate_runtime = runtime_containers(runtime_home)
-        for service in SERVICES:
-            if (
-                candidate_runtime[service]["container_id"]
-                == previous_runtime[service]["container_id"]
-            ):
-                raise RuntimeError(
-                    f"promotion did not create a new container for {service}"
-                )
-            if candidate_runtime[service]["image_id"] != images[service]["id"]:
-                raise RuntimeError(f"candidate container image changed for {service}")
-        candidate_runtime_images = runtime_images(candidate_runtime, runtime_home)
-        candidate_port_443_owner = port_443_owner(candidate_runtime)
-        effective_config = command(
-            *compose_command(runtime_home, "config", override_file=override_file),
-            cwd=runtime_home,
-        )
-        differential_identity = runtime_differential_identity(
-            source_root, identity, images, effective_config
-        )
-        atomic_json(differential_identity_path, differential_identity)
-        differential_identity_published = True
-        receipt: dict[str, object] = {
-            "schema_version": 2,
-            "kind": "standing-promotion",
-            "status": "pass",
-            "run_id": prepared_receipt["run_id"],
-            "started_at": started_at.isoformat(),
-            "completed_at": datetime.now(UTC).isoformat(),
-            "activation_duration_seconds": time.monotonic() - activation_started,
-            "image_verification_duration_seconds": activation_verified_at
-            - activation_started,
-            "compose_activation_duration_seconds": health_started - compose_started,
-            "health_duration_seconds": health_completed - health_started,
-            "canary_duration_seconds": canary_completed - canary_started,
-            **identity,
-            "promotion_precondition": prepared_receipt["promotion_precondition"],
-            "runtime_home": str(runtime_home),
-            "prepared_receipt": {
-                "path": str(prepared_receipt_path),
-                "sha256": prepared_receipt_sha256,
-            },
-            "project_name": "wikijump-standing",
-            "network_name": network_name,
-            "images": images,
-            "rollback_images": rollback_images,
-            "protected_volumes": list(PROTECTED_VOLUMES),
-            "runtime_differential_identity": {
-                "path": str(differential_identity_path),
-                "sha256": file_sha256(differential_identity_path),
-                "identity": differential_identity,
-            },
-            "health": health,
-            "saved_page_render_freshness": saved_page_render_freshness,
-            "canary": {
-                "url": CANARY_URL,
-                "status": "pass",
-                "required_markers": ["scp-9506", "page-content"],
-            },
-            "cleanup": {
-                "status": "pass",
-                "candidate_receipt": {
-                    "path": str(prepared_receipt_path),
-                    "sha256": prepared_receipt_sha256,
-                },
-                "receipt": {
-                    "path": str(prepared_receipt_path),
-                    "sha256": prepared_receipt_sha256,
-                },
-                "superseded_images": [],
-            },
-            "resource_disposition": {
-                "active": {
-                    service: {
-                        "owner": "standing-runtime",
-                        "keep_until": expiry,
-                        "id": images[service]["id"],
-                    }
-                    for service in SERVICES
-                },
-                "rollback": {
-                    service: {
-                        "owner": "standing-runtime-rollback",
-                        "keep_until": expiry,
-                        "id": rollback_images[service]["id"],
-                    }
-                    for service in SERVICES
-                },
-                "volumes": "protected-and-untouched",
-                "worktrees": "none created",
-                "target_directories": "none created",
-            },
-        }
-        atomic_json_no_replace(receipt_path, receipt)
-        print(
-            json.dumps(
-                {"status": "pass", "receipt": str(receipt_path), **identity},
-                sort_keys=True,
-            )
-        )
-        return 0
-    except Exception as error:
-        if switched:
-            if candidate_runtime is None:
-                try:
-                    candidate_runtime = runtime_containers(runtime_home)
-                except Exception:
-                    candidate_runtime = None
-            cleanup = None
-            cleanup_error = None
-            try:
-                cleanup = remove_candidate_resources(
-                    candidate_runtime, images, rollback_images, runtime_home
-                )
-            except Exception as cleanup_exception:
-                cleanup_error = str(cleanup_exception)
-        else:
-            cleanup = {
-                "status": "not-needed",
-                "reason": "candidate activation did not switch the runtime",
-            }
-            cleanup_error = None
-        restored = False
-        restore_error = None
-        restored_runtime = None
-        restored_port_443_owner = None
-        rollback_health = None
-        rollback_canary = None
-        if parked:
-            try:
-                if switched:
-                    write_environment(
-                        runtime_home / ".env",
-                        rollback_environment(previous_environment, rollback_images),
-                    )
-                restored_runtime = restore_parked_containers(parked, runtime_home)
-                final_runtime = runtime_containers(runtime_home)
-                for service in RUNTIME_SERVICES:
-                    if (
-                        final_runtime[service]["container_id"]
-                        != previous_runtime[service]["container_id"]
-                    ):
-                        raise RuntimeError(
-                            f"rollback changed container identity for {service}"
-                        )
-                restored_port_443_owner = port_443_owner(final_runtime)
-                if (
-                    restored_port_443_owner["container_id"]
-                    != previous_port_443_owner["container_id"]
-                ):
-                    raise RuntimeError("rollback changed the port-443 owner")
-                rollback_health = wait_for_health(
-                    runtime_home, override_file, args.health_timeout_seconds
-                )
-                rollback_body = command(
-                    "curl",
-                    "--silent",
-                    "--show-error",
-                    "--fail",
-                    "--location",
-                    "--insecure",
-                    "--max-time",
-                    "30",
-                    CANARY_URL,
-                    cwd=runtime_home,
-                )
-                if (
-                    "scp-9506" not in rollback_body.lower()
-                    or "page-content" not in rollback_body
-                ):
-                    raise RuntimeError(
-                        "restored standing scp-9506 canary returned an unexpected document"
-                    )
-                rollback_canary = {
-                    "url": CANARY_URL,
-                    "status": "pass",
-                    "required_markers": ["scp-9506", "page-content"],
-                }
-                if differential_identity_published:
-                    if previous_differential is None:
-                        differential_identity_path.unlink(missing_ok=True)
-                    else:
-                        atomic_json(differential_identity_path, previous_differential)
-                restored = True
-            except Exception as rollback_exception:
-                restore_error = str(rollback_exception)
-        failure = {
-            "schema_version": 2,
-            "status": "fail",
-            "run_id": prepared_receipt_sha256,
-            "started_at": started_at.isoformat(),
-            "completed_at": datetime.now(UTC).isoformat(),
-            "error": str(error),
-            "containers": {
-                "before": previous_runtime,
-                "candidate": candidate_runtime,
-                "port_443_owner_before": previous_port_443_owner,
-                "port_443_owner_candidate": candidate_port_443_owner,
-            },
-            "runtime_images": {
-                "before": previous_runtime_images,
-                "candidate": candidate_runtime_images,
-            },
-            "cleanup": cleanup,
-            "cleanup_error": cleanup_error,
-            "rollback": {
-                "status": "pass" if restored else "fail",
-                "containers": restored_runtime,
-                "port_443_owner": restored_port_443_owner,
-                "error": restore_error,
-                "health": rollback_health,
-                "canary": rollback_canary,
-            },
-            "rollback_images": rollback_images,
-        }
-        atomic_json_no_replace(failure_receipt_path, failure)
-        raise
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

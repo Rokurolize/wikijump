@@ -129,10 +129,9 @@ test("Site Tools browser requests preserve exact module names and callback indic
   )
 })
 
-
-
 test("Site Tools browser request helper rejects unregistered module shapes", async () => {
-  const fetcher = async () => assert.fail("unsupported Site Tools shapes must fail before fetch")
+  const fetcher = async () =>
+    assert.fail("unsupported Site Tools shapes must fail before fetch")
   await assert.rejects(
     requestWikidotSiteToolsModule(fetcher, "sitetools/UnknownModule", 1),
     { name: "TypeError", message: "Unsupported Site Tools module request" }

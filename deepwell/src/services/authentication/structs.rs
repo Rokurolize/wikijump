@@ -19,7 +19,9 @@
  */
 
 use crate::models::user::Model as UserModel;
+use crate::services::PasswordService;
 use std::net::IpAddr;
+use std::sync::LazyLock;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct AuthenticateUser {
@@ -70,13 +72,13 @@ pub struct LoginUserMfa {
 
 /// Password hash to compute against when a user does not exist.
 ///
-/// It has similar settings to other passwords on Wikijump, but
-/// after hashing the result is ignored (see `valid`).
-///
-/// This is *not* a secret, but the value isn't too important
-/// anyways. The password is simply a long randomly-generated value.
-pub const INVALID_PASSWORD_HASH: &str =
-    "$argon2id$v=19$m=4096,t=3,p=1$UjcwSVNZd1hzUWdkc0s2bg$kxdfVniblhviREHGGy81/A";
+/// Generate it with the same Argon2 parameters and encoding used for real
+/// account passwords. The dummy plaintext is fixed and is not an account secret;
+/// only its salted hash is retained for this process.
+pub static INVALID_PASSWORD_HASH: LazyLock<String> = LazyLock::new(|| {
+    PasswordService::new_hash("wikijump-invalid-account-password-dummy")
+        .expect("generating the dummy authentication hash should succeed")
+});
 
 #[derive(Debug, Clone)]
 pub struct UserAuthInfo {
@@ -100,7 +102,7 @@ impl UserAuthInfo {
     pub fn invalid() -> Self {
         UserAuthInfo {
             user_id: 0,
-            password_hash: str!(INVALID_PASSWORD_HASH),
+            password_hash: INVALID_PASSWORD_HASH.clone(),
             multi_factor_secret: None,
             valid: false,
         }
@@ -160,8 +162,17 @@ mod tests {
         let auth = UserAuthInfo::invalid();
 
         assert_eq!(auth.user_id, 0);
-        assert_eq!(auth.password_hash, INVALID_PASSWORD_HASH);
+        assert_eq!(auth.password_hash, INVALID_PASSWORD_HASH.as_str());
         assert_eq!(auth.multi_factor_secret, None);
         assert!(!auth.valid);
+
+        let real_hash = PasswordService::new_hash("test account password").unwrap();
+        let argon_parameters =
+            |hash: &str| hash.split('$').take(4).collect::<Vec<_>>().join("$");
+        assert_eq!(
+            argon_parameters(&auth.password_hash),
+            argon_parameters(&real_hash),
+            "unknown identifiers should use the same encoded Argon2 cost as real accounts",
+        );
     }
 }

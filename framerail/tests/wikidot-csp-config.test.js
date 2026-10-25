@@ -12,6 +12,39 @@ if (previousFramerailEnvironment === undefined) {
 const directives = config.kit?.csp?.directives
 if (!directives) throw new Error("CSP directives are missing")
 
+test("local included components can load styles and fonts from the reviewed mirrors", () => {
+  for (const origin of [
+    "https://scp-wiki.wjfiles.localhost",
+    "https://scp-jp.wjfiles.localhost"
+  ]) {
+    for (const directive of ["style-src", "font-src"]) {
+      assert(directives[directive]?.includes(origin), `${directive} needs ${origin}`)
+    }
+    for (const directive of ["script-src", "connect-src", "frame-src"]) {
+      assert(!directives[directive]?.includes(origin), `${directive} excludes ${origin}`)
+    }
+  }
+})
+
+test("local mirror style and font grants do not reach other deployments", async () => {
+  const previous = process.env.FRAMERAIL_ENV
+  try {
+    for (const environment of ["dev", "prod"]) {
+      process.env.FRAMERAIL_ENV = environment
+      const { default: other } = await import(
+        `../svelte.config.js?mirror-assets=${environment}`
+      )
+      for (const directive of ["style-src", "font-src"]) {
+        const sources = other.kit.csp.directives[directive]
+        assert(!sources.some((source) => source.includes(".wjfiles.localhost")))
+      }
+    }
+  } finally {
+    if (previous === undefined) delete process.env.FRAMERAIL_ENV
+    else process.env.FRAMERAIL_ENV = previous
+  }
+})
+
 test("allows captured Wikidot legacy asset origins in local CSP", () => {
   assert.equal(directives["upgrade-insecure-requests"], true)
   assert(directives["style-src"]?.some((source) => source === "https://cdn.jsdelivr.net"))
@@ -35,6 +68,24 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
       (source) => source === "https://d2qhngyckgiutd.cloudfront.net"
     )
   )
+  // Theme header logos and decorative images that live Wikidot loads from
+  // these hosts (jakstyle, al-slop, paperstack in the 2026-10-19 theme sweep).
+  for (const origin of [
+    "https://nu-scptheme.github.io",
+    "https://scpwiki.github.io",
+    "https://upload.wikimedia.org"
+  ]) {
+    assert(
+      directives["img-src"]?.some((source) => source === origin),
+      origin
+    )
+  }
+  // Typekit kits (aesthetic-theme, ouroborous-theme) need the kit host for
+  // styles and fonts, and the `p.css` import host for styles only.
+  assert(directives["style-src"]?.includes("https://use.typekit.net"))
+  assert(directives["font-src"]?.includes("https://use.typekit.net"))
+  assert(directives["style-src"]?.includes("https://p.typekit.net"))
+  assert(!directives["font-src"]?.includes("https://p.typekit.net"))
   for (const origin of [
     "https://scp-wiki.wjfiles.localhost",
     "https://scp-jp.wjfiles.localhost"
@@ -94,6 +145,7 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
   )
   assert.deepEqual(directives["frame-src"], [
     "self",
+    "https://wikijump-current-site.invalid",
     "https://www.youtube.com",
     "https://embed.acast.com"
   ])

@@ -34,6 +34,7 @@
 
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::ServiceContext;
+use crate::services::view::redirect::escape_wikidot_html_text;
 use crate::services::{DomainService, SiteService};
 use crate::types::Reference;
 use fluent::{FluentArgs, FluentValue};
@@ -47,6 +48,17 @@ pub struct BasicErrorOutput {
 
 #[derive(Debug)]
 pub struct BasicErrorService;
+
+/// Fluent string argument for basic-error HTML output.
+///
+/// Every value interpolated into a basic-error message lands in final HTML
+/// (element text, or link targets behind fixed `https://{domain}/` prefixes
+/// that pin the scheme). Escape uniformly at the argument boundary rather
+/// than per-slot, so a future caller passing request-path data into any
+/// slot cannot reintroduce reflection (issue #2560).
+fn html_arg(value: impl AsRef<str>) -> FluentValue<'static> {
+    FluentValue::String(escape_wikidot_html_text(value.as_ref()).into())
+}
 
 impl BasicErrorService {
     /// Error for when a canonical site does not exist.
@@ -67,10 +79,12 @@ impl BasicErrorService {
 
         assert!(!locales.is_empty(), "No languages specified");
         let config = ctx.config();
+        let main_domain = config.public_authority(&config.main_domain_no_dot);
+        let files_domain = config.public_authority(&config.files_domain_no_dot);
         let mut args = FluentArgs::new();
-        args.set("main_domain", fluent_str!(config.main_domain_no_dot));
-        args.set("files_domain", fluent_str!(config.files_domain_no_dot));
-        args.set("slug", fluent_str!(site_slug));
+        args.set("main_domain", html_arg(main_domain));
+        args.set("files_domain", html_arg(files_domain));
+        args.set("slug", html_arg(site_slug));
 
         let title = ctx
             .localization()
@@ -106,10 +120,12 @@ impl BasicErrorService {
 
         assert!(!locales.is_empty(), "No languages specified");
         let config = ctx.config();
+        let main_domain = config.public_authority(&config.main_domain_no_dot);
+        let files_domain = config.public_authority(&config.files_domain_no_dot);
         let mut args = FluentArgs::new();
-        args.set("main_domain", fluent_str!(config.main_domain_no_dot));
-        args.set("files_domain", fluent_str!(config.files_domain_no_dot));
-        args.set("custom_domain", fluent_str!(domain));
+        args.set("main_domain", html_arg(main_domain));
+        args.set("files_domain", html_arg(files_domain));
+        args.set("custom_domain", html_arg(domain));
 
         let title = ctx
             .localization()
@@ -157,8 +173,8 @@ impl BasicErrorService {
             .await
             .or_raise(make_error)?;
 
-        let domain = DomainService::preferred_domain(config, &site);
-        args.set("domain", fluent_str!(domain));
+        let domain = DomainService::preferred_authority(config, &site);
+        args.set("domain", html_arg(domain));
 
         let title = ctx
             .localization()
@@ -201,9 +217,9 @@ impl BasicErrorService {
         let site = SiteService::get(ctx, Reference::Id(site_id))
             .await
             .or_raise(make_error)?;
-        let domain = DomainService::preferred_domain(config, &site);
-        args.set("domain", fluent_str!(domain));
-        args.set("page_slug", fluent_str!(page_slug));
+        let domain = DomainService::preferred_authority(config, &site);
+        args.set("domain", html_arg(domain));
+        args.set("page_slug", html_arg(page_slug));
 
         let title = ctx
             .localization()
@@ -245,10 +261,10 @@ impl BasicErrorService {
         let site = SiteService::get(ctx, Reference::Id(site_id))
             .await
             .or_raise(make_error)?;
-        let domain = DomainService::preferred_domain(config, &site);
-        args.set("domain", fluent_str!(domain));
-        args.set("page_slug", fluent_str!(page_slug));
-        args.set("filename", fluent_str!(filename));
+        let domain = DomainService::preferred_authority(config, &site);
+        args.set("domain", html_arg(domain));
+        args.set("page_slug", html_arg(page_slug));
+        args.set("filename", html_arg(filename));
 
         let title = ctx
             .localization()
@@ -290,10 +306,10 @@ impl BasicErrorService {
             .await
             .or_raise(make_error)?;
 
-        let domain = DomainService::preferred_domain(config, &site);
-        args.set("domain", fluent_str!(domain));
-        args.set("page_slug", fluent_str!(page_slug));
-        args.set("filename", fluent_str!(filename));
+        let domain = DomainService::preferred_authority(config, &site);
+        args.set("domain", html_arg(domain));
+        args.set("page_slug", html_arg(page_slug));
+        args.set("filename", html_arg(filename));
 
         let title = ctx
             .localization()
@@ -336,11 +352,11 @@ impl BasicErrorService {
         let site = SiteService::get(ctx, Reference::Id(site_id))
             .await
             .or_raise(make_error)?;
-        let domain = DomainService::preferred_domain(config, &site);
-        args.set("domain", fluent_str!(domain));
-        args.set("index", fluent_str!(index));
-        args.set("block_type", fluent_str!(block_type));
-        args.set("reason", fluent_str!(reason));
+        let domain = DomainService::preferred_authority(config, &site);
+        args.set("domain", html_arg(domain));
+        args.set("index", html_arg(index));
+        args.set("type", html_arg(block_type));
+        args.set("reason", html_arg(reason));
 
         let title = ctx
             .localization()
@@ -372,9 +388,11 @@ impl BasicErrorService {
 
         assert!(!locales.is_empty(), "No languages specified");
         let config = ctx.config();
+        let main_domain = config.public_authority(&config.main_domain_no_dot);
+        let files_domain = config.public_authority(&config.files_domain_no_dot);
         let mut args = FluentArgs::new();
-        args.set("main_domain", fluent_str!(config.main_domain_no_dot));
-        args.set("files_domain", fluent_str!(config.files_domain_no_dot));
+        args.set("main_domain", html_arg(main_domain));
+        args.set("files_domain", html_arg(files_domain));
 
         let title = ctx
             .localization()
@@ -409,7 +427,7 @@ impl BasicErrorService {
 
         assert!(!locales.is_empty(), "No languages specified");
         let mut args = FluentArgs::new();
-        args.set("s3_hash", fluent_str!(s3_hash));
+        args.set("s3_hash", html_arg(s3_hash));
         let title = ctx
             .localization()
             .translate(locales, "basic-error-blob-fetch.title", &args)
@@ -442,7 +460,7 @@ impl BasicErrorService {
         assert!(!locales.is_empty(), "No languages specified");
         let mut args = FluentArgs::new();
         let user_id = user_id.to_string();
-        args.set("user_id", fluent_str!(user_id));
+        args.set("user_id", html_arg(user_id));
         let title = ctx
             .localization()
             .translate(locales, "basic-error-user-fetch.title", &args)
@@ -475,7 +493,7 @@ impl BasicErrorService {
         assert!(!locales.is_empty(), "No languages specified");
         let mut args = FluentArgs::new();
         let user_id = user_id.to_string();
-        args.set("user_id", fluent_str!(user_id));
+        args.set("user_id", html_arg(user_id));
         let title = ctx
             .localization()
             .translate(locales, "basic-error-user-avatar.title", &args)

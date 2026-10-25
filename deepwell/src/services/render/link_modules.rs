@@ -368,6 +368,7 @@ impl RenderService {
                 ErrorType::Render,
             )
         };
+        ctx.note_link_graph_read();
         let txn = ctx.transaction();
         let statement = Statement::from_string(
             txn.get_database_backend(),
@@ -439,6 +440,7 @@ impl RenderService {
                 ErrorType::Render,
             )
         };
+        ctx.note_link_graph_read();
         let txn = ctx.transaction();
         let statement = Statement::from_string(
             txn.get_database_backend(),

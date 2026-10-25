@@ -6,9 +6,9 @@
     "sha256": "1906d7229472694d2afbbea30e65e9e33c39dbc40481f794f4676a4000ac57cb"
   },
   "current_inventory": {
-    "source_revision": "20cd7aa4a74e89976090a1c9d81f267bbb484d58",
+    "source_revision": "62ed9ef590d87d33660d0d167a727215893a13b3",
     "path": "docs/development/compatibility-surface-inventory.json",
-    "sha256": "30e7bc6462035f10c444e3992c338970dfffd8bef0c4f178e6df72405ce00746"
+    "sha256": "0af7a2460e901d86170d3b24e687fb908a66d243d6af11d5c0110d3fcbd6b47a"
   },
   "records": [
     {
@@ -84,6 +84,18 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-route:/-/forgot",
+      "tests": [
+        "framerail/tests/email-token.test.js::forgot load requests the recovery copy keys"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-route:/-/login",
       "tests": [
         "framerail/tests/account-route-boundaries.test.js::account route loads expose their public SvelteKit page data"
@@ -120,6 +132,18 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-route:/-/reset/{token}",
+      "tests": [
+        "framerail/tests/email-token.test.js::reset page exchanges the link for a grant only on POST"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-route:/-/settings",
       "tests": [
         "framerail/tests/account-route-boundaries.test.js::account route loads expose their public SvelteKit page data"
@@ -147,6 +171,30 @@
       "surface_id": "framerail-route:/-/user/{slug}",
       "tests": [
         "framerail/tests/account-route-boundaries.test.js::legacy user slug route fails closed for imported profiles"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/-/verify-email",
+      "tests": [
+        "framerail/tests/email-token.test.js::verify resend page requests the verification copy keys"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/-/verify-email/{token}",
+      "tests": [
+        "framerail/tests/email-token.test.js::verify link load pre-fills the token form without calling Deepwell"
       ],
       "tracking": [
         {
@@ -597,6 +645,31 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-route:/sitemap_page_{n}.xml",
+      "tests": [
+        "framerail/tests/sitemap.test.ts::builds a shard urlset with escaped locations and lastmod dates",
+        "framerail/tests/sitemap.test.ts::parses shard numbers starting at 1 and rejects anything else"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/sitemap.xml",
+      "tests": [
+        "framerail/tests/sitemap.test.ts::builds a sitemap index pointing at each shard page"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-route:/user:info/{target}",
       "tests": [
         "framerail/tests/wikidot-user-info-target-route.test.js::GET /user:info/<target> has an encoded public route"
@@ -981,6 +1054,18 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-server-action:/-/forgot?/default",
+      "tests": [
+        "framerail/tests/email-token.test.js::forgot issue trims the address and always reports success"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-server-action:/-/login?/default",
       "tests": [
         "framerail/tests/account-route-boundaries.test.js::login shares a session across native Wikijump wiki hosts but not custom domains"
@@ -1017,6 +1102,30 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-server-action:/-/reset/{token}?/default",
+      "tests": [
+        "framerail/tests/email-token.test.js::reset page exchanges the link for a grant only on POST"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/-/reset/{token}?/setPassword",
+      "tests": [
+        "framerail/tests/email-token.test.js::reset completion sets the password, clears it, and reports revocation"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-server-action:/-/settings?/display",
       "tests": [
         "framerail/tests/user-settings-action-boundary.test.js::user settings bind persistence to the server session actor"
@@ -1026,6 +1135,18 @@
           "issue": 1063,
           "case": "A1063_SETTINGS_ACTION_BOUNDARY_REGRESSION"
         },
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/-/settings?/password",
+      "tests": [
+        "framerail/tests/user-settings-password-change.spec.ts::account settings change the password with the current one"
+      ],
+      "tracking": [
         {
           "issue": 1372
         }
@@ -1045,9 +1166,45 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-server-action:/-/verify-email?/default",
+      "tests": [
+        "framerail/tests/email-token.test.js::verify issue uses the verify RPC, never the reset RPC"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/-/verify-email/{token}?/default",
+      "tests": [
+        "framerail/tests/email-token.test.js::verify redemption POSTs the token; malformed tokens never reach Deepwell"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-server-action:/?/backlinks",
       "tests": [
         "framerail/tests/page-append-backlinks-public-boundary.test.js::Backlinks handler delegates the current route to the typed public Deepwell view"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/?/createPermission",
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
       ],
       "tracking": [
         {
@@ -1072,6 +1229,18 @@
       "surface_id": "framerail-server-action:/?/deletedGet",
       "tests": [
         "framerail/tests/page-deleted-authorization.test.js::deleted-page actions use the authenticated route context"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/?/deletePermission",
+      "tests": [
+        "framerail/tests/page-option-form-permission.spec.ts::Delete answers with the delete-permission dialog and opens no form"
       ],
       "tracking": [
         {
@@ -1345,6 +1514,18 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-server-action:/?/movePermission",
+      "tests": [
+        "framerail/tests/page-option-form-permission.spec.ts::Move answers with the move-permission dialog and opens no form"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-server-action:/?/parentGet",
       "tests": [
         "framerail/tests/page-parent-action-boundary.test.js::page form initialization gives ParentPane only its parents field"
@@ -1489,6 +1670,18 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/createPermission",
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/delete",
       "tests": [
         "framerail/tests/page-delete-action-boundary.test.js::native Wikidot delete accepts an omitted comment"
@@ -1504,6 +1697,18 @@
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/deletedGet",
       "tests": [
         "framerail/tests/page-deleted-authorization.test.js::deleted-page actions use the authenticated route context"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/deletePermission",
+      "tests": [
+        "framerail/tests/page-option-form-permission.spec.ts::Delete answers with the delete-permission dialog and opens no form"
       ],
       "tracking": [
         {
@@ -1768,6 +1973,18 @@
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/move",
       "tests": [
         "framerail/tests/page-move-action-boundary.test.js::native page move resolves the routed page before moving it"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/movePermission",
+      "tests": [
+        "framerail/tests/page-option-form-permission.spec.ts::Move answers with the move-permission dialog and opens no form"
       ],
       "tracking": [
         {

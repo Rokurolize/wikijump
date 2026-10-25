@@ -7,9 +7,11 @@ use uuid::Uuid;
 use super::super::RenderService;
 use super::super::html_text::{
     HtmlDataSegment, OPAQUE_ELEMENTS, TagKind, html_data_segments,
-    is_foreign_self_closing, opaque_element_end, protected_construct_end, tag_kind,
+    html_preformatted_content_ranges, is_foreign_self_closing, opaque_element_end,
+    protected_construct_end, tag_kind,
 };
 use super::super::literal_regions::LiteralRegionIndex;
+use super::text_fragments::escape_html_text;
 
 #[cfg(test)]
 use std::cell::Cell;
@@ -52,8 +54,9 @@ enum CompatFragment {
         html: String,
         trim_preceding_space: bool,
         allow_span_parent: bool,
+        allow_rate_inline_parent: bool,
         unwrap_residual_div_paragraph_prefix: bool,
-        list_pages_row_boundary: Option<ListPagesRowBoundary>,
+        list_pages_row_boundary: Option<ListPagesContainerBoundary>,
     },
     Plain {
         plain: String,
@@ -62,7 +65,7 @@ enum CompatFragment {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-enum ListPagesRowBoundary {
+enum ListPagesContainerBoundary {
     Open,
     Close,
 }
@@ -95,6 +98,7 @@ impl CompatHtmlFragments {
             html,
             trim_preceding_space: false,
             allow_span_parent: false,
+            allow_rate_inline_parent: false,
             unwrap_residual_div_paragraph_prefix: false,
             list_pages_row_boundary: None,
         })
@@ -112,6 +116,24 @@ impl CompatHtmlFragments {
             html,
             trim_preceding_space: false,
             allow_span_parent: true,
+            allow_rate_inline_parent: false,
+            unwrap_residual_div_paragraph_prefix: false,
+            list_pages_row_boundary: None,
+        })
+    }
+
+    /// Registers a trusted block from a live Rate module, whose observed
+    /// Wikidot output remains inside a cross-tree authored span or anchor.
+    /// The parent is accepted only after FTML has closed any paragraph.
+    pub(in crate::services::render) fn push_rate_block_html(
+        &mut self,
+        html: String,
+    ) -> String {
+        self.push_fragment(CompatFragment::BlockHtml {
+            html,
+            trim_preceding_space: false,
+            allow_span_parent: false,
+            allow_rate_inline_parent: true,
             unwrap_residual_div_paragraph_prefix: false,
             list_pages_row_boundary: None,
         })
@@ -126,12 +148,13 @@ impl CompatHtmlFragments {
             html,
             trim_preceding_space: true,
             allow_span_parent: false,
+            allow_rate_inline_parent: false,
             unwrap_residual_div_paragraph_prefix: false,
             list_pages_row_boundary: None,
         })
     }
 
-    pub(in crate::services::render) fn push_list_pages_row_open(
+    pub(in crate::services::render) fn push_list_pages_container_open(
         &mut self,
         html: String,
     ) -> String {
@@ -139,21 +162,26 @@ impl CompatHtmlFragments {
             html,
             trim_preceding_space: false,
             allow_span_parent: false,
+            allow_rate_inline_parent: false,
             unwrap_residual_div_paragraph_prefix: false,
-            list_pages_row_boundary: Some(ListPagesRowBoundary::Open),
+            list_pages_row_boundary: Some(ListPagesContainerBoundary::Open),
         })
     }
 
-    pub(in crate::services::render) fn push_list_pages_row_close(
+    /// Register only the fixed closing tag of a paired runtime container.
+    /// Its restoration may outlive structurally invalid selected HTML, so it
+    /// must never carry arbitrary block content.
+    pub(in crate::services::render) fn push_list_pages_container_close(
         &mut self,
-        html: String,
+        trim_preceding_space: bool,
     ) -> String {
         self.push_fragment(CompatFragment::BlockHtml {
-            html,
-            trim_preceding_space: true,
+            html: "</div>".to_owned(),
+            trim_preceding_space,
             allow_span_parent: false,
+            allow_rate_inline_parent: false,
             unwrap_residual_div_paragraph_prefix: false,
-            list_pages_row_boundary: Some(ListPagesRowBoundary::Close),
+            list_pages_row_boundary: Some(ListPagesContainerBoundary::Close),
         })
     }
 
@@ -168,6 +196,7 @@ impl CompatHtmlFragments {
             html,
             trim_preceding_space: false,
             allow_span_parent: false,
+            allow_rate_inline_parent: false,
             unwrap_residual_div_paragraph_prefix: true,
             list_pages_row_boundary: None,
         })
@@ -208,9 +237,81 @@ impl CompatHtmlFragments {
         format!("{}{index}X", self.namespace)
     }
 
+    /// `restore` with each of `sets` in turn, in one pass.
+    ///
+    /// A ListPages block keeps one set per row, and restoring them one after
+    /// another rescanned the whole sealed block for every row: a block of 255
+    /// table rows scanned its HTML 255 times. Rows are rendered in order and
+    /// each row's markers stay inside it, so the sets are merged into one
+    /// (their markers renamed into one namespace) and restored once.
+    pub(in crate::services::render) fn restore_in_order(
+        sets: &[Self],
+        text: &str,
+    ) -> String {
+        match sets {
+            [] => text.to_owned(),
+            [set] => set.restore(text),
+            sets => {
+                let (merged, text) = Self::merge(sets, text);
+                merged.restore(&text)
+            }
+        }
+    }
+
+    /// One set holding every fragment of `sets`, and `text` with their markers
+    /// renamed to it. Markers of other sets are left alone.
+    fn merge(sets: &[Self], text: &str) -> (Self, String) {
+        let mut merged = Self::new(text);
+        let mut offsets = std::collections::HashMap::with_capacity(sets.len());
+        for set in sets {
+            offsets.insert(
+                set.namespace.as_str(),
+                (merged.fragments.len(), set.fragments.len()),
+            );
+            merged.fragments.extend(set.fragments.iter().cloned());
+            merged
+                .exact_fragments
+                .extend(set.exact_fragments.iter().cloned());
+        }
+
+        let mut output = String::with_capacity(text.len());
+        let mut cursor = 0;
+        while let Some(offset) = text[cursor..].find(COMPAT_HTML_MARKER_PREFIX) {
+            let start = cursor + offset;
+            let renamed = text
+                .get(start..start + merged.namespace.len())
+                .and_then(|namespace| offsets.get(namespace))
+                .and_then(|&(base, len)| {
+                    let suffix = &text[start + merged.namespace.len()..];
+                    let digits = suffix.bytes().take_while(u8::is_ascii_digit).count();
+                    if digits == 0 || suffix.as_bytes().get(digits) != Some(&b'X') {
+                        return None;
+                    }
+                    let index = suffix[..digits].parse::<usize>().ok()?;
+                    (index < len)
+                        .then_some((base + index, merged.namespace.len() + digits + 1))
+                });
+            output.push_str(&text[cursor..start]);
+            match renamed {
+                Some((index, marker_len)) => {
+                    write!(&mut output, "{}{index}X", merged.namespace)
+                        .expect("writing to a String cannot fail");
+                    cursor = start + marker_len;
+                }
+                None => {
+                    output.push_str(COMPAT_HTML_MARKER_PREFIX);
+                    cursor = start + COMPAT_HTML_MARKER_PREFIX.len();
+                }
+            }
+        }
+        output.push_str(&text[cursor..]);
+        (merged, output)
+    }
+
     pub(in crate::services::render) fn restore(&self, text: &str) -> String {
         let text = self.restore_exact_fragments(text);
         let text = self.restore_block_marker_paragraphs(&text);
+        let text = self.restore_preformatted_markers_as_text(&text);
         let data_segments = html_data_segments(&text);
         self.restore_with(&text, None, Some(&data_segments), true, |fragment| {
             match fragment {
@@ -220,6 +321,73 @@ impl CompatHtmlFragments {
                 CompatFragment::Plain { html, .. } => Some(html.as_str()),
             }
         })
+    }
+
+    fn restore_preformatted_markers_as_text(&self, text: &str) -> String {
+        self.restore_markers_as_text_in_ranges(
+            text,
+            html_preformatted_content_ranges(text),
+        )
+    }
+
+    /// Restore registered fragments that a compatibility fallback could not
+    /// place structurally, keeping them as escaped text in visible HTML data.
+    /// This is used only at the fallback boundary; ordinary rendering retains
+    /// its conservative block-placement rules.
+    pub(in crate::services::render) fn restore_remaining_markers_as_text(
+        &self,
+        text: &str,
+    ) -> String {
+        let mut ranges = html_data_segments(text)
+            .into_iter()
+            .map(|segment| segment.range)
+            .collect::<Vec<_>>();
+        ranges.extend(html_preformatted_content_ranges(text));
+        ranges.sort_by_key(|range| range.start);
+        self.restore_markers_as_text_in_ranges(text, ranges)
+    }
+
+    fn restore_markers_as_text_in_ranges(
+        &self,
+        text: &str,
+        ranges: Vec<std::ops::Range<usize>>,
+    ) -> String {
+        if self.fragments.is_empty() || !text.contains(&self.namespace) {
+            return text.to_owned();
+        }
+        if ranges.is_empty() {
+            return text.to_owned();
+        }
+        let mut output = String::with_capacity(text.len());
+        let mut copied = 0;
+        for range in ranges {
+            if range.start < copied {
+                continue;
+            }
+            output.push_str(&text[copied..range.start]);
+            let content = &text[range.clone()];
+            let mut cursor = 0;
+            while let Some(offset) = content[cursor..].find(&self.namespace) {
+                let start = cursor + offset;
+                output.push_str(&content[cursor..start]);
+                if let Some((index, marker_len)) = self.marker_at(&content[start..]) {
+                    let fragment = match &self.fragments[index] {
+                        CompatFragment::Html(html)
+                        | CompatFragment::BlockHtml { html, .. }
+                        | CompatFragment::Plain { html, .. } => html,
+                    };
+                    output.push_str(&escape_html_text(fragment));
+                    cursor = start + marker_len;
+                } else {
+                    output.push_str(&self.namespace);
+                    cursor = start + self.namespace.len();
+                }
+            }
+            output.push_str(&content[cursor..]);
+            copied = range.end;
+        }
+        output.push_str(&text[copied..]);
+        output
     }
 
     pub(in crate::services::render) fn restore_exact_fragments(
@@ -391,7 +559,7 @@ impl CompatHtmlFragments {
                         } => *list_pages_row_boundary,
                         CompatFragment::Html(_) | CompatFragment::Plain { .. } => None,
                     };
-                    if row_boundary == Some(ListPagesRowBoundary::Close)
+                    if row_boundary == Some(ListPagesContainerBoundary::Close)
                         && !parent_stack.has_list_pages_row_boundary()
                     {
                         output.push_str(&text[start..marker_end]);
@@ -412,13 +580,17 @@ impl CompatHtmlFragments {
                         output.pop();
                         parent_stack.clamp_parsed_len(output.len());
                     }
-                    let allow_span_parent = matches!(
-                        &self.fragments[index],
-                        CompatFragment::BlockHtml {
-                            allow_span_parent: true,
-                            ..
-                        },
-                    );
+                    let (allow_span_parent, rate_inline_scope) =
+                        match &self.fragments[index] {
+                            CompatFragment::BlockHtml {
+                                allow_span_parent,
+                                allow_rate_inline_parent,
+                                ..
+                            } => (*allow_span_parent, *allow_rate_inline_parent),
+                            CompatFragment::Html(_) | CompatFragment::Plain { .. } => {
+                                (false, false)
+                            }
+                        };
                     let unwrap_residual_div_paragraph_prefix = matches!(
                         &self.fragments[index],
                         CompatFragment::BlockHtml {
@@ -433,31 +605,52 @@ impl CompatHtmlFragments {
                             ..
                         },
                     );
+                    let known_container_close =
+                        row_boundary == Some(ListPagesContainerBoundary::Close);
                     let restored_fragment_start = if unwrap_block_paragraphs
                         && matches!(
                             &self.fragments[index],
                             CompatFragment::BlockHtml { .. },
                         ) {
-                        if let Some(fragment_start) = restore_block_html_from_paragraph(
-                            &mut output,
-                            text,
-                            marker_end,
-                            fragment,
-                            &mut cursor,
-                            &mut parent_stack,
-                            BlockParagraphRestoreOptions {
-                                unwrap_residual_div_paragraph_prefix,
-                                trim_preceding_space,
-                            },
-                        ) {
+                        let options = BlockParagraphRestoreOptions {
+                            known_container_close,
+                            unwrap_residual_div_paragraph_prefix,
+                            trim_preceding_space,
+                        };
+                        let restored = if rate_inline_scope {
+                            restore_rate_block_from_inline_paragraph(
+                                &mut output,
+                                text,
+                                marker_end,
+                                fragment,
+                                &mut cursor,
+                                &mut parent_stack,
+                            )
+                        } else {
+                            restore_block_html_from_paragraph(
+                                &mut output,
+                                text,
+                                marker_end,
+                                fragment,
+                                &mut cursor,
+                                &mut parent_stack,
+                                options,
+                            )
+                        };
+                        if let Some(fragment_start) = restored {
                             Some(fragment_start)
                         } else {
-                            if !parent_stack
+                            let parent_accepts_block = parent_stack
                                 .advance_and_check_parent_accepts_block_fragment(
                                     &output,
                                     allow_span_parent,
                                 )
-                            {
+                                || (rate_inline_scope
+                                    && parent_stack
+                                        .advance_and_check_parent_is_rate_inline(
+                                            &output,
+                                        ));
+                            if !known_container_close && !parent_accepts_block {
                                 output.push_str(&text[start..marker_end]);
                                 cursor = marker_end;
                                 continue;
@@ -474,13 +667,13 @@ impl CompatHtmlFragments {
                         fragment_start
                     });
                     match row_boundary {
-                        Some(ListPagesRowBoundary::Open) => {
+                        Some(ListPagesContainerBoundary::Open) => {
                             parent_stack.record_list_pages_row_boundary(
                                 &output,
                                 fragment_start + fragment.len(),
                             );
                         }
-                        Some(ListPagesRowBoundary::Close) => {
+                        Some(ListPagesContainerBoundary::Close) => {
                             parent_stack.close_list_pages_row_boundary(
                                 &mut output,
                                 fragment_start,
@@ -515,8 +708,108 @@ impl CompatHtmlFragments {
 
 #[derive(Clone, Copy, Debug)]
 struct BlockParagraphRestoreOptions {
+    known_container_close: bool,
     unwrap_residual_div_paragraph_prefix: bool,
     trim_preceding_space: bool,
+}
+
+/// Restores a runtime Rate block that FTML placed inside a paragraph-spanning
+/// Wikidot inline scope. Split that scope at the block boundary, matching the
+/// live Wikidot DOM shape while keeping the block outside every paragraph.
+fn restore_rate_block_from_inline_paragraph(
+    output: &mut String,
+    text: &str,
+    marker_end: usize,
+    fragment: &str,
+    cursor: &mut usize,
+    parent_stack: &mut IncrementalHtmlElementStack,
+) -> Option<usize> {
+    let paragraph_start = output.rfind("<p>")?;
+    if !parent_stack.advance_and_check_parent_is_safe(&output[..paragraph_start]) {
+        return None;
+    }
+    let leading = &output[paragraph_start + 3..];
+    let wrappers = active_rate_inline_scope_tags(leading)?;
+    if wrappers.is_empty() {
+        return None;
+    }
+
+    let paragraph_end = text[marker_end..].find("</p>")?;
+    let trailing_end = marker_end + paragraph_end;
+    let trailing = &text[marker_end..trailing_end];
+    let mut trailing_content_end = trailing.len();
+    for (_, name) in wrappers.iter().rev() {
+        let closing = format!("</{name}>");
+        trailing_content_end = trailing[..trailing_content_end]
+            .strip_suffix(&closing)?
+            .len();
+    }
+    let trailing_content = &trailing[..trailing_content_end];
+    if !contains_only_text_breaks_and_balanced_inline_elements(trailing_content) {
+        return None;
+    }
+
+    for (_, name) in wrappers.iter().rev() {
+        write!(output, "</{name}>").expect("writing to a String cannot fail");
+    }
+    output.push_str("</p>");
+
+    let block_start = output.len();
+    for (opening, _) in &wrappers {
+        output.push_str(opening);
+    }
+    output.push_str(fragment);
+    for (_, name) in wrappers.iter().rev() {
+        write!(output, "</{name}>").expect("writing to a String cannot fail");
+    }
+
+    output.push_str("<p>");
+    for (opening, _) in &wrappers {
+        output.push_str(opening);
+    }
+    output.push_str(trailing_content);
+    for (_, name) in wrappers.iter().rev() {
+        write!(output, "</{name}>").expect("writing to a String cannot fail");
+    }
+    output.push_str("</p>");
+    *cursor = trailing_end + "</p>".len();
+    Some(block_start)
+}
+
+fn active_rate_inline_scope_tags(value: &str) -> Option<Vec<(String, String)>> {
+    let mut cursor = 0;
+    let mut stack = Vec::new();
+    while let Some(relative_start) = value[cursor..].find('<') {
+        let start = cursor + relative_start;
+        let Some(TagKind::Element { closing }) = tag_kind(&value[start..]) else {
+            return None;
+        };
+        let end = html_tag_end(value, start)?;
+        let raw_tag = &value[start..end];
+        let tag = raw_tag.strip_prefix('<')?.strip_suffix('>')?.trim();
+        let name = tag
+            .strip_prefix('/')
+            .map_or(tag, str::trim_start)
+            .split(|character: char| character.is_ascii_whitespace() || character == '/')
+            .next()?
+            .to_ascii_lowercase();
+        if closing {
+            if stack.last().is_none_or(|(_, open_name)| open_name != &name) {
+                return None;
+            }
+            stack.pop();
+        } else if !is_void_html_element(&name) {
+            if tag.trim_end().ends_with('/') {
+                return None;
+            }
+            stack.push((raw_tag.to_owned(), name));
+        }
+        cursor = end;
+    }
+    stack
+        .iter()
+        .all(|(_, name)| matches!(name.as_str(), "a" | "span"))
+        .then_some(stack)
 }
 
 /// Restores a trusted block marker without ever nesting block HTML in the
@@ -543,7 +836,9 @@ fn restore_block_html_from_paragraph(
     if !contains_only_text_breaks_and_balanced_inline_elements(trailing) {
         return None;
     }
-    if !parent_stack.advance_and_check_parent_is_safe(&output[..paragraph_start]) {
+    if !options.known_container_close
+        && !parent_stack.advance_and_check_parent_is_safe(&output[..paragraph_start])
+    {
         return None;
     }
 
@@ -703,7 +998,7 @@ fn leading_break_end(value: &str) -> Option<usize> {
 struct IncrementalHtmlElementStack {
     parsed: usize,
     stack: Vec<String>,
-    list_pages_row_depths: Vec<usize>,
+    list_pages_row_stacks: Vec<Vec<String>>,
     valid: bool,
 }
 
@@ -712,7 +1007,7 @@ impl Default for IncrementalHtmlElementStack {
         Self {
             parsed: 0,
             stack: Vec::new(),
-            list_pages_row_depths: Vec::new(),
+            list_pages_row_stacks: Vec::new(),
             valid: true,
         }
     }
@@ -724,24 +1019,32 @@ impl IncrementalHtmlElementStack {
     }
 
     fn has_list_pages_row_boundary(&self) -> bool {
-        !self.list_pages_row_depths.is_empty()
+        !self.list_pages_row_stacks.is_empty()
     }
 
     fn record_list_pages_row_boundary(&mut self, html: &str, end: usize) {
         if self.advance(&html[..end]) {
-            self.list_pages_row_depths.push(self.stack.len());
+            self.list_pages_row_stacks.push(self.stack.clone());
         }
     }
 
     fn close_list_pages_row_boundary(&mut self, html: &mut String, start: usize) {
-        if !self.advance(&html[..start]) {
-            return;
-        }
-        let Some(depth) = self.list_pages_row_depths.pop() else {
+        // The paired delimiter is trusted closing markup, even when a selected
+        // fragment contains crossed/unmatched authored tags. Never let those
+        // tags expose the delimiter's internal marker. Ordinary block fragments
+        // still require the conservative structural parent check.
+        let structurally_valid = self.advance(&html[..start]);
+        let Some(boundary_stack) = self.list_pages_row_stacks.pop() else {
             return;
         };
-        if self.stack.len() < depth {
-            self.valid = false;
+        let depth = boundary_stack.len();
+        if !structurally_valid || self.stack.len() < depth {
+            // A sealed selected-content row owns its malformed descendants.
+            // Resume at its paired, fixed close rather than poisoning every
+            // later runtime fragment with those descendants' scan state.
+            self.stack = boundary_stack;
+            self.parsed = start;
+            self.valid = true;
             return;
         }
         let mut closing = String::new();
@@ -759,6 +1062,15 @@ impl IncrementalHtmlElementStack {
 
     fn advance_and_check_parent_is_safe(&mut self, html: &str) -> bool {
         self.advance_and_check_parent_accepts_block_fragment(html, false)
+    }
+
+    fn advance_and_check_parent_is_rate_inline(&mut self, html: &str) -> bool {
+        self.advance(html)
+            && !self.stack.iter().any(|element| element == "p")
+            && self
+                .stack
+                .last()
+                .is_some_and(|parent| matches!(parent.as_str(), "a" | "span"))
     }
 
     fn advance_and_check_parent_accepts_block_fragment(
@@ -841,18 +1153,14 @@ fn advance_open_html_element_stack(
             return false;
         }
         if closing {
-            if name == "p" && stack.last().is_some_and(|open| open != "p") {
-                // HTML tree building implicitly closes a paragraph before a
-                // block <div>; the corresponding authored </p> is then stray.
-                // Keep the structural stack aligned with browser recovery so
-                // a later trusted ListPages row boundary can close the div.
-                *cursor = end;
-                continue;
+            // Match the browser tree builder's recovery for crossed tags:
+            // close the named ancestor and discard open descendants. A stray
+            // closing tag with no matching open element has no effect. This
+            // lets a later trusted fragment use the actual surviving parent
+            // while malformed tag text still fails closed above.
+            if let Some(open_index) = stack.iter().rposition(|open| open == &name) {
+                stack.truncate(open_index);
             }
-            if stack.last().is_none_or(|open| open != &name) {
-                return false;
-            }
-            stack.pop();
         } else if is_foreign_self_closing(&name, raw_tag) {
             *cursor = end;
             continue;
@@ -1160,12 +1468,72 @@ mod tests {
         );
     }
 
+    fn restore_one_by_one(sets: &[CompatHtmlFragments], text: &str) -> String {
+        sets.iter()
+            .fold(text.to_owned(), |text, set| set.restore(&text))
+    }
+
+    #[test]
+    fn restoring_row_sets_in_one_pass_matches_restoring_them_one_by_one() {
+        let mut outer = CompatHtmlFragments::new("");
+        let foreign = outer.push_html("<em>outer</em>".to_owned());
+        let mut sets = Vec::new();
+        let mut table = String::from("<table class=\"wiki-content-table\">");
+        let mut blocks = String::new();
+        for row in 0..40 {
+            let mut set = CompatHtmlFragments::new("");
+            let title = set.push_html(format!("<a href=\"/page-{row}\">Page {row}</a>"));
+            let author = set.push_plain(&format!("author {row}"));
+            let block = set.push_block_html(format!("<div class=\"row-{row}\">x</div>"));
+            let trimmed = set
+                .push_block_html_trimming_preceding_space(format!("<div>t{row}</div>"));
+            write!(&mut table, "<tr><td>{title}</td><td>{author}</td></tr>").unwrap();
+            write!(
+                &mut blocks,
+                "<p>{block}</p>\n<p>text {foreign}</p> <p>{trimmed}</p>\n"
+            )
+            .unwrap();
+            sets.push(set);
+        }
+        table.push_str("</table>");
+
+        for (text, has_foreign) in [(table, false), (blocks, true)] {
+            let merged = CompatHtmlFragments::restore_in_order(&sets, &text);
+            assert_eq!(merged, restore_one_by_one(&sets, &text));
+            assert_eq!(
+                merged.contains(&foreign),
+                has_foreign,
+                "a foreign set's marker stays"
+            );
+            assert_eq!(
+                merged.matches(COMPAT_HTML_MARKER_PREFIX).count(),
+                usize::from(has_foreign) * 40
+            );
+        }
+    }
+
+    #[test]
+    fn row_sets_sharing_a_paragraph_restore_as_they_do_one_by_one() {
+        let mut first = CompatHtmlFragments::new("");
+        let mut second = CompatHtmlFragments::new("");
+        let first_block = first.push_block_html("<div>first</div>".to_owned());
+        let second_block = second.push_block_html("<div>second</div>".to_owned());
+        let sets = [first, second];
+        let text = format!("<p>{first_block}<br>\n{second_block}</p>");
+
+        assert_eq!(
+            CompatHtmlFragments::restore_in_order(&sets, &text),
+            restore_one_by_one(&sets, &text),
+        );
+    }
+
     #[test]
     fn list_pages_row_boundary_closes_unmatched_summary_html() {
         let mut fragments = CompatHtmlFragments::new("");
-        let row_open = fragments
-            .push_list_pages_row_open(r#"<div class="list-pages-item">"#.to_owned());
-        let row_close = fragments.push_list_pages_row_close("</div>".to_owned());
+        let row_open = fragments.push_list_pages_container_open(
+            r#"<div class="list-pages-item">"#.to_owned(),
+        );
+        let row_close = fragments.push_list_pages_container_close(true);
 
         assert_eq!(
             fragments.restore(&format!(
@@ -1182,9 +1550,10 @@ mod tests {
     #[test]
     fn list_pages_row_boundary_preserves_balanced_summary_html() {
         let mut fragments = CompatHtmlFragments::new("");
-        let row_open = fragments
-            .push_list_pages_row_open(r#"<div class="list-pages-item">"#.to_owned());
-        let row_close = fragments.push_list_pages_row_close("</div>".to_owned());
+        let row_open = fragments.push_list_pages_container_open(
+            r#"<div class="list-pages-item">"#.to_owned(),
+        );
+        let row_close = fragments.push_list_pages_container_close(true);
 
         assert_eq!(
             fragments.restore(&format!(
@@ -1203,12 +1572,14 @@ mod tests {
         let mut fragments = CompatHtmlFragments::new("");
         let wrapper_open =
             fragments.push_block_html(r#"<div class="list-pages-box">"#.to_owned());
-        let first_open = fragments
-            .push_list_pages_row_open(r#"<div class="list-pages-item">"#.to_owned());
-        let first_close = fragments.push_list_pages_row_close("</div>".to_owned());
-        let second_open = fragments
-            .push_list_pages_row_open(r#"<div class="list-pages-item">"#.to_owned());
-        let second_close = fragments.push_list_pages_row_close("</div>".to_owned());
+        let first_open = fragments.push_list_pages_container_open(
+            r#"<div class="list-pages-item">"#.to_owned(),
+        );
+        let first_close = fragments.push_list_pages_container_close(true);
+        let second_open = fragments.push_list_pages_container_open(
+            r#"<div class="list-pages-item">"#.to_owned(),
+        );
+        let second_close = fragments.push_list_pages_container_close(true);
         let wrapper_close = fragments.push_block_html("</div>".to_owned());
         let parsed = format!(
             "<p>{wrapper_open}</p><p>{first_open}</p><h1>FIRST</h1><p><div style=\"text-align: right;\"></p><p>{first_close}<br>\n{second_open}</p><h1>SECOND</h1><p>{second_close}</p><p>{wrapper_close}</p>",
@@ -1226,10 +1597,33 @@ mod tests {
     #[test]
     fn list_pages_row_close_without_its_open_boundary_remains_literal() {
         let mut fragments = CompatHtmlFragments::new("");
-        let row_close = fragments.push_list_pages_row_close("</div>".to_owned());
+        let row_close = fragments.push_list_pages_container_close(true);
         let html = format!("<p>{row_close}</p>");
 
         assert_eq!(fragments.restore(&html), html);
+    }
+
+    #[test]
+    fn paired_container_closers_survive_crossed_selected_content_tags() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let wrapper = fragments
+            .push_list_pages_container_open(r#"<div class="list-pages-box">"#.to_owned());
+        let row = fragments.push_list_pages_container_open(
+            r#"<div class="list-pages-item">"#.to_owned(),
+        );
+        let row_close = fragments.push_list_pages_container_close(true);
+        let wrapper_close = fragments.push_list_pages_container_close(false);
+        let ordinary = fragments.push_block_html("<div>unsafe context</div>".to_owned());
+        let crossed = "<p><span></p><div><p>FIRST<br>\n</span></p></div>";
+        let html = format!(
+            "<p>{wrapper}</p><p>{row}</p>{crossed}<p>{row_close}</p><p>{wrapper_close}</p><span>{ordinary}</span>"
+        );
+        assert_eq!(
+            fragments.restore(&html),
+            format!(
+                "<div class=\"list-pages-box\"><div class=\"list-pages-item\">{crossed}</div></div><span>{ordinary}</span>",
+            )
+        );
     }
 
     #[test]
@@ -1300,6 +1694,24 @@ mod tests {
     }
 
     #[test]
+    fn block_html_parent_stack_recovers_at_crossed_and_stray_closing_tags() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let marker = fragments.push_block_html("<ul><li>trusted</li></ul>".to_owned());
+
+        let crossed = format!("<div><span><strong>before</div><p>{marker}</p>");
+        assert_eq!(
+            fragments.restore(&crossed),
+            "<div><span><strong>before</div><ul><li>trusted</li></ul>",
+        );
+
+        let stray = format!("</strong><div><p>{marker}</p></div>");
+        assert_eq!(
+            fragments.restore(&stray),
+            "</strong><div><ul><li>trusted</li></ul></div>",
+        );
+    }
+
+    #[test]
     fn block_html_parent_stack_accepts_abrupt_html_comment_endings() {
         let mut fragments = CompatHtmlFragments::new("");
         let marker = fragments.push_block_html("<ul><li>trusted</li></ul>".to_owned());
@@ -1358,6 +1770,38 @@ mod tests {
     }
 
     #[test]
+    fn compatibility_markers_inside_pre_are_escaped_as_visible_text() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let marker =
+            fragments.push_html("<strong>runtime fragment & text</strong>".to_owned());
+
+        assert_eq!(
+            fragments.restore(&format!("<pre>{marker}</pre>")),
+            "<pre>&lt;strong&gt;runtime fragment &amp; text&lt;/strong&gt;</pre>",
+        );
+        assert_eq!(
+            fragments.restore(&format!("<code>{marker}</code>")),
+            format!("<code>{marker}</code>"),
+        );
+    }
+
+    #[test]
+    fn fallback_restores_registered_residual_markers_as_escaped_data_text() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let marker = fragments.push_block_html("<div>trusted block</div>".to_owned());
+        let html = format!(
+            r#"<p>{marker}</p><a title="{marker}">{marker}</a><code>{marker}</code><pre>{marker}</pre>"#,
+        );
+
+        assert_eq!(
+            fragments.restore_remaining_markers_as_text(&html),
+            format!(
+                r#"<p>&lt;div&gt;trusted block&lt;/div&gt;</p><a title="{marker}">&lt;div&gt;trusted block&lt;/div&gt;</a><code>{marker}</code><pre>&lt;div&gt;trusted block&lt;/div&gt;</pre>"#,
+            ),
+        );
+    }
+
+    #[test]
     fn block_html_never_restores_in_attributes_comments_or_opaque_elements() {
         let mut fragments = CompatHtmlFragments::new("");
         let marker = fragments.push_block_html("<div>trusted block</div>".to_owned());
@@ -1367,7 +1811,7 @@ mod tests {
         assert_eq!(
             fragments.restore(&html),
             format!(
-                r#"<a title="{marker}">{marker}</a><span>{marker}</span><button>{marker}</button><h2>{marker}</h2><!-- {marker} --><code>{marker}</code><pre>{marker}</pre>"#,
+                r#"<a title="{marker}">{marker}</a><span>{marker}</span><button>{marker}</button><h2>{marker}</h2><!-- {marker} --><code>{marker}</code><pre>&lt;div&gt;trusted block&lt;/div&gt;</pre>"#,
             ),
         );
     }
@@ -1390,10 +1834,40 @@ mod tests {
         let mut fragments = CompatHtmlFragments::new("");
         let marker = fragments.push_block_html("<div>trusted block</div>".to_owned());
 
-        for parent in ["span", "a", "button", "h2", "code", "pre"] {
+        for parent in ["span", "a", "button", "h2", "code"] {
             let html = format!("<{parent}><p>{marker}</p></{parent}>");
             assert_eq!(fragments.restore(&html), html, "parent: {parent}");
         }
+        assert_eq!(
+            fragments.restore(&format!("<pre><p>{marker}</p></pre>")),
+            "<pre><p>&lt;div&gt;trusted block&lt;/div&gt;</p></pre>",
+        );
+    }
+
+    #[test]
+    fn rate_blocks_follow_only_live_cross_tree_inline_parents() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let marker = fragments.push_rate_block_html("<div>rate</div>".to_owned());
+
+        for parent in ["span", "a"] {
+            let flow = format!("<{parent}>{marker}</{parent}>");
+            assert_eq!(
+                fragments.restore(&flow),
+                format!("<{parent}><div>rate</div></{parent}>"),
+            );
+
+            let paragraph = format!("<{parent}><p>{marker}</p></{parent}>");
+            assert_eq!(fragments.restore(&paragraph), paragraph);
+        }
+
+        for parent in ["button", "h2", "code"] {
+            let html = format!("<{parent}>{marker}</{parent}>");
+            assert_eq!(fragments.restore(&html), html);
+        }
+        assert_eq!(
+            fragments.restore(&format!("<pre>{marker}</pre>")),
+            "<pre>&lt;div&gt;rate&lt;/div&gt;</pre>",
+        );
     }
 
     #[test]

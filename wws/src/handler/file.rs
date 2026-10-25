@@ -76,7 +76,10 @@ fn local_lab_wikidot_file_fallback(headers: &HeaderMap, uri: &Uri) -> Option<Str
         .next()?
         .trim_end_matches('.')
         .to_ascii_lowercase();
-    if request_host != format!("{site_slug}.wjfiles.localhost") {
+    // Any loopback files host of a local environment: `wjfiles.localhost`
+    // (standing) or `wjfiles.dev.localhost` (the local development stack).
+    let environment = request_host.strip_prefix(&format!("{site_slug}.wjfiles."))?;
+    if environment != "localhost" && !environment.ends_with(".localhost") {
         return None;
     }
 
@@ -130,6 +133,11 @@ async fn serve_file(
     let last_modified = httpdate::fmt_http_date(file_info.revision_created_at.into());
     let is_head = *method == Method::HEAD;
     let content_type = response_content_type(filename, &file_info.mime);
+    // Script-capable uploads (HTML, SVG, XML) must never render inline in the
+    // files origin, so the inline routes force a download for them. Benign
+    // types (images, audio, video, PDF, plain text) keep inline behavior so
+    // normal wiki embedding is unaffected. See issue #2554.
+    let as_attachment = as_attachment || is_active_content_type(&file_info.mime);
     let params = ServeParams {
         etag: &etag,
         last_modified: &last_modified,
@@ -457,6 +465,33 @@ fn response_content_type<'a>(filename: &str, mime: &'a str) -> &'a str {
     }
 }
 
+/// Reports whether a stored file MIME type can carry active script content
+/// when navigated to directly in a browser.
+///
+/// HTML, XHTML, SVG, and other XML types execute script (or XSLT-driven
+/// behavior) in the files origin, so the inline file routes must serve them
+/// as downloads rather than inline documents. The match is on the MIME
+/// essence only (parameters such as `charset` are ignored) and covers the
+/// whole `+xml` suffix family instead of enumerating individual types.
+/// See issue #2554.
+pub(super) fn is_active_content_type(mime: &str) -> bool {
+    let essence = mime
+        .split(';')
+        .next()
+        .unwrap_or("")
+        .trim()
+        .to_ascii_lowercase();
+    matches!(
+        essence.as_str(),
+        "text/html"
+            | "application/xhtml+xml"
+            | "image/svg+xml"
+            | "image/svg"
+            | "text/xml"
+            | "application/xml",
+    ) || essence.ends_with("+xml")
+}
+
 fn base_headers(
     status: StatusCode,
     etag: &str,
@@ -468,7 +503,8 @@ fn base_headers(
         .status(status)
         .header(header::ETAG, etag)
         .header(header::LAST_MODIFIED, last_modified)
-        .header(header::ACCEPT_RANGES, "bytes");
+        .header(header::ACCEPT_RANGES, "bytes")
+        .header(header::X_CONTENT_TYPE_OPTIONS, "nosniff");
 
     if as_attachment {
         builder = builder.header(
@@ -537,6 +573,7 @@ fn multipart_content_length(
 mod tests {
     use super::*;
     use crate::config::Secrets;
+    use crate::handler::handle_user_avatar;
     use crate::state::build_server_state;
     use axum::Router;
     use axum::body;
@@ -545,6 +582,7 @@ mod tests {
     use axum::http::header::{
         ACCEPT_RANGES, CACHE_CONTROL, CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_RANGE,
         CONTENT_TYPE, ETAG, IF_NONE_MATCH, IF_RANGE, LAST_MODIFIED, LOCATION, RANGE,
+        X_CONTENT_TYPE_OPTIONS,
     };
     use s3::creds::Credentials;
     use s3::region::Region;
@@ -574,6 +612,45 @@ mod tests {
         );
     }
 
+    #[test]
+    fn active_content_types_are_detected_by_mime_essence() {
+        for mime in [
+            "text/html",
+            "text/html; charset=utf-8",
+            "TEXT/HTML; CHARSET=UTF-8",
+            "  text/html  ",
+            "application/xhtml+xml",
+            "image/svg+xml",
+            "image/svg+xml; charset=us-ascii",
+            "image/svg",
+            "text/xml",
+            "application/xml",
+            "application/xml; charset=utf-8",
+            "application/rss+xml",
+            "application/atom+xml",
+        ] {
+            assert!(is_active_content_type(mime), "should be active: {mime}");
+        }
+
+        for mime in [
+            "",
+            "text/plain",
+            "text/plain; charset=us-ascii",
+            "text/css",
+            "image/png",
+            "image/jpeg",
+            "image/gif",
+            "audio/mpeg",
+            "video/mp4",
+            "application/pdf",
+            "application/javascript",
+            "application/octet-stream",
+            "application/x-test",
+        ] {
+            assert!(!is_active_content_type(mime), "should stay inline: {mime}");
+        }
+    }
+
     async fn file_handler_rpc(body: Bytes) -> Response {
         let request: Value = serde_json::from_slice(&body).unwrap();
         let method = request["method"].as_str().unwrap();
@@ -592,6 +669,18 @@ mod tests {
                 "result": {"page_id": 2117},
                 "id": id
             }),
+            "page_get" if request["params"]["page"] == "art:scp-8200:the-phantom-sea" => {
+                json!({
+                    "jsonrpc": "2.0",
+                    "result": {"page_id": 8200},
+                    "id": id
+                })
+            }
+            // The category-merged form must never resolve: it is what the
+            // old files-host lookup produced for multi-colon slugs (#2688).
+            "page_get" if request["params"]["page"] == "art-scp-8200:the-phantom-sea" => {
+                json!({"jsonrpc": "2.0", "result": null, "id": id})
+            }
             "page_get" => json!({
                 "jsonrpc": "2.0",
                 "result": {"page_id": 123},
@@ -625,6 +714,30 @@ mod tests {
                 },
                 "id": id
             }),
+            "file_get" if request["params"]["file"] == "VYkoXf1.webp" => json!({
+                "jsonrpc": "2.0",
+                "result": {
+                    "file_id": 11,
+                    "revision_id": 21,
+                    "revision_created_at": "2020-07-23T06:38:39Z",
+                    "mime": "image/webp",
+                    "size": 6,
+                    "s3_hash": "public-hash"
+                },
+                "id": id
+            }),
+            "file_get" if request["params"]["file"] == "vector.svg" => json!({
+                "jsonrpc": "2.0",
+                "result": {
+                    "file_id": 9,
+                    "revision_id": 19,
+                    "revision_created_at": "2020-07-23T06:38:39Z",
+                    "mime": "image/svg+xml; charset=us-ascii",
+                    "size": 6,
+                    "s3_hash": "public-hash"
+                },
+                "id": id
+            }),
             "file_get"
                 if request["params"]["page_id"] == 2117
                     && request["params"]["file"] == "present file.txt" =>
@@ -642,6 +755,22 @@ mod tests {
                     "id": id
                 })
             }
+            "user_get" if request["params"]["user"] == 20001200 => json!({
+                "jsonrpc": "2.0",
+                "result": {"avatar_s3_hash": [171, 205]},
+                "id": id
+            }),
+            "user_get" if request["params"]["user"] == 20001201 => json!({
+                "jsonrpc": "2.0",
+                "result": {"avatar_s3_hash": [222, 173]},
+                "id": id
+            }),
+            "user_get" if request["params"]["user"] == 20001202 => json!({
+                "jsonrpc": "2.0",
+                "result": {"avatar_s3_hash": [222, 173]},
+                "id": id
+            }),
+            "user_get" => json!({"jsonrpc": "2.0", "result": null, "id": id}),
             "basic_error_missing_page_slug" | "basic_error_missing_file_name" => {
                 json!({
                     "jsonrpc": "2.0",
@@ -652,6 +781,11 @@ mod tests {
             "basic_error_page_fetch" => json!({
                 "jsonrpc": "2.0",
                 "result": {"title": "fetch", "body": "backend failure"},
+                "id": id
+            }),
+            "basic_error_user_avatar" => json!({
+                "jsonrpc": "2.0",
+                "result": {"title": "user not found", "body": "user not found"},
                 "id": id
             }),
             other => panic!("unexpected JSON-RPC method: {other}"),
@@ -722,13 +856,24 @@ mod tests {
     }
 
     fn spawn_s3_server(responses: Vec<(u16, &'static [u8])>) -> S3Server {
+        spawn_s3_server_with_content_type(
+            responses
+                .into_iter()
+                .map(|(status, body)| (status, "application/octet-stream", body))
+                .collect(),
+        )
+    }
+
+    fn spawn_s3_server_with_content_type(
+        responses: Vec<(u16, &'static str, &'static [u8])>,
+    ) -> S3Server {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let endpoint = format!("http://{}", listener.local_addr().unwrap());
         let requests = Arc::new(Mutex::new(Vec::new()));
         let server_requests = Arc::clone(&requests);
 
         let handle = thread::spawn(move || {
-            for (status, body) in responses {
+            for (status, content_type, body) in responses {
                 let (mut stream, _) = listener.accept().unwrap();
                 stream
                     .set_read_timeout(Some(Duration::from_secs(2)))
@@ -756,13 +901,14 @@ mod tests {
                     concat!(
                         "HTTP/1.1 {status} OK\r\n",
                         "Content-Length: {length}\r\n",
-                        "Content-Type: application/octet-stream\r\n",
+                        "Content-Type: {content_type}\r\n",
                         "ETag: \"test-etag\"\r\n",
                         "Connection: close\r\n",
                         "\r\n",
                     ),
                     status = status,
                     length = body.len(),
+                    content_type = content_type,
                 );
                 stream.write_all(response.as_bytes()).unwrap();
                 stream.write_all(body).unwrap();
@@ -918,6 +1064,157 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn file_get_serves_active_types_as_attachment_with_nosniff() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![(200, b"abcdef"), (200, b"abcdef")]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        // Script-capable SVG upload: the inline route must force a download
+        // instead of rendering in the files origin. See issue #2554.
+        let active = handle_file_fetch(
+            State(Arc::clone(&state)),
+            Method::GET,
+            Path(("existing-page".to_owned(), "vector.svg".to_owned())),
+            site_headers(),
+        )
+        .await;
+
+        assert_eq!(active.status(), StatusCode::OK);
+        assert_eq!(
+            active.headers().get(CONTENT_TYPE).unwrap(),
+            "image/svg+xml; charset=us-ascii",
+        );
+        assert_eq!(
+            active.headers().get(CONTENT_DISPOSITION).unwrap(),
+            "attachment; filename=\"vector.svg\"",
+        );
+        assert_eq!(
+            active.headers().get(X_CONTENT_TYPE_OPTIONS).unwrap(),
+            "nosniff",
+        );
+
+        // Benign type: stays inline, but still gets nosniff.
+        let benign = handle_file_fetch(
+            State(state),
+            Method::GET,
+            Path(("existing-page".to_owned(), "present.txt".to_owned())),
+            site_headers(),
+        )
+        .await;
+
+        assert_eq!(benign.status(), StatusCode::OK);
+        assert!(benign.headers().get(CONTENT_DISPOSITION).is_none());
+        assert_eq!(
+            benign.headers().get(X_CONTENT_TYPE_OPTIONS).unwrap(),
+            "nosniff",
+        );
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn avatar_serves_active_types_as_attachment_with_nosniff() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        // One head_object plus one get_object_stream per avatar fetch.
+        let svg = b"<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>";
+        let png = b"\x89PNG\r\n\x1a\n";
+        let s3_server = spawn_s3_server_with_content_type(vec![
+            (200, "image/svg+xml; charset=us-ascii", svg),
+            (200, "image/svg+xml; charset=us-ascii", svg),
+            (200, "image/png", png),
+            (200, "image/png", png),
+            // Stored SVG bytes under a non-SVG MIME stay inline (same as
+            // the file lane); the nosniff assertion below is what keeps
+            // the browser from executing them.
+            (200, "application/octet-stream", svg),
+            (200, "application/octet-stream", svg),
+        ]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        // Script-capable SVG avatar: must download instead of executing
+        // in the files origin. See issue #2653.
+        let active = handle_user_avatar(
+            State(Arc::clone(&state)),
+            Path("20001200".to_owned()),
+            site_headers(),
+        )
+        .await;
+
+        assert_eq!(active.status(), StatusCode::OK);
+        assert_eq!(
+            active.headers().get(CONTENT_TYPE).unwrap(),
+            "image/svg+xml; charset=us-ascii",
+        );
+        assert_eq!(
+            active.headers().get(CONTENT_DISPOSITION).unwrap(),
+            "attachment",
+        );
+        assert_eq!(
+            active.headers().get(X_CONTENT_TYPE_OPTIONS).unwrap(),
+            "nosniff",
+        );
+
+        // Raster avatar: stays inline, but still gets nosniff.
+        let benign = handle_user_avatar(
+            State(Arc::clone(&state)),
+            Path("20001201".to_owned()),
+            site_headers(),
+        )
+        .await;
+
+        assert_eq!(benign.status(), StatusCode::OK);
+        assert_eq!(benign.headers().get(CONTENT_TYPE).unwrap(), "image/png",);
+        assert!(benign.headers().get(CONTENT_DISPOSITION).is_none());
+        assert_eq!(
+            benign.headers().get(X_CONTENT_TYPE_OPTIONS).unwrap(),
+            "nosniff",
+        );
+
+        // Mislabelled case: SVG bytes stored as application/octet-stream
+        // stay inline exactly like the file lane, so the nosniff header
+        // pinned here is the layer that stops the browser executing them.
+        let mislabelled =
+            handle_user_avatar(State(state), Path("20001202".to_owned()), site_headers())
+                .await;
+
+        assert_eq!(mislabelled.status(), StatusCode::OK);
+        assert_eq!(
+            mislabelled.headers().get(CONTENT_TYPE).unwrap(),
+            "application/octet-stream",
+        );
+        assert!(mislabelled.headers().get(CONTENT_DISPOSITION).is_none());
+        assert_eq!(
+            mislabelled.headers().get(X_CONTENT_TYPE_OPTIONS).unwrap(),
+            "nosniff",
+        );
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn avatar_missing_user_still_returns_not_found() {
+        // Removal invalidation (#2556) must keep working after the serving
+        // policy fix: no avatar means 404, not a policy response.
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let missing =
+            handle_user_avatar(State(state), Path("20009999".to_owned()), site_headers())
+                .await;
+
+        assert_eq!(missing.status(), StatusCode::NOT_FOUND);
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
     async fn local_files_get_decodes_page_and_filename_and_returns_file_without_redirect()
     {
         let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
@@ -980,6 +1277,36 @@ mod tests {
             local.bytes().await.unwrap(),
             internal.bytes().await.unwrap()
         );
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn multicolon_page_slug_resolves_by_exact_slug() {
+        // #2688: attachments on pages whose slug holds more than one colon
+        // (category `art`, the rest is the name) must resolve locally for
+        // both the Wikidot-compat and the internal file routes, not fall
+        // back to wdfiles or a missing-file document.
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![(200, b"abcdef"), (200, b"abcdef")]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        for path in [
+            "/local--files/art%3Ascp-8200%3Athe-phantom-sea/VYkoXf1.webp",
+            "/-/file/art%3Ascp-8200%3Athe-phantom-sea/VYkoXf1.webp",
+        ] {
+            let response =
+                router_request(Arc::clone(&state), Method::GET, path, None).await;
+            assert_eq!(
+                response.status(),
+                StatusCode::OK,
+                "multi-colon slug must serve local bytes: {path}",
+            );
+            assert!(!response.headers().contains_key(LOCATION));
+            assert_eq!(response.bytes().await.unwrap(), &b"abcdef"[..]);
+        }
 
         s3_server.join();
         deepwell_server.abort();
@@ -1228,6 +1555,33 @@ mod tests {
         );
         assert!(response.bytes().await.unwrap().is_empty());
         assert!(s3_server.requests().is_empty());
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn dev_environment_scp_mirror_redirects_missing_files_to_wdfiles() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let response = router_request_with_headers(
+            state,
+            Method::GET,
+            "/local--files/theme%3Abasalt/missing.txt",
+            &[
+                (crate::handler::HEADER_SITE_SLUG, "scp-wiki"),
+                (header::HOST, "scp-wiki.wjfiles.dev.localhost:18443"),
+            ],
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::FOUND);
+        assert_eq!(
+            response.headers().get(LOCATION).unwrap(),
+            "https://scp-wiki.wdfiles.com/local--files/theme%3Abasalt/missing.txt",
+        );
         s3_server.join();
         deepwell_server.abort();
     }
@@ -1573,6 +1927,10 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         assert_eq!(response.headers().get(ETAG).unwrap(), "\"etag\"");
         assert_eq!(response.headers().get(ACCEPT_RANGES).unwrap(), "bytes");
+        assert_eq!(
+            response.headers().get(X_CONTENT_TYPE_OPTIONS).unwrap(),
+            "nosniff",
+        );
         assert!(response.headers().get(CONTENT_DISPOSITION).is_none());
     }
 

@@ -83,15 +83,11 @@
 </script>
 
 <!--
-  Source Wikidot leaves `#action-area` hidden and empty when a read-only
-  WhoWatches request fails (issue #2241): no roster, no error dialog, no
-  retry control, and never a fabricated empty list. The parent hides the
-  action area once this pane reports its read failed, so a failed
-  Wikidot-layout read renders nothing at all. While the read is in flight
-  the pane keeps its loading state (and the parent's close control), and
-  the native layout keeps the visible error/retry affordance.
+  Wikidot inserts the module result only on success. Pending and failed reads
+  render no child elements; the parent also hides the action area and Close.
+  Native layout retains its loading and error/retry controls.
 -->
-{#if !wikidot || state.status !== "failure"}
+{#if !wikidot || state.status === "success"}
   <h1 class="page-watchers-header">Watchers</h1>
   {#if state.status === "loading"}
     <p role="status">Loading…</p>
@@ -105,6 +101,17 @@
       >
         Retry
       </button>
+    </p>
+  {:else if state.items.length === 0 && data.page?.from_wikidot}
+    <!--
+      Imported pages carry no subscription graph: their watch relations
+      were never imported, so an empty roster would falsely assert zero
+      subscriptions. Say so instead of showing a bare empty list
+      (issue #2172). Locally authored pages keep the genuine empty list.
+    -->
+    <p>
+      {data.internationalization?.["wiki-page-watchers-unimported"] ??
+        "The watcher list for this imported page is unavailable because its subscriptions were not imported."}
     </p>
   {:else}
     <WatchersList watchers={state.items} />

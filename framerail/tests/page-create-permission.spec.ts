@@ -133,3 +133,33 @@ test("authorized direct /edit/true on a missing page opens the editor and create
 
   await expect.poll(async () => (await pageCreateWritesFor(request, slug)).length).toBe(1)
 })
+
+test("a missing page without a site template shows Wikidot's default state once", async ({
+  page
+}) => {
+  await page.setExtraHTTPHeaders(SITE_HEADERS)
+  const response = await page.goto(`/${DENIED_SLUG}`)
+  expect(response?.status()).toBe(404)
+  await expect(page.locator("#page-title")).toHaveText("The page does not (yet) exist.")
+  await expect(page.locator("#page-content > p[id='404-message']")).toContainText(
+    "you want to access does not exist."
+  )
+  // One create affordance, after the message, as on Wikidot.
+  await expect(page.locator("#page-content a")).toHaveCount(1)
+  await expect(page.locator("#page-content > :last-child")).toHaveAttribute(
+    "id",
+    "create-it-now-link"
+  )
+  await expect(page.locator("#restore-button")).toHaveCount(0)
+})
+
+test("a site 404 template replaces the default missing-page state", async ({ page }) => {
+  await page.setExtraHTTPHeaders(SITE_HEADERS)
+  const response = await page.goto("/site-404-template-probe")
+  expect(response?.status()).toBe(404)
+  await expect(page.locator("#page-content")).toHaveText(
+    "Site 404 template for this wiki."
+  )
+  await expect(page.locator("#create-it-now-link")).toHaveCount(0)
+  await expect(page.locator("#page-title")).toHaveCount(0)
+})

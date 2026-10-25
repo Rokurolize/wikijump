@@ -12,6 +12,14 @@ Run the hermetic contract/unit suite plus the checked-in syntax differential wit
 pnpm --dir install/local/wikidot-verification offline
 ```
 
+The Node test runner may execute independent test files concurrently. Mocked
+`capture-browser-rendering.mjs` CLI tests use separate, test-owned capture
+locks and request-gate state paths **only** under the repository's offline
+network guard (`WIKIJUMP_TEST_NETWORK_GUARD_ACTIVE=1`). This prevents false
+cross-test lock contention while retaining the single global capture lock
+for actual public-source acquisition. The fixture override is rejected if the
+offline guard is absent; never set it for real Wikidot browser capture.
+
 Run the product-owned WWS, Framerail, and Deepwell regression suites against
 task-owned local services with external networking denied with:
 
@@ -35,7 +43,7 @@ Run the full-page SCP-9506 browser oracle against a local standing runtime with:
 pnpm --dir install/local/wikidot-verification offline:browser
 ```
 
-`offline:browser` uses `fixtures/offline-compatibility/scp-9506-final-zero-oracle.json`, the exact final-zero Chromium identity, a repository-owned external-response fixture, and the final-zero-accepted full-page Wikijump image. Public stylesheet/font/image responses are replayed from the fixture. Any missing public response fails closed instead of fetching it. The semantic comparison uses the frozen Wikidot browser observation; the visual comparison uses normalized ImageMagick RMSE against the Wikijump image that passed that same final-zero live comparison. The browser runs in a fresh user+network namespace with only loopback. A Unix-domain socket bridges that namespace's `127.0.0.1:443` exclusively to the host's existing standing `127.0.0.1:443`; Chromium has no external IP route at all. The harness locally fulfills only the exact `/local--favicon/favicon.gif` browser-internal request to prevent its standing redirect from escaping the sealed fixture model, and records that normalization in the verdict.
+`offline:browser` uses `fixtures/offline-compatibility/scp-9506-final-zero-oracle.json`, the exact final-zero Chromium identity, a repository-owned external-response fixture, and the final-zero-accepted full-page Wikijump image. Public stylesheet/font/image responses are replayed from the fixture. Any missing public response fails closed instead of fetching it. The semantic comparison uses the frozen Wikidot browser observation; the visual comparison uses normalized ImageMagick RMSE against the Wikijump image that passed that same final-zero live comparison. The browser runs in a fresh user+network namespace with only loopback. A Unix-domain socket bridges that namespace's `127.0.0.1:443` exclusively to the host's existing standing `127.0.0.1:443`; Chromium has no external IP route at all. The harness locally fulfills only the exact `/local--favicon/favicon.gif` browser-internal request to prevent its standing redirect from escaping the sealed fixture model, and records that normalization in the verdict. For retained redirects to external CSS, the browser route fulfills the terminal response at the original origin because Chromium cannot follow the public redirect in its isolated namespace. The harness rewrites relative `url()` and quoted `@import` references in the *in-memory replay only*, relative to the retained terminal URL. The verdict records each such normalization; the source response fixture and frozen oracle remain unchanged. Missing font/image response bytes still fail closed.
 
 Run the portable gate plus the local-standing browser oracle with
 `pnpm --dir install/local/wikidot-verification offline:all`. Live-reference,
@@ -255,6 +263,17 @@ The command is read-only. It follows same-site `[[include]]` targets (skipping o
 
 Repair drifted pages as new revisions: build an import manifest for exactly the drifted slugs with `build-corpus-import-manifest.mjs --fullname <slug>...`, apply it with `apply-corpus-import-manifest.mjs --create-mode db --replace-existing`, rerender the dependents, and rerun the report until it exits zero. `--replace-existing` appends a revision; it never rewrites or deletes existing rows.
 
+### Import mirrored site icons
+
+A mirrored site's favicon, iOS touch icon, and Windows tile are site-level assets (`site_icon`), not page files. `scripts/import-mirror-site-icons.mjs` reads which icons the source site's own head declares, fetches each through the identity-bound public evidence response cache (pass `--cache-dir`/`--cache-identity` to replay a retained store such as `scp9506-live-20261012-chromium149` with no network), and stores the bytes and observed media type with `site_icon_set`. A kind the source no longer declares is cleared, so re-running refreshes and removes stale icons. The session file holds a platform-staff Deepwell session; the RPC token comes from `DEEPWELL_RPC_TOKEN`.
+
+```sh
+node install/local/wikidot-verification/scripts/import-mirror-site-icons.mjs \
+  --site scp-wiki --source-origin https://scp-wiki.wikidot.com \
+  --rpc-url http://127.0.0.1:2747/jsonrpc --session-file /private/operator-session.json \
+  --receipt /evidence/site-icons-scp-wiki.json
+```
+
 ### Verify imported source integrity
 
 After materializing corpus pages, compare the selected local page's current revision source, stored corpus snapshot hash, latest import state, and (for selected complex canaries) compiled body length against the exact manifest source files. The command is read-only and exits nonzero for missing pages, changed or blank source, absent/mismatched provenance, incomplete import state, or a required empty body. Select the correct site ID explicitly when the local stack has more than one site:
@@ -440,7 +459,7 @@ Raw HTML, parsed DOM, and visible text are mandatory. Browser intervals may be n
 
 ## Python environment
 
-The authenticated Wikidot helper runs from this component's private `.venv`. The runtime package subset mirrored from the frozen `requirements.txt` manifest lives in `requirements-pypi.txt`, build packages live in `requirements-build.txt`, and both are hash-locked in `requirements.lock`; the owner's `Rokurolize/wikidot.py` fork remains pinned separately to a full commit in `requirements.txt`. The setup script installs the hash-verified packages first, fetches only that commit, verifies the checked-out `HEAD`, and installs it without dependency resolution or build isolation. Create or refresh the environment before using the theme-localization execution path:
+The authenticated Wikidot helper runs from this component's private `.venv`. The runtime package subset mirrored from the frozen `requirements.txt` manifest lives in `requirements-pypi.txt`, build packages live in `requirements-build.txt`, and both are hash-locked in `requirements.lock`; the owner's `Rokurolize/wikidot.py` fork remains pinned separately to a full commit in `requirements.txt`. The setup script first installs the hash-locked bootstrap tools from `requirements-bootstrap.lock` (pip 26.2.2 and certifi 2026.10.19), then the hash-locked application packages, fetches only the pinned commit, verifies the checked-out `HEAD`, and installs the fork without dependency resolution or build isolation. This first step avoids making a package request with an older `ensurepip` pip/certifi bundle after the eMudhra/emSign CA incident. It requires `uv >= 0.13.4` and uses the official PyPI index for the security bootstrap and locked packages. To regenerate the locks, run `uv pip compile requirements-bootstrap.in --index-url https://pypi.org/simple/ --generate-hashes --output-file requirements-bootstrap.lock` and `uv pip compile requirements-pypi.txt requirements-build.txt --index-url https://pypi.org/simple/ --generate-hashes --output-file requirements.lock`. Create or refresh the environment before using the theme-localization execution path:
 
 ```sh
 install/local/wikidot-verification/scripts/setup-python-env.sh
@@ -453,9 +472,13 @@ Theme-localization execution is site-scoped by the audited two-member allowlist
 Python helper and checked at every origin boundary. The default site remains
 `scpaiueouiuiuiui`; selecting the sandbox requires explicit
 `--site sandbox-for-codex --wikidot-origin https://sandbox-for-codex.wikidot.com`
-and `--wikijump-origin https://sandbox-for-codex.wikijump.localhost`. The
-allowlist widening is a separate draft change held for owner sign-off before
-any live sandbox mutation.
+and `--wikijump-origin https://sandbox-for-codex.wikijump.localhost`. Any further
+widening of the allowlist is a separate change in its own PR. It updates the
+JavaScript and Python allowlists together, and it merges only when
+`tests/theme-localization-e2e.test.mjs`,
+`tests/theme-localization-execution.test.mjs`, and
+`tests/test_wikidot_theme_page_helper.py` pass with the new site covered. Those
+tests are the gate, so no separate sign-off step is needed.
 
 ## Completion controller
 
@@ -553,45 +576,25 @@ The document inventory output is the exact complement of the sealed redirect set
 
 ## Standing candidate browser parity
 
-`scripts/run-standing-browser-parity.mjs` defines the source-owned browser-parity receipts used around promotion. `verify-standing-candidate-parity-admission.mjs` binds candidate evidence to the candidate identity, live reference, and completion policy; `install/standing/scripts/verify-promotion-precondition.mjs` binds that admission to the sealed build, final-frozen inputs, and staging home before standing preparation or refresh. The runner has three intentional modes. `live-reference` captures only the six production-theme canaries from `scp-wiki.wikidot.com` through an identity-bound persistent response cache with a 0 ms fixed inter-request interval; repeated runs reuse retained responses, while cache misses still honor server `Retry-After`. `candidate` captures the same pages only from a sealed, expiring non-443 candidate and compares them to an exact sealed live reference. `standing` runs only after a passing standing refresh receipt, captures the canonical local `https://scp-wiki.wikijump.localhost` and `https://scp-wiki.wjfiles.localhost` authorities on port 443 without rewriting their origins, replays retained source redirects through the same evidence cache, and seals a post-refresh browser proof bound to that refresh receipt. Candidate mode never targets port 443; standing mode intentionally does because changing the standing origin or port changes CSP and resource semantics. Historical sealed references retain the request interval recorded when they were acquired and remain reusable evidence rather than forcing another external fetch.
+`scripts/run-standing-browser-parity.mjs` is the browser check of a standing promotion. `install/standing/promote.py` runs it twice: in `candidate` mode against the rehearsal (only when migrations change), and in `standing` mode after activation, where a failure rolls standing back. Both modes compare six production-theme canaries (`src/standing-browser-canaries.mjs`) with a retained live Wikidot reference and replay public resources from a persistent response cache only (zero external requests).
 
-Any later merge that changes runtime inputs after a passing final-zero makes that receipt historical. Re-certification must establish a fresh pre-merge candidate identity from the new runtime base, then repeat promotion, standing proof, reconciliation, and final-zero; do not carry a previous standing or final-zero verdict across a dependency-only runtime merge.
+The reference is retained once in `${XDG_STATE_HOME:-$HOME/.local/state}/wikijump/standing-browser-reference/reference.json`. It names the live completion policy, the reference ledger and its SHA-256, the response cache directory and identity, the browser executable, and `candidate_public_port`. The port matters: cross-origin theme fonts and stylesheets answer with `Vary: Origin`, so a cached response replays only for the candidate origin it was captured from, and a candidate on any other port fails with "candidate response cache miss". Promotions never recapture the reference. Recapture it with `--mode live-reference` only when the canary contract or the live pages change, then update `reference.json`:
 
 ```sh
 node install/local/wikidot-verification/scripts/run-standing-browser-parity.mjs \
   --mode live-reference \
-  --output-dir /mnt/oracle-store/wjlab/standing-live-reference-... \
-  --live-completion-policy /secure/standing-live-completion-policy.json \
-  --source-response-cache-dir "$HOME/.cache/wikijump-verification/standing-live-reference-v1" \
-  --source-response-cache-identity standing-live-<browser-sha>-<policy-sha> \
+  --output-dir <new reference directory> \
+  --live-completion-policy <policy.json> \
+  --source-response-cache-dir "$HOME/.cache/wikijump-verification/candidate-public-evidence-v1" \
+  --source-response-cache-identity wikijump-candidate-public-evidence-cache-v1 \
   --cache-source-documents \
   --browser-root framerail \
   --browser-executable /usr/bin/google-chrome
 ```
 
-```sh
-node install/local/wikidot-verification/scripts/run-standing-browser-parity.mjs \
-  --mode candidate \
-  --output-dir /mnt/oracle-store/wjlab/standing-candidate-parity-... \
-  --live-completion-policy /secure/standing-live-completion-policy.json \
-  --candidate-identity /secure/candidate-parity-identity.json \
-  --live-reference-ledger /mnt/oracle-store/wjlab/standing-live-reference-.../standing-browser-live-reference.json \
-  --live-reference-sha256 <sealed-reference-sha256> \
-  --browser-root framerail \
-  --browser-executable /usr/bin/google-chrome
-```
+`candidate` mode captures only from a sealed, expiring non-443 candidate (`--candidate-identity`, written by `start-promotion-candidate.mjs`). `standing` mode runs only after a passing standing refresh receipt (`--standing-refresh`, schema 4 from `promote.py`), captures the canonical local `https://scp-wiki.wikijump.localhost` and `https://scp-wiki.wjfiles.localhost` authorities on port 443 without rewriting their origins, and seals a proof bound to that receipt. Candidate mode never targets port 443; standing mode intentionally does, because changing the standing origin or port changes CSP and resource semantics. A candidate that serves a copy of standing's data must re-render the canary pages with its own configuration first (`promote.py` does): standing's saved HTML embeds standing's own origin.
 
-```sh
-node install/local/wikidot-verification/scripts/run-standing-browser-parity.mjs \
-  --mode standing \
-  --output-dir /mnt/oracle-store/wjlab/standing-browser-parity-... \
-  --live-completion-policy /secure/standing-live-completion-policy.json \
-  --standing-refresh /secure/standing-refresh.json \
-  --live-reference-ledger /mnt/oracle-store/wjlab/standing-live-reference-.../standing-browser-live-reference.json \
-  --live-reference-sha256 <sealed-reference-sha256> \
-  --source-response-cache-dir "$HOME/.cache/wikijump-verification/candidate-public-evidence-v1" \
-  --source-response-cache-identity wikijump-candidate-public-evidence-cache-v1
-```
+`verify-standing-candidate-parity-admission.mjs`, `install/standing/scripts/verify-promotion-precondition.mjs`, and `emit-final-frozen-receipt.mjs` belong to the retired multi-receipt promotion chain. Promotion does not use them; they remain only for historical final-zero inputs (`verify-final-zero.mjs`).
 
 The live policy is sealed before any browser request and names each tolerated external failure exactly. A candidate identity is sealed before local capture and binds its repository/tree, FTML pin, immutable image IDs, isolated configuration hashes, owner/expiry, non-443 endpoint, loopback address, and evidence seal. Before opening the browser, and again after browser, proxy, request-gate, and lock closure, the runner independently inspects the candidate Compose project. Every declared role must be running exactly once with the sealed image, provenance labels, expiry, artifact key, configuration hash, and a Caddy HTTPS mapping limited to the declared loopback non-443 endpoint. The identity also carries the expected aggregate hash of effective Docker service configuration. The runner computes that hash from command, entrypoint, environment, mounts, network, port, and security settings without recording secret values. Candidate mode runs only from a clean source checkout whose exact Wikijump tree and FTML lock pin match the candidate, and binds a canonical manifest of every parity module into the receipt. Standing mode instead binds the proof to the validated refresh receipt and keeps both canonical local HTTPS origins unchanged; local file redirects are resolved through retained evidence before Chromium follows them so a missing mirrored file does not turn a source response into a different cross-origin browser observation. The resulting receipts reject a missing canary, stale or mismatched source identity, local-only anomaly, omitted screenshot, incomplete load/font/image observation, or a record that lacks the `DOMContentLoaded` observation. A terminal ledger and receipt are published only after clean closure, with the final shared-gate snapshot bound into both. The immediate capture is DOM/CSS evidence at `DOMContentLoaded`, not a compositor-filmstrip claim.
 

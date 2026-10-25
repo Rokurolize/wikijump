@@ -99,9 +99,8 @@ pub use self::forum_read_routes::{
     WikidotForumFeedItem, WikidotForumFeedKind, WikidotForumFeedOutput,
     WikidotForumFeedScope, WikidotForumModuleRequest, WikidotForumModuleResponse,
 };
-pub(crate) use self::generator::{
-    DEEPWELL_RENDERER_EPOCH, compiled_generator_is_current,
-};
+pub use self::generator::DEEPWELL_RENDERER_EPOCH;
+pub(crate) use self::generator::compiled_generator_is_current;
 pub use self::legacy_actions::{
     LegacyActionDescriptor, LegacyActionRegistry, LegacyBrowserAction,
 };
@@ -111,7 +110,8 @@ pub use self::rate_actions::{
     RateActionRegistry, RateBrowserAction, RateBrowserActionRegistry,
 };
 pub use self::render_dependency::{
-    RenderDependencyClass, RenderDependencyClasses, classify_render_dependencies,
+    RenderDependencyClass, RenderDependencyClasses,
+    classify_anonymous_render_dependencies, classify_render_dependencies,
 };
 pub(crate) use self::replay::{
     RenderReplayService, RenderReplaySettings, run_worker_action,
@@ -133,7 +133,9 @@ pub use self::site_changes_feed::{
     SITE_CHANGES_FEED_ITEM_LIMIT, WikidotSiteChangesFeedItem,
     WikidotSiteChangesFeedOutput, wikidot_site_changes_change_type,
 };
-pub use self::sitemap::{SITEMAP_MAX_ENTRIES, WikidotSitemapEntry, WikidotSitemapOutput};
+pub use self::sitemap::{
+    SITEMAP_ENTRIES_PER_SHARD, WikidotSitemapEntry, WikidotSitemapOutput,
+};
 pub use self::structs::{
     RenderOutput, RenderPageOutput, WikidotListPagesFeedInput, WikidotListPagesFeedItem,
     WikidotListPagesFeedOutput,

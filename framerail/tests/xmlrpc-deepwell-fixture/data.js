@@ -615,8 +615,8 @@ x^2 + y^2 = z^2
     compiled_body_styles: [".generated-style-d { color: black; }"]
   },
   "navigation-style-duplicate": {
-    page_id: 3000395,
-    revision_id: 9000395,
+    page_id: 3000398,
+    revision_id: 9000398,
     page_created_at: "2026-08-12T00:00:00Z",
     page_updated_at: null,
     page_revision_count: 1,
@@ -744,7 +744,7 @@ export const toArticleViewResult = (page, siteId = 6000005) => ({
         no_redirect: false,
         no_render: false,
         debug: false,
-        renderer: false,
+        rerender: false,
         comments: false,
         history: false,
         offset: null,
@@ -851,6 +851,43 @@ export const parentBySlug = {
 /** @type {Record<string, { slug: string; title: string }[]>} */
 export const backlinksByPage = {
   "scp-173": [{ slug: "scp-173-parent", title: "SCP Foundation" }]
+}
+
+/**
+ * Populated watcher rosters by numeric page id, in Deepwell's public
+ * identity shape. Pages without an entry read as an empty roster.
+ *
+ * @type {Record<
+ *   number,
+ *   {
+ *     "user-id": number
+ *     "user-slug": string
+ *     "user-name": string
+ *     "user-karma": number
+ *     "user-avatar-data": string
+ *     "user-profile-url": string
+ *   }[]
+ * >}
+ */
+export const watchersByPageId = {
+  3000340: [
+    {
+      "user-id": 19_000_001,
+      "user-slug": "watcher-fixture",
+      "user-name": "Watcher Fixture",
+      "user-karma": 0,
+      "user-avatar-data": "",
+      "user-profile-url": "/-/user/watcher-fixture"
+    },
+    {
+      "user-id": 19_000_002,
+      "user-slug": "second-watcher",
+      "user-name": "Second Watcher",
+      "user-karma": 0,
+      "user-avatar-data": "",
+      "user-profile-url": "/-/user/second-watcher"
+    }
+  ]
 }
 
 /**

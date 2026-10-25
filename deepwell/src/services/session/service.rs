@@ -66,6 +66,10 @@ impl SessionService {
             .lock_exclusive()
     }
 
+    fn mfa_attempt_user_query(user_id: i64) -> sea_orm::Select<User> {
+        User::find_by_id(user_id).lock_exclusive()
+    }
+
     /// Creates a new session with the given parameters.
     ///
     /// # Returns
@@ -213,7 +217,10 @@ impl SessionService {
             return Ok(None);
         };
 
-        let user = User::find_by_id(session.user_id)
+        // MFA attempts can arrive on distinct restricted sessions. Lock the
+        // user row as well as the session row so recovery-code verification
+        // and consumption serialize across every session for this account.
+        let user = Self::mfa_attempt_user_query(session.user_id)
             .one(ctx.transaction())
             .await
             .or_raise(make_error)?
@@ -556,6 +563,31 @@ impl SessionService {
         Ok(rows_affected)
     }
 
+    /// Invalidates every session of an account, including any current one.
+    ///
+    /// Password recovery has no surviving session to keep, so unlike
+    /// [`Self::invalidate_others`] this deletes unconditionally. Used only
+    /// after token-proofed recovery.
+    pub async fn invalidate_all(ctx: &ServiceContext<'_>, user_id: i64) -> Result<u64> {
+        info!("Invalidating all session IDs for user ID {user_id}");
+
+        let make_error = || {
+            Error::new(
+                format!("failed to invalidate all sessions for user ID {user_id}"),
+                ErrorType::Session,
+            )
+        };
+
+        let DeleteResult { rows_affected, .. } = Session::delete_many()
+            .filter(session::Column::UserId.eq(user_id))
+            .exec(ctx.transaction())
+            .await
+            .or_raise(make_error)?;
+
+        debug!("User ID {user_id}: {rows_affected} sessions were invalidated");
+        Ok(rows_affected)
+    }
+
     /// Prunes all expired sessions from the database.
     ///
     /// # Returns
@@ -591,6 +623,16 @@ mod tests {
 
         assert!(statement.contains("mfa_failed_attempts"));
         assert!(statement.contains("< 5"));
+        assert!(statement.ends_with("FOR UPDATE"));
+    }
+
+    #[test]
+    fn mfa_attempt_user_lookup_is_row_locked_across_sessions() {
+        let statement = SessionService::mfa_attempt_user_query(42)
+            .build(DbBackend::Postgres)
+            .to_string();
+
+        assert!(statement.contains("user_id"));
         assert!(statement.ends_with("FOR UPDATE"));
     }
 }

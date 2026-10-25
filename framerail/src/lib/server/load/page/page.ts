@@ -5,7 +5,12 @@ import {
 } from "$lib/layout/wikidot-shell-decision"
 import { articleRouteWithQueryNoRender } from "$lib/server/page-norender-query"
 import { resolvePageRedirect } from "$lib/server/page-redirect"
-import { pageDeletedGet } from "$lib/server/deepwell/page"
+import { authGetSession } from "$lib/server/auth/get-session"
+import {
+  pageCreatePermission,
+  pageDeletedGet,
+  pageScore
+} from "$lib/server/deepwell/page"
 import { pageErrorStatus } from "$lib/server/load/page/page-error-status.js"
 import { translate } from "$lib/server/deepwell/translate"
 import { articleView } from "$lib/server/deepwell/views"
@@ -20,6 +25,12 @@ import {
   getPreloadBackendLocales,
   getPreloadRequestLocales
 } from "$lib/server/load/preload"
+import { resolvePageMutationUserId } from "$lib/server/load/local-authoring-actor"
+import {
+  collectThemeSiteFileReferences,
+  createSiteFilePresenceCache,
+  resolveSiteFilePresence
+} from "$lib/server/load/site-file-presence"
 import { loadSiteInfo } from "$lib/server/load/site-info"
 import { getRequestContext } from "$lib/server/request-context"
 import {
@@ -54,7 +65,14 @@ export async function loadPage(
     sessionToken
   )
   const { page: articlePage, ...preloadResponse } = articleResponse
-  const response = gateMissingPageCreateSource(articlePage)
+  const response = gateMissingPageCreateSource(
+    await applyLocalAuthoringCreateGrant(articlePage, {
+      siteId,
+      siteSlug,
+      slug,
+      sessionToken
+    })
+  )
   const parentData = finalizePreloadData(preloadResponse, requestLocales)
   const locales = parentData.locales
   const siteLocale = parentData.site.locale
@@ -90,9 +108,28 @@ export async function loadPage(
       locales
     })
   )
+  // The actions row shows the live combined score (imported baseline plus
+  // local votes), matching the pagerate module and the vote pane. A failed
+  // lookup keeps the imported baseline instead of breaking the page.
+  let combinedRating: number | null = null
+  if (response.type === "found" && response.data.page_rating.enabled) {
+    try {
+      const score = await pageScore({
+        siteId,
+        page: response.data.page.page_id,
+        sessionToken
+      })
+      if (typeof score?.score === "number" && Number.isFinite(score.score)) {
+        combinedRating = score.score
+      }
+    } catch {
+      combinedRating = null
+    }
+  }
   const presentation = buildWikidotPagePresentation(response, {
     hasSession: !!parentData.user_session,
-    siteLocale
+    siteLocale,
+    combinedRating
   })
 
   if (response.type !== "found") {
@@ -126,11 +163,39 @@ export async function loadPage(
     error(pageErrorStatus(response.type, slug), errorData)
   }
 
+  // Per-file presence for the page theme's site attachments: the head
+  // rewrites a WDFiles URL to the local files host only when the referenced
+  // file exists locally. Missing pages, failed listings, and non-imported
+  // sites resolve to no presence, so every such URL keeps its source
+  // literal. The lookup is request-scoped and runs only when the theme
+  // names same-site candidates.
+  let siteFilePresence: string[] = []
+  if (response.type === "found") {
+    try {
+      const references = collectThemeSiteFileReferences(
+        response.data.theme,
+        parentData.site
+      )
+      if (references.length > 0) {
+        const requestContext = locals ? getRequestContext(locals) : undefined
+        const present = await resolveSiteFilePresence(references, {
+          siteId,
+          requestContext,
+          cache: createSiteFilePresenceCache()
+        })
+        siteFilePresence = [...present]
+      }
+    } catch {
+      siteFilePresence = []
+    }
+  }
+
   const viewData = {
     ...response.data,
     view: response.type,
     internationalization,
-    ...presentation
+    ...presentation,
+    site_file_presence: siteFilePresence
   }
   runRedirect(response.data, slug, extra, request.url)
 
@@ -140,6 +205,45 @@ export async function loadPage(
     locals.wikidotDocument = resolveShellLayoutValue(loadData) === WIKIDOT_LAYOUT
   }
   return loadData
+}
+
+/**
+ * Missing-page create decision for the anonymous local-authoring seam.
+ * Deepwell reports can_create=false for anonymous viewers; when this
+ * request itself resolves to the local admin actor, ask Deepwell honestly
+ * (marker-bound create permission for the same actor the save would use)
+ * and adopt a grant. Anything else — including a Deepwell refusal or
+ * failure — keeps the denial (fail closed). Template and data-form sources
+ * below are then gated on the adopted decision like any other grant.
+ */
+async function applyLocalAuthoringCreateGrant(
+  articlePage: PageView,
+  options: {
+    siteId: number
+    siteSlug: string
+    slug: Optional<string>
+    sessionToken: string | undefined
+  }
+): Promise<PageView> {
+  const { siteId, siteSlug, slug, sessionToken } = options
+  if (articlePage.type !== "missing" || articlePage.data.can_create === true) {
+    return articlePage
+  }
+  if (!slug) return articlePage
+  const session = sessionToken ? await authGetSession(sessionToken) : null
+  if (resolvePageMutationUserId(session?.user_id, siteSlug, siteId, siteId) !== -1) {
+    return articlePage
+  }
+  try {
+    const grant = await pageCreatePermission(
+      { page: slug },
+      { siteId, localPageMutationActor: true }
+    )
+    if (!grant.can_create) return articlePage
+    return { ...articlePage, data: { ...articlePage.data, can_create: true } }
+  } catch {
+    return articlePage
+  }
 }
 
 /**

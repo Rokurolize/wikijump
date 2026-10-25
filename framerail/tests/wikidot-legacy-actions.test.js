@@ -1,3 +1,4 @@
+/* eslint-disable no-script-url -- Wikidot footer and fixture markup use javascript:; no-op links that parity requires */
 // @ts-nocheck
 import { strict as assert } from "node:assert"
 import test from "node:test"

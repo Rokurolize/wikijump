@@ -33,7 +33,7 @@ femme = "2"
 filemagic = "0.13"
 fluent = "0.17"
 fluent-syntax = "0"
-ftml = { git = "https://github.com/Rokurolize/ftml", rev = "17dbc236a5bc879c1bcd451e2308bb080d854f15" }
+ftml = { git = "https://github.com/Rokurolize/ftml", rev = "c36bc5fe655fdb6cd41a563882194493f50008e1" }
 futures = { version = "0.3", features = ["async-await"], default-features = false }
 hex = { version = "0.4", features = ["serde"] }
 hostname = "0.4"
@@ -51,7 +51,7 @@ ref-map = "0.2"
 regex = "1"
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
 rsmq_async = "18"
-rust-s3 = { version = "0.37", features = ["with-tokio", "tokio-rustls-tls"], default-features = false }
+rust-s3 = { version = "0.38", features = ["with-tokio", "tokio-rustls-tls"], default-features = false }
 rust-otp = "3"
 sea-orm = { version = "2", features = ["sqlx-postgres", "runtime-tokio-rustls", "postgres-array", "stream", "macros", "with-json", "with-time"], default-features = false }
 sea-query = "1"
@@ -103,6 +103,15 @@ ignored = ["rust-s3"]  # renamed to s3
 
 [profile.release]
 lto = true
+
+# Standing promotion images: release optimisation without whole-program LTO,
+# which alone takes about 14 minutes for this crate, and with incremental
+# compilation, so a source change rebuilds in minutes.
+[profile.standing]
+inherits = "release"
+lto = false
+incremental = true
+
 
 # Keep ordinary development and test artifacts bounded. Full debug information
 # is opt-in through `cargo --profile debugging` below.

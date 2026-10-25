@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation"
+  import { resolve } from "$app/paths"
   import { errorPopupState } from "$lib/layout/stores.svelte"
   import { authCancelDestination } from "$lib/auth-cancel.js"
   import { untrack } from "svelte"
@@ -45,7 +46,7 @@
 {#if isRegistered}
   <p role="status" class="register-success">
     {data.internationalization?.["register.toast"]}
-    <a href="/-/login">{data.internationalization?.login}</a>
+    <a href={resolve("/-/login", {})}>{data.internationalization?.login}</a>
   </p>
 {:else}
   <form id="register" class="register-form" method="POST" use:enhance>
@@ -148,6 +149,24 @@
     </div>
 
     <!--
+      #2074 anti-bot honeypot mirroring the observed Wikidot signup control
+      ("Please leave this checkbox blank"): positioned off-screen so people
+      never see it, kept out of keyboard order and assistive tech, and left
+      uncontrolled so a bot-filled value reaches the server-side gate
+      unchanged. The server rejects a tripped gate before creating anything.
+    -->
+    <div class="register-honeypot" aria-hidden="true">
+      <label for="register-leave-blank">Please leave this checkbox blank</label>
+      <input
+        id="register-leave-blank"
+        name="leaveBlank"
+        type="checkbox"
+        tabindex="-1"
+        autocomplete="off"
+      />
+    </div>
+
+    <!--
       Wikidot states the account-creation contract directly above the Sign up
       action: "By creating an account you accept our Terms of Service and
       Privacy Policy." A generic footer link is not that disclosure, so the
@@ -209,6 +228,17 @@
           color: red;
         }
       }
+    }
+
+    // #2074 honeypot: off-screen (never display:none, which some fillers
+    // skip) so people never see it while automated fillers still find it.
+    .register-honeypot {
+      position: absolute;
+      top: auto;
+      left: -10000px;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
     }
 
     .register-legal {

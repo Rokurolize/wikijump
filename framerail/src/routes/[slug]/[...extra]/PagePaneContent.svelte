@@ -15,8 +15,10 @@
     initialFileList = null,
     onFileListVisibilityChange,
     onPaneReadStateChange,
+    auxPaneRequestId = 0,
     setRevision,
-    setShowRevision
+    setShowRevision,
+    setRevisionContext
   }: {
     props: PageProps
     pagePaneState: PagePane
@@ -24,12 +26,14 @@
     wikidot: boolean
     initialFileList?: PageFile[] | null
     onFileListVisibilityChange?: (ready: boolean) => void
+    auxPaneRequestId?: number
     onPaneReadStateChange?: (
       pane: "backlinks" | "watchers",
       readState: "loading" | "success" | "failure"
     ) => void
     setRevision: (revision: Optional<PageRevisionModelFiltered>) => void
     setShowRevision: (state: boolean) => void
+    setRevisionContext: (context: string | null) => void
   } = $props()
 
   let { data } = $derived(props)
@@ -109,17 +113,19 @@
     {/if}
   {:else if pagePaneState === PagePane.Backlinks}
     {#if BacklinksPane}
-      <BacklinksPane
-        {...props}
-        onPaneReadStateChange={(readState: "loading" | "success" | "failure") =>
-          onPaneReadStateChange?.("backlinks", readState)}
-      />
-    {:else}
+      {#key auxPaneRequestId}
+        <BacklinksPane
+          {...props}
+          onPaneReadStateChange={(readState: "loading" | "success" | "failure") =>
+            onPaneReadStateChange?.("backlinks", readState)}
+        />
+      {/key}
+    {:else if !wikidot}
       <p class="pane-loading" aria-live="polite">Loading…</p>
     {/if}
   {:else if pagePaneState === PagePane.EditMeta}
     {#if EditMetaPane}
-      <EditMetaPane {...props} />
+      <EditMetaPane bind:pagePaneState {...props} />
     {:else}
       <p class="pane-loading" aria-live="polite">Loading…</p>
     {/if}
@@ -167,12 +173,14 @@
     {/if}
   {:else if pagePaneState === PagePane.Watchers}
     {#if WatchersPane}
-      <WatchersPane
-        {...props}
-        onPaneReadStateChange={(readState: "loading" | "success" | "failure") =>
-          onPaneReadStateChange?.("watchers", readState)}
-      />
-    {:else}
+      {#key auxPaneRequestId}
+        <WatchersPane
+          {...props}
+          onPaneReadStateChange={(readState: "loading" | "success" | "failure") =>
+            onPaneReadStateChange?.("watchers", readState)}
+        />
+      {/key}
+    {:else if !wikidot}
       <p class="pane-loading" aria-live="polite">Loading…</p>
     {/if}
   {:else if pagePaneState === PagePane.File}
@@ -184,7 +192,7 @@
   {:else if pagePaneState === PagePane.History}
     {#if HistoryPane}
       {#key `${data.site.site_id}:${data.page?.page_id ?? ""}`}
-        <HistoryPane {setRevision} {setShowRevision} {...props} />
+        <HistoryPane {setRevision} {setShowRevision} {setRevisionContext} {...props} />
       {/key}
     {:else}
       <p class="pane-loading" aria-live="polite">Loading…</p>

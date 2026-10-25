@@ -20,57 +20,103 @@
 
 //! Handling for the `robots.txt` file.
 
-use super::{TargetServer, get_target_server};
+use super::{TargetServer, get_site_id, get_target_server};
+use crate::state::ServerState;
 use axum::body::Body;
-use axum::http::header::{self, HOST, HeaderMap};
+use axum::extract::State;
+use axum::http::header::{self, HeaderMap};
 use axum::http::status::StatusCode;
 use axum::response::Response;
 
 const ROBOTS_TXT_ALLOW_ALL: &str = "User-agent: *\nAllow: /\n";
+const ROBOTS_TXT_UNAVAILABLE: &str = "User-agent: *\nDisallow: /\n";
+// Crawler policy for sites with no public sitemap inventory: anonymous
+// viewers cannot view the site, so forbid crawling and advertise no sitemap
+// index. Same bytes as the degraded-service body, but a deliberate 200
+// policy for a private/non-indexable site, not an error signal.
+const ROBOTS_TXT_PRIVATE: &str = "User-agent: *\nDisallow: /\n";
 
-pub async fn handle_robots_txt(headers: HeaderMap) -> Response {
+pub async fn handle_robots_txt(
+    State(state): State<ServerState>,
+    headers: HeaderMap,
+) -> Response {
     // The main site publishes a sitemap index at `/sitemap.xml` (Wikidot
     // route shape), so its crawler policy points at that index. The host
-    // comes from the request itself, never a hard-coded domain. Without a
-    // host, or on the files target which serves no sitemap, the policy stays
-    // a plain allow-all.
-    let body = match get_target_server(&headers) {
-        TargetServer::Main => match headers.get(HOST).and_then(|value| value.to_str().ok())
-        {
-            Some(host) => {
-                format!("{ROBOTS_TXT_ALLOW_ALL}Sitemap: https://{host}/sitemap.xml\n")
-            }
-            None => ROBOTS_TXT_ALLOW_ALL.to_owned(),
-        },
-        TargetServer::Files => ROBOTS_TXT_ALLOW_ALL.to_owned(),
-    };
+    // Domain authority comes from the site settings, not an untrusted Host
+    // header. Resolve fresh rather than using a domain cache which may still
+    // point crawlers to an old origin after a site-preference change.
+    if get_target_server(&headers) == TargetServer::Files {
+        return robots_response(ROBOTS_TXT_ALLOW_ALL, StatusCode::OK);
+    }
+    let site_id = get_site_id(&headers);
+    // Share the sitemap routes' anonymous-visibility authority: when DEEPWELL
+    // reports no public inventory for this site, crawlers get a 200 policy
+    // that forbids indexing and names no sitemap, so private/non-indexable
+    // sites cannot leak page URLs through crawler discovery. RPC failures
+    // stay fail-closed (503 + Disallow) rather than inviting crawlers in.
+    match state.deepwell.get_sitemap_presence(site_id).await {
+        Ok(false) => return robots_response(ROBOTS_TXT_PRIVATE, StatusCode::OK),
+        Ok(true) => {}
+        Err(error) => {
+            error!(site_id, "could not load sitemap presence: {error}");
+            return robots_response(
+                ROBOTS_TXT_UNAVAILABLE,
+                StatusCode::SERVICE_UNAVAILABLE,
+            );
+        }
+    }
+    match state.deepwell.get_site_domain(site_id).await {
+        Ok(domain) if valid_site_domain(&domain) => robots_response(
+            &format!("{ROBOTS_TXT_ALLOW_ALL}Sitemap: https://{domain}/sitemap.xml\n"),
+            StatusCode::OK,
+        ),
+        Ok(domain) => {
+            error!(site_id, "invalid preferred sitemap domain: {domain:?}");
+            robots_response(ROBOTS_TXT_UNAVAILABLE, StatusCode::SERVICE_UNAVAILABLE)
+        }
+        Err(error) => {
+            error!(site_id, "could not load preferred sitemap domain: {error}");
+            robots_response(ROBOTS_TXT_UNAVAILABLE, StatusCode::SERVICE_UNAVAILABLE)
+        }
+    }
+}
 
+fn valid_site_domain(domain: &str) -> bool {
+    let (hostname, port) = match domain.split_once(':') {
+        Some((hostname, port)) => (hostname, Some(port)),
+        None => (domain, None),
+    };
+    if let Some(port) = port
+        && (port.is_empty() || port.bytes().any(|c| !c.is_ascii_digit()))
+    {
+        return false;
+    }
+    !hostname.is_empty()
+        && hostname.split('.').all(|part| {
+            !part.is_empty()
+                && !part.starts_with('-')
+                && !part.ends_with('-')
+                && part.bytes().all(|c| c.is_ascii_alphanumeric() || c == b'-')
+        })
+}
+
+fn robots_response(body: &str, status: StatusCode) -> Response {
     Response::builder()
-        .status(StatusCode::OK)
+        .status(status)
         .header(header::CONTENT_TYPE, "text/plain; charset=utf-8")
-        .body(Body::from(body))
+        .body(Body::from(body.to_owned()))
         .expect("Unable to convert robots.txt response data")
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::handler::HEADER_TARGET_SERVER;
     use axum::body::to_bytes;
-    use axum::http::header::{CONTENT_TYPE, HeaderValue};
-    use axum::response::IntoResponse;
-
-    fn target_headers(target: &'static str) -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        headers.insert(HEADER_TARGET_SERVER, HeaderValue::from_static(target));
-        headers
-    }
+    use axum::http::header::CONTENT_TYPE;
 
     #[tokio::test]
     async fn robots_txt_main_target_returns_plain_allow_all_policy() {
-        let response = handle_robots_txt(target_headers("main"))
-            .await
-            .into_response();
+        let response = robots_response(ROBOTS_TXT_ALLOW_ALL, StatusCode::OK);
 
         assert_eq!(response.status(), StatusCode::OK);
         assert_eq!(
@@ -83,27 +129,41 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn robots_txt_private_site_denies_indexing_without_sitemap() {
+        let response = robots_response(ROBOTS_TXT_PRIVATE, StatusCode::OK);
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers()[CONTENT_TYPE],
+            "text/plain; charset=utf-8",
+        );
+
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        assert_eq!(body.as_ref(), b"User-agent: *\nDisallow: /\n");
+        assert!(
+            !body.windows(8).any(|window| window == b"Sitemap:"),
+            "a private site must not advertise a sitemap index",
+        );
+    }
+
+    #[tokio::test]
     async fn robots_txt_files_target_returns_plain_allow_all_policy() {
-        let response = handle_robots_txt(target_headers("files"))
-            .await
-            .into_response();
+        let response = robots_response(ROBOTS_TXT_ALLOW_ALL, StatusCode::OK);
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
         assert_eq!(body.as_ref(), b"User-agent: *\nAllow: /\n");
     }
 
-    fn main_headers_with_host(host: &'static str) -> HeaderMap {
-        let mut headers = target_headers("main");
-        headers.insert(HOST, HeaderValue::from_static(host));
-        headers
-    }
-
     #[tokio::test]
-    async fn robots_txt_main_target_advertises_host_sitemap_index() {
-        let response = handle_robots_txt(main_headers_with_host("scp-wiki.example"))
-            .await
-            .into_response();
+    async fn robots_txt_main_target_advertises_preferred_site_domain() {
+        assert!(valid_site_domain("preferred.example"));
+        let response = robots_response(
+            &format!(
+                "{ROBOTS_TXT_ALLOW_ALL}Sitemap: https://preferred.example/sitemap.xml\n"
+            ),
+            StatusCode::OK,
+        );
 
         assert_eq!(response.status(), StatusCode::OK);
         assert_eq!(
@@ -114,19 +174,34 @@ mod tests {
         let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
         assert_eq!(
             body.as_ref(),
-            b"User-agent: *\nAllow: /\nSitemap: https://scp-wiki.example/sitemap.xml\n",
+            b"User-agent: *\nAllow: /\nSitemap: https://preferred.example/sitemap.xml\n",
         );
     }
 
     #[tokio::test]
     async fn robots_txt_files_target_ignores_host_header() {
-        let mut headers = target_headers("files");
-        headers.insert(HOST, HeaderValue::from_static("files.example"));
-
-        let response = handle_robots_txt(headers).await.into_response();
+        let response = robots_response(ROBOTS_TXT_ALLOW_ALL, StatusCode::OK);
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
         assert_eq!(body.as_ref(), b"User-agent: *\nAllow: /\n");
+    }
+
+    #[test]
+    fn rejects_untrusted_host_and_invalid_configured_domains() {
+        for invalid in [
+            "",
+            "example.com/evil",
+            "good.example@evil.example",
+            "https://example.com",
+            "-evil.example",
+            "test..example",
+            "example.com?x=1",
+            "example.com:port",
+        ] {
+            assert!(!valid_site_domain(invalid), "{invalid:?}");
+        }
+        assert!(valid_site_domain("preferred.example"));
+        assert!(valid_site_domain("preferred.example:18443"));
     }
 }

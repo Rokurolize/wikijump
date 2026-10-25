@@ -95,10 +95,7 @@ test("site changes feed serves RSS with the recent-page-changes channel", async 
     body,
     /<guid>http:\/\/[^<]+\/fixture-site-changes-page#revision-3000000123<\/guid>/u
   )
-  assert.match(
-    body,
-    /<link>https?:\/\/[^<]+\/fixture-site-changes-page<\/link>/u
-  )
+  assert.match(body, /<link>https?:\/\/[^<]+\/fixture-site-changes-page<\/link>/u)
 })
 
 test("site changes feed is independently reachable without the wiki page", async () => {
@@ -126,7 +123,11 @@ test("site changes feed returns 404 when the site is not viewable", async () => 
 })
 
 test("other feed paths are not claimed by the site changes route", async () => {
-  for (const shape of ["/feed/site-changes.json", "/feed/site-changes", "/feed/other.xml"]) {
+  for (const shape of [
+    "/feed/site-changes.json",
+    "/feed/site-changes",
+    "/feed/other.xml"
+  ]) {
     const response = await fetch(`${baseUrl}${shape}`, { headers: siteHeaders })
     await response.text()
     assert.notEqual(response.status, 200, shape)

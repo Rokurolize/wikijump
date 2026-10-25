@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {isDeepStrictEqual} from 'node:util';
-import {resolveExistingContainedFile} from './package-path.mjs';
+import {resolveExistingContainedFile, resolveExistingContainedFileWithoutSymlinks} from './package-path.mjs';
 import {framerailSourceFingerprintSync} from './framerail-source-fingerprint.mjs';
 import {requireDeepwellRuntimeIdentity} from './deepwell-runtime-identity.mjs';
 
@@ -34,6 +34,39 @@ function containedRelative(root, file, label, baseDirectory = root) {
   return resolveExistingContainedFile(root, file, label, baseDirectory);
 }
 
+// Legacy BHL option captures record the absolute pathname of their original
+// acceptance worktree. The receipt bytes are SHA-bound by the frozen candidate
+// set, so changing those path strings would invalidate the evidence. Resolve
+// only the known BHL capture directory within the current evidence checkout;
+// the caller still verifies the captured screenshot's exact SHA-256.
+const BHL_CAPTURE_PREFIX = 'ports/black-highlighter-theme/option-scenarios/captures/';
+const LEGACY_THEME_LAB_SEPARATOR = '/install/local/theme-lab/';
+
+export function canonicalBhlScreenshotPath(root, recordedPath) {
+  if (typeof recordedPath !== 'string' || !recordedPath) {
+    throw new Error('BHL screenshot path is missing');
+  }
+  const pathFromRoot = path.isAbsolute(recordedPath)
+    ? path.relative(root, recordedPath)
+    : recordedPath;
+  const relative = pathFromRoot.startsWith(BHL_CAPTURE_PREFIX)
+    ? pathFromRoot
+    : recordedPath.startsWith('/') && recordedPath.includes(LEGACY_THEME_LAB_SEPARATOR)
+      ? recordedPath.slice(recordedPath.lastIndexOf(LEGACY_THEME_LAB_SEPARATOR) + LEGACY_THEME_LAB_SEPARATOR.length)
+      : null;
+  if (!relative?.startsWith(BHL_CAPTURE_PREFIX)) {
+    throw new Error('BHL screenshot is outside the frozen capture directory');
+  }
+  // Require a real, confined PNG. Do not normalize away traversal or follow a
+  // symlink; resolveExistingContainedFile checks each path component.
+  if (relative.split('/').some(part => part === '..' || part === '.' || part === '') ||
+      !relative.endsWith('.png')) {
+    throw new Error('BHL screenshot path is not a confined PNG');
+  }
+  resolveExistingContainedFileWithoutSymlinks(root, relative, 'BHL screenshot');
+  return relative;
+}
+
 function authorityRecordContains(value, slug, sourceSha256) {
   let found = false;
   const visit = current => {
@@ -48,7 +81,12 @@ function authorityRecordContains(value, slug, sourceSha256) {
   return found;
 }
 
-function validateBhlTargetedEvidence(root, frozen, graph, failures) {
+// 'identity' skips only the targeted evidence section (receipts, screenshots,
+// visual reviews, and the evidence bindings). Every other check still runs.
+// 'full' is the completion-gate scope and is the default.
+export const CANDIDATE_SET_SCOPES = Object.freeze(['identity', 'full']);
+
+function validateBhlTargetedEvidence(root, frozen, graph, failures, scope = 'full') {
   const scenarios = frozen.targeted_scenarios ?? [];
   const bhlScenarios = scenarios.filter(scenario => scenario.id?.startsWith('bhl-options-'));
   if (!bhlScenarios.length) return;
@@ -93,6 +131,7 @@ function validateBhlTargetedEvidence(root, frozen, graph, failures) {
     if (scenario.current_authority_sha256 !== authoritySha) failures.push(`${scenario.id}: frozen scenario uses stale BHL option authority`);
     if (scenario.theme_candidate_source_sha256 !== frozenTheme?.source_sha256 || scenario.theme_candidate_css_sha256 !== frozenTheme?.candidate_css_sha256)
       failures.push(`${scenario.id}: frozen scenario uses a stale BHL theme candidate`);
+    if (scope === 'identity') continue;
     const evidence = frozen.targeted_evidence_bindings?.find(binding => binding.scenario_id === scenario.id);
     if (!evidence) {
       failures.push(`${scenario.id}: frozen targeted evidence bindings are missing`);
@@ -148,7 +187,7 @@ function validateBhlTargetedEvidence(root, frozen, graph, failures) {
           if (!isDeepStrictEqual(row.option_candidates ?? [], authorityArtifact.value.option_candidates ?? []))
             failures.push(`${scenario.id}: targeted capture row has stale option candidates: ${receiptPath}/${row.state}`);
           try {
-            const screenshotPath = path.relative(root, row.screenshot);
+            const screenshotPath = canonicalBhlScreenshotPath(root, row.screenshot);
             const screenshotBytes = fs.readFileSync(containedRelative(root, screenshotPath, `${scenario.id} screenshot`));
             if (sha(screenshotBytes) !== row.screenshot_sha256) failures.push(`${scenario.id}: screenshot changed: ${row.screenshot}`);
             expectedScreenshots.push({path: screenshotPath, sha256: row.screenshot_sha256, receipt_path: receiptPath, state: row.state, baseline: receipt.baseline, browser_engine: receipt.browser_engine, viewport: row.viewport});
@@ -190,15 +229,23 @@ function validateBhlTargetedEvidence(root, frozen, graph, failures) {
       failures.push(`${scenario.id}: visual review is unavailable: ${error.message}`);
     }
   }
+  if (scope === 'identity') return;
   for (const binding of frozen.targeted_evidence_bindings ?? []) {
     const required = binding.scenario_id && bhlScenarios.some(scenario => scenario.id === binding.scenario_id);
     if (!required) failures.push(`Unexpected frozen targeted evidence binding: ${binding.scenario_id ?? 'missing scenario id'}`);
   }
 }
 
-export function validatePublicationCandidateSet(root, {expectedCandidateSetSha256, contract, label = 'Publication candidate set'} = {}) {
+// documents, when given, replaces the publication files that the generator has
+// not written yet: {frozen: {value}, graph: {value}, readiness: {bytes, value}}.
+// Byte and identity checks still run on the replacements. Omit it to validate
+// the files in the checkout.
+// scope 'full' (default) runs every check. scope 'identity' runs every check except
+// the targeted evidence section (receipts, screenshots, visual reviews, bindings).
+export function validatePublicationCandidateSet(root, {expectedCandidateSetSha256, contract, label = 'Publication candidate set', documents = null, scope = 'full'} = {}) {
+  if (!CANDIDATE_SET_SCOPES.includes(scope)) throw new Error(`unknown candidate-set validation scope: ${scope}`);
   const failures = [];
-  const frozenArtifact = readJson(root, 'publication/frozen-candidate-set.json', 'Frozen publication candidate set', failures);
+  const frozenArtifact = documents?.frozen ?? readJson(root, 'publication/frozen-candidate-set.json', 'Frozen publication candidate set', failures);
   if (!frozenArtifact) return failures;
   const frozen = frozenArtifact.value;
   const calculated = frozenCandidateSetSha256(frozen);
@@ -210,7 +257,7 @@ export function validatePublicationCandidateSet(root, {expectedCandidateSetSha25
     failures.push(`${label}: run contract candidate_set_sha256 is missing or stale`);
   if (frozen.state !== 'frozen-before-final-acceptance') failures.push(`${label}: candidate set is not frozen for final acceptance`);
 
-  const graphArtifact = readJson(root, 'publication/dependency-graph.json', 'Current publication dependency graph', failures);
+  const graphArtifact = documents?.graph ?? readJson(root, 'publication/dependency-graph.json', 'Current publication dependency graph', failures);
   if (graphArtifact) {
     const graph = graphArtifact.value;
     const freeze = graph.candidate_freeze ?? {};
@@ -352,7 +399,7 @@ export function validatePublicationCandidateSet(root, {expectedCandidateSetSha25
 
   const readinessPath = frozen.readiness_audit;
   if (readinessPath) {
-    const readiness = readJson(root, `publication/${readinessPath}`, 'Candidate freeze readiness audit', failures);
+    const readiness = documents?.readiness ?? readJson(root, `publication/${readinessPath}`, 'Candidate freeze readiness audit', failures);
     if (readiness) {
       if (frozen.readiness_audit_sha256 !== sha(readiness.bytes)) failures.push(`${label}: frozen readiness audit whole-file SHA is stale`);
       if (readiness.value.freeze_record?.candidate_set_sha256 !== frozen.candidate_set_sha256 || readiness.value.freeze_record?.manifest_sha256)
@@ -360,6 +407,6 @@ export function validatePublicationCandidateSet(root, {expectedCandidateSetSha25
     }
   }
 
-  validateBhlTargetedEvidence(root, frozen, graphArtifact?.value, failures);
+  validateBhlTargetedEvidence(root, frozen, graphArtifact?.value, failures, scope);
   return failures;
 }

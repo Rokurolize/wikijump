@@ -1,10 +1,10 @@
 export interface PageRedirectData {
   redirect_page: string | null
-  redirect_kind?: "wikidot_module" | null
+  redirect_kind?: "wikidot_module" | "random_helper" | null
 }
 
 export interface ResolvedPageRedirect {
-  status: 301 | 308
+  status: 301 | 302 | 308
   location: string
 }
 
@@ -20,6 +20,9 @@ export function resolvePageRedirect(
 
   if (viewData.redirect_kind === "wikidot_module") {
     return resolveWikidotModuleRedirect(viewData.redirect_page, extra, requestUrl)
+  }
+  if (viewData.redirect_kind === "random_helper") {
+    return resolveRandomHelperRedirect(viewData.redirect_page, requestUrl)
   }
   if (viewData.redirect_kind !== null && viewData.redirect_kind !== undefined) {
     return null
@@ -106,6 +109,44 @@ function resolveWikidotModuleRedirect(
   }
 
   return { status: 301, location: mappedLocation }
+}
+
+function resolveRandomHelperRedirect(
+  slug: string,
+  requestUrl: string
+): ResolvedPageRedirect | null {
+  // Deepwell only ever emits a same-site page slug here. Refuse anything
+  // that is not a bare slug so a malformed value can never turn the helper
+  // into an open redirect. The helper's own suffix is never carried onto the
+  // randomly selected target; only the request query is preserved.
+  // A 302 (not 301) is required: the target changes on every visit, so a
+  // permanent redirect would pin browsers to one random pick.
+  if (
+    slug === "" ||
+    // eslint-disable-next-line no-control-regex -- redirect targets must not smuggle controls
+    /[\x00-\x20\x7f?#\\]/.test(slug) ||
+    slug.startsWith("/") ||
+    slug.includes("://")
+  ) {
+    return null
+  }
+
+  let currentPath: string
+  let search: string
+  try {
+    const current = new URL(requestUrl)
+    currentPath = decodeURI(current.pathname)
+    search = current.search
+  } catch {
+    return null
+  }
+
+  // Never bounce back to the helper itself.
+  if (currentPath === `/${slug}`) {
+    return null
+  }
+
+  return { status: 302, location: `/${slug}${search}` }
 }
 
 function buildRoute(

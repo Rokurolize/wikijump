@@ -362,16 +362,19 @@ export interface WikidotSitemapEntry {
 
 export interface WikidotSitemapOutput {
   entries: WikidotSitemapEntry[]
+  shard_count: number | null
 }
 
 export async function wikidotSitemap(
   siteId: number,
+  shard: number,
   requestContext: RequestContext = {}
 ): Promise<WikidotSitemapOutput | null> {
   return client.request(
     "wikidot_sitemap",
     {
-      site_id: siteId
+      site_id: siteId,
+      shard
     },
     requestContext
   )
@@ -446,6 +449,20 @@ export async function wikidotSiteChangesModule(
       ...(input.categoryId === undefined ? {} : { category_id: input.categoryId })
     },
     requestContext
+  )
+}
+
+export async function pageCreatePermission(
+  input: { page: string },
+  requestContext: RequestContext = {}
+): Promise<{ can_create: boolean }> {
+  return client.request(
+    "page_create_permission",
+    {},
+    {
+      ...requestContext,
+      page: input.page
+    }
   )
 }
 

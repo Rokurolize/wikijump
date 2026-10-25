@@ -3,7 +3,8 @@ const EDIT_META_MODULE = "edit/EditMetaModule"
 /**
  * @param {unknown} value
  * @returns {{ status: string; body?: unknown }}
- * @throws {Error} If the response does not carry the legacy `status: "ok"` envelope.
+ * @throws {Error} If the response does not carry the legacy `status: "ok"`
+ *   envelope.
  */
 const requireOkResponse = (value) => {
   if (

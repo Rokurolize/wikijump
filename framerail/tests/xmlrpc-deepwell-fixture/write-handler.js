@@ -31,8 +31,9 @@ const handleUserCreate = ({ rpcRequest, response }) => {
     typeof params.ip_address !== "string" ||
     typeof params.bypass_filter !== "boolean" ||
     typeof params.bypass_email_verification !== "boolean"
-  )
+  ) {
     return undefined
+  }
 
   fixtureState.userCreateRequests.push({
     user_type: params.user_type,

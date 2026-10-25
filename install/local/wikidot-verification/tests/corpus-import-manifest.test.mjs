@@ -6,8 +6,10 @@ import test from "node:test";
 
 import {
   buildCorpusImportManifest,
+  buildCrossSiteDependencyManifest,
   buildManifestSummary,
   formatJsonl,
+  summarizeCrossSiteCoverage,
 } from "../src/corpus-import-manifest.mjs";
 import {
   cryptoSha256,
@@ -337,4 +339,152 @@ test('buildCorpusImportManifest fullnames filter fails closed on unknown pages',
     }),
     /at least one page/,
   );
+});
+
+test('buildCrossSiteDependencyManifest emits foreign rows with corpus provenance and gap lists', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-xsite-'));
+  writePage(root, 'en', 'scp-1', {
+    entityId: '11111111-1111-4111-8111-111111111111',
+    source: '[[include :snippets:comp]]\n[[include :nosuchsite:gone]]\n[[include component:local]]',
+  });
+  writePage(root, 'en', 'component:local', {
+    entityId: '22222222-2222-4222-8222-222222222222',
+    source: 'local component',
+  });
+  writePage(root, 'snippets', 'comp', {
+    entityId: '33333333-3333-4333-8333-333333333333',
+    meta: { fullname: 'comp', title: 'Comp', title_shown: 'Comp', tags: [] },
+    source: 'shared component',
+  });
+  fs.writeFileSync(
+    path.join(root, 'snippets', 'pages', 'comp', 'current.json'),
+    '{"capture_id":"cap-1","entity_id":"33333333-3333-4333-8333-333333333333","fullname":"comp","payload_sha256":"abc","run_id":"run-9","schema_version":1,"status":"active"}\n',
+  );
+
+  const { rows, gaps, summary } = buildCrossSiteDependencyManifest({
+    corpusRoot: root,
+    targetBranch: 'en',
+    targetSite: 'scp-wiki',
+    roots: ['scp-1'],
+    branches: ['en', 'snippets'],
+  });
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].fullname, 'comp');
+  assert.equal(rows[0].source_site, 'snippets');
+  assert.equal(rows[0].source_branch, 'snippets');
+  assert.equal(rows[0].closure_depth, 1);
+  assert.equal(rows[0].closure_via, 'en:scp-1');
+  assert.match(rows[0].source_path, /snippets\/pages\/comp\/source\.wikidot\.txt/u);
+  assert.equal(rows[0].source_current_capture_id, 'cap-1');
+  assert.equal(rows[0].source_current_run_id, 'run-9');
+  assert.equal(rows[0].source_current_payload_sha256, 'abc');
+  assert.equal(summary.cross_site_row_count, 1);
+  assert.equal(summary.same_site_dependency_count, 1);
+  assert.equal(summary.gap_count, 1);
+  assert.deepEqual(summary.gaps_by_reason, { 'absent-from-corpus': 1 });
+  assert.equal(gaps[0].identity, 'nosuchsite:gone');
+  assert.equal(gaps[0].reason, 'absent-from-corpus');
+});
+
+test('buildCrossSiteDependencyManifest reports collisions and bad records as gaps, never renames', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-xsite-'));
+  writePage(root, 'en', 'scp-1', {
+    entityId: '11111111-1111-4111-8111-111111111111',
+    source: '[[include :snippets:clash]]\n[[include :snippets:broken]]',
+  });
+  writePage(root, 'en', 'clash', {
+    entityId: '22222222-2222-4222-8222-222222222222',
+    source: 'same-site page wins the slug',
+  });
+  writePage(root, 'snippets', 'clash', {
+    entityId: '33333333-3333-4333-8333-333333333333',
+    meta: { fullname: 'clash', title: 'C', title_shown: 'C', tags: [] },
+    source: 'foreign decoy',
+  });
+  writePage(root, 'snippets', 'broken', {
+    entityId: '44444444-4444-4444-8444-444444444444',
+    meta: { fullname: 'WRONG', title: 'B', title_shown: 'B', tags: [] },
+    source: 'mismatched meta',
+  });
+
+  const { rows, gaps } = buildCrossSiteDependencyManifest({
+    corpusRoot: root,
+    targetBranch: 'en',
+    targetSite: 'scp-wiki',
+    roots: ['scp-1'],
+    branches: ['en', 'snippets'],
+  });
+  assert.deepEqual(rows, []);
+  assert.deepEqual(gaps.map((gap) => gap.reason).sort(), ['invalid-corpus-record', 'slug-collision']);
+});
+
+test('summarizeCrossSiteCoverage counts fixed pages from per-root verdicts', () => {
+  const summary = summarizeCrossSiteCoverage({
+    affectedSlugs: ['scp-1', 'scp-2'],
+    verdicts: {
+      'scp-1': { fixed: true, gaps: [], truncated: [] },
+      'scp-2': { fixed: false, gaps: [{ identity: 'x:y' }], truncated: [] },
+    },
+    manifest: { rows: [{ fullname: 'comp' }], gaps: [{ identity: 'x:y' }], summary: { gaps_by_reason: { 'absent-from-corpus': 1 }, truncated: [] } },
+  });
+  assert.equal(summary.affected_count, 2);
+  assert.equal(summary.would_fix_count, 1);
+  assert.deepEqual(summary.still_broken, ['scp-2']);
+  assert.equal(summary.manifest_row_count, 1);
+});
+
+test('buildCrossSiteDependencyManifest honors caller-configured branch preferences with audit trail', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-xsite-'));
+  writePage(root, 'en', 'scp-1', {
+    entityId: '11111111-1111-4111-8111-111111111111',
+    source: '[[include :shared:both]]',
+  });
+  for (const [branch, text] of [['aaa', 'leaf aaa'], ['zzz', 'leaf zzz']]) {
+    writePage(root, branch, 'both', {
+      entityId: branch === 'aaa' ? '33333333-3333-4333-8333-333333333333' : '44444444-4444-4444-8444-444444444444',
+      meta: { fullname: 'both', title: 'B', title_shown: 'B', tags: [] },
+      source: text,
+    });
+  }
+  const { rows, gaps } = buildCrossSiteDependencyManifest({
+    corpusRoot: root,
+    targetBranch: 'en',
+    targetSite: 'scp-wiki',
+    roots: ['scp-1'],
+    branches: ['en', 'aaa', 'zzz'],
+    includeClosure: { preferredBranches: { shared: 'zzz' } },
+  });
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].source_branch, 'zzz');
+  assert.equal(rows[0].closure_resolution, 'preferred-branch');
+  assert.deepEqual(rows[0].source_also_in_branches, ['aaa']);
+  assert.deepEqual(gaps, []);
+});
+
+test('buildCrossSiteDependencyManifest treats cross-branch same slugs as collisions', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-xsite-'));
+  writePage(root, 'en', 'scp-1', {
+    entityId: '11111111-1111-4111-8111-111111111111',
+    source: '[[include :aaa:shared]]\n[[include :zzz:shared]]',
+  });
+  for (const branch of ['aaa', 'zzz']) {
+    writePage(root, branch, 'shared', {
+      entityId: branch === 'aaa' ? '33333333-3333-4333-8333-333333333333' : '44444444-4444-4444-8444-444444444444',
+      meta: { fullname: 'shared', title: 'S', title_shown: 'S', tags: [] },
+      source: `shared from ${branch}`,
+    });
+  }
+  const { rows, gaps } = buildCrossSiteDependencyManifest({
+    corpusRoot: root,
+    targetBranch: 'en',
+    targetSite: 'scp-wiki',
+    roots: ['scp-1'],
+    branches: ['en', 'aaa', 'zzz'],
+    includeClosure: { preferredBranches: { aaa: 'aaa', zzz: 'zzz' } },
+  });
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].source_branch, 'aaa');
+  assert.equal(gaps.length, 1);
+  assert.equal(gaps[0].reason, 'slug-collision');
+  assert.match(gaps[0].detail, /already emitted for aaa:shared/u);
 });

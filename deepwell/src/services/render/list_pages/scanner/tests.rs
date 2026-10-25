@@ -545,6 +545,32 @@ fn count_pages_preflight_accepts_regex_valid_mixed_whitespace() {
 }
 
 #[test]
+fn count_pages_shapes_need_the_module_name_in_any_case() {
+    assert!(list_pages_body_has_standalone_count_pages_opening(
+        "%%title%%\n[[module COUNTPAGES category=\"_default\"]]",
+    ));
+    assert!(
+        list_pages_body_inline_count_pages_legacy_tail(
+            "[[module countPages category=\"_default\"]]%%total%%[[/module]]",
+        )
+        .is_some()
+    );
+    for body in [
+        "%%title%% %%rating%%",
+        "[[module Count Pages]]\n[[/module]]",
+    ] {
+        assert!(
+            !list_pages_body_has_standalone_count_pages_opening(body),
+            "{body}"
+        );
+        assert!(
+            list_pages_body_inline_count_pages_legacy_tail(body).is_none(),
+            "{body}"
+        );
+    }
+}
+
+#[test]
 fn standalone_countpages_detector_matches_frozen_ownership_shapes() {
     // Frozen Wikidot observation: a standalone nested opening is treated as
     // the empty-row shape, while a same-line module body takes the separate
@@ -2556,19 +2582,21 @@ fn preserved_module654_suffix_charges_projected_merge_and_recursive_work() {
     // behavioral oracle (unclosed_at_marker_preservation_does_not_hide_a_later_valid_module).
     // Quoted-line continuation extensions below test internal work counters;
     // their exact renderings are NOT independently verified live Wikidot oracles.
+    // `raw_tail` is two lone `@@` lines: Wikidot pairs `@@` per line, so neither
+    // owns a literal range (the counters count only real ranges).
     let preserved = "[[module ListPages name=\"missing\"]]";
     let raw_tail = "@@\nDOC\n@@\n";
     let later = "[[module ListPages name=\"later-valid\"]]ROW[[/module]]";
     for (label, prefix, gap, expected_work, expected_advances) in [
         ("no projection", "", "", 593, 4),
-        ("quoted prefix", "> quoted\\\n> second row\n", "", 1_522, 9),
-        ("quoted suffix", "", "> quoted\\\n> second row\n", 2_097, 14),
+        ("quoted prefix", "> quoted\\\n> second row\n", "", 1_521, 8),
+        ("quoted suffix", "", "> quoted\\\n> second row\n", 2_094, 12),
         (
             "literal and quoted prefix",
             "@@hidden@@\n> quoted\\\n> second row\n",
             "",
-            1_569,
-            12,
+            1_568,
+            11,
         ),
     ] {
         let source = format!("{prefix}{preserved}{raw_tail}{gap}{later}");

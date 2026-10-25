@@ -1,4 +1,5 @@
 import { parseDeploymentEnvironment } from "./deployment-environment.js"
+import { platformDomains, platformHttpsOrigin } from "./platform-domains.js"
 
 /**
  * Authoritative platform legal destinations.
@@ -13,10 +14,10 @@ import { parseDeploymentEnvironment } from "./deployment-environment.js"
  * point an instance at its own policies with
  * `WIKIJUMP_TERMS_OF_SERVICE_URL` and `WIKIJUMP_PRIVACY_POLICY_URL`; when
  * an operator does not configure them, the documented platform
- * destinations for the deployment environment are used, which mirrors how
- * the session cookie already derives the platform host. A self-hosted
- * instance that serves its policies from another host must set the
- * environment variables instead of inheriting the public ones.
+ * destinations on the deployment's platform host are used (see
+ * `platform-domains.js`), the same host the session cookie is scoped to. A
+ * self-hosted instance that serves its policies from another host must set
+ * the environment variables instead of inheriting the public ones.
  *
  * Destinations are validated as absolute `https:` URLs. Anything else is a
  * configuration defect and fails closed, because a relative or
@@ -24,15 +25,15 @@ import { parseDeploymentEnvironment } from "./deployment-environment.js"
  * wiki's origin.
  */
 
-const PLATFORM_LEGAL_HOSTS = {
-  local: "wikijump.localhost",
-  dev: "wikijump.dev",
-  prod: "wikijump.com"
+const PLATFORM_LEGAL_PATHS = {
+  termsOfService: "/legal:terms-of-service",
+  privacyPolicy: "/legal:privacy-policy"
 }
 
-const PLATFORM_LEGAL_PATHS = {
-  termsOfService: "/legal/terms-of-service",
-  privacyPolicy: "/legal/privacy-policy"
+// The platform wiki (www) serves these as ordinary seeded pages.
+const PLATFORM_FOOTER_PATHS = {
+  docs: "/docs",
+  security: "/legal:security"
 }
 
 const LEGAL_DESTINATION_ENVIRONMENT_VARIABLES = {
@@ -85,7 +86,8 @@ export const legalDestinations = ({
   deploymentEnvironment?: "local" | "dev" | "prod"
   env?: Record<string, string | undefined>
 } = {}): LegalDestinations => {
-  const host = PLATFORM_LEGAL_HOSTS[deploymentEnvironment]
+  const domains = platformDomains({ deploymentEnvironment, env })
+  const origin = platformHttpsOrigin(domains.main, domains)
   const keys = Object.keys(PLATFORM_LEGAL_PATHS) as LegalDestinationKey[]
 
   return keys.reduce<LegalDestinations>((destinations, key) => {
@@ -94,7 +96,32 @@ export const legalDestinations = ({
       env[environmentVariable],
       environmentVariable
     )
-    destinations[key] = configured ?? `https://${host}${PLATFORM_LEGAL_PATHS[key]}`
+    destinations[key] = configured ?? `${origin}${PLATFORM_LEGAL_PATHS[key]}`
     return destinations
   }, {} as LegalDestinations)
+}
+
+/**
+ * The native footer's destinations for this deployment: Terms and Privacy
+ * are the same pages the registration disclosure names, Docs and Security
+ * are the platform wiki's own pages. Explicit
+ * `PUBLIC_WIKIJUMP_FOOTER_*_URL` overrides still win (see
+ * `$lib/platform-footer-links`).
+ */
+export const platformFooterDestinations = ({
+  deploymentEnvironment = parseDeploymentEnvironment(),
+  env = process.env
+}: {
+  deploymentEnvironment?: "local" | "dev" | "prod"
+  env?: Record<string, string | undefined>
+} = {}): Record<string, string> => {
+  const domains = platformDomains({ deploymentEnvironment, env })
+  const origin = platformHttpsOrigin(domains.main, domains)
+  const legal = legalDestinations({ deploymentEnvironment, env })
+  return {
+    "terms-conditions": legal.termsOfService,
+    privacy: legal.privacyPolicy,
+    docs: `${origin}${PLATFORM_FOOTER_PATHS.docs}`,
+    security: `${origin}${PLATFORM_FOOTER_PATHS.security}`
+  }
 }

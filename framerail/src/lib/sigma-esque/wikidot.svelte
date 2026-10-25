@@ -1,6 +1,7 @@
 <script lang="ts">
   import { wikidotCollapsibles } from "$lib/wikidot/wikidot-collapsibles"
   import { wikidotFooterControls } from "$lib/wikidot/wikidot-footer"
+  import { wikidotMenu } from "$lib/wikidot/wikidot-menus.js"
 
   import type { HTMLAnchorAttributes } from "svelte/elements"
 
@@ -30,7 +31,7 @@
       <div id="container">
         <div id="header">
           {@render header?.()}
-          <div id="top-bar">
+          <div id="top-bar" use:wikidotMenu={{ list: true }}>
             {@render topBar?.()}
           </div>
           {@render loginStatus?.()}
@@ -39,7 +40,7 @@
           <div id="header-extra-div-3"><span></span></div>
         </div>
         <div id="content-wrap">
-          <div id="side-bar">
+          <div id="side-bar" use:wikidotMenu>
             {@render sideBar?.()}
             <a class="close-menu" href="##">
               <br />
@@ -47,7 +48,8 @@
                 alt="black.png"
                 class="image"
                 src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAMSURBVBhXY2BgYAAAAAQAAVzN/2kAAAAASUVORK5CYII="
-                style="z-index:-1; opacity: 0.3;"
+                style:z-index="-1"
+                style:opacity="0.3"
               />
               <br />
             </a>

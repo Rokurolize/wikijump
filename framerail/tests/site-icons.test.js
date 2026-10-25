@@ -10,6 +10,7 @@ import {
   WINDOWS_TILE_ROUTE_PREFIX,
   faviconDeclaration,
   hasIosIcons,
+  iconSiteForHead,
   windowsTileDeclaration
 } from "../src/lib/site-icons.ts"
 
@@ -126,6 +127,47 @@ test("a site without a usable Windows 8 tile declares nothing", () => {
     null,
     "a favicon route must not be declared as the Windows tile"
   )
+})
+
+test("an imported view carries every configured icon link without a flagged site row", () => {
+  // The seeded scp-wiki mirror keeps a native site row while serving
+  // imported views. The sealed 2026-10-07 head declares the favicon and
+  // iOS routes below, so the head must carry both once the import script
+  // stores those sources, instead of falling back to the empty data icon.
+  const unflaggedMirror = {
+    slug: "scp-wiki",
+    from_wikidot: false,
+    favicon_source: "https://scp-wiki.wikidot.com/local--favicon/favicon.gif",
+    ios_icon_source: "https://scp-wiki.wikidot.com/local--iosicon/iosicon.png",
+    windows_tile_source: null
+  }
+
+  const iconSite = iconSiteForHead(unflaggedMirror, true)
+  assert.equal(iconSite?.from_wikidot, true)
+  assert.deepEqual(faviconDeclaration(iconSite), {
+    href: `${FAVICON_ROUTE_PREFIX}favicon.gif`,
+    type: "image/gif"
+  })
+  assert.equal(hasIosIcons(iconSite), true)
+  assert.equal(windowsTileDeclaration(iconSite), null)
+
+  // The same row in a native view keeps its own flag, so an unconfigured
+  // mirror stays on the default fallback instead of declaring foreign routes.
+  const nativeSite = iconSiteForHead(unflaggedMirror, false)
+  assert.equal(nativeSite?.from_wikidot, false)
+  assert.equal(faviconDeclaration(nativeSite), null)
+  assert.equal(hasIosIcons(nativeSite), false)
+})
+
+test("the head site derivation keeps flagged rows and empty sites unchanged", () => {
+  assert.equal(iconSiteForHead(null, true), null)
+  const flagged = importedSite({
+    favicon_source: "https://scp-wiki.wikidot.com/local--favicon/favicon.gif"
+  })
+  assert.equal(iconSiteForHead(flagged, false), flagged)
+  assert.equal(iconSiteForHead(flagged, true), flagged)
+  const native = localSite()
+  assert.equal(iconSiteForHead(native, false), native)
 })
 
 test("iOS touch icons reproduce the three filenames and sizes Wikidot declares", () => {

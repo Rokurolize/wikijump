@@ -28,7 +28,9 @@ IMAGE_ARGUMENTS = (
 )
 
 PRODUCTION_DOMAIN_BLOCK = '[domain]\nmain = "wikijump.com"\nhttps-port = 443\nfiles = "wjfiles.com"'
-STANDING_DOMAIN_BLOCK = '[domain]\nmain = "wikijump.localhost"\nhttps-port = 18443\nfiles = "wjfiles.localhost"'
+# Standing is the stack on 127.0.0.1:443; the local development stack has its
+# own `wikijump.dev.localhost` hosts on 18443 (install/local/deepwell/config.toml).
+STANDING_DOMAIN_BLOCK = '[domain]\nmain = "wikijump.localhost"\nhttps-port = 443\nfiles = "wjfiles.localhost"'
 
 
 def command(*args: str, cwd: Path) -> str:
@@ -148,7 +150,7 @@ def main() -> int:
             "deepwell_config_source_sha256": deepwell_config_source_sha256,
             "deepwell_domain_override": {
                 "main": "wikijump.localhost",
-                "https_port": 18443,
+                "https_port": 443,
                 "files": "wjfiles.localhost",
             },
             **identity,

@@ -142,7 +142,8 @@ export const readCachedArticleResponse = async (store, key) => {
  * >} entry
  * @param {number} ttlSeconds
  * @param {{ maxSerializedBytes?: number }} [options]
- * @returns {Promise<boolean>} `false` when serialization, size, or store writes prevent caching.
+ * @returns {Promise<boolean>} `false` when serialization, size, or store
+ *   writes prevent caching.
  */
 export const writeCachedArticleResponse = async (
   store,

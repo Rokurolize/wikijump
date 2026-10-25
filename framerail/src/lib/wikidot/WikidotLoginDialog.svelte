@@ -7,6 +7,7 @@
   import { enhance } from "$app/forms"
   import { invalidateAll } from "$app/navigation"
   import { resolve } from "$app/paths"
+  import { page } from "$app/state"
   import {
     WIKIDOT_LOGIN_DIALOG_LABELS,
     interpretLoginActionResult
@@ -118,7 +119,11 @@
     {#if mfaRequired}
       <p class="wikidot-login-dialog-message" role="status">
         {labels.mfaRequired}
-        <a href={resolve("/-/login", {})}>{labels.signInPage}</a>
+        <a
+          href={`${resolve("/-/login", {})}?return=${encodeURIComponent(
+            page.url.pathname + page.url.search
+          )}`}>{labels.signInPage}</a
+        >
       </p>
     {/if}
     <div class="action-row">

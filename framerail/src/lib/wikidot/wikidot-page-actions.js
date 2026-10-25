@@ -56,6 +56,34 @@ export const sourceShowsStandardWikidotPageActions = (sourceSite) => {
 }
 
 /**
+ * The server permission gate `openPagePane` checks before mounting a write
+ * pane. Append, Parent and Lock write under the page `edit` permission;
+ * Move writes under `rename` and Delete under `delete`, each matching the
+ * authority the matching server mutation enforces. Read panes return null
+ * and mount without a pre-check. Tags gates on `edit` through its own call
+ * site (`openEditTagsPane`) and EditMeta inside its pane, so neither is
+ * part of this mapping. Unknown panes return null and mount ungated,
+ * exactly as before.
+ *
+ * @param {string} pane
+ * @returns {"edit" | "move" | "delete" | null}
+ */
+export const wikidotOpenPanePermissionKind = (pane) => {
+  switch (pane) {
+    case "append":
+    case "parent":
+    case "lock":
+      return "edit"
+    case "move":
+      return "move"
+    case "delete":
+      return "delete"
+    default:
+      return null
+  }
+}
+
+/**
  * @typedef {{
  *   status?: string
  *   message?: string
@@ -166,6 +194,34 @@ export const wikidotPageActionVisibility = ({
  * }} snapshot
  * @returns {WikidotPageActionLabels}
  */
+/**
+ * Picks the rating shown on the page actions row.
+ *
+ * Every rating surface shows the same number: the live combined score
+ * (imported baseline plus local votes) when one was fetched, otherwise the
+ * imported baseline snapshot, otherwise nothing. A combined score of zero
+ * is a real score and wins over the baseline; non-numeric values never
+ * do.
+ *
+ * @param {{
+ *   combinedRating?: number | null
+ *   importedRating?: number | null
+ * }} input
+ * @returns {number | null}
+ */
+export const selectWikidotPageRating = ({
+  combinedRating = null,
+  importedRating = null
+} = {}) => {
+  if (typeof combinedRating === "number" && Number.isFinite(combinedRating)) {
+    return combinedRating
+  }
+  if (typeof importedRating === "number" && Number.isFinite(importedRating)) {
+    return importedRating
+  }
+  return null
+}
+
 export const buildWikidotPageActionLabels = ({
   rating,
   comments,

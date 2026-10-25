@@ -5,6 +5,8 @@ ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 VENV="$ROOT/.venv"
 SOURCE_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/wikidot-python-source.XXXXXX")
 SETUP_COMPLETE=0
+UV_BIN=${UV_BIN:-uv}
+PYPI_INDEX_URL=https://pypi.org/simple/
 
 cleanup() {
   rm -rf -- "$SOURCE_ROOT"
@@ -35,8 +37,31 @@ if ! cmp -s "$SOURCE_ROOT/requirements-pypi.expected" "$ROOT/requirements-pypi.t
 fi
 rm -f -- "$SOURCE_ROOT/requirements-pypi.expected"
 
+if ! command -v "$UV_BIN" >/dev/null 2>&1; then
+  echo "uv >= 0.13.4 is required to bootstrap a current TLS trust bundle" >&2
+  exit 1
+fi
+UV_VERSION=$("$UV_BIN" --version | awk 'NR == 1 { print $2 }')
+if [ "$(printf '%s\n' 0.13.4 "$UV_VERSION" | sort -V | head -n 1)" != "0.13.4" ]; then
+  echo "uv >= 0.13.4 is required; found ${UV_VERSION:-unknown}" >&2
+  exit 1
+fi
+
 python3 -m venv --clear "$VENV"
-"$VENV/bin/python" -m pip install --require-hashes --requirement "$ROOT/requirements.lock"
+
+# Replace the stale ensurepip pip/certifi bundle before any TLS package install.
+# The updated uv uses current Mozilla roots, and both bootstrap artifacts are hash-locked.
+"$UV_BIN" pip install \
+  --python "$VENV/bin/python" \
+  --default-index "$PYPI_INDEX_URL" \
+  --require-hashes \
+  --requirements "$ROOT/requirements-bootstrap.lock"
+
+# Application dependencies are independently hash-pinned, with the fixed certifi version.
+"$VENV/bin/python" -m pip install \
+  --require-hashes \
+  --index-url "$PYPI_INDEX_URL" \
+  --requirement "$ROOT/requirements.lock"
 
 git init --quiet "$SOURCE_ROOT"
 git -C "$SOURCE_ROOT" remote add origin "$WIKIDOT_REPOSITORY"

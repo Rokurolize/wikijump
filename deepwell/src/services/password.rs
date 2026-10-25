@@ -123,7 +123,7 @@ impl PasswordService {
         let argon2 = Argon2::default();
         argon2
             .verify_password(password.as_bytes(), hash)
-            .map_err(convert_argon_error)?;
+            .map_err(convert_verify_error)?;
 
         Ok(())
     }
@@ -141,6 +141,23 @@ fn convert_argon_error(error: argon2::password_hash::Error) -> Error {
     )
 }
 
+/// Converts an error from password *verification*.
+///
+/// A computed hash that simply does not match is an expected
+/// authentication outcome ([`ErrorType::InvalidAuthentication`]), so the
+/// caller can log it as an ordinary rejection. Every other verifier
+/// failure (malformed stored hash, unsupported parameters, …) is a
+/// genuine cryptographic problem and keeps the hashing error class.
+fn convert_verify_error(error: argon2::password_hash::Error) -> Error {
+    match error {
+        argon2::password_hash::Error::PasswordInvalid => Error::new(
+            "password does not match the stored hash",
+            ErrorType::InvalidAuthentication,
+        ),
+        _ => convert_argon_error(error),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -155,6 +172,33 @@ mod tests {
         PasswordService::verify_internal(&password, &hash).unwrap();
         assert!(PasswordService::verify_internal(&wrong_password, &hash).is_err());
         assert!(PasswordService::verify_internal(&password, "not phc").is_err());
+    }
+
+    #[test]
+    fn password_verification_distinguishes_mismatch_from_verifier_failure() {
+        let password = Uuid::new_v4().to_string();
+        let wrong_password = Uuid::new_v4().to_string();
+        let hash = PasswordService::new_hash(&password).unwrap();
+
+        // A plain mismatch is an expected authentication outcome, not a
+        // cryptographic failure.
+        let mismatch =
+            PasswordService::verify_internal(&wrong_password, &hash).unwrap_err();
+        assert!(
+            matches!(mismatch.error_type, ErrorType::InvalidAuthentication),
+            "wrong password must classify as InvalidAuthentication, got {:?}",
+            mismatch.error_type,
+        );
+
+        // A malformed stored hash is a genuine verifier failure and must
+        // stay in the cryptography error class.
+        let malformed =
+            PasswordService::verify_internal(&password, "not phc").unwrap_err();
+        assert!(
+            matches!(malformed.error_type, ErrorType::Cryptography(_)),
+            "malformed hash must classify as Cryptography, got {:?}",
+            malformed.error_type,
+        );
     }
 
     #[test]

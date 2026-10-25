@@ -30,14 +30,14 @@ const fixtureThreadPosts = (page) =>
       fixtureThreadPager(2)
 
 const fixtureThreadBody = () =>
-  '<div class="forum-thread-box "><div class="description-block well">This is the discussion related to the wiki page <a href="/scp-9506">National Fog Safety Initiative</a>.</div>' +
-  '<div class="options"><a href="javascript:;" onclick="WIKIDOT.modules.ForumViewThreadModule.listeners.unfoldAll(event)" class="btn btn-default btn-small btn-sm">Unfold All</a> ' +
-  '<a href="javascript:;" onclick="WIKIDOT.modules.ForumViewThreadModule.listeners.foldAll(event)" class="btn btn-default btn-small btn-sm">Fold All</a> ' +
-  '<a href="javascript:;" id="thread-toggle-options" onclick="WIKIDOT.modules.ForumViewThreadModule.listeners.toggleThreadOptions(event)" class="btn btn-default btn-small btn-sm"><i class="icon-plus"></i> More Options</a></div>' +
-  '<div id="thread-options-2" class="options" style="display: none"><a href="javascript:;" onclick="WIKIDOT.modules.ForumViewThreadModule.listeners.editThreadMeta(event)" class="btn btn-default btn-small btn-sm">Edit Title &amp; Description</a></div>' +
-  '<div id="thread-container" class="thread-container"><div id="thread-container-posts" style="display: none">' +
-  fixtureThreadPosts(1) +
-  '</div></div><div style="display:none" id="post-options-template"><a href="javascript:;" onclick="WIKIDOT.modules.ForumViewThreadModule.listeners.showPermalink(event,\'%POST_ID%\')" class="btn btn-default btn-small btn-sm">Permanent Link</a></div>' +
+  `<div class="forum-thread-box "><div class="description-block well">This is the discussion related to the wiki page <a href="/scp-9506">National Fog Safety Initiative</a>.</div>` +
+  `<div class="options"><a href="javascript:;" onclick="WIKIDOT.modules.ForumViewThreadModule.listeners.unfoldAll(event)" class="btn btn-default btn-small btn-sm">Unfold All</a> ` +
+  `<a href="javascript:;" onclick="WIKIDOT.modules.ForumViewThreadModule.listeners.foldAll(event)" class="btn btn-default btn-small btn-sm">Fold All</a> ` +
+  `<a href="javascript:;" id="thread-toggle-options" onclick="WIKIDOT.modules.ForumViewThreadModule.listeners.toggleThreadOptions(event)" class="btn btn-default btn-small btn-sm"><i class="icon-plus"></i> More Options</a></div>` +
+  `<div id="thread-options-2" class="options" style="display: none"><a href="javascript:;" onclick="WIKIDOT.modules.ForumViewThreadModule.listeners.editThreadMeta(event)" class="btn btn-default btn-small btn-sm">Edit Title &amp; Description</a></div>` +
+  `<div id="thread-container" class="thread-container"><div id="thread-container-posts" style="display: none">${fixtureThreadPosts(
+    1
+  )}</div></div><div style="display:none" id="post-options-template"><a href="javascript:;" onclick="WIKIDOT.modules.ForumViewThreadModule.listeners.showPermalink(event,'%POST_ID%')" class="btn btn-default btn-small btn-sm">Permanent Link</a></div>` +
   `<div style="display:none" id="post-options-permalink-template">/forum/t-${FIXTURE_THREAD_ID}/national-fog-safety-initiative#post-</div></div>` +
   `<script type="text/javascript">WIKIDOT.forumThreadId = ${FIXTURE_THREAD_ID};</script>`
 

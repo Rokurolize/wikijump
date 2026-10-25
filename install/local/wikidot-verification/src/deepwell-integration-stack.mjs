@@ -26,6 +26,16 @@ export function deepwellTestThreads(env = process.env) {
   return String(value);
 }
 
+/** How many nextest partitions run side by side, each on its own stack. */
+export function deepwellTestShards(env = process.env) {
+  const raw = env.WIKIJUMP_DEEPWELL_TEST_SHARDS?.trim() || "1";
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 1 || value > 16) {
+    fail("WIKIJUMP_DEEPWELL_TEST_SHARDS must be an integer from 1 through 16");
+  }
+  return value;
+}
+
 export function deepwellNextestPartition(env = process.env) {
   const value = env.WIKIJUMP_DEEPWELL_NEXTEST_PARTITION?.trim();
   if (!value) return null;
@@ -135,6 +145,28 @@ export async function resolveDeepwellSeedBinary({cargo = "cargo", env = process.
     fail("cargo metadata did not report a target_directory for Deepwell");
   }
   return join(metadata.target_directory, "debug", process.platform === "win32" ? "deepwell.exe" : "deepwell");
+}
+
+/** Run `body` on a provisioned stack. Provisioning (containers, migrations,
+ * the seeder) is setup, not a test: on a saturated barrier the seeder's
+ * renders can outlast Deepwell's 500 ms Valkey reply timeout. A failed
+ * provisioning gets one fresh stack; a failure inside `body` is never retried. */
+export async function withProvisionedDeepwellStack(body, options = {}, {
+  stack = withDeepwellIntegrationStack,
+  log = (message) => console.error(message),
+} = {}) {
+  for (let attempt = 1; ; attempt += 1) {
+    let provisioned = false;
+    try {
+      return await stack(async (context) => {
+        provisioned = true;
+        return await body(context);
+      }, options);
+    } catch (error) {
+      if (provisioned || attempt >= 2) throw error;
+      log(`Deepwell test stack provisioning failed; retrying once on a fresh stack: ${error?.message ?? error}`);
+    }
+  }
 }
 
 export async function withDeepwellIntegrationStack(callback, {

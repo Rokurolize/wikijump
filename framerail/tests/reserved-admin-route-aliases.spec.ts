@@ -20,6 +20,13 @@ const APP_URL = `http://localhost:${process.env.PLAYWRIGHT_APP_PORT ?? "4173"}`
 test("anonymous canonical and alternate admin routes share the denied response", async ({
   page
 }) => {
+  const fixturePort = process.env.PLAYWRIGHT_FIXTURE_PORT
+  expect(fixturePort).toBeTruthy()
+  const resetArticleReads = await page.request.get(
+    `http://127.0.0.1:${fixturePort}/last-article-read-requests`
+  )
+  expect(resetArticleReads.ok()).toBe(true)
+
   for (const site of SITE_CONTEXTS) {
     await page.setExtraHTTPHeaders(site.headers)
 
@@ -56,8 +63,6 @@ test("anonymous canonical and alternate admin routes share the denied response",
     }
   }
 
-  const fixturePort = process.env.PLAYWRIGHT_FIXTURE_PORT
-  expect(fixturePort).toBeTruthy()
   const articleReads = await page.request.get(
     `http://127.0.0.1:${fixturePort}/last-article-read-requests`
   )

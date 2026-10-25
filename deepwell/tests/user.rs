@@ -336,6 +336,108 @@ async fn oversized_avatar_rejection_does_not_promote_blob_or_change_target() {
 }
 
 #[tokio::test]
+async fn non_raster_avatar_rejection_does_not_change_target() {
+    // SVG (and other active document types) must not become avatars: the
+    // route serves the stored blob verbatim on the files origin, where
+    // script would execute. See issue #2653.
+    const AVATAR_DATA: &[u8] =
+        b"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\"></svg>";
+
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(SAMPLE_USER_ID),
+        ..Default::default()
+    });
+
+    let target_before =
+        run_endpoint!(runner, user_get, json!({ "user": SAMPLE_USER_ID }),)
+            .expect("sample user should exist")
+            .user
+            .unwrap_wikijump()
+            .expect("sample user should be a Wikijump user");
+
+    let pending_blob_id = cuid();
+    let s3_path = format!("uploads/{pending_blob_id}");
+    let avatar_hash = sha512_hash(AVATAR_DATA);
+    assert!(
+        BlobService::get_optional(runner.context(), &avatar_hash)
+            .await
+            .expect("avatar fixture permanent lookup should succeed")
+            .is_none(),
+        "avatar fixture hash must not already exist"
+    );
+    let upload = runner
+        .state()
+        .s3_files_bucket
+        .put_object(&s3_path, AVATAR_DATA)
+        .await
+        .expect("avatar fixture upload should succeed");
+    assert_eq!(upload.status_code(), 200);
+    let created_at = OffsetDateTime::now_utc();
+    blob_pending::ActiveModel {
+        external_id: Set(pending_blob_id.clone()),
+        created_by: Set(SAMPLE_USER_ID),
+        created_at: Set(created_at),
+        expires_at: Set(created_at + time::Duration::minutes(5)),
+        expected_length: Set(AVATAR_DATA.len().try_into().expect("fixture length fits")),
+        s3_path: Set(s3_path.clone()),
+        s3_hash: Set(None),
+        presign_url: Set("not-used-in-test".to_owned()),
+        site_id: Set(None),
+        page_id: Set(None),
+        content_type_label: Set(None),
+        content_type_description: Set(None),
+    }
+    .insert(&runner.state().database)
+    .await
+    .expect("avatar pending blob fixture should be inserted");
+
+    let error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": SAMPLE_USER_ID,
+            "avatar_uploaded_blob_id": pending_blob_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let target_after =
+        run_endpoint!(runner, user_get, json!({ "user": SAMPLE_USER_ID }),)
+            .expect("sample user should remain readable")
+            .user
+            .unwrap_wikijump()
+            .expect("sample user should remain a Wikijump user");
+
+    BlobPending::delete_by_id(&pending_blob_id)
+        .exec(&runner.state().database)
+        .await
+        .expect("avatar pending blob fixture cleanup should succeed");
+    runner
+        .state()
+        .s3_files_bucket
+        .delete_object(&s3_path)
+        .await
+        .expect("avatar temporary fixture cleanup should succeed");
+    // Unlike the oversized rejection (which fails before the move), the
+    // MIME verdict needs libmagic output over the finalized bytes, so the
+    // content-addressed object already exists when the upload is refused.
+    // The hash was absent before this fixture ran, so removing it here
+    // cannot delete another test's bytes.
+    runner
+        .state()
+        .s3_files_bucket
+        .delete_object(blob_hash_to_hex(&avatar_hash))
+        .await
+        .expect("rejected avatar permanent cleanup should succeed");
+
+    assert_contains_error!(error, ErrorType::Blob);
+    assert_eq!(
+        target_after.avatar_s3_hash, target_before.avatar_s3_hash,
+        "rejected avatar must leave the existing avatar untouched"
+    );
+}
+
+#[tokio::test]
 async fn regular_account_password_policy_rejects_short_create_passwords() {
     let mut runner = TestRunner::setup().await;
     runner.set_request_context(RequestContext {
@@ -383,8 +485,25 @@ async fn regular_account_password_policy_rejects_short_create_passwords() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
+    // Account holders change their own password through
+    // user_password_change, which checks the current one.
     runner.set_request_context(RequestContext {
         user_id: Some(created.user_id),
+        ..Default::default()
+    });
+    let self_edit_error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": created.user_id,
+            "password": "ééééééééééééééé",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(self_edit_error, ErrorType::PermissionDenied);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
         ..Default::default()
     });
     let before_password =
@@ -789,6 +908,7 @@ async fn basic_update() {
         json!({
             "user": USER_SLUG,
             "email": "jane@wikijump.dev",
+            "current_password": "password-fixture",
             "ip_address": common::IP_ADDRESS,
         }),
     );
@@ -806,14 +926,20 @@ async fn basic_update() {
         json!({
             "user": USER_SLUG,
             "email": "jane@spam.xxx",
+            "current_password": "password-fixture",
             "biography": "This is a spam account now",
             "ip_address": common::IP_ADDRESS,
         }),
     );
     assert_contains_error!(error, ErrorType::DisallowedEmail);
 
-    // Update password
+    // Update password (platform staff; account holders use
+    // user_password_change, which checks the current password)
 
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
     let user = run_endpoint!(
         runner,
         user_edit,
@@ -916,6 +1042,10 @@ async fn user_create_only_verified_email_blocks_conflict() {
         .expect("verified email login should create a session");
     assert_eq!(session.user_id, first.user_id);
 
+    // The second account was displaced when the first verified, so it no
+    // longer names any mailbox: verification fails as "no email set"
+    // (UserEmailEmpty) rather than "owned by another" (UserExists). Either
+    // way no second verified owner is created.
     let error = run_endpoint_err!(
         runner,
         user_edit,
@@ -925,7 +1055,7 @@ async fn user_create_only_verified_email_blocks_conflict() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    assert_contains_error!(error, ErrorType::UserExists);
+    assert_contains_error!(error, ErrorType::UserEmailEmpty);
 
     let error = run_endpoint_err!(
         runner,
@@ -942,6 +1072,114 @@ async fn user_create_only_verified_email_blocks_conflict() {
     );
 
     assert_contains_error!(error, ErrorType::UserExists);
+}
+
+#[tokio::test]
+async fn verifying_email_displaces_other_pending_claims() {
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+
+    let first = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "First Pending Email Claim",
+            "email": "disputed-mailbox@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let second = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Second Pending Email Claim",
+            "email": "disputed-mailbox@example.invalid",
+            "locales": ["en"],
+            "password": "changed-password-fixture",
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_ne!(first.user_id, second.user_id);
+
+    // First verified proof wins the mailbox.
+    let verified = run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": first.user_id,
+            "email_verified": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(verified.email_verified_at.is_some());
+
+    // The other pending claim loses the address, not the account.
+    let displaced = run_endpoint!(runner, user_get, json!({"user": second.user_id}))
+        .expect("displaced user should remain readable")
+        .user
+        .unwrap_wikijump()
+        .expect("displaced user should be a Wikijump user");
+    assert!(displaced.email.is_empty());
+    assert!(displaced.email_verified_at.is_none());
+
+    // Name login still works for the displaced account.
+    let login = run_endpoint!(
+        runner,
+        auth_login,
+        json!({
+            "name_or_email": "Second Pending Email Claim",
+            "password": "changed-password-fixture",
+            "ip_address": common::IP_ADDRESS,
+            "user_agent": "displaced-claim-test",
+        }),
+    );
+    let session = run_endpoint!(runner, auth_session_get, json!([login.session_token]),)
+        .expect("name login should still work after displacement");
+    assert_eq!(session.user_id, second.user_id);
+
+    // The displaced account cannot verify an address it no longer holds.
+    let error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": second.user_id,
+            "email_verified": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::UserEmailEmpty);
+
+    // It can claim a new address and verify that one instead.
+    let relocated = run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": second.user_id,
+            "email": "relocated-claim@example.invalid",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(relocated.email, "relocated-claim@example.invalid");
+    let relocated = run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": second.user_id,
+            "email_verified": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(relocated.email_verified_at.is_some());
 }
 
 #[tokio::test]
@@ -1669,4 +1907,165 @@ async fn avatar_removal_is_owner_only_and_clears_only_the_association() {
         stored_avatar(&runner, other.user_id).await,
         Some(OTHER_HASH.to_vec())
     );
+}
+
+#[tokio::test]
+async fn self_email_change_requires_current_password_proof() {
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    let user = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Email Proof User",
+            "email": "before-proof@example.invalid",
+            "locales": ["en"],
+            "password": "email-proof-password",
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    // Act as the account holder, not as platform staff.
+    runner.set_request_context(RequestContext {
+        user_id: Some(user.user_id),
+        ..Default::default()
+    });
+
+    // No proof: rejected, email untouched.
+    let error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": user.user_id,
+            "email": "after-proof@example.invalid",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::InvalidAuthentication);
+
+    // Wrong proof: same indistinguishable rejection.
+    let error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": user.user_id,
+            "email": "after-proof@example.invalid",
+            "current_password": "not-the-password",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::InvalidAuthentication);
+
+    // Non-email self edits need no proof.
+    let renamed = run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": user.user_id,
+            "name": "Email Proof Renamed",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(renamed.email, "before-proof@example.invalid");
+
+    // Correct proof: email changes and verified ownership is cleared.
+    let changed = run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": user.user_id,
+            "email": "after-proof@example.invalid",
+            "current_password": "email-proof-password",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(changed.email, "after-proof@example.invalid");
+    assert!(changed.email_verified_at.is_none());
+}
+
+/// WWS serves avatars from its `user_avatar:<id>` cache entry, so changing or
+/// removing an avatar must drop that entry, and only that user's (#2556).
+#[tokio::test]
+async fn avatar_changes_drop_only_that_users_wws_cache_entry() {
+    use redis::AsyncCommands;
+
+    let mut runner = TestRunner::setup().await;
+    let mut user_ids = Vec::new();
+    for (name, email) in [
+        ("Avatar Cache Owner", "avatar-cache-owner@example.invalid"),
+        (
+            "Avatar Cache Bystander",
+            "avatar-cache-bystander@example.invalid",
+        ),
+    ] {
+        let created = run_endpoint!(
+            runner,
+            user_create,
+            json!({
+                "user_type": "regular",
+                "name": name,
+                "email": email,
+                "locales": ["en"],
+                "password": "password-fixture",
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        user::ActiveModel {
+            user_id: Set(created.user_id),
+            avatar_s3_hash: Set(Some([0xab; 64].to_vec())),
+            ..Default::default()
+        }
+        .update(runner.context().transaction())
+        .await
+        .expect("avatar fixture should be stored");
+        user_ids.push(created.user_id);
+    }
+    let (owner, other) = (user_ids[0], user_ids[1]);
+    let cached = |user_id: i64| format!("user_avatar:{user_id}");
+    let mut redis = runner.context().redis();
+    for user_id in [owner, other] {
+        let _: () = redis
+            .set(cached(user_id), "stale-avatar-hash")
+            .await
+            .expect("cache fixture should be stored");
+    }
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(owner),
+        ..Default::default()
+    });
+    // An edit that leaves the avatar alone keeps the cache entry.
+    run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": owner,
+            "biography": "edited without touching the avatar",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let kept: Option<String> = redis.get(cached(owner)).await.expect("cache read");
+    assert_eq!(kept.as_deref(), Some("stale-avatar-hash"));
+
+    // Removing the avatar drops the owner's entry and no one else's.
+    run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": owner,
+            "avatar_uploaded_blob_id": null,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let removed: Option<String> = redis.get(cached(owner)).await.expect("cache read");
+    let untouched: Option<String> = redis.get(cached(other)).await.expect("cache read");
+    assert_eq!(removed, None);
+    assert_eq!(untouched.as_deref(), Some("stale-avatar-hash"));
+
+    let _: usize = redis.del(cached(other)).await.expect("cache cleanup");
 }

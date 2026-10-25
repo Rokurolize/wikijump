@@ -10,6 +10,7 @@
  * (at your option) any later version.
  */
 
+use super::collect_line_paired_ranges;
 use super::list_pages_protection::collect_count_pages_inherited_ranges;
 use super::merge_sorted_ranges;
 use super::token_boundaries::{
@@ -20,7 +21,8 @@ use std::ops::Range;
 
 pub(super) fn collect_count_pages_literal_ranges(source: &str) -> Vec<Range<usize>> {
     let block_ranges = collect_line_prefix_block_ranges(source);
-    let raw_ranges = collect_alternating_ranges(source, "@@");
+    let mut raw_ranges = Vec::new();
+    collect_line_paired_ranges(source, "@@", &mut raw_ranges);
     let comment_ranges = collect_comment_ranges(source);
     let legacy_ranges = merge_sorted_ranges(
         merge_sorted_ranges(block_ranges, raw_ranges),
@@ -183,25 +185,6 @@ fn collect_line_prefix_block_ranges(source: &str) -> Vec<Range<usize>> {
     merge_sorted_ranges(code_ranges, html_ranges)
 }
 
-fn collect_alternating_ranges(source: &str, delimiter: &str) -> Vec<Range<usize>> {
-    let mut ranges = Vec::new();
-    let mut open = None;
-    let mut cursor = 0usize;
-    while let Some(relative) = source[cursor..].find(delimiter) {
-        let start = cursor + relative;
-        cursor = start + delimiter.len();
-        if let Some(open) = open.take() {
-            ranges.push(open..cursor);
-        } else {
-            open = Some(start);
-        }
-    }
-    if let Some(open) = open {
-        ranges.push(open..source.len());
-    }
-    ranges
-}
-
 fn collect_comment_ranges(source: &str) -> Vec<Range<usize>> {
     let mut ranges = Vec::new();
     let mut open = None;
@@ -245,17 +228,29 @@ mod tests {
     }
 
     #[test]
-    fn preserves_legacy_raw_and_comment_prefix_state() {
+    fn comments_hide_modules_but_a_lone_raw_marker_does_not() {
+        let source = "[!-- [[module CountPages tags=\"+hidden\"]]H[[/module]]";
+        let module = source.find("[[module CountPages").unwrap();
+        assert!(LiteralRegionIndex::new_count_pages_syntax(source).contains(module));
+
+        // A lone `@@` is literal text in Wikidot (wikidot-at-raw-preview-20261019.json:
+        // `plain-lone-at-then-code`, `lone-at-then-module-next-line`), so it does not
+        // own the rest of the document.
         for source in [
-            "@@ [[module CountPages tags=\"+hidden\"]]H[[/module]]",
-            "[!-- [[module CountPages tags=\"+hidden\"]]H[[/module]]",
+            "@@ [[module CountPages tags=\"+live\"]]L[[/module]]",
+            "text @@\n[[module CountPages tags=\"+live\"]]L[[/module]]",
         ] {
             let module = source.find("[[module CountPages").unwrap();
             assert!(
-                LiteralRegionIndex::new_count_pages_syntax(source).contains(module),
+                !LiteralRegionIndex::new_count_pages_syntax(source).contains(module),
                 "{source}",
             );
         }
+
+        let source = "@@raw@@ [[module CountPages tags=\"+live\"]]L[[/module]]";
+        let module = source.find("[[module CountPages").unwrap();
+        assert!(!LiteralRegionIndex::new_count_pages_syntax(source).contains(module));
+        assert!(LiteralRegionIndex::new_count_pages_syntax(source).contains(2));
 
         let source = "@@@@ [[module CountPages tags=\"+live\"]]L[[/module]]";
         let module = source.find("[[module CountPages").unwrap();

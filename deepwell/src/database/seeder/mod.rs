@@ -267,8 +267,17 @@ pub async fn seed(state: &ServerState) -> Result<()> {
             );
         }
 
+        // Seeded loopback custom domains (`scp-jp.localhost`) sit beside this
+        // deployment's platform domain, so each local environment has its own
+        // names: `scp-jp.dev.localhost` beside `wikijump.dev.localhost`.
+        let loopback_parent = loopback_parent(&ctx.config().main_domain_no_dot);
+        let preferred_domain = site
+            .preferred_domain
+            .map(|domain| rebase_loopback_domain(domain, loopback_parent));
+
         for site_domain in site.domains {
             let (domain, www_redirect) = site_domain.into_fields();
+            let domain = rebase_loopback_domain(domain, loopback_parent);
             info!("Creating site domain '{domain}' (www redirect: {www_redirect})");
 
             DomainService::create_custom(
@@ -287,7 +296,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
             &ctx,
             Reference::Id(site_id),
             UpdateSiteBody {
-                preferred_domain: Maybe::Set(site.preferred_domain),
+                preferred_domain: Maybe::Set(preferred_domain),
                 ..Default::default()
             },
             None,
@@ -641,8 +650,18 @@ pub async fn seed(state: &ServerState) -> Result<()> {
     // Role and permission mutations normally defer permission-cache invalidation
     // until the API wrapper commits. The seeder owns the transaction manually, so
     // drain those Redis-side invalidations before rerendering with the final role
-    // graph.
-    ctx.run_post_commit_actions().await.or_raise(make_error)?;
+    // graph. Page rerenders queued while seeding (dependents of pages created
+    // later) are covered by the full rerender below, and would otherwise run
+    // in a separate transaction that cannot see the uncommitted seed.
+    let actions = ctx
+        .drain_post_commit_actions()
+        .or_raise(make_error)?
+        .into_iter()
+        .filter(|action| !action.is_page_rerender())
+        .collect();
+    ServiceContext::run_post_commit_actions_for_state(&ctx.state(), actions)
+        .await
+        .or_raise(make_error)?;
 
     for page_id in seeded_page_ids {
         PageRevisionService::rerender(
@@ -696,6 +715,49 @@ async fn restart_sequence_with(
             ErrorType::DatabaseSeeder,
         )
     })
+}
+
+/// The parent of a loopback platform domain: `dev.localhost` for
+/// `wikijump.dev.localhost`, `localhost` for `wikijump.localhost`, and `None`
+/// for a public domain.
+fn loopback_parent(main_domain: &str) -> Option<&str> {
+    if !main_domain.ends_with(".localhost") {
+        return None;
+    }
+
+    main_domain.split_once('.').map(|(_, parent)| parent)
+}
+
+/// Moves a seeded `*.localhost` custom domain under the platform's loopback parent.
+fn rebase_loopback_domain(domain: String, loopback_parent: Option<&str>) -> String {
+    match (loopback_parent, domain.strip_suffix(".localhost")) {
+        (Some(parent), Some(name)) if parent != "localhost" => format!("{name}.{parent}"),
+        _ => domain,
+    }
+}
+
+#[test]
+fn seeded_loopback_domains_follow_the_platform_domain() {
+    let rebase = |domain: &str, main: &str| {
+        rebase_loopback_domain(str!(domain), loopback_parent(main))
+    };
+
+    assert_eq!(
+        rebase("scp-jp.localhost", "wikijump.localhost"),
+        "scp-jp.localhost"
+    );
+    assert_eq!(
+        rebase("scp-jp.localhost", "wikijump.dev.localhost"),
+        "scp-jp.dev.localhost",
+    );
+    assert_eq!(
+        rebase("scp-jp.localhost", "wikijump.dev"),
+        "scp-jp.localhost"
+    );
+    assert_eq!(
+        rebase("scpwiki.com", "wikijump.dev.localhost"),
+        "scpwiki.com"
+    );
 }
 
 async fn run_query(txn: &DatabaseTransaction, sql: String) -> Result<()> {

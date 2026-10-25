@@ -131,3 +131,83 @@ test("canonical slug redirects use a 301 and retain route options and query", ()
     { status: 301, location: "/normalized/history?view=history" }
   )
 })
+
+test("random helper redirects use a 302 to the selected slug and keep the query", () => {
+  assert.deepEqual(
+    resolvePageRedirect(
+      { redirect_page: "scp-4890", redirect_kind: "random_helper" },
+      "random:random-scp",
+      undefined,
+      "https://scp-wiki.wikijump.localhost/random:random-scp?utm_source=nav"
+    ),
+    { status: 302, location: "/scp-4890?utm_source=nav" }
+  )
+})
+
+test("random helper redirects drop the helper suffix and allow category slugs", () => {
+  assert.deepEqual(
+    resolvePageRedirect(
+      { redirect_page: "component:image-block", redirect_kind: "random_helper" },
+      "random:random-page",
+      "history",
+      "https://scp-wiki.wikijump.localhost/random:random-page/history"
+    ),
+    { status: 302, location: "/component:image-block" }
+  )
+})
+
+test("random helper redirects never bounce back to the helper itself", () => {
+  assert.equal(
+    resolvePageRedirect(
+      { redirect_page: "random:random-page", redirect_kind: "random_helper" },
+      "random:random-page",
+      undefined,
+      "https://scp-wiki.wikijump.localhost/random:random-page"
+    ),
+    null
+  )
+})
+
+test("random helper redirects fail closed on non-slug locations", () => {
+  for (const location of [
+    "",
+    "scp 4890",
+    "/scp-4890",
+    "scp-4890?view=1",
+    "scp-4890#part",
+    "https://example.test/scp-4890",
+    "//example.test/scp-4890",
+    "back\\slash"
+  ]) {
+    // NOTE: a colon alone (as in "javascript:alert(1)") is not rejected:
+    // helper targets are always emitted as same-origin paths, so a colon
+    // can only address a same-site category slug, never a URL scheme.
+    assert.equal(
+      resolvePageRedirect(
+        { redirect_page: location, redirect_kind: "random_helper" },
+        "random:random-page",
+        undefined,
+        "https://scp-wiki.wikijump.localhost/random:random-page"
+      ),
+      null,
+      location
+    )
+  }
+})
+
+test("verified Wikidot URL spelling aliases redirect to canonical pages with HTTP 301", () => {
+  // Deepwell resolves each alias to this canonical page and performs the
+  // canonical page's permission check before Framerail sends the redirect.
+  for (const source of ["scp---9506", "scp-9506_", "scp%209506", "scp-9506%09"]) {
+    assert.deepEqual(
+      resolvePageRedirect(
+        { redirect_page: "scp-9506", redirect_kind: null },
+        source,
+        "history",
+        `https://scp-wiki.wikijump.localhost/${source}/history?view=history`
+      ),
+      { status: 301, location: "/scp-9506/history?view=history" },
+      source
+    )
+  }
+})

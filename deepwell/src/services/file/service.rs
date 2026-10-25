@@ -46,13 +46,20 @@ use crate::utils::trim_spaces_in_place;
 use paste::paste;
 use sea_orm::ActiveValue;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, EntityTrait,
-    FromQueryResult, QueryFilter, QueryOrder, QuerySelect, Set, Statement, Value,
+    ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DbErr, EntityTrait,
+    FromQueryResult, QueryFilter, QueryOrder, QuerySelect, Set, SqlErr, Statement, Value,
 };
 use std::net::IpAddr;
 use time::OffsetDateTime;
 
 pub const MAXIMUM_FILE_NAME_LENGTH: usize = 256;
+
+/// Partial unique index over live file rows, added for #2602.
+///
+/// Concurrent creates can both pass the `check_conflicts()` lookup before
+/// either inserts, so this index is the arbiter. Unique violations naming
+/// it map to `ErrorType::FileExists`.
+const FILE_ACTIVE_UNIQUE_INDEX: &str = "file_active_page_name_unique";
 
 #[derive(Debug)]
 pub struct FileService;
@@ -141,7 +148,22 @@ impl FileService {
             page_id: Set(page_id),
             ..Default::default()
         };
-        let file = model.insert(txn).await.or_raise(make_error)?;
+        // The pre-insert check_conflicts() lookup cannot see a concurrent
+        // uncommitted insert, so the losing racer reaches this insert. Map
+        // the partial unique violation to the same conflict error rather
+        // than leaking a raw database error.
+        let file = match model.insert(txn).await {
+            Ok(file) => file,
+            Err(error) if is_file_active_unique_violation(&error) => {
+                bail!(Error::new(
+                    format!(
+                        "cannot create file, one with name '{name}' on page ID {page_id} since one already exists",
+                    ),
+                    ErrorType::FileExists,
+                ));
+            }
+            Err(error) => return Err(error).or_raise(make_error),
+        };
 
         let output = FileRevisionService::create_first(
             ctx,
@@ -1194,7 +1216,7 @@ impl FileService {
 /// This helper function is generally read-only, but if
 /// it finds a name which has leading or trailing whitespace,
 /// then it trims that off in-place.
-fn normalize_and_validate_file_name(name: &mut String) -> Result<()> {
+pub(crate) fn normalize_and_validate_file_name(name: &mut String) -> Result<()> {
     trim_spaces_in_place(name);
     debug!("Trimmed file name: '{name}'");
 
@@ -1249,6 +1271,14 @@ fn normalize_and_validate_file_name(name: &mut String) -> Result<()> {
 
 fn descriptor_field_is_valid(value: &str) -> bool {
     !value.is_empty() && !value.chars().any(|c| matches!(c, '\r' | '\n' | '\0'))
+}
+
+fn is_file_active_unique_violation(error: &DbErr) -> bool {
+    matches!(
+        error.sql_err(),
+        Some(SqlErr::UniqueConstraintViolation(message))
+            if message.contains(FILE_ACTIVE_UNIQUE_INDEX)
+    )
 }
 
 /// Verifies that the `last_revision_id` argument is the most recent.

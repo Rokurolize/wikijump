@@ -115,7 +115,12 @@ test("MFA-required sign-in points to the native sign-in page without carrying a 
 
   await expect(page.getByRole("status")).toContainText("Two-step verification")
   const nativeLink = page.getByRole("link", { name: "Open the sign-in page" })
-  await expect(nativeLink).toHaveAttribute("href", "/-/login")
+  // The native page returns to this wiki page after sign-in; the MFA
+  // continuation token never travels in the link.
+  await expect(nativeLink).toHaveAttribute(
+    "href",
+    `/-/login?return=${encodeURIComponent(new URL(WIKI_PAGE).pathname)}`
+  )
   await expect(page).toHaveURL(WIKI_PAGE)
 })
 

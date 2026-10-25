@@ -154,6 +154,38 @@ visual judgments; full package and runtime/source safety gates still apply.
 - Local Wikijump output proves the candidate implementation. Wikidot remains
   the authority for Wikidot-compatible runtime behavior.
 
+## Evidence retention (content-addressed store)
+
+Theme Lab verification must not require one full per-candidate checkout
+per evidence run. Keep a single content-addressed evidence store (see
+`install/local/theme-lab/scripts/evidence-store.mjs`): each blob is
+stored once under its SHA-256, per-source manifests map original
+relative paths to hashes, and per-candidate views materialize as
+hardlinks. `materialize` rejects manifest paths outside the destination
+and existing symlinks in destination path components before writing. The
+store's `verify` command re-hashes every object and confirms each manifest
+resolves; run it before deleting any source copy, and never delete or
+modify an evidence source until its blobs are verified in the store.
+
+Authority evidence resolves in two roots with the same relative paths: the
+checkout's `ports/authority-evidence` first, then the shared cache at
+`$XDG_DATA_HOME/wikijump/theme-lab-evidence` (default
+`~/.local/share/wikijump/theme-lab-evidence`; override with
+`WIKIJUMP_THEME_EVIDENCE_ROOT`, empty disables). A file is accepted from the
+first root whose bytes match the expected SHA-256; a missing or mismatching
+local file falls back, an unsafe path never does, and a receipt's nested
+artifacts are validated only against the root that resolved it. The fallback
+applies only to the default checkout root; callers that pass their own root get
+no fallback. Do not copy shared evidence into the checkout
+(`src/evidence-roots.mjs`).
+
+Once a verdict is recorded (an accept/review note with SHA references),
+keep the verdict, the final package, the final run contract, and the
+blobs they reference. Superseded iterations go: older canary versions,
+per-day generated directories, and intermediate rebind steps (keep the
+latest). Keep the accepted ordinary campaign and migration evidence as
+separate dimensions over the same store, not two copies.
+
 ## Completion boundary
 
 A new port is not complete when “the CSS looks approximately right.” Complete

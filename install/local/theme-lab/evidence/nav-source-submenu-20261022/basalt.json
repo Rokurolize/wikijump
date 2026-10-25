@@ -1,0 +1,1217 @@
+{
+  "schema": "theme_lab_source_navigation_submenu.v1",
+  "theme": "basalt",
+  "source_url": "https://scp-wiki.wikidot.com/theme:basalt",
+  "source_sha256": "df4b78d344536f5b7c363ac86b2ddc6f3c31b3647693f473169550e03fca17c5",
+  "observed_at": "2026-10-22T09:57:59.187Z",
+  "public_writes": 0,
+  "external_requests_sent": 0,
+  "offline": true,
+  "browser_version": "149.0.7827.55",
+  "browser_sha256": "2d18db9d8608b052b6a552ee00ec1e830f93692e928b65ecc67d693bd33fe801",
+  "original_html_sha256": "2400015139cdc0c0fa3ae4913c142f09d8d710d8927417b4a668bd53ab512804",
+  "replay_entry": "/o/df79307988265b882e90d7c9d9ed7644fb17af0961caff54d3c798a902095484",
+  "snapshot_sha256": "aca6913d3d69f5413a41eea4c3a632841218ec535b5cf8307d46a2cc451f29f0",
+  "snapshot_source": "reference cache manifest (anonymous Wikidot acquisition retained 2026-09-23; acquisition forbidden in this replay)",
+  "artifacts": [
+    {
+      "path": "evidence/nav-source-submenu-20261022/objects/24/2400015139cdc0c0fa3ae4913c142f09d8d710d8927417b4a668bd53ab512804",
+      "sha256": "2400015139cdc0c0fa3ae4913c142f09d8d710d8927417b4a668bd53ab512804"
+    },
+    {
+      "path": "evidence/nav-source-submenu-20261022/objects/df/df79307988265b882e90d7c9d9ed7644fb17af0961caff54d3c798a902095484",
+      "sha256": "df79307988265b882e90d7c9d9ed7644fb17af0961caff54d3c798a902095484"
+    },
+    {
+      "path": "evidence/nav-source-submenu-20261022/artifacts/tablet-expanded.png",
+      "sha256": "3983fe374fae628b07764051368b94fcd3bf5ceac2b553a3982b0533e8b9af2d"
+    },
+    {
+      "path": "evidence/nav-source-submenu-20261022/artifacts/mobile-expanded.png",
+      "sha256": "6fb20e2b8a7e55d8280f296a933070aee3b0d0939365b4b5b500184085500741"
+    },
+    {
+      "path": "evidence/nav-source-submenu-20261022/artifacts/narrow-mobile-expanded.png",
+      "sha256": "c9cc7ebf3a0c925900ec5b219641ee8d8fe1bb3b9abd07d8566447c642afa857"
+    }
+  ],
+  "scope": "Open top-navigation submenu of the frozen Basalt source at tablet (768x1024), mobile (390x844) and narrow-mobile (320x800), opened with the target capture helpers. Measures link background/alpha, backdrop filter and title/heading overlap.",
+  "measurement_programs": [
+    {
+      "path": "evidence/nav-source-submenu-20261022/probe-nav-source-submenu-20261022.mjs",
+      "sha256": "b50cf12d23fac6876eb47faf6dde0b003e0480d0837ef74bc0749167b5c59a74"
+    }
+  ],
+  "source_measurements": [
+    {
+      "viewport": "tablet",
+      "viewport_size": {
+        "width": 768,
+        "height": 1024
+      },
+      "action": "expandTabletTopNavigation",
+      "action_error": null,
+      "visible_submenu_links": 18,
+      "expanded_lists": 1,
+      "backgrounds": [
+        "rgba(252, 252, 252, 0.875)"
+      ],
+      "backdrops": [
+        "blur(1.6px)"
+      ],
+      "ul_backgrounds": [
+        "rgba(0, 0, 0, 0)"
+      ],
+      "uiOpacityVars": [
+        ".875"
+      ],
+      "links": [
+        {
+          "text": "About Us",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 100,
+            "w": 384,
+            "h": 37
+          }
+        },
+        {
+          "text": "Site Rules",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 384,
+            "y": 100,
+            "w": 384,
+            "h": 37
+          }
+        },
+        {
+          "text": "FAQ",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 137,
+            "w": 384,
+            "h": 37
+          }
+        },
+        {
+          "text": "Licensing",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 384,
+            "y": 137,
+            "w": 384,
+            "h": 37
+          }
+        },
+        {
+          "text": "Criticism Policy",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 175,
+            "w": 384,
+            "h": 37
+          }
+        },
+        {
+          "text": "Article Deletions",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 384,
+            "y": 175,
+            "w": 384,
+            "h": 37
+          }
+        },
+        {
+          "text": "Contact Staff",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 212,
+            "w": 768,
+            "h": 37
+          }
+        },
+        {
+          "text": "Site News",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 100,
+            "w": 384,
+            "h": 37
+          }
+        },
+        {
+          "text": "IRC Chat",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 384,
+            "y": 100,
+            "w": 384,
+            "h": 37
+          }
+        },
+        {
+          "text": "Authors' Pages",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 137,
+            "w": 384,
+            "h": 37
+          }
+        },
+        {
+          "text": "Artist Directory",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 384,
+            "y": 137,
+            "w": 384,
+            "h": 37
+          }
+        },
+        {
+          "text": "Contest Archive",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 175,
+            "w": 384,
+            "h": 37
+          }
+        },
+        {
+          "text": "Staff List",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 384,
+            "y": 175,
+            "w": 384,
+            "h": 37
+          }
+        },
+        {
+          "text": "Guides",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 100,
+            "w": 384,
+            "h": 37
+          }
+        },
+        {
+          "text": "Essays & Resources",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 384,
+            "y": 100,
+            "w": 384,
+            "h": 37
+          }
+        },
+        {
+          "text": "Wiki Syntax",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 137,
+            "w": 384,
+            "h": 37
+          }
+        },
+        {
+          "text": "Sandbox",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 384,
+            "y": 137,
+            "w": 384,
+            "h": 37
+          }
+        },
+        {
+          "text": "Usertools",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 175,
+            "w": 768,
+            "h": 37
+          }
+        }
+      ],
+      "title_candidates": [
+        {
+          "tag": "H1",
+          "text": "SCP Foundation",
+          "color": "rgb(35, 35, 38)",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "w": 688,
+            "h": 57
+          }
+        },
+        {
+          "tag": "DIV",
+          "text": "Basalt Theme",
+          "color": "rgba(35, 35, 38, 0.75)",
+          "rect": {
+            "x": 21,
+            "y": 126,
+            "w": 726,
+            "h": 44
+          }
+        }
+      ],
+      "links_overlapping_title": 12,
+      "overlapping": [
+        {
+          "text": "About Us",
+          "area_over_title": 3993
+        },
+        {
+          "text": "Site Rules",
+          "area_over_title": 3993
+        },
+        {
+          "text": "FAQ",
+          "area_over_title": 11979
+        },
+        {
+          "text": "Licensing",
+          "area_over_title": 11979
+        },
+        {
+          "text": "Site News",
+          "area_over_title": 3993
+        },
+        {
+          "text": "IRC Chat",
+          "area_over_title": 3993
+        },
+        {
+          "text": "Authors' Pages",
+          "area_over_title": 11979
+        },
+        {
+          "text": "Artist Directory",
+          "area_over_title": 11979
+        },
+        {
+          "text": "Guides",
+          "area_over_title": 3993
+        },
+        {
+          "text": "Essays & Resources",
+          "area_over_title": 3993
+        },
+        {
+          "text": "Wiki Syntax",
+          "area_over_title": 11979
+        },
+        {
+          "text": "Sandbox",
+          "area_over_title": 11979
+        }
+      ],
+      "screenshot_png": "evidence/nav-source-submenu-20261022/artifacts/tablet-expanded.png",
+      "screenshot_sha256": "3983fe374fae628b07764051368b94fcd3bf5ceac2b553a3982b0533e8b9af2d"
+    },
+    {
+      "viewport": "mobile",
+      "viewport_size": {
+        "width": 390,
+        "height": 844
+      },
+      "action": "expandMobileTopSubmenu",
+      "action_error": null,
+      "visible_submenu_links": 18,
+      "expanded_lists": 1,
+      "backgrounds": [
+        "rgba(252, 252, 252, 0.875)"
+      ],
+      "backdrops": [
+        "blur(1.6px)"
+      ],
+      "ul_backgrounds": [
+        "rgba(0, 0, 0, 0)"
+      ],
+      "uiOpacityVars": [
+        ".875"
+      ],
+      "links": [
+        {
+          "text": "About Us",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 98,
+            "w": 195,
+            "h": 35
+          }
+        },
+        {
+          "text": "Site Rules",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 195,
+            "y": 98,
+            "w": 195,
+            "h": 35
+          }
+        },
+        {
+          "text": "FAQ",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 133,
+            "w": 195,
+            "h": 35
+          }
+        },
+        {
+          "text": "Licensing",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 195,
+            "y": 133,
+            "w": 195,
+            "h": 35
+          }
+        },
+        {
+          "text": "Criticism Policy",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 168,
+            "w": 195,
+            "h": 35
+          }
+        },
+        {
+          "text": "Article Deletions",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 195,
+            "y": 168,
+            "w": 195,
+            "h": 35
+          }
+        },
+        {
+          "text": "Contact Staff",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 202,
+            "w": 390,
+            "h": 35
+          }
+        },
+        {
+          "text": "Site News",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 98,
+            "w": 195,
+            "h": 35
+          }
+        },
+        {
+          "text": "IRC Chat",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 195,
+            "y": 98,
+            "w": 195,
+            "h": 35
+          }
+        },
+        {
+          "text": "Authors' Pages",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 133,
+            "w": 195,
+            "h": 35
+          }
+        },
+        {
+          "text": "Artist Directory",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 195,
+            "y": 133,
+            "w": 195,
+            "h": 35
+          }
+        },
+        {
+          "text": "Contest Archive",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 168,
+            "w": 195,
+            "h": 35
+          }
+        },
+        {
+          "text": "Staff List",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 195,
+            "y": 168,
+            "w": 195,
+            "h": 35
+          }
+        },
+        {
+          "text": "Guides",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 98,
+            "w": 195,
+            "h": 35
+          }
+        },
+        {
+          "text": "Essays & Resources",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 195,
+            "y": 98,
+            "w": 195,
+            "h": 35
+          }
+        },
+        {
+          "text": "Wiki Syntax",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 133,
+            "w": 195,
+            "h": 35
+          }
+        },
+        {
+          "text": "Sandbox",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 195,
+            "y": 133,
+            "w": 195,
+            "h": 35
+          }
+        },
+        {
+          "text": "Usertools",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 168,
+            "w": 390,
+            "h": 35
+          }
+        }
+      ],
+      "title_candidates": [
+        {
+          "tag": "H1",
+          "text": "SCP Foundation",
+          "color": "rgb(35, 35, 38)",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "w": 310,
+            "h": 57
+          }
+        },
+        {
+          "tag": "DIV",
+          "text": "Basalt Theme",
+          "color": "rgba(35, 35, 38, 0.75)",
+          "rect": {
+            "x": 21,
+            "y": 124,
+            "w": 348,
+            "h": 41
+          }
+        }
+      ],
+      "links_overlapping_title": 12,
+      "overlapping": [
+        {
+          "text": "About Us",
+          "area_over_title": 1566
+        },
+        {
+          "text": "Site Rules",
+          "area_over_title": 1566
+        },
+        {
+          "text": "FAQ",
+          "area_over_title": 5568
+        },
+        {
+          "text": "Licensing",
+          "area_over_title": 5568
+        },
+        {
+          "text": "Site News",
+          "area_over_title": 1566
+        },
+        {
+          "text": "IRC Chat",
+          "area_over_title": 1566
+        },
+        {
+          "text": "Authors' Pages",
+          "area_over_title": 5568
+        },
+        {
+          "text": "Artist Directory",
+          "area_over_title": 5568
+        },
+        {
+          "text": "Guides",
+          "area_over_title": 1566
+        },
+        {
+          "text": "Essays & Resources",
+          "area_over_title": 1566
+        },
+        {
+          "text": "Wiki Syntax",
+          "area_over_title": 5568
+        },
+        {
+          "text": "Sandbox",
+          "area_over_title": 5568
+        }
+      ],
+      "screenshot_png": "evidence/nav-source-submenu-20261022/artifacts/mobile-expanded.png",
+      "screenshot_sha256": "6fb20e2b8a7e55d8280f296a933070aee3b0d0939365b4b5b500184085500741"
+    },
+    {
+      "viewport": "narrow-mobile",
+      "viewport_size": {
+        "width": 320,
+        "height": 800
+      },
+      "action": "expandMobileTopSubmenu",
+      "action_error": null,
+      "visible_submenu_links": 18,
+      "expanded_lists": 1,
+      "backgrounds": [
+        "rgba(252, 252, 252, 0.875)"
+      ],
+      "backdrops": [
+        "blur(1.6px)"
+      ],
+      "ul_backgrounds": [
+        "rgba(0, 0, 0, 0)"
+      ],
+      "uiOpacityVars": [
+        ".875"
+      ],
+      "links": [
+        {
+          "text": "About Us",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 98,
+            "w": 160,
+            "h": 35
+          }
+        },
+        {
+          "text": "Site Rules",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 160,
+            "y": 98,
+            "w": 160,
+            "h": 35
+          }
+        },
+        {
+          "text": "FAQ",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 132,
+            "w": 160,
+            "h": 35
+          }
+        },
+        {
+          "text": "Licensing",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 160,
+            "y": 132,
+            "w": 160,
+            "h": 35
+          }
+        },
+        {
+          "text": "Criticism Policy",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 167,
+            "w": 160,
+            "h": 35
+          }
+        },
+        {
+          "text": "Article Deletions",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 160,
+            "y": 167,
+            "w": 160,
+            "h": 35
+          }
+        },
+        {
+          "text": "Contact Staff",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 202,
+            "w": 320,
+            "h": 35
+          }
+        },
+        {
+          "text": "Site News",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 98,
+            "w": 160,
+            "h": 35
+          }
+        },
+        {
+          "text": "IRC Chat",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 160,
+            "y": 98,
+            "w": 160,
+            "h": 35
+          }
+        },
+        {
+          "text": "Authors' Pages",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 132,
+            "w": 160,
+            "h": 35
+          }
+        },
+        {
+          "text": "Artist Directory",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 160,
+            "y": 132,
+            "w": 160,
+            "h": 35
+          }
+        },
+        {
+          "text": "Contest Archive",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 167,
+            "w": 160,
+            "h": 35
+          }
+        },
+        {
+          "text": "Staff List",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 160,
+            "y": 167,
+            "w": 160,
+            "h": 35
+          }
+        },
+        {
+          "text": "Guides",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 98,
+            "w": 160,
+            "h": 35
+          }
+        },
+        {
+          "text": "Essays & Resources",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 160,
+            "y": 98,
+            "w": 160,
+            "h": 35
+          }
+        },
+        {
+          "text": "Wiki Syntax",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 132,
+            "w": 160,
+            "h": 35
+          }
+        },
+        {
+          "text": "Sandbox",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 160,
+            "y": 132,
+            "w": 160,
+            "h": 35
+          }
+        },
+        {
+          "text": "Usertools",
+          "background": "rgba(252, 252, 252, 0.875)",
+          "backdrop": "blur(1.6px)",
+          "opacity": "1",
+          "color": "rgb(35, 35, 38)",
+          "ul_background": "rgba(0, 0, 0, 0)",
+          "ul_backdrop": "none",
+          "uiOpacityVar": ".875",
+          "rect": {
+            "x": 0,
+            "y": 167,
+            "w": 320,
+            "h": 35
+          }
+        }
+      ],
+      "title_candidates": [
+        {
+          "tag": "H1",
+          "text": "SCP Foundation",
+          "color": "rgb(35, 35, 38)",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "w": 240,
+            "h": 57
+          }
+        },
+        {
+          "tag": "DIV",
+          "text": "Basalt Theme",
+          "color": "rgba(35, 35, 38, 0.75)",
+          "rect": {
+            "x": 21,
+            "y": 124,
+            "w": 278,
+            "h": 41
+          }
+        }
+      ],
+      "links_overlapping_title": 12,
+      "overlapping": [
+        {
+          "text": "About Us",
+          "area_over_title": 1251
+        },
+        {
+          "text": "Site Rules",
+          "area_over_title": 1251
+        },
+        {
+          "text": "FAQ",
+          "area_over_title": 4587
+        },
+        {
+          "text": "Licensing",
+          "area_over_title": 4587
+        },
+        {
+          "text": "Site News",
+          "area_over_title": 1251
+        },
+        {
+          "text": "IRC Chat",
+          "area_over_title": 1251
+        },
+        {
+          "text": "Authors' Pages",
+          "area_over_title": 4587
+        },
+        {
+          "text": "Artist Directory",
+          "area_over_title": 4587
+        },
+        {
+          "text": "Guides",
+          "area_over_title": 1251
+        },
+        {
+          "text": "Essays & Resources",
+          "area_over_title": 1251
+        },
+        {
+          "text": "Wiki Syntax",
+          "area_over_title": 4587
+        },
+        {
+          "text": "Sandbox",
+          "area_over_title": 4587
+        }
+      ],
+      "screenshot_png": "evidence/nav-source-submenu-20261022/artifacts/narrow-mobile-expanded.png",
+      "screenshot_sha256": "c9cc7ebf3a0c925900ec5b219641ee8d8fe1bb3b9abd07d8566447c642afa857"
+    }
+  ]
+}

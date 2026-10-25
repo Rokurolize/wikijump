@@ -147,10 +147,15 @@ mod tests {
     use super::*;
     use crate::config::Secrets;
     use crate::state::build_server_state;
+    use axum::body::Bytes;
+    use axum::extract::State;
     use axum::http::StatusCode;
     use axum::http::header::LOCATION;
+    use axum::routing::post;
     use s3::creds::Credentials;
     use s3::region::Region;
+    use serde_json::{Value, json};
+    use std::sync::{Arc, Mutex};
     use tokio::net::TcpListener;
 
     fn test_secrets() -> Secrets {
@@ -180,6 +185,161 @@ mod tests {
     async fn build_router_accepts_initialized_state() {
         let state = build_server_state(false, test_secrets()).await.unwrap();
         let _router = build_router(state);
+    }
+
+    async fn canonical_domain_rpc(
+        State(domain): State<Arc<Mutex<String>>>,
+        body: Bytes,
+    ) -> ([(axum::http::HeaderName, &'static str); 1], String) {
+        let request: Value = serde_json::from_slice(&body).unwrap();
+        let result = match request["method"].as_str().unwrap() {
+            "site_domain" => {
+                assert_eq!(request["params"][0], 42);
+                json!(domain.lock().unwrap().clone())
+            }
+            // The robots handler checks sitemap presence before resolving the
+            // canonical domain; this public site answers the index query.
+            "wikidot_sitemap" => {
+                assert_eq!(request["params"]["site_id"], 42);
+                assert_eq!(request["params"]["shard"], 0);
+                json!({ "entries": [], "shard_count": 0 })
+            }
+            other => panic!("unexpected JSON-RPC method: {other}"),
+        };
+        let response = json!({
+            "jsonrpc": "2.0",
+            "result": result,
+            "id": request["id"],
+        });
+        (
+            [(axum::http::header::CONTENT_TYPE, "application/json")],
+            response.to_string(),
+        )
+    }
+
+    #[tokio::test]
+    async fn public_robots_uses_site_domain_rpc_not_request_host() {
+        let preferred_domain = Arc::new(Mutex::new("preferred.example".to_owned()));
+        let preferred_domain_for_server = Arc::clone(&preferred_domain);
+        let backend_listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let backend_addr = backend_listener.local_addr().unwrap();
+        let backend = tokio::spawn(async move {
+            axum::serve(
+                backend_listener,
+                Router::new()
+                    .route("/jsonrpc", post(canonical_domain_rpc))
+                    .with_state(Arc::clone(&preferred_domain_for_server)),
+            )
+            .await
+            .unwrap();
+        });
+        let mut secrets = test_secrets();
+        secrets.deepwell_url = format!("http://{backend_addr}/jsonrpc");
+        let state = build_server_state(false, secrets).await.unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            axum::serve(listener, build_router(state)).await.unwrap();
+        });
+        let client = reqwest::Client::new();
+        let response = client
+            .get(format!("http://{addr}/robots.txt"))
+            .header(crate::handler::HEADER_TARGET_SERVER, "main")
+            .header(crate::handler::HEADER_SITE_ID, "42")
+            .header("host", "host-header-spoof.example")
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.text().await.unwrap(),
+            "User-agent: *\nAllow: /\nSitemap: https://preferred.example/sitemap.xml\n"
+        );
+
+        *preferred_domain.lock().unwrap() = "changed.example".to_owned();
+        let updated = client
+            .get(format!("http://{addr}/robots.txt"))
+            .header(crate::handler::HEADER_TARGET_SERVER, "main")
+            .header(crate::handler::HEADER_SITE_ID, "42")
+            .header("host", "host-header-spoof.example")
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(updated.status(), StatusCode::OK);
+        assert_eq!(
+            updated.text().await.unwrap(),
+            "User-agent: *\nAllow: /\nSitemap: https://changed.example/sitemap.xml\n"
+        );
+
+        let response = client
+            .get(format!("http://{addr}/robots.txt"))
+            .header(crate::handler::HEADER_TARGET_SERVER, "files")
+            .header("host", "files.example")
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.text().await.unwrap(), "User-agent: *\nAllow: /\n");
+        server.abort();
+        backend.abort();
+    }
+
+    async fn private_sitemap_rpc(
+        body: Bytes,
+    ) -> ([(axum::http::HeaderName, &'static str); 1], String) {
+        let request: Value = serde_json::from_slice(&body).unwrap();
+        // A site with no public inventory answers the index query with null,
+        // and the robots handler must not consult the domain RPC for it.
+        assert_eq!(request["method"], "wikidot_sitemap");
+        assert_eq!(request["params"]["site_id"], 7);
+        assert_eq!(request["params"]["shard"], 0);
+        let response = json!({
+            "jsonrpc": "2.0",
+            "result": Value::Null,
+            "id": request["id"],
+        });
+        (
+            [(axum::http::header::CONTENT_TYPE, "application/json")],
+            response.to_string(),
+        )
+    }
+
+    #[tokio::test]
+    async fn private_site_robots_denies_indexing_without_sitemap() {
+        let backend_listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let backend_addr = backend_listener.local_addr().unwrap();
+        let backend = tokio::spawn(async move {
+            axum::serve(
+                backend_listener,
+                Router::new().route("/jsonrpc", post(private_sitemap_rpc)),
+            )
+            .await
+            .unwrap();
+        });
+        let mut secrets = test_secrets();
+        secrets.deepwell_url = format!("http://{backend_addr}/jsonrpc");
+        let state = build_server_state(false, secrets).await.unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            axum::serve(listener, build_router(state)).await.unwrap();
+        });
+        let client = reqwest::Client::new();
+        let response = client
+            .get(format!("http://{addr}/robots.txt"))
+            .header(crate::handler::HEADER_TARGET_SERVER, "main")
+            .header(crate::handler::HEADER_SITE_ID, "7")
+            .header("host", "private.example")
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.text().await.unwrap(),
+            "User-agent: *\nDisallow: /\n"
+        );
+        server.abort();
+        backend.abort();
     }
 
     #[tokio::test]

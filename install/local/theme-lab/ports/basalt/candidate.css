@@ -2547,3 +2547,64 @@ sup {
 .top-left-box>.item {
     display: none;
 }
+
+
+
+
+
+
+
+/* SCP-JP Wikidot Basalt credit controls: support the native direct-child anchor shape. */
+/* The frozen JP component markup emits .creditButton > a, while the source Basalt rules cover .creditButton > p > a. Keep this correction scoped to those two current credit-module containers. */
+div.rate-box-with-credit-button .creditButton > a,
+div.heritage-rating-module ~ div.creditButton > a {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  color: transparent !important;
+  background-color: transparent;
+  box-sizing: border-box;
+  transition: all 95ms linear;
+}
+
+div.rate-box-with-credit-button .creditButton > a::after,
+div.rate-box-with-credit-button .creditButton > a::before,
+div.heritage-rating-module ~ div.creditButton > a::after,
+div.heritage-rating-module ~ div.creditButton > a::before {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background-color: rgb(var(--basalt-main-text-color));
+  transition: background-color 95ms linear;
+}
+
+div.rate-box-with-credit-button .creditButton > a::before,
+div.heritage-rating-module ~ div.creditButton > a::before {
+  background-color: rgb(var(--rate-module-info-background-color));
+}
+
+div.rate-box-with-credit-button .creditButton > a::after,
+div.heritage-rating-module ~ div.creditButton > a::after {
+  background-color: rgb(var(--rate-module-info-icon-color));
+  -webkit-mask-image: var(--vote-info-mask);
+  mask-image: var(--vote-info-mask);
+  -webkit-mask-size: 27.5%;
+  mask-size: 27.5%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+div.rate-box-with-credit-button .creditButton > a:is(:hover, :focus)::before,
+div.heritage-rating-module ~ div.creditButton > a:is(:hover, :focus)::before {
+  background-color: rgb(var(--basalt-focus-color));
+}

@@ -277,7 +277,10 @@ function openTagPattern(tagName: string): RegExp {
   if (!pattern) {
     const escaped = escapeRegExp(tagName)
     pattern = new RegExp(
-      `<${escaped}(?:${XML_WHITESPACE}[^>]*)?>|<${escaped}${XML_WHITESPACE}*/>`,
+      // An XML opening tag cannot contain another literal '<'. Stopping at
+      // it prevents repeated attempts from scanning the same unterminated
+      // attribute tail to the end of a large untrusted value.
+      `<${escaped}(?:${XML_WHITESPACE}[^<>]*)?>|<${escaped}${XML_WHITESPACE}*/>`,
       "g"
     )
     OPEN_TAG_PATTERN_CACHE.set(tagName, pattern)
@@ -290,7 +293,7 @@ function closingTagPattern(tagName: string): RegExp {
   if (!pattern) {
     const escaped = escapeRegExp(tagName)
     pattern = new RegExp(
-      `</?${escaped}(?:${XML_WHITESPACE}[^>]*)?>|<${escaped}${XML_WHITESPACE}*/>`,
+      `</?${escaped}(?:${XML_WHITESPACE}[^<>]*)?>|<${escaped}${XML_WHITESPACE}*/>`,
       "g"
     )
     TAG_PATTERN_CACHE.set(tagName, pattern)
@@ -551,7 +554,16 @@ function decodeXmlText(value: string): string {
 }
 
 function trimXmlWhitespace(value: string): string {
-  return value.replace(/^[ \t\r\n]+|[ \t\r\n]+$/g, "")
+  // A global regex with a greedy end-of-input whitespace alternative retries
+  // long interior runs from every offset. Scan each edge exactly once so a
+  // large authenticated XML-RPC payload cannot monopolize the event loop.
+  let start = 0
+  let end = value.length
+  const isWhitespace = (code: number) =>
+    code === 0x20 || code === 0x09 || code === 0x0a || code === 0x0d
+  while (start < end && isWhitespace(value.charCodeAt(start))) start += 1
+  while (end > start && isWhitespace(value.charCodeAt(end - 1))) end -= 1
+  return value.slice(start, end)
 }
 
 function isXmlWhitespaceOnly(value: string): boolean {

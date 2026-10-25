@@ -43,6 +43,7 @@ export async function userView(
 interface UserEditParams {
   name?: Optional<string>
   email?: Optional<string>
+  currentPassword?: Optional<string>
   emailVerified?: Optional<boolean>
   password?: Optional<string>
   locales?: Optional<string[]>
@@ -94,6 +95,7 @@ export async function userEdit(
     const value = params[paramName]
     if (value !== undefined) data[rpcName] = value
   }
+  if (params.currentPassword) data.current_password = params.currentPassword
   for (const [paramName, rpcName] of nullableUserEditFields) {
     const value = params[paramName]
     if (value !== undefined) data[rpcName] = value || null
@@ -132,6 +134,24 @@ export async function userEdit(
       user: userId,
       ip_address: userIpAddr,
       ...data
+    },
+    requestContext
+  )
+}
+
+/* ----- User Password Change ----- */
+export async function userPasswordChange(
+  currentPassword: string,
+  newPassword: string,
+  userIpAddr: string,
+  requestContext: RequestContext
+): Promise<{ other_sessions_revoked: number }> {
+  return client.request(
+    "user_password_change",
+    {
+      current_password: currentPassword,
+      new_password: newPassword,
+      ip_address: userIpAddr
     },
     requestContext
   )

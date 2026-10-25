@@ -1,3 +1,4 @@
+import {DEFAULT_SIGMA10_RUN_CONTRACT,DEFAULT_SIGMA9_RUN_CONTRACT,resolveRunContractOption} from './current-run-contract-option.mjs';
 import {runtimeSurfaceContractSha} from './browser-runtime-contract.mjs';
 import {observationRuntimeSourceMatchesContract,requireRuntimeSourceSha} from './runtime-source-identity.mjs';
 import {readCurrentBrowserContracts,observationHasCurrentActionAndFixture,observationHasCurrentEnvironment} from './current-browser-contracts.mjs';
@@ -55,14 +56,14 @@ export const canonicalScreenshotPath=(contract,row)=>{
   return `${namespace}${row.theme}/artifacts/interactive/${row.browser_engine}/${row.viewport}/${stateKey}-${failed}${row.screenshot_sha256}.png`;
 };
 
-export function validateCurrentSigma10Contract(root){
+export function validateCurrentSigma10Contract(root,sigma10Contract=DEFAULT_SIGMA10_RUN_CONTRACT){
  const failures=[];const read=file=>fs.readFileSync(resolveExistingContainedFile(root,file,'Current Sigma-10 artifact'));
  try{
-  const contractPath=path.join(root,'sigma10-migration/current-campaign/run-contract.json');
-  const contract=JSON.parse(read('sigma10-migration/current-campaign/run-contract.json'));
+  const contractPath=path.join(root,sigma10Contract);
+  const contract=JSON.parse(read(sigma10Contract));
   failures.push(...validatePublicationCandidateSet(root,{expectedCandidateSetSha256:contract.candidate_set_sha256,contract,label:'Sigma-10 publication candidate set'}));
   if(contract.visual_gate_policy?.sha256!==VISUAL_GATE_POLICY_SHA256)failures.push('Current Sigma-10 run contract is not bound to the maintained 145-state visual gate policy');
-  if(contract.artifact_namespace!=='migration/sigma10-current')failures.push('Current Sigma-10 artifact namespace is not isolated from historical migration evidence');
+  if(!(sigma10Contract===DEFAULT_SIGMA10_RUN_CONTRACT?contract.artifact_namespace==='migration/sigma10-current':/^migration\/sigma10-[a-z0-9-]+$/u.test(contract.artifact_namespace??'')))failures.push('Current Sigma-10 artifact namespace is not isolated from historical migration evidence');
   const ledger=JSON.parse(read('ports/adaptation-authority.json'));
   const expected=[...Object.keys(ledger.packages),'sigma10-baseline'].sort();
   const inventory=contract.current_candidate_inventory??[];
@@ -154,8 +155,129 @@ export function validateBrowserCoverage(audit,packages,{migration=false}={}) {
  return failures;
 }
 
-export function checkCampaignCompletion(root, {captureContractReader = readCurrentBrowserContracts} = {}) {
-  const failures = validateCurrentSigma10Contract(root);
+// Asset dependency of one maintained or baseline Sigma-10 candidate. Shared by
+// the completion gate and the Sigma-10 audit validator below.
+const candidateAssetDependencySha=(root,ledger,name,dir,sourceName,baselineCss)=>{
+  const runtimeSupportCss=fs.readFileSync(resolveExistingContainedFile(root,'ports/interactive-visual-fixture/runtime-asset-replay.css','Current runtime asset replay CSS'),'utf8');
+  const base=ledger.packages[name]
+    ?currentPackageBaseCss(dir,name)??Buffer.alloc(0)
+    :optionalPackageBytes(dir,'candidate-base.css',`${name}: asset-dependency base CSS`)??Buffer.alloc(0);
+  const css=fs.readFileSync(resolveExistingPackageFile(dir,'candidate.css',`${name}: asset-dependency candidate CSS`));
+  let source;
+  try{source=fs.readFileSync(resolveExistingPackageFile(dir,sourceName,`${name}: asset-dependency source file`))}
+  catch(error){
+    if(ledger.packages[name]?.source_file)throw error;
+    source=fs.readFileSync(resolveExistingPackageFile(dir,'candidate.wikidot.txt',`${name}: asset-dependency preview source`));
+  }
+  return candidateAssetDependencyState({portsDir:path.join(root,'ports'),themeDir:dir,runtimeSupportCss,baselineCss,baseCss:base,candidateCss:css,candidateSource:source}).asset_dependency_sha256;
+};
+
+// Audit-level Sigma-10 acceptance: the browser audit, its canonical scenario
+// matrices and every record's identity against the current run contract. The
+// completion gate and the Sigma-10 finalizer both call this, so a decision is
+// refused by exactly the checks that later gate it. It reads no decision file
+// and writes nothing; it returns failures (empty means the audit validates).
+export function validateSigma10MigrationAudit(root,{sigma10Contract=DEFAULT_SIGMA10_RUN_CONTRACT,audit,evidence,nonblockingObservations=[],captureContractReader=readCurrentBrowserContracts}={}){
+ const failures=[];
+ try{
+  const read=file=>JSON.parse(fs.readFileSync(resolveExistingContainedFile(root,file,`Current Sigma-10 input ${file}`),'utf8'));
+  const ledger=read('ports/adaptation-authority.json');
+  const names=Object.keys(ledger.packages).sort();
+  const migrationNames=[...names,'sigma10-baseline'].sort();
+  const contractPath=resolveExistingContainedFile(root,sigma10Contract,'Current Sigma-10 run contract');
+  const contractSha=sha(fs.readFileSync(contractPath));
+  const spec=JSON.parse(fs.readFileSync(contractPath,'utf8'));
+  const baselineCss=fs.readFileSync(resolveRunContractPath(root,path.dirname(contractPath),spec.baseline_theme.replacement_css_path,'current Sigma-10 baseline replacement CSS'),'utf8');
+  const inventoryByName=new Map((spec.current_candidate_inventory??[]).map(item=>[item.package,item]));
+  const captureContracts=new Map();
+  const runtimeHashes=new Map();
+  const currentRuntime=row=>{
+    const key=JSON.stringify([row.surface,row.viewport]);
+    if(!runtimeHashes.has(key))runtimeHashes.set(key,runtimeSurfaceContractSha(path.resolve(root,'../../..'),row.surface,row.viewport));
+    return row.runtime_surface_contract_sha256===runtimeHashes.get(key);
+  };
+  const currentCapture=(row,contract)=>{
+    if(!captureContracts.has(contract))captureContracts.set(contract,captureContractReader(root,contract));
+    return observationHasCurrentActionAndFixture(row,captureContracts.get(contract));
+  };
+  const assetDependencies=new Map(),structureShas=new Map();
+  for(const name of migrationNames){
+    const binding=spec.additional_candidates?.[name];
+    if(!binding)continue;
+    const relative=typeof binding==='string'?binding:binding.directory;
+    const dir=resolveRunContractPath(root,path.dirname(contractPath),relative,`Sigma-10 candidate directory for ${name}`);
+    const sourceName=ledger.packages[name]?.source_file??'candidate.wikidot.source.txt';
+    assetDependencies.set(name,candidateAssetDependencySha(root,ledger,name,dir,sourceName,baselineCss));
+    let structureSha=null;try{structureSha=sha(fs.readFileSync(resolveExistingPackageFile(dir,'acceptance-structure.json',`${name}: acceptance structure`)))}catch{}
+    structureShas.set(name,structureSha);
+  }
+  const browserVersions={};
+  for(const record of audit.records??[]){
+   const previous=browserVersions[record.browser_engine];
+   if(previous&&previous!==record.browser_version)failures.push(`migration browser audit mixes ${record.browser_engine} versions`);
+   browserVersions[record.browser_engine]=record.browser_version;
+  }
+  try{
+   const scenarioNames=Object.keys(audit.canonical_scenarios??{}).sort();
+   if(JSON.stringify(scenarioNames)!==JSON.stringify(names))throw new Error('Sigma-10 canonical scenario matrix inventory does not match maintained packages');
+   if(JSON.stringify(Object.keys(evidence??{}).sort())!==JSON.stringify(names))throw new Error('Sigma-10 decision canonical scenario evidence inventory does not match maintained packages');
+   for(const name of names){
+    const canonical=validateCanonicalScenarioMatrix({root,packageName:name,generation:'sigma10',matrix:audit.canonical_scenarios[name],browserVersions,runContract:sigma10Contract});
+    const bound=evidence[name];
+    if(bound?.generation!=='sigma10'||bound?.scenario_sha256!==canonical.scenario_sha256||bound?.matrix_receipt_sha256!==canonical.matrix_receipt_sha256||bound?.measurement_contract_sha256!==canonical.measurement_contract_sha256)throw new Error(`${name}: Sigma-10 decision is not bound to current canonical scenario evidence`);
+   }
+  }catch(error){failures.push(`Sigma-10 canonical scenario evidence is missing or stale: ${error.message}`)}
+  const semantic=audit.acceptance_model===SEMANTIC_BROWSER_MODEL;
+  if(semantic){
+    failures.push(...validateSemanticBrowserAcceptance(audit).failures,...validateSemanticSourceAuthority(root,audit,{sigma10RunContract:sigma10Contract}));
+    for(const artifact of semanticReviewArtifactBindings(audit)){
+      try{readBoundArtifact(root,artifact.binding,artifact.label)}catch(error){failures.push(error.message)}
+    }
+  }
+  failures.push(...validateBrowserCoverage(audit,migrationNames,{migration:true}));
+  for(const record of audit.records??[]){
+    failures.push(...validateVisualGateRecord(record));
+    const screenshotRequired=visualGateNeedsScreenshot(record,{failure:!!record.failure});
+    if(!observationRuntimeSourceMatchesContract(record,spec))failures.push(`Sigma-10: browser runtime source SHA is missing or differs from the current run contract for ${record.theme}/${record.surface}`);
+    if(!deepwellRuntimeIdentityMatchesContract(record,spec))failures.push(`Sigma-10: browser Deepwell backend identity is missing or differs from the current run contract for ${record.theme}/${record.surface}`);
+    if(semantic&&!currentRuntime(record))failures.push(`Sigma-10: superseded browser runtime surface ${record.theme}/${record.surface}`);
+    if(semantic&&!currentCapture(record,sigma10Contract))failures.push(`Sigma-10: superseded browser action/fixture ${record.theme}/${record.surface}.${record.state}`);
+    const expected=inventoryByName.get(record.theme);
+    if(!expected||record.candidate_sha256!==expected.candidate_sha256||record.candidate_source_sha256!==expected.source_sha256)failures.push(`Sigma-10 capture uses an undeclared or superseded candidate identity: ${record.theme}`);
+    if(record.asset_dependency_sha256!==assetDependencies.get(record.theme))failures.push(`Sigma-10 capture uses a superseded asset dependency: ${record.theme}`);
+    if(semantic&&!observationHasCurrentEnvironment(record,captureContracts.get(sigma10Contract),spec,contractSha,{assetDependencySha:assetDependencies.get(record.theme),candidateStructureSha:structureShas.get(record.theme)}))failures.push(`Sigma-10 capture uses a superseded environment contract: ${record.theme}/${record.surface}.${record.state}`);
+    if(record.scoped_authority_contract_sha256!==scopedRunContractSha(runContractWithoutRuntimeBindings(spec),record))failures.push(`Sigma-10: browser capture lacks the current scoped authority contract identity for ${record.theme}/${record.surface}.${record.state}`);
+    if(!captureRunContractIsCurrent(record,spec,contractSha)||record.baseline_theme_mode!=='replacement'||record.baseline_theme_css_sha256!==spec.baseline_theme.replacement_css_sha256)failures.push('Sigma-10 capture uses superseded baseline/contract');
+    if(!Array.isArray(record.unconfirmed_items)||!Array.isArray(record.asset_failures)||!Array.isArray(record.page_errors)||!Array.isArray(record.action_responses)||record.action_responses.some(response=>response.type==='failure'||response.status>=400||response.error_message))failures.push('Sigma-10 capture lacks clean explicit safety results');
+    if(!semantic && (record.unconfirmed_items?.length||record.asset_failures?.length||record.page_errors?.length||record.external_requests_sent!==0||screenshotRequired&&!record.reviewed_after_last_change||screenshotRequired&&record.migration_review?.screenshot_sha256!==record.screenshot_sha256))failures.push(`Unresolved Sigma-10 state ${record.theme}/${record.surface}.${record.state}`);
+    if(!semantic && (!['PASS_NATURAL','PASS_INTENTIONAL_DIVERGENCE','EXTERNAL_CONTRACT_UNVERIFIABLE','NOT_APPLICABLE'].includes(record.classification)||screenshotRequired&&(record.migration_review?.classification!==record.classification||record.visual_review?.screenshot_sha256!==record.screenshot_sha256)))failures.push(`Sigma-10 state lacks a current accepted visual review: ${record.theme}/${record.surface}.${record.state}`);
+    if(screenshotRequired){
+      if(record.screenshot!==canonicalScreenshotPath(spec,record))failures.push(`Sigma-10 screenshot path is not canonical content-addressed evidence: ${record.theme}/${record.surface}.${record.state}`);
+      try{readBoundArtifact(root,{path:`ports/${record.screenshot}`,sha256:record.screenshot_sha256},'Sigma-10 screenshot')}catch(error){failures.push(error.message)}
+    }else if(record.screenshot||record.screenshot_sha256)failures.push(`successful machine-only Sigma-10 state retained a screenshot: ${record.theme}/${record.surface}.${record.state}`);
+    if(!semantic && !['PASS_NATURAL','PASS_INTENTIONAL_DIVERGENCE','EXTERNAL_CONTRACT_UNVERIFIABLE','NOT_APPLICABLE'].includes(record.classification)&&!nonblockingObservations.some(item=>item.screenshot_sha256===record.screenshot_sha256&&item.blocker===false&&item.authority!=='WIKIDOT_RUNTIME_PARITY'))failures.push(`Unresolved Sigma-10 classification ${record.theme}/${record.surface}.${record.state}`);
+  }
+  for(const name of names){
+    const records=audit.records?.filter(record=>record.theme===name)??[];
+    if(!records.length)failures.push(`${name}: missing current Sigma-10 migration evidence`);
+    const packageDir=resolveExistingPackageDirectory(path.join(root,'ports'),name,`${name}: package directory`);
+    const sourceName=ledger.packages[name]?.source_file??'candidate.wikidot.source.txt';
+    const base=currentPackageBaseCss(packageDir,name)??Buffer.alloc(0);
+    const currentCandidate=candidateIdentity(fs.readFileSync(resolveExistingPackageFile(packageDir,'candidate.css',`${name}: candidate CSS`)),base).candidateSha;
+    const currentSource=sha(fs.readFileSync(resolveExistingPackageFile(packageDir,sourceName,`${name}: Sigma-10 source file`)));
+    let currentStructureSha=null;try{currentStructureSha=sha(fs.readFileSync(resolveExistingPackageFile(packageDir,'acceptance-structure.json',`${name}: acceptance structure`)))}catch{}
+    if(records.some(record=>record.candidate_sha256!==currentCandidate))failures.push(`${name}: Sigma-10 matrix uses superseded CSS`);
+    if(records.some(record=>record.candidate_source_sha256!==currentSource))failures.push(`${name}: Sigma-10 matrix uses a superseded candidate`);
+    if(records.some(record=>(record.candidate_structure_sha256??null)!==currentStructureSha))failures.push(`${name}: Sigma-10 matrix uses a superseded candidate structure`);
+  }
+ }catch(error){failures.push(error.message)}
+ return failures;
+}
+
+export function checkCampaignCompletion(root, {captureContractReader = readCurrentBrowserContracts, sigma9RunContract, sigma10RunContract} = {}) {
+  const sigma9Contract = resolveRunContractOption(root, sigma9RunContract, {generation:'sigma9'});
+  const sigma10Contract = resolveRunContractOption(root, sigma10RunContract, {generation:'sigma10'});
+  const failures = validateCurrentSigma10Contract(root, sigma10Contract);
   const runtimeHashes = new Map();
   const currentRuntime = row => {
     const key = JSON.stringify([row.surface,row.viewport]);
@@ -175,10 +297,15 @@ export function checkCampaignCompletion(root, {captureContractReader = readCurre
   let document;
   try { document = read('current-campaign-acceptance.json'); }
   catch(error) {
-    const message=error.code==='ENOENT'
+    // INCONCLUSIVE means truly absent evidence only. A present but unreadable,
+    // symlinked, corrupt or malformed receipt is a failing integrity check:
+    // treating it as absence would allow source tampering to bypass the gate.
+    const absent=error.code==='ENOENT' &&
+      fs.lstatSync(path.join(root,'current-campaign-acceptance.json'),{throwIfNoEntry:false})===undefined;
+    const message=absent
       ? 'Current campaign acceptance receipt is missing; historical integrity cannot authorize completion.'
       : `Current campaign acceptance receipt is invalid: ${error.message}; historical integrity cannot authorize completion.`;
-    return {status:'inconclusive',failures:[message,...failures]};
+    return {status:absent?'inconclusive':'fail',failures:[message,...failures]};
   }
   if (document.schema !== 'theme_lab_current_campaign_acceptance.v1') failures.push('Invalid current campaign receipt schema');
   const ledger = read('ports/adaptation-authority.json');
@@ -186,35 +313,36 @@ export function checkCampaignCompletion(root, {captureContractReader = readCurre
   const portsRoot=path.join(root,'ports');
   const packageDirectory=name=>resolveExistingPackageDirectory(portsRoot,name,`${name}: package directory`);
   const expectedTargetFixtures=Object.fromEntries(Object.entries({baseline:'fixtures/scp-jp-sigma9-offline.css',sidebar:'fixtures/scp-jp-sidebar.html',header:'fixtures/scp-jp-header.html',navigation:'fixtures/scp-jp-navigation.html'}).map(([name,file])=>[name,sha(fs.readFileSync(resolveExistingContainedFile(root,file,`Current target fixture ${name}`)))]));
-  const currentRunContractPath=resolveExistingContainedFile(root,'ports/current-acceptance/run-contract.json','Current browser run contract');
+  const currentRunContractPath=resolveExistingContainedFile(root,sigma9Contract,'Current browser run contract');
   const currentRunContract=fs.readFileSync(currentRunContractPath);
   const currentRunContractSha=sha(currentRunContract),currentRunSpec=JSON.parse(currentRunContract);
+  // The receipt names the run contract it was assembled against. A task-owned
+  // contract is accepted only when named explicitly and bound by exact bytes;
+  // the shared contract must not be satisfied by a task-owned receipt.
+  {
+    const bound=document.run_contract??null,explicit=sigma9Contract!==DEFAULT_SIGMA9_RUN_CONTRACT;
+    if(explicit?(bound?.path!==sigma9Contract||bound?.sha256!==currentRunContractSha):bound!==null)
+      failures.push(explicit?'Current campaign receipt is not bound to the explicitly supplied run contract':'Current campaign receipt is bound to a task-owned run contract; pass --run-contract to check it');
+  }
   try{requireRuntimeSourceSha(currentRunSpec.expected_runtime_source_sha256,'Current Sigma-9 run contract')}catch(error){failures.push(error.message)}
   try{requireDeepwellRuntimeIdentity(currentRunSpec.expected_backend_runtime_identity,'Current Sigma-9 run contract')}catch(error){failures.push(error.message)}
   failures.push(...validatePublicationCandidateSet(root,{expectedCandidateSetSha256:currentRunSpec.candidate_set_sha256,contract:currentRunSpec,label:'Sigma-9 publication candidate set'}));
   if(currentRunSpec.visual_gate_policy?.sha256!==VISUAL_GATE_POLICY_SHA256)failures.push('Current Sigma-9 run contract is not bound to the maintained 145-state visual gate policy');
-  if(!/^current-acceptance\/[a-z0-9-]+$/u.test(currentRunSpec.artifact_namespace??''))failures.push('Current browser artifact namespace is not isolated below current-acceptance');
-  const currentMigrationContractPath=resolveExistingContainedFile(root,'sigma10-migration/current-campaign/run-contract.json','Current Sigma-10 run contract');
+  if(!(sigma9Contract===DEFAULT_SIGMA9_RUN_CONTRACT?/^current-acceptance\/[a-z0-9-]+$/u:/^current-acceptance\/sigma9\/[a-z0-9-]+$/u).test(currentRunSpec.artifact_namespace??''))failures.push('Current browser artifact namespace is not isolated below current-acceptance');
+  const currentMigrationContractPath=resolveExistingContainedFile(root,sigma10Contract,'Current Sigma-10 run contract');
   const currentMigrationContract=fs.readFileSync(currentMigrationContractPath);
   const currentMigrationContractSha=sha(currentMigrationContract),currentMigrationSpec=JSON.parse(currentMigrationContract);
+  // A task-owned Sigma-10 contract is accepted only when named explicitly and
+  // bound by exact bytes in the campaign receipt; the default must not carry one.
+  {
+    const bound=document.migration?.run_contract??null,explicit=sigma10Contract!==DEFAULT_SIGMA10_RUN_CONTRACT;
+    if(explicit?(bound?.path!==sigma10Contract||bound?.sha256!==currentMigrationContractSha):bound!==null)
+      failures.push(explicit?'Current campaign receipt is not bound to the explicitly supplied Sigma-10 run contract':'Current campaign receipt is bound to a task-owned Sigma-10 run contract; pass --sigma10-run-contract to check it');
+  }
   try{requireRuntimeSourceSha(currentMigrationSpec.expected_runtime_source_sha256,'Current Sigma-10 run contract')}catch(error){failures.push(error.message)}
   try{requireDeepwellRuntimeIdentity(currentMigrationSpec.expected_backend_runtime_identity,'Current Sigma-10 run contract')}catch(error){failures.push(error.message)}
-  const runtimeSupportCss=fs.readFileSync(resolveExistingContainedFile(root,'ports/interactive-visual-fixture/runtime-asset-replay.css','Current runtime asset replay CSS'),'utf8');
   const currentRunBaselineCss=fs.readFileSync(resolveRunContractPath(root,path.dirname(currentRunContractPath),currentRunSpec.baseline_theme.replacement_css_path,'current baseline replacement CSS'),'utf8');
-  const currentMigrationBaselineCss=fs.readFileSync(resolveRunContractPath(root,path.dirname(currentMigrationContractPath),currentMigrationSpec.baseline_theme.replacement_css_path,'current Sigma-10 baseline replacement CSS'),'utf8');
-  const assetDependency=(name,dir,sourceName,baselineCss)=>{
-    const base=ledger.packages[name]
-      ?currentPackageBaseCss(dir,name)??Buffer.alloc(0)
-      :optionalPackageBytes(dir,'candidate-base.css',`${name}: asset-dependency base CSS`)??Buffer.alloc(0);
-    const css=fs.readFileSync(resolveExistingPackageFile(dir,'candidate.css',`${name}: asset-dependency candidate CSS`));
-    let source;
-    try{source=fs.readFileSync(resolveExistingPackageFile(dir,sourceName,`${name}: asset-dependency source file`))}
-    catch(error){
-      if(ledger.packages[name]?.source_file)throw error;
-      source=fs.readFileSync(resolveExistingPackageFile(dir,'candidate.wikidot.txt',`${name}: asset-dependency preview source`));
-    }
-    return candidateAssetDependencyState({portsDir:path.join(root,'ports'),themeDir:dir,runtimeSupportCss,baselineCss,baseCss:base,candidateCss:css,candidateSource:source}).asset_dependency_sha256;
-  };
+  const assetDependency=(name,dir,sourceName,baselineCss)=>candidateAssetDependencySha(root,ledger,name,dir,sourceName,baselineCss);
   const currentInventory=currentMigrationSpec.current_candidate_inventory??[];
   const expectedMigrationNames=[...names,'sigma10-baseline'].sort();
   if(currentInventory.length!==expectedMigrationNames.length||currentInventory.map(item=>item.package).sort().join('\0')!==expectedMigrationNames.join('\0'))failures.push('Sigma-10 current candidate inventory does not enumerate every maintained candidate plus baseline');
@@ -329,7 +457,7 @@ export function checkCampaignCompletion(root, {captureContractReader = readCurre
       }catch(error){failures.push(`${row.package}: canonical scenario matrix is missing or stale: ${error.message}`)}
       const semantic = audit.acceptance_model === SEMANTIC_BROWSER_MODEL;
       if (semantic) {
-        failures.push(...validateSemanticBrowserAcceptance(audit).failures, ...validateSemanticSourceAuthority(root,audit));
+        failures.push(...validateSemanticBrowserAcceptance(audit).failures, ...validateSemanticSourceAuthority(root,audit,{sigma10RunContract:sigma10Contract}));
         try {
           const sourceHtmlSha=semanticSourceReferenceHtmlSha(root,audit,row.package);
           if(result.reference_identity?.original_html_sha256!==sourceHtmlSha)failures.push(`${row.package}: full package reference differs from current frozen source rendering`);
@@ -348,7 +476,7 @@ export function checkCampaignCompletion(root, {captureContractReader = readCurre
         if(!currentRuntimeSource(record,currentRunSpec))failures.push(`${row.package}: browser runtime source SHA is missing or differs from the current run contract`);
         if(!currentBackendRuntime(record,currentRunSpec))failures.push(`${row.package}: browser Deepwell backend identity is missing or differs from the current run contract`);
         if(semantic&&!currentRuntime(record))failures.push(`${row.package}: superseded browser runtime surface ${record.surface}`);
-        if(semantic&&!currentCapture(record,'ports/current-acceptance/run-contract.json'))failures.push(`${row.package}: superseded browser action/fixture ${record.surface}.${record.state}`);
+        if(semantic&&!currentCapture(record,sigma9Contract))failures.push(`${row.package}: superseded browser action/fixture ${record.surface}.${record.state}`);
         if(record.scoped_authority_contract_sha256!==scopedRunContractSha(runContractWithoutRuntimeBindings(currentRunSpec),record))failures.push(`${row.package}: browser capture lacks the current scoped authority contract identity ${record.surface}.${record.state}`);
         if(!captureRunContractIsCurrent(record,currentRunSpec,currentRunContractSha)||record.baseline_theme_mode!=='replacement'||record.baseline_theme_css_sha256!==currentRunSpec.baseline_theme.replacement_css_sha256)failures.push(`${row.package}: browser capture uses superseded target baseline/contract`);
         if(!Array.isArray(record.unconfirmed_items)||!Array.isArray(record.asset_failures)||!Array.isArray(record.page_errors)||!Array.isArray(record.action_responses))failures.push(`${row.package}: browser capture lacks explicit safety results`);
@@ -357,7 +485,7 @@ export function checkCampaignCompletion(root, {captureContractReader = readCurre
         if (record.candidate_source_sha256 !== row.inputs.source.sha256) failures.push(`${row.package}: superseded browser source identity`);
         if((record.candidate_structure_sha256??null)!==currentStructureSha)failures.push(`${row.package}: superseded browser candidate structure`);
         if(record.asset_dependency_sha256!==currentAssetDependencySha)failures.push(`${row.package}: superseded browser asset dependency`);
-        if(semantic&&!observationHasCurrentEnvironment(record,captureContracts.get('ports/current-acceptance/run-contract.json'),currentRunSpec,currentRunContractSha,{assetDependencySha:currentAssetDependencySha,candidateStructureSha:currentStructureSha}))failures.push(`${row.package}: superseded browser environment contract ${record.surface}.${record.state}`);
+        if(semantic&&!observationHasCurrentEnvironment(record,captureContracts.get(sigma9Contract),currentRunSpec,currentRunContractSha,{assetDependencySha:currentAssetDependencySha,candidateStructureSha:currentStructureSha}))failures.push(`${row.package}: superseded browser environment contract ${record.surface}.${record.state}`);
         if(screenshotRequired){
           if(record.screenshot!==canonicalScreenshotPath(currentRunSpec,record))failures.push(`${row.package}: browser screenshot path is not canonical content-addressed evidence`);
           const screenshot=bind({path:`ports/${record.screenshot}`,sha256:record.screenshot_sha256},row.package);
@@ -374,74 +502,8 @@ export function checkCampaignCompletion(root, {captureContractReader = readCurre
     if(migration.run_contract_sha256!==currentMigrationContractSha)failures.push('Migration decision is not bound to the current Sigma-10 run contract');
     if (!accepted(migration.overall_acceptance?.status)) failures.push(`Current Sigma-10 migration acceptance is ${migration.overall_acceptance?.status ?? 'missing'}`);
     const audit = JSON.parse(bind(document.migration?.browser_audit, 'Sigma-10 migration audit'));
-    try{
-      const browserVersions={};
-      for(const record of audit.records??[]){
-        const previous=browserVersions[record.browser_engine];
-        if(previous&&previous!==record.browser_version)throw new Error(`migration browser audit mixes ${record.browser_engine} versions`);
-        browserVersions[record.browser_engine]=record.browser_version;
-      }
-      const scenarioNames=Object.keys(audit.canonical_scenarios??{}).sort();
-      if(JSON.stringify(scenarioNames)!==JSON.stringify(names))throw new Error('Sigma-10 canonical scenario matrix inventory does not match maintained packages');
-      const evidence=migration.canonical_scenario_evidence;
-      if(JSON.stringify(Object.keys(evidence??{}).sort())!==JSON.stringify(names))throw new Error('Sigma-10 decision canonical scenario evidence inventory does not match maintained packages');
-      for(const name of names){
-        const canonical=validateCanonicalScenarioMatrix({root,packageName:name,generation:'sigma10',matrix:audit.canonical_scenarios[name],browserVersions});
-        const bound=evidence[name];
-        if(bound?.generation!=='sigma10'||bound?.scenario_sha256!==canonical.scenario_sha256||bound?.matrix_receipt_sha256!==canonical.matrix_receipt_sha256||bound?.measurement_contract_sha256!==canonical.measurement_contract_sha256)throw new Error(`${name}: Sigma-10 decision is not bound to current canonical scenario evidence`);
-      }
-    }catch(error){failures.push(`Sigma-10 canonical scenario evidence is missing or stale: ${error.message}`)}
-    const semantic = audit.acceptance_model === SEMANTIC_BROWSER_MODEL;
-    if (semantic) {
-      failures.push(...validateSemanticBrowserAcceptance(audit).failures, ...validateSemanticSourceAuthority(root,audit));
-      for (const artifact of semanticReviewArtifactBindings(audit)) bind(artifact.binding, artifact.label);
-    }
-    failures.push(...validateBrowserCoverage(audit,[...names,'sigma10-baseline'],{migration:true}));
+    failures.push(...validateSigma10MigrationAudit(root,{sigma10Contract,audit,evidence:migration.canonical_scenario_evidence,nonblockingObservations:migration.nonblocking_observations??[],captureContractReader}));
     if(migration.browser_audit_sha256!==(document.migration.browser_audit.uncompressed_sha256??document.migration.browser_audit.sha256))failures.push('Migration decision is not bound to current browser audit');
-    const migrationAssetDependencies=new Map(),migrationStructureShas=new Map();
-    for(const name of expectedMigrationNames){
-      const binding=currentMigrationSpec.additional_candidates?.[name];
-      if(!binding)continue;
-      const relative=typeof binding==='string'?binding:binding.directory;
-      const dir=resolveRunContractPath(root,path.dirname(currentMigrationContractPath),relative,`Sigma-10 candidate directory for ${name}`);
-      const sourceName=ledger.packages[name]?.source_file??'candidate.wikidot.source.txt';
-      migrationAssetDependencies.set(name,assetDependency(name,dir,sourceName,currentMigrationBaselineCss));
-      let structureSha=null;try{structureSha=sha(fs.readFileSync(resolveExistingPackageFile(dir,'acceptance-structure.json',`${name}: acceptance structure`)))}catch{}
-      migrationStructureShas.set(name,structureSha);
-    }
-    for(const record of audit.records??[]){
-      failures.push(...validateVisualGateRecord(record));
-      const screenshotRequired=visualGateNeedsScreenshot(record,{failure:!!record.failure});
-      if(!currentRuntimeSource(record,currentMigrationSpec))failures.push(`Sigma-10: browser runtime source SHA is missing or differs from the current run contract for ${record.theme}/${record.surface}`);
-      if(!currentBackendRuntime(record,currentMigrationSpec))failures.push(`Sigma-10: browser Deepwell backend identity is missing or differs from the current run contract for ${record.theme}/${record.surface}`);
-      if(semantic&&!currentRuntime(record))failures.push(`Sigma-10: superseded browser runtime surface ${record.theme}/${record.surface}`);
-      if(semantic&&!currentCapture(record,'sigma10-migration/current-campaign/run-contract.json'))failures.push(`Sigma-10: superseded browser action/fixture ${record.theme}/${record.surface}.${record.state}`);
-      const expected=inventoryByName.get(record.theme);
-      if(!expected||record.candidate_sha256!==expected.candidate_sha256||record.candidate_source_sha256!==expected.source_sha256)failures.push(`Sigma-10 capture uses an undeclared or superseded candidate identity: ${record.theme}`);
-      if(record.asset_dependency_sha256!==migrationAssetDependencies.get(record.theme))failures.push(`Sigma-10 capture uses a superseded asset dependency: ${record.theme}`);
-      if(semantic&&!observationHasCurrentEnvironment(record,captureContracts.get('sigma10-migration/current-campaign/run-contract.json'),currentMigrationSpec,currentMigrationContractSha,{assetDependencySha:migrationAssetDependencies.get(record.theme),candidateStructureSha:migrationStructureShas.get(record.theme)}))failures.push(`Sigma-10 capture uses a superseded environment contract: ${record.theme}/${record.surface}.${record.state}`);
-      if(record.scoped_authority_contract_sha256!==scopedRunContractSha(runContractWithoutRuntimeBindings(currentMigrationSpec),record))failures.push(`Sigma-10: browser capture lacks the current scoped authority contract identity for ${record.theme}/${record.surface}.${record.state}`);
-      if(!captureRunContractIsCurrent(record,currentMigrationSpec,currentMigrationContractSha)||record.baseline_theme_mode!=='replacement'||record.baseline_theme_css_sha256!==currentMigrationSpec.baseline_theme.replacement_css_sha256)failures.push('Sigma-10 capture uses superseded baseline/contract');
-      if(!Array.isArray(record.unconfirmed_items)||!Array.isArray(record.asset_failures)||!Array.isArray(record.page_errors)||!Array.isArray(record.action_responses)||record.action_responses.some(response=>response.type==='failure'||response.status>=400||response.error_message))failures.push('Sigma-10 capture lacks clean explicit safety results');
-      if(!semantic && (record.unconfirmed_items?.length||record.asset_failures?.length||record.page_errors?.length||record.external_requests_sent!==0||screenshotRequired&&!record.reviewed_after_last_change||screenshotRequired&&record.migration_review?.screenshot_sha256!==record.screenshot_sha256))failures.push(`Unresolved Sigma-10 state ${record.theme}/${record.surface}.${record.state}`);
-      if(!semantic && (!['PASS_NATURAL','PASS_INTENTIONAL_DIVERGENCE','EXTERNAL_CONTRACT_UNVERIFIABLE','NOT_APPLICABLE'].includes(record.classification)||screenshotRequired&&(record.migration_review?.classification!==record.classification||record.visual_review?.screenshot_sha256!==record.screenshot_sha256)))failures.push(`Sigma-10 state lacks a current accepted visual review: ${record.theme}/${record.surface}.${record.state}`);
-      if(screenshotRequired){
-        if(record.screenshot!==canonicalScreenshotPath(currentMigrationSpec,record))failures.push(`Sigma-10 screenshot path is not canonical content-addressed evidence: ${record.theme}/${record.surface}.${record.state}`);
-        bind({path:`ports/${record.screenshot}`,sha256:record.screenshot_sha256},'Sigma-10 screenshot');
-      }else if(record.screenshot||record.screenshot_sha256)failures.push(`successful machine-only Sigma-10 state retained a screenshot: ${record.theme}/${record.surface}.${record.state}`);
-      if(!semantic && !['PASS_NATURAL','PASS_INTENTIONAL_DIVERGENCE','EXTERNAL_CONTRACT_UNVERIFIABLE','NOT_APPLICABLE'].includes(record.classification)&&!migration.nonblocking_observations?.some(item=>item.screenshot_sha256===record.screenshot_sha256&&item.blocker===false&&item.authority!=='WIKIDOT_RUNTIME_PARITY'))failures.push(`Unresolved Sigma-10 classification ${record.theme}/${record.surface}.${record.state}`);
-    }
-    for (const row of rows) {
-      const records = audit.records?.filter(record => record.theme === row.package) ?? [];
-      if (!records.length) failures.push(`${row.package}: missing current Sigma-10 migration evidence`);
-      const packageDir=packageDirectory(row.package);
-      const base=currentPackageBaseCss(packageDir,row.package)??Buffer.alloc(0);
-      const currentCandidate=candidateIdentity(fs.readFileSync(resolveExistingPackageFile(packageDir,'candidate.css',`${row.package}: candidate CSS`)),base).candidateSha;
-      let currentStructureSha=null;try{currentStructureSha=sha(fs.readFileSync(resolveExistingPackageFile(packageDir,'acceptance-structure.json',`${row.package}: acceptance structure`)))}catch{}
-      if(records.some(record=>record.candidate_sha256!==currentCandidate))failures.push(`${row.package}: Sigma-10 matrix uses superseded CSS`);
-      if (records.some(record => record.candidate_source_sha256 !== row.inputs.source.sha256)) failures.push(`${row.package}: Sigma-10 matrix uses a superseded candidate`);
-      if(records.some(record=>(record.candidate_structure_sha256??null)!==currentStructureSha))failures.push(`${row.package}: Sigma-10 matrix uses a superseded candidate structure`);
-    }
   } catch (error) { failures.push(error.message); }
   return {status: failures.length ? 'fail' : 'pass', packages: rows.length, failures};
 }

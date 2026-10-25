@@ -80,7 +80,7 @@ export function createSqlExecutor({ dbUrl, dbContainer }) {
       const result = spawnSync(
         'docker',
         ['exec', '-i', '-e', 'PGPASSWORD=wikijump', dbContainer, 'psql', '-h', 'localhost', '-U', 'wikijump', '-d', 'wikijump', '-1', '-v', 'ON_ERROR_STOP=1', '-q', '-t', '-A'],
-        { input: sql, encoding: 'utf8' },
+        { input: sql, encoding: 'utf8', maxBuffer: 512 * 1024 * 1024 },
       );
       if (result.status !== 0) {
         throw new Error(sqlErrorMessage(result.status, result.stdout, result.stderr, sql));

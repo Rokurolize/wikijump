@@ -146,6 +146,11 @@ services:
       DEEPWELL_HOST: 127.0.0.1
       DEEPWELL_PORT: "2747"
       DEEPWELL_RPC_TOKEN: ${DEEPWELL_RPC_TOKEN:?DEEPWELL_RPC_TOKEN is required}
+      # Largest page source Wikidot accepts is 200,001 characters
+      # (measured 2026-10-24; Deepwell enforces that limit). Form bodies
+      # carrying such a source stay under 2 MiB even with multibyte text,
+      # so the adapter default of 512 KiB must not reject them first.
+      BODY_SIZE_LIMIT: "2097152"
       FRAMERAIL_MODE: built
       FRAMERAIL_ENV: local
       FRAMERAIL_CSRF_CHECK_ORIGIN: "true"

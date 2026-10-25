@@ -39,8 +39,10 @@
     IOS_ICON_ROUTE_PREFIX,
     faviconDeclaration,
     hasIosIcons,
+    iconSiteForHead,
     windowsTileDeclaration
   } from "$lib/site-icons"
+  import { siteHeadFallbacks, unsupersededHeadFallbacks } from "$lib/head-metadata"
   import { installWikidotCategories } from "$lib/wikidot/wikidot-categories.js"
   import { installJavascriptAnchorGuard } from "$lib/wikidot/wikidot-javascript-anchors.js"
   import { installWikidotNewPageHelper } from "$lib/wikidot/wikidot-new-page-helper"
@@ -48,6 +50,7 @@
     buildWikidotHovertipContainersHtml,
     installWikidotHovertips
   } from "$lib/wikidot/wikidot-hovertips"
+  import { installWikidotOdates } from "$lib/wikidot/wikidot-odates.js"
   import WikidotBottomToolbar from "$lib/wikidot/WikidotBottomToolbar.svelte"
   import WikidotLoginDialog from "$lib/wikidot/WikidotLoginDialog.svelte"
   import {
@@ -63,7 +66,9 @@
     customThemeHeadHtml,
     normalizeGoogleAnalyticsSettings,
     normalizeThemeSetting,
-    resolveThemePreviewUrl
+    resolveExternalThemeHref,
+    resolveThemePreviewUrl,
+    siteFilePresenceKey
   } from "$lib/site-settings.js"
 
   const WIKIDOT_SEARCH_CHROME_HTML =
@@ -118,6 +123,9 @@
   const nativeFooterLinks = $derived(
     resolveNativeFooterLinks(viewData?.native_footer_destinations)
   )
+  const SIGMA_FOOTER_ORDER = ["docs", "terms-conditions", "privacy", "security"]
+  const nativeFooterHref = (key: string) =>
+    nativeFooterLinks.find((link) => link.key === key)?.href
   const wikidotLoginLabels = $derived(buildWikidotLoginLabels(wikidotLocale))
   const wikidotAccountLabels = $derived(buildWikidotAccountLabels(wikidotLocale))
   const wikidotLicenseHtml = $derived(
@@ -166,20 +174,57 @@
       page.url.searchParams.get("theme_url")
     )
   )
-  const customThemeHtml = $derived(customThemeHeadHtml(effectiveTheme))
+  // The head rewrites a WDFiles attachment URL only on two pieces of
+  // evidence together: the viewed site names the file, and the page loader
+  // confirmed that exact page file exists locally. Without both, every
+  // theme and asset URL stays literal, so a partially imported mirror
+  // keeps the working source hotlink instead of a local 404.
+  const siteFileEvidence = $derived(viewData?.site ?? null)
+  const siteFileAuthority = $derived(viewData?.site_file_domain ?? null)
+  const siteFilePresence = $derived(
+    new Set(
+      Array.isArray(viewData?.site_file_presence)
+        ? viewData.site_file_presence.filter((key) => typeof key === "string")
+        : []
+    )
+  )
+  const isSiteFilePresent = (page: string, name: string) => {
+    const key = siteFilePresenceKey(page, name)
+    return key !== null && siteFilePresence.has(key)
+  }
+  const customThemeHtml = $derived(
+    customThemeHeadHtml(
+      effectiveTheme,
+      siteFileEvidence,
+      siteFileAuthority,
+      isSiteFilePresent
+    )
+  )
+  const externalThemeHref = $derived(
+    resolveExternalThemeHref(
+      effectiveTheme,
+      siteFileEvidence,
+      siteFileAuthority,
+      isSiteFilePresent
+    )
+  )
   const builtInThemeHtml = $derived(builtInThemeHeadHtml(effectiveTheme))
   const wikidotSiteTitle = $derived(resolveWikidotSiteTitle(viewData))
   const iconSite = $derived(
-    viewData?.site
-      ? {
-          ...viewData.site,
-          from_wikidot: viewData.site.from_wikidot || isImportedWikidotLayout
-        }
-      : null
+    iconSiteForHead(viewData?.site ?? null, isImportedWikidotLayout)
   )
   const siteFavicon = $derived(faviconDeclaration(iconSite))
-  const siteHasIosIcons = $derived(hasIosIcons(viewData?.site ?? null))
+  const siteHasIosIcons = $derived(hasIosIcons(iconSite))
   const siteWindowsTile = $derived(windowsTileDeclaration(iconSite))
+  // Site-field head fallbacks minus any stored meta-tag row that replaces
+  // them. The page head projects the effective rows themselves, so the
+  // final head carries each text/social entry exactly once.
+  const headMetaFallbacks = $derived(
+    unsupersededHeadFallbacks(
+      siteHeadFallbacks(viewData?.site ?? null),
+      viewData?.meta_tags ?? []
+    )
+  )
   const wikidotSiteTagline = $derived(resolveWikidotSiteTagline(viewData))
   const wikidotSessionUserName = $derived(resolveWikidotSessionUserName(viewData))
   const pageLayoutContext = $state<PageLayoutContext>({
@@ -206,6 +251,10 @@
     const uninstallHovertips = isImportedWikidotLayout
       ? installWikidotHovertips(document)
       : () => {}
+    // Browser ODate phase (issue #2638): viewer-local text for odate spans.
+    const uninstallOdates = isImportedWikidotLayout
+      ? installWikidotOdates(document)
+      : () => {}
     const wikidotSearchForm =
       document.querySelector<HTMLFormElement>("#search-top-box-form")
     const wikidotSearchInput = document.querySelector<HTMLInputElement>(
@@ -223,6 +272,7 @@
       uninstallJavascriptAnchorGuard()
       uninstallLoginActionHandler()
       uninstallHovertips()
+      uninstallOdates()
       wikidotSearchForm?.removeEventListener("submit", submitWikidotSearch)
       wikidotSearchInput?.removeEventListener("focus", clearWikidotSearchPrompt)
     }
@@ -242,10 +292,9 @@
 
 <svelte:head>
   <title>{documentTitle}</title>
-  {#if viewData?.site?.description}
-    <meta name="description" content={viewData.site.description} />
-    <meta name="og:site_name" content={viewData.site.name} />
-  {/if}
+  {#each headMetaFallbacks as tag (tag.name)}
+    <meta name={tag.name} content={tag.content} />
+  {/each}
   {#if analyticsProfile}
     <meta
       name="wikidot-site-analytics-profile"
@@ -275,9 +324,15 @@
     <link href="/wikidot/styles/wikidot-base-165bc434fd1d.css" rel="stylesheet" />
     <link href="/wikidot/styles/pagerate-db0bffe086ed.css" rel="stylesheet" />
     {#if !viewData?.theme_previewer_blank}
-      <link href="/wikidot/styles/sigma-fe5388a32e12.css" rel="stylesheet" />
+      {#if effectiveTheme.type === "built_in"}
+        <link href="/wikidot/styles/sigma-fe5388a32e12.css" rel="stylesheet" />
+      {/if}
       {#if effectiveTheme.type === "external"}
-        <link data-wikidot-site-theme href={effectiveTheme.url} rel="stylesheet" />
+        <link
+          data-wikidot-site-theme
+          href={externalThemeHref ?? effectiveTheme.url}
+          rel="stylesheet"
+        />
       {:else if effectiveTheme.type === "custom"}
         {@html customThemeHtml}
       {:else}
@@ -415,16 +470,18 @@
         -->
         {@html wikidotFooterHtml}
       {:else}
+        <!--
+          The same instance-level destinations as the native footer, in this
+          layout's Docs | Terms | Privacy | Security order. They never resolve
+          against the viewed wiki.
+        -->
         <div class="options">
-          <a href={resolve("/", {})}>{viewData?.internationalization?.docs}</a>
-          |
-          <a href={resolve("/", {})}
-            >{viewData?.internationalization?.["terms-conditions"]}</a
-          >
-          |
-          <a href={resolve("/", {})}>{viewData?.internationalization?.privacy}</a>
-          |
-          <a href={resolve("/", {})}>{viewData?.internationalization?.security}</a>
+          {#each SIGMA_FOOTER_ORDER as key, index (key)}
+            {#if index > 0}|{/if}
+            <a href={nativeFooterHref(key)} rel="external"
+              >{viewData?.internationalization?.[key]}</a
+            >
+          {/each}
         </div>
         <div class="footer-powered-by">
           {viewData?.internationalization?.["footer-powered-by"]}

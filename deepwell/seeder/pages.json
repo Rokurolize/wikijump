@@ -59,6 +59,26 @@
             "slug": "system:page-tags",
             "title": "Page Tags",
             "wikitext": "page-tags"
+        },
+        {
+            "slug": "docs",
+            "title": "Documentation",
+            "wikitext": "docs"
+        },
+        {
+            "slug": "legal:terms-of-service",
+            "title": "Terms of Service",
+            "wikitext": "legal-terms-of-service"
+        },
+        {
+            "slug": "legal:privacy-policy",
+            "title": "Privacy Policy",
+            "wikitext": "legal-privacy-policy"
+        },
+        {
+            "slug": "legal:security",
+            "title": "Security",
+            "wikitext": "legal-security"
         }
     ],
     "test": [
@@ -345,6 +365,36 @@
             "wikitext": "scp-9506"
         },
         {
+            "slug": "random:random-art",
+            "title": "Random Art",
+            "tags": ["admin", "redirect"],
+            "wikitext": "random-random-art"
+        },
+        {
+            "slug": "random:random-goi-format",
+            "title": "Random GoI Format",
+            "tags": ["admin", "redirect"],
+            "wikitext": "random-random-goi-format"
+        },
+        {
+            "slug": "random:random-page",
+            "title": "Random Page",
+            "tags": ["admin", "redirect"],
+            "wikitext": "random-random-page"
+        },
+        {
+            "slug": "random:random-scp",
+            "title": "Random SCP",
+            "tags": ["admin", "redirect"],
+            "wikitext": "random-random-scp"
+        },
+        {
+            "slug": "random:random-tale",
+            "title": "Random Tale",
+            "tags": ["admin", "redirect"],
+            "wikitext": "random-random-tale"
+        },
+        {
             "slug": "nav:side",
             "title": "Sidebar",
             "wikitext": "scp-sidebar"
@@ -361,13 +411,20 @@
         },
         {
             "slug": "system:join",
-            "title": "Join this site",
-            "wikitext": "join"
+            "title": "Join the Site",
+            "tags": [
+                "admin",
+                "policy"
+            ],
+            "wikitext": "scp-join"
         },
         {
             "slug": "system:members",
             "title": "Site Members",
-            "wikitext": "members"
+            "tags": [
+                "admin"
+            ],
+            "wikitext": "scp-members"
         },
         {
             "slug": "system:recent-changes",
@@ -377,7 +434,10 @@
         {
             "slug": "system:page-tags",
             "title": "Page Tags",
-            "wikitext": "page-tags"
+            "tags": [
+                "admin"
+            ],
+            "wikitext": "scp-page-tags"
         }
     ]
 }

@@ -124,9 +124,54 @@ export const installWikidotInterwikiStyleRuntime = (
     })
   }
 
+  // The side block stays hidden until every theme pulled at initialization has
+  // loaded (or failed), so the first paint never shows a heading half-styled by
+  // a theme that has not arrived yet. Wikidot's frame shows its own styles on
+  // first paint; this only closes the window where a stylesheet is still
+  // loading. A stalled theme is released by the timeout.
+  const hideUntilThemesSettle = () => {
+    const pendingStyle = frameDocument.createElement("style")
+    pendingStyle.textContent = ".side-block{display:none}"
+    pendingStyle.dataset.wikijumpThemePending = "true"
+    frameDocument.head.appendChild(pendingStyle)
+    return pendingStyle
+  }
+
+  const releaseWhenThemesSettle = (pendingStyle) => {
+    let remaining = 0
+    let released = false
+    const release = () => {
+      if (released) return
+      released = true
+      pendingStyle.textContent = ""
+      if (typeof frameWindow.dispatchEvent === "function") {
+        frameWindow.dispatchEvent(new frameWindow.Event("wikijump-themes-settled"))
+      }
+    }
+    const settled = () => {
+      remaining -= 1
+      if (remaining <= 0) release()
+    }
+    const waiting = customStyles("link.custom-style").filter((link) => !link.sheet)
+    remaining = waiting.length
+    if (remaining === 0) {
+      release()
+      return
+    }
+    waiting.forEach((link) => {
+      link.addEventListener("load", settled)
+      link.addEventListener("error", settled)
+    })
+    if (typeof frameWindow.setTimeout === "function") {
+      frameWindow.setTimeout(release, 5000)
+    }
+  }
+
   const initialize = () => {
+    const pendingStyle = hideUntilThemesSettle()
     pullStyleFrames()
     frameWindow.isInterwikiFrame = true
+    releaseWhenThemesSettle(pendingStyle)
   }
   if (frameDocument.readyState === "loading") {
     frameWindow.addEventListener("DOMContentLoaded", initialize)

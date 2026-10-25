@@ -10,6 +10,22 @@ const WORKFLOW_POLICY_SUBJECTS = new Set([
   "framerail/playwright.config.ts",
 ])
 
+// All services in these reviewed local Compose manifests are supplied by the
+// Deepwell, Framerail and WWS runtimes. Their dependencies (Postgres, object
+// storage, cache and Caddy) affect those runtimes and their local security
+// checks, but do not provide Theme Lab or Fluent locale inputs. Unknown
+// Compose filenames still take the fail-closed selectAll path.
+const LOCAL_COMPOSE_RUNTIME_FILES = new Set([
+  "install/local/docker-compose.yaml",
+  "install/local/docker-compose.dev.yaml",
+  "install/local/docker-compose.postgres-perf.yaml",
+])
+
+// The local Caddy edge serves the Deepwell-generated routes in front of the
+// same Deepwell, Framerail and WWS runtimes, so it takes the same checks as
+// the Compose manifests that start it.
+const LOCAL_CADDY_RUNTIME_PREFIX = "install/local/caddy/"
+
 const selectAll = (selected) => {
   for (const group of GROUPS) selected[group] = true
   selected.verification = true
@@ -21,7 +37,15 @@ const selectWorkflow = (selected) => {
 
 const metadataOnly = (file) =>
   file.startsWith("docs/") ||
-  ["AGENTS.md", "CLAUDE.md", "CODEOWNERS", "LICENSE.md", "README.md", "SECURITY.md"].includes(file)
+  [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "CODEOWNERS",
+    "LICENSE.md",
+    "README.md",
+    "SECURITY.md",
+    "install/local/README.md"
+  ].includes(file)
 
 const machineAuthorityDocument = (file) =>
   file.startsWith("docs/development/") && file.endsWith(".json")
@@ -35,13 +59,19 @@ const verificationInput = (file) =>
     ".github/workflows/wikidot-verification.yaml",
     "scripts/data/wikidot-implementation-ledger.json",
     "scripts/data/wikidot-live-observations.json",
+    "scripts/data/wikidot-spec-supplements.json",
     "scripts/generate-wikidot-specifications.mjs",
+    "scripts/refresh-test-quality-snapshot.mjs",
+    "scripts/run-test-quality-audit.mjs",
     "scripts/initialize-wikidot-implementation-ledger.mjs",
     "scripts/lib/wikidot-implementation-ledger.mjs"
   ].includes(file) ||
   // Dated detailed-spec evidence aliases are consumed only by the
   // specification generator and implementation-ledger checks.
-  file.startsWith("scripts/data/wikidot-detailed-")
+  file.startsWith("scripts/data/wikidot-detailed-") ||
+  // The test-quality audit's library is exercised only by the verification
+  // package's test-quality tests.
+  file.startsWith("scripts/lib/test-quality-")
 
 const verificationOnly = (file) =>
   verificationInput(file) && file !== ".github/workflows/wikidot-verification.yaml"
@@ -73,6 +103,13 @@ export function classifyChanges(paths, all = false) {
     }
 
     if (metadataOnly(file) || verificationOnly(file)) continue
+
+    if (LOCAL_COMPOSE_RUNTIME_FILES.has(file) || file.startsWith(LOCAL_CADDY_RUNTIME_PREFIX)) {
+      for (const group of ["deepwell", "wws", "framerail"]) selected[group] = true
+      selected.workflow = true
+      selected.verification = true
+      continue
+    }
 
     let matched = false
 

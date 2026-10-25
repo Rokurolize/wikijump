@@ -2,12 +2,14 @@ export type WikidotForumFeedKind = "threads" | "posts"
 export type WikidotForumFeedScope = "site" | "category" | "thread"
 
 /**
- * A Wikidot forum feed is either the site-wide pair or one named forum object.
+ * A Wikidot forum feed is either the site-wide pair or one named forum
+ * object.
  *
- * `ct-<id>` lists the new threads of a category, `cp-<id>` its new posts, and
- * `t-<id>` the posts of a single thread. The ID is the identifier Wikidot
- * exposes in the HTML forum routes; imported objects keep their legacy Wikidot
- * ID, so locally created objects resolve through the same space.
+ * `ct-<id>` lists the new threads of a category, `cp-<id>` its new posts,
+ * and `t-<id>` the posts of a single thread. The ID is the identifier
+ * Wikidot exposes in the HTML forum routes; imported objects keep their
+ * legacy Wikidot ID, so locally created objects resolve through the same
+ * space.
  */
 export interface WikidotForumFeedTarget {
   kind: WikidotForumFeedKind
@@ -100,7 +102,20 @@ function cdata(value: string): string {
 
 export function formatWikidotForumFeedDate(value: Date): string {
   const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec"
+  ]
   const day = value.getUTCDate().toString().padStart(2, "0")
   const hours = value.getUTCHours().toString().padStart(2, "0")
   const minutes = value.getUTCMinutes().toString().padStart(2, "0")
@@ -108,7 +123,11 @@ export function formatWikidotForumFeedDate(value: Date): string {
   return `${weekdays[value.getUTCDay()]}, ${day} ${months[value.getUTCMonth()]} ${value.getUTCFullYear()} ${hours}:${minutes}:${seconds} +0000`
 }
 
-function itemXml(origin: string, kind: WikidotForumFeedKind, item: WikidotForumFeedItem): string {
+function itemXml(
+  origin: string,
+  kind: WikidotForumFeedKind,
+  item: WikidotForumFeedItem
+): string {
   const threadPath = item.page_slug
     ? `/${item.page_slug}/comments/show`
     : `/forum/t-${item.forum_thread_id}/${item.thread_slug}`
@@ -118,9 +137,7 @@ function itemXml(origin: string, kind: WikidotForumFeedKind, item: WikidotForumF
   const guidOrigin = new URL(origin)
   guidOrigin.protocol = "http:"
   const guid = isThread ? canonicalPath : `${canonicalPath}#post-${item.forum_post_id}`
-  const link = isThread
-    ? `${canonicalPath}/${item.thread_slug}`
-    : postPath
+  const link = isThread ? `${canonicalPath}/${item.thread_slug}` : postPath
   const title = isThread ? item.thread_title : ""
   const content = isThread
     ? item.content_html
@@ -147,10 +164,10 @@ function itemXml(origin: string, kind: WikidotForumFeedKind, item: WikidotForumF
 /**
  * The channel Wikidot publishes for each feed scope.
  *
- * The site-wide pair is a frozen live observation. The scoped routes reuse that
- * observed grammar with the named scope appended, and the per-thread title uses
- * the observed `Comments for page "..."` spelling, where a page discussion
- * thread carries the page title.
+ * The site-wide pair is a frozen live observation. The scoped routes reuse
+ * that observed grammar with the named scope appended, and the per-thread
+ * title uses the observed `Comments for page "..."` spelling, where a page
+ * discussion thread carries the page title.
  */
 function forumFeedChannel(
   origin: string,

@@ -67,6 +67,10 @@ impl Fixture {
     /// Commit a page, then make its saved output stale as a renderer
     /// generation bump does: an old generator and an old body.
     async fn new(label: &str) -> Self {
+        Self::new_with_body(label, "").await
+    }
+
+    async fn new_with_body(label: &str, body_suffix: &str) -> Self {
         let namespace = format!("rsmq-render-ahead-{label}-{}", Uuid::new_v4().simple());
         let state = build_server_state_without_workers_with_job_queue_namespace(
             Config::integration_testing(),
@@ -92,7 +96,7 @@ impl Fixture {
                 &ctx,
                 CreatePage {
                     site_id,
-                    wikitext: marker.clone(),
+                    wikitext: format!("{marker}\n{body_suffix}"),
                     title: String::from("Render ahead fixture"),
                     alt_title: None,
                     tags: Vec::new(),
@@ -231,6 +235,26 @@ fn count(summary: &JsonValue, field: &str) -> i64 {
 }
 
 #[tokio::test]
+async fn render_ahead_reports_listpages_link_to_as_link_graph_reader() {
+    let fixture = Fixture::new_with_body(
+        "link-to-reader",
+        "[[module ListPages category=\"*\" link_to=\".\" separate=\"no\" wrapper=\"no\"]]\n%%title%%\n[[/module]]",
+    )
+    .await;
+
+    let summary = fixture.render_ahead(false).await;
+    assert_eq!(count(&summary, "rendered"), 1, "{summary}");
+    assert_eq!(count(&summary, "failed"), 0, "{summary}");
+    assert_eq!(
+        summary["link_reader_page_ids"],
+        serde_json::json!([fixture.page_id]),
+        "a ListPages link_to render must be revisited after link updates: {summary}"
+    );
+
+    fixture.cleanup().await;
+}
+
+#[tokio::test]
 async fn render_ahead_is_served_only_after_promotion() {
     let fixture = Fixture::new("promote").await;
     let before = fixture.served().await;
@@ -242,6 +266,11 @@ async fn render_ahead_is_served_only_after_promotion() {
     assert_eq!(count(&summary, "rendered"), 1, "{summary}");
     assert_eq!(count(&summary, "failed"), 0, "{summary}");
     assert_eq!(count(&summary, "stale_without_valid_ahead"), 0, "{summary}");
+    assert_eq!(
+        summary["link_reader_page_ids"],
+        serde_json::json!([]),
+        "a literal-only page must not be classified as a link graph reader: {summary}",
+    );
     assert_eq!(
         fixture.served().await,
         before,

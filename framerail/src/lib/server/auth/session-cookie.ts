@@ -1,13 +1,9 @@
 import { parseDeploymentEnvironment } from "$lib/server/deployment-environment.js"
+import { platformDomains } from "$lib/server/platform-domains.js"
 
 import type { Cookies } from "@sveltejs/kit"
 
 const SESSION_COOKIE = "wikijump_token"
-const SESSION_DOMAINS = {
-  local: "wikijump.localhost",
-  dev: "wikijump.dev",
-  prod: "wikijump.com"
-} as const
 
 const baseSessionCookieOptions = () => ({
   path: "/",
@@ -27,7 +23,7 @@ export function sessionCookieDomain(
     return undefined
   }
 
-  const domain = SESSION_DOMAINS[deploymentEnvironment]
+  const domain = platformDomains({ deploymentEnvironment }).main
   return hostname === domain || hostname.endsWith(`.${domain}`) ? domain : undefined
 }
 

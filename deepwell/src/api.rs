@@ -316,8 +316,8 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
 
                 // Wrap each call in a transaction, normally committing only
                 // after the endpoint succeeds and running queued side effects
-                // only after commit. The MFA rejection path may explicitly
-                // commit its durable attempt counter before returning an error.
+                // only after commit. Password/MFA rejection paths may explicitly
+                // commit durable attempt counters before returning an error.
                 let db_state = Arc::clone(&state);
                 async move {
                     let txn_result = match $isolation {
@@ -558,6 +558,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("wikidot_page_preview", wikidot_page_preview);
     register!("wikidot_legacy_set_tags", wikidot_legacy_set_tags);
     register!("page_edit", page_edit);
+    register!("page_create_permission", page_create_permission);
     register!("page_edit_permission", page_edit_permission);
     register!("page_move_permission", page_move_permission);
     register!("page_delete_permission", page_delete_permission);
@@ -650,6 +651,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("user_activate_from_wikidot", user_activate_from_wikidot);
     register!("user_get", user_get);
     register!("user_edit", user_edit);
+    register!("user_password_change", user_password_change);
     register!("user_delete", user_delete);
     register!("user_add_name_change", user_add_name_change);
 
@@ -668,6 +670,11 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
 
     // Email
     register!("email_validate", validate_email);
+    register!("email_verify_issue", email_verify_issue);
+    register!("email_verify_redeem", email_verify_redeem);
+    register!("password_reset_issue", password_reset_issue);
+    register!("password_reset_redeem", password_reset_redeem);
+    register!("password_reset_complete", password_reset_complete);
 
     // Votes
     register!("vote_set", vote_set);
@@ -680,10 +687,23 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
 
     // Wikidot data import
     register!("import_wikidot_user", import_wikidot_user);
+    register!(
+        "promote_observed_wikidot_identity",
+        promote_observed_wikidot_identity
+    );
     register!("import_wikidot_site", import_wikidot_site);
     register!("import_wikidot_page", import_wikidot_page);
     register!("import_wikidot_page_revision", import_wikidot_page_revision);
+    register!("import_wikidot_file", import_wikidot_file);
+    register!("import_wikidot_file_delete", import_wikidot_file_delete);
+    register!(
+        "import_wikidot_page_files_verify",
+        import_wikidot_page_files_verify
+    );
     register!("import_wikidot_discussion", import_wikidot_discussion);
+    register!("mirror_scope_get", mirror_scope_get);
+    register!("mirror_scope_set", mirror_scope_set);
+    register!("mirror_scope_reconcile_files", mirror_scope_reconcile_files);
 
     // Return
     Ok(module)
@@ -745,19 +765,35 @@ async fn build_request(
     })
 }
 
-const LOCAL_AUTHORING_DOMAIN: &str = "wikijump.localhost";
+/// Whether the configured platform domain is a loopback-only `.localhost`
+/// name (RFC 6761), such as `wikijump.localhost` (standing) or
+/// `wikijump.dev.localhost` (the local development stack).
+fn is_local_authoring_domain(configured_domain: &str) -> bool {
+    configured_domain.ends_with(".localhost")
+        && configured_domain
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'.')
+}
 const LOCAL_AUTHORING_SITE_SLUG: &str = "scpaiueouiuiuiui";
 const LOCAL_AUTHORING_USER_ID: i64 = -1;
 
 fn is_local_page_mutation_method(method_name: &str) -> bool {
     matches!(
         method_name,
+        // Mutations themselves.
         "page_create"
             | "page_edit"
             | "page_delete"
             | "page_move"
             | "file_restore"
             | "file_rollback"
+            // Read-only permission preflights for the same mutations. These
+            // only report booleans for the bound actor; the mutations above
+            // still enforce. (Issue #2131.)
+            | "page_create_permission"
+            | "page_edit_permission"
+            | "page_move_permission"
+            | "page_delete_permission"
     )
 }
 
@@ -768,7 +804,7 @@ fn may_bind_local_authoring_actor(
     actor_marker_present: bool,
     method_name: &str,
 ) -> bool {
-    configured_domain == LOCAL_AUTHORING_DOMAIN
+    is_local_authoring_domain(configured_domain)
         && session_token.is_none_or(str::is_empty)
         && request_user_id.is_none()
         && actor_marker_present
@@ -798,6 +834,10 @@ mod tests {
             "page_move",
             "file_restore",
             "file_rollback",
+            "page_create_permission",
+            "page_edit_permission",
+            "page_move_permission",
+            "page_delete_permission",
         ] {
             assert!(is_local_page_mutation_method(method), "{method}");
         }
@@ -830,15 +870,19 @@ mod tests {
     #[test]
     fn local_authoring_actor_requires_local_domain_anonymous_request_marker_and_allowed_method()
      {
-        assert!(may_bind_local_authoring_actor(
-            LOCAL_AUTHORING_DOMAIN,
-            None,
-            None,
-            true,
-            "page_create",
-        ));
+        const LOCAL_AUTHORING_DOMAIN: &str = "wikijump.localhost";
+
+        for domain in [LOCAL_AUTHORING_DOMAIN, "wikijump.dev.localhost"] {
+            assert!(
+                may_bind_local_authoring_actor(domain, None, None, true, "page_create"),
+                "expected actor binding for {domain}",
+            );
+        }
         for (domain, session, user, marker, method) in [
             ("wikijump.com", None, None, true, "page_create"),
+            ("wikijump.dev", None, None, true, "page_create"),
+            ("localhost.wikijump.com", None, None, true, "page_create"),
+            ("wikijump.localhost:18443", None, None, true, "page_create"),
             (
                 LOCAL_AUTHORING_DOMAIN,
                 Some("invalid-token"),

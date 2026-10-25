@@ -72,9 +72,10 @@ export const startFramerailServer = async () => {
   const path = process.env.SOCKET_PATH
   const host = process.env.HOST ?? "0.0.0.0"
   const port = process.env.PORT ?? "3000"
-  const readiness = process.env.WIKIJUMP_STARTUP_READINESS === "true"
-    ? createStartupReadiness({ probe: probeStartupDeepwell })
-    : undefined
+  const readiness =
+    process.env.WIKIJUMP_STARTUP_READINESS === "true"
+      ? createStartupReadiness({ probe: probeStartupDeepwell })
+      : undefined
   const lifecycle = createFramerailServerRuntime({ handler, readiness })
 
   lifecycle.server.listen(path ? { path } : { host, port }, () => {
