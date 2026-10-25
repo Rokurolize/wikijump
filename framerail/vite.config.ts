@@ -8,6 +8,8 @@ import { resolve } from "path"
 
 import type { UserConfig } from "vite"
 
+import svelteKitOptions from "./sveltekit-options.js"
+
 const pnpmVersion = pkg.packageManager?.startsWith("pnpm@")
   ? pkg.packageManager.slice("pnpm@".length)
   : null
@@ -56,7 +58,9 @@ const config: UserConfig = {
     //    Essentially, caddy is acting as our "allowedHosts" for us.
     allowedHosts: true
   },
-  plugins: [sveltekit()],
+  // SvelteKit 3 no longer reads svelte.config.js; the kit/adapter/CSP/CSRF/
+  // preprocess options are passed here (see sveltekit-options.js).
+  plugins: [sveltekit(svelteKitOptions)],
   define: {
     // also update $lib/vite-env.d.ts if these defines are changed
     serverInfo: {

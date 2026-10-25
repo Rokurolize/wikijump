@@ -86,7 +86,7 @@ fixed performance gate.
 
 ## Node deployment
 
-Production uses `@sveltejs/adapter-node`, configured in `svelte.config.js`. Build the adapter output and start the repository server entry point:
+Production uses `@sveltejs/adapter-node`, configured in `sveltekit-options.js` (passed to the `sveltekit()` Vite plugin). Build the adapter output and start the repository server entry point:
 
 ```bash
 pnpm build

@@ -3,13 +3,13 @@ import test from "node:test"
 
 const previousFramerailEnvironment = process.env.FRAMERAIL_ENV
 process.env.FRAMERAIL_ENV = "local"
-const { default: config } = await import("../svelte.config.js")
+const { default: config } = await import("../sveltekit-options.js")
 if (previousFramerailEnvironment === undefined) {
   delete process.env.FRAMERAIL_ENV
 } else {
   process.env.FRAMERAIL_ENV = previousFramerailEnvironment
 }
-const directives = config.kit?.csp?.directives
+const directives = config.csp?.directives
 if (!directives) throw new Error("CSP directives are missing")
 
 test("local included components can load styles and fonts from the reviewed mirrors", () => {
@@ -32,10 +32,10 @@ test("local mirror style and font grants do not reach other deployments", async 
     for (const environment of ["dev", "prod"]) {
       process.env.FRAMERAIL_ENV = environment
       const { default: other } = await import(
-        `../svelte.config.js?mirror-assets=${environment}`
+        `../sveltekit-options.js?mirror-assets=${environment}`
       )
       for (const directive of ["style-src", "font-src"]) {
-        const sources = other.kit.csp.directives[directive]
+        const sources = other.csp.directives[directive]
         assert(!sources.some((source) => source.includes(".wjfiles.localhost")))
       }
     }

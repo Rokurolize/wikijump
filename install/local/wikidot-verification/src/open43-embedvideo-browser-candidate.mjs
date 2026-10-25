@@ -653,7 +653,7 @@ const SOURCE_FILES = Object.freeze([
     ...STANDING_BROWSER_EXECUTION_MODULES,
     "docs/development/open43-m-closure-audit.json",
     "deepwell/tests/media.rs",
-    "framerail/svelte.config.js",
+    "framerail/sveltekit-options.js",
     "framerail/tests/wikidot-csp-config.test.js",
     "install/local/wikidot-verification/scripts/run-candidate-cases.mjs",
     "install/local/wikidot-verification/src/candidate-browser-contexts.mjs",
