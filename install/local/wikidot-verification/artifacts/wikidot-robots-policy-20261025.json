@@ -1,0 +1,29 @@
+{
+  "schema": "wikijump.wikidot_robots_policy_evidence.v1",
+  "captured_at": "2026-10-25",
+  "purpose": "Source evidence for #2088: the robots.txt body Wikidot serves is platform-global; only the Sitemap line varies (the site's canonical origin).",
+  "fetches": [
+    {
+      "url": "https://scp-wiki.wikidot.com/robots.txt",
+      "status": 200,
+      "body": "User-agent: *\nDisallow: /*/p/*/p/\nDisallow: /*/p/*_p/\nDisallow: /*_p/*/p/\nDisallow: /*_p/*_p/\n\nSitemap: https://scpwiki.com/sitemap.xml\nUser-agent: voltron\nDisallow: /\n"
+    },
+    {
+      "url": "https://www.wikidot.com/robots.txt",
+      "status": 200,
+      "body": "User-agent: *\nDisallow: /*/p/*/p/\nDisallow: /*/p/*_p/\nDisallow: /*_p/*/p/\nDisallow: /*_p/*_p/\n\nSitemap: https://www.wikidot.com/sitemap.xml\nUser-agent: voltron\nDisallow: /\n"
+    },
+    {
+      "url": "https://scp-jp.wikidot.com/robots.txt",
+      "status": 200,
+      "body": "User-agent: *\nDisallow: /*/p/*/p/\nDisallow: /*/p/*_p/\nDisallow: /*_p/*/p/\nDisallow: /*_p/*_p/\n\nSitemap: https://scp-jp.wikidot.com/sitemap.xml\nUser-agent: voltron\nDisallow: /\n"
+    },
+    {
+      "url": "https://scp-wiki.wdfiles.com/robots.txt",
+      "status": 200,
+      "note": "The file host serves the same body, with the Sitemap line naming the owning site's canonical origin.",
+      "body": "User-agent: *\nDisallow: /*/p/*/p/\nDisallow: /*/p/*_p/\nDisallow: /*_p/*/p/\nDisallow: /*_p/*_p/\n\nSitemap: https://scpwiki.com/sitemap.xml\nUser-agent: voltron\nDisallow: /\n"
+    }
+  ],
+  "conclusion": "For a public site, Wikijump's robots.txt should carry the four /p/ Disallow patterns, a blank line, the Sitemap line for the site's preferred domain, and the voltron block. Private/non-indexable sites keep the deliberate deny-all policy (no sitemap advertised); the shared files host keeps its plain allow-all policy because it serves many sites and cannot name one site's sitemap."
+}
