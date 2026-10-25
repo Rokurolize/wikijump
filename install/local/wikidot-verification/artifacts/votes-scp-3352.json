@@ -2557,5 +2557,6 @@
    "value": 1
   }
  ],
- "note": "anonymous public Who-Rated capture via wikidot.py page.votes; names omitted, user_id and value retained"
+ "note": "anonymous public Who-Rated capture via wikidot.py page.votes; names omitted, user_id and value retained",
+ "case_id": "scp-3352-who-rated"
 }

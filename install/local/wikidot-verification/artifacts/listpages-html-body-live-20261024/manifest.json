@@ -33,5 +33,14 @@
    "bytes": 519
   }
  },
- "summary_sha256": "e4c1e7072a8cee480efb19ff4ed89653de199fb69543985eb929af93c4ae6107"
+ "summary_sha256": "a96ccbfc117be7e601b210f82faf0fef9c785f80fa4076e45dcc97999e10b835",
+ "case_ids": [
+  "matrix-A-html-mid-after-prose.html",
+  "matrix-B-html-mid-after-two-prose-lines.html",
+  "matrix-C-control-no-block.html",
+  "matrix-D-escaped-html-marker-mid.html",
+  "matrix-E-code-mid-after-prose.html",
+  "wj2680-1792846101-lead-hosted.html",
+  "wj2680-1792846101-mid-hosted.html"
+ ]
 }
