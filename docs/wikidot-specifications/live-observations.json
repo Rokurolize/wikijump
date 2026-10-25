@@ -3610,7 +3610,7 @@
       "title": "Mid-body html blocks are owned by Wikidot's html pass, not only leading ones",
       "feature_ids": [
         "module-listpages",
-        "syntax-html-block"
+        "syntax-html-blocks"
       ],
       "classification": "documentation-omission",
       "observed_at": "2026-10-24",
@@ -3652,7 +3652,7 @@
       "title": "Identity and tag variables inside a body-owned html block stay literal",
       "feature_ids": [
         "module-listpages",
-        "syntax-html-block"
+        "syntax-html-blocks"
       ],
       "classification": "documentation-clarification",
       "observed_at": "2026-10-24",
