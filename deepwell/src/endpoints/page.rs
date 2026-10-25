@@ -1080,41 +1080,22 @@ pub async fn page_who_rated(
         .iter()
         .map(|vote| vote.user_id)
         .collect::<BTreeSet<_>>();
-    let mut identities = UserService::get_public_identities(ctx, &user_ids)
+    let mut resolved = UserService::get_public_identities_or_tombstones(ctx, &user_ids)
         .await
         .or_raise(make_error)?;
-    let missing_ids = user_ids
-        .iter()
-        .copied()
-        .filter(|user_id| !identities.contains_key(user_id))
-        .collect::<BTreeSet<_>>();
-    let deleted_ids = if missing_ids.is_empty() {
-        BTreeSet::new()
-    } else {
-        UserService::get_deleted_user_ids(ctx, &missing_ids)
-            .await
-            .or_raise(make_error)?
-    };
     let mut output = Vec::with_capacity(votes.len());
     for vote in votes {
-        if let Some(user) = identities.remove(&vote.user_id) {
-            output.push(PageWhoRatedVote {
-                user_id: vote.user_id,
-                user: Some(user),
-                value: vote.value,
-            });
-        } else if deleted_ids.contains(&vote.user_id) {
-            output.push(PageWhoRatedVote {
-                user_id: vote.user_id,
-                user: None,
-                value: vote.value,
-            });
-        } else {
-            // An identity that was never imported (or is only a
-            // known-user observation) fails the whole list closed,
-            // rather than silently dropping a voter.
+        // A never-imported identity (e.g. only a known-user
+        // observation) is absent from the map and fails the whole
+        // list closed, rather than silently dropping a voter.
+        let Some(user) = resolved.remove(&vote.user_id) else {
             return Err(make_error().into());
-        }
+        };
+        output.push(PageWhoRatedVote {
+            user_id: vote.user_id,
+            user,
+            value: vote.value,
+        });
     }
     Ok(output)
 }
