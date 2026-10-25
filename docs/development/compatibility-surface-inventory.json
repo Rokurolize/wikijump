@@ -11605,7 +11605,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "1b12cbf9af4af83b004680504f0d88ac47c4f01771e4ee4b8192ad66e82db31d"
+      "source_input_set_sha256": "68ecc0ae2799453c72c00a21ab258dd1b61e00c4107af6803649a6ba6f69e9cb"
     },
     "ftml": {
       "commit": "c36bc5fe655fdb6cd41a563882194493f50008e1",
@@ -11618,7 +11618,7 @@
       },
       {
         "path": "deepwell/Cargo.toml",
-        "sha256": "835bc284d7049006f2c0d74c6888360ff39805139218e6321471a8bc9e1d792f"
+        "sha256": "1ee3649b137d49b14ac5cf791325eb94ca88957a88d0477eb7a4e4167def945f"
       },
       {
         "path": "deepwell/src/api.rs",
@@ -11838,7 +11838,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "826c09c88de9f39cdab3eb3e36949ad7c771573c981562274bcabcf307d3fd08"
+        "sha256": "0bd482e426103e70a4f1263d5a1888f0140e9f8acaac9351836e1d2c8a21661b"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
