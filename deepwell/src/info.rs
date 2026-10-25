@@ -26,6 +26,10 @@ use std::sync::LazyLock;
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc2822;
 
+/// The full `cargo --version` line of the cargo that built this
+/// binary, captured by build.rs (WJ-1279).
+pub const CARGO_VERSION: &str = env!("DEEPWELL_CARGO_VERSION");
+
 #[allow(unused_imports)]
 pub use self::build::{
     BUILT_TIME_UTC as BUILT_TIME_UTC_STR, CFG_ENDIAN, GIT_COMMIT_HASH, NUM_JOBS,

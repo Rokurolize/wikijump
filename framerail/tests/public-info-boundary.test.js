@@ -16,12 +16,13 @@ const rawInfo = {
     version: "PUBLIC_PACKAGE_VERSION_SENTINEL"
   },
   compile_info: {
-    built_at: "PRIVATE_BUILT_AT_SENTINEL",
+    built_at: "PUBLIC_BUILT_AT_SENTINEL",
     rustc_version: "PUBLIC_RUSTC_VERSION_SENTINEL",
+    cargo_version: "PUBLIC_CARGO_VERSION_SENTINEL",
     endian: "PRIVATE_ENDIAN_SENTINEL",
     target: "PRIVATE_TARGET_SENTINEL",
     threads: 987654321,
-    git_commit: "PRIVATE_GIT_COMMIT_SENTINEL"
+    git_commit: "PUBLIC_GIT_COMMIT_SENTINEL"
   },
   current_time: "PRIVATE_CURRENT_TIME_SENTINEL",
   hostname: "PRIVATE_HOSTNAME_SENTINEL",
@@ -77,13 +78,19 @@ test("GET /-/about projects Deepwell info to its public fields", async () => {
       version: "PUBLIC_PACKAGE_VERSION_SENTINEL"
     },
     compile_info: {
-      rustc_version: "PUBLIC_RUSTC_VERSION_SENTINEL"
+      rustc_version: "PUBLIC_RUSTC_VERSION_SENTINEL",
+      cargo_version: "PUBLIC_CARGO_VERSION_SENTINEL",
+      built_at: "PUBLIC_BUILT_AT_SENTINEL",
+      git_commit: "PUBLIC_GIT_COMMIT_SENTINEL"
     }
   })
 
   const body = render(aboutPage, { props: { data } }).body
   assert.match(body, /PUBLIC_PACKAGE_NAME_SENTINEL/u)
   assert.match(body, /PUBLIC_RUSTC_VERSION_SENTINEL/u)
+  assert.match(body, /PUBLIC_CARGO_VERSION_SENTINEL/u)
+  assert.match(body, /PUBLIC_BUILT_AT_SENTINEL/u)
+  assert.match(body, /PUBLIC_GIT_COMMIT_SENTINEL/u)
   assert.doesNotMatch(body, /PRIVATE_[A-Z_]+_SENTINEL/u)
   assert.doesNotMatch(body, /<textarea\b/u)
 })

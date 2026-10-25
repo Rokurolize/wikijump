@@ -4181,8 +4181,8 @@
         "component": "deepwell",
         "handler": "server_info",
         "source": "deepwell/src/endpoints/info.rs#server_info",
-        "source_sha256": "2ceefb96514af0205aaf6ac11b214d103af309ef8a98f1a37e5fc20fd01abf1a",
-        "function_sha256": "3984770b19b2a9fb305abaaccf405936615b23ea0babc38341bb6106db9e5988"
+        "source_sha256": "253708140d3612b6f88f7ee464dc83d05781b887506a5e00866828db84055b39",
+        "function_sha256": "5b72cd437e58defccdc667418f7bd733efcb7559d4293c2a0b6117811ddc2a54"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
