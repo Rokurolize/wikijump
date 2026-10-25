@@ -790,11 +790,24 @@ def promote(args, source_root, runtime_home, override_file, identity, evidence, 
     # nothing from render-ahead and is taken alongside the build.
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
         validation = pool.submit(stages.run, "validation", validation_stage)
-        build = pool.submit(stages.run, "build", build_stage)
+        # The candidate build compiles the same crates the Deepwell test
+        # shards exercise; beside them it starved the shards (Deepwell full
+        # tests took 893s in the 2026-10-24 promotion against ~160s of
+        # uncontended shard execution). When the Deepwell group runs, the
+        # build waits for validation; otherwise it stays alongside, where
+        # the validation groups are not CPU-starved by it.
+        build_after_validation = bool(plan["required_groups"].get("deepwell"))
+        build = (
+            None
+            if build_after_validation
+            else pool.submit(stages.run, "build", build_stage)
+        )
         dependencies = pool.submit(stages.run, "browser-dependencies", browser_dependencies_stage)
         clone = pool.submit(stages.run, "rehearsal-clone", clone_stage) if plan["rehearse"] else None
         try:
             receipt["validation"] = validation.result()
+            if build is None:
+                build = pool.submit(stages.run, "build", build_stage)
             built = build.result()
             dependencies.result()
             if clone:

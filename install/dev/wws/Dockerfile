@@ -4,6 +4,28 @@
 
 FROM rust:1.95.0@sha256:f49565f188ee00bc2a18dd418183f2c5f23ef7d6e691890517ed341a598f67c3 AS rust
 
+# The pinned image still trusts the compromised emSign ECC Root CA - G3 and
+# Comodo AAA cross-sign. Refresh the OS bundle before any HTTPS bootstrap.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates && \
+    update-ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Rustup before 1.29.2 trusts a compromised eMudhra intermediate
+# (CVE-2026-111943, RUSTSEC-2026-0382,
+# https://blog.rust-lang.org/2026/10/20/Rustup-1.29.2/). The pinned base
+# image still ships rustup 1.29.0 and has not been rebuilt upstream, so a
+# re-pin does not fix it. Replace the image's rustup with 1.29.2 here,
+# before any rustup or cargo network use. The Rust toolchain itself stays
+# 1.95.0 per rust-toolchain.toml.
+RUN set -eux; \
+    curl -fsSL -o /tmp/rustup-init https://static.rust-lang.org/rustup/archive/1.29.2/x86_64-unknown-linux-gnu/rustup-init; \
+    printf '%s  %s\n' "5be191e8c70a5007074254cb74d78dbfdd25cd5a61c27de7b8e5410122ec24f4" /tmp/rustup-init | sha256sum -c -; \
+    chmod +x /tmp/rustup-init; \
+    cp /tmp/rustup-init "$(command -v rustup)"; \
+    rm /tmp/rustup-init; \
+    rustup --version | grep -F "1.29.2"
+
 # Install files
 COPY ./install/dev/wws/health-check.sh /usr/local/bin/wikijump-health-check
 
@@ -25,7 +47,10 @@ RUN cargo build --release
 FROM debian:bookworm-slim@sha256:7b140f374b289a7c2befc338f42ebe6441b7ea838a042bbd5acbfca6ec875818
 
 # Install dependencies.
-RUN apt update && apt install -y curl
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates curl && \
+    update-ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install files
 COPY --from=rust /src/wws/target/release/wws /usr/local/bin/wws

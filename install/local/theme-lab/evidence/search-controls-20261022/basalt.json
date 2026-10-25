@@ -1,0 +1,129 @@
+{
+  "schema": "theme_lab_wikidot_search_control.v1",
+  "theme": "basalt",
+  "source_url": "https://scp-wiki.wikidot.com/theme:basalt",
+  "source_sha256": "df4b78d344536f5b7c363ac86b2ddc6f3c31b3647693f473169550e03fca17c5",
+  "observed_at": "2026-10-22T10:01:21.926Z",
+  "public_writes": 0,
+  "external_requests_sent": 0,
+  "offline": true,
+  "browser_version": "149.0.7827.55",
+  "browser_sha256": "2d18db9d8608b052b6a552ee00ec1e830f93692e928b65ecc67d693bd33fe801",
+  "original_html_sha256": "2400015139cdc0c0fa3ae4913c142f09d8d710d8927417b4a668bd53ab512804",
+  "replay_entry": "/o/df79307988265b882e90d7c9d9ed7644fb17af0961caff54d3c798a902095484",
+  "snapshot_sha256": "aca6913d3d69f5413a41eea4c3a632841218ec535b5cf8307d46a2cc451f29f0",
+  "snapshot_source": "reference cache manifest (anonymous Wikidot acquisition retained 2026-09-23; acquisition forbidden in this replay)",
+  "artifacts": [
+    {
+      "path": "evidence/search-controls-20261022/objects/24/2400015139cdc0c0fa3ae4913c142f09d8d710d8927417b4a668bd53ab512804",
+      "sha256": "2400015139cdc0c0fa3ae4913c142f09d8d710d8927417b4a668bd53ab512804"
+    },
+    {
+      "path": "evidence/search-controls-20261022/objects/df/df79307988265b882e90d7c9d9ed7644fb17af0961caff54d3c798a902095484",
+      "sha256": "df79307988265b882e90d7c9d9ed7644fb17af0961caff54d3c798a902095484"
+    }
+  ],
+  "scope": "Mobile (390x844) and narrow-mobile (320x800) hidden header query and native visible-button search navigation of the frozen Basalt source. Sibling of evidence/search-controls-20261001 (desktop, laptop, tablet); not an edit of it.",
+  "source_measurements": [
+    {
+      "theme": "basalt",
+      "url": "https://scp-wiki.wikidot.com/theme:basalt",
+      "viewport": "mobile",
+      "viewport_size": {
+        "width": 390,
+        "height": 844
+      },
+      "source_sha256": "df4b78d344536f5b7c363ac86b2ddc6f3c31b3647693f473169550e03fca17c5",
+      "loaded": {
+        "offline": true,
+        "root_url": "https://scp-wiki.wikidot.com/theme:basalt",
+        "entry": "/o/df79307988265b882e90d7c9d9ed7644fb17af0961caff54d3c798a902095484"
+      },
+      "query": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "after_focus": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "button": {
+        "display": "block",
+        "visibility": "visible",
+        "width": 32,
+        "height": 57.28125
+      },
+      "handler": {
+        "search": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}",
+        "events": [
+          {
+            "type": "submit",
+            "fn": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}"
+          }
+        ]
+      },
+      "navigation": "/search:site/q/Search%20this%20site",
+      "action_error": null,
+      "original_html_sha256": "2400015139cdc0c0fa3ae4913c142f09d8d710d8927417b4a668bd53ab512804"
+    },
+    {
+      "theme": "basalt",
+      "url": "https://scp-wiki.wikidot.com/theme:basalt",
+      "viewport": "narrow-mobile",
+      "viewport_size": {
+        "width": 320,
+        "height": 800
+      },
+      "source_sha256": "df4b78d344536f5b7c363ac86b2ddc6f3c31b3647693f473169550e03fca17c5",
+      "loaded": {
+        "offline": true,
+        "root_url": "https://scp-wiki.wikidot.com/theme:basalt",
+        "entry": "/o/df79307988265b882e90d7c9d9ed7644fb17af0961caff54d3c798a902095484"
+      },
+      "query": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "after_focus": {
+        "display": "none",
+        "visibility": "visible",
+        "width": 0,
+        "height": 0,
+        "value": "Search this site"
+      },
+      "button": {
+        "display": "block",
+        "visibility": "visible",
+        "width": 32,
+        "height": 57.28125
+      },
+      "handler": {
+        "search": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}",
+        "events": [
+          {
+            "type": "submit",
+            "fn": "function(d){var c=$(\"search-top-box-input\").value;c=encodeURIComponent(c);var b=\"/search:site/q/\"+c;window.location.href=b;YAHOO.util.Event.preventDefault(d)}"
+          }
+        ]
+      },
+      "navigation": "/search:site/q/Search%20this%20site",
+      "action_error": null,
+      "original_html_sha256": "2400015139cdc0c0fa3ae4913c142f09d8d710d8927417b4a668bd53ab512804"
+    }
+  ],
+  "measurement_programs": [
+    {
+      "path": "evidence/search-controls-20261022/probe-frozen-search-mobile-narrow-20261022.mjs",
+      "sha256": "6b549076eea7865d5bfc088228b4a43ae931a456be348afb88386d78f82a87a8"
+    }
+  ]
+}

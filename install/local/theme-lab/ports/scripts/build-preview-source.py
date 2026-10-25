@@ -85,6 +85,23 @@ def palette_markup(body: str) -> str:
     )
 
 
+RAW_SPAN = re.compile(r"@@[\s\S]*?@@")
+
+
+def mask_raw_spans(text):
+    spans = []
+
+    def hide(match):
+        spans.append(match.group(0))
+        return f"\x00RAW{len(spans) - 1}\x00"
+
+    return RAW_SPAN.sub(hide, text), spans
+
+
+def unmask_raw_spans(text, spans):
+    return re.sub(r"\x00RAW(\d+)\x00", lambda match: spans[int(match.group(1))], text)
+
+
 def build(source: str, squares_source: str = "") -> tuple[str, int, list[str]]:
     body = CSS_MODULE.sub("", source)
     # This is a theme-page preview independent of page tags, so remove every
@@ -118,12 +135,18 @@ def build(source: str, squares_source: str = "") -> tuple[str, int, list[str]]:
     # candidate.wikidot.source.txt; this derived preview records and omits
     # unresolved include directives, while standard runtime surfaces below
     # exercise Rate, TOC, tabs, collapsibles, tables, quotes, and image blocks.
-    omitted_includes = sorted({item.strip() for item in INCLUDE_RE.findall(body)})
-    body = INCLUDE_RE.sub("", body)
-    unclosed = re.findall(r"\[\[include\b[^\]]*$", body, flags=re.I | re.M)
+    # Wikidot @@...@@ spans are literal text. An include-like sample inside one
+    # (for example a documented "[[include ...]]" example with a nested span) is
+    # not a directive, so mask those spans before any include handling; removing
+    # the sample's opening would otherwise corrupt the displayed text.
+    masked, raw_spans = mask_raw_spans(body)
+    omitted_includes = sorted({item.strip() for item in INCLUDE_RE.findall(masked)})
+    masked = INCLUDE_RE.sub("", masked)
+    unclosed = re.findall(r"\[\[include\b[^\]]*$", masked, flags=re.I | re.M)
     if unclosed:
-        body = re.sub(r"\[\[include\b[^\]]*(?:\n|$)(?:(?!\]\]).*(?:\n|$))*$", "", body, flags=re.I | re.M)
+        masked = re.sub(r"\[\[include\b[^\]]*(?:\n|$)(?:(?!\]\]).*(?:\n|$))*$", "", masked, flags=re.I | re.M)
         omitted_includes.extend(f"unterminated:{item.strip()}" for item in unclosed)
+    body = unmask_raw_spans(masked, raw_spans)
 
     fixture = ["\n\n+ Theme Lab runtime fixture\n"]
     # Always render a genuine current SCP-JP rating DOM. Theme articles also

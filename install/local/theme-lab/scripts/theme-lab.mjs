@@ -29,6 +29,7 @@ import {ReferenceCache, defaultCacheDir} from "../src/reference-cache.mjs";
 import {startSessionServer} from "../src/session-server.mjs";
 import {isLocalWikijumpHostname} from "../src/local-wikijump-host.mjs";
 import {loadCandidateStructure} from "../src/candidate-structure.mjs";
+import {formatTriageSummary, triageThemePackageByName} from "../src/theme-triage.mjs";
 
 function parseArgs(argv) {
   const args = {_positional: []};
@@ -185,12 +186,25 @@ async function main() {
   const args = parseArgs(rest);
   if (!command || command === "help" || args.help) {
     process.stdout.write(
-      "commands: serve | open | check | css | clear-css | preview | torture | reference | viewport | snapshot | probe | diff | screenshot | status | stop\n",
+      "commands: serve | open | check | css | clear-css | preview | torture | reference | viewport | snapshot | probe | diff | screenshot | status | stop | triage\n",
     );
     return 0;
   }
   if (command === "serve") {
     await serve(args);
+    return 0;
+  }
+
+  if (command === "triage") {
+    // Static, daemon-free package triage (#2753): touched surfaces and
+    // unclassified selectors for one package's candidate CSS.
+    const target = args._positional[0];
+    if (!target) {
+      process.stderr.write("usage: theme-lab.mjs triage <package-name-or-slug> [--json]\n");
+      return 2;
+    }
+    const report = triageThemePackageByName(target);
+    process.stdout.write(args.json ? `${JSON.stringify(report, null, 2)}\n` : `${formatTriageSummary(report)}\n`);
     return 0;
   }
 

@@ -21,17 +21,19 @@
 //! Regression locks for the scp-744 epoch-38 body loss (#2573).
 //!
 //! Under the reverted #2596 pairing, the whole-article body vanished while a
-//! literal `[[>]]` printed after the header. The fixed (current) behavior is
-//! the unconditional per-source rewrite: every non-literal alignment marker
-//! line becomes a `[[div]]`, so no marker can ever leak as literal text and
-//! no pairing state can hide content. These tests lock that behavior on the
-//! exact marker shapes scp-744 carries.
+//! literal `[[>]]` printed after the header. The current behavior pairs
+//! markers on the whole expanded document, and every pair of non-literal
+//! markers with no trailing whitespace becomes a `[[div]]`, so a balanced
+//! marker set never leaks as literal text and no pairing state can hide
+//! content. These tests lock that behavior on the exact marker shapes
+//! scp-744 carries.
 
 use super::*;
 
 fn rewrite(source: &str) -> String {
     let mut wikitext = source.to_owned();
-    RenderService::normalize_wikidot_alignment_markers(&mut wikitext);
+    let mut preserved = CompatTextFragments::new(&wikitext);
+    RenderService::normalize_wikidot_alignment_markers(&mut wikitext, &mut preserved);
     wikitext
 }
 

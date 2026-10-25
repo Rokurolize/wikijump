@@ -83,3 +83,44 @@ test('assembler writes only the canonical current campaign index path',()=>{
   assert.equal(fs.existsSync(path.join(root,'evidence/current-campaign-acceptance.json')),false);
  }finally{fs.rmSync(root,{recursive:true,force:true})}
 });
+
+function explicitContractFixture(root,{rowSha}={}){
+ const write=(relative,contents)=>{const file=path.join(root,relative);fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,typeof contents==='string'?contents:JSON.stringify(contents));return relative;};
+ write('ports/adaptation-authority.json',JSON.stringify({packages:{fixture:{source_file:'source.txt'}}}));
+ for(const relative of ['ports/fixture/candidate.css','ports/fixture/source.txt','ports/fixture/candidate.wikidot.txt','ports/current-acceptance/fixture/accepted-result.json','ports/current-acceptance/fixture/visual-review.json','sigma10-migration/current-campaign/accepted-result.json'])write(relative,relative);
+ const contractRelative=write('ports/current-acceptance/run-contract-assembled-check.json',{schema:'scp_jp_interactive_acceptance_run.v1',artifact_namespace:'current-acceptance/sigma9/assembled-check'});
+ const contractSha=digest(fs.readFileSync(path.join(root,contractRelative)));
+ write('ports/current-acceptance/fixture/browser-audit.json',{records:[{surface:'page.normal',state:'open',run_contract_sha256:rowSha??contractSha},{surface:'page.files',state:'open',run_contract_sha256:contractSha}]});
+ write('sigma10-migration/current-campaign/browser-audit.json',{records:[]});
+ return {contractRelative,contractSha};
+}
+
+test('explicit task-owned run contract is bound into the receipt when every audit row names its exact bytes',()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'theme-lab-assemble-explicit-'));
+ try{
+  const {contractRelative,contractSha}=explicitContractFixture(root);
+  const output=assembleCurrentCampaign(root,{sigma9RunContract:contractRelative});
+  const document=JSON.parse(fs.readFileSync(path.join(root,output.path),'utf8'));
+  assert.deepEqual(document.run_contract,{path:contractRelative,sha256:contractSha});
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
+});
+
+test('explicit run contract is rejected when an audit row was captured against other bytes',()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'theme-lab-assemble-explicit-mismatch-'));
+ try{
+  const {contractRelative}=explicitContractFixture(root,{rowSha:digest(Buffer.from('shared contract'))});
+  assert.throws(()=>assembleCurrentCampaign(root,{sigma9RunContract:contractRelative}),/not captured against the supplied run contract/u);
+  assert.equal(fs.existsSync(path.join(root,'current-campaign-acceptance.json')),false);
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
+});
+
+test('default assembly writes no run-contract binding and a missing explicit contract fails closed',()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'theme-lab-assemble-default-'));
+ try{
+  const {contractRelative}=explicitContractFixture(root);
+  const output=assembleCurrentCampaign(root,{sigma9RunContract:'ports/current-acceptance/run-contract.json'});
+  assert.equal(Object.hasOwn(JSON.parse(fs.readFileSync(path.join(root,output.path),'utf8')),'run_contract'),false);
+  assert.throws(()=>assembleCurrentCampaign(root,{sigma9RunContract:'ports/current-acceptance/run-contract-absent-check.json'}),/ENOENT|Task-owned|no such file/iu);
+  fs.rmSync(path.join(root,contractRelative));
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
+});

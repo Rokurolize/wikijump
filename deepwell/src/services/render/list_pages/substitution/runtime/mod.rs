@@ -20,7 +20,8 @@ use super::{
     LISTPAGES_VARIABLE_REGEX, ListPagesDataFormDefinition, ListPagesGeneratedSlot,
     ListPagesParentDisplay, ListPagesRuntimeDisplay, ListPagesRuntimeTextRange,
     ListPagesSnapshotDisplay, RenderService, WikidotCompatLinkTitleMap,
-    WikidotUserDisplay, collect_list_pages_html_body_ranges, escape_html_text,
+    WikidotUserDisplay, collect_list_pages_html_body_ranges,
+    collect_list_pages_html_escape_ranges, escape_html_text,
     format_list_pages_created_at, format_list_pages_rating, ftml,
     is_list_pages_hidden_tag, is_list_pages_visible_tag, list_pages_created_by_slug,
     list_pages_first_paragraph, list_pages_plain_text, list_pages_preview,
@@ -91,6 +92,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
     runtime_title_is_delayed: bool,
 ) -> String {
     let html_body_ranges = collect_list_pages_html_body_ranges(template);
+    let html_escape_ranges = collect_list_pages_html_escape_ranges(template);
     let full_slug = page.slug.as_deref().unwrap_or("");
     // Page-query rows already retain Wikidot's normalized full slug, including
     // a non-default category prefix. Reconstructing it would duplicate that prefix.
@@ -357,6 +359,9 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
             let inside_html_block = html_body_ranges
                 .iter()
                 .any(|range| range.start <= matched.start() && matched.end() <= range.end);
+            let inside_html_escape = html_escape_ranges
+                .iter()
+                .any(|range| range.start <= matched.start() && matched.end() <= range.end);
             substituted_cursor += matched.start() - source_cursor;
             let replacement_start = substituted_cursor;
             let runtime_origin = if generated_slots.is_some()
@@ -416,7 +421,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     .map_or("", |matched| matched.as_str())
                     .to_owned(),
                 "created_by" | "createdby" => {
-                    render_list_pages_substituted_identity(&created_by, inside_html_block)
+                    render_list_pages_substituted_identity(&created_by, inside_html_escape)
                 }
                 "created_by_linked" | "createdbylinked" | "author" => {
                     protect_list_pages_generated_html(
@@ -449,7 +454,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     )
                 }
                 "updated_by" | "updatedby" => {
-                    render_list_pages_substituted_identity(&updated_by, inside_html_block)
+                    render_list_pages_substituted_identity(&updated_by, inside_html_escape)
                 }
                 "updated_by_linked"
                 | "updatedbylinked"
@@ -477,7 +482,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                 }
                 "commented_by"
                 | "commentedby" => {
-                    render_list_pages_substituted_identity(&commented_by, inside_html_block)
+                    render_list_pages_substituted_identity(&commented_by, inside_html_escape)
                 }
                 "commented_by_linked" | "commentedbylinked" => {
                     protect_list_pages_generated_html(
@@ -509,7 +514,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                 "rating_votes" | "ratingvotes" => rating_votes.clone(),
                 "comments" => comments.clone(),
                 "tags" => {
-                    render_list_pages_substituted_identity(&tags_text, inside_html_block)
+                    render_list_pages_substituted_identity(&tags_text, inside_html_escape)
                 }
                 "tags_linked" | "tagslinked"
                     if generated_slots.is_some()
@@ -564,7 +569,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                 "_tags" => {
                     render_list_pages_substituted_identity(
                         &hidden_tags.join(" "),
-                        inside_html_block,
+                        inside_html_escape,
                     )
                 }
                 "category" => context.category.to_owned(),
@@ -660,7 +665,10 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                                 compat_html,
                             )
                         } else {
-                            value
+                            render_list_pages_substituted_identity(
+                                &value,
+                                inside_html_escape,
+                            )
                         }
                     })
                     .unwrap_or_else(|| captures[0].to_owned()),
@@ -688,7 +696,10 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                                 compat_html,
                             )
                         } else {
-                            value
+                            render_list_pages_substituted_identity(
+                                &value,
+                                inside_html_escape,
+                            )
                         }
                     })
                     .unwrap_or_else(|| captures[0].to_owned()),

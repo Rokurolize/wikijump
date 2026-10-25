@@ -10,11 +10,13 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {finalizeVisualAcceptance,reviewCompletionTime} from '../src/finalize-visual-acceptance.mjs';
+import {candidateSourceName} from '../src/theme-package.mjs';
 import {validateCombinedAcceptance,validateBrowserCoverage} from '../src/campaign-completion.mjs';
 import {candidateIdentity} from '../ports/scripts/candidate-identity.mjs';
 import {SEMANTIC_BROWSER_MODEL,validateSemanticBrowserAcceptance,semanticReviewArtifactBindings} from '../src/semantic-browser-acceptance.mjs';
 import {candidateAssetDependencyState} from '../src/candidate-asset-dependencies.mjs';
 import {resolveRunContractPath} from '../src/run-contract-path.mjs';
+import {DEFAULT_SIGMA9_RUN_CONTRACT,auditMatchesRunContract,resolveRunContractOption,runContractArgument} from '../src/current-run-contract-option.mjs';
 import {currentPackageFullCheckInputBindings} from '../src/full-check-input-bindings.mjs';
 import {prepareCanonicalChildOutputDirectory,prepareContainedOutputFile,resolveExistingContainedFile,resolveExistingPackageDirectory,resolveExistingPackageFile} from '../src/package-path.mjs';
 import {currentPackageBaseCss} from '../src/candidate-base-contract.mjs';
@@ -33,7 +35,7 @@ if(!Object.hasOwn(ledger.packages,name))throw new Error('Unknown maintained pack
 const read=file=>fs.readFile(path.resolve(file));
 const raw=JSON.parse(await read(value('--result'))),review=JSON.parse(await read(value('--review'))),audit=JSON.parse(await read(value('--audit'))),scenarioMatrix=JSON.parse(await read(value('--scenario-matrix')));
 const dir=resolveExistingPackageDirectory(path.join(root,'ports'),name,`${name}: package directory`),pkg=ledger.packages[name];
-const sourcePath=resolveExistingPackageFile(dir,pkg.source_file??'candidate.wikidot.source.txt',`${name}: source file`);
+const sourcePath=resolveExistingPackageFile(dir,candidateSourceName(dir,pkg),`${name}: source file`);
 const cssPath=resolveExistingPackageFile(dir,'candidate.css',`${name}: candidate CSS`),previewPath=resolveExistingPackageFile(dir,'candidate.wikidot.txt',`${name}: preview source`);
 const base=currentPackageBaseCss(dir,name)??Buffer.alloc(0);
 const [css,source,preview]=await Promise.all([fs.readFile(cssPath),fs.readFile(sourcePath),fs.readFile(previewPath)]);
@@ -42,7 +44,9 @@ const candidate=candidateIdentity(css,base).candidateSha;
 let structurePath=null;try{structurePath=resolveExistingPackageFile(dir,'acceptance-structure.json',`${name}: acceptance structure`)}catch(error){if(error.code!=='ENOENT')throw error}
 const structureBytes=structurePath?await fs.readFile(structurePath):null;
 const candidateStructureSha=structureBytes?sha(structureBytes):null;
-const runContractPath=resolveExistingContainedFile(root,'ports/current-acceptance/run-contract.json','Current browser run contract');
+const explicitRunContract=runContractArgument(args);
+const runContractRelative=resolveRunContractOption(root,explicitRunContract);
+const runContractPath=resolveExistingContainedFile(root,runContractRelative,'Current browser run contract');
 const runContract=JSON.parse(await fs.readFile(runContractPath,'utf8'));
 const expectedRuntimeSourceSha=requireRuntimeSourceSha(runContract.expected_runtime_source_sha256,'current Sigma-9 run contract');
 requireDeepwellRuntimeIdentity(runContract.expected_backend_runtime_identity,'current Sigma-9 run contract');
@@ -53,13 +57,14 @@ const [runtimeSupportCss,baselineCss]=await Promise.all([
 const assetDependencySha=candidateAssetDependencyState({portsDir:path.join(root,'ports'),themeDir:dir,runtimeSupportCss,baselineCss,baseCss:base,candidateCss:css,candidateSource:source}).asset_dependency_sha256;
 const fullCheckBindings=currentPackageFullCheckInputBindings(root,name);
 const browserRoot=args.includes('--browser-root')?path.resolve(value('--browser-root')):path.resolve(root,'../../../framerail');
-const canonicalScenario=validateCanonicalScenarioMatrix({root,packageName:name,generation:'sigma9',matrix:scenarioMatrix,browserVersions:playwrightBrowserVersions(browserRoot)});
+const canonicalScenario=validateCanonicalScenarioMatrix({root,packageName:name,generation:'sigma9',runContract:explicitRunContract===null?null:runContractRelative,matrix:scenarioMatrix,browserVersions:playwrightBrowserVersions(browserRoot)});
 const subset={...audit,canonical_scenario:scenarioMatrix,records:audit.records.filter(row=>row.theme===name)};
 const failures=validateBrowserCoverage(subset,[name]);
+if(runContractRelative!==DEFAULT_SIGMA9_RUN_CONTRACT)failures.push(...auditMatchesRunContract(subset.records,await fs.readFile(runContractPath)));
 const semantic=subset.acceptance_model===SEMANTIC_BROWSER_MODEL;
 const rawResult=raw.result??raw;
 failures.push(...targetRuntimeIdentityFailures(rawResult,currentTargetRuntimeSourceSha(root),runContract.expected_backend_runtime_identity));
-const captureContracts=semantic?readCurrentBrowserContracts(root,'ports/current-acceptance/run-contract.json',{browserRoot}):null;
+const captureContracts=semantic?readCurrentBrowserContracts(root,runContractRelative,{browserRoot}):null;
 if(semantic){
  failures.push(...validateSemanticBrowserAcceptance(subset).failures, ...validateSemanticSourceAuthority(root,subset));
  try{

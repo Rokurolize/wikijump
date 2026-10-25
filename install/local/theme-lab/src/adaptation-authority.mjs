@@ -7,7 +7,9 @@ import {closedDrawerBounds} from './viewport-bounds.mjs';
 import {candidatePageTags,materializeDefaultCss} from './runtime-theme-css.mjs';
 import {validateFrozenHistoryResponse} from './frozen-history-replay.mjs';
 import {validateFrozenPagePreview} from './frozen-page-preview-replay.mjs';
+import {evidenceRoots,resolveEvidenceFile} from './evidence-roots.mjs';
 import {resolveExistingContainedFile,resolveExistingPackageDirectory,resolveExistingPackageFile} from './package-path.mjs';
+import {adaptationInputNames} from './theme-package.mjs';
 
 export function verifyGeneratedLineAuthority(receipt) {
   const captures = receipt.rows?.filter(row => row.state === 'header-line-layout') ?? [];
@@ -144,17 +146,23 @@ export function validateAuthority(row) {
   return row;
 }
 
-export function verifyEvidence(rows, root = ports) {
+// `root` is the ports root. When it is the default checkout root, authority
+// evidence missing (or hash-mismatching) locally may be served from the shared
+// evidence cache; the root that resolves a receipt is the only root its nested
+// artifacts are validated against. An explicit `root` never falls back unless
+// `sharedRoot` is also given.
+export function verifyEvidence(rows, root = ports, {sharedRoot} = {}) {
+  const roots = evidenceRoots(root, ports, sharedRoot);
   for (const row of rows) {
     validateAuthority(row);
     if (!PUBLISHABLE_AUTHORITIES.has(row.authority)) continue;
     const requiredStates=row.scope?.states??(row.scope?.state?[row.scope.state]:[]);
     const observedStates=new Set();
     for (const evidence of row.evidence) {
-      const file = resolveExistingContainedFile(root,evidence.path,'authority evidence');
-      if (digest(fs.readFileSync(file)) !== evidence.sha256) throw new Error(`stale authority evidence: ${evidence.path}`);
+      const {file, root: evidenceRoot, bytes} = resolveEvidenceFile(roots,evidence.path,'authority evidence',evidence.sha256);
       if (row.authority.includes('CERTIFIED')) {
-        const receipt = JSON.parse(fs.readFileSync(file, 'utf8'));
+        const root = evidenceRoot;
+        const receipt = JSON.parse(bytes.toString('utf8'));
         if (receipt.schema !== 'theme_lab_wikidot_adaptation_ab.v1' || receipt.public_writes !== 0 || !receipt.url || !receipt.observed_at || !receipt.snapshot?.entry) throw new Error(`invalid Wikidot A/B authority receipt: ${evidence.path}`);
         verifyFrozenHistoryAuthority(receipt,path.dirname(file),root);
         verifyFrozenPagePreviewAuthority(receipt,path.dirname(file),root);
@@ -199,9 +207,10 @@ export function authorityInventory(name, root = ports) {
   return pkg;
 }
 
-export function assertPublishablePackage(name, {checkOutputs = false, portsRoot = ports, verifyAuthorityEvidence = true} = {}) {
+export function assertPublishablePackage(name, {checkOutputs = false, portsRoot = ports, verifyAuthorityEvidence = true, sharedEvidenceRoot} = {}) {
   const pkg = authorityInventory(name,portsRoot), dir = resolveExistingPackageDirectory(portsRoot,name,`${name}: package directory`);
-  if(verifyAuthorityEvidence)verifyEvidence(pkg.blocks,portsRoot);
+  const {sourceInputName, publicationSourceNames} = adaptationInputNames(dir);
+  if(verifyAuthorityEvidence)verifyEvidence(pkg.blocks,portsRoot,{sharedRoot:sharedEvidenceRoot});
   for(const block of pkg.blocks) if(block.diagnostic_file && digest(fs.readFileSync(resolveExistingPackageFile(dir,block.diagnostic_file,`${name}: diagnostic file`)))!==block.diagnostic_file_sha256) throw new Error(`${name}: historical diagnostic evidence changed: ${block.marker}`);
   for (const [file, sha] of Object.entries(pkg.inputs)) {
     if (digest(fs.readFileSync(resolveExistingPackageFile(dir,file,`${name}: adaptation input`))) !== sha) throw new Error(`${name}: unreviewed adaptation input ${file}`);
@@ -224,7 +233,7 @@ export function assertPublishablePackage(name, {checkOutputs = false, portsRoot 
     }
   }
   const sourceDisposition=pkg.blocks.find(row=>row.origin==='preserved-source');
-  if(!sourceDisposition || sourceDisposition.sha256!==pkg.inputs[name==='quand-le-soleil-se-couche'?'candidate-template.css':'candidate-input.css']) throw new Error(`${name}: source input lacks matching authority disposition`);
+  if(!sourceDisposition || sourceDisposition.sha256!==pkg.inputs[sourceInputName]) throw new Error(`${name}: source input lacks matching authority disposition`);
   const sourceFile = pkg.source_file;
   const manifestFile=resolveExistingPackageFile(dir,'manifest.json',`${name}: manifest`);
   if(fs.existsSync(manifestFile)) {
@@ -245,7 +254,7 @@ export function assertPublishablePackage(name, {checkOutputs = false, portsRoot 
     if(source!==expected) throw new Error(`${name}: candidate source is not the authority-bound composition`);
   }
   const publicationSources=[source];
-  if(checkOutputs && name==='quand-le-soleil-se-couche')publicationSources.push(fs.readFileSync(resolveExistingPackageFile(dir,'publishable-theme.wikidot.txt',`${name}: publishable theme`),'utf8'));
+  if(checkOutputs)for(const extra of publicationSourceNames)publicationSources.push(fs.readFileSync(resolveExistingPackageFile(dir,extra,`${name}: publishable theme`),'utf8'));
   for (const block of publicationSources.flatMap(extractSCPJPAdaptationBlocks)) {
     const disposition = pkg.blocks.find(r=>r.sha256===block.sha256 && r.marker===block.marker);
     if (!disposition || !PUBLISHABLE_AUTHORITIES.has(disposition.authority)) throw new Error(`${name}: unauthorized publishable adaptation: ${block.marker}`);

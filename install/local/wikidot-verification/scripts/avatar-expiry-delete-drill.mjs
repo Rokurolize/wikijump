@@ -33,7 +33,9 @@ export function usage() {
     "  --operator-ip <ip>       operator IP recorded in the audit trail",
     "  --wait-seconds <n>       expiry wait, must exceed the 60s avatar TTL (default 65)",
     "Secrets come from the environment (never from flags):",
-    "  AVATAR_DRILL_SESSION_TOKEN (deepwell session), AVATAR_DRILL_PROBE_PASSWORD.",
+    "  DEEPWELL_RPC_TOKEN (service token, sent as Authorization Bearer),",
+    "  AVATAR_DRILL_SESSION_TOKEN (staff session, sent as X-Deepwell-Session-Token),",
+    "  AVATAR_DRILL_PROBE_PASSWORD.",
   ].join("\n");
 }
 
@@ -102,10 +104,32 @@ function runCache(container, command) {
   return out === "" ? null : out;
 }
 
+/**
+ * RPC auth headers, split exactly the way deepwell expects: the SERVICE
+ * token (DEEPWELL_RPC_TOKEN) rides Authorization Bearer — RpcAuthLayer
+ * (deepwell/src/middleware/rpc_auth.rs) rejects anything else — and the
+ * staff session rides X-Deepwell-Session-Token, the only header
+ * RequestContextLayer (deepwell/src/middleware.rs) reads the session from.
+ * Putting the session in the Bearer slot proves nothing and 401s.
+ */
+export function rpcHeaders(env) {
+  if (!env.DEEPWELL_RPC_TOKEN) {
+    throw new Error("missing DEEPWELL_RPC_TOKEN (service token for Authorization Bearer)");
+  }
+  if (!env.AVATAR_DRILL_SESSION_TOKEN) {
+    throw new Error("missing AVATAR_DRILL_SESSION_TOKEN (staff session for X-Deepwell-Session-Token)");
+  }
+  return {
+    "content-type": "application/json",
+    authorization: `Bearer ${env.DEEPWELL_RPC_TOKEN}`,
+    "X-Deepwell-Session-Token": env.AVATAR_DRILL_SESSION_TOKEN,
+  };
+}
+
 async function runRpc(url, stepId, method, params, env) {
   const response = await fetch(url, {
     method: "POST",
-    headers: { "content-type": "application/json", ...(env.AVATAR_DRILL_SESSION_TOKEN ? { authorization: `Bearer ${env.AVATAR_DRILL_SESSION_TOKEN}` } : {}) },
+    headers: rpcHeaders(env),
     body: JSON.stringify({ jsonrpc: "2.0", id: stepId, method, params }),
   });
   const payload = await response.json();

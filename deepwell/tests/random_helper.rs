@@ -53,6 +53,7 @@ use deepwell::services::view::{
     GetPageView, GetPageViewOutput, PageRedirectKind, PageRoute, ViewService,
 };
 use deepwell::types::{Action, Permission, Reference, Resource, UserType};
+use sea_orm::{ConnectionTrait, Statement, Value};
 use std::collections::BTreeSet;
 use uuid::Uuid;
 
@@ -482,6 +483,93 @@ async fn helper_redirect_only_fires_on_the_bare_route() {
             "helper with extra '{extra}' must render instead of redirecting",
         );
     }
+
+    runner.teardown().await;
+}
+
+/// Page and served-revision IDs of a view that resolved to a page.
+fn found_ids(view: GetPageViewOutput, slug: &str) -> (i64, i64) {
+    match view {
+        GetPageViewOutput::Found {
+            page,
+            page_revision,
+            ..
+        } => (page.page_id, page_revision.revision_id),
+        _ => panic!("route '{slug}' must resolve to a page view"),
+    }
+}
+
+/// Stamps a fixture page and its served revision with Wikidot import
+/// provenance, the two flags an imported page carries.
+async fn mark_imported(runner: &TestRunner, (page_id, revision_id): (i64, i64)) {
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "UPDATE page SET from_wikidot = TRUE WHERE page_id = $1",
+            [Value::from(page_id)],
+        ))
+        .await
+        .expect("imported page provenance should be recorded");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "UPDATE page_revision SET from_wikidot = TRUE WHERE revision_id = $1",
+            [Value::from(revision_id)],
+        ))
+        .await
+        .expect("imported revision provenance should be recorded");
+}
+
+#[tokio::test]
+async fn helper_redirects_when_the_page_is_imported_from_wikidot() {
+    let mut runner = TestRunner::setup().await;
+    let (site_id, session_token) = setup_fixture_site(&mut runner).await;
+
+    // Imported pages carry Wikidot provenance on the page and its served
+    // revision. That provenance selects the Redirect-module branch, which
+    // finds no module on a helper page. The helper must still select and
+    // redirect instead of rendering its ListPages body.
+    let helper = found_ids(
+        helper_view(&runner, site_id, &session_token, "random:helper-main", "").await,
+        "random:helper-main",
+    );
+    mark_imported(&runner, helper).await;
+
+    let mut seen = BTreeSet::new();
+    for _ in 0..40 {
+        let target = redirect_target(
+            helper_view(&runner, site_id, &session_token, "random:helper-main", "").await,
+            "random:helper-main",
+        )
+        .expect("an imported helper must redirect while eligible pages exist");
+        assert!(
+            target == "alpha-one" || target == "alpha-two",
+            "imported helper must stay inside the eligible set, got '{target}'",
+        );
+        seen.insert(target);
+    }
+    assert_eq!(
+        seen,
+        BTreeSet::from(["alpha-one".to_owned(), "alpha-two".to_owned()]),
+        "imported helper must visit every eligible page",
+    );
+
+    // Negative control: an imported ordinary page with no helper body and no
+    // Redirect module keeps rendering instead of redirecting.
+    let plain = found_ids(
+        helper_view(&runner, site_id, &session_token, "alpha-one", "").await,
+        "alpha-one",
+    );
+    mark_imported(&runner, plain).await;
+    assert_eq!(
+        redirect_target(
+            helper_view(&runner, site_id, &session_token, "alpha-one", "").await,
+            "alpha-one",
+        ),
+        None,
+        "an imported page without a redirect source must render",
+    );
 
     runner.teardown().await;
 }

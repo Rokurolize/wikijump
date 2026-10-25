@@ -12,6 +12,7 @@ import {promisify} from "node:util";
 const execFile = promisify(execFileCallback);
 
 import {screenshot, setViewport} from "./browser-lab.mjs";
+import {movePointerToSafeArea} from "./pointer-park.mjs";
 
 export const DEFAULT_VISUAL_RMSE_THRESHOLD = 0.015;
 
@@ -76,6 +77,8 @@ export async function captureVisualPair({
     if (referencePage) {
       referencePath = path.join(outputDir, `reference-${viewport.id}.png`);
       await Promise.all([setViewport(candidatePage, viewport), setViewport(referencePage, viewport)]);
+      // Park both pointers before painting: a pointer left over hover-sensitive chrome opens the drawer.
+      await Promise.all([movePointerToSafeArea(candidatePage), movePointerToSafeArea(referencePage)]);
       await Promise.all([
         screenshot(candidatePage, {path: candidatePath, fullPage}),
         screenshot(referencePage, {path: referencePath, fullPage}),
@@ -87,6 +90,7 @@ export async function captureVisualPair({
       comparisons.push(comparison.then((value) => { results[viewport.id].comparison = value; }));
     } else {
       await setViewport(candidatePage, viewport);
+      await movePointerToSafeArea(candidatePage);
       await screenshot(candidatePage, {path: candidatePath, fullPage});
     }
     results[viewport.id] = {candidate_path: candidatePath, reference_path: referencePath, comparison: null};

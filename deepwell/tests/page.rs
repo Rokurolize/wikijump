@@ -30,6 +30,9 @@ mod theme_previewer;
 #[path = "page/forum.rs"]
 mod forum;
 
+#[path = "page/foreign_source.rs"]
+mod foreign_source;
+
 #[path = "page/membership.rs"]
 mod membership;
 
@@ -4529,6 +4532,127 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
     assert_eq!(served_key, current_key);
     assert!(compiled_body_html.contains(CURRENT_BODY));
     assert!(!compiled_body_html.contains(STALE_BODY));
+}
+
+#[tokio::test]
+async fn category_theme_change_invalidates_article_view_cache() {
+    const SLUG: &str = "theme-cache-fixture";
+    const BODY: &str = "theme cache fixture body";
+    const THEME_URL: &str = "https://themes.example/changed.css";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+    create_listpages_test_page(&mut runner, site_id, SLUG, "Theme cache fixture", BODY)
+        .await;
+
+    let page = PageTable::find()
+        .filter(
+            sea_orm::Condition::all()
+                .add(page::Column::SiteId.eq(site_id))
+                .add(page::Column::Slug.eq(SLUG)),
+        )
+        .one(runner.context().transaction())
+        .await
+        .expect("theme cache page lookup should not fail")
+        .expect("theme cache page should exist");
+    let mut page = page.into_active_model();
+    page.from_wikidot = Set(true);
+    page.update(runner.context().transaction())
+        .await
+        .expect("theme cache page should be marked imported");
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let input = json!({
+        "site_id": site_id,
+        "session_token": null,
+        "route": {"slug": SLUG, "extra": ""},
+        "locales": ["en-US", "en"],
+    });
+
+    // First view populates the anonymous article-view cache.
+    let metadata_before =
+        run_endpoint!(runner, article_view_cache_metadata, input.clone());
+    let key_before = metadata_before
+        .article_page_cache_key
+        .expect("imported static page should have an anonymous cache key");
+    assert!(
+        key_before.contains(":theme="),
+        "cache key must carry the theme fingerprint: {key_before}",
+    );
+    let view_before = run_endpoint!(runner, article_view, input.clone());
+    let GetArticleViewOutput {
+        page:
+            GetPageViewOutput::Found {
+                theme: theme_before,
+                ..
+            },
+        article_page_cache_key: Some(served_key_before),
+        ..
+    } = view_before
+    else {
+        panic!("theme cache fixture should return an article view");
+    };
+    assert_eq!(served_key_before, key_before);
+    assert!(!matches!(theme_before, ThemeSetting::External { .. }));
+
+    // Change the `_default` category theme (the page has no category prefix,
+    // so its theme resolves through `_default`).
+    let default_category = CategoryService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("_default")),
+    )
+    .await
+    .expect("default category should exist");
+    CategoryService::update(
+        runner.context(),
+        site_id,
+        Reference::Id(default_category.category_id),
+        deepwell::services::category::UpdateCategoryBody {
+            theme: Maybe::Set(ThemeSetting::External {
+                url: String::from(THEME_URL),
+            }),
+            ..Default::default()
+        },
+        Some(default_category.settings_revision),
+        SYSTEM_USER_ID,
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("category theme update should be stored");
+
+    // The cache key must change, and the next view must serve the new theme
+    // instead of the previously cached view (issue #2764).
+    let metadata_after =
+        run_endpoint!(runner, article_view_cache_metadata, input.clone());
+    let key_after = metadata_after
+        .article_page_cache_key
+        .expect("page should still have an anonymous cache key after the theme change");
+    assert_ne!(key_before, key_after);
+
+    let view_after = run_endpoint!(runner, article_view, input);
+    let GetArticleViewOutput {
+        page: GetPageViewOutput::Found {
+            theme: theme_after, ..
+        },
+        article_page_cache_key: Some(served_key_after),
+        ..
+    } = view_after
+    else {
+        panic!(
+            "theme cache fixture should return an article view after the theme change"
+        );
+    };
+    assert_eq!(served_key_after, key_after);
+    assert!(
+        matches!(theme_after, ThemeSetting::External { ref url } if url == THEME_URL),
+        "view after the theme change must serve the new theme, got {theme_after:?}",
+    );
 }
 
 #[tokio::test]
@@ -10628,6 +10752,106 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
 }
 
 #[tokio::test]
+async fn wikidot_user_observation_only_identity_resolves_inline_user() {
+    // Refs #2081 residual: an inline [[user]] reference must resolve to an
+    // observed source identity even when no materialized wikidot_user row
+    // exists. That is the live Standing shape (a banked observation with a
+    // stable source ID links userInfo(<id>); only genuinely unknown names
+    // keep the error-inline text). The matrix test above banks full rows
+    // for every extant case, so this test pins the sparse path instead.
+    const OBSERVED_USER_ID: i64 = 19_103_700;
+    const PAGE_SLUG: &str = "fixture-wikidot-observation-only-user";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO known_user (user_id) VALUES ($1)",
+            [Value::from(OBSERVED_USER_ID)],
+        ))
+        .await
+        .expect("observation-only known-user fixture should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO wikidot_identity_observation (user_id, source_sha256, observed_at, name, slug, source_reference) VALUES ($1, $2, NOW(), 'Observed Author', 'observed-author', 'test observation-only fixture')",
+            [
+                Value::from(OBSERVED_USER_ID),
+                Value::from(Sha256::digest("test observation-only fixture").to_vec()),
+            ],
+        ))
+        .await
+        .expect("observation-only identity fixture should be inserted");
+
+    let source = "OBS=[[user Observed Author]]\n";
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Wikidot observation-only user",
+            "wikitext": source,
+        }),
+    );
+    let html = preview.body;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PAGE_SLUG,
+        "Fixture Wikidot observation-only user",
+        source,
+    )
+    .await;
+    let saved_page = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let saved_html = match saved_page {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected saved observation-only user page, got {other:?}"),
+    };
+
+    for (label, output) in [
+        ("preview", html.as_str()),
+        ("saved page", saved_html.as_str()),
+    ] {
+        assert!(
+            output.contains("https://www.wikidot.com/user:info/observed-author")
+                && output.contains(&format!(
+                    "WIKIDOT.page.listeners.userInfo({OBSERVED_USER_ID}); return false;"
+                ))
+                && output.contains(">Observed Author</a>"),
+            "{label} observation-only identity must link the stable source ID:\n{output}",
+        );
+        assert!(
+            !output.contains("does not match any existing user name"),
+            "{label} must not error-inline a banked observation:\n{output}",
+        );
+    }
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
 async fn basalt_runtime_state_users_rerender_identity_profile_subtrees() {
     let runtime_state: serde_json::Value = serde_json::from_str(include_str!(
         "../../install/local/wikidot-verification/fixtures/open87-basalt-users/runtime-state.json"
@@ -11731,13 +11955,13 @@ async fn request_argument_page_views_do_not_persist_hosted_text_blocks() {
             "PAGER_START\n",
             "[[module ListPages name=\"fixture-readonly-view-target-*\" order=\"title\" separate=\"no\" perPage=\"1\" limit=\"2\"]]\n",
             "PAGER %%title%%\n",
-            "[[html]]<p>PAGER_BLOCK %%title%%</p>[[/html]]\n",
+            "PAGER_BLOCK %%title%%\n",
             "[[/module]]\n",
             "PAGER_END\n",
             "TAG_START\n",
             "[[module ListPages name=\"fixture-readonly-view-target-*\" tags=\"@URL\" order=\"title\" separate=\"no\" limit=\"2\"]]\n",
             "TAG %%title%%\n",
-            "[[html]]<p>TAG_BLOCK %%title%%</p>[[/html]]\n",
+            "TAG_BLOCK %%title%%\n",
             "[[/module]]\n",
             "TAG_END",
         ),
@@ -22887,10 +23111,17 @@ async fn listpages_template_body_over_the_render_budget_remains_literal() {
     let template_body = |sentinel: &str, bytes: usize| {
         let variable = "%%title%%";
         assert!(sentinel.len() + variable.len() <= bytes);
-        format!(
-            "{sentinel}{}{variable}",
-            "x".repeat(bytes - sentinel.len() - variable.len()),
-        )
+        // The render budget counts bytes while the page-source limit
+        // counts characters (200,001 max), so the filler is multibyte:
+        // the body reaches the byte budget while the page itself stays
+        // within the source limit.
+        let fill_bytes = bytes - sentinel.len() - variable.len();
+        let fill = format!(
+            "{}{}",
+            "\u{3042}".repeat(fill_bytes / 3),
+            "x".repeat(fill_bytes % 3),
+        );
+        format!("{sentinel}{fill}{variable}")
     };
     let module_source = |body: &str| {
         format!(
@@ -24709,7 +24940,7 @@ INSERT INTO wikidot_corpus_import_run (
             [
                 Value::from(import_run_id),
                 Value::from(site_id),
-                Value::from(format!("author-selector-test-{import_run_id}")),
+                Value::from("author-selector-test"),
                 Value::from(row_count),
             ],
         ))
@@ -24758,7 +24989,7 @@ INSERT INTO wikidot_page_snapshot (
 "#,
             [
                 Value::from(page_id),
-                Value::from(format!("author-selector-test-{import_run_id}")),
+                Value::from("author-selector-test"),
                 Value::from(format!(
                     "71300000-0000-4000-8000-{source_entity_suffix:012x}"
                 )),

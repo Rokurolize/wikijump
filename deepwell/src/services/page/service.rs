@@ -53,11 +53,70 @@ use sea_orm::{
     FromQueryResult, IntoActiveModel, QueryFilter, QueryOrder, QuerySelect, Set,
     Statement, Value,
 };
+use sea_query::Expr;
 use std::net::IpAddr;
 use wikidot_normalize::normalize;
 
+/// Largest accepted page source, in characters (Unicode scalar values).
+///
+/// Wikidot rejects page saves whose source is longer than this. The bound
+/// was measured empirically on a Wikidot sandbox (2026-10-24, via the same
+/// save path the editor uses): a source of 200,001 characters saves and
+/// round-trips exactly, while 200,002 characters is rejected, for ASCII
+/// and multibyte sources alike (so the unit is characters, not bytes).
+/// Large real pages corroborate it: every sampled page over 190,000
+/// characters on scp-wiki / scp-jp sits just below the bound (the largest
+/// found was 199,898 characters).
+pub const MAX_PAGE_SOURCE_LENGTH: usize = 200_001;
+
+/// Reject a page source longer than Wikidot would accept.
+fn check_page_source_length(wikitext: &str) -> Result<()> {
+    let length = wikitext.chars().count();
+    if length > MAX_PAGE_SOURCE_LENGTH {
+        return Err(Error::new(
+            format!(
+                "page source is {length} characters, which exceeds the maximum of {MAX_PAGE_SOURCE_LENGTH} characters"
+            ),
+            ErrorType::Page,
+        )
+        .into());
+    }
+    Ok(())
+}
+
 #[derive(Debug)]
 pub struct PageService;
+
+/// SQL predicate fragment hiding foreign include-source snapshots from
+/// site-page queries (issue #2690).
+///
+/// A snapshot page belongs to the site when its source names the site
+/// itself or one of the corpus branches the site imports from; rows
+/// without snapshots (locally created pages) always belong. Anything else
+/// is cross-site include-source storage (for example `d3-readonly-assets`
+/// pages held inside `scp-wiki` so that
+/// `[[include :d3-readonly-assets:…]]` resolves) and must not be served as
+/// a page of the holding site — though `fetch_imported_cross_site_source`
+/// keeps resolving those rows by (`source_site`, `source_fullname`).
+///
+/// `page_id_ref` is the SQL reference to the outer page row (for example
+/// `page.page_id`); `site_id` is inlined as a literal because it is always
+/// a server-side integer, never caller input. A branch code only ever
+/// matches its own corpus branch, so foreign import runs must keep using
+/// dated one-off branch names (as the existing `d3-readonly-*` runs do)
+/// rather than the bare source site name, or their pages would read as
+/// own.
+pub(in crate::services) fn foreign_snapshot_exclusion_sql(
+    page_id_ref: &str,
+    site_id: i64,
+) -> String {
+    format!(
+        "NOT EXISTS (SELECT 1 FROM wikidot_page_snapshot snapshot \
+         WHERE snapshot.page_id = {page_id_ref} \
+         AND snapshot.source_site NOT IN (SELECT slug FROM \"site\" WHERE site_id = {site_id}) \
+         AND snapshot.source_site NOT IN (SELECT DISTINCT source_branch FROM wikidot_corpus_import_run WHERE site_id = {site_id}))"
+    )
+}
 
 impl PageService {
     /// Resolve display-name-only page lifecycle identities.
@@ -175,6 +234,8 @@ WHERE page.site_id = $1
             ip_address,
         }: CreatePage,
     ) -> Result<CreatePageOutput> {
+        check_page_source_length(&wikitext)?;
+
         let txn = ctx.transaction();
 
         // Ensure slug is normalized
@@ -340,6 +401,10 @@ WHERE page.site_id = $1
             ip_address,
         }: EditPage<'_>,
     ) -> Result<Option<EditPageOutput>> {
+        if let Some(wikitext) = wikitext.to_option() {
+            check_page_source_length(wikitext)?;
+        }
+
         let txn = ctx.transaction();
 
         let PageModel {
@@ -1165,6 +1230,32 @@ WHERE page.site_id = $1
         site_id: i64,
         reference: Reference<'_>,
     ) -> Result<Option<PageModel>> {
+        Self::get_optional_impl(ctx, site_id, reference, true).await
+    }
+
+    /// Gets a page like [`Self::get_optional`], but without the foreign
+    /// snapshot exclusion.
+    ///
+    /// This is only for callers that have already established the page's
+    /// identity through the snapshot store itself: cross-site include
+    /// resolution, which finds foreign include-source snapshots by
+    /// (`source_site`, `source_fullname`) precisely so they can be read
+    /// as include sources (issue #2690). Ordinary page surfaces must use
+    /// [`Self::get_optional`] so foreign snapshots stay hidden there.
+    pub async fn get_optional_including_foreign_snapshots(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        reference: Reference<'_>,
+    ) -> Result<Option<PageModel>> {
+        Self::get_optional_impl(ctx, site_id, reference, false).await
+    }
+
+    async fn get_optional_impl(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        reference: Reference<'_>,
+        exclude_foreign_snapshots: bool,
+    ) -> Result<Option<PageModel>> {
         let txn = ctx.transaction();
         let page = {
             let condition = match reference {
@@ -1175,13 +1266,21 @@ WHERE page.site_id = $1
                 }
             };
 
+            let mut condition = Condition::all()
+                .add(condition)
+                .add(page::Column::SiteId.eq(site_id))
+                .add(page::Column::DeletedAt.is_null());
+            if exclude_foreign_snapshots {
+                // Foreign include-source snapshots are storage, not
+                // pages of this site (issue #2690).
+                condition = condition.add(Expr::cust(foreign_snapshot_exclusion_sql(
+                    "page.page_id",
+                    site_id,
+                )));
+            }
+
             Page::find()
-                .filter(
-                    Condition::all()
-                        .add(condition)
-                        .add(page::Column::SiteId.eq(site_id))
-                        .add(page::Column::DeletedAt.is_null()),
-                )
+                .filter(condition)
                 .one(txn)
                 .await
                 .or_raise(|| Error::new("failed to get page", ErrorType::Page))?
@@ -1637,4 +1736,31 @@ fn assert_latest_revision(page: &PageModel) {
         page.slug,
         page.site_id,
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{MAX_PAGE_SOURCE_LENGTH, check_page_source_length};
+
+    #[test]
+    fn page_source_length_at_max_is_accepted() {
+        let source = "x".repeat(MAX_PAGE_SOURCE_LENGTH);
+        assert!(check_page_source_length(&source).is_ok());
+    }
+
+    #[test]
+    fn page_source_length_over_max_is_rejected() {
+        let source = "x".repeat(MAX_PAGE_SOURCE_LENGTH + 1);
+        assert!(check_page_source_length(&source).is_err());
+    }
+
+    #[test]
+    fn page_source_length_counts_characters_not_bytes() {
+        // Each of these characters is three bytes in UTF-8; the limit is
+        // on the character count, as measured against Wikidot.
+        let source = "\u{3042}".repeat(MAX_PAGE_SOURCE_LENGTH);
+        assert!(check_page_source_length(&source).is_ok());
+        let source = "\u{3042}".repeat(MAX_PAGE_SOURCE_LENGTH + 1);
+        assert!(check_page_source_length(&source).is_err());
+    }
 }

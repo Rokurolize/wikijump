@@ -142,6 +142,9 @@ for(const theme of campaign.themes) {
 const assetRoot=path.join(ports,'shared-replay-assets');
 index.assets=[];
 for(const name of (await fs.readdir(assetRoot)).sort()) {
+  // Git attributes describe how these content-addressed assets are stored; they
+  // are repository metadata, not assets whose basenames must carry their hash.
+  if(name==='.gitattributes')continue;
   const file=path.join(assetRoot,name);if(!(await fs.stat(file)).isFile())continue;
   const bytes=await fs.readFile(file),hash=digest(bytes);
   if(!name.startsWith(hash+'.'))throw new Error(`corrupt shared replay asset: ${name}`);
