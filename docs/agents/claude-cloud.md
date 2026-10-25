@@ -31,10 +31,13 @@ One-time account steps in a terminal: run `claude`, then
 `.claude/settings.json` registers a SessionStart hook that runs
 `scripts/claude-cloud-maintenance.sh`. The hook no-ops outside cloud
 sessions (`CLAUDE_CODE_REMOTE` is not `true`), so local machines are
-never touched. In the cloud it re-activates the pinned toolchains,
-refreshes dependency prefetches, and starts PostgreSQL/Redis through
-the services helper (the environment snapshot restores files, not
-processes).
+never touched. In the cloud it hands the pinned toolchain PATH to the
+session through `CLAUDE_ENV_FILE` (a hook's own exports do not reach
+the session), refreshes dependency prefetches, and starts
+PostgreSQL/Redis through the services helper (the environment
+snapshot restores files, not processes). The helper creates the
+`wikijump_claude` database only if it is missing and never wipes
+state, so a resumed session keeps its data.
 
 ## Working rules in cloud sessions
 

@@ -12,8 +12,8 @@ if [[ "${CLAUDE_CODE_REMOTE:-}" != "true" ]]; then
   exit 0
 fi
 
-script_revision=2026-10-26.1
-required_node_major=24
+script_revision=2026-10-26.2
+node_version=24.22.1
 required_rust_version=1.95.0
 pnpm_version=11.10.0
 trusted_node24_dir=/opt/wikijump/trusted-node24
@@ -49,14 +49,24 @@ fi
 cd "$repo"
 
 if [[ ! -x "$trusted_node24_dir/bin/node" ]]; then
-  printf 'Trusted Node %s is missing; the environment setup script has not run. Run it from the environment settings.\n' "$required_node_major" >&2
+  printf 'Trusted Node %s is missing; the environment setup script has not run. Run it from the environment settings.\n' "$node_version" >&2
   exit 1
 fi
 export PATH="$trusted_node24_dir/bin:$HOME/.cargo/bin:$PATH"
 hash -r
-[[ "$(node -p 'process.versions.node.split(".")[0]')" == "$required_node_major" ]]
+[[ "$(node --version)" == "v$node_version" ]]
 rustup default "$required_rust_version" >/dev/null 2>&1 || true
 printf 'Using %s / %s\n' "$(node --version)" "$(rustc --version)"
+
+# A hook's own exports die with the hook process. Hand the toolchain
+# PATH to the session itself through CLAUDE_ENV_FILE, which Claude
+# Code sources when the session starts.
+if [[ -n "${CLAUDE_ENV_FILE:-}" ]]; then
+  # $PATH is written literally on purpose: it must expand when Claude
+  # Code sources the env file, not when this hook runs.
+  # shellcheck disable=SC2016
+  printf 'export PATH=%s:$PATH\n' "$trusted_node24_dir/bin:$HOME/.cargo/bin" >>"$CLAUDE_ENV_FILE"
+fi
 
 installed_pnpm=$(pnpm --version 2>/dev/null || true)
 if [[ "$installed_pnpm" != "$pnpm_version" ]]; then
