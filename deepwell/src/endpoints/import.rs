@@ -25,8 +25,8 @@ use crate::services::import::{
     ImportFileDeleteOutput, ImportFileOutput, ImportPage, ImportPageFilesVerify,
     ImportPageFilesVerifyOutput, ImportPageOutput, ImportPageRevision,
     ImportPageRevisionOutput, ImportPageVotes, ImportPageVotesOutput, ImportService,
-    ImportSite, ImportSiteOutput, ImportUser, ImportUserOutput, PromoteObservedIdentity,
-    PromoteObservedIdentityOutput,
+    ImportSite, ImportSiteOutput, ImportSiteRoster, ImportSiteRosterOutput, ImportUser,
+    ImportUserOutput, PromoteObservedIdentity, PromoteObservedIdentityOutput,
 };
 
 pub async fn import_wikidot_discussion(
@@ -83,6 +83,26 @@ pub async fn import_wikidot_site(
     ImportService::add_site(ctx, input).await.or_raise(|| {
         Error::new("failed to import wikidot site", ErrorType::DatabaseImport)
     })
+}
+
+pub async fn import_wikidot_site_roster(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<ImportSiteRosterOutput> {
+    MutationAuthorization::require_platform_staff(
+        ctx,
+        "import Wikidot site roster data",
+    )?;
+    let input: ImportSiteRoster = parse!(params, DatabaseImport);
+    info!("Syncing imported roster for site ID {}", input.site_id);
+    ImportService::sync_site_roster(ctx, input)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to sync imported site roster",
+                ErrorType::DatabaseImport,
+            )
+        })
 }
 
 pub async fn import_wikidot_page(

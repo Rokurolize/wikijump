@@ -35,6 +35,8 @@ pub use self::structs::{
     ImportFileOutput, ImportMetaTag, ImportPage, ImportPageFilesVerify,
     ImportPageFilesVerifyOutput, ImportPageOutput, ImportPageRevision,
     ImportPageRevisionOutput, ImportPageVote, ImportPageVotes, ImportPageVotesOutput,
-    ImportSite, ImportSiteOutput, ImportUser, ImportUserOutput, ImportedUserType,
-    ObservedUserProfile, PromoteObservedIdentity, PromoteObservedIdentityOutput,
+    ImportSite, ImportSiteMember, ImportSiteOutput, ImportSiteRoster,
+    ImportSiteRosterOutput, ImportUser, ImportUserOutput, ImportedSiteRole,
+    ImportedUserType, ObservedUserProfile, PromoteObservedIdentity,
+    PromoteObservedIdentityOutput,
 };
