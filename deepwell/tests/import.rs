@@ -36,6 +36,11 @@ use deepwell::models::known_user::Entity as KnownUser;
 use deepwell::models::relation::{Column as RelationColumn, Entity as RelationTable};
 use deepwell::models::role::ActiveModel as RoleActiveModel;
 use deepwell::models::site::Entity as SiteTable;
+
+use deepwell::models::page::{Column as PageColumn, Entity as PageTable};
+use deepwell::models::page_revision::{
+    Column as PageRevisionColumn, Entity as PageRevisionTable,
+};
 use deepwell::models::user::Entity as User;
 use deepwell::models::user_role::{Column as UserRoleColumn, Entity as UserRoleTable};
 use deepwell::models::wikidot_user::Entity as WikidotUser;
@@ -44,15 +49,15 @@ use deepwell::services::file::FileService;
 use deepwell::services::file_revision::{CreateFirstFileRevision, FileRevisionService};
 use deepwell::services::import::{
     ImportFile, ImportFileDelete, ImportFileExpectation, ImportMetaTag, ImportPage,
-    ImportPageFilesVerify, ImportService, ImportSite, ImportSiteMember, ImportSiteRoster,
-    ImportUser, ImportedSiteRole, ImportedUserType, MAX_IMPORT_FILE_BYTES,
-    ObservedUserProfile, PromoteObservedIdentity,
+    ImportPageFilesVerify, ImportPageRevision, ImportService, ImportSite,
+    ImportSiteMember, ImportSiteRoster, ImportUser, ImportedSiteRole, ImportedUserType,
+    MAX_IMPORT_FILE_BYTES, ObservedUserProfile, PromoteObservedIdentity,
 };
 use deepwell::services::mirror_scope::{MirrorScopeService, SetMirrorScope};
 use deepwell::services::page_meta_tag::{PageMetaTag, PageMetaTagService};
 use deepwell::services::user::{CreateUser, User as ServiceUser, UserService};
 use deepwell::services::{RequestContext, ServiceContext};
-use deepwell::types::{FileRevisionType, Reference, UserType};
+use deepwell::types::{FileRevisionType, PageRevisionType, Reference, UserType};
 use ftml::data::KarmaLevel;
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, ConnectionTrait, DatabaseBackend,
@@ -2599,4 +2604,295 @@ async fn import_site_roster_rejects_unimported_identity() {
             .is_empty(),
         "a rejected sync writes no relations",
     );
+}
+
+async fn imported_page_count(runner: &TestRunner, site_id: i64, slug: &str) -> u64 {
+    PageTable::find()
+        .filter(PageColumn::SiteId.eq(site_id))
+        .filter(PageColumn::Slug.eq(slug))
+        .count(runner.context().transaction())
+        .await
+        .expect("page row count should succeed")
+}
+
+async fn imported_revision_count(runner: &TestRunner, page_id: i64) -> u64 {
+    PageRevisionTable::find()
+        .filter(PageRevisionColumn::PageId.eq(page_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("revision row count should succeed")
+}
+
+fn import_idempotency_page(runner_page_id: i64, site_id: i64, slug: &str) -> ImportPage {
+    ImportPage {
+        page_id: runner_page_id,
+        site_id,
+        created_at: OffsetDateTime::UNIX_EPOCH,
+        slug: String::from(slug),
+        locked: false,
+        discussion_thread_id: None,
+        ip_address: common::IP_ADDRESS,
+        meta_tags: vec![],
+    }
+}
+
+struct ImportIdempotencyRevision<'a> {
+    revision_id: i64,
+    revision_number: i32,
+    page_id: i64,
+    site_id: i64,
+    author_id: i64,
+    slug: &'a str,
+    title: &'a str,
+    wikitext: &'a str,
+    tags: &'a [&'a str],
+}
+
+fn import_idempotency_revision(
+    params: ImportIdempotencyRevision<'_>,
+) -> ImportPageRevision {
+    ImportPageRevision {
+        revision_id: params.revision_id,
+        revision_type: PageRevisionType::Regular,
+        created_at: OffsetDateTime::UNIX_EPOCH,
+        updated_at: None,
+        revision_number: params.revision_number,
+        page_id: params.page_id,
+        site_id: params.site_id,
+        user_id: params.author_id,
+        wikitext: String::from(params.wikitext),
+        comments: String::from("source import"),
+        title: String::from(params.title),
+        slug: String::from(params.slug),
+        tags: params.tags.iter().map(ToString::to_string).collect(),
+    }
+}
+
+async fn import_idempotency_author(runner: &TestRunner) -> i64 {
+    // page_revision.user_id references known_user, so the revision author
+    // must exist as an imported identity first.
+    let (user_id, _, fixture) = fixture_ids();
+    ImportService::add_user(
+        runner.context(),
+        import_user(user_id, &fixture, "idempotency-author"),
+    )
+    .await
+    .expect("revision author should import");
+    i64::from(user_id)
+}
+
+async fn import_idempotency_current(
+    runner: &TestRunner,
+    site_id: i64,
+    slug: &str,
+) -> (String, Vec<String>, String) {
+    let fetched = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": slug,
+            "details": {"wikitext": true},
+        }),
+    )
+    .expect("imported page should be readable");
+    (
+        fetched.title,
+        fetched.tags,
+        fetched
+            .wikitext
+            .expect("imported source should be readable"),
+    )
+}
+
+#[tokio::test]
+async fn import_page_reimport_identical_snapshot_fails_closed_without_changing_state() {
+    // Refs #2083 item 4: re-running an import over an already-imported
+    // source page must neither duplicate rows nor restore generic seed
+    // content. Deepwell fails the conflicting create closed (the operator
+    // tool reconciles via its adopt/skip/replace flags); this test pins
+    // the fail-closed half: state is byte-identical afterwards.
+    let runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .unwrap()
+        .site
+        .site_id;
+    let author_id = import_idempotency_author(&runner).await;
+
+    let slug = "reimport-idempotency";
+    let page_id = 3_260_000_011;
+    ImportService::add_page(
+        runner.context(),
+        import_idempotency_page(page_id, site_id, slug),
+    )
+    .await
+    .expect("source page should import");
+    ImportService::add_page_revision(
+        runner.context(),
+        import_idempotency_revision(ImportIdempotencyRevision {
+            revision_id: 4_260_000_011,
+            revision_number: 0,
+            page_id,
+            site_id,
+            author_id,
+            slug,
+            title: "Source Title",
+            wikitext: "Source v0 body with [[tabview]].\n",
+            tags: &["admin"],
+        }),
+    )
+    .await
+    .expect("source revision should import");
+
+    // Identical retry with the same stable page ID fails closed. The
+    // conflicting write aborts only its savepoint (repo savepoint idiom),
+    // so the outer transaction stays usable for the unchanged-state
+    // assertions below.
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("re-import savepoint should begin");
+    let error = ImportService::add_page(
+        &ServiceContext::new(runner.state(), &transaction),
+        import_idempotency_page(page_id, site_id, slug),
+    )
+    .await
+    .expect_err("identical page re-import must fail closed");
+    assert_contains_error!(error, ErrorType::DatabaseImport);
+    transaction
+        .rollback()
+        .await
+        .expect("re-import savepoint should roll back");
+
+    // Same slug under a fresh stable ID also fails: never a duplicate row.
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("colliding re-import savepoint should begin");
+    let error = ImportService::add_page(
+        &ServiceContext::new(runner.state(), &transaction),
+        import_idempotency_page(page_id + 1, site_id, slug),
+    )
+    .await
+    .expect_err("slug-colliding page re-import must fail closed");
+    assert_contains_error!(error, ErrorType::DatabaseImport);
+    transaction
+        .rollback()
+        .await
+        .expect("colliding re-import savepoint should roll back");
+
+    // State unchanged: one page row, one revision, source content intact.
+    assert_eq!(imported_page_count(&runner, site_id, slug).await, 1);
+    assert_eq!(imported_revision_count(&runner, page_id).await, 1);
+    let (title, tags, wikitext) =
+        import_idempotency_current(&runner, site_id, slug).await;
+    assert_eq!(title, "Source Title");
+    assert_eq!(tags, ["admin"]);
+    assert!(
+        wikitext.contains("Source v0 body"),
+        "re-import must leave the source revision in place",
+    );
+    assert!(
+        !wikitext.contains("Please customize this page"),
+        "re-import must not restore generic seed content:\n{wikitext}",
+    );
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn import_page_source_update_appends_single_deterministic_revision() {
+    // Refs #2083 item 5: a source update re-imports as exactly one new
+    // revision — the next number is enforced, so refresh is deterministic
+    // rather than a duplicate page or seed/import revision pile-up.
+    let runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .unwrap()
+        .site
+        .site_id;
+    let author_id = import_idempotency_author(&runner).await;
+
+    let slug = "source-update-refresh";
+    let page_id = 3_260_000_021;
+    ImportService::add_page(
+        runner.context(),
+        import_idempotency_page(page_id, site_id, slug),
+    )
+    .await
+    .expect("source page should import");
+    ImportService::add_page_revision(
+        runner.context(),
+        import_idempotency_revision(ImportIdempotencyRevision {
+            revision_id: 4_260_000_021,
+            revision_number: 0,
+            page_id,
+            site_id,
+            author_id,
+            slug,
+            title: "Source Title v0",
+            wikitext: "Source v0 body.\n",
+            tags: &["admin"],
+        }),
+    )
+    .await
+    .expect("source revision should import");
+
+    let output = ImportService::add_page_revision(
+        runner.context(),
+        import_idempotency_revision(ImportIdempotencyRevision {
+            revision_id: 4_260_000_022,
+            revision_number: 1,
+            page_id,
+            site_id,
+            author_id,
+            slug,
+            title: "Source Title v1",
+            wikitext: "Source v1 body with the updated guide.\n",
+            tags: &["admin", "updated"],
+        }),
+    )
+    .await
+    .expect("source update should import");
+    assert_eq!(output.page_revision_number, 1);
+
+    // Skipping a revision number is rejected: the sequence is deterministic.
+    let error = ImportService::add_page_revision(
+        runner.context(),
+        import_idempotency_revision(ImportIdempotencyRevision {
+            revision_id: 4_260_000_023,
+            revision_number: 5,
+            page_id,
+            site_id,
+            author_id,
+            slug,
+            title: "Source Title v5",
+            wikitext: "Skipped sequence body.\n",
+            tags: &["admin"],
+        }),
+    )
+    .await
+    .expect_err("out-of-sequence source revision must fail closed");
+    assert_contains_error!(error, ErrorType::DatabaseImport);
+
+    // Exactly one page row, exactly two revisions, latest content wins.
+    assert_eq!(imported_page_count(&runner, site_id, slug).await, 1);
+    assert_eq!(imported_revision_count(&runner, page_id).await, 2);
+    let (title, tags, wikitext) =
+        import_idempotency_current(&runner, site_id, slug).await;
+    assert_eq!(title, "Source Title v1");
+    assert_eq!(tags, ["admin", "updated"]);
+    assert!(
+        wikitext.contains("updated guide"),
+        "refresh must serve the updated source revision",
+    );
+    assert!(
+        !wikitext.contains("Please customize this page"),
+        "refresh must not restore generic seed content:\n{wikitext}",
+    );
+
+    runner.teardown().await;
 }
