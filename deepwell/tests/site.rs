@@ -797,7 +797,8 @@ async fn newsite_bootstrap_creates_template_pages_and_default_start() {
     );
 
     let fetched = run_endpoint!(runner, site_get, json!({ "site": created.site_id }),)
-        .expect("newly created site should be fetchable");
+        .expect("newly created site should be fetchable")
+        .expect("newly created site should exist");
     assert_eq!(fetched.site.default_page, "start");
 }
 
