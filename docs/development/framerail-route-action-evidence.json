@@ -6,9 +6,9 @@
     "sha256": "1906d7229472694d2afbbea30e65e9e33c39dbc40481f794f4676a4000ac57cb"
   },
   "current_inventory": {
-    "source_revision": "62ed9ef590d87d33660d0d167a727215893a13b3",
+    "source_revision": "d62704f8e265e31c6f4a153f6b9b0df4a99a35c6",
     "path": "docs/development/compatibility-surface-inventory.json",
-    "sha256": "0af7a2460e901d86170d3b24e687fb908a66d243d6af11d5c0110d3fcbd6b47a"
+    "sha256": "9dbe87c74de256b223608ae12f47efb344869b180820c24ba2330003b566f264"
   },
   "records": [
     {
@@ -1526,6 +1526,20 @@
       "temporal": []
     },
     {
+      "surface_id": "framerail-server-action:/?/newSite",
+      "tests": [
+        "framerail/tests/new-site-submission.test.js::a created site redirects to its canonical origin",
+        "framerail/tests/new-site-submission.test.js::pageActions exposes newSite for the compat form post",
+        "framerail/tests/newsite-create-journey.spec.ts::an authenticated submission creates the site and redirects to its origin"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
       "surface_id": "framerail-server-action:/?/parentGet",
       "tests": [
         "framerail/tests/page-parent-action-boundary.test.js::page form initialization gives ParentPane only its parents field"
@@ -1985,6 +1999,20 @@
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/movePermission",
       "tests": [
         "framerail/tests/page-option-form-permission.spec.ts::Move answers with the move-permission dialog and opens no form"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/newSite",
+      "tests": [
+        "framerail/tests/new-site-submission.test.js::a created site redirects to its canonical origin",
+        "framerail/tests/new-site-submission.test.js::pageActions exposes newSite for the compat form post",
+        "framerail/tests/newsite-create-journey.spec.ts::an authenticated submission creates the site and redirects to its origin"
       ],
       "tracking": [
         {

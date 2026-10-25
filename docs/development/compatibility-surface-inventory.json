@@ -4607,6 +4607,11 @@
       "target": "wikijump.framerail"
     },
     {
+      "source": "framerail-server-action:/?/newSite",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
       "source": "framerail-server-action:/?/parentGet",
       "type": "implemented_by",
       "target": "wikijump.framerail"
@@ -4798,6 +4803,11 @@
     },
     {
       "source": "framerail-server-action:/{slug}/{*extra}?/movePermission",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-server-action:/{slug}/{*extra}?/newSite",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
@@ -11615,7 +11625,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "b1ab38f8c5125453c5e127dfae2fdab995569ef3dd4e138a3173c0f8ceb66e64"
+      "source_input_set_sha256": "b3d365859eb8e043c9ac1d855bf448c01faf2afd72c8229b5e2892c2d4ad6431"
     },
     "ftml": {
       "commit": "c36bc5fe655fdb6cd41a563882194493f50008e1",
@@ -11684,7 +11694,7 @@
       },
       {
         "path": "deepwell/src/endpoints/info.rs",
-        "sha256": "253708140d3612b6f88f7ee464dc83d05781b887506a5e00866828db84055b39"
+        "sha256": "2ceefb96514af0205aaf6ac11b214d103af309ef8a98f1a37e5fc20fd01abf1a"
       },
       {
         "path": "deepwell/src/endpoints/link.rs",
@@ -11748,7 +11758,7 @@
       },
       {
         "path": "deepwell/src/endpoints/site.rs",
-        "sha256": "fe88eb98e88ce8686ceed7b34a7288d5350e20a2bd3751378849b93d2f807e0b"
+        "sha256": "48dc8abb7049cfad6d7ccc30a2837f2fbf42b7ffd6bb927f6114eea97d5078e3"
       },
       {
         "path": "deepwell/src/endpoints/text_block.rs",
@@ -11784,7 +11794,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "b20d00898a645455b9ea98dc58647250c0cf24adb73d04a4cae750f32a45f80e"
+        "sha256": "f414a695e2b683d33e319e7fc8deaa6f3fc59b978950e1adf3e6e0f0072751e3"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11792,7 +11802,7 @@
       },
       {
         "path": "docs/development/framerail-route-action-evidence.json",
-        "sha256": "f349853e2e303e3bbf2d426c3b2b3d961788ee4b696469d2c553dea2e5049dbb"
+        "sha256": "c68c0f328bf2b00b2e61be4153de36aae934ca2d428b136ca1ea5e8120db4485"
       },
       {
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
@@ -11872,7 +11882,7 @@
       },
       {
         "path": "framerail/src/lib/server/load/page/page-actions.ts",
-        "sha256": "9f86a2af75d76ffffbce84b97e153411f6117ab2b3d5f8e4544289f520485b66"
+        "sha256": "397df976d2643f49b18921d6318fe6d9b46e03469ba3b9003751c05e2e5fd44d"
       },
       {
         "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",
@@ -11924,7 +11934,7 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/about/+page.svelte",
-        "sha256": "cea601987892135ccb2c7d4ed9cb3561a3c8aa7ad7ed0e6a933e293e560a42b6"
+        "sha256": "029b3d2d9354f4a6753fe5b259c980ea3533e473b5dd77e1e366e9447908be48"
       },
       {
         "path": "framerail/src/routes/[x+2d]/admin/+page.server.ts",
@@ -12259,14 +12269,14 @@
     ]
   },
   "counts": {
-    "total": 1000,
+    "total": 1002,
     "by_kind": {
       "catalog_feature": 210,
       "deepwell_jsonrpc_method": 202,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 27,
       "framerail_route": 39,
-      "framerail_server_action": 119,
+      "framerail_server_action": 121,
       "framerail_xmlrpc_method": 17,
       "missing_page_control": 2,
       "open43_audit_case": 285,
@@ -37175,6 +37185,49 @@
       ]
     },
     {
+      "surface_id": "framerail-server-action:/?/newSite",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:newSite",
+        "framerail/src/routes/+page.server.ts#action:newSite"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/new-site-submission.test.js#a created site redirects to its canonical origin",
+          "framerail/tests/new-site-submission.test.js#pageActions exposes newSite for the compat form post",
+          "framerail/tests/newsite-create-journey.spec.ts#an authenticated submission creates the site and redirects to its origin"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-server-action:/?/parentGet",
       "kind": "framerail_server_action",
       "public_reference": [
@@ -38774,6 +38827,49 @@
       ]
     },
     {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/newSite",
+      "kind": "framerail_server_action",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:newSite",
+        "framerail/src/routes/[slug]/[...extra]/+page.server.ts#action:newSite"
+      ],
+      "existing_refs": {
+        "issues": [
+          1372
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/new-site-submission.test.js#a created site redirects to its canonical origin",
+          "framerail/tests/new-site-submission.test.js#pageActions exposes newSite for the compat form post",
+          "framerail/tests/newsite-create-journey.spec.ts#an authenticated submission creates the site and redirects to its origin"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-action",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/parentGet",
       "kind": "framerail_server_action",
       "public_reference": [
@@ -39949,7 +40045,7 @@
         },
         {
           "path": "framerail/src/lib/server/load/page/page-actions.ts",
-          "sha256": "9f86a2af75d76ffffbce84b97e153411f6117ab2b3d5f8e4544289f520485b66"
+          "sha256": "397df976d2643f49b18921d6318fe6d9b46e03469ba3b9003751c05e2e5fd44d"
         }
       ],
       "specification_owner": "wikijump.registry:missing-page-control",
@@ -40049,7 +40145,7 @@
         },
         {
           "path": "framerail/src/lib/server/load/page/page-actions.ts",
-          "sha256": "9f86a2af75d76ffffbce84b97e153411f6117ab2b3d5f8e4544289f520485b66"
+          "sha256": "397df976d2643f49b18921d6318fe6d9b46e03469ba3b9003751c05e2e5fd44d"
         },
         {
           "path": "framerail/src/lib/server/load/page/page.ts",

@@ -49,6 +49,7 @@ import {
   membershipJoinAction,
   membershipPasswordAction
 } from "$lib/server/load/page/page-membership-actions"
+import { newSitePageAction } from "$lib/server/load/page/page-newsite-actions"
 
 export const pageActions = {
   backlinks: pageBacklinksAction,
@@ -88,6 +89,7 @@ export const pageActions = {
   membershipEmailInvitation: membershipEmailInvitationAction,
   membershipJoin: membershipJoinAction,
   membershipPassword: membershipPasswordAction,
+  newSite: newSitePageAction,
   deletedGet: pageDeletedGetAction,
   restore: pageRestoreAction
 }
