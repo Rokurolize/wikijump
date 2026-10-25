@@ -11,7 +11,10 @@ import {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const layoutSource = fs.readFileSync(path.join(root, "src/routes/+layout.svelte"), "utf8")
-const svelteConfigSource = fs.readFileSync(path.join(root, "sveltekit-options.js"), "utf8")
+const svelteConfigSource = fs.readFileSync(
+  path.join(root, "sveltekit-options.js"),
+  "utf8"
+)
 const serverSource = [
   "src/lib/server/deepwell/index.ts",
   "src/lib/server/deepwell/views.ts",
