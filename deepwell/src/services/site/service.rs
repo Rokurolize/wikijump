@@ -270,13 +270,17 @@ impl SiteService {
         .await
         .or_raise(make_error)?;
 
-        // Some fields can only be set in update after creation
+        // Some fields can only be set in update after creation.
+        // The biography check constraint requires NULL or a non-empty
+        // value, and site creation legitimately carries an empty
+        // description (the creation form has no description field), so
+        // an empty description must become no biography at all.
         UserService::update(
             ctx,
             Reference::Id(user.user_id),
             ip_address,
             UpdateUserBody {
-                biography: Maybe::Set(Some(description)),
+                biography: Maybe::Set((!description.is_empty()).then_some(description)),
                 ..Default::default()
             },
         )

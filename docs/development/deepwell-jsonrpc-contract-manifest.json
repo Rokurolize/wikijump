@@ -10193,7 +10193,8 @@
           "deepwell/tests/site.rs#educational_upgrade_is_site_scoped_and_master_admin_only",
           "deepwell/tests/site.rs#hosted_sites_keep_same_slug_page_state_isolated_at_public_endpoints",
           "deepwell/tests/site.rs#public_site_create_audits_authenticated_actor_and_supplied_ip_once",
-          "deepwell/tests/site.rs#site_create_site_user_relation_and_audit_roll_back_together"
+          "deepwell/tests/site.rs#site_create_site_user_relation_and_audit_roll_back_together",
+          "deepwell/tests/site.rs#site_create_with_empty_description_succeeds"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
