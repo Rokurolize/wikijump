@@ -11615,7 +11615,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "3cc0c1b79fe86ac2be4a6a6bd506ddb388f929e835f33a582ea68c12327672fd"
+      "source_input_set_sha256": "ea269e75b662698d505426456d137d91fb7d9c67a236d0a912054b6b72e5a275"
     },
     "ftml": {
       "commit": "c36bc5fe655fdb6cd41a563882194493f50008e1",
@@ -11848,19 +11848,19 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "5f88ba4230f571e98b754c3c2ef6eeda2c698b384db9ef4bc8f4b50f1a25afda"
+        "sha256": "e90ba3cf34d1adc11a531b0c62b119b46a63f12c62bf940309388e2d0bbcc0c7"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
-        "sha256": "ed8e7d69f7766f9890f6bd70c80a060b92cd4621c3f229e7ff346350807a6e6d"
+        "sha256": "0352a7eefcccdeb44b593c0db7726b9837adb813438cad0ac3df9936d80aaf3c"
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "36e296e0689b86e7a5f9c64e62baca5310bec67809e5531ec860a139f30f6564"
+        "sha256": "d71aee4d9d8364324063368c22a93fe879d1ffc8a7978e1c11f201be979353ef"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
-        "sha256": "09f8d21c9249157018147b2a7e227705da904269bd19771eda9afe56c1149ae3"
+        "sha256": "736882475a3bf678f537019feb4bff9e0e58f17d57a59437d928a4f849c2b841"
       },
       {
         "path": "docs/wikidot-specifications/source-coverage.json",
@@ -12168,7 +12168,7 @@
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
-        "sha256": "36e296e0689b86e7a5f9c64e62baca5310bec67809e5531ec860a139f30f6564"
+        "sha256": "d71aee4d9d8364324063368c22a93fe879d1ffc8a7978e1c11f201be979353ef"
       },
       {
         "path": "wws/src/route.rs",
