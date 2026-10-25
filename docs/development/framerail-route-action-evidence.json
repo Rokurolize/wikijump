@@ -6,9 +6,9 @@
     "sha256": "1906d7229472694d2afbbea30e65e9e33c39dbc40481f794f4676a4000ac57cb"
   },
   "current_inventory": {
-    "source_revision": "62ed9ef590d87d33660d0d167a727215893a13b3",
+    "source_revision": "225c453615a0d4c49b4b7bee2017dec9e56d92e2",
     "path": "docs/development/compatibility-surface-inventory.json",
-    "sha256": "0af7a2460e901d86170d3b24e687fb908a66d243d6af11d5c0110d3fcbd6b47a"
+    "sha256": "6de812b640a33a92a5e8c4da9de4ce11f997d8e5dd5d20c7e3711b1c6337585c"
   },
   "records": [
     {
@@ -1528,13 +1528,13 @@
     {
       "surface_id": "framerail-server-action:/?/newSite",
       "tests": [
-        "framerail/tests/new-site-submission.test.js::pageActions exposes newSite for the compat form post",
         "framerail/tests/new-site-submission.test.js::a created site redirects to its canonical origin",
+        "framerail/tests/new-site-submission.test.js::pageActions exposes newSite for the compat form post",
         "framerail/tests/newsite-create-journey.spec.ts::an authenticated submission creates the site and redirects to its origin"
       ],
       "tracking": [
         {
-          "issue": 2052
+          "issue": 1372
         }
       ],
       "temporal": []
@@ -2010,13 +2010,13 @@
     {
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/newSite",
       "tests": [
-        "framerail/tests/new-site-submission.test.js::pageActions exposes newSite for the compat form post",
         "framerail/tests/new-site-submission.test.js::a created site redirects to its canonical origin",
+        "framerail/tests/new-site-submission.test.js::pageActions exposes newSite for the compat form post",
         "framerail/tests/newsite-create-journey.spec.ts::an authenticated submission creates the site and redirects to its origin"
       ],
       "tracking": [
         {
-          "issue": 2052
+          "issue": 1372
         }
       ],
       "temporal": []
