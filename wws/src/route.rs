@@ -253,7 +253,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         assert_eq!(
             response.text().await.unwrap(),
-            "User-agent: *\nAllow: /\nSitemap: https://preferred.example/sitemap.xml\n"
+            "User-agent: *\nDisallow: /*/p/*/p/\nDisallow: /*/p/*_p/\nDisallow: /*_p/*/p/\nDisallow: /*_p/*_p/\n\nSitemap: https://preferred.example/sitemap.xml\nUser-agent: voltron\nDisallow: /\n"
         );
 
         *preferred_domain.lock().unwrap() = "changed.example".to_owned();
@@ -268,7 +268,7 @@ mod tests {
         assert_eq!(updated.status(), StatusCode::OK);
         assert_eq!(
             updated.text().await.unwrap(),
-            "User-agent: *\nAllow: /\nSitemap: https://changed.example/sitemap.xml\n"
+            "User-agent: *\nDisallow: /*/p/*/p/\nDisallow: /*/p/*_p/\nDisallow: /*_p/*/p/\nDisallow: /*_p/*_p/\n\nSitemap: https://changed.example/sitemap.xml\nUser-agent: voltron\nDisallow: /\n"
         );
 
         let response = client
