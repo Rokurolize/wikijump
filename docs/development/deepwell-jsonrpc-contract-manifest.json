@@ -3,7 +3,7 @@
   "source_identities": {
     "jsonrpc_registry": {
       "path": "deepwell/src/api.rs",
-      "sha256": "dff1a3e1976916bdd1ca909d657cb5f1088c8b7b7e82851dccbe214793d87c44"
+      "sha256": "96e752cd23aaefc31f904ad812b84939e95aea671b8edae01921c74fcc38ef02"
     },
     "request_context_middleware": {
       "path": "deepwell/src/middleware.rs",
@@ -26,7 +26,7 @@
       "classification": "historical"
     }
   ],
-  "method_count": 200,
+  "method_count": 201,
   "methods": [
     {
       "method": "admin_view",
@@ -5149,7 +5149,7 @@
         "component": "deepwell",
         "handler": "mirror_scope_get",
         "source": "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_get",
-        "source_sha256": "1f07f9a201d21f4d13ab4d5c7f25947a1ce222a96d4502b4ae10158b6e2180a0",
+        "source_sha256": "257d8af464a63fd79767d758b93321c13045fcd3900954d1949bd5832d020b2a",
         "function_sha256": "b52674ec596ad8eaa097442eaa97b790ada0c80b542df57ce69fc3d73261ff35"
       },
       "params_schema": {
@@ -5205,12 +5205,67 @@
       }
     },
     {
+      "method": "mirror_scope_reconcile",
+      "endpoint_owner": {
+        "component": "deepwell",
+        "handler": "mirror_scope_reconcile",
+        "source": "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_reconcile",
+        "source_sha256": "257d8af464a63fd79767d758b93321c13045fcd3900954d1949bd5832d020b2a",
+        "function_sha256": "b85290f6bf77ac67d0d5a0580b118b9ed222b5224b2d55f5f079c0348d0908cf"
+      },
+      "params_schema": {
+        "transport": "jsonrpsee::types::params::Params<'static>",
+        "parameter_name": "params",
+        "decoder": "parse!(params, Site)"
+      },
+      "actor_context": {
+        "transport_authentication": {
+          "header_symbol": "AUTHORIZATION",
+          "header": "Authorization",
+          "scheme": "Bearer",
+          "token_format": "64 lowercase hexadecimal characters",
+          "duplicate_values": "rejected"
+        },
+        "request_context_headers": [
+          {
+            "header": "X-Deepwell-Session-Token",
+            "target": "session_token"
+          },
+          {
+            "header": "X-Deepwell-Site-Id",
+            "target": "site_id"
+          },
+          {
+            "header": "X-Deepwell-Page",
+            "target": "page_ref"
+          }
+        ],
+        "requirements": [
+          "mutation_authorization"
+        ],
+        "requirement_sources": [
+          "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_reconcile"
+        ]
+      },
+      "mutation_class": {
+        "classification": "read_only",
+        "source_signals": []
+      },
+      "transaction_isolation": "default",
+      "test_witness": {
+        "kind": "endpoint_behavioral",
+        "reference": "deepwell/tests/mirror_reconcile.rs#reconcile_endpoint_requires_platform_staff",
+        "alternatives": [],
+        "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+      }
+    },
+    {
       "method": "mirror_scope_reconcile_files",
       "endpoint_owner": {
         "component": "deepwell",
         "handler": "mirror_scope_reconcile_files",
         "source": "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_reconcile_files",
-        "source_sha256": "1f07f9a201d21f4d13ab4d5c7f25947a1ce222a96d4502b4ae10158b6e2180a0",
+        "source_sha256": "257d8af464a63fd79767d758b93321c13045fcd3900954d1949bd5832d020b2a",
         "function_sha256": "bdc47e150b310dfe003099ef77d7c6457c1540a6e7520ad989cc38ca43776e01"
       },
       "params_schema": {
@@ -5265,7 +5320,7 @@
         "component": "deepwell",
         "handler": "mirror_scope_set",
         "source": "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_set",
-        "source_sha256": "1f07f9a201d21f4d13ab4d5c7f25947a1ce222a96d4502b4ae10158b6e2180a0",
+        "source_sha256": "257d8af464a63fd79767d758b93321c13045fcd3900954d1949bd5832d020b2a",
         "function_sha256": "e2d76747802a77078dab98a82f7cc8e83646e31b94deabd6180a44a3b1bca5f5"
       },
       "params_schema": {

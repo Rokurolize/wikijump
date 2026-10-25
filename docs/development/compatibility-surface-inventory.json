@@ -3362,6 +3362,11 @@
       "target": "wikijump.deepwell"
     },
     {
+      "source": "deepwell-jsonrpc:mirror_scope_reconcile",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
       "source": "deepwell-jsonrpc:mirror_scope_set",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
@@ -11605,7 +11610,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "f60967ca34f4080ae735f51173a75702b945bafc4a0975b98fff366e7811a88c"
+      "source_input_set_sha256": "0bf1c5fe90c6200231a4b63a1d11fa11eb9af470cb3a7aeadfc3f61b952f44e9"
     },
     "ftml": {
       "commit": "c36bc5fe655fdb6cd41a563882194493f50008e1",
@@ -11622,7 +11627,7 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "dff1a3e1976916bdd1ca909d657cb5f1088c8b7b7e82851dccbe214793d87c44"
+        "sha256": "96e752cd23aaefc31f904ad812b84939e95aea671b8edae01921c74fcc38ef02"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
@@ -11690,7 +11695,7 @@
       },
       {
         "path": "deepwell/src/endpoints/mirror_scope.rs",
-        "sha256": "1f07f9a201d21f4d13ab4d5c7f25947a1ce222a96d4502b4ae10158b6e2180a0"
+        "sha256": "257d8af464a63fd79767d758b93321c13045fcd3900954d1949bd5832d020b2a"
       },
       {
         "path": "deepwell/src/endpoints/normalize.rs",
@@ -11774,7 +11779,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "d653da3dad69a21747dec538a76e28b6dc459eae97631717f9d0a18189149694"
+        "sha256": "f014f19458dbe9a25dd11055cc6c472d4913921d64b4bfdc6537cac4d040a9a8"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11838,7 +11843,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "05c51cddf7a60078b9b8c3ea2d7ee2db4851aa672c8574b8f6a27cd358910a45"
+        "sha256": "95c2007cbc43dfb07c802e2f0e0ba56e99e613b0aff498a02f671c70235945ff"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -12249,10 +12254,10 @@
     ]
   },
   "counts": {
-    "total": 998,
+    "total": 999,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 200,
+      "deepwell_jsonrpc_method": 201,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 27,
       "framerail_route": 39,
@@ -26475,6 +26480,51 @@
         "cases": [],
         "tests": [
           "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/mirror_scope.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:mirror_scope_reconcile",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:mirror_scope_reconcile",
+        "deepwell/src/endpoints/mirror_scope.rs#mirror_scope_reconcile"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/mirror_reconcile.rs#reconcile_endpoint_requires_platform_staff"
         ]
       },
       "evidence": {
