@@ -30,6 +30,22 @@ use axum::response::Response;
 
 const ROBOTS_TXT_ALLOW_ALL: &str = "User-agent: *\nAllow: /\n";
 const ROBOTS_TXT_UNAVAILABLE: &str = "User-agent: *\nDisallow: /\n";
+// The crawler policy Wikidot serves for every public site (evidence:
+// install/local/wikidot-verification/artifacts/wikidot-robots-policy-20261025.json;
+// identical bodies on www/scp-wiki/scp-jp and the wdfiles host, only the
+// Sitemap line varies with the site's canonical origin). The four Disallow
+// patterns keep crawlers out of Wikidot's page-history URL shapes.
+const ROBOTS_TXT_PUBLIC_EXCLUSIONS: &str = "User-agent: *\nDisallow: /*/p/*/p/\nDisallow: /*/p/*_p/\nDisallow: /*_p/*/p/\nDisallow: /*_p/*_p/\n";
+const ROBOTS_TXT_VOLTRON_BLOCK: &str = "User-agent: voltron\nDisallow: /\n";
+
+/// The public-site robots body in Wikidot's shape: the exclusion list, a
+/// blank line, the Sitemap line for the site's preferred domain, and the
+/// voltron block.
+fn public_robots_txt(domain: &str) -> String {
+    format!(
+        "{ROBOTS_TXT_PUBLIC_EXCLUSIONS}\nSitemap: https://{domain}/sitemap.xml\n{ROBOTS_TXT_VOLTRON_BLOCK}"
+    )
+}
 // Crawler policy for sites with no public sitemap inventory: anonymous
 // viewers cannot view the site, so forbid crawling and advertise no sitemap
 // index. Same bytes as the degraded-service body, but a deliberate 200
@@ -66,10 +82,9 @@ pub async fn handle_robots_txt(
         }
     }
     match state.deepwell.get_site_domain(site_id).await {
-        Ok(domain) if valid_site_domain(&domain) => robots_response(
-            &format!("{ROBOTS_TXT_ALLOW_ALL}Sitemap: https://{domain}/sitemap.xml\n"),
-            StatusCode::OK,
-        ),
+        Ok(domain) if valid_site_domain(&domain) => {
+            robots_response(&public_robots_txt(&domain), StatusCode::OK)
+        }
         Ok(domain) => {
             error!(site_id, "invalid preferred sitemap domain: {domain:?}");
             robots_response(ROBOTS_TXT_UNAVAILABLE, StatusCode::SERVICE_UNAVAILABLE)
@@ -158,12 +173,8 @@ mod tests {
     #[tokio::test]
     async fn robots_txt_main_target_advertises_preferred_site_domain() {
         assert!(valid_site_domain("preferred.example"));
-        let response = robots_response(
-            &format!(
-                "{ROBOTS_TXT_ALLOW_ALL}Sitemap: https://preferred.example/sitemap.xml\n"
-            ),
-            StatusCode::OK,
-        );
+        let response =
+            robots_response(&public_robots_txt("preferred.example"), StatusCode::OK);
 
         assert_eq!(response.status(), StatusCode::OK);
         assert_eq!(
@@ -174,7 +185,7 @@ mod tests {
         let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
         assert_eq!(
             body.as_ref(),
-            b"User-agent: *\nAllow: /\nSitemap: https://preferred.example/sitemap.xml\n",
+            b"User-agent: *\nDisallow: /*/p/*/p/\nDisallow: /*/p/*_p/\nDisallow: /*_p/*/p/\nDisallow: /*_p/*_p/\n\nSitemap: https://preferred.example/sitemap.xml\nUser-agent: voltron\nDisallow: /\n",
         );
     }
 

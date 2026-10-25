@@ -3,7 +3,7 @@ import test from "node:test"
 
 const previousFramerailEnvironment = process.env.FRAMERAIL_ENV
 process.env.FRAMERAIL_ENV = "local"
-const { default: config } = await import("../svelte.config.js")
+const { default: config } = await import("../sveltekit-options.js")
 const { AUDITED_EXTERNAL_ASSET_ORIGINS, auditedExternalAssetOrigins } =
   await import("../src/lib/server/audited-external-asset-origins.js")
 if (previousFramerailEnvironment === undefined) {
@@ -11,7 +11,7 @@ if (previousFramerailEnvironment === undefined) {
 } else {
   process.env.FRAMERAIL_ENV = previousFramerailEnvironment
 }
-const directives = config.kit?.csp?.directives
+const directives = config.csp?.directives
 if (!directives) throw new Error("CSP directives are missing")
 
 test("every audited external asset origin is a documented https origin", () => {

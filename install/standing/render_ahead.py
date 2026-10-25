@@ -480,16 +480,11 @@ def render_full_sharded(render, name, cutoff, chunks, *, serial=False, extended=
     return merge_summaries([results[index] for index in sorted(results)])
 
 
-def render_until_links_settle(render, digests, cutoff, timings=None):
-    """Render every stale page once, then the link readers until their links
-    settle. Every successful run ends with an unchanged graph: a reader may
-    have observed links before another concurrent reader rewrote them. A
-    continually moving reader cannot be declared safe without dependency
-    provenance proving that its output is independent of those changes.
+def _digest_snapshot(digests, timings=None):
+    """A link-digest snapshot function that times itself into `timings`.
 
-    When `timings` is a list, each link-digest snapshot appends its stage
-    and wall-clock there: the snapshots scan the whole link graph, so their
-    cost is the controller-side counterpart to the render passes.
+    The snapshots scan the whole link graph, so their cost is the
+    controller-side counterpart to the render passes.
     """
     def snapshot(stage):
         started = time.monotonic()
@@ -499,17 +494,29 @@ def render_until_links_settle(render, digests, cutoff, timings=None):
             if timings is not None:
                 timings.append({"stage": stage, "digest_seconds": time.monotonic() - started})
 
-    links_before = snapshot("links-before-full")
-    _, readers = render_with_deadline_tail(render, "full", cutoff)
-    changed = set(changed_pages(links_before, snapshot("links-after-full")))
+    return snapshot
+
+
+def _settle_link_readers(render, snapshot, readers, changed, *, pass_prefix, stage_prefix):
+    """Render the link readers until a round leaves every link unchanged.
+
+    A reader may have observed links before another render rewrote them, so
+    the readers render again, alone, while digests keep moving. Fails closed
+    when the graph never settles: a continually moving reader cannot be
+    declared safe without dependency provenance proving that its output is
+    independent of those changes. Returns the accumulated reader set and the
+    pages whose links changed in every round.
+    """
+    readers = set(readers)
+    changed = set(changed)
     moving: set[int] | None = None
     for number in range(1, MAX_READER_ROUNDS + 1):
         if not changed or not readers:
             return sorted(readers), sorted(moving or ())
-        links_before = snapshot(f"links-before-readers-{number}")
+        links_before = snapshot(f"links-before-{stage_prefix}readers-{number}")
         requested = sorted(readers)
         selected, round_readers = render_with_deadline_tail(
-            render, f"link-readers-{number}", utc_now(), requested
+            render, f"{pass_prefix}link-readers-{number}", utc_now(), requested
         )
         if selected != len(requested):
             raise RuntimeError(
@@ -517,7 +524,7 @@ def render_until_links_settle(render, digests, cutoff, timings=None):
                 f"{len(requested)} reader pages: {requested[:20]}"
             )
         readers |= round_readers
-        changed = set(changed_pages(links_before, snapshot(f"links-after-readers-{number}")))
+        changed = set(changed_pages(links_before, snapshot(f"links-after-{stage_prefix}readers-{number}")))
         moving = changed if moving is None else moving & changed
     if changed:
         suspected_stochastic = changed & (moving or set())
@@ -528,6 +535,26 @@ def render_until_links_settle(render, digests, cutoff, timings=None):
             "A subsequent reader may have observed an earlier link snapshot"
         )
     return sorted(readers), []
+
+
+def render_until_links_settle(render, digests, cutoff, timings=None):
+    """Render every stale page once, then the link readers until their links
+    settle. Every successful run ends with an unchanged graph: a reader may
+    have observed links before another concurrent reader rewrote them. A
+    continually moving reader cannot be declared safe without dependency
+    provenance proving that its output is independent of those changes.
+
+    When `timings` is a list, each link-digest snapshot appends its stage
+    and wall-clock there.
+    """
+    snapshot = _digest_snapshot(digests, timings)
+
+    links_before = snapshot("links-before-full")
+    _, readers = render_with_deadline_tail(render, "full", cutoff)
+    changed = set(changed_pages(links_before, snapshot("links-after-full")))
+    return _settle_link_readers(
+        render, snapshot, readers, changed, pass_prefix="", stage_prefix=""
+    )
 
 
 def image_identity(image: str) -> str:
@@ -565,19 +592,64 @@ def parse_args() -> argparse.Namespace:
 # A live wiki keeps taking edits while render-ahead runs. A page written
 # after the cutoff has no valid ahead render yet, so verify would report it
 # stale and fail the promotion. Render just those pages and verify again,
-# a bounded number of times, before calling the run incomplete.
+# a bounded number of times, before calling the run incomplete. A catch-up
+# render can itself move the link graph, so the readers are settled again
+# afterwards (see verify_with_catch_up).
 CATCH_UP_ROUNDS = 3
 
 
-def verify_with_catch_up(render, cutoff, rounds: int = CATCH_UP_ROUNDS) -> dict[str, object]:
-    """Verify the whole site, rendering pages written during the run first."""
+def verify_with_catch_up(
+    render,
+    cutoff,
+    digests=None,
+    timings=None,
+    readers=(),
+    rounds: int = CATCH_UP_ROUNDS,
+) -> dict[str, object]:
+    """Verify the whole site, rendering pages written during the run first.
+
+    When `digests` is given, the catch-up renders are bracketed by link
+    digests: an edit caught up here can move the link graph after the main
+    pass's readers already settled, leaving those readers with a stale link
+    view. If any digest moved, the known readers (`readers` from the main
+    pass plus any the catch-up renders report) render again until the graph
+    settles, and a final verify confirms the settle left nothing stale
+    (#2738). Without `digests` the historical behavior is kept.
+    """
     final = render("verify", cutoff, dry_run=True)
+    snapshot = _digest_snapshot(digests, timings) if digests is not None else None
+    links_before_catch_up: dict[str, str] | None = None
+    caught_up_readers: set[int] = set()
     for round_number in range(1, rounds + 1):
         if final["stale_without_valid_ahead"] == 0:
             break
-        render(f"catch-up-{round_number}", cutoff)
+        if snapshot is not None and links_before_catch_up is None:
+            links_before_catch_up = snapshot("links-before-catch-up")
+        summary = render(f"catch-up-{round_number}", cutoff)
+        if snapshot is not None:
+            caught_up_readers |= link_readers(summary)
         final = render(f"verify-{round_number}", cutoff, dry_run=True)
-    return final
+    if (
+        snapshot is None
+        or links_before_catch_up is None
+        or final["stale_without_valid_ahead"] != 0
+    ):
+        return final
+    changed = set(
+        changed_pages(links_before_catch_up, snapshot("links-after-catch-up"))
+    )
+    known_readers = set(readers) | caught_up_readers
+    if not changed or not known_readers:
+        return final
+    _settle_link_readers(
+        render,
+        snapshot,
+        known_readers,
+        changed,
+        pass_prefix="catch-up-",
+        stage_prefix="catch-up-",
+    )
+    return render("verify-after-catch-up", cutoff, dry_run=True)
 
 
 def main() -> int:
@@ -655,7 +727,13 @@ def main() -> int:
         )
         # Verify the whole site, not just the last pass's pages, after
         # catching up on pages written while the run was in progress.
-        final = verify_with_catch_up(render, cutoff)
+        final = verify_with_catch_up(
+            render,
+            cutoff,
+            digests=lambda: link_digests(args.database_container),
+            timings=digest_timings,
+            readers=readers,
+        )
     finally:
         os.unlink(extended_config)
     receipt = {

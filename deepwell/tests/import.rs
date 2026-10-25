@@ -33,21 +33,31 @@ use deepwell::models::file_revision::{
     Column as FileRevisionColumn, Entity as FileRevisionTable,
 };
 use deepwell::models::known_user::Entity as KnownUser;
+use deepwell::models::relation::{Column as RelationColumn, Entity as RelationTable};
+use deepwell::models::role::ActiveModel as RoleActiveModel;
+use deepwell::models::site::Entity as SiteTable;
+
+use deepwell::models::page::{Column as PageColumn, Entity as PageTable};
+use deepwell::models::page_revision::{
+    Column as PageRevisionColumn, Entity as PageRevisionTable,
+};
 use deepwell::models::user::Entity as User;
+use deepwell::models::user_role::{Column as UserRoleColumn, Entity as UserRoleTable};
 use deepwell::models::wikidot_user::Entity as WikidotUser;
 use deepwell::services::blob::EMPTY_BLOB_HASH;
 use deepwell::services::file::FileService;
 use deepwell::services::file_revision::{CreateFirstFileRevision, FileRevisionService};
 use deepwell::services::import::{
     ImportFile, ImportFileDelete, ImportFileExpectation, ImportMetaTag, ImportPage,
-    ImportPageFilesVerify, ImportService, ImportSite, ImportUser, ImportedUserType,
+    ImportPageFilesVerify, ImportPageRevision, ImportService, ImportSite,
+    ImportSiteMember, ImportSiteRoster, ImportUser, ImportedSiteRole, ImportedUserType,
     MAX_IMPORT_FILE_BYTES, ObservedUserProfile, PromoteObservedIdentity,
 };
 use deepwell::services::mirror_scope::{MirrorScopeService, SetMirrorScope};
 use deepwell::services::page_meta_tag::{PageMetaTag, PageMetaTagService};
 use deepwell::services::user::{CreateUser, User as ServiceUser, UserService};
 use deepwell::services::{RequestContext, ServiceContext};
-use deepwell::types::{FileRevisionType, Reference, UserType};
+use deepwell::types::{FileRevisionType, PageRevisionType, Reference, UserType};
 use ftml::data::KarmaLevel;
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, ConnectionTrait, DatabaseBackend,
@@ -2316,4 +2326,573 @@ async fn native_regular_slug_keeps_precedence_over_imported_identity() {
         matches!(resolved, Some(ServiceUser::Wikijump(_))),
         "authenticatable local account should keep slug precedence",
     );
+}
+
+fn import_site(site_id: i64, fixture: &str) -> ImportSite {
+    ImportSite {
+        site_id,
+        created_at: OffsetDateTime::UNIX_EPOCH,
+        name: format!("Roster Site {fixture}"),
+        slug: format!("roster-site-{fixture}"),
+        tagline: String::new(),
+        description: String::new(),
+        license: License::CcBySa40,
+        locale: "en".to_owned(),
+        ip_address: common::IP_ADDRESS,
+        meta_tags: Vec::new(),
+    }
+}
+
+async fn insert_site_role(runner: &TestRunner, site_id: i64, name: &str) -> i64 {
+    RoleActiveModel {
+        site_id: Set(site_id),
+        name: Set(name.to_owned()),
+        description: Set(String::new()),
+        from_wikidot: Set(true),
+        is_virtual: Set(false),
+        parent_role_id: Set(None),
+        ..Default::default()
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("site role fixture insert should succeed")
+    .role_id
+}
+
+async fn active_member_relations(
+    runner: &TestRunner,
+    site_id: i64,
+    user_id: i64,
+) -> Vec<deepwell::models::relation::Model> {
+    RelationTable::find()
+        .filter(RelationColumn::DestId.eq(site_id))
+        .filter(RelationColumn::FromId.eq(user_id))
+        .filter(RelationColumn::DeletedAt.is_null())
+        .filter(RelationColumn::OverwrittenAt.is_null())
+        .all(runner.context().transaction())
+        .await
+        .expect("member relation lookup should succeed")
+}
+
+async fn active_staff_roles(runner: &TestRunner, site_id: i64, user_id: i64) -> Vec<i64> {
+    UserRoleTable::find()
+        .filter(UserRoleColumn::SiteId.eq(site_id))
+        .filter(UserRoleColumn::UserId.eq(user_id))
+        .filter(UserRoleColumn::DeletedAt.is_null())
+        .all(runner.context().transaction())
+        .await
+        .expect("user role lookup should succeed")
+        .into_iter()
+        .map(|row| row.role_id)
+        .collect()
+}
+
+#[tokio::test]
+async fn import_site_roster_syncs_members_roles_and_master_admin() {
+    let runner = TestRunner::setup().await;
+    let (member_id, admin_id, fixture) = fixture_ids();
+    let mod_id = member_id + 2;
+    let site_id = 6_900_000 + i64::from(member_id % 10_000);
+
+    ImportService::add_site(runner.context(), import_site(site_id, &fixture))
+        .await
+        .expect("roster site should import");
+    let admin_role_id = insert_site_role(&runner, site_id, "admin").await;
+    let mod_role_id = insert_site_role(&runner, site_id, "moderator").await;
+    for (user_id, label) in [(member_id, "member"), (mod_id, "mod"), (admin_id, "admin")]
+    {
+        ImportService::add_user(runner.context(), import_user(user_id, &fixture, label))
+            .await
+            .expect("roster user should import");
+    }
+
+    let joined = OffsetDateTime::UNIX_EPOCH + time::Duration::days(30);
+    let roster = |members: Vec<ImportSiteMember>| ImportSiteRoster {
+        site_id,
+        fetched_at: OffsetDateTime::UNIX_EPOCH + time::Duration::seconds(5),
+        master_admin_user_id: Some(admin_id),
+        members,
+        importing_user_id: ADMIN_USER_ID,
+        ip_address: common::IP_ADDRESS,
+    };
+    let snapshot1 = roster(vec![
+        ImportSiteMember {
+            user_id: member_id,
+            joined_at: joined,
+            roles: Vec::new(),
+        },
+        ImportSiteMember {
+            user_id: mod_id,
+            joined_at: joined,
+            roles: vec![ImportedSiteRole::Moderator],
+        },
+        ImportSiteMember {
+            user_id: admin_id,
+            joined_at: joined,
+            roles: vec![ImportedSiteRole::Admin],
+        },
+    ]);
+    let out = ImportService::sync_site_roster(runner.context(), snapshot1)
+        .await
+        .expect("first roster sync should succeed");
+    assert_eq!(out.members_created, 3);
+    assert_eq!(out.roles_assigned, 2);
+    assert!(out.master_admin_set);
+
+    // Relations carry the source join time; roles landed; the master
+    // admin is set; and no local account exists for any imported
+    // identity (they must stay non-authenticatable).
+    for user_id in [member_id, mod_id, admin_id] {
+        let relations =
+            active_member_relations(&runner, site_id, i64::from(user_id)).await;
+        assert_eq!(relations.len(), 1, "exactly one active member relation");
+        assert_eq!(relations[0].created_at, joined);
+        assert!(
+            User::find_by_id(i64::from(user_id))
+                .one(runner.context().transaction())
+                .await
+                .expect("local user lookup should succeed")
+                .is_none(),
+            "imported identity must not gain a local account",
+        );
+    }
+    assert_eq!(
+        active_staff_roles(&runner, site_id, i64::from(mod_id)).await,
+        vec![mod_role_id]
+    );
+    assert_eq!(
+        active_staff_roles(&runner, site_id, i64::from(admin_id)).await,
+        vec![admin_role_id]
+    );
+    let site = SiteTable::find_by_id(site_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("site lookup should succeed")
+        .expect("site should exist");
+    assert_eq!(site.master_admin_user_id, Some(i64::from(admin_id)));
+
+    // An identical re-sync is a no-op.
+    let snapshot2 = roster(vec![
+        ImportSiteMember {
+            user_id: member_id,
+            joined_at: joined,
+            roles: Vec::new(),
+        },
+        ImportSiteMember {
+            user_id: mod_id,
+            joined_at: joined,
+            roles: vec![ImportedSiteRole::Moderator],
+        },
+        ImportSiteMember {
+            user_id: admin_id,
+            joined_at: joined,
+            roles: vec![ImportedSiteRole::Admin],
+        },
+    ]);
+    let out = ImportService::sync_site_roster(runner.context(), snapshot2)
+        .await
+        .expect("idempotent re-sync should succeed");
+    assert_eq!(out.members_created, 0);
+    assert_eq!(out.members_updated, 0);
+    assert_eq!(out.members_retired, 0);
+    assert_eq!(out.roles_assigned, 0);
+    assert_eq!(out.roles_removed, 0);
+    assert!(!out.master_admin_set);
+
+    // Re-sync with the moderator gone, the admin demoted to a plain
+    // member, and the member's join time corrected.
+    let joined_later = joined + time::Duration::days(10);
+    let snapshot3 = roster(vec![
+        ImportSiteMember {
+            user_id: member_id,
+            joined_at: joined_later,
+            roles: Vec::new(),
+        },
+        ImportSiteMember {
+            user_id: admin_id,
+            joined_at: joined,
+            roles: Vec::new(),
+        },
+    ]);
+    let out = ImportService::sync_site_roster(runner.context(), snapshot3)
+        .await
+        .expect("reconciling re-sync should succeed");
+    assert_eq!(out.members_retired, 1, "the absent moderator is retired");
+    assert_eq!(out.members_updated, 1, "the corrected join time overwrites");
+    assert_eq!(
+        out.roles_removed, 2,
+        "moderator role (retired) + admin role (demoted)"
+    );
+
+    assert!(
+        active_member_relations(&runner, site_id, i64::from(mod_id))
+            .await
+            .is_empty()
+    );
+    assert!(
+        active_staff_roles(&runner, site_id, i64::from(mod_id))
+            .await
+            .is_empty()
+    );
+    assert!(
+        active_staff_roles(&runner, site_id, i64::from(admin_id))
+            .await
+            .is_empty()
+    );
+    let relations = active_member_relations(&runner, site_id, i64::from(member_id)).await;
+    assert_eq!(
+        relations.len(),
+        1,
+        "still exactly one active relation after overwrite"
+    );
+    assert_eq!(relations[0].created_at, joined_later);
+}
+
+#[tokio::test]
+async fn import_site_roster_rejects_non_imported_site() {
+    let runner = TestRunner::setup().await;
+    // Site 6000000 is the seeded local www site (not from Wikidot).
+    let result = ImportService::sync_site_roster(
+        runner.context(),
+        ImportSiteRoster {
+            site_id: 6000000,
+            fetched_at: OffsetDateTime::UNIX_EPOCH,
+            master_admin_user_id: None,
+            members: Vec::new(),
+            importing_user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await;
+    assert!(
+        result.is_err(),
+        "roster sync must refuse locally owned sites"
+    );
+}
+
+#[tokio::test]
+async fn import_site_roster_rejects_unimported_identity() {
+    let runner = TestRunner::setup().await;
+    let (user_id, _, fixture) = fixture_ids();
+    let site_id = 6_950_000 + i64::from(user_id % 10_000);
+    ImportService::add_site(runner.context(), import_site(site_id, &fixture))
+        .await
+        .expect("roster site should import");
+    let result = ImportService::sync_site_roster(
+        runner.context(),
+        ImportSiteRoster {
+            site_id,
+            fetched_at: OffsetDateTime::UNIX_EPOCH,
+            master_admin_user_id: None,
+            members: vec![ImportSiteMember {
+                user_id,
+                joined_at: OffsetDateTime::UNIX_EPOCH,
+                roles: Vec::new(),
+            }],
+            importing_user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await;
+    assert!(
+        result.is_err(),
+        "roster sync must require imported identities"
+    );
+    assert!(
+        active_member_relations(&runner, site_id, i64::from(user_id))
+            .await
+            .is_empty(),
+        "a rejected sync writes no relations",
+    );
+}
+
+async fn imported_page_count(runner: &TestRunner, site_id: i64, slug: &str) -> u64 {
+    PageTable::find()
+        .filter(PageColumn::SiteId.eq(site_id))
+        .filter(PageColumn::Slug.eq(slug))
+        .count(runner.context().transaction())
+        .await
+        .expect("page row count should succeed")
+}
+
+async fn imported_revision_count(runner: &TestRunner, page_id: i64) -> u64 {
+    PageRevisionTable::find()
+        .filter(PageRevisionColumn::PageId.eq(page_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("revision row count should succeed")
+}
+
+fn import_idempotency_page(runner_page_id: i64, site_id: i64, slug: &str) -> ImportPage {
+    ImportPage {
+        page_id: runner_page_id,
+        site_id,
+        created_at: OffsetDateTime::UNIX_EPOCH,
+        slug: String::from(slug),
+        locked: false,
+        discussion_thread_id: None,
+        ip_address: common::IP_ADDRESS,
+        meta_tags: vec![],
+    }
+}
+
+struct ImportIdempotencyRevision<'a> {
+    revision_id: i64,
+    revision_number: i32,
+    page_id: i64,
+    site_id: i64,
+    author_id: i64,
+    slug: &'a str,
+    title: &'a str,
+    wikitext: &'a str,
+    tags: &'a [&'a str],
+}
+
+fn import_idempotency_revision(
+    params: ImportIdempotencyRevision<'_>,
+) -> ImportPageRevision {
+    ImportPageRevision {
+        revision_id: params.revision_id,
+        revision_type: PageRevisionType::Regular,
+        created_at: OffsetDateTime::UNIX_EPOCH,
+        updated_at: None,
+        revision_number: params.revision_number,
+        page_id: params.page_id,
+        site_id: params.site_id,
+        user_id: params.author_id,
+        wikitext: String::from(params.wikitext),
+        comments: String::from("source import"),
+        title: String::from(params.title),
+        slug: String::from(params.slug),
+        tags: params.tags.iter().map(ToString::to_string).collect(),
+    }
+}
+
+async fn import_idempotency_author(runner: &TestRunner) -> i64 {
+    // page_revision.user_id references known_user, so the revision author
+    // must exist as an imported identity first.
+    let (user_id, _, fixture) = fixture_ids();
+    ImportService::add_user(
+        runner.context(),
+        import_user(user_id, &fixture, "idempotency-author"),
+    )
+    .await
+    .expect("revision author should import");
+    i64::from(user_id)
+}
+
+async fn import_idempotency_current(
+    runner: &TestRunner,
+    site_id: i64,
+    slug: &str,
+) -> (String, Vec<String>, String) {
+    let fetched = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": slug,
+            "details": {"wikitext": true},
+        }),
+    )
+    .expect("imported page should be readable");
+    (
+        fetched.title,
+        fetched.tags,
+        fetched
+            .wikitext
+            .expect("imported source should be readable"),
+    )
+}
+
+#[tokio::test]
+async fn import_page_reimport_identical_snapshot_fails_closed_without_changing_state() {
+    // Refs #2083 item 4: re-running an import over an already-imported
+    // source page must neither duplicate rows nor restore generic seed
+    // content. Deepwell fails the conflicting create closed (the operator
+    // tool reconciles via its adopt/skip/replace flags); this test pins
+    // the fail-closed half: state is byte-identical afterwards.
+    let runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .unwrap()
+        .site
+        .site_id;
+    let author_id = import_idempotency_author(&runner).await;
+
+    let slug = "reimport-idempotency";
+    let page_id = 3_260_000_011;
+    ImportService::add_page(
+        runner.context(),
+        import_idempotency_page(page_id, site_id, slug),
+    )
+    .await
+    .expect("source page should import");
+    ImportService::add_page_revision(
+        runner.context(),
+        import_idempotency_revision(ImportIdempotencyRevision {
+            revision_id: 4_260_000_011,
+            revision_number: 0,
+            page_id,
+            site_id,
+            author_id,
+            slug,
+            title: "Source Title",
+            wikitext: "Source v0 body with [[tabview]].\n",
+            tags: &["admin"],
+        }),
+    )
+    .await
+    .expect("source revision should import");
+
+    // Identical retry with the same stable page ID fails closed. The
+    // conflicting write aborts only its savepoint (repo savepoint idiom),
+    // so the outer transaction stays usable for the unchanged-state
+    // assertions below.
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("re-import savepoint should begin");
+    let error = ImportService::add_page(
+        &ServiceContext::new(runner.state(), &transaction),
+        import_idempotency_page(page_id, site_id, slug),
+    )
+    .await
+    .expect_err("identical page re-import must fail closed");
+    assert_contains_error!(error, ErrorType::DatabaseImport);
+    transaction
+        .rollback()
+        .await
+        .expect("re-import savepoint should roll back");
+
+    // Same slug under a fresh stable ID also fails: never a duplicate row.
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("colliding re-import savepoint should begin");
+    let error = ImportService::add_page(
+        &ServiceContext::new(runner.state(), &transaction),
+        import_idempotency_page(page_id + 1, site_id, slug),
+    )
+    .await
+    .expect_err("slug-colliding page re-import must fail closed");
+    assert_contains_error!(error, ErrorType::DatabaseImport);
+    transaction
+        .rollback()
+        .await
+        .expect("colliding re-import savepoint should roll back");
+
+    // State unchanged: one page row, one revision, source content intact.
+    assert_eq!(imported_page_count(&runner, site_id, slug).await, 1);
+    assert_eq!(imported_revision_count(&runner, page_id).await, 1);
+    let (title, tags, wikitext) =
+        import_idempotency_current(&runner, site_id, slug).await;
+    assert_eq!(title, "Source Title");
+    assert_eq!(tags, ["admin"]);
+    assert!(
+        wikitext.contains("Source v0 body"),
+        "re-import must leave the source revision in place",
+    );
+    assert!(
+        !wikitext.contains("Please customize this page"),
+        "re-import must not restore generic seed content:\n{wikitext}",
+    );
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn import_page_source_update_appends_single_deterministic_revision() {
+    // Refs #2083 item 5: a source update re-imports as exactly one new
+    // revision — the next number is enforced, so refresh is deterministic
+    // rather than a duplicate page or seed/import revision pile-up.
+    let runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .unwrap()
+        .site
+        .site_id;
+    let author_id = import_idempotency_author(&runner).await;
+
+    let slug = "source-update-refresh";
+    let page_id = 3_260_000_021;
+    ImportService::add_page(
+        runner.context(),
+        import_idempotency_page(page_id, site_id, slug),
+    )
+    .await
+    .expect("source page should import");
+    ImportService::add_page_revision(
+        runner.context(),
+        import_idempotency_revision(ImportIdempotencyRevision {
+            revision_id: 4_260_000_021,
+            revision_number: 0,
+            page_id,
+            site_id,
+            author_id,
+            slug,
+            title: "Source Title v0",
+            wikitext: "Source v0 body.\n",
+            tags: &["admin"],
+        }),
+    )
+    .await
+    .expect("source revision should import");
+
+    let output = ImportService::add_page_revision(
+        runner.context(),
+        import_idempotency_revision(ImportIdempotencyRevision {
+            revision_id: 4_260_000_022,
+            revision_number: 1,
+            page_id,
+            site_id,
+            author_id,
+            slug,
+            title: "Source Title v1",
+            wikitext: "Source v1 body with the updated guide.\n",
+            tags: &["admin", "updated"],
+        }),
+    )
+    .await
+    .expect("source update should import");
+    assert_eq!(output.page_revision_number, 1);
+
+    // Skipping a revision number is rejected: the sequence is deterministic.
+    let error = ImportService::add_page_revision(
+        runner.context(),
+        import_idempotency_revision(ImportIdempotencyRevision {
+            revision_id: 4_260_000_023,
+            revision_number: 5,
+            page_id,
+            site_id,
+            author_id,
+            slug,
+            title: "Source Title v5",
+            wikitext: "Skipped sequence body.\n",
+            tags: &["admin"],
+        }),
+    )
+    .await
+    .expect_err("out-of-sequence source revision must fail closed");
+    assert_contains_error!(error, ErrorType::DatabaseImport);
+
+    // Exactly one page row, exactly two revisions, latest content wins.
+    assert_eq!(imported_page_count(&runner, site_id, slug).await, 1);
+    assert_eq!(imported_revision_count(&runner, page_id).await, 2);
+    let (title, tags, wikitext) =
+        import_idempotency_current(&runner, site_id, slug).await;
+    assert_eq!(title, "Source Title v1");
+    assert_eq!(tags, ["admin", "updated"]);
+    assert!(
+        wikitext.contains("updated guide"),
+        "refresh must serve the updated source revision",
+    );
+    assert!(
+        !wikitext.contains("Please customize this page"),
+        "refresh must not restore generic seed content:\n{wikitext}",
+    );
+
+    runner.teardown().await;
 }

@@ -113,6 +113,68 @@ impl UserService {
         Ok(identities)
     }
 
+    /// Public identities for list endpoints that mirror Wikidot's
+    /// deleted-account placeholders (page WhoRated, for one). Every
+    /// requested ID maps to `Some(identity)`, or to `None` when the
+    /// account is deleted in either user table: deleted accounts
+    /// have no public identity, but the list still has to render
+    /// their tombstone row. An ID that was never imported is absent
+    /// from the map, so callers can keep failing closed on it.
+    pub async fn get_public_identities_or_tombstones(
+        ctx: &ServiceContext<'_>,
+        user_ids: &BTreeSet<i64>,
+    ) -> Result<BTreeMap<i64, Option<ftml::data::UserInfo<'static>>>> {
+        let identities = Self::get_public_identities(ctx, user_ids).await?;
+        let missing_ids = user_ids
+            .iter()
+            .copied()
+            .filter(|user_id| !identities.contains_key(user_id))
+            .collect::<BTreeSet<_>>();
+        if missing_ids.is_empty() {
+            return Ok(identities
+                .into_iter()
+                .map(|(user_id, identity)| (user_id, Some(identity)))
+                .collect());
+        }
+
+        let txn = ctx.transaction();
+        let make_error =
+            || Error::new("failed to get deleted user identities", ErrorType::User);
+        let mut deleted = BTreeSet::new();
+        let wikijump_users = WikijumpUser::find()
+            .filter(user::Column::UserId.is_in(missing_ids.iter().copied()))
+            .filter(user::Column::DeletedAt.is_not_null())
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+        deleted.extend(wikijump_users.iter().map(|user| user.user_id));
+
+        let wikidot_ids = missing_ids
+            .iter()
+            .filter_map(|user_id| i32::try_from(*user_id).ok())
+            .collect::<Vec<_>>();
+        if !wikidot_ids.is_empty() {
+            let wikidot_users = WikidotUser::find()
+                .filter(wikidot_user::Column::UserId.is_in(wikidot_ids))
+                .filter(wikidot_user::Column::IsDeleted.eq(true))
+                .all(txn)
+                .await
+                .or_raise(make_error)?;
+            deleted.extend(wikidot_users.iter().map(|user| i64::from(user.user_id)));
+        }
+
+        let mut resolved = identities
+            .into_iter()
+            .map(|(user_id, identity)| (user_id, Some(identity)))
+            .collect::<BTreeMap<_, _>>();
+        for user_id in missing_ids {
+            if deleted.contains(&user_id) {
+                resolved.insert(user_id, None);
+            }
+        }
+        Ok(resolved)
+    }
+
     pub async fn create(
         ctx: &ServiceContext<'_>,
         input: CreateUser,

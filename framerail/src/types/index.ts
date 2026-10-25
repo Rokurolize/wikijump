@@ -8,6 +8,11 @@ export interface Locales {
   "about-info.package-repository": string
   "about-info.package-version": string
   "about-info.rustc-version": string
+  "about-info.cargo-version": string
+  "about-info.built-at": string
+  "about-info.git-commit": string
+  "about-info.blurb": string
+  "about-info.blog": string
   "about-info.node-version": string
   "about-info.pnpm-version": string
   "site-info": string

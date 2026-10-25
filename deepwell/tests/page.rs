@@ -4535,6 +4535,127 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
 }
 
 #[tokio::test]
+async fn category_theme_change_invalidates_article_view_cache() {
+    const SLUG: &str = "theme-cache-fixture";
+    const BODY: &str = "theme cache fixture body";
+    const THEME_URL: &str = "https://themes.example/changed.css";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+    create_listpages_test_page(&mut runner, site_id, SLUG, "Theme cache fixture", BODY)
+        .await;
+
+    let page = PageTable::find()
+        .filter(
+            sea_orm::Condition::all()
+                .add(page::Column::SiteId.eq(site_id))
+                .add(page::Column::Slug.eq(SLUG)),
+        )
+        .one(runner.context().transaction())
+        .await
+        .expect("theme cache page lookup should not fail")
+        .expect("theme cache page should exist");
+    let mut page = page.into_active_model();
+    page.from_wikidot = Set(true);
+    page.update(runner.context().transaction())
+        .await
+        .expect("theme cache page should be marked imported");
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let input = json!({
+        "site_id": site_id,
+        "session_token": null,
+        "route": {"slug": SLUG, "extra": ""},
+        "locales": ["en-US", "en"],
+    });
+
+    // First view populates the anonymous article-view cache.
+    let metadata_before =
+        run_endpoint!(runner, article_view_cache_metadata, input.clone());
+    let key_before = metadata_before
+        .article_page_cache_key
+        .expect("imported static page should have an anonymous cache key");
+    assert!(
+        key_before.contains(":theme="),
+        "cache key must carry the theme fingerprint: {key_before}",
+    );
+    let view_before = run_endpoint!(runner, article_view, input.clone());
+    let GetArticleViewOutput {
+        page:
+            GetPageViewOutput::Found {
+                theme: theme_before,
+                ..
+            },
+        article_page_cache_key: Some(served_key_before),
+        ..
+    } = view_before
+    else {
+        panic!("theme cache fixture should return an article view");
+    };
+    assert_eq!(served_key_before, key_before);
+    assert!(!matches!(theme_before, ThemeSetting::External { .. }));
+
+    // Change the `_default` category theme (the page has no category prefix,
+    // so its theme resolves through `_default`).
+    let default_category = CategoryService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("_default")),
+    )
+    .await
+    .expect("default category should exist");
+    CategoryService::update(
+        runner.context(),
+        site_id,
+        Reference::Id(default_category.category_id),
+        deepwell::services::category::UpdateCategoryBody {
+            theme: Maybe::Set(ThemeSetting::External {
+                url: String::from(THEME_URL),
+            }),
+            ..Default::default()
+        },
+        Some(default_category.settings_revision),
+        SYSTEM_USER_ID,
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("category theme update should be stored");
+
+    // The cache key must change, and the next view must serve the new theme
+    // instead of the previously cached view (issue #2764).
+    let metadata_after =
+        run_endpoint!(runner, article_view_cache_metadata, input.clone());
+    let key_after = metadata_after
+        .article_page_cache_key
+        .expect("page should still have an anonymous cache key after the theme change");
+    assert_ne!(key_before, key_after);
+
+    let view_after = run_endpoint!(runner, article_view, input);
+    let GetArticleViewOutput {
+        page: GetPageViewOutput::Found {
+            theme: theme_after, ..
+        },
+        article_page_cache_key: Some(served_key_after),
+        ..
+    } = view_after
+    else {
+        panic!(
+            "theme cache fixture should return an article view after the theme change"
+        );
+    };
+    assert_eq!(served_key_after, key_after);
+    assert!(
+        matches!(theme_after, ThemeSetting::External { ref url } if url == THEME_URL),
+        "view after the theme change must serve the new theme, got {theme_after:?}",
+    );
+}
+
+#[tokio::test]
 async fn page_view_rerenders_stale_persisted_compiled_artifact() {
     const SLUG: &str = "renderer-epoch-persisted-fixture";
     const CURRENT_BODY: &str = "renderer epoch persisted current body";
@@ -11834,13 +11955,13 @@ async fn request_argument_page_views_do_not_persist_hosted_text_blocks() {
             "PAGER_START\n",
             "[[module ListPages name=\"fixture-readonly-view-target-*\" order=\"title\" separate=\"no\" perPage=\"1\" limit=\"2\"]]\n",
             "PAGER %%title%%\n",
-            "[[html]]<p>PAGER_BLOCK %%title%%</p>[[/html]]\n",
+            "PAGER_BLOCK %%title%%\n",
             "[[/module]]\n",
             "PAGER_END\n",
             "TAG_START\n",
             "[[module ListPages name=\"fixture-readonly-view-target-*\" tags=\"@URL\" order=\"title\" separate=\"no\" limit=\"2\"]]\n",
             "TAG %%title%%\n",
-            "[[html]]<p>TAG_BLOCK %%title%%</p>[[/html]]\n",
+            "TAG_BLOCK %%title%%\n",
             "[[/module]]\n",
             "TAG_END",
         ),
@@ -16225,7 +16346,10 @@ async fn page_who_rated_returns_only_current_typed_votes_in_creation_order() {
     assert_eq!(output[0]["value"], 1);
     assert_eq!(output[1]["user"]["user-name"], "User");
     assert_eq!(output[1]["value"], -1);
-    assert!(output[0].get("user_id").is_none());
+    // Each vote also carries its raw user ID: the deleted-account
+    // placeholder Wikidot renders is keyed by it (as in page history).
+    assert_eq!(output[0]["user_id"], ADMIN_USER_ID);
+    assert_eq!(output[1]["user_id"], SAMPLE_USER_ID);
 
     let malformed = run_endpoint_err!(
         runner,
@@ -16237,6 +16361,48 @@ async fn page_who_rated_returns_only_current_typed_votes_in_creation_order() {
         "JSONRPC InvalidParams error not returned:\n{:?}",
         malformed,
     );
+
+    // A voter whose source account is deleted renders as a tombstone
+    // (null identity), exactly as Wikidot's "(account deleted)" rows,
+    // instead of failing the whole list.
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_string(
+            sea_orm::DatabaseBackend::Postgres,
+            "INSERT INTO known_user (user_id) VALUES (19000002)",
+        ))
+        .await
+        .expect("deleted WhoRated known user should insert");
+    transaction
+        .execute_raw(Statement::from_string(
+            sea_orm::DatabaseBackend::Postgres,
+            concat!(
+                "INSERT INTO wikidot_user ",
+                "(user_id, created_at, fetched_at, is_deleted, karma, is_pro) ",
+                "VALUES (19000002, NOW() - INTERVAL '1 day', NOW(), true, 0, false)",
+            ),
+        ))
+        .await
+        .expect("deleted WhoRated identity should insert");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            sea_orm::DatabaseBackend::Postgres,
+            "INSERT INTO page_vote (from_wikidot, page_id, user_id, rating_system, value) VALUES (true, $1, 19000002, 'points', 1)",
+            [Value::from(target.page_id)],
+        ))
+        .await
+        .expect("deleted WhoRated vote should insert");
+    let with_deleted = run_endpoint!(
+        runner,
+        page_who_rated,
+        json!({"site_id": site.site_id, "page_id": target.page_id}),
+    );
+    let with_deleted =
+        serde_json::to_value(with_deleted).expect("WhoRated output should serialize");
+    assert_eq!(with_deleted.as_array().map(Vec::len), Some(3));
+    assert_eq!(with_deleted[2]["user_id"], 19000002);
+    assert!(with_deleted[2]["user"].is_null());
+    assert_eq!(with_deleted[2]["value"], 1);
 
     let transaction = runner.context().transaction();
     transaction

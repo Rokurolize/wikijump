@@ -62,6 +62,25 @@ test("renders page source in the Wikidot client parsing boundary", () => {
   )
 })
 
+test("renders a deleted WhoRated voter with the live placeholder markup", () => {
+  assert.equal(
+    renderWikidotWhoRated([
+      {
+        user_id: 11111,
+        user: {
+          "user-id": 11111,
+          "user-name": "Voter One",
+          "user-slug": "voter-one"
+        },
+        value: 1
+      },
+      { user_id: 9801497, user: null, value: 1 },
+      { user_id: 9023808, user: null, value: -1 }
+    ]),
+    '<h2>Users who rated:</h2>\n\n<div style="-moz-column-count:3"><span class="printuser avatarhover"><a href="https://www.wikidot.com/user:info/voter-one" onclick="WIKIDOT.page.listeners.userInfo(11111); return false;">Voter One</a></span>\n        <span style="color:#777">\n                    +              </span><br/><span class="printuser deleted" data-id="9801497"><img class="small" src="https://www.wikidot.com/common--images/avatars/default/a16.png" alt=""/>(account deleted)</span>\n        <span style="color:#777">\n                    +              </span><br/><span class="printuser deleted" data-id="9023808"><img class="small" src="https://www.wikidot.com/common--images/avatars/default/a16.png" alt=""/>(account deleted)</span>\n        <span style="color:#777">\n                    -              </span><br/></div>'
+  )
+})
+
 test("renders typed WhoRated votes in the exact wikidot.py DOM boundary", () => {
   assert.equal(
     renderWikidotWhoRated([

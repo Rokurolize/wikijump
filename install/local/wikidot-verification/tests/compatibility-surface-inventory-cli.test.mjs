@@ -1055,14 +1055,14 @@ test("CLI emits the pinned FTML raw manifest without changing the public denomin
     lexer_rules: 62,
     parser_functions: 3,
     canonical_blocks: 63,
-    block_aliases: 47,
+    block_aliases: 48,
     typed_modules: 7,
     ast_variants: 48,
     delayed_forms: 9,
     generated_runtime_kinds: 2,
     renderer_modules: 30,
     wikidot_fixtures: 138,
-    total: 409
+    total: 410
   })
   assert.equal(inventory.ftml_raw_surface_manifest.catalog_crosswalk.length, 41)
   assert.deepEqual(inventory.ftml_raw_surface_manifest.source, inventory.provenance.ftml)
@@ -1569,7 +1569,7 @@ test("CLI emits closed owner keys and typed edges without double-counting FTML r
   assert.equal(inventory.counts.total, trackedInventory.counts.total)
   assert.equal(
     inventory.relationship_edges.filter(({ type }) => type === "alias").length,
-    47
+    48
   )
   const edgeKeys = inventory.relationship_edges.map(
     ({ source, type, target }) => `${source}\u0000${type}\u0000${target}`

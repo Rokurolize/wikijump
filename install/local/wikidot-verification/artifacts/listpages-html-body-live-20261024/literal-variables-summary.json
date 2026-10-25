@@ -1,0 +1,24 @@
+{
+ "schema": "wikijump.listpages_literal_variables_live.v1",
+ "observed_at": "2026-10-24",
+ "note": "Hosted html-block iframe documents as served by Wikidot for the ListPages body-owned block; the ListPages variables inside the block content were stored and served literally, never substituted per row.",
+ "cases": {
+  "mid-hosted-literal-tags-and-author": {
+   "hosted_path": "pages/wj2680-1792846101-mid-hosted.html",
+   "hosted_sha256": "0ea8038fe02b6f045abbf806376cc58c8f53d79a4135853afc6fde2b25ac2743",
+   "literal_variables": [
+    "%%tags%%",
+    "%%created_by%%"
+   ],
+   "variables_substituted": false
+  },
+  "lead-hosted-literal-tags": {
+   "hosted_path": "pages/wj2680-1792846101-lead-hosted.html",
+   "hosted_sha256": "df2be845bc7fad5b0de184e002266500c08a635041a446ea94b7ccf43276d65d",
+   "literal_variables": [
+    "%%tags%%"
+   ],
+   "variables_substituted": false
+  }
+ }
+}

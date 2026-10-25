@@ -259,6 +259,10 @@ pub enum AuditEvent<'a> {
         site_slug: &'a str,
         site_name: &'a str,
     },
+    ImportSiteRoster {
+        site_id: i64,
+        member_count: usize,
+    },
     ImportPage {
         site_id: i64,
         page_id: i64,
@@ -983,6 +987,22 @@ impl<'a> AuditEvent<'a> {
                 extra_string_1: Some(Cow::Owned(str!(site_slug))),
                 extra_string_2: Some(Cow::Owned(str!(site_name))),
                 extra_number: None,
+            },
+
+            AuditEvent::ImportSiteRoster {
+                site_id,
+                member_count,
+            } => RawAuditEvent {
+                event_type: "import.site_roster",
+                ip_address,
+                user_id: None,
+                site_id: Some(site_id),
+                page_id: None,
+                extra_id_1: None,
+                extra_id_2: None,
+                extra_string_1: None,
+                extra_string_2: None,
+                extra_number: Some(i32::try_from(member_count).unwrap_or(i32::MAX)),
             },
             AuditEvent::ImportPage {
                 site_id,

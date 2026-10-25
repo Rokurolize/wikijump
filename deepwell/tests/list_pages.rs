@@ -977,7 +977,11 @@ async fn delayed_listpages_rows_keep_authored_html_blocks_literal_in_preview() {
             && preview.contains("[[/html]]")
             && preview.contains("ListPages Delayed HTML Block Target")
             && preview.contains("&lt;strong&gt;ROW_HTML_PAYLOAD&lt;/strong&gt;")
-            && !preview.contains("%%title%%")
+            // Live Wikidot captures show that the default row is generated,
+            // while the authored prefix and module close remain literal page
+            // text when an HTML block occurs after prose. Keep the row token
+            // literal as part of that observed ownership boundary.
+            && preview.contains("%%title%%")
             && !preview.contains("[[module ListPages")
             && !preview.contains("html-block-iframe"),
         "PagePreview must keep delayed ListPages HTML blocks literal:\n{preview}",

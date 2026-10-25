@@ -39,7 +39,8 @@ use deepwell::services::category::CategoryService;
 use deepwell::services::page::CreatePage;
 use deepwell::services::permission::{PermissionCache, PermissionService};
 use deepwell::services::role::{
-    GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
+    GetUserRolesInput, GrantUserRoleInput, InternalCreateRoleInput, RoleService,
+    UpdateRolePermissionsInput,
 };
 use deepwell::services::session::{CreateSession, SessionService};
 use deepwell::services::site::{CreateSite, SiteService, UpdateSiteBody};
@@ -246,6 +247,44 @@ async fn public_site_create_audits_authenticated_actor_and_supplied_ip_once() {
 }
 
 #[tokio::test]
+async fn site_create_with_empty_description_succeeds() {
+    // Regression: the creation form supplies no description, and the
+    // empty string must not be written as the site user's biography --
+    // the user_biography_check constraint requires NULL or non-empty,
+    // so site creation rolled back entirely.
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let actor_user_id = create_user(&runner, n, "site-creator-empty-description").await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(actor_user_id),
+        ..Default::default()
+    });
+
+    let created = run_endpoint!(
+        runner,
+        site_create,
+        json!({
+            "slug": format!("empty-description-site-{n}"),
+            "name": format!("Empty description site {n}"),
+            "tagline": "",
+            "description": "",
+            "default_page": null,
+            "layout": null,
+            "license": "cc0",
+            "locale": "en",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let site_user = UserTable::find_by_id(created.site_user_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("site user lookup should succeed")
+        .expect("site user should exist");
+    assert_eq!(site_user.biography, None);
+}
+
+#[tokio::test]
 async fn hosted_sites_keep_same_slug_page_state_isolated_at_public_endpoints() {
     let mut runner = TestRunner::setup().await;
     let n = next_n();
@@ -412,6 +451,10 @@ async fn educational_upgrade_is_site_scoped_and_master_admin_only() {
     grant_site_edit(&runner, created.site_id, master_admin, n).await;
     grant_site_edit(&runner, created.site_id, ordinary_admin, n + 100_000).await;
 
+    let fetched = run_endpoint!(runner, site_get, json!({ "site": created.site_id }))
+        .expect("educational site should be fetchable");
+    let base_revision = fetched.site.settings_revision;
+
     runner.set_request_context(RequestContext {
         user_id: Some(ordinary_admin),
         site_id: Some(created.site_id),
@@ -423,7 +466,7 @@ async fn educational_upgrade_is_site_scoped_and_master_admin_only() {
         json!({
             "site": created.site_id,
             "user_id": ordinary_admin,
-            "expected_settings_revision": 0,
+            "expected_settings_revision": base_revision,
             "educational_upgrade": {
                 "organization": "Run Owned University",
                 "purpose": "Research and teaching",
@@ -444,7 +487,7 @@ async fn educational_upgrade_is_site_scoped_and_master_admin_only() {
         json!({
             "site": created.site_id,
             "user_id": master_admin,
-            "expected_settings_revision": 0,
+            "expected_settings_revision": base_revision,
             "educational_upgrade": {
                 "organization": "Run Owned University",
                 "purpose": "Research and teaching",
@@ -454,7 +497,7 @@ async fn educational_upgrade_is_site_scoped_and_master_admin_only() {
     );
     let public_site = serde_json::to_value(&upgraded).expect("site should serialize");
     assert_eq!(public_site["educational"], true);
-    assert_eq!(public_site["settings_revision"], 1);
+    assert_eq!(public_site["settings_revision"], base_revision + 1);
     assert!(public_site.get("master_admin_user_id").is_none());
     assert!(public_site.get("educational_organization").is_none());
     assert!(public_site.get("educational_purpose").is_none());
@@ -465,7 +508,7 @@ async fn educational_upgrade_is_site_scoped_and_master_admin_only() {
         json!({
             "site": created.site_id,
             "user_id": master_admin,
-            "expected_settings_revision": 1,
+            "expected_settings_revision": base_revision + 1,
             "educational_upgrade": {
                 "organization": "Run Owned University",
                 "purpose": "Research and teaching",
@@ -569,6 +612,264 @@ async fn site_create_site_user_relation_and_audit_roll_back_together() {
             .expect("rolled-back site-create audit count should succeed"),
         0,
     );
+}
+
+/// Refs #2052 slice 2. The public creation path must yield a usable site:
+/// the seeder baseline role graph with the creator bound as administrator.
+///
+/// IGNORED: slice lane has no cargo; the build lane runs this.
+#[tokio::test]
+#[ignore]
+async fn newsite_bootstrap_binds_creator_admin_with_site_edit() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let actor_user_id = create_user(&runner, n, "bootstrap-creator").await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(actor_user_id),
+        ..Default::default()
+    });
+
+    let created = run_endpoint!(
+        runner,
+        site_create,
+        json!({
+            "slug": format!("bootstrap-roles-{n}"),
+            "name": format!("Bootstrap roles {n}"),
+            "tagline": "",
+            "description": "Bootstrap role graph fixture",
+            "default_page": null,
+            "layout": null,
+            "license": "cc-by-sa-4.0",
+            "locale": "en",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let roles = RoleService::get_all_roles_for_site(runner.context(), created.site_id)
+        .await
+        .expect("bootstrap roles should list");
+    let names: Vec<&str> = roles.iter().map(|role| role.name.as_str()).collect();
+    assert_eq!(
+        names,
+        [
+            "root",
+            "admin",
+            "moderator",
+            "member",
+            "guest",
+            "registered",
+            "anonymous",
+            "everyone",
+            "page-author",
+        ],
+        "browser creation must inherit the seeder baseline role graph",
+    );
+
+    let user_roles = RoleService::get_all_roles_for_user_and_site(
+        runner.context(),
+        GetUserRolesInput {
+            site_id: created.site_id,
+            user_id: Some(actor_user_id),
+            page_reference: None,
+        },
+    )
+    .await
+    .expect("creator roles should list");
+    assert!(
+        user_roles.iter().any(|role| role.name == "admin"),
+        "creator must be bound as site administrator, got {:?}",
+        user_roles
+            .iter()
+            .map(|role| role.name.as_str())
+            .collect::<Vec<_>>(),
+    );
+
+    let updated = run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": created.site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 0,
+            "name": format!("Bootstrap rename {n}"),
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(updated.site_id, created.site_id);
+    assert_eq!(updated.name, format!("Bootstrap rename {n}"));
+}
+
+/// Refs #2052 slice 2. Bootstrap runs in the creation transaction: roles
+/// created for a rolled-back site must not survive it.
+///
+/// IGNORED: slice lane has no cargo; the build lane runs this.
+#[tokio::test]
+#[ignore]
+async fn newsite_bootstrap_roles_roll_back_with_creation() {
+    use deepwell::models::role::{Column as RoleColumn, Entity as RoleTable};
+
+    let runner = TestRunner::setup().await;
+    let n = next_n();
+    let actor_user_id = create_user(&runner, n, "bootstrap-rollback").await;
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("bootstrap savepoint should begin");
+    let ctx =
+        ServiceContext::new(runner.state(), &transaction).with_request(RequestContext {
+            user_id: Some(actor_user_id),
+            ..Default::default()
+        });
+
+    let created = deepwell::endpoints::all::site_create(
+        &ctx,
+        common::make_params(json!({
+            "slug": format!("bootstrap-rollback-{n}"),
+            "name": format!("Bootstrap rollback {n}"),
+            "tagline": "",
+            "description": "Bootstrap rollback fixture",
+            "default_page": null,
+            "layout": null,
+            "license": "cc-by-sa-4.0",
+            "locale": "en",
+            "ip_address": common::IP_ADDRESS,
+        })),
+    )
+    .await
+    .expect("transactional public site creation should succeed");
+
+    assert_eq!(
+        RoleTable::find()
+            .filter(RoleColumn::SiteId.eq(created.site_id))
+            .count(&transaction)
+            .await
+            .expect("transactional bootstrap role count should succeed"),
+        9,
+        "baseline role graph must exist inside the creation transaction",
+    );
+
+    transaction
+        .rollback()
+        .await
+        .expect("bootstrap savepoint should roll back");
+
+    assert_eq!(
+        RoleTable::find()
+            .filter(RoleColumn::SiteId.eq(created.site_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("rolled-back bootstrap role count should succeed"),
+        0,
+        "bootstrap roles must not survive a rolled-back creation",
+    );
+}
+
+/// Refs #2052 slice 3. Browser creation seeds the Standard template's
+/// initial pages with the creator as author and lands on the start page.
+///
+/// IGNORED: slice lane has no cargo; the build lane runs this.
+#[tokio::test]
+#[ignore]
+async fn newsite_bootstrap_creates_template_pages_and_default_start() {
+    use deepwell::services::relation::{
+        GetPageAttributions, PageAttributionKind, RelationService,
+    };
+
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let actor_user_id = create_user(&runner, n, "bootstrap-pages").await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(actor_user_id),
+        ..Default::default()
+    });
+
+    let created = run_endpoint!(
+        runner,
+        site_create,
+        json!({
+            "slug": format!("bootstrap-pages-{n}"),
+            "name": format!("Bootstrap pages {n}"),
+            "tagline": "",
+            "description": "Bootstrap template pages fixture",
+            "default_page": null,
+            "layout": null,
+            "license": "cc-by-sa-4.0",
+            "locale": "en",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    for slug in [
+        "start",
+        "nav:side",
+        "nav:top",
+        "search:site",
+        "admin:manage",
+        "_admin",
+        "system:join",
+        "system:members",
+        "system:recent-changes",
+        "system:page-tags",
+        "system:list-all-pages",
+    ] {
+        let page =
+            PageService::get(runner.context(), created.site_id, Reference::from(slug))
+                .await
+                .expect("bootstrap template page should exist");
+        assert_eq!(page.slug, slug);
+    }
+
+    let attributions = RelationService::get_page_attributions(
+        runner.context(),
+        GetPageAttributions {
+            site_id: created.site_id,
+            page: Reference::from("start"),
+        },
+    )
+    .await
+    .expect("start page attributions should list");
+    assert!(
+        attributions.iter().any(|attribution| {
+            attribution.user_id == actor_user_id
+                && attribution.metadata.attribution_type == PageAttributionKind::Author
+        }),
+        "creator must author the initial pages",
+    );
+
+    let fetched = run_endpoint!(runner, site_get, json!({ "site": created.site_id }),)
+        .expect("newly created site should exist");
+    assert_eq!(fetched.site.default_page, "start");
+}
+
+/// Refs #2052 slice 3. The bootstrap page list must track `template-en`.
+///
+/// IGNORED: slice lane has no cargo; the build lane runs this.
+#[tokio::test]
+#[ignore]
+async fn newsite_template_pages_match_seeder_template_set() {
+    let seed: serde_json::Value =
+        serde_json::from_str(include_str!("../seeder/pages.json"))
+            .expect("seed pages should parse");
+    let entries = seed["template-en"]
+        .as_array()
+        .expect("template-en pages should list");
+    let bootstrap = deepwell::services::site::STANDARD_TEMPLATE_PAGES;
+
+    assert_eq!(
+        bootstrap.len(),
+        entries.len(),
+        "bootstrap must cover the whole template-en set",
+    );
+    for (entry, (slug, title, wikitext)) in entries.iter().zip(bootstrap.iter()) {
+        assert_eq!(entry["slug"].as_str(), Some(*slug));
+        assert_eq!(entry["title"].as_str(), Some(*title));
+        assert!(
+            !wikitext.is_empty(),
+            "template page {slug} must carry content"
+        );
+    }
 }
 
 #[tokio::test]

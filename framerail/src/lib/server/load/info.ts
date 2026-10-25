@@ -26,6 +26,11 @@ export async function loadInfo(preloadData: PreloadDataAsync) {
     "about-info.package-repository": {},
     "about-info.package-version": {},
     "about-info.rustc-version": {},
+    "about-info.cargo-version": {},
+    "about-info.built-at": {},
+    "about-info.git-commit": {},
+    "about-info.blurb": {},
+    "about-info.blog": {},
     "about-info.node-version": {},
     "about-info.pnpm-version": {}
   }
@@ -40,7 +45,10 @@ export async function loadInfo(preloadData: PreloadDataAsync) {
         version: response.package.version
       },
       compile_info: {
-        rustc_version: response.compile_info.rustc_version
+        rustc_version: response.compile_info.rustc_version,
+        cargo_version: response.compile_info.cargo_version,
+        built_at: response.compile_info.built_at,
+        git_commit: response.compile_info.git_commit
       }
     },
     frontend: {
@@ -50,8 +58,13 @@ export async function loadInfo(preloadData: PreloadDataAsync) {
       version: serverInfo.frontendVersion,
       license: serverInfo.frontendLicense,
       node: process.versions.node,
-      pnpm: serverInfo.pnpmVersion
-    }
+      pnpm: serverInfo.pnpmVersion,
+      git_commit: serverInfo.frontendGitCommit
+    },
+    // The Wikijump project blog (WJ-1279). The historical
+    // blog.wikijump.org subdomain no longer resolves; the project
+    // site itself is the blog.
+    blog_url: "https://www.wikijump.org"
   }
 
   const internationalization = await translate(locales, translateKeys)

@@ -227,7 +227,7 @@ pub struct DeletePage<'a> {
 pub struct DeletePageOutput {
     page_id: i64,
     revision_id: i64,
-    revision_number: i32,
+    pub revision_number: i32,
 }
 
 #[derive(Deserialize, Debug, Clone)]

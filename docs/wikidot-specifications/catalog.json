@@ -31,7 +31,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 92,
+    "observation_count": 95,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -2114,7 +2114,10 @@
         "listpages-per-argument-source-grammar-20260730",
         "listpages-template-section-and-linked-phase-20260730",
         "listpages-generated-block-and-heading-boundaries-20260730",
-        "listpages-amc-form-last-value-20260816"
+        "listpages-amc-form-last-value-20260816",
+        "listpages-body-html-block-ownership-20261024",
+        "listpages-body-html-block-literal-variables-20261024",
+        "pagerate-who-rated-roster-complete-20261024"
       ]
     },
     {
@@ -2706,7 +2709,8 @@
       ],
       "related_features": [],
       "live_observation_ids": [
-        "rate-module-live-stars-and-body-semantics"
+        "rate-module-live-stars-and-body-semantics",
+        "pagerate-who-rated-roster-complete-20261024"
       ]
     },
     {
@@ -5036,7 +5040,9 @@
       ],
       "related_features": [],
       "live_observation_ids": [
-        "listpages-preview-and-saved-html-context-20260730"
+        "listpages-preview-and-saved-html-context-20260730",
+        "listpages-body-html-block-ownership-20261024",
+        "listpages-body-html-block-literal-variables-20261024"
       ]
     },
     {

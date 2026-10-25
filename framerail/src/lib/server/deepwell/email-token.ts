@@ -101,3 +101,71 @@ export async function passwordResetComplete(
     context
   )
 }
+
+export interface AccountDeleteIssueInput {
+  ipAddress: string
+}
+
+export interface AccountDeleteRedeemInput {
+  token: string
+  ipAddress: string
+}
+
+export interface DeleteGrantOutput {
+  grant: string
+}
+
+export interface AccountDeleteCompleteInput {
+  grant: string
+  password: string
+  ipAddress: string
+}
+
+export interface DeleteCompleteOutput {
+  sessions_revoked: number
+}
+
+/** Request an account-deletion confirmation link for the signed-in account. */
+export async function accountDeleteIssue(
+  input: AccountDeleteIssueInput,
+  context: RequestContext = {}
+): Promise<void> {
+  return client.request(
+    "account_delete_issue",
+    {
+      ip_address: input.ipAddress
+    },
+    context
+  )
+}
+
+/** Exchange an account-deletion link for a one-time deletion grant. */
+export async function accountDeleteRedeem(
+  input: AccountDeleteRedeemInput,
+  context: RequestContext = {}
+): Promise<DeleteGrantOutput> {
+  return client.request(
+    "account_delete_redeem",
+    {
+      token: input.token,
+      ip_address: input.ipAddress
+    },
+    context
+  )
+}
+
+/** Delete the signed-in account on grant + password authority. */
+export async function accountDeleteComplete(
+  input: AccountDeleteCompleteInput,
+  context: RequestContext = {}
+): Promise<DeleteCompleteOutput> {
+  return client.request(
+    "account_delete_complete",
+    {
+      grant: input.grant,
+      password: input.password,
+      ip_address: input.ipAddress
+    },
+    context
+  )
+}

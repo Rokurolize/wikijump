@@ -631,6 +631,61 @@ Evidence:
 - `/home/roku/wjlab/evidence/issue1374-listpages-anonymous-20260816/manifest.json` (SHA-256 `bb95244df5a2cdadbed860705199f2de4776970982b4bee8034a82cb88a06771`), cases: none
 - `/home/roku/wjlab/evidence/issue1374-listpages-anonymous-20260816/manifest-v2.json` (SHA-256 `33d3b1361064da1bb200202bf2783ecb88ad2e695bf54d9cbfa4a0150f866e4b`), cases: none
 
+### Mid-body html blocks are owned by Wikidot's html pass, not only leading ones
+
+- Observation ID: `listpages-body-html-block-ownership-20261024`
+- Classification: `documentation-omission`
+- Observed at: `2026-10-24`
+- Analysis: Authenticated run-owned holder pages on sandbox-for-codex, read back anonymously. A ListPages body with an [[html]] block after authored prose (one or two lines) renders the default template for every row, one hosted html-block iframe at the block's position, the authored prose as literal page text, and the closing module text as literal text. A body with no html block keeps the per-row template. An escaped @@[[html]]@@ marker is literal text and keeps the per-row template. A body whose [[code]] block follows prose also renders the default template with residual text, which conflicts with the narrower code rule currently implemented and is recorded separately.
+
+Normative behavior:
+
+- When a ListPages body contains an [[html]] block anywhere (not only as the first body token), Wikidot's html pass owns it before ListPages evaluates. ListPages uses the default summary template and does not apply the body as a per-row template.
+- The authored text before and after the owned block, and the closing module text, render after the generated list as literal page text.
+- The owned html block renders as one html-block iframe at its source position in the residual text, not once per list row.
+- An escaped @@[[html]]@@ marker is literal text and does not open a block.
+- A body without an html block renders the per-row template for each matched row.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-html-body-live-20261024/matrix-summary.json` (SHA-256 `a96ccbfc117be7e601b210f82faf0fef9c785f80fa4076e45dcc97999e10b835`), cases: `A-html-mid-after-prose`, `B-html-mid-after-two-prose-lines`, `C-control-no-block`, `D-escaped-html-marker-mid`, `E-code-mid-after-prose`
+- `install/local/wikidot-verification/artifacts/listpages-html-body-live-20261024/manifest.json` (SHA-256 `ed90dbb0bb5291315164fb441707f179460550216a8c8e247cab55c8264d9c0f`), cases: `matrix-A-html-mid-after-prose.html`, `matrix-B-html-mid-after-two-prose-lines.html`, `matrix-C-control-no-block.html`, `matrix-D-escaped-html-marker-mid.html`, `matrix-E-code-mid-after-prose.html`
+
+### Identity and tag variables inside a body-owned html block stay literal
+
+- Observation ID: `listpages-body-html-block-literal-variables-20261024`
+- Classification: `documentation-clarification`
+- Observed at: `2026-10-24`
+- Analysis: The hosted html-block document of a body-owned block (leading or mid-body) contains the authored source with %%tags%% and %%created_by%% unsubstituted. Wikidot never produces a per-row html block from a ListPages body, so ListPages variable substitution does not reach that block. Tag values containing <, >, and " are accepted by Wikidot and read back verbatim (x<i>y and q"t) on the same page, so tag markup characters are not rejected at tagging time.
+
+Normative behavior:
+
+- Inside a hosted html block that Wikidot owns from a ListPages body, %%tags%%, %%created_by%% and similar ListPages variables are not substituted.
+- Page tags containing <, >, " and [ characters are accepted when set through the page tag editor and are read back exactly as entered.
+- Identity and tag variable escaping therefore cannot be justified by a Wikidot tag or username charset rule; it applies only where a per-row template emits html, which the body-owned rule now excludes.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/listpages-html-body-live-20261024/literal-variables-summary.json` (SHA-256 `1d9dd3bde9f4d9e4bde8389bc5c489c651c0f21fca82f4dd5ddf2c5a02f9da0b`), cases: `mid-hosted-literal-tags-and-author`, `lead-hosted-literal-tags`
+
+### Who-Rated roster lists every individual voter and equals the aggregate score
+
+- Observation ID: `pagerate-who-rated-roster-complete-20261024`
+- Classification: `documentation-omission`
+- Observed at: `2026-10-24`
+- Analysis: Anonymous wikidot.py page.votes reads of the public scp-wiki pages scp-9506 and scp-3352 return one vote row per individual voter (486 and 638 rows). Positive votes minus negative votes equals the page's displayed rating in both cases (475-11=464 and 628-10=618). The aggregate therefore derives from the individual vote rows, and a roster cannot be reconstructed from the aggregate alone.
+
+Normative behavior:
+
+- The Who-Rated roster lists one entry per individual voter with the voter's +1 or -1 value.
+- For each page, the sum of voter values equals the page rating shown to readers.
+- Deleted or placeholder voter accounts remain roster entries with their vote value.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/votes-scp-9506.json` (SHA-256 `79fd94f17bd78f34435c9517a6a9631aeacc8f5bf7ad76716a00295e709b6c0b`), cases: `scp-9506-who-rated`
+- `install/local/wikidot-verification/artifacts/votes-scp-3352.json` (SHA-256 `90799760c6c3151e2d972923d9fa68ab54a6a3344f775a1a0efbe4ae0b510ba9`), cases: `scp-3352-who-rated`
+
 
 
 ## Suggested public TDD seams

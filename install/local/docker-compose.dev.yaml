@@ -86,8 +86,8 @@ services:
         target: /app/patches
         read_only: true
       - type: bind
-        source: ../../framerail/svelte.config.js
-        target: /app/svelte.config.js
+        source: ../../framerail/sveltekit-options.js
+        target: /app/sveltekit-options.js
         read_only: true
       - type: bind
         source: ../../framerail/vite.config.ts

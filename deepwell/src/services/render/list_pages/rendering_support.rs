@@ -262,6 +262,13 @@ pub(in crate::services::render) fn preserve_list_pages_module_matches(
     preserved
 }
 
+fn contains_unescaped_html_block_opener(body: &str) -> bool {
+    let lowercase = body.to_ascii_lowercase();
+    lowercase
+        .match_indices("[[html]]")
+        .any(|(start, _)| !lowercase[..start].ends_with("@@"))
+}
+
 pub(in crate::services::render) fn list_pages_body_starts_with_preparsed_block(
     body: &str,
 ) -> bool {
@@ -269,10 +276,16 @@ pub(in crate::services::render) fn list_pages_body_starts_with_preparsed_block(
     if body
         .get(.."[[code]]".len())
         .is_some_and(|opening| opening.eq_ignore_ascii_case("[[code]]"))
-        || body
-            .get(.."[[html]]".len())
-            .is_some_and(|opening| opening.eq_ignore_ascii_case("[[html]]"))
     {
+        return true;
+    }
+
+    // Wikidot's html pass owns an html block wherever it sits in the body, not
+    // only when it leads (#2680). Live captures show a block after authored
+    // prose uses the default template, emits one hosted iframe, and leaves the
+    // prose and closing module as page text. An escaped `@@[[html]]@@` marker is
+    // literal text and does not open a block.
+    if contains_unescaped_html_block_opener(body) {
         return true;
     }
 
@@ -741,6 +754,24 @@ mod tests {
         )));
         assert!(list_pages_body_starts_with_preparsed_block(
             "[[code]]literal[[/code]]",
+        ));
+        // #2680 live captures on sandbox-for-codex: a mid-body html block after
+        // prose is owned by Wikidot's html pass, with or without a second line.
+        assert!(list_pages_body_starts_with_preparsed_block(concat!(
+            "Row %%title_linked%%\n",
+            "[[html]]\n<div>A</div>\n[[/html]]",
+        )));
+        assert!(list_pages_body_starts_with_preparsed_block(concat!(
+            "Row %%title_linked%%\nSecond line\n",
+            "[[html]]<div>B</div>[[/html]]\nTail line",
+        )));
+        // The escaped marker is literal text, so the body stays a per-row template.
+        assert!(!list_pages_body_starts_with_preparsed_block(concat!(
+            "Row %%title_linked%% @@[[html]]@@ literal\n",
+            "@@[[/html]]@@",
+        )));
+        assert!(!list_pages_body_starts_with_preparsed_block(
+            "Row %%title_linked%%\nSecond line",
         ));
         assert!(!list_pages_body_starts_with_preparsed_block(concat!(
             "ordinary prose\n",
