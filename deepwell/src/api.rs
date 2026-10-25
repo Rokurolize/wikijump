@@ -675,6 +675,9 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("password_reset_issue", password_reset_issue);
     register!("password_reset_redeem", password_reset_redeem);
     register!("password_reset_complete", password_reset_complete);
+    register!("account_delete_issue", account_delete_issue);
+    register!("account_delete_redeem", account_delete_redeem);
+    register!("account_delete_complete", account_delete_complete);
 
     // Votes
     register!("vote_set", vote_set);

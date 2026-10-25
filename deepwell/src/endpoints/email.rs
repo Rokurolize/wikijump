@@ -19,6 +19,7 @@
  */
 
 use super::prelude::*;
+use crate::services::MutationAuthorization;
 use crate::services::PasswordService;
 use crate::services::email::{
     EmailService, EmailTokenPurpose, EmailTokenService, EmailValidationOutput,
@@ -217,10 +218,15 @@ pub async fn password_reset_redeem(
         .into());
     }
 
-    let issued =
-        EmailTokenService::issue_grant(ctx, redeemed.user_id, redeemed.email, ip_address)
-            .await
-            .or_raise(|| Error::new("failed to issue reset grant", ErrorType::Email))?;
+    let issued = EmailTokenService::issue_grant(
+        ctx,
+        redeemed.user_id,
+        redeemed.email,
+        EmailTokenPurpose::ResetGrant,
+        ip_address,
+    )
+    .await
+    .or_raise(|| Error::new("failed to issue reset grant", ErrorType::Email))?;
 
     Ok(ResetGrantOutput {
         grant: issued.token,
@@ -297,4 +303,220 @@ pub async fn password_reset_complete(
         })?;
 
     Ok(ResetCompleteOutput { sessions_revoked })
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct AccountDeleteIssue {
+    ip_address: IpAddr,
+}
+
+/// Request an account-deletion confirmation link for the signed-in account.
+///
+/// Self-service and self-only (spec P1, P4): the session actor is the
+/// target, so no address or user id is accepted and a third party cannot
+/// start someone else's deletion. The link is emailed to the account's
+/// current address; nothing is deleted until the link is redeemed and the
+/// password is confirmed.
+pub async fn account_delete_issue(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<()> {
+    let AccountDeleteIssue { ip_address } = parse!(params, Request);
+    let actor_user_id =
+        MutationAuthorization::require_authenticated(ctx, "request account deletion")?;
+
+    let user = UserService::get_real(ctx, Reference::Id(actor_user_id))
+        .await
+        .or_raise(|| {
+            Error::new("failed to load account for deletion", ErrorType::User)
+        })?;
+
+    match EmailTokenService::issue(
+        ctx,
+        IssueEmailToken {
+            user_id: user.user_id,
+            email: user.email.clone(),
+            purpose: EmailTokenPurpose::DeleteConfirm,
+            ip_address,
+        },
+    )
+    .await
+    .or_raise(|| Error::new("failed to issue deletion token", ErrorType::Email))?
+    {
+        IssueEmailTokenOutcome::Issued(issued) => {
+            // The plaintext token stays server-side; only delivery
+            // metadata is recorded, never the token itself. The expiry
+            // comes from the stored row, not a recomputation.
+            EmailService::send_token_email(
+                &user.email,
+                EmailTokenPurpose::DeleteConfirm,
+                issued.expires_at,
+            )
+            .await;
+        }
+        IssueEmailTokenOutcome::Suppressed => {}
+    }
+
+    Ok(())
+}
+
+#[derive(Serialize, Clone)]
+pub struct DeleteGrantOutput {
+    pub grant: String,
+}
+
+impl std::fmt::Debug for DeleteGrantOutput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DeleteGrantOutput")
+            .field("grant", &"..")
+            .finish()
+    }
+}
+
+/// Exchange an account-deletion link for a one-time deletion grant.
+///
+/// The redeem landing shows confirmation state, never deletion controls
+/// (spec P7). Unsigned-out links fail closed: a session for the same
+/// account is required, and a link for another account fails exactly like
+/// a bogus one (spec P4, P6), so redemption never oracles which property
+/// failed. The grant, not the link, authorizes the terminal step.
+pub async fn account_delete_redeem(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<DeleteGrantOutput> {
+    let EmailTokenRedeem { token, ip_address } = parse!(params, Request);
+    let actor_user_id =
+        MutationAuthorization::require_authenticated(ctx, "redeem account deletion")?;
+    let redeemed =
+        EmailTokenService::redeem(ctx, &token, EmailTokenPurpose::DeleteConfirm)
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to redeem deletion token",
+                    ErrorType::InvalidEmailToken,
+                )
+            })?;
+
+    if redeemed.user_id != actor_user_id {
+        return Err(Error::new(
+            "deletion token does not belong to the signed-in account",
+            ErrorType::InvalidEmailToken,
+        )
+        .into());
+    }
+
+    let user = UserService::get_real(ctx, Reference::Id(redeemed.user_id))
+        .await
+        .or_raise(|| {
+            Error::new("failed to load account for deletion", ErrorType::User)
+        })?;
+    if user.email != redeemed.email {
+        return Err(Error::new(
+            "deletion token no longer matches the account address",
+            ErrorType::InvalidEmailToken,
+        )
+        .into());
+    }
+
+    let issued = EmailTokenService::issue_grant(
+        ctx,
+        redeemed.user_id,
+        redeemed.email,
+        EmailTokenPurpose::DeleteGrant,
+        ip_address,
+    )
+    .await
+    .or_raise(|| Error::new("failed to issue deletion grant", ErrorType::Email))?;
+
+    Ok(DeleteGrantOutput {
+        grant: issued.token,
+    })
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct AccountDeleteComplete {
+    grant: String,
+    password: String,
+    ip_address: IpAddr,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct DeleteCompleteOutput {
+    pub sessions_revoked: u64,
+}
+
+/// Delete the signed-in account on grant + password authority.
+///
+/// Terminal step of the documented flow (spec P1, P3): the mailbox proof
+/// (grant) and the password prompt both check out before anything mutates,
+/// so nothing destructive precedes the required confirmations. The
+/// password proof is indistinguishable on failure, exactly like the
+/// account-holder email-change path. Deletion itself is the existing
+/// idempotent server-owned `user_delete` (audit + `deleted_at`, wikis and
+/// pages untouched per spec P3), then every session of the account is
+/// revoked including the current one, signing the browser out.
+pub async fn account_delete_complete(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<DeleteCompleteOutput> {
+    let AccountDeleteComplete {
+        grant,
+        password,
+        ip_address,
+    } = parse!(params, Request);
+    let actor_user_id =
+        MutationAuthorization::require_authenticated(ctx, "complete account deletion")?;
+    let redeemed = EmailTokenService::redeem(ctx, &grant, EmailTokenPurpose::DeleteGrant)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to redeem deletion grant",
+                ErrorType::InvalidEmailToken,
+            )
+        })?;
+
+    MutationAuthorization::require_matching_actor(
+        ctx,
+        redeemed.user_id,
+        "complete account deletion",
+    )?;
+
+    let user = UserService::get_real(ctx, Reference::Id(redeemed.user_id))
+        .await
+        .or_raise(|| {
+            Error::new("failed to load account for deletion", ErrorType::User)
+        })?;
+    if user.email != redeemed.email {
+        return Err(Error::new(
+            "deletion grant no longer matches the account address",
+            ErrorType::InvalidEmailToken,
+        )
+        .into());
+    }
+
+    PasswordService::verify_sleep(ctx, &password, &user.password, true)
+        .await
+        .map_err(|_| {
+            Error::new(
+                "current password verification failed",
+                ErrorType::InvalidAuthentication,
+            )
+        })?;
+
+    UserService::delete(ctx, Reference::Id(user.user_id), actor_user_id, ip_address)
+        .await
+        .or_raise(|| Error::new("failed to delete account", ErrorType::User))?;
+
+    let sessions_revoked = SessionService::invalidate_all(ctx, user.user_id)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to revoke sessions after deletion",
+                ErrorType::Session,
+            )
+        })?;
+
+    Ok(DeleteCompleteOutput { sessions_revoked })
 }

@@ -20,8 +20,8 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "git_blob": "2de626d8e3907c0de9e4a36df41b116eabf51602",
-        "sha256": "52b1306edcb8eb517b846ac0efe2eaa326c18eb5e98970b9133658b49ae784ea"
+        "git_blob": "699d9c57d468e371b5988f7becd4b89cccac1dad",
+        "sha256": "a8ca7a2f59e34fceda64a0119a33cf9a6614e55713a77d1d52706290acd5294d"
       },
       {
         "path": "deepwell/src/endpoints/text_block.rs",

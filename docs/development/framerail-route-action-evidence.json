@@ -6,9 +6,9 @@
     "sha256": "1906d7229472694d2afbbea30e65e9e33c39dbc40481f794f4676a4000ac57cb"
   },
   "current_inventory": {
-    "source_revision": "d62704f8e265e31c6f4a153f6b9b0df4a99a35c6",
+    "source_revision": "76f66332cd90d9c608364b57cd603ce18a76b3c7",
     "path": "docs/development/compatibility-surface-inventory.json",
-    "sha256": "9dbe87c74de256b223608ae12f47efb344869b180820c24ba2330003b566f264"
+    "sha256": "455ca6820f8d3606498a44c5671d93c24da749e036ad5806c7105e92325f1ce7"
   },
   "records": [
     {
@@ -75,6 +75,30 @@
       "surface_id": "framerail-route:/-/admin",
       "tests": [
         "framerail/tests/site-settings-public-boundary.test.js::routes settings writes through the trusted site and revision-bound action seam"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/-/delete-account",
+      "tests": [
+        "framerail/tests/email-token.test.js::delete start page needs a session, then requests the copy keys"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-route:/-/delete-account/{token}",
+      "tests": [
+        "framerail/tests/email-token.test.js::delete link load pre-fills the token form without calling Deepwell"
       ],
       "tracking": [
         {
@@ -1045,6 +1069,42 @@
       "surface_id": "framerail-server-action:/-/admin?/toolbar",
       "tests": [
         "framerail/tests/site-settings-public-boundary.test.js::routes settings writes through the trusted site and revision-bound action seam"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/-/delete-account?/default",
+      "tests": [
+        "framerail/tests/email-token.test.js::delete issue binds the session actor and sends no identity"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/-/delete-account/{token}?/confirm",
+      "tests": [
+        "framerail/tests/email-token.test.js::delete completion deletes on grant plus password and clears both"
+      ],
+      "tracking": [
+        {
+          "issue": 1372
+        }
+      ],
+      "temporal": []
+    },
+    {
+      "surface_id": "framerail-server-action:/-/delete-account/{token}?/default",
+      "tests": [
+        "framerail/tests/email-token.test.js::delete redemption exchanges the link for a grant only on POST"
       ],
       "tracking": [
         {
