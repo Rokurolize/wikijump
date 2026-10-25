@@ -1,6 +1,6 @@
 {
   "schema": "theme_lab_bhl_option_authority.v1",
-  "observed_at": "2026-10-25",
+  "observed_at": "2026-10-26",
   "authority": "shared SCP-JP corpus current snapshots plus retained exact public stylesheet response",
   "pages": [
     {
@@ -133,7 +133,7 @@
   ],
   "framerail": {
     "fingerprint_tool": "../../../../src/framerail-source-fingerprint.mjs",
-    "fingerprint_sha256": "e87fe4a7c68fbea5216ece02a8b00ff2594170fb2d6baddd4019aab7d3aae1f1",
+    "fingerprint_sha256": "42ee7181da4cf05300b4d172bea8c2bd801e7f81b83b8aacd40db72a6d0530b7",
     "runtime_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3395",
     "runtime_source_header": "x-theme-lab-runtime-source-sha",
     "runtime_version": "captured by runner at execution"
@@ -150,12 +150,12 @@
   ],
   "backend_runtime_identity": {
     "schema": "wikijump_deepwell_runtime_identity.v1",
-    "source_sha256": "7495f018e02ab9bfd5f9e0dd90676978055beb6bdba1cdcaa202db9e22ffdbae",
-    "ftml_git_revision": "c36bc5fe655fdb6cd41a563882194493f50008e1",
-    "container_id": "90042d34ea0de0938d12a4ef552fba721eeed64852a5bdfe5adbdfb23f00ca7a",
-    "image_id": "sha256:333ba54331dd7f8014ec6edaaddca479e6ebd5dc57e3386c310f996e94e4b228",
-    "binary_sha256": "f9323634c78cec97f36ca329589b59c9365842c9959ebbe905df5185b7327301",
+    "source_sha256": "f942bea04611191c45df56cdf1f5b858013cf5b824ab1ce24b68096d4d771fc5",
+    "ftml_git_revision": "e6e86eb031fdf7ce3468baf033ce5c9b1399391a",
+    "container_id": "e94b5bc75224f70887c7699cca07a8a3e6d1c56132b5506d7fde0ea66fc32f4a",
+    "image_id": "sha256:48f77b7a6077a97b88c88c7450f291857b9a1a3cc127cb0d319f1fa7bbf38d29",
+    "binary_sha256": "ecb939f73bb18543f695e01477a67e13984f09bc30ee1f532556bc766383e535",
     "config_sha256": "6eeb5715be1ac0d72784a10eb2a821b14995e9d0e29cd886a146e489ff16f638",
-    "identity_sha256": "7b7cfb8c52e2ed3460ff9d27197edc18923f0f9f55f24db62dcf5232d165881e"
+    "identity_sha256": "c668c008500e2fa7311b9a973edca1779a150e808a6ed0eb31d316aa67fa4f7c"
   }
 }
