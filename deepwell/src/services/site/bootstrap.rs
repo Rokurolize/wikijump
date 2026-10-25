@@ -52,6 +52,7 @@ use crate::utils::now;
 /// Baseline role/permission templates shared with the database seeder.
 /// Field-for-field the shape of the seeder's `Role` records.
 #[derive(serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "kebab-case")]
 struct RoleTemplate {
     name: String,
     description: String,
