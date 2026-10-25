@@ -3662,7 +3662,8 @@
         "Page tags containing <, >, \" and [ characters are accepted when set through the page tag editor and are read back exactly as entered.",
         "Identity and tag variable escaping therefore cannot be justified by a Wikidot tag or username charset rule; it applies only where a per-row template emits html, which the body-owned rule now excludes."
       ],
-      "evidence": [
+      "evidence": [],
+      "raw_captures": [
         {
           "path": "install/local/wikidot-verification/artifacts/listpages-html-body-live-20261024/pages/wj2680-1792846101-mid-hosted.html",
           "sha256": "0ea8038fe02b6f045abbf806376cc58c8f53d79a4135853afc6fde2b25ac2743",
