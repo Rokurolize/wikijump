@@ -173,10 +173,8 @@ mod tests {
     #[tokio::test]
     async fn robots_txt_main_target_advertises_preferred_site_domain() {
         assert!(valid_site_domain("preferred.example"));
-        let response = robots_response(
-            &public_robots_txt("preferred.example"),
-            StatusCode::OK,
-        );
+        let response =
+            robots_response(&public_robots_txt("preferred.example"), StatusCode::OK);
 
         assert_eq!(response.status(), StatusCode::OK);
         assert_eq!(
