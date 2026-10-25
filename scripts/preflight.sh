@@ -15,13 +15,17 @@
 #   --base <ref>    Compare against this ref instead of origin/develop.
 #   --final         Run the complete candidate barrier, including Clippy, full
 #                   tests, validators, and the Framerail production build.
-#   --groups <a,b>  Run only these of the selected groups (the standing
-#                   promotion runs the groups no earlier receipt covers).
+#   --groups <a,b>  Run exactly these groups, whatever the change-set selects
+#                   (the standing promotion runs the groups no earlier receipt
+#                   covers). Unknown group names are refused. Without it, the
+#                   groups come from the changes against the base.
 #   --jobs <n>      Run up to n check groups at once (0: all; the default for
 #                   --final, 1 otherwise), in two waves: the suites with
-#                   wall-clock deadlines, then the Deepwell tests beside the
-#                   compile-only groups. Checks within a group stay in order;
-#                   each Rust group then builds in its own target directory.
+#                   wall-clock deadlines plus the compile-only lint groups,
+#                   then the Deepwell tests beside the small Rust groups.
+#                   Checks within a group stay in order, except the groups
+#                   that opt into run_checks_concurrent; each Rust group
+#                   builds in its own target directory.
 #   --list          Print the selected groups and the checks, then exit.
 #
 # Exit code is non-zero if any check fails.
@@ -73,7 +77,7 @@ if ! {
 fi
 mapfile -d '' -t CHANGED_PATHS < "${CHANGED_PATHS_FILE}"
 
-if [[ ${#CHANGED_PATHS[@]} -eq 0 ]]; then
+if [[ ${#CHANGED_PATHS[@]} -eq 0 && -z "${ONLY_GROUPS}" ]]; then
   echo "preflight: no changes against ${BASE}; nothing to check"
   exit 0
 fi
@@ -83,9 +87,17 @@ if ! SELECTED="$(printf '%s\0' "${CHANGED_PATHS[@]}" | node .github/scripts/clas
   exit 2
 fi
 if [[ -n "${ONLY_GROUPS}" ]]; then
+  # An explicit list is authoritative: the named groups run even when the
+  # change-set would not select them, and nothing else runs.
+  for requested in ${ONLY_GROUPS//,/ }; do
+    if ! grep -q "^${requested}=" <<<"${SELECTED}"; then
+      echo "preflight: unknown group in --groups: ${requested}" >&2
+      exit 2
+    fi
+  done
   RESTRICTED=""
   while IFS='=' read -r group value; do
-    [[ ",${ONLY_GROUPS}," == *",${group},"* ]] || value=false
+    [[ ",${ONLY_GROUPS}," == *",${group},"* ]] && value=true || value=false
     RESTRICTED+="${group}=${value}"$'\n'
   done <<<"${SELECTED}"
   SELECTED="${RESTRICTED%$'\n'}"
@@ -155,6 +167,44 @@ run_test_inconclusive_ok() {
   esac
 }
 
+# Jobs mode only: run check functions at once, each in its own log, then
+# replay the logs in the order the functions were given and merge their
+# FAILED / INCONCLUSIVE lists. The group-level parallel runner uses the same
+# pattern one level up. Checks in one call must be independent: no shared
+# build directories, ports, or generated files.
+run_checks_concurrent() {
+  local dir fn pid
+  dir="$(mktemp -d)" || return 1
+  local -a pids=()
+  for fn in "$@"; do
+    (
+      FAILED=()
+      INCONCLUSIVE=()
+      "${fn}"
+      : > "${dir}/${fn}.failed"
+      (( ${#FAILED[@]} == 0 )) || printf '%s\n' "${FAILED[@]}" > "${dir}/${fn}.failed"
+      : > "${dir}/${fn}.inconclusive"
+      (( ${#INCONCLUSIVE[@]} == 0 )) || printf '%s\n' "${INCONCLUSIVE[@]}" > "${dir}/${fn}.inconclusive"
+    ) > "${dir}/${fn}.log" 2>&1 &
+    pids+=("$!")
+  done
+  for pid in "${pids[@]}"; do wait "${pid}"; done
+  for fn in "$@"; do
+    cat "${dir}/${fn}.log"
+    if [[ -s "${dir}/${fn}.failed" ]]; then
+      local -a part=()
+      mapfile -t part < "${dir}/${fn}.failed"
+      FAILED+=("${part[@]}")
+    fi
+    if [[ -s "${dir}/${fn}.inconclusive" ]]; then
+      local -a part_inc=()
+      mapfile -t part_inc < "${dir}/${fn}.inconclusive"
+      INCONCLUSIVE+=("${part_inc[@]}")
+    fi
+  done
+  rm -rf -- "${dir}"
+}
+
 group_contracts() {
   if group_selected verification || group_selected deepwell || group_selected wws || group_selected framerail || group_selected theme_lab; then
     if [[ "${MODE}" == "final" ]]; then
@@ -191,13 +241,44 @@ group_workflow() {
   fi
 }
 
+check_wikidot_verification_tests() {
+  run_test "wikidot verification tests" pnpm --dir install/local/wikidot-verification test
+}
+
+check_standing_runtime_tests() {
+  run_test "standing runtime tests" python3 -m unittest discover -s install/standing/tests -p 'test_*.py'
+}
+
+check_standing_receipt_tests() {
+  run_test "standing receipt tests" node --test 'install/standing/tests/*.test.mjs'
+}
+
+check_wikidot_specification_generator() {
+  run_test_inconclusive_ok "wikidot specification generator" node scripts/generate-wikidot-specifications.mjs --check
+}
+
+check_wikidot_implementation_ledger() {
+  run "wikidot implementation ledger" node scripts/initialize-wikidot-implementation-ledger.mjs --check
+}
+
 group_verification() {
   if group_selected verification && [[ "${MODE}" == "final" ]]; then
-    run_test "wikidot verification tests" pnpm --dir install/local/wikidot-verification test
-    run_test "standing runtime tests" python3 -m unittest discover -s install/standing/tests -p 'test_*.py'
-    run_test "standing receipt tests" node --test 'install/standing/tests/*.test.mjs'
-    run "wikidot specification generator" node scripts/generate-wikidot-specifications.mjs --check
-    run "wikidot implementation ledger" node scripts/initialize-wikidot-implementation-ledger.mjs --check
+    if "${LIST}" || [[ "${JOBS}" == 1 ]]; then
+      check_wikidot_verification_tests
+      check_standing_runtime_tests
+      check_standing_receipt_tests
+      check_wikidot_specification_generator
+      check_wikidot_implementation_ledger
+    else
+      # Independent suites with separate outputs; in series they summed to
+      # the wave's critical path while the other groups waited.
+      run_checks_concurrent \
+        check_wikidot_verification_tests \
+        check_standing_runtime_tests \
+        check_standing_receipt_tests \
+        check_wikidot_specification_generator \
+        check_wikidot_implementation_ledger
+    fi
   fi
 }
 
@@ -286,11 +367,14 @@ else
   }
   # Two waves. The test suites that give subprocesses and timers wall-clock
   # deadlines run first, without the Deepwell shards: beside them they missed
-  # those deadlines. The Deepwell tests then run beside the groups that only
-  # compile and lint.
+  # those deadlines. The compile-only Deepwell lint group runs here too: its
+  # full-crate Clippy build beside the shards starved them (in the
+  # 2026-10-24 standing promotion the Deepwell tests took 893s against
+  # ~160s of uncontended shard execution). The Deepwell tests then run
+  # beside only the small Rust groups and the contracts check.
   WAVES=(
-    "theme_lab workflow verification framerail_lint framerail"
-    "contracts deepwell_lint deepwell wws locales"
+    "theme_lab workflow verification deepwell_lint framerail_lint framerail"
+    "contracts deepwell wws locales"
   )
   for wave in "${WAVES[@]}"; do
     for group in ${wave}; do

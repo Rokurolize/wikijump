@@ -342,12 +342,37 @@
               "decision_authority": "REVIEWED_COMPONENT_PUBLICATION_SOURCE"
             }
           ]
+        },
+        {
+          "marker": "SCP-JP Wikidot Basalt credit controls: support the native direct-child anchor shape.",
+          "rationale": "The preserved SCP-JP credit component emits direct-child info anchors, while the frozen Basalt stylesheet only styles anchors nested under p elements. This narrowly applies the same icon, transparency, and hover/focus contract to those direct-child shapes.",
+          "sha256": "48596ee87a0c996573b549e084e3ccd99d4df5132a69dd49fc0a0a6d935eccaf",
+          "selectors": [
+            "div.heritage-rating-module ~ div.creditButton > a",
+            "div.heritage-rating-module ~ div.creditButton > a::after",
+            "div.heritage-rating-module ~ div.creditButton > a::before",
+            "div.heritage-rating-module ~ div.creditButton > a:is(:hover, :focus)::before",
+            "div.rate-box-with-credit-button .creditButton > a",
+            "div.rate-box-with-credit-button .creditButton > a::after",
+            "div.rate-box-with-credit-button .creditButton > a::before",
+            "div.rate-box-with-credit-button .creditButton > a:is(:hover, :focus)::before"
+          ],
+          "at_contexts": [],
+          "origin": "source-backed-jp-component-compatibility",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/basalt-jp-credit-direct-child-compatibility.json",
+              "sha256": "2a8d98dacfbf07d03b47be2818042edbf1f56bc69397c17f46f8c2bbc6d2a734",
+              "decision_authority": "FROZEN_SCPJP_AND_WIKIDOT_SOURCE"
+            }
+          ]
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df",
         "candidate-input.css": "0a40d1b821a9f77c875da059e36c9d089a1250b9911d50d4ea6e944098baa7d0",
-        "authority-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "authority-overrides.css": "3a6ef9c6f7416d680ad0d40c8a5704b589e5e0840593f0352c509e4535f6fca2",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/betterfootnotes.wikidot.txt": "84aa43f24ed32e2953abacc1b81804f284235b3afcdcee2b56f908525e45d46d",
         "source-includes/betterfootnotes-input.css": "4aedde777d67d2a23dd069bcaee758cda60e82b59a8b74c8097a5c3c8e4c1cb5",
@@ -356,13 +381,13 @@
         "source-css-includes.json": "91a598f39414626016af54112e912f4d7f3ed958e883ed2737fefb08c576ae9b"
       },
       "outputs": {
-        "candidate.css": "c1b44963493737105ecb19c33bb49a41c4b931c09a9b3dbecde0562b0f942823",
-        "candidate-source.css": "4299340521db719481a402743d780d52e8c4337a2e1557df7d2c5311d8234638",
-        "candidate.wikidot.source.txt": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df",
-        "candidate.wikidot.txt": "4a266040a4c16b6ffd7e281a8615d476680872c057c0d5a4078a07fecb9110ae",
+        "candidate.css": "059a0e4ff9dc0071e1c13e0bb17578722f46c783ff9227edaa9b0215649afba0",
+        "candidate-source.css": "55010fb29ab202f9507069b09d3043e69aa79f9486581cd37658f79c8634a5ac",
+        "candidate.wikidot.source.txt": "7167897315929a07f31f9008682a529351686d51ddab7a8569f6e6d06ca021d5",
+        "candidate.wikidot.txt": "454aace77676d80079e37a71e11fe2492b7e308f3c8af39111301fe6969f38c1",
         "maintenance/base.wikidot.txt": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df",
-        "maintenance/jp-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "maintenance/final.wikidot.txt": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df"
+        "maintenance/jp-overrides.css": "a882f453b7397899b41fcf2e031a86856d395c8d2e7c4e1c545d200ee8e69a63",
+        "maintenance/final.wikidot.txt": "6c07597c4d066a2dc36f1bbb4309aed9663ee705627df251f81a866914b0796f"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",

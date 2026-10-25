@@ -1109,6 +1109,14 @@
       "missing_in_clean_head": true
     },
     {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/basalt-jp-credit-direct-child-compatibility.json",
+      "size_bytes": 1884,
+      "sha256": "2a8d98dacfbf07d03b47be2818042edbf1f56bc69397c17f46f8c2bbc6d2a734",
+      "ledger_root": true,
+      "ledger_hash_verified": true,
+      "missing_in_clean_head": false
+    },
+    {
       "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-current-css-20261006/measurement-authority-probe-temp.mjs",
       "size_bytes": 25746,
       "sha256": "270f6ad4a2a47ed73a2db4ec0c15eb0cf7f76e08041565fe8bfcca5943cb74f7",
@@ -17262,9 +17270,9 @@
     }
   ],
   "summary": {
-    "files": 2157,
-    "bytes": 5406334207,
-    "ledger_paths": 104,
+    "files": 2158,
+    "bytes": 5406336091,
+    "ledger_paths": 105,
     "ledger_hash_mismatches": 0,
     "missing_in_clean": 2073,
     "replay_objects_appended": 227,

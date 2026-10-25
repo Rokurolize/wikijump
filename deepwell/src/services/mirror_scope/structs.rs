@@ -114,3 +114,58 @@ pub struct ReconcileMirrorOutput {
     pub failed: usize,
     pub items: Vec<ReconcileItemResult>,
 }
+
+/// One source attachment the mirror page must carry, from corpus
+/// attachment metadata (name plus content hash and size when recorded).
+///
+/// The hash is the stored blob digest in hex, the same terms the import
+/// verify path (`ImportFileExpectation::s3_hash`) compares. A missing
+/// hash or size narrows the check to name presence only.
+#[derive(Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct SourceFileExpectation {
+    pub name: String,
+    pub s3_hash_hex: Option<String>,
+    pub size: Option<i64>,
+}
+
+/// Reconcile one mirror page's file inventory against the source.
+///
+/// Active rows absent from the inventory are tombstoned through the
+/// canonical file delete (history preserved, attributed to the staff
+/// actor with the reconciliation time, never backdated to a fabricated
+/// source time). Rows whose bytes disagree and source names with no
+/// local row are reported, not touched: new or changed bytes must
+/// arrive through the import path, never invented here. Requires an
+/// existing scope record.
+#[derive(Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct ReconcileMirrorFiles<'a> {
+    pub site_id: i64,
+    pub page: Reference<'a>,
+    pub files: Vec<SourceFileExpectation>,
+    pub ip_address: IpAddr,
+}
+
+/// The outcome of one reconciled file row.
+#[derive(Serialize, Debug, Clone)]
+pub struct ReconcileFileItemResult {
+    pub name: String,
+    pub op: String,
+    pub ok: bool,
+    pub revision_number: Option<i32>,
+    pub error: Option<String>,
+}
+
+/// The outcome of one file reconciliation pass.
+#[derive(Serialize, Debug, Clone)]
+pub struct ReconcileMirrorFilesOutput {
+    pub site_id: i64,
+    pub page_id: i64,
+    pub tombstoned: usize,
+    pub kept: usize,
+    pub changed: Vec<String>,
+    pub missing: Vec<String>,
+    pub failed: usize,
+    pub items: Vec<ReconcileFileItemResult>,
+}

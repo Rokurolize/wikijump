@@ -44,7 +44,7 @@
     },
     "existing_jp_audit": "new-jp-candidate-verified",
     "technical_spec_version": "1.4",
-    "final_verdict": "warn"
+    "final_verdict": "inconclusive"
   },
   "dependencies": {
     "slug": "theme:basalt",
@@ -133,7 +133,7 @@
       "reason": "The page-level image was broken in offline JP preview. Its bytes were already in the content-addressed acquisition cache; "
     }
   ],
-  "final_verdict": "warn",
+  "final_verdict": "inconclusive",
   "existing_jp_audit": "new-jp-candidate-verified",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/basalt/assets.json",
   "asset_dependency_decision_count": 244,
@@ -142,13 +142,13 @@
     "jp_overrides": "maintenance/jp-overrides.css",
     "manifest": "maintenance/manifest.json",
     "base_sha256": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "semantic_css_sha256": "ab1f1224d01e1b079fef1edb6d656260111249a51ac485aa1fed834a86fc1ad1",
-    "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "jp_overrides_sha256": "a882f453b7397899b41fcf2e031a86856d395c8d2e7c4e1c545d200ee8e69a63",
+    "semantic_css_sha256": "f36d05298f9f2b89fe2271810e68519c713567b4866166e33d1ca13f3d863257",
+    "canonical_override_sha256": "db87b30380e50e2948b4146d11cea59913f09ffbc71534c91e8087cd0473e362",
     "final_source": "maintenance/final.wikidot.txt",
-    "final_source_sha256": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df",
+    "final_source_sha256": "6c07597c4d066a2dc36f1bbb4309aed9663ee705627df251f81a866914b0796f",
     "exact_duplicate_rules_removed": 0,
-    "redundant_same_value_declarations_removed": 0,
+    "redundant_same_value_declarations_removed": 1,
     "empty_rules_removed": 0
   },
   "interactive_acceptance": {
@@ -156,7 +156,7 @@
       "source_path": "candidate-input.css",
       "source_sha256": "0a40d1b821a9f77c875da059e36c9d089a1250b9911d50d4ea6e944098baa7d0",
       "active_tags": [],
-      "candidate_source_sha256": "b3dc264fd62d29c3202e3e3db90a2461e27f04426e657c66c648284be558f4df",
+      "candidate_source_sha256": "7167897315929a07f31f9008682a529351686d51ddab7a8569f6e6d06ca021d5",
       "candidate_active_tags": [
         "theme"
       ],
@@ -167,7 +167,7 @@
       "inactive_source_css_modules_removed_exact": 4,
       "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "c1b44963493737105ecb19c33bb49a41c4b931c09a9b3dbecde0562b0f942823",
+      "candidate_css_sha256": "059a0e4ff9dc0071e1c13e0bb17578722f46c783ff9227edaa9b0215649afba0",
       "asset_receipt_path": "assets.json",
       "assets": 237,
       "imports": 6,
@@ -188,8 +188,7 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "warn",
-    "port_verdict": "pass",
-    "target_status": "warn"
+    "status": "inconclusive",
+    "reason": "Historical candidate acceptance superseded"
   }
 }

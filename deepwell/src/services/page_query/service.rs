@@ -36,6 +36,7 @@ use crate::models::page_connection::{self, Entity as PageConnection};
 use crate::models::page_parent::{self, Entity as PageParent};
 use crate::models::{page_revision, text};
 use crate::services::ServiceContext;
+use crate::services::page::foreign_snapshot_exclusion_sql;
 use crate::services::{PageService, ParentService, ScoreService};
 use crate::types::{ConnectionType, Reference};
 use sea_orm::FromQueryResult;
@@ -252,6 +253,14 @@ impl PageQueryService {
         let mut condition = Condition::all();
 
         condition = condition.add(page::Column::SiteId.eq(queried_site_id));
+
+        // Foreign include-source snapshots are storage, not pages of this
+        // site (issue #2690): hide them from every ListPages selection the
+        // same way direct routes hide them.
+        condition = condition.add(Expr::cust(foreign_snapshot_exclusion_sql(
+            "page.page_id",
+            queried_site_id,
+        )));
 
         let hidden_condition = Expr::cust_with_expr(
             r#"regexp_replace($1, '^.*:', '') LIKE '\_%' ESCAPE '\'"#,

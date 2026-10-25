@@ -28,3 +28,13 @@ export function resolveRunContractPath(themeLabDir, contractDir, relative, label
   if (contractCandidate === root || contractCandidate.startsWith(root + path.sep)) return contractCandidate;
   throw new Error(`${label} does not resolve to an existing Theme Lab path`);
 }
+
+/**
+ * Resolves a path written inside a manifest file (for example a migration
+ * fixture's `file`) against that manifest's own directory, then Theme Lab root.
+ * The run contract's directory is not a base: the Sigma-10 identity manifest
+ * lives in sigma10-migration/, while a task contract lives in current-campaign/.
+ */
+export function resolveManifestRelativePath(themeLabDir, manifestPath, relative, label = 'manifest path') {
+  return resolveRunContractPath(themeLabDir, path.dirname(manifestPath), relative, label);
+}

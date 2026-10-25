@@ -30,6 +30,9 @@ mod theme_previewer;
 #[path = "page/forum.rs"]
 mod forum;
 
+#[path = "page/foreign_source.rs"]
+mod foreign_source;
+
 #[path = "page/membership.rs"]
 mod membership;
 
@@ -10625,6 +10628,106 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
             }
         }
     }
+}
+
+#[tokio::test]
+async fn wikidot_user_observation_only_identity_resolves_inline_user() {
+    // Refs #2081 residual: an inline [[user]] reference must resolve to an
+    // observed source identity even when no materialized wikidot_user row
+    // exists. That is the live Standing shape (a banked observation with a
+    // stable source ID links userInfo(<id>); only genuinely unknown names
+    // keep the error-inline text). The matrix test above banks full rows
+    // for every extant case, so this test pins the sparse path instead.
+    const OBSERVED_USER_ID: i64 = 19_103_700;
+    const PAGE_SLUG: &str = "fixture-wikidot-observation-only-user";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO known_user (user_id) VALUES ($1)",
+            [Value::from(OBSERVED_USER_ID)],
+        ))
+        .await
+        .expect("observation-only known-user fixture should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO wikidot_identity_observation (user_id, source_sha256, observed_at, name, slug, source_reference) VALUES ($1, $2, NOW(), 'Observed Author', 'observed-author', 'test observation-only fixture')",
+            [
+                Value::from(OBSERVED_USER_ID),
+                Value::from(Sha256::digest("test observation-only fixture").to_vec()),
+            ],
+        ))
+        .await
+        .expect("observation-only identity fixture should be inserted");
+
+    let source = "OBS=[[user Observed Author]]\n";
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Wikidot observation-only user",
+            "wikitext": source,
+        }),
+    );
+    let html = preview.body;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PAGE_SLUG,
+        "Fixture Wikidot observation-only user",
+        source,
+    )
+    .await;
+    let saved_page = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let saved_html = match saved_page {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected saved observation-only user page, got {other:?}"),
+    };
+
+    for (label, output) in [
+        ("preview", html.as_str()),
+        ("saved page", saved_html.as_str()),
+    ] {
+        assert!(
+            output.contains("https://www.wikidot.com/user:info/observed-author")
+                && output.contains(&format!(
+                    "WIKIDOT.page.listeners.userInfo({OBSERVED_USER_ID}); return false;"
+                ))
+                && output.contains(">Observed Author</a>"),
+            "{label} observation-only identity must link the stable source ID:\n{output}",
+        );
+        assert!(
+            !output.contains("does not match any existing user name"),
+            "{label} must not error-inline a banked observation:\n{output}",
+        );
+    }
+
+    runner.teardown().await;
 }
 
 #[tokio::test]
@@ -22887,10 +22990,17 @@ async fn listpages_template_body_over_the_render_budget_remains_literal() {
     let template_body = |sentinel: &str, bytes: usize| {
         let variable = "%%title%%";
         assert!(sentinel.len() + variable.len() <= bytes);
-        format!(
-            "{sentinel}{}{variable}",
-            "x".repeat(bytes - sentinel.len() - variable.len()),
-        )
+        // The render budget counts bytes while the page-source limit
+        // counts characters (200,001 max), so the filler is multibyte:
+        // the body reaches the byte budget while the page itself stays
+        // within the source limit.
+        let fill_bytes = bytes - sentinel.len() - variable.len();
+        let fill = format!(
+            "{}{}",
+            "\u{3042}".repeat(fill_bytes / 3),
+            "x".repeat(fill_bytes % 3),
+        );
+        format!("{sentinel}{fill}{variable}")
     };
     let module_source = |body: &str| {
         format!(
@@ -24709,7 +24819,7 @@ INSERT INTO wikidot_corpus_import_run (
             [
                 Value::from(import_run_id),
                 Value::from(site_id),
-                Value::from(format!("author-selector-test-{import_run_id}")),
+                Value::from("author-selector-test"),
                 Value::from(row_count),
             ],
         ))
@@ -24758,7 +24868,7 @@ INSERT INTO wikidot_page_snapshot (
 "#,
             [
                 Value::from(page_id),
-                Value::from(format!("author-selector-test-{import_run_id}")),
+                Value::from("author-selector-test"),
                 Value::from(format!(
                     "71300000-0000-4000-8000-{source_entity_suffix:012x}"
                 )),

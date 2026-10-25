@@ -107,7 +107,7 @@ def link_file(blob, destination, digest, size):
         raise
 
 
-def transfer(store_root, destination_root, inventory_path, expected_sha, *, mode, source_root=None, apply=False, link=False):
+def transfer(store_root, destination_root, inventory_path, expected_sha, *, mode, source_root=None, apply=False, link=False, reader=None):
     if mode not in ('ingest', 'restore'):
         raise ValueError('mode must be ingest or restore')
     if link and mode != 'restore':
@@ -135,7 +135,7 @@ def transfer(store_root, destination_root, inventory_path, expected_sha, *, mode
     elif source_root is not None:
         raise ValueError('restore must not depend on the original source worktree')
 
-    entries, objects = inventory_files(destination, Path(inventory_path), expected_sha)
+    entries, objects = (reader or inventory_files)(destination, Path(inventory_path), expected_sha)
     missing_objects = {}
     verified_objects = set()
     for rel, (digest, size) in entries.items():

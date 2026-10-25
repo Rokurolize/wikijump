@@ -1,6 +1,8 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {execFileSync} from 'node:child_process';
+import {SHARED_LOGICAL_ORIGIN} from './fixture-origin.mjs';
 import {playwrightBrowserVersions} from './playwright-browser-versions.mjs';
 import {ACCEPTANCE_VIEWPORTS} from './acceptance-viewports.mjs';
 import {scopedRunContractSha} from './scoped-run-contract.mjs';
@@ -13,9 +15,20 @@ const viewportById=new Map(ACCEPTANCE_VIEWPORTS.map(row=>[row.id,{width:row.widt
 // Anonymous contract dumping starts a disposable browser but opens no page or
 // session. Recompute cheap contracts; never recapture pixels just to inspect
 // the current dependency graph.
+export function contractDumpArgs(absoluteContractPath, contractOrigin) {
+  // Task-owned runtimes use their own contract origin as the transport. The
+  // anonymous contract dump must be told that origin explicitly, because a
+  // non-shared logical origin has no implicit transport.
+  const transportArgs = typeof contractOrigin === 'string' && contractOrigin !== SHARED_LOGICAL_ORIGIN
+    ? [`--transport-origin=${contractOrigin}`] : [];
+  return ['--anonymous', '--dump-contracts', `--run-contract=${absoluteContractPath}`, ...transportArgs];
+}
+
 export function readCurrentBrowserContracts(root, contractPath, {browserRoot=path.resolve(root,'../../../framerail')}={}) {
+  const absoluteContractPath = path.join(root, contractPath);
+  const contract = JSON.parse(fs.readFileSync(absoluteContractPath, 'utf8'));
   const bytes = execFileSync(process.execPath, [path.join(root, 'ports/interactive-visual-fixture/capture-interactive.mjs'),
-    '--anonymous', '--dump-contracts', `--run-contract=${path.join(root, contractPath)}`],
+    ...contractDumpArgs(absoluteContractPath, contract.target_site?.origin)],
   {encoding: 'utf8', timeout: 30000, maxBuffer: 8 * 1024 * 1024,
     env:{...process.env,THEME_LAB_BROWSER_ROOT:browserRoot}});
   const document = JSON.parse(bytes);

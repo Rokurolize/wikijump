@@ -24,11 +24,11 @@
     "pinned_files": {
       "requirements": {
         "path": "install/local/wikidot-verification/requirements.txt",
-        "sha256": "623a1f799ef3814b9a55f75ee4cef47c10030431da307b84f0706f7c7011a69f"
+        "sha256": "f347baf8fb6d3996c9b0a872f7d653df93d3e1d2bc337c690bead9420e7ad92a"
       },
       "requirements_lock": {
         "path": "install/local/wikidot-verification/requirements.lock",
-        "sha256": "8f2ec862f6f0358b5f0aea8ca6edd40c1ef043c2f0391701217fd907c2ae82e1"
+        "sha256": "faa6949629144aaca52cdf941f7cf289c7dc1c3fc95f1fa8ed21539d83429db0"
       }
     }
   },
