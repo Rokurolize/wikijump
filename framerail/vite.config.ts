@@ -15,11 +15,14 @@ const pnpmVersion = pkg.packageManager?.startsWith("pnpm@")
 // The commit this frontend was built from, when the build runs inside
 // a git checkout. Deployed builds may not have one; the platform
 // information page (WJ-1279) omits the row when it is absent.
-let frontendGitCommit: string | null = null
-try {
-  frontendGitCommit = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim() || null
-} catch {
-  frontendGitCommit = null
+let frontendGitCommit: string | null = process.env.WIKIJUMP_GIT_COMMIT || null
+if (!frontendGitCommit) {
+  try {
+    frontendGitCommit =
+      execSync("git rev-parse HEAD", { encoding: "utf8" }).trim() || null
+  } catch {
+    frontendGitCommit = null
+  }
 }
 
 const testCacheDir =
