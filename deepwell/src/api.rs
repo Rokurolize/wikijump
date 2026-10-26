@@ -706,6 +706,10 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     );
     register!("import_wikidot_discussion", import_wikidot_discussion);
     register!("import_wikidot_page_votes", import_wikidot_page_votes);
+    register!(
+        "import_wikidot_page_meta_tags",
+        import_wikidot_page_meta_tags
+    );
     register!("mirror_scope_get", mirror_scope_get);
     register!("mirror_scope_set", mirror_scope_set);
     register!("mirror_scope_reconcile", mirror_scope_reconcile);
