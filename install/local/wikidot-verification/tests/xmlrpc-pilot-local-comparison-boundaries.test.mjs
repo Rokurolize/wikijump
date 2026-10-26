@@ -19,6 +19,27 @@ import {
 
 const rpcToken = "0".repeat(64);
 
+// A FIFO opened without O_NONBLOCK would park the comparison forever, so the
+// FIFO cases bound the comparison call itself. Building the sealed pilot fixture
+// fsyncs dozens of files and runs outside the bound: under host memory or I/O
+// pressure it alone can take longer than the comparison's whole budget.
+const FIFO_COMPARISON_BOUND_MS = 10_000;
+
+async function settlesWithin(promise, milliseconds) {
+  let timer;
+  const bound = new Promise((_resolve, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`comparison did not settle within ${milliseconds}ms`)),
+      milliseconds,
+    );
+  });
+  try {
+    return await Promise.race([promise, bound]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 test("a page_get response must identify the requested site and full slug", async (t) => {
   const fixture = await sealPilot(t);
   const responses = [...fixture.responses.values()];
@@ -71,27 +92,29 @@ test("a page_get response with an invalid RFC3339 calendar date is a local error
   assert.equal(rows[1].status, "matched");
 });
 
-test("receipt FIFOs fail without blocking", { timeout: 10_000 }, async (t) => {
+test("receipt FIFOs fail without blocking", async (t) => {
   const fixture = await sealPilot(t);
   const resultPath = path.join(fixture.pilotRoot, "receipts", "result.json");
   await fs.unlink(resultPath);
   await execFileAsync("mkfifo", [resultPath]);
   await assert.rejects(
-    runXmlrpcPilotLocalComparison({
-      outputDir: comparisonOutputDir(fixture, "receipt-fifo-output"),
-      pilotRoot: fixture.pilotRoot,
-      rpcToken,
-      rpcUrl: "http://127.0.0.1:29999/jsonrpc",
-      runtimeIdentityPath: fixture.runtimeIdentityPath,
-      sourceExpectation: fixture.sourceExpectation,
-    }),
+    settlesWithin(
+      runXmlrpcPilotLocalComparison({
+        outputDir: comparisonOutputDir(fixture, "receipt-fifo-output"),
+        pilotRoot: fixture.pilotRoot,
+        rpcToken,
+        rpcUrl: "http://127.0.0.1:29999/jsonrpc",
+        runtimeIdentityPath: fixture.runtimeIdentityPath,
+        sourceExpectation: fixture.sourceExpectation,
+      }),
+      FIFO_COMPARISON_BOUND_MS,
+    ),
     /bounded regular file/u,
   );
 });
 
 test(
   "existing output FIFOs fail before local RPC",
-  { timeout: 10_000 },
   async (t) => {
     const fixture = await sealPilot(t);
     const pages = new Map(
@@ -106,14 +129,17 @@ test(
     const rowsPath = path.join(outputDir, "local-comparison.jsonl");
     await execFileAsync("mkfifo", [rowsPath]);
     await assert.rejects(
-      runXmlrpcPilotLocalComparison({
-        outputDir,
-        pilotRoot: fixture.pilotRoot,
-        rpcToken,
-        rpcUrl: rpc.rpcUrl,
-        runtimeIdentityPath: fixture.runtimeIdentityPath,
-        sourceExpectation: fixture.sourceExpectation,
-      }),
+      settlesWithin(
+        runXmlrpcPilotLocalComparison({
+          outputDir,
+          pilotRoot: fixture.pilotRoot,
+          rpcToken,
+          rpcUrl: rpc.rpcUrl,
+          runtimeIdentityPath: fixture.runtimeIdentityPath,
+          sourceExpectation: fixture.sourceExpectation,
+        }),
+        FIFO_COMPARISON_BOUND_MS,
+      ),
       /expected private regular file/u,
     );
     assert.equal(rpc.calls.length, 0);
