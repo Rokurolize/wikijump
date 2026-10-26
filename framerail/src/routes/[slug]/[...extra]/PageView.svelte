@@ -56,7 +56,6 @@
   import CurrentPageActions from "./CurrentPageActions.svelte"
   import CurrentPageMetadata from "./CurrentPageMetadata.svelte"
   import PageHead from "./PageHead.svelte"
-  import { resolveHeadImageUrls } from "$lib/head-metadata"
   import RevisionBanner from "./RevisionBanner.svelte"
   import PagePaneContent from "./PagePaneContent.svelte"
   import WikidotFoundPageTags from "./WikidotFoundPageTags.svelte"
@@ -631,9 +630,7 @@
 <PageHead
   {compiledBodyStylesHead}
   fontPreloadHrefs={pageFontPreloadHrefs}
-  metaTags={showRevision
-    ? []
-    : resolveHeadImageUrls(data.meta_tags ?? [], data.site, page.url.origin)}
+  metaTags={showRevision ? [] : (data.meta_tags ?? [])}
 />
 
 <RevisionBanner
