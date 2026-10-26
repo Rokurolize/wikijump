@@ -14,7 +14,9 @@
 
 mod value_safety;
 
-use self::value_safety::render_list_pages_substituted_identity;
+use self::value_safety::{
+    render_list_pages_substituted_identity, render_list_pages_substituted_title,
+};
 use super::{
     BTreeMap, BTreeSet, CompatHtmlFragments, CompatTextFragments, Cow, FoundPageRow,
     LISTPAGES_VARIABLE_REGEX, ListPagesDataFormDefinition, ListPagesGeneratedSlot,
@@ -27,6 +29,7 @@ use super::{
     list_pages_first_paragraph, list_pages_plain_text, list_pages_preview,
     list_pages_preview_length, list_pages_tag_target_prefix,
     list_pages_variable_capture_has_unknown_name, list_pages_variable_capture_is_valid,
+    list_pages_variable_inside_quoted_attribute,
     list_pages_variable_starts_triple_link_target, neutralize_authored_markers,
     protect_list_pages_content_insertion, protect_list_pages_generated_html,
     push_list_pages_rendered_fragment, push_list_pages_rendered_fragment_with_mode,
@@ -362,6 +365,8 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
             let inside_html_escape = html_escape_ranges
                 .iter()
                 .any(|range| range.start <= matched.start() && matched.end() <= range.end);
+            let inside_quoted_attribute =
+                list_pages_variable_inside_quoted_attribute(template, matched.start());
             substituted_cursor += matched.start() - source_cursor;
             let replacement_start = substituted_cursor;
             let runtime_origin = if generated_slots.is_some()
@@ -399,7 +404,11 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     marker
                 }
                 "title_linked" | "linked_title" => title_linked.clone(),
-                "title" => title_plain.clone(),
+                "title" => render_list_pages_substituted_title(
+                    &title_plain,
+                    inside_html_escape,
+                    inside_quoted_attribute,
+                ),
                 "name" | "slug" | "page_name" => slug.to_owned(),
                 "fullname" | "full_slug" | "page_unix_name" | "full_page_name"
                     if list_pages_variable_starts_triple_link_target(
@@ -618,7 +627,13 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     .unwrap_or_default(),
                 "parent_title" => context
                     .page_parent_display
-                    .map(|parent| sanitize_list_pages_title(&parent.title))
+                    .map(|parent| {
+                        render_list_pages_substituted_title(
+                            &sanitize_list_pages_title(&parent.title),
+                            inside_html_escape,
+                            inside_quoted_attribute,
+                        )
+                    })
                     .unwrap_or_default(),
                 "parent_title_linked" => context
                     .page_parent_display
@@ -712,6 +727,13 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                             context.data_form_definition,
                         )
                     })
+                    .map(|value| {
+                        render_list_pages_substituted_title(
+                            &value,
+                            inside_html_escape,
+                            inside_quoted_attribute,
+                        )
+                    })
                     .unwrap_or_else(|| captures[0].to_owned()),
                 "form_hint" => captures
                     .name("argument")
@@ -720,6 +742,13 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                         substitute_list_pages_form_hint(
                             field,
                             context.data_form_definition,
+                        )
+                    })
+                    .map(|value| {
+                        render_list_pages_substituted_title(
+                            &value,
+                            inside_html_escape,
+                            inside_quoted_attribute,
                         )
                     })
                     .unwrap_or_else(|| captures[0].to_owned()),
