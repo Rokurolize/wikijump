@@ -35,13 +35,13 @@ use crate::services::page_revision::{
     CreatePageRevisionBody, CreatePageRevisionOutput, CreateResurrectionPageRevision,
     CreateTombstonePageRevision, GetPageRevision, RerenderType,
 };
+use crate::services::permission::{PermissionService, PermissionTarget};
 use crate::services::{
     CategoryService, FilterService, PageRevisionService, TextBlockService, TextService,
 };
 use crate::types::Maybe;
 use crate::types::{
-    Action, PageId, PageOrder, PageRevisionType, Permission, Reference, RerenderDepth,
-    Resource,
+    Action, PageId, PageOrder, PageRevisionType, Reference, RerenderDepth,
 };
 use crate::utils::now;
 use crate::utils::{get_category_name, trim_default};
@@ -1658,6 +1658,24 @@ WHERE page.site_id = $1
         let page_ref = ctx.request().page_reference().or_raise(make_error)?;
         let site_id = ctx.request().site_id().or_raise(make_error)?;
 
+        Self::check_user_permission_for_page(ctx, site_id, page_ref.clone(), action)
+            .await
+            .or_raise(make_error)
+    }
+
+    /// Variant of `check_user_permission` for an explicit page, used when
+    /// the request context carries no page reference (for example the
+    /// page-edit-permission endpoint falling back to the site's default
+    /// page, upstream #3155).
+    pub async fn check_user_permission_for_page(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        page_ref: Reference<'_>,
+        action: Action,
+    ) -> Result<bool> {
+        let make_error =
+            || Error::new("failed to check user permissions for page", ErrorType::Page);
+
         info!(
             "Checking edit permission for page {:?} in site ID {:?}",
             page_ref, site_id
@@ -1667,11 +1685,15 @@ WHERE page.site_id = $1
             .await
             .or_raise(make_error)?;
 
-        ctx.user_has_permission(Permission {
-            resource_type: Resource::Page,
-            resource_category: Some(Reference::Id(page_model.page_category_id)),
+        PermissionService::can_user(
+            ctx,
+            Some(site_id),
             action,
-        })
+            PermissionTarget::Page {
+                page_id: page_model.page_id,
+                category_id: page_model.page_category_id,
+            },
+        )
         .await
         .or_raise(make_error)
     }

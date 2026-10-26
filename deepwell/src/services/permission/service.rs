@@ -27,7 +27,7 @@ use crate::services::ServiceContext;
 use crate::services::audit::{AuditEvent, AuditService};
 use crate::services::permission::resolvers::resolve_category_slug;
 use crate::services::permission::{
-    CheckPermissionContext, PermissionCache, SetUserPermissionInput,
+    CheckPermissionContext, PermissionCache, PermissionTarget, SetUserPermissionInput,
     resolve_category_reference,
 };
 use crate::services::relation::{GetSiteBan, RelationService};
@@ -446,6 +446,82 @@ impl PermissionService {
     ) -> Result<bool> {
         let [result] = Self::batch_check_user_can(ctx, perm_ctx, [input]).await?;
         Ok(result)
+    }
+
+    /// Checks whether the user of the current request can perform the
+    /// action on the target.
+    ///
+    /// Target-typed front API from upstream #3136, implemented over this
+    /// service's existing resolution path (`check_user_can`): the fenced
+    /// permission cache, timed-ban suppression, and site-scoped role
+    /// lookup all apply exactly as for a direct `check_user_can` call.
+    pub async fn can_user(
+        ctx: &ServiceContext<'_>,
+        site_id: Option<i64>,
+        action: Action,
+        target: PermissionTarget,
+    ) -> Result<bool> {
+        Self::can_user_as(ctx, ctx.request().user_id, site_id, action, target).await
+    }
+
+    /// Checks an explicit user's permissions for the given action on the
+    /// target.
+    ///
+    /// This API should only be used to check permissions for an arbitrary
+    /// user, not for authorizing the current request's user. For that, use
+    /// `can_user()`.
+    pub async fn can_user_as(
+        ctx: &ServiceContext<'_>,
+        user_id: Option<i64>,
+        site_id: Option<i64>,
+        action: Action,
+        target: PermissionTarget,
+    ) -> Result<bool> {
+        // We cannot determine roles without an associated site.
+        let Some(site_id) = site_id else {
+            return Ok(false);
+        };
+
+        let (permission, page_reference) = match target {
+            PermissionTarget::Site => (
+                Permission {
+                    resource_type: Resource::Site,
+                    resource_category: None,
+                    action,
+                },
+                None,
+            ),
+            PermissionTarget::Page {
+                page_id,
+                category_id,
+            } => (
+                Permission {
+                    resource_type: Resource::Page,
+                    resource_category: Some(Reference::Id(category_id)),
+                    action,
+                },
+                Some(Reference::Id(page_id)),
+            ),
+            PermissionTarget::Lock => (
+                Permission {
+                    resource_type: Resource::PageLock,
+                    resource_category: None,
+                    action,
+                },
+                None,
+            ),
+        };
+
+        Self::check_user_can(
+            ctx,
+            &CheckPermissionContext {
+                user_id,
+                site_id,
+                page_reference,
+            },
+            permission,
+        )
+        .await
     }
 
     /// Batch check if a user has the specified permissions.

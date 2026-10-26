@@ -43,6 +43,7 @@ pub enum Resource {
     ForumCategory,
     Role,
     Site,
+    PageLock,
 }
 
 #[derive(

@@ -27,10 +27,11 @@ use deepwell::error::ErrorType;
 use deepwell::license::License;
 use deepwell::services::category::CategoryService;
 use deepwell::services::forum::{CreateForumCategory, CreateForumGroup, ForumService};
+use deepwell::services::page::{CreatePage, PageService};
 use deepwell::services::permission::{
     CheckPermissionContext, DecoratedPermission, PERMISSION_CACHE_FENCE_TTL_SECONDS,
     PERMISSION_CACHE_INVALIDATION_CHANNEL, PERMISSION_CACHE_TTL_SECONDS, PermissionCache,
-    PermissionService, SetUserPermissionInput,
+    PermissionService, PermissionTarget, SetUserPermissionInput,
 };
 use deepwell::services::relation::{
     CreateSiteBan, CreateSiteMember, RelationService, RemoveSiteMember, SiteBanData,
@@ -88,6 +89,9 @@ struct PermissionFixture {
     user_a: i64,
     user_b: i64,
     user_c: i64,
+    user_d: i64,
+    test_page_id: i64,
+    other_page_id: i64,
 }
 
 impl PermissionFixture {
@@ -170,13 +174,74 @@ impl PermissionFixture {
         )
         .await;
 
+        // RoleD: site:edit + page-lock:bypass-lock, both unscoped (upstream #3136)
+        let role_d = create_role(ctx, site_id, "RoleD", None).await;
+        add_perms_to_role(
+            ctx,
+            site_id,
+            role_d,
+            vec![
+                Permission {
+                    resource_type: Resource::Site,
+                    resource_category: None,
+                    action: Action::Edit,
+                },
+                Permission {
+                    resource_type: Resource::PageLock,
+                    resource_category: None,
+                    action: Action::BypassLock,
+                },
+            ],
+        )
+        .await;
+
         let user_a = create_user(ctx, n, "a").await;
         let user_b = create_user(ctx, n, "b").await;
         let user_c = create_user(ctx, n, "c").await;
+        let user_d = create_user(ctx, n, "d").await;
 
         grant_role(ctx, site_id, user_a, role_a).await;
         grant_role(ctx, site_id, user_b, role_b).await;
         // user_c doesn't have any roles
+        grant_role(ctx, site_id, user_d, role_d).await;
+
+        let test_page = PageService::create(
+            ctx,
+            CreatePage {
+                site_id,
+                wikitext: String::new(),
+                title: String::from("Test Category Permission Page"),
+                alt_title: None,
+                tags: Vec::new(),
+                slug: format!("{TEST_CATEGORY_NAME}:permission-test-{n}"),
+                layout: None,
+                revision_comments: String::new(),
+                user_id: SYSTEM_USER_ID,
+                bypass_filter: true,
+                ip_address: common::IP_ADDRESS,
+            },
+        )
+        .await
+        .expect("Failed to create test-category page");
+
+        let other_page = PageService::create(
+            ctx,
+            CreatePage {
+                site_id,
+                wikitext: String::new(),
+                title: String::from("Other Category Permission Page"),
+                alt_title: None,
+                tags: Vec::new(),
+                slug: format!("{OTHER_CATEGORY_NAME}:permission-test-{n}"),
+                layout: None,
+                revision_comments: String::new(),
+                user_id: SYSTEM_USER_ID,
+                bypass_filter: true,
+                ip_address: common::IP_ADDRESS,
+            },
+        )
+        .await
+        .expect("Failed to create other-category page");
 
         PermissionFixture {
             site_id,
@@ -186,6 +251,9 @@ impl PermissionFixture {
             user_a,
             user_b,
             user_c,
+            user_d,
+            test_page_id: test_page.page_id,
+            other_page_id: other_page.page_id,
         }
     }
 }
@@ -533,6 +601,148 @@ async fn check_user_can() {
         !check(&runner, a, f.site_id, Resource::Page, cat, Action::Edit).await,
         "user_a: should fail page:edit check in test-category"
     );
+}
+
+/// Ported from upstream #3136: checks via the target-typed API.
+async fn check_target(
+    runner: &TestRunner,
+    user_id: Option<i64>,
+    site_id: i64,
+    target: PermissionTarget,
+    action: Action,
+) -> bool {
+    PermissionService::can_user_as(runner.context(), user_id, Some(site_id), action, target)
+        .await
+        .expect("Permission check returned an error")
+}
+
+#[tokio::test]
+async fn can_user() {
+    let runner = TestRunner::setup().await;
+    let f = PermissionFixture::setup(&runner).await;
+
+    let a = Some(f.user_a);
+    let b = Some(f.user_b);
+    let c = Some(f.user_c);
+    let d = Some(f.user_d);
+    let test_page = PermissionTarget::Page {
+        page_id: f.test_page_id,
+        category_id: f.category_id,
+    };
+    let other_page = PermissionTarget::Page {
+        page_id: f.other_page_id,
+        category_id: f.other_category_id,
+    };
+
+    // RoleA grants page:view and page:edit unscoped
+    assert!(
+        check_target(&runner, a, f.site_id, test_page, Action::View).await,
+        "user_a should pass page:view check"
+    );
+    assert!(
+        check_target(&runner, a, f.site_id, other_page, Action::Edit).await,
+        "user_a should pass page:edit check"
+    );
+
+    // user_c has no roles at all
+    assert!(
+        !check_target(&runner, c, f.site_id, test_page, Action::View).await,
+        "user_c should fail page:view check"
+    );
+    assert!(
+        !check_target(&runner, c, f.site_id, test_page, Action::Edit).await,
+        "user_c should fail page:edit check"
+    );
+
+    // user_b has no view permission
+    assert!(
+        !check_target(&runner, b, f.site_id, test_page, Action::View).await,
+        "user_b should fail page:view check"
+    );
+
+    // user_b has page:edit permission scoped to the test category
+    assert!(
+        check_target(&runner, b, f.site_id, test_page, Action::Edit).await,
+        "user_b: should pass page:edit check in test-category"
+    );
+    assert!(
+        !check_target(&runner, b, f.site_id, other_page, Action::Edit).await,
+        "user_b: should fail page:edit in other category"
+    );
+
+    // Since the test category has scoped edit permission, user_a cannot
+    // edit it with the _default edit permission
+    assert!(
+        !check_target(&runner, a, f.site_id, test_page, Action::Edit).await,
+        "user_a: should fail page:edit check in test-category"
+    );
+
+    // RoleD grants site:edit
+    assert!(
+        check_target(&runner, d, f.site_id, PermissionTarget::Site, Action::Edit).await,
+        "user_d should pass site:edit check"
+    );
+    assert!(
+        !check_target(&runner, a, f.site_id, PermissionTarget::Site, Action::Edit).await,
+        "user_a should fail site:edit check"
+    );
+    assert!(
+        !check_target(&runner, None, f.site_id, PermissionTarget::Site, Action::Edit).await,
+        "anonymous should fail site:edit check"
+    );
+
+    // RoleD grants page-lock:bypass-lock
+    assert!(
+        check_target(
+            &runner,
+            d,
+            f.site_id,
+            PermissionTarget::Lock,
+            Action::BypassLock
+        )
+        .await,
+        "user_d should pass page-lock:bypass-lock check"
+    );
+    assert!(
+        !check_target(
+            &runner,
+            a,
+            f.site_id,
+            PermissionTarget::Lock,
+            Action::BypassLock
+        )
+        .await,
+        "user_a should fail page-lock:bypass-lock check"
+    );
+
+    // user_d has no page permissions
+    assert!(
+        !check_target(&runner, d, f.site_id, other_page, Action::Edit).await,
+        "user_d: site:edit should not grant page:edit"
+    );
+}
+
+#[tokio::test]
+async fn check_category_scoping() {
+    let runner = TestRunner::setup().await;
+    let f = PermissionFixture::setup(&runner).await;
+
+    // Permission check should be able to resolve the category for a page target
+    assert!(
+        PermissionService::can_user_as(
+            runner.context(),
+            Some(f.user_b),
+            Some(f.site_id),
+            Action::Edit,
+            PermissionTarget::Page {
+                page_id: f.test_page_id,
+                category_id: f.category_id,
+            }
+        )
+        .await
+        .expect("Permission check returned an error"),
+        "user_b should have page:edit permission for the page in test-category"
+    )
 }
 
 #[tokio::test]
@@ -1548,6 +1758,57 @@ async fn check_permission_endpoint() {
         !run_endpoint!(runner, page_edit_permission).can_edit,
         "user_c should NOT have edit permission for page in test-category"
     );
+
+    // Upstream #3155: with no page in the request context, the endpoint
+    // falls back to the site's default page instead of failing.
+    let site = SiteService::get(runner.context(), Reference::Id(f.site_id))
+        .await
+        .expect("Failed to get site");
+
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": f.site_id,
+            "wikitext": "Main page",
+            "title": "Main Page",
+            "alt_title": null,
+            "slug": site.default_page,
+            "layout": null,
+            "revision_comments": "",
+            "user_id": SYSTEM_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_a),
+        site_id: Some(f.site_id),
+        page_reference: None,
+        ..Default::default()
+    });
+    assert!(
+        run_endpoint!(runner, page_edit_permission).can_edit,
+        "user_a should have edit permission for the default page"
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_c),
+        site_id: Some(f.site_id),
+        page_reference: None,
+        ..Default::default()
+    });
+    assert!(
+        !run_endpoint!(runner, page_edit_permission).can_edit,
+        "user_c should NOT have edit permission for the default page"
+    );
+
+    // Same test but with no site ID either, should fail
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_a),
+        ..Default::default()
+    });
+    run_endpoint_err!(runner, page_edit_permission);
 }
 
 #[tokio::test]

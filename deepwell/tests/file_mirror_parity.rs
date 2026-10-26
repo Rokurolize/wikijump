@@ -120,6 +120,8 @@ async fn import_uploader(runner: &TestRunner, label: &str) -> i64 {
             website: None,
             karma: KarmaLevel::Three,
             is_pro: false,
+            upsert: false,
+            delete_old_if_same_name: false,
             importing_user_id: ADMIN_USER_ID,
             ip_address: common::IP_ADDRESS,
         },

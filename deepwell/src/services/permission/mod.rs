@@ -29,4 +29,4 @@ pub use self::cache::{
 };
 pub use self::resolvers::resolve_category_reference;
 pub use self::service::PermissionService;
-pub use self::structs::{CheckPermissionContext, DecoratedPermission};
+pub use self::structs::{CheckPermissionContext, DecoratedPermission, PermissionTarget};

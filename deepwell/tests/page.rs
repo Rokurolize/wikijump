@@ -3093,6 +3093,33 @@ async fn basic_edit() {
     assert_eq!(page.revision_type, PageRevisionType::Regular);
     assert_eq!(page.revision_user_id, ADMIN_USER_ID);
     assert_eq!(page.page_category_slug, "_default");
+
+    let output = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": page_id,
+            "last_revision_id": revision_id,
+            "revision_comments": "authenticated attribution",
+            "user_id": ADMIN_USER_ID,
+            "title": "authenticated edit",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("No revision created");
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": page_id,
+        }),
+    )
+    .expect("Cannot find page");
+    assert_eq!(page.revision_id, output.revision_id);
+    assert_eq!(page.revision_user_id, ADMIN_USER_ID);
 }
 
 #[tokio::test]
@@ -10502,6 +10529,8 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
             website: None,
             karma: KarmaLevel::Three,
             is_pro: false,
+            upsert: false,
+            delete_old_if_same_name: false,
             importing_user_id: ADMIN_USER_ID,
             ip_address: common::IP_ADDRESS,
         },
