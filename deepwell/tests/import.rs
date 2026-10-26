@@ -49,9 +49,10 @@ use deepwell::services::file::FileService;
 use deepwell::services::file_revision::{CreateFirstFileRevision, FileRevisionService};
 use deepwell::services::import::{
     ImportFile, ImportFileDelete, ImportFileExpectation, ImportMetaTag, ImportPage,
-    ImportPageFilesVerify, ImportPageRevision, ImportService, ImportSite,
-    ImportSiteMember, ImportSiteRoster, ImportUser, ImportedSiteRole, ImportedUserType,
-    MAX_IMPORT_FILE_BYTES, ObservedUserProfile, PromoteObservedIdentity,
+    ImportPageFilesVerify, ImportPageMetaTags, ImportPageRevision, ImportService,
+    ImportSite, ImportSiteMember, ImportSiteRoster, ImportUser, ImportedSiteRole,
+    ImportedUserType, MAX_IMPORT_FILE_BYTES, ObservedUserProfile,
+    PromoteObservedIdentity,
 };
 use deepwell::services::mirror_scope::{MirrorScopeService, SetMirrorScope};
 use deepwell::services::page_meta_tag::{PageMetaTag, PageMetaTagService};
@@ -2893,6 +2894,111 @@ async fn import_page_source_update_appends_single_deterministic_revision() {
         !wikitext.contains("Please customize this page"),
         "refresh must not restore generic seed content:\n{wikitext}",
     );
+
+    runner.teardown().await;
+}
+
+async fn page_scope_meta_tags(
+    runner: &TestRunner,
+    site_id: i64,
+    page_id: i64,
+) -> Vec<PageMetaTag> {
+    PageMetaTagService::effective(runner.context(), site_id, page_id)
+        .await
+        .expect("effective meta tags should load")
+        .into_iter()
+        .filter(|tag| !tag.all_pages)
+        .collect()
+}
+
+#[tokio::test]
+async fn import_page_meta_tags_replace_semantics() {
+    // Refs #2089: the meta-tag import is authoritative for the page's
+    // scope — a re-import with a changed source set converges (updates,
+    // additions, removals) instead of accumulating stale tags.
+    let runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .unwrap()
+        .site
+        .site_id;
+    let page_id = 3_260_000_041;
+    let slug = "source-meta-tags";
+    ImportService::add_page(
+        runner.context(),
+        import_idempotency_page(page_id, site_id, slug),
+    )
+    .await
+    .expect("source page should import");
+
+    let tag = |name: &str, content: &str| ImportMetaTag {
+        name: String::from(name),
+        content: String::from(content),
+    };
+
+    let output = ImportService::add_page_meta_tags(
+        runner.context(),
+        ImportPageMetaTags {
+            site_id,
+            page_id,
+            meta_tags: vec![
+                tag("og:title", "Source Title"),
+                tag("og:description", "Source description"),
+            ],
+        },
+    )
+    .await
+    .expect("first meta tag import should succeed");
+    assert_eq!((output.stored, output.removed), (2, 0));
+    let stored = page_scope_meta_tags(&runner, site_id, page_id).await;
+    assert_eq!(stored.len(), 2);
+
+    // Changed set: og:title updated, og:description dropped, twitter:card added.
+    let output = ImportService::add_page_meta_tags(
+        runner.context(),
+        ImportPageMetaTags {
+            site_id,
+            page_id,
+            meta_tags: vec![
+                tag("og:title", "Source Title v2"),
+                tag("twitter:card", "summary"),
+            ],
+        },
+    )
+    .await
+    .expect("second meta tag import should succeed");
+    assert_eq!((output.stored, output.removed), (2, 1));
+    let mut stored = page_scope_meta_tags(&runner, site_id, page_id).await;
+    stored.sort_by(|a, b| a.name.cmp(&b.name));
+    assert_eq!(stored.len(), 2);
+    assert_eq!(stored[0].name, "og:title");
+    assert_eq!(stored[0].content, "Source Title v2");
+    assert_eq!(stored[1].name, "twitter:card");
+
+    // A duplicate name in one payload is rejected.
+    let error = ImportService::add_page_meta_tags(
+        runner.context(),
+        ImportPageMetaTags {
+            site_id,
+            page_id,
+            meta_tags: vec![tag("og:title", "A"), tag("og:title", "B")],
+        },
+    )
+    .await
+    .expect_err("duplicate meta tag names must fail");
+    assert_contains_error!(error, ErrorType::DatabaseImport);
+
+    // A page that is not an imported Wikidot page is rejected.
+    let error = ImportService::add_page_meta_tags(
+        runner.context(),
+        ImportPageMetaTags {
+            site_id,
+            page_id: page_id + 999,
+            meta_tags: vec![tag("og:title", "Nope")],
+        },
+    )
+    .await
+    .expect_err("meta tags for a non-imported page must fail");
+    assert_contains_error!(error, ErrorType::DatabaseImport);
 
     runner.teardown().await;
 }

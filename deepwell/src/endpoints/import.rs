@@ -23,10 +23,11 @@ use crate::services::MutationAuthorization;
 use crate::services::import::{
     ImportDiscussion, ImportDiscussionOutput, ImportFile, ImportFileDelete,
     ImportFileDeleteOutput, ImportFileOutput, ImportPage, ImportPageFilesVerify,
-    ImportPageFilesVerifyOutput, ImportPageOutput, ImportPageRevision,
-    ImportPageRevisionOutput, ImportPageVotes, ImportPageVotesOutput, ImportService,
-    ImportSite, ImportSiteOutput, ImportSiteRoster, ImportSiteRosterOutput, ImportUser,
-    ImportUserOutput, PromoteObservedIdentity, PromoteObservedIdentityOutput,
+    ImportPageFilesVerifyOutput, ImportPageMetaTags, ImportPageMetaTagsOutput,
+    ImportPageOutput, ImportPageRevision, ImportPageRevisionOutput, ImportPageVotes,
+    ImportPageVotesOutput, ImportService, ImportSite, ImportSiteOutput, ImportSiteRoster,
+    ImportSiteRosterOutput, ImportUser, ImportUserOutput, PromoteObservedIdentity,
+    PromoteObservedIdentityOutput,
 };
 
 pub async fn import_wikidot_discussion(
@@ -194,6 +195,25 @@ pub async fn import_wikidot_page_votes(
         .or_raise(|| {
             Error::new(
                 "failed to import wikidot page votes",
+                ErrorType::DatabaseImport,
+            )
+        })
+}
+
+pub async fn import_wikidot_page_meta_tags(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<ImportPageMetaTagsOutput> {
+    MutationAuthorization::require_platform_staff(
+        ctx,
+        "import Wikidot page meta tag data",
+    )?;
+    let input: ImportPageMetaTags = parse!(params, DatabaseImport);
+    ImportService::add_page_meta_tags(ctx, input)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to import wikidot page meta tags",
                 ErrorType::DatabaseImport,
             )
         })
