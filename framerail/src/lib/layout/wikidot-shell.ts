@@ -10,9 +10,7 @@ export function shouldUseWikidotShell(data: ShellViewData | null | undefined): b
   return shouldUseWikidotShellValue(data)
 }
 
-export function sideBarHasCloseMenu(
-  data: ShellViewData | null | undefined
-): boolean {
+export function sideBarHasCloseMenu(data: ShellViewData | null | undefined): boolean {
   return sideBarHasCloseMenuValue(data)
 }
 

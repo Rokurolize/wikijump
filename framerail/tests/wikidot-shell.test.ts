@@ -85,7 +85,8 @@ test("shell heuristics apply only when page and site layouts are unspecified", (
 test("side bar close-menu detection follows the rendered side bar html", () => {
   assert.equal(
     sideBarHasCloseMenuValue({
-      compiled_side_bar_html: '<div class="side-block"><a class="close-menu" href="##">x</a></div>'
+      compiled_side_bar_html:
+        '<div class="side-block"><a class="close-menu" href="##">x</a></div>'
     }),
     true
   )

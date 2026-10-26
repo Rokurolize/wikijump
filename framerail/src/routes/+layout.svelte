@@ -21,10 +21,7 @@
     PAGE_LAYOUT_CONTEXT_KEY,
     type PageLayoutContext
   } from "$lib/layout/page-layout-context"
-  import {
-    resolveShellLayout,
-    sideBarHasCloseMenu
-  } from "$lib/layout/wikidot-shell"
+  import { resolveShellLayout, sideBarHasCloseMenu } from "$lib/layout/wikidot-shell"
   import {
     resolveCanonicalViewData,
     resolveCanonicalViewMetadata
