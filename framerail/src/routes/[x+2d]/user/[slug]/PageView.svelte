@@ -104,6 +104,7 @@
         >{data.internationalization?.["user-profile-info.website"]}</span
       >
       {#if websiteHref}
+        <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- user-supplied external website URL -->
         <a class="user-attribute-value website-link" href={websiteHref}
           >{userData.website}</a
         >

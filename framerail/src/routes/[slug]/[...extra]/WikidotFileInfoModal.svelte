@@ -98,6 +98,7 @@
         </tr>
         <tr>
           <td>{text("wiki-page-file-info.url", "Full file URL:")}</td>
+          <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- full file URL on the file domain, not a route -->
           <td><a href={fileUrl}>{fileUrl}</a></td>
         </tr>
         <tr>

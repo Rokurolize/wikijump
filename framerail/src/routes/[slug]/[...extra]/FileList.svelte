@@ -229,6 +229,7 @@
             {@const fileUrl = `//${data.site_file_domain}/-/file/${data.page?.slug}/${file.name}`}
             <tr id="file-row-{file.file_id}">
               <td>
+                <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- protocol-relative file-domain URL, not a route -->
                 <a href={fileUrl}>
                   {file.name}
                 </a>

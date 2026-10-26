@@ -16,7 +16,7 @@
   let totpOrCode = $state("")
 
   const cancelLogin = async () => {
-    await goto(authCancelDestination(), { replaceState: true })
+    await goto(resolve(authCancelDestination(), {}), { replaceState: true })
   }
 
   const { form, enhance } = superForm(
@@ -35,6 +35,7 @@
           // Land where sign-in started (or the site root) with the session's
           // account menu, instead of staying on the bare /-/login screen.
           if (isLoggedIn) {
+            // eslint-disable-next-line svelte/no-navigation-without-resolve -- return target is a validated same-site path
             await goto(authReturnDestination(page.url), {
               replaceState: true,
               invalidateAll: true
