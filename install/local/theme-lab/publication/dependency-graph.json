@@ -7218,7 +7218,7 @@
         "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json"
       ],
       "visual_review": "ports/black-highlighter-theme/option-scenarios/runs/visual-review.json",
-      "current_authority_sha256": "0b269c60f688b2f70f15c445caab0622c7c05123908c10d43e981a3a28539b89",
+      "current_authority_sha256": "9bd338e7109ea60d093c0a45cb0e17afac0ec4fe9709c1ba0d90aca04939f385",
       "theme_candidate_source_sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
       "theme_candidate_css_sha256": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b",
       "option_component_candidates": [
@@ -7292,7 +7292,7 @@
         "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json"
       ],
       "visual_review": "ports/black-highlighter-theme/option-scenarios/runs/visual-review.json",
-      "current_authority_sha256": "0b269c60f688b2f70f15c445caab0622c7c05123908c10d43e981a3a28539b89",
+      "current_authority_sha256": "9bd338e7109ea60d093c0a45cb0e17afac0ec4fe9709c1ba0d90aca04939f385",
       "theme_candidate_source_sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
       "theme_candidate_css_sha256": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b",
       "option_component_candidates": [
@@ -7313,9 +7313,9 @@
   "edge_scope": "Explicit edges represent publication ordering constraints and actionable cross-page publication/runtime dependency actions. They are not an exhaustive rendering of every ordinary Wikidot include. Ordinary include observations and source identities are recorded per theme in campaign_snapshot.candidate_jp_includes and package dependency-input/source-includes manifests; excluded dependencies are listed separately.",
   "candidate_freeze": {
     "path": "frozen-candidate-set.json",
-    "candidate_set_sha256": "a4d79b5ab424816ae77777f1ced54c24f82ef8b85dcd0874aeab5949e8209fca",
+    "candidate_set_sha256": "d50e18cc8c1a2b796ba16b41e06dcd4d6649830408b8ad511f9f1803a9662c46",
     "state": "frozen-before-final-acceptance",
     "frozen_at": "2026-10-22",
-    "readiness_audit_sha256": "f46c65704eb4fa49da8d382d57351db14edbdf5447045c38a6a32cb953180b91"
+    "readiness_audit_sha256": "eb42b4504614d02ca97615620e10a048c3933e757a21aaca3063463e8bf2194e"
   }
 }
