@@ -29,11 +29,11 @@
 use super::structs::{
     ImportFile, ImportFileDelete, ImportFileDeleteOutput, ImportFileOutput,
     ImportMetaTag, ImportPage, ImportPageFilesVerify, ImportPageFilesVerifyOutput,
-    ImportPageOutput, ImportPageRevision, ImportPageRevisionOutput, ImportPageVote,
-    ImportPageVotes, ImportPageVotesOutput, ImportSite, ImportSiteMember,
-    ImportSiteOutput, ImportSiteRoster, ImportSiteRosterOutput, ImportUser,
-    ImportUserOutput, ImportedSiteRole, ImportedUserType, PromoteObservedIdentity,
-    PromoteObservedIdentityOutput,
+    ImportPageMetaTags, ImportPageMetaTagsOutput, ImportPageOutput, ImportPageRevision,
+    ImportPageRevisionOutput, ImportPageVote, ImportPageVotes, ImportPageVotesOutput,
+    ImportSite, ImportSiteMember, ImportSiteOutput, ImportSiteRoster,
+    ImportSiteRosterOutput, ImportUser, ImportUserOutput, ImportedSiteRole,
+    ImportedUserType, PromoteObservedIdentity, PromoteObservedIdentityOutput,
 };
 use crate::constants::SYSTEM_USER_ID;
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
@@ -42,6 +42,7 @@ use crate::models::file::{self, Entity as File, Model as FileModel};
 use crate::models::file_revision::{self, Entity as FileRevision};
 use crate::models::page::{self, Entity as Page};
 use crate::models::page_category::Model as PageCategoryModel;
+use crate::models::page_meta_tag::{self, Entity as PageMetaTagTable};
 use crate::models::page_revision::{self, Entity as PageRevision};
 use crate::models::page_vote::{self, Entity as PageVote};
 use crate::models::relation::{self, Entity as Relation};
@@ -60,7 +61,9 @@ use crate::services::file_revision::{
     FileRevisionService,
 };
 use crate::services::page_lock::{CreatePageLockInput, PageLockService};
-use crate::services::page_meta_tag::{PageMetaTagService, SetPageMetaTag};
+use crate::services::page_meta_tag::{
+    DeletePageMetaTag, PageMetaTagService, SetPageMetaTag,
+};
 use crate::services::page_revision::{
     CreateFirstPageRevision, CreateFirstPageRevisionOutput, CreatePageRevision,
     CreatePageRevisionBody, PageRevisionService,
@@ -2422,6 +2425,95 @@ impl ImportService {
             page_id,
             inserted,
             unchanged,
+        })
+    }
+
+    /// Replace one imported page's `<META>` tags with the source set.
+    ///
+    /// The supplied set is authoritative for the page's scope: tags the
+    /// page currently has that are absent from the set are deleted, and
+    /// every supplied tag is written through the page-meta-tag service
+    /// (so validation and cache invalidation apply exactly as for site
+    /// and page imports). Site-scope tags are never touched.
+    pub async fn add_page_meta_tags(
+        ctx: &ServiceContext<'_>,
+        ImportPageMetaTags {
+            site_id,
+            page_id,
+            meta_tags,
+        }: ImportPageMetaTags,
+    ) -> Result<ImportPageMetaTagsOutput> {
+        info!(
+            "Importing {} source meta tag(s) on page ID {page_id} on site ID {site_id}",
+            meta_tags.len(),
+        );
+
+        let txn = ctx.transaction();
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to import meta tags on page ID {page_id} in site ID {site_id}",
+                ),
+                ErrorType::DatabaseImport,
+            )
+        };
+
+        require_imported_page(ctx, site_id, page_id)
+            .await
+            .or_raise(make_error)?;
+
+        // A name twice in one payload is a producer bug; reject it rather
+        // than letting set-order decide the stored value.
+        let mut new_names = HashSet::new();
+        for tag in &meta_tags {
+            if !new_names.insert(tag.name.clone()) {
+                bail!(Error::new(
+                    format!(
+                        "failed to import meta tags on page ID {page_id} in site ID {site_id}: duplicate meta tag name '{}'",
+                        tag.name,
+                    ),
+                    ErrorType::DatabaseImport,
+                ));
+            }
+        }
+
+        let existing_names: Vec<String> = PageMetaTagTable::find()
+            .filter(page_meta_tag::Column::SiteId.eq(site_id))
+            .filter(page_meta_tag::Column::AllPages.eq(false))
+            .filter(page_meta_tag::Column::PageId.eq(page_id))
+            .all(txn)
+            .await
+            .or_raise(make_error)?
+            .into_iter()
+            .map(|row| row.name)
+            .collect();
+
+        let mut removed = 0;
+        for name in existing_names {
+            if !new_names.contains(&name) {
+                PageMetaTagService::delete(
+                    ctx,
+                    DeletePageMetaTag {
+                        site_id,
+                        page_id,
+                        name,
+                        all_pages: false,
+                    },
+                )
+                .await
+                .or_raise(make_error)?;
+                removed += 1;
+            }
+        }
+
+        Self::record_meta_tags(ctx, site_id, page_id, false, &meta_tags, &make_error)
+            .await?;
+
+        Ok(ImportPageMetaTagsOutput {
+            site_id,
+            page_id,
+            stored: meta_tags.len(),
+            removed,
         })
     }
 }

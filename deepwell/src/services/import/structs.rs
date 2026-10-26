@@ -436,3 +436,24 @@ pub struct ImportPageVotesOutput {
     pub inserted: usize,
     pub unchanged: usize,
 }
+
+/// The full source `<META>` tag set for one imported page, as observed in
+/// the source page's rendered head. The set is authoritative for the
+/// page's scope: import replaces the page's stored tags with exactly
+/// this set, so a re-import after the source head changes converges
+/// instead of accumulating stale tags. Site-scope (all-pages) tags are
+/// not touched; they belong to the site import.
+#[derive(Deserialize, Debug, Clone)]
+pub struct ImportPageMetaTags {
+    pub site_id: i64,
+    pub page_id: i64,
+    pub meta_tags: Vec<ImportMetaTag>,
+}
+
+#[derive(Serialize, Debug, Copy, Clone)]
+pub struct ImportPageMetaTagsOutput {
+    pub site_id: i64,
+    pub page_id: i64,
+    pub stored: usize,
+    pub removed: usize,
+}
