@@ -65,18 +65,18 @@ use crate::services::relation::{
 };
 use crate::services::render::{
     LegacyActionRegistry, MembershipActionRegistry, RenderOutput, RenderService,
-    ViewablePageRef, compiled_generator_is_current, has_theme_previewer_no_ui,
-    view_decisions_for_scanned_pages,
+    ViewablePageRef, compiled_generator_is_current, format_score_value,
+    has_theme_previewer_no_ui, view_decisions_for_scanned_pages,
 };
 use crate::services::settings::{
-    NavigationPageHtml, PageRatingSettings, SettingsService,
+    NavigationPageHtml, PageRatingSettings, PageRatingType, SettingsService,
 };
 use crate::services::user::User;
 use crate::services::view::ViewType;
 use crate::services::vote::GetVote;
 use crate::services::{
     BlueprintPageService, CategoryService, DataFormEditor, DomainService,
-    PageLockService, PageMetaTagService, PageRevisionService, PageService,
+    PageLockService, PageMetaTagService, PageRevisionService, PageService, ScoreService,
     SessionService, SiteService, TextService, UserService, VoteService,
 };
 use crate::types::Reference;
@@ -97,6 +97,31 @@ use std::collections::BTreeMap;
 use time::OffsetDateTime;
 use unic_langid::LanguageIdentifier;
 use wikidot_normalize::normalize;
+
+/// The exact span the read-only Plus/PlusMinus rate module renderer emits
+/// around the score number (see `services/render/rate_module.rs`). Only the
+/// text inside this span is refreshed at view time, so the widget control
+/// markup -- and the control cardinality the rate-action registry checks
+/// against the body -- is unchanged.
+const RATE_WIDGET_SCORE_SPAN_OPEN: &str = "<span class=\"number prw54353\">";
+
+/// Replace the score text of every read-only rate widget span in the body.
+/// Spans without a closing tag are left untouched.
+fn replace_rate_widget_score_text(html: &str, formatted_score: &str) -> String {
+    let mut output = String::with_capacity(html.len());
+    let mut rest = html;
+    while let Some(start) = rest.find(RATE_WIDGET_SCORE_SPAN_OPEN) {
+        let after_open = &rest[start + RATE_WIDGET_SCORE_SPAN_OPEN.len()..];
+        let Some(close) = after_open.find("</span>") else {
+            break;
+        };
+        output.push_str(&rest[..start + RATE_WIDGET_SCORE_SPAN_OPEN.len()]);
+        output.push_str(formatted_score);
+        rest = &after_open[close..];
+    }
+    output.push_str(rest);
+    output
+}
 
 async fn rate_browser_actions_for_page(
     ctx: &ServiceContext<'_>,
@@ -348,6 +373,8 @@ impl ViewService {
                 .await?;
             }
 
+            Self::refresh_rate_widget_score(ctx, &mut page).await?;
+
             return Ok(GetArticleViewOutput {
                 viewer: preload.viewer,
                 page,
@@ -370,7 +397,7 @@ impl ViewService {
             });
         }
 
-        let page_view = Self::page(ctx, input).await?;
+        let mut page_view = Self::page(ctx, input).await?;
         if let (Some(cache_key), GetPageViewOutput::Found {
             page,
             redirect_kind,
@@ -386,6 +413,8 @@ impl ViewService {
         {
             ArticlePageCache::set(ctx, cache_key, &page_view).await?;
         }
+
+        Self::refresh_rate_widget_score(ctx, &mut page_view).await?;
 
         Ok(GetArticleViewOutput {
             viewer: preload.viewer,
@@ -412,6 +441,56 @@ impl ViewService {
                 })
                 .flatten(),
         })
+    }
+
+    /// Refresh the baked-in Plus/PlusMinus rate widget number with the
+    /// page's current score (issue #3341).
+    ///
+    /// Rate modules expand when the body is compiled, so the number stored
+    /// in `compiled_body_html` freezes at compile time. Vote imports and
+    /// rating baseline refreshes create no revision and never recompile,
+    /// which left imported pages showing a stale widget number next to the
+    /// live page-options score. This runs on the returned view only: the
+    /// article page cache keeps the canonical unsubstituted body, and this
+    /// is applied after the cache read (hit) and after the cache write
+    /// (miss), mirroring the wikidot breadcrumbs recomputation above.
+    ///
+    /// The refresh is gated on the rate-action registry: `page()` issues it
+    /// only when the body's widget boxes are exactly this page's own rate
+    /// modules, so a rate widget embedded from another page (for example
+    /// through ListPages content) is never overwritten with this page's
+    /// score. Stars widgets are out of scope here; their data-rating
+    /// attribute and text spans must move together, and are handled
+    /// separately.
+    pub async fn refresh_rate_widget_score(
+        ctx: &ServiceContext<'_>,
+        output: &mut GetPageViewOutput,
+    ) -> Result<()> {
+        let GetPageViewOutput::Found {
+            page,
+            page_rating,
+            rate_actions,
+            compiled_body_html,
+            ..
+        } = output
+        else {
+            return Ok(());
+        };
+        if !page_rating.enabled
+            || !matches!(
+                page_rating.rating_type,
+                PageRatingType::Plus | PageRatingType::PlusMinus
+            )
+            || rate_actions.is_none()
+            || !compiled_body_html.contains(RATE_WIDGET_SCORE_SPAN_OPEN)
+        {
+            return Ok(());
+        }
+        let score = ScoreService::score(ctx, page.page_id).await?;
+        let formatted = format_score_value(score);
+        *compiled_body_html =
+            replace_rate_widget_score_text(compiled_body_html, &formatted);
+        Ok(())
     }
 
     fn cached_article_page_is_current(page: &GetPageViewOutput) -> bool {
@@ -2229,5 +2308,46 @@ mod wikidot_redirect_module_allowed_tests {
             &page(false),
             &revision(false)
         ));
+    }
+}
+
+#[cfg(test)]
+mod rate_widget_score_refresh_tests {
+    use super::replace_rate_widget_score_text;
+
+    const WIDGET: &str = concat!(
+        "<div class=\"page-rate-widget-box\">",
+        "<span class=\"rate-points\">Rating: ",
+        "<span class=\"number prw54353\">+461</span>",
+        "</span>",
+        "</div>",
+    );
+
+    #[test]
+    fn replaces_stale_score_with_live_score() {
+        let refreshed = replace_rate_widget_score_text(WIDGET, "+466");
+        assert!(refreshed.contains("<span class=\"number prw54353\">+466</span>"));
+        assert!(!refreshed.contains("+461"));
+    }
+
+    #[test]
+    fn replaces_every_widget_on_the_page() {
+        let body = format!("{WIDGET}<p>text</p>{WIDGET}");
+        let refreshed = replace_rate_widget_score_text(&body, "-6");
+        assert_eq!(refreshed.matches(">-6</span>").count(), 2);
+        // Widget control markup around the number is untouched.
+        assert_eq!(refreshed.matches("page-rate-widget-box").count(), 2);
+    }
+
+    #[test]
+    fn leaves_bodies_without_widgets_unchanged() {
+        let body = "<p>no rate module here</p>";
+        assert_eq!(replace_rate_widget_score_text(body, "+1"), body);
+    }
+
+    #[test]
+    fn leaves_unclosed_span_unchanged() {
+        let body = "<span class=\"number prw54353\">+461";
+        assert_eq!(replace_rate_widget_score_text(body, "+466"), body);
     }
 }

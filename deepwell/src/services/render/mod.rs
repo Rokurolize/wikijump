@@ -109,6 +109,7 @@ pub use self::membership_actions::{MembershipActionKind, MembershipActionRegistr
 pub use self::rate_actions::{
     RateActionRegistry, RateBrowserAction, RateBrowserActionRegistry,
 };
+pub(crate) use self::rate_module::format_score_value;
 pub use self::render_dependency::{
     RenderDependencyClass, RenderDependencyClasses,
     classify_anonymous_render_dependencies, classify_render_dependencies,
