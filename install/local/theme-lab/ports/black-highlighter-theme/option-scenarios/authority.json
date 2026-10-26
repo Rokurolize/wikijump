@@ -133,7 +133,7 @@
   ],
   "framerail": {
     "fingerprint_tool": "../../../../src/framerail-source-fingerprint.mjs",
-    "fingerprint_sha256": "b3fe758250db953f7ed27833850440a51c467c6ddfc5033a77db360a6154bbe5",
+    "fingerprint_sha256": "b3a677c9932ebe41dc107afd5690abf81fe18e3a08504d42d715ccd798b7f72d",
     "runtime_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3395",
     "runtime_source_header": "x-theme-lab-runtime-source-sha",
     "runtime_version": "captured by runner at execution"
