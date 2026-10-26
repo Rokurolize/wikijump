@@ -611,9 +611,15 @@ async fn check_target(
     target: PermissionTarget,
     action: Action,
 ) -> bool {
-    PermissionService::can_user_as(runner.context(), user_id, Some(site_id), action, target)
-        .await
-        .expect("Permission check returned an error")
+    PermissionService::can_user_as(
+        runner.context(),
+        user_id,
+        Some(site_id),
+        action,
+        target,
+    )
+    .await
+    .expect("Permission check returned an error")
 }
 
 #[tokio::test]
@@ -687,7 +693,14 @@ async fn can_user() {
         "user_a should fail site:edit check"
     );
     assert!(
-        !check_target(&runner, None, f.site_id, PermissionTarget::Site, Action::Edit).await,
+        !check_target(
+            &runner,
+            None,
+            f.site_id,
+            PermissionTarget::Site,
+            Action::Edit
+        )
+        .await,
         "anonymous should fail site:edit check"
     );
 
@@ -1765,6 +1778,14 @@ async fn check_permission_endpoint() {
         .await
         .expect("Failed to get site");
 
+    // Page mutations require the request context actor to match the
+    // attributed user; create the default page as user_a (site admin).
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_a),
+        site_id: Some(f.site_id),
+        page_reference: None,
+        ..Default::default()
+    });
     run_endpoint!(
         runner,
         page_create,
@@ -1776,7 +1797,7 @@ async fn check_permission_endpoint() {
             "slug": site.default_page,
             "layout": null,
             "revision_comments": "",
-            "user_id": SYSTEM_USER_ID,
+            "user_id": f.user_a,
             "ip_address": common::IP_ADDRESS,
         }),
     );
