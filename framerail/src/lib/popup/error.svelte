@@ -96,7 +96,7 @@
         {#if errorExtraMessage}
           <p id="model-message-extra" class="modal-message-extra">
             {errorExtraMessage}{#if inlineAction}
-              <!-- eslint-disable-next-line svelte/no-useless-mustaches -->
+              <!-- eslint-disable-next-line svelte/no-useless-mustaches, svelte/no-navigation-without-resolve -- popup action hrefs may be external or pre-resolved -->
               {" "}<a bind:this={actionLink} href={inlineAction.href}
                 >{inlineAction.label}</a
               >
@@ -105,6 +105,7 @@
         {/if}
         {#if errorPopupState.current.actionLink && !inlineAction}
           <p class="modal-action-link">
+            <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- popup action hrefs may be external or pre-resolved -->
             <a bind:this={actionLink} href={errorPopupState.current.actionLink.href}
               >{errorPopupState.current.actionLink.label}</a
             >

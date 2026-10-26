@@ -188,6 +188,9 @@ const options = {
     }
   },
   alias: {
+    // SvelteKit 3 removed the built-in $lib alias (module_removed_lib); keep it
+    // rather than rewriting every import to #lib.
+    "$lib": resolve(__dirname, "src/lib"),
     "$static": resolve(__dirname, "static"),
     "$assets": resolveAssets()
   }

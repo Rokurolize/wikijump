@@ -16,7 +16,7 @@
   )
 
   const cancelRegistration = async () => {
-    await goto(authCancelDestination(), { replaceState: true })
+    await goto(resolve(authCancelDestination(), {}), { replaceState: true })
   }
 
   const { form, enhance, errors } = superForm(

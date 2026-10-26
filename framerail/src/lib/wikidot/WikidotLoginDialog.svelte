@@ -119,11 +119,13 @@
     {#if mfaRequired}
       <p class="wikidot-login-dialog-message" role="status">
         {labels.mfaRequired}
+        <!-- eslint-disable svelte/no-navigation-without-resolve -- already resolve()d; only a query string is appended -->
         <a
           href={`${resolve("/-/login", {})}?return=${encodeURIComponent(
             page.url.pathname + page.url.search
           )}`}>{labels.signInPage}</a
         >
+        <!-- eslint-enable svelte/no-navigation-without-resolve -->
       </p>
     {/if}
     <div class="action-row">
