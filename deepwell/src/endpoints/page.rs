@@ -61,7 +61,7 @@ use crate::services::render::{
     wikidot_site_changes_empty_response,
 };
 use crate::services::settings::PageRatingVisibility;
-use crate::services::{MutationAuthorization, SettingsService, TextService};
+use crate::services::{MutationAuthorization, SettingsService, SiteService, TextService};
 use crate::types::{
     Action, Bytes, FileOrder, PageDetails, PageId, Permission, Reference, RerenderDepth,
     Resource,

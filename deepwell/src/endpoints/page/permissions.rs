@@ -224,11 +224,29 @@ pub async fn page_edit_permission(
     ctx: &ServiceContext<'_>,
     _params: Params<'static>,
 ) -> Result<PageEditPermissionOutput> {
-    let can_edit = PageService::check_user_permission(ctx, Action::Edit)
+    let make_error =
+        || Error::new("failed to check page edit permission", ErrorType::Page);
+
+    let can_edit = if ctx.request().page_reference.is_some() {
+        PageService::check_user_permission(ctx, Action::Edit)
+            .await
+            .or_raise(make_error)?
+    } else {
+        // Upstream #3155: with no page reference, default to the site's
+        // default page instead of failing.
+        let site_id = ctx.request().site_id().or_raise(make_error)?;
+        let site = SiteService::get(ctx, Reference::Id(site_id))
+            .await
+            .or_raise(make_error)?;
+        PageService::check_user_permission_for_page(
+            ctx,
+            site_id,
+            Reference::Slug(site.default_page.into()),
+            Action::Edit,
+        )
         .await
-        .or_raise(|| {
-            Error::new("failed to check page edit permission", ErrorType::Page)
-        })?;
+        .or_raise(make_error)?
+    };
 
     Ok(PageEditPermissionOutput { can_edit })
 }

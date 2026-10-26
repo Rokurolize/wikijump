@@ -185,6 +185,8 @@ async fn issue_is_quiet_for_unknown_imported_and_deleted_addresses() {
             website: None,
             karma: KarmaLevel::Three,
             is_pro: false,
+            upsert: false,
+            delete_old_if_same_name: false,
             importing_user_id: deepwell::constants::ADMIN_USER_ID,
             ip_address: common::IP_ADDRESS,
         },

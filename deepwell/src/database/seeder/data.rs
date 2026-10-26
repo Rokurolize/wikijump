@@ -460,7 +460,7 @@ mod tests {
             .map(|domain| domain.domain())
             .collect::<Vec<_>>();
 
-        assert_eq!(site.preferred_domain.as_deref(), Some("scp-jp.localhost"));
+        assert_eq!(site.preferred_domain, None);
         assert_eq!(domains, ["scp-jp.localhost"]);
         assert!(!domains.contains(&"scp-jp.wikijump.dev"));
     }

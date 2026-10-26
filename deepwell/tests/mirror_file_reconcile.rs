@@ -121,6 +121,8 @@ async fn import_source_uploader(runner: &TestRunner, tag: &Uuid, label: &str) ->
             website: None,
             karma: KarmaLevel::Three,
             is_pro: false,
+            upsert: false,
+            delete_old_if_same_name: false,
             importing_user_id: ADMIN_USER_ID,
             ip_address: common::IP_ADDRESS,
         },

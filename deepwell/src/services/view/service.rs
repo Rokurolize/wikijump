@@ -59,7 +59,9 @@ use crate::services::membership::{
     JoinActorState, MembershipBrowserAction, MembershipPolicy, MembershipService,
 };
 use crate::services::page_revision::RerenderType;
-use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::services::permission::{
+    CheckPermissionContext, PermissionService, PermissionTarget,
+};
 use crate::services::relation::{
     GetPageAttributions, GetSiteBan, PageAttribution, RelationService,
 };
@@ -874,29 +876,31 @@ impl ViewService {
                         .or_raise(make_error)?;
 
                 // Check user access to page
-                let [user_can_access_page, user_can_edit_page] =
-                    PermissionService::batch_check_user_can(
-                        ctx,
-                        &CheckPermissionContext {
-                            user_id: user_session.as_ref().map(|s| s.user.user_id),
-                            site_id,
-                            page_reference: None,
-                        },
-                        [
-                            Permission {
-                                resource_type: Resource::Page,
-                                resource_category: category_id.map(Reference::Id),
-                                action: Action::View,
-                            },
-                            Permission {
-                                resource_type: Resource::Page,
-                                resource_category: category_id.map(Reference::Id),
-                                action: Action::Edit,
-                            },
-                        ],
-                    )
-                    .await
-                    .or_raise(make_error)?;
+                let session_user_id =
+                    user_session.as_ref().map(|session| session.user.user_id);
+                let target = PermissionTarget::Page {
+                    page_id: page.page_id,
+                    category_id: page.page_category_id,
+                };
+                let user_can_access_page = PermissionService::can_user_as(
+                    ctx,
+                    session_user_id,
+                    Some(site_id),
+                    Action::View,
+                    target,
+                )
+                .await
+                .or_raise(make_error)?;
+
+                let user_can_edit_page = PermissionService::can_user_as(
+                    ctx,
+                    session_user_id,
+                    Some(site_id),
+                    Action::Edit,
+                    target,
+                )
+                .await
+                .or_raise(make_error)?;
 
                 // Determine whether to return the actual page contents,
                 // or the "private page" data (_public).
@@ -2031,20 +2035,24 @@ ORDER BY breadcrumb_chain.depth ASC
         } = render_output;
 
         // Check user access to site settings
-        let user_id = match user_session {
-            Some(ref session) => Some(session.user.user_id),
-            None => {
-                debug!("No user for session, disallow admin access");
-                return Ok(GetAdminViewOutput::AdminPermissions {
-                    html: compiled_html,
-                });
-            }
-        };
+        if user_session.is_none() {
+            debug!("No user for session, disallow admin access");
+            return Ok(GetAdminViewOutput::AdminPermissions {
+                html: compiled_html,
+            });
+        }
 
-        let user_can_access_admin =
-            PermissionService::check_user_can_access_admin(ctx, user_id, site_id)
-                .await
-                .or_raise(make_error)?;
+        let user_id = user_session.as_ref().map(|session| session.user.user_id);
+
+        let user_can_access_admin = PermissionService::can_user_as(
+            ctx,
+            user_id,
+            Some(site_id),
+            Action::Edit,
+            PermissionTarget::Site,
+        )
+        .await
+        .or_raise(make_error)?;
 
         // Determine whether to return the actual admin panel content
         let output = if user_can_access_admin {

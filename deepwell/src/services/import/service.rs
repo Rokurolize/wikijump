@@ -282,6 +282,11 @@ impl ImportService {
             website,
             karma,
             is_pro,
+            // Our add_user is already insert-or-refresh-if-strictly-newer,
+            // which is the behavior the import scripts request with
+            // `upsert`; a plain insert-or-error mode has no caller here.
+            upsert: _,
+            delete_old_if_same_name,
             importing_user_id,
             ip_address,
         }: ImportUser,
@@ -400,8 +405,37 @@ impl ImportService {
                 .one(txn)
                 .await
                 .or_raise(make_error)?;
-            if conflicting_identity.is_some() {
-                return Err(make_error().into());
+            if let Some(conflicting) = conflicting_identity {
+                // Upstream #3123: when the import scripts set
+                // `delete_old_if_same_name` and the colliding row is
+                // strictly older, tombstone it and proceed instead of
+                // erroring. (Upstream's own collision query compared the
+                // slug column against the *name* value; the query above
+                // compares name-to-name and slug-to-slug.)
+                let can_tombstone = delete_old_if_same_name
+                    && !conflicting.is_deleted
+                    && conflicting.fetched_at < fetched_at;
+                if !can_tombstone {
+                    return Err(make_error().into());
+                }
+                info!(
+                    "Due to delete_old_if_same_name, tombstoning colliding user ID {} in favor of new user ID {} (fetched at: {} < {})",
+                    conflicting.user_id, user_id, conflicting.fetched_at, fetched_at,
+                );
+                let mut model = conflicting.into_active_model();
+                model.is_deleted = Set(true);
+                model.name = Set(None);
+                model.slug = Set(None);
+                model.avatar_s3_hash = Set(None);
+                model.real_name = Set(None);
+                model.gender = Set(None);
+                model.birthday = Set(None);
+                model.location = Set(None);
+                model.biography = Set(None);
+                model.website = Set(None);
+                model.karma = Set(0);
+                model.is_pro = Set(false);
+                model.update(txn).await.or_raise(make_error)?;
             }
         }
 
@@ -741,6 +775,8 @@ impl ImportService {
                 // Checked non-empty above
                 karma: profile.karma.unwrap_or(KarmaLevel::Zero),
                 is_pro: profile.is_pro.unwrap_or(false),
+                upsert: false,
+                delete_old_if_same_name: false,
                 importing_user_id,
                 ip_address,
             },
