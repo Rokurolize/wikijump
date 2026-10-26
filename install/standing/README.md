@@ -46,6 +46,19 @@ python3 install/standing/promote.py
 
 It fetches `origin/develop`, moves its own worktree `${XDG_STATE_HOME:-$HOME/.local/state}/wikijump/promotion-checkout` there (creating it the first time), and continues with that checkout's `promote.py`, so the orchestrator is always the one the promoted source ships. The worktree keeps its Cargo target directories and `node_modules` between promotions, so checks that must run compile incrementally. It must stay clean and is never reset; local changes in it stop the promotion. `--source-root <clean checkout of the fetched origin/develop>` promotes from another checkout instead.
 
+Launcher environment: `promote.py` and the validation it runs shell out to `cargo`, and the Deepwell test stack spawns `sqlx`; both tools live in `$HOME/.cargo/bin`. Run the promotion from a login shell, or an environment whose PATH includes `$HOME/.cargo/bin`. Without it, the Rust check groups fail with `cargo: command not found` for environmental reasons only. `promote.py` checks for both tools before any stage runs and names a missing one.
+
+### Browser verification of Standing
+
+A browser result is evidence about the revision Standing is actually serving, not about the checkout in front of you. Before trusting one:
+
+1. GET `/-/about` on the Standing host and compare the git-commit rows against the fetched `origin/develop` HEAD. The rows are public by design (WJ-1279) for exactly this check. A result against any other served revision is not evidence about current code.
+2. If the served revision differs, promote first (Tier 1 above) and re-check `/-/about`.
+3. Run the browser verification.
+4. Record the served SHA beside every verdict, so the reader can tell which revision the verdict rests on.
+
+The check must be against the running runtime, not the checkout: a build can pass its unit tests while its production server entry fails at boot, so a green build in a checkout says nothing about what Standing serves.
+
 It stops at the first failing stage, leaves standing as it was or restores it, and writes `promotion-receipt.json` with every stage's duration and result under `${XDG_STATE_HOME:-$HOME/.local/state}/wikijump/promotions/<sha>-<time>/`. The stages:
 
 1. **identity** — the checkout is clean and exactly the fetched `origin/develop`; the standing runtime records the revision it serves. Nothing runs when standing already serves this head.
