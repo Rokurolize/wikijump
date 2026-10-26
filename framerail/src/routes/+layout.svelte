@@ -21,7 +21,7 @@
     PAGE_LAYOUT_CONTEXT_KEY,
     type PageLayoutContext
   } from "$lib/layout/page-layout-context"
-  import { resolveShellLayout } from "$lib/layout/wikidot-shell"
+  import { resolveShellLayout, sideBarHasCloseMenu } from "$lib/layout/wikidot-shell"
   import {
     resolveCanonicalViewData,
     resolveCanonicalViewMetadata
@@ -227,6 +227,7 @@
   )
   const wikidotSiteTagline = $derived(resolveWikidotSiteTagline(viewData))
   const wikidotSessionUserName = $derived(resolveWikidotSessionUserName(viewData))
+  const sideBarHasOwnCloseMenu = $derived(sideBarHasCloseMenu(viewData))
   const pageLayoutContext = $state<PageLayoutContext>({
     current: resolveCurrentLayout()
   })
@@ -373,6 +374,7 @@
     <div id="navi-bar-shadow">&nbsp;</div>
   {/if}
   <Wikidot
+    showCloseMenu={!sideBarHasOwnCloseMenu}
     footerStyle={isImportedWikidotLayout ? WIKIDOT_FOOTER_STYLE : undefined}
     footerLocale={wikidotLocale}
     footerAnonymous={!viewData?.user_session}
