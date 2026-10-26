@@ -15,7 +15,7 @@
 # prefetches so sessions start warm.
 set -Eeuo pipefail
 
-script_revision=2026-10-26.2
+script_revision=2026-10-26.3
 node_version=24.22.1
 required_rust_version=1.95.0
 pnpm_version=11.10.0
@@ -61,18 +61,19 @@ install_node24() {
   # Node.js via the npm `node` package: registry.npmjs.org is in the
   # Trusted network allowlist, so this depends on no other host. The
   # version is pinned exactly, matching framerail's engines field.
-  retry npm install --global --no-audit --no-fund "node@${node_version}"
-  # Resolve the just-installed node from the npm global prefix, never
-  # from PATH: `command -v node` can still point at the preinstalled
-  # Node, whose prefix may be /usr (copying that would be a disaster).
-  local prefix installed_node
-  prefix=$(npm prefix -g)
-  installed_node="$prefix/bin/node"
-  [[ -x "$installed_node" ]]
-  [[ "$("$installed_node" --version)" == "v$node_version" ]]
-  mkdir -p "$(dirname "$trusted_node24_dir")"
+  # Install into the trusted directory as a dedicated npm prefix. The
+  # preinstalled Node lives in npm's default global prefix (for Node
+  # 22, /opt/node22) and occupies its bin/node, so installing the
+  # `node` package there fails with EEXIST and the setup aborts. A
+  # dedicated, initially empty prefix has no bin/node yet, so npm can
+  # create it, and the result is exactly the trusted tree the rest of
+  # this script activates.
   rm -rf "$trusted_node24_dir"
-  cp -a "$prefix" "$trusted_node24_dir"
+  mkdir -p "$trusted_node24_dir"
+  retry npm install --global --prefix "$trusted_node24_dir" \
+    --no-audit --no-fund "node@${node_version}"
+  [[ -x "$trusted_node24_dir/bin/node" ]]
+  [[ "$("$trusted_node24_dir/bin/node" --version)" == "v$node_version" ]]
   hash -r
 }
 
@@ -122,13 +123,17 @@ install_rust() {
 }
 
 install_pnpm() {
-  # Runs after activate_node24, so npm's global prefix IS the trusted
-  # directory and pnpm lands beside the trusted node.
+  # The trusted directory carries no npm of its own, so the npm on
+  # PATH is still the preinstalled one, whose default global prefix is
+  # the preinstalled Node's tree. Pass --prefix explicitly so pnpm
+  # lands beside the trusted node.
   local installed
   installed=$(pnpm --version 2>/dev/null || true)
-  if [[ "$installed" != "$pnpm_version" ]]; then
+  if [[ "$installed" != "$pnpm_version" ]] || \
+     [[ "$(command -v pnpm)" != "$trusted_node24_dir/bin/pnpm" ]]; then
     corepack disable pnpm >/dev/null 2>&1 || true
-    retry npm install --global --no-audit --no-fund "pnpm@${pnpm_version}"
+    retry npm install --global --prefix "$trusted_node24_dir" \
+      --no-audit --no-fund "pnpm@${pnpm_version}"
     hash -r
   fi
   [[ "$(pnpm --version)" == "$pnpm_version" ]]

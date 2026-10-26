@@ -12,7 +12,7 @@ if [[ "${CLAUDE_CODE_REMOTE:-}" != "true" ]]; then
   exit 0
 fi
 
-script_revision=2026-10-26.2
+script_revision=2026-10-26.3
 node_version=24.22.1
 required_rust_version=1.95.0
 pnpm_version=11.10.0
@@ -71,7 +71,12 @@ fi
 installed_pnpm=$(pnpm --version 2>/dev/null || true)
 if [[ "$installed_pnpm" != "$pnpm_version" ]]; then
   corepack disable pnpm >/dev/null 2>&1 || true
-  retry npm install --global --no-audit --no-fund "pnpm@${pnpm_version}"
+  # The trusted directory carries no npm of its own; the npm on PATH
+  # belongs to the preinstalled Node, so pass --prefix explicitly to
+  # install pnpm beside the trusted node (same fix as the setup
+  # script's install_pnpm).
+  retry npm install --global --prefix "$trusted_node24_dir" \
+    --no-audit --no-fund "pnpm@${pnpm_version}"
   hash -r
 fi
 
