@@ -208,7 +208,7 @@ fn is_japanese_wikidot_locale(language: &str) -> bool {
     matches!(language.as_str(), "ja" | "jp") || language.starts_with("ja-")
 }
 
-fn format_score_value(score: ftml::data::ScoreValue) -> String {
+pub(crate) fn format_score_value(score: ftml::data::ScoreValue) -> String {
     match score {
         ftml::data::ScoreValue::Integer(value) if value > 0 => format!("+{value}"),
         ftml::data::ScoreValue::Integer(value) => value.to_string(),

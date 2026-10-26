@@ -114,12 +114,21 @@ pub async fn page_view(
 ) -> Result<GetPageViewOutput> {
     let input: GetPageView = parse!(params => ErrorType::GetView(ViewType::Page));
 
-    ViewService::page(ctx, input).await.or_raise(|| {
+    let mut output = ViewService::page(ctx, input).await.or_raise(|| {
         Error::new(
             "failed to get page view",
             ErrorType::GetView(ViewType::Page),
         )
-    })
+    })?;
+    ViewService::refresh_rate_widget_score(ctx, &mut output)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to refresh page view rate widget score",
+                ErrorType::GetView(ViewType::Page),
+            )
+        })?;
+    Ok(output)
 }
 
 /// Returns relevant context for rendering a user profile from a processed web request.
