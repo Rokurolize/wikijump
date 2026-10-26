@@ -1,6 +1,6 @@
 {
   "schema": "theme_lab_candidate_freeze_readiness_audit.v1",
-  "generated_at": "2026-10-26T09:57:00Z",
+  "generated_at": "2026-10-26T02:00:00Z",
   "decision": "identity-bound-evidence-pending",
   "scope": "Freeze readiness only; Sigma-9, Sigma-10, and final theme visual acceptance are not part of this record.",
   "counts": {
@@ -50,20 +50,20 @@
       "targeted-evidence-missing bhl-options-collapsible-sidebar receipt",
       "targeted-evidence-missing bhl-options-collapsible-sidebar receipt",
       "targeted-evidence-missing bhl-options-collapsible-sidebar receipt",
-      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/wt-bhlrefresh/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/wt-bhlrefresh/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/wt-bhlrefresh/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/wt-bhlrefresh/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/wt-bhlrefresh/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/wt-bhlrefresh/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-toggle-header-dark: visual review is unavailable: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/wt-bhlrefresh/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/wt-bhlrefresh/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/wt-bhlrefresh/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/wt-bhlrefresh/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/wt-bhlrefresh/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/wt-bhlrefresh/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/wt-bhlrefresh/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-collapsible-sidebar: visual review is unavailable: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/wt-bhlrefresh/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'"
+      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/muse-canary/wt-kit3boot/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/muse-canary/wt-kit3boot/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/muse-canary/wt-kit3boot/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/muse-canary/wt-kit3boot/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/muse-canary/wt-kit3boot/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/muse-canary/wt-kit3boot/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-toggle-header-dark: visual review is unavailable: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/muse-canary/wt-kit3boot/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/muse-canary/wt-kit3boot/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/muse-canary/wt-kit3boot/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/muse-canary/wt-kit3boot/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/muse-canary/wt-kit3boot/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/muse-canary/wt-kit3boot/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/muse-canary/wt-kit3boot/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-collapsible-sidebar: visual review is unavailable: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/muse-canary/wt-kit3boot/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'"
     ]
   },
   "source_artifacts": [
@@ -709,7 +709,7 @@
     {
       "id": "bhl-option-authority",
       "path": "ports/black-highlighter-theme/option-scenarios/authority.json",
-      "sha256": "8a3fcd135c11d4f86b7a14721990be1b4d55b24f57d68c0b37aa5ee6540fcbe0"
+      "sha256": "485ab37ba2c2c2c415f917aa639d2671af36a0d3aa7de668efc7838d6702d6bc"
     },
     {
       "id": "source-dependency-audit",
@@ -724,7 +724,7 @@
   ],
   "freeze_record": {
     "state": "frozen-before-final-acceptance",
-    "candidate_set_sha256": "be1913d1cc780abd9215aa67ba4737a7c31fd6469b6aa11c4ab8cf9e93480575",
+    "candidate_set_sha256": "8c61109a59354338c528fe8fd3bc28e323e1f14c9ba5679ae8b74b5d3ff1366a",
     "final_acceptance": {
       "sigma9": "pending",
       "sigma10": "pending",
