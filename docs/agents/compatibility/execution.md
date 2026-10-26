@@ -22,6 +22,8 @@ Time alone is not a rerun reason. Reuse retained acceptance only if source/runti
 
 During a long build, finalizer, or browser campaign, prepare independent downstream inputs—issue snapshot, denominator, candidate-private fixture mapping, promotion command, standing evidence directory, cleanup plan. Never duplicate an expensive operation for progress output. Poll with the longest supported empty-process interval in the current DevSpace schema, never at one-second intervals; current tool limits override copied timeout numbers in old runbooks.
 
+Wait on a long build, validation, promotion, or browser campaign under a watchdog cap, not indefinitely. When the cap expires, the waiter dumps the current stage, the elapsed time, and the state of the processes it was waiting on into the run's evidence directory before anything is stopped. An uncapped waiter cannot distinguish a slow stage from a hung one — a promotion once waited 64 minutes on an idle browser worker — and the dump is what makes the hang diagnosable afterwards.
+
 ## Adaptive batch size
 
 For thousands of homogeneous render/import items, use bounded batches/concurrency within the known DB/service pool; for a small tail, use direct site/run groups or individual retries, not large-batch machinery. Once the failure mode is known, separate exceptional heavy pages; retry at low concurrency and preserve failure evidence. Extend a one-shot deadline only when renderer semantics are unchanged and the recorded failure is the deadline. Local WSL services need no pacing; external origins use persistent caches, not sleeps; after the first retained acquisition, cache hits target zero external requests.
