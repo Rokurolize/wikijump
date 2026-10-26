@@ -1778,29 +1778,27 @@ async fn check_permission_endpoint() {
         .await
         .expect("Failed to get site");
 
-    // Page mutations require the request context actor to match the
-    // attributed user; create the default page as user_a (site admin).
-    runner.set_request_context(RequestContext {
-        user_id: Some(f.user_a),
-        site_id: Some(f.site_id),
-        page_reference: None,
-        ..Default::default()
-    });
-    run_endpoint!(
-        runner,
-        page_create,
-        json!({
-            "site_id": f.site_id,
-            "wikitext": "Main page",
-            "title": "Main Page",
-            "alt_title": null,
-            "slug": site.default_page,
-            "layout": null,
-            "revision_comments": "",
-            "user_id": f.user_a,
-            "ip_address": common::IP_ADDRESS,
-        }),
-    );
+    // Create the site's default page at the service layer, as the
+    // fixture does; the behavior under test is the endpoint's fallback,
+    // not page creation.
+    PageService::create(
+        runner.context(),
+        CreatePage {
+            site_id: f.site_id,
+            wikitext: str!("Main page"),
+            title: str!("Main Page"),
+            alt_title: None,
+            tags: Vec::new(),
+            slug: site.default_page.clone(),
+            layout: None,
+            revision_comments: str!(""),
+            user_id: SYSTEM_USER_ID,
+            bypass_filter: true,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("Failed to create default page");
 
     runner.set_request_context(RequestContext {
         user_id: Some(f.user_a),
