@@ -1,4 +1,5 @@
 import type { Nullable, SiteModel } from "$lib/types"
+import { siteOwnedLocalFilePath } from "./site-icon-source.ts"
 
 /** One text/social head entry: the `name`/`content` pair of a `<meta>` tag. */
 export interface HeadMetaTag {
@@ -45,4 +46,33 @@ export function unsupersededHeadFallbacks(
 ): HeadMetaTag[] {
   const superseded = new Set(effective.map((tag) => tag.name))
   return fallbacks.filter((tag) => !superseded.has(tag.name))
+}
+
+/** Image-valued social entries whose source asset may have been imported. */
+const HEAD_IMAGE_TAG_NAMES: ReadonlySet<string> = new Set(["og:image", "twitter:image"])
+
+/**
+ * Resolve imported image references to the local file origin.
+ *
+ * An `og:image`/`twitter:image` entry that names the imported site's own
+ * `/local--files/` asset (via the source `wdfiles.com` host or a local
+ * path) is advertised as an absolute URL on the serving origin rather than
+ * the source host. Anything else is left literal, so a non-imported or
+ * foreign image is never rewritten. Other entries pass through unchanged.
+ */
+export function resolveHeadImageUrls<T extends HeadMetaTag>(
+  tags: readonly T[],
+  site: Nullable<Pick<SiteModel, "from_wikidot" | "slug">>,
+  origin: string
+): T[] {
+  if (!site) return [...tags]
+  return tags.map((tag) => {
+    if (!HEAD_IMAGE_TAG_NAMES.has(tag.name)) return tag
+    const local =
+      siteOwnedLocalFilePath(site, tag.content) ??
+      (tag.content.startsWith("/local--files/")
+        ? siteOwnedLocalFilePath(site, `https://${site.slug}.wdfiles.com${tag.content}`)
+        : null)
+    return local ? { ...tag, content: `${origin}${local}` } : tag
+  })
 }
