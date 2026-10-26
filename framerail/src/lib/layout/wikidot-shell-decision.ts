@@ -56,6 +56,21 @@ export function shouldUseWikidotShellValue(
   )
 }
 
+const CLOSE_MENU_CLASS = /class="[^"]*\bclose-menu\b/
+
+/**
+ * Whether the rendered side bar already carries its own close-menu
+ * element. Imported side bar sources (for example the SCP wikis' nav:side)
+ * include one; when they do, the layout must not append its fallback copy
+ * or the mobile menu shows the overlay twice.
+ */
+export function sideBarHasCloseMenuValue(
+  data: ShellViewData | null | undefined
+): boolean {
+  const html = data?.compiled_side_bar_html
+  return !!html && CLOSE_MENU_CLASS.test(html)
+}
+
 export function resolveShellLayoutValue(
   data: ShellViewData | null | undefined
 ): ShellLayout {
