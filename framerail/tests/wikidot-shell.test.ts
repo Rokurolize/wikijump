@@ -4,6 +4,7 @@ import test from "node:test"
 import {
   resolveShellLayoutValue,
   shouldUseWikidotShellValue,
+  sideBarHasCloseMenuValue,
   type ShellViewData,
   WIKIDOT_LAYOUT,
   WIKIJUMP_LAYOUT
@@ -79,4 +80,21 @@ test("shell heuristics apply only when page and site layouts are unspecified", (
     false
   )
   assert.equal(resolveShellLayoutValue(undefined), WIKIJUMP_LAYOUT)
+})
+
+test("side bar close-menu detection follows the rendered side bar html", () => {
+  assert.equal(
+    sideBarHasCloseMenuValue({
+      compiled_side_bar_html: '<div class="side-block"><a class="close-menu" href="##">x</a></div>'
+    }),
+    true
+  )
+  assert.equal(
+    sideBarHasCloseMenuValue({
+      compiled_side_bar_html: '<div class="side-block">no overlay here</div>'
+    }),
+    false
+  )
+  assert.equal(sideBarHasCloseMenuValue({ compiled_side_bar_html: null }), false)
+  assert.equal(sideBarHasCloseMenuValue(undefined), false)
 })

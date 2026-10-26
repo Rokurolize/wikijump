@@ -20,7 +20,8 @@
     footerLocale = "en",
     footerAnonymous = false,
     license,
-    bottomToolbar
+    bottomToolbar,
+    showCloseMenu = true
   } = $props()
 </script>
 
@@ -42,17 +43,19 @@
         <div id="content-wrap">
           <div id="side-bar" use:wikidotMenu>
             {@render sideBar?.()}
-            <a class="close-menu" href="##">
-              <br />
-              <img
-                alt="black.png"
-                class="image"
-                src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAMSURBVBhXY2BgYAAAAAQAAVzN/2kAAAAASUVORK5CYII="
-                style:z-index="-1"
-                style:opacity="0.3"
-              />
-              <br />
-            </a>
+            {#if showCloseMenu}
+              <a class="close-menu" href="##">
+                <br />
+                <img
+                  alt="black.png"
+                  class="image"
+                  src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAMSURBVBhXY2BgYAAAAAQAAVzN/2kAAAAASUVORK5CYII="
+                  style:z-index="-1"
+                  style:opacity="0.3"
+                />
+                <br />
+              </a>
+            {/if}
           </div>
           <div id="main-content">
             <div id="action-area-top"></div>
