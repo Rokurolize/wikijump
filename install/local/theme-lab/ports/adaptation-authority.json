@@ -5835,21 +5835,43 @@
               "sha256": "6ed5d876df05625082ce9c92fc69abe7eac6fa4b787b48eeccd9cd7b9b3b1676"
             }
           ]
+        },
+        {
+          "marker": "SCP-JP Wikidot page history: keep the history option row within the mobile viewport.",
+          "rationale": "The verbatim upstream history-form rule lays the option cells out past the mobile viewport on the SCP-JP Sigma-9 target (delta receipt: target overflow at 320px and 390px without this block, zero at every measured width 320-1440px with it, and no collateral geometry change). Equal flexible columns keep all six history options inside the viewport; the correction is runtime-independent.",
+          "sha256": "cb507f4e1a05c0b41c534c7238440693fd3b81c3b0316fe6ff00d3539c3e2953",
+          "selectors": [
+            "#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2)"
+          ],
+          "at_contexts": [],
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/extra-black-highlighter-theme-history-form-delta-20261027/receipt.json",
+              "sha256": "d1a6144f205fea68c74bc69273e2500fe755a3d9fe959023688ce73f81adf8d4"
+            }
+          ],
+          "scope": {
+            "target": "SCP-JP Sigma-9 current target acceptance",
+            "state": "page.history"
+          },
+          "published_css_sha256": "8c8dc369fbceb4ec259068032816124cd1fb4d74c303b4eea0440cac83ad5444"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
         "candidate-input.css": "8dbfc268b989e2afcd15c48f446dfef150a0388569db7d2f63f6bad1eb51fa8d",
-        "authority-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "authority-overrides.css": "103b972f4d86dda68ae9587178edc7d5b68573c337282935c6cf1c54a72be1d5",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/bhl-dark-sidebar.wikidot.txt": "d0966083b843469867ba56a74ed698bb41fb410d7a5ba04da60aa8bea14891b5",
         "source-includes/bhl-dark-sidebar-input.css": "cd3d596a415e550ead1e145717d6d12d583f881a966bc85607571a1d0e2162e0",
         "source-css-includes.json": "f6a3c710e9437604a3ddf49527dbed8f8aab9cdffd26633332c21b4aef2c4d2d"
       },
       "outputs": {
-        "candidate.css": "1942887e382d16b8150cf95086a4944c7589def1ea0c2783d5d6dc341c445400",
-        "candidate-source.css": "78a1092980b6e4343cdbfec987a75283d6d367a753b94ae3e4c6401344ce2588",
-        "candidate.wikidot.source.txt": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
+        "candidate.css": "8c8dc369fbceb4ec259068032816124cd1fb4d74c303b4eea0440cac83ad5444",
+        "candidate-source.css": "3f4bb6d2c0ce702cd5ea26f10037d2e8f2847ee5a4209a8313e8f60cd7223f92",
+        "candidate.wikidot.source.txt": "e12f8970787fca9b6b862d132a0bd97b94811c91c5959c5a5660c231263308fc",
         "candidate.wikidot.txt": "da2890818409c8d174ccd3f01d119deb2ec0e97a579184f5f878f5938af99e19",
         "maintenance/base.wikidot.txt": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
         "maintenance/jp-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -6109,12 +6131,34 @@
               "sha256": "38a3de3d2a1987b57615dfa215eeaddde2fe31e5ffb5d7ce4f190656c18dcee2"
             }
           ]
+        },
+        {
+          "marker": "SCP-JP Wikidot page history: keep the history option row within the mobile viewport.",
+          "rationale": "The verbatim upstream history-form rule lays the option cells out past the mobile viewport on the SCP-JP Sigma-9 target (delta receipt: target overflow at 320px and 390px without this block, zero at every measured width 320-1440px with it, and no collateral geometry change). Equal flexible columns keep all six history options inside the viewport; the correction is runtime-independent.",
+          "sha256": "cb507f4e1a05c0b41c534c7238440693fd3b81c3b0316fe6ff00d3539c3e2953",
+          "selectors": [
+            "#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2)"
+          ],
+          "at_contexts": [],
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/aesthetic-theme-history-form-delta-20261027/receipt.json",
+              "sha256": "ed09a9c4ed5f8901daf15ea51a247d65dee393f9614fe1462c16319a6de56b6a"
+            }
+          ],
+          "scope": {
+            "target": "SCP-JP Sigma-9 current target acceptance",
+            "state": "page.history"
+          },
+          "published_css_sha256": "330963720c8e459b4d1efa2cb7d116bf3020ea3cfd4d46f799e13a46225edfdd"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c",
         "candidate-input.css": "e80f23c0464a6a330996706854384cbc909da111cf08a2114af967ca503835d8",
-        "authority-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "authority-overrides.css": "103b972f4d86dda68ae9587178edc7d5b68573c337282935c6cf1c54a72be1d5",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/toggle-sidebar-bhl.wikidot.txt": "212ffc2c275de8baa38b3da02d6e08636d649ea5324e0c9c2e9dab6a313a73dc",
         "source-includes/toggle-sidebar-bhl-input.css": "6a820d809d6029aa94eb1285ae644e0f2e28d03c3656e37ee32f6d4473fed1fb",
@@ -6123,9 +6167,9 @@
         "source-css-includes.json": "270b412dfe1dad38f24cfaaa37d7bb7af01d749f15d1ad7f7aa77b385ee6d022"
       },
       "outputs": {
-        "candidate.css": "5419caca49caf8f0be65724001a7edcf57daa52f75a01b324c98f4a869b6c117",
-        "candidate-source.css": "511b301dfd1a1108c21bba7b39d0a421c8dbe551ff8d00c251f4a61fe2bc7c96",
-        "candidate.wikidot.source.txt": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c",
+        "candidate.css": "330963720c8e459b4d1efa2cb7d116bf3020ea3cfd4d46f799e13a46225edfdd",
+        "candidate-source.css": "e639aae88a31fca799b51f1d9ae423b3d5d3a0d1691e794688ac48989e42df1d",
+        "candidate.wikidot.source.txt": "c4442648bd8ac45e5330011203b5615964246efa60736dc607202532e0e58715",
         "candidate.wikidot.txt": "e81d43c4d4d599a8e1325205ad65bfede07cffa4a8cace109c527783c0cdd390",
         "maintenance/base.wikidot.txt": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c",
         "maintenance/jp-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -8337,12 +8381,38 @@
               "sha256": "38a3de3d2a1987b57615dfa215eeaddde2fe31e5ffb5d7ce4f190656c18dcee2"
             }
           ]
+        },
+        {
+          "marker": "SCP-JP Wikidot page history: keep the history option row within the mobile viewport.",
+          "rationale": "The verbatim upstream history-form rule lays the option cells out past the mobile viewport on the SCP-JP Sigma-9 target (delta receipt: 134px overflow at 320px and 67.5px at 390px without this block, zero at every measured width with it, and no collateral geometry change). The block is scoped to max-width:479px, the widths where the defect exists, because the unscoped form measurably shifted one out-of-pane link at desktop widths for this package. The correction is runtime-independent.",
+          "sha256": "331b282200027f17151fef832a23788dc9daf27370bd0bf7013da8fe4c07cb4f",
+          "selectors": [
+            "@media (max-width: 479px)",
+            "#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2)",
+            "}"
+          ],
+          "at_contexts": [
+            "@media (max-width: 479px)"
+          ],
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/minimalist-bhl-history-form-delta-20261027/receipt.json",
+              "sha256": "22726921370b7997bdaec811146cf78a4f699628f89560379be341afd59b098a"
+            }
+          ],
+          "scope": {
+            "target": "SCP-JP Sigma-9 current target acceptance",
+            "state": "page.history"
+          },
+          "published_css_sha256": "05717ba414c83af78abfdf2709a9f2a69dc1725583d16ef072b1be73fda6026e"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
         "candidate-input.css": "0255fea88b53187db86d6e6b99703260b9d7fefa32d22dc2442bce95a5a4868f",
-        "authority-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "authority-overrides.css": "5335a5302c8d2858572fb0addaf646a7814919b0113067fa7e3898043fca03a8",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/toggle-sidebar-bhl.wikidot.txt": "212ffc2c275de8baa38b3da02d6e08636d649ea5324e0c9c2e9dab6a313a73dc",
         "source-includes/toggle-sidebar-bhl-input.css": "6a820d809d6029aa94eb1285ae644e0f2e28d03c3656e37ee32f6d4473fed1fb",
@@ -8351,9 +8421,9 @@
         "source-css-includes.json": "270b412dfe1dad38f24cfaaa37d7bb7af01d749f15d1ad7f7aa77b385ee6d022"
       },
       "outputs": {
-        "candidate.css": "bb4018bd604b2abfbd17e84f3fd884d13c3891be34fdac52c3a6d30af295d245",
-        "candidate-source.css": "e8b0f843602869405f0241ec9f9355b98cead44da11a2ede23c09ff76632b3c0",
-        "candidate.wikidot.source.txt": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
+        "candidate.css": "05717ba414c83af78abfdf2709a9f2a69dc1725583d16ef072b1be73fda6026e",
+        "candidate-source.css": "fb696263746cd6c979c9c1f33e98c363f9f0449c0f153e31240cb9f59b50f22e",
+        "candidate.wikidot.source.txt": "ea0928053d827e32d43639d5eb6d3367953e81da3b70aee26830b8a88737e7cc",
         "candidate.wikidot.txt": "90ea3a6c9b8e830c3a9f11bf7f04c74c22d76b64dfb9bdf61c0180e90248215c",
         "maintenance/base.wikidot.txt": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
         "maintenance/jp-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -9315,12 +9385,34 @@
               "sha256": "38a3de3d2a1987b57615dfa215eeaddde2fe31e5ffb5d7ce4f190656c18dcee2"
             }
           ]
+        },
+        {
+          "marker": "SCP-JP Wikidot page history: keep the history option row within the mobile viewport.",
+          "rationale": "The verbatim upstream history-form rule lays the option cells out past the mobile viewport on the SCP-JP Sigma-9 target (delta receipt: target overflow at 320px and 390px without this block, zero at every measured width 320-1440px with it, and no collateral geometry change). Equal flexible columns keep all six history options inside the viewport; the correction is runtime-independent.",
+          "sha256": "cb507f4e1a05c0b41c534c7238440693fd3b81c3b0316fe6ff00d3539c3e2953",
+          "selectors": [
+            "#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2)"
+          ],
+          "at_contexts": [],
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/redtape-history-form-delta-20261027/receipt.json",
+              "sha256": "4d0f07f374ba4d7c26e198b20b052e3f0f8b8af702e06f0366358c1dee9b7904"
+            }
+          ],
+          "scope": {
+            "target": "SCP-JP Sigma-9 current target acceptance",
+            "state": "page.history"
+          },
+          "published_css_sha256": "6b9bba79b361e2207ab1a12aada9b56fb6f94678d95318b41ce4cb286ec16914"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
         "candidate-input.css": "e715aff3bea062e42ab06f0e59259c6319ec716c4defd43623191ead7b0d368b",
-        "authority-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "authority-overrides.css": "103b972f4d86dda68ae9587178edc7d5b68573c337282935c6cf1c54a72be1d5",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/toggle-sidebar-bhl.wikidot.txt": "212ffc2c275de8baa38b3da02d6e08636d649ea5324e0c9c2e9dab6a313a73dc",
         "source-includes/toggle-sidebar-bhl-input.css": "6a820d809d6029aa94eb1285ae644e0f2e28d03c3656e37ee32f6d4473fed1fb",
@@ -9329,9 +9421,9 @@
         "source-css-includes.json": "270b412dfe1dad38f24cfaaa37d7bb7af01d749f15d1ad7f7aa77b385ee6d022"
       },
       "outputs": {
-        "candidate.css": "e68651742177907f32d7870a383a86a432159fe581e4a005e1d9f1a0da227016",
-        "candidate-source.css": "9ba92371a9f7f0ccd1b6a065dcff74ca18ba96bc74acbf311248d2fe84f09cb4",
-        "candidate.wikidot.source.txt": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
+        "candidate.css": "6b9bba79b361e2207ab1a12aada9b56fb6f94678d95318b41ce4cb286ec16914",
+        "candidate-source.css": "b49c13b4a9c6e592b29e6037448bd65e72fc867f4aa8af60cad05422e3f040e9",
+        "candidate.wikidot.source.txt": "2655dea50ad2280948198a567d1640f07ed8b053cf8bc466be8860949cd9b7b0",
         "candidate.wikidot.txt": "770aa44e13226adf2acb3091effcb034e42bf8eb1f87ae3cbeef09ed40ffca81",
         "maintenance/base.wikidot.txt": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
         "maintenance/jp-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",

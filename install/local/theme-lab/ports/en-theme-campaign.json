@@ -6081,7 +6081,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/assets.json",
-      "dependency_decision_count": 1,
+      "dependency_decision_count": 40,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -6335,12 +6335,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "warn",
       "overall_acceptance": {
         "status": "warn",
         "port_verdict": "pass",
         "target_status": "warn"
-      }
+      },
+      "final_verdict": "inconclusive"
     },
     {
       "slug": "theme:aesthetic-theme",
@@ -6414,7 +6414,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/aesthetic-theme/assets.json",
-      "dependency_decision_count": 2,
+      "dependency_decision_count": 66,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -6669,12 +6669,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "warn",
       "overall_acceptance": {
         "status": "warn",
         "port_verdict": "pass",
         "target_status": "warn"
-      }
+      },
+      "final_verdict": "inconclusive"
     },
     {
       "slug": "theme:flopstyle-dark",
@@ -9046,7 +9046,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/minimalist-bhl/assets.json",
-      "dependency_decision_count": 0,
+      "dependency_decision_count": 39,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -9294,12 +9294,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "warn",
       "overall_acceptance": {
         "status": "warn",
         "port_verdict": "pass",
         "target_status": "warn"
-      }
+      },
+      "final_verdict": "inconclusive"
     },
     {
       "slug": "theme:hansarp",
@@ -10354,7 +10354,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/redtape/assets.json",
-      "dependency_decision_count": 3,
+      "dependency_decision_count": 66,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -10609,12 +10609,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "warn",
       "overall_acceptance": {
         "status": "warn",
         "port_verdict": "pass",
         "target_status": "warn"
-      }
+      },
+      "final_verdict": "inconclusive"
     },
     {
       "slug": "theme:ouroborous-theme",

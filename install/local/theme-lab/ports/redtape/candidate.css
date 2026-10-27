@@ -1636,3 +1636,7 @@ rnb-.current.raisanav {
     --header-subtitle: "{$years} Minutes to Midnight";
     --minutes-to-midnight: {$years};
 }
+
+
+/* SCP-JP Wikidot page history: keep the history option row within the mobile viewport. */
+#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2){grid-template-columns:repeat(3,1fr)}
