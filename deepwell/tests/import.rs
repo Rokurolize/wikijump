@@ -3075,31 +3075,33 @@ async fn import_revision_queues_deferred_rerender_for_includers() {
     runner.teardown().await;
 }
 
-fn import_anonymous_revision(
+struct ImportAnonymousRevision<'a> {
     revision_id: i64,
     revision_number: i32,
     revision_type: PageRevisionType,
     page_id: i64,
     site_id: i64,
     user_id: Option<i64>,
-    anonymous_ip: Option<&str>,
-    slug: &str,
-    wikitext: &str,
-) -> ImportPageRevision {
+    anonymous_ip: Option<&'a str>,
+    slug: &'a str,
+    wikitext: &'a str,
+}
+
+fn import_anonymous_revision(params: ImportAnonymousRevision<'_>) -> ImportPageRevision {
     ImportPageRevision {
-        revision_id,
-        revision_type,
+        revision_id: params.revision_id,
+        revision_type: params.revision_type,
         created_at: OffsetDateTime::UNIX_EPOCH,
         updated_at: None,
-        revision_number,
-        page_id,
-        site_id,
-        user_id,
-        anonymous_ip: anonymous_ip.map(String::from),
-        wikitext: String::from(wikitext),
+        revision_number: params.revision_number,
+        page_id: params.page_id,
+        site_id: params.site_id,
+        user_id: params.user_id,
+        anonymous_ip: params.anonymous_ip.map(String::from),
+        wikitext: String::from(params.wikitext),
         comments: String::from("source import"),
         title: String::from("Anonymous revision test"),
-        slug: String::from(slug),
+        slug: String::from(params.slug),
         tags: vec![],
     }
 }
@@ -3139,17 +3141,17 @@ async fn import_anonymous_first_revision_displays_with_masked_ip() {
 
     ImportService::add_page_revision(
         runner.context(),
-        import_anonymous_revision(
-            4_270_000_021,
-            0,
-            PageRevisionType::Create,
+        import_anonymous_revision(ImportAnonymousRevision {
+            revision_id: 4_270_000_021,
+            revision_number: 0,
+            revision_type: PageRevisionType::Create,
             page_id,
             site_id,
-            None,
-            Some("67.142.130.x"),
+            user_id: None,
+            anonymous_ip: Some("67.142.130.x"),
             slug,
-            "Anonymous first revision body.",
-        ),
+            wikitext: "Anonymous first revision body.",
+        }),
     )
     .await
     .expect("anonymous-authored revision should import");
@@ -3218,51 +3220,51 @@ async fn import_mixed_history_attributes_anonymous_revisions() {
 
     ImportService::add_page_revision(
         runner.context(),
-        import_anonymous_revision(
-            4_270_000_022,
-            0,
-            PageRevisionType::Create,
+        import_anonymous_revision(ImportAnonymousRevision {
+            revision_id: 4_270_000_022,
+            revision_number: 0,
+            revision_type: PageRevisionType::Create,
             page_id,
             site_id,
-            Some(author_id),
-            None,
+            user_id: Some(author_id),
+            anonymous_ip: None,
             slug,
-            "Attributed v0 body.",
-        ),
+            wikitext: "Attributed v0 body.",
+        }),
     )
     .await
     .expect("attributed first revision should import");
 
     ImportService::add_page_revision(
         runner.context(),
-        import_anonymous_revision(
-            4_270_000_023,
-            1,
-            PageRevisionType::Regular,
+        import_anonymous_revision(ImportAnonymousRevision {
+            revision_id: 4_270_000_023,
+            revision_number: 1,
+            revision_type: PageRevisionType::Regular,
             page_id,
             site_id,
-            None,
-            Some("99.245.177.x"),
+            user_id: None,
+            anonymous_ip: Some("99.245.177.x"),
             slug,
-            "Anonymous edit body.",
-        ),
+            wikitext: "Anonymous edit body.",
+        }),
     )
     .await
     .expect("anonymous regular revision should import");
 
     ImportService::add_page_revision(
         runner.context(),
-        import_anonymous_revision(
-            4_270_000_024,
-            2,
-            PageRevisionType::Rollback,
+        import_anonymous_revision(ImportAnonymousRevision {
+            revision_id: 4_270_000_024,
+            revision_number: 2,
+            revision_type: PageRevisionType::Rollback,
             page_id,
             site_id,
-            None,
-            Some("65.26.177.x"),
+            user_id: None,
+            anonymous_ip: Some("65.26.177.x"),
             slug,
-            "Attributed v0 body.",
-        ),
+            wikitext: "Attributed v0 body.",
+        }),
     )
     .await
     .expect("anonymous rollback revision should import");
@@ -3343,17 +3345,17 @@ async fn import_revision_rejects_anonymous_ip_with_real_author() {
 
     let result = ImportService::add_page_revision(
         runner.context(),
-        import_anonymous_revision(
-            4_270_000_025,
-            0,
-            PageRevisionType::Create,
+        import_anonymous_revision(ImportAnonymousRevision {
+            revision_id: 4_270_000_025,
+            revision_number: 0,
+            revision_type: PageRevisionType::Create,
             page_id,
             site_id,
-            Some(author_id),
-            Some("67.142.130.x"),
+            user_id: Some(author_id),
+            anonymous_ip: Some("67.142.130.x"),
             slug,
-            "Mismatched attribution body.",
-        ),
+            wikitext: "Mismatched attribution body.",
+        }),
     )
     .await;
     assert!(
