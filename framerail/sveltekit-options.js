@@ -10,6 +10,7 @@ import {
 } from "./src/lib/server/deployment-environment.js"
 import { auditedExternalAssetOrigins } from "./src/lib/server/audited-external-asset-origins.js"
 import {
+  LOCAL_MIRROR_FILE_ASSET_SITES,
   platformDomains,
   platformHttpsOrigin
 } from "./src/lib/server/platform-domains.js"
@@ -42,14 +43,11 @@ const WIKIDOT_LEGACY_IMAGE_SOURCES = ["https://d3g0gp89917ko0.cloudfront.net"]
 /** @type {CspSources} */
 const WIKIDOT_LEGACY_SCRIPT_SOURCES = []
 /** @type {CspSources} */
-// These read-only local mirrors are already trusted image sources. Included
-// components also retain their source mirror's stylesheet/font authority
-// (e.g. info:start imports scp-wiki's info:style on the local authoring site).
-// Keep this exact local allowlist; authored imports cannot grant new origins.
-// The mirrors are this local environment's own file hosts (standing:
-// `scp-wiki.wjfiles.localhost`; local development:
+// The read-only local mirrors (LOCAL_MIRROR_FILE_ASSET_SITES in
+// platform-domains.js) are this local environment's own file hosts
+// (standing: `scp-wiki.wjfiles.localhost`; local development:
 // `scp-wiki.wjfiles.dev.localhost:18443`).
-const LOCAL_SCP_FILE_ASSET_SITES = ["scp-wiki", "scp-jp"]
+const LOCAL_SCP_FILE_ASSET_SITES = LOCAL_MIRROR_FILE_ASSET_SITES
 /** @type {CspSources} */
 const WIKIDOT_IMAGE_SOURCES = [
   "https://scp-wiki.wikidot.com",
