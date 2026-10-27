@@ -581,3 +581,55 @@ class LauncherToolsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DeepwellClonePauseTest(unittest.TestCase):
+    def run_fake(self):
+        calls = []
+
+        def fake_run(*args):
+            calls.append(args)
+            if args[:2] == ("docker", "inspect"):
+                return "false true"
+            return ""
+
+        return calls, fake_run
+
+    def test_the_pause_wraps_the_body_and_resumes(self) -> None:
+        calls, fake_run = self.run_fake()
+        with mock.patch.object(promote, "run", side_effect=fake_run), \
+                mock.patch.object(promote, "deepwell_log_lines", return_value=0), \
+                mock.patch.object(promote.time, "sleep"):
+            with promote.deepwell_paused_for_clone():
+                calls.append(("body",))
+        kinds = [call[:2] for call in calls]
+        self.assertLess(kinds.index(("docker", "pause")), kinds.index(("body",)))
+        self.assertLess(kinds.index(("body",)), kinds.index(("docker", "unpause")))
+
+    def test_the_pause_resumes_even_when_the_clone_fails(self) -> None:
+        calls, fake_run = self.run_fake()
+        with mock.patch.object(promote, "run", side_effect=fake_run), \
+                mock.patch.object(promote, "deepwell_log_lines", return_value=0), \
+                mock.patch.object(promote.time, "sleep"):
+            with self.assertRaisesRegex(RuntimeError, "clone failed"):
+                with promote.deepwell_paused_for_clone():
+                    raise RuntimeError("clone failed")
+        self.assertIn(("docker", "unpause", promote.STANDING_DEEPWELL), calls)
+
+    def test_a_deepwell_that_keeps_logging_while_paused_is_refused(self) -> None:
+        calls, fake_run = self.run_fake()
+        with mock.patch.object(promote, "run", side_effect=fake_run), \
+                mock.patch.object(promote, "deepwell_log_lines", side_effect=[3, 4]), \
+                mock.patch.object(promote.time, "sleep"):
+            with self.assertRaisesRegex(RuntimeError, "kept logging"):
+                with promote.deepwell_paused_for_clone():
+                    pass
+        self.assertIn(("docker", "unpause", promote.STANDING_DEEPWELL), calls)
+
+    def test_the_clone_stage_clones_under_the_pause(self) -> None:
+        source = inspect.getsource(promote.promote)
+        clone = source.index("def clone_stage")
+        body = source[clone:clone + 500]
+        self.assertIn("with deepwell_paused_for_clone():", body)
+        self.assertLess(body.index("deepwell_paused_for_clone"), body.index("clone_standing_database"))
+        self.assertLess(body.index("deepwell_paused_for_clone"), body.index("overlay_standing_files"))

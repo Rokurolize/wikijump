@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import contextlib
 from datetime import UTC, datetime, timedelta
 import hashlib
 import json
@@ -49,6 +50,7 @@ from volume_contract import PROTECTED_VOLUMES
 SERVICES = refresh.SERVICES
 VERIFICATION = Path("install/local/wikidot-verification")
 STANDING_DATABASE = "wikijump-standing-database-1"
+STANDING_DEEPWELL = "wikijump-standing-deepwell-1"
 STANDING_CACHE = "wikijump-standing-cache-1"
 STANDING_NAMESPACE = "wikijump-standing-caddy-1"
 STANDING_FILES_VOLUME = "wikijump-standing-files-data"
@@ -300,6 +302,66 @@ def overlay_standing_files(volume: str, upper_volume: str) -> None:
         "--opt", f"o=lowerdir={lower},upperdir={upper_root}/data,workdir={upper_root}/work",
         volume,
     )
+
+
+def deepwell_log_lines(since: datetime) -> int:
+    """Lines standing's Deepwell has logged since a moment, both streams."""
+    result = subprocess.run(
+        ["docker", "logs", "--since", since.strftime("%Y-%m-%dT%H:%M:%SZ"), STANDING_DEEPWELL],
+        capture_output=True, text=True, check=True,
+    )
+    return len(result.stdout.splitlines()) + len(result.stderr.splitlines())
+
+
+@contextlib.contextmanager
+def deepwell_paused_for_clone():
+    """Freeze standing's Deepwell while the rehearsal clone is taken.
+
+    Deepwell is the only writer of text_block rows and their objects, and
+    its deferred re-render fan-out replaces them continuously. A
+    replacement uploads the new objects, commits the new rows, and only
+    then deletes the old objects (the cleanup is deferred past the
+    commit), so standing is consistent at every instant -- but the
+    database copy (pg_basebackup) and the text-block bucket copy are
+    taken at different moments, and a re-render landing between them
+    leaves the rehearsal database naming objects its file copy lacks.
+
+    Pausing the container freezes both stores at one instant, and any
+    instant is a consistent one for that write order: an uncommitted
+    replacement still has its old objects, and a committed one already
+    has its new objects. The pause covers exactly the clone segment; the
+    finally path always resumes the container, and the resume is verified
+    before the promotion continues.
+    """
+    started = datetime.now(UTC)
+    run("docker", "pause", STANDING_DEEPWELL)
+    try:
+        # A paused container produces no new log lines; two equal samples
+        # prove the render fan-out has actually stopped before the clone.
+        time.sleep(3)
+        lines = deepwell_log_lines(started)
+        time.sleep(3)
+        if deepwell_log_lines(started) != lines:
+            raise RuntimeError(
+                "standing Deepwell kept logging while paused for the rehearsal clone"
+            )
+        yield started
+    finally:
+        run("docker", "unpause", STANDING_DEEPWELL)
+        state = run(
+            "docker", "inspect", "--format",
+            "{{.State.Paused}} {{.State.Running}}", STANDING_DEEPWELL,
+        )
+        resumed = datetime.now(UTC)
+        print(
+            "standing Deepwell paused for the rehearsal clone: "
+            f"{started.isoformat()} .. {resumed.isoformat()}",
+            flush=True,
+        )
+        if state != "false true":
+            raise RuntimeError(
+                f"standing Deepwell did not resume after the rehearsal clone pause: {state}"
+            )
 
 
 def missing_text_blocks(database_container: str, files_container: str) -> list[str]:
@@ -791,8 +853,9 @@ def promote(args, source_root, runtime_home, override_file, identity, evidence, 
     }
 
     def clone_stage():
-        clone_standing_database(rehearsal_volumes["database"])
-        overlay_standing_files(rehearsal_volumes["files"], rehearsal_volumes["files_upper"])
+        with deepwell_paused_for_clone():
+            clone_standing_database(rehearsal_volumes["database"])
+            overlay_standing_files(rehearsal_volumes["files"], rehearsal_volumes["files_upper"])
         return dict(rehearsal_volumes)
 
     def browser_dependencies_stage():
