@@ -1485,13 +1485,19 @@ impl ImportService {
             category_id,
             page_id,
         };
+        // Imported revisions outdate their dependents one rerender depth
+        // deeper than interactive edits, queuing background rerenders
+        // instead of re-rendering every dependent inside this request: a
+        // component included by thousands of pages would otherwise make a
+        // single imported revision cost one render per includer before the
+        // import could respond.
         if let Some(followups) = first_followups {
-            PageRevisionService::apply_first_followups(ctx, id, followups)
+            PageRevisionService::apply_first_followups_for_import(ctx, id, followups)
                 .await
                 .or_raise(make_error)?;
         }
         if let Some(revision) = persisted_revision {
-            PageRevisionService::apply_followups(ctx, id, revision)
+            PageRevisionService::apply_followups_for_import(ctx, id, revision)
                 .await
                 .or_raise(make_error)?;
         }
