@@ -396,15 +396,11 @@ async fn apply_revision_outdating(
         slug,
         tasks,
     }: PageRevisionFollowups,
+    depth: RerenderDepth,
 ) -> Result<()> {
     if let Some(old_slug) = old_slug.as_deref() {
         OutdateService::process_page_move(
-            ctx,
-            id.site_id,
-            id.page_id,
-            old_slug,
-            &slug,
-            RerenderDepth::default(),
+            ctx, id.site_id, id.page_id, old_slug, &slug, depth,
         )
         .await?;
         assert_eq!(
@@ -419,19 +415,11 @@ async fn apply_revision_outdating(
     try_join!(
         conditional_future!(
             tasks.rerender_incoming_links,
-            OutdateService::outdate_incoming_links(
-                ctx,
-                id.page_id,
-                RerenderDepth::default()
-            ),
+            OutdateService::outdate_incoming_links(ctx, id.page_id, depth),
         ),
         conditional_future!(
             tasks.rerender_outgoing_includes,
-            OutdateService::outdate_outgoing_includes(
-                ctx,
-                id.page_id,
-                RerenderDepth::default()
-            ),
+            OutdateService::outdate_outgoing_includes(ctx, id.page_id, depth),
         ),
         conditional_future!(
             tasks.rerender_templates,
@@ -440,7 +428,7 @@ async fn apply_revision_outdating(
                 id.site_id,
                 category_slug,
                 page_slug,
-                RerenderDepth::default(),
+                depth,
             ),
         ),
     )?;
@@ -609,7 +597,30 @@ impl PageRevisionService {
         id: PageId,
         revision: PersistedPageRevision,
     ) -> Result<CreatePageRevisionOutput> {
-        apply_revision_outdating(ctx, id, revision.followups).await?;
+        apply_revision_outdating(ctx, id, revision.followups, RerenderDepth::default())
+            .await?;
+        Ok(revision.output)
+    }
+
+    /// Applies the follow-up work for a revision created by a page import.
+    ///
+    /// Identical to [`Self::apply_followups`], except dependent outdating
+    /// runs one rerender depth deeper, so dependents are queued as deferred
+    /// background rerenders instead of being re-rendered immediately inside
+    /// this request. A bulk import of a widely-included page must not
+    /// synchronously re-render every includer before the import can respond.
+    pub(crate) async fn apply_followups_for_import(
+        ctx: &ServiceContext<'_>,
+        id: PageId,
+        revision: PersistedPageRevision,
+    ) -> Result<CreatePageRevisionOutput> {
+        apply_revision_outdating(
+            ctx,
+            id,
+            revision.followups,
+            RerenderDepth::default().plus_one(),
+        )
+        .await?;
         Ok(revision.output)
     }
 
@@ -755,22 +766,47 @@ impl PageRevisionService {
     pub(crate) async fn apply_first_followups(
         ctx: &ServiceContext<'_>,
         id: PageId,
+        followups: FirstRevisionFollowups,
+    ) -> Result<()> {
+        Self::apply_first_followups_at_depth(ctx, id, followups, RerenderDepth::default())
+            .await
+    }
+
+    /// Applies the follow-up work for the first revision of an imported page.
+    ///
+    /// Identical to [`Self::apply_first_followups`], except dependent
+    /// outdating runs one rerender depth deeper, so dependents are queued
+    /// as deferred background rerenders instead of being re-rendered
+    /// immediately inside this request. See
+    /// [`Self::apply_followups_for_import`].
+    pub(crate) async fn apply_first_followups_for_import(
+        ctx: &ServiceContext<'_>,
+        id: PageId,
+        followups: FirstRevisionFollowups,
+    ) -> Result<()> {
+        Self::apply_first_followups_at_depth(
+            ctx,
+            id,
+            followups,
+            RerenderDepth::default().plus_one(),
+        )
+        .await
+    }
+
+    async fn apply_first_followups_at_depth(
+        ctx: &ServiceContext<'_>,
+        id: PageId,
         FirstRevisionFollowups {
             slug,
             rerender_after_latest_revision,
         }: FirstRevisionFollowups,
+        depth: RerenderDepth,
     ) -> Result<()> {
-        OutdateService::process_page_create(
-            ctx,
-            id.site_id,
-            id.page_id,
-            &slug,
-            RerenderDepth::default(),
-        )
-        .await?;
+        OutdateService::process_page_create(ctx, id.site_id, id.page_id, &slug, depth)
+            .await?;
 
         if rerender_after_latest_revision {
-            Self::rerender(ctx, id, RerenderDepth::default(), RerenderType::Full).await?;
+            Self::rerender(ctx, id, depth, RerenderType::Full).await?;
         }
         Ok(())
     }
