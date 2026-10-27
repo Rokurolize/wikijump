@@ -1700,3 +1700,23 @@ fn div_heads_with_arguments_ignore_trailing_spaces_before_the_line_break() {
         assert!(!rendered.contains("[[/div]]"), "{original}: {rendered}");
     }
 }
+
+#[test]
+fn localizes_scp_wiki_theme_code_url_to_the_scp_wiki_mirror_for_a_local_custom_domain_site() {
+    let mut site = wikidot_site("scp-jp", Some("scp-jp.localhost"));
+    site.locale = "ja".to_owned();
+    site.from_wikidot = false;
+    let mut config = Config::integration_testing();
+    config.files_domain = ".wjfiles.localhost".to_owned();
+    config.files_domain_no_dot = "wjfiles.localhost".to_owned();
+    let html = r#"<style>@import url('https://scp-wiki.wdfiles.com/local--code/theme%3Ajust-girly-things/1');</style>"#;
+    // The site's preferred domain is its local custom domain, not a
+    // wikidot.com host, so the site is not a "translated SCP branch" for
+    // asset purposes: the scp-wiki theme URL must stay on the scp-wiki
+    // mirror's file host (where the page actually exists), not be
+    // rewritten onto scp-jp.
+    assert_eq!(
+        RenderService::localize_wikidot_local_file_urls(html, Some(&site), &config),
+        r#"<style>@import url('https://scp-wiki.wjfiles.localhost/local--code/theme%3Ajust-girly-things/1');</style>"#,
+    );
+}
