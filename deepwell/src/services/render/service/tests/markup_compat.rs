@@ -1702,7 +1702,8 @@ fn div_heads_with_arguments_ignore_trailing_spaces_before_the_line_break() {
 }
 
 #[test]
-fn localizes_scp_wiki_theme_code_url_to_the_scp_wiki_mirror_for_a_local_custom_domain_site() {
+fn localizes_scp_wiki_theme_code_url_to_the_scp_wiki_mirror_for_a_local_custom_domain_site()
+ {
     let mut site = wikidot_site("scp-jp", Some("scp-jp.localhost"));
     site.locale = "ja".to_owned();
     site.from_wikidot = false;
