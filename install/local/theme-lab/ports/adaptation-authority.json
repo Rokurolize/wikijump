@@ -998,18 +998,40 @@
               "decision_authority": "FROZEN_WIKIDOT_SOURCE"
             }
           ]
+        },
+        {
+          "marker": "SCP-JP Wikidot page history: keep the history option row within the mobile viewport.",
+          "rationale": "On the SCP-JP Sigma-9 target the verbatim upstream history-form rule lays the option cells out at 442px, overflowing the 390px mobile viewport by 67.5px (134px at 320px) and clipping the row (defect D1). The same-target delta receipt shows repeat(3,1fr) clears the overflow at every measured width (320-1440px) with no collateral geometry change outside the history form owning area.",
+          "sha256": "cb507f4e1a05c0b41c534c7238440693fd3b81c3b0316fe6ff00d3539c3e2953",
+          "selectors": [
+            "#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2)"
+          ],
+          "at_contexts": [],
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/bhl-history-form-delta-20261027/receipt.json",
+              "sha256": "81b57d1453cb58a59afac6554efaa690d7d159aa890db52e648eca17d9a5f329"
+            }
+          ],
+          "scope": {
+            "target": "SCP-JP Sigma-9 current target acceptance",
+            "state": "page.history"
+          },
+          "published_css_sha256": "2de5be3997d47471201614d9d4c6251182aee532c5d999a081494b5a647998f4"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
         "candidate-input.css": "2d8dcd8b6835d303b1da6204a56f2fc3539bb9ac0dd37ce35e67c0a7fc489e1f",
-        "authority-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "authority-overrides.css": "103b972f4d86dda68ae9587178edc7d5b68573c337282935c6cf1c54a72be1d5",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd"
       },
       "outputs": {
-        "candidate.css": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b",
-        "candidate-source.css": "02a2527c55fea05c0654038e908cc06874dec356ac4d24c7d37ab094760798ed",
-        "candidate.wikidot.source.txt": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
+        "candidate.css": "2de5be3997d47471201614d9d4c6251182aee532c5d999a081494b5a647998f4",
+        "candidate-source.css": "c3f64692b7b7a122992831e7fbde186fe59532e9fbcc04e61c607a7ed437b95c",
+        "candidate.wikidot.source.txt": "9edca59037bc68bad470d8ba41126aaf481dc39928e62be91e1e0ed8f8ac73a2",
         "candidate.wikidot.txt": "3a14fe45ff7f93ff37848c3b91a18a9c8490b61f844e86286fcc0630e0627c9a",
         "maintenance/base.wikidot.txt": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
         "maintenance/jp-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
