@@ -286,7 +286,24 @@ pub struct ImportPageRevision {
     pub revision_number: i32,
     pub page_id: i64,
     pub site_id: i64,
-    pub user_id: i64,
+    /// The source author's Wikidot user ID.
+    ///
+    /// `None` means the source revision was authored by Wikidot's
+    /// Anonymous pseudo-user, who has no Wikidot account and therefore
+    /// no source user ID. Such revisions are attributed to the
+    /// platform's own Anonymous system user (see `ANONYMOUS_USER_ID`),
+    /// never to a real account.
+    pub user_id: Option<i64>,
+    /// The masked IP address Wikidot recorded for an anonymous source
+    /// author, verbatim as served (its last octet is already masked by
+    /// Wikidot, e.g. "67.142.130.x").
+    ///
+    /// Only meaningful when `user_id` is `None`: the address is part of
+    /// that individual revision's anonymous attribution, not a property
+    /// of any account. Payloads that set it together with a real author
+    /// ID are rejected.
+    #[serde(default)]
+    pub anonymous_ip: Option<String>,
     pub wikitext: String,
     pub comments: String,
     pub title: String,

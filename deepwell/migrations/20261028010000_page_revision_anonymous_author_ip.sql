@@ -1,0 +1,12 @@
+-- Issue #2076: anonymous-authored Wikidot revisions are attributed to
+-- the platform's Anonymous system user (user_id -3), and Wikidot serves
+-- each such revision with its author's masked IP address, which the
+-- revision history displays inline ("Anonymous (67.142.130.x)").
+--
+-- The masked IP is part of the individual revision's anonymous
+-- attribution -- different revisions carry different IPs -- so it is
+-- stored per revision, not on the shared Anonymous identity. It is only
+-- ever set for imported revisions whose source author is the Anonymous
+-- pseudo-user. The address arrives already masked by Wikidot (the last
+-- octet is the literal letter "x"), so it is stored verbatim as text.
+ALTER TABLE page_revision ADD COLUMN anonymous_author_ip TEXT;
