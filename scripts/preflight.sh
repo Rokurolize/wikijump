@@ -117,6 +117,20 @@ if ! [[ "${JOBS}" =~ ^[0-9]+$ ]]; then
   exit 2
 fi
 
+# The Rust groups shell out to cargo, and the Deepwell test stack spawns
+# sqlx; both live in ~/.cargo/bin, which a non-login shell may not have on
+# PATH. Name the environmental failure here instead of inside a group.
+if [[ "${LIST}" != true ]]; then
+  if { group_selected deepwell || group_selected wws; } && ! command -v cargo >/dev/null 2>&1; then
+    echo "preflight: cargo not found on PATH; the Rust check groups need it — run from a login shell or add \$HOME/.cargo/bin to PATH" >&2
+    exit 2
+  fi
+  if group_selected deepwell && ! command -v sqlx >/dev/null 2>&1; then
+    echo "preflight: sqlx not found on PATH; the Deepwell test stack runs sqlx migrate — run from a login shell or add \$HOME/.cargo/bin to PATH" >&2
+    exit 2
+  fi
+fi
+
 FAILED=()
 INCONCLUSIVE=()
 run() {

@@ -14,7 +14,9 @@
 
 mod value_safety;
 
-use self::value_safety::render_list_pages_substituted_identity;
+use self::value_safety::{
+    render_list_pages_substituted_identity, render_list_pages_substituted_title,
+};
 use super::{
     BTreeMap, BTreeSet, CompatHtmlFragments, CompatTextFragments, Cow, FoundPageRow,
     LISTPAGES_VARIABLE_REGEX, ListPagesDataFormDefinition, ListPagesGeneratedSlot,
@@ -27,6 +29,7 @@ use super::{
     list_pages_first_paragraph, list_pages_plain_text, list_pages_preview,
     list_pages_preview_length, list_pages_tag_target_prefix,
     list_pages_variable_capture_has_unknown_name, list_pages_variable_capture_is_valid,
+    list_pages_variable_inside_quoted_attribute,
     list_pages_variable_starts_triple_link_target, neutralize_authored_markers,
     protect_list_pages_content_insertion, protect_list_pages_generated_html,
     push_list_pages_rendered_fragment, push_list_pages_rendered_fragment_with_mode,
@@ -362,6 +365,8 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
             let inside_html_escape = html_escape_ranges
                 .iter()
                 .any(|range| range.start <= matched.start() && matched.end() <= range.end);
+            let inside_quoted_attribute =
+                list_pages_variable_inside_quoted_attribute(template, matched.start());
             substituted_cursor += matched.start() - source_cursor;
             let replacement_start = substituted_cursor;
             let runtime_origin = if generated_slots.is_some()
@@ -399,7 +404,11 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     marker
                 }
                 "title_linked" | "linked_title" => title_linked.clone(),
-                "title" => title_plain.clone(),
+                "title" => render_list_pages_substituted_title(
+                    &title_plain,
+                    inside_html_escape,
+                    inside_quoted_attribute,
+                ),
                 "name" | "slug" | "page_name" => slug.to_owned(),
                 "fullname" | "full_slug" | "page_unix_name" | "full_page_name"
                     if list_pages_variable_starts_triple_link_target(
@@ -618,7 +627,13 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     .unwrap_or_default(),
                 "parent_title" => context
                     .page_parent_display
-                    .map(|parent| sanitize_list_pages_title(&parent.title))
+                    .map(|parent| {
+                        render_list_pages_substituted_title(
+                            &sanitize_list_pages_title(&parent.title),
+                            inside_html_escape,
+                            inside_quoted_attribute,
+                        )
+                    })
                     .unwrap_or_default(),
                 "parent_title_linked" => context
                     .page_parent_display
@@ -712,6 +727,13 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                             context.data_form_definition,
                         )
                     })
+                    .map(|value| {
+                        render_list_pages_substituted_title(
+                            &value,
+                            inside_html_escape,
+                            inside_quoted_attribute,
+                        )
+                    })
                     .unwrap_or_else(|| captures[0].to_owned()),
                 "form_hint" => captures
                     .name("argument")
@@ -720,6 +742,13 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                         substitute_list_pages_form_hint(
                             field,
                             context.data_form_definition,
+                        )
+                    })
+                    .map(|value| {
+                        render_list_pages_substituted_title(
+                            &value,
+                            inside_html_escape,
+                            inside_quoted_attribute,
                         )
                     })
                     .unwrap_or_else(|| captures[0].to_owned()),
@@ -805,136 +834,4 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::services::render::compat::CompatHtmlFragments;
-
-    use super::{
-        list_pages_rendered_fragment_has_html_block, list_pages_rendered_inline_fragment,
-        push_list_pages_rendered_fragment, push_list_pages_rendered_fragment_with_mode,
-    };
-
-    #[test]
-    fn rendered_inline_fragment_keeps_empty_paragraph_boundaries() {
-        let source = "<p>before</p>\n<p>\n\n</p>\n<p>after</p>";
-
-        assert_eq!(
-            list_pages_rendered_inline_fragment(source),
-            "before</p>\n\n\n\n<p>after",
-        );
-    }
-
-    #[test]
-    fn rendered_inline_fragment_still_flattens_ordinary_paragraphs() {
-        let source = "<p>before</p>\n<p>after</p>";
-
-        assert_eq!(list_pages_rendered_inline_fragment(source), "before\nafter");
-    }
-
-    #[test]
-    fn rendered_block_fragment_drops_one_redundant_outer_paragraph() {
-        let mut compat_html = CompatHtmlFragments::new("");
-        let marker = push_list_pages_rendered_fragment(
-            r#"<p><p><iframe src="/page/html/hash-1" class="html-block-iframe"></iframe></p></p>"#,
-            &mut compat_html,
-        );
-
-        let restored = compat_html.restore(&format!("<div><p>{marker}</p></div>"));
-
-        assert_eq!(
-            restored,
-            r#"<div><p><iframe src="/page/html/hash-1" class="html-block-iframe"></iframe></p></div>"#,
-        );
-    }
-
-    #[test]
-    fn rendered_style_frame_fragment_escapes_the_outer_row_paragraph() {
-        let mut compat_html = CompatHtmlFragments::new("");
-        let marker = push_list_pages_rendered_fragment(
-            r#"<p><p><iframe src="/-/wikidot-interwiki/styleFrame.html?priority=1"></iframe></p><p>body</p></p>"#,
-            &mut compat_html,
-        );
-
-        let restored = compat_html.restore(&format!("<div><p>{marker}</p></div>"));
-
-        assert_eq!(
-            restored,
-            r#"<div><p><iframe src="/-/wikidot-interwiki/styleFrame.html?priority=1"></iframe></p><p>body</p></div>"#,
-        );
-    }
-
-    #[test]
-    fn empty_paragraph_restoration_does_not_rescan_the_output_per_marker() {
-        let mut source = String::from("<p>before</p>\n");
-        for _ in 0..1_024 {
-            source.push_str("<p>\n</p>\n");
-        }
-        source.push_str("<p>after</p>");
-
-        let rendered = list_pages_rendered_inline_fragment(&source);
-        let scanned_bytes = super::take_empty_paragraph_restore_scanned_bytes();
-
-        assert!(rendered.contains("before"), "{rendered:?}");
-        assert!(rendered.contains("after"), "{rendered:?}");
-        assert!(
-            scanned_bytes <= source.len() * 4,
-            "empty paragraph restoration rescanned {scanned_bytes} bytes for {} source bytes",
-            source.len(),
-        );
-    }
-
-    #[test]
-    fn rendered_fragment_recognizes_only_the_trusted_html_block_iframe() {
-        assert!(list_pages_rendered_fragment_has_html_block(
-            r#"<p>HTML_START</p><p><iframe src="/page/html/hash-1" class="html-block-iframe"></iframe></p>"#,
-        ));
-        assert!(!list_pages_rendered_fragment_has_html_block(
-            r#"<p><iframe src="/user-content/frame"></iframe></p>"#,
-        ));
-        assert!(!list_pages_rendered_fragment_has_html_block(
-            r#"<p><iframe src="/page/html/hash-1" class="other-iframe"></iframe></p>"#,
-        ));
-        assert!(list_pages_rendered_fragment_has_html_block(
-            r#"<p><iframe src="/-/wikidot-interwiki/styleFrame.html?priority=1"></iframe></p>"#,
-        ));
-    }
-
-    #[test]
-    fn forced_block_rendered_fragment_escapes_the_outer_row_paragraph() {
-        let mut compat_html = CompatHtmlFragments::new("");
-        let marker = push_list_pages_rendered_fragment_with_mode(
-            r#"<div style="text-align: right;"><div class="page-rate-widget-box"></div></div><p>body</p>"#,
-            &mut compat_html,
-            true,
-        );
-
-        let restored = compat_html.restore(&format!("<p>{marker}</p>"));
-        assert_eq!(
-            restored,
-            r#"<div style="text-align: right;"><div class="page-rate-widget-box"></div></div><p>body</p>"#,
-        );
-    }
-
-    #[test]
-    fn rendered_html_block_fragment_preserves_wikidot_paragraph_boundaries() {
-        let mut compat_html = CompatHtmlFragments::new("");
-        let marker = push_list_pages_rendered_fragment(
-            concat!(
-                "<p>DOC_HTML_BEGIN</p>\n",
-                "<p><iframe src=\"/page/html/hash-1\" ",
-                "class=\"html-block-iframe\"></iframe></p>",
-            ),
-            &mut compat_html,
-        );
-
-        let restored = compat_html.restore(&format!("<div><p>{marker}</p></div>"));
-
-        assert_eq!(
-            restored,
-            concat!(
-                "<div><p>DOC_HTML_BEGIN</p>\n",
-                "<p><iframe src=\"/page/html/hash-1\" ",
-                "class=\"html-block-iframe\"></iframe></p></div>",
-            ),
-        );
-    }
-}
+mod tests;
