@@ -131,6 +131,8 @@ async fn page_meta_tags_support_site_and_page_round_trips() {
         ],
     );
 
+    // Meta tags are multi-valued: setting a second value under the same
+    // name adds a row instead of overwriting the first value.
     set_tag(&runner, site_id, page.page_id, "a", "updated", false).await;
     run_endpoint!(
         runner,
@@ -149,6 +151,11 @@ async fn page_meta_tags_support_site_and_page_round_trips() {
                 name: "robots".into(),
                 content: "index".into(),
                 all_pages: true
+            },
+            PageMetaTag {
+                name: "a".into(),
+                content: "one".into(),
+                all_pages: false
             },
             PageMetaTag {
                 name: "a".into(),
@@ -405,5 +412,94 @@ async fn page_editor_cannot_mutate_site_wide_meta_tags() {
             all_pages: false,
         }],
         "denied anonymous requests must not change page or site metadata"
+    );
+}
+
+#[tokio::test]
+async fn page_meta_tags_allow_multiple_values_for_one_name() {
+    // Issue #2089: a head legitimately repeats a name with different
+    // values (og:locale:alternate). Both scopes store every pair, an
+    // exact repeat of a stored pair does not duplicate it, and page
+    // values still override the site values for that name as a group.
+    let mut runner = TestRunner::setup().await;
+    let (site_id, _, page) = create_page(&mut runner).await;
+
+    set_tag(
+        &runner,
+        site_id,
+        page.page_id,
+        "og:locale:alternate",
+        "en_GB",
+        true,
+    )
+    .await;
+    set_tag(
+        &runner,
+        site_id,
+        page.page_id,
+        "og:locale:alternate",
+        "fr_FR",
+        true,
+    )
+    .await;
+    // Exact repeat of a stored pair: no duplicate row.
+    set_tag(
+        &runner,
+        site_id,
+        page.page_id,
+        "og:locale:alternate",
+        "en_GB",
+        true,
+    )
+    .await;
+    assert_eq!(
+        get_tags(&runner, site_id, page.page_id).await,
+        vec![
+            PageMetaTag {
+                name: "og:locale:alternate".into(),
+                content: "en_GB".into(),
+                all_pages: true
+            },
+            PageMetaTag {
+                name: "og:locale:alternate".into(),
+                content: "fr_FR".into(),
+                all_pages: true
+            },
+        ],
+    );
+
+    // Page scope is multi-valued too, and overrides the site group.
+    set_tag(
+        &runner,
+        site_id,
+        page.page_id,
+        "og:locale:alternate",
+        "de_DE",
+        false,
+    )
+    .await;
+    set_tag(
+        &runner,
+        site_id,
+        page.page_id,
+        "og:locale:alternate",
+        "ja_JP",
+        false,
+    )
+    .await;
+    assert_eq!(
+        get_tags(&runner, site_id, page.page_id).await,
+        vec![
+            PageMetaTag {
+                name: "og:locale:alternate".into(),
+                content: "de_DE".into(),
+                all_pages: false
+            },
+            PageMetaTag {
+                name: "og:locale:alternate".into(),
+                content: "ja_JP".into(),
+                all_pages: false
+            },
+        ],
     );
 }

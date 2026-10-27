@@ -2956,7 +2956,9 @@ async fn import_page_meta_tags_replace_semantics() {
     let stored = page_scope_meta_tags(&runner, site_id, page_id).await;
     assert_eq!(stored.len(), 2);
 
-    // Changed set: og:title updated, og:description dropped, twitter:card added.
+    // Changed set: og:title updated, og:description dropped, twitter:card
+    // added. Removal is pair-precise, so both the dropped og:description
+    // pair and the superseded og:title pair count as removed.
     let output = ImportService::add_page_meta_tags(
         runner.context(),
         ImportPageMetaTags {
@@ -2970,7 +2972,7 @@ async fn import_page_meta_tags_replace_semantics() {
     )
     .await
     .expect("second meta tag import should succeed");
-    assert_eq!((output.stored, output.removed), (2, 1));
+    assert_eq!((output.stored, output.removed), (2, 2));
     let mut stored = page_scope_meta_tags(&runner, site_id, page_id).await;
     stored.sort_by(|a, b| a.name.cmp(&b.name));
     assert_eq!(stored.len(), 2);
@@ -2978,8 +2980,9 @@ async fn import_page_meta_tags_replace_semantics() {
     assert_eq!(stored[0].content, "Source Title v2");
     assert_eq!(stored[1].name, "twitter:card");
 
-    // A duplicate name in one payload is rejected.
-    let error = ImportService::add_page_meta_tags(
+    // The same name with different content is a legitimate multi-valued
+    // tag: both pairs are stored, replacing the previous pairs.
+    let output = ImportService::add_page_meta_tags(
         runner.context(),
         ImportPageMetaTags {
             site_id,
@@ -2988,8 +2991,56 @@ async fn import_page_meta_tags_replace_semantics() {
         },
     )
     .await
-    .expect_err("duplicate meta tag names must fail");
+    .expect("multi-valued meta tag import should succeed");
+    assert_eq!((output.stored, output.removed), (2, 2));
+    let stored = page_scope_meta_tags(&runner, site_id, page_id).await;
+    assert_eq!(stored.len(), 2);
+    assert!(stored.iter().all(|tag| tag.name == "og:title"));
+
+    // An exact duplicate (name, content) pair in one payload is rejected.
+    let error = ImportService::add_page_meta_tags(
+        runner.context(),
+        ImportPageMetaTags {
+            site_id,
+            page_id,
+            meta_tags: vec![tag("og:title", "A"), tag("og:title", "A")],
+        },
+    )
+    .await
+    .expect_err("duplicate meta tag pairs must fail");
     assert_contains_error!(error, ErrorType::DatabaseImport);
+
+    // og:locale:alternate arrives as repeated pairs and converges on
+    // re-import (the #2089 rollout shape).
+    let locale_tags = vec![
+        tag("og:locale", "en_US"),
+        tag("og:locale:alternate", "en_GB"),
+        tag("og:locale:alternate", "fr_FR"),
+    ];
+    let output = ImportService::add_page_meta_tags(
+        runner.context(),
+        ImportPageMetaTags {
+            site_id,
+            page_id,
+            meta_tags: locale_tags.clone(),
+        },
+    )
+    .await
+    .expect("locale meta tag import should succeed");
+    assert_eq!((output.stored, output.removed), (3, 2));
+    let output = ImportService::add_page_meta_tags(
+        runner.context(),
+        ImportPageMetaTags {
+            site_id,
+            page_id,
+            meta_tags: locale_tags,
+        },
+    )
+    .await
+    .expect("locale meta tag re-import should converge");
+    assert_eq!((output.stored, output.removed), (3, 0));
+    let stored = page_scope_meta_tags(&runner, site_id, page_id).await;
+    assert_eq!(stored.len(), 3);
 
     // A page that is not an imported Wikidot page is rejected.
     let error = ImportService::add_page_meta_tags(
