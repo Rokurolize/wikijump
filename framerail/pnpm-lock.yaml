@@ -131,8 +131,8 @@ importers:
         specifier: ^17.16.0
         version: 17.16.0(typescript@6.0.3)
       stylelint-config-recess-order:
-        specifier: ^7.8.0
-        version: 7.8.0(stylelint-order@8.1.2(stylelint@17.16.0(typescript@6.0.3)))(stylelint@17.16.0(typescript@6.0.3))
+        specifier: ^7.9.0
+        version: 7.9.0(stylelint-order@8.1.2(stylelint@17.16.0(typescript@6.0.3)))(stylelint@17.16.0(typescript@6.0.3))
       stylelint-order:
         specifier: ^8.1.2
         version: 8.1.2(stylelint@17.16.0(typescript@6.0.3))
@@ -1887,8 +1887,8 @@ packages:
     resolution: {integrity: sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==}
     engines: {node: '>=8'}
 
-  stylelint-config-recess-order@7.8.0:
-    resolution: {integrity: sha512-ObYusdkXavm8ulgb5xvmU1l8wgCdveNYG12hOTUEdjS8bNhSRggl4or0mE0JaOnQz+Ve2xZemVpwqERCgJbntg==}
+  stylelint-config-recess-order@7.9.0:
+    resolution: {integrity: sha512-Pu3zhefjou7PYNkEtx4uLnsCSmXpiNIx8ALd20r+PGO1LApcf2Gowh2pKEaY9h8gdR8Wp6rUGqhqEIAhdyoHxg==}
     peerDependencies:
       stylelint: ^16.18.0 || ^17.0.0
       stylelint-order: ^7.0.0 || ^8.0.0
@@ -3796,7 +3796,7 @@ snapshots:
 
   strip-json-comments@3.1.1: {}
 
-  stylelint-config-recess-order@7.8.0(stylelint-order@8.1.2(stylelint@17.16.0(typescript@6.0.3)))(stylelint@17.16.0(typescript@6.0.3)):
+  stylelint-config-recess-order@7.9.0(stylelint-order@8.1.2(stylelint@17.16.0(typescript@6.0.3)))(stylelint@17.16.0(typescript@6.0.3)):
     dependencies:
       stylelint: 17.16.0(typescript@6.0.3)
       stylelint-order: 8.1.2(stylelint@17.16.0(typescript@6.0.3))
