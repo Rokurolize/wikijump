@@ -1721,3 +1721,80 @@ fn localizes_scp_wiki_theme_code_url_to_the_scp_wiki_mirror_for_a_local_custom_d
         r#"<style>@import url('https://scp-wiki.wjfiles.localhost/local--code/theme%3Ajust-girly-things/1');</style>"#,
     );
 }
+
+#[test]
+fn bold_color_span_renders_nested_size_block() {
+    let page_info =
+        fallback_test_page_info("just-girly-things-hub", "Just Girly Things Hub");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut wikitext =
+        "**##hotpink|[[size x-large]]₊˚⊹♡Just Girly Things Homepage!₊˚⊹♡[[/size]]##**\n"
+            .to_owned();
+
+    let inline_spans =
+        RenderService::protect_wikidot_inline_html_spans(&mut wikitext, &settings);
+    let color_spans =
+        RenderService::protect_wikidot_color_spans(&mut wikitext, &settings);
+
+    let mut compat_text = CompatTextFragments::new(&wikitext);
+    wikitext = RenderService::protect_unrendered_wikidot_color_markers(
+        wikitext,
+        &settings,
+        &mut compat_text,
+    );
+    ftml::preprocess_for_layout(&mut wikitext, settings.layout);
+    let tokens = ftml::tokenize(&wikitext);
+    let result = ftml::parse(&tokens, &page_info, &settings);
+    let (tree, errors) = result.into();
+    assert!(errors.is_empty(), "{errors:?}");
+
+    let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
+    let rendered =
+        RenderService::restore_protected_wikidot_color_spans(rendered, &color_spans);
+    let rendered =
+        RenderService::restore_protected_wikidot_inline_html(rendered, &inline_spans);
+    let rendered = compat_text.restore(&rendered);
+
+    assert!(
+        rendered.contains(
+            r#"<strong><span style="color: hotpink"><span style="font-size:x-large;">₊˚⊹♡Just Girly Things Homepage!₊˚⊹♡</span></span></strong>"#
+        ),
+        "{rendered}",
+    );
+    assert!(!rendered.contains("[[size"), "{rendered}");
+}
+
+#[test]
+fn protected_inline_body_renders_size_blocks() {
+    let rendered = super::super::render_wikidot_protected_inline_body_html(
+        "[[size 75%]]small[[/size]] and [[size larger]]big[[/size]]",
+    );
+
+    assert_eq!(
+        rendered,
+        r#"<span style="font-size:75%;">small</span> and <span style="font-size:larger;">big</span>"#
+    );
+}
+
+#[test]
+fn protected_inline_body_renders_nested_size_blocks() {
+    let rendered = super::super::render_wikidot_protected_inline_body_html(
+        "[[size large]]a[[size small]]b[[/size]]c[[/size]]",
+    );
+
+    assert_eq!(
+        rendered,
+        r#"<span style="font-size:large;">a<span style="font-size:small;">b</span>c</span>"#
+    );
+}
+
+#[test]
+fn protected_inline_body_leaves_malformed_size_markers_literal() {
+    let rendered = super::super::render_wikidot_protected_inline_body_html(
+        "[[size bogus]]x[[/size]] and [[size 12px]]unclosed",
+    );
+
+    assert!(rendered.contains("[[size bogus]]"), "{rendered}");
+    assert!(rendered.contains("[[size 12px]]unclosed"), "{rendered}");
+    assert!(!rendered.contains("font-size"), "{rendered}");
+}
