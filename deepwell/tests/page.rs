@@ -11480,6 +11480,172 @@ async fn members_module_ssr_and_ajax_share_100_row_duplicate_relation_boundary()
 }
 
 #[tokio::test]
+async fn members_module_renders_directory_larger_than_legacy_scan_budget() {
+    const FIXTURE_USER_ID: i64 = 19_103_700;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let transaction = runner.context().transaction();
+
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "DELETE FROM relation WHERE dest_type = 'site' AND dest_id = $1 ",
+                "AND from_type = 'user' AND relation_type IN ('member', 'site-member')",
+            ),
+            [Value::from(site_id)],
+        ))
+        .await
+        .expect("existing member-directory fixtures should be cleared");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO known_user (user_id) ",
+                "SELECT $1 + fixture.n::BIGINT FROM generate_series(0, 2499) AS fixture(n)",
+            ),
+            [Value::from(FIXTURE_USER_ID)],
+        ))
+        .await
+        .expect("large-directory known-user fixtures should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO wikidot_user (",
+                "user_id, created_at, fetched_at, is_deleted, name, slug, karma, is_pro",
+                ") SELECT $1 + fixture.n::BIGINT, ",
+                "TIMESTAMPTZ '2020-01-01 00:00:00+00', NOW(), fixture.n >= 2400, ",
+                "'Scale Member ' || lpad(fixture.n::TEXT, 4, '0'), ",
+                "'scale-member-' || lpad(fixture.n::TEXT, 4, '0'), 2, FALSE ",
+                "FROM generate_series(0, 2499) AS fixture(n)",
+            ),
+            [Value::from(FIXTURE_USER_ID)],
+        ))
+        .await
+        .expect("large-directory identity fixtures should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO relation (",
+                "relation_type, dest_type, dest_id, from_type, from_id, metadata, created_by, created_at",
+                ") SELECT 'member', 'site', $2, 'user', $1 + fixture.n::BIGINT, ",
+                "'{}'::jsonb, $3, ",
+                "TIMESTAMPTZ '2020-01-01 00:00:00+00' + fixture.n * INTERVAL '1 second' ",
+                "FROM generate_series(0, 2499) AS fixture(n)",
+            ),
+            [
+                Value::from(FIXTURE_USER_ID),
+                Value::from(site_id),
+                Value::from(SYSTEM_USER_ID),
+            ],
+        ))
+        .await
+        .expect("large-directory relation fixtures should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO relation (",
+                "relation_type, dest_type, dest_id, from_type, from_id, metadata, created_by, created_at",
+                ") SELECT 'site-member', 'site', $2, 'user', $1 + fixture.n::BIGINT, ",
+                "'{}'::jsonb, $3, ",
+                "TIMESTAMPTZ '2020-01-02 00:00:00+00' + fixture.n * INTERVAL '1 second' ",
+                "FROM generate_series(0, 2) AS fixture(n)",
+            ),
+            [
+                Value::from(FIXTURE_USER_ID),
+                Value::from(site_id),
+                Value::from(SYSTEM_USER_ID),
+            ],
+        ))
+        .await
+        .expect("duplicate large-directory relations should be inserted");
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Members large directory",
+            "wikitext": concat!(
+                "DEFAULT_START\n",
+                "[[module Members]]\n",
+                "DEFAULT_END\n",
+                "NAMEDESC_START\n",
+                "[[module Members order=\"nameDesc\"]]\n",
+                "NAMEDESC_END",
+            ),
+        }),
+    );
+    let default = preview
+        .body
+        .split_once("DEFAULT_START")
+        .and_then(|(_, tail)| tail.split_once("DEFAULT_END"))
+        .map(|(default, _)| default)
+        .expect("default directory should remain between authored markers");
+    assert_eq!(
+        default.matches("<tr>").count(),
+        100,
+        "a 2,400-member directory must render its first 100-row page:\n{default}",
+    );
+    assert!(
+        default.contains("Scale Member 0000")
+            && default.contains("Scale Member 0099")
+            && !default.contains("Scale Member 0100")
+            && default.contains(r#"<span class="pager-no">page 1 of 24</span>"#)
+            && default.contains("membership/MembersListModule"),
+        "the first page must show the earliest 100 of 2,400 visible members \
+         (100 deleted identities and duplicate relations excluded):\n{default}",
+    );
+    let namedesc = preview
+        .body
+        .split_once("NAMEDESC_START")
+        .and_then(|(_, tail)| tail.split_once("NAMEDESC_END"))
+        .map(|(namedesc, _)| namedesc)
+        .expect("nameDesc directory should remain between authored markers");
+    assert_eq!(
+        namedesc.matches("<tr>").count(),
+        100,
+        "the nameDesc slice of a large directory must render 100 rows:\n{namedesc}",
+    );
+    assert!(
+        namedesc.find("Scale Member 2399") < namedesc.find("Scale Member 2300")
+            && namedesc.contains("Scale Member 2300")
+            && !namedesc.contains("Scale Member 2299")
+            && !namedesc.contains("class=\"pager\""),
+        "nameDesc must slice the filtered directory from the highest name:\n{namedesc}",
+    );
+
+    let last_page = run_endpoint!(
+        runner,
+        wikidot_members_list_module,
+        json!({
+            "site_id": site_id,
+            "parameters": {"group": "", "order": "joined", "page": "24"},
+        }),
+    );
+    assert_eq!(last_page.status, "ok");
+    assert_eq!(last_page.body.matches("<tr>").count(), 100);
+    assert!(
+        last_page.body.contains("Scale Member 2300")
+            && last_page.body.contains("Scale Member 2399")
+            && !last_page.body.contains("Scale Member 2299")
+            && last_page.body.contains("page 24 of 24"),
+        "the Ajax continuation must agree with the SSR slice on the last page:\n{}",
+        last_page.body,
+    );
+}
+
+#[tokio::test]
 async fn members_module_queries_only_visible_site_members_and_roles() {
     const ALPHA_USER_ID: i64 = 19_103_200;
     const ZETA_USER_ID: i64 = 19_103_201;

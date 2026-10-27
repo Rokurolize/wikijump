@@ -13,7 +13,7 @@ use rand::RngExt;
 use regex::Regex;
 use sea_orm::{
     ColumnTrait, Condition, ConnectionTrait, EntityTrait, FromQueryResult, QueryFilter,
-    QuerySelect, Statement, Value,
+    Statement, Value,
 };
 use serde::Serialize;
 
@@ -25,22 +25,13 @@ use super::service::{
     format_wikidot_list_pages_date,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
-use crate::models::relation::{self, Entity as Relation};
-use crate::models::role::{self, Entity as Role};
 use crate::models::user::{self, Entity as WikijumpUser};
-use crate::models::user_role::{self, Entity as UserRole};
 use crate::services::ServiceContext;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
-use crate::services::relation::relation_type_condition;
-use crate::types::{Action, Permission, RelationObjectType, RelationType, Resource};
+use crate::types::{Action, Permission, Resource};
 use crate::utils::now;
 
 pub(super) const MEMBERS_PAGE_SIZE: usize = 100;
-const MAX_MEMBERS_DIRECTORY_SCAN_ROWS: usize = 1_000;
-
-fn members_directory_scan_exceeded(row_count: usize) -> bool {
-    row_count > MAX_MEMBERS_DIRECTORY_SCAN_ROWS
-}
 
 pub(super) static MEMBERS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+Members\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
@@ -190,34 +181,17 @@ pub(super) fn wikitext_has_executable_members_module(wikitext: &str) -> bool {
 #[derive(Clone, Debug)]
 enum DirectoryIdentity {
     Wikidot(UserInfo<'static>),
-    Wikijump { user_id: i64, name: String },
-}
-
-impl DirectoryIdentity {
-    fn user_id(&self) -> i64 {
-        match self {
-            Self::Wikidot(user) => user.user_id,
-            Self::Wikijump { user_id, .. } => *user_id,
-        }
-    }
-
-    fn name(&self) -> &str {
-        match self {
-            Self::Wikidot(user) => &user.user_name,
-            Self::Wikijump { name, .. } => name,
-        }
-    }
+    Wikijump { name: String },
 }
 
 #[derive(Clone, Debug)]
 struct DirectoryRow {
     identity: DirectoryIdentity,
     joined_at: time::OffsetDateTime,
-    sort_name: String,
 }
 
 #[derive(Debug, FromQueryResult)]
-struct MembersAjaxCandidate {
+struct DirectoryCandidate {
     user_id: i64,
     joined_at: time::OffsetDateTime,
     total_count: i64,
@@ -232,10 +206,8 @@ pub(super) async fn render_members_module(
     let Some(arguments) = MembersArguments::parse(head) else {
         return Ok(None);
     };
-    let mut rows = load_directory_rows(ctx, site_id, arguments.group).await?;
-    sort_directory_rows(&mut rows, arguments.order);
-    let total_pages = rows.len().div_ceil(MEMBERS_PAGE_SIZE);
-    rows.truncate(MEMBERS_PAGE_SIZE);
+    let (rows, total_count) = load_directory_page(ctx, site_id, arguments, 0).await?;
+    let total_pages = total_count.div_ceil(MEMBERS_PAGE_SIZE);
     Ok(Some(render_directory(
         &rows,
         arguments,
@@ -308,135 +280,80 @@ fn members_ajax_response(status: &str, body: String) -> WikidotMembersListModule
     }
 }
 
-async fn load_directory_rows(
+/// Loads one page of the member directory plus the total number of
+/// directory rows across all pages.
+///
+/// Membership deduplication, identity filtering, role filtering, ordering,
+/// counting, and pagination all happen in the database, so a render only
+/// ever materializes the requested page (`MEMBERS_PAGE_SIZE` rows), no
+/// matter how many members the site has.
+async fn load_directory_page(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    arguments: MembersArguments,
+    offset: i64,
+) -> Result<(Vec<DirectoryRow>, usize)> {
+    let candidates =
+        load_directory_candidates(ctx, site_id, arguments.group, arguments.order, offset)
+            .await?;
+    let total_count = candidates
+        .first()
+        .map_or(0, |candidate| candidate.total_count);
+    let total_count = usize::try_from(total_count).or_raise(|| {
+        Error::new(
+            "Members directory count cannot be represented",
+            ErrorType::Render,
+        )
+    })?;
+    let rows = build_directory_rows(ctx, site_id, candidates).await?;
+    Ok((rows, total_count))
+}
+
+async fn load_directory_candidates(
     ctx: &ServiceContext<'_>,
     site_id: i64,
     group: MembersGroup,
-) -> Result<Vec<DirectoryRow>> {
-    let make_error = || {
-        Error::new(
-            format!("failed to load member directory for site ID {site_id}"),
-            ErrorType::Render,
-        )
+    order: MembersOrder,
+    offset: i64,
+) -> Result<Vec<DirectoryCandidate>> {
+    let mut values = vec![Value::from(site_id)];
+    let role_filter = match group.role_name() {
+        Some(role_name) => {
+            values.push(Value::from(role_name));
+            values.push(Value::from(now()));
+            concat!(
+                "AND EXISTS (",
+                "SELECT 1 FROM user_role assignment ",
+                "JOIN role directory_role ",
+                "ON directory_role.role_id = assignment.role_id ",
+                "WHERE assignment.user_id = membership.from_id ",
+                "AND assignment.site_id = $1 ",
+                "AND directory_role.site_id = $1 ",
+                "AND directory_role.name = $2 ",
+                "AND directory_role.is_virtual = FALSE ",
+                "AND directory_role.deleted_at IS NULL ",
+                "AND assignment.deleted_at IS NULL ",
+                "AND (assignment.expires_at IS NULL OR assignment.expires_at > $3)",
+                ") ",
+            )
+        }
+        None => "",
     };
-    let memberships = Relation::find()
-        .filter(
-            Condition::all()
-                .add(relation_type_condition(RelationType::SiteMember))
-                .add(relation::Column::DestType.eq(RelationObjectType::Site))
-                .add(relation::Column::DestId.eq(site_id))
-                .add(relation::Column::FromType.eq(RelationObjectType::User))
-                .add(relation::Column::OverwrittenAt.is_null())
-                .add(relation::Column::DeletedAt.is_null()),
-        )
-        .limit((MAX_MEMBERS_DIRECTORY_SCAN_ROWS + 1) as u64)
-        .all(ctx.transaction())
-        .await
-        .or_raise(make_error)?;
-    if members_directory_scan_exceeded(memberships.len()) {
-        return Err(Error::new(
-            format!(
-                "member directory for site ID {site_id} exceeds the render scan budget"
-            ),
-            ErrorType::Render,
-        )
-        .into());
-    }
-    let mut joined_at = BTreeMap::<i64, time::OffsetDateTime>::new();
-    for membership in memberships {
-        joined_at
-            .entry(membership.from_id)
-            .and_modify(|earliest| *earliest = (*earliest).min(membership.created_at))
-            .or_insert(membership.created_at);
-    }
-
-    if let Some(role_name) = group.role_name() {
-        let roles = Role::find()
-            .filter(
-                Condition::all()
-                    .add(role::Column::SiteId.eq(site_id))
-                    .add(role::Column::Name.eq(role_name))
-                    .add(role::Column::IsVirtual.eq(false))
-                    .add(role::Column::DeletedAt.is_null()),
-            )
-            .limit((MAX_MEMBERS_DIRECTORY_SCAN_ROWS + 1) as u64)
-            .all(ctx.transaction())
-            .await
-            .or_raise(make_error)?;
-        if members_directory_scan_exceeded(roles.len()) {
-            return Err(Error::new(
-                format!(
-                    "member directory roles for site ID {site_id} exceed the render scan budget"
-                ),
-                ErrorType::Render,
-            )
-            .into());
-        }
-        let role_ids = roles
-            .into_iter()
-            .map(|role| role.role_id)
-            .collect::<BTreeSet<_>>();
-        if role_ids.is_empty() {
-            return Ok(Vec::new());
-        }
-        let assignments = UserRole::find()
-            .filter(
-                Condition::all()
-                    .add(user_role::Column::SiteId.eq(site_id))
-                    .add(user_role::Column::RoleId.is_in(role_ids))
-                    .add(user_role::Column::DeletedAt.is_null())
-                    .add(
-                        Condition::any()
-                            .add(user_role::Column::ExpiresAt.is_null())
-                            .add(user_role::Column::ExpiresAt.gt(now())),
-                    ),
-            )
-            .limit((MAX_MEMBERS_DIRECTORY_SCAN_ROWS + 1) as u64)
-            .all(ctx.transaction())
-            .await
-            .or_raise(make_error)?;
-        if members_directory_scan_exceeded(assignments.len()) {
-            return Err(Error::new(
-                format!(
-                    "member directory role assignments for site ID {site_id} exceed the render scan budget"
-                ),
-                ErrorType::Render,
-            )
-            .into());
-        }
-        let assigned_user_ids = assignments
-            .into_iter()
-            .map(|assignment| assignment.user_id)
-            .collect::<BTreeSet<_>>();
-        joined_at.retain(|user_id, _| assigned_user_ids.contains(user_id));
-    }
-
-    let candidate_ids = joined_at.keys().copied().collect::<BTreeSet<_>>();
-    let mut identities = load_directory_identities(ctx, site_id, &candidate_ids).await?;
-
-    Ok(joined_at
-        .into_iter()
-        .filter_map(|(user_id, joined_at)| {
-            let identity = identities.remove(&user_id)?;
-            let sort_name = identity.name().to_lowercase();
-            Some(DirectoryRow {
-                identity,
-                joined_at,
-                sort_name,
-            })
-        })
-        .collect())
-}
-
-async fn load_members_ajax_page(
-    ctx: &ServiceContext<'_>,
-    site_id: i64,
-    page: u32,
-) -> Result<(Vec<DirectoryRow>, usize)> {
-    let offset = i64::from(page - 1) * MEMBERS_PAGE_SIZE as i64;
-    let candidates =
-        MembersAjaxCandidate::find_by_statement(Statement::from_sql_and_values(
-            ctx.transaction().get_database_backend(),
+    let order_by = match order {
+        MembersOrder::UserId => "user_id",
+        MembersOrder::UserIdDesc => "user_id DESC",
+        MembersOrder::Joined => "joined_at, user_id",
+        MembersOrder::JoinedDesc => "joined_at DESC, user_id DESC",
+        MembersOrder::Name => "LOWER(display_name), user_id",
+        MembersOrder::NameDesc => "LOWER(display_name) DESC, user_id DESC",
+    };
+    values.push(Value::from(MEMBERS_PAGE_SIZE as i64));
+    let limit_index = values.len();
+    values.push(Value::from(offset));
+    let offset_index = values.len();
+    let statement = Statement::from_sql_and_values(
+        ctx.transaction().get_database_backend(),
+        format!(
             concat!(
                 "WITH active_members AS (",
                 "SELECT membership.from_id AS user_id, ",
@@ -452,41 +369,55 @@ async fn load_members_ajax_page(
                 "EXISTS (SELECT 1 FROM wikidot_user imported_user ",
                 "WHERE imported_user.user_id = membership.from_id ",
                 "AND imported_user.is_deleted = FALSE ",
+                "AND imported_user.name IS NOT NULL ",
                 "AND imported_user.slug IS NOT NULL) ",
                 "OR EXISTS (SELECT 1 FROM \"user\" local_user ",
                 "WHERE local_user.user_id = membership.from_id ",
                 "AND local_user.deleted_at IS NULL)",
                 ") ",
+                "{role_filter}",
                 "GROUP BY membership.from_id",
+                "), directory AS (",
+                "SELECT member.user_id, member.joined_at, ",
+                "COALESCE(imported_user.name, local_user.name) AS display_name ",
+                "FROM active_members member ",
+                "LEFT JOIN wikidot_user imported_user ",
+                "ON imported_user.user_id = member.user_id ",
+                "AND imported_user.is_deleted = FALSE ",
+                "AND imported_user.name IS NOT NULL ",
+                "AND imported_user.slug IS NOT NULL ",
+                "LEFT JOIN \"user\" local_user ",
+                "ON local_user.user_id = member.user_id ",
+                "AND local_user.deleted_at IS NULL",
                 ") ",
                 "SELECT user_id, joined_at, COUNT(*) OVER () AS total_count ",
-                "FROM active_members ",
-                "ORDER BY joined_at, user_id ",
-                "LIMIT $2 OFFSET $3",
+                "FROM directory ",
+                "ORDER BY {order_by} ",
+                "LIMIT ${limit_index} OFFSET ${offset_index}",
             ),
-            [
-                Value::from(site_id),
-                Value::from(MEMBERS_PAGE_SIZE as i64),
-                Value::from(offset),
-            ],
-        ))
+            role_filter = role_filter,
+            order_by = order_by,
+            limit_index = limit_index,
+            offset_index = offset_index,
+        ),
+        values,
+    );
+    DirectoryCandidate::find_by_statement(statement)
         .all(ctx.transaction())
         .await
         .or_raise(|| {
             Error::new(
-                format!("failed to load Members Ajax page for site ID {site_id}"),
+                format!("failed to load member directory for site ID {site_id}"),
                 ErrorType::Render,
             )
-        })?;
-    let total_count = candidates
-        .first()
-        .map_or(0, |candidate| candidate.total_count);
-    let total_count = usize::try_from(total_count).or_raise(|| {
-        Error::new(
-            "Members Ajax count cannot be represented",
-            ErrorType::Render,
-        )
-    })?;
+        })
+}
+
+async fn build_directory_rows(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    candidates: Vec<DirectoryCandidate>,
+) -> Result<Vec<DirectoryRow>> {
     let candidate_ids = candidates
         .iter()
         .map(|candidate| candidate.user_id)
@@ -497,21 +428,39 @@ async fn load_members_ajax_page(
         .into_iter()
         .filter_map(|candidate| {
             let identity = identities.remove(&candidate.user_id)?;
-            let sort_name = identity.name().to_lowercase();
             Some(DirectoryRow {
                 identity,
                 joined_at: candidate.joined_at,
-                sort_name,
             })
         })
         .collect::<Vec<_>>();
     if rows.len() != expected_rows {
         return Err(Error::new(
-            "Members Ajax identity snapshot did not match its page query",
+            "Members directory identity snapshot did not match its page query",
             ErrorType::Render,
         )
         .into());
     }
+    Ok(rows)
+}
+
+async fn load_members_ajax_page(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    page: u32,
+) -> Result<(Vec<DirectoryRow>, usize)> {
+    let offset = i64::from(page - 1) * MEMBERS_PAGE_SIZE as i64;
+    let (rows, total_count) = load_directory_page(
+        ctx,
+        site_id,
+        MembersArguments {
+            group: MembersGroup::Members,
+            order: MembersOrder::Joined,
+            show_since: true,
+        },
+        offset,
+    )
+    .await?;
     Ok((rows, total_count.div_ceil(MEMBERS_PAGE_SIZE)))
 }
 
@@ -550,38 +499,11 @@ async fn load_directory_identities(
         identities.extend(users.into_iter().map(|user| {
             (
                 user.user_id,
-                DirectoryIdentity::Wikijump {
-                    user_id: user.user_id,
-                    name: user.name,
-                },
+                DirectoryIdentity::Wikijump { name: user.name },
             )
         }));
     }
     Ok(identities)
-}
-
-fn sort_directory_rows(rows: &mut [DirectoryRow], order: MembersOrder) {
-    rows.sort_by(|left, right| {
-        let ordering = match order {
-            MembersOrder::UserId | MembersOrder::UserIdDesc => {
-                left.identity.user_id().cmp(&right.identity.user_id())
-            }
-            MembersOrder::Joined | MembersOrder::JoinedDesc => left
-                .joined_at
-                .cmp(&right.joined_at)
-                .then_with(|| left.identity.user_id().cmp(&right.identity.user_id())),
-            MembersOrder::Name | MembersOrder::NameDesc => left
-                .sort_name
-                .cmp(&right.sort_name)
-                .then_with(|| left.identity.user_id().cmp(&right.identity.user_id())),
-        };
-        match order {
-            MembersOrder::UserIdDesc
-            | MembersOrder::JoinedDesc
-            | MembersOrder::NameDesc => ordering.reverse(),
-            _ => ordering,
-        }
-    });
 }
 
 fn render_directory(
@@ -895,38 +817,6 @@ mod tests {
     }
 
     #[test]
-    fn directory_sort_is_stable_across_supported_orders() {
-        fn row(user_id: i64, name: &str, joined_at: i64) -> DirectoryRow {
-            DirectoryRow {
-                identity: DirectoryIdentity::Wikijump {
-                    user_id,
-                    name: name.to_owned(),
-                },
-                joined_at: time::OffsetDateTime::from_unix_timestamp(joined_at)
-                    .expect("fixture timestamp should be valid"),
-                sort_name: name.to_lowercase(),
-            }
-        }
-        let source = [row(2, "Beta", 20), row(1, "alpha", 10)];
-        for (order, expected) in [
-            (MembersOrder::UserId, [1, 2]),
-            (MembersOrder::UserIdDesc, [2, 1]),
-            (MembersOrder::Joined, [1, 2]),
-            (MembersOrder::JoinedDesc, [2, 1]),
-            (MembersOrder::Name, [1, 2]),
-            (MembersOrder::NameDesc, [2, 1]),
-        ] {
-            let mut rows = source.clone();
-            sort_directory_rows(&mut rows, order);
-            assert_eq!(
-                rows.map(|row| row.identity.user_id()),
-                expected,
-                "{order:?}",
-            );
-        }
-    }
-
-    #[test]
     fn member_pager_matches_the_observed_page_target_order() {
         let mut output = String::new();
         render_pager(&mut output, "updateMemberList1", 7);
@@ -940,15 +830,5 @@ mod tests {
         let page_seven = output.find(">7</a>").expect("page 7 target should render");
         assert!(page_two < page_three && page_three < dots);
         assert!(dots < page_six && page_six < page_seven);
-    }
-
-    #[test]
-    fn member_directory_scan_budget_rejects_rows_beyond_render_limit() {
-        assert!(!members_directory_scan_exceeded(
-            MAX_MEMBERS_DIRECTORY_SCAN_ROWS
-        ));
-        assert!(members_directory_scan_exceeded(
-            MAX_MEMBERS_DIRECTORY_SCAN_ROWS + 1
-        ));
     }
 }
