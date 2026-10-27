@@ -1,6 +1,6 @@
 <!-- adaptation-authority-current -->
 Current publication inputs have passed the adaptation-authority gate. Historical campaign/local-runtime screenshots describe the superseded candidate; they are not acceptance for this CSS. See ../ADAPTATION-AUTHORITY-AUDIT.md and maintenance/historical-receipt.json where present.
-Current source SHA-256: b62171f0df44d62ebe3af75eca1cb53ef854f0b8e747dedade2ed0ee399e9c48; CSS SHA-256: 28a72ef325901611e12a505fa1e94ea40a315c80cb316f787d6ec6c2ee3606a4. Full port acceptance remains a separate combined result.
+Current source SHA-256: 6538b37accac65ba5c9ae78c88244b48ca447963251ac7e99b58e3d27334b1fc; CSS SHA-256: fa49d12c7af28d6001cccb36f6763b5539b2909a322aaf47e140a3aaf9a2ceae. Full port acceptance remains a separate combined result.
 <!-- adaptation-authority-end -->
 
 ## Current acceptance selector scope

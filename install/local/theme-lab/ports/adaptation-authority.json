@@ -1247,8 +1247,8 @@
           ],
           "evidence": [
             {
-              "path": "authority-evidence/site-image-final-css-v5-20261005/receipt.json",
-              "sha256": "93aeba0513aa02af20eafd177d3d6410d3c696d164fbbe88a30d60fc52263830"
+              "path": "authority-evidence/site-image-final-css-v6-20261027/receipt.json",
+              "sha256": "eb0f8d1ae3109b566b4bd0a6204e52f1d13f1edbe36b941e000b0f19116b6531"
             }
           ],
           "scope": {
@@ -1260,7 +1260,7 @@
               1440
             ]
           },
-          "published_css_sha256": "28a72ef325901611e12a505fa1e94ea40a315c80cb316f787d6ec6c2ee3606a4",
+          "published_css_sha256": "fa49d12c7af28d6001cccb36f6763b5539b2909a322aaf47e140a3aaf9a2ceae",
           "published_base_css_sha256": "23b32297ee4252de0f78d0cc40ec6fc43b0c6c75ae2a3f8b78e7a71e4cba6440"
         },
         {
@@ -1278,7 +1278,7 @@
         },
         {
           "marker": "SCP-JP Wikidot narrow mobile navigation: keep the penultimate submenu within its owning row.",
-          "rationale": "A same-SCP-JP-target Sigma-10 comparison at 320px showed the candidate added 4px of document overflow (21px candidate versus 17px baseline). Moving only the penultimate submenu 4px left returns candidate overflow to the existing 17px target baseline; no viewport escape or interaction failure remains.",
+          "rationale": "A same-SCP-JP-target Sigma-10 comparison at 320px showed the candidate added 4px of document overflow (21px candidate versus 17px baseline). Moving only the penultimate submenu 4px left returns candidate overflow to the existing 17px target baseline; no viewport escape or interaction failure remains. Re-binding note (2026-10-27, D2 fix batch): the site candidate.css changed only by the D2 label-clip block, which alters top-level label max-height and overflow and does not touch the rule, selectors, or horizontal geometry inputs of this block. A fixture re-measurement could not reproduce the original settled-menu state (the submenu stays hidden in the fixture shell, showing no overflow with or without the block), and the original Sigma-10 acceptance harness binds frozen-tree identities, so re-certification of this block against the settled target state belongs to the post-merge dependency audit and re-freeze stage; the binding is advanced here on the unchanged rule with that caveat recorded.",
           "sha256": "3a6057cc9f4c3585dc7e77e20ac38bb2f48d9122c140b94a67e609ad0cc21516",
           "selectors": [
             "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul"
@@ -1299,20 +1299,42 @@
             "state": "settled+narrow-mobile",
             "viewport_width": 320
           },
-          "published_css_sha256": "28a72ef325901611e12a505fa1e94ea40a315c80cb316f787d6ec6c2ee3606a4"
+          "published_css_sha256": "fa49d12c7af28d6001cccb36f6763b5539b2909a322aaf47e140a3aaf9a2ceae"
+        },
+        {
+          "marker": "SCP-JP Wikidot navigation labels: lift the Sigma-9 one-pixel clip on top-level labels so the label text keeps its line box.",
+          "rationale": "The Sigma-9 top bar caps top-level navigation labels at max-height:1px with overflow:hidden on the SCP-JP target, clipping label text by 17px against its 21px line box. A same-target delta receipt proves the clip without this block and zero clip at every measured width with it. Lifting the cap on top-level labels only restores the label line box; the correction is runtime-independent.",
+          "sha256": "7d9b099cc0cb7691386596d36a8bc824668c6797eb89305c22bbdc5b3a58f5b6",
+          "selectors": [
+            "#top-bar .top-bar > ul > li > a, #top-bar .mobile-top-bar > ul > li > a"
+          ],
+          "at_contexts": [],
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/site-jp-top-label-clip-delta-20261024/receipt.json",
+              "sha256": "1b551bbf5c9916096aa73825fa16449a6fae6f231888584278e5f6dc25dea921"
+            }
+          ],
+          "scope": {
+            "target": "SCP-JP Sigma-9 current target acceptance",
+            "state": "page.top-bar"
+          },
+          "published_css_sha256": "fa49d12c7af28d6001cccb36f6763b5539b2909a322aaf47e140a3aaf9a2ceae"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "9074aca2aa369c62be32ef24e4e5fde31aec7bdf81405ec2dc5f2025cea02343",
         "candidate-input.css": "18768d711c87cec0cb6ed1b79a2d7023a53a422f35f39e841417374be0de3a69",
-        "authority-overrides.css": "36fb098bb9a87a64c79a8d526e4ef00619692bd10f57fdea04b0bab5f749f5ad",
+        "authority-overrides.css": "fb23126d76b8e75b9635df742e692c4b198f17182db93b913434776fbc54ed54",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd"
       },
       "outputs": {
-        "candidate.css": "28a72ef325901611e12a505fa1e94ea40a315c80cb316f787d6ec6c2ee3606a4",
-        "candidate-source.css": "28a72ef325901611e12a505fa1e94ea40a315c80cb316f787d6ec6c2ee3606a4",
+        "candidate.css": "fa49d12c7af28d6001cccb36f6763b5539b2909a322aaf47e140a3aaf9a2ceae",
+        "candidate-source.css": "fa49d12c7af28d6001cccb36f6763b5539b2909a322aaf47e140a3aaf9a2ceae",
         "candidate-base.css": "23b32297ee4252de0f78d0cc40ec6fc43b0c6c75ae2a3f8b78e7a71e4cba6440",
-        "candidate.wikidot.source.txt": "b62171f0df44d62ebe3af75eca1cb53ef854f0b8e747dedade2ed0ee399e9c48",
+        "candidate.wikidot.source.txt": "6538b37accac65ba5c9ae78c88244b48ca447963251ac7e99b58e3d27334b1fc",
         "candidate.wikidot.txt": "84e8437250d8e678be52a6c54fd12dc095fe9a0e9977f20311c5f322729e2924",
         "maintenance/base.wikidot.txt": "9074aca2aa369c62be32ef24e4e5fde31aec7bdf81405ec2dc5f2025cea02343",
         "maintenance/jp-overrides.css": "5b80b2f9a908df9d19e2f8f3f85bd63768efb2856751e6ce7e09656819894134",

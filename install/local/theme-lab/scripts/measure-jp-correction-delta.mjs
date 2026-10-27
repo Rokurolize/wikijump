@@ -20,6 +20,16 @@ const args = Object.fromEntries(process.argv.slice(2).reduce((acc, arg, i, all) 
 }, []));
 const need = key => { if (!args[key]) throw new Error(`missing --${key}`); return args[key]; };
 const SCENARIOS = {
+  "site-narrow-submenu": {
+    origin: "https://scpaiueouiuiuiui.wikijump.localhost:3410",
+    page: "run-owned:theme-lab-visual-acceptance-imported-20260924",
+    widths: [320],
+    target: "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul",
+    anchors: "#top-bar a",
+    open: {click: ".open-menu", wait: "#top-bar .mobile-top-bar"},
+    stack: ["ports/interactive-visual-fixture/runtime-asset-replay.css", "fixtures/scp-jp-sigma9-offline.css", "ports/site/candidate-base.css", "fixtures/tmp-narrow-minus.css"],
+    navigation: "fixtures/scp-jp-navigation.html",
+  },
   'site-top-bar': {
     origin: 'https://scpaiueouiuiuiui.wikijump.localhost:3410',
     page: 'run-owned:theme-lab-visual-acceptance-imported-20260924',

@@ -1804,12 +1804,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "warn",
       "overall_acceptance": {
         "status": "warn",
         "port_verdict": "pass",
         "target_status": "warn"
-      }
+      },
+      "final_verdict": "inconclusive"
     },
     {
       "slug": "theme:isolated-terminal",
