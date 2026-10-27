@@ -80,7 +80,7 @@ const trustedSiteSlug = (value) => {
     : null
 }
 
-const materializeExactCspSource = (policy, source, replacement) => {
+const materializeExactCspSources = (policy, replacements) => {
   let replaced = false
   const directives = policy
     .split(";")
@@ -90,7 +90,8 @@ const materializeExactCspSource = (policy, source, replacement) => {
       directive
         .split(/\s+/u)
         .map((token) => {
-          if (token !== source) return token
+          const replacement = replacements.get(token)
+          if (replacement === undefined) return token
           replaced = true
           return replacement
         })
@@ -123,35 +124,42 @@ export const materializeSiteCsp = (
   const domains = platformDomains({ deploymentEnvironment })
   const { files } = domains
   const portSuffix = port ? `:${port}` : ""
-  let current = materializeExactCspSource(
-    policy,
-    CURRENT_SITE_FILE_ORIGIN,
-    `https://${slug}.${files}${portSuffix}`
-  )
-  let materialized = current !== null
-  current = current ?? policy
+  // A local deployment served on a non-default port references each of
+  // its file hosts in two forms. URLs framerail generates for a file
+  // carry the request port, while literal references inside stored
+  // stylesheets (compiled once, e.g. the url(...) images of a theme)
+  // carry the canonical origin at the configured HTTPS port, because a
+  // served stylesheet's contents cannot be rewritten per request.
+  // Materialize both forms for every file host so neither is refused.
+  // When the forms coincide there is only the one origin, exactly as
+  // before; with no request port known, portSuffix is empty and the
+  // single form is the portless one, also as before.
+  const fileOriginForms = (host) => {
+    const canonical = platformHttpsOrigin(host, domains)
+    const served = `https://${host}${portSuffix}`
+    return portSuffix && served !== canonical ? `${canonical} ${served}` : served
+  }
+  const replacements = new Map([
+    [CURRENT_SITE_FILE_ORIGIN, fileOriginForms(`${slug}.${files}`)]
+  ])
   // The local mirror file origins baked into the policy by
   // sveltekit-options.js carry the configured HTTPS port (default 443),
   // not the port this local deployment is actually served on, so on a
-  // non-443 local deployment the policy refuses every stylesheet, font and
-  // image a page includes from a mirror site (e.g. a component included
-  // from scp-wiki). Materialize them with the request port exactly like
-  // the current-site origin above. With no request port known there is
-  // nothing better to substitute, and on the default port the baked
-  // origins are already correct.
+  // non-443 local deployment the request-port form must be added beside
+  // the baked canonical form, exactly like the current-site origin
+  // above. With no request port known there is nothing to add, and on
+  // the default port the two forms coincide. A single replacement pass
+  // rewrites every token once, so a mirror site that is also the
+  // current site is not rewritten twice.
   if (deploymentEnvironment === "local" && port) {
     for (const mirrorSite of LOCAL_MIRROR_FILE_ASSET_SITES) {
       const baked = platformHttpsOrigin(`${mirrorSite}.${files}`, domains)
       const served = `https://${mirrorSite}.${files}${portSuffix}`
-      if (baked === served) continue
-      const next = materializeExactCspSource(current, baked, served)
-      if (next) {
-        current = next
-        materialized = true
-      }
+      if (baked !== served) replacements.set(baked, `${baked} ${served}`)
     }
   }
-  if (materialized) response.headers.set("content-security-policy", current)
+  const materialized = materializeExactCspSources(policy, replacements)
+  if (materialized) response.headers.set("content-security-policy", materialized)
 }
 
 export const staticSecurityHeaderEntries = (
