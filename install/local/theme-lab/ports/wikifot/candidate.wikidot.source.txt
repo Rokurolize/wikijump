@@ -305,3 +305,10 @@ body{cursor:wait}#u-darkmode:target .toggle{display:none}#u-darkmode:target .wik
   .scp-image-block.block-right { max-width: calc(100% - 2em - 2px) !important; }
 }
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot Wikifot narrow gutter: keep the mobile content column off the left viewport edge. */
+@media (max-width: 767px) {
+#main-content{margin-left:1rem}
+}
+[[/module]]

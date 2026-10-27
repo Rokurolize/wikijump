@@ -20,6 +20,18 @@ const args = Object.fromEntries(process.argv.slice(2).reduce((acc, arg, i, all) 
 }, []));
 const need = key => { if (!args[key]) throw new Error(`missing --${key}`); return args[key]; };
 const SCENARIOS = {
+  "isolated-files": {
+    origin: "https://scpaiueouiuiuiui.wikijump.localhost:3410",
+    page: "run-owned:theme-lab-visual-acceptance-imported-20260924",
+    widths: [320, 390, 480, 768, 1024, 1440],
+    target: "table.page-files",
+    owner: "#action-area",
+    anchors: null,
+    open: {click: "#files-button", wait: "table.page-files"},
+    stack: ["ports/isolated-terminal/candidate.css"],
+    navigation: null,
+    replaceLink: true,
+  },
   "site-narrow-submenu": {
     origin: "https://scpaiueouiuiuiui.wikijump.localhost:3410",
     page: "run-owned:theme-lab-visual-acceptance-imported-20260924",

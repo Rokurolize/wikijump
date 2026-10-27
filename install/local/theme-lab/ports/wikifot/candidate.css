@@ -168,3 +168,10 @@ div.page-rate-widget-box .rate-points{
 @media (max-width: 479px) {
   .scp-image-block.block-right { max-width: calc(100% - 2em - 2px) !important; }
 }
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot Wikifot narrow gutter: keep the mobile content column off the left viewport edge. */
+@media (max-width: 767px) {
+#main-content{margin-left:1rem}
+}

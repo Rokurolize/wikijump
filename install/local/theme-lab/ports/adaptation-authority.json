@@ -3005,13 +3005,13 @@
           "rationale": "Real SCP-JP reproduces a 63.98px closed drawer strip which intercepts article and open-menu controls. Reset only the mobile left margin and translate the closed drawer by its measured width; preserve the open target and bound its width.",
           "evidence": [
             {
-              "path": "authority-evidence/wikifot-final-image-sidebar-closed-12-0-20261001/receipt.json",
-              "sha256": "995a227781ec3ca2f5028bf22dd1045d8c4f26010705398bc2934e1a381aa424",
+              "path": "authority-evidence/wikifot-sidebar-closed-recert-20261027/receipt.json",
+              "sha256": "ad833818200c469dc9c032dd84911c471be2071e590ea988c15a896d0144aca4",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             },
             {
-              "path": "authority-evidence/wikifot-final-image-sidebar-open-12-1-20261001/receipt.json",
-              "sha256": "85c762d1e760c15cd3acb0ffb9ddd4cb8fff4c3c7e94a18a53de5947cd8cc67c",
+              "path": "authority-evidence/wikifot-sidebar-open-recert-20261027/receipt.json",
+              "sha256": "daafb8a1dff5bdcaefae64f22dfbf9cea25520e2949ee22fec134dea01798b4e",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
@@ -3026,7 +3026,7 @@
               390
             ]
           },
-          "published_css_sha256": "738099d2701ec214769009074f34e060a0d05f6b7999e36aeeccc9ec833e1c9d"
+          "published_css_sha256": "0516edb1e9f34d5d07175b3e3212ffb0852cddc00531ff09d3ede9854162efe7"
         },
         {
           "marker": "SCP-JP Wikidot narrow image-block correction: include the native right margin and border in its available width.",
@@ -3042,8 +3042,8 @@
           ],
           "evidence": [
             {
-              "path": "authority-evidence/wikifot-image-block-authority-20261001/receipt.json",
-              "sha256": "58e058f5941bef9bb7aea1cca47b2c74a7d38b1b08926bcb907fc3219ef92aa0",
+              "path": "authority-evidence/wikifot-image-block-recert-20261027/receipt.json",
+              "sha256": "71d330cd6db363bdd3a0974ac28c222191f1eb14e2be8ed278cb353cf9b57b76",
               "decision_authority": "REAL_WIKIDOT_TARGET_AB"
             }
           ],
@@ -3056,20 +3056,46 @@
               1440
             ]
           },
-          "published_css_sha256": "738099d2701ec214769009074f34e060a0d05f6b7999e36aeeccc9ec833e1c9d",
+          "published_css_sha256": "0516edb1e9f34d5d07175b3e3212ffb0852cddc00531ff09d3ede9854162efe7",
           "published_base_css_sha256": null
+        },
+        {
+          "marker": "SCP-JP Wikidot Wikifot narrow gutter: keep the mobile content column off the left viewport edge.",
+          "rationale": "The verbatim upstream mobile rule margin-left:unset removes the content gutter in the Wikijump runtime: a same-target delta measurement (gutter variant program archived with the receipt) shows the content column starting at the left viewport edge (0px) without this block and at 16px with it, at 320/390/767px, with no collateral geometry change. Sigma-9 and the frozen source render both keep a mobile gutter (about 13-23px), so the flush-left column, which also clips the rating label, is a runtime difference rather than the theme design. The correction is runtime-independent.",
+          "sha256": "f5f538e0adbc8c26d31d7f108b0c1a867ed92f3ef8d85ed6e877038739fdde5e",
+          "selectors": [
+            "@media (max-width: 767px)",
+            "#main-content",
+            "}"
+          ],
+          "at_contexts": [
+            "@media (max-width: 767px)"
+          ],
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/wikifot-narrow-gutter-delta-20261027/receipt.json",
+              "sha256": "9b0b20994439c289e1c49482710d5e1c82ebb27ca310deb82706102cee55f2ce"
+            }
+          ],
+          "scope": {
+            "target": "SCP-JP Sigma-9 current target acceptance",
+            "state": "page.main-content"
+          },
+          "published_css_sha256": "0516edb1e9f34d5d07175b3e3212ffb0852cddc00531ff09d3ede9854162efe7"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "9d42eb1414ca870f6a789123ff52f71092564a4eb8df09e699cade2d32f8ff45",
         "candidate-input.css": "db9c78dff364e2e87a17ee86e79a8a37d6e16ff4442a37e8b8561e61621edce3",
-        "authority-overrides.css": "97f9ecd611f5f60125b3eda8243b56079490f5bc3ec536419515cf3c10de5a0e",
+        "authority-overrides.css": "808d5b2ec0aa08640d01f762c1e23f0059a3840d8d8c0ab9ff5eb1b1eaf3e60c",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd"
       },
       "outputs": {
-        "candidate.css": "738099d2701ec214769009074f34e060a0d05f6b7999e36aeeccc9ec833e1c9d",
-        "candidate-source.css": "738099d2701ec214769009074f34e060a0d05f6b7999e36aeeccc9ec833e1c9d",
-        "candidate.wikidot.source.txt": "403335fe611db4be2ef13a0349e8215dade54727318494551221bb5671cc5e55",
+        "candidate.css": "0516edb1e9f34d5d07175b3e3212ffb0852cddc00531ff09d3ede9854162efe7",
+        "candidate-source.css": "0516edb1e9f34d5d07175b3e3212ffb0852cddc00531ff09d3ede9854162efe7",
+        "candidate.wikidot.source.txt": "fd0fa6d765b149fc5a1b60a179435d6e20eb34fbf581de3dfb96cb7a8912243e",
         "candidate.wikidot.txt": "54a12171edb8107300f2a6079debb2768b20c68017e0648c32afb16252e4abc3",
         "maintenance/base.wikidot.txt": "9d42eb1414ca870f6a789123ff52f71092564a4eb8df09e699cade2d32f8ff45",
         "maintenance/jp-overrides.css": "e79ef547b4245d535105989ecc2d9d4815b9a4c03d999a439223af480cebb41b",
