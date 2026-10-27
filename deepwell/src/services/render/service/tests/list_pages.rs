@@ -1,5 +1,7 @@
 use super::*;
 
+use crate::services::data_form::parse_wikidot_data_form_definition;
+
 fn list_pages_substitution_context<'a>(
     rendered_limit: usize,
     user_displays: &'a BTreeMap<i64, WikidotUserDisplay>,
@@ -67,6 +69,16 @@ fn empty_list_pages_runtime_displays() -> &'static BTreeMap<i64, ListPagesRuntim
     static EMPTY: std::sync::LazyLock<BTreeMap<i64, ListPagesRuntimeDisplay>> =
         std::sync::LazyLock::new(BTreeMap::new);
     &EMPTY
+}
+
+fn render_list_pages_substituted_wikitext(wikitext: &str) -> String {
+    let mut source = wikitext.to_owned();
+    ftml::preprocess_for_layout(&mut source, Layout::Wikidot);
+    let tokens = ftml::tokenize(&source);
+    let page_info = fallback_test_page_info("wj-pentest-host", "WJ Pentest Host");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let (tree, _parse_errors) = ftml::parse(&tokens, &page_info, &settings).into();
+    HtmlRender.render(&tree, &page_info, &settings).body
 }
 
 /// A request that carried only a `tag` path argument.
@@ -4221,6 +4233,226 @@ fn substituted_quote_breakout_values_cannot_escape_double_quoted_attributes() {
     );
     assert!(!html.contains("<iframe"), "{html:?}");
     assert!(html.contains("alert(1)"), "{html:?}");
+}
+
+/// Regression for #2787 (mirrors
+/// `substituted_quote_breakout_values_cannot_escape_double_quoted_attributes`,
+/// which pins the same #2652 property for `%%tags%%` / `%%created_by%%`).
+///
+/// A page-author-controlled `%%title%%` inside a template-authored quoted
+/// attribute must not carry a raw double quote into the wikitext, since the
+/// value would terminate the attribute and inject real markup.
+#[test]
+fn substituted_title_cannot_escape_double_quoted_attributes() {
+    let template = "[[div class=\"%%title%%\"]]\nx\n[[/div]]";
+    let page = FoundPageRow {
+        page_id: 1,
+        site_id: 1,
+        title: Some("x\" data-injected=\"yes".to_owned()),
+        alt_title: None,
+        slug: Some("wj-pentest-title-host".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: None,
+        created_at: None,
+        created_by: Some(7),
+        updated_at: None,
+        updated_by: None,
+        score: None,
+        revision_count: None,
+    };
+    let user_displays = BTreeMap::new();
+    let data_form_values = BTreeMap::new();
+    let context =
+        list_pages_substitution_context(20, &user_displays, None, &data_form_values);
+    let substituted = substitute_list_pages_variables(template, &page, 1, 1, &context);
+
+    // The title quote is neutralized at the substitution boundary, so the
+    // template-authored class attribute cannot terminate early.
+    assert_eq!(
+        substituted,
+        "[[div class=\"x&#34; data-injected=&#34;yes\"]]\nx\n[[/div]]",
+    );
+
+    let html = render_list_pages_substituted_wikitext(&substituted);
+
+    let div_start = html.find("<div").expect("template renders a div");
+    let div_end = html[div_start..].find('>').expect("div tag closes") + div_start;
+    let div_tag = &html[div_start..=div_end];
+    let mut outside_quotes = String::new();
+    let mut in_quotes = false;
+    for ch in div_tag.chars() {
+        if ch == '"' {
+            in_quotes = !in_quotes;
+        } else if !in_quotes {
+            outside_quotes.push(ch);
+        }
+    }
+    assert!(
+        !outside_quotes.contains("data-injected"),
+        "injected attribute must not survive into real markup: {div_tag:?} {html:?}",
+    );
+}
+
+/// The sibling page-author-controlled title variables from #2787
+/// (`%%parent_title%%`, `%%form_label%%`, `%%form_hint%%`) share the quoted
+/// attribute boundary.
+#[test]
+fn substituted_sibling_title_variables_cannot_escape_quoted_attributes() {
+    let page = FoundPageRow {
+        page_id: 1,
+        site_id: 1,
+        title: Some("Host page".to_owned()),
+        alt_title: None,
+        slug: Some("wj-pentest-title-host".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: None,
+        created_at: None,
+        created_by: None,
+        updated_at: None,
+        updated_by: None,
+        score: None,
+        revision_count: None,
+    };
+    let parent = ListPagesParentDisplay {
+        fullname: "run-owned:parent".to_owned(),
+        name: "parent".to_owned(),
+        category: "run-owned".to_owned(),
+        title: "px\" data-parent=\"yes".to_owned(),
+    };
+    let definition = parse_wikidot_data_form_definition(concat!(
+        "[[form]]\nfields:\n  evil:\n",
+        "    label: lx\" data-label=\"yes\n",
+        "    hint: hx\" data-hint=\"yes\n",
+        "[[/form]]",
+    ))
+    .expect("data form definition");
+    let user_displays = BTreeMap::new();
+    let data_form_values = BTreeMap::new();
+    let mut context =
+        list_pages_substitution_context(20, &user_displays, None, &data_form_values);
+    context.page_parent_display = Some(&parent);
+    context.data_form_definition = Some(&definition);
+    for (variable, escaped, injected) in [
+        (
+            "%%parent_title%%",
+            "px&#34; data-parent=&#34;yes",
+            "data-parent",
+        ),
+        (
+            "%%form_label{evil}%%",
+            "lx&#34; data-label=&#34;yes",
+            "data-label",
+        ),
+        (
+            "%%form_hint{evil}%%",
+            "hx&#34; data-hint=&#34;yes",
+            "data-hint",
+        ),
+    ] {
+        let template = format!("[[div class=\"{variable}\"]]\nx\n[[/div]]");
+        let substituted =
+            substitute_list_pages_variables(&template, &page, 1, 1, &context);
+
+        assert_eq!(
+            substituted,
+            format!("[[div class=\"{escaped}\"]]\nx\n[[/div]]"),
+            "{variable}",
+        );
+
+        let html = render_list_pages_substituted_wikitext(&substituted);
+
+        let div_start = html.find("<div").expect("template renders a div");
+        let div_end = html[div_start..].find('>').expect("div tag closes") + div_start;
+        let div_tag = &html[div_start..=div_end];
+        let mut outside_quotes = String::new();
+        let mut in_quotes = false;
+        for ch in div_tag.chars() {
+            if ch == '"' {
+                in_quotes = !in_quotes;
+            } else if !in_quotes {
+                outside_quotes.push(ch);
+            }
+        }
+        assert!(
+            !outside_quotes.contains(injected),
+            "{variable}: injected attribute must not survive into real markup: {div_tag:?} {html:?}",
+        );
+    }
+}
+
+/// Issue #2787 sibling variables inside `[[html]]` blocks must be
+/// HTML-escaped like `%%title%%` and the #2667 identity/tag values.
+#[test]
+fn substituted_sibling_title_variables_escape_html_inside_html_blocks() {
+    let page = FoundPageRow {
+        page_id: 1,
+        site_id: 1,
+        title: Some("Host page".to_owned()),
+        alt_title: None,
+        slug: Some("wj-pentest-title-host".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: None,
+        created_at: None,
+        created_by: None,
+        updated_at: None,
+        updated_by: None,
+        score: None,
+        revision_count: None,
+    };
+    let parent = ListPagesParentDisplay {
+        fullname: "run-owned:parent".to_owned(),
+        name: "parent".to_owned(),
+        category: "run-owned".to_owned(),
+        title: "<img src=x onerror=\"alert(1)\">".to_owned(),
+    };
+    let definition = parse_wikidot_data_form_definition(concat!(
+        "[[form]]\nfields:\n  evil:\n",
+        "    label: <script>alert(2)</script>\n",
+        "    hint: <b onmouseover=alert(3)>hint</b>\n",
+        "[[/form]]",
+    ))
+    .expect("data form definition");
+    let user_displays = BTreeMap::new();
+    let data_form_values = BTreeMap::new();
+    let mut context =
+        list_pages_substitution_context(20, &user_displays, None, &data_form_values);
+    context.page_parent_display = Some(&parent);
+    context.data_form_definition = Some(&definition);
+    for (variable, escaped, raw) in [
+        (
+            "%%parent_title%%",
+            "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;",
+            "<img",
+        ),
+        (
+            "%%form_label{evil}%%",
+            "&lt;script&gt;alert(2)&lt;/script&gt;",
+            "<script>",
+        ),
+        (
+            "%%form_hint{evil}%%",
+            "&lt;b onmouseover=alert(3)&gt;hint&lt;/b&gt;",
+            "<b onmouseover",
+        ),
+    ] {
+        let template = format!("[[html]]\n{variable}\n[[/html]]");
+        let substituted =
+            substitute_list_pages_variables(&template, &page, 1, 1, &context);
+
+        assert!(
+            substituted.contains("[[html]]"),
+            "{variable}: {substituted:?}"
+        );
+        assert!(
+            substituted.contains("[[/html]]"),
+            "{variable}: {substituted:?}",
+        );
+        assert!(!substituted.contains(raw), "{variable}: {substituted:?}");
+        assert!(substituted.contains(escaped), "{variable}: {substituted:?}",);
+    }
 }
 
 /// Issue #2667: inside `[[html]]` blocks the substituted value is raw HTML

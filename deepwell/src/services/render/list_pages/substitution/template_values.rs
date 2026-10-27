@@ -88,6 +88,27 @@ pub(super) fn list_pages_variable_starts_triple_link_target(
         .is_some_and(|opening| template[opening + 3..start].trim().is_empty())
 }
 
+/// Whether a variable occurrence falls inside a double-quoted attribute value
+/// of an unterminated wiki construct (see #2787).
+///
+/// FTML only recognizes `"` as an attribute delimiter, and it parses the
+/// construct head after substitution, so a raw quote in a substituted value
+/// terminates the attribute early. Looking back to the last unclosed `[[`
+/// keeps the check independent of line shape, matching the quoted
+/// continuation forms the ListPages scanner already accepts.
+pub(super) fn list_pages_variable_inside_quoted_attribute(
+    template: &str,
+    start: usize,
+) -> bool {
+    let Some(opening) = template[..start].rfind("[[") else {
+        return false;
+    };
+    let head = &template[opening + 2..start];
+    !head.contains("]]")
+        && !head.starts_with('/')
+        && head.bytes().filter(|byte| *byte == b'"').count() % 2 == 1
+}
+
 pub(in crate::services::render) fn list_pages_unknown_link_target_slugs(
     template: &str,
 ) -> BTreeSet<String> {
@@ -167,5 +188,33 @@ mod tests {
             )),
             BTreeSet::from(["other".to_owned(), "unknown".to_owned()]),
         );
+    }
+
+    #[test]
+    fn variables_inside_unclosed_quoted_attributes_are_detected() {
+        let template = "[[div class=\"%%title%%\"]]";
+        let start = template.find("%%title%%").expect("variable");
+        assert!(list_pages_variable_inside_quoted_attribute(template, start));
+
+        let template = "[[module ListPages\n  category=\"%%title%%\"]]";
+        let start = template.find("%%title%%").expect("variable");
+        assert!(list_pages_variable_inside_quoted_attribute(template, start));
+    }
+
+    #[test]
+    fn variables_outside_quoted_attributes_are_not_detected() {
+        for template in [
+            "TITLE=%%title%%",
+            "[[div class=\"closed\"]] %%title%%",
+            "[[div class='%%title%%']]",
+            "[[/div]] %%title%%",
+            "%%title%% \"quoted prose\"",
+        ] {
+            let start = template.find("%%title%%").expect("variable");
+            assert!(
+                !list_pages_variable_inside_quoted_attribute(template, start),
+                "{template:?}",
+            );
+        }
     }
 }

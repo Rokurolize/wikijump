@@ -60,6 +60,15 @@ const configuredHttpsPort = (value) => {
  * @returns {{ main: string; files: string; httpsPort: number }}
  * @throws {Error} If an override is not a bare hostname or a TCP port.
  */
+/**
+ * The read-only local SCP mirrors whose file hosts are allowlisted in a
+ * local deployment's CSP. Included components retain their source mirror's
+ * stylesheet/font authority (e.g. info:start imports scp-wiki's info:style
+ * on the local authoring site). Keep this exact local allowlist; authored
+ * imports cannot grant new origins.
+ */
+export const LOCAL_MIRROR_FILE_ASSET_SITES = ["scp-wiki", "scp-jp"]
+
 export const platformDomains = ({
   deploymentEnvironment = parseDeploymentEnvironment(),
   env = process.env

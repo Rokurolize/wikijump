@@ -331,7 +331,157 @@ pub(in crate::services::render) fn render_wikidot_protected_inline_body_html(
         &render_native_list_inline_wikidot_strong(&render_native_list_inline_html(body)),
     );
 
+    let rendered = render_wikidot_protected_inline_sizes(&rendered);
     substitute_wikidot_protected_inline_typography(&rendered)
+}
+
+/// Render `[[size]]` blocks inside a pre-rendered protected body.
+///
+/// The plain color-span protection leaves span bodies as wikitext, so FTML
+/// renders block constructs Wikidot allows inside a color span (see the
+/// `[[size]]` note in `protect_wikidot_color_spans`). The bold/underline
+/// color-span passes in this file instead pre-render their bodies through
+/// `render_wikidot_protected_inline_body_html`, whose inline pipeline has no
+/// block handling, so a nested `[[size]]` leaked as literal text. This pass
+/// restores parity for that one block: matched `[[size value]]` /
+/// `[[/size]]` pairs in text (never inside a tag) become the same
+/// `<span style="font-size:value;">` FTML emits in the Wikidot layout.
+/// Unmatched or malformed markers stay literal, as they do when FTML
+/// rejects the block.
+fn render_wikidot_protected_inline_sizes(html: &str) -> String {
+    let mut output = String::with_capacity(html.len());
+    let mut rest = html;
+    while let Some((open_offset, open_len, value)) = find_wikidot_size_open(rest) {
+        output.push_str(&rest[..open_offset]);
+        let after_open = &rest[open_offset + open_len..];
+        match find_wikidot_size_close(after_open) {
+            Some((close_offset, close_len)) => {
+                let inner =
+                    render_wikidot_protected_inline_sizes(&after_open[..close_offset]);
+                output.push_str("<span style=\"font-size:");
+                output.push_str(value);
+                output.push_str(";\">");
+                output.push_str(&inner);
+                output.push_str("</span>");
+                rest = &after_open[close_offset + close_len..];
+            }
+            None => {
+                output.push_str(&rest[open_offset..open_offset + open_len]);
+                rest = after_open;
+            }
+        }
+    }
+    output.push_str(rest);
+    output
+}
+
+/// Find the first valid `[[size value]]` open marker in `text`, skipping
+/// `<...>` tags and malformed markers. Returns its byte offset, byte
+/// length, and validated CSS size value.
+fn find_wikidot_size_open(text: &str) -> Option<(usize, usize, &str)> {
+    let bytes = text.as_bytes();
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] == b'<' {
+            match text[index..].find('>') {
+                Some(offset) => index += offset + 1,
+                None => return None,
+            }
+        } else if text[index..].starts_with("[[size") {
+            match wikidot_protected_inline_size_open(&text[index..]) {
+                Some((open_len, value)) => return Some((index, open_len, value)),
+                None => index += "[[".len(),
+            }
+        } else {
+            index += text[index..].chars().next().map_or(1, char::len_utf8);
+        }
+    }
+    None
+}
+
+/// Find the `[[/size]]` close matching an open whose body starts at the
+/// beginning of `text`, counting nested valid opens. Returns its byte
+/// offset and length.
+fn find_wikidot_size_close(text: &str) -> Option<(usize, usize)> {
+    let close_marker = "[[/size]]";
+    let bytes = text.as_bytes();
+    let mut depth = 1usize;
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] == b'<' {
+            match text[index..].find('>') {
+                Some(offset) => index += offset + 1,
+                None => return None,
+            }
+        } else if text[index..].starts_with(close_marker) {
+            depth -= 1;
+            if depth == 0 {
+                return Some((index, close_marker.len()));
+            }
+            index += close_marker.len();
+        } else if text[index..].starts_with("[[size") {
+            match wikidot_protected_inline_size_open(&text[index..]) {
+                Some((open_len, _)) => {
+                    depth += 1;
+                    index += open_len;
+                }
+                None => index += "[[".len(),
+            }
+        } else {
+            index += text[index..].chars().next().map_or(1, char::len_utf8);
+        }
+    }
+    None
+}
+
+/// Parse a `[[size value]]` open marker at the start of `text`, returning
+/// its byte length and the validated CSS size value. Mirrors FTML's
+/// Wikidot-layout size validation (`wikidot_size_value` in ftml's size
+/// block): a fixed keyword set, or a number with a `%`, `px`, or `em`
+/// suffix.
+fn wikidot_protected_inline_size_open(text: &str) -> Option<(usize, &str)> {
+    let rest = text.strip_prefix("[[size")?;
+    if !rest
+        .chars()
+        .next()
+        .is_some_and(|character| character.is_whitespace())
+    {
+        return None;
+    }
+    let close = rest.find("]]")?;
+    let value = wikidot_protected_inline_size_value(&rest[..close])?;
+    Some(("[[size".len() + close + "]]".len(), value))
+}
+
+fn wikidot_protected_inline_size_value(size: &str) -> Option<&str> {
+    let size = size.trim_matches([' ', '\t', '\r', '\n']);
+    if matches!(
+        size,
+        "xx-small"
+            | "x-small"
+            | "small"
+            | "medium"
+            | "large"
+            | "x-large"
+            | "xx-large"
+            | "smaller"
+            | "larger"
+    ) {
+        return Some(size);
+    }
+    for suffix in ["%", "px", "em"] {
+        if let Some(number) = size.strip_suffix(suffix)
+            && !number.is_empty()
+            && number != "."
+            && number
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || byte == b'.')
+            && number.bytes().filter(|byte| *byte == b'.').count() <= 1
+        {
+            return Some(size);
+        }
+    }
+    None
 }
 
 pub(in crate::services::render) fn substitute_wikidot_protected_inline_typography(

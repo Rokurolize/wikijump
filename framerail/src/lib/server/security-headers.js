@@ -3,7 +3,11 @@ import { createHash } from "node:crypto"
 import { auditedExternalAssetOrigins } from "./audited-external-asset-origins.js"
 import { WIKIDOT_STYLE_FRAME_SCRIPT } from "../wikidot/wikidot-styleframe.js"
 import { parseDeploymentEnvironment } from "./deployment-environment.js"
-import { platformDomains } from "./platform-domains.js"
+import {
+  LOCAL_MIRROR_FILE_ASSET_SITES,
+  platformDomains,
+  platformHttpsOrigin
+} from "./platform-domains.js"
 
 const SECURITY_HEADERS = {
   "cross-origin-opener-policy": "same-origin",
@@ -116,10 +120,38 @@ export const materializeSiteCsp = (
       port = ""
     }
   }
-  const { files } = platformDomains({ deploymentEnvironment })
-  const origin = `https://${slug}.${files}${port ? `:${port}` : ""}`
-  const materialized = materializeExactCspSource(policy, CURRENT_SITE_FILE_ORIGIN, origin)
-  if (materialized) response.headers.set("content-security-policy", materialized)
+  const domains = platformDomains({ deploymentEnvironment })
+  const { files } = domains
+  const portSuffix = port ? `:${port}` : ""
+  let current = materializeExactCspSource(
+    policy,
+    CURRENT_SITE_FILE_ORIGIN,
+    `https://${slug}.${files}${portSuffix}`
+  )
+  let materialized = current !== null
+  current = current ?? policy
+  // The local mirror file origins baked into the policy by
+  // sveltekit-options.js carry the configured HTTPS port (default 443),
+  // not the port this local deployment is actually served on, so on a
+  // non-443 local deployment the policy refuses every stylesheet, font and
+  // image a page includes from a mirror site (e.g. a component included
+  // from scp-wiki). Materialize them with the request port exactly like
+  // the current-site origin above. With no request port known there is
+  // nothing better to substitute, and on the default port the baked
+  // origins are already correct.
+  if (deploymentEnvironment === "local" && port) {
+    for (const mirrorSite of LOCAL_MIRROR_FILE_ASSET_SITES) {
+      const baked = platformHttpsOrigin(`${mirrorSite}.${files}`, domains)
+      const served = `https://${mirrorSite}.${files}${portSuffix}`
+      if (baked === served) continue
+      const next = materializeExactCspSource(current, baked, served)
+      if (next) {
+        current = next
+        materialized = true
+      }
+    }
+  }
+  if (materialized) response.headers.set("content-security-policy", current)
 }
 
 export const staticSecurityHeaderEntries = (
