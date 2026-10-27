@@ -712,6 +712,150 @@ mod tests {
         );
     }
 
+    /// Regression for #2787: `%%title%%` inside a `[[html]]` block uses the
+    /// same escaping boundary as identity, tag, and form values (#2667).
+    ///
+    /// Inside an html block the substituted value is raw HTML served on the
+    /// files origin, so a page-author-controlled title must be HTML-escaped
+    /// before it reaches the served block. This exercises the full delayed
+    /// preparation and sealing path rather than the substitution string alone.
+    #[test]
+    fn title_inside_html_block_is_escaped() {
+        let source = "[[html]]\n<b>%%title%% tags: %%tags%%</b>\n[[/html]]";
+        let template =
+            ListPagesTemplatePlan::compile(source).expect("supported template");
+        let page = FoundPageRow {
+            page_id: 1,
+            site_id: 1,
+            title: Some(
+                "<img src=x onerror=\"alert(1)\"><script>alert(2)</script>".to_owned(),
+            ),
+            alt_title: None,
+            slug: Some("wj-pentest-title-host".to_owned()),
+            page_category_id: None,
+            page_revision_id: None,
+            tags: Some(vec![r#"<img src=x onerror="alert(1)">"#.to_owned()]),
+            created_at: None,
+            created_by: None,
+            updated_at: None,
+            updated_by: None,
+            score: None,
+            revision_count: None,
+        };
+        let user_displays = BTreeMap::new();
+        let snapshot_displays = BTreeMap::new();
+        let runtime_displays = BTreeMap::new();
+        let data_form_values = BTreeMap::new();
+        let context = empty_substitution_context(
+            &user_displays,
+            &snapshot_displays,
+            &runtime_displays,
+            &data_form_values,
+        );
+        let mut compat_text = CompatTextFragments::new(source);
+        let prepared = prepare_delayed_list_pages_row(
+            &template,
+            template.body(),
+            &page,
+            1,
+            1,
+            &context,
+            &[],
+            &mut compat_text,
+            false,
+            None,
+        );
+
+        let escaped_payload = "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;";
+        assert!(
+            prepared.body.contains(escaped_payload),
+            "the title payload must be escaped at the substitution boundary: {}",
+            prepared.body,
+        );
+        assert!(
+            prepared
+                .body
+                .contains("&lt;script&gt;alert(2)&lt;/script&gt;"),
+            "the title script must be escaped at the substitution boundary: {}",
+            prepared.body,
+        );
+        assert!(
+            !prepared.body.contains("<img src=x onerror="),
+            "no raw title markup may reach the delayed body: {}",
+            prepared.body,
+        );
+        // Identity, tag, and form values share the same escaping (#2667):
+        // the title and the tag payload occur escaped identically here.
+        assert!(
+            prepared.body.matches(escaped_payload).count() >= 2,
+            "title and tag payloads must both be escaped: {}",
+            prepared.body,
+        );
+
+        let page_info = PageInfo {
+            page: Cow::Borrowed("site"),
+            category: Some(Cow::Borrowed("search")),
+            site: Cow::Borrowed("sandbox-for-codex"),
+            title: Cow::Borrowed("Preview"),
+            alt_title: None,
+            score: ftml::data::ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let settings = WikitextSettings::from_mode(
+            WikitextMode::Page,
+            ftml::layout::Layout::Wikidot,
+        );
+
+        // Replicate the sealing internals so the html block content that the
+        // `/{page}/html/{index}` route serves can be inspected directly.
+        let output = prepared.body;
+        let runtime_text_ranges = prepared.runtime_text_ranges;
+        let mut segments = Vec::with_capacity(runtime_text_ranges.len() * 2 + 1);
+        let mut cursor = 0usize;
+        for range in &runtime_text_ranges {
+            if cursor < range.source_range.start {
+                segments.push(InputSegment::text(
+                    cursor..range.source_range.start,
+                    TextOrigin::Authored,
+                ));
+            }
+            segments.push(InputSegment::text(range.source_range.clone(), range.origin));
+            cursor = range.source_range.end;
+        }
+        if cursor < output.len() {
+            segments.push(InputSegment::text(
+                cursor..output.len(),
+                TextOrigin::Authored,
+            ));
+        }
+        let delayed_input = DelayedInput::new(&output, segments)
+            .expect("typed ListPages stream should be valid");
+        let mut list_settings =
+            WikitextSettings::from_mode(WikitextMode::List, settings.layout);
+        list_settings.enable_html_blocks = true;
+        let delayed_tree = parse_delayed_list(&delayed_input, &page_info, &list_settings)
+            .expect("typed ListPages stream should parse");
+        let bound = delayed_tree
+            .bind(&SlotBindings::new(Vec::new()).expect("bindings"))
+            .expect("bind");
+        let sealed = bound.render_html(&page_info, &list_settings);
+        let served_blocks = sealed.html_blocks().join("\n");
+
+        assert!(
+            served_blocks.contains(escaped_payload),
+            "the escaped title payload must reach the served html block: {served_blocks:?}",
+        );
+        assert!(
+            !served_blocks.contains("<img src=x onerror="),
+            "raw title payload must not reach the served html block: {served_blocks:?}",
+        );
+        assert!(
+            !served_blocks.contains("<script>alert(2)</script>"),
+            "raw title script must not reach the served html block: {served_blocks:?}",
+        );
+    }
+
     #[test]
     fn authored_template_typography_precedes_generated_value_substitution() {
         let source = concat!(

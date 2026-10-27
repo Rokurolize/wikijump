@@ -34,6 +34,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import socket
 import subprocess
 import sys
@@ -613,6 +614,25 @@ def run_from_source_root(source_root: Path) -> None:
     os.execv(sys.executable, [sys.executable, str(own), *arguments])
 
 
+LAUNCHER_TOOLS = ("cargo", "sqlx")
+
+
+def require_launcher_tools() -> None:
+    """Fail fast when the launcher environment lacks the Rust tools.
+
+    The validation groups a promotion runs shell out to cargo, and the
+    Deepwell test stack spawns sqlx; both live in ~/.cargo/bin, which a
+    non-login shell may not have on PATH. Name the environmental failure
+    here instead of failing every Rust group deep inside validation."""
+    missing = [tool for tool in LAUNCHER_TOOLS if shutil.which(tool) is None]
+    if missing:
+        raise SystemExit(
+            "promote: required tool(s) not found on PATH: "
+            + ", ".join(missing)
+            + "; run from a login shell or add $HOME/.cargo/bin to PATH"
+        )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
@@ -639,6 +659,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    require_launcher_tools()
     if args.source_root is None:
         source_root = prepare_promotion_checkout(
             Path(__file__).resolve().parents[2], state_root() / "promotion-checkout"

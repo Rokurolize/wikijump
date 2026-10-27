@@ -171,6 +171,39 @@ test("preserves a local request port in the current-site file CSP origin", () =>
   )
 })
 
+test("preserves a local request port in the local mirror file CSP origins", () => {
+  const response = new Response("", {
+    headers: {
+      "content-security-policy":
+        "style-src 'self' https://wikijump-current-site.invalid https://scp-wiki.wjfiles.localhost https://scp-jp.wjfiles.localhost"
+    }
+  })
+  materializeSiteCsp(
+    response,
+    "scpaiueouiuiuiui",
+    "local",
+    "https://scpaiueouiuiuiui.wikijump.localhost:28443"
+  )
+  assert.equal(
+    response.headers.get("content-security-policy"),
+    "style-src 'self' https://scpaiueouiuiuiui.wjfiles.localhost:28443 https://scp-wiki.wjfiles.localhost:28443 https://scp-jp.wjfiles.localhost:28443"
+  )
+})
+
+test("leaves local mirror file origins unchanged when no request port is known", () => {
+  const response = new Response("", {
+    headers: {
+      "content-security-policy":
+        "style-src 'self' https://wikijump-current-site.invalid https://scp-wiki.wjfiles.localhost"
+    }
+  })
+  materializeSiteCsp(response, "scp-wiki", "local")
+  assert.equal(
+    response.headers.get("content-security-policy"),
+    "style-src 'self' https://scp-wiki.wjfiles.localhost https://scp-wiki.wjfiles.localhost"
+  )
+})
+
 test("the local development stack materializes its own files host", () => {
   const previous = process.env.WIKIJUMP_FILES_DOMAIN
   process.env.WIKIJUMP_FILES_DOMAIN = "wjfiles.dev.localhost"

@@ -61,9 +61,7 @@ use crate::services::file_revision::{
     FileRevisionService,
 };
 use crate::services::page_lock::{CreatePageLockInput, PageLockService};
-use crate::services::page_meta_tag::{
-    DeletePageMetaTag, PageMetaTagService, SetPageMetaTag,
-};
+use crate::services::page_meta_tag::{PageMetaTagService, SetPageMetaTag};
 use crate::services::page_revision::{
     CreateFirstPageRevision, CreateFirstPageRevisionOutput, CreatePageRevision,
     CreatePageRevisionBody, PageRevisionService,
@@ -1487,13 +1485,19 @@ impl ImportService {
             category_id,
             page_id,
         };
+        // Imported revisions outdate their dependents one rerender depth
+        // deeper than interactive edits, queuing background rerenders
+        // instead of re-rendering every dependent inside this request: a
+        // component included by thousands of pages would otherwise make a
+        // single imported revision cost one render per includer before the
+        // import could respond.
         if let Some(followups) = first_followups {
-            PageRevisionService::apply_first_followups(ctx, id, followups)
+            PageRevisionService::apply_first_followups_for_import(ctx, id, followups)
                 .await
                 .or_raise(make_error)?;
         }
         if let Some(revision) = persisted_revision {
-            PageRevisionService::apply_followups(ctx, id, revision)
+            PageRevisionService::apply_followups_for_import(ctx, id, revision)
                 .await
                 .or_raise(make_error)?;
         }
@@ -2462,41 +2466,46 @@ impl ImportService {
             .await
             .or_raise(make_error)?;
 
-        // A name twice in one payload is a producer bug; reject it rather
-        // than letting set-order decide the stored value.
-        let mut new_names = HashSet::new();
+        // Meta tags are multi-valued: the same name may legitimately
+        // appear several times with different content (for example
+        // repeated og:locale:alternate values). Only an exact
+        // (name, content) pair twice in one payload is a producer bug;
+        // reject it rather than storing the pair twice.
+        let mut new_pairs = HashSet::new();
         for tag in &meta_tags {
-            if !new_names.insert(tag.name.clone()) {
+            if !new_pairs.insert((tag.name.clone(), tag.content.clone())) {
                 bail!(Error::new(
                     format!(
-                        "failed to import meta tags on page ID {page_id} in site ID {site_id}: duplicate meta tag name '{}'",
-                        tag.name,
+                        "failed to import meta tags on page ID {page_id} in site ID {site_id}: duplicate meta tag pair '{}' = '{}'",
+                        tag.name, tag.content,
                     ),
                     ErrorType::DatabaseImport,
                 ));
             }
         }
 
-        let existing_names: Vec<String> = PageMetaTagTable::find()
+        let existing_rows = PageMetaTagTable::find()
             .filter(page_meta_tag::Column::SiteId.eq(site_id))
             .filter(page_meta_tag::Column::AllPages.eq(false))
             .filter(page_meta_tag::Column::PageId.eq(page_id))
             .all(txn)
             .await
-            .or_raise(make_error)?
-            .into_iter()
-            .map(|row| row.name)
-            .collect();
+            .or_raise(make_error)?;
 
+        // The supplied set is authoritative for the page's scope: remove
+        // every stored pair the set no longer carries, then record the
+        // set itself. Removal is pair-precise, so a pair that remains in
+        // the set is never deleted and re-inserted.
         let mut removed = 0;
-        for name in existing_names {
-            if !new_names.contains(&name) {
-                PageMetaTagService::delete(
+        for row in existing_rows {
+            if !new_pairs.contains(&(row.name.clone(), row.content.clone())) {
+                PageMetaTagService::delete_pair(
                     ctx,
-                    DeletePageMetaTag {
+                    SetPageMetaTag {
                         site_id,
                         page_id,
-                        name,
+                        name: row.name,
+                        content: row.content,
                         all_pages: false,
                     },
                 )

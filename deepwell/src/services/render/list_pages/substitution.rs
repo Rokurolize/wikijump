@@ -83,6 +83,7 @@ pub(in crate::services::render) use self::template_values::{
     substitute_list_pages_rating_only,
 };
 use self::template_values::{
+    list_pages_variable_inside_quoted_attribute,
     list_pages_variable_starts_triple_link_target, protect_list_pages_content_insertion,
 };
 
