@@ -12344,6 +12344,7 @@
         "kind": "endpoint_behavioral",
         "reference": "deepwell/tests/page.rs#members_list_ajax_paginates_only_filtered_site_identities",
         "alternatives": [
+          "deepwell/tests/page.rs#members_module_renders_directory_larger_than_legacy_scan_budget",
           "deepwell/tests/page.rs#members_module_ssr_and_ajax_share_100_row_duplicate_relation_boundary"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
@@ -12496,6 +12497,7 @@
           "deepwell/tests/page.rs#loginstatus_page_source_matches_live_unavailable_module",
           "deepwell/tests/page.rs#mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views",
           "deepwell/tests/page.rs#members_module_queries_only_visible_site_members_and_roles",
+          "deepwell/tests/page.rs#members_module_renders_directory_larger_than_legacy_scan_budget",
           "deepwell/tests/page.rs#members_module_ssr_and_ajax_share_100_row_duplicate_relation_boundary",
           "deepwell/tests/page.rs#page_preview_omits_iftags_in_included_sources",
           "deepwell/tests/page.rs#search_and_feed_modules_match_live_preview_and_page_view_boundaries",
