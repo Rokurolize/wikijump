@@ -59,52 +59,53 @@ impl PageMetaTagService {
             .collect())
     }
 
+    /// Store one (name, content) pair in a scope. Meta tags are
+    /// multi-valued: a scope may hold several rows with the same name and
+    /// different content (for example repeated `og:locale:alternate`
+    /// values in a page head), so storing a pair never overwrites a
+    /// different value held under the same name. Storing a pair that is
+    /// already present is a no-op, which keeps re-imports idempotent.
     pub async fn set(ctx: &ServiceContext<'_>, input: SetPageMetaTag) -> Result<()> {
         Self::validate_name(&input.name)?;
         Self::validate_content(&input.content)?;
 
         let page_id = (!input.all_pages).then_some(input.page_id);
-        let filter = Self::scope_filter(input.site_id, page_id)
-            .add(page_meta_tag::Column::Name.eq(input.name.clone()));
         let existing = PageMetaTagTable::find()
-            .filter(filter)
+            .filter(Self::scope_filter(input.site_id, page_id))
+            .filter(page_meta_tag::Column::Name.eq(input.name.clone()))
+            .filter(page_meta_tag::Column::Content.eq(input.content.clone()))
             .one(ctx.transaction())
             .await
             .or_raise(Self::make_error)?;
 
-        if let Some(existing) = existing {
-            let mut model: page_meta_tag::ActiveModel = existing.into();
-            model.content = Set(input.content);
-            model
-                .update(ctx.transaction())
-                .await
-                .or_raise(Self::make_error)?;
-        } else {
-            let count = PageMetaTagTable::find()
-                .filter(Self::scope_filter(input.site_id, page_id))
-                .count(ctx.transaction())
-                .await
-                .or_raise(Self::make_error)?;
-            if count >= MAX_META_TAGS_PER_SCOPE as u64 {
-                return Err(Error::new(
-                    "metadata tag scope reached its safe bound",
-                    ErrorType::Page,
-                )
-                .into());
-            }
+        if existing.is_some() {
+            return Ok(());
+        }
 
-            page_meta_tag::ActiveModel {
-                site_id: Set(input.site_id),
-                page_id: Set(page_id),
-                name: Set(input.name),
-                content: Set(input.content),
-                all_pages: Set(input.all_pages),
-                ..Default::default()
-            }
-            .insert(ctx.transaction())
+        let count = PageMetaTagTable::find()
+            .filter(Self::scope_filter(input.site_id, page_id))
+            .count(ctx.transaction())
             .await
             .or_raise(Self::make_error)?;
+        if count >= MAX_META_TAGS_PER_SCOPE as u64 {
+            return Err(Error::new(
+                "metadata tag scope reached its safe bound",
+                ErrorType::Page,
+            )
+            .into());
         }
+
+        page_meta_tag::ActiveModel {
+            site_id: Set(input.site_id),
+            page_id: Set(page_id),
+            name: Set(input.name),
+            content: Set(input.content),
+            all_pages: Set(input.all_pages),
+            ..Default::default()
+        }
+        .insert(ctx.transaction())
+        .await
+        .or_raise(Self::make_error)?;
 
         ctx.defer_public_content_cache_invalidate_site(input.site_id)
             .or_raise(Self::make_error)
@@ -130,6 +131,32 @@ impl PageMetaTagService {
         Ok(())
     }
 
+    /// Remove one exact (name, content) pair from a scope, leaving any
+    /// other values stored under the same name in place. Replace-style
+    /// imports use this to converge a scope to an authoritative pair set
+    /// without churning pairs that remain in the set.
+    pub async fn delete_pair(
+        ctx: &ServiceContext<'_>,
+        input: SetPageMetaTag,
+    ) -> Result<()> {
+        Self::validate_name(&input.name)?;
+        Self::validate_content(&input.content)?;
+        let page_id = (!input.all_pages).then_some(input.page_id);
+        let deleted = PageMetaTagTable::delete_many()
+            .filter(Self::scope_filter(input.site_id, page_id))
+            .filter(page_meta_tag::Column::Name.eq(input.name))
+            .filter(page_meta_tag::Column::Content.eq(input.content))
+            .exec(ctx.transaction())
+            .await
+            .or_raise(Self::make_error)?;
+
+        if deleted.rows_affected > 0 {
+            ctx.defer_public_content_cache_invalidate_site(input.site_id)
+                .or_raise(Self::make_error)?;
+        }
+        Ok(())
+    }
+
     async fn scope_rows(
         ctx: &ServiceContext<'_>,
         site_id: i64,
@@ -138,6 +165,7 @@ impl PageMetaTagService {
         let rows = PageMetaTagTable::find()
             .filter(Self::scope_filter(site_id, page_id))
             .order_by_asc(page_meta_tag::Column::Name)
+            .order_by_asc(page_meta_tag::Column::PageMetaTagId)
             .limit(META_TAG_QUERY_LIMIT)
             .all(ctx.transaction())
             .await

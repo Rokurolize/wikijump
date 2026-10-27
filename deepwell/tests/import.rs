@@ -54,12 +54,14 @@ use deepwell::services::import::{
     ImportedUserType, MAX_IMPORT_FILE_BYTES, ObservedUserProfile,
     PromoteObservedIdentity,
 };
+use deepwell::services::job::{JOB_QUEUE_NAME, Job};
 use deepwell::services::mirror_scope::{MirrorScopeService, SetMirrorScope};
 use deepwell::services::page_meta_tag::{PageMetaTag, PageMetaTagService};
 use deepwell::services::user::{CreateUser, User as ServiceUser, UserService};
 use deepwell::services::{RequestContext, ServiceContext};
 use deepwell::types::{FileRevisionType, PageRevisionType, Reference, UserType};
 use ftml::data::KarmaLevel;
+use rsmq_async::RsmqConnection;
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, ConnectionTrait, DatabaseBackend,
     EntityTrait, PaginatorTrait, QueryFilter, Statement, TransactionTrait,
@@ -2902,6 +2904,176 @@ async fn import_page_source_update_appends_single_deterministic_revision() {
     runner.teardown().await;
 }
 
+async fn queued_job_messages(runner: &TestRunner) -> u64 {
+    runner
+        .context()
+        .rsmq()
+        .get_queue_attributes(JOB_QUEUE_NAME)
+        .await
+        .expect("job queue attributes should be readable")
+        .msgs
+}
+
+async fn drain_queued_jobs(runner: &TestRunner) -> Vec<Job> {
+    let mut rsmq = runner.context().rsmq();
+    let mut jobs = Vec::new();
+    while let Some(message) = rsmq
+        .receive_message::<Vec<u8>>(JOB_QUEUE_NAME, None)
+        .await
+        .expect("queued jobs should be receivable")
+    {
+        jobs.push(
+            serde_json::from_slice::<Job>(&message.message)
+                .expect("queued job payload should deserialize"),
+        );
+        rsmq.delete_message(JOB_QUEUE_NAME, &message.id)
+            .await
+            .expect("received job should be deletable");
+    }
+    jobs
+}
+
+async fn stored_revision(
+    runner: &TestRunner,
+    revision_id: i64,
+) -> deepwell::models::page_revision::Model {
+    PageRevisionTable::find_by_id(revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("revision lookup should succeed")
+        .expect("revision should exist")
+}
+
+#[tokio::test]
+async fn import_revision_queues_deferred_rerender_for_includers() {
+    // Refs #2076: importing a revision of a page must not re-render its
+    // includers inside the import request. Imported followups outdate one
+    // rerender depth deeper than interactive edits, so includers are
+    // queued as background rerender jobs instead.
+    let namespace = format!("import-fanout-{}", std::process::id());
+    let runner = TestRunner::setup_with_job_queue_namespace(&namespace).await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .unwrap()
+        .site
+        .site_id;
+    let author_id = import_idempotency_author(&runner).await;
+
+    // The included component.
+    let component_slug = "import-fanout-component";
+    let component_page_id = 3_260_000_031;
+    ImportService::add_page(
+        runner.context(),
+        import_idempotency_page(component_page_id, site_id, component_slug),
+    )
+    .await
+    .expect("component page should import");
+    ImportService::add_page_revision(
+        runner.context(),
+        import_idempotency_revision(ImportIdempotencyRevision {
+            revision_id: 4_260_000_031,
+            revision_number: 0,
+            page_id: component_page_id,
+            site_id,
+            author_id,
+            slug: component_slug,
+            title: "Fanout Component",
+            wikitext: "Component body, version zero.\n",
+            tags: &[],
+        }),
+    )
+    .await
+    .expect("component revision should import");
+
+    // A page that includes the component.
+    let includer_slug = "import-fanout-includer";
+    let includer_page_id = 3_260_000_032;
+    let includer_revision_id = 4_260_000_032;
+    ImportService::add_page(
+        runner.context(),
+        import_idempotency_page(includer_page_id, site_id, includer_slug),
+    )
+    .await
+    .expect("includer page should import");
+    ImportService::add_page_revision(
+        runner.context(),
+        import_idempotency_revision(ImportIdempotencyRevision {
+            revision_id: includer_revision_id,
+            revision_number: 0,
+            page_id: includer_page_id,
+            site_id,
+            author_id,
+            slug: includer_slug,
+            title: "Fanout Includer",
+            wikitext: "Includer body.\n\n[[include import-fanout-component]]\n",
+            tags: &[],
+        }),
+    )
+    .await
+    .expect("includer revision should import");
+
+    // Flush the setup imports' deferred work and empty the job queue, so
+    // only the second component revision's effects are measured below.
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("setup post-commit actions should run");
+    drain_queued_jobs(&runner).await;
+    let includer_compiled_at = stored_revision(&runner, includer_revision_id)
+        .await
+        .compiled_at;
+
+    // Import a new revision of the component.
+    ImportService::add_page_revision(
+        runner.context(),
+        import_idempotency_revision(ImportIdempotencyRevision {
+            revision_id: 4_260_000_033,
+            revision_number: 1,
+            page_id: component_page_id,
+            site_id,
+            author_id,
+            slug: component_slug,
+            title: "Fanout Component",
+            wikitext: "Component body, version one.\n",
+            tags: &[],
+        }),
+    )
+    .await
+    .expect("component update should import");
+
+    // The import itself sends nothing to the job queue: dependent
+    // rerenders exist only as post-commit actions until the request ends.
+    assert_eq!(queued_job_messages(&runner).await, 0);
+
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("import post-commit actions should run");
+
+    // The includer was not re-rendered inline: its stored render is still
+    // the one produced by its own import.
+    assert_eq!(
+        stored_revision(&runner, includer_revision_id)
+            .await
+            .compiled_at,
+        includer_compiled_at,
+        "importing a component revision must not re-render its includers inline",
+    );
+
+    // Instead, a deferred rerender job names the includer.
+    let jobs = drain_queued_jobs(&runner).await;
+    assert!(
+        jobs.iter().any(|job| matches!(
+            job,
+            Job::RerenderPage { id, .. } if id.page_id == includer_page_id
+        )),
+        "expected a deferred rerender job for the includer, got {jobs:?}",
+    );
+
+    runner.teardown().await;
+}
+
 async fn page_scope_meta_tags(
     runner: &TestRunner,
     site_id: i64,
@@ -2956,7 +3128,9 @@ async fn import_page_meta_tags_replace_semantics() {
     let stored = page_scope_meta_tags(&runner, site_id, page_id).await;
     assert_eq!(stored.len(), 2);
 
-    // Changed set: og:title updated, og:description dropped, twitter:card added.
+    // Changed set: og:title updated, og:description dropped, twitter:card
+    // added. Removal is pair-precise, so both the dropped og:description
+    // pair and the superseded og:title pair count as removed.
     let output = ImportService::add_page_meta_tags(
         runner.context(),
         ImportPageMetaTags {
@@ -2970,7 +3144,7 @@ async fn import_page_meta_tags_replace_semantics() {
     )
     .await
     .expect("second meta tag import should succeed");
-    assert_eq!((output.stored, output.removed), (2, 1));
+    assert_eq!((output.stored, output.removed), (2, 2));
     let mut stored = page_scope_meta_tags(&runner, site_id, page_id).await;
     stored.sort_by(|a, b| a.name.cmp(&b.name));
     assert_eq!(stored.len(), 2);
@@ -2978,8 +3152,9 @@ async fn import_page_meta_tags_replace_semantics() {
     assert_eq!(stored[0].content, "Source Title v2");
     assert_eq!(stored[1].name, "twitter:card");
 
-    // A duplicate name in one payload is rejected.
-    let error = ImportService::add_page_meta_tags(
+    // The same name with different content is a legitimate multi-valued
+    // tag: both pairs are stored, replacing the previous pairs.
+    let output = ImportService::add_page_meta_tags(
         runner.context(),
         ImportPageMetaTags {
             site_id,
@@ -2988,8 +3163,56 @@ async fn import_page_meta_tags_replace_semantics() {
         },
     )
     .await
-    .expect_err("duplicate meta tag names must fail");
+    .expect("multi-valued meta tag import should succeed");
+    assert_eq!((output.stored, output.removed), (2, 2));
+    let stored = page_scope_meta_tags(&runner, site_id, page_id).await;
+    assert_eq!(stored.len(), 2);
+    assert!(stored.iter().all(|tag| tag.name == "og:title"));
+
+    // An exact duplicate (name, content) pair in one payload is rejected.
+    let error = ImportService::add_page_meta_tags(
+        runner.context(),
+        ImportPageMetaTags {
+            site_id,
+            page_id,
+            meta_tags: vec![tag("og:title", "A"), tag("og:title", "A")],
+        },
+    )
+    .await
+    .expect_err("duplicate meta tag pairs must fail");
     assert_contains_error!(error, ErrorType::DatabaseImport);
+
+    // og:locale:alternate arrives as repeated pairs and converges on
+    // re-import (the #2089 rollout shape).
+    let locale_tags = vec![
+        tag("og:locale", "en_US"),
+        tag("og:locale:alternate", "en_GB"),
+        tag("og:locale:alternate", "fr_FR"),
+    ];
+    let output = ImportService::add_page_meta_tags(
+        runner.context(),
+        ImportPageMetaTags {
+            site_id,
+            page_id,
+            meta_tags: locale_tags.clone(),
+        },
+    )
+    .await
+    .expect("locale meta tag import should succeed");
+    assert_eq!((output.stored, output.removed), (3, 2));
+    let output = ImportService::add_page_meta_tags(
+        runner.context(),
+        ImportPageMetaTags {
+            site_id,
+            page_id,
+            meta_tags: locale_tags,
+        },
+    )
+    .await
+    .expect("locale meta tag re-import should converge");
+    assert_eq!((output.stored, output.removed), (3, 0));
+    let stored = page_scope_meta_tags(&runner, site_id, page_id).await;
+    assert_eq!(stored.len(), 3);
 
     // A page that is not an imported Wikidot page is rejected.
     let error = ImportService::add_page_meta_tags(

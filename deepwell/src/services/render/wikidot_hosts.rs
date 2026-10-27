@@ -28,7 +28,12 @@ use crate::config::Config;
 
 pub(super) fn preferred_domain_wikidot_slug(preferred_domain: &str) -> Option<String> {
     let host = preferred_domain_host(preferred_domain)?;
-    let wikidot_slug = host.strip_suffix(".wikidot.com").unwrap_or(host.as_str());
+    // Only a wikidot.com host names a Wikidot slug. A preferred domain on
+    // any other host (a local mirror's scp-jp.localhost, a deployment's own
+    // domain) is not a Wikidot identity; returning it here made the
+    // asset-localization heuristics treat such sites as translated SCP
+    // branches and rewrite other sites' asset URLs onto them.
+    let wikidot_slug = host.strip_suffix(".wikidot.com")?;
 
     (!wikidot_slug.is_empty()).then(|| wikidot_slug.to_owned())
 }
