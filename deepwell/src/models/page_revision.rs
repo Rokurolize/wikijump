@@ -18,6 +18,8 @@ pub struct Model {
     pub page_id: i64,
     pub site_id: i64,
     pub user_id: i64,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub anonymous_author_ip: Option<String>,
     pub from_wikidot: bool,
     pub changes: Vec<String>,
     #[sea_orm(column_type = "VarBinary(StringLen::None)")]

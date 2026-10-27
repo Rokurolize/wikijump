@@ -35,7 +35,7 @@ use super::structs::{
     ImportSiteRosterOutput, ImportUser, ImportUserOutput, ImportedSiteRole,
     ImportedUserType, PromoteObservedIdentity, PromoteObservedIdentityOutput,
 };
-use crate::constants::SYSTEM_USER_ID;
+use crate::constants::{ANONYMOUS_USER_ID, SYSTEM_USER_ID};
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
 use crate::hash::{BLOB_HASH_LENGTH, sha512_hash, slice_to_blob_hash};
 use crate::models::file::{self, Entity as File, Model as FileModel};
@@ -1288,6 +1288,7 @@ impl ImportService {
             page_id,
             site_id,
             user_id,
+            anonymous_ip,
             wikitext,
             comments,
             title,
@@ -1295,6 +1296,21 @@ impl ImportService {
             tags,
         }: ImportPageRevision,
     ) -> Result<ImportPageRevisionOutput> {
+        // A null user ID means the source author is Wikidot's Anonymous
+        // pseudo-user, who has no Wikidot account (and so no source user
+        // ID). Attribute the revision to the platform's own Anonymous
+        // system user, never to a real account.
+        if user_id.is_some() && anonymous_ip.is_some() {
+            bail!(Error::new(
+                format!(
+                    "failed to import page revision ID {} (number {}), because an anonymous author IP was supplied for a revision with a real author ID",
+                    revision_id, revision_number,
+                ),
+                ErrorType::DatabaseImport,
+            ));
+        }
+        let user_id = user_id.unwrap_or(ANONYMOUS_USER_ID);
+
         info!(
             "Creating page revision ID {} (number {}) on page ID {} on site ID {}",
             revision_id, revision_number, page_id, site_id,
@@ -1457,6 +1473,10 @@ impl ImportService {
             .col_expr(page_revision::Column::UpdatedAt, Expr::value(updated_at))
             // not settable on page create
             .col_expr(page_revision::Column::Tags, Expr::value(tags))
+            .col_expr(
+                page_revision::Column::AnonymousAuthorIp,
+                Expr::value(anonymous_ip),
+            )
             .filter(page_revision::Column::RevisionId.eq(output_revision_id))
             .exec(txn)
             .await

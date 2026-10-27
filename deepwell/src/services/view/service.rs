@@ -2280,6 +2280,7 @@ mod wikidot_redirect_module_allowed_tests {
             page_id: 1,
             site_id: 1,
             user_id: 1,
+            anonymous_author_ip: None,
             from_wikidot,
             changes: vec![],
             wikitext_hash: vec![],

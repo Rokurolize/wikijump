@@ -22,7 +22,7 @@
 mod common;
 
 use self::common::TestRunner;
-use deepwell::constants::ADMIN_USER_ID;
+use deepwell::constants::{ADMIN_USER_ID, ANONYMOUS_USER_ID};
 use deepwell::error::ErrorType;
 use deepwell::hash::{blob_hash_to_hex, sha512_hash};
 use deepwell::license::License;
@@ -39,7 +39,7 @@ use deepwell::models::site::Entity as SiteTable;
 
 use deepwell::models::page::{Column as PageColumn, Entity as PageTable};
 use deepwell::models::page_revision::{
-    Column as PageRevisionColumn, Entity as PageRevisionTable,
+    Column as PageRevisionColumn, Entity as PageRevisionTable, Model as PageRevisionModel,
 };
 use deepwell::models::user::Entity as User;
 use deepwell::models::user_role::{Column as UserRoleColumn, Entity as UserRoleTable};
@@ -2666,7 +2666,8 @@ fn import_idempotency_revision(
         revision_number: params.revision_number,
         page_id: params.page_id,
         site_id: params.site_id,
-        user_id: params.author_id,
+        user_id: Some(params.author_id),
+        anonymous_ip: None,
         wikitext: String::from(params.wikitext),
         comments: String::from("source import"),
         title: String::from(params.title),
@@ -3070,6 +3071,298 @@ async fn import_revision_queues_deferred_rerender_for_includers() {
         )),
         "expected a deferred rerender job for the includer, got {jobs:?}",
     );
+
+    runner.teardown().await;
+}
+
+struct ImportAnonymousRevision<'a> {
+    revision_id: i64,
+    revision_number: i32,
+    revision_type: PageRevisionType,
+    page_id: i64,
+    site_id: i64,
+    user_id: Option<i64>,
+    anonymous_ip: Option<&'a str>,
+    slug: &'a str,
+    wikitext: &'a str,
+}
+
+fn import_anonymous_revision(params: ImportAnonymousRevision<'_>) -> ImportPageRevision {
+    ImportPageRevision {
+        revision_id: params.revision_id,
+        revision_type: params.revision_type,
+        created_at: OffsetDateTime::UNIX_EPOCH,
+        updated_at: None,
+        revision_number: params.revision_number,
+        page_id: params.page_id,
+        site_id: params.site_id,
+        user_id: params.user_id,
+        anonymous_ip: params.anonymous_ip.map(String::from),
+        wikitext: String::from(params.wikitext),
+        comments: String::from("source import"),
+        title: String::from("Anonymous revision test"),
+        slug: String::from(params.slug),
+        tags: vec![],
+    }
+}
+
+async fn stored_imported_revision(
+    runner: &TestRunner,
+    revision_id: i64,
+) -> PageRevisionModel {
+    PageRevisionTable::find_by_id(revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("stored revision lookup should succeed")
+        .expect("imported revision should be stored")
+}
+
+#[tokio::test]
+async fn import_anonymous_first_revision_displays_with_masked_ip() {
+    // Refs #2076: Wikidot allowed logged-out editing in its early period.
+    // Such revisions are authored by the "Anonymous" pseudo-user, who has
+    // no Wikidot account (so no source user ID), and Wikidot serves each
+    // one with its author's masked IP, displaying the history author as
+    // "Anonymous (67.142.130.x)".
+    let runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .unwrap()
+        .site
+        .site_id;
+
+    let slug = "anonymous-first-revision";
+    let page_id = 3_270_000_021;
+    ImportService::add_page(
+        runner.context(),
+        import_idempotency_page(page_id, site_id, slug),
+    )
+    .await
+    .expect("source page should import");
+
+    ImportService::add_page_revision(
+        runner.context(),
+        import_anonymous_revision(ImportAnonymousRevision {
+            revision_id: 4_270_000_021,
+            revision_number: 0,
+            revision_type: PageRevisionType::Create,
+            page_id,
+            site_id,
+            user_id: None,
+            anonymous_ip: Some("67.142.130.x"),
+            slug,
+            wikitext: "Anonymous first revision body.",
+        }),
+    )
+    .await
+    .expect("anonymous-authored revision should import");
+
+    // The revision is attributed to the dedicated Anonymous identity and
+    // carries its own masked IP.
+    let stored = stored_imported_revision(&runner, 4_270_000_021).await;
+    assert_eq!(stored.user_id, ANONYMOUS_USER_ID);
+    assert_eq!(stored.anonymous_author_ip.as_deref(), Some("67.142.130.x"));
+
+    // That identity resolves to the platform's Anonymous pseudo-user,
+    // never to a real account.
+    let identity =
+        UserService::get_optional(runner.context(), Reference::Id(ANONYMOUS_USER_ID))
+            .await
+            .expect("anonymous identity lookup should succeed")
+            .and_then(|user| user.into_public_identity())
+            .expect("the Anonymous system user should have a public identity");
+    assert_eq!(identity.user_name.as_ref(), "Anonymous");
+    assert_eq!(identity.user_slug.as_ref(), "anonymous");
+
+    // The revision history endpoint presents the author the way Wikidot
+    // does: the Anonymous name plus this revision's masked IP.
+    let revisions = run_endpoint!(
+        runner,
+        page_revision_range,
+        json!({
+            "site_id": site_id,
+            "page_id": page_id,
+            "revision_number": 0,
+            "revision_direction": "before",
+            "limit": 1,
+        }),
+    );
+    assert_eq!(revisions.len(), 1);
+    let author = revisions[0]
+        .author
+        .as_ref()
+        .expect("anonymous revision should carry an author identity");
+    assert_eq!(author.user_name.as_ref(), "Anonymous (67.142.130.x)");
+    assert_eq!(author.user_slug.as_ref(), "anonymous");
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn import_mixed_history_attributes_anonymous_revisions() {
+    // The scp-002 shape: an imported page whose history mixes a real
+    // Wikidot author with anonymous revisions, each anonymous revision
+    // carrying its own masked IP.
+    let runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .unwrap()
+        .site
+        .site_id;
+    let author_id = import_idempotency_author(&runner).await;
+
+    let slug = "anonymous-mixed-history";
+    let page_id = 3_270_000_022;
+    ImportService::add_page(
+        runner.context(),
+        import_idempotency_page(page_id, site_id, slug),
+    )
+    .await
+    .expect("source page should import");
+
+    ImportService::add_page_revision(
+        runner.context(),
+        import_anonymous_revision(ImportAnonymousRevision {
+            revision_id: 4_270_000_022,
+            revision_number: 0,
+            revision_type: PageRevisionType::Create,
+            page_id,
+            site_id,
+            user_id: Some(author_id),
+            anonymous_ip: None,
+            slug,
+            wikitext: "Attributed v0 body.",
+        }),
+    )
+    .await
+    .expect("attributed first revision should import");
+
+    ImportService::add_page_revision(
+        runner.context(),
+        import_anonymous_revision(ImportAnonymousRevision {
+            revision_id: 4_270_000_023,
+            revision_number: 1,
+            revision_type: PageRevisionType::Regular,
+            page_id,
+            site_id,
+            user_id: None,
+            anonymous_ip: Some("99.245.177.x"),
+            slug,
+            wikitext: "Anonymous edit body.",
+        }),
+    )
+    .await
+    .expect("anonymous regular revision should import");
+
+    ImportService::add_page_revision(
+        runner.context(),
+        import_anonymous_revision(ImportAnonymousRevision {
+            revision_id: 4_270_000_024,
+            revision_number: 2,
+            revision_type: PageRevisionType::Rollback,
+            page_id,
+            site_id,
+            user_id: None,
+            anonymous_ip: Some("65.26.177.x"),
+            slug,
+            wikitext: "Attributed v0 body.",
+        }),
+    )
+    .await
+    .expect("anonymous rollback revision should import");
+
+    let first = stored_imported_revision(&runner, 4_270_000_022).await;
+    assert_eq!(first.user_id, author_id);
+    assert_eq!(first.anonymous_author_ip, None);
+
+    let second = stored_imported_revision(&runner, 4_270_000_023).await;
+    assert_eq!(second.user_id, ANONYMOUS_USER_ID);
+    assert_eq!(second.revision_type, PageRevisionType::Regular);
+    assert_eq!(second.anonymous_author_ip.as_deref(), Some("99.245.177.x"));
+
+    let third = stored_imported_revision(&runner, 4_270_000_024).await;
+    assert_eq!(third.user_id, ANONYMOUS_USER_ID);
+    assert_eq!(third.revision_type, PageRevisionType::Rollback);
+    assert_eq!(third.anonymous_author_ip.as_deref(), Some("65.26.177.x"));
+
+    // History comes back newest-first; each anonymous revision displays
+    // with its own IP, and the attributed revision keeps its author.
+    let revisions = run_endpoint!(
+        runner,
+        page_revision_range,
+        json!({
+            "site_id": site_id,
+            "page_id": page_id,
+            "revision_number": 2,
+            "revision_direction": "before",
+            "limit": 3,
+        }),
+    );
+    assert_eq!(revisions.len(), 3);
+    assert_eq!(revisions[0].user_id, ANONYMOUS_USER_ID);
+    assert_eq!(revisions[1].user_id, ANONYMOUS_USER_ID);
+    assert_eq!(revisions[2].user_id, author_id);
+    assert_eq!(
+        revisions[0]
+            .author
+            .as_ref()
+            .expect("rollback author should resolve")
+            .user_name
+            .as_ref(),
+        "Anonymous (65.26.177.x)",
+    );
+    assert_eq!(
+        revisions[1]
+            .author
+            .as_ref()
+            .expect("anonymous author should resolve")
+            .user_name
+            .as_ref(),
+        "Anonymous (99.245.177.x)",
+    );
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn import_revision_rejects_anonymous_ip_with_real_author() {
+    // The masked IP is part of an anonymous attribution only; a payload
+    // that pairs it with a real author ID has inconsistent provenance
+    // and must fail closed rather than guess.
+    let runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .unwrap()
+        .site
+        .site_id;
+    let author_id = import_idempotency_author(&runner).await;
+
+    let slug = "anonymous-ip-mismatch";
+    let page_id = 3_270_000_023;
+    ImportService::add_page(
+        runner.context(),
+        import_idempotency_page(page_id, site_id, slug),
+    )
+    .await
+    .expect("source page should import");
+
+    let result = ImportService::add_page_revision(
+        runner.context(),
+        import_anonymous_revision(ImportAnonymousRevision {
+            revision_id: 4_270_000_025,
+            revision_number: 0,
+            revision_type: PageRevisionType::Create,
+            page_id,
+            site_id,
+            user_id: Some(author_id),
+            anonymous_ip: Some("67.142.130.x"),
+            slug,
+            wikitext: "Mismatched attribution body.",
+        }),
+    )
+    .await;
+    assert!(
+        result.is_err(),
+        "an anonymous IP with a real author must be rejected",
+    );
+    assert_eq!(imported_revision_count(&runner, page_id).await, 0);
 
     runner.teardown().await;
 }
