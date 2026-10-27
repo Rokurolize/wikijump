@@ -152,7 +152,7 @@ test("materializes an exact current-site file origin", () => {
   assert.doesNotMatch(policy, /wikijump-current-site\.invalid|\*\.wjfiles/u)
 })
 
-test("preserves a local request port in the current-site file CSP origin", () => {
+test("preserves the canonical and request-port forms of the current-site file CSP origin", () => {
   const response = new Response("", {
     headers: {
       "content-security-policy":
@@ -167,11 +167,11 @@ test("preserves a local request port in the current-site file CSP origin", () =>
   )
   assert.equal(
     response.headers.get("content-security-policy"),
-    "img-src 'self' https://scp-wiki.wjfiles.localhost:18443; style-src 'self' https://scp-wiki.wjfiles.localhost:18443"
+    "img-src 'self' https://scp-wiki.wjfiles.localhost https://scp-wiki.wjfiles.localhost:18443; style-src 'self' https://scp-wiki.wjfiles.localhost https://scp-wiki.wjfiles.localhost:18443"
   )
 })
 
-test("preserves a local request port in the local mirror file CSP origins", () => {
+test("preserves the canonical and request-port forms of the local mirror file CSP origins", () => {
   const response = new Response("", {
     headers: {
       "content-security-policy":
@@ -186,7 +186,26 @@ test("preserves a local request port in the local mirror file CSP origins", () =
   )
   assert.equal(
     response.headers.get("content-security-policy"),
-    "style-src 'self' https://scpaiueouiuiuiui.wjfiles.localhost:28443 https://scp-wiki.wjfiles.localhost:28443 https://scp-jp.wjfiles.localhost:28443"
+    "style-src 'self' https://scpaiueouiuiuiui.wjfiles.localhost https://scpaiueouiuiuiui.wjfiles.localhost:28443 https://scp-wiki.wjfiles.localhost https://scp-wiki.wjfiles.localhost:28443 https://scp-jp.wjfiles.localhost https://scp-jp.wjfiles.localhost:28443"
+  )
+})
+
+test("keeps canonical file origins beside request-port forms at a rehearsal port", () => {
+  const response = new Response("", {
+    headers: {
+      "content-security-policy":
+        "img-src 'self' https://wikijump-current-site.invalid; style-src 'self' https://scp-wiki.wjfiles.localhost https://scp-jp.wjfiles.localhost"
+    }
+  })
+  materializeSiteCsp(
+    response,
+    "scp-wiki",
+    "local",
+    "https://scp-wiki.wikijump.localhost:18560"
+  )
+  assert.equal(
+    response.headers.get("content-security-policy"),
+    "img-src 'self' https://scp-wiki.wjfiles.localhost https://scp-wiki.wjfiles.localhost:18560; style-src 'self' https://scp-wiki.wjfiles.localhost https://scp-wiki.wjfiles.localhost:18560 https://scp-jp.wjfiles.localhost https://scp-jp.wjfiles.localhost:18560"
   )
 })
 
@@ -221,7 +240,7 @@ test("the local development stack materializes its own files host", () => {
     )
     assert.equal(
       response.headers.get("content-security-policy"),
-      "img-src 'self' https://scp-wiki.wjfiles.dev.localhost:18443"
+      "img-src 'self' https://scp-wiki.wjfiles.dev.localhost https://scp-wiki.wjfiles.dev.localhost:18443"
     )
   } finally {
     if (previous === undefined) delete process.env.WIKIJUMP_FILES_DOMAIN
