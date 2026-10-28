@@ -18,6 +18,7 @@ import {TARGET_ACCEPTANCE_CONTRACT_SHA256} from './target-acceptance-contract.mj
 import {candidateAssetDependencyState} from './candidate-asset-dependencies.mjs';
 import {resolveRunContractPath} from './run-contract-path.mjs';
 import {currentPackageFullCheckInputBindings} from './full-check-input-bindings.mjs';
+import {verifyFaithfulDesignWaivers} from './finalize-visual-acceptance.mjs';
 import {candidateSourceName, declaredCandidateSourceName} from './theme-package.mjs';
 import {resolveExistingContainedDirectory,resolveExistingContainedFile,resolveExistingPackageDirectory,resolveExistingPackageFile} from './package-path.mjs';
 import {currentPackageBaseCss} from './candidate-base-contract.mjs';
@@ -417,6 +418,7 @@ export function checkCampaignCompletion(root, {captureContractReader = readCurre
         failures.push(`${row.package}: final image review provenance is missing or stale`);
       if(visualReview?.schema!=='theme_lab_visual_acceptance.v1'||visualReview?.candidate_css_sha256!==result.candidate_css_sha256||visualReview?.candidate_source_sha256!==result.candidate_source_sha256||visualReview?.candidate_preview_sha256!==result.candidate_preview_sha256||(visualReview?.candidate_base_css_sha256??null)!==(result.candidate_base_css_sha256??null))failures.push(`${row.package}: bound visual review uses superseded candidate inputs`);
       failures.push(...validateCombinedAcceptance(result, row.package));
+      failures.push(...verifyFaithfulDesignWaivers(result, row.package));
       if(Object.entries(expectedTargetFixtures).some(([name,hash])=>result.target_fixture_identity?.[name]!==hash))failures.push(`${row.package}: paired check uses superseded target fixtures`);
       if(result.verification_scope?.mode!=='full'||result.verification_scope?.deferred?.length)failures.push(`${row.package}: completion requires a full, non-deferred check`);
       if(ACCEPTANCE_VIEWPORT_IDS.some(viewport=>result.viewport_status?.[viewport]?.status!=='pass'))failures.push(`${row.package}: current viewport acceptance is incomplete`);
