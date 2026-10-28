@@ -4346,3 +4346,8 @@ tt {
 
 /* SCP-JP Wikidot Flopstyle Dark Firefox submenu: anchor the third parent endpoint at mobile widths. */
 @supports (-moz-appearance:none){@media(max-width:359px){#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul {left:0;right:auto;}}@media(min-width:360px) and (max-width:767px){#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul {left:auto;right:0;}#top-bar .mobile-top-bar > ul > li:last-child > ul {left:0;right:auto;}}}
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot flopstyle-dark history list: keep the history table inside the content column at narrow widths. */
+@media (max-width:400px){table.page-history{font-size:.8em}}
