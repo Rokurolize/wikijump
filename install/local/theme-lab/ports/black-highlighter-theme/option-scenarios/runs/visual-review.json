@@ -2,9 +2,9 @@
   "schema": "theme_lab_bhl_option_visual_review.v2",
   "status": "pass",
   "reviewer": "Muse visual review",
-  "review_method": "direct visual inspection of labeled contact sheets covering all 82 screenshots (6 sheets grouped by scenario and engine)",
-  "reviewed_at": "2026-10-28T14:53:42Z",
-  "candidate_set_sha256": "98c063a1b9943770fe95242706f6d49edf5a57290ae280b6f828a44bdc40bdb3",
+  "review_method": "direct visual inspection of labeled contact sheets covering all 82 screenshots (scenario/engine sheets for the full set in the first Freeze-2 round, plus a dedicated sheet of the 27 byte-changed screenshots in this round)",
+  "reviewed_at": "2026-10-28T15:22:49Z",
+  "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
   "source_authority_sha256": "900eac424c3c64c7fa2ad14dae6648dd25cdfff4509d2a6fc5a264031929a86e",
   "framerail_fingerprint_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
   "backend_runtime_identity": {
@@ -30,31 +30,31 @@
       "id": "bhl-options-toggle-header-dark",
       "status": "pass",
       "reviewer": "Muse visual review",
-      "review_method": "direct visual inspection of labeled contact sheets covering all 82 screenshots (6 sheets grouped by scenario and engine)",
+      "review_method": "direct visual inspection of labeled contact sheets covering all 82 screenshots (scenario/engine sheets for the full set in the first Freeze-2 round, plus a dedicated sheet of the 27 byte-changed screenshots in this round)",
       "receipts": [
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
-          "sha256": "319780ee78cc99a43eee5484aeea073bf6180ae7d30bd40e013259e08296696b"
+          "sha256": "f7e23a6ca3f013296da52984c99c96ec6c504ab3f351681f405713e0993046bb"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
-          "sha256": "7b7e799e72ff41c26ee5609494a94a9e865204db99166334efd781e1e87e96ae"
+          "sha256": "1d8811bae790afb6a0ae27890aeb1797c092d3743ea3cea2585cbbfab53e1321"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
-          "sha256": "8e05007dcbfc6afaffdf80feeb75bd5cbbec46bd09988028f2d37f33c3d281a3"
+          "sha256": "203f6ed0f41ce807747180ef3226207ac81797861b936dfe46dd04dcaebb4e3b"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
-          "sha256": "8bcc730b58d117fb7adb8a7a9160b3d543a3137e2d7957ef57d49e496add084f"
+          "sha256": "31c58ff441847858bd0a41e6de129e3fa03d6fa19d9477c7c28a59fba9bb8612"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
-          "sha256": "46885f14e463ef8f782b3a6bed63025b350b2f05798b00c318050d661d7c0fad"
+          "sha256": "ceadfec11673d04ba84ab3333f533368f598d4f97c5e1d958f4bf37883f4f058"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
-          "sha256": "4e64359dbda540aa0a631d7f0d3ee4c76937aaf82b91274b6c11d33f98f8c972"
+          "sha256": "d49669fe02d1659b432b2e0a0cae9aa715031fc6d6209c08ccc86e47706d071c"
         }
       ],
       "screenshots": [
@@ -67,7 +67,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-centered-mobile-mobile.png",
@@ -78,18 +78,18 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-centered-narrow-narrow-mobile.png",
-          "sha256": "6bb9d03ecd2cd5ebc0ee223a40610d504de70c40e5da907436c92eff7b33d687",
+          "sha256": "684ce65faae2bd48d2c9c60ffc72e17abd9507f0d133872306272c8258e8abef",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "centered-narrow",
           "viewport": "narrow-mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-rest-desktop.png",
@@ -100,29 +100,29 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-corner-button-open-desktop.png",
-          "sha256": "0357da7b3f5abe171116d4fc42d11a37287c1c91a1ec181c4ba2fc6642df033f",
+          "sha256": "09ed2d7c96264f3674405bd0cf0db6c6a69badb2a8950470308d84e879447a3a",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "toggle-corner-button-open",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-hover-after-button-open-desktop.png",
-          "sha256": "6fb8654c18d30a0962923217df13eafdd07a19a3302de0089e8383adc73273fe",
+          "sha256": "0c9ed3e695b64cc6280e7e568920902b7d040c968692f1b1e716e1a06f07e77e",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "toggle-hover-after-button-open",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-keyboard-focus-open-desktop.png",
@@ -133,18 +133,18 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-mobile-target-open-mobile.png",
-          "sha256": "840bc1ebef6dbd11fd26c8fe3d438d5237189d7d1f64271ce8e44ecd1f1821f8",
+          "sha256": "d97a178a277714585c50b942c32279974a96ef1e6a4395ebecbf165f3ca62434",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "toggle-mobile-target-open",
           "viewport": "mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-mobile-close-menu-mobile.png",
@@ -155,106 +155,106 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-narrow-target-open-narrow-mobile.png",
-          "sha256": "c958d4d689de86eb5ae11be80191e4b273a3b5762af6a7611160894de8124182",
+          "sha256": "082e81bfed088ef969ee26bb249df580de508d32e8546c37f0b215fedbedef65",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "toggle-narrow-target-open",
           "viewport": "narrow-mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-normal-desktop.png",
-          "sha256": "63e1b36407999488a21d8ad7988078228de2c904bc11d7397af196eb87ba0498",
+          "sha256": "9896d792953fc5ce0d3e6a468e0a857d7a32d39cb43df4d73b61668d1c1f6e7c",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "dark-normal",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-hover-desktop.png",
-          "sha256": "8e48e886d6a47e4f45caee98676462e2eb9ec27184e19fa42785f87a9d0c8bcc",
+          "sha256": "47973b079653c14dd18fe8a9fc1589bc3a3ab290dcf699e6e967db1b3ec52ef4",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "dark-hover",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-keyboard-focus-desktop.png",
-          "sha256": "cbc2ec1877e43271d47fcd2f04c093203d6f9e6bc5d2fec488a668cb33c4cf2d",
+          "sha256": "3904696a5d94808c730bad00dd8b5397a26cb4f33e9b26b3e679c03609742688",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "dark-keyboard-focus",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-current-desktop.png",
-          "sha256": "e089debac787459f3155084a979efabcd33b13d268eba52e143666e82b222393",
+          "sha256": "0357da7b3f5abe171116d4fc42d11a37287c1c91a1ec181c4ba2fc6642df033f",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "dark-current",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-normal-mobile.png",
-          "sha256": "94541534cf8d6e37f68936e8a9813a354336948348cbba6507b76ae1d8f0e5db",
+          "sha256": "c270f3e217e0a0ce6eca45af6495f7db77c83607bcc87272f698c474707c8b71",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "dark-mobile-normal",
           "viewport": "mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-keyboard-focus-mobile.png",
-          "sha256": "a233a8ed0c4090aaf3adc549783fae66654bf3cc8e065ab5c6ed3d2f77a61059",
+          "sha256": "cb8de4461f5187e776a834a5190d52e5cf071158f7a46aed75ad3e1b10706b5c",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "dark-mobile-keyboard-focus",
           "viewport": "mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-current-mobile.png",
-          "sha256": "abc092b9a101d6d847356282c0cc9c363075315e96d4f8e90c8a4a0ff6f26e83",
+          "sha256": "878825c32f25483cf35527c44cb4f30cd55020e92c7eb9a3cced4f0bfeeb21ae",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "dark-mobile-current",
           "viewport": "mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-hover-mobile.png",
-          "sha256": "80a4afeddab0fc1c86033ebc72532112b36ae55c1eaa6167b82fd937fdc0d39f",
+          "sha256": "4abe88d337f76c5b22340cc9bfecb58f344a004486a497b520715f2b30d32345",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "dark-mobile-hover",
           "viewport": "mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-corner-button-open-desktop.png",
@@ -265,7 +265,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-hover-after-button-open-desktop.png",
@@ -276,7 +276,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-keyboard-focus-open-desktop.png",
@@ -287,7 +287,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-mobile-target-open-mobile.png",
@@ -298,7 +298,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-mobile-close-menu-mobile.png",
@@ -309,7 +309,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-corner-button-open-desktop.png",
@@ -320,7 +320,7 @@
           "browser_engine": "webkit",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-hover-after-button-open-desktop.png",
@@ -331,7 +331,7 @@
           "browser_engine": "webkit",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-keyboard-focus-open-desktop.png",
@@ -342,7 +342,7 @@
           "browser_engine": "webkit",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-mobile-target-open-mobile.png",
@@ -353,7 +353,7 @@
           "browser_engine": "webkit",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-mobile-close-menu-mobile.png",
@@ -364,7 +364,7 @@
           "browser_engine": "webkit",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-centered-desktop-desktop.png",
@@ -375,7 +375,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-centered-mobile-mobile.png",
@@ -386,18 +386,18 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-centered-narrow-narrow-mobile.png",
-          "sha256": "a876ab1ec949986bae9f6c09095615f3ad1312aca262aebece1e26f084e89d60",
+          "sha256": "22bb351762f445f698cc171acb88c6cb5dad7581fe555732c3ad0530dcca8260",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "centered-narrow",
           "viewport": "narrow-mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-rest-desktop.png",
@@ -408,51 +408,51 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-corner-button-open-desktop.png",
-          "sha256": "3f3641b2b2abaeafd1b0fd92bea05aa576127a76fd61f82b440287cc0916b787",
+          "sha256": "80f965c5c844441c5cfe1d307d9ad4840fcfb552ce62e7a4c9315ba16f46cd2e",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "toggle-corner-button-open",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-hover-after-button-open-desktop.png",
-          "sha256": "8eb57fdc5679b69d81785ab790690bcd0079e4c14ff1c030a6b95e32e56759e2",
+          "sha256": "799ab96b57123daf3a2a8093ddcc7f584ee7eb3ed20c847f5cf5f970fe759a46",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "toggle-hover-after-button-open",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-keyboard-focus-open-desktop.png",
-          "sha256": "208e3c8cb0448651ccdfda9831d7e05ca434c9acb3a2f303b4dae5c604104794",
+          "sha256": "7e9ee43180028e19b42e91b41c5c269fb3fdd8906e0a8429447a5c90c7a292f1",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "toggle-keyboard-focus-open",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-mobile-target-open-mobile.png",
-          "sha256": "473d7a1e835a1db59587f13ae4869763ad9da47209a3bcf9c9d34f0e29a2e70a",
+          "sha256": "4323ad86034bed256979c260770fb1715c8f1fd2c9873dd6aa6570bcaea5020a",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "toggle-mobile-target-open",
           "viewport": "mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-mobile-close-menu-mobile.png",
@@ -463,106 +463,106 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-narrow-target-open-narrow-mobile.png",
-          "sha256": "7d60c0528ff00afb3a7f68cc4c71fb7e8ea491413619d6e2db5f354b0f970a55",
+          "sha256": "d784770273e77d92eab81cc2f79dbca8782bc896db2df1991bf5604c566a67c2",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "toggle-narrow-target-open",
           "viewport": "narrow-mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-normal-desktop.png",
-          "sha256": "466bb2546a697bf67f91718ab20e7f994b97c4f4f5dd03fc052b1eb41f9bf765",
+          "sha256": "b4ae83f9b418190340b4e289b204937e07a30fa53ed7b6a59da3a22d69ca4566",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "dark-normal",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-hover-desktop.png",
-          "sha256": "07894341ccdcd041f5ce23d2140e8d1025630df4c7bb4769613faeef4a33e4fb",
+          "sha256": "f4188e2f25dde4637eee40de7d0bbbc636314ddcc36765d8d5ddff16634b485f",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "dark-hover",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-keyboard-focus-desktop.png",
-          "sha256": "3384f787f4845b164c654982956549241faeef58149c15a6b5a9aaf529dcfc9e",
+          "sha256": "e6eb09bac644d51eba677b578579979eb3d6a84323f12df046ef864bb9528db4",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "dark-keyboard-focus",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-current-desktop.png",
-          "sha256": "088f4c402013cf7ddc55c26d35aaaca18a0668a0a7ef2df56ec147db2974a3b7",
+          "sha256": "6ad3757932cc7bf4388bb94e1adaaa0d1f60bc273615d435e7c2efe2bf863351",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "dark-current",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-mobile-normal-mobile.png",
-          "sha256": "236d503afb40e25070d58fe6938363c1decbe598102c60c2fa9495a803a2743f",
+          "sha256": "b52ba0f591067c54fa675ce4c5d35672ff97e59623385d08da8a48f425bcfe00",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "dark-mobile-normal",
           "viewport": "mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-mobile-keyboard-focus-mobile.png",
-          "sha256": "861970dc3c4856598cc199c57b14d24e8de9c45a58f2f1ebec6cbc7628de6728",
+          "sha256": "9208aab88a612e410a704618346dafb7fdbbb1cccd6d4263f4105b0a226e4de8",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "dark-mobile-keyboard-focus",
           "viewport": "mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-mobile-current-mobile.png",
-          "sha256": "e75ab08fd717b294c69bb18fd6e0bde4a38e8743be0481649d5a298d6f891378",
+          "sha256": "431b390a27e5705b25670fc21eafa2381ddf3b383b4c4c4f6ee91c59438cad3c",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "dark-mobile-current",
           "viewport": "mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-mobile-hover-mobile.png",
-          "sha256": "f68426779368a6a0e16f63f6411ccbf0d38d499b9fa600eba6e0cb46c8eb3419",
+          "sha256": "d382f1578a17a527e9baa2bf5677c995912adabd926cab30ab83040f63e79de6",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "dark-mobile-hover",
           "viewport": "mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-corner-button-open-desktop.png",
@@ -573,7 +573,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-hover-after-button-open-desktop.png",
@@ -584,7 +584,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-keyboard-focus-open-desktop.png",
@@ -595,7 +595,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-mobile-target-open-mobile.png",
@@ -606,7 +606,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-mobile-close-menu-mobile.png",
@@ -617,7 +617,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-corner-button-open-desktop.png",
@@ -628,7 +628,7 @@
           "browser_engine": "webkit",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-hover-after-button-open-desktop.png",
@@ -639,7 +639,7 @@
           "browser_engine": "webkit",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-keyboard-focus-open-desktop.png",
@@ -650,7 +650,7 @@
           "browser_engine": "webkit",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-mobile-target-open-mobile.png",
@@ -661,7 +661,7 @@
           "browser_engine": "webkit",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-mobile-close-menu-mobile.png",
@@ -672,7 +672,7 @@
           "browser_engine": "webkit",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         }
       ]
     },
@@ -680,31 +680,31 @@
       "id": "bhl-options-collapsible-sidebar",
       "status": "pass",
       "reviewer": "Muse visual review",
-      "review_method": "direct visual inspection of labeled contact sheets covering all 82 screenshots (6 sheets grouped by scenario and engine)",
+      "review_method": "direct visual inspection of labeled contact sheets covering all 82 screenshots (scenario/engine sheets for the full set in the first Freeze-2 round, plus a dedicated sheet of the 27 byte-changed screenshots in this round)",
       "receipts": [
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
-          "sha256": "1670b4d37c4f5e9dbeaf42650fc14189a3c18b52acfa3dc799983cc63d4b1457"
+          "sha256": "ea61bd7df96aa7860860922fde8601a2c9751ed51af923bbfbe13119ebfe477a"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json",
-          "sha256": "abaae954f678db73b3b270770e665cb81f94763f8f9ae9423b4d470e0b62656e"
+          "sha256": "92147dcca5af6d1b00b040bfa9b046c4b30f8f4bf3569b46422bd2d30bb49d4a"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json",
-          "sha256": "026ab3bd76ec7f1404da295fb50d73edcae69714e7e3684c6b36095c6529f695"
+          "sha256": "2a8376c200b78359248868154603f2dae5085157b0a5609bb094c7579489b597"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
-          "sha256": "663e1eb6f60f89646109cab3974b3fed9bd8e4c21496f39a858ebc1af4faadc1"
+          "sha256": "b804fb5a5d63cfdd13e1fe01cb94572be76278abb771b718c2aa3c66f6089f5d"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json",
-          "sha256": "965237c3c462f36fb3136d5fa9a4bf674e5b18a0f8d5d0471534f12f3d340855"
+          "sha256": "3eae9167250b359c91b18b40686957d1bf1d8cffafae451b3549d6345e053018"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json",
-          "sha256": "e03021bbdb307864810ccf6cb0a1291334e296ea2ad2e200366f9cc68a1fdeec"
+          "sha256": "e496f973f8b862ddb8ba840e366903d22224fd94b64ef2afacc799caf44ea7ea"
         }
       ],
       "screenshots": [
@@ -717,7 +717,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-hover-expanded-desktop.png",
@@ -728,7 +728,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
@@ -739,7 +739,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-nested-entry-desktop.png",
@@ -750,7 +750,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-closed-desktop.png",
@@ -761,7 +761,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-mobile-mobile.png",
@@ -772,7 +772,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-narrow-mobile-narrow-mobile.png",
@@ -783,7 +783,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/collapsible-collapsible-hover-expanded-desktop.png",
@@ -794,7 +794,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
@@ -805,7 +805,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/collapsible-collapsible-nested-entry-desktop.png",
@@ -816,7 +816,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/collapsible-collapsible-hover-expanded-desktop.png",
@@ -827,7 +827,7 @@
           "browser_engine": "webkit",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
@@ -838,7 +838,7 @@
           "browser_engine": "webkit",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/collapsible-collapsible-nested-entry-desktop.png",
@@ -849,7 +849,7 @@
           "browser_engine": "webkit",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-rest-desktop.png",
@@ -860,7 +860,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-hover-expanded-desktop.png",
@@ -871,7 +871,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
@@ -882,7 +882,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-nested-entry-desktop.png",
@@ -893,7 +893,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-closed-desktop.png",
@@ -904,7 +904,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-mobile-mobile.png",
@@ -915,7 +915,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-narrow-mobile-narrow-mobile.png",
@@ -926,7 +926,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/collapsible-collapsible-hover-expanded-desktop.png",
@@ -937,7 +937,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
@@ -948,7 +948,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/collapsible-collapsible-nested-entry-desktop.png",
@@ -959,7 +959,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/collapsible-collapsible-hover-expanded-desktop.png",
@@ -970,7 +970,7 @@
           "browser_engine": "webkit",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
@@ -981,7 +981,7 @@
           "browser_engine": "webkit",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/collapsible-collapsible-nested-entry-desktop.png",
@@ -992,7 +992,7 @@
           "browser_engine": "webkit",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
         }
       ]
     }
