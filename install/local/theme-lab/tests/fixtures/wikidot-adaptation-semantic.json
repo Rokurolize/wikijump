@@ -7175,8 +7175,8 @@
     },
     "hansarp": {
       "evidence": {
-        "source_path": "authority-evidence/hansarp-freeze2-navigation-20261028/receipt.json",
-        "source_sha256": "1520185f342fa2bdee071f206cb098b3db9577134f4b830cc625bdc6db44a90b",
+        "source_path": "authority-evidence/hansarp-freeze3-navigation-20261029/receipt.json",
+        "source_sha256": "c42dd006acc113b9519a4701e91ef294937d82b435219610dcc296fa6b29a714",
         "url": "https://scp-jp.wikidot.com/scp-173-jp",
         "browser_version": "156.0.8078.47",
         "snapshot_entry": "/o/778e97a6218d6fb6db2875232096a7c430bea73b22f4f2686e649fde167add29",
@@ -8081,7 +8081,7 @@
             "state": "navigation-action",
             "index": 0,
             "pass": true,
-            "css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
+            "css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -8412,7 +8412,7 @@
             "state": "navigation-action",
             "index": 1,
             "pass": true,
-            "css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
+            "css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -8581,7 +8581,7 @@
             "state": "navigation-action",
             "index": 2,
             "pass": true,
-            "css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
+            "css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -8840,7 +8840,7 @@
             "state": "navigation-action",
             "index": 3,
             "pass": true,
-            "css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
+            "css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -9865,7 +9865,7 @@
             "state": "navigation-action",
             "index": 0,
             "pass": true,
-            "css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
+            "css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -10196,7 +10196,7 @@
             "state": "navigation-action",
             "index": 1,
             "pass": true,
-            "css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
+            "css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -10365,7 +10365,7 @@
             "state": "navigation-action",
             "index": 2,
             "pass": true,
-            "css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
+            "css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -10624,7 +10624,7 @@
             "state": "navigation-action",
             "index": 3,
             "pass": true,
-            "css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
+            "css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -10754,8 +10754,8 @@
         ]
       },
       "ledger_current": {
-        "path": "authority-evidence/hansarp-final-four-navigation-20261004/receipt.json",
-        "sha256": "d7a691e8ec5bfa81724a336ef91df41818bdbe0bce21e6c5c30eaa3b860c34e4"
+        "path": "authority-evidence/hansarp-freeze3-navigation-20261029/receipt.json",
+        "sha256": "c42dd006acc113b9519a4701e91ef294937d82b435219610dcc296fa6b29a714"
       }
     },
     "pataphysics": {

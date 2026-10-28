@@ -9626,9 +9626,9 @@
         }
       },
       "current_navigation_evidence": {
-        "path": "authority-evidence/hansarp-final-four-navigation-20261004/receipt.json",
-        "sha256": "d7a691e8ec5bfa81724a336ef91df41818bdbe0bce21e6c5c30eaa3b860c34e4",
-        "published_css_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319"
+        "path": "authority-evidence/hansarp-freeze3-navigation-20261029/receipt.json",
+        "sha256": "c42dd006acc113b9519a4701e91ef294937d82b435219610dcc296fa6b29a714",
+        "published_css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c"
       }
     },
     "night-rush-theme": {
