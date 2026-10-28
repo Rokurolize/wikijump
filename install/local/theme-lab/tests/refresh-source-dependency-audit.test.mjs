@@ -100,6 +100,20 @@ describe('dependency surface', () => {
     assert.deepEqual(dependencySurface(after, ''), dependencySurface(before, ''));
   });
 
+  test('an unterminated trailing [[include does not absorb following content', () => {
+    const before = '[[include :scp-jp:theme:bedrock]]\n@import url("https://example.com/theme.css");\n[[include :scp-jp:component:interwiki-style\n| theme=https://example.com/theme:x/1\n';
+    const after = before + '\n[[module CSS]]\n/* appended adaptation module */\n#action-area { background: none; }\n[[/module]]\n';
+    assert.deepEqual(dependencySurface(after, ''), dependencySurface(before, ''));
+    assert.deepEqual(dependencySurface(before, '').includes.at(-1),
+      '[[include :scp-jp:component:interwiki-style\n| theme=https://example.com/theme:x/1');
+  });
+
+  test('still detects a changed unterminated trailing [[include target', () => {
+    const before = '[[include :scp-jp:component:interwiki-style\n| theme=https://example.com/theme:x/1\n';
+    const after = '[[include :scp-jp:component:interwiki-style\n| theme=https://example.com/theme:y/1\n[[module CSS]]\n[[/module]]\n';
+    assert.notDeepEqual(dependencySurface(after, ''), dependencySurface(before, ''));
+  });
+
   test('still detects a changed trailing @import target', () => {
     const before = '@import url("https://example.com/theme:x/1")\n';
     const after = '@import url("https://example.com/theme:y/1")\n';
