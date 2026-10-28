@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7",
+  "frozen_candidate_source_sha256": "528f4a52a34ac4dd3de8133a2fff4dd6c0b56da8be0b4b10c8b6c3b21a4e1e26",
   "base_source_sha256": "e2a79c2965b4558f59b4a0884fc18563a7ee8c6ad17d27d6e5f219856044459c",
-  "raw_jp_overrides_sha256": "aba7816550929ab34d537aa5f297cc9ad364ecba2c8c54981bf092d2e5e73a49",
-  "jp_overrides_sha256": "8a9af036f7af817c26040ed10056babd3fd8f6193562f3195a4fec0d8b01c901",
-  "semantic_css_sha256": "76739e4d912ac1e989fa72a8165eea4c35b88946e2fc89e5c64b8942a44e0f6c",
-  "canonical_override_sha256": "85bc74c5f2bf4e3a3538b9e4d04ac02ce44735fc9cda9750400c8149aaf4952a",
+  "raw_jp_overrides_sha256": "77d91146da1c28d428ee00f9489a58b85df7a1866f5682b05f037dde9f18301c",
+  "jp_overrides_sha256": "fe2d3cd74c461f0bfbd87de4bec767ea673b18fdc5f2d0c6ef0b13df8a5e7698",
+  "semantic_css_sha256": "24e5b668b30852f87280f30fecb4565c875b99fa36ea054ef8f84cff826f737f",
+  "canonical_override_sha256": "abce4424450bdd63324c05b02e836f2ab06a3f92e81739d4002eda2f325e568c",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "5379e2db62a142b3d1c080d9a96c56fefc6b40a52b50a768945ba347e2ef1073",
+  "final_source_sha256": "e3c83b88e401141bcaf210f7179f4d516a48222bbcc102e5938bec7ef1f09f0e",
   "final_source_inputs": {
     "base_sha256": "e2a79c2965b4558f59b4a0884fc18563a7ee8c6ad17d27d6e5f219856044459c",
-    "jp_overrides_sha256": "8a9af036f7af817c26040ed10056babd3fd8f6193562f3195a4fec0d8b01c901"
+    "jp_overrides_sha256": "fe2d3cd74c461f0bfbd87de4bec767ea673b18fdc5f2d0c6ef0b13df8a5e7698"
   },
   "ordered_include_sha256": "957e5b16f3829417edc46d104d12889b420b4e9aecec9f9458acb8d875055849",
   "declaration_reviews": {},
-  "adaptation_block_count": 3,
-  "raw_override_rule_count": 5,
-  "canonical_override_rule_count": 5,
+  "adaptation_block_count": 4,
+  "raw_override_rule_count": 7,
+  "canonical_override_rule_count": 7,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -179,9 +179,8 @@
       "rationale": "The native narrow account region extends 10.71875px off-left under this theme. Bound it to the masthead and allow its links to wrap, preserving the source font scale and wider states.",
       "evidence": [
         {
-          "path": "authority-evidence/isolated-terminal-generated-final-normal-20261002-v2/receipt.json",
-          "sha256": "6b96ff3bbcf2e5dc0cf5a5be5393b8ab0f7db785160b2fdd8355945b96948c3c",
-          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+          "path": "authority-evidence/isolated-terminal-w13-recert-20261028/block-9/receipt.json",
+          "sha256": "a350f710c297d75ff812db89cf26bf692bee9578ae4c7ccece16ab708f2e0bc1"
         }
       ],
       "scope": {
@@ -197,7 +196,7 @@
           "#login-status a"
         ]
       },
-      "published_css_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2"
+      "published_css_sha256": "4b8fb8dd0aca57923f47143d4e2dc55192b35d2173b54b93dfc25785ed1511d8"
     },
     {
       "marker": "SCP-JP Wikidot Isolated Terminal native History: retain form and revision columns inside horizontal scrollers.",
@@ -207,9 +206,8 @@
       "rationale": "The exact native History read responses expand a 320px document to 462px; its filter table still extends 38px after containing the revision list alone. Retain both tables in horizontal scrollers, without claiming filter/diff behavior.",
       "evidence": [
         {
-          "path": "authority-evidence/isolated-terminal-generated-final-history-list-20261002-v2/receipt.json",
-          "sha256": "6d11fcd6178c97b34fb66764a9960bb6b1d0684de6706871137821920209f46e",
-          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+          "path": "authority-evidence/isolated-terminal-w13-recert-20261028/block-10/receipt.json",
+          "sha256": "f9f11a8143267b92d905668cfa70943d463f448d5441291ea3c956940dfe140a"
         }
       ],
       "scope": {
@@ -225,7 +223,7 @@
           "#history-form-1 .form"
         ]
       },
-      "published_css_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2"
+      "published_css_sha256": "4b8fb8dd0aca57923f47143d4e2dc55192b35d2173b54b93dfc25785ed1511d8"
     },
     {
       "marker": "SCP-JP Wikidot Isolated Terminal narrow tables: preserve their columns in an intrinsic-width horizontal scroller.",
@@ -235,9 +233,8 @@
       "rationale": "Anonymous native SCP-JP preview table rows retain the actual Wikidot table DOM. The longer three-column case expands a 320px document to 337px under the source theme. A table-owned horizontal scroller preserves all columns, the source type scale, compact control widths and wider layouts. Authority is preview component geometry in the frozen standard SCP-JP shell, not a saved-page or editing claim.",
       "evidence": [
         {
-          "path": "authority-evidence/isolated-terminal-generated-final-article-table-20261002-v2/receipt.json",
-          "sha256": "d6a0dabc9387fab9d0483e85a76951c34231d1bcfde4ff910617454fea33565f",
-          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+          "path": "authority-evidence/isolated-terminal-w13-recert-20261028/block-11/receipt.json",
+          "sha256": "743444a4f2eb8d736b4efdf717fbec389bfd3b7fef7740976c2a20323d57ba67"
         }
       ],
       "scope": {
@@ -255,7 +252,49 @@
           ".native-table-negative-two table.wiki-content-table"
         ]
       },
-      "published_css_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2"
+      "published_css_sha256": "4b8fb8dd0aca57923f47143d4e2dc55192b35d2173b54b93dfc25785ed1511d8"
+    },
+    {
+      "marker": "SCP-JP Wikidot isolated-terminal narrow files: keep the file table inside the viewport at phone widths.",
+      "rationale": "W13 G2-08/G2-07 family fix, settled in the acceptance frame. G2-07 member: isolated-terminal files rows at 320px (idx 71-72). Before: {\"files\": \"c25d5f87f6\"}. After: {\"files\": \"90508affd834b910ff95a3b841ea1946dcbcd9292acbe0fd862191e99373f7dd\"}. File table headers and the fixture row now render inside the viewport (frame inspected). The G2-07 top-bar item is NOT fixed by the Sigma-bar remedy class (two variants measured byte-identical) and the account-hover item (idx 29) was not reproduced in this session; both are carried as named deferrals in the wave record.",
+      "sha256": "ab7297ac3068a1443c5ff946b88d6ef4a69e9e60721279659c742cec79ff140f",
+      "selectors": [],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/isolated-terminal-files-delta-20261028/receipt.json",
+          "sha256": "8e2b491e599cb595228bb9d7789acbe5b5f488164a2d2ffda6a2163a238035e6"
+        }
+      ],
+      "scope": {
+        "target": "w13-delta",
+        "state": "acceptance-frame"
+      },
+      "published_css_sha256": "4b8fb8dd0aca57923f47143d4e2dc55192b35d2173b54b93dfc25785ed1511d8"
+    },
+    {
+      "marker": "SCP-JP Wikidot isolated-terminal top bar labels: keep top navigation labels whole at narrow widths.",
+      "rationale": "WITHDRAWN in W13 after full measurement: (1) the compound-selector form (#top-bar.mobile-top-bar) matches nothing — .mobile-top-bar is a child of #top-bar — and produced byte-identical frames; (2) the corrected descendant form DOES unbreak the labels in the acceptance frame (b594e4aa... -> 7668c637...), but against the native reference page it breaks the package's three certified blocks: with the block present, the W13 re-certification A/Bs for the narrow-login, native-history, and narrow-tables blocks all FAIL their with-variant bounds at 320 and 390 (they pass without it). An RI block that breaks certified geometry on the reference page cannot ship; the acceptance-frame fragmentation for this package is deferred to a later wave with a remedy that does not disturb the native layout.",
+      "sha256": "8dbe96173891ce6235f278556623dc96a5e63d8259ec3019bb8975d2e7610e73",
+      "selectors": [
+        "#top-bar .mobile-top-bar>ul>li>a"
+      ],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "REMOVE",
+      "evidence": [
+        {
+          "path": "authority-evidence/isolated-terminal-nav-delta-20261028/receipt.json",
+          "sha256": "c8bfade66d26d07774dc9ec40f039c14004803ab1adb6cc162460d12f6dd940b"
+        }
+      ],
+      "scope": {
+        "target": "w13-delta",
+        "state": "acceptance-frame"
+      },
+      "published_css_sha256": "4b8fb8dd0aca57923f47143d4e2dc55192b35d2173b54b93dfc25785ed1511d8"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
@@ -296,6 +335,19 @@
         "@media(max-width:359px)"
       ],
       "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot isolated-terminal narrow files: keep the file table inside the viewport at phone widths.",
+      "rationale": "SCP-JP Wikidot isolated-terminal narrow files: keep the file table inside the viewport at phone widths.",
+      "sha256": "ab7297ac3068a1443c5ff946b88d6ef4a69e9e60721279659c742cec79ff140f",
+      "selectors": [
+        "#action-area table.page-files",
+        "#action-area table.page-files td"
+      ],
+      "at_contexts": [
+        "@media (max-width:767px)"
+      ],
+      "authority": "RUNTIME_INDEPENDENT"
     }
   ]
 }

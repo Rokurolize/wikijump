@@ -19,6 +19,40 @@ const sha256 = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const serialize = value => `${JSON.stringify(value, null, 2)}\n`;
 const DATE = /^\d{4}-\d{2}-\d{2}$/u;
 
+// Extracts the [[include ...]] directives of a theme source. A directive
+// normally ends at its closing ]]; a directive with no closing ]] before the
+// next block opener is unterminated: theme sources carry such a trailing
+// include (the interwiki-style include at the end of skipos's source), and a
+// scan for the first ]] would stretch that match over whatever wikitext or
+// adaptation modules follow it once they supply a ]] of their own, so
+// appended non-include content would masquerade as a changed include
+// surface. An unterminated directive is therefore recorded as its own text
+// up to the next block opener or the end of the source, trimmed of trailing
+// whitespace, which is the same text in both positions.
+export function includeDirectives(sourceText) {
+  const directives = [];
+  let from = 0;
+  for (;;) {
+    const start = sourceText.indexOf('[[include', from);
+    if (start === -1) return directives;
+    const boundary = sourceText[start + '[[include'.length];
+    if (boundary !== undefined && /[A-Za-z0-9_]/u.test(boundary)) {
+      from = start + '[[include'.length;
+      continue;
+    }
+    const close = sourceText.indexOf(']]', start + '[[include'.length);
+    const nextOpen = sourceText.indexOf('[[', start + 2);
+    if (close === -1 || (nextOpen !== -1 && nextOpen < close)) {
+      const end = nextOpen === -1 ? sourceText.length : nextOpen;
+      directives.push(sourceText.slice(start, end).trimEnd());
+      from = end;
+    } else {
+      directives.push(sourceText.slice(start, close + 2));
+      from = close + 2;
+    }
+  }
+}
+
 export function dependencySurface(sourceText, cssText) {
   // An @import match ends at its terminating semicolon or at end of line,
   // whichever comes first. Theme sources carry a trailing @import with no
@@ -28,7 +62,7 @@ export function dependencySurface(sourceText, cssText) {
   // masquerade as a changed import surface. Every @import statement in the
   // theme corpus completes on its own line, so the line bound loses nothing.
   return {
-    includes: [...sourceText.matchAll(/\[\[include\b[\s\S]*?\]\]/gu)].map(match => match[0]),
+    includes: includeDirectives(sourceText),
     source_imports: [...sourceText.matchAll(/@import[^;\n]*/gu)].map(match => match[0]),
     css_imports: [...cssText.matchAll(/@import[^;\n]*/gu)].map(match => match[0]),
   };

@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "c3e4148bc860bab02cdf1ca71cf33f98a128b802de072c61ec185857fe818e1c",
+  "frozen_candidate_source_sha256": "df6265436b06703f428f4df2ee6809634177378d104332f05e252ee77bae26f7",
   "base_source_sha256": "72ef4e7545f439aa9d8a330c566a9489980eafa02cd8e08cff327b7171b3d6aa",
-  "raw_jp_overrides_sha256": "67c3a0867e3d7388201c47b0e7d535a6d2ad94380852c10dd0e965f5a2bc09d2",
-  "jp_overrides_sha256": "9813ec0658990f55a179a7851b4f159ade6f0e0e00308777707640e7be5927f0",
-  "semantic_css_sha256": "351cc7e6eb45c6fb7950a66a8e3f3743a1981a4f44999cb69761568e4cbd3c1c",
-  "canonical_override_sha256": "c9e84aafdd3036f898f24e2f3c8be29aef3ab3cf5a500657d6809f9068ad0d0e",
+  "raw_jp_overrides_sha256": "b89954af393b2717097cbb5ebc5979b11c85cf17a01e3be51d02994a95dd2404",
+  "jp_overrides_sha256": "ad2b0c42291a784662665aef131746aba621dc7f1b309aad47adbc59253cf311",
+  "semantic_css_sha256": "d98b3f4d0934b412539c1e3ace39f7c9c7aec82ed069940ca29ec36ce37c64e7",
+  "canonical_override_sha256": "bcc9abe9443659d2b216e3b077c4fe8ead3df64a3ee40f875b2bd1a368fa4486",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "4b6a72c49ff0e9ba8aa1aebae47e309268e1f24ba3ec043d52bd5fd9991670eb",
+  "final_source_sha256": "c80dafffcbdfba842970aade036d9ccfe1326132be7a860ca9716124bc47ec5c",
   "final_source_inputs": {
     "base_sha256": "72ef4e7545f439aa9d8a330c566a9489980eafa02cd8e08cff327b7171b3d6aa",
-    "jp_overrides_sha256": "9813ec0658990f55a179a7851b4f159ade6f0e0e00308777707640e7be5927f0"
+    "jp_overrides_sha256": "ad2b0c42291a784662665aef131746aba621dc7f1b309aad47adbc59253cf311"
   },
   "ordered_include_sha256": "2f8ee5dd0773ea8801380dae8fbcbb55a1c4b34b4539cb1469ba1c8f46a3b206",
   "declaration_reviews": {},
-  "adaptation_block_count": 4,
-  "raw_override_rule_count": 4,
-  "canonical_override_rule_count": 4,
+  "adaptation_block_count": 6,
+  "raw_override_rule_count": 9,
+  "canonical_override_rule_count": 9,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -407,7 +407,7 @@
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "credit.view"
       },
-      "published_css_sha256": "eaa78c18bc1e583254f9dc0479f9b70e72451eb205efbe2a24c72fcd34f24735"
+      "published_css_sha256": "9050a943386e3975914248717c6a354ea8c88dc45eb06120ae2f58625e3eb70e"
     },
     {
       "marker": "SCP-JP Wikidot space credit rate bar: keep the module layout inside the credit modals so the bar shares its row with the license badge instead of overlapping it.",
@@ -429,7 +429,7 @@
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "credit.view"
       },
-      "published_css_sha256": "eaa78c18bc1e583254f9dc0479f9b70e72451eb205efbe2a24c72fcd34f24735"
+      "published_css_sha256": "9050a943386e3975914248717c6a354ea8c88dc45eb06120ae2f58625e3eb70e"
     },
     {
       "marker": "SCP-JP Wikidot space top bar: keep submenus closed on keyboard focus alone, matching the runtime default menu behavior.",
@@ -451,7 +451,54 @@
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "navigation.focus"
       },
-      "published_css_sha256": "eaa78c18bc1e583254f9dc0479f9b70e72451eb205efbe2a24c72fcd34f24735"
+      "published_css_sha256": "9050a943386e3975914248717c6a354ea8c88dc45eb06120ae2f58625e3eb70e"
+    },
+    {
+      "marker": "SCP-JP Wikidot space credit modals: give the credit modal box a definite width at mobile widths so the otherwise columns do not collapse and the rate bar clears the license badges.",
+      "rationale": "In the Sigma-10 shell the credit modal box shrink-wraps its content inside the grid-centered container: the otherwise box measured 149px wide with a 66px content column at a 390px viewport, so the credit data collapsed to one or two characters per line (S10B-2), and in the credit view the rate bar reached the license-badge corner (S10B-1; the pre-freeze credit-rate correction block is present in the candidate but insufficient in this composition). Giving the modal box a definite width at mobile widths — min(36rem, 100vw - 2rem) — restores the full-width otherwise layout and separates the rate bar from the badges. W13 delta evidence: acceptance-frame captures before/after in the S10 shell (otherwise bc956c07… -> 26081f4e…, view 723d8ce9… -> 1bbb0a90…), narrow-mobile verified, and the S9 shell mobile frames re-captured well-formed with the block.",
+      "sha256": "f7a1d6a86271cc33e8c5b99fabc06be456f8fae6591c3a0bc09fc3997f806755",
+      "selectors": [
+        "[id*=u-credit] .modalbox"
+      ],
+      "at_contexts": [
+        "@media (max-width:768px)"
+      ],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/space-w13-delta-20261028/receipt.json",
+          "sha256": "2f0997113f9e816ac0fe29246764e37b4261746d47e16388655655c801dfb0ac"
+        }
+      ],
+      "scope": {
+        "target": "SCP-JP Sigma-10 migration target acceptance",
+        "state": "credit.otherwise"
+      },
+      "published_css_sha256": "9050a943386e3975914248717c6a354ea8c88dc45eb06120ae2f58625e3eb70e"
+    },
+    {
+      "marker": "SCP-JP Wikidot space narrow history: keep the revision table inside the viewport at phone widths.",
+      "rationale": "G2-08 (D6 family): at 320px the revision table's container measures 331px wide and the comment column is clipped at the viewport edge. The block caps the history container at the viewport width and gives the table a fixed layout at full width with anywhere wrapping, so every column stays inside the viewport and all revision data remains readable (narrow columns wrap hard; two softer distributions were measured and rejected — auto layout collapses the columns pathologically). Acceptance-frame delta: ec2b1c11... (331px, clipped) -> ac982b5a... (280px, complete).",
+      "sha256": "6dee3d6ecb23de8dad649fc9e3f395903c410e9d2324707e3ddb0d02ee68c190",
+      "selectors": [
+        ".page-history",
+        ".page-history table"
+      ],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/space-history-delta-20261028/receipt.json",
+          "sha256": "5844d40d78213eb7ddd5a0604d2fde8aab513ff4d4888c107efbd32741665cd3"
+        }
+      ],
+      "scope": {
+        "target": "w13-delta",
+        "state": "acceptance-frame"
+      },
+      "published_css_sha256": "9050a943386e3975914248717c6a354ea8c88dc45eb06120ae2f58625e3eb70e"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
@@ -496,6 +543,33 @@
         "#top-bar :is(.top-bar,.mobile-top-bar) ul li:focus-within:not(:hover):not(.sfhover) ul"
       ],
       "at_contexts": [],
+      "authority": "RUNTIME_INDEPENDENT"
+    },
+    {
+      "marker": "SCP-JP Wikidot space credit modals: give the credit modal box a definite width at mobile widths so the otherwise columns do not collapse and the rate bar clears the license badges.",
+      "rationale": "SCP-JP Wikidot space credit modals: give the credit modal box a definite width at mobile widths so the otherwise columns do not collapse and the rate bar clears the license badges.",
+      "sha256": "f7a1d6a86271cc33e8c5b99fabc06be456f8fae6591c3a0bc09fc3997f806755",
+      "selectors": [
+        "[id*=u-credit] .modalbox"
+      ],
+      "at_contexts": [
+        "@media (max-width:768px)"
+      ],
+      "authority": "RUNTIME_INDEPENDENT"
+    },
+    {
+      "marker": "SCP-JP Wikidot space narrow history: keep the revision table inside the viewport at phone widths.",
+      "rationale": "SCP-JP Wikidot space narrow history: keep the revision table inside the viewport at phone widths.",
+      "sha256": "6dee3d6ecb23de8dad649fc9e3f395903c410e9d2324707e3ddb0d02ee68c190",
+      "selectors": [
+        ".page-history",
+        ".page-history table",
+        ".page-history td",
+        ".page-history th"
+      ],
+      "at_contexts": [
+        "@media (max-width:767px)"
+      ],
       "authority": "RUNTIME_INDEPENDENT"
     }
   ]

@@ -1460,6 +1460,10 @@ hr {
   background-color:rgb(var(--swatch-primary-darkest));color:rgb(var(--swatch-text-secondary-color));--rating-module-text-color:var(--swatch-text-secondary-color)
 }
 
+[id*=u-credit] .heritage-rating-module .page-rate-widget-box {
+  background-color:transparent;color:rgb(var(--swatch-text-secondary-color))
+}
+
 /* SCP-JP Wikidot redtape dialog headings: keep dialog body headings on the dialog text color so they stay readable on the white dialog ground. */
 #odialog-container .owindow {
   --modal-body-header-txt:var(--bright-accent)

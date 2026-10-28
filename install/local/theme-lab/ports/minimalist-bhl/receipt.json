@@ -29,9 +29,9 @@
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/minimalist-bhl",
-  "candidate_source_hash": "919dbda6c608205b4da445faafbe1ccd8aa274a53f14beaaa53178bb4e22bc9e",
+  "candidate_source_hash": "0ae6dfa09094ed2db9512c085ecffd3c7513464ef799da00e7186a52c9f5df73",
   "source_candidate_path": "install/local/theme-lab/ports/minimalist-bhl/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "919dbda6c608205b4da445faafbe1ccd8aa274a53f14beaaa53178bb4e22bc9e",
+  "source_candidate_sha256": "0ae6dfa09094ed2db9512c085ecffd3c7513464ef799da00e7186a52c9f5df73",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -39,11 +39,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/minimalist-bhl/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "919dbda6c608205b4da445faafbe1ccd8aa274a53f14beaaa53178bb4e22bc9e",
+  "candidate_source_sha256": "0ae6dfa09094ed2db9512c085ecffd3c7513464ef799da00e7186a52c9f5df73",
   "human_port_candidate_path": "install/local/theme-lab/ports/minimalist-bhl/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "66d2b5303c6b5c4530835fd993c8f9a9e48ab9ac15d3d81eb367d17a038a5391",
   "candidate_preview_sha256": "75eb1b618d591224c5fe1e7183c7bd74843e81191ecea125f1b769ec21787aef",
-  "candidate_css_sha256": "c42321624f2b36b8e220a1fd75cfe2fbb10ba4b73af378d0688aff850ada3851",
+  "candidate_css_sha256": "f35aec8f29c8ab4cf5a0a24d27b3ad31f504103404a76fd17a1b149da7f306ab",
   "page_attachment_manifest": null,
   "existing_jp_reconciliation": {
     "previous_source_sha256": "6e5daba96afeb10ce3e4f49bc436920f6c0ba2ac4937c072030c59e43e80f3a0",

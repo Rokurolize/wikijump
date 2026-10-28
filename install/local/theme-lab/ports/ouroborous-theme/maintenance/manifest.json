@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f",
+  "frozen_candidate_source_sha256": "ec5eadaa0d7f13636259c8209ad6f5ab2f20c52a882ed92a59ebcd2f7469299d",
   "base_source_sha256": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f",
-  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "semantic_css_sha256": "ca571c0502db167c5cba7a9efc7f44fa66609f6e1775613bf44183bd7d67e88d",
-  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "raw_jp_overrides_sha256": "7b9c0f2d54931607d458bc9397afb098723c0553634b5fef5b5d407b8b0c4fe8",
+  "jp_overrides_sha256": "def2974c0900300a25832dbe69868ce6ca9de5669f9e87ef5f7d4db0cd9ee80a",
+  "semantic_css_sha256": "dc1651e76a135e57c74a2356cfdd448091442645e0399ac4faf9415cad2a0fdc",
+  "canonical_override_sha256": "af22b6ab9fda0e40ebf3a9d3d8bb062cd1d7bfe1f282c1986e17bd9f42b79a3c",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f",
+  "final_source_sha256": "6b2209bb4f90fcd1a5cb705258ee880bd7b50cdacb74efdff4abaa3e92cc44b8",
   "final_source_inputs": {
     "base_sha256": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "jp_overrides_sha256": "def2974c0900300a25832dbe69868ce6ca9de5669f9e87ef5f7d4db0cd9ee80a"
   },
   "ordered_include_sha256": "c9dbda53003c78fc04da82148ba151d7ec197176f06fdf2df9831a611df1037c",
   "declaration_reviews": {},
-  "adaptation_block_count": 0,
-  "raw_override_rule_count": 0,
-  "canonical_override_rule_count": 0,
+  "adaptation_block_count": 1,
+  "raw_override_rule_count": 2,
+  "canonical_override_rule_count": 2,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -319,8 +319,40 @@
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
         }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot ouroborous top bar labels: keep top navigation labels whole at narrow widths.",
+      "rationale": "W13 trial",
+      "sha256": "e535321fe331ababfdc5e3df58fa5b1ca4dec5a8972d315abb118799725d77f5",
+      "selectors": [],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/ouroborous-q12-delta-20261028/receipt.json",
+          "sha256": "4515e0acea7f9a960b89ac4df3784b5c4b612e6fb6912b81998fbbb6cd9aee65"
+        }
+      ],
+      "scope": {
+        "target": "w13-delta",
+        "state": "acceptance-frame"
+      },
+      "published_css_sha256": "0102ff1156947176ae4bca48829e758982331d11c45df6b7b8f8ef5d453d402e"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
-  "publishable_adaptations": []
+  "publishable_adaptations": [
+    {
+      "marker": "SCP-JP Wikidot ouroborous top bar labels: keep top navigation labels whole at narrow widths.",
+      "rationale": "SCP-JP Wikidot ouroborous top bar labels: keep top navigation labels whole at narrow widths.",
+      "sha256": "e535321fe331ababfdc5e3df58fa5b1ca4dec5a8972d315abb118799725d77f5",
+      "selectors": [
+        "#top-bar .mobile-top-bar>ul>li>a",
+        "#top-bar .top-bar>ul>li>a"
+      ],
+      "at_contexts": [],
+      "authority": "RUNTIME_INDEPENDENT"
+    }
+  ]
 }

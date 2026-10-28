@@ -20,3 +20,6 @@ div#extra-div-6 { width: 100%; left: 18px; overflow-x: clip; }
 @media (min-width: 360px) and (max-width: 767px) {
   #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto !important; right: 0 !important; }
 }
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+/* SCP-JP Wikidot scheme narrow header: shrink the fixed gear emblem clear of the wordmark and the top bar. */
+@media (max-width:480px){div#extra-div-2{width:4.5rem;height:4.5rem;background-size:contain}}

@@ -972,3 +972,13 @@ table.page-files .highlight { background: transparent; }
 /* SCP-JP Wikidot space top bar: keep submenus closed on keyboard focus alone, matching the runtime default menu behavior. */
 #top-bar :is(.top-bar,.mobile-top-bar) ul li:focus-within:not(:hover):not(.sfhover) ul{pointer-events:none;opacity:0}
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot space credit modals: give the credit modal box a definite width at mobile widths so the otherwise columns do not collapse and the rate bar clears the license badges. */
+@media (max-width:768px){[id*=u-credit] .modalbox{width:min(36rem,calc(100vw - 2rem))}}
+[[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot space narrow history: keep the revision table inside the viewport at phone widths. */
+@media (max-width:767px){.page-history{max-width:calc(100vw - 2.5rem)}.page-history table{width:100%;table-layout:fixed}.page-history td,.page-history th{overflow-wrap:anywhere}}
+[[/module]]

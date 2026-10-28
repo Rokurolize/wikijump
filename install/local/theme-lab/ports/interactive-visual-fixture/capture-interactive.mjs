@@ -782,6 +782,16 @@ async function persistBatch(batch,theme){
     // loads its CSS first. Finish them before the action so scroll-into-view
     // and anchor jumps measure the settled layout (setup, not action contract).
     await settleFiniteMeasurementTransitions(page).catch(()=>null);
+    // W13/G2-43: the source-owned acceptance structure is inserted into
+    // #page-content during navigation, but under WebKit the node is gone by
+    // action time (the page-content region is re-rendered after insertion;
+    // Chromium/Firefox settle before it). Re-assert the structure here when
+    // its root element was wiped, so source-owned controls (e.g.
+    // monotypical's sidebar toggle) exist for the action in every engine.
+    if(candidateStructure)await page.evaluate(html=>{
+     const rootId=html.match(/<\w+[^>]*\bid="([^"]+)"/u)?.[1]??null;
+     if(rootId&&!document.getElementById(rootId))document.querySelector('#page-content')?.insertAdjacentHTML('afterbegin',html);
+    },candidateStructure.html);
     phaseStartedAt=performance.now();await spec.action(page);if(runtimeIdentityFailures.length)throw new Error(runtimeIdentityFailures[0]);if(shouldParkPointer(spec))await parkPointer(page,viewports[viewportArg]);phaseDurations.action=Math.round(performance.now()-phaseStartedAt);
     // Hash/DOM assertions can become true before theme CSS transitions settle.
     phaseStartedAt=performance.now();settledAnimationsFinished=spec.surface.startsWith('nav.')?await settleFiniteVisualTransitions(page):0;await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));phaseDurations.visual_settle=Math.round(performance.now()-phaseStartedAt);

@@ -8,5 +8,6 @@
   "pruned_fonts": [],
   "template_placeholders": [],
   "asset_replacements": {},
-  "omitted_assets": []
+  "omitted_assets": [],
+  "dependency_decisions": []
 }

@@ -78,9 +78,9 @@
   ],
   "candidate": {
     "source_path": "../candidate.wikidot.source.txt",
-    "source_sha256": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
+    "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
     "css_path": "../candidate.css",
-    "css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577",
+    "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca",
     "base_css_path": null,
     "base_css_sha256": null
   },

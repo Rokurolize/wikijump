@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "a1224d4197633e7ec643ba2d970ce635ab0327f217e3618ec2383a8f8e2509be",
+  "frozen_candidate_source_sha256": "f2c421f4711c9fac2bae3cc5aaa6e656247599a22182aef2892002b99d6a278f",
   "base_source_sha256": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c",
-  "raw_jp_overrides_sha256": "fbbb682b2c42f2fc8c6dc68d7c7543a80e8b14c9e56de49a662ab9b4738f9544",
-  "jp_overrides_sha256": "80dffad975d239ad50f681142e19d47c4324015be4ea904e7b7a702676a9a3ef",
-  "semantic_css_sha256": "6951de098bf3cb0e512e347933d0326de69f5acceb174230e676b4b3c5839fe2",
-  "canonical_override_sha256": "ce4ab19c2c61418412fd6c39b34b6302ecb9a893292c46d07414022e0d8654eb",
+  "raw_jp_overrides_sha256": "76533dd8bab1dc8d056982643291a9b80b49efc8e5cff4129bafcb46ead6a4b4",
+  "jp_overrides_sha256": "41fa78e3531868fbad99dce719ea0f1d78b2d526c4ea8e99b7a7c5bbb2e05612",
+  "semantic_css_sha256": "dd2dcaf8f1a14bc7b5b372813df4a2f7656886e693ad814eeda22749b59163f9",
+  "canonical_override_sha256": "70bab390e54cec515ab6a5ca83bb92ae41a3430b0283d274026ce9587da4443a",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "25a21d823a84c8e409d4a798b05aedad0d060608619d4ffa907e1f663b042244",
+  "final_source_sha256": "2e01c18bfc206d312f0cd9b52ca489265d6a94110bb3982044204e46c2d94e3e",
   "final_source_inputs": {
     "base_sha256": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c",
-    "jp_overrides_sha256": "80dffad975d239ad50f681142e19d47c4324015be4ea904e7b7a702676a9a3ef"
+    "jp_overrides_sha256": "41fa78e3531868fbad99dce719ea0f1d78b2d526c4ea8e99b7a7c5bbb2e05612"
   },
   "ordered_include_sha256": "ebb5a5fd5da0ba020abdbb0b8ac56809ff6843d5e53e794a17b8dba51d3e9931",
   "declaration_reviews": {},
-  "adaptation_block_count": 2,
-  "raw_override_rule_count": 2,
-  "canonical_override_rule_count": 2,
+  "adaptation_block_count": 3,
+  "raw_override_rule_count": 4,
+  "canonical_override_rule_count": 4,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -288,7 +288,7 @@
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "page.history"
       },
-      "published_css_sha256": "7354a9978b1d5e2dd1134bcfe974282a2fd5c89ef3a897f18eedd798fd0587d9"
+      "published_css_sha256": "05f0a7bfbd9581f913a87093e70ec51d5133efba15b07e34ba1c2f107f797b09"
     },
     {
       "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
@@ -310,7 +310,29 @@
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "credit.otherwise"
       },
-      "published_css_sha256": "7354a9978b1d5e2dd1134bcfe974282a2fd5c89ef3a897f18eedd798fd0587d9"
+      "published_css_sha256": "05f0a7bfbd9581f913a87093e70ec51d5133efba15b07e34ba1c2f107f797b09"
+    },
+    {
+      "marker": "SCP-JP Wikidot aesthetic-theme top bar labels: keep top navigation labels whole at narrow widths.",
+      "rationale": "G2-12 (Q1-2): at 320px the mobile top-bar labels fragment mid-word (the longest label breaks across two lines). word-break:keep-all on the bar anchors — in the descendant selector form, since .mobile-top-bar is a child of #top-bar — keeps every label whole. Acceptance-frame delta: 9c53460aa60e... -> f43e357cdcba... (frame inspected: all four parent labels on one line).",
+      "sha256": "eb7a84111a49aff864b5a0737bac58b3d8c3edf9cb71e33759df73ac6af06004",
+      "selectors": [
+        "#top-bar .mobile-top-bar>ul>li>a"
+      ],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/aesthetic-theme-q12-delta-20261028/receipt.json",
+          "sha256": "c56b3946e59cd346fec2b6fff28c3948ab7b7bce2aa538978dfbdef57a719bd9"
+        }
+      ],
+      "scope": {
+        "target": "w13-delta",
+        "state": "acceptance-frame"
+      },
+      "published_css_sha256": "05f0a7bfbd9581f913a87093e70ec51d5133efba15b07e34ba1c2f107f797b09"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
@@ -331,6 +353,17 @@
       "sha256": "741b04aa4099d6de0c6d70996c006c68a9087c61e24f2ccb2dd67039d7169f9e",
       "selectors": [
         "[id*=u-credit] div.credit-back a"
+      ],
+      "at_contexts": [],
+      "authority": "RUNTIME_INDEPENDENT"
+    },
+    {
+      "marker": "SCP-JP Wikidot aesthetic-theme top bar labels: keep top navigation labels whole at narrow widths.",
+      "rationale": "SCP-JP Wikidot aesthetic-theme top bar labels: keep top navigation labels whole at narrow widths.",
+      "sha256": "eb7a84111a49aff864b5a0737bac58b3d8c3edf9cb71e33759df73ac6af06004",
+      "selectors": [
+        "#top-bar .mobile-top-bar>ul>li>a",
+        "#top-bar .top-bar>ul>li>a"
       ],
       "at_contexts": [],
       "authority": "RUNTIME_INDEPENDENT"

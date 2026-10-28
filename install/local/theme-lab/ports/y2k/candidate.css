@@ -371,3 +371,6 @@ hr {
 @media (max-width: 479px) {
   .scp-image-block.block-right { max-width: calc(100% - 2em - 2px) !important; }
 }
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+/* SCP-JP Wikidot y2k narrow top bar: give the narrow top bar the theme teal ground so its labels stay readable over the halftone band. */
+@media (max-width:767px){#top-bar{background-color:#0c4f47}}

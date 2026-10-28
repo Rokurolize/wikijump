@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "c9987477d0e9079b7b15c55ac608b853e69c970484dc2b5b0e6f3cd6565c442c",
+  "frozen_candidate_source_sha256": "c8f06e137605ffe2ab8249cc2faa0d8d13f795b1574ec64079c96a53af7312ae",
   "base_source_sha256": "c9987477d0e9079b7b15c55ac608b853e69c970484dc2b5b0e6f3cd6565c442c",
-  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "semantic_css_sha256": "f0238fe4ca1385e324049a96296c4b372626fdf0e4aea8acc1f25cac1b98a8d1",
-  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "raw_jp_overrides_sha256": "cad8dc35818dbbfa51e50bffcac91f95c86f67a19971681b6989ca3541fb4988",
+  "jp_overrides_sha256": "3d0aa2796380209197347c70c8c2a6a09ea431530d0c493850fdcaf849ef4882",
+  "semantic_css_sha256": "2c4b9c608b7377ebdf3abb5331aafab15a7c17626ff9cedc0665304757f55539",
+  "canonical_override_sha256": "f2564149b7e1badc45469f5741677f34be64b49660b6ba9940cd1db22696e747",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "c9987477d0e9079b7b15c55ac608b853e69c970484dc2b5b0e6f3cd6565c442c",
+  "final_source_sha256": "fbae38fb518b5c80a6b53596c8e5f3d3a2cbeec2984e8b4b2effed9cad584c0c",
   "final_source_inputs": {
     "base_sha256": "c9987477d0e9079b7b15c55ac608b853e69c970484dc2b5b0e6f3cd6565c442c",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "jp_overrides_sha256": "3d0aa2796380209197347c70c8c2a6a09ea431530d0c493850fdcaf849ef4882"
   },
   "ordered_include_sha256": "07cba71222b02b7ebf25938aea39dec9ff4396dcb13b9d4d079a32ec82f65e99",
   "declaration_reviews": {},
-  "adaptation_block_count": 0,
-  "raw_override_rule_count": 0,
-  "canonical_override_rule_count": 0,
+  "adaptation_block_count": 1,
+  "raw_override_rule_count": 2,
+  "canonical_override_rule_count": 2,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -217,8 +217,42 @@
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
         }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot yossistyle narrow files: keep the file table inside the viewport at phone widths.",
+      "rationale": "W13 G2-08/G2-07 family fix, settled in the acceptance frame. G2-08 member: yossistyle Q1-10 files at 320px (right columns cut off-frame). Before: {\"files\": \"7f53623a913f1acec97c86dc04742b59e49309f721c5ec217f06fd446cd7e475\"}. After: {\"files\": \"3efc8a72b44d1b6128e00f5311cfc44da26e8a7e5db0c26fca7fdf54a83d2daa\"}. All columns visible in-frame after the fix: name wraps, type/size/actions present (frame inspected).",
+      "sha256": "e32216fbd458a9990d4845e6db5d65172b3816f9517ebd7fffa9d96c11e1d19e",
+      "selectors": [],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/yossistyle-files-delta-20261028/receipt.json",
+          "sha256": "81dc6397ddb7e1619fb9fac81c08e0a994fd49d8d50954561f46d8868dd24997"
+        }
+      ],
+      "scope": {
+        "target": "w13-delta",
+        "state": "acceptance-frame"
+      },
+      "published_css_sha256": "c1c711959c75c57b769ef9bdbf294bf60e8b937dc2a6af86b8bd345191ada445"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
-  "publishable_adaptations": []
+  "publishable_adaptations": [
+    {
+      "marker": "SCP-JP Wikidot yossistyle narrow files: keep the file table inside the viewport at phone widths.",
+      "rationale": "SCP-JP Wikidot yossistyle narrow files: keep the file table inside the viewport at phone widths.",
+      "sha256": "e32216fbd458a9990d4845e6db5d65172b3816f9517ebd7fffa9d96c11e1d19e",
+      "selectors": [
+        "#action-area table.page-files",
+        "#action-area table.page-files td"
+      ],
+      "at_contexts": [
+        "@media (max-width:767px)"
+      ],
+      "authority": "RUNTIME_INDEPENDENT"
+    }
+  ]
 }

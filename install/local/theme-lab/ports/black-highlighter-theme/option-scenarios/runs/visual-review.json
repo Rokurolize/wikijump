@@ -1,0 +1,1000 @@
+{
+  "schema": "theme_lab_bhl_option_visual_review.v2",
+  "status": "pass",
+  "reviewer": "Muse visual review",
+  "review_method": "direct visual inspection of labeled contact sheets covering all 82 screenshots (scenario/engine sheets for the full set in the first Freeze-2 round, plus a dedicated sheet of the 27 byte-changed screenshots in this round)",
+  "reviewed_at": "2026-10-28T15:22:49Z",
+  "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+  "source_authority_sha256": "900eac424c3c64c7fa2ad14dae6648dd25cdfff4509d2a6fc5a264031929a86e",
+  "framerail_fingerprint_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
+  "backend_runtime_identity": {
+    "schema": "wikijump_deepwell_runtime_identity.v1",
+    "source_sha256": "2a84ce2e9905e6f1871f3d0732e61f3370500a92bf37cbb2d8825d08366bea4e",
+    "ftml_git_revision": "ef502b8af7cd9a58f7f1b1edf3639f35f48bd982",
+    "container_id": "2d13667a9f60be6f5eb811c50c3be95c6474e9a02f41933c4c07a4d763628b5b",
+    "image_id": "sha256:db7927fa45edfb29992712e3fb33bd7abcf0a294262116da150a6e70f0b133e8",
+    "binary_sha256": "d9f1697f97fce220f6d1004bd86c62a385dfd4327d6165501c20269a95c63618",
+    "config_sha256": "6eeb5715be1ac0d72784a10eb2a821b14995e9d0e29cd886a146e489ff16f638",
+    "identity_sha256": "53c7476f81925cc5d3886606334fae4697c4ea413bc7e932a2762696d9a0baf8"
+  },
+  "backend_runtime_identity_sha256": "53c7476f81925cc5d3886606334fae4697c4ea413bc7e932a2762696d9a0baf8",
+  "candidate_identity": {
+    "theme_candidate_source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
+    "theme_candidate_css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
+  },
+  "classification_counts": {
+    "PASS_NATURAL": 82
+  },
+  "scenarios": [
+    {
+      "id": "bhl-options-toggle-header-dark",
+      "status": "pass",
+      "reviewer": "Muse visual review",
+      "review_method": "direct visual inspection of labeled contact sheets covering all 82 screenshots (scenario/engine sheets for the full set in the first Freeze-2 round, plus a dedicated sheet of the 27 byte-changed screenshots in this round)",
+      "receipts": [
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "sha256": "f7e23a6ca3f013296da52984c99c96ec6c504ab3f351681f405713e0993046bb"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
+          "sha256": "1d8811bae790afb6a0ae27890aeb1797c092d3743ea3cea2585cbbfab53e1321"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
+          "sha256": "203f6ed0f41ce807747180ef3226207ac81797861b936dfe46dd04dcaebb4e3b"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "sha256": "31c58ff441847858bd0a41e6de129e3fa03d6fa19d9477c7c28a59fba9bb8612"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
+          "sha256": "ceadfec11673d04ba84ab3333f533368f598d4f97c5e1d958f4bf37883f4f058"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
+          "sha256": "d49669fe02d1659b432b2e0a0cae9aa715031fc6d6209c08ccc86e47706d071c"
+        }
+      ],
+      "screenshots": [
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-centered-desktop-desktop.png",
+          "sha256": "577014389311b8d312c0c9195767a44efc31602eb641a65f4a0bcc98527b4ea9",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "centered-desktop",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-centered-mobile-mobile.png",
+          "sha256": "41d3170c0bb7ca099217c6c2abfd6854dbbb26ded357e4dec2e382c38844e5ed",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "centered-mobile",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-centered-narrow-narrow-mobile.png",
+          "sha256": "684ce65faae2bd48d2c9c60ffc72e17abd9507f0d133872306272c8258e8abef",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "centered-narrow",
+          "viewport": "narrow-mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-rest-desktop.png",
+          "sha256": "577014389311b8d312c0c9195767a44efc31602eb641a65f4a0bcc98527b4ea9",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "toggle-rest",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-corner-button-open-desktop.png",
+          "sha256": "09ed2d7c96264f3674405bd0cf0db6c6a69badb2a8950470308d84e879447a3a",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "toggle-corner-button-open",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-hover-after-button-open-desktop.png",
+          "sha256": "0c9ed3e695b64cc6280e7e568920902b7d040c968692f1b1e716e1a06f07e77e",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "toggle-hover-after-button-open",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-keyboard-focus-open-desktop.png",
+          "sha256": "d3a94bc91caab4247605040efc8ff6b3bde07d768c4a6d7541ca6e223fee064d",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "toggle-keyboard-focus-open",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-mobile-target-open-mobile.png",
+          "sha256": "d97a178a277714585c50b942c32279974a96ef1e6a4395ebecbf165f3ca62434",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "toggle-mobile-target-open",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-mobile-close-menu-mobile.png",
+          "sha256": "41d3170c0bb7ca099217c6c2abfd6854dbbb26ded357e4dec2e382c38844e5ed",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "toggle-mobile-close-menu",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-narrow-target-open-narrow-mobile.png",
+          "sha256": "082e81bfed088ef969ee26bb249df580de508d32e8546c37f0b215fedbedef65",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "toggle-narrow-target-open",
+          "viewport": "narrow-mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-normal-desktop.png",
+          "sha256": "9896d792953fc5ce0d3e6a468e0a857d7a32d39cb43df4d73b61668d1c1f6e7c",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "dark-normal",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-hover-desktop.png",
+          "sha256": "47973b079653c14dd18fe8a9fc1589bc3a3ab290dcf699e6e967db1b3ec52ef4",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "dark-hover",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-keyboard-focus-desktop.png",
+          "sha256": "3904696a5d94808c730bad00dd8b5397a26cb4f33e9b26b3e679c03609742688",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "dark-keyboard-focus",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-current-desktop.png",
+          "sha256": "0357da7b3f5abe171116d4fc42d11a37287c1c91a1ec181c4ba2fc6642df033f",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "dark-current",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-normal-mobile.png",
+          "sha256": "c270f3e217e0a0ce6eca45af6495f7db77c83607bcc87272f698c474707c8b71",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "dark-mobile-normal",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-keyboard-focus-mobile.png",
+          "sha256": "cb8de4461f5187e776a834a5190d52e5cf071158f7a46aed75ad3e1b10706b5c",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "dark-mobile-keyboard-focus",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-current-mobile.png",
+          "sha256": "878825c32f25483cf35527c44cb4f30cd55020e92c7eb9a3cced4f0bfeeb21ae",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "dark-mobile-current",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-hover-mobile.png",
+          "sha256": "4abe88d337f76c5b22340cc9bfecb58f344a004486a497b520715f2b30d32345",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "dark-mobile-hover",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-corner-button-open-desktop.png",
+          "sha256": "10c19748707d6a1ba648de9bc5ed3b51d0490dcb94b097f2de2927af61a51281",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
+          "state": "toggle-corner-button-open",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-hover-after-button-open-desktop.png",
+          "sha256": "688f98b71b1d656f0735f87bdb900e2bb5267a7a34b29f5b81cebcf0842969f5",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
+          "state": "toggle-hover-after-button-open",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-keyboard-focus-open-desktop.png",
+          "sha256": "a937c0b718b2cb19831a14b23964f9351aade8312b37d55e1dbfe2869934a385",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
+          "state": "toggle-keyboard-focus-open",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-mobile-target-open-mobile.png",
+          "sha256": "979a866cff7c1cad35fe8f9560b18f133abb046b704aec44ae4e14bdf5127d45",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
+          "state": "toggle-mobile-target-open",
+          "viewport": "mobile",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-mobile-close-menu-mobile.png",
+          "sha256": "7ff65be1a7d0aa8311444ea30c261c59a10929bf20ae3350ee149c925cc9b043",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
+          "state": "toggle-mobile-close-menu",
+          "viewport": "mobile",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-corner-button-open-desktop.png",
+          "sha256": "834f82239164977ed4830c936bfefcb4d2364429745d333c90df45b141150f8e",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
+          "state": "toggle-corner-button-open",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-hover-after-button-open-desktop.png",
+          "sha256": "7f1ef01b58f08124e90b29a2d77e8ac8f1b0f0785646097c10e6f165047faeb8",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
+          "state": "toggle-hover-after-button-open",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-keyboard-focus-open-desktop.png",
+          "sha256": "5b6f1bc6258fd178be4e79407286a01f4ba20f8db8f7a8870bc3048e821e114d",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
+          "state": "toggle-keyboard-focus-open",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-mobile-target-open-mobile.png",
+          "sha256": "30717a08a6dac7f8f051b04d71b5ccb4070f4153013318280135ebd34619187e",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
+          "state": "toggle-mobile-target-open",
+          "viewport": "mobile",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-mobile-close-menu-mobile.png",
+          "sha256": "5663fc6d47fd2b3816e3a2a524d8ff0cc2378b64b6b8918a7168e3811b891843",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
+          "state": "toggle-mobile-close-menu",
+          "viewport": "mobile",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-centered-desktop-desktop.png",
+          "sha256": "8b184ce559c7480a71f8026758b97c7f143ed0eed97ac4c446bf0bc22cafbacc",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "centered-desktop",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-centered-mobile-mobile.png",
+          "sha256": "6c196422ec0529358081391867708d3cb3e612cf4bf8a8e8cb510231fd6edfe0",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "centered-mobile",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-centered-narrow-narrow-mobile.png",
+          "sha256": "22bb351762f445f698cc171acb88c6cb5dad7581fe555732c3ad0530dcca8260",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "centered-narrow",
+          "viewport": "narrow-mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-rest-desktop.png",
+          "sha256": "8b184ce559c7480a71f8026758b97c7f143ed0eed97ac4c446bf0bc22cafbacc",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "toggle-rest",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-corner-button-open-desktop.png",
+          "sha256": "80f965c5c844441c5cfe1d307d9ad4840fcfb552ce62e7a4c9315ba16f46cd2e",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "toggle-corner-button-open",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-hover-after-button-open-desktop.png",
+          "sha256": "799ab96b57123daf3a2a8093ddcc7f584ee7eb3ed20c847f5cf5f970fe759a46",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "toggle-hover-after-button-open",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-keyboard-focus-open-desktop.png",
+          "sha256": "7e9ee43180028e19b42e91b41c5c269fb3fdd8906e0a8429447a5c90c7a292f1",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "toggle-keyboard-focus-open",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-mobile-target-open-mobile.png",
+          "sha256": "4323ad86034bed256979c260770fb1715c8f1fd2c9873dd6aa6570bcaea5020a",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "toggle-mobile-target-open",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-mobile-close-menu-mobile.png",
+          "sha256": "6c196422ec0529358081391867708d3cb3e612cf4bf8a8e8cb510231fd6edfe0",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "toggle-mobile-close-menu",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-narrow-target-open-narrow-mobile.png",
+          "sha256": "d784770273e77d92eab81cc2f79dbca8782bc896db2df1991bf5604c566a67c2",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "toggle-narrow-target-open",
+          "viewport": "narrow-mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-normal-desktop.png",
+          "sha256": "b4ae83f9b418190340b4e289b204937e07a30fa53ed7b6a59da3a22d69ca4566",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "dark-normal",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-hover-desktop.png",
+          "sha256": "f4188e2f25dde4637eee40de7d0bbbc636314ddcc36765d8d5ddff16634b485f",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "dark-hover",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-keyboard-focus-desktop.png",
+          "sha256": "e6eb09bac644d51eba677b578579979eb3d6a84323f12df046ef864bb9528db4",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "dark-keyboard-focus",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-current-desktop.png",
+          "sha256": "6ad3757932cc7bf4388bb94e1adaaa0d1f60bc273615d435e7c2efe2bf863351",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "dark-current",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-mobile-normal-mobile.png",
+          "sha256": "b52ba0f591067c54fa675ce4c5d35672ff97e59623385d08da8a48f425bcfe00",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "dark-mobile-normal",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-mobile-keyboard-focus-mobile.png",
+          "sha256": "9208aab88a612e410a704618346dafb7fdbbb1cccd6d4263f4105b0a226e4de8",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "dark-mobile-keyboard-focus",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-mobile-current-mobile.png",
+          "sha256": "431b390a27e5705b25670fc21eafa2381ddf3b383b4c4c4f6ee91c59438cad3c",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "dark-mobile-current",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-mobile-hover-mobile.png",
+          "sha256": "d382f1578a17a527e9baa2bf5677c995912adabd926cab30ab83040f63e79de6",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "dark-mobile-hover",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-corner-button-open-desktop.png",
+          "sha256": "1e474c101e5fb73c192e238cdbbbf0a74f0e1aca06bb052c21b6beafc38d1b4d",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
+          "state": "toggle-corner-button-open",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-hover-after-button-open-desktop.png",
+          "sha256": "21edcfce451396e00395e57f16cdc021dac4664e3856008cfbd8e196a3a13a4a",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
+          "state": "toggle-hover-after-button-open",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-keyboard-focus-open-desktop.png",
+          "sha256": "47d4a799cfa65f5b894e04ca9076bfd5b2d8958cc55530d351e674afdb27a80a",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
+          "state": "toggle-keyboard-focus-open",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-mobile-target-open-mobile.png",
+          "sha256": "ae5c2a605131f42028a16f8eb36ad4ed32ab029e2caba06aa348f348a4e095ab",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
+          "state": "toggle-mobile-target-open",
+          "viewport": "mobile",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-mobile-close-menu-mobile.png",
+          "sha256": "6561f5f4ee9ff7e256116dffa39fcb8b095f4d2fbefd6e137e7e80fefbba9722",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
+          "state": "toggle-mobile-close-menu",
+          "viewport": "mobile",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-corner-button-open-desktop.png",
+          "sha256": "feff32a212266f73e1ace02b4dd40c610c11c7ed4cf6cc8071367fa05d0d4f56",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
+          "state": "toggle-corner-button-open",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-hover-after-button-open-desktop.png",
+          "sha256": "e778528c9d94e1714b4490c564a8954decc68c7eba4ccfc40523105e5c65cab4",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
+          "state": "toggle-hover-after-button-open",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-keyboard-focus-open-desktop.png",
+          "sha256": "648e3b7e33b7ffb1ff12ec45814c8070fdf158d39ef491e7576d8b8e5da3896f",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
+          "state": "toggle-keyboard-focus-open",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-mobile-target-open-mobile.png",
+          "sha256": "a2b7425a37097108389b756c334c091d77818fee03b3d32955b66af887b138ce",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
+          "state": "toggle-mobile-target-open",
+          "viewport": "mobile",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-mobile-close-menu-mobile.png",
+          "sha256": "7809e30735871bd02fcbf6c31be5f62e1e138292e2a2e2439ea4fece23f081a6",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
+          "state": "toggle-mobile-close-menu",
+          "viewport": "mobile",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        }
+      ]
+    },
+    {
+      "id": "bhl-options-collapsible-sidebar",
+      "status": "pass",
+      "reviewer": "Muse visual review",
+      "review_method": "direct visual inspection of labeled contact sheets covering all 82 screenshots (scenario/engine sheets for the full set in the first Freeze-2 round, plus a dedicated sheet of the 27 byte-changed screenshots in this round)",
+      "receipts": [
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
+          "sha256": "ea61bd7df96aa7860860922fde8601a2c9751ed51af923bbfbe13119ebfe477a"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json",
+          "sha256": "92147dcca5af6d1b00b040bfa9b046c4b30f8f4bf3569b46422bd2d30bb49d4a"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json",
+          "sha256": "2a8376c200b78359248868154603f2dae5085157b0a5609bb094c7579489b597"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
+          "sha256": "b804fb5a5d63cfdd13e1fe01cb94572be76278abb771b718c2aa3c66f6089f5d"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json",
+          "sha256": "3eae9167250b359c91b18b40686957d1bf1d8cffafae451b3549d6345e053018"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json",
+          "sha256": "e496f973f8b862ddb8ba840e366903d22224fd94b64ef2afacc799caf44ea7ea"
+        }
+      ],
+      "screenshots": [
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-rest-desktop.png",
+          "sha256": "035722802a82dce2f17cd32df79a073ab5a017314b631d31f1a5db162d3fe419",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
+          "state": "collapsible-rest",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-hover-expanded-desktop.png",
+          "sha256": "e7f5143488b661d04a6eb2510d4fd3d2094026afedb6d1bf5a3220b6ba1a4b12",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
+          "state": "collapsible-hover-expanded",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
+          "sha256": "915747298f57a90ea8e4938ae675aaaf52bac1eb2c0dda63eacbb6720940e644",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
+          "state": "collapsible-keyboard-focus-expanded",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-nested-entry-desktop.png",
+          "sha256": "80188fa33a5c6dfac54cd62b81f48643ed017d08c8a07ba29a8b405d02183f9a",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
+          "state": "collapsible-nested-entry",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-closed-desktop.png",
+          "sha256": "035722802a82dce2f17cd32df79a073ab5a017314b631d31f1a5db162d3fe419",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
+          "state": "collapsible-closed",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-mobile-mobile.png",
+          "sha256": "e70e023f61ce39663ea389f4fa95ab84fda9846cb89e4146f67d989c279ce570",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
+          "state": "collapsible-mobile",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-narrow-mobile-narrow-mobile.png",
+          "sha256": "6d3ebd279fdccea5f93f642a49ae0ef2f89eee864e53e2150d14691148b2bb55",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
+          "state": "collapsible-narrow-mobile",
+          "viewport": "narrow-mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/collapsible-collapsible-hover-expanded-desktop.png",
+          "sha256": "bef72eac435a576b02a1d5a9a8555f0814a100a4b6f4830eec6e323aab1c2b79",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json",
+          "state": "collapsible-hover-expanded",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
+          "sha256": "811566a130cf2197807ebe0696809d666d3022eaecdb84a679e1b0803635eda3",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json",
+          "state": "collapsible-keyboard-focus-expanded",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/collapsible-collapsible-nested-entry-desktop.png",
+          "sha256": "cc96f375ce16a0354e106e553dcbb2ed9cd8d8515444c89f27082aed2bd4a9de",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json",
+          "state": "collapsible-nested-entry",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/collapsible-collapsible-hover-expanded-desktop.png",
+          "sha256": "bb79e07e2de64ec7ca1c77f7886040ddb6da4e07a59e6062871c82bc656040bc",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json",
+          "state": "collapsible-hover-expanded",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
+          "sha256": "8257e5deceb5a7185ec0104b402259343ce13b623666705398410f47b4a1f147",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json",
+          "state": "collapsible-keyboard-focus-expanded",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/collapsible-collapsible-nested-entry-desktop.png",
+          "sha256": "2c3982544e6bb9ab2b70a98805c3bbd8070f04b4e81b2d295570bf23e66901ff",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json",
+          "state": "collapsible-nested-entry",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-rest-desktop.png",
+          "sha256": "944a51c083c3ce7f6aadd89e401a56a75ecfd8f9da4f99ae940b3848b1e4db92",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
+          "state": "collapsible-rest",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-hover-expanded-desktop.png",
+          "sha256": "145a5e905969b20a5a6e99529e9e06ba2fba11b5edd297cb13f8b1f439e44c7a",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
+          "state": "collapsible-hover-expanded",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
+          "sha256": "be4bdfc18a42c8645d1c3057a0809f307b9991f7c1f1490f5651fbc33198e8fb",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
+          "state": "collapsible-keyboard-focus-expanded",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-nested-entry-desktop.png",
+          "sha256": "925d31a5ced7dc38c92c541acfaf5746275e3825b038b46e780831d2d1b5ab31",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
+          "state": "collapsible-nested-entry",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-closed-desktop.png",
+          "sha256": "944a51c083c3ce7f6aadd89e401a56a75ecfd8f9da4f99ae940b3848b1e4db92",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
+          "state": "collapsible-closed",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-mobile-mobile.png",
+          "sha256": "2b18b08cbd3582868278551431023a9f4ec0ddde97f34fb8890b07d356d7e03d",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
+          "state": "collapsible-mobile",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-narrow-mobile-narrow-mobile.png",
+          "sha256": "b8a0d32cd530cfe354926722a6ed27ba1589f6375c5a34671c8a5e765b2a78e5",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
+          "state": "collapsible-narrow-mobile",
+          "viewport": "narrow-mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/collapsible-collapsible-hover-expanded-desktop.png",
+          "sha256": "082ebc2f1a11b34b2090c4545c30d313edb52a386156bcf477aed2ddd12d4297",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json",
+          "state": "collapsible-hover-expanded",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
+          "sha256": "24621b4bca700963bf83ec5565e6957af58b8e09e68a12f1de020b3a2428ba14",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json",
+          "state": "collapsible-keyboard-focus-expanded",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/collapsible-collapsible-nested-entry-desktop.png",
+          "sha256": "cb957289e8e9071b47191353ce50541aa3d1ec461e512faf884e9a847fc61f50",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json",
+          "state": "collapsible-nested-entry",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/collapsible-collapsible-hover-expanded-desktop.png",
+          "sha256": "1165c30a37856f392108e0862ca85cbb8f0dd4089c1df78a9b76f1332d3bc442",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json",
+          "state": "collapsible-hover-expanded",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
+          "sha256": "d032f1e1e553462c1a5925a9ebfc505533705ee7c8e73419fc0bcdea6ab2fe6b",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json",
+          "state": "collapsible-keyboard-focus-expanded",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/collapsible-collapsible-nested-entry-desktop.png",
+          "sha256": "2a962748f400c85f6e73c939bce33e9ef27525d253f79003b2a3c4c656e050cd",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json",
+          "state": "collapsible-nested-entry",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Freeze-2 re-capture under candidate set 9b97b89c (re-cut after the ledger outputs-pin refresh; BHL candidate and runtime unchanged). Directly inspected on the W14 contact sheets: the 55 screenshots byte-identical to the previously inspected round and the 27 re-rendered ones on a dedicated sheet; the fixture renders naturally in this state, no overflow, clipping or missing elements."
+        }
+      ]
+    }
+  ]
+}

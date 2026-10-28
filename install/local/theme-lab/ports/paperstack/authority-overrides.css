@@ -24,3 +24,6 @@
 @media (min-width: 768px) and (max-width: 1023px) {
   #side-bar { overflow-x: auto !important; }
 }
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+/* SCP-JP Wikidot paperstack narrow header: move the top bar below the generated subtitle in the compact header. */
+@media (max-width:767px){#header{padding-bottom:3.6rem}#top-bar{top:9.1rem}#top-bar .top-bar>ul>li>a,#top-bar .mobile-top-bar>ul>li>a{word-break:keep-all;font-size:.85em;padding-left:.25em;padding-right:.25em}}

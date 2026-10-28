@@ -1714,3 +1714,8 @@ div.page-rate-widget-box .rate-points {
 /* SCP-JP Wikidot turbo-vision heading correction: keep wrapped pixel-font headings from striking through at mobile widths. */
 @media (max-width:768px){h1,h2,h3,#page-title{line-height:1.15}}
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot turbo-vision narrow panes: keep the revision and file tables inside the viewport at phone widths. */
+@media (max-width:767px){.page-history{max-width:calc(100vw - 2.5rem)}.page-history table{width:100%;table-layout:fixed}.page-history td,.page-history th{overflow-wrap:anywhere}#action-area table.page-files{width:100%;table-layout:fixed}#action-area table.page-files td{overflow-wrap:anywhere}}
+[[/module]]

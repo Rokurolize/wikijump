@@ -4351,3 +4351,8 @@ tt {
 
 /* SCP-JP Wikidot flopstyle-dark history list: keep the history table inside the content column at narrow widths. */
 @media (max-width:400px){table.page-history{font-size:.8em}}
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot flopstyle-dark narrow submenu: keep the open mobile submenu above the page-title artwork. */
+#top-bar .mobile-top-bar>ul>li>ul{z-index:100}

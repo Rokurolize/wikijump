@@ -1357,3 +1357,6 @@ html {
 
 /* SCP-JP Wikidot Isolated Terminal narrow tables: preserve their columns in an intrinsic-width horizontal scroller. */
 @media(max-width:359px){#page-content table.wiki-content-table{display:block;max-width:100%;overflow-x:auto;width:max-content;}}
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+/* SCP-JP Wikidot isolated-terminal narrow files: keep the file table inside the viewport at phone widths. */
+@media (max-width:767px){#action-area table.page-files{width:100%;table-layout:fixed}#action-area table.page-files td{overflow-wrap:anywhere}}

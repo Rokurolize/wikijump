@@ -52,7 +52,7 @@
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
-    "final_verdict": "warn",
+    "final_verdict": "inconclusive",
     "existing_jp_rebase": {
       "previous_sha256": "da489a08caa3f51ed73125e40b823a1e5e647a711769d6962721ef4a958191d5",
       "previous_snapshot": "existing-jp-pre-rebase-20261005.wikidot.txt",
@@ -99,7 +99,7 @@
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
   "candidate_origin": "current official SCP-JP page source",
-  "final_verdict": "warn",
+  "final_verdict": "inconclusive",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/y2k/assets.json",
   "asset_dependency_decision_count": 3,
@@ -108,11 +108,11 @@
     "jp_overrides": "maintenance/jp-overrides.css",
     "manifest": "maintenance/manifest.json",
     "base_sha256": "de3113777c594f85a686e5cff3a31f22252448db1a5fc70f980bbcce0bf263a1",
-    "jp_overrides_sha256": "9bf2bda1d7a611d947759a558600095c54e645fb1a082e29c69f8753e473c725",
-    "semantic_css_sha256": "14ccc0278bf3e337927b8c365c41d66d2fd9d4bd69a397c4aade9bfc1b994222",
-    "canonical_override_sha256": "8ea2cc39d90a2148c5f4702bc4a830f73be446d8d882cd6dc66b814c7e06e613",
+    "jp_overrides_sha256": "087739d27258faa8e585a730095933b86c117e47281fa7c9839ecbd3cb75698f",
+    "semantic_css_sha256": "7fe86478df5ad18b86a3eaa01b84ed42199ccd0dfdeb95c249673454af9703d4",
+    "canonical_override_sha256": "722638a9c69b72321390bb3b78bc3d86de8ffb8a3673f2ca51cf76d6635ae471",
     "final_source": "maintenance/final.wikidot.txt",
-    "final_source_sha256": "00009eeef6e77b229e63462999bb914629c3920f6644b77add8151d9d0458b34",
+    "final_source_sha256": "8b09fb6e674e1b2b85dddc0ef03d0d5f7522eb0cf8abd87c2bf68135ae88969c",
     "exact_duplicate_rules_removed": 0,
     "redundant_same_value_declarations_removed": 0,
     "empty_rules_removed": 0
@@ -122,7 +122,7 @@
       "source_path": "candidate-input.css",
       "source_sha256": "dc35e32bb86337edae2f7014fde37e03dfeffb2265a3d72e284ea19c7acc361f",
       "active_tags": [],
-      "candidate_source_sha256": "267413c5754294971d048457f9712b6929d5421ffe2d3e54dfa47c47140e8bf0",
+      "candidate_source_sha256": "8e350e9f2a3444e2e8abd1d5a26e2618f91db4ace75e1bcb574a2903d25027f2",
       "candidate_active_tags": [
         "en",
         "テーマ"
@@ -134,7 +134,7 @@
       "inactive_source_css_modules_removed_exact": 0,
       "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "65f2796fb65882751c4b2d521878ddb78a6a542425023a9a83eea30a90a92f5e",
+      "candidate_css_sha256": "450d8184621bdf1a9245790b2b3b32fa388e7e7fe61e7115eb898b0891fe7a6c",
       "asset_receipt_path": "assets.json",
       "assets": 2,
       "imports": 1,
@@ -149,8 +149,7 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "warn",
-    "port_verdict": "pass",
-    "target_status": "warn"
+    "status": "inconclusive",
+    "reason": "Historical candidate acceptance superseded"
   }
 }

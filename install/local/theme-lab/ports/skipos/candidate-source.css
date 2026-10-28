@@ -4,3 +4,7 @@
 
 
 @import url('https://scp-wiki.wdfiles.com/local--code/theme%3Askipos/1');
+
+
+/* SCP-JP Wikidot skipos action-area pane: give the opened action-area pane the theme's own dark glass ground at every width so pane content stays readable over the page. */
+#action-area{background-color:rgb(25 25 39 / .686);backdrop-filter:blur(.75rem) saturate(1.05)}

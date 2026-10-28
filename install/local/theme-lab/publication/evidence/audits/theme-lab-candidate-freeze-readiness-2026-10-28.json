@@ -1,6 +1,6 @@
 {
   "schema": "theme_lab_candidate_freeze_readiness_audit.v1",
-  "generated_at": "2026-10-28T07:46:25Z",
+  "generated_at": "2026-10-28T15:15:50.000Z",
   "decision": "identity-bound-evidence-pending",
   "scope": "Freeze readiness only; Sigma-9, Sigma-10, and final theme visual acceptance are not part of this record.",
   "counts": {
@@ -36,34 +36,34 @@
     },
     "identity_findings": 0,
     "pending_evidence": [
-      "targeted-evidence-missing bhl-options-toggle-header-dark visual review",
-      "targeted-evidence-missing bhl-options-toggle-header-dark receipt",
-      "targeted-evidence-missing bhl-options-toggle-header-dark receipt",
-      "targeted-evidence-missing bhl-options-toggle-header-dark receipt",
-      "targeted-evidence-missing bhl-options-toggle-header-dark receipt",
-      "targeted-evidence-missing bhl-options-toggle-header-dark receipt",
-      "targeted-evidence-missing bhl-options-toggle-header-dark receipt",
-      "targeted-evidence-missing bhl-options-collapsible-sidebar visual review",
-      "targeted-evidence-missing bhl-options-collapsible-sidebar receipt",
-      "targeted-evidence-missing bhl-options-collapsible-sidebar receipt",
-      "targeted-evidence-missing bhl-options-collapsible-sidebar receipt",
-      "targeted-evidence-missing bhl-options-collapsible-sidebar receipt",
-      "targeted-evidence-missing bhl-options-collapsible-sidebar receipt",
-      "targeted-evidence-missing bhl-options-collapsible-sidebar receipt",
-      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-toggle-header-dark: visual review is unavailable: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
-      "validator bhl-options-collapsible-sidebar: visual review is unavailable: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'"
+      "targeted-evidence-stale bhl-options-toggle-header-dark visual review",
+      "targeted-evidence-stale bhl-options-toggle-header-dark receipt",
+      "targeted-evidence-stale bhl-options-toggle-header-dark receipt",
+      "targeted-evidence-stale bhl-options-toggle-header-dark receipt",
+      "targeted-evidence-stale bhl-options-toggle-header-dark receipt",
+      "targeted-evidence-stale bhl-options-toggle-header-dark receipt",
+      "targeted-evidence-stale bhl-options-toggle-header-dark receipt",
+      "targeted-evidence-stale bhl-options-collapsible-sidebar visual review",
+      "targeted-evidence-stale bhl-options-collapsible-sidebar receipt",
+      "targeted-evidence-stale bhl-options-collapsible-sidebar receipt",
+      "targeted-evidence-stale bhl-options-collapsible-sidebar receipt",
+      "targeted-evidence-stale bhl-options-collapsible-sidebar receipt",
+      "targeted-evidence-stale bhl-options-collapsible-sidebar receipt",
+      "targeted-evidence-stale bhl-options-collapsible-sidebar receipt",
+      "validator bhl-options-toggle-header-dark: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+      "validator bhl-options-toggle-header-dark: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
+      "validator bhl-options-toggle-header-dark: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
+      "validator bhl-options-toggle-header-dark: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+      "validator bhl-options-toggle-header-dark: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
+      "validator bhl-options-toggle-header-dark: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
+      "validator bhl-options-toggle-header-dark: visual review is not bound to the frozen candidate/source authority",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json",
+      "validator bhl-options-collapsible-sidebar: visual review is not bound to the frozen candidate/source authority"
     ]
   },
   "source_artifacts": [
@@ -99,15 +99,15 @@
       "node": "theme:aesthetic-theme",
       "action": "update",
       "path": "../ports/aesthetic-theme/candidate.wikidot.source.txt",
-      "source_sha256": "a1224d4197633e7ec643ba2d970ce635ab0327f217e3618ec2383a8f8e2509be",
-      "candidate_css_sha256": "7354a9978b1d5e2dd1134bcfe974282a2fd5c89ef3a897f18eedd798fd0587d9"
+      "source_sha256": "f2c421f4711c9fac2bae3cc5aaa6e656247599a22182aef2892002b99d6a278f",
+      "candidate_css_sha256": "05f0a7bfbd9581f913a87093e70ec51d5133efba15b07e34ba1c2f107f797b09"
     },
     {
       "node": "theme:al-slop",
       "action": "create",
       "path": "../ports/al-slop/candidate.wikidot.source.txt",
-      "source_sha256": "1d9fdc59e8cddb2bee05e562b126686cd7608f50067a5168fec8779bbe74814f",
-      "candidate_css_sha256": "006c85b41da9002e2a701ef3db17185fee4c428e6f5d0e6a338af2d7ce370ee4"
+      "source_sha256": "4954b888b502397c1e8612addfc74dda5c6da91c8fb260ed19f8cdc323f73122",
+      "candidate_css_sha256": "0fb7e246567d58220ee4c98ff4009fa7fad14b2c0a685c0edffeb6a2738a7677"
     },
     {
       "node": "theme:basalt",
@@ -127,8 +127,8 @@
       "node": "theme:black-highlighter-theme",
       "action": "update",
       "path": "../ports/black-highlighter-theme/candidate.wikidot.source.txt",
-      "source_sha256": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
-      "candidate_css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577"
+      "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
+      "candidate_css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
     },
     {
       "node": "theme:classic",
@@ -155,29 +155,29 @@
       "node": "theme:extra-black-highlighter-theme",
       "action": "update",
       "path": "../ports/extra-black-highlighter-theme/candidate.wikidot.source.txt",
-      "source_sha256": "7a58af8257b5d4daba45c3aefaf1542a9e942333f8cbfdd2451c89b3e56bdba7",
-      "candidate_css_sha256": "ffc99c551f35faf592fefb35dcdfa2b7e23c20530bad4a70224b626ca30a62f2"
+      "source_sha256": "b8753485c88e904e91db1e1d54659aca2542ad3cdb9353667d38af1527bc44f6",
+      "candidate_css_sha256": "31e5af9285e5643840ab5f205e6d5d3a4a33726a4649383abc7eb1392c5ed3e9"
     },
     {
       "node": "theme:flopstyle-dark",
       "action": "create",
       "path": "../ports/flopstyle-dark/candidate.wikidot.source.txt",
-      "source_sha256": "ccb1b62f1368db3992b121d43c9a69f493e033e9c9f11a01145326a3b373f905",
-      "candidate_css_sha256": "519d88b43e366531bff3fb2b0a1ff722cb80c444efa952919631f943a4cd8a97"
+      "source_sha256": "a3702c545d95bd13b7ce148c343f482b52f13e3b589933e26682031d4052203d",
+      "candidate_css_sha256": "be744e1d57f1028199f07f0aee70fbd7a96a724c3627dc7a3affdbc23d99108c"
     },
     {
       "node": "theme:foxtrot",
       "action": "update",
       "path": "../ports/foxtrot/candidate.wikidot.source.txt",
-      "source_sha256": "e0bbf7be650005b5f7d5e3893e598e16febd6f06d0bc26fc86f90163520b4e47",
-      "candidate_css_sha256": "db15469bd49cb604c373918859834372b1cfc07b79157c0d66747c8f61c69912"
+      "source_sha256": "1940fcb0c0dc1aebbe9fd6f9c638dc83b07895acda45649ad99dce75bc58b7c8",
+      "candidate_css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a"
     },
     {
       "node": "theme:hansarp",
       "action": "update",
       "path": "../ports/hansarp/candidate.wikidot.source.txt",
-      "source_sha256": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00",
-      "candidate_css_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319"
+      "source_sha256": "64d5227d86a84ab67944599e6b5d5af73a5a898f2ef38c501ecee028d2c7c5ff",
+      "candidate_css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6"
     },
     {
       "node": "theme:inkblot",
@@ -190,22 +190,22 @@
       "node": "theme:isolated-terminal",
       "action": "update",
       "path": "../ports/isolated-terminal/candidate.wikidot.source.txt",
-      "source_sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7",
-      "candidate_css_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2"
+      "source_sha256": "528f4a52a34ac4dd3de8133a2fff4dd6c0b56da8be0b4b10c8b6c3b21a4e1e26",
+      "candidate_css_sha256": "4b8fb8dd0aca57923f47143d4e2dc55192b35d2173b54b93dfc25785ed1511d8"
     },
     {
       "node": "theme:jakstyle",
       "action": "update",
       "path": "../ports/jakstyle/candidate.wikidot.source.txt",
-      "source_sha256": "8a565cdbb3e8c1a7ea9541a82b731cee709554b494b3167a53d092f5559dae35",
-      "candidate_css_sha256": "66c73632860fbbc7cfab07f37eec5f8c3e816b3545988b727b1f4898addab014"
+      "source_sha256": "89034fb9bc67ce6c1df63201c30c98ee546499015aaf44709dcf13e04ff57aff",
+      "candidate_css_sha256": "08367e8d1364e6e976a4dc4acb0ccc4332dac24791e396fb0e508c091058e175"
     },
     {
       "node": "theme:minimalist-bhl",
       "action": "update",
       "path": "../ports/minimalist-bhl/candidate.wikidot.source.txt",
-      "source_sha256": "919dbda6c608205b4da445faafbe1ccd8aa274a53f14beaaa53178bb4e22bc9e",
-      "candidate_css_sha256": "c42321624f2b36b8e220a1fd75cfe2fbb10ba4b73af378d0688aff850ada3851"
+      "source_sha256": "0ae6dfa09094ed2db9512c085ecffd3c7513464ef799da00e7186a52c9f5df73",
+      "candidate_css_sha256": "f35aec8f29c8ab4cf5a0a24d27b3ad31f504103404a76fd17a1b149da7f306ab"
     },
     {
       "node": "theme:monotypical",
@@ -218,8 +218,8 @@
       "node": "theme:much-cool",
       "action": "update",
       "path": "../ports/much-cool/candidate.wikidot.source.txt",
-      "source_sha256": "5b80ba7f55a5f70b6569fef18e95056bf223ec143f7c2ef549d88aba7a3d096a",
-      "candidate_css_sha256": "d6232bbe6f3e7da786f975a4960754dd86b71fdf16abbbc58bd07c2052293468"
+      "source_sha256": "799c546f83e7d257fa8b56067a9779eeebe6bda8e6bbc72a4ccbac100f6d9570",
+      "candidate_css_sha256": "c8b4d4ae7d31b4d9f1f5b2c75f7b898db8371db46ee53781dc4c24b069d4acdb"
     },
     {
       "node": "theme:night-rush-theme",
@@ -232,22 +232,22 @@
       "node": "theme:ouroborous-theme",
       "action": "update",
       "path": "../ports/ouroborous-theme/candidate.wikidot.source.txt",
-      "source_sha256": "0fa23f59bcaafa19dd4cd7bf135cd29e4726de0c507f9357343d23a12a927d2f",
-      "candidate_css_sha256": "e3ca8e1a29abcba717d8e638af2eb2526f85b0ae134cd76918157a2b7f5a3fb1"
+      "source_sha256": "ec5eadaa0d7f13636259c8209ad6f5ab2f20c52a882ed92a59ebcd2f7469299d",
+      "candidate_css_sha256": "0102ff1156947176ae4bca48829e758982331d11c45df6b7b8f8ef5d453d402e"
     },
     {
       "node": "theme:paperstack",
       "action": "update",
       "path": "../ports/paperstack/candidate.wikidot.source.txt",
-      "source_sha256": "b02cb8e8bf5c98d90fc6aa5fccaca2c8fb0c101d6dbc10dd3d94be77ac0471d2",
-      "candidate_css_sha256": "5c388bc9f4e8c9a888c71e72ca59c6dc7a64f5aab0f791f7a789f8478d77e0aa"
+      "source_sha256": "15eebfa9eecd99a5201589d70f239b5f2ab5945936f537c0f53f589e00a8e773",
+      "candidate_css_sha256": "ccc0e9df9f727e6c4ab5c3507839e88b15c75fa216b5a9ccecbdf32ca83f20f7"
     },
     {
       "node": "theme:pataphysics",
       "action": "update",
       "path": "../ports/pataphysics/candidate.wikidot.source.txt",
-      "source_sha256": "6fdcaec9c6a74cf2c3c0c75ac4fac85f010c6733d3fcdf10d3312d8f5470c07b",
-      "candidate_css_sha256": "98f233f2f3161e085fe9c764c87a2e07b95501977e69702236582d1e39923b17"
+      "source_sha256": "626144809c1f3056382d7e0a2af1a8bdaafdf221477536add3cc0eaddc7bcf5d",
+      "candidate_css_sha256": "0be6fc9252a367bd01997ed80d6f454c7cb6cdf19ab202307a9178b84ad53010"
     },
     {
       "node": "theme:penumbra",
@@ -267,15 +267,15 @@
       "node": "theme:redtape",
       "action": "update",
       "path": "../ports/redtape/candidate.wikidot.source.txt",
-      "source_sha256": "c9f511a9c22faa366c11a096a2a068d39d74321e88c038f6b38db00365b3fd84",
-      "candidate_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
+      "source_sha256": "585e429f8a4fd472aed4e190461a23fba689aba968ebc38195971509fffa304e",
+      "candidate_css_sha256": "291cd47505fcdae005459e6ad82f9485cc1a803d32a2d802c6c4721ad7a586d7"
     },
     {
       "node": "theme:scheme",
       "action": "create",
       "path": "../ports/scheme/candidate.wikidot.source.txt",
-      "source_sha256": "292624abd9238b7a3c0cca9fe0f603fbd18476610740084e2b5315a01e8348fc",
-      "candidate_css_sha256": "13b6176aa6fddeeaeaf1a8e493163fe1fa6c8f72888e27d9631a66dfc0950fce"
+      "source_sha256": "dab1d3ddc8805b0e4c3977dbe49876e04e975f43151aa3fb3e70165291599b58",
+      "candidate_css_sha256": "274f0149d9d1d695fd0555d28de09ceb7a0439a310bdd67e3b44c12ba23b2c55"
     },
     {
       "node": "theme:scp-offices-theme",
@@ -288,8 +288,8 @@
       "node": "theme:scpedia",
       "action": "create",
       "path": "../ports/scpedia/candidate.wikidot.source.txt",
-      "source_sha256": "a03ffcf8189adfaf7d9e43fd3084c61957f9f4910a6096b32d9073ad699d70f8",
-      "candidate_css_sha256": "68d1cdb84e515d1c7693a3663d70915f05e7bf5d4de3b9294f7c2a9774b21924"
+      "source_sha256": "7cad349274e80a9710e32526e5366b85e4cec268d04a80fc5b6e80bdc806d41c",
+      "candidate_css_sha256": "137675ef1fc201189336334bde5d9c88b8d38012a1c2d193cfbe5632338f556f"
     },
     {
       "node": "theme:sigma",
@@ -309,22 +309,22 @@
       "node": "theme:skipos",
       "action": "create",
       "path": "../ports/skipos/candidate.wikidot.source.txt",
-      "source_sha256": "d4433a2cdfa61e377dfd7bc925cc61b3add23aade773a891b968acf9a6ec2507",
-      "candidate_css_sha256": "4c937d03bc1365ea16418f20c086048139954971435cabb60cfecb36485dc810"
+      "source_sha256": "5422f618f60c010cf39c702b8d70aff2dd1a889aca66751b27cf887396ca5ea7",
+      "candidate_css_sha256": "db7104e8a069325316c07b8d20b0b1211abfe3b3fe34bc2aea1551a63c38b8cc"
     },
     {
       "node": "theme:space",
       "action": "update",
       "path": "../ports/space/candidate.wikidot.source.txt",
-      "source_sha256": "c3e4148bc860bab02cdf1ca71cf33f98a128b802de072c61ec185857fe818e1c",
-      "candidate_css_sha256": "eaa78c18bc1e583254f9dc0479f9b70e72451eb205efbe2a24c72fcd34f24735"
+      "source_sha256": "df6265436b06703f428f4df2ee6809634177378d104332f05e252ee77bae26f7",
+      "candidate_css_sha256": "9050a943386e3975914248717c6a354ea8c88dc45eb06120ae2f58625e3eb70e"
     },
     {
       "node": "theme:turbo-vision",
       "action": "update",
       "path": "../ports/turbo-vision/candidate.wikidot.source.txt",
-      "source_sha256": "c26d77a0915b873a375a9e0e81dea259889394059ed82c4aacfd6ecf3ffb0c7a",
-      "candidate_css_sha256": "19227e0d6d1d723955040f7b67d75f09cc9897eb30a2abd0b646db315fdc386d"
+      "source_sha256": "8934e7d94e2eb582311c961eaf4042fd01107f7943b9547252e1e5bee08aa3c3",
+      "candidate_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651"
     },
     {
       "node": "theme:wikifot",
@@ -337,15 +337,15 @@
       "node": "theme:y2k",
       "action": "update",
       "path": "../ports/y2k/candidate.wikidot.source.txt",
-      "source_sha256": "267413c5754294971d048457f9712b6929d5421ffe2d3e54dfa47c47140e8bf0",
-      "candidate_css_sha256": "65f2796fb65882751c4b2d521878ddb78a6a542425023a9a83eea30a90a92f5e"
+      "source_sha256": "8e350e9f2a3444e2e8abd1d5a26e2618f91db4ace75e1bcb574a2903d25027f2",
+      "candidate_css_sha256": "450d8184621bdf1a9245790b2b3b32fa388e7e7fe61e7115eb898b0891fe7a6c"
     },
     {
       "node": "theme:yossistyle",
       "action": "create",
       "path": "../ports/yossistyle/candidate.wikidot.source.txt",
-      "source_sha256": "c9987477d0e9079b7b15c55ac608b853e69c970484dc2b5b0e6f3cd6565c442c",
-      "candidate_css_sha256": "84a214fc85344d262727f624b6319e2a4bdfa6537bd49ebd8678d854f009faab"
+      "source_sha256": "c8f06e137605ffe2ab8249cc2faa0d8d13f795b1574ec64079c96a53af7312ae",
+      "candidate_css_sha256": "c1c711959c75c57b769ef9bdbf294bf60e8b937dc2a6af86b8bd345191ada445"
     }
   ],
   "attachments": [
@@ -704,17 +704,17 @@
     {
       "id": "adaptation-authority",
       "path": "ports/adaptation-authority.json",
-      "sha256": "f94437708ab8857e0e2906af22422cf58ee6db6cd133200fd027e46459bf91d1"
+      "sha256": "599b871c310d940f41883eaf7bec4c401dade79b6f2a077a81ca53dfc367bb6c"
     },
     {
       "id": "bhl-option-authority",
       "path": "ports/black-highlighter-theme/option-scenarios/authority.json",
-      "sha256": "9ed3274e1983a98efddd61381588f86baca724a06e59cff05c201b7661e2fe05"
+      "sha256": "900eac424c3c64c7fa2ad14dae6648dd25cdfff4509d2a6fc5a264031929a86e"
     },
     {
       "id": "source-dependency-audit",
       "path": "publication/evidence/audits/theme-lab-source-dependency-freeze-audit-2026-10-28.json",
-      "sha256": "583caca56b49e4159f84638f9829beba23b58b3f517e770d11f1474c605a6a67"
+      "sha256": "defc395ec973c9dd457d2ff21b26e812a8623bde71ee1f48b232010a570bf3e6"
     },
     {
       "id": "foreign-dependency-policy-audit",
@@ -724,7 +724,7 @@
   ],
   "freeze_record": {
     "state": "frozen-before-final-acceptance",
-    "candidate_set_sha256": "867aafeb5615d006950c5524e2fc1fe7c4c1f9a02e8db3f6011eee1362e277bb",
+    "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
     "final_acceptance": {
       "sigma9": "pending",
       "sigma10": "pending",

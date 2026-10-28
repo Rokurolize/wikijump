@@ -555,4 +555,20 @@ div.page-rate-widget-box {
 div.rate-box-with-credit-button {
   background-color:var(--sp_rate-module-background) !important
 }
+
+/* SCP-JP Wikidot al-slop narrow history: keep the revision table inside the viewport at phone widths. */
+@media (max-width:767px) {
+  .page-history {
+    max-width:calc(100vw - 2.5rem)
+  }
+
+  .page-history table {
+    width:100%;table-layout:fixed
+  }
+
+  .page-history td,
+  .page-history th {
+    overflow-wrap:anywhere
+  }
+}
 [[/module]]
