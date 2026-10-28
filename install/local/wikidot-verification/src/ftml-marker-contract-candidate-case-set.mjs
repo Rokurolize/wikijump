@@ -24,7 +24,7 @@ const REPOSITORY_ROOT = path.resolve(
 const FIXTURE_INDEX =
   "install/local/wikidot-verification/fixtures/ftml-marker-contract/fixtures.json";
 export const RETAINED_CANARY =
-  "install/local/wikidot-verification/fixtures/ftml-marker-contract-canary/canary-summary-ef502b8a.json";
+  "install/local/wikidot-verification/fixtures/ftml-marker-contract-canary/canary-summary-82df3f47.json";
 const CASE_ID = "F1380_FTML_MARKER_CONTRACT";
 const SOURCE_FILES = Object.freeze([
   "deepwell/Cargo.lock",
