@@ -1019,23 +1019,45 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "page.history"
           },
-          "published_css_sha256": "2de5be3997d47471201614d9d4c6251182aee532c5d999a081494b5a647998f4"
+          "published_css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577"
+        },
+        {
+          "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
+          "rationale": "In the otherwise credit dialog the back link (戻る) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
+          "sha256": "741b04aa4099d6de0c6d70996c006c68a9087c61e24f2ccb2dd67039d7169f9e",
+          "selectors": [
+            "[id*=u-credit] div.credit-back a"
+          ],
+          "at_contexts": [],
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/black-highlighter-theme-credit-back-delta-20261028/receipt.json",
+              "sha256": "98fd5f8d58cbe832dad8b765e5eeff82b5346a7fba516639aa1cb2b84badabda"
+            }
+          ],
+          "scope": {
+            "target": "SCP-JP Sigma-9 current target acceptance",
+            "state": "credit.otherwise"
+          },
+          "published_css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
         "candidate-input.css": "2d8dcd8b6835d303b1da6204a56f2fc3539bb9ac0dd37ce35e67c0a7fc489e1f",
-        "authority-overrides.css": "103b972f4d86dda68ae9587178edc7d5b68573c337282935c6cf1c54a72be1d5",
+        "authority-overrides.css": "fbbb682b2c42f2fc8c6dc68d7c7543a80e8b14c9e56de49a662ab9b4738f9544",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd"
       },
       "outputs": {
-        "candidate.css": "2de5be3997d47471201614d9d4c6251182aee532c5d999a081494b5a647998f4",
-        "candidate-source.css": "c3f64692b7b7a122992831e7fbde186fe59532e9fbcc04e61c607a7ed437b95c",
-        "candidate.wikidot.source.txt": "9edca59037bc68bad470d8ba41126aaf481dc39928e62be91e1e0ed8f8ac73a2",
-        "candidate.wikidot.txt": "3a14fe45ff7f93ff37848c3b91a18a9c8490b61f844e86286fcc0630e0627c9a",
+        "candidate.css": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577",
+        "candidate-source.css": "ae734eade4ab66aef24de009a29c7afcec4ae3a806e0fa79bf04d91d2a98ef28",
+        "candidate.wikidot.source.txt": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
+        "candidate.wikidot.txt": "854aaac19e41e16d2587380511ab2ddfab6a34addb50eae83bc1e59e52ad4d11",
         "maintenance/base.wikidot.txt": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
-        "maintenance/jp-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "maintenance/final.wikidot.txt": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427"
+        "maintenance/jp-overrides.css": "80dffad975d239ad50f681142e19d47c4324015be4ea904e7b7a702676a9a3ef",
+        "maintenance/final.wikidot.txt": "53af0156492efeb9e000d4aaf3f51fd06ba6aa954e2ec442efbb0cc1c32f0c68"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -6059,26 +6081,48 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "page.history"
           },
-          "published_css_sha256": "8c8dc369fbceb4ec259068032816124cd1fb4d74c303b4eea0440cac83ad5444"
+          "published_css_sha256": "ffc99c551f35faf592fefb35dcdfa2b7e23c20530bad4a70224b626ca30a62f2"
+        },
+        {
+          "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
+          "rationale": "In the otherwise credit dialog the back link (戻る) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
+          "sha256": "741b04aa4099d6de0c6d70996c006c68a9087c61e24f2ccb2dd67039d7169f9e",
+          "selectors": [
+            "[id*=u-credit] div.credit-back a"
+          ],
+          "at_contexts": [],
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/extra-black-highlighter-theme-credit-back-delta-20261028/receipt.json",
+              "sha256": "989604687b461aa1a14a2d7c73034b2cb222b81e0eead954ad45a5e197328ce2"
+            }
+          ],
+          "scope": {
+            "target": "SCP-JP Sigma-9 current target acceptance",
+            "state": "credit.otherwise"
+          },
+          "published_css_sha256": "ffc99c551f35faf592fefb35dcdfa2b7e23c20530bad4a70224b626ca30a62f2"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
         "candidate-input.css": "8dbfc268b989e2afcd15c48f446dfef150a0388569db7d2f63f6bad1eb51fa8d",
-        "authority-overrides.css": "103b972f4d86dda68ae9587178edc7d5b68573c337282935c6cf1c54a72be1d5",
+        "authority-overrides.css": "fbbb682b2c42f2fc8c6dc68d7c7543a80e8b14c9e56de49a662ab9b4738f9544",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/bhl-dark-sidebar.wikidot.txt": "d0966083b843469867ba56a74ed698bb41fb410d7a5ba04da60aa8bea14891b5",
         "source-includes/bhl-dark-sidebar-input.css": "cd3d596a415e550ead1e145717d6d12d583f881a966bc85607571a1d0e2162e0",
         "source-css-includes.json": "f6a3c710e9437604a3ddf49527dbed8f8aab9cdffd26633332c21b4aef2c4d2d"
       },
       "outputs": {
-        "candidate.css": "8c8dc369fbceb4ec259068032816124cd1fb4d74c303b4eea0440cac83ad5444",
-        "candidate-source.css": "3f4bb6d2c0ce702cd5ea26f10037d2e8f2847ee5a4209a8313e8f60cd7223f92",
-        "candidate.wikidot.source.txt": "e12f8970787fca9b6b862d132a0bd97b94811c91c5959c5a5660c231263308fc",
-        "candidate.wikidot.txt": "da2890818409c8d174ccd3f01d119deb2ec0e97a579184f5f878f5938af99e19",
+        "candidate.css": "ffc99c551f35faf592fefb35dcdfa2b7e23c20530bad4a70224b626ca30a62f2",
+        "candidate-source.css": "6eec774ff1af490956cdfe43541d617905dce835bd963909f0a64151b7660b4e",
+        "candidate.wikidot.source.txt": "7a58af8257b5d4daba45c3aefaf1542a9e942333f8cbfdd2451c89b3e56bdba7",
+        "candidate.wikidot.txt": "aca07f08e2b8af3cefa1b95bc19f8ab8737a44fa152426abcd8ffa292ec8f459",
         "maintenance/base.wikidot.txt": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
-        "maintenance/jp-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "maintenance/final.wikidot.txt": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a"
+        "maintenance/jp-overrides.css": "80dffad975d239ad50f681142e19d47c4324015be4ea904e7b7a702676a9a3ef",
+        "maintenance/final.wikidot.txt": "ac543cf236c4c33da09be6ac6a44d1688be537627d7dce24d4e480e07db186d8"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -6355,13 +6399,35 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "page.history"
           },
-          "published_css_sha256": "330963720c8e459b4d1efa2cb7d116bf3020ea3cfd4d46f799e13a46225edfdd"
+          "published_css_sha256": "7354a9978b1d5e2dd1134bcfe974282a2fd5c89ef3a897f18eedd798fd0587d9"
+        },
+        {
+          "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
+          "rationale": "In the otherwise credit dialog the back link (戻る) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
+          "sha256": "741b04aa4099d6de0c6d70996c006c68a9087c61e24f2ccb2dd67039d7169f9e",
+          "selectors": [
+            "[id*=u-credit] div.credit-back a"
+          ],
+          "at_contexts": [],
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/aesthetic-theme-credit-back-delta-20261028/receipt.json",
+              "sha256": "04fbb6958028793ac2ea67aa9b67c487184eaf1888e7edd809297e1024bd7e10"
+            }
+          ],
+          "scope": {
+            "target": "SCP-JP Sigma-9 current target acceptance",
+            "state": "credit.otherwise"
+          },
+          "published_css_sha256": "7354a9978b1d5e2dd1134bcfe974282a2fd5c89ef3a897f18eedd798fd0587d9"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c",
         "candidate-input.css": "e80f23c0464a6a330996706854384cbc909da111cf08a2114af967ca503835d8",
-        "authority-overrides.css": "103b972f4d86dda68ae9587178edc7d5b68573c337282935c6cf1c54a72be1d5",
+        "authority-overrides.css": "fbbb682b2c42f2fc8c6dc68d7c7543a80e8b14c9e56de49a662ab9b4738f9544",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/toggle-sidebar-bhl.wikidot.txt": "212ffc2c275de8baa38b3da02d6e08636d649ea5324e0c9c2e9dab6a313a73dc",
         "source-includes/toggle-sidebar-bhl-input.css": "6a820d809d6029aa94eb1285ae644e0f2e28d03c3656e37ee32f6d4473fed1fb",
@@ -6370,13 +6436,13 @@
         "source-css-includes.json": "270b412dfe1dad38f24cfaaa37d7bb7af01d749f15d1ad7f7aa77b385ee6d022"
       },
       "outputs": {
-        "candidate.css": "330963720c8e459b4d1efa2cb7d116bf3020ea3cfd4d46f799e13a46225edfdd",
-        "candidate-source.css": "e639aae88a31fca799b51f1d9ae423b3d5d3a0d1691e794688ac48989e42df1d",
-        "candidate.wikidot.source.txt": "c4442648bd8ac45e5330011203b5615964246efa60736dc607202532e0e58715",
-        "candidate.wikidot.txt": "e81d43c4d4d599a8e1325205ad65bfede07cffa4a8cace109c527783c0cdd390",
+        "candidate.css": "7354a9978b1d5e2dd1134bcfe974282a2fd5c89ef3a897f18eedd798fd0587d9",
+        "candidate-source.css": "81091ec51e9a9b0c892d230ac75f813834e171d21ac3df075b7c95d130de6e0d",
+        "candidate.wikidot.source.txt": "a1224d4197633e7ec643ba2d970ce635ab0327f217e3618ec2383a8f8e2509be",
+        "candidate.wikidot.txt": "acbcd84dcd1549a467db0df422de3ff0621c39edf429e86748c56333dddd894a",
         "maintenance/base.wikidot.txt": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c",
-        "maintenance/jp-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "maintenance/final.wikidot.txt": "336b7b50a4969b60b1b8926b17975d54fe5f2297ef3354d56c41c20ede8d164c"
+        "maintenance/jp-overrides.css": "80dffad975d239ad50f681142e19d47c4324015be4ea904e7b7a702676a9a3ef",
+        "maintenance/final.wikidot.txt": "25a21d823a84c8e409d4a798b05aedad0d060608619d4ffa907e1f663b042244"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -8631,13 +8697,35 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "page.history"
           },
-          "published_css_sha256": "05717ba414c83af78abfdf2709a9f2a69dc1725583d16ef072b1be73fda6026e"
+          "published_css_sha256": "c42321624f2b36b8e220a1fd75cfe2fbb10ba4b73af378d0688aff850ada3851"
+        },
+        {
+          "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
+          "rationale": "In the otherwise credit dialog the back link (戻る) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
+          "sha256": "741b04aa4099d6de0c6d70996c006c68a9087c61e24f2ccb2dd67039d7169f9e",
+          "selectors": [
+            "[id*=u-credit] div.credit-back a"
+          ],
+          "at_contexts": [],
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/minimalist-bhl-credit-back-delta-20261028/receipt.json",
+              "sha256": "58ce104cf82beb5c078273cd6dad43e71401bd6db7921a1703854d52a2fee599"
+            }
+          ],
+          "scope": {
+            "target": "SCP-JP Sigma-9 current target acceptance",
+            "state": "credit.otherwise"
+          },
+          "published_css_sha256": "c42321624f2b36b8e220a1fd75cfe2fbb10ba4b73af378d0688aff850ada3851"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
         "candidate-input.css": "0255fea88b53187db86d6e6b99703260b9d7fefa32d22dc2442bce95a5a4868f",
-        "authority-overrides.css": "5335a5302c8d2858572fb0addaf646a7814919b0113067fa7e3898043fca03a8",
+        "authority-overrides.css": "add9de09b799f7e806914762f40dec125b97af6ec8bef5ee2e2300c414e5cc5b",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/toggle-sidebar-bhl.wikidot.txt": "212ffc2c275de8baa38b3da02d6e08636d649ea5324e0c9c2e9dab6a313a73dc",
         "source-includes/toggle-sidebar-bhl-input.css": "6a820d809d6029aa94eb1285ae644e0f2e28d03c3656e37ee32f6d4473fed1fb",
@@ -8646,13 +8734,13 @@
         "source-css-includes.json": "270b412dfe1dad38f24cfaaa37d7bb7af01d749f15d1ad7f7aa77b385ee6d022"
       },
       "outputs": {
-        "candidate.css": "05717ba414c83af78abfdf2709a9f2a69dc1725583d16ef072b1be73fda6026e",
-        "candidate-source.css": "fb696263746cd6c979c9c1f33e98c363f9f0449c0f153e31240cb9f59b50f22e",
-        "candidate.wikidot.source.txt": "ea0928053d827e32d43639d5eb6d3367953e81da3b70aee26830b8a88737e7cc",
-        "candidate.wikidot.txt": "90ea3a6c9b8e830c3a9f11bf7f04c74c22d76b64dfb9bdf61c0180e90248215c",
+        "candidate.css": "c42321624f2b36b8e220a1fd75cfe2fbb10ba4b73af378d0688aff850ada3851",
+        "candidate-source.css": "4e3afb71e69f0e9a0f335199d144461231d6739a1aa0cc2a72760e4ff55c9026",
+        "candidate.wikidot.source.txt": "919dbda6c608205b4da445faafbe1ccd8aa274a53f14beaaa53178bb4e22bc9e",
+        "candidate.wikidot.txt": "75eb1b618d591224c5fe1e7183c7bd74843e81191ecea125f1b769ec21787aef",
         "maintenance/base.wikidot.txt": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
-        "maintenance/jp-overrides.css": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "maintenance/final.wikidot.txt": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5"
+        "maintenance/jp-overrides.css": "d84284c97f9c70ab146deb83a08024f3d83ab1e32ad9f5818bb996ecf2ca4f3d",
+        "maintenance/final.wikidot.txt": "bc62294322172c7d5bb72165fcc3e8681dd9247cd94ea8111b06f35287dd493e"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -9631,7 +9719,7 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "page.history"
           },
-          "published_css_sha256": "cb7ac10ab239cbb81824441e470c315f674439ec2f825c76d247cea5abcab545"
+          "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
         },
         {
           "marker": "SCP-JP Wikidot redtape mobile submenu: list the mobile submenu in a single column like the target menu instead of a two-column grid with a dangling empty cell.",
@@ -9653,7 +9741,7 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "navigation.mobile"
           },
-          "published_css_sha256": "cb7ac10ab239cbb81824441e470c315f674439ec2f825c76d247cea5abcab545"
+          "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
         },
         {
           "marker": "SCP-JP Wikidot redtape credit heritage: give the heritage rating module the dark pill ground of the target composition so its label stays readable in the credit modal.",
@@ -9675,7 +9763,7 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "credit.view"
           },
-          "published_css_sha256": "cb7ac10ab239cbb81824441e470c315f674439ec2f825c76d247cea5abcab545"
+          "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
         },
         {
           "marker": "SCP-JP Wikidot redtape dialog headings: keep dialog body headings on the dialog text color so they stay readable on the white dialog ground.",
@@ -9697,13 +9785,35 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "dialog.generic"
           },
-          "published_css_sha256": "cb7ac10ab239cbb81824441e470c315f674439ec2f825c76d247cea5abcab545"
+          "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
+        },
+        {
+          "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
+          "rationale": "In the otherwise credit dialog the back link (戻る) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
+          "sha256": "741b04aa4099d6de0c6d70996c006c68a9087c61e24f2ccb2dd67039d7169f9e",
+          "selectors": [
+            "[id*=u-credit] div.credit-back a"
+          ],
+          "at_contexts": [],
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/redtape-credit-back-delta-20261028/receipt.json",
+              "sha256": "e5e588d3959e8cb73ede63c7235811d820440c1b7202af4c524ec40c43692b50"
+            }
+          ],
+          "scope": {
+            "target": "SCP-JP Sigma-9 current target acceptance",
+            "state": "credit.otherwise"
+          },
+          "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
         "candidate-input.css": "e715aff3bea062e42ab06f0e59259c6319ec716c4defd43623191ead7b0d368b",
-        "authority-overrides.css": "021322e3544e7adbface53f9d05fbf2e68a3301d70e847339a250e3fe65899ea",
+        "authority-overrides.css": "a976ab1e2bbdaf1c1a61e0a4fc2dfd7a4725c17f2d8c96f2b5fdc55d93906328",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/toggle-sidebar-bhl.wikidot.txt": "212ffc2c275de8baa38b3da02d6e08636d649ea5324e0c9c2e9dab6a313a73dc",
         "source-includes/toggle-sidebar-bhl-input.css": "6a820d809d6029aa94eb1285ae644e0f2e28d03c3656e37ee32f6d4473fed1fb",
@@ -9712,13 +9822,13 @@
         "source-css-includes.json": "270b412dfe1dad38f24cfaaa37d7bb7af01d749f15d1ad7f7aa77b385ee6d022"
       },
       "outputs": {
-        "candidate.css": "cb7ac10ab239cbb81824441e470c315f674439ec2f825c76d247cea5abcab545",
-        "candidate-source.css": "60dd9054b3821383756b9df284d358a262327493ed90a4a0ab81f8c6a42ee71c",
-        "candidate.wikidot.source.txt": "269c678c4394a80200fda9fdb25e608a57c1caf20f113f94164f03764eccf278",
-        "candidate.wikidot.txt": "f78c9ef7aaa1e856728e0eebde879fc4633304c0b0d050c60c0815cb57b6372f",
+        "candidate.css": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b",
+        "candidate-source.css": "710fb3f8917865ef6d6234abc40249781a08bf726971613f699ffe23c916e278",
+        "candidate.wikidot.source.txt": "c9f511a9c22faa366c11a096a2a068d39d74321e88c038f6b38db00365b3fd84",
+        "candidate.wikidot.txt": "b82c6664e77bb804770059fceec8e978e3ef4f415f0a6c45cf4ddcedc2675e15",
         "maintenance/base.wikidot.txt": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
-        "maintenance/jp-overrides.css": "16b6447e4c711b07484fb9285bda0102de039c8d94506e7f16f763f34e7e69db",
-        "maintenance/final.wikidot.txt": "5ec19dc4b5f84fae806a47d31a24f0aa8017ba8bc71cfceb185d030a84cf6674"
+        "maintenance/jp-overrides.css": "830bdaa2eaa58771eea194beefbde00034ca5123a0663bfd71b1b0a7c9d819ee",
+        "maintenance/final.wikidot.txt": "d0aa5b01fe3ab2ba3dc32310cfae534c042e49be0e7d94cb0f2a193bc0f55e3c"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",

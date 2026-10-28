@@ -30,9 +30,9 @@
   "existing_jp_audit": "existing-jp-current-and-valid",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/black-highlighter-theme",
-  "candidate_source_hash": "9edca59037bc68bad470d8ba41126aaf481dc39928e62be91e1e0ed8f8ac73a2",
+  "candidate_source_hash": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
   "source_candidate_path": "install/local/theme-lab/ports/black-highlighter-theme/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "9edca59037bc68bad470d8ba41126aaf481dc39928e62be91e1e0ed8f8ac73a2",
+  "source_candidate_sha256": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -40,11 +40,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/black-highlighter-theme/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "9edca59037bc68bad470d8ba41126aaf481dc39928e62be91e1e0ed8f8ac73a2",
+  "candidate_source_sha256": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
   "human_port_candidate_path": "install/local/theme-lab/ports/black-highlighter-theme/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "7ba1e8e7f570dbb8a46f6687c2ab340d576019dece9c0ab8482f846514a356dc",
-  "candidate_preview_sha256": "3a14fe45ff7f93ff37848c3b91a18a9c8490b61f844e86286fcc0630e0627c9a",
-  "candidate_css_sha256": "2de5be3997d47471201614d9d4c6251182aee532c5d999a081494b5a647998f4",
+  "candidate_preview_sha256": "854aaac19e41e16d2587380511ab2ddfab6a34addb50eae83bc1e59e52ad4d11",
+  "candidate_css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577",
   "page_assets": [
     {
       "filename": "black-highlighter-logo.svg",

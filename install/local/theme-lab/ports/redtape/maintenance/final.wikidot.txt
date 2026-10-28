@@ -1464,4 +1464,9 @@ hr {
 #odialog-container .owindow {
   --modal-body-header-txt:var(--bright-accent)
 }
+
+/* SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog. */
+[id*=u-credit] div.credit-back a {
+  white-space:nowrap;flex-shrink:0
+}
 [[/module]]

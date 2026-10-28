@@ -893,3 +893,8 @@ bodyフォントはOpen Sans。
 /* SCP-JP Wikidot page history: keep the history option row within the mobile viewport. */
 #history-form-1>table>tbody>tr:first-child>td:nth-of-type(2){grid-template-columns:repeat(3,1fr)}
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog. */
+[id*=u-credit] div.credit-back a{white-space:nowrap;flex-shrink:0}
+[[/module]]
