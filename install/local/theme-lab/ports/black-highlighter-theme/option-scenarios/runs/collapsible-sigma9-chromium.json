@@ -4,7 +4,7 @@
   "baseline": "Sigma-9",
   "browser_engine": "chromium",
   "browser_version": "156.0.8078.4",
-  "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
+  "candidate_set_sha256": "534421af85cd46116df4b286da8f6702c2ee2fd3e07519189f7d21c55cf3d9a2",
   "candidate_set_state": "frozen-before-final-acceptance",
   "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
   "transport_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3410",
@@ -47,7 +47,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
+      "candidate_set_sha256": "534421af85cd46116df4b286da8f6702c2ee2fd3e07519189f7d21c55cf3d9a2",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -145,17 +145,17 @@
           "header": true
         },
         "sidebar": {
-          "x": -9.257156372070312,
+          "x": -9.2275390625,
           "y": 150,
           "width": 270.421875,
           "height": 900,
-          "left": -9.257156372070312,
-          "right": 261.1647186279297,
+          "left": -9.2275390625,
+          "right": 261.1943359375,
           "top": 150,
           "bottom": 1050,
           "inline_style": null,
           "left_css": "0px",
-          "transform": "matrix(1, 0, 0, 1, -9.25716, 0)",
+          "transform": "matrix(1, 0, 0, 1, -9.22754, 0)",
           "position": "sticky",
           "display": "flex",
           "pointerEvents": "auto",
@@ -1575,12 +1575,12 @@
             "display": "flex",
             "visibility": "visible",
             "rect": {
-              "x": -4.6321563720703125,
+              "x": -4.6025390625,
               "y": 232,
-              "width": 250.70314025878906,
+              "width": 250.703125,
               "height": 24,
-              "left": -4.6321563720703125,
-              "right": 246.07098388671875,
+              "left": -4.6025390625,
+              "right": 246.1005859375,
               "top": 232,
               "bottom": 256
             }
@@ -1591,12 +1591,12 @@
             "outlineColor": "rgb(12, 12, 12)",
             "outlineStyle": "none",
             "rect": {
-              "x": -4.6321563720703125,
+              "x": -4.6025390625,
               "y": 208,
-              "width": 250.70314025878906,
+              "width": 250.703125,
               "height": 24,
-              "left": -4.6321563720703125,
-              "right": 246.07098388671875,
+              "left": -4.6025390625,
+              "right": 246.1005859375,
               "top": 208,
               "bottom": 232
             },
@@ -1677,8 +1677,8 @@
             "hit_id": "side-bar",
             "hit_class": "",
             "side_rect": {
-              "left": -1.870452880859375,
-              "right": 267.6764221191406
+              "left": -21.9892578125,
+              "right": 251.9951171875
             }
           }
         ],
@@ -1686,7 +1686,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
+      "candidate_set_sha256": "534421af85cd46116df4b286da8f6702c2ee2fd3e07519189f7d21c55cf3d9a2",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -3310,7 +3310,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
+      "candidate_set_sha256": "534421af85cd46116df4b286da8f6702c2ee2fd3e07519189f7d21c55cf3d9a2",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -4934,7 +4934,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
+      "candidate_set_sha256": "534421af85cd46116df4b286da8f6702c2ee2fd3e07519189f7d21c55cf3d9a2",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -6558,7 +6558,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
+      "candidate_set_sha256": "534421af85cd46116df4b286da8f6702c2ee2fd3e07519189f7d21c55cf3d9a2",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -8182,7 +8182,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
+      "candidate_set_sha256": "534421af85cd46116df4b286da8f6702c2ee2fd3e07519189f7d21c55cf3d9a2",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -8280,16 +8280,16 @@
           "header": true
         },
         "sidebar": {
-          "x": -248.671875,
+          "x": -222.8125,
           "y": 0,
           "width": 209.515625,
           "height": 844,
-          "left": -248.671875,
-          "right": -39.15625,
+          "left": -222.8125,
+          "right": -13.296875,
           "top": 0,
           "bottom": 844,
           "inline_style": null,
-          "left_css": "-248.681px",
+          "left_css": "-222.819px",
           "transform": "none",
           "position": "fixed",
           "display": "block",
@@ -9691,12 +9691,12 @@
             "visibility": "hidden",
             "pointerEvents": "none",
             "rect": {
-              "x": 7.4375,
+              "x": 7.953125,
               "y": 0,
               "width": 596.265625,
               "height": 844,
-              "left": 7.4375,
-              "right": 603.703125,
+              "left": 7.953125,
+              "right": 604.21875,
               "top": 0,
               "bottom": 844
             }
@@ -9710,12 +9710,12 @@
             "display": "flex",
             "visibility": "visible",
             "rect": {
-              "x": -242.171875,
+              "x": -216.3125,
               "y": 56,
               "width": 195.015625,
               "height": 24,
-              "left": -242.171875,
-              "right": -47.15625,
+              "left": -216.3125,
+              "right": -21.296875,
               "top": 56,
               "bottom": 80
             }
@@ -9726,12 +9726,12 @@
             "outlineColor": "rgb(12, 12, 12)",
             "outlineStyle": "none",
             "rect": {
-              "x": -242.171875,
+              "x": -216.3125,
               "y": 32,
               "width": 195.015625,
               "height": 24,
-              "left": -242.171875,
-              "right": -47.15625,
+              "left": -216.3125,
+              "right": -21.296875,
               "top": 32,
               "bottom": 56
             },
@@ -9806,7 +9806,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
+      "candidate_set_sha256": "534421af85cd46116df4b286da8f6702c2ee2fd3e07519189f7d21c55cf3d9a2",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -9904,16 +9904,16 @@
           "header": true
         },
         "sidebar": {
-          "x": -260,
+          "x": -232.015625,
           "y": 0,
           "width": 209.515625,
           "height": 740,
-          "left": -260,
-          "right": -50.484375,
+          "left": -232.015625,
+          "right": -22.5,
           "top": 0,
           "bottom": 740,
           "inline_style": null,
-          "left_css": "-260.009px",
+          "left_css": "-232.027px",
           "transform": "none",
           "position": "fixed",
           "display": "block",
@@ -11315,12 +11315,12 @@
             "visibility": "hidden",
             "pointerEvents": "none",
             "rect": {
-              "x": 7.28125,
+              "x": 7.6875,
               "y": 0,
               "width": 526.265625,
               "height": 740,
-              "left": 7.28125,
-              "right": 533.546875,
+              "left": 7.6875,
+              "right": 533.953125,
               "top": 0,
               "bottom": 740
             }
@@ -11334,12 +11334,12 @@
             "display": "flex",
             "visibility": "visible",
             "rect": {
-              "x": -253.5,
+              "x": -225.515625,
               "y": 56,
               "width": 195.015625,
               "height": 24,
-              "left": -253.5,
-              "right": -58.484375,
+              "left": -225.515625,
+              "right": -30.5,
               "top": 56,
               "bottom": 80
             }
@@ -11350,12 +11350,12 @@
             "outlineColor": "rgb(12, 12, 12)",
             "outlineStyle": "none",
             "rect": {
-              "x": -253.5,
+              "x": -225.515625,
               "y": 32,
               "width": 195.015625,
               "height": 24,
-              "left": -253.5,
-              "right": -58.484375,
+              "left": -225.515625,
+              "right": -30.5,
               "top": 32,
               "bottom": 56
             },
@@ -11379,7 +11379,7 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-narrow-mobile-narrow-mobile.png",
-      "screenshot_sha256": "6d3ebd279fdccea5f93f642a49ae0ef2f89eee864e53e2150d14691148b2bb55",
+      "screenshot_sha256": "1220f6d8d32c2ae4ca90ef1db6d085a7a3e5e485727293ba8c81a710eadf5ef4",
       "candidate": {
         "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
         "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
@@ -11415,5 +11415,5 @@
       "page_errors": []
     }
   ],
-  "receipt_sha256": "9914b434159f17f983827651f70a0f09db8e2fd1499da00e5c47cc58fd465362"
+  "receipt_sha256": "e61683a8674beb1cd424fc811045174f94ae8595f60c12185c36f19970a54d22"
 }

@@ -4,7 +4,7 @@
   "baseline": "Sigma-10",
   "browser_engine": "firefox",
   "browser_version": "157.0",
-  "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
+  "candidate_set_sha256": "534421af85cd46116df4b286da8f6702c2ee2fd3e07519189f7d21c55cf3d9a2",
   "candidate_set_state": "frozen-before-final-acceptance",
   "baseline_css_sha256": "08b5e63699eae178f35fc1958560d4c794a3dd5078bbf5f6f9e72906ac34f87e",
   "transport_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3410",
@@ -49,7 +49,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
+      "candidate_set_sha256": "534421af85cd46116df4b286da8f6702c2ee2fd3e07519189f7d21c55cf3d9a2",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "08b5e63699eae178f35fc1958560d4c794a3dd5078bbf5f6f9e72906ac34f87e",
       "option_stylesheet_rule_count": 23,
@@ -1910,7 +1910,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
+      "candidate_set_sha256": "534421af85cd46116df4b286da8f6702c2ee2fd3e07519189f7d21c55cf3d9a2",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "08b5e63699eae178f35fc1958560d4c794a3dd5078bbf5f6f9e72906ac34f87e",
       "option_stylesheet_rule_count": 23,
@@ -3757,7 +3757,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
+      "candidate_set_sha256": "534421af85cd46116df4b286da8f6702c2ee2fd3e07519189f7d21c55cf3d9a2",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "08b5e63699eae178f35fc1958560d4c794a3dd5078bbf5f6f9e72906ac34f87e",
       "option_stylesheet_rule_count": 23,
@@ -5613,7 +5613,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
+      "candidate_set_sha256": "534421af85cd46116df4b286da8f6702c2ee2fd3e07519189f7d21c55cf3d9a2",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "08b5e63699eae178f35fc1958560d4c794a3dd5078bbf5f6f9e72906ac34f87e",
       "option_stylesheet_rule_count": 23,
@@ -7460,7 +7460,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
+      "candidate_set_sha256": "534421af85cd46116df4b286da8f6702c2ee2fd3e07519189f7d21c55cf3d9a2",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "08b5e63699eae178f35fc1958560d4c794a3dd5078bbf5f6f9e72906ac34f87e",
       "option_stylesheet_rule_count": 23,
@@ -9291,5 +9291,5 @@
       "page_errors": []
     }
   ],
-  "receipt_sha256": "200c5a27361df29c9354273b47f1e1e2c6b9bafeb9c9f54c3065fc7784ac2a58"
+  "receipt_sha256": "5847508c5d78a1107783cfc690669854bd941c89553735e5898006308cab53b8"
 }
