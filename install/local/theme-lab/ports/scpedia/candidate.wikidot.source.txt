@@ -970,3 +970,8 @@ div#action-area h1 {
 /* SCP-JP Wikidot native history list: preserve the seven columns inside their own horizontal scroller. */
 @media(max-width:767px){#revision-list {max-width:100%;overflow-x:auto;}}
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot scpedia narrow header: move the top bar below the subtitle in the compact header. */
+@media (max-width:767px){#header{padding-bottom:3.4rem}#top-bar{top:8.4rem}}
+[[/module]]

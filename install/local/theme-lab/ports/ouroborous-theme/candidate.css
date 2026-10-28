@@ -1090,3 +1090,8 @@ font-display:auto;font-style:normal;font-weight:500;font-stretch:normal;
      }
     }
 }
+
+
+
+/* SCP-JP Wikidot ouroborous top bar labels: keep top navigation labels whole at narrow widths. */
+#top-bar .top-bar>ul>li>a,#top-bar .mobile-top-bar>ul>li>a{word-break:keep-all}
