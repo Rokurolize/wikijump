@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
+  "frozen_candidate_source_sha256": "93bc363be11348c98a5418e62eab30b050159ad3d54b32da96360eb4cac8f97d",
   "base_source_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
-  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "semantic_css_sha256": "50f8103cf890ddb6e62981a4c220ca335e72ea486469173b75ef17df10d60d5b",
-  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "raw_jp_overrides_sha256": "103b972f4d86dda68ae9587178edc7d5b68573c337282935c6cf1c54a72be1d5",
+  "jp_overrides_sha256": "ac229e9c608fd391858d904a6a2ba2580c53659ed734ce520085e02e73506ecf",
+  "semantic_css_sha256": "3944d7e0c0e19699b2ddd7e548e0d19b6c8f4b79fea9982c2c06df440a1f955e",
+  "canonical_override_sha256": "ffe4639710b0f7ff032231ee308f5bb498cdfc9a01a5f1cecc00126f07e15632",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
+  "final_source_sha256": "eac630300735e3e92ec9c255140fa5a24de4b9128277988c80dc8bbbb931bb5c",
   "final_source_inputs": {
     "base_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "jp_overrides_sha256": "ac229e9c608fd391858d904a6a2ba2580c53659ed734ce520085e02e73506ecf"
   },
   "ordered_include_sha256": "150dae8ecd8f3064f5b808b9b5c669821ecbe6ac081ebddca5964e8c1308f4ea",
   "declaration_reviews": {},
-  "adaptation_block_count": 0,
-  "raw_override_rule_count": 0,
-  "canonical_override_rule_count": 0,
+  "adaptation_block_count": 1,
+  "raw_override_rule_count": 1,
+  "canonical_override_rule_count": 1,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -456,8 +456,40 @@
           "sha256": "38a3de3d2a1987b57615dfa215eeaddde2fe31e5ffb5d7ce4f190656c18dcee2"
         }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot page history: keep the history option row within the mobile viewport.",
+      "rationale": "On the SCP-JP Sigma-9 target the verbatim upstream history-form rule lays the option cells out at 442px, overflowing the 390px mobile viewport by 67.5px (134px at 320px) and clipping the row (defect Q1-15, the D1 family; jakstyle was outside the five packages fixed in the D1 batch). The same-target delta receipt shows repeat(3,1fr) clears the overflow at every measured width (320-1440px) with no collateral geometry change outside the history form owning area.",
+      "sha256": "cb507f4e1a05c0b41c534c7238440693fd3b81c3b0316fe6ff00d3539c3e2953",
+      "selectors": [
+        "#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2)"
+      ],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/jakstyle-history-form-delta-20261028/receipt.json",
+          "sha256": "5ed75ee917d2f2d0096b8c940a2d9e6efbf1ac889b484bc57df401769d36dc29"
+        }
+      ],
+      "scope": {
+        "target": "SCP-JP Sigma-9 current target acceptance",
+        "state": "page.history"
+      }
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
-  "publishable_adaptations": []
+  "publishable_adaptations": [
+    {
+      "marker": "SCP-JP Wikidot page history: keep the history option row within the mobile viewport.",
+      "rationale": "SCP-JP Wikidot page history: keep the history option row within the mobile viewport.",
+      "sha256": "cb507f4e1a05c0b41c534c7238440693fd3b81c3b0316fe6ff00d3539c3e2953",
+      "selectors": [
+        "#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2)"
+      ],
+      "at_contexts": [],
+      "authority": "RUNTIME_INDEPENDENT"
+    }
+  ]
 }

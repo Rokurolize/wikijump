@@ -88,6 +88,18 @@ const SCENARIOS = {
     navigation: null,
     replaceLink: true,
   },
+  "jakstyle-history": {
+    origin: "https://scpaiueouiuiuiui.wikijump.localhost:3410",
+    page: "run-owned:theme-lab-visual-acceptance-imported-20260924",
+    widths: [320, 390, 480, 768, 1024, 1440],
+    target: "#history-form-1 table.form",
+    owner: "#action-area",
+    anchors: null,
+    open: {click: "#history-button", wait: "#history-form-1"},
+    stack: ["ports/jakstyle/candidate.css"],
+    navigation: null,
+    replaceLink: true,
+  },
   "extra-bhl-history": {
     origin: "https://scpaiueouiuiuiui.wikijump.localhost:3410",
     page: "run-owned:theme-lab-visual-acceptance-imported-20260924",
