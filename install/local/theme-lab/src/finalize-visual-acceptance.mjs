@@ -28,24 +28,107 @@ export function faithfulDesignExemptionsState(){
 }
 export function loadFaithfulDesignExemptions(){return faithfulDesignExemptionsState().document??{schema:FAITHFUL_DESIGN_EXEMPTIONS_SCHEMA,entries:[]};}
 const FULL_CHECK_MEASUREMENT_KEYS=['overflow_px','document_overflow_px','viewport_escape_px','baseline_overflow_px','baseline_document_overflow_px','baseline_viewport_escape_px'];
-function fullCheckFindingMatches(entry,result,finding){
+// OD-T3-a surface_new_viewport_overflow variant (OWNER-DECISIONS.md
+// OD-T3-a; basis is Q1-4 provenance per TAIL-C1-EVIDENCE.md only: before_px
+// is 0, the frozen EN reference does NOT overflow, and no entry using this
+// variant may claim parity with the reference). The variant is deliberately
+// narrower than the generic matcher: it names the only two packages and the
+// only measurements it can ever waive, additionally binds the candidate
+// preview/base identities and the TL-02 full-check raw result, and binds
+// the finding by a hash of its whole ordered overflow_sources chain instead
+// of any selector pattern or tolerance.
+const SURFACE_NEW_VIEWPORT_OVERFLOW_KIND='surface_new_viewport_overflow';
+const SURFACE_MEASUREMENT_KEYS=['before_px','after_px'];
+const SURFACE_OVERFLOW_PACKAGES=Object.freeze({'ouroborous-theme':Object.freeze({after_px:67,first_source_width:442}),'scp-offices-theme':Object.freeze({after_px:85,first_source_width:460})});
+// Canonical JSON for the overflow_sources chain hash: object keys are
+// sorted lexicographically (UTF-16 code-unit order, the JavaScript default
+// string sort), arrays keep their original order, strings, numbers,
+// booleans and null are encoded exactly as JSON.stringify encodes them,
+// object properties whose value is undefined (or a function/symbol) are
+// omitted and undefined array elements become null, mirroring
+// JSON.stringify. The chain hash is the lowercase hex SHA-256 of the UTF-8
+// encoding of that canonical string for the whole ordered overflow_sources
+// array, duplicates included.
+export function canonicalJson(value){
+ if(value===null||['number','boolean','string'].includes(typeof value))return JSON.stringify(value);
+ if(Array.isArray(value))return `[${value.map(row=>canonicalJson(row)??'null').join(',')}]`;
+ if(typeof value==='object'){
+  const parts=[];
+  for(const key of Object.keys(value).sort()){
+   const encoded=canonicalJson(value[key]);
+   if(encoded!==undefined)parts.push(`${JSON.stringify(key)}:${encoded}`);
+  }
+  return `{${parts.join(',')}}`;
+ }
+ return undefined;
+}
+export function surfaceOverflowSourcesChainSha256(overflowSources){
+ if(!Array.isArray(overflowSources))return null;
+ return sha(canonicalJson(overflowSources));
+}
+// The finding canonical hash is a DISTINCT binding from the chain hash
+// above: it is the lowercase hex SHA-256 of the canonical JSON (same
+// canonicalization as canonicalJson) of the WHOLE finding object as
+// recorded by the full check -- every key, including severity and
+// parity_review -- with one exception: a top-level `exemption` property is
+// excluded, because finalizeVisualAcceptance itself stamps that mark onto
+// the waived finding, and completion re-verification must recompute the
+// same hash over the finalized result. The chain hash is the match key for
+// the overflow_sources chain; this hash binds the entire finding.
+export function surfaceFindingCanonicalSha256(finding){
+ if(!finding||typeof finding!=='object'||Array.isArray(finding))return null;
+ const {exemption:_exemption,...measured}=finding;
+ return sha(canonicalJson(measured));
+}
+function surfaceFirstSourceMatches(source,named){
+ return source?.selector==='table.form'&&source?.tag==='table'&&source?.inside_page_content===false&&
+  Array.isArray(source?.ancestors)&&source.ancestors.length>=2&&source.ancestors[0]==='#history-form-1'&&source.ancestors[1]==='#action-area'&&
+  source?.rect?.width===named.first_source_width&&source?.computed?.width===`${named.first_source_width}px`;
+}
+function surfaceFindingMatches(entry,spec,result,finding,options){
+ const named=SURFACE_OVERFLOW_PACKAGES[entry?.package];
+ if(!named||entry.decision!=='OD-T3-a')return false;
+ if(entry.candidate_preview_sha256!==result?.candidate_preview_sha256)return false;
+ if((entry.candidate_base_css_sha256??null)!==(result?.candidate_base_css_sha256??null))return false;
+ if(typeof entry.full_check_raw_result_sha256!=='string'||!/^[0-9a-f]{64}$/u.test(entry.full_check_raw_result_sha256))return false;
+ const recordedRawResultSha=result?.faithful_design_exemptions?.waivers?.find(row=>row?.entry_id===entry.id)?.full_check_raw_result_sha256??null;
+ const suppliedRawResultSha=options?.fullCheckRawResultSha256??result?.full_check_raw_result_sha256??recordedRawResultSha;
+ if(suppliedRawResultSha!==null&&suppliedRawResultSha!==undefined&&suppliedRawResultSha!==entry.full_check_raw_result_sha256)return false;
+ // A finalized result must record the raw-result binding it was waived
+ // under; completion re-verification cannot take that binding on trust.
+ if(result?.faithful_design_exemptions&&recordedRawResultSha!==entry.full_check_raw_result_sha256)return false;
+ if(spec?.surface!=='page.history'||spec?.state!=='history-list'||spec?.viewport!=='mobile')return false;
+ if(finding?.surface!=='page.history'||finding?.state!=='history-list'||finding?.viewport!=='mobile')return false;
+ if(spec.before_px!==0||spec.after_px!==named.after_px||finding.before_px!==0||finding.after_px!==named.after_px)return false;
+ if(spec.overflow_sources_chain_sha256!==surfaceOverflowSourcesChainSha256(finding.overflow_sources))return false;
+ if(typeof spec.finding_canonical_sha256!=='string'||spec.finding_canonical_sha256!==surfaceFindingCanonicalSha256(finding))return false;
+ if(!surfaceFirstSourceMatches(finding.overflow_sources?.[0],named))return false;
+ const first=spec.overflow_sources_first;
+ if(first?.selector!=='table.form'||first?.tag!=='table'||first?.inside_page_content!==false||first?.width!==named.first_source_width||JSON.stringify(first?.ancestors??[])!==JSON.stringify(['#history-form-1','#action-area']))return false;
+ const selectors=[...new Set((finding.overflow_sources??[]).map(row=>row.selector))].sort();
+ const expected=[...(spec.selectors??[])].sort();
+ return JSON.stringify(selectors)===JSON.stringify(expected);
+}
+function fullCheckFindingMatches(entry,result,finding,options={}){
  if(entry?.instrument!=='full_check_target'||finding?.severity!=='error')return false;
  if(entry.candidate_css_sha256!==result?.candidate_css_sha256||entry.candidate_source_sha256!==result?.candidate_source_sha256)return false;
  if(entry.target_acceptance_contract_sha256!==result?.target_acceptance_contract_sha256)return false;
  if(entry.full_check_input_bindings_sha256!==result?.full_check_input_bindings?.sha256)return false;
- const spec=(entry.findings??[]).find(row=>row.viewport===finding.viewport&&row.kind===finding.kind);
+ const spec=(entry.findings??[]).find(row=>row.viewport===finding.viewport&&row.kind===finding.kind&&(finding.kind!==SURFACE_NEW_VIEWPORT_OVERFLOW_KIND||(row.surface===finding.surface&&row.state===finding.state)));
  if(!spec)return false;
+ if(finding.kind===SURFACE_NEW_VIEWPORT_OVERFLOW_KIND)return surfaceFindingMatches(entry,spec,result,finding,options);
  if(FULL_CHECK_MEASUREMENT_KEYS.some(key=>spec[key]!==finding[key]))return false;
  const selectors=[...new Set((finding.overflow_sources??[]).map(row=>row.selector))].sort();
  const expected=[...(spec.selectors??[])].sort();
  return JSON.stringify(selectors)===JSON.stringify(expected);
 }
-export function matchFullCheckWaivers(document,result){
+
+export function matchFullCheckWaivers(document,result,options={}){
  const target=result?.local_target_acceptance??result?.target_acceptance;
  const waivers=[];
  for(const finding of target?.findings??[]){
   if(finding?.severity!=='error')continue;
-  const entry=(document?.entries??[]).find(candidate=>fullCheckFindingMatches(candidate,result,finding));
+  const entry=(document?.entries??[]).find(candidate=>fullCheckFindingMatches(candidate,result,finding,options));
   if(entry)waivers.push({entry,finding});
  }
  return waivers;
@@ -56,13 +139,25 @@ export function matchFaithfulDesignContainment(document,{theme,observationKey: k
   entry.match?.baseline_overflow_px===baselineOverflowPx&&entry.match?.dependencies_sha256===dependenciesSha256)??null;
 }
 function viewportExplainedByWaivers(result,viewport,waivers){
- const rows=waivers.filter(waiver=>waiver.finding.viewport===viewport);
+ // Surface-kind waivers (OD-T3-a) do not contribute to viewport_status
+ // measurements, so they never explain a viewport row here.
+ const rows=waivers.filter(waiver=>waiver.finding.viewport===viewport&&waiver.finding.kind!==SURFACE_NEW_VIEWPORT_OVERFLOW_KIND);
  if(!rows.length)return false;
  const row=result.viewport_status?.[viewport];
  if(!row)return false;
  return row.viewport_escape_px===Math.max(...rows.map(waiver=>waiver.finding.viewport_escape_px))&&
         row.document_overflow_px===Math.max(...rows.map(waiver=>waiver.finding.document_overflow_px));
 }
+function surfaceWaiverExplainsViewport(result,viewport,waivers){
+ const rows=waivers.filter(waiver=>waiver.finding.viewport===viewport&&waiver.finding.kind===SURFACE_NEW_VIEWPORT_OVERFLOW_KIND);
+ if(!rows.length)return false;
+ const row=result.viewport_status?.[viewport];
+ // The surface finding does not poison viewport_status: for these packages
+ // the mobile row already passes with zero overflow, so the waiver only
+ // records the entry id on that row; it never rewrites a failing row.
+ return !!row&&row.status==='pass'&&row.viewport_escape_px===0&&row.document_overflow_px===0;
+}
+
 export function verifyFaithfulDesignWaivers(result,packageName){
  const failures=[];
  const block=result?.faithful_design_exemptions;
@@ -81,7 +176,7 @@ export function verifyFaithfulDesignWaivers(result,packageName){
  const recorded=(block.waivers??[]).map(waiver=>waiver.entry_id).sort();
  if(JSON.stringify(recomputed)!==JSON.stringify(recorded))failures.push(`${packageName}: recorded faithful-design waivers do not match the current ledger`);
  for(const waiver of block.waivers??[]){
-  const finding=(target?.findings??[]).find(row=>row?.exemption?.entry_id===waiver.entry_id&&row.viewport===waiver.viewport&&row.kind===waiver.kind);
+  const finding=(target?.findings??[]).find(row=>row?.exemption?.entry_id===waiver.entry_id&&row.viewport===waiver.viewport&&row.kind===waiver.kind&&(waiver.kind!==SURFACE_NEW_VIEWPORT_OVERFLOW_KIND||(row.surface===waiver.surface&&row.state===waiver.state)));
   if(!finding)failures.push(`${packageName}: waiver ${waiver.entry_id} has no matching exempted finding`);
   else if(finding.exemption.decision!==waiver.decision)failures.push(`${packageName}: waiver ${waiver.entry_id} records a different decision than its finding`);
   const row=result.viewport_status?.[waiver.viewport];
@@ -129,7 +224,8 @@ export async function finalizeVisualAcceptance({result,review,css,baseCss='',sou
  const visual=summarizeVisual(captures);if(!['pass','warn'].includes(visual.status))throw new Error(`Image review is ${visual.status}`);
  const output=structuredClone(result);
  output.visual={...visual,decision_authority:'SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY'};
- const targetStatus=visual.status==='warn'||target.issue_count>0||target.style_change_count>0||target.torture_changed_component_count>0||tortureVerdict==='warn'?'warn':'pass';
+ // An OD-T3-a surface waiver may raise the target status to warn, never to pass.
+ const targetStatus=visual.status==='warn'||target.issue_count>0||target.style_change_count>0||target.torture_changed_component_count>0||tortureVerdict==='warn'||waivers.some(waiver=>waiver.finding.kind===SURFACE_NEW_VIEWPORT_OVERFLOW_KIND)?'warn':'pass';
  const finalizedTarget={...target,status:targetStatus,visual_status:visual.status};
  if(waivers.length){
   const waivedEntries=new Map(waivers.map(waiver=>[waiver.finding,waiver.entry]));
@@ -149,11 +245,11 @@ export async function finalizeVisualAcceptance({result,review,css,baseCss='',sou
  output.image_review_provenance={schema:'theme_lab_visual_acceptance.v1',review_sha256:sha(JSON.stringify(review)),raw_result_sha256:sha(JSON.stringify(result)),candidate_css_sha256:sha(css),candidate_source_sha256:sha(source),candidate_preview_sha256:sha(preview),candidate_base_css_sha256:baseCss?sha(baseCss):null,scope:'Only exact reviewed image acceptance completed; port decisions and measured target findings are preserved.'};
  if(waivers.length){
   for(const viewport of new Set(waivers.map(waiver=>waiver.finding.viewport))){
-   if(viewportExplainedByWaivers(result,viewport,waivers)){
+   if(viewportExplainedByWaivers(result,viewport,waivers)||surfaceWaiverExplainsViewport(result,viewport,waivers)){
     output.viewport_status[viewport]={...output.viewport_status[viewport],status:'pass',exemption_entry_ids:waivers.filter(waiver=>waiver.finding.viewport===viewport).map(waiver=>waiver.entry.id)};
    }
   }
-  output.faithful_design_exemptions={schema:FAITHFUL_DESIGN_EXEMPTIONS_SCHEMA,ledger_sha256:exemptionState.sha256,waivers:waivers.map(({entry,finding})=>({entry_id:entry.id,decision:entry.decision,kind:finding.kind,viewport:finding.viewport,measured:Object.fromEntries(FULL_CHECK_MEASUREMENT_KEYS.map(key=>[key,finding[key]??null])),viewport_status_original:result.viewport_status?.[finding.viewport]?.status??null,target_status_original:target.status}))};
+  output.faithful_design_exemptions={schema:FAITHFUL_DESIGN_EXEMPTIONS_SCHEMA,ledger_sha256:exemptionState.sha256,waivers:waivers.map(({entry,finding})=>({entry_id:entry.id,decision:entry.decision,kind:finding.kind,viewport:finding.viewport,...(finding.kind===SURFACE_NEW_VIEWPORT_OVERFLOW_KIND?{surface:finding.surface,state:finding.state,full_check_raw_result_sha256:entry.full_check_raw_result_sha256,overflow_sources_chain_sha256:surfaceOverflowSourcesChainSha256(finding.overflow_sources),finding_canonical_sha256:surfaceFindingCanonicalSha256(finding)}:{}),measured:Object.fromEntries((finding.kind===SURFACE_NEW_VIEWPORT_OVERFLOW_KIND?SURFACE_MEASUREMENT_KEYS:FULL_CHECK_MEASUREMENT_KEYS).map(key=>[key,finding[key]??null])),viewport_status_original:result.viewport_status?.[finding.viewport]?.status??null,target_status_original:target.status}))};
  }
  return output;
 }
