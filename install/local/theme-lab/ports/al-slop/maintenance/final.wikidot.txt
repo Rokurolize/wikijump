@@ -550,4 +550,9 @@ div.page-rate-widget-box {
     left:auto;right:0;
   }
 }
+
+/* SCP-JP Wikidot Al Slop rating label: restore the design background behind the white rating points so the score stays readable. */
+div.rate-box-with-credit-button {
+  background-color:var(--sp_rate-module-background) !important
+}
 [[/module]]

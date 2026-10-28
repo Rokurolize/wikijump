@@ -406,7 +406,8 @@
       "scope": {
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "credit.view"
-      }
+      },
+      "published_css_sha256": "eaa78c18bc1e583254f9dc0479f9b70e72451eb205efbe2a24c72fcd34f24735"
     },
     {
       "marker": "SCP-JP Wikidot space credit rate bar: keep the module layout inside the credit modals so the bar shares its row with the license badge instead of overlapping it.",
@@ -427,7 +428,8 @@
       "scope": {
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "credit.view"
-      }
+      },
+      "published_css_sha256": "eaa78c18bc1e583254f9dc0479f9b70e72451eb205efbe2a24c72fcd34f24735"
     },
     {
       "marker": "SCP-JP Wikidot space top bar: keep submenus closed on keyboard focus alone, matching the runtime default menu behavior.",
@@ -448,7 +450,8 @@
       "scope": {
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "navigation.focus"
-      }
+      },
+      "published_css_sha256": "eaa78c18bc1e583254f9dc0479f9b70e72451eb205efbe2a24c72fcd34f24735"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",

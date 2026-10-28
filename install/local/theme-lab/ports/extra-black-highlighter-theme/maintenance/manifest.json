@@ -144,7 +144,7 @@
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "page.history"
       },
-      "published_css_sha256": "8c8dc369fbceb4ec259068032816124cd1fb4d74c303b4eea0440cac83ad5444"
+      "published_css_sha256": "ffc99c551f35faf592fefb35dcdfa2b7e23c20530bad4a70224b626ca30a62f2"
     },
     {
       "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
@@ -165,7 +165,8 @@
       "scope": {
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "credit.otherwise"
-      }
+      },
+      "published_css_sha256": "ffc99c551f35faf592fefb35dcdfa2b7e23c20530bad4a70224b626ca30a62f2"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",

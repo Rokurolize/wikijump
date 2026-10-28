@@ -477,7 +477,7 @@
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "page.history"
       },
-      "published_css_sha256": "de286c1732cb4880ae014859abdb4b070d1677b48401d22ba58ecd4c3c8fd7c8"
+      "published_css_sha256": "66c73632860fbbc7cfab07f37eec5f8c3e816b3545988b727b1f4898addab014"
     },
     {
       "marker": "SCP-JP Wikidot jakstyle files table: keep the file name readable at narrow widths and let the table spill inside its scroll wrapper.",
@@ -502,7 +502,8 @@
       "scope": {
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "page.files"
-      }
+      },
+      "published_css_sha256": "66c73632860fbbc7cfab07f37eec5f8c3e816b3545988b727b1f4898addab014"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",

@@ -210,7 +210,7 @@
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "page.history"
       },
-      "published_css_sha256": "cb7ac10ab239cbb81824441e470c315f674439ec2f825c76d247cea5abcab545"
+      "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
     },
     {
       "marker": "SCP-JP Wikidot redtape mobile submenu: list the mobile submenu in a single column like the target menu instead of a two-column grid with a dangling empty cell.",
@@ -232,7 +232,7 @@
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "navigation.mobile"
       },
-      "published_css_sha256": "cb7ac10ab239cbb81824441e470c315f674439ec2f825c76d247cea5abcab545"
+      "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
     },
     {
       "marker": "SCP-JP Wikidot redtape credit heritage: give the heritage rating module the dark pill ground of the target composition so its label stays readable in the credit modal.",
@@ -254,7 +254,7 @@
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "credit.view"
       },
-      "published_css_sha256": "cb7ac10ab239cbb81824441e470c315f674439ec2f825c76d247cea5abcab545"
+      "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
     },
     {
       "marker": "SCP-JP Wikidot redtape dialog headings: keep dialog body headings on the dialog text color so they stay readable on the white dialog ground.",
@@ -276,7 +276,7 @@
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "dialog.generic"
       },
-      "published_css_sha256": "cb7ac10ab239cbb81824441e470c315f674439ec2f825c76d247cea5abcab545"
+      "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
     },
     {
       "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
@@ -297,7 +297,8 @@
       "scope": {
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "credit.otherwise"
-      }
+      },
+      "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",

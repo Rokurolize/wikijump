@@ -1359,8 +1359,8 @@
         "candidate.wikidot.source.txt": "6538b37accac65ba5c9ae78c88244b48ca447963251ac7e99b58e3d27334b1fc",
         "candidate.wikidot.txt": "84e8437250d8e678be52a6c54fd12dc095fe9a0e9977f20311c5f322729e2924",
         "maintenance/base.wikidot.txt": "9074aca2aa369c62be32ef24e4e5fde31aec7bdf81405ec2dc5f2025cea02343",
-        "maintenance/jp-overrides.css": "5b80b2f9a908df9d19e2f8f3f85bd63768efb2856751e6ce7e09656819894134",
-        "maintenance/final.wikidot.txt": "b19c9514e1a1b4ffc8c045a3803832515df02b2a0dcf03bf0fa340285aa4a555"
+        "maintenance/jp-overrides.css": "5246d94d522c407b9bd779380526e076606539f64aab21833c7cc7ed92f159ae",
+        "maintenance/final.wikidot.txt": "3905cad69bbb34ea3a93e5a27a12c9266ea9e3f73e02171eb2ff880ae0678550"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -2822,8 +2822,8 @@
         "candidate.wikidot.source.txt": "1d9fdc59e8cddb2bee05e562b126686cd7608f50067a5168fec8779bbe74814f",
         "candidate.wikidot.txt": "a9d86eec4a7a303d4969f70d05b53ccfe849d00e6d0235df33389de46cf5daae",
         "maintenance/base.wikidot.txt": "ef64c472fbc4c6add75121aa68283f72d21823b9e7915c493c6c891bac559b70",
-        "maintenance/jp-overrides.css": "fd094532f5134a9b0628032ebbc6909c20e6b684c2eb2dfecee15b3677d97bdd",
-        "maintenance/final.wikidot.txt": "416d5ebf279a8dfd9e94ee8438c4cfa7c528c16fc8b9e7a6f9df6d3bbbec04c8"
+        "maintenance/jp-overrides.css": "94b7fcc631396878ba1252a77883538d51701f911ce4d426ec0b22e410c76b9e",
+        "maintenance/final.wikidot.txt": "a893abb27b3a049aa48200c10a64c147f0e77a819e768bd34ee20275e67204b5"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -3141,8 +3141,8 @@
         "candidate.wikidot.source.txt": "fd0fa6d765b149fc5a1b60a179435d6e20eb34fbf581de3dfb96cb7a8912243e",
         "candidate.wikidot.txt": "54a12171edb8107300f2a6079debb2768b20c68017e0648c32afb16252e4abc3",
         "maintenance/base.wikidot.txt": "9d42eb1414ca870f6a789123ff52f71092564a4eb8df09e699cade2d32f8ff45",
-        "maintenance/jp-overrides.css": "e79ef547b4245d535105989ecc2d9d4815b9a4c03d999a439223af480cebb41b",
-        "maintenance/final.wikidot.txt": "6a31e41e829e560ad343f0dcdf4ff0d40d4f5cd352e4604809a7bc3debffd69b"
+        "maintenance/jp-overrides.css": "45d04d48ce561b2adf834470ea5ade7455348752d8d3ea6ee1ecfcd671ddc7a5",
+        "maintenance/final.wikidot.txt": "b609206bc7b2913d325e64f3b380726335c0f719c60d9457f3a5fdf7906dcf13"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",

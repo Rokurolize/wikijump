@@ -248,9 +248,8 @@
       "rationale": "Frozen real SCP-JP A/B establishes this specific target regression and verifies the minimum correction. Source styling, palette, dimensions, and unrelated menus remain owned by the imported theme.",
       "evidence": [
         {
-          "path": "authority-evidence/flopstyle-dark-rev401-navigation-chromium-20261005/receipt.json",
-          "sha256": "c8cdb36e5af58d3de723f2cbea9784bd353912d96ac6b1d0e83583148b77fed1",
-          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+          "path": "authority-evidence/flopstyle-dark-navigation-recert-20261028/receipt.json",
+          "sha256": "f3e4490eac4c900325577c2312efe23ba9cc14a0a7ffd920e7ba34a9bdf0cfa7"
         }
       ],
       "scope": {
@@ -265,7 +264,7 @@
           "sha256": "bce06e2f87c6962d176e9f54f8bac47815860044b52a16562a139e98a0051b85"
         }
       },
-      "published_css_sha256": "cfb5865dd28e562413dc1cbed44ace29ff4d08eb4bdc8daafcfc87b4e98c8161"
+      "published_css_sha256": "519d88b43e366531bff3fb2b0a1ff722cb80c444efa952919631f943a4cd8a97"
     },
     {
       "marker": "Resolve preserved source CSS component includes",
@@ -299,9 +298,8 @@
       "rationale": "Firefox wraps the native third/fourth parents onto different rows. The Chromium anchors lose the third submenu off-left at 320px and the fourth off-left at 390px; the third hidden menu also expands the 390px document. Scope alternate row endpoints to Firefox and retain the separately certified Chromium behavior.",
       "evidence": [
         {
-          "path": "authority-evidence/flopstyle-dark-rev401-navigation-firefox-20261005/receipt.json",
-          "sha256": "42ecbfbf102bb0cdaf807d697eaf22736947797ea364e87fae6b3bd1313fce71",
-          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+          "path": "authority-evidence/flopstyle-dark-navigation-action-recert-20261028/receipt.json",
+          "sha256": "68e26c36580e5f70ea746afd26947a3ad2a18639eb5de0a695aeb30eb959bc66"
         }
       ],
       "scope": {
@@ -312,7 +310,7 @@
           390
         ]
       },
-      "published_css_sha256": "cfb5865dd28e562413dc1cbed44ace29ff4d08eb4bdc8daafcfc87b4e98c8161"
+      "published_css_sha256": "519d88b43e366531bff3fb2b0a1ff722cb80c444efa952919631f943a4cd8a97"
     },
     {
       "marker": "SCP-JP Wikidot flopstyle-dark history list: keep the history table inside the content column at narrow widths.",
@@ -335,7 +333,8 @@
       "scope": {
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "page.history"
-      }
+      },
+      "published_css_sha256": "519d88b43e366531bff3fb2b0a1ff722cb80c444efa952919631f943a4cd8a97"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
