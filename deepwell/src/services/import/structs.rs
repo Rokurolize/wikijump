@@ -26,13 +26,32 @@ use time::{Date, OffsetDateTime};
 #[derive(Deserialize, Debug)]
 pub struct ImportUser {
     // Required fields
+    /// The user ID of the Wikidot user.
     pub user_id: i32,
+
+    /// The datetime when the Wikidot user was created.
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
+
+    /// The datetime when this Wikidot user was fetched.
+    ///
+    /// The database asserts that this date is strictly later than `created_at`,
+    /// since it's not possible to fetch data about a user that has not yet been
+    /// created. (And especially for these old users, it's been a decade plus
+    /// since the user was created.)
     #[serde(with = "time::serde::rfc3339")]
     pub fetched_at: OffsetDateTime,
+
+    /// The kind of Wikidot user.
+    ///
+    /// This is how we represent an extant user (which has a name and slug),
+    /// or a deleted user (which doesn't usually have a known username).
     #[serde(flatten)]
     pub wikidot_user_type: ImportedUserType,
+
+    /// The blob ID of the Wikidot user's avatar.
+    ///
+    /// This is created as normal with `blob_upload`.
     pub avatar_uploaded_blob_id: Option<String>,
 
     // Biographical fields
@@ -46,8 +65,27 @@ pub struct ImportUser {
     pub is_pro: bool,
 
     // Request metadata
-    // Must be the same as the user who uploaded the avatar blob
+    /// If a `wikidot_user` row with this ID exists, then update its fields.
+    #[serde(default)]
+    pub upsert: bool,
+
+    /// Mark an old `wikidot_user` row as `deleted` if it has a name collision.
+    ///
+    /// In the case where attempting to import this user fails due to a non-unique
+    /// name or slug, but we find that the colliding user has an older `fetched_at`
+    /// value, this indicates that this Wikidot user has since been deleted.
+    ///
+    /// In such a case, if this option is set, then the user is marked as `deleted`
+    /// and we proceed with the new user insert. Otherwise, we raise an error.
+    #[serde(default)]
+    pub delete_old_if_same_name: bool,
+
+    /// The user ID to associate with this request in the audit log.
+    ///
+    /// Note that this must be the same user who uploaded the avatar blob.
     pub importing_user_id: i64,
+
+    /// The IP address to associate with this request in the audit log.
     pub ip_address: IpAddr,
 }
 
@@ -155,6 +193,66 @@ pub struct ImportSiteOutput {
     pub site_id: i64,
 }
 
+/// One member row of an imported Wikidot site roster snapshot.
+/// `user_id` is the stable Wikidot user ID; the identity must already
+/// have been imported (see `ImportUser`) so the stable mapping exists.
+/// Every entry is at least a site member; `roles` carries the public
+/// staff groups the source lists the user in.
+#[derive(Deserialize, Debug, Clone)]
+pub struct ImportSiteMember {
+    pub user_id: i32,
+    #[serde(with = "time::serde::rfc3339")]
+    pub joined_at: OffsetDateTime,
+    #[serde(default)]
+    pub roles: Vec<ImportedSiteRole>,
+}
+
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[serde(rename_all = "kebab-case")]
+pub enum ImportedSiteRole {
+    Moderator,
+    Admin,
+}
+
+/// A full public membership/role roster snapshot for one imported
+/// Wikidot site, as rendered by the source's member directory
+/// (`system:members` and its group lists).
+///
+/// Sync semantics: the snapshot is authoritative for *imported*
+/// relations on the site. Members are upserted with their source join
+/// time, staff role assignments are reconciled to `roles`, and
+/// imported members absent from the snapshot are retired. Locally
+/// owned memberships (relations whose user is a local account) are
+/// never touched. Imported identities remain non-authenticatable;
+/// nothing here creates a local account or grants login rights, and
+/// on a read-only mirror the imported roles describe source state
+/// only.
+#[derive(Deserialize, Debug)]
+pub struct ImportSiteRoster {
+    pub site_id: i64,
+    #[serde(with = "time::serde::rfc3339")]
+    pub fetched_at: OffsetDateTime,
+    /// The source's Master Administrator, when the roster exposes one.
+    /// `None` leaves the site's current value unchanged.
+    pub master_admin_user_id: Option<i32>,
+    pub members: Vec<ImportSiteMember>,
+
+    // Request metadata
+    pub importing_user_id: i64,
+    pub ip_address: IpAddr,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ImportSiteRosterOutput {
+    pub site_id: i64,
+    pub members_created: u64,
+    pub members_updated: u64,
+    pub members_retired: u64,
+    pub roles_assigned: u64,
+    pub roles_removed: u64,
+    pub master_admin_set: bool,
+}
+
 #[derive(Deserialize, Debug)]
 pub struct ImportPage {
     pub page_id: i64,
@@ -188,7 +286,24 @@ pub struct ImportPageRevision {
     pub revision_number: i32,
     pub page_id: i64,
     pub site_id: i64,
-    pub user_id: i64,
+    /// The source author's Wikidot user ID.
+    ///
+    /// `None` means the source revision was authored by Wikidot's
+    /// Anonymous pseudo-user, who has no Wikidot account and therefore
+    /// no source user ID. Such revisions are attributed to the
+    /// platform's own Anonymous system user (see `ANONYMOUS_USER_ID`),
+    /// never to a real account.
+    pub user_id: Option<i64>,
+    /// The masked IP address Wikidot recorded for an anonymous source
+    /// author, verbatim as served (its last octet is already masked by
+    /// Wikidot, e.g. "67.142.130.x").
+    ///
+    /// Only meaningful when `user_id` is `None`: the address is part of
+    /// that individual revision's anonymous attribution, not a property
+    /// of any account. Payloads that set it together with a real author
+    /// ID are rejected.
+    #[serde(default)]
+    pub anonymous_ip: Option<String>,
     pub wikitext: String,
     pub comments: String,
     pub title: String,
@@ -308,4 +423,54 @@ pub struct ImportPageFilesVerifyOutput {
     pub site_id: i64,
     pub page_id: i64,
     pub verified_files: usize,
+}
+
+/// One individually sourced vote on an imported page, as the source
+/// Who-Rated roster lists it.
+#[derive(Deserialize, Debug, Clone, Copy)]
+pub struct ImportPageVote {
+    pub user_id: i64,
+    pub value: i16,
+}
+
+/// The complete source Who-Rated roster of one imported page.
+///
+/// The roster is an import of individual vote rows. It is not derived from
+/// the aggregate: the aggregate baseline is imported separately (#2078), and
+/// the sum of these rows must equal that baseline when it is present.
+#[derive(Deserialize, Debug)]
+pub struct ImportPageVotes {
+    pub site_id: i64,
+    pub page_id: i64,
+    pub rating_system: String,
+    pub votes: Vec<ImportPageVote>,
+}
+
+#[derive(Serialize, Debug, Copy, Clone)]
+pub struct ImportPageVotesOutput {
+    pub site_id: i64,
+    pub page_id: i64,
+    pub inserted: usize,
+    pub unchanged: usize,
+}
+
+/// The full source `<META>` tag set for one imported page, as observed in
+/// the source page's rendered head. The set is authoritative for the
+/// page's scope: import replaces the page's stored tags with exactly
+/// this set, so a re-import after the source head changes converges
+/// instead of accumulating stale tags. Site-scope (all-pages) tags are
+/// not touched; they belong to the site import.
+#[derive(Deserialize, Debug, Clone)]
+pub struct ImportPageMetaTags {
+    pub site_id: i64,
+    pub page_id: i64,
+    pub meta_tags: Vec<ImportMetaTag>,
+}
+
+#[derive(Serialize, Debug, Copy, Clone)]
+pub struct ImportPageMetaTagsOutput {
+    pub site_id: i64,
+    pub page_id: i64,
+    pub stored: usize,
+    pub removed: usize,
 }

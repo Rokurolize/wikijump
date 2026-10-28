@@ -12,9 +12,10 @@
 
 //! Safety transforms for substituted ListPages values.
 //!
-//! Identity, tag, and non-wiki Data Form values are page-author-controlled
-//! text, not wikitext. They share this transform so none of them can form
-//! module syntax or raw HTML after substitution (#2652, #2667, #2682).
+//! Identity, tag, title, and non-wiki Data Form values are
+//! page-author-controlled text, not wikitext. They share these transforms so
+//! none of them can form module syntax or raw HTML after substitution
+//! (#2652, #2667, #2682, #2787).
 //!
 //! Split out of `runtime/mod.rs` to keep that file under the compatibility
 //! source-size budget; behavior is byte-identical.
@@ -35,10 +36,11 @@ use super::escape_html_text;
 /// attributes. The entities decode back to the same visible characters
 /// downstream.
 fn neutralize_list_pages_substituted_syntax(value: &str) -> String {
-    value
-        .replace('[', "&#91;")
-        .replace(']', "&#93;")
-        .replace('"', "&#34;")
+    neutralize_list_pages_substituted_brackets(value).replace('"', "&#34;")
+}
+
+fn neutralize_list_pages_substituted_brackets(value: &str) -> String {
+    value.replace('[', "&#91;").replace(']', "&#93;")
 }
 
 /// Render a substituted ListPages text value (identity, tag, or non-wiki
@@ -63,6 +65,31 @@ pub(super) fn render_list_pages_substituted_identity(
         neutralize_list_pages_substituted_syntax(&escape_html_text(value))
     } else {
         neutralize_list_pages_substituted_syntax(value)
+    }
+}
+
+/// Render a page-author-controlled title value (`%%title%%`,
+/// `%%parent_title%%`, `%%form_label%%`, `%%form_hint%%`) for the context
+/// its variable sits in (see #2787).
+///
+/// Inside `[[html]]` blocks the value is raw HTML in the files-origin iframe,
+/// so it is HTML-escaped like the identity boundary from #2667. Inside a
+/// double-quoted module attribute it must not terminate the attribute, so
+/// quotes and brackets are neutralized as in #2652. In ordinary wikitext only
+/// brackets need neutralization: a straight quote is plain prose there, and
+/// titles legitimately contain them, so replacing it with an entity would
+/// change visible output.
+pub(super) fn render_list_pages_substituted_title(
+    value: &str,
+    inside_html_block: bool,
+    inside_quoted_attribute: bool,
+) -> String {
+    if inside_html_block {
+        neutralize_list_pages_substituted_syntax(&escape_html_text(value))
+    } else if inside_quoted_attribute {
+        neutralize_list_pages_substituted_syntax(value)
+    } else {
+        neutralize_list_pages_substituted_brackets(value)
     }
 }
 
@@ -137,6 +164,38 @@ mod tests {
         assert!(
             !rendered.contains("&amp;#"),
             "neutralization entities must survive escaping: {rendered:?}",
+        );
+    }
+
+    #[test]
+    fn title_keeps_plain_quotes_outside_attributes() {
+        assert_eq!(
+            render_list_pages_substituted_title("The \"Best\" Page", false, false),
+            "The \"Best\" Page",
+        );
+        assert_eq!(
+            render_list_pages_substituted_title("[a] title", false, false),
+            "&#91;a&#93; title",
+        );
+    }
+
+    #[test]
+    fn title_cannot_terminate_a_quoted_attribute() {
+        assert_eq!(
+            render_list_pages_substituted_title("x\" data-injected=\"yes", false, true,),
+            "x&#34; data-injected=&#34;yes",
+        );
+    }
+
+    #[test]
+    fn title_is_html_escaped_inside_html_blocks() {
+        assert_eq!(
+            render_list_pages_substituted_title(
+                "<img src=x onerror=\"alert(1)\"><script>alert(2)</script>",
+                true,
+                false,
+            ),
+            "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;&lt;script&gt;alert(2)&lt;/script&gt;",
         );
     }
 }

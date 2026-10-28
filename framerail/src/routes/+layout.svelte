@@ -21,7 +21,7 @@
     PAGE_LAYOUT_CONTEXT_KEY,
     type PageLayoutContext
   } from "$lib/layout/page-layout-context"
-  import { resolveShellLayout } from "$lib/layout/wikidot-shell"
+  import { resolveShellLayout, sideBarHasCloseMenu } from "$lib/layout/wikidot-shell"
   import {
     resolveCanonicalViewData,
     resolveCanonicalViewMetadata
@@ -227,6 +227,7 @@
   )
   const wikidotSiteTagline = $derived(resolveWikidotSiteTagline(viewData))
   const wikidotSessionUserName = $derived(resolveWikidotSessionUserName(viewData))
+  const sideBarHasOwnCloseMenu = $derived(sideBarHasCloseMenu(viewData))
   const pageLayoutContext = $state<PageLayoutContext>({
     current: resolveCurrentLayout()
   })
@@ -324,7 +325,9 @@
     <link href="/wikidot/styles/wikidot-base-165bc434fd1d.css" rel="stylesheet" />
     <link href="/wikidot/styles/pagerate-db0bffe086ed.css" rel="stylesheet" />
     {#if !viewData?.theme_previewer_blank}
-      <link href="/wikidot/styles/sigma-fe5388a32e12.css" rel="stylesheet" />
+      {#if effectiveTheme.type === "built_in"}
+        <link href="/wikidot/styles/sigma-fe5388a32e12.css" rel="stylesheet" />
+      {/if}
       {#if effectiveTheme.type === "external"}
         <link
           data-wikidot-site-theme
@@ -371,6 +374,7 @@
     <div id="navi-bar-shadow">&nbsp;</div>
   {/if}
   <Wikidot
+    showCloseMenu={!sideBarHasOwnCloseMenu}
     footerStyle={isImportedWikidotLayout ? WIKIDOT_FOOTER_STYLE : undefined}
     footerLocale={wikidotLocale}
     footerAnonymous={!viewData?.user_session}

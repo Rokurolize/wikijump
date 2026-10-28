@@ -30,6 +30,9 @@ mod theme_previewer;
 #[path = "page/forum.rs"]
 mod forum;
 
+#[path = "page/foreign_source.rs"]
+mod foreign_source;
+
 #[path = "page/membership.rs"]
 mod membership;
 
@@ -3090,6 +3093,33 @@ async fn basic_edit() {
     assert_eq!(page.revision_type, PageRevisionType::Regular);
     assert_eq!(page.revision_user_id, ADMIN_USER_ID);
     assert_eq!(page.page_category_slug, "_default");
+
+    let output = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": page_id,
+            "last_revision_id": revision_id,
+            "revision_comments": "authenticated attribution",
+            "user_id": ADMIN_USER_ID,
+            "title": "authenticated edit",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("No revision created");
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": page_id,
+        }),
+    )
+    .expect("Cannot find page");
+    assert_eq!(page.revision_id, output.revision_id);
+    assert_eq!(page.revision_user_id, ADMIN_USER_ID);
 }
 
 #[tokio::test]
@@ -4529,6 +4559,127 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
     assert_eq!(served_key, current_key);
     assert!(compiled_body_html.contains(CURRENT_BODY));
     assert!(!compiled_body_html.contains(STALE_BODY));
+}
+
+#[tokio::test]
+async fn category_theme_change_invalidates_article_view_cache() {
+    const SLUG: &str = "theme-cache-fixture";
+    const BODY: &str = "theme cache fixture body";
+    const THEME_URL: &str = "https://themes.example/changed.css";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+    create_listpages_test_page(&mut runner, site_id, SLUG, "Theme cache fixture", BODY)
+        .await;
+
+    let page = PageTable::find()
+        .filter(
+            sea_orm::Condition::all()
+                .add(page::Column::SiteId.eq(site_id))
+                .add(page::Column::Slug.eq(SLUG)),
+        )
+        .one(runner.context().transaction())
+        .await
+        .expect("theme cache page lookup should not fail")
+        .expect("theme cache page should exist");
+    let mut page = page.into_active_model();
+    page.from_wikidot = Set(true);
+    page.update(runner.context().transaction())
+        .await
+        .expect("theme cache page should be marked imported");
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let input = json!({
+        "site_id": site_id,
+        "session_token": null,
+        "route": {"slug": SLUG, "extra": ""},
+        "locales": ["en-US", "en"],
+    });
+
+    // First view populates the anonymous article-view cache.
+    let metadata_before =
+        run_endpoint!(runner, article_view_cache_metadata, input.clone());
+    let key_before = metadata_before
+        .article_page_cache_key
+        .expect("imported static page should have an anonymous cache key");
+    assert!(
+        key_before.contains(":theme="),
+        "cache key must carry the theme fingerprint: {key_before}",
+    );
+    let view_before = run_endpoint!(runner, article_view, input.clone());
+    let GetArticleViewOutput {
+        page:
+            GetPageViewOutput::Found {
+                theme: theme_before,
+                ..
+            },
+        article_page_cache_key: Some(served_key_before),
+        ..
+    } = view_before
+    else {
+        panic!("theme cache fixture should return an article view");
+    };
+    assert_eq!(served_key_before, key_before);
+    assert!(!matches!(theme_before, ThemeSetting::External { .. }));
+
+    // Change the `_default` category theme (the page has no category prefix,
+    // so its theme resolves through `_default`).
+    let default_category = CategoryService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("_default")),
+    )
+    .await
+    .expect("default category should exist");
+    CategoryService::update(
+        runner.context(),
+        site_id,
+        Reference::Id(default_category.category_id),
+        deepwell::services::category::UpdateCategoryBody {
+            theme: Maybe::Set(ThemeSetting::External {
+                url: String::from(THEME_URL),
+            }),
+            ..Default::default()
+        },
+        Some(default_category.settings_revision),
+        SYSTEM_USER_ID,
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("category theme update should be stored");
+
+    // The cache key must change, and the next view must serve the new theme
+    // instead of the previously cached view (issue #2764).
+    let metadata_after =
+        run_endpoint!(runner, article_view_cache_metadata, input.clone());
+    let key_after = metadata_after
+        .article_page_cache_key
+        .expect("page should still have an anonymous cache key after the theme change");
+    assert_ne!(key_before, key_after);
+
+    let view_after = run_endpoint!(runner, article_view, input);
+    let GetArticleViewOutput {
+        page: GetPageViewOutput::Found {
+            theme: theme_after, ..
+        },
+        article_page_cache_key: Some(served_key_after),
+        ..
+    } = view_after
+    else {
+        panic!(
+            "theme cache fixture should return an article view after the theme change"
+        );
+    };
+    assert_eq!(served_key_after, key_after);
+    assert!(
+        matches!(theme_after, ThemeSetting::External { ref url } if url == THEME_URL),
+        "view after the theme change must serve the new theme, got {theme_after:?}",
+    );
 }
 
 #[tokio::test]
@@ -10378,6 +10529,8 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
             website: None,
             karma: KarmaLevel::Three,
             is_pro: false,
+            upsert: false,
+            delete_old_if_same_name: false,
             importing_user_id: ADMIN_USER_ID,
             ip_address: common::IP_ADDRESS,
         },
@@ -11327,6 +11480,172 @@ async fn members_module_ssr_and_ajax_share_100_row_duplicate_relation_boundary()
 }
 
 #[tokio::test]
+async fn members_module_renders_directory_larger_than_legacy_scan_budget() {
+    const FIXTURE_USER_ID: i64 = 19_103_700;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let transaction = runner.context().transaction();
+
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "DELETE FROM relation WHERE dest_type = 'site' AND dest_id = $1 ",
+                "AND from_type = 'user' AND relation_type IN ('member', 'site-member')",
+            ),
+            [Value::from(site_id)],
+        ))
+        .await
+        .expect("existing member-directory fixtures should be cleared");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO known_user (user_id) ",
+                "SELECT $1 + fixture.n::BIGINT FROM generate_series(0, 2499) AS fixture(n)",
+            ),
+            [Value::from(FIXTURE_USER_ID)],
+        ))
+        .await
+        .expect("large-directory known-user fixtures should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO wikidot_user (",
+                "user_id, created_at, fetched_at, is_deleted, name, slug, karma, is_pro",
+                ") SELECT $1 + fixture.n::BIGINT, ",
+                "TIMESTAMPTZ '2020-01-01 00:00:00+00', NOW(), fixture.n >= 2400, ",
+                "'Scale Member ' || lpad(fixture.n::TEXT, 4, '0'), ",
+                "'scale-member-' || lpad(fixture.n::TEXT, 4, '0'), 2, FALSE ",
+                "FROM generate_series(0, 2499) AS fixture(n)",
+            ),
+            [Value::from(FIXTURE_USER_ID)],
+        ))
+        .await
+        .expect("large-directory identity fixtures should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO relation (",
+                "relation_type, dest_type, dest_id, from_type, from_id, metadata, created_by, created_at",
+                ") SELECT 'member', 'site', $2, 'user', $1 + fixture.n::BIGINT, ",
+                "'{}'::jsonb, $3, ",
+                "TIMESTAMPTZ '2020-01-01 00:00:00+00' + fixture.n * INTERVAL '1 second' ",
+                "FROM generate_series(0, 2499) AS fixture(n)",
+            ),
+            [
+                Value::from(FIXTURE_USER_ID),
+                Value::from(site_id),
+                Value::from(SYSTEM_USER_ID),
+            ],
+        ))
+        .await
+        .expect("large-directory relation fixtures should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO relation (",
+                "relation_type, dest_type, dest_id, from_type, from_id, metadata, created_by, created_at",
+                ") SELECT 'site-member', 'site', $2, 'user', $1 + fixture.n::BIGINT, ",
+                "'{}'::jsonb, $3, ",
+                "TIMESTAMPTZ '2020-01-02 00:00:00+00' + fixture.n * INTERVAL '1 second' ",
+                "FROM generate_series(0, 2) AS fixture(n)",
+            ),
+            [
+                Value::from(FIXTURE_USER_ID),
+                Value::from(site_id),
+                Value::from(SYSTEM_USER_ID),
+            ],
+        ))
+        .await
+        .expect("duplicate large-directory relations should be inserted");
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Members large directory",
+            "wikitext": concat!(
+                "DEFAULT_START\n",
+                "[[module Members]]\n",
+                "DEFAULT_END\n",
+                "NAMEDESC_START\n",
+                "[[module Members order=\"nameDesc\"]]\n",
+                "NAMEDESC_END",
+            ),
+        }),
+    );
+    let default = preview
+        .body
+        .split_once("DEFAULT_START")
+        .and_then(|(_, tail)| tail.split_once("DEFAULT_END"))
+        .map(|(default, _)| default)
+        .expect("default directory should remain between authored markers");
+    assert_eq!(
+        default.matches("<tr>").count(),
+        100,
+        "a 2,400-member directory must render its first 100-row page:\n{default}",
+    );
+    assert!(
+        default.contains("Scale Member 0000")
+            && default.contains("Scale Member 0099")
+            && !default.contains("Scale Member 0100")
+            && default.contains(r#"<span class="pager-no">page 1 of 24</span>"#)
+            && default.contains("membership/MembersListModule"),
+        "the first page must show the earliest 100 of 2,400 visible members \
+         (100 deleted identities and duplicate relations excluded):\n{default}",
+    );
+    let namedesc = preview
+        .body
+        .split_once("NAMEDESC_START")
+        .and_then(|(_, tail)| tail.split_once("NAMEDESC_END"))
+        .map(|(namedesc, _)| namedesc)
+        .expect("nameDesc directory should remain between authored markers");
+    assert_eq!(
+        namedesc.matches("<tr>").count(),
+        100,
+        "the nameDesc slice of a large directory must render 100 rows:\n{namedesc}",
+    );
+    assert!(
+        namedesc.find("Scale Member 2399") < namedesc.find("Scale Member 2300")
+            && namedesc.contains("Scale Member 2300")
+            && !namedesc.contains("Scale Member 2299")
+            && !namedesc.contains("class=\"pager\""),
+        "nameDesc must slice the filtered directory from the highest name:\n{namedesc}",
+    );
+
+    let last_page = run_endpoint!(
+        runner,
+        wikidot_members_list_module,
+        json!({
+            "site_id": site_id,
+            "parameters": {"group": "", "order": "joined", "page": "24"},
+        }),
+    );
+    assert_eq!(last_page.status, "ok");
+    assert_eq!(last_page.body.matches("<tr>").count(), 100);
+    assert!(
+        last_page.body.contains("Scale Member 2300")
+            && last_page.body.contains("Scale Member 2399")
+            && !last_page.body.contains("Scale Member 2299")
+            && last_page.body.contains("page 24 of 24"),
+        "the Ajax continuation must agree with the SSR slice on the last page:\n{}",
+        last_page.body,
+    );
+}
+
+#[tokio::test]
 async fn members_module_queries_only_visible_site_members_and_roles() {
     const ALPHA_USER_ID: i64 = 19_103_200;
     const ZETA_USER_ID: i64 = 19_103_201;
@@ -11831,13 +12150,13 @@ async fn request_argument_page_views_do_not_persist_hosted_text_blocks() {
             "PAGER_START\n",
             "[[module ListPages name=\"fixture-readonly-view-target-*\" order=\"title\" separate=\"no\" perPage=\"1\" limit=\"2\"]]\n",
             "PAGER %%title%%\n",
-            "[[html]]<p>PAGER_BLOCK %%title%%</p>[[/html]]\n",
+            "PAGER_BLOCK %%title%%\n",
             "[[/module]]\n",
             "PAGER_END\n",
             "TAG_START\n",
             "[[module ListPages name=\"fixture-readonly-view-target-*\" tags=\"@URL\" order=\"title\" separate=\"no\" limit=\"2\"]]\n",
             "TAG %%title%%\n",
-            "[[html]]<p>TAG_BLOCK %%title%%</p>[[/html]]\n",
+            "TAG_BLOCK %%title%%\n",
             "[[/module]]\n",
             "TAG_END",
         ),
@@ -16222,7 +16541,10 @@ async fn page_who_rated_returns_only_current_typed_votes_in_creation_order() {
     assert_eq!(output[0]["value"], 1);
     assert_eq!(output[1]["user"]["user-name"], "User");
     assert_eq!(output[1]["value"], -1);
-    assert!(output[0].get("user_id").is_none());
+    // Each vote also carries its raw user ID: the deleted-account
+    // placeholder Wikidot renders is keyed by it (as in page history).
+    assert_eq!(output[0]["user_id"], ADMIN_USER_ID);
+    assert_eq!(output[1]["user_id"], SAMPLE_USER_ID);
 
     let malformed = run_endpoint_err!(
         runner,
@@ -16234,6 +16556,48 @@ async fn page_who_rated_returns_only_current_typed_votes_in_creation_order() {
         "JSONRPC InvalidParams error not returned:\n{:?}",
         malformed,
     );
+
+    // A voter whose source account is deleted renders as a tombstone
+    // (null identity), exactly as Wikidot's "(account deleted)" rows,
+    // instead of failing the whole list.
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_string(
+            sea_orm::DatabaseBackend::Postgres,
+            "INSERT INTO known_user (user_id) VALUES (19000002)",
+        ))
+        .await
+        .expect("deleted WhoRated known user should insert");
+    transaction
+        .execute_raw(Statement::from_string(
+            sea_orm::DatabaseBackend::Postgres,
+            concat!(
+                "INSERT INTO wikidot_user ",
+                "(user_id, created_at, fetched_at, is_deleted, karma, is_pro) ",
+                "VALUES (19000002, NOW() - INTERVAL '1 day', NOW(), true, 0, false)",
+            ),
+        ))
+        .await
+        .expect("deleted WhoRated identity should insert");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            sea_orm::DatabaseBackend::Postgres,
+            "INSERT INTO page_vote (from_wikidot, page_id, user_id, rating_system, value) VALUES (true, $1, 19000002, 'points', 1)",
+            [Value::from(target.page_id)],
+        ))
+        .await
+        .expect("deleted WhoRated vote should insert");
+    let with_deleted = run_endpoint!(
+        runner,
+        page_who_rated,
+        json!({"site_id": site.site_id, "page_id": target.page_id}),
+    );
+    let with_deleted =
+        serde_json::to_value(with_deleted).expect("WhoRated output should serialize");
+    assert_eq!(with_deleted.as_array().map(Vec::len), Some(3));
+    assert_eq!(with_deleted[2]["user_id"], 19000002);
+    assert!(with_deleted[2]["user"].is_null());
+    assert_eq!(with_deleted[2]["value"], 1);
 
     let transaction = runner.context().transaction();
     transaction
@@ -22987,10 +23351,17 @@ async fn listpages_template_body_over_the_render_budget_remains_literal() {
     let template_body = |sentinel: &str, bytes: usize| {
         let variable = "%%title%%";
         assert!(sentinel.len() + variable.len() <= bytes);
-        format!(
-            "{sentinel}{}{variable}",
-            "x".repeat(bytes - sentinel.len() - variable.len()),
-        )
+        // The render budget counts bytes while the page-source limit
+        // counts characters (200,001 max), so the filler is multibyte:
+        // the body reaches the byte budget while the page itself stays
+        // within the source limit.
+        let fill_bytes = bytes - sentinel.len() - variable.len();
+        let fill = format!(
+            "{}{}",
+            "\u{3042}".repeat(fill_bytes / 3),
+            "x".repeat(fill_bytes % 3),
+        );
+        format!("{sentinel}{fill}{variable}")
     };
     let module_source = |body: &str| {
         format!(
@@ -24809,7 +25180,7 @@ INSERT INTO wikidot_corpus_import_run (
             [
                 Value::from(import_run_id),
                 Value::from(site_id),
-                Value::from(format!("author-selector-test-{import_run_id}")),
+                Value::from("author-selector-test"),
                 Value::from(row_count),
             ],
         ))
@@ -24858,7 +25229,7 @@ INSERT INTO wikidot_page_snapshot (
 "#,
             [
                 Value::from(page_id),
-                Value::from(format!("author-selector-test-{import_run_id}")),
+                Value::from("author-selector-test"),
                 Value::from(format!(
                     "71300000-0000-4000-8000-{source_entity_suffix:012x}"
                 )),

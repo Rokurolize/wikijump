@@ -12,7 +12,7 @@
 
 use std::sync::LazyLock;
 
-pub const DEEPWELL_RENDERER_EPOCH: u32 = 41;
+pub const DEEPWELL_RENDERER_EPOCH: u32 = 44;
 
 pub(super) static COMPILED_GENERATOR: LazyLock<String> = LazyLock::new(|| {
     format!(
@@ -35,7 +35,7 @@ mod tests {
         assert_eq!(
             COMPILED_GENERATOR.as_str(),
             format!(
-                "{} v{}; deepwell-render/v41",
+                "{} v{}; deepwell-render/v44",
                 ftml::info::PKG_NAME,
                 ftml::info::PKG_VERSION,
             ),

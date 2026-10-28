@@ -1,6 +1,7 @@
 <script lang="ts">
   import { deserialize } from "$app/forms"
   import { invalidateAll } from "$app/navigation"
+  import { resolve } from "$app/paths"
   import { errorPopupState } from "$lib/layout/stores.svelte"
   import { onDestroy } from "svelte"
   import { SvelteMap } from "svelte/reactivity"
@@ -292,7 +293,7 @@
           </div>
           <div class="revision-attribute page">
             {#if data.page?.page_id === revisionItem.page_id && data.site.site_id === revisionItem.site_id}
-              <a href={`/${data.page.slug}`}>{data.page.slug}</a>
+              <a href={resolve(`/${data.page.slug}`, {})}>{data.page.slug}</a>
             {:else}
               <span>—</span>
             {/if}

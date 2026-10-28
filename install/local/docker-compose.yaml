@@ -108,6 +108,9 @@ services:
     environment:
       - "DEEPWELL_HOST=deepwell"
       - "DEEPWELL_RPC_TOKEN=${DEEPWELL_RPC_TOKEN:?set DEEPWELL_RPC_TOKEN to 64 lowercase hex characters}"
+      # See install/standing/compose.yaml: 2 MiB so a maximum-length
+      # (200,001 character) page source always fits the form body.
+      - "BODY_SIZE_LIMIT=2097152"
       - "FRAMERAIL_MODE=${FRAMERAIL_MODE:-dev}"
       # Platform hosts and public port; must match deepwell/config.toml [domain].
       - "WIKIJUMP_MAIN_DOMAIN=wikijump.dev.localhost"

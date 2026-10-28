@@ -188,6 +188,24 @@
             "slug": "boundary-check",
             "title": "Boundary Check: SCP-JP Mirror",
             "wikitext": "issue5-scp-jp-boundary-check"
+        },
+        {
+            "slug": "system:join",
+            "title": "SCP財団参加の手引き",
+            "tags": ["jp", "管理"],
+            "wikitext": "scp-jp-join"
+        },
+        {
+            "slug": "system:members",
+            "title": "サイトメンバー",
+            "tags": ["jp", "管理"],
+            "wikitext": "scp-jp-members"
+        },
+        {
+            "slug": "system:page-tags",
+            "title": "Page Tags",
+            "tags": ["jp", "管理"],
+            "wikitext": "scp-jp-page-tags"
         }
     ],
     "template-en": [

@@ -31,6 +31,7 @@ use crate::services::permission::PermissionService;
 use crate::services::{MutationAuthorization, TextService};
 use crate::types::{Action, PageDetails, Permission, Reference, Resource};
 use ftml::data::UserInfo;
+use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub async fn page_revision_count(
@@ -294,6 +295,7 @@ async fn filter_and_populate_revision(
         page_id,
         site_id,
         user_id,
+        anonymous_author_ip,
         changes,
         wikitext_hash,
         compiled_body_html_hash,
@@ -309,6 +311,21 @@ async fn filter_and_populate_revision(
         slug,
         tags,
     } = model;
+
+    // Wikidot displays an anonymous revision's author together with the
+    // masked IP recorded for that revision ("Anonymous (67.142.130.x)").
+    // The IP belongs to the individual revision's attribution, so it is
+    // folded into the resolved identity's display name here, the one
+    // place that has both the revision and its author in hand.
+    let author = match (author, anonymous_author_ip) {
+        (Some(mut author), Some(ip))
+            if user_id == crate::constants::ANONYMOUS_USER_ID =>
+        {
+            author.user_name = Cow::Owned(format!("{} ({ip})", author.user_name));
+            Some(author)
+        }
+        (author, _) => author,
+    };
 
     let make_error = || {
         Error::new(

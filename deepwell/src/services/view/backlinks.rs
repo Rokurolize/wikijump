@@ -14,11 +14,13 @@ use super::service::ViewService;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::page::{self, Entity as Page};
 use crate::models::page_connection::{self, Entity as PageConnection};
+use crate::services::page::foreign_snapshot_exclusion_sql;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::render::{ViewablePageRef, view_decisions_for_scanned_pages};
 use crate::services::{PageRevisionService, PageService, ServiceContext};
 use crate::types::{Action, ConnectionType, Permission, Reference, Resource};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
+use sea_query::Expr;
 use std::collections::{BTreeMap, HashMap};
 
 const MAX_PAGE_BACKLINKS: usize = 500;
@@ -112,6 +114,12 @@ impl ViewService {
                 .filter(page::Column::SiteId.eq(input.site_id))
                 .filter(page::Column::DeletedAt.is_null())
                 .filter(page::Column::PageId.is_in(from_page_ids))
+                // Foreign include-source snapshots are storage, not pages
+                // of this site (issue #2690).
+                .filter(Expr::cust(foreign_snapshot_exclusion_sql(
+                    "page.page_id",
+                    input.site_id,
+                )))
                 .all(ctx.transaction())
                 .await
                 .or_raise(make_error)?

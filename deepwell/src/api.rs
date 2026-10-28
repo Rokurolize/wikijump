@@ -675,6 +675,9 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("password_reset_issue", password_reset_issue);
     register!("password_reset_redeem", password_reset_redeem);
     register!("password_reset_complete", password_reset_complete);
+    register!("account_delete_issue", account_delete_issue);
+    register!("account_delete_redeem", account_delete_redeem);
+    register!("account_delete_complete", account_delete_complete);
 
     // Votes
     register!("vote_set", vote_set);
@@ -692,6 +695,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
         promote_observed_wikidot_identity
     );
     register!("import_wikidot_site", import_wikidot_site);
+    register!("import_wikidot_site_roster", import_wikidot_site_roster);
     register!("import_wikidot_page", import_wikidot_page);
     register!("import_wikidot_page_revision", import_wikidot_page_revision);
     register!("import_wikidot_file", import_wikidot_file);
@@ -701,8 +705,14 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
         import_wikidot_page_files_verify
     );
     register!("import_wikidot_discussion", import_wikidot_discussion);
+    register!("import_wikidot_page_votes", import_wikidot_page_votes);
+    register!(
+        "import_wikidot_page_meta_tags",
+        import_wikidot_page_meta_tags
+    );
     register!("mirror_scope_get", mirror_scope_get);
     register!("mirror_scope_set", mirror_scope_set);
+    register!("mirror_scope_reconcile", mirror_scope_reconcile);
     register!("mirror_scope_reconcile_files", mirror_scope_reconcile_files);
 
     // Return

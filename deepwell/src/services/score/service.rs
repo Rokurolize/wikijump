@@ -329,7 +329,8 @@ impl ScoreService {
         Ok(map)
     }
 
-    async fn imported_rating(
+    /// The imported aggregate baseline for a page, if one was imported.
+    pub(crate) async fn imported_rating(
         ctx: &ServiceContext<'_>,
         page_id: i64,
     ) -> Result<Option<i64>> {

@@ -28,12 +28,14 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import contextlib
 from datetime import UTC, datetime, timedelta
 import hashlib
 import json
 import os
 from pathlib import Path
 import re
+import shutil
 import socket
 import subprocess
 import sys
@@ -48,6 +50,7 @@ from volume_contract import PROTECTED_VOLUMES
 SERVICES = refresh.SERVICES
 VERIFICATION = Path("install/local/wikidot-verification")
 STANDING_DATABASE = "wikijump-standing-database-1"
+STANDING_DEEPWELL = "wikijump-standing-deepwell-1"
 STANDING_CACHE = "wikijump-standing-cache-1"
 STANDING_NAMESPACE = "wikijump-standing-caddy-1"
 STANDING_FILES_VOLUME = "wikijump-standing-files-data"
@@ -299,6 +302,66 @@ def overlay_standing_files(volume: str, upper_volume: str) -> None:
         "--opt", f"o=lowerdir={lower},upperdir={upper_root}/data,workdir={upper_root}/work",
         volume,
     )
+
+
+def deepwell_log_lines(since: datetime) -> int:
+    """Lines standing's Deepwell has logged since a moment, both streams."""
+    result = subprocess.run(
+        ["docker", "logs", "--since", since.strftime("%Y-%m-%dT%H:%M:%SZ"), STANDING_DEEPWELL],
+        capture_output=True, text=True, check=True,
+    )
+    return len(result.stdout.splitlines()) + len(result.stderr.splitlines())
+
+
+@contextlib.contextmanager
+def deepwell_paused_for_clone():
+    """Freeze standing's Deepwell while the rehearsal clone is taken.
+
+    Deepwell is the only writer of text_block rows and their objects, and
+    its deferred re-render fan-out replaces them continuously. A
+    replacement uploads the new objects, commits the new rows, and only
+    then deletes the old objects (the cleanup is deferred past the
+    commit), so standing is consistent at every instant -- but the
+    database copy (pg_basebackup) and the text-block bucket copy are
+    taken at different moments, and a re-render landing between them
+    leaves the rehearsal database naming objects its file copy lacks.
+
+    Pausing the container freezes both stores at one instant, and any
+    instant is a consistent one for that write order: an uncommitted
+    replacement still has its old objects, and a committed one already
+    has its new objects. The pause covers exactly the clone segment; the
+    finally path always resumes the container, and the resume is verified
+    before the promotion continues.
+    """
+    started = datetime.now(UTC)
+    run("docker", "pause", STANDING_DEEPWELL)
+    try:
+        # A paused container produces no new log lines; two equal samples
+        # prove the render fan-out has actually stopped before the clone.
+        time.sleep(3)
+        lines = deepwell_log_lines(started)
+        time.sleep(3)
+        if deepwell_log_lines(started) != lines:
+            raise RuntimeError(
+                "standing Deepwell kept logging while paused for the rehearsal clone"
+            )
+        yield started
+    finally:
+        run("docker", "unpause", STANDING_DEEPWELL)
+        state = run(
+            "docker", "inspect", "--format",
+            "{{.State.Paused}} {{.State.Running}}", STANDING_DEEPWELL,
+        )
+        resumed = datetime.now(UTC)
+        print(
+            "standing Deepwell paused for the rehearsal clone: "
+            f"{started.isoformat()} .. {resumed.isoformat()}",
+            flush=True,
+        )
+        if state != "false true":
+            raise RuntimeError(
+                f"standing Deepwell did not resume after the rehearsal clone pause: {state}"
+            )
 
 
 def missing_text_blocks(database_container: str, files_container: str) -> list[str]:
@@ -613,6 +676,25 @@ def run_from_source_root(source_root: Path) -> None:
     os.execv(sys.executable, [sys.executable, str(own), *arguments])
 
 
+LAUNCHER_TOOLS = ("cargo", "sqlx")
+
+
+def require_launcher_tools() -> None:
+    """Fail fast when the launcher environment lacks the Rust tools.
+
+    The validation groups a promotion runs shell out to cargo, and the
+    Deepwell test stack spawns sqlx; both live in ~/.cargo/bin, which a
+    non-login shell may not have on PATH. Name the environmental failure
+    here instead of failing every Rust group deep inside validation."""
+    missing = [tool for tool in LAUNCHER_TOOLS if shutil.which(tool) is None]
+    if missing:
+        raise SystemExit(
+            "promote: required tool(s) not found on PATH: "
+            + ", ".join(missing)
+            + "; run from a login shell or add $HOME/.cargo/bin to PATH"
+        )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
@@ -639,6 +721,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    require_launcher_tools()
     if args.source_root is None:
         source_root = prepare_promotion_checkout(
             Path(__file__).resolve().parents[2], state_root() / "promotion-checkout"
@@ -770,8 +853,9 @@ def promote(args, source_root, runtime_home, override_file, identity, evidence, 
     }
 
     def clone_stage():
-        clone_standing_database(rehearsal_volumes["database"])
-        overlay_standing_files(rehearsal_volumes["files"], rehearsal_volumes["files_upper"])
+        with deepwell_paused_for_clone():
+            clone_standing_database(rehearsal_volumes["database"])
+            overlay_standing_files(rehearsal_volumes["files"], rehearsal_volumes["files_upper"])
         return dict(rehearsal_volumes)
 
     def browser_dependencies_stage():
@@ -790,11 +874,24 @@ def promote(args, source_root, runtime_home, override_file, identity, evidence, 
     # nothing from render-ahead and is taken alongside the build.
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
         validation = pool.submit(stages.run, "validation", validation_stage)
-        build = pool.submit(stages.run, "build", build_stage)
+        # The candidate build compiles the same crates the Deepwell test
+        # shards exercise; beside them it starved the shards (Deepwell full
+        # tests took 893s in the 2026-10-24 promotion against ~160s of
+        # uncontended shard execution). When the Deepwell group runs, the
+        # build waits for validation; otherwise it stays alongside, where
+        # the validation groups are not CPU-starved by it.
+        build_after_validation = bool(plan["required_groups"].get("deepwell"))
+        build = (
+            None
+            if build_after_validation
+            else pool.submit(stages.run, "build", build_stage)
+        )
         dependencies = pool.submit(stages.run, "browser-dependencies", browser_dependencies_stage)
         clone = pool.submit(stages.run, "rehearsal-clone", clone_stage) if plan["rehearse"] else None
         try:
             receipt["validation"] = validation.result()
+            if build is None:
+                build = pool.submit(stages.run, "build", build_stage)
             built = build.result()
             dependencies.result()
             if clone:

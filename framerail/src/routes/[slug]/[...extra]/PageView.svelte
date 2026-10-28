@@ -722,6 +722,7 @@
         <div class="page-watch-options">
           <!-- svelte-ignore a11y_invalid_attribute -->
           <a href="javascript:;">{wikidotPageWatch.label}</a>
+          <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- Wikidot help link, external -->
           [<a href={wikidotPageWatch.helpHref} rel="noopener noreferrer" target="_blank"
             >{wikidotPageWatch.helpLabel}</a
           >]
@@ -771,6 +772,7 @@
             {wikidotPageActions.tags}
           </a>
           {#if wikidotPageActions.showDiscuss && wikidotPageActions.discussHref}
+            <!-- eslint-disable svelte/no-navigation-without-resolve -- discuss URL from site data, not a route -->
             <a
               href={wikidotPageActions.discussHref}
               class="btn btn-default"
@@ -778,6 +780,7 @@
             >
               {wikidotPageActions.discuss}
             </a>
+            <!-- eslint-enable svelte/no-navigation-without-resolve -->
           {:else if wikidotPageActions.showDiscuss}
             <!-- svelte-ignore a11y_invalid_attribute -->
             <a

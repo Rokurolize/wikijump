@@ -10,6 +10,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {finalizeVisualAcceptance,reviewCompletionTime} from '../src/finalize-visual-acceptance.mjs';
+import {candidateSourceName} from '../src/theme-package.mjs';
 import {validateCombinedAcceptance,validateBrowserCoverage} from '../src/campaign-completion.mjs';
 import {candidateIdentity} from '../ports/scripts/candidate-identity.mjs';
 import {SEMANTIC_BROWSER_MODEL,validateSemanticBrowserAcceptance,semanticReviewArtifactBindings} from '../src/semantic-browser-acceptance.mjs';
@@ -34,7 +35,7 @@ if(!Object.hasOwn(ledger.packages,name))throw new Error('Unknown maintained pack
 const read=file=>fs.readFile(path.resolve(file));
 const raw=JSON.parse(await read(value('--result'))),review=JSON.parse(await read(value('--review'))),audit=JSON.parse(await read(value('--audit'))),scenarioMatrix=JSON.parse(await read(value('--scenario-matrix')));
 const dir=resolveExistingPackageDirectory(path.join(root,'ports'),name,`${name}: package directory`),pkg=ledger.packages[name];
-const sourcePath=resolveExistingPackageFile(dir,pkg.source_file??'candidate.wikidot.source.txt',`${name}: source file`);
+const sourcePath=resolveExistingPackageFile(dir,candidateSourceName(dir,pkg),`${name}: source file`);
 const cssPath=resolveExistingPackageFile(dir,'candidate.css',`${name}: candidate CSS`),previewPath=resolveExistingPackageFile(dir,'candidate.wikidot.txt',`${name}: preview source`);
 const base=currentPackageBaseCss(dir,name)??Buffer.alloc(0);
 const [css,source,preview]=await Promise.all([fs.readFile(cssPath),fs.readFile(sourcePath),fs.readFile(previewPath)]);

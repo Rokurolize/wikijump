@@ -13,6 +13,7 @@
   {@const profileUrl = author["user-profile-url"].replace(/^http:/u, "https:")}
   <span class="printuser avatarhover">
     {#if author["user-avatar-data"]}
+      <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- absolute profile URL from user data -->
       <a href={profileUrl}>
         <img
           class="small"
@@ -22,6 +23,7 @@
         />
       </a>
     {/if}
+    <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- absolute profile URL from user data -->
     <a href={profileUrl}>{author["user-name"]}</a>
   </span>
 {:else}

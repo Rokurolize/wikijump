@@ -97,11 +97,12 @@ ${globalRows}${pageRows}\t</div>
 
 /**
  * @typedef {{
+ *   user_id: number
  *   user: {
  *     "user-id": number
  *     "user-name": string
  *     "user-slug": string
- *   }
+ *   } | null
  *   value: number
  * }} WikidotWhoRatedVote
  */
@@ -109,9 +110,16 @@ ${globalRows}${pageRows}\t</div>
 /** @param {WikidotWhoRatedVote[]} votes */
 export const renderWikidotWhoRated = (votes) => {
   const rows = votes
-    .map(({ user, value }) => {
+    .map(({ user, user_id: deletedUserId, value }) => {
       if (value !== 1 && value !== -1) {
         throw new TypeError("WhoRated supports only observed plus/minus vote values")
+      }
+      if (user === null) {
+        // Deleted source account: live Wikidot renders the shared
+        // default avatar with the "(account deleted)" placeholder,
+        // keyed by the raw user ID (captured live, issue #2205).
+        const sign = value === 1 ? "+" : "-"
+        return `<span class="printuser deleted" data-id="${deletedUserId}"><img class="small" src="https://www.wikidot.com/common--images/avatars/default/a16.png" alt=""/>(account deleted)</span>\n        <span style="color:#777">\n                    ${sign}              </span><br/>`
       }
       const userId = user["user-id"]
       const userSlug = escapeHtmlAttribute(user["user-slug"])

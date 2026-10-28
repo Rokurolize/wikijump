@@ -23,10 +23,12 @@ const redisArray = (...values) => {
   return response
 }
 
+// Measures the wait on the monotonic clock: a wall-clock step (NTP correcting
+// a drifting VM clock) must not expire the deadline before it has elapsed.
 const waitFor = async (condition, message, timeoutMs = 1500) => {
-  const started = Date.now()
+  const started = performance.now()
   while (!condition()) {
-    if (Date.now() - started > timeoutMs) throw new Error(message)
+    if (performance.now() - started > timeoutMs) throw new Error(message)
     await new Promise((resolve) => setTimeout(resolve, 10))
   }
 }

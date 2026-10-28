@@ -61,7 +61,7 @@ use crate::services::render::{
     wikidot_site_changes_empty_response,
 };
 use crate::services::settings::PageRatingVisibility;
-use crate::services::{MutationAuthorization, SettingsService, TextService};
+use crate::services::{MutationAuthorization, SettingsService, SiteService, TextService};
 use crate::types::{
     Action, Bytes, FileOrder, PageDetails, PageId, Permission, Reference, RerenderDepth,
     Resource,
@@ -161,7 +161,11 @@ struct PageWhoRatedInput {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct PageWhoRatedVote {
-    pub user: UserInfo<'static>,
+    pub user_id: i64,
+    /// The voter's public identity, or `None` when the account is
+    /// deleted: Wikidot renders those rows as "(account deleted)"
+    /// placeholders keyed by the raw user ID.
+    pub user: Option<UserInfo<'static>>,
     pub value: i16,
 }
 
@@ -1076,15 +1080,19 @@ pub async fn page_who_rated(
         .iter()
         .map(|vote| vote.user_id)
         .collect::<BTreeSet<_>>();
-    let mut identities = UserService::get_public_identities(ctx, &user_ids)
+    let mut resolved = UserService::get_public_identities_or_tombstones(ctx, &user_ids)
         .await
         .or_raise(make_error)?;
     let mut output = Vec::with_capacity(votes.len());
     for vote in votes {
-        let Some(user) = identities.remove(&vote.user_id) else {
+        // A never-imported identity (e.g. only a known-user
+        // observation) is absent from the map and fails the whole
+        // list closed, rather than silently dropping a voter.
+        let Some(user) = resolved.remove(&vote.user_id) else {
             return Err(make_error().into());
         };
         output.push(PageWhoRatedVote {
+            user_id: vote.user_id,
             user,
             value: vote.value,
         });

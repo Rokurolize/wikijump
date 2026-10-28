@@ -22,7 +22,7 @@ use super::prelude::*;
 use crate::services::MutationAuthorization;
 use crate::services::mirror_scope::{
     MirrorScope, MirrorScopeService, ReconcileMirrorFiles, ReconcileMirrorFilesOutput,
-    SetMirrorScope,
+    ReconcileMirrorOutput, ReconcileMirrorPages, SetMirrorScope,
 };
 use serde::Deserialize;
 
@@ -52,6 +52,18 @@ pub async fn mirror_scope_set(
     MirrorScopeService::set(ctx, input)
         .await
         .or_raise(|| Error::new("failed to set mirror scope", ErrorType::Site))
+}
+
+pub async fn mirror_scope_reconcile(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<ReconcileMirrorOutput> {
+    let input: ReconcileMirrorPages = parse!(params, Site);
+    let actor_user_id =
+        MutationAuthorization::require_platform_staff(ctx, "reconcile mirror pages")?;
+    MirrorScopeService::reconcile(ctx, actor_user_id, input)
+        .await
+        .or_raise(|| Error::new("failed to reconcile mirror pages", ErrorType::Site))
 }
 
 pub async fn mirror_scope_reconcile_files(

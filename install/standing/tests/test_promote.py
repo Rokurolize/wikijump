@@ -554,5 +554,82 @@ class ActivationSafetyTest(unittest.TestCase):
         self.assertNotIn("wikijump-standing", source)
 
 
+class LauncherToolsTest(unittest.TestCase):
+    def test_all_launcher_tools_present_passes(self) -> None:
+        with mock.patch.object(promote.shutil, "which", return_value="/bin/tool"):
+            promote.require_launcher_tools()
+
+    def test_missing_cargo_is_named_with_the_path_fix(self) -> None:
+        def which(tool: str):
+            return None if tool == "cargo" else "/usr/bin/sqlx"
+
+        with mock.patch.object(promote.shutil, "which", side_effect=which):
+            with self.assertRaises(SystemExit) as raised:
+                promote.require_launcher_tools()
+        self.assertIn("cargo", str(raised.exception))
+        self.assertIn("$HOME/.cargo/bin", str(raised.exception))
+
+    def test_missing_sqlx_is_named(self) -> None:
+        def which(tool: str):
+            return None if tool == "sqlx" else "/usr/bin/cargo"
+
+        with mock.patch.object(promote.shutil, "which", side_effect=which):
+            with self.assertRaises(SystemExit) as raised:
+                promote.require_launcher_tools()
+        self.assertIn("sqlx", str(raised.exception))
+
+
 if __name__ == "__main__":
     unittest.main()
+
+
+class DeepwellClonePauseTest(unittest.TestCase):
+    def run_fake(self):
+        calls = []
+
+        def fake_run(*args):
+            calls.append(args)
+            if args[:2] == ("docker", "inspect"):
+                return "false true"
+            return ""
+
+        return calls, fake_run
+
+    def test_the_pause_wraps_the_body_and_resumes(self) -> None:
+        calls, fake_run = self.run_fake()
+        with mock.patch.object(promote, "run", side_effect=fake_run), \
+                mock.patch.object(promote, "deepwell_log_lines", return_value=0), \
+                mock.patch.object(promote.time, "sleep"):
+            with promote.deepwell_paused_for_clone():
+                calls.append(("body",))
+        kinds = [call[:2] for call in calls]
+        self.assertLess(kinds.index(("docker", "pause")), kinds.index(("body",)))
+        self.assertLess(kinds.index(("body",)), kinds.index(("docker", "unpause")))
+
+    def test_the_pause_resumes_even_when_the_clone_fails(self) -> None:
+        calls, fake_run = self.run_fake()
+        with mock.patch.object(promote, "run", side_effect=fake_run), \
+                mock.patch.object(promote, "deepwell_log_lines", return_value=0), \
+                mock.patch.object(promote.time, "sleep"):
+            with self.assertRaisesRegex(RuntimeError, "clone failed"):
+                with promote.deepwell_paused_for_clone():
+                    raise RuntimeError("clone failed")
+        self.assertIn(("docker", "unpause", promote.STANDING_DEEPWELL), calls)
+
+    def test_a_deepwell_that_keeps_logging_while_paused_is_refused(self) -> None:
+        calls, fake_run = self.run_fake()
+        with mock.patch.object(promote, "run", side_effect=fake_run), \
+                mock.patch.object(promote, "deepwell_log_lines", side_effect=[3, 4]), \
+                mock.patch.object(promote.time, "sleep"):
+            with self.assertRaisesRegex(RuntimeError, "kept logging"):
+                with promote.deepwell_paused_for_clone():
+                    pass
+        self.assertIn(("docker", "unpause", promote.STANDING_DEEPWELL), calls)
+
+    def test_the_clone_stage_clones_under_the_pause(self) -> None:
+        source = inspect.getsource(promote.promote)
+        clone = source.index("def clone_stage")
+        body = source[clone:clone + 500]
+        self.assertIn("with deepwell_paused_for_clone():", body)
+        self.assertLess(body.index("deepwell_paused_for_clone"), body.index("clone_standing_database"))
+        self.assertLess(body.index("deepwell_paused_for_clone"), body.index("overlay_standing_files"))

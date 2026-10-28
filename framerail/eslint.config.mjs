@@ -180,7 +180,7 @@ export default defineConfig(
       "**/pnpm-lock.yaml",
       "**/package-lock.json",
       "**/yarn.lock",
-      "svelte.config.js"
+      "sveltekit-options.js"
     ]),
 
     {

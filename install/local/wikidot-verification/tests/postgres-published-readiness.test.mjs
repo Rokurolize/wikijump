@@ -11,6 +11,11 @@ import {
 const SSL_REQUEST = Buffer.from([0x00, 0x00, 0x00, 0x08, 0x04, 0xd2, 0x16, 0x2f]);
 const AUTH_REQUEST = Buffer.from([0x52, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00]);
 const isSslRequest = (chunk) => chunk.length === 8 && chunk[4] === 0x04;
+// Every real-socket server below answers at once or closes, so the probe's idle
+// timer is only a hang backstop here; timeout handling is covered by the scripted
+// host-path test. A short timer turns any event-loop stall on a loaded host into a
+// spurious timeout and an extra connection attempt.
+const PROBE_TIMEOUT_MS = 10_000;
 
 function errorResponse(message) {
   const fields = [["S", "FATAL"], ["C", "57P03"], ["M", message]];
@@ -31,7 +36,13 @@ function startupProtocol(message) {
 }
 
 async function listen(handler) {
-  const server = net.createServer(handler);
+  const server = net.createServer((socket) => {
+    // A probe that abandons an attempt resets the connection. PostgreSQL tolerates
+    // that; an unhandled server-side ECONNRESET would instead abort the running test
+    // and leave its retry loop dialling into the next test.
+    socket.on("error", () => {});
+    handler(socket);
+  });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(0, "127.0.0.1", resolve);
@@ -85,7 +96,7 @@ test("published PostgreSQL probe waits for a query-ready startup response", asyn
     });
   });
   try {
-    assert.equal(await probePublishedPostgres({port, timeoutMs: 200}), "N");
+    assert.equal(await probePublishedPostgres({port, timeoutMs: PROBE_TIMEOUT_MS}), "N");
     assert.deepEqual(requests[0], SSL_REQUEST);
     assert.equal(startupProtocol(requests[1]), 196608);
     assert.match(requests[1].toString("utf8"), /user\0wikijump\0database\0wikijump\0\0$/u);
@@ -104,7 +115,7 @@ test("published PostgreSQL probe assembles a fragmented startup response", async
     });
   });
   try {
-    assert.equal(await probePublishedPostgres({port, timeoutMs: 200}), "N");
+    assert.equal(await probePublishedPostgres({port, timeoutMs: PROBE_TIMEOUT_MS}), "N");
   } finally {
     await close(server);
   }
@@ -120,7 +131,7 @@ test("published PostgreSQL probe rejects an SSL-enabled server without sending p
   });
   try {
     await assert.rejects(
-      probePublishedPostgres({port, timeoutMs: 200}),
+      probePublishedPostgres({port, timeoutMs: PROBE_TIMEOUT_MS}),
       /offered SSL.*requires a plaintext task-owned database/u,
     );
     assert.deepEqual(requests, [SSL_REQUEST]);
@@ -152,7 +163,7 @@ test("published PostgreSQL readiness retries a still-recovering database", async
     });
   });
   try {
-    assert.equal(await waitForPublishedPostgres({port, attempts: 3, intervalMs: 1, timeoutMs: 200}), "N");
+    assert.equal(await waitForPublishedPostgres({port, attempts: 3, intervalMs: 1, timeoutMs: PROBE_TIMEOUT_MS}), "N");
     assert.equal(connections, 2);
   } finally {
     await close(server);
@@ -168,7 +179,7 @@ test("published PostgreSQL probe surfaces the recovery error", async () => {
   });
   try {
     await assert.rejects(
-      probePublishedPostgres({port, timeoutMs: 200}),
+      probePublishedPostgres({port, timeoutMs: PROBE_TIMEOUT_MS}),
       /PostgreSQL is not ready: the database system is starting up/u,
     );
   } finally {
@@ -199,7 +210,7 @@ test("published PostgreSQL readiness retries an invalid first protocol response"
     });
   });
   try {
-    assert.equal(await waitForPublishedPostgres({port, attempts: 3, intervalMs: 1, timeoutMs: 200}), "N");
+    assert.equal(await waitForPublishedPostgres({port, attempts: 3, intervalMs: 1, timeoutMs: PROBE_TIMEOUT_MS}), "N");
     assert.equal(connections, 2);
   } finally {
     await close(server);
@@ -235,7 +246,7 @@ test("published PostgreSQL probe rejects a non-protocol byte", async () => {
   });
   try {
     await assert.rejects(
-      probePublishedPostgres({port, timeoutMs: 100}),
+      probePublishedPostgres({port, timeoutMs: PROBE_TIMEOUT_MS}),
       /unexpected PostgreSQL SSLRequest response: 0x00/u,
     );
   } finally {

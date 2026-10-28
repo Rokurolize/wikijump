@@ -1,0 +1,1 @@
+{"hooks":{"SessionStart":[{"hooks":[{"command":"bash \"$CLAUDE_PROJECT_DIR/scripts/claude-cloud-maintenance.sh\"","timeout":600,"type":"command"}],"matcher":"startup|resume"}]}}

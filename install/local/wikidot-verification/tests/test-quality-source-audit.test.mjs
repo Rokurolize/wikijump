@@ -11,6 +11,26 @@ import {applyNodeMutation, runNodeMutations} from "../src/test-quality-mutations
 import {coverageInstrumentationExclusions, mergeLcovReports, summarizeLcov} from "../src/test-quality-coverage.mjs";
 import {runAuditCommand} from "../src/audit-command.mjs";
 
+// Waits for a supervised child to write a non-empty marker file and returns its
+// contents. The marker appears only after one or more Node process startups, whose
+// latency scales with host load, so the wait is not capped by a poll count. It ends
+// early if the supervised run settles first, so a child that exits without writing
+// the marker fails the caller's assertion at once; a monotonic backstop far above
+// any observed startup chain keeps a wedged child from hanging the suite while still
+// letting the caller's cleanup run.
+const MARKER_BACKSTOP_MS = 60_000;
+
+async function waitForMarker(file, run) {
+  let settled = false;
+  run.then(() => { settled = true; }, () => { settled = true; });
+  const started = performance.now();
+  for (;;) {
+    const value = await fs.readFile(file, "utf8").catch(() => "");
+    if (value || settled || performance.now() - started > MARKER_BACKSTOP_MS) return value;
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+}
+
 async function fixture(t) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-audit-test-"));
   t.after(() => fs.rm(root, {recursive: true, force: true}));
@@ -173,10 +193,7 @@ test("interrupted commands await child restoration before caller cleanup", async
     fs.writeFileSync(${JSON.stringify(ready)}, 'ready');
     setInterval(() => {}, 100);
   `], {signal: controller.signal, capture: true});
-  for (let attempt = 0; attempt < 200; attempt += 1) {
-    if (await fs.stat(ready).then(() => true, () => false)) break;
-    await new Promise((resolve) => setTimeout(resolve, 5));
-  }
+  await waitForMarker(ready, run);
   try {
     assert.equal(await fs.readFile(ready, "utf8"), "ready");
   } finally {
@@ -207,10 +224,7 @@ test("interrupted Node mutation restores exact source bytes and mode before clea
   // Attach rejection handling while waiting for the fresh mutant process.
   const result = assert.rejects(run, /mutation interrupted/u);
   try {
-    for (let attempt = 0; attempt < 200; attempt += 1) {
-      if (await fs.stat(ready).then(() => true, () => false)) break;
-      await new Promise((resolve) => setTimeout(resolve, 5));
-    }
+    await waitForMarker(ready, run);
     assert.equal(await fs.readFile(ready, "utf8"), "ready");
   } finally {
     controller.abort(new Error("mutation interrupted"));
@@ -247,17 +261,11 @@ test("repeated interrupts leave the supervisor alive until restoration finishes"
   `], {capture: true});
   let pid, finished = false;
   try {
-    for (let attempt = 0; attempt < 200; attempt += 1) {
-      const value = await fs.readFile(ready, "utf8").catch(() => null);
-      if (value) { pid = Number(value); break; }
-      await new Promise(resolve => setTimeout(resolve, 5));
-    }
+    const value = await waitForMarker(ready, run);
+    if (value) pid = Number(value);
     assert.ok(pid);
     process.kill(pid, "SIGINT");
-    for (let attempt = 0; attempt < 200; attempt += 1) {
-      if (await fs.stat(restoring).then(() => true, () => false)) break;
-      await new Promise(resolve => setTimeout(resolve, 5));
-    }
+    await waitForMarker(restoring, run);
     assert.equal(await fs.readFile(restoring, "utf8"), "restoring");
     process.kill(pid, "SIGINT");
     await fs.writeFile(release, "release");

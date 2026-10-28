@@ -358,7 +358,7 @@ async fn scp744_full_closure_render_keeps_article_body() {
                 manifest_sha256, manifest_row_count, complete_inventory,
                 state, summary
             ) VALUES (
-                {import_run_id}, {site_id}, 'en', 'scp-wiki',
+                {import_run_id}, {site_id}, 'scp-wiki', 'scp-wiki',
                 decode(repeat('00', 32), 'hex'), 1, false,
                 'metadata_done', '{{}}'::jsonb
             )"#,
@@ -375,7 +375,7 @@ async fn scp744_full_closure_render_keeps_article_body() {
                 updated_by_name, title_shown, parent_fullname, comments,
                 source_sha256, meta_sha256, meta_json, last_import_run_id
             ) VALUES (
-                {page_id}, 'en', 'scp-wiki', '{}', 'scp-744',
+                {page_id}, 'scp-wiki', 'scp-wiki', '{}', 'scp-744',
                 TIMESTAMPTZ '2023-07-21T18:57:00Z',
                 TIMESTAMPTZ '2023-07-21T18:57:00Z',
                 49, 98, 'MontagueETC', 'Jerden', 'SCP-744', NULL, 0,

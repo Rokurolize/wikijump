@@ -1,7 +1,11 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { siteHeadFallbacks, unsupersededHeadFallbacks } from "../src/lib/head-metadata.ts"
+import {
+  resolveHeadImageUrls,
+  siteHeadFallbacks,
+  unsupersededHeadFallbacks
+} from "../src/lib/head-metadata.ts"
 
 const site = (fields = {}) => ({
   name: "Example Wiki",
@@ -69,4 +73,44 @@ test("fallbacks plus effective rows carry each entry exactly once", () => {
     "twitter:card"
   ])
   assert.equal(new Set(names).size, names.length)
+})
+
+test("imported social images resolve to the local file origin", () => {
+  const imported = { from_wikidot: true, slug: "example" }
+  const origin = "https://example.wikijump.test"
+  const tags = [
+    row("og:image", "https://example.wdfiles.com/local--files/main/logo.png"),
+    row("twitter:image", "/local--files/main/logo.png"),
+    row("twitter:card", "summary")
+  ]
+  assert.deepEqual(resolveHeadImageUrls(tags, imported, origin), [
+    row("og:image", "https://example.wikijump.test/local--files/main/logo.png"),
+    row("twitter:image", "https://example.wikijump.test/local--files/main/logo.png"),
+    row("twitter:card", "summary")
+  ])
+})
+
+test("foreign or non-imported images stay literal", () => {
+  const origin = "https://example.wikijump.test"
+  const foreign = [row("og:image", "https://other.wdfiles.com/local--files/a/b.png")]
+  assert.deepEqual(
+    resolveHeadImageUrls(foreign, { from_wikidot: true, slug: "example" }, origin),
+    foreign
+  )
+  const own = [row("og:image", "https://example.wdfiles.com/local--files/a/b.png")]
+  assert.deepEqual(
+    resolveHeadImageUrls(own, { from_wikidot: false, slug: "example" }, origin),
+    own
+  )
+  assert.deepEqual(resolveHeadImageUrls(own, null, origin), own)
+})
+
+test("hostile content stays inert data for the renderer to escape", () => {
+  // Rows are rendered as `<meta content={...}>` attributes, never raw HTML;
+  // the projection must not alter or interpret markup-significant text.
+  const hostile = [row("description", `"><script>alert(1)</script> 'q' &amp;`)]
+  assert.deepEqual(
+    resolveHeadImageUrls(hostile, { from_wikidot: true, slug: "example" }, "https://x"),
+    hostile
+  )
 })

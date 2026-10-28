@@ -1,3 +1,4 @@
+import { resolveHeadImageUrls } from "$lib/head-metadata"
 import { buildAnonymousArticleResponseCacheMetadata } from "$lib/server/cache/article-response/index.js"
 import {
   resolveShellLayoutValue,
@@ -190,8 +191,21 @@ export async function loadPage(
     }
   }
 
+  // Imported social images are advertised on the serving origin, not
+  // the source Wikidot files host. Resolved here, at data assembly,
+  // so the component stays a pure projection of data.meta_tags.
+  const metaTags =
+    response.type === "found"
+      ? resolveHeadImageUrls(
+          response.data.meta_tags,
+          parentData.site,
+          new URL(request.url).origin
+        )
+      : undefined
+
   const viewData = {
     ...response.data,
+    ...(metaTags !== undefined ? { meta_tags: metaTags } : {}),
     view: response.type,
     internationalization,
     ...presentation,

@@ -29,20 +29,27 @@
 use super::structs::{
     ImportFile, ImportFileDelete, ImportFileDeleteOutput, ImportFileOutput,
     ImportMetaTag, ImportPage, ImportPageFilesVerify, ImportPageFilesVerifyOutput,
-    ImportPageOutput, ImportPageRevision, ImportPageRevisionOutput, ImportSite,
-    ImportSiteOutput, ImportUser, ImportUserOutput, ImportedUserType,
-    PromoteObservedIdentity, PromoteObservedIdentityOutput,
+    ImportPageMetaTags, ImportPageMetaTagsOutput, ImportPageOutput, ImportPageRevision,
+    ImportPageRevisionOutput, ImportPageVote, ImportPageVotes, ImportPageVotesOutput,
+    ImportSite, ImportSiteMember, ImportSiteOutput, ImportSiteRoster,
+    ImportSiteRosterOutput, ImportUser, ImportUserOutput, ImportedSiteRole,
+    ImportedUserType, PromoteObservedIdentity, PromoteObservedIdentityOutput,
 };
-use crate::constants::SYSTEM_USER_ID;
+use crate::constants::{ANONYMOUS_USER_ID, SYSTEM_USER_ID};
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
 use crate::hash::{BLOB_HASH_LENGTH, sha512_hash, slice_to_blob_hash};
 use crate::models::file::{self, Entity as File, Model as FileModel};
 use crate::models::file_revision::{self, Entity as FileRevision};
 use crate::models::page::{self, Entity as Page};
 use crate::models::page_category::Model as PageCategoryModel;
+use crate::models::page_meta_tag::{self, Entity as PageMetaTagTable};
 use crate::models::page_revision::{self, Entity as PageRevision};
+use crate::models::page_vote::{self, Entity as PageVote};
+use crate::models::relation::{self, Entity as Relation};
+use crate::models::role::{self, Entity as Role};
 use crate::models::site::{self, Entity as Site};
 use crate::models::user::{self, Entity as WikijumpUser};
+use crate::models::user_role::{self, Entity as UserRole};
 use crate::models::wikidot_user::{self, Entity as WikidotUser};
 use crate::services::ServiceContext;
 use crate::services::audit::{AuditEvent, AuditService};
@@ -59,8 +66,12 @@ use crate::services::page_revision::{
     CreateFirstPageRevision, CreateFirstPageRevisionOutput, CreatePageRevision,
     CreatePageRevisionBody, PageRevisionService,
 };
-use crate::services::{CategoryService, PageService, UserService};
-use crate::types::{FileRevisionType, Maybe, PageId, PageLockType, Reference, UserType};
+use crate::services::relation::{SiteMemberAccepted, SiteMemberData};
+use crate::services::{CategoryService, PageService, ScoreService, UserService};
+use crate::types::{
+    FileRevisionType, Maybe, PageId, PageLockType, Reference, RelationObjectType,
+    RelationType, UserType,
+};
 use crate::utils::{get_category_name, now};
 use ftml::data::KarmaLevel;
 use ftml::layout::Layout;
@@ -72,7 +83,7 @@ use sea_orm::{
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, UpdateResult};
 use sea_query::Expr;
 use sha2::{Digest, Sha256};
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::net::IpAddr;
 use time::OffsetDateTime;
 
@@ -269,6 +280,11 @@ impl ImportService {
             website,
             karma,
             is_pro,
+            // Our add_user is already insert-or-refresh-if-strictly-newer,
+            // which is the behavior the import scripts request with
+            // `upsert`; a plain insert-or-error mode has no caller here.
+            upsert: _,
+            delete_old_if_same_name,
             importing_user_id,
             ip_address,
         }: ImportUser,
@@ -387,8 +403,37 @@ impl ImportService {
                 .one(txn)
                 .await
                 .or_raise(make_error)?;
-            if conflicting_identity.is_some() {
-                return Err(make_error().into());
+            if let Some(conflicting) = conflicting_identity {
+                // Upstream #3123: when the import scripts set
+                // `delete_old_if_same_name` and the colliding row is
+                // strictly older, tombstone it and proceed instead of
+                // erroring. (Upstream's own collision query compared the
+                // slug column against the *name* value; the query above
+                // compares name-to-name and slug-to-slug.)
+                let can_tombstone = delete_old_if_same_name
+                    && !conflicting.is_deleted
+                    && conflicting.fetched_at < fetched_at;
+                if !can_tombstone {
+                    return Err(make_error().into());
+                }
+                info!(
+                    "Due to delete_old_if_same_name, tombstoning colliding user ID {} in favor of new user ID {} (fetched at: {} < {})",
+                    conflicting.user_id, user_id, conflicting.fetched_at, fetched_at,
+                );
+                let mut model = conflicting.into_active_model();
+                model.is_deleted = Set(true);
+                model.name = Set(None);
+                model.slug = Set(None);
+                model.avatar_s3_hash = Set(None);
+                model.real_name = Set(None);
+                model.gender = Set(None);
+                model.birthday = Set(None);
+                model.location = Set(None);
+                model.biography = Set(None);
+                model.website = Set(None);
+                model.karma = Set(0);
+                model.is_pro = Set(false);
+                model.update(txn).await.or_raise(make_error)?;
             }
         }
 
@@ -728,6 +773,8 @@ impl ImportService {
                 // Checked non-empty above
                 karma: profile.karma.unwrap_or(KarmaLevel::Zero),
                 is_pro: profile.is_pro.unwrap_or(false),
+                upsert: false,
+                delete_old_if_same_name: false,
                 importing_user_id,
                 ip_address,
             },
@@ -802,6 +849,346 @@ impl ImportService {
         .or_raise(make_error)?;
 
         Ok(ImportSiteOutput { site_id })
+    }
+
+    /// Synchronizes one imported site's public membership/role roster
+    /// with a source snapshot (see [`ImportSiteRoster`] for the exact
+    /// semantics). The directory renderer reads `SiteMember` relations
+    /// plus `admin` / `moderator` site-role assignments, so this writes
+    /// exactly those rows, keyed by the stable Wikidot user IDs.
+    ///
+    /// Relations are written directly (like the other importers write
+    /// their models) rather than through the interactive membership
+    /// service: the source join time must be preserved as the relation
+    /// `created_at`, and one batch audit event covers the sync instead
+    /// of one join event per member. Imported identities have no local
+    /// account, so no permission-cache state can exist for them.
+    pub async fn sync_site_roster(
+        ctx: &ServiceContext<'_>,
+        ImportSiteRoster {
+            site_id,
+            fetched_at: _,
+            master_admin_user_id,
+            members,
+            importing_user_id,
+            ip_address,
+        }: ImportSiteRoster,
+    ) -> Result<ImportSiteRosterOutput> {
+        info!(
+            "Syncing imported roster for site ID {} ({} members)",
+            site_id,
+            members.len(),
+        );
+
+        let txn = ctx.transaction();
+        let make_error = || {
+            Error::new(
+                format!("failed to sync imported roster for site ID {site_id}"),
+                ErrorType::DatabaseImport,
+            )
+        };
+
+        // The roster receiver only governs imported (Wikidot) sites;
+        // locally owned sites own their membership state.
+        let site = Site::find_by_id(site_id)
+            .one(txn)
+            .await
+            .or_raise(make_error)?
+            .ok_or_raise(make_error)?;
+        if !site.from_wikidot {
+            error!("Roster sync target site ID {site_id} is not an imported site");
+            bail!(make_error());
+        }
+
+        // Resolve the site's staff roles up-front so a snapshot asking
+        // for a role the site does not define fails before any writes.
+        let staff_roles = Role::find()
+            .filter(
+                Condition::all()
+                    .add(role::Column::SiteId.eq(site_id))
+                    .add(role::Column::Name.is_in(["admin", "moderator"]))
+                    .add(role::Column::IsVirtual.eq(false))
+                    .add(role::Column::DeletedAt.is_null()),
+            )
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+        let role_id_by_name: std::collections::HashMap<&str, i64> = staff_roles
+            .iter()
+            .map(|role| (role.name.as_str(), role.role_id))
+            .collect();
+        let staff_role_ids: Vec<i64> = staff_roles.iter().map(|r| r.role_id).collect();
+
+        // Every roster identity must already be imported, so the stable
+        // Wikidot identity mapping exists before relations reference it.
+        let mut snapshot: std::collections::HashMap<i64, &ImportSiteMember> =
+            std::collections::HashMap::new();
+        for member in &members {
+            if WikidotUser::find_by_id(member.user_id)
+                .one(txn)
+                .await
+                .or_raise(make_error)?
+                .is_none()
+            {
+                error!(
+                    "Roster for site ID {site_id} references un-imported Wikidot user ID {}",
+                    member.user_id,
+                );
+                bail!(make_error());
+            }
+            for role in &member.roles {
+                let name = match role {
+                    ImportedSiteRole::Admin => "admin",
+                    ImportedSiteRole::Moderator => "moderator",
+                };
+                if !role_id_by_name.contains_key(name) {
+                    error!(
+                        "Roster for site ID {site_id} needs role '{name}', which the site does not define",
+                    );
+                    bail!(make_error());
+                }
+            }
+            snapshot.insert(i64::from(member.user_id), member);
+        }
+
+        // Load the currently active member relations for this site.
+        let active_members = Relation::find()
+            .filter(
+                Condition::all()
+                    .add(relation::Column::RelationType.eq(RelationType::SiteMember))
+                    .add(relation::Column::DestType.eq(RelationObjectType::Site))
+                    .add(relation::Column::DestId.eq(site_id))
+                    .add(relation::Column::FromType.eq(RelationObjectType::User))
+                    .add(relation::Column::OverwrittenAt.is_null())
+                    .add(relation::Column::DeletedAt.is_null()),
+            )
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+        let active_by_user: std::collections::HashMap<i64, relation::Model> =
+            active_members
+                .into_iter()
+                .map(|rel| (rel.from_id, rel))
+                .collect();
+
+        // Imported scope: identities with a Wikidot profile row and no
+        // local account row. Only those may be retired by absence;
+        // snapshot upserts apply by stable ID either way, so an
+        // activated identity reconciles onto the same relation.
+        let candidate_ids: Vec<i64> = active_by_user.keys().copied().collect();
+        let mut imported_scope: std::collections::HashSet<i64> = Default::default();
+        if !candidate_ids.is_empty() {
+            let wikidot_ids: std::collections::HashSet<i64> = WikidotUser::find()
+                .filter(wikidot_user::Column::UserId.is_in(candidate_ids.clone()))
+                .all(txn)
+                .await
+                .or_raise(make_error)?
+                .into_iter()
+                .map(|user| i64::from(user.user_id))
+                .collect();
+            let local_ids: std::collections::HashSet<i64> = WikijumpUser::find()
+                .filter(user::Column::UserId.is_in(candidate_ids))
+                .all(txn)
+                .await
+                .or_raise(make_error)?
+                .into_iter()
+                .map(|user| user.user_id)
+                .collect();
+            imported_scope = wikidot_ids.difference(&local_ids).copied().collect();
+        }
+
+        let mut output = ImportSiteRosterOutput {
+            site_id,
+            members_created: 0,
+            members_updated: 0,
+            members_retired: 0,
+            roles_assigned: 0,
+            roles_removed: 0,
+            master_admin_set: false,
+        };
+        let sync_time = now();
+
+        // Upsert memberships with the source join time.
+        for (user_id, member) in &snapshot {
+            let user_id = *user_id;
+            match active_by_user.get(&user_id) {
+                Some(existing) if existing.created_at == member.joined_at => (),
+                Some(existing) => {
+                    let model = relation::ActiveModel {
+                        relation_id: Set(existing.relation_id),
+                        overwritten_at: Set(Some(sync_time)),
+                        overwritten_by: Set(Some(importing_user_id)),
+                        ..Default::default()
+                    };
+                    model.update(txn).await.or_raise(make_error)?;
+                    Self::insert_imported_member_relation(
+                        txn,
+                        site_id,
+                        user_id,
+                        member.joined_at,
+                        importing_user_id,
+                        &make_error,
+                    )
+                    .await?;
+                    output.members_updated += 1;
+                }
+                None => {
+                    Self::insert_imported_member_relation(
+                        txn,
+                        site_id,
+                        user_id,
+                        member.joined_at,
+                        importing_user_id,
+                        &make_error,
+                    )
+                    .await?;
+                    output.members_created += 1;
+                }
+            }
+
+            // Reconcile this member's staff role assignments.
+            let desired: std::collections::HashSet<i64> = member
+                .roles
+                .iter()
+                .map(|role| {
+                    role_id_by_name[match role {
+                        ImportedSiteRole::Admin => "admin",
+                        ImportedSiteRole::Moderator => "moderator",
+                    }]
+                })
+                .collect();
+            let current: Vec<user_role::Model> = if staff_role_ids.is_empty() {
+                Vec::new()
+            } else {
+                UserRole::find()
+                    .filter(
+                        Condition::all()
+                            .add(user_role::Column::SiteId.eq(site_id))
+                            .add(user_role::Column::UserId.eq(user_id))
+                            .add(user_role::Column::RoleId.is_in(staff_role_ids.clone()))
+                            .add(user_role::Column::DeletedAt.is_null()),
+                    )
+                    .all(txn)
+                    .await
+                    .or_raise(make_error)?
+            };
+            let current_ids: std::collections::HashSet<i64> =
+                current.iter().map(|row| row.role_id).collect();
+            for role_id in desired.difference(&current_ids) {
+                let model = user_role::ActiveModel {
+                    user_id: Set(user_id),
+                    role_id: Set(*role_id),
+                    site_id: Set(site_id),
+                    assigned_at: Set(sync_time),
+                    assigned_by: Set(importing_user_id),
+                    expires_at: Set(None),
+                    ..Default::default()
+                };
+                model.insert(txn).await.or_raise(make_error)?;
+                output.roles_assigned += 1;
+            }
+            for role_id in current_ids.difference(&desired) {
+                let model = user_role::ActiveModel {
+                    user_id: Set(user_id),
+                    role_id: Set(*role_id),
+                    deleted_at: Set(Some(sync_time)),
+                    ..Default::default()
+                };
+                model.update(txn).await.or_raise(make_error)?;
+                output.roles_removed += 1;
+            }
+        }
+
+        // Retire imported members absent from the snapshot, together
+        // with their staff role assignments on this site.
+        for (user_id, relation) in &active_by_user {
+            if snapshot.contains_key(user_id) || !imported_scope.contains(user_id) {
+                continue;
+            }
+            let model = relation::ActiveModel {
+                relation_id: Set(relation.relation_id),
+                deleted_at: Set(Some(sync_time)),
+                deleted_by: Set(Some(importing_user_id)),
+                ..Default::default()
+            };
+            model.update(txn).await.or_raise(make_error)?;
+            output.members_retired += 1;
+
+            if !staff_role_ids.is_empty() {
+                let stale_roles = UserRole::find()
+                    .filter(
+                        Condition::all()
+                            .add(user_role::Column::SiteId.eq(site_id))
+                            .add(user_role::Column::UserId.eq(*user_id))
+                            .add(user_role::Column::RoleId.is_in(staff_role_ids.clone()))
+                            .add(user_role::Column::DeletedAt.is_null()),
+                    )
+                    .all(txn)
+                    .await
+                    .or_raise(make_error)?;
+                for row in stale_roles {
+                    let model = user_role::ActiveModel {
+                        user_id: Set(row.user_id),
+                        role_id: Set(row.role_id),
+                        deleted_at: Set(Some(sync_time)),
+                        ..Default::default()
+                    };
+                    model.update(txn).await.or_raise(make_error)?;
+                    output.roles_removed += 1;
+                }
+            }
+        }
+
+        // Master Administrator identity, when the snapshot exposes one.
+        if let Some(master_admin_id) = master_admin_user_id {
+            let master_admin_id = i64::from(master_admin_id);
+            if site.master_admin_user_id != Some(master_admin_id) {
+                let mut model = site.into_active_model();
+                model.master_admin_user_id = Set(Some(master_admin_id));
+                model.update(txn).await.or_raise(make_error)?;
+                output.master_admin_set = true;
+            }
+        }
+
+        AuditService::log(
+            ctx,
+            ip_address,
+            AuditEvent::ImportSiteRoster {
+                site_id,
+                member_count: members.len(),
+            },
+        )
+        .await
+        .or_raise(make_error)?;
+
+        Ok(output)
+    }
+
+    async fn insert_imported_member_relation(
+        txn: &DatabaseTransaction,
+        site_id: i64,
+        user_id: i64,
+        joined_at: OffsetDateTime,
+        importing_user_id: i64,
+        make_error: &impl Fn() -> Error,
+    ) -> Result<()> {
+        let metadata = serde_json::to_value(SiteMemberData {
+            accepted: SiteMemberAccepted::Imported,
+        })
+        .or_raise(make_error)?;
+        let model = relation::ActiveModel {
+            relation_type: Set(RelationType::SiteMember),
+            dest_type: Set(RelationObjectType::Site),
+            dest_id: Set(site_id),
+            from_type: Set(RelationObjectType::User),
+            from_id: Set(user_id),
+            metadata: Set(metadata),
+            created_at: Set(joined_at),
+            created_by: Set(importing_user_id),
+            ..Default::default()
+        };
+        model.insert(txn).await.or_raise(make_error)?;
+        Ok(())
     }
 
     pub async fn add_page(
@@ -901,6 +1288,7 @@ impl ImportService {
             page_id,
             site_id,
             user_id,
+            anonymous_ip,
             wikitext,
             comments,
             title,
@@ -908,6 +1296,21 @@ impl ImportService {
             tags,
         }: ImportPageRevision,
     ) -> Result<ImportPageRevisionOutput> {
+        // A null user ID means the source author is Wikidot's Anonymous
+        // pseudo-user, who has no Wikidot account (and so no source user
+        // ID). Attribute the revision to the platform's own Anonymous
+        // system user, never to a real account.
+        if user_id.is_some() && anonymous_ip.is_some() {
+            bail!(Error::new(
+                format!(
+                    "failed to import page revision ID {} (number {}), because an anonymous author IP was supplied for a revision with a real author ID",
+                    revision_id, revision_number,
+                ),
+                ErrorType::DatabaseImport,
+            ));
+        }
+        let user_id = user_id.unwrap_or(ANONYMOUS_USER_ID);
+
         info!(
             "Creating page revision ID {} (number {}) on page ID {} on site ID {}",
             revision_id, revision_number, page_id, site_id,
@@ -1070,6 +1473,10 @@ impl ImportService {
             .col_expr(page_revision::Column::UpdatedAt, Expr::value(updated_at))
             // not settable on page create
             .col_expr(page_revision::Column::Tags, Expr::value(tags))
+            .col_expr(
+                page_revision::Column::AnonymousAuthorIp,
+                Expr::value(anonymous_ip),
+            )
             .filter(page_revision::Column::RevisionId.eq(output_revision_id))
             .exec(txn)
             .await
@@ -1098,13 +1505,19 @@ impl ImportService {
             category_id,
             page_id,
         };
+        // Imported revisions outdate their dependents one rerender depth
+        // deeper than interactive edits, queuing background rerenders
+        // instead of re-rendering every dependent inside this request: a
+        // component included by thousands of pages would otherwise make a
+        // single imported revision cost one render per includer before the
+        // import could respond.
         if let Some(followups) = first_followups {
-            PageRevisionService::apply_first_followups(ctx, id, followups)
+            PageRevisionService::apply_first_followups_for_import(ctx, id, followups)
                 .await
                 .or_raise(make_error)?;
         }
         if let Some(revision) = persisted_revision {
-            PageRevisionService::apply_followups(ctx, id, revision)
+            PageRevisionService::apply_followups_for_import(ctx, id, revision)
                 .await
                 .or_raise(make_error)?;
         }
@@ -1118,8 +1531,6 @@ impl ImportService {
             page_revision_number: revision_number,
         })
     }
-
-    // TODO page_vote
 
     // TODO forum
 
@@ -1935,12 +2346,319 @@ impl ImportService {
         })
     }
 
-    // TODO page_vote
+    /// Imports the source Who-Rated roster of one imported page.
+    ///
+    /// Each source vote becomes a current `page_vote` row flagged
+    /// `from_wikidot`. When the imported aggregate baseline is present, score
+    /// evaluation already counts only local rows, so the roster and the
+    /// aggregate do not add the same votes twice. The import is idempotent:
+    /// a row that already matches the source is left alone, while a conflicting
+    /// local or differing row fails the import instead of being overwritten.
+    pub async fn add_page_votes(
+        ctx: &ServiceContext<'_>,
+        ImportPageVotes {
+            site_id,
+            page_id,
+            rating_system,
+            votes,
+        }: ImportPageVotes,
+    ) -> Result<ImportPageVotesOutput> {
+        info!(
+            "Importing {} source vote(s) on page ID {page_id} on site ID {site_id}",
+            votes.len(),
+        );
+
+        let txn = ctx.transaction();
+        let make_error = |detail: String| {
+            Error::new(
+                format!(
+                    "imported vote roster on page ID {page_id} in site ID {site_id} is invalid: {detail}",
+                ),
+                ErrorType::DatabaseImport,
+            )
+        };
+
+        require_imported_page(ctx, site_id, page_id)
+            .await
+            .or_raise(|| make_error(str!("page is not an imported Wikidot page")))?;
+
+        if let Err(detail) = validate_imported_votes(&rating_system, &votes) {
+            bail!(make_error(detail));
+        }
+
+        // The aggregate baseline is only authoritative once it has been
+        // imported; a missing snapshot skips the cross-check rather than
+        // guessing at the source total.
+        if let Some(imported_rating) =
+            ScoreService::imported_rating(ctx, page_id)
+                .await
+                .or_raise(|| make_error(str!("failed to read the imported aggregate")))?
+        {
+            let source_total: i64 = votes.iter().map(|vote| i64::from(vote.value)).sum();
+            if source_total != imported_rating {
+                bail!(make_error(format!(
+                    "source votes total {source_total} but the imported aggregate is {imported_rating}",
+                )));
+            }
+        }
+
+        let existing = PageVote::find()
+            .filter(page_vote::Column::PageId.eq(page_id))
+            .filter(page_vote::Column::RatingSystem.eq(rating_system.as_str()))
+            .filter(page_vote::Column::DeletedAt.is_null())
+            .all(txn)
+            .await
+            .or_raise(|| make_error(str!("failed to load current votes")))?;
+        let mut existing_by_user = BTreeMap::new();
+        for vote in existing {
+            existing_by_user.insert(vote.user_id, vote);
+        }
+
+        let mut inserted = 0;
+        let mut unchanged = 0;
+        for ImportPageVote { user_id, value } in votes {
+            match existing_by_user.get(&user_id) {
+                Some(vote) if vote.from_wikidot && vote.value == value => {
+                    unchanged += 1;
+                }
+                Some(vote) => {
+                    bail!(make_error(format!(
+                        "user ID {user_id} already has a current vote (value {}, from_wikidot {}) that differs from the source value {value}",
+                        vote.value, vote.from_wikidot,
+                    )));
+                }
+                None => {
+                    let model = page_vote::ActiveModel {
+                        page_id: Set(page_id),
+                        user_id: Set(user_id),
+                        rating_system: Set(rating_system.clone()),
+                        value: Set(value),
+                        from_wikidot: Set(true),
+                        ..Default::default()
+                    };
+                    model.insert(txn).await.or_raise(|| {
+                        make_error(format!("failed to insert user ID {user_id}"))
+                    })?;
+                    inserted += 1;
+                }
+            }
+        }
+
+        Ok(ImportPageVotesOutput {
+            site_id,
+            page_id,
+            inserted,
+            unchanged,
+        })
+    }
+
+    /// Replace one imported page's `<META>` tags with the source set.
+    ///
+    /// The supplied set is authoritative for the page's scope: tags the
+    /// page currently has that are absent from the set are deleted, and
+    /// every supplied tag is written through the page-meta-tag service
+    /// (so validation and cache invalidation apply exactly as for site
+    /// and page imports). Site-scope tags are never touched.
+    pub async fn add_page_meta_tags(
+        ctx: &ServiceContext<'_>,
+        ImportPageMetaTags {
+            site_id,
+            page_id,
+            meta_tags,
+        }: ImportPageMetaTags,
+    ) -> Result<ImportPageMetaTagsOutput> {
+        info!(
+            "Importing {} source meta tag(s) on page ID {page_id} on site ID {site_id}",
+            meta_tags.len(),
+        );
+
+        let txn = ctx.transaction();
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to import meta tags on page ID {page_id} in site ID {site_id}",
+                ),
+                ErrorType::DatabaseImport,
+            )
+        };
+
+        require_imported_page(ctx, site_id, page_id)
+            .await
+            .or_raise(make_error)?;
+
+        // Meta tags are multi-valued: the same name may legitimately
+        // appear several times with different content (for example
+        // repeated og:locale:alternate values). Only an exact
+        // (name, content) pair twice in one payload is a producer bug;
+        // reject it rather than storing the pair twice.
+        let mut new_pairs = HashSet::new();
+        for tag in &meta_tags {
+            if !new_pairs.insert((tag.name.clone(), tag.content.clone())) {
+                bail!(Error::new(
+                    format!(
+                        "failed to import meta tags on page ID {page_id} in site ID {site_id}: duplicate meta tag pair '{}' = '{}'",
+                        tag.name, tag.content,
+                    ),
+                    ErrorType::DatabaseImport,
+                ));
+            }
+        }
+
+        let existing_rows = PageMetaTagTable::find()
+            .filter(page_meta_tag::Column::SiteId.eq(site_id))
+            .filter(page_meta_tag::Column::AllPages.eq(false))
+            .filter(page_meta_tag::Column::PageId.eq(page_id))
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+
+        // The supplied set is authoritative for the page's scope: remove
+        // every stored pair the set no longer carries, then record the
+        // set itself. Removal is pair-precise, so a pair that remains in
+        // the set is never deleted and re-inserted.
+        let mut removed = 0;
+        for row in existing_rows {
+            if !new_pairs.contains(&(row.name.clone(), row.content.clone())) {
+                PageMetaTagService::delete_pair(
+                    ctx,
+                    SetPageMetaTag {
+                        site_id,
+                        page_id,
+                        name: row.name,
+                        content: row.content,
+                        all_pages: false,
+                    },
+                )
+                .await
+                .or_raise(make_error)?;
+                removed += 1;
+            }
+        }
+
+        Self::record_meta_tags(ctx, site_id, page_id, false, &meta_tags, &make_error)
+            .await?;
+
+        Ok(ImportPageMetaTagsOutput {
+            site_id,
+            page_id,
+            stored: meta_tags.len(),
+            removed,
+        })
+    }
+}
+
+/// Checks a source roster before any row is written. Only the plus/minus
+/// rating (`points`) is evidenced by the source roster, so other systems are
+/// rejected rather than guessed.
+fn validate_imported_votes(
+    rating_system: &str,
+    votes: &[ImportPageVote],
+) -> std::result::Result<(), String> {
+    if rating_system != "points" {
+        return Err(format!("unsupported rating system '{rating_system}'"));
+    }
+
+    let mut seen = HashSet::new();
+    for vote in votes {
+        if vote.user_id <= 0 {
+            return Err(format!("invalid user ID {}", vote.user_id));
+        }
+        if vote.value != 1 && vote.value != -1 {
+            return Err(format!(
+                "user ID {} has value {}, expected +1 or -1",
+                vote.user_id, vote.value,
+            ));
+        }
+        if !seen.insert(vote.user_id) {
+            return Err(format!("user ID {} is listed more than once", vote.user_id));
+        }
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::SYNC_PAGE_REVISION_SEQUENCE_SQL;
+    use super::{
+        ImportPageVote, SYNC_PAGE_REVISION_SEQUENCE_SQL, validate_imported_votes,
+    };
+    use serde::Deserialize;
+
+    /// A captured anonymous Who-Rated roster (see the artifact's capture
+    /// script). Only the fields the import reads are declared.
+    #[derive(Deserialize)]
+    struct CapturedRoster {
+        rating: i64,
+        votes: Vec<ImportPageVote>,
+    }
+
+    fn captured_roster(json: &str) -> CapturedRoster {
+        serde_json::from_str(json).expect("captured roster should parse")
+    }
+
+    #[test]
+    fn source_votes_accept_only_plus_minus_points_once_per_user() {
+        let votes = [
+            ImportPageVote {
+                user_id: 1,
+                value: 1,
+            },
+            ImportPageVote {
+                user_id: 2,
+                value: -1,
+            },
+        ];
+        assert!(validate_imported_votes("points", &votes).is_ok());
+        assert!(validate_imported_votes("stars", &votes).is_err());
+
+        let out_of_range = [ImportPageVote {
+            user_id: 1,
+            value: 5,
+        }];
+        assert!(validate_imported_votes("points", &out_of_range).is_err());
+
+        let invalid_user = [ImportPageVote {
+            user_id: 0,
+            value: 1,
+        }];
+        assert!(validate_imported_votes("points", &invalid_user).is_err());
+
+        let duplicate = [
+            ImportPageVote {
+                user_id: 1,
+                value: 1,
+            },
+            ImportPageVote {
+                user_id: 1,
+                value: -1,
+            },
+        ];
+        assert!(validate_imported_votes("points", &duplicate).is_err());
+    }
+
+    #[test]
+    fn captured_scp_9506_roster_validates_and_sums_to_the_source_aggregate() {
+        // #2205: 486 individual voters (475 plus, 11 minus) whose sum is the
+        // page's displayed rating of 464.
+        let roster = captured_roster(include_str!(
+            "../../../../install/local/wikidot-verification/artifacts/votes-scp-9506.json"
+        ));
+        assert_eq!(roster.votes.len(), 486);
+        assert!(validate_imported_votes("points", &roster.votes).is_ok());
+        let total: i64 = roster.votes.iter().map(|vote| i64::from(vote.value)).sum();
+        assert_eq!(total, roster.rating);
+    }
+
+    #[test]
+    fn captured_scp_3352_roster_validates_and_sums_to_the_source_aggregate() {
+        let roster = captured_roster(include_str!(
+            "../../../../install/local/wikidot-verification/artifacts/votes-scp-3352.json"
+        ));
+        assert_eq!(roster.votes.len(), 638);
+        assert!(validate_imported_votes("points", &roster.votes).is_ok());
+        let total: i64 = roster.votes.iter().map(|vote| i64::from(vote.value)).sum();
+        assert_eq!(total, roster.rating);
+    }
 
     #[test]
     fn revision_sequence_sync_sql_uses_imported_max_and_current_sequence_state() {

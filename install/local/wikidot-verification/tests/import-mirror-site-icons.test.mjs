@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { declaredSiteIcons, iconMime } from "../scripts/import-mirror-site-icons.mjs"
+import { declaredSiteIcons, iconMime, sniffIconMime } from "../scripts/import-mirror-site-icons.mjs"
 
 // The head served by scp-wiki.wikidot.com on 2026-10-11 (retained SCP-9506
 // capture scp9506-live-20261012-chromium149).
@@ -39,4 +39,15 @@ test("the observed media type is kept, including a GIF route serving PNG bytes",
   assert.equal(iconMime("image/gif; charset=utf-8"), "image/gif")
   assert.equal(iconMime("image/png"), "image/png")
   assert.throws(() => iconMime("text/html; charset=utf-8"), /unsupported site icon media type/u)
+})
+
+test("sniffIconMime reads the type from the bytes, not the declared header", () => {
+  // Regression: the SCP Wiki favicon is PNG bytes served as image/gif;
+  // Deepwell rejects a declared type the bytes do not match.
+  const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+  assert.equal(sniffIconMime(png), "image/png")
+  assert.equal(sniffIconMime(Buffer.from("GIF89a", "ascii")), "image/gif")
+  assert.equal(sniffIconMime(Buffer.from([0xff, 0xd8, 0xff, 0xe0])), "image/jpeg")
+  assert.equal(sniffIconMime(Buffer.from([0x00, 0x00, 0x01, 0x00])), "image/x-icon")
+  assert.throws(() => sniffIconMime(Buffer.from("<html>", "ascii")), /do not match a supported image type/u)
 })

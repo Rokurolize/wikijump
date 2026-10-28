@@ -13,7 +13,8 @@
             "page:rename",
             "role:view",
             "role:edit",
-            "role:assign"
+            "role:assign",
+            "site:edit"
         ]
     },
     {

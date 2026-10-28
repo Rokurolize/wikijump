@@ -32,6 +32,7 @@
 use super::service::RenderService;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::ServiceContext;
+use crate::services::page::foreign_snapshot_exclusion_sql;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::types::{Action, Permission, Resource};
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement, Value};
@@ -169,8 +170,11 @@ impl RenderService {
             .map(i64::to_string)
             .collect::<Vec<_>>()
             .join(",");
+        // Foreign include-source snapshots are storage, not pages of this
+        // site (issue #2690).
         let where_sql = format!(
-            "site_id = $1 AND deleted_at IS NULL AND page_category_id IN ({allowed_sql})"
+            "site_id = $1 AND deleted_at IS NULL AND page_category_id IN ({allowed_sql}) AND {}",
+            foreign_snapshot_exclusion_sql("page.page_id", site_id),
         );
 
         if shard == 0 {

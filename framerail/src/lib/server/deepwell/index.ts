@@ -82,6 +82,7 @@ interface PackageInfo {
 interface CompileInfo {
   built_at: string
   rustc_version: string
+  cargo_version: string
   endian: string
   target: string
   threads: number

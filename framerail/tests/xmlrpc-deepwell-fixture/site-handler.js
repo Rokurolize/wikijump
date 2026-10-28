@@ -210,6 +210,54 @@ export const handleSiteRpc = ({ rpcRequest }) => {
   ) {
     result = []
   } else if (
+    rpcRequest.method === "site_create" &&
+    hasExactKeys(rpcRequest.params, [
+      "slug",
+      "name",
+      "tagline",
+      "description",
+      "default_page",
+      "layout",
+      "license",
+      "locale",
+      "ip_address"
+    ]) &&
+    typeof rpcRequest.params.slug === "string" &&
+    typeof rpcRequest.params.name === "string" &&
+    typeof rpcRequest.params.tagline === "string" &&
+    typeof rpcRequest.params.description === "string" &&
+    typeof rpcRequest.params.locale === "string" &&
+    typeof rpcRequest.params.ip_address === "string"
+  ) {
+    // Refs #2052. Records the framerail newSite submission at the public
+    // service boundary and answers like a fresh creation.
+    fixtureState.siteCreateRequests.push({
+      slug: rpcRequest.params.slug,
+      name: rpcRequest.params.name,
+      tagline: rpcRequest.params.tagline,
+      description: rpcRequest.params.description,
+      default_page: rpcRequest.params.default_page,
+      layout: rpcRequest.params.layout,
+      license: rpcRequest.params.license,
+      locale: rpcRequest.params.locale,
+      ip_address: rpcRequest.params.ip_address
+    })
+    fixtureState.lastCreatedSiteSlug = rpcRequest.params.slug
+    result = {
+      site_id: 6000099,
+      site_user_id: 6000100,
+      slug: rpcRequest.params.slug
+    }
+  } else if (
+    rpcRequest.method === "site_domain" &&
+    Array.isArray(rpcRequest.params) &&
+    rpcRequest.params[0] === 6000099
+  ) {
+    // Answers the canonical origin for the freshly recorded site. The
+    // `.localhost` authority keeps the hermetic suite loopback-contained;
+    // specs assert the redirect Location, never fetch it.
+    result = `${fixtureState.lastCreatedSiteSlug ?? "newsite-journey"}.localhost`
+  } else if (
     rpcRequest.method === "site_get" &&
     hasExactKeys(rpcRequest.params, ["site"]) &&
     ["scp-wiki", "www", "missing-site"].includes(rpcRequest.params.site)

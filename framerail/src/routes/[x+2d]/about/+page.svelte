@@ -6,6 +6,14 @@
 
 <h1>{data.internationalization?.["about-info"]}</h1>
 
+<p class="platform-blurb">{data.internationalization?.["about-info.blurb"]}</p>
+
+<p class="platform-links">
+  <a href={data.blog_url} rel="external"
+    >{data.internationalization?.["about-info.blog"]}</a
+  >
+</p>
+
 <table class="platform-info">
   <tbody>
     <tr class="info-header">
@@ -51,6 +59,26 @@
       >
       <td class="info-attribute-value">{data.backend.compile_info.rustc_version}</td>
     </tr>
+    <tr class="info-attribute-row">
+      <th class="info-attribute-name"
+        >{data.internationalization?.["about-info.cargo-version"]}</th
+      >
+      <td class="info-attribute-value">{data.backend.compile_info.cargo_version}</td>
+    </tr>
+    <tr class="info-attribute-row">
+      <th class="info-attribute-name"
+        >{data.internationalization?.["about-info.built-at"]}</th
+      >
+      <td class="info-attribute-value">{data.backend.compile_info.built_at}</td>
+    </tr>
+    {#if data.backend.compile_info.git_commit}
+      <tr class="info-attribute-row">
+        <th class="info-attribute-name"
+          >{data.internationalization?.["about-info.git-commit"]}</th
+        >
+        <td class="info-attribute-value">{data.backend.compile_info.git_commit}</td>
+      </tr>
+    {/if}
   </tbody>
   <tbody>
     <tr class="info-header">
@@ -102,6 +130,14 @@
       >
       <td class="info-attribute-value">{data.frontend.pnpm}</td>
     </tr>
+    {#if data.frontend.git_commit}
+      <tr class="info-attribute-row">
+        <th class="info-attribute-name"
+          >{data.internationalization?.["about-info.git-commit"]}</th
+        >
+        <td class="info-attribute-value">{data.frontend.git_commit}</td>
+      </tr>
+    {/if}
   </tbody>
 </table>
 

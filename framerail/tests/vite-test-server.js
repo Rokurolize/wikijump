@@ -8,8 +8,8 @@ import { createServer } from "vite"
  * watching only introduces cross-worker invalidation of the shared
  * generated tree.
  */
-export const createTestViteServer = () => {
-  return createServer({
+export const createTestViteServer = async () => {
+  const server = await createServer({
     appType: "custom",
     logLevel: "silent",
     server: {
@@ -17,4 +17,11 @@ export const createTestViteServer = () => {
       watch: null
     }
   })
+
+  // SvelteKit 3 serves requests through the SSR environment's module runner,
+  // which keeps its own module instances. Route ssrLoadModule through the same
+  // runner so tests that patch a module (e.g. the Deepwell client) affect the
+  // instance the request handlers use.
+  server.ssrLoadModule = (url) => server.environments.ssr.runner.import(url)
+  return server
 }

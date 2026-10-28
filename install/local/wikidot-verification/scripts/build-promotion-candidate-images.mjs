@@ -149,6 +149,11 @@ async function dockerBuildImage({role, dockerfile, context, build_args: buildArg
       "--label", `com.rokurolize.wikijump.ftml_sha=${sourceIdentity.ftml_sha}`,
       "--label", "com.rokurolize.wikijump.profile=production-build",
       ...buildArgs.flatMap((value) => ["--build-arg", value]),
+      // The platform information page (WJ-1279) shows the source commit;
+      // Docker contexts exclude .git, so the commit is passed explicitly.
+      ...(role === "deepwell" || role === "framerail"
+        ? ["--build-arg", `WIKIJUMP_GIT_COMMIT=${sourceIdentity.wikijump_commit}`]
+        : []),
       "--iidfile", iidfile,
       context,
     ];
