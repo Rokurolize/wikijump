@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import fsp from 'node:fs/promises';import os from 'node:os';import path from 'node:path';import crypto from 'node:crypto';
-import {faithfulDesignExemptionsState,loadFaithfulDesignExemptions,matchFullCheckWaivers,matchFaithfulDesignContainment,verifyFaithfulDesignWaivers,finalizeVisualAcceptance,FAITHFUL_DESIGN_EXEMPTIONS_SCHEMA} from '../src/finalize-visual-acceptance.mjs';
+import {faithfulDesignExemptionsState,loadFaithfulDesignExemptions,matchFullCheckWaivers,matchFaithfulDesignContainment,verifyFaithfulDesignWaivers,finalizeVisualAcceptance,surfaceOverflowSourcesChainSha256,surfaceFindingCanonicalSha256,FAITHFUL_DESIGN_EXEMPTIONS_SCHEMA} from '../src/finalize-visual-acceptance.mjs';
 import {TARGET_ACCEPTANCE_CONTRACT_SHA256} from '../src/target-acceptance-contract.mjs';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const readPackageFile=name=>fs.readFileSync(new URL(`../ports/cosmonaut/${name}`,import.meta.url),'utf8');
@@ -7,10 +7,11 @@ const ledgerEntry=()=>loadFaithfulDesignExemptions().entries.find(entry=>entry.i
 const findingFromSpec=spec=>({severity:'error',kind:spec.kind,viewport:spec.viewport,overflow_px:spec.overflow_px,document_overflow_px:spec.document_overflow_px,viewport_escape_px:spec.viewport_escape_px,baseline_overflow_px:spec.baseline_overflow_px,baseline_document_overflow_px:spec.baseline_document_overflow_px,baseline_viewport_escape_px:spec.baseline_viewport_escape_px,overflow_sources:spec.selectors.map(selector=>({selector}))});
 const syntheticResult=entry=>({target_acceptance_contract_sha256:entry.target_acceptance_contract_sha256,candidate_css_sha256:entry.candidate_css_sha256,candidate_source_sha256:entry.candidate_source_sha256,full_check_input_bindings:{sha256:entry.full_check_input_bindings_sha256},target_acceptance:{status:'fail',findings:entry.findings.map(findingFromSpec)}});
 
-test('the committed ledger carries only the authorized G2-47 cosmonaut entry',()=>{
+test('the committed ledger carries the authorized G2-47 cosmonaut entry first',()=>{
  const document=loadFaithfulDesignExemptions();
  assert.equal(document.schema,FAITHFUL_DESIGN_EXEMPTIONS_SCHEMA);
- assert.equal(document.entries.length,1);
+ assert.equal(document.entries.length,3);
+ assert.deepEqual(document.entries.map(entry=>entry.id),['G2-47-cosmonaut-hovertip','OD-T3-a-ouroborous-surface-history','OD-T3-a-scp-offices-surface-history']);
  const entry=document.entries[0];
  assert.equal(entry.id,'G2-47-cosmonaut-hovertip');
  assert.equal(entry.decision,'G2-47');
@@ -101,4 +102,148 @@ test('containment exemptions match exactly, including the certified-remedy-confl
  assert.equal(matchFaithfulDesignContainment(document,{...tuple,theme:'space'}),null);
  const fallback=matchFaithfulDesignContainment(document,{theme:'hansarp',observationKey:JSON.stringify(['hansarp','chromium','narrow-mobile','page.history','settled']),candidateOverflowPx:5,baselineOverflowPx:0,dependenciesSha256:'b'.repeat(64)});
  assert.equal(fallback?.decision,'certified-remedy-conflict');
+});
+
+// --- OD-T3-a surface_new_viewport_overflow variant ---
+// The chains below are the exact ordered overflow_sources arrays recorded in
+// the TL-02 full-check raw results (runtime tree, tl02-*-full/raw-result.json).
+const OUROBOROUS_CHAIN=[{"selector": "table.form", "tag": "table", "class_name": "form", "inside_page_content": false, "ancestors": ["#history-form-1", "#action-area", "#main-content", "#content-wrap", "#container"], "rect": {"left": 15.5, "right": 457.5, "width": 442}, "overflow_px": 67.5, "off_left_px": 0, "off_right_px": 67.5, "computed": {"width": "442px", "min_width": "0px", "max_width": "100%", "position": "static", "overflow_x": "visible"}}, {"selector": "tbody", "tag": "tbody", "class_name": "", "inside_page_content": false, "ancestors": ["table.form", "#history-form-1", "#action-area", "#main-content", "#content-wrap"], "rect": {"left": 15.5, "right": 457.5, "width": 442}, "overflow_px": 67.5, "off_left_px": 0, "off_right_px": 67.5, "computed": {"width": "442px", "min_width": "0px", "max_width": "none", "position": "static", "overflow_x": "visible"}}, {"selector": "tr", "tag": "tr", "class_name": "", "inside_page_content": false, "ancestors": ["tbody", "table.form", "#history-form-1", "#action-area", "#main-content"], "rect": {"left": 321.5, "right": 457.5, "width": 136}, "overflow_px": 67.5, "off_left_px": 0, "off_right_px": 67.5, "computed": {"width": "136px", "min_width": "auto", "max_width": "none", "position": "static", "overflow_x": "visible"}}, {"selector": "td", "tag": "td", "class_name": "", "inside_page_content": false, "ancestors": ["tr", "tbody", "table.form", "#history-form-1", "#action-area"], "rect": {"left": 353.3, "right": 457.5, "width": 104.2}, "overflow_px": 67.5, "off_left_px": 0, "off_right_px": 67.5, "computed": {"width": "99px", "min_width": "auto", "max_width": "none", "position": "static", "overflow_x": "visible"}}, {"selector": "td", "tag": "td", "class_name": "", "inside_page_content": false, "ancestors": ["tr", "tbody", "table.form", "#history-form-1", "#action-area"], "rect": {"left": 353.3, "right": 457.5, "width": 104.2}, "overflow_px": 67.5, "off_left_px": 0, "off_right_px": 67.5, "computed": {"width": "104.188px", "min_width": "auto", "max_width": "none", "position": "static", "overflow_x": "visible"}}];
+const SCP_OFFICES_CHAIN=[{"selector": "table.form", "tag": "table", "class_name": "form", "inside_page_content": false, "ancestors": ["#history-form-1", "#action-area", "#main-content", "#content-wrap", "#container"], "rect": {"left": 15.5, "right": 475.5, "width": 460}, "overflow_px": 85.5, "off_left_px": 0, "off_right_px": 85.5, "computed": {"width": "460px", "min_width": "0px", "max_width": "100%", "position": "static", "overflow_x": "visible"}}, {"selector": "tbody", "tag": "tbody", "class_name": "", "inside_page_content": false, "ancestors": ["table.form", "#history-form-1", "#action-area", "#main-content", "#content-wrap"], "rect": {"left": 15.5, "right": 475.5, "width": 460}, "overflow_px": 85.5, "off_left_px": 0, "off_right_px": 85.5, "computed": {"width": "460px", "min_width": "0px", "max_width": "none", "position": "static", "overflow_x": "visible"}}, {"selector": "tr", "tag": "tr", "class_name": "", "inside_page_content": false, "ancestors": ["tbody", "table.form", "#history-form-1", "#action-area", "#main-content"], "rect": {"left": 339.5, "right": 475.5, "width": 136}, "overflow_px": 85.5, "off_left_px": 0, "off_right_px": 85.5, "computed": {"width": "136px", "min_width": "auto", "max_width": "none", "position": "static", "overflow_x": "visible"}}, {"selector": "td", "tag": "td", "class_name": "", "inside_page_content": false, "ancestors": ["tr", "tbody", "table.form", "#history-form-1", "#action-area"], "rect": {"left": 356.3, "right": 475.5, "width": 119.2}, "overflow_px": 85.5, "off_left_px": 0, "off_right_px": 85.5, "computed": {"width": "114px", "min_width": "auto", "max_width": "none", "position": "static", "overflow_x": "visible"}}, {"selector": "td", "tag": "td", "class_name": "", "inside_page_content": false, "ancestors": ["tr", "tbody", "table.form", "#history-form-1", "#action-area"], "rect": {"left": 356.3, "right": 475.5, "width": 119.2}, "overflow_px": 85.5, "off_left_px": 0, "off_right_px": 85.5, "computed": {"width": "119.188px", "min_width": "auto", "max_width": "none", "position": "static", "overflow_x": "visible"}}];
+const surfaceEntry=id=>loadFaithfulDesignExemptions().entries.find(entry=>entry.id===id);
+const readThemeFile=(pkg,name)=>fs.readFileSync(new URL(`../ports/${pkg}/${name}`,import.meta.url),'utf8');
+// The whole TL-02 finding objects, verbatim: the finding canonical hash
+// binds every key of these objects, not only the overflow chain.
+const SURFACE_FINDINGS={'OD-T3-a-ouroborous-surface-history':{"severity": "error", "kind": "surface_new_viewport_overflow", "surface": "page.history", "state": "history-list", "viewport": "mobile", "before_px": 0, "after_px": 67, "overflow_sources": [{"selector": "table.form", "tag": "table", "class_name": "form", "inside_page_content": false, "ancestors": ["#history-form-1", "#action-area", "#main-content", "#content-wrap", "#container"], "rect": {"left": 15.5, "right": 457.5, "width": 442}, "overflow_px": 67.5, "off_left_px": 0, "off_right_px": 67.5, "computed": {"width": "442px", "min_width": "0px", "max_width": "100%", "position": "static", "overflow_x": "visible"}}, {"selector": "tbody", "tag": "tbody", "class_name": "", "inside_page_content": false, "ancestors": ["table.form", "#history-form-1", "#action-area", "#main-content", "#content-wrap"], "rect": {"left": 15.5, "right": 457.5, "width": 442}, "overflow_px": 67.5, "off_left_px": 0, "off_right_px": 67.5, "computed": {"width": "442px", "min_width": "0px", "max_width": "none", "position": "static", "overflow_x": "visible"}}, {"selector": "tr", "tag": "tr", "class_name": "", "inside_page_content": false, "ancestors": ["tbody", "table.form", "#history-form-1", "#action-area", "#main-content"], "rect": {"left": 321.5, "right": 457.5, "width": 136}, "overflow_px": 67.5, "off_left_px": 0, "off_right_px": 67.5, "computed": {"width": "136px", "min_width": "auto", "max_width": "none", "position": "static", "overflow_x": "visible"}}, {"selector": "td", "tag": "td", "class_name": "", "inside_page_content": false, "ancestors": ["tr", "tbody", "table.form", "#history-form-1", "#action-area"], "rect": {"left": 353.3, "right": 457.5, "width": 104.2}, "overflow_px": 67.5, "off_left_px": 0, "off_right_px": 67.5, "computed": {"width": "99px", "min_width": "auto", "max_width": "none", "position": "static", "overflow_x": "visible"}}, {"selector": "td", "tag": "td", "class_name": "", "inside_page_content": false, "ancestors": ["tr", "tbody", "table.form", "#history-form-1", "#action-area"], "rect": {"left": 353.3, "right": 457.5, "width": 104.2}, "overflow_px": 67.5, "off_left_px": 0, "off_right_px": 67.5, "computed": {"width": "104.188px", "min_width": "auto", "max_width": "none", "position": "static", "overflow_x": "visible"}}], "parity_review": {"status": "INSUFFICIENT_EVIDENCE", "surface_ids": ["content.article", "content.table", "page.history", "page.normal", "shell.container"], "may_treat_differences_as_port_requirements": false, "port_conclusion_eligible": false, "blocks_port_conclusion": false, "quarantined": true, "conclusion_resolution": "LOCAL_TARGET_ACCEPTANCE_ONLY", "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY", "reason": "The finding remains in SCP-JP local target acceptance; it cannot establish Wikidot parity or a parity-based port requirement."}},'OD-T3-a-scp-offices-surface-history':{"severity": "error", "kind": "surface_new_viewport_overflow", "surface": "page.history", "state": "history-list", "viewport": "mobile", "before_px": 0, "after_px": 85, "overflow_sources": [{"selector": "table.form", "tag": "table", "class_name": "form", "inside_page_content": false, "ancestors": ["#history-form-1", "#action-area", "#main-content", "#content-wrap", "#container"], "rect": {"left": 15.5, "right": 475.5, "width": 460}, "overflow_px": 85.5, "off_left_px": 0, "off_right_px": 85.5, "computed": {"width": "460px", "min_width": "0px", "max_width": "100%", "position": "static", "overflow_x": "visible"}}, {"selector": "tbody", "tag": "tbody", "class_name": "", "inside_page_content": false, "ancestors": ["table.form", "#history-form-1", "#action-area", "#main-content", "#content-wrap"], "rect": {"left": 15.5, "right": 475.5, "width": 460}, "overflow_px": 85.5, "off_left_px": 0, "off_right_px": 85.5, "computed": {"width": "460px", "min_width": "0px", "max_width": "none", "position": "static", "overflow_x": "visible"}}, {"selector": "tr", "tag": "tr", "class_name": "", "inside_page_content": false, "ancestors": ["tbody", "table.form", "#history-form-1", "#action-area", "#main-content"], "rect": {"left": 339.5, "right": 475.5, "width": 136}, "overflow_px": 85.5, "off_left_px": 0, "off_right_px": 85.5, "computed": {"width": "136px", "min_width": "auto", "max_width": "none", "position": "static", "overflow_x": "visible"}}, {"selector": "td", "tag": "td", "class_name": "", "inside_page_content": false, "ancestors": ["tr", "tbody", "table.form", "#history-form-1", "#action-area"], "rect": {"left": 356.3, "right": 475.5, "width": 119.2}, "overflow_px": 85.5, "off_left_px": 0, "off_right_px": 85.5, "computed": {"width": "114px", "min_width": "auto", "max_width": "none", "position": "static", "overflow_x": "visible"}}, {"selector": "td", "tag": "td", "class_name": "", "inside_page_content": false, "ancestors": ["tr", "tbody", "table.form", "#history-form-1", "#action-area"], "rect": {"left": 356.3, "right": 475.5, "width": 119.2}, "overflow_px": 85.5, "off_left_px": 0, "off_right_px": 85.5, "computed": {"width": "119.188px", "min_width": "auto", "max_width": "none", "position": "static", "overflow_x": "visible"}}], "parity_review": {"status": "INSUFFICIENT_EVIDENCE", "surface_ids": ["content.article", "content.table", "page.history", "page.normal", "shell.container"], "may_treat_differences_as_port_requirements": false, "port_conclusion_eligible": false, "blocks_port_conclusion": false, "quarantined": true, "conclusion_resolution": "LOCAL_TARGET_ACCEPTANCE_ONLY", "decision_authority": "SCP_JP_LOCAL_TARGET_ACCEPTANCE_ONLY", "reason": "The finding remains in SCP-JP local target acceptance; it cannot establish Wikidot parity or a parity-based port requirement."}}};
+const surfaceFinding=(entry)=>structuredClone(SURFACE_FINDINGS[entry.id]);
+const surfaceResult=(entry,chain)=>({target_acceptance_contract_sha256:entry.target_acceptance_contract_sha256,candidate_css_sha256:entry.candidate_css_sha256,candidate_source_sha256:entry.candidate_source_sha256,candidate_preview_sha256:entry.candidate_preview_sha256,candidate_base_css_sha256:entry.candidate_base_css_sha256,full_check_input_bindings:{sha256:entry.full_check_input_bindings_sha256},target_acceptance:{status:'fail',findings:[surfaceFinding(entry,chain)]}});
+
+test('OD-T3-a entries carry the exact TL-02 bindings and claim no reference parity',()=>{
+ const expected={
+  'OD-T3-a-ouroborous-surface-history':{package:'ouroborous-theme',css:'0102ff1156947176ae4bca48829e758982331d11c45df6b7b8f8ef5d453d402e',source:'ec5eadaa0d7f13636259c8209ad6f5ab2f20c52a882ed92a59ebcd2f7469299d',preview:'cf7f337ed0cc7b6d651bf58887aa7c58259f9ad646b32df459b4d28de697c5a8',inputs:'b3f6af7b052294a6407700f0dba6c6f22799c83aef32dfc44e979a1caf32b54b',raw:'613b2671d98a91b23c550615fefb668717a50847531b8dcb0a9dedc93a00b32f',chain:'0817205ccec880ca137054307fb690c5e3569c1637cde31d49b2fe544d5a3b5e',findingHash:'5427e20788c79fba400b23d79f972b80f2d2cf5043bef1327389b37e1242cc76',after:67,width:442,chainRows:OUROBOROUS_CHAIN},
+  'OD-T3-a-scp-offices-surface-history':{package:'scp-offices-theme',css:'f3d5d0cec11e9092bed5913399d302ed8a19dea98a4e43ee71845afe4e803545',source:'1fb480f19fd71c9d78ba365e5d88d5668ce46b722546f514b795a83b74eb82c8',preview:'c1232435af36eeeee5d2d5c5b548832f7b8d7f5e66b5485af3d7eba0b80f4213',inputs:'abc7e2553b8a7b02e22390f399a385051f22c0a134910d28292d6de782dcf872',raw:'dc19675e426ea3e0f8142699ec5165642fb4be8a3596a9a57500c087e0575759',chain:'2691dc99dc39092d6d96b4964908970e005b0401c65731ae34d207e28c5fc10b',findingHash:'6ef09bb339b7610f6607301c1ae24ec4880138ff86bfe81d74e56a98f686028c',after:85,width:460,chainRows:SCP_OFFICES_CHAIN}};
+ for(const [id,want] of Object.entries(expected)){
+  const entry=surfaceEntry(id);
+  assert.ok(entry,id);
+  assert.equal(entry.decision,'OD-T3-a');
+  assert.equal(entry.package,want.package);
+  assert.equal(entry.instrument,'full_check_target');
+  assert.equal(entry.candidate_css_sha256,want.css);
+  assert.equal(entry.candidate_source_sha256,want.source);
+  assert.equal(entry.candidate_preview_sha256,want.preview);
+  assert.equal(entry.candidate_base_css_sha256,null);
+  assert.equal(entry.full_check_input_bindings_sha256,want.inputs);
+  assert.equal(entry.full_check_raw_result_sha256,want.raw);
+  assert.equal(entry.target_acceptance_contract_sha256,TARGET_ACCEPTANCE_CONTRACT_SHA256);
+  assert.equal(sha(readThemeFile(want.package,'candidate.css')),want.css);
+  assert.equal(sha(readThemeFile(want.package,'candidate.wikidot.source.txt')),want.source);
+  assert.equal(sha(readThemeFile(want.package,'candidate.wikidot.txt')),want.preview);
+  const spec=entry.findings[0];
+  assert.equal(entry.findings.length,1);
+  assert.deepEqual({kind:spec.kind,surface:spec.surface,state:spec.state,viewport:spec.viewport,before_px:spec.before_px,after_px:spec.after_px},{kind:'surface_new_viewport_overflow',surface:'page.history',state:'history-list',viewport:'mobile',before_px:0,after_px:want.after});
+  assert.equal(spec.overflow_sources_chain_sha256,want.chain);
+  assert.equal(spec.overflow_sources_first.width,want.width);
+  assert.equal(surfaceOverflowSourcesChainSha256(want.chainRows),want.chain);
+  assert.equal(spec.finding_canonical_sha256,want.findingHash);
+  assert.notEqual(spec.finding_canonical_sha256,spec.overflow_sources_chain_sha256);
+  assert.equal(surfaceFindingCanonicalSha256(SURFACE_FINDINGS[id]),want.findingHash);
+  // Basis is Q1-4 provenance only: the reference does not overflow.
+  assert.match(entry.basis,/Q1-4 provenance only/);
+  assert.match(entry.basis,/does NOT overflow/);
+  assert.match(entry.basis,/does not claim parity with the reference/);
+ }
+});
+
+test('OD-T3-a waivers match only the exact recorded surface findings',()=>{
+ const document=loadFaithfulDesignExemptions();
+ const ouroborous=surfaceEntry('OD-T3-a-ouroborous-surface-history');
+ const offices=surfaceEntry('OD-T3-a-scp-offices-surface-history');
+ const ouroborousResult=surfaceResult(ouroborous,OUROBOROUS_CHAIN);
+ const officesResult=surfaceResult(offices,SCP_OFFICES_CHAIN);
+ assert.deepEqual(matchFullCheckWaivers(document,ouroborousResult,{fullCheckRawResultSha256:ouroborous.full_check_raw_result_sha256}).map(w=>w.entry.id),['OD-T3-a-ouroborous-surface-history']);
+ assert.deepEqual(matchFullCheckWaivers(document,officesResult,{fullCheckRawResultSha256:offices.full_check_raw_result_sha256}).map(w=>w.entry.id),['OD-T3-a-scp-offices-surface-history']);
+ assert.equal(matchFullCheckWaivers(document,ouroborousResult).length,1);
+ // Cross-package: neither entry waives the other package's finding.
+ assert.equal(matchFullCheckWaivers({schema:FAITHFUL_DESIGN_EXEMPTIONS_SCHEMA,entries:[offices]},ouroborousResult).length,0);
+ assert.equal(matchFullCheckWaivers({schema:FAITHFUL_DESIGN_EXEMPTIONS_SCHEMA,entries:[ouroborous]},officesResult).length,0);
+});
+
+test('OD-T3-a variant never matches any drifted kind, surface, state, viewport, package, chain, px or binding',()=>{
+ const entry=surfaceEntry('OD-T3-a-ouroborous-surface-history');
+ const options={fullCheckRawResultSha256:entry.full_check_raw_result_sha256};
+ const noMatch=(label,mutate)=>{
+  const document={schema:FAITHFUL_DESIGN_EXEMPTIONS_SCHEMA,entries:[structuredClone(entry)]};
+  const result=surfaceResult(entry,OUROBOROUS_CHAIN);
+  mutate(result,document);
+  assert.equal(matchFullCheckWaivers(document,result,options).length,0,label);
+ };
+ noMatch('other kind',result=>{result.target_acceptance.findings[0].kind='viewport_overflow';});
+ noMatch('other surface kind',result=>{result.target_acceptance.findings[0].kind='surface_navigation_viewport_escape';});
+ noMatch('other surface',result=>{result.target_acceptance.findings[0].surface='page.normal';});
+ noMatch('other state',result=>{result.target_acceptance.findings[0].state='normal';});
+ noMatch('same table at narrow-mobile',result=>{result.target_acceptance.findings[0].viewport='narrow-mobile';});
+ noMatch('other viewport',result=>{result.target_acceptance.findings[0].viewport='desktop';});
+ noMatch('hansarp package',(_result,document)=>{document.entries[0].package='hansarp';});
+ noMatch('any other package',(_result,document)=>{document.entries[0].package='basalt';});
+ noMatch('reordered source chain',result=>{const rows=result.target_acceptance.findings[0].overflow_sources;[rows[1],rows[2]]=[rows[2],rows[1]];});
+ noMatch('different source chain measurement',result=>{result.target_acceptance.findings[0].overflow_sources[2].rect.width=137;});
+ noMatch('first source inside page content',result=>{result.target_acceptance.findings[0].overflow_sources[0].inside_page_content=true;});
+ noMatch('first source ancestors swapped',result=>{result.target_acceptance.findings[0].overflow_sources[0].ancestors[0]='#action-area';});
+ noMatch('truncated source chain',result=>{result.target_acceptance.findings[0].overflow_sources.pop();});
+ noMatch('after_px difference',result=>{result.target_acceptance.findings[0].after_px=68;});
+ noMatch('no tolerance for fractional px',result=>{result.target_acceptance.findings[0].after_px=67.5;});
+ noMatch('non-zero before_px',result=>{result.target_acceptance.findings[0].before_px=1;});
+ noMatch('warn severity is not waived',result=>{result.target_acceptance.findings[0].severity='warn';});
+ noMatch('candidate css drift',result=>{result.candidate_css_sha256='0'.repeat(64);});
+ noMatch('candidate source drift',result=>{result.candidate_source_sha256='0'.repeat(64);});
+ noMatch('candidate preview drift',result=>{result.candidate_preview_sha256='0'.repeat(64);});
+ noMatch('candidate base drift',result=>{result.candidate_base_css_sha256='0'.repeat(64);});
+ noMatch('input bindings drift',result=>{result.full_check_input_bindings.sha256='0'.repeat(64);});
+ noMatch('contract drift',result=>{result.target_acceptance_contract_sha256='0'.repeat(64);});
+ noMatch('spec px drift',(_result,document)=>{document.entries[0].findings[0].after_px=68;});
+ noMatch('spec chain hash drift',(_result,document)=>{document.entries[0].findings[0].overflow_sources_chain_sha256='0'.repeat(64);});
+ noMatch('spec finding canonical hash drift',(_result,document)=>{document.entries[0].findings[0].finding_canonical_sha256='0'.repeat(64);});
+ noMatch('finding field outside the chain changes the whole-finding binding',result=>{result.target_acceptance.findings[0].parity_review.reason='drifted';});
+ const wrongRaw=surfaceResult(entry,OUROBOROUS_CHAIN);
+ assert.equal(matchFullCheckWaivers({schema:FAITHFUL_DESIGN_EXEMPTIONS_SCHEMA,entries:[entry]},wrongRaw,{fullCheckRawResultSha256:'0'.repeat(64)}).length,0,'raw result drift');
+});
+
+async function ouroborousFinalize(t){
+ const entry=surfaceEntry('OD-T3-a-ouroborous-surface-history');
+ const dir=await fsp.mkdtemp(path.join(os.tmpdir(),'theme-lab-odt3a-'));t.after(()=>fsp.rm(dir,{recursive:true,force:true}));
+ const candidate=path.join(dir,'candidate.png'),reference=path.join(dir,'reference.png');
+ await fsp.writeFile(candidate,'candidate');await fsp.writeFile(reference,'reference');
+ const inputs={css:readThemeFile('ouroborous-theme','candidate.css'),source:readThemeFile('ouroborous-theme','candidate.wikidot.source.txt'),preview:readThemeFile('ouroborous-theme','candidate.wikidot.txt')};
+ const viewports=['desktop','laptop','tablet','mobile','narrow-mobile'];
+ const result={target_acceptance_contract_sha256:TARGET_ACCEPTANCE_CONTRACT_SHA256,next_actions:[],candidate_css_sha256:entry.candidate_css_sha256,candidate_source_sha256:entry.candidate_source_sha256,candidate_preview_sha256:sha(inputs.preview),candidate_base_css_sha256:null,full_check_input_bindings:{sha256:entry.full_check_input_bindings_sha256},verification_scope:{mode:'full',deferred:[]},port_decision:{verdict:'pass'},target_acceptance:{status:'fail',visual_status:'inconclusive',issue_count:0,style_change_count:0,torture_changed_component_count:0,findings:[surfaceFinding(entry,OUROBOROUS_CHAIN)]},overall_acceptance:{status:'fail',port_verdict:'pass',target_status:'fail'},verdict:'fail',viewport_status:Object.fromEntries(viewports.map(id=>[id,{status:'pass',viewport_escape_px:0,document_overflow_px:0}])),font_diagnostics:{status:'measured',fonts:[{glyph_count:1}]},torture:'pass',visual:{viewports:Object.fromEntries(viewports.map(id=>[id,{candidate_path:candidate,reference_path:reference,comparison_status:'fail',normalized_rmse:.4}]))}};
+ const review={schema:'theme_lab_visual_acceptance.v1',candidate_css_sha256:entry.candidate_css_sha256,candidate_source_sha256:entry.candidate_source_sha256,candidate_preview_sha256:sha(inputs.preview),viewports:Object.fromEntries(viewports.map(id=>[id,{status:'pass',candidate_screenshot_sha256:sha('candidate'),reference_screenshot_sha256:sha('reference'),reviewed_at:new Date().toISOString(),reviewer:'test reviewer',note:'History surface reviewed against the OD-T3-a record.'}]))};
+ return finalizeVisualAcceptance({result,review,...inputs,fullCheckInputBindings:{sha256:entry.full_check_input_bindings_sha256}});
+}
+
+test('finalize waives the OD-T3-a finding to warn, never pass, and completion re-verifies it',async t=>{
+ const entry=surfaceEntry('OD-T3-a-ouroborous-surface-history');
+ const accepted=await ouroborousFinalize(t);
+ assert.equal(accepted.target_acceptance.status,'warn');
+ assert.equal(accepted.overall_acceptance.status,'warn');
+ const marked=accepted.target_acceptance.findings.filter(finding=>finding.exemption);
+ assert.equal(marked.length,1);
+ assert.equal(marked[0].exemption.entry_id,'OD-T3-a-ouroborous-surface-history');
+ assert.equal(marked[0].exemption.decision,'OD-T3-a');
+ assert.equal(accepted.viewport_status.mobile.status,'pass');
+ assert.deepEqual(accepted.viewport_status.mobile.exemption_entry_ids,['OD-T3-a-ouroborous-surface-history']);
+ assert.equal(accepted.viewport_status.mobile.viewport_escape_px,0);
+ assert.equal(accepted.viewport_status.desktop.exemption_entry_ids,undefined);
+ assert.equal(accepted.faithful_design_exemptions.waivers.length,1);
+ const waiver=accepted.faithful_design_exemptions.waivers[0];
+ assert.deepEqual(waiver.measured,{before_px:0,after_px:67});
+ assert.equal(waiver.surface,'page.history');
+ assert.equal(waiver.state,'history-list');
+ assert.equal(waiver.full_check_raw_result_sha256,entry.full_check_raw_result_sha256);
+ assert.equal(waiver.overflow_sources_chain_sha256,entry.findings[0].overflow_sources_chain_sha256);
+ assert.equal(waiver.finding_canonical_sha256,entry.findings[0].finding_canonical_sha256);
+ assert.deepEqual(verifyFaithfulDesignWaivers(accepted,'ouroborous-theme'),[]);
+ const unbound=structuredClone(accepted);delete unbound.faithful_design_exemptions.waivers[0].full_check_raw_result_sha256;
+ assert.ok(verifyFaithfulDesignWaivers(unbound,'ouroborous-theme').length>0);
+ const drifted=structuredClone(accepted);drifted.target_acceptance.findings[0].surface='page.normal';
+ assert.ok(verifyFaithfulDesignWaivers(drifted,'ouroborous-theme').length>0);
+ assert.ok(verifyFaithfulDesignWaivers(accepted,'scp-offices-theme').length>0);
 });
