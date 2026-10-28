@@ -1,11 +1,11 @@
 {
   "schema": "theme_lab_published_runtime_css_materialization.v1",
   "source_file": "maintenance/authority-base.wikidot.txt",
-  "source_sha256": "39dc4c06547aa7c7e49ac6f35fe38480a35dd7687331496ac6c4f6ef54c0fd99",
+  "source_sha256": "6f335793beb03e96c14bc5e906153e3857da66a37a19e148900e97ae2505f1ca",
   "runtime_active_tags": [],
   "modules": [
     {
-      "index": 4143,
+      "index": 4111,
       "css_sha256": "3020f58a863a29c1c15c55b0c0a83cef70cbb9c5c1773055c232dd1dfc50bf1e"
     }
   ],

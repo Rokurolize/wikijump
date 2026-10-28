@@ -30,9 +30,9 @@
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/paperstack",
-  "candidate_source_hash": "5939181e533d5c02d39ac16dad70f9ae9b80efa7fcd79ebb4c8ba8b75ab16854",
+  "candidate_source_hash": "b02cb8e8bf5c98d90fc6aa5fccaca2c8fb0c101d6dbc10dd3d94be77ac0471d2",
   "source_candidate_path": "install/local/theme-lab/ports/paperstack/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "5939181e533d5c02d39ac16dad70f9ae9b80efa7fcd79ebb4c8ba8b75ab16854",
+  "source_candidate_sha256": "b02cb8e8bf5c98d90fc6aa5fccaca2c8fb0c101d6dbc10dd3d94be77ac0471d2",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -40,10 +40,10 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/paperstack/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "5939181e533d5c02d39ac16dad70f9ae9b80efa7fcd79ebb4c8ba8b75ab16854",
+  "candidate_source_sha256": "b02cb8e8bf5c98d90fc6aa5fccaca2c8fb0c101d6dbc10dd3d94be77ac0471d2",
   "human_port_candidate_path": "install/local/theme-lab/ports/paperstack/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "ae89b529a8182a14fcb9bd4022d431aba0d432da2bf31c4b42d228e27a1f55d6",
-  "candidate_preview_sha256": "5aad28c7ee38731c0d4d3f1dbcf5cd68b58155ae1eb865d48e1687a958232041",
+  "candidate_preview_sha256": "a1cfd160fd4dd9173168c769ffd54c4bf40eaf93abb9707707f6494b1dea3792",
   "candidate_css_sha256": "5c388bc9f4e8c9a888c71e72ca59c6dc7a64f5aab0f791f7a789f8478d77e0aa",
   "page_assets": [
     {
@@ -100,15 +100,10 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "warn",
-    "port_verdict": "pass",
-    "target_status": "warn"
+    "status": "inconclusive",
+    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
   },
-  "state": "accepted-local-candidate-not-published",
-  "final_verdict": "warn",
-  "final_status": "current-full-acceptance",
-  "current_acceptance": {
-    "path": "../current-acceptance/paperstack/accepted-result.json",
-    "sha256": "3970fe848bb5bed195817523aca6abaf121985d326245a5f926911776ea86ff5"
-  }
+  "state": "authority-cleaned-local-candidate-not-published",
+  "final_verdict": "inconclusive",
+  "final_status": "adaptation-authority-cleaned"
 }

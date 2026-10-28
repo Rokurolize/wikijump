@@ -108,5 +108,78 @@
   "pruned_fonts": [],
   "template_placeholders": [],
   "asset_replacements": {},
-  "omitted_assets": []
+  "omitted_assets": [],
+  "dependency_decisions": [
+    {
+      "resource_type": "candidate-css-asset",
+      "source_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFE8j75s.ttf",
+      "sha256": "8e27c1f5656b2482f06486e620ec17d8533e7ceef79c4d9fb819a08a67009b61",
+      "decision": "freeze-runtime-independent-asset"
+    },
+    {
+      "resource_type": "candidate-css-asset",
+      "source_url": "https://fonts.gstatic.com/s/notosansjp/v56/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFPYk75s.ttf",
+      "sha256": "a3910e15eea0451ffbea62e894e951ea9f7c812c8b4b5e947593b6ecc2d4b057",
+      "decision": "freeze-runtime-independent-asset"
+    },
+    {
+      "resource_type": "candidate-css-asset",
+      "source_url": "https://fonts.gstatic.com/s/sawarabigothic/v17/x3d4ckfVaqqa-BEj-I9mE65u3k3NBQ.ttf",
+      "sha256": "50880519c7814f353d58a521c6aa3a4c66f9ddb2c17d135f35d31b83885841c5",
+      "decision": "freeze-runtime-independent-asset"
+    },
+    {
+      "resource_type": "candidate-css-asset",
+      "source_url": "https://fonts.gstatic.com/s/josefinsans/v34/Qw3PZQNVED7rKGKxtqIqX5E-AVSJrOCfjY46_N_XXME.ttf",
+      "sha256": "03c22cfb3121845c2e3201ce354780011431564c496653d36a63f78005998355",
+      "decision": "freeze-runtime-independent-asset"
+    },
+    {
+      "resource_type": "candidate-css-asset",
+      "source_url": "https://fonts.gstatic.com/s/oxygen/v16/2sDfZG1Wl4Lcnbu6iQ.ttf",
+      "sha256": "8eb12af7c555ddc2f90cece6a14fc31f2ca15518f172f734bc350285fe4f7f3d",
+      "decision": "freeze-runtime-independent-asset"
+    },
+    {
+      "resource_type": "candidate-css-asset",
+      "source_url": "https://fonts.gstatic.com/s/firacode/v27/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_D1sFVc.ttf",
+      "sha256": "edc273e94e72c8ee4279c8406f65373d96c518e3fea9cc3f121fed51283e0e70",
+      "decision": "freeze-runtime-independent-asset"
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.googleapis.com/css2?family=Fira+Code&display=swap",
+      "sha256": "d3d9c9ad210fba827d47180250adc61ae55792ccd09313c2b7a6aa37987ed541",
+      "asset_file": "d3d9c9ad210fba827d47180250adc61ae55792ccd09313c2b7a6aa37987ed541.css",
+      "decision": "freeze-source-stylesheet"
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@700&display=swap",
+      "sha256": "6764b63895b5c760712a88b3d1660c3565c4d834887e987fb585b6123be7306f",
+      "asset_file": "6764b63895b5c760712a88b3d1660c3565c4d834887e987fb585b6123be7306f.css",
+      "decision": "freeze-source-stylesheet"
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;700&display=swap",
+      "sha256": "bc28d2f8e1523a0025498921f4e34141d28745b56e790d02679d5b4c39ae4046",
+      "asset_file": "bc28d2f8e1523a0025498921f4e34141d28745b56e790d02679d5b4c39ae4046.css",
+      "decision": "freeze-source-stylesheet"
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.googleapis.com/css2?family=Oxygen&display=swap",
+      "sha256": "f863cbf56bdc254127b41d9cbddddd058a52d85dcd79330eaf6f649a414dbacf",
+      "asset_file": "f863cbf56bdc254127b41d9cbddddd058a52d85dcd79330eaf6f649a414dbacf.css",
+      "decision": "freeze-source-stylesheet"
+    },
+    {
+      "resource_type": "candidate-css-import",
+      "source_url": "https://fonts.googleapis.com/css2?family=Sawarabi+Gothic&display=swap",
+      "sha256": "e93305634b06763b06cea7b872f909c96282571cd482d55cbfeae6a5c20b6d72",
+      "asset_file": "e93305634b06763b06cea7b872f909c96282571cd482d55cbfeae6a5c20b6d72.css",
+      "decision": "freeze-source-stylesheet"
+    }
+  ]
 }

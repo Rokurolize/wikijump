@@ -43,55 +43,59 @@
 このテーマは、Containment Breachのインターフェースに着想を得て、EstrellaYoshteによって作成されました。このテーマを使用するには、次のテキストをページの最初に入力してください:
 
 
-> @@[[include :scp-jp:theme:paperstack]]@@
-> @@ @@
-> @@[[div class="logo"]]@@
-> @@[[image lgtrans.png]]@@
-> @@[[/div]]@@
-> @@ @@
-> @@[[>]]@@
-> @@[[module Rate]]@@
-> @@[[/>]]@@
-> @@ @@
-> @@[[div class="header-container"]]@@
-> @@[[div class="text-item"]]@@
-> @@[[size 90%]]##grey|**アイテム番号:**##[[/size]]@@
-> @@ @@
-> @@[[size 220%]]**(番号)**[[/size]]@@
-> @@[[/div]]@@
-> @@ @@
-> @@[[div class="text-item"]]@@
-> @@[[size 90%]]##grey|**収容クラス:**##[[/size]]@@
-> @@ @@
-> @@[[size 220%]]**(クラス)**[[/size]]@@
-> @@[[/div]]@@
-> @@ @@
-> @@[[div class="grid-item"]]@@
-> @@[[include component:image-block name=画像URL|caption=画像キャプション|width=300px|align=center]]@@
-> @@[[/div]]@@
-> @@[[/div]]@@
-> @@ @@
-> @@[[div class="textbox"]]@@
-> ここに短い文章
-> @@[[/div]]@@
+[[div class="code"]]
+@@[[include :scp-jp:theme:paperstack]]@@
+@@ @@
+@@[[div class="logo"]]@@
+@@[[image lgtrans.png]]@@
+@@[[/div]]@@
+@@ @@
+@@[[>]]@@
+@@[[module Rate]]@@
+@@[[/>]]@@
+@@ @@
+@@[[div class="header-container"]]@@
+@@[[div class="text-item"]]@@
+@@[[size 90%]]##grey|**アイテム番号:**##[[/size]]@@
+@@ @@
+@@[[size 220%]]**(番号)**[[/size]]@@
+@@[[/div]]@@
+@@ @@
+@@[[div class="text-item"]]@@
+@@[[size 90%]]##grey|**収容クラス:**##[[/size]]@@
+@@ @@
+@@[[size 220%]]**(クラス)**[[/size]]@@
+@@[[/div]]@@
+@@ @@
+@@[[div class="grid-item"]]@@
+@@[[include component:image-block name=画像URL|caption=画像キャプション|width=300px|align=center]]@@
+@@[[/div]]@@
+@@[[/div]]@@
+@@ @@
+@@[[div class="textbox"]]@@
+ここに短い文章
+@@[[/div]]@@
+[[/div]]
 
 使用する"//text-item//"ブロックの数を増減させることもできます。(4つ以下にすることを推奨します)
 
-> @@[[include :scp-jp:theme:paperstack]]@@
-> @@ @@
-> @@[[div class="logo"]]@@
-> @@[[image lgtrans.png]]@@
-> @@[[/div]]@@
-> @@ @@
-> @@[[>]]@@
-> @@[[module Rate]]@@
-> @@[[/>]]@@
-> @@ @@
-> @@[[div class="header-container"]]@@
-> @@[[div class="text-item"]]@@
-> @@ ここに文章を入力@@
-> @@[[/div]]@@
-> @@[[/div]]@@
+[[div class="code"]]
+@@[[include :scp-jp:theme:paperstack]]@@
+@@ @@
+@@[[div class="logo"]]@@
+@@[[image lgtrans.png]]@@
+@@[[/div]]@@
+@@ @@
+@@[[>]]@@
+@@[[module Rate]]@@
+@@[[/>]]@@
+@@ @@
+@@[[div class="header-container"]]@@
+@@[[div class="text-item"]]@@
+@@ ここに文章を入力@@
+@@[[/div]]@@
+@@[[/div]]@@
+[[/div]]
 
 [[include component:image-block
     name=http://scp-jp-storage.wikidot.com/local--files/file:3396310-33-dj1t/t1.png |
