@@ -52,7 +52,7 @@
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
-    "final_verdict": "warn"
+    "final_verdict": "inconclusive"
   },
   "dependencies": {
     "slug": "theme:hansarp",
@@ -118,7 +118,7 @@
       "reason": "The page-level image was broken in offline JP preview. Its bytes were already in the content-addressed acquisition cache; "
     }
   ],
-  "final_verdict": "warn",
+  "final_verdict": "inconclusive",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/hansarp/assets.json",
   "asset_dependency_decision_count": 49,
@@ -141,7 +141,7 @@
       "source_path": "candidate-input.css",
       "source_sha256": "de74faf9920df398c3582b4a8d810130a744ab9e8657645c4c1cdc030d626cad",
       "active_tags": [],
-      "candidate_source_sha256": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00",
+      "candidate_source_sha256": "64d5227d86a84ab67944599e6b5d5af73a5a898f2ef38c501ecee028d2c7c5ff",
       "candidate_active_tags": [
         "en",
         "テーマ"
@@ -153,7 +153,7 @@
       "inactive_source_css_modules_removed_exact": 0,
       "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319",
+      "candidate_css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
       "asset_receipt_path": "assets.json",
       "assets": 38,
       "imports": 10,
@@ -168,8 +168,7 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "warn",
-    "port_verdict": "pass",
-    "target_status": "warn"
+    "status": "inconclusive",
+    "reason": "Historical candidate acceptance superseded"
   }
 }

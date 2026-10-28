@@ -939,5 +939,15 @@ div[id*="page-options-bottom"]:not(.page-rate-widget-box):not(#search-top-box-fo
 
 /* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
 
-/* SCP-JP Wikidot Hansarp credit fader anchors: retain native backdrop stacking under the visible controls. */
-#main-content :is(#u-credit-view,#u-credit-otherwise) >.fader.foldable-list-container>a{position:absolute;z-index:auto;transform:none;translate:none;}
+/* SCP-JP Wikidot Hansarp history options: size the history option tracks fluidly so the form fits the mobile viewport. */
+#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2){grid-template-columns:repeat(3,1fr)}
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot Hansarp search: reveal the collapsed query input while the search control is hovered or keyboard-focused. */
+#search-top-box-form:hover #search-top-box-input,#search-top-box-form:focus-within #search-top-box-input{display:inline-block!important;width:8rem}
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot Hansarp navigation labels: keep top-bar labels unbroken on narrow viewports. */
+#top-bar .top-bar>ul>li>a,#top-bar .mobile-top-bar>ul>li>a{word-break:keep-all}
