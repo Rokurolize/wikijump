@@ -873,6 +873,66 @@ fn leaves_image_block_includes_on_non_scp_wiki_sites_for_normal_expansion() {
 }
 
 #[test]
+fn expands_dotted_site_image_block_includes_like_the_canonical_spelling() {
+    // `:scp-wiki.wikidot.com:` names the same site as `:scp-wiki:` (Wikidot
+    // looks the segment up as a site or a host), so the dotted spelling must
+    // expand exactly like the canonical one on an scp-wiki page.
+    let page_info = fallback_test_page_info("scp-3922", "SCP-3922");
+    let mut dotted =
+        "[[include :scp-wiki.wikidot.com:component:image-block name=dotted.jpg]]\n"
+            .to_owned();
+    let dotted_refs =
+        RenderService::expand_wikidot_image_block_includes(&mut dotted, &page_info, None);
+    let mut canonical =
+        "[[include :scp-wiki:component:image-block name=dotted.jpg]]\n".to_owned();
+    let canonical_refs = RenderService::expand_wikidot_image_block_includes(
+        &mut canonical,
+        &page_info,
+        None,
+    );
+    assert_eq!(dotted, canonical);
+    assert_eq!(
+        dotted_refs,
+        vec![
+            PageRef::page_and_site("scp-wiki", "component:image-block"),
+            PageRef::page_and_site("scp-wiki", "component:image-block-base"),
+        ],
+    );
+    assert_eq!(dotted_refs, canonical_refs);
+}
+
+#[test]
+fn dotted_image_block_include_refs_canonicalize_while_dashed_spellings_stay_distinct() {
+    // Fragment shape: `:<B-slug>.wikidot.com:page` keys on site B, so the
+    // snapshot fallback uses the same canonical key as the bare spelling.
+    assert_eq!(
+        RenderService::wikidot_image_block_page_ref(
+            Some("scp-sandbox-3.wikidot.com"),
+            "component:image-block",
+        ),
+        PageRef::page_and_site("scp-sandbox-3", "component:image-block"),
+    );
+    // Dashed host form is a different, nonexistent site on Wikidot
+    // (capture pv2-dashed-host-form): its key must not move.
+    assert_eq!(
+        RenderService::wikidot_image_block_page_ref(
+            Some("scp-jp-wikidot-com"),
+            "component:image-block",
+        ),
+        PageRef::page_and_site("scp-jp-wikidot-com", "component:image-block"),
+    );
+    let scp_wiki = fallback_test_page_info("scp-3922", "SCP-3922");
+    assert!(RenderService::should_expand_wikidot_image_block_include(
+        Some("scp-wiki.wikidot.com"),
+        &scp_wiki,
+    ));
+    assert!(!RenderService::should_expand_wikidot_image_block_include(
+        Some("scp-jp-wikidot-com"),
+        &scp_wiki,
+    ));
+}
+
+#[test]
 fn leaves_literal_wikidot_image_block_includes_unexpanded() {
     let mut wikitext = concat!(
         "[[code]]\n",

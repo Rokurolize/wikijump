@@ -646,7 +646,7 @@ pub(super) static WIKIDOT_TABVIEW_PANEL_ID_REGEX: LazyLock<Regex> =
 static WIKIDOT_IMAGE_BLOCK_INCLUDE_START_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!(
         r#"(?is)\[\[include(?:[ \t\r\n]+|\[!--.*?--\])+"#,
-        r#"(?::(?P<site>[A-Za-z0-9_-]+):)?component:image-block"#,
+        r#"(?::(?P<site>[A-Za-z0-9_.-]+):)?component:image-block"#,
         r#"(?P<after>(?:[ \t\r\n]+|\[!--.*?--\])+|\||\]\])"#,
     ))
     .unwrap()

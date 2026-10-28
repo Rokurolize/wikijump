@@ -651,7 +651,14 @@ impl RenderService {
         page: &str,
     ) -> PageRef {
         match site {
-            Some(site) => PageRef::page_and_site(site, page),
+            // Host-form `<slug>.wikidot.com` spellings name the same site as
+            // the bare slug (Wikidot looks the segment up as a site or a
+            // host), so canonicalize before normalization runs. Anything else
+            // passes through unchanged.
+            Some(site) => PageRef::page_and_site(
+                ftml::data::canonical_include_site(site).into_owned(),
+                page,
+            ),
             None => PageRef::page_only(page),
         }
     }
@@ -661,7 +668,9 @@ impl RenderService {
         page_info: &PageInfo<'_>,
     ) -> bool {
         page_info.site.as_ref() == "scp-wiki"
-            && include_site.is_none_or(|site| site == "scp-wiki")
+            && include_site.is_none_or(|site| {
+                ftml::data::canonical_include_site(site).into_owned() == "scp-wiki"
+            })
     }
 
     pub(super) fn is_inside_wikidot_code_block(source: &str, start: usize) -> bool {
