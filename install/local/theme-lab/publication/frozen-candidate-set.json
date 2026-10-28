@@ -1,6 +1,6 @@
 {
   "schema": "theme_lab_frozen_candidate_set_identity.v1",
-  "generated_at": "2026-10-28T15:22:53.000Z",
+  "generated_at": "2026-10-28T22:21:48.000Z",
   "inventory": {
     "theme_nodes": 36,
     "shared_nodes": 12,
@@ -337,8 +337,8 @@
       "site": "scp-jp",
       "action": "update",
       "publication_source": "../ports/foxtrot/candidate.wikidot.source.txt",
-      "source_sha256": "1940fcb0c0dc1aebbe9fd6f9c638dc83b07895acda45649ad99dce75bc58b7c8",
-      "candidate_css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
+      "source_sha256": "94bec2085323e08e9fe302fa86df5a051c3d21f93dd57c9986a750cc591845f0",
+      "candidate_css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b",
       "upstream": {
         "site": "scp-wiki",
         "slug": "theme:foxtrot",
@@ -359,8 +359,8 @@
       "site": "scp-jp",
       "action": "update",
       "publication_source": "../ports/hansarp/candidate.wikidot.source.txt",
-      "source_sha256": "64d5227d86a84ab67944599e6b5d5af73a5a898f2ef38c501ecee028d2c7c5ff",
-      "candidate_css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
+      "source_sha256": "ccf5f58cc71f0e9a6f7b988e5a74bbc889dd369625075c33da06773b57bc8f45",
+      "candidate_css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
       "upstream": {
         "site": "scp-wiki",
         "slug": "theme:hansarp",
@@ -746,8 +746,8 @@
       "site": "scp-jp",
       "action": "update",
       "publication_source": "../ports/turbo-vision/candidate.wikidot.source.txt",
-      "source_sha256": "8934e7d94e2eb582311c961eaf4042fd01107f7943b9547252e1e5bee08aa3c3",
-      "candidate_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651",
+      "source_sha256": "e8acd56ebfe4e28b14825c26db3980a1d584e5b2532a9c9b818ec70aa9013647",
+      "candidate_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402",
       "upstream": {
         "site": "scp-wiki",
         "slug": "theme:turbo-vision",
@@ -1462,16 +1462,16 @@
   ],
   "authority": {
     "adaptation_authority_packages": 36,
-    "adaptation_authority_sha256": "599b871c310d940f41883eaf7bec4c401dade79b6f2a077a81ca53dfc367bb6c",
+    "adaptation_authority_sha256": "94d414e9c5b6f6cfbe33dca83f2ba800d1a98a79f1063bc96a296f94615a119b",
     "bhl_option_authority_sha256": "900eac424c3c64c7fa2ad14dae6648dd25cdfff4509d2a6fc5a264031929a86e",
     "bhl_framerail_fingerprint_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
-    "source_dependency_audit_sha256": "defc395ec973c9dd457d2ff21b26e812a8623bde71ee1f48b232010a570bf3e6",
+    "source_dependency_audit_sha256": "1fe16e8dc187419436c7badab5b92f9180ba89035e9f169bfb73b7677c0f335e",
     "foreign_dependency_policy_audit_sha256": "a5a3516aaa578c5c61dcb4c1cb248bfe4bcd90dbb54e5bfba574a92b7d6842c6",
     "artifacts": [
       {
         "id": "adaptation-authority",
         "path": "ports/adaptation-authority.json",
-        "sha256": "599b871c310d940f41883eaf7bec4c401dade79b6f2a077a81ca53dfc367bb6c"
+        "sha256": "94d414e9c5b6f6cfbe33dca83f2ba800d1a98a79f1063bc96a296f94615a119b"
       },
       {
         "id": "bhl-option-authority",
@@ -1480,8 +1480,8 @@
       },
       {
         "id": "source-dependency-audit",
-        "path": "publication/evidence/audits/theme-lab-source-dependency-freeze-audit-2026-10-28.json",
-        "sha256": "defc395ec973c9dd457d2ff21b26e812a8623bde71ee1f48b232010a570bf3e6"
+        "path": "publication/evidence/audits/theme-lab-source-dependency-freeze-audit-2026-10-29.json",
+        "sha256": "1fe16e8dc187419436c7badab5b92f9180ba89035e9f169bfb73b7677c0f335e"
       },
       {
         "id": "foreign-dependency-policy-audit",
@@ -1511,7 +1511,7 @@
     "implementation_audit_sha256": "268e08ca3a34f0a245eaa3b48a2b28ff59e37a069280acecdabdb18cd0dd506b"
   },
   "identity_contract": "sha256(JSON.stringify({inventory,nodes,edges,attachments,targeted_scenarios,authority}))",
-  "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+  "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
   "targeted_evidence_bindings": [
     {
       "scenario_id": "bhl-options-toggle-header-dark",
@@ -1580,5 +1580,5 @@
       ]
     }
   ],
-  "readiness_audit_sha256": "dd84ad46d42aba5e376b2903ff723a855e2956b15e4c153d809a8b024e420ff9"
+  "readiness_audit_sha256": "957f438bd34e1514c9ecf3587148e85884c517e85a21b12373741147efba6cc3"
 }

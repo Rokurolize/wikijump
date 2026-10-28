@@ -1824,7 +1824,7 @@
       "status": "source-dependency-reviewed-final-acceptance-pending",
       "publication_source": "../ports/foxtrot/candidate.wikidot.source.txt",
       "candidate_source_sha256": "e0bbf7be650005b5f7d5e3893e598e16febd6f06d0bc26fc86f90163520b4e47",
-      "candidate_css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
+      "candidate_css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b",
       "upstream": {
         "site": "scp-wiki",
         "slug": "theme:foxtrot",
@@ -2931,7 +2931,7 @@
           }
         ]
       },
-      "source_sha256": "1940fcb0c0dc1aebbe9fd6f9c638dc83b07895acda45649ad99dce75bc58b7c8"
+      "source_sha256": "94bec2085323e08e9fe302fa86df5a051c3d21f93dd57c9986a750cc591845f0"
     },
     {
       "id": "theme:hansarp",
@@ -2940,7 +2940,7 @@
       "status": "source-dependency-reviewed-final-acceptance-pending",
       "publication_source": "../ports/hansarp/candidate.wikidot.source.txt",
       "candidate_source_sha256": "8607035277a57cb631f331706c0b2d7fbfbdcf1bcf278cdebf9442258f3aef00",
-      "candidate_css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
+      "candidate_css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
       "upstream": {
         "site": "scp-wiki",
         "slug": "theme:hansarp",
@@ -3158,7 +3158,7 @@
         ],
         "source_css_includes": []
       },
-      "source_sha256": "64d5227d86a84ab67944599e6b5d5af73a5a898f2ef38c501ecee028d2c7c5ff"
+      "source_sha256": "ccf5f58cc71f0e9a6f7b988e5a74bbc889dd369625075c33da06773b57bc8f45"
     },
     {
       "id": "theme:inkblot",
@@ -6516,7 +6516,7 @@
       "status": "source-dependency-reviewed-final-acceptance-pending",
       "publication_source": "../ports/turbo-vision/candidate.wikidot.source.txt",
       "candidate_source_sha256": "69e1fa9c6a57ca01097a29beab1f58b67741f9e53f958e95616fb5f7b559e589",
-      "candidate_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651",
+      "candidate_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402",
       "upstream": {
         "site": "scp-wiki",
         "slug": "theme:turbo-vision",
@@ -6725,7 +6725,7 @@
           }
         ]
       },
-      "source_sha256": "8934e7d94e2eb582311c961eaf4042fd01107f7943b9547252e1e5bee08aa3c3"
+      "source_sha256": "e8acd56ebfe4e28b14825c26db3980a1d584e5b2532a9c9b818ec70aa9013647"
     },
     {
       "id": "theme:wikifot",
@@ -7313,9 +7313,9 @@
   "edge_scope": "Explicit edges represent publication ordering constraints and actionable cross-page publication/runtime dependency actions. They are not an exhaustive rendering of every ordinary Wikidot include. Ordinary include observations and source identities are recorded per theme in campaign_snapshot.candidate_jp_includes and package dependency-input/source-includes manifests; excluded dependencies are listed separately.",
   "candidate_freeze": {
     "path": "frozen-candidate-set.json",
-    "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+    "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
     "state": "frozen-before-final-acceptance",
     "frozen_at": "2026-10-28",
-    "readiness_audit_sha256": "dd84ad46d42aba5e376b2903ff723a855e2956b15e4c153d809a8b024e420ff9"
+    "readiness_audit_sha256": "957f438bd34e1514c9ecf3587148e85884c517e85a21b12373741147efba6cc3"
   }
 }
