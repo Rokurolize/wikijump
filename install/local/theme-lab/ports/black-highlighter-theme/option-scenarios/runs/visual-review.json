@@ -1,11 +1,11 @@
 {
   "schema": "theme_lab_bhl_option_visual_review.v2",
   "status": "pass",
-  "reviewer": "Muse W10 lane (subagent 59efbf0b)",
-  "review_method": "direct visual inspection of the 23 screenshots whose bytes differ from the W08 reviewed set; the remaining 54 are byte-identical to screenshots already classified PASS_NATURAL in the W08 Freeze-1 review and inherit that human review",
-  "reviewed_at": "2026-10-28T08:04:00Z",
-  "candidate_set_sha256": "867aafeb5615d006950c5524e2fc1fe7c4c1f9a02e8db3f6011eee1362e277bb",
-  "source_authority_sha256": "9ed3274e1983a98efddd61381588f86baca724a06e59cff05c201b7661e2fe05",
+  "reviewer": "Muse visual review",
+  "review_method": "direct visual inspection of labeled contact sheets covering all 82 screenshots (6 sheets grouped by scenario and engine)",
+  "reviewed_at": "2026-10-28T14:53:42Z",
+  "candidate_set_sha256": "98c063a1b9943770fe95242706f6d49edf5a57290ae280b6f828a44bdc40bdb3",
+  "source_authority_sha256": "900eac424c3c64c7fa2ad14dae6648dd25cdfff4509d2a6fc5a264031929a86e",
   "framerail_fingerprint_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
   "backend_runtime_identity": {
     "schema": "wikijump_deepwell_runtime_identity.v1",
@@ -19,8 +19,8 @@
   },
   "backend_runtime_identity_sha256": "53c7476f81925cc5d3886606334fae4697c4ea413bc7e932a2762696d9a0baf8",
   "candidate_identity": {
-    "theme_candidate_source_sha256": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
-    "theme_candidate_css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577"
+    "theme_candidate_source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
+    "theme_candidate_css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
   },
   "classification_counts": {
     "PASS_NATURAL": 82
@@ -29,32 +29,32 @@
     {
       "id": "bhl-options-toggle-header-dark",
       "status": "pass",
-      "reviewer": "Muse W10 lane (subagent 59efbf0b)",
-      "review_method": "direct visual inspection of the 23 screenshots whose bytes differ from the W08 reviewed set; the remaining 54 are byte-identical to screenshots already classified PASS_NATURAL in the W08 Freeze-1 review and inherit that human review",
+      "reviewer": "Muse visual review",
+      "review_method": "direct visual inspection of labeled contact sheets covering all 82 screenshots (6 sheets grouped by scenario and engine)",
       "receipts": [
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
-          "sha256": "abc64ddd9f8ce49b461e73d716630926f149879a4846c9f5840a9a0b9fe4e47a"
+          "sha256": "319780ee78cc99a43eee5484aeea073bf6180ae7d30bd40e013259e08296696b"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
-          "sha256": "6f9094ffddd47812261ab4bfd51f9e0b65a03dcac9c98c6b525ab9fb4c6e1b1a"
+          "sha256": "7b7e799e72ff41c26ee5609494a94a9e865204db99166334efd781e1e87e96ae"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
-          "sha256": "7350a9bd8d75082770ae5dad305a6c6a6c4397dcb4f22d1148b7f1e13881f835"
+          "sha256": "8e05007dcbfc6afaffdf80feeb75bd5cbbec46bd09988028f2d37f33c3d281a3"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
-          "sha256": "9d7a9f5a4595ce333467f463666ef4bd68fbcdb7f081636d9e2de5c7fdfd64d7"
+          "sha256": "8bcc730b58d117fb7adb8a7a9160b3d543a3137e2d7957ef57d49e496add084f"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
-          "sha256": "27d75313467f89834f99b84c9be7558587ba7f6ce8c1d1df06c8a8186e7b2b0d"
+          "sha256": "46885f14e463ef8f782b3a6bed63025b350b2f05798b00c318050d661d7c0fad"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
-          "sha256": "8ea6297d04ead0bbdd7d076433e223d86c68cd36ca184dc9c7d05c518bf67ebd"
+          "sha256": "4e64359dbda540aa0a631d7f0d3ee4c76937aaf82b91274b6c11d33f98f8c972"
         }
       ],
       "screenshots": [
@@ -67,7 +67,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-centered-mobile-mobile.png",
@@ -78,18 +78,18 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-centered-narrow-narrow-mobile.png",
-          "sha256": "684ce65faae2bd48d2c9c60ffc72e17abd9507f0d133872306272c8258e8abef",
+          "sha256": "6bb9d03ecd2cd5ebc0ee223a40610d504de70c40e5da907436c92eff7b33d687",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "centered-narrow",
           "viewport": "narrow-mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-rest-desktop.png",
@@ -100,117 +100,117 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-corner-button-open-desktop.png",
-          "sha256": "e089debac787459f3155084a979efabcd33b13d268eba52e143666e82b222393",
+          "sha256": "0357da7b3f5abe171116d4fc42d11a37287c1c91a1ec181c4ba2fc6642df033f",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "toggle-corner-button-open",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-hover-after-button-open-desktop.png",
-          "sha256": "7ba315b5053bcb4c8da4d971fb19e839b186755fa868d082609c2786df190d64",
+          "sha256": "6fb8654c18d30a0962923217df13eafdd07a19a3302de0089e8383adc73273fe",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "toggle-hover-after-button-open",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-keyboard-focus-open-desktop.png",
-          "sha256": "87d27f0e22a8ba58c50c479f1a69174a85d4781098b4a47f183c477d7679cc5e",
+          "sha256": "d3a94bc91caab4247605040efc8ff6b3bde07d768c4a6d7541ca6e223fee064d",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "toggle-keyboard-focus-open",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-mobile-target-open-mobile.png",
-          "sha256": "4d3f756d2d3ebdca0ac5fe9f7be46c7200721285547140ea4724cd3d2c15e9f0",
+          "sha256": "840bc1ebef6dbd11fd26c8fe3d438d5237189d7d1f64271ce8e44ecd1f1821f8",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "toggle-mobile-target-open",
           "viewport": "mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-mobile-close-menu-mobile.png",
-          "sha256": "98ad736e29b898cb4283093e803f8c612d584f17819d1b2ec459f7bb8e48f7f5",
+          "sha256": "41d3170c0bb7ca099217c6c2abfd6854dbbb26ded357e4dec2e382c38844e5ed",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "toggle-mobile-close-menu",
           "viewport": "mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-narrow-target-open-narrow-mobile.png",
-          "sha256": "28c513b9d604b7015e59c9f3aa8ab8fb55baa9696ec6f84e25217ecce1904a28",
+          "sha256": "c958d4d689de86eb5ae11be80191e4b273a3b5762af6a7611160894de8124182",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "toggle-narrow-target-open",
           "viewport": "narrow-mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-normal-desktop.png",
-          "sha256": "353b3d9f38f0f69609445010a156c0eb92403d29e1bd7f3775b8bfe07431390a",
+          "sha256": "63e1b36407999488a21d8ad7988078228de2c904bc11d7397af196eb87ba0498",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "dark-normal",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-hover-desktop.png",
-          "sha256": "07acad5a3b285b4380d9d05153b0a655267d0e21cbc7fd3cf5d75019295278b0",
+          "sha256": "8e48e886d6a47e4f45caee98676462e2eb9ec27184e19fa42785f87a9d0c8bcc",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "dark-hover",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-keyboard-focus-desktop.png",
-          "sha256": "3904696a5d94808c730bad00dd8b5397a26cb4f33e9b26b3e679c03609742688",
+          "sha256": "cbc2ec1877e43271d47fcd2f04c093203d6f9e6bc5d2fec488a668cb33c4cf2d",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "dark-keyboard-focus",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-current-desktop.png",
-          "sha256": "09ed2d7c96264f3674405bd0cf0db6c6a69badb2a8950470308d84e879447a3a",
+          "sha256": "e089debac787459f3155084a979efabcd33b13d268eba52e143666e82b222393",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "dark-current",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-normal-mobile.png",
@@ -221,40 +221,40 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-keyboard-focus-mobile.png",
-          "sha256": "5dea726be38eded26fcd1df7dc226316fbb944aed9aa901e3ab3fa5b28a83850",
+          "sha256": "a233a8ed0c4090aaf3adc549783fae66654bf3cc8e065ab5c6ed3d2f77a61059",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "dark-mobile-keyboard-focus",
           "viewport": "mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-current-mobile.png",
-          "sha256": "9d7c05e677f12ddce453dbfbcb7c54b72da8de30c2479451c3420271e7b22d58",
+          "sha256": "abc092b9a101d6d847356282c0cc9c363075315e96d4f8e90c8a4a0ff6f26e83",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "dark-mobile-current",
           "viewport": "mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-hover-mobile.png",
-          "sha256": "3cc616f87a9d27ad7805099b378a43d4d79dddedf822f230230313904f570087",
+          "sha256": "80a4afeddab0fc1c86033ebc72532112b36ae55c1eaa6167b82fd937fdc0d39f",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
           "state": "dark-mobile-hover",
           "viewport": "mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-corner-button-open-desktop.png",
@@ -265,7 +265,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-hover-after-button-open-desktop.png",
@@ -276,7 +276,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-keyboard-focus-open-desktop.png",
@@ -287,7 +287,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-mobile-target-open-mobile.png",
@@ -298,7 +298,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-mobile-close-menu-mobile.png",
@@ -309,40 +309,40 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-corner-button-open-desktop.png",
-          "sha256": "245d45a12375760cb46172774d2a9c33b5d2952654c04dabffc931dca2afdaa6",
+          "sha256": "834f82239164977ed4830c936bfefcb4d2364429745d333c90df45b141150f8e",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
           "state": "toggle-corner-button-open",
           "viewport": "desktop",
           "browser_engine": "webkit",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-hover-after-button-open-desktop.png",
-          "sha256": "b9e9d8a1e57ad426c15dddf6af46dcab0aac4fa5fe9f4bc21cc4b14dbccf07d7",
+          "sha256": "7f1ef01b58f08124e90b29a2d77e8ac8f1b0f0785646097c10e6f165047faeb8",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
           "state": "toggle-hover-after-button-open",
           "viewport": "desktop",
           "browser_engine": "webkit",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-keyboard-focus-open-desktop.png",
-          "sha256": "1faab70a40c987275a1a86316b04d55364d2efeec19737ffe9e5e6f3168421ff",
+          "sha256": "5b6f1bc6258fd178be4e79407286a01f4ba20f8db8f7a8870bc3048e821e114d",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
           "state": "toggle-keyboard-focus-open",
           "viewport": "desktop",
           "browser_engine": "webkit",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-mobile-target-open-mobile.png",
@@ -353,18 +353,18 @@
           "browser_engine": "webkit",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-mobile-close-menu-mobile.png",
-          "sha256": "6a5db5f142e9ac455124ed32ae587285368a892a019d104455241aaa7b18b6be",
+          "sha256": "5663fc6d47fd2b3816e3a2a524d8ff0cc2378b64b6b8918a7168e3811b891843",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
           "state": "toggle-mobile-close-menu",
           "viewport": "mobile",
           "browser_engine": "webkit",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-centered-desktop-desktop.png",
@@ -375,7 +375,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-centered-mobile-mobile.png",
@@ -386,18 +386,18 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-centered-narrow-narrow-mobile.png",
-          "sha256": "22bb351762f445f698cc171acb88c6cb5dad7581fe555732c3ad0530dcca8260",
+          "sha256": "a876ab1ec949986bae9f6c09095615f3ad1312aca262aebece1e26f084e89d60",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "centered-narrow",
           "viewport": "narrow-mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-rest-desktop.png",
@@ -408,51 +408,51 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-corner-button-open-desktop.png",
-          "sha256": "a7d1ab251f2ab94795f4417080e463ed7e5d688a334a92d799af329ff85ea070",
+          "sha256": "3f3641b2b2abaeafd1b0fd92bea05aa576127a76fd61f82b440287cc0916b787",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "toggle-corner-button-open",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-hover-after-button-open-desktop.png",
-          "sha256": "5ab76280c61a53fc6362ce0a1944b267d1f1c25538939169ddb588a9f1f5185b",
+          "sha256": "8eb57fdc5679b69d81785ab790690bcd0079e4c14ff1c030a6b95e32e56759e2",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "toggle-hover-after-button-open",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-keyboard-focus-open-desktop.png",
-          "sha256": "a3a6463319b55833f69ea486a06b7aeb738f2d6aba4f76f1360da87801fbab6b",
+          "sha256": "208e3c8cb0448651ccdfda9831d7e05ca434c9acb3a2f303b4dae5c604104794",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "toggle-keyboard-focus-open",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-mobile-target-open-mobile.png",
-          "sha256": "610eadc4c563b697ac9c7bfd78e3bafebdb6cb100961d77e994045c0f4138dd0",
+          "sha256": "473d7a1e835a1db59587f13ae4869763ad9da47209a3bcf9c9d34f0e29a2e70a",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "toggle-mobile-target-open",
           "viewport": "mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-mobile-close-menu-mobile.png",
@@ -463,62 +463,62 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-narrow-target-open-narrow-mobile.png",
-          "sha256": "df20c998e2d9be9c3f012bc1b58055d73067573e0cccc8a9bbeea4dfad7a3b1f",
+          "sha256": "7d60c0528ff00afb3a7f68cc4c71fb7e8ea491413619d6e2db5f354b0f970a55",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "toggle-narrow-target-open",
           "viewport": "narrow-mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-normal-desktop.png",
-          "sha256": "913f925cdabcf8bbefea8e90b7d4cf337cd923db6ccec209b362b00b2166d937",
+          "sha256": "466bb2546a697bf67f91718ab20e7f994b97c4f4f5dd03fc052b1eb41f9bf765",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "dark-normal",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-hover-desktop.png",
-          "sha256": "f4188e2f25dde4637eee40de7d0bbbc636314ddcc36765d8d5ddff16634b485f",
+          "sha256": "07894341ccdcd041f5ce23d2140e8d1025630df4c7bb4769613faeef4a33e4fb",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "dark-hover",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-keyboard-focus-desktop.png",
-          "sha256": "f861cbacdd77418d1afa95f469c6892bb5ee999276a333799411e7901f485351",
+          "sha256": "3384f787f4845b164c654982956549241faeef58149c15a6b5a9aaf529dcfc9e",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "dark-keyboard-focus",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-current-desktop.png",
-          "sha256": "3f3641b2b2abaeafd1b0fd92bea05aa576127a76fd61f82b440287cc0916b787",
+          "sha256": "088f4c402013cf7ddc55c26d35aaaca18a0668a0a7ef2df56ec147db2974a3b7",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "dark-current",
           "viewport": "desktop",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-mobile-normal-mobile.png",
@@ -529,40 +529,40 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-mobile-keyboard-focus-mobile.png",
-          "sha256": "9946c31dbb4a0b5cbcb497346adaa3ac00bd21efa7b2c45e2dfee9c964238fc8",
+          "sha256": "861970dc3c4856598cc199c57b14d24e8de9c45a58f2f1ebec6cbc7628de6728",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "dark-mobile-keyboard-focus",
           "viewport": "mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-mobile-current-mobile.png",
-          "sha256": "947d70d0b4a611d698f4fb32d3f6d226e150961cc4940cb4839b45c70d276061",
+          "sha256": "e75ab08fd717b294c69bb18fd6e0bde4a38e8743be0481649d5a298d6f891378",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "dark-mobile-current",
           "viewport": "mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-mobile-hover-mobile.png",
-          "sha256": "a758ff1bd5c94f8162f1a5e5245a6fdbf3d43f8ca78b9a429959cdf8c1cdb010",
+          "sha256": "f68426779368a6a0e16f63f6411ccbf0d38d499b9fa600eba6e0cb46c8eb3419",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
           "state": "dark-mobile-hover",
           "viewport": "mobile",
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-corner-button-open-desktop.png",
@@ -573,7 +573,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-hover-after-button-open-desktop.png",
@@ -584,7 +584,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-keyboard-focus-open-desktop.png",
@@ -595,7 +595,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-mobile-target-open-mobile.png",
@@ -606,7 +606,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-mobile-close-menu-mobile.png",
@@ -617,40 +617,40 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-corner-button-open-desktop.png",
-          "sha256": "4ef5acd13427ccbb1014011b8eb84c1d31ec4750f4ce659b0e36c421f11a5500",
+          "sha256": "feff32a212266f73e1ace02b4dd40c610c11c7ed4cf6cc8071367fa05d0d4f56",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
           "state": "toggle-corner-button-open",
           "viewport": "desktop",
           "browser_engine": "webkit",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-hover-after-button-open-desktop.png",
-          "sha256": "84cf0056ca64235a10a095a300997999c46303690292df9b70d17af3f1cc7828",
+          "sha256": "e778528c9d94e1714b4490c564a8954decc68c7eba4ccfc40523105e5c65cab4",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
           "state": "toggle-hover-after-button-open",
           "viewport": "desktop",
           "browser_engine": "webkit",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-keyboard-focus-open-desktop.png",
-          "sha256": "7b470f1c61acac550920792b129bbf7140f1c878751a4cf17dd1808a53339d91",
+          "sha256": "648e3b7e33b7ffb1ff12ec45814c8070fdf158d39ef491e7576d8b8e5da3896f",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
           "state": "toggle-keyboard-focus-open",
           "viewport": "desktop",
           "browser_engine": "webkit",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-mobile-target-open-mobile.png",
@@ -661,50 +661,50 @@
           "browser_engine": "webkit",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-mobile-close-menu-mobile.png",
-          "sha256": "72b2f036be13f8a7c43b7b18053061b30d715ab469a3b2c2a0bb4ba3f1bc1843",
+          "sha256": "7809e30735871bd02fcbf6c31be5f62e1e138292e2a2e2439ea4fece23f081a6",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
           "state": "toggle-mobile-close-menu",
           "viewport": "mobile",
           "browser_engine": "webkit",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         }
       ]
     },
     {
       "id": "bhl-options-collapsible-sidebar",
       "status": "pass",
-      "reviewer": "Muse W10 lane (subagent 59efbf0b)",
-      "review_method": "direct visual inspection of the 23 screenshots whose bytes differ from the W08 reviewed set; the remaining 54 are byte-identical to screenshots already classified PASS_NATURAL in the W08 Freeze-1 review and inherit that human review",
+      "reviewer": "Muse visual review",
+      "review_method": "direct visual inspection of labeled contact sheets covering all 82 screenshots (6 sheets grouped by scenario and engine)",
       "receipts": [
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
-          "sha256": "b825f5f8c263eabeaec0b87c60228c9050e21ca0e9aff31d12a6ddea194418a4"
+          "sha256": "1670b4d37c4f5e9dbeaf42650fc14189a3c18b52acfa3dc799983cc63d4b1457"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json",
-          "sha256": "df5db63706766490101ef1917d1b08a1ab2a6d447fe8d55ef047878e4a19a2a7"
+          "sha256": "abaae954f678db73b3b270770e665cb81f94763f8f9ae9423b4d470e0b62656e"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json",
-          "sha256": "6b1166f9292ccab6bf693964fa6db4895bf9887417842fc82ad7aaf0bb1847c5"
+          "sha256": "026ab3bd76ec7f1404da295fb50d73edcae69714e7e3684c6b36095c6529f695"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
-          "sha256": "24bf1e6df16f97f0aca99dfcf24b2b92d06e74a8c20e841807889127c161a3bb"
+          "sha256": "663e1eb6f60f89646109cab3974b3fed9bd8e4c21496f39a858ebc1af4faadc1"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json",
-          "sha256": "c93460c1c97361494c78d983d287e2eb62bbc062b64b778b2ee69251636ba4e0"
+          "sha256": "965237c3c462f36fb3136d5fa9a4bf674e5b18a0f8d5d0471534f12f3d340855"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json",
-          "sha256": "5521abc026b877837426cade7675f407aa442603c4b49db57a1c85a1f0be0f8f"
+          "sha256": "e03021bbdb307864810ccf6cb0a1291334e296ea2ad2e200366f9cc68a1fdeec"
         }
       ],
       "screenshots": [
@@ -717,7 +717,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-hover-expanded-desktop.png",
@@ -728,7 +728,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
@@ -739,7 +739,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-nested-entry-desktop.png",
@@ -750,7 +750,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-closed-desktop.png",
@@ -761,7 +761,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-mobile-mobile.png",
@@ -772,7 +772,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-narrow-mobile-narrow-mobile.png",
@@ -783,7 +783,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/collapsible-collapsible-hover-expanded-desktop.png",
@@ -794,7 +794,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
@@ -805,7 +805,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/collapsible-collapsible-nested-entry-desktop.png",
@@ -816,40 +816,40 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/collapsible-collapsible-hover-expanded-desktop.png",
-          "sha256": "836f8729ec27bab097645659bfa6bbdc65087881954069606d04117de06f37f7",
+          "sha256": "bb79e07e2de64ec7ca1c77f7886040ddb6da4e07a59e6062871c82bc656040bc",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json",
           "state": "collapsible-hover-expanded",
           "viewport": "desktop",
           "browser_engine": "webkit",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
-          "sha256": "7c8141c1dc60eaf1c0384bd24c2db649c7538cc73d29e02f774d75431d626d3b",
+          "sha256": "8257e5deceb5a7185ec0104b402259343ce13b623666705398410f47b4a1f147",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json",
           "state": "collapsible-keyboard-focus-expanded",
           "viewport": "desktop",
           "browser_engine": "webkit",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/collapsible-collapsible-nested-entry-desktop.png",
-          "sha256": "a8aeb9080a1c07315d204790057028438722d3d98e1e44410b0258f84398f201",
+          "sha256": "2c3982544e6bb9ab2b70a98805c3bbd8070f04b4e81b2d295570bf23e66901ff",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json",
           "state": "collapsible-nested-entry",
           "viewport": "desktop",
           "browser_engine": "webkit",
           "baseline": "Sigma-9",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-rest-desktop.png",
@@ -860,7 +860,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-hover-expanded-desktop.png",
@@ -871,7 +871,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
@@ -882,7 +882,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-nested-entry-desktop.png",
@@ -893,7 +893,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-closed-desktop.png",
@@ -904,7 +904,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-mobile-mobile.png",
@@ -915,7 +915,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-narrow-mobile-narrow-mobile.png",
@@ -926,7 +926,7 @@
           "browser_engine": "chromium",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/collapsible-collapsible-hover-expanded-desktop.png",
@@ -937,7 +937,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
@@ -948,7 +948,7 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/collapsible-collapsible-nested-entry-desktop.png",
@@ -959,40 +959,40 @@
           "browser_engine": "firefox",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/collapsible-collapsible-hover-expanded-desktop.png",
-          "sha256": "cdcbf6cfce357e24761b95478ebb0ce30be2facb7ffdf78a3a91165aaa5c3b1b",
+          "sha256": "1165c30a37856f392108e0862ca85cbb8f0dd4089c1df78a9b76f1332d3bc442",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json",
           "state": "collapsible-hover-expanded",
           "viewport": "desktop",
           "browser_engine": "webkit",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
-          "sha256": "684e87a3ee6fdcaf248a28ebe8095417f95cfacd6c43f3fa2bec0d9f377af433",
+          "sha256": "d032f1e1e553462c1a5925a9ebfc505533705ee7c8e73419fc0bcdea6ab2fe6b",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json",
           "state": "collapsible-keyboard-focus-expanded",
           "viewport": "desktop",
           "browser_engine": "webkit",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/collapsible-collapsible-nested-entry-desktop.png",
-          "sha256": "da196363b88111cd47d69ffee46bec13c5c64cf88ebce89bec8b59a59b3d2334",
+          "sha256": "2a962748f400c85f6e73c939bce33e9ef27525d253f79003b2a3c4c656e050cd",
           "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json",
           "state": "collapsible-nested-entry",
           "viewport": "desktop",
           "browser_engine": "webkit",
           "baseline": "Sigma-10",
           "classification": "PASS_NATURAL",
-          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+          "note": "Freeze-2 re-capture under candidate set 98c063a1; directly inspected on the W14 contact sheets (all 82 screenshots, grouped by scenario and engine): the fixture renders naturally in this state, sidebar and toggle behavior as designed, no overflow, clipping or missing elements."
         }
       ]
     }

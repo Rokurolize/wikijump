@@ -4,7 +4,7 @@
   "baseline": "Sigma-9",
   "browser_engine": "firefox",
   "browser_version": "157.0",
-  "candidate_set_sha256": "867aafeb5615d006950c5524e2fc1fe7c4c1f9a02e8db3f6011eee1362e277bb",
+  "candidate_set_sha256": "98c063a1b9943770fe95242706f6d49edf5a57290ae280b6f828a44bdc40bdb3",
   "candidate_set_state": "frozen-before-final-acceptance",
   "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
   "transport_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3410",
@@ -12,9 +12,9 @@
   "intent_review_reviewed_at": "2026-10-06",
   "backend_project": "wikijump-theme-lab-campaign-20261023",
   "running_backend_runtime_identity_sha256": "53c7476f81925cc5d3886606334fae4697c4ea413bc7e932a2762696d9a0baf8",
-  "source_authority_sha256": "9ed3274e1983a98efddd61381588f86baca724a06e59cff05c201b7661e2fe05",
-  "candidate_source_sha256": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
-  "candidate_css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577",
+  "source_authority_sha256": "900eac424c3c64c7fa2ad14dae6648dd25cdfff4509d2a6fc5a264031929a86e",
+  "candidate_source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
+  "candidate_css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca",
   "option_css_sha256": "56913f15b50230cc813602b74fd63ce78f6ce68b7f3518ac55d3d6c9938ce687",
   "framerail_fingerprint_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
   "framerail_runtime_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3410",
@@ -49,7 +49,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "867aafeb5615d006950c5524e2fc1fe7c4c1f9a02e8db3f6011eee1362e277bb",
+      "candidate_set_sha256": "98c063a1b9943770fe95242706f6d49edf5a57290ae280b6f828a44bdc40bdb3",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 23,
@@ -1861,8 +1861,8 @@
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-corner-button-open-desktop.png",
       "screenshot_sha256": "10c19748707d6a1ba648de9bc5ed3b51d0490dcb94b097f2de2927af61a51281",
       "candidate": {
-        "source_sha256": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
-        "css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577"
+        "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
+        "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
       },
       "option_candidates": [
         {
@@ -1876,7 +1876,7 @@
         }
       ],
       "option_css_sha256": "56913f15b50230cc813602b74fd63ce78f6ce68b7f3518ac55d3d6c9938ce687",
-      "source_authority_sha256": "9ed3274e1983a98efddd61381588f86baca724a06e59cff05c201b7661e2fe05",
+      "source_authority_sha256": "900eac424c3c64c7fa2ad14dae6648dd25cdfff4509d2a6fc5a264031929a86e",
       "framerail_fingerprint_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
       "framerail_runtime_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3410",
       "framerail_response_source_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
@@ -1916,7 +1916,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "867aafeb5615d006950c5524e2fc1fe7c4c1f9a02e8db3f6011eee1362e277bb",
+      "candidate_set_sha256": "98c063a1b9943770fe95242706f6d49edf5a57290ae280b6f828a44bdc40bdb3",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 23,
@@ -3719,8 +3719,8 @@
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-hover-after-button-open-desktop.png",
       "screenshot_sha256": "688f98b71b1d656f0735f87bdb900e2bb5267a7a34b29f5b81cebcf0842969f5",
       "candidate": {
-        "source_sha256": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
-        "css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577"
+        "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
+        "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
       },
       "option_candidates": [
         {
@@ -3734,7 +3734,7 @@
         }
       ],
       "option_css_sha256": "56913f15b50230cc813602b74fd63ce78f6ce68b7f3518ac55d3d6c9938ce687",
-      "source_authority_sha256": "9ed3274e1983a98efddd61381588f86baca724a06e59cff05c201b7661e2fe05",
+      "source_authority_sha256": "900eac424c3c64c7fa2ad14dae6648dd25cdfff4509d2a6fc5a264031929a86e",
       "framerail_fingerprint_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
       "framerail_runtime_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3410",
       "framerail_response_source_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
@@ -3769,7 +3769,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "867aafeb5615d006950c5524e2fc1fe7c4c1f9a02e8db3f6011eee1362e277bb",
+      "candidate_set_sha256": "98c063a1b9943770fe95242706f6d49edf5a57290ae280b6f828a44bdc40bdb3",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 23,
@@ -3927,16 +3927,16 @@
           "header": true
         },
         "sidebar": {
-          "x": -0.6666717529296875,
+          "x": -0.649993896484375,
           "y": 0,
           "width": 266,
           "height": 900,
-          "left": -0.6666717529296875,
-          "right": 265.3333282470703,
+          "left": -0.649993896484375,
+          "right": 265.3500061035156,
           "top": 0,
           "bottom": 900,
           "inline_style": null,
-          "left_css": "-0.666667px",
+          "left_css": "-0.65px",
           "transform": "none",
           "position": "fixed",
           "display": "block",
@@ -5534,12 +5534,12 @@
             "display": "flex",
             "visibility": "visible",
             "rect": {
-              "x": -0.6666717529296875,
+              "x": -0.649993896484375,
               "y": 68,
               "width": 258,
               "height": 24,
-              "left": -0.6666717529296875,
-              "right": 257.3333282470703,
+              "left": -0.649993896484375,
+              "right": 257.3500061035156,
               "top": 68,
               "bottom": 92
             }
@@ -5550,12 +5550,12 @@
             "outlineColor": "rgb(252, 252, 252)",
             "outlineStyle": "none",
             "rect": {
-              "x": -0.6666717529296875,
+              "x": -0.649993896484375,
               "y": 44,
               "width": 258,
               "height": 24,
-              "left": -0.6666717529296875,
-              "right": 257.3333282470703,
+              "left": -0.649993896484375,
+              "right": 257.3500061035156,
               "top": 44,
               "bottom": 68
             },
@@ -5581,8 +5581,8 @@
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-keyboard-focus-open-desktop.png",
       "screenshot_sha256": "a937c0b718b2cb19831a14b23964f9351aade8312b37d55e1dbfe2869934a385",
       "candidate": {
-        "source_sha256": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
-        "css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577"
+        "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
+        "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
       },
       "option_candidates": [
         {
@@ -5596,7 +5596,7 @@
         }
       ],
       "option_css_sha256": "56913f15b50230cc813602b74fd63ce78f6ce68b7f3518ac55d3d6c9938ce687",
-      "source_authority_sha256": "9ed3274e1983a98efddd61381588f86baca724a06e59cff05c201b7661e2fe05",
+      "source_authority_sha256": "900eac424c3c64c7fa2ad14dae6648dd25cdfff4509d2a6fc5a264031929a86e",
       "framerail_fingerprint_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
       "framerail_runtime_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3410",
       "framerail_response_source_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
@@ -5631,7 +5631,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "867aafeb5615d006950c5524e2fc1fe7c4c1f9a02e8db3f6011eee1362e277bb",
+      "candidate_set_sha256": "98c063a1b9943770fe95242706f6d49edf5a57290ae280b6f828a44bdc40bdb3",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 23,
@@ -7434,8 +7434,8 @@
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-mobile-target-open-mobile.png",
       "screenshot_sha256": "979a866cff7c1cad35fe8f9560b18f133abb046b704aec44ae4e14bdf5127d45",
       "candidate": {
-        "source_sha256": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
-        "css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577"
+        "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
+        "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
       },
       "option_candidates": [
         {
@@ -7449,7 +7449,7 @@
         }
       ],
       "option_css_sha256": "56913f15b50230cc813602b74fd63ce78f6ce68b7f3518ac55d3d6c9938ce687",
-      "source_authority_sha256": "9ed3274e1983a98efddd61381588f86baca724a06e59cff05c201b7661e2fe05",
+      "source_authority_sha256": "900eac424c3c64c7fa2ad14dae6648dd25cdfff4509d2a6fc5a264031929a86e",
       "framerail_fingerprint_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
       "framerail_runtime_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3410",
       "framerail_response_source_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
@@ -7484,7 +7484,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "867aafeb5615d006950c5524e2fc1fe7c4c1f9a02e8db3f6011eee1362e277bb",
+      "candidate_set_sha256": "98c063a1b9943770fe95242706f6d49edf5a57290ae280b6f828a44bdc40bdb3",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 23,
@@ -9287,8 +9287,8 @@
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-mobile-close-menu-mobile.png",
       "screenshot_sha256": "7ff65be1a7d0aa8311444ea30c261c59a10929bf20ae3350ee149c925cc9b043",
       "candidate": {
-        "source_sha256": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
-        "css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577"
+        "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
+        "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
       },
       "option_candidates": [
         {
@@ -9302,7 +9302,7 @@
         }
       ],
       "option_css_sha256": "56913f15b50230cc813602b74fd63ce78f6ce68b7f3518ac55d3d6c9938ce687",
-      "source_authority_sha256": "9ed3274e1983a98efddd61381588f86baca724a06e59cff05c201b7661e2fe05",
+      "source_authority_sha256": "900eac424c3c64c7fa2ad14dae6648dd25cdfff4509d2a6fc5a264031929a86e",
       "framerail_fingerprint_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
       "framerail_runtime_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3410",
       "framerail_response_source_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
@@ -9321,5 +9321,5 @@
       "page_errors": []
     }
   ],
-  "receipt_sha256": "cdf982afd56a1dcd44eafa3c066c3439f1cb94b73c792f55dc402a88da7ef97f"
+  "receipt_sha256": "1aa011b1967d22a677097ff5a72f8af230ff4dac316136a29943009accf86878"
 }

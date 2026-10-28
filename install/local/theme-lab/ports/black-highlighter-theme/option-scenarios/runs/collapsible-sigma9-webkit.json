@@ -4,7 +4,7 @@
   "baseline": "Sigma-9",
   "browser_engine": "webkit",
   "browser_version": "27.2",
-  "candidate_set_sha256": "867aafeb5615d006950c5524e2fc1fe7c4c1f9a02e8db3f6011eee1362e277bb",
+  "candidate_set_sha256": "98c063a1b9943770fe95242706f6d49edf5a57290ae280b6f828a44bdc40bdb3",
   "candidate_set_state": "frozen-before-final-acceptance",
   "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
   "transport_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3410",
@@ -12,9 +12,9 @@
   "intent_review_reviewed_at": "2026-10-06",
   "backend_project": "wikijump-theme-lab-campaign-20261023",
   "running_backend_runtime_identity_sha256": "53c7476f81925cc5d3886606334fae4697c4ea413bc7e932a2762696d9a0baf8",
-  "source_authority_sha256": "9ed3274e1983a98efddd61381588f86baca724a06e59cff05c201b7661e2fe05",
-  "candidate_source_sha256": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
-  "candidate_css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577",
+  "source_authority_sha256": "900eac424c3c64c7fa2ad14dae6648dd25cdfff4509d2a6fc5a264031929a86e",
+  "candidate_source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
+  "candidate_css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca",
   "option_css_sha256": "24d2855400ec10a4e56236a893bf7c448412d0764e0cc567781c72d02ed4b437",
   "framerail_fingerprint_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
   "framerail_runtime_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3410",
@@ -53,8 +53,8 @@
             "hit_id": "side-bar",
             "hit_class": "",
             "side_rect": {
-              "left": -278.6023254394531,
-              "right": 22.803924560546875
+              "left": -282,
+              "right": 24
             }
           }
         ],
@@ -62,7 +62,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "867aafeb5615d006950c5524e2fc1fe7c4c1f9a02e8db3f6011eee1362e277bb",
+      "candidate_set_sha256": "98c063a1b9943770fe95242706f6d49edf5a57290ae280b6f828a44bdc40bdb3",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -1635,10 +1635,10 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/collapsible-collapsible-hover-expanded-desktop.png",
-      "screenshot_sha256": "836f8729ec27bab097645659bfa6bbdc65087881954069606d04117de06f37f7",
+      "screenshot_sha256": "bb79e07e2de64ec7ca1c77f7886040ddb6da4e07a59e6062871c82bc656040bc",
       "candidate": {
-        "source_sha256": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
-        "css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577"
+        "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
+        "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
       },
       "option_candidates": [
         {
@@ -1652,7 +1652,7 @@
         }
       ],
       "option_css_sha256": "24d2855400ec10a4e56236a893bf7c448412d0764e0cc567781c72d02ed4b437",
-      "source_authority_sha256": "9ed3274e1983a98efddd61381588f86baca724a06e59cff05c201b7661e2fe05",
+      "source_authority_sha256": "900eac424c3c64c7fa2ad14dae6648dd25cdfff4509d2a6fc5a264031929a86e",
       "framerail_fingerprint_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
       "framerail_runtime_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3410",
       "framerail_response_source_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
@@ -1686,7 +1686,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "867aafeb5615d006950c5524e2fc1fe7c4c1f9a02e8db3f6011eee1362e277bb",
+      "candidate_set_sha256": "98c063a1b9943770fe95242706f6d49edf5a57290ae280b6f828a44bdc40bdb3",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -3259,10 +3259,10 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
-      "screenshot_sha256": "7c8141c1dc60eaf1c0384bd24c2db649c7538cc73d29e02f774d75431d626d3b",
+      "screenshot_sha256": "8257e5deceb5a7185ec0104b402259343ce13b623666705398410f47b4a1f147",
       "candidate": {
-        "source_sha256": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
-        "css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577"
+        "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
+        "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
       },
       "option_candidates": [
         {
@@ -3276,7 +3276,7 @@
         }
       ],
       "option_css_sha256": "24d2855400ec10a4e56236a893bf7c448412d0764e0cc567781c72d02ed4b437",
-      "source_authority_sha256": "9ed3274e1983a98efddd61381588f86baca724a06e59cff05c201b7661e2fe05",
+      "source_authority_sha256": "900eac424c3c64c7fa2ad14dae6648dd25cdfff4509d2a6fc5a264031929a86e",
       "framerail_fingerprint_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
       "framerail_runtime_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3410",
       "framerail_response_source_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
@@ -3310,7 +3310,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "867aafeb5615d006950c5524e2fc1fe7c4c1f9a02e8db3f6011eee1362e277bb",
+      "candidate_set_sha256": "98c063a1b9943770fe95242706f6d49edf5a57290ae280b6f828a44bdc40bdb3",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -4883,10 +4883,10 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/collapsible-collapsible-nested-entry-desktop.png",
-      "screenshot_sha256": "a8aeb9080a1c07315d204790057028438722d3d98e1e44410b0258f84398f201",
+      "screenshot_sha256": "2c3982544e6bb9ab2b70a98805c3bbd8070f04b4e81b2d295570bf23e66901ff",
       "candidate": {
-        "source_sha256": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
-        "css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577"
+        "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
+        "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
       },
       "option_candidates": [
         {
@@ -4900,7 +4900,7 @@
         }
       ],
       "option_css_sha256": "24d2855400ec10a4e56236a893bf7c448412d0764e0cc567781c72d02ed4b437",
-      "source_authority_sha256": "9ed3274e1983a98efddd61381588f86baca724a06e59cff05c201b7661e2fe05",
+      "source_authority_sha256": "900eac424c3c64c7fa2ad14dae6648dd25cdfff4509d2a6fc5a264031929a86e",
       "framerail_fingerprint_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
       "framerail_runtime_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3410",
       "framerail_response_source_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
@@ -4919,5 +4919,5 @@
       "page_errors": []
     }
   ],
-  "receipt_sha256": "b60eb0ffb61555194f9d61f014dae7a5d4e214668db2beb6bcc13f4809b11fa0"
+  "receipt_sha256": "cee38603eb73d2beaaf5d9598d8a819c89eaeca06dd1a1594e74f6418bd2f3a5"
 }
