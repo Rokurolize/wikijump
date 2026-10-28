@@ -11,6 +11,7 @@ import {
   normalizeGoogleAnalyticsSettings,
   normalizeThemePreviewUrl,
   normalizeThemeSetting,
+  resolveExternalThemeHref,
   resolveThemePreviewUrl
 } from "../src/lib/site-settings.js"
 
@@ -101,6 +102,87 @@ describe("Wikidot site settings foundation", () => {
     assert.deepEqual(
       normalizeThemeSetting({ type: "custom", css: "</style><script>x</script>" }),
       { type: "built_in", id: 1 }
+    )
+  })
+
+  it("admits an external theme served from the site's own files host", () => {
+    const authority = "scp-jp-sigma10.wjfiles.localhost:28443"
+    const ported =
+      "https://scp-jp-sigma10.wjfiles.localhost:28443/local--code/component:theme/1"
+    const portless =
+      "https://scp-jp-sigma10.wjfiles.localhost/local--code/component:theme/1"
+    // The serving authority names the port; the stored URL may carry it or not.
+    assert.deepEqual(
+      normalizeThemeSetting({ type: "external", url: ported }, authority),
+      { type: "external", url: ported }
+    )
+    assert.deepEqual(
+      normalizeThemeSetting({ type: "external", url: portless }, authority),
+      { type: "external", url: portless }
+    )
+    // A port-less authority admits the port-less form.
+    assert.deepEqual(
+      normalizeThemeSetting(
+        { type: "external", url: portless },
+        "scp-jp-sigma10.wjfiles.localhost"
+      ),
+      { type: "external", url: portless }
+    )
+    // The head href resolver keeps the admitted own-host theme.
+    assert.equal(
+      resolveExternalThemeHref(
+        { type: "external", url: ported },
+        null,
+        authority,
+        () => false
+      ),
+      ported
+    )
+  })
+
+  it("keeps every other external theme rejection intact beside an own host", () => {
+    const authority = "scp-jp-sigma10.wjfiles.localhost:28443"
+    const builtIn = { type: "built_in", id: 1 }
+    for (const url of [
+      // Unrelated hosts stay rejected, with or without an authority.
+      "https://themes.example/a.css",
+      // Another site's files host is not this site's own host.
+      "https://scp-wiki.wjfiles.localhost:28443/local--code/component:theme/1",
+      // The own host on any other port stays rejected.
+      "https://scp-jp-sigma10.wjfiles.localhost:9999/local--code/component:theme/1",
+      // Credentials and plain http stay rejected on the own host too.
+      "https://user:password@scp-jp-sigma10.wjfiles.localhost:28443/a.css",
+      "http://scp-jp-sigma10.wjfiles.localhost:28443/a.css"
+    ]) {
+      assert.deepEqual(
+        normalizeThemeSetting({ type: "external", url }, authority),
+        builtIn,
+        url
+      )
+    }
+    // Without a viewed site's authority the own host is not admitted.
+    assert.deepEqual(
+      normalizeThemeSetting({
+        type: "external",
+        url: "https://scp-jp-sigma10.wjfiles.localhost:28443/a.css"
+      }),
+      builtIn
+    )
+    // Malformed authorities fail closed.
+    assert.deepEqual(
+      normalizeThemeSetting(
+        {
+          type: "external",
+          url: "https://scp-jp-sigma10.wjfiles.localhost:28443/a.css"
+        },
+        "https://scp-jp-sigma10.wjfiles.localhost:28443"
+      ),
+      builtIn
+    )
+    // The ThemePreviewer has no viewed site and keeps the global policy.
+    assert.equal(
+      normalizeThemePreviewUrl("https://scp-jp-sigma10.wjfiles.localhost:28443/a.css"),
+      null
     )
   })
 
