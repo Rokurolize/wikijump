@@ -90,14 +90,17 @@ Dryblood[[span class="css-variable"]]@@--dark-accent@@[[/span]][[span class="css
 = [[size 200%]]**JPにおける注意！**[[/size]]
 
 このカスタムテーマは、[*https://creativecommons.org/licenses/by-sa/4.0/deed.ja CC BY-SA 4.0ライセンス]下にあります。JPで使用する際は、以下のincludeをクレジットモジュール内に設置してください:
-= [[span style="border: 1px solid #fff; padding: 2%; text-align: center; font-family: var(--mono-font);"]]@@@@[[/span]]
+= [[span style="border: 1px solid #fff; padding: 2%; text-align: center; font-family: var(--mono-font);"]]@@[[include :scp-jp:credit:cc4]]@@[[/span]]
 [[/div]]
 
 どんなウィキでも:
 
 [[div class="code"]]
-@@@@
-@@@@
+@@[[include :scp-jp:theme:black-highlighter-theme]]@@
+@@[[include :scp-jp:theme:redtape@@
+@@|dark=--]@@ <- これはテーマのダークモードを使用したい場合のオプション引数です。これを省略すると、デフォルトのライトモードになります。
+@@|years=XX@@ <- これにより、サブヘッダーと時計の真夜中までの時間が設定されます。REDTAPEの年表に従う全ての記事において、真夜中は2043年となります。
+@@]]@@
 [[/div]]
 
 + 例
@@ -1409,6 +1412,14 @@ hr {
 
 
 
+
+
+
+
+
+
+
+
 [[module CSS]]
 td { vertical-align: top; }
 td strong { white-space: nowrap; }
@@ -1476,7 +1487,12 @@ td strong { white-space: nowrap; }
 [[div class="creditRate"]]
 [[div class="rateBox"]]
 [[div class="rate-box-with-credit-button"]]
-[[module Rate]]
+[[div class="page-rate-widget-box"]]
+[[span class="rate-points"]]評価: +1[[/span]]
+[[span class="rateup btn btn-default"]]+[[/span]]
+[[span class="ratedown btn btn-default"]]–[[/span]]
+[[span class="cancel btn btn-default"]]x[[/span]]
+[[/div]]
 [[/div]]
 [[/div]]
 [[/div]]

@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
+  "frozen_candidate_source_sha256": "269c678c4394a80200fda9fdb25e608a57c1caf20f113f94164f03764eccf278",
   "base_source_sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
-  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "semantic_css_sha256": "0c6cc4b9b20eb44c9744c4a57462101b180d2aab3ca38896d3dca4763305ef72",
-  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "raw_jp_overrides_sha256": "021322e3544e7adbface53f9d05fbf2e68a3301d70e847339a250e3fe65899ea",
+  "jp_overrides_sha256": "16b6447e4c711b07484fb9285bda0102de039c8d94506e7f16f763f34e7e69db",
+  "semantic_css_sha256": "64bd5e6b92ba5076430c705fcae5739817653bdda4836065c90df2a3abdaeead",
+  "canonical_override_sha256": "7a9e01eb0a0f3b07de25711b3544df8f121852ad085ccf182b350e8f2e4d3e09",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
+  "final_source_sha256": "5ec19dc4b5f84fae806a47d31a24f0aa8017ba8bc71cfceb185d030a84cf6674",
   "final_source_inputs": {
     "base_sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "jp_overrides_sha256": "16b6447e4c711b07484fb9285bda0102de039c8d94506e7f16f763f34e7e69db"
   },
   "ordered_include_sha256": "225db8ab14b085d9e4b79edcbad105a5a26c4813233687bf7202035ebfc348a4",
   "declaration_reviews": {},
-  "adaptation_block_count": 0,
-  "raw_override_rule_count": 0,
-  "canonical_override_rule_count": 0,
+  "adaptation_block_count": 4,
+  "raw_override_rule_count": 4,
+  "canonical_override_rule_count": 4,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -189,8 +189,134 @@
           "sha256": "38a3de3d2a1987b57615dfa215eeaddde2fe31e5ffb5d7ce4f190656c18dcee2"
         }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot page history: keep the history option row within the mobile viewport.",
+      "rationale": "The verbatim upstream history-form rule lays the option cells out past the mobile viewport on the SCP-JP Sigma-9 target (delta receipt: target overflow at 320px and 390px without this block, zero at every measured width 320-1440px with it, and no collateral geometry change). Equal flexible columns keep all six history options inside the viewport; the correction is runtime-independent.",
+      "sha256": "cb507f4e1a05c0b41c534c7238440693fd3b81c3b0316fe6ff00d3539c3e2953",
+      "selectors": [
+        "#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2)"
+      ],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/redtape-history-form-delta-20261027/receipt.json",
+          "sha256": "4d0f07f374ba4d7c26e198b20b052e3f0f8b8af702e06f0366358c1dee9b7904"
+        }
+      ],
+      "scope": {
+        "target": "SCP-JP Sigma-9 current target acceptance",
+        "state": "page.history"
+      },
+      "published_css_sha256": "6b9bba79b361e2207ab1a12aada9b56fb6f94678d95318b41ce4cb286ec16914"
+    },
+    {
+      "marker": "SCP-JP Wikidot redtape mobile submenu: list the mobile submenu in a single column like the target menu instead of a two-column grid with a dangling empty cell.",
+      "rationale": "The inherited BHL mobile rule lays the top-bar submenu out as a two-column grid (grid-template-columns:repeat(2,50%)); the SCP-JP target menu has 17 items, so the grid leaves a dangling empty translucent cell at the bottom right (defect Q1-9), while the target Sigma menu is a single-column list. The same-target delta receipt shows this block restores a single column at 320/390px and leaves the desktop submenu template unchanged.",
+      "sha256": "5a565f64fe7e569dd6e46e7d72ee6e755cc954064dbf986896f1e108f97b0eae",
+      "selectors": [
+        "#header div.mobile-top-bar>ul>li>ul"
+      ],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/redtape-menu-heritage-delta-20261028/receipt.json",
+          "sha256": "e433bb756ddb423f05832200f7605b45a291fd9ef4fd62c4a1151fc7637f64f8"
+        }
+      ],
+      "scope": {
+        "target": "SCP-JP Sigma-9 current target acceptance",
+        "state": "navigation.mobile"
+      }
+    },
+    {
+      "marker": "SCP-JP Wikidot redtape credit heritage: give the heritage rating module the dark pill ground of the target composition so its label stays readable in the credit modal.",
+      "rationale": "In the credit modal the heritage rating module box computes to the theme background (rgb(252,252,252)) because --rating-module-bg-color resolves to --swatch-background (white monochrome), while the target composition shows the heritage module as a dark pill and the campaign pilot shows redtape label text failing against the white box (defect Q1-7; the F5 comparison in the W02 triage found the box background itself divergent, so this is not the F5 identical state). The same-target delta receipt shows this block gives the modal module the theme dark accent ground (rgb(70,13,13)) with the on-dark text color (label contrast 8.9) and leaves the page-level heritage module unchanged. The pilot cascade balance differs from the fixture frame on the label color source, so the block sets both the ground and the text variables; full verification at the Sigma-9 recapture.",
+      "sha256": "e5b5775456a0538e7caaaeac021eda3a3524c9aec99ea1f2a8551a44fcc346c4",
+      "selectors": [
+        "[id*=u-credit] .heritage-rating-module"
+      ],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/redtape-menu-heritage-delta-20261028/receipt.json",
+          "sha256": "e433bb756ddb423f05832200f7605b45a291fd9ef4fd62c4a1151fc7637f64f8"
+        }
+      ],
+      "scope": {
+        "target": "SCP-JP Sigma-9 current target acceptance",
+        "state": "credit.view"
+      }
+    },
+    {
+      "marker": "SCP-JP Wikidot redtape dialog headings: keep dialog body headings on the dialog text color so they stay readable on the white dialog ground.",
+      "rationale": "Two redtape-authored choices collide in dialogs: its own owindow rule forces the dialog ground white, while its variable block sets --swatch-text-tertiary-color to the white accent, and the shared BHL rule colors dialog body headings rgb(var(--modal-body-header-txt)) = the tertiary color — measured heading rgb(244,244,244) on white, contrast 1.1 (defect Q1-8; the BHL reference computes a dark heading at 17.79). Redefining --modal-body-header-txt to the dialog own text color (bright accent) inside the owindow scope restores a readable heading (measured 5.9) with body text unchanged.",
+      "sha256": "c1260f2f3be0e009ac13bb258b9eaaed584225e4eea8838aec805240c8e6eb7e",
+      "selectors": [
+        "#odialog-container .owindow"
+      ],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/redtape-dialog-heading-delta-20261028/receipt.json",
+          "sha256": "aa1e8c3d2de9c5aeef9687812d752c14310d5089b373b4a04e410941b550eb70"
+        }
+      ],
+      "scope": {
+        "target": "SCP-JP Sigma-9 current target acceptance",
+        "state": "dialog.generic"
+      }
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
-  "publishable_adaptations": []
+  "publishable_adaptations": [
+    {
+      "marker": "SCP-JP Wikidot page history: keep the history option row within the mobile viewport.",
+      "rationale": "SCP-JP Wikidot page history: keep the history option row within the mobile viewport.",
+      "sha256": "cb507f4e1a05c0b41c534c7238440693fd3b81c3b0316fe6ff00d3539c3e2953",
+      "selectors": [
+        "#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2)"
+      ],
+      "at_contexts": [],
+      "authority": "RUNTIME_INDEPENDENT"
+    },
+    {
+      "marker": "SCP-JP Wikidot redtape mobile submenu: list the mobile submenu in a single column like the target menu instead of a two-column grid with a dangling empty cell.",
+      "rationale": "SCP-JP Wikidot redtape mobile submenu: list the mobile submenu in a single column like the target menu instead of a two-column grid with a dangling empty cell.",
+      "sha256": "5a565f64fe7e569dd6e46e7d72ee6e755cc954064dbf986896f1e108f97b0eae",
+      "selectors": [
+        "#header div.mobile-top-bar>ul>li>ul"
+      ],
+      "at_contexts": [],
+      "authority": "RUNTIME_INDEPENDENT"
+    },
+    {
+      "marker": "SCP-JP Wikidot redtape credit heritage: give the heritage rating module the dark pill ground of the target composition so its label stays readable in the credit modal.",
+      "rationale": "SCP-JP Wikidot redtape credit heritage: give the heritage rating module the dark pill ground of the target composition so its label stays readable in the credit modal.",
+      "sha256": "e5b5775456a0538e7caaaeac021eda3a3524c9aec99ea1f2a8551a44fcc346c4",
+      "selectors": [
+        "[id*=u-credit] .heritage-rating-module"
+      ],
+      "at_contexts": [],
+      "authority": "RUNTIME_INDEPENDENT"
+    },
+    {
+      "marker": "SCP-JP Wikidot redtape dialog headings: keep dialog body headings on the dialog text color so they stay readable on the white dialog ground.",
+      "rationale": "SCP-JP Wikidot redtape dialog headings: keep dialog body headings on the dialog text color so they stay readable on the white dialog ground.",
+      "sha256": "c1260f2f3be0e009ac13bb258b9eaaed584225e4eea8838aec805240c8e6eb7e",
+      "selectors": [
+        "#odialog-container .owindow"
+      ],
+      "at_contexts": [],
+      "authority": "RUNTIME_INDEPENDENT"
+    }
+  ]
 }

@@ -1,0 +1,19 @@
+/* SCP-JP Wikidot page history: keep the history option row within the mobile viewport. */
+#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2) {
+  grid-template-columns:repeat(3,1fr)
+}
+
+/* SCP-JP Wikidot redtape mobile submenu: list the mobile submenu in a single column like the target menu instead of a two-column grid with a dangling empty cell. */
+#header div.mobile-top-bar>ul>li>ul {
+  grid-template-columns:1fr
+}
+
+/* SCP-JP Wikidot redtape credit heritage: give the heritage rating module the dark pill ground of the target composition so its label stays readable in the credit modal. */
+[id*=u-credit] .heritage-rating-module {
+  background-color:rgb(var(--swatch-primary-darkest));color:rgb(var(--swatch-text-secondary-color));--rating-module-text-color:var(--swatch-text-secondary-color)
+}
+
+/* SCP-JP Wikidot redtape dialog headings: keep dialog body headings on the dialog text color so they stay readable on the white dialog ground. */
+#odialog-container .owindow {
+  --modal-body-header-txt:var(--bright-accent)
+}
