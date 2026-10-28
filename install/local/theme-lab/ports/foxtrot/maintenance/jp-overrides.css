@@ -9,9 +9,12 @@
   }
 }
 
-@media (min-width: 360px) and (max-width: 767px) {
-  #top-bar .mobile-top-bar > ul > li:last-child > ul {
-    left: auto !important; right: 0 !important;
+/* SCP-JP Wikidot Foxtrot WebKit row endpoint: contain the fourth submenu where the engine keeps all parents on one row. */
+@supports(-webkit-hyphens:none) {
+  @media(min-width:360px) and (max-width:767px) {
+    #top-bar .mobile-top-bar > ul > li:last-child > ul {
+      left:auto!important;right:0!important;
+    }
   }
 }
 
