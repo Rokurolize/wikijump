@@ -1,6 +1,6 @@
 {
   "schema": "theme_lab_candidate_freeze_readiness_audit.v1",
-  "generated_at": "2026-10-28T06:15:00Z",
+  "generated_at": "2026-10-28T07:46:25Z",
   "decision": "identity-bound-evidence-pending",
   "scope": "Freeze readiness only; Sigma-9, Sigma-10, and final theme visual acceptance are not part of this record.",
   "counts": {
@@ -36,34 +36,34 @@
     },
     "identity_findings": 0,
     "pending_evidence": [
-      "targeted-evidence-stale bhl-options-toggle-header-dark visual review",
-      "targeted-evidence-stale bhl-options-toggle-header-dark receipt",
-      "targeted-evidence-stale bhl-options-toggle-header-dark receipt",
-      "targeted-evidence-stale bhl-options-toggle-header-dark receipt",
-      "targeted-evidence-stale bhl-options-toggle-header-dark receipt",
-      "targeted-evidence-stale bhl-options-toggle-header-dark receipt",
-      "targeted-evidence-stale bhl-options-toggle-header-dark receipt",
-      "targeted-evidence-stale bhl-options-collapsible-sidebar visual review",
-      "targeted-evidence-stale bhl-options-collapsible-sidebar receipt",
-      "targeted-evidence-stale bhl-options-collapsible-sidebar receipt",
-      "targeted-evidence-stale bhl-options-collapsible-sidebar receipt",
-      "targeted-evidence-stale bhl-options-collapsible-sidebar receipt",
-      "targeted-evidence-stale bhl-options-collapsible-sidebar receipt",
-      "targeted-evidence-stale bhl-options-collapsible-sidebar receipt",
-      "validator bhl-options-toggle-header-dark: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
-      "validator bhl-options-toggle-header-dark: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
-      "validator bhl-options-toggle-header-dark: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
-      "validator bhl-options-toggle-header-dark: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
-      "validator bhl-options-toggle-header-dark: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
-      "validator bhl-options-toggle-header-dark: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
-      "validator bhl-options-toggle-header-dark: visual review is not bound to the frozen candidate/source authority",
-      "validator bhl-options-collapsible-sidebar: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
-      "validator bhl-options-collapsible-sidebar: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json",
-      "validator bhl-options-collapsible-sidebar: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json",
-      "validator bhl-options-collapsible-sidebar: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
-      "validator bhl-options-collapsible-sidebar: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json",
-      "validator bhl-options-collapsible-sidebar: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json",
-      "validator bhl-options-collapsible-sidebar: visual review is not bound to the frozen candidate/source authority"
+      "targeted-evidence-missing bhl-options-toggle-header-dark visual review",
+      "targeted-evidence-missing bhl-options-toggle-header-dark receipt",
+      "targeted-evidence-missing bhl-options-toggle-header-dark receipt",
+      "targeted-evidence-missing bhl-options-toggle-header-dark receipt",
+      "targeted-evidence-missing bhl-options-toggle-header-dark receipt",
+      "targeted-evidence-missing bhl-options-toggle-header-dark receipt",
+      "targeted-evidence-missing bhl-options-toggle-header-dark receipt",
+      "targeted-evidence-missing bhl-options-collapsible-sidebar visual review",
+      "targeted-evidence-missing bhl-options-collapsible-sidebar receipt",
+      "targeted-evidence-missing bhl-options-collapsible-sidebar receipt",
+      "targeted-evidence-missing bhl-options-collapsible-sidebar receipt",
+      "targeted-evidence-missing bhl-options-collapsible-sidebar receipt",
+      "targeted-evidence-missing bhl-options-collapsible-sidebar receipt",
+      "targeted-evidence-missing bhl-options-collapsible-sidebar receipt",
+      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-toggle-header-dark: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-toggle-header-dark: visual review is unavailable: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is unavailable: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'",
+      "validator bhl-options-collapsible-sidebar: visual review is unavailable: ENOENT: no such file or directory, lstat '/home/roku/.local/state/wikijump/agents/worktrees/jp-corrections-2506/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/runs'"
     ]
   },
   "source_artifacts": [
@@ -709,7 +709,7 @@
     {
       "id": "bhl-option-authority",
       "path": "ports/black-highlighter-theme/option-scenarios/authority.json",
-      "sha256": "f07c6428457ad8535b46cdad6856bec14f3ed2d3edcc38b19d9aa6b1874f04f6"
+      "sha256": "9ed3274e1983a98efddd61381588f86baca724a06e59cff05c201b7661e2fe05"
     },
     {
       "id": "source-dependency-audit",
@@ -724,7 +724,7 @@
   ],
   "freeze_record": {
     "state": "frozen-before-final-acceptance",
-    "candidate_set_sha256": "a4ffccd85bd3b781661ba915b24200906c6a97ee92ef5646f99052d9db3874a7",
+    "candidate_set_sha256": "867aafeb5615d006950c5524e2fc1fe7c4c1f9a02e8db3f6011eee1362e277bb",
     "final_acceptance": {
       "sigma9": "pending",
       "sigma10": "pending",

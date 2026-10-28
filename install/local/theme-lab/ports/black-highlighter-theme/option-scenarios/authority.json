@@ -152,10 +152,10 @@
     "schema": "wikijump_deepwell_runtime_identity.v1",
     "source_sha256": "2a84ce2e9905e6f1871f3d0732e61f3370500a92bf37cbb2d8825d08366bea4e",
     "ftml_git_revision": "ef502b8af7cd9a58f7f1b1edf3639f35f48bd982",
-    "container_id": "2f63d1764cc01886b7ee1fca9a9ddb00b1ae44fe11b6c3a583a1cb13e5e1e8fd",
-    "image_id": "sha256:4a5f140dec2707522d9728962bfc7e2d8d959e0a6bbe59f547554692e2e281c2",
-    "binary_sha256": "b04a033f0645a43c46e7ca0fe1055dc5788b80762ac12bb5224a90e17ed39bed",
+    "container_id": "2d13667a9f60be6f5eb811c50c3be95c6474e9a02f41933c4c07a4d763628b5b",
+    "image_id": "sha256:db7927fa45edfb29992712e3fb33bd7abcf0a294262116da150a6e70f0b133e8",
+    "binary_sha256": "d9f1697f97fce220f6d1004bd86c62a385dfd4327d6165501c20269a95c63618",
     "config_sha256": "6eeb5715be1ac0d72784a10eb2a821b14995e9d0e29cd886a146e489ff16f638",
-    "identity_sha256": "34700ffa57036c00ea958af1422a8828261b497b272000a34eb64d99a1db876a"
+    "identity_sha256": "53c7476f81925cc5d3886606334fae4697c4ea413bc7e932a2762696d9a0baf8"
   }
 }
