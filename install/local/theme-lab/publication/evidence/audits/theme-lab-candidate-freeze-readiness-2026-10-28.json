@@ -1,6 +1,6 @@
 {
   "schema": "theme_lab_candidate_freeze_readiness_audit.v1",
-  "generated_at": "2026-10-28T22:21:42.000Z",
+  "generated_at": "2026-10-28T22:35:24.000Z",
   "decision": "identity-bound-evidence-pending",
   "scope": "Freeze readiness only; Sigma-9, Sigma-10, and final theme visual acceptance are not part of this record.",
   "counts": {
@@ -704,7 +704,7 @@
     {
       "id": "adaptation-authority",
       "path": "ports/adaptation-authority.json",
-      "sha256": "94d414e9c5b6f6cfbe33dca83f2ba800d1a98a79f1063bc96a296f94615a119b"
+      "sha256": "8f3a0a8184d2b8852bbdccb1c3d498021d80e0c37c4ac5ddbf4b74b56721a90a"
     },
     {
       "id": "bhl-option-authority",
@@ -724,7 +724,7 @@
   ],
   "freeze_record": {
     "state": "frozen-before-final-acceptance",
-    "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
+    "candidate_set_sha256": "534421af85cd46116df4b286da8f6702c2ee2fd3e07519189f7d21c55cf3d9a2",
     "final_acceptance": {
       "sigma9": "pending",
       "sigma10": "pending",
