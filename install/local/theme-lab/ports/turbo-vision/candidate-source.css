@@ -148,3 +148,6 @@
 /* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
 /* SCP-JP Wikidot turbo-vision narrow panes: keep the revision and file tables inside the viewport at phone widths. */
 @media (max-width:767px){.page-history{max-width:calc(100vw - 2.5rem)}.page-history table{width:100%;table-layout:fixed}.page-history td,.page-history th{overflow-wrap:anywhere}#action-area table.page-files{width:100%;table-layout:fixed}#action-area table.page-files td{overflow-wrap:anywhere}}
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+/* SCP-JP Wikidot Turbo Vision documentation blockquote wrap: owner OPTION C (2026-10-29) — wrap long unbroken strings in blockquotes so they read in place at narrow widths; a localization quality improvement, divergence from verbatim upstream accepted for this package + finding. */
+.turbo-block .blockquote, .turbo-block .blockquote * { overflow-wrap: anywhere; }

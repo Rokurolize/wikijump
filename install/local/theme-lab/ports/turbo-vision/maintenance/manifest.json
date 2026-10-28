@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "8934e7d94e2eb582311c961eaf4042fd01107f7943b9547252e1e5bee08aa3c3",
+  "frozen_candidate_source_sha256": "e8acd56ebfe4e28b14825c26db3980a1d584e5b2532a9c9b818ec70aa9013647",
   "base_source_sha256": "b43f1d79215dab57e1a03bfe9c7250db9f25a5467e1429627f114b9dfa750340",
-  "raw_jp_overrides_sha256": "9f69aebd94f44605702e676f5a7141918e922c62c6273926c3e39c364249cb5c",
-  "jp_overrides_sha256": "91e167399460ba6704ee74279ed906d608c40932462d07e568a411536c5113fc",
-  "semantic_css_sha256": "25caa29f4803344f6b02b0d8a5e04791cffb0ee32aaf2d22c04d16c0bf6d004e",
-  "canonical_override_sha256": "9faa872b6cfefc904db58eaec9dcf4be3797cc4d51af15bb4ba80623e772800f",
+  "raw_jp_overrides_sha256": "00211f559f2da850c6d966800d8a94b778129f104dba8a198a97979c901e6780",
+  "jp_overrides_sha256": "ba3b88029c1b0d260684287829fcfe0450e9e95abafec497b0b0d2427073c546",
+  "semantic_css_sha256": "8ae0bd6f93a93bce57a6a1fc54fcdb533cc9a77f0a534fe9cff5e9eb89a4a195",
+  "canonical_override_sha256": "f3f628145fa7ca6a2aac3f71543234cd45ad64e1305b1edb2b42b055e608695d",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "18b8e57a271c425c17f7ef49a8cc700e4491ce222cf36959e8c8475718ddd6b0",
+  "final_source_sha256": "4b9ee9e2f1ec56cc6ec210d5b20609fa12984bc9f05eee5e3b1a20373faf58de",
   "final_source_inputs": {
     "base_sha256": "b43f1d79215dab57e1a03bfe9c7250db9f25a5467e1429627f114b9dfa750340",
-    "jp_overrides_sha256": "91e167399460ba6704ee74279ed906d608c40932462d07e568a411536c5113fc"
+    "jp_overrides_sha256": "ba3b88029c1b0d260684287829fcfe0450e9e95abafec497b0b0d2427073c546"
   },
   "ordered_include_sha256": "2d9da036cfae7fd12cfc6366c1e5bafaaf37105d3e5a19172b72a4a4bc3763e8",
   "declaration_reviews": {},
-  "adaptation_block_count": 8,
-  "raw_override_rule_count": 19,
-  "canonical_override_rule_count": 19,
+  "adaptation_block_count": 9,
+  "raw_override_rule_count": 21,
+  "canonical_override_rule_count": 21,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -424,6 +424,29 @@
         "state": "acceptance-frame"
       },
       "published_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651"
+    },
+    {
+      "marker": "SCP-JP Wikidot Turbo Vision documentation blockquote wrap: owner OPTION C (2026-10-29) — wrap long unbroken strings in blockquotes so they read in place at narrow widths; a localization quality improvement, divergence from verbatim upstream accepted for this package + finding.",
+      "rationale": "Owner OPTION C (2026-10-29): the theme documentation blockquote carries a raw image URL as a classless span; at 320px the unbroken string measures 273px wide from left 60 to right 333 and overflows the document by 13px (current-contract full check w16-turbo-vision-full, raw result sha256 cf8b7993005e195e2805808e0953d39913ea0cb70e3873e81b5af6ee5173d9eb). The same-frame delta receipt reproduces the defect without the rule (13px, span 60/333/273, computed overflow-wrap normal) and clears it with the rule (zero error findings; computed overflow-wrap anywhere on the blockquote and its descendants, selector matched on the fixture blockquote element). Divergence from verbatim upstream is accepted for this package + finding as a localization quality improvement.",
+      "sha256": "debb27e2e77cb7e3a92eb61affd85fbf0257fa3a9b5b464b48e8d85a48d13ec5",
+      "selectors": [
+        ".turbo-block .blockquote",
+        ".turbo-block .blockquote *"
+      ],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/turbo-vision-blockquote-delta-20261029/receipt.json",
+          "sha256": "062fdff930371adaa9f586ebdbc25b80e1c67f919ad05e7d933b1a6b1b0fbd39"
+        }
+      ],
+      "scope": {
+        "target": "SCP-JP Sigma-9 current target acceptance",
+        "state": "page.normal"
+      },
+      "published_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
@@ -535,6 +558,17 @@
       "at_contexts": [
         "@media (max-width:767px)"
       ],
+      "authority": "RUNTIME_INDEPENDENT"
+    },
+    {
+      "marker": "SCP-JP Wikidot Turbo Vision documentation blockquote wrap: owner OPTION C (2026-10-29) — wrap long unbroken strings in blockquotes so they read in place at narrow widths; a localization quality improvement, divergence from verbatim upstream accepted for this package + finding.",
+      "rationale": "SCP-JP Wikidot Turbo Vision documentation blockquote wrap: owner OPTION C (2026-10-29) — wrap long unbroken strings in blockquotes so they read in place at narrow widths; a localization quality improvement, divergence from verbatim upstream accepted for this package + finding.",
+      "sha256": "debb27e2e77cb7e3a92eb61affd85fbf0257fa3a9b5b464b48e8d85a48d13ec5",
+      "selectors": [
+        ".turbo-block .blockquote",
+        ".turbo-block .blockquote *"
+      ],
+      "at_contexts": [],
       "authority": "RUNTIME_INDEPENDENT"
     }
   ]
