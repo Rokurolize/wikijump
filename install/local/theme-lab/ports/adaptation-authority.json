@@ -848,7 +848,7 @@
           "sha256": "aafd43797a2065561b9a42ad3269189cfba6c6d5501cb34275502c1bc7978a76",
           "authority": "TARGET_WIKIDOT_CERTIFIED",
           "origin": "target-certified-replacement",
-          "rationale": "In WebKit at 390px all four native JP menu parents stay on one row. The fourth submenu expands even the closed document beyond the viewport; the unthemed state fits. Right-anchor this row endpoint only in WebKit at 360–767px. Native normal and all eight navigation actions pass; the wrapped 320px row and other engines retain their existing anchors.",
+          "rationale": "In WebKit at 390px all four native JP menu parents stay on one row. The fourth submenu expands even the closed document beyond the viewport; the unthemed state fits. Right-anchor this row endpoint only in WebKit at 360\u2013767px. Native normal and all eight navigation actions pass; the wrapped 320px row and other engines retain their existing anchors.",
           "evidence": [
             {
               "path": "authority-evidence/foxtrot-component-refresh-normal-webkit-20261005/receipt.json",
@@ -1023,7 +1023,7 @@
         },
         {
           "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
-          "rationale": "In the otherwise credit dialog the back link (戻る) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
+          "rationale": "In the otherwise credit dialog the back link (\u623b\u308b) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
           "sha256": "741b04aa4099d6de0c6d70996c006c68a9087c61e24f2ccb2dd67039d7169f9e",
           "selectors": [
             "[id*=u-credit] div.credit-back a"
@@ -3396,7 +3396,7 @@
           "sha256": "985d2f3995ef32767b02714495f40fb13ff969d4fd986667505025f5f0a96ded",
           "origin": "target-certified-replacement",
           "authority": "TARGET_WIKIDOT_CERTIFIED",
-          "rationale": "At 390px Classic increases the real SCP-JP fourth submenu escape by 4.703125px relative to the native target. Align only that endpoint from 360px through 767px. At 320–359px, a separately certified narrow-navigation block keeps primary links in one row and contains the fourth submenu.",
+          "rationale": "At 390px Classic increases the real SCP-JP fourth submenu escape by 4.703125px relative to the native target. Align only that endpoint from 360px through 767px. At 320\u2013359px, a separately certified narrow-navigation block keeps primary links in one row and contains the fourth submenu.",
           "evidence": [
             {
               "path": "authority-evidence/classic-mobile-endpoint-current-css-20261006/receipt.json",
@@ -6085,7 +6085,7 @@
         },
         {
           "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
-          "rationale": "In the otherwise credit dialog the back link (戻る) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
+          "rationale": "In the otherwise credit dialog the back link (\u623b\u308b) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
           "sha256": "741b04aa4099d6de0c6d70996c006c68a9087c61e24f2ccb2dd67039d7169f9e",
           "selectors": [
             "[id*=u-credit] div.credit-back a"
@@ -6403,7 +6403,7 @@
         },
         {
           "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
-          "rationale": "In the otherwise credit dialog the back link (戻る) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
+          "rationale": "In the otherwise credit dialog the back link (\u623b\u308b) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
           "sha256": "741b04aa4099d6de0c6d70996c006c68a9087c61e24f2ccb2dd67039d7169f9e",
           "selectors": [
             "[id*=u-credit] div.credit-back a"
@@ -8701,7 +8701,7 @@
         },
         {
           "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
-          "rationale": "In the otherwise credit dialog the back link (戻る) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
+          "rationale": "In the otherwise credit dialog the back link (\u623b\u308b) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
           "sha256": "741b04aa4099d6de0c6d70996c006c68a9087c61e24f2ccb2dd67039d7169f9e",
           "selectors": [
             "[id*=u-credit] div.credit-back a"
@@ -8975,7 +8975,7 @@
           "sha256": "c9d7e360fac1ddcdf5c38306c91cb8bc7924171b0c50784d03cde1b707fef7ab",
           "authority": "TARGET_WIKIDOT_CERTIFIED",
           "origin": "target-certified-replacement",
-          "rationale": "The theme transforms the view-panel container, making its nested otherwise panel fixed relative to that container instead of the viewport. Native trusted otherwise clicks demonstrate 51–597px of panel escape. Remove only that containing transform and retain vertical centering with top/bottom and auto margins.",
+          "rationale": "The theme transforms the view-panel container, making its nested otherwise panel fixed relative to that container instead of the viewport. Native trusted otherwise clicks demonstrate 51\u2013597px of panel escape. Remove only that containing transform and retain vertical centering with top/bottom and auto margins.",
           "evidence": [
             {
               "path": "authority-evidence/hansarp-final-four-block-14-20261004/receipt.json",
@@ -9719,7 +9719,7 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "page.history"
           },
-          "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
+          "published_css_sha256": "291cd47505fcdae005459e6ad82f9485cc1a803d32a2d802c6c4721ad7a586d7"
         },
         {
           "marker": "SCP-JP Wikidot redtape mobile submenu: list the mobile submenu in a single column like the target menu instead of a two-column grid with a dangling empty cell.",
@@ -9741,14 +9741,15 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "navigation.mobile"
           },
-          "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
+          "published_css_sha256": "291cd47505fcdae005459e6ad82f9485cc1a803d32a2d802c6c4721ad7a586d7"
         },
         {
           "marker": "SCP-JP Wikidot redtape credit heritage: give the heritage rating module the dark pill ground of the target composition so its label stays readable in the credit modal.",
-          "rationale": "In the credit modal the heritage rating module box computes to the theme background (rgb(252,252,252)) because --rating-module-bg-color resolves to --swatch-background (white monochrome), while the target composition shows the heritage module as a dark pill and the campaign pilot shows redtape label text failing against the white box (defect Q1-7; the F5 comparison in the W02 triage found the box background itself divergent, so this is not the F5 identical state). The same-target delta receipt shows this block gives the modal module the theme dark accent ground (rgb(70,13,13)) with the on-dark text color (label contrast 8.9) and leaves the page-level heritage module unchanged. The pilot cascade balance differs from the fixture frame on the label color source, so the block sets both the ground and the text variables; full verification at the Sigma-9 recapture.",
-          "sha256": "e5b5775456a0538e7caaaeac021eda3a3524c9aec99ea1f2a8551a44fcc346c4",
+          "rationale": "In the credit modal the heritage rating module box computes to the theme background (rgb(252,252,252)) because --rating-module-bg-color resolves to --swatch-background (white monochrome), while the target composition shows the heritage module as a dark pill and the campaign pilot shows redtape label text failing against the white box (defect Q1-7; the F5 comparison in the W02 triage found the box background itself divergent, so this is not the F5 identical state). The same-target delta receipt shows this block gives the modal module the theme dark accent ground (rgb(70,13,13)) with the on-dark text color (label contrast 8.9) and leaves the page-level heritage module unchanged. The pilot cascade balance differs from the fixture frame on the label color source, so the block sets both the ground and the text variables; full verification at the Sigma-9 recapture. W13 (G2-13): the nested .page-rate-widget-box kept its own light ground inside the darkened module, leaving the rate segment white-on-white in the modal; the block now also clears the widget ground to transparent and sets its text to the on-dark color (W13 delta receipt: widget background rgb(252,252,252) -> transparent, rate-points color -> rgb(252,252,252) on the dark pill; screenshot-verified).",
+          "sha256": "1625c652813bfd0776ba4b7d2daedfae00ada0d35c3e64d2a3b668f23fbb07c8",
           "selectors": [
-            "[id*=u-credit] .heritage-rating-module"
+            "[id*=u-credit] .heritage-rating-module",
+            "[id*=u-credit] .heritage-rating-module .page-rate-widget-box"
           ],
           "at_contexts": [],
           "origin": "runtime-independent-css-containment",
@@ -9757,17 +9758,21 @@
             {
               "path": "authority-evidence/redtape-menu-heritage-delta-20261028/receipt.json",
               "sha256": "e433bb756ddb423f05832200f7605b45a291fd9ef4fd62c4a1151fc7637f64f8"
+            },
+            {
+              "path": "authority-evidence/redtape-heritage-ratebox-delta-20261028/receipt.json",
+              "sha256": "83df8ed2a41255fe5c75593cd3bd0ca59345dfbf3a5c60b29f5d332c5df18b40"
             }
           ],
           "scope": {
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "credit.view"
           },
-          "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
+          "published_css_sha256": "291cd47505fcdae005459e6ad82f9485cc1a803d32a2d802c6c4721ad7a586d7"
         },
         {
           "marker": "SCP-JP Wikidot redtape dialog headings: keep dialog body headings on the dialog text color so they stay readable on the white dialog ground.",
-          "rationale": "Two redtape-authored choices collide in dialogs: its own owindow rule forces the dialog ground white, while its variable block sets --swatch-text-tertiary-color to the white accent, and the shared BHL rule colors dialog body headings rgb(var(--modal-body-header-txt)) = the tertiary color — measured heading rgb(244,244,244) on white, contrast 1.1 (defect Q1-8; the BHL reference computes a dark heading at 17.79). Redefining --modal-body-header-txt to the dialog own text color (bright accent) inside the owindow scope restores a readable heading (measured 5.9) with body text unchanged.",
+          "rationale": "Two redtape-authored choices collide in dialogs: its own owindow rule forces the dialog ground white, while its variable block sets --swatch-text-tertiary-color to the white accent, and the shared BHL rule colors dialog body headings rgb(var(--modal-body-header-txt)) = the tertiary color \u2014 measured heading rgb(244,244,244) on white, contrast 1.1 (defect Q1-8; the BHL reference computes a dark heading at 17.79). Redefining --modal-body-header-txt to the dialog own text color (bright accent) inside the owindow scope restores a readable heading (measured 5.9) with body text unchanged.",
           "sha256": "c1260f2f3be0e009ac13bb258b9eaaed584225e4eea8838aec805240c8e6eb7e",
           "selectors": [
             "#odialog-container .owindow"
@@ -9785,11 +9790,11 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "dialog.generic"
           },
-          "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
+          "published_css_sha256": "291cd47505fcdae005459e6ad82f9485cc1a803d32a2d802c6c4721ad7a586d7"
         },
         {
           "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
-          "rationale": "In the otherwise credit dialog the back link (戻る) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
+          "rationale": "In the otherwise credit dialog the back link (\u623b\u308b) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
           "sha256": "741b04aa4099d6de0c6d70996c006c68a9087c61e24f2ccb2dd67039d7169f9e",
           "selectors": [
             "[id*=u-credit] div.credit-back a"
@@ -9807,13 +9812,13 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "credit.otherwise"
           },
-          "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
+          "published_css_sha256": "291cd47505fcdae005459e6ad82f9485cc1a803d32a2d802c6c4721ad7a586d7"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
         "candidate-input.css": "e715aff3bea062e42ab06f0e59259c6319ec716c4defd43623191ead7b0d368b",
-        "authority-overrides.css": "a976ab1e2bbdaf1c1a61e0a4fc2dfd7a4725c17f2d8c96f2b5fdc55d93906328",
+        "authority-overrides.css": "f0de6fc0ec97e126c1fe76c5132fbd11ecc91687c45955485d28670de92ca86c",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/toggle-sidebar-bhl.wikidot.txt": "212ffc2c275de8baa38b3da02d6e08636d649ea5324e0c9c2e9dab6a313a73dc",
         "source-includes/toggle-sidebar-bhl-input.css": "6a820d809d6029aa94eb1285ae644e0f2e28d03c3656e37ee32f6d4473fed1fb",
@@ -9822,12 +9827,12 @@
         "source-css-includes.json": "270b412dfe1dad38f24cfaaa37d7bb7af01d749f15d1ad7f7aa77b385ee6d022"
       },
       "outputs": {
-        "candidate.css": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b",
-        "candidate-source.css": "710fb3f8917865ef6d6234abc40249781a08bf726971613f699ffe23c916e278",
-        "candidate.wikidot.source.txt": "c9f511a9c22faa366c11a096a2a068d39d74321e88c038f6b38db00365b3fd84",
+        "candidate.css": "291cd47505fcdae005459e6ad82f9485cc1a803d32a2d802c6c4721ad7a586d7",
+        "candidate-source.css": "5d032bd8a1d7b3017508295048b43a48962aed289ac492b7214d32bf96f3de02",
+        "candidate.wikidot.source.txt": "585e429f8a4fd472aed4e190461a23fba689aba968ebc38195971509fffa304e",
         "candidate.wikidot.txt": "b82c6664e77bb804770059fceec8e978e3ef4f415f0a6c45cf4ddcedc2675e15",
         "maintenance/base.wikidot.txt": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
-        "maintenance/jp-overrides.css": "830bdaa2eaa58771eea194beefbde00034ca5123a0663bfd71b1b0a7c9d819ee",
+        "maintenance/jp-overrides.css": "70e7b48277f1042c7884308df765a5c0826ebe852639d135ee0c35704e6d9052",
         "maintenance/final.wikidot.txt": "d0aa5b01fe3ab2ba3dc32310cfae534c042e49be0e7d94cb0f2a193bc0f55e3c"
       },
       "historical_candidate": {

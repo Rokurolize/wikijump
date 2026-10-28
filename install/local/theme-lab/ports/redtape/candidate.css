@@ -1650,6 +1650,7 @@ rnb-.current.raisanav {
 
 /* SCP-JP Wikidot redtape credit heritage: give the heritage rating module the dark pill ground of the target composition so its label stays readable in the credit modal. */
 [id*=u-credit] .heritage-rating-module{background-color:rgb(var(--swatch-primary-darkest));color:rgb(var(--swatch-text-secondary-color));--rating-module-text-color:var(--swatch-text-secondary-color)}
+[id*=u-credit] .heritage-rating-module .page-rate-widget-box{background-color:transparent;color:rgb(var(--swatch-text-secondary-color))}
 
 /* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
 
