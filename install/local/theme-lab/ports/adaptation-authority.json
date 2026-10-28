@@ -4557,7 +4557,7 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "credit.view"
           },
-          "published_css_sha256": "382f0f02d9b2ce705aaae5d78a0cc11108f5b82209805105c352661db8e15ffd"
+          "published_css_sha256": "9050a943386e3975914248717c6a354ea8c88dc45eb06120ae2f58625e3eb70e"
         },
         {
           "marker": "SCP-JP Wikidot space credit rate bar: keep the module layout inside the credit modals so the bar shares its row with the license badge instead of overlapping it.",
@@ -4579,7 +4579,7 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "credit.view"
           },
-          "published_css_sha256": "382f0f02d9b2ce705aaae5d78a0cc11108f5b82209805105c352661db8e15ffd"
+          "published_css_sha256": "9050a943386e3975914248717c6a354ea8c88dc45eb06120ae2f58625e3eb70e"
         },
         {
           "marker": "SCP-JP Wikidot space top bar: keep submenus closed on keyboard focus alone, matching the runtime default menu behavior.",
@@ -4601,7 +4601,7 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "navigation.focus"
           },
-          "published_css_sha256": "382f0f02d9b2ce705aaae5d78a0cc11108f5b82209805105c352661db8e15ffd"
+          "published_css_sha256": "9050a943386e3975914248717c6a354ea8c88dc45eb06120ae2f58625e3eb70e"
         },
         {
           "marker": "SCP-JP Wikidot space credit modals: give the credit modal box a definite width at mobile widths so the otherwise columns do not collapse and the rate bar clears the license badges.",
@@ -4625,22 +4625,45 @@
             "target": "SCP-JP Sigma-10 migration target acceptance",
             "state": "credit.otherwise"
           },
-          "published_css_sha256": "382f0f02d9b2ce705aaae5d78a0cc11108f5b82209805105c352661db8e15ffd"
+          "published_css_sha256": "9050a943386e3975914248717c6a354ea8c88dc45eb06120ae2f58625e3eb70e"
+        },
+        {
+          "marker": "SCP-JP Wikidot space narrow history: keep the revision table inside the viewport at phone widths.",
+          "rationale": "G2-08 (D6 family): at 320px the revision table's container measures 331px wide and the comment column is clipped at the viewport edge. The block caps the history container at the viewport width and gives the table a fixed layout at full width with anywhere wrapping, so every column stays inside the viewport and all revision data remains readable (narrow columns wrap hard; two softer distributions were measured and rejected \u2014 auto layout collapses the columns pathologically). Acceptance-frame delta: ec2b1c11... (331px, clipped) -> ac982b5a... (280px, complete).",
+          "sha256": "6dee3d6ecb23de8dad649fc9e3f395903c410e9d2324707e3ddb0d02ee68c190",
+          "selectors": [
+            ".page-history",
+            ".page-history table"
+          ],
+          "at_contexts": [],
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/space-history-delta-20261028/receipt.json",
+              "sha256": "5844d40d78213eb7ddd5a0604d2fde8aab513ff4d4888c107efbd32741665cd3"
+            }
+          ],
+          "scope": {
+            "target": "w13-delta",
+            "state": "acceptance-frame"
+          },
+          "published_css_sha256": "9050a943386e3975914248717c6a354ea8c88dc45eb06120ae2f58625e3eb70e"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "72ef4e7545f439aa9d8a330c566a9489980eafa02cd8e08cff327b7171b3d6aa",
         "candidate-input.css": "718d6bfc1705006f15a492f3cb96000489e32efc1df0ab50d5ffc10b41276367",
-        "authority-overrides.css": "080f283bda1bc240118805e64beaac3f5b03dadc383ae140b4e9bac5894814aa",
+        "authority-overrides.css": "e6ce7c7bfcbe413aafdd4e8cfbef97a03efcb06d572d283341b62d54853956bb",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/sigma-plus.wikidot.txt": "dccfb8c281e6bf0268f7f472ef86690aa64181d3d916d1385838886bd89eafbf",
         "source-includes/sigma-plus-input.css": "5bd2d00b494a875d43fcd5e270a4b323c9ddbe16b6238fb5f5b80992c3b37b0a",
         "source-css-includes.json": "02e25771b7150b87385c11550cbce45a4ab7886bb9260b436c3928ede4709620"
       },
       "outputs": {
-        "candidate.css": "382f0f02d9b2ce705aaae5d78a0cc11108f5b82209805105c352661db8e15ffd",
-        "candidate-source.css": "42a135f2e69e4cb7a1982a6f59de27d9450c75482ef5e7c746552176415bd365",
-        "candidate.wikidot.source.txt": "a310401c00c8d87a98658c87a08f94e03a78034e6fb56e8830ba9a8fd96c1900",
+        "candidate.css": "9050a943386e3975914248717c6a354ea8c88dc45eb06120ae2f58625e3eb70e",
+        "candidate-source.css": "cd853e79a528b69b572ba79e0dc594d8e3a0c758d42977319505f597c7fef4c6",
+        "candidate.wikidot.source.txt": "df6265436b06703f428f4df2ee6809634177378d104332f05e252ee77bae26f7",
         "candidate.wikidot.txt": "14ee4d352b8e20c89e66347c4fc3bbe7fee64c8f527ebf1658a31dcd2b860ce9",
         "maintenance/base.wikidot.txt": "72ef4e7545f439aa9d8a330c566a9489980eafa02cd8e08cff327b7171b3d6aa",
         "maintenance/jp-overrides.css": "9813ec0658990f55a179a7851b4f159ade6f0e0e00308777707640e7be5927f0",
