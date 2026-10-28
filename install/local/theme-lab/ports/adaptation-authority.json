@@ -822,15 +822,14 @@
         },
         {
           "marker": "SCP-JP Wikidot Foxtrot navigation correction: separate the drawer toggle from the header menu and contain row endpoint submenus.",
-          "sha256": "15c5280fde0e4808cf39a31b03d4424b4ca729f861d05161f34605a7f853ace5",
+          "sha256": "0038b036c90e6c41c068bb653eac94bf6ee7f85ed813d2c36c6103ddf80127dd",
           "origin": "target-certified-replacement",
           "authority": "TARGET_WIKIDOT_CERTIFIED",
-          "rationale": "The complete default source stylesheet still requires the drawer separation and third-menu endpoint correction at mobile widths. The fourth parent wraps at 390px, so right-anchoring it creates a new left escape and is removed. Trusted native A/B exercises all eight parent actions with the retained correction.",
+          "rationale": "The complete default source stylesheet still requires the drawer separation and third-menu endpoint correction at mobile widths. The fourth parent wraps at 390px, so right-anchoring it creates a new left escape and is removed. Trusted native A/B exercises all eight parent actions with the retained correction. W13 re-certification note: on the current reference snapshot all four parents stay on one row in Chromium as well, so the row endpoint is the last parent; the block now right-anchors the last parent submenu too (the same remedy as the WebKit endpoint block), verified by the W13 re-certification A/B.",
           "evidence": [
             {
-              "path": "authority-evidence/foxtrot-component-refresh-navigation-chromium-20261005/receipt.json",
-              "sha256": "7971c30fb81e03fba8d13a46c669b1285d7b9dab8705d760927745d26a83ca06",
-              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+              "path": "authority-evidence/foxtrot-w13-recert-20261028/block22-receipt.json",
+              "sha256": "a9b9ace19176cd24524676e730319ec156b11a9555916a4a2167171669c6accb"
             }
           ],
           "scope": {
@@ -841,14 +840,14 @@
               390
             ]
           },
-          "published_css_sha256": "db15469bd49cb604c373918859834372b1cfc07b79157c0d66747c8f61c69912"
+          "published_css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a"
         },
         {
           "marker": "SCP-JP Wikidot Foxtrot WebKit row endpoint: contain the fourth submenu where the engine keeps all parents on one row.",
           "sha256": "aafd43797a2065561b9a42ad3269189cfba6c6d5501cb34275502c1bc7978a76",
-          "authority": "TARGET_WIKIDOT_CERTIFIED",
+          "authority": "REMOVE",
           "origin": "target-certified-replacement",
-          "rationale": "In WebKit at 390px all four native JP menu parents stay on one row. The fourth submenu expands even the closed document beyond the viewport; the unthemed state fits. Right-anchor this row endpoint only in WebKit at 360\u2013767px. Native normal and all eight navigation actions pass; the wrapped 320px row and other engines retain their existing anchors.",
+          "rationale": "RECLASSIFIED REMOVE at W13 re-certification: the block's containment (right-anchoring the last parent's submenu at 360-767px) is now provided for every engine by the extended navigation correction block, whose W13 A/B demonstrates the need and the pass. Against the post-extension candidate, this block's own A/B shows no independent need (the without-variant passes at 320 and 390 in WebKit, normal and navigation-action), so it is not independently publishable under the authority rule. Its pre-extension W13 A/B did demonstrate need and pass; the rule text is preserved in git history and in this ledger entry.",
           "evidence": [
             {
               "path": "authority-evidence/foxtrot-component-refresh-normal-webkit-20261005/receipt.json",
@@ -871,14 +870,36 @@
               320,
               390
             ]
+          }
+        },
+        {
+          "marker": "SCP-JP Wikidot foxtrot heritage credit button: restore a dark ground under the info glyph so it is not white-on-white.",
+          "rationale": "The port-authored JP-localization rule in candidate-input.css strips the credit button background (background:none, absent upstream), so in the Sigma-10 heritage module the info button renders as an empty bordered box and its glyph does not read (S10-2, white-on-white). The block restores a dark ground in the theme's own accent (#333, matching its action buttons) with a light glyph. Verified in the S10 acceptance frame: before frame e855e732... (empty box) -> after frame 85b8da306b27... (white info glyph on dark ground, module crop inspected).",
+          "sha256": "8bdae8a975ead08079b942a51797e84b5e225dec7a883e0cb4b2b77bf4f3acde",
+          "selectors": [
+            "#page-content .creditRate.creditModule .creditButton",
+            "#page-content .creditRate.creditModule .creditButton a"
+          ],
+          "at_contexts": [],
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/foxtrot-credit-button-delta-20261028/receipt.json",
+              "sha256": "39fa72e52c63c7e6d2df720c2366a7cd69f0f39bcb8a9da3f74980235d09d537"
+            }
+          ],
+          "scope": {
+            "target": "heritage-credit-button",
+            "state": "credit.variant.heritage"
           },
-          "published_css_sha256": "db15469bd49cb604c373918859834372b1cfc07b79157c0d66747c8f61c69912"
+          "published_css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
         "candidate-input.css": "204ba9991e64a43359ce626e5b6f775e709a1c482974f44896cd6c11326c7e73",
-        "authority-overrides.css": "e50f6ac33618d59caf40271fd30bafa8fe8bfec545f7084fe22b7816a611ef1a",
+        "authority-overrides.css": "e2816d3d7e2814f2b2e651be835e3971807a32de019f98c636e7cdad01efa9dc",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/toggle-sidebar.wikidot.txt": "5e6e6bf79aa9b08344865b1209693254db4c8d1aef7d579092bc6dd9c7c55e35",
         "source-includes/toggle-sidebar-input.css": "d4d80ebcc0e2afb61490420a96b3f0b4cc29dfc9de532029e062af1ee80028ae",
@@ -892,9 +913,9 @@
         "runtime-css-materialization.json": "7d17d16f28c2f1924970a2218b469f9f67ff8b7d079bbced8374b71ab6d8d005"
       },
       "outputs": {
-        "candidate.css": "db15469bd49cb604c373918859834372b1cfc07b79157c0d66747c8f61c69912",
-        "candidate-source.css": "57f5b70ec4d75bf10a09461bc06b848c79f80afa7787d7af0079284d9db1afeb",
-        "candidate.wikidot.source.txt": "e0bbf7be650005b5f7d5e3893e598e16febd6f06d0bc26fc86f90163520b4e47",
+        "candidate.css": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
+        "candidate-source.css": "876658aea9289bc76b9e83bdcfbae2bcee705115b14336fccebd76540cbfc5a3",
+        "candidate.wikidot.source.txt": "1940fcb0c0dc1aebbe9fd6f9c638dc83b07895acda45649ad99dce75bc58b7c8",
         "candidate.wikidot.txt": "49e6c67780fa597483e84c34e92e1f69c9c883b0385aa2044076593154c34fcb",
         "maintenance/base.wikidot.txt": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
         "maintenance/jp-overrides.css": "4e673bd50dad499374773efdfdfa62fb6ac3f9cf7bd82e7fbe44a4e19edc7978",
