@@ -6701,8 +6701,8 @@
           "rationale": "Frozen real SCP-JP A/B establishes this specific target regression and verifies the minimum correction. Source styling, palette, dimensions, and unrelated menus remain owned by the imported theme.",
           "evidence": [
             {
-              "path": "authority-evidence/flopstyle-dark-navigation-recert-20261028/receipt.json",
-              "sha256": "f3e4490eac4c900325577c2312efe23ba9cc14a0a7ffd920e7ba34a9bdf0cfa7"
+              "path": "authority-evidence/flopstyle-dark-w13-recert-20261028/navigation-receipt.json/receipt.json",
+              "sha256": "15c948102dc7752ae5cd14b6cecf2890ba25f01610f3570ff98700d88160b4c7"
             }
           ],
           "scope": {
@@ -6717,7 +6717,7 @@
               "sha256": "bce06e2f87c6962d176e9f54f8bac47815860044b52a16562a139e98a0051b85"
             }
           },
-          "published_css_sha256": "519d88b43e366531bff3fb2b0a1ff722cb80c444efa952919631f943a4cd8a97"
+          "published_css_sha256": "be744e1d57f1028199f07f0aee70fbd7a96a724c3627dc7a3affdbc23d99108c"
         },
         {
           "marker": "Resolve preserved source CSS component includes",
@@ -6751,8 +6751,8 @@
           "rationale": "Firefox wraps the native third/fourth parents onto different rows. The Chromium anchors lose the third submenu off-left at 320px and the fourth off-left at 390px; the third hidden menu also expands the 390px document. Scope alternate row endpoints to Firefox and retain the separately certified Chromium behavior.",
           "evidence": [
             {
-              "path": "authority-evidence/flopstyle-dark-navigation-action-recert-20261028/receipt.json",
-              "sha256": "68e26c36580e5f70ea746afd26947a3ad2a18639eb5de0a695aeb30eb959bc66"
+              "path": "authority-evidence/flopstyle-dark-w13-recert-20261028/navigation-action-receipt.json/receipt.json",
+              "sha256": "5d01bd60275afd020e50b5bfeab65e412c410c37847e543bb6abc91448b24d03"
             }
           ],
           "scope": {
@@ -6763,7 +6763,7 @@
               390
             ]
           },
-          "published_css_sha256": "519d88b43e366531bff3fb2b0a1ff722cb80c444efa952919631f943a4cd8a97"
+          "published_css_sha256": "be744e1d57f1028199f07f0aee70fbd7a96a724c3627dc7a3affdbc23d99108c"
         },
         {
           "marker": "SCP-JP Wikidot flopstyle-dark history list: keep the history table inside the content column at narrow widths.",
@@ -6787,13 +6787,35 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "page.history"
           },
-          "published_css_sha256": "519d88b43e366531bff3fb2b0a1ff722cb80c444efa952919631f943a4cd8a97"
+          "published_css_sha256": "be744e1d57f1028199f07f0aee70fbd7a96a724c3627dc7a3affdbc23d99108c"
+        },
+        {
+          "marker": "SCP-JP Wikidot flopstyle-dark narrow submenu: keep the open mobile submenu above the page-title artwork.",
+          "rationale": "At 320px the open mobile submenu's first entry is partly covered by dark fragments of the page-title artwork rendering over the panel (defect Q1-33; the dropdown renders cleanly at 390px and 768px). The submenu is absolutely positioned with z-index auto, so the title artwork wins the paint order where they overlap. Raising the dropdown's z-index keeps the open menu above the artwork. Verified in the acceptance frame: the W13 scoped recapture of nav.mobile-top submenu-expanded at narrow-mobile is byte-identical to the W11 defect frame before the block and shows the first entry uncovered with it.",
+          "sha256": "6ebe8021cc9b1581dea05bce1bf2ce5797d1fcf7d38128c65c4d0b081d214eb1",
+          "selectors": [
+            "#top-bar .mobile-top-bar>ul>li>ul"
+          ],
+          "at_contexts": [],
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/flopstyle-dark-submenu-stacking-delta-20261028/receipt.json",
+              "sha256": "7ecc4b3e4af854f7abedf232ceee05e4c7c04030fedfcc2bc4a0aee16fbca5bb"
+            }
+          ],
+          "scope": {
+            "target": "SCP-JP Sigma-9 current target acceptance",
+            "state": "navigation.mobile"
+          },
+          "published_css_sha256": "be744e1d57f1028199f07f0aee70fbd7a96a724c3627dc7a3affdbc23d99108c"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "541622cca25acbb968a463e89f4b1465092b1658088c499211a479af6ca1021f",
         "candidate-input.css": "d811f7cbfdc58a636c845e006f230679d8828f71192b628cf6151116d750968d",
-        "authority-overrides.css": "7c3874538bfa8847bfd2dbf804df855048ce0610a5ad69a963f05d1945d08b6c",
+        "authority-overrides.css": "069f1fe01fee0bccb675c50516554be594056b8e81f1b6adad463ef2b2dd2e4c",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/toggle-sidebar.wikidot.txt": "5e6e6bf79aa9b08344865b1209693254db4c8d1aef7d579092bc6dd9c7c55e35",
         "source-includes/toggle-sidebar-input.css": "d4d80ebcc0e2afb61490420a96b3f0b4cc29dfc9de532029e062af1ee80028ae",
@@ -6810,9 +6832,9 @@
         "source-includes/acs-animation-input.css": "9c2d54387591ead58b15b16791039c675b87d47c268b98800b48eed8f6662690"
       },
       "outputs": {
-        "candidate.css": "519d88b43e366531bff3fb2b0a1ff722cb80c444efa952919631f943a4cd8a97",
-        "candidate-source.css": "4d68b28d7f4c4b7f3e75b668cac30c8394ff2c3171554de9272c9a9fb6df42d7",
-        "candidate.wikidot.source.txt": "ccb1b62f1368db3992b121d43c9a69f493e033e9c9f11a01145326a3b373f905",
+        "candidate.css": "be744e1d57f1028199f07f0aee70fbd7a96a724c3627dc7a3affdbc23d99108c",
+        "candidate-source.css": "3a2a15914f17df1343e297468c8bc6f9a48d1bb629f3c4ecc00553ffc8d990b7",
+        "candidate.wikidot.source.txt": "a3702c545d95bd13b7ce148c343f482b52f13e3b589933e26682031d4052203d",
         "candidate.wikidot.txt": "a29c62ad16f1a380c47c63f74904a7875798e4a359dd7aa8503fc09bacab3e49",
         "maintenance/base.wikidot.txt": "541622cca25acbb968a463e89f4b1465092b1658088c499211a479af6ca1021f",
         "maintenance/jp-overrides.css": "4e913ef3679e5120466195388833c2f87971aa18201d6e162707ea8f82122563",
