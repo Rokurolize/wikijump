@@ -4,7 +4,7 @@
   "baseline": "Sigma-9",
   "browser_engine": "chromium",
   "browser_version": "156.0.8078.4",
-  "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+  "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
   "candidate_set_state": "frozen-before-final-acceptance",
   "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
   "transport_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3410",
@@ -47,7 +47,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -68,12 +68,12 @@
         "creditModules": [
           {
             "rect": {
-              "x": 820.859375,
+              "x": 821.96875,
               "y": 1297.9375,
               "width": 158.25,
               "height": 44.6875,
-              "left": 820.859375,
-              "right": 979.109375,
+              "left": 821.96875,
+              "right": 980.21875,
               "top": 1297.9375,
               "bottom": 1342.625
             },
@@ -90,12 +90,12 @@
               "id": "page-content",
               "className": "",
               "rect": {
-                "x": 247.109375,
+                "x": 248.21875,
                 "y": 295.1875,
                 "width": 732,
                 "height": 1151.0625,
-                "left": 247.109375,
-                "right": 979.109375,
+                "left": 248.21875,
+                "right": 980.21875,
                 "top": 295.1875,
                 "bottom": 1446.25
               },
@@ -145,17 +145,17 @@
           "header": true
         },
         "sidebar": {
-          "x": -2.036468505859375,
+          "x": -9.257156372070312,
           "y": 150,
-          "width": 268.203125,
+          "width": 270.421875,
           "height": 900,
-          "left": -2.036468505859375,
-          "right": 266.1666564941406,
+          "left": -9.257156372070312,
+          "right": 261.1647186279297,
           "top": 150,
           "bottom": 1050,
           "inline_style": null,
           "left_css": "0px",
-          "transform": "matrix(1, 0, 0, 1, -2.03646, 0)",
+          "transform": "matrix(1, 0, 0, 1, -9.25716, 0)",
           "position": "sticky",
           "display": "flex",
           "pointerEvents": "auto",
@@ -166,7 +166,7 @@
             "id": "side-bar",
             "className": ""
           },
-          "background": "rgba(252, 252, 252, 0.984)",
+          "background": "rgba(252, 252, 252, 0.97)",
           "darkVariables": {
             "sidebarBg": "252,252,252",
             "darkMenu": "48,48,52",
@@ -1575,12 +1575,12 @@
             "display": "flex",
             "visibility": "visible",
             "rect": {
-              "x": 2.151031494140625,
+              "x": -4.6321563720703125,
               "y": 232,
-              "width": 252.484375,
+              "width": 250.70314025878906,
               "height": 24,
-              "left": 2.151031494140625,
-              "right": 254.63540649414062,
+              "left": -4.6321563720703125,
+              "right": 246.07098388671875,
               "top": 232,
               "bottom": 256
             }
@@ -1591,12 +1591,12 @@
             "outlineColor": "rgb(12, 12, 12)",
             "outlineStyle": "none",
             "rect": {
-              "x": 2.151031494140625,
+              "x": -4.6321563720703125,
               "y": 208,
-              "width": 252.484375,
+              "width": 250.70314025878906,
               "height": 24,
-              "left": 2.151031494140625,
-              "right": 254.63540649414062,
+              "left": -4.6321563720703125,
+              "right": 246.07098388671875,
               "top": 208,
               "bottom": 232
             },
@@ -1607,11 +1607,11 @@
         },
         "contentHit": {
           "point": {
-            "x": 251.109375,
+            "x": 252.21875,
             "y": 170
           },
           "tag": "DIV",
-          "id": "",
+          "id": "side-bar",
           "inSidebar": true
         },
         "state": "collapsible-rest"
@@ -1677,8 +1677,8 @@
             "hit_id": "side-bar",
             "hit_class": "",
             "side_rect": {
-              "left": -21.978546142578125,
-              "right": 252.00582885742188
+              "left": -1.870452880859375,
+              "right": 267.6764221191406
             }
           }
         ],
@@ -1686,7 +1686,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -3310,7 +3310,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -4934,7 +4934,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -6558,7 +6558,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -8182,7 +8182,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -8280,16 +8280,16 @@
           "header": true
         },
         "sidebar": {
-          "x": -292.8125,
+          "x": -248.671875,
           "y": 0,
           "width": 209.515625,
           "height": 844,
-          "left": -292.8125,
-          "right": -83.296875,
+          "left": -248.671875,
+          "right": -39.15625,
           "top": 0,
           "bottom": 844,
           "inline_style": null,
-          "left_css": "-292.828px",
+          "left_css": "-248.681px",
           "transform": "none",
           "position": "fixed",
           "display": "block",
@@ -9691,12 +9691,12 @@
             "visibility": "hidden",
             "pointerEvents": "none",
             "rect": {
-              "x": 7.234375,
+              "x": 7.4375,
               "y": 0,
               "width": 596.265625,
               "height": 844,
-              "left": 7.234375,
-              "right": 603.5,
+              "left": 7.4375,
+              "right": 603.703125,
               "top": 0,
               "bottom": 844
             }
@@ -9710,12 +9710,12 @@
             "display": "flex",
             "visibility": "visible",
             "rect": {
-              "x": -286.3125,
+              "x": -242.171875,
               "y": 56,
               "width": 195.015625,
               "height": 24,
-              "left": -286.3125,
-              "right": -91.296875,
+              "left": -242.171875,
+              "right": -47.15625,
               "top": 56,
               "bottom": 80
             }
@@ -9726,12 +9726,12 @@
             "outlineColor": "rgb(12, 12, 12)",
             "outlineStyle": "none",
             "rect": {
-              "x": -286.3125,
+              "x": -242.171875,
               "y": 32,
               "width": 195.015625,
               "height": 24,
-              "left": -286.3125,
-              "right": -91.296875,
+              "left": -242.171875,
+              "right": -47.15625,
               "top": 32,
               "bottom": 56
             },
@@ -9806,7 +9806,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "cc9d36545c74453124c00a1f91050aae9d6d63401860ac6faeea9453def9bc1e",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -9904,16 +9904,16 @@
           "header": true
         },
         "sidebar": {
-          "x": -284.09375,
+          "x": -260,
           "y": 0,
           "width": 209.515625,
           "height": 740,
-          "left": -284.09375,
-          "right": -74.578125,
+          "left": -260,
+          "right": -50.484375,
           "top": 0,
           "bottom": 740,
           "inline_style": null,
-          "left_css": "-284.098px",
+          "left_css": "-260.009px",
           "transform": "none",
           "position": "fixed",
           "display": "block",
@@ -11315,12 +11315,12 @@
             "visibility": "hidden",
             "pointerEvents": "none",
             "rect": {
-              "x": 7.265625,
+              "x": 7.28125,
               "y": 0,
               "width": 526.265625,
               "height": 740,
-              "left": 7.265625,
-              "right": 533.53125,
+              "left": 7.28125,
+              "right": 533.546875,
               "top": 0,
               "bottom": 740
             }
@@ -11334,12 +11334,12 @@
             "display": "flex",
             "visibility": "visible",
             "rect": {
-              "x": -277.59375,
+              "x": -253.5,
               "y": 56,
               "width": 195.015625,
               "height": 24,
-              "left": -277.59375,
-              "right": -82.578125,
+              "left": -253.5,
+              "right": -58.484375,
               "top": 56,
               "bottom": 80
             }
@@ -11350,12 +11350,12 @@
             "outlineColor": "rgb(12, 12, 12)",
             "outlineStyle": "none",
             "rect": {
-              "x": -277.59375,
+              "x": -253.5,
               "y": 32,
               "width": 195.015625,
               "height": 24,
-              "left": -277.59375,
-              "right": -82.578125,
+              "left": -253.5,
+              "right": -58.484375,
               "top": 32,
               "bottom": 56
             },
@@ -11415,5 +11415,5 @@
       "page_errors": []
     }
   ],
-  "receipt_sha256": "ee9689641e6e7c1613acb4bbc08d0fcd066da2b830c9f68f8e320898c1b0c549"
+  "receipt_sha256": "9914b434159f17f983827651f70a0f09db8e2fd1499da00e5c47cc58fd465362"
 }
