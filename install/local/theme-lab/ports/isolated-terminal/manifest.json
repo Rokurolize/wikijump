@@ -52,7 +52,7 @@
     },
     "existing_jp_audit": "existing-jp-current-and-valid",
     "technical_spec_version": "1.4",
-    "final_verdict": "warn",
+    "final_verdict": "inconclusive",
     "existing_jp_rebase": {
       "previous_sha256": "4cffaa491e5f88926e9793f732bdb80616f0c8a91282b2544478e1b9caa41e30",
       "previous_snapshot": "existing-jp-pre-rebase-20261005.wikidot.txt",
@@ -159,7 +159,7 @@
       "reason": "The page-level image was broken in offline JP preview. Its bytes were already in the content-addressed acquisition cache; "
     }
   ],
-  "final_verdict": "warn",
+  "final_verdict": "inconclusive",
   "existing_jp_audit": "existing-jp-current-and-valid",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/isolated-terminal/assets.json",
   "asset_dependency_decision_count": 53,
@@ -182,7 +182,7 @@
       "source_path": "candidate-input.css",
       "source_sha256": "8d94e5301b2d8defe39877fa97953287ca77acb73b49b58daf4fa1d5edc43a1a",
       "active_tags": [],
-      "candidate_source_sha256": "81ddb7613a62070b01f7c95657433a7ac130ece617e3f691df43db82255670b7",
+      "candidate_source_sha256": "528f4a52a34ac4dd3de8133a2fff4dd6c0b56da8be0b4b10c8b6c3b21a4e1e26",
       "candidate_active_tags": [
         "en",
         "テーマ"
@@ -194,7 +194,7 @@
       "inactive_source_css_modules_removed_exact": 0,
       "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "ae7f1726cb7b2f37ef99a4530e4dde51294f337ec6aa2e41d375a9c37603c0c2",
+      "candidate_css_sha256": "4b8fb8dd0aca57923f47143d4e2dc55192b35d2173b54b93dfc25785ed1511d8",
       "asset_receipt_path": "assets.json",
       "assets": 41,
       "imports": 11,
@@ -215,8 +215,7 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "warn",
-    "port_verdict": "pass",
-    "target_status": "warn"
+    "status": "inconclusive",
+    "reason": "Historical candidate acceptance superseded"
   }
 }
