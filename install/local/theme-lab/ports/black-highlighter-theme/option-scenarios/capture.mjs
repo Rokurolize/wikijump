@@ -209,7 +209,7 @@ async function visibleSidebarOpener(page){
  throw new Error('the current visible mobile :target sidebar control is missing');
 }
 async function openToggleWithCornerButton(page){
- const button=page.locator('#side-bar > .close-menu');
+ const button=page.locator('#side-bar .close-menu');
  await button.waitFor({state:'visible',timeout:5000});
  const href=await button.getAttribute('href');
  await button.click({timeout:5000});
@@ -218,7 +218,7 @@ async function openToggleWithCornerButton(page){
   return !!side&&(side.matches(':focus-within')||side.matches(':target')||side.getBoundingClientRect().left>=-1);
  },null,{timeout:5000});
  await page.waitForTimeout(750);
- return {type:'click-desktop-corner-button',selector:'#side-bar > .close-menu',href};
+ return {type:'click-desktop-corner-button',selector:'#side-bar .close-menu',href};
 }
 async function openMobileSidebarByTarget(page){
  if(await page.evaluate(()=>location.hash==='#side-bar'))return;
@@ -235,7 +235,7 @@ async function assertions(page,state,viewport){
   const h1Style=h1?getComputedStyle(h1):null,h2Style=h2?getComputedStyle(h2):null;
   const centerHeader={h1_display:h1Style?.display??null,h2_display:h2Style?.display??null,h1_justify:h1Style?.justifyContent??null,h2_justify:h2Style?.justifyContent??null,h1_center_delta:title?Math.abs(center(title)-center(headerBox)):null,h2_center_delta:subtitle?Math.abs(center(subtitle)-center(headerBox)):null,h1_rect:title,h2_rect:subtitle,header_rect:headerBox,header:!!title&&!!subtitle};
   const side=document.querySelector('#side-bar'),sideRect=rect(side),sideCss=side?getComputedStyle(side):null;
-  const close=document.querySelector('#side-bar > .close-menu');
+  const close=document.querySelector('#side-bar .close-menu');
   const closeStyle=close?getComputedStyle(close):null;
   const closeBox=rect(close);
   const current=document.querySelector('#side-bar .bhl-option-current');
@@ -346,7 +346,7 @@ async function captureOne([state,viewportName]){
  }else if(state==='toggle-mobile-close-menu'){
   const menu=await visibleSidebarOpener(page);
   await menu.click();await page.waitForFunction(()=>location.hash==='#side-bar');
-  const close=page.locator('#side-bar > .close-menu');await close.waitFor({state:'visible'});await close.click();await page.waitForFunction(()=>location.hash!=='#side-bar');await page.waitForTimeout(750);
+  const close=page.locator('#side-bar .close-menu');await close.waitFor({state:'visible'});await close.click();await page.waitForFunction(()=>location.hash!=='#side-bar');await page.waitForTimeout(750);
   action={type:'click-close-menu',href:await close.getAttribute('href')};
  }else if(state==='dark-normal'||state==='dark-mobile-normal'){
   if(state==='dark-mobile-normal')await openMobileSidebarByTarget(page);else{await openToggleWithCornerButton(page);const side=await sidebarData(page);await page.mouse.move(Math.max(5,side.x+side.width-5),Math.round(viewport.height*.8));await page.evaluate(()=>document.activeElement instanceof HTMLElement&&document.activeElement.blur());await page.waitForTimeout(250);}
@@ -355,7 +355,7 @@ async function captureOne([state,viewportName]){
   if(state==='dark-mobile-hover')await openMobileSidebarByTarget(page);else await openToggleWithCornerButton(page);
   await page.locator('#side-bar .bhl-option-state-link').hover();if(state==='dark-hover')await page.evaluate(()=>document.activeElement instanceof HTMLElement&&document.activeElement.blur());await waitCss(page);action={type:state==='dark-mobile-hover'?'mobile-target-open-then-pointer-hover-link':'corner-button-open-then-pointer-hover-link-and-blur'};
  }else if(state==='dark-keyboard-focus'||state==='dark-mobile-keyboard-focus'){
-  if(state==='dark-mobile-keyboard-focus')await openMobileSidebarByTarget(page);else{await openToggleWithCornerButton(page);const close=page.locator('#side-bar > .close-menu');await close.focus();await page.keyboard.press('Tab');await page.waitForTimeout(750);}
+  if(state==='dark-mobile-keyboard-focus')await openMobileSidebarByTarget(page);else{await openToggleWithCornerButton(page);const close=page.locator('#side-bar .close-menu');await close.focus();await page.keyboard.press('Tab');await page.waitForTimeout(750);}
   const current=page.locator('#side-bar .bhl-option-current');await current.focus();await page.keyboard.press('Tab');await waitCss(page);action={type:'keyboard-tab-link-focus'};
  }else if(state==='dark-current'||state==='dark-mobile-current'){
   if(state==='dark-mobile-current')await openMobileSidebarByTarget(page);else await openToggleWithCornerButton(page);
@@ -383,7 +383,7 @@ async function captureOne([state,viewportName]){
  const observed=await assertions(page,state,viewport);
  const failures=[];
  if(observed.viewport.scroll_width>observed.viewport.width+1)failures.push('horizontal overflow');
- if(!observed.sidebar.closeMenu.present)failures.push('current Framerail .close-menu node absent');
+ if(!observed.sidebar.closeMenu.present)failures.push('sidebar .close-menu node absent');
  if(state.startsWith('centered-')){
   if(observed.header.h1_display!=='flex'||observed.header.h2_display!=='flex'||observed.header.h1_justify!=='center'||observed.header.h2_justify!=='center'||observed.header.h1_center_delta>4||observed.header.h2_center_delta>4)failures.push('centered title/subtitle composition failed');
  }
