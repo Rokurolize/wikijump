@@ -55,3 +55,13 @@
     height:40px;background-color:#aaa;
   }
 }
+
+/* SCP-JP Wikidot turbo-vision heading correction: keep wrapped pixel-font headings from striking through at mobile widths. */
+@media (max-width:768px) {
+  h1,
+  h2,
+  h3,
+  #page-title {
+    line-height:1.15
+  }
+}

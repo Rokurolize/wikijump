@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "69e1fa9c6a57ca01097a29beab1f58b67741f9e53f958e95616fb5f7b559e589",
+  "frozen_candidate_source_sha256": "c26d77a0915b873a375a9e0e81dea259889394059ed82c4aacfd6ecf3ffb0c7a",
   "base_source_sha256": "b43f1d79215dab57e1a03bfe9c7250db9f25a5467e1429627f114b9dfa750340",
-  "raw_jp_overrides_sha256": "d3383b7229358a1c08652685e7c6930f9c5fef06b04e35dc694afcd9071fe274",
-  "jp_overrides_sha256": "e0a16bfa070fb8b6e957596efe1b04900034022b8089f719ba4f7e92a2822f09",
-  "semantic_css_sha256": "48d7d02f1155b13ea70a4967958e90485318c4fbc44b6378472e01eae7a34f14",
-  "canonical_override_sha256": "3221a69f3a3777ddb9dc87c3749e99477c10322243781c010d185c437f1d80fb",
+  "raw_jp_overrides_sha256": "f6d1fe73f88ee1d702ace3ef81c4d581d0049c5e7ceabe349c8054e6ca0e6b89",
+  "jp_overrides_sha256": "03acd7d07b95873454d53953e1230afd16fa7177fc113037b5b499415a9efd4c",
+  "semantic_css_sha256": "a05d34128804d2598adf22fe612cd0d95b9699e544444e38e2c1b2d979110853",
+  "canonical_override_sha256": "20e083e455929528b84c5727a08498465c1ac75582ba310afbbfe9745c1f1878",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "bc2edc69a644fda477278f959d9a49f75fd311ab65c815758e0ebe7978dfa9c9",
+  "final_source_sha256": "5053a25ece13fda7f5b1d96596842e1ccbfa668e0ae47c13e560ee9aaba564b2",
   "final_source_inputs": {
     "base_sha256": "b43f1d79215dab57e1a03bfe9c7250db9f25a5467e1429627f114b9dfa750340",
-    "jp_overrides_sha256": "e0a16bfa070fb8b6e957596efe1b04900034022b8089f719ba4f7e92a2822f09"
+    "jp_overrides_sha256": "03acd7d07b95873454d53953e1230afd16fa7177fc113037b5b499415a9efd4c"
   },
   "ordered_include_sha256": "2d9da036cfae7fd12cfc6366c1e5bafaaf37105d3e5a19172b72a4a4bc3763e8",
   "declaration_reviews": {},
-  "adaptation_block_count": 6,
-  "raw_override_rule_count": 9,
-  "canonical_override_rule_count": 9,
+  "adaptation_block_count": 7,
+  "raw_override_rule_count": 13,
+  "canonical_override_rule_count": 13,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -384,6 +384,32 @@
         ]
       },
       "published_css_sha256": "4ea34f42f05c6f1f845811620cdcd73395860284adeac42b847f385aa24e1cd3"
+    },
+    {
+      "marker": "SCP-JP Wikidot turbo-vision heading correction: keep wrapped pixel-font headings from striking through at mobile widths.",
+      "rationale": "The pixel typeface (JFDot MPlus 12 via the candidate JP font stack) has a natural line height about 1.09 times its font size, while h1 and the page title carry line-height 0.85em and h2 inherits the fixed 22px body line height at a 24px size; wrapped headings therefore strike through at 768px and below (defect Q1-22). The same-target delta receipt shows line overlap of 7.8px (page title), 7.2px (h1) and 4px (h2) without the correction and zero overlap with line-height 1.15 scoped to max-width:768px, with desktop geometry unchanged and no collateral beyond uniform downstream flow. All six certified blocks are re-certified against the resulting candidate in the same change.",
+      "sha256": "894a25cfd762a6482cf6bd32ffc671e915e564b8fbcfa7ff871f199a006d4d07",
+      "selectors": [
+        "h1",
+        "h2",
+        "h3",
+        "#page-title"
+      ],
+      "at_contexts": [
+        "@media (max-width: 768px)"
+      ],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/turbo-vision-heading-delta-20261028/receipt.json",
+          "sha256": "735ee06f632038312885ebe4a29a551c16480c8aab437c05a6818b3763b3bd3d"
+        }
+      ],
+      "scope": {
+        "target": "SCP-JP Sigma-9 current target acceptance",
+        "state": "page.normal"
+      }
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
@@ -464,6 +490,21 @@
         "@media(max-width:359px)"
       ],
       "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot turbo-vision heading correction: keep wrapped pixel-font headings from striking through at mobile widths.",
+      "rationale": "SCP-JP Wikidot turbo-vision heading correction: keep wrapped pixel-font headings from striking through at mobile widths.",
+      "sha256": "894a25cfd762a6482cf6bd32ffc671e915e564b8fbcfa7ff871f199a006d4d07",
+      "selectors": [
+        "#page-title",
+        "h1",
+        "h2",
+        "h3"
+      ],
+      "at_contexts": [
+        "@media (max-width:768px)"
+      ],
+      "authority": "RUNTIME_INDEPENDENT"
     }
   ]
 }

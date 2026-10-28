@@ -5506,7 +5506,7 @@
         "broken": []
       },
       "dependency_decisions_path": "install/local/theme-lab/ports/turbo-vision/assets.json",
-      "dependency_decision_count": 0,
+      "dependency_decision_count": 26,
       "historical_acceptance": {
         "status": "SUPERSEDED_CANDIDATE",
         "final_verdict": "warn",
@@ -5736,12 +5736,12 @@
         "status": "pass",
         "publishable_without_authority": 0
       },
-      "final_verdict": "warn",
       "overall_acceptance": {
         "status": "warn",
         "port_verdict": "pass",
         "target_status": "warn"
-      }
+      },
+      "final_verdict": "inconclusive"
     },
     {
       "slug": "theme:skipos",
