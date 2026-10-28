@@ -550,3 +550,8 @@ div.page-rate-widget-box {
 /* SCP-JP Wikidot Al Slop rating label: restore the design background behind the white rating points so the score stays readable. */
 div.rate-box-with-credit-button{background-color:var(--sp_rate-module-background) !important}
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot al-slop narrow history: keep the revision table inside the viewport at phone widths. */
+@media (max-width:767px){.page-history{max-width:calc(100vw - 2.5rem)}.page-history table{width:100%;table-layout:fixed}.page-history td,.page-history th{overflow-wrap:anywhere}}
+[[/module]]

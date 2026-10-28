@@ -578,3 +578,10 @@
     border-radius: unset;
     box-shadow: unset;
 }
+
+
+
+
+
+/* SCP-JP Wikidot pataphysics narrow files: keep the file table inside the viewport at phone widths. */
+@media (max-width:767px){#action-area table.page-files{width:100%;table-layout:fixed}#action-area table.page-files td{overflow-wrap:anywhere}}

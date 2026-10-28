@@ -30,9 +30,9 @@
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/much-cool",
-  "candidate_source_hash": "5b80ba7f55a5f70b6569fef18e95056bf223ec143f7c2ef549d88aba7a3d096a",
+  "candidate_source_hash": "799c546f83e7d257fa8b56067a9779eeebe6bda8e6bbc72a4ccbac100f6d9570",
   "source_candidate_path": "install/local/theme-lab/ports/much-cool/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "5b80ba7f55a5f70b6569fef18e95056bf223ec143f7c2ef549d88aba7a3d096a",
+  "source_candidate_sha256": "799c546f83e7d257fa8b56067a9779eeebe6bda8e6bbc72a4ccbac100f6d9570",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -40,11 +40,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/much-cool/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "5b80ba7f55a5f70b6569fef18e95056bf223ec143f7c2ef549d88aba7a3d096a",
+  "candidate_source_sha256": "799c546f83e7d257fa8b56067a9779eeebe6bda8e6bbc72a4ccbac100f6d9570",
   "human_port_candidate_path": "install/local/theme-lab/ports/much-cool/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "1659e8da7d111e02fb8b340c608e300b7c40842016415201aa6d8587c2e56c4a",
   "candidate_preview_sha256": "eea69b0f1c9895752d840ad964f3d1ca925a592aba19dcf2f9a2c0fd539141e1",
-  "candidate_css_sha256": "d6232bbe6f3e7da786f975a4960754dd86b71fdf16abbbc58bd07c2052293468",
+  "candidate_css_sha256": "c8b4d4ae7d31b4d9f1f5b2c75f7b898db8371db46ee53781dc4c24b069d4acdb",
   "page_attachment_manifest": null,
   "existing_jp_reconciliation": {
     "previous_source_sha256": "0305019f63ac920a0451b2fe9c17aa8c84992d86ae8b2243692e3d29c7354833",
@@ -86,15 +86,10 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "warn",
-    "port_verdict": "pass",
-    "target_status": "warn"
+    "status": "inconclusive",
+    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
   },
-  "state": "accepted-local-candidate-not-published",
-  "final_verdict": "warn",
-  "final_status": "current-full-acceptance",
-  "current_acceptance": {
-    "path": "../current-acceptance/much-cool/accepted-result.json",
-    "sha256": "5c0ed57e6bcbca740e68e592ce1c3883c9999a3ab9dccff1bfee685c81424e16"
-  }
+  "state": "authority-cleaned-local-candidate-not-published",
+  "final_verdict": "inconclusive",
+  "final_status": "adaptation-authority-cleaned"
 }

@@ -54,7 +54,7 @@
     },
     "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
     "technical_spec_version": "1.4",
-    "final_verdict": "warn",
+    "final_verdict": "inconclusive",
     "existing_jp_rebase": {
       "previous_sha256": "0305019f63ac920a0451b2fe9c17aa8c84992d86ae8b2243692e3d29c7354833",
       "previous_snapshot": "existing-jp-pre-rebase-20261005.wikidot.txt",
@@ -109,7 +109,7 @@
   "candidate_input": "existing-jp.wikidot.txt",
   "candidate_css_source": "candidate-source.css",
   "candidate_origin": "current official SCP-JP page source",
-  "final_verdict": "warn",
+  "final_verdict": "inconclusive",
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "asset_dependency_decisions_path": "install/local/theme-lab/ports/much-cool/assets.json",
   "asset_dependency_decision_count": 5,
@@ -132,7 +132,7 @@
       "source_path": "candidate-input.css",
       "source_sha256": "d47e135bc57142667778e5d08777114b60392e09a6c3f9ca875fd3588484bd61",
       "active_tags": [],
-      "candidate_source_sha256": "5b80ba7f55a5f70b6569fef18e95056bf223ec143f7c2ef549d88aba7a3d096a",
+      "candidate_source_sha256": "799c546f83e7d257fa8b56067a9779eeebe6bda8e6bbc72a4ccbac100f6d9570",
       "candidate_active_tags": [
         "en",
         "テーマ"
@@ -144,7 +144,7 @@
       "inactive_source_css_modules_removed_exact": 0,
       "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "d6232bbe6f3e7da786f975a4960754dd86b71fdf16abbbc58bd07c2052293468",
+      "candidate_css_sha256": "c8b4d4ae7d31b4d9f1f5b2c75f7b898db8371db46ee53781dc4c24b069d4acdb",
       "asset_receipt_path": "assets.json",
       "assets": 3,
       "imports": 2,
@@ -159,8 +159,7 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "warn",
-    "port_verdict": "pass",
-    "target_status": "warn"
+    "status": "inconclusive",
+    "reason": "Historical candidate acceptance superseded"
   }
 }
