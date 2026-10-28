@@ -118,11 +118,11 @@
     "jp_overrides": "maintenance/jp-overrides.css",
     "manifest": "maintenance/manifest.json",
     "base_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
-    "jp_overrides_sha256": "ac229e9c608fd391858d904a6a2ba2580c53659ed734ce520085e02e73506ecf",
-    "semantic_css_sha256": "3944d7e0c0e19699b2ddd7e548e0d19b6c8f4b79fea9982c2c06df440a1f955e",
-    "canonical_override_sha256": "ffe4639710b0f7ff032231ee308f5bb498cdfc9a01a5f1cecc00126f07e15632",
+    "jp_overrides_sha256": "0ed77b321c0895acd23d5ed84390b1887e3dc391036a4631ea714065331fceb9",
+    "semantic_css_sha256": "d02015077390f7a0a9bc7084d7028a6210b52b0b4184126eae2e55433a3c78da",
+    "canonical_override_sha256": "4e578251c700aba7d0bbde77fda76e581d05b9ffbcae53ee1f86ed4d4a727534",
     "final_source": "maintenance/final.wikidot.txt",
-    "final_source_sha256": "eac630300735e3e92ec9c255140fa5a24de4b9128277988c80dc8bbbb931bb5c",
+    "final_source_sha256": "d1ef5002907ef6684f6c2c4c40f8e5bb9c9a01f991440c8f886ffb750ca75a61",
     "exact_duplicate_rules_removed": 0,
     "redundant_same_value_declarations_removed": 0,
     "empty_rules_removed": 0
@@ -132,7 +132,7 @@
       "source_path": "candidate-input.css",
       "source_sha256": "234ee618f739d621479f9615f8bddcea1870eb83ea0880cac4f2035fff43e93b",
       "active_tags": [],
-      "candidate_source_sha256": "93bc363be11348c98a5418e62eab30b050159ad3d54b32da96360eb4cac8f97d",
+      "candidate_source_sha256": "8a565cdbb3e8c1a7ea9541a82b731cee709554b494b3167a53d092f5559dae35",
       "candidate_active_tags": [
         "en",
         "テーマ"
@@ -144,7 +144,7 @@
       "inactive_source_css_modules_removed_exact": 0,
       "inactive_source_css_modules_ambiguous": 0,
       "css_source_path": "candidate-source.css",
-      "candidate_css_sha256": "de286c1732cb4880ae014859abdb4b070d1677b48401d22ba58ecd4c3c8fd7c8",
+      "candidate_css_sha256": "66c73632860fbbc7cfab07f37eec5f8c3e816b3545988b727b1f4898addab014",
       "asset_receipt_path": "assets.json",
       "assets": 32,
       "imports": 6,

@@ -5047,13 +5047,39 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "page.history"
           },
-          "published_css_sha256": "de286c1732cb4880ae014859abdb4b070d1677b48401d22ba58ecd4c3c8fd7c8"
+          "published_css_sha256": "66c73632860fbbc7cfab07f37eec5f8c3e816b3545988b727b1f4898addab014"
+        },
+        {
+          "marker": "SCP-JP Wikidot jakstyle files table: keep the file name readable at narrow widths and let the table spill inside its scroll wrapper.",
+          "rationale": "The inherited BHL grid lays the files table rows out at width:100% with 1.5fr/1.5fr/1fr/2fr tracks; at 320px the options cell min-content starves the file name track, crushing the name cell to 42px and wrapping the row to 422px tall (defect Q1-14). On the SCP-JP Sigma-9 target the same table keeps its natural width (461px) and spills inside its .file-list-scroll wrapper with a 293px name cell and 34px rows. The same-target delta receipt shows a 15rem floor on the name track restores a 240px name cell and 71.5px rows at 320/390px, with the spill landing in the scroll wrapper (table scroll width 488px) and no change at 768px and above.",
+          "sha256": "7f20c242007a6cf2e4e868e18560b4195dede4e2c9d3d2cfe6b58fa72fdad0ae",
+          "selectors": [
+            "table.page-files thead tr",
+            "table.page-files tr[id*=file-row]",
+            "[id*=files-] :is(table.page-files) tbody tr"
+          ],
+          "at_contexts": [
+            "@media (max-width: 767px)"
+          ],
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/jakstyle-files-table-delta-20261028/receipt.json",
+              "sha256": "536c498af2f39200a274f354a7e1832d6a327098d8643e6c45437f487385e20b"
+            }
+          ],
+          "scope": {
+            "target": "SCP-JP Sigma-9 current target acceptance",
+            "state": "page.files"
+          },
+          "published_css_sha256": "66c73632860fbbc7cfab07f37eec5f8c3e816b3545988b727b1f4898addab014"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
         "candidate-input.css": "234ee618f739d621479f9615f8bddcea1870eb83ea0880cac4f2035fff43e93b",
-        "authority-overrides.css": "103b972f4d86dda68ae9587178edc7d5b68573c337282935c6cf1c54a72be1d5",
+        "authority-overrides.css": "7e76b48a8a7ecb027ab107300b56d494fc1623a39555295cb49521f678c557ac",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/toggle-sidebar-bhl.wikidot.txt": "212ffc2c275de8baa38b3da02d6e08636d649ea5324e0c9c2e9dab6a313a73dc",
         "source-includes/toggle-sidebar-bhl-input.css": "6a820d809d6029aa94eb1285ae644e0f2e28d03c3656e37ee32f6d4473fed1fb",
@@ -5062,13 +5088,13 @@
         "source-css-includes.json": "270b412dfe1dad38f24cfaaa37d7bb7af01d749f15d1ad7f7aa77b385ee6d022"
       },
       "outputs": {
-        "candidate.css": "de286c1732cb4880ae014859abdb4b070d1677b48401d22ba58ecd4c3c8fd7c8",
-        "candidate-source.css": "312df26b38e7f01b2ccdabe62f38695da42a0e499fc1a50f6d79c7628cfa3a51",
-        "candidate.wikidot.source.txt": "93bc363be11348c98a5418e62eab30b050159ad3d54b32da96360eb4cac8f97d",
-        "candidate.wikidot.txt": "e32f91ece8e6ae326b119aaa79d1f650fe4ba8ba2b1669ab2eaa0359d3fd3545",
+        "candidate.css": "66c73632860fbbc7cfab07f37eec5f8c3e816b3545988b727b1f4898addab014",
+        "candidate-source.css": "322ceff1db8a0496ea7d47832edb5698370dfec3e1c09b70d696669f46e9df72",
+        "candidate.wikidot.source.txt": "8a565cdbb3e8c1a7ea9541a82b731cee709554b494b3167a53d092f5559dae35",
+        "candidate.wikidot.txt": "a254b2c1602f6971ad27ba3242e059449844c13e7887dc479adaf3afbcddba0a",
         "maintenance/base.wikidot.txt": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
-        "maintenance/jp-overrides.css": "ac229e9c608fd391858d904a6a2ba2580c53659ed734ce520085e02e73506ecf",
-        "maintenance/final.wikidot.txt": "eac630300735e3e92ec9c255140fa5a24de4b9128277988c80dc8bbbb931bb5c"
+        "maintenance/jp-overrides.css": "0ed77b321c0895acd23d5ed84390b1887e3dc391036a4631ea714065331fceb9",
+        "maintenance/final.wikidot.txt": "d1ef5002907ef6684f6c2c4c40f8e5bb9c9a01f991440c8f886ffb750ca75a61"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",

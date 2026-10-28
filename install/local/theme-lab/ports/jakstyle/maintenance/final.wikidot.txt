@@ -898,4 +898,13 @@ table.page-files th {
 #history-form-1>table>tbody>tr:first-child>td:nth-of-type(2) {
   grid-template-columns:repeat(3,1fr)
 }
+
+/* SCP-JP Wikidot jakstyle files table: keep the file name readable at narrow widths and let the table spill inside its scroll wrapper. */
+@media (max-width:767px) {
+  table.page-files thead tr,
+  table.page-files tr[id*=file-row],
+  [id*=files-] :is(table.page-files) tbody tr {
+    grid-template-columns:minmax(15rem,1.5fr) 1.5fr 1fr 2fr
+  }
+}
 [[/module]]
