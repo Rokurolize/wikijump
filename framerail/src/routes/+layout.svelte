@@ -167,7 +167,13 @@
   const analyticsProfile = $derived(
     analyticsSettings.enabled ? analyticsSettings.profile : null
   )
-  const effectiveTheme = $derived(normalizeThemeSetting(viewData?.theme))
+  const siteFileEvidence = $derived(viewData?.site ?? null)
+  const siteFileAuthority = $derived(viewData?.site_file_domain ?? null)
+  // The site's own files authority also admits an external theme served
+  // from that host: a site may run a base theme it publishes itself.
+  const effectiveTheme = $derived(
+    normalizeThemeSetting(viewData?.theme, siteFileAuthority)
+  )
   const themePreviewUrl = $derived(
     resolveThemePreviewUrl(
       viewData?.theme_previewer_no_ui,
@@ -179,8 +185,6 @@
   // confirmed that exact page file exists locally. Without both, every
   // theme and asset URL stays literal, so a partially imported mirror
   // keeps the working source hotlink instead of a local 404.
-  const siteFileEvidence = $derived(viewData?.site ?? null)
-  const siteFileAuthority = $derived(viewData?.site_file_domain ?? null)
   const siteFilePresence = $derived(
     new Set(
       Array.isArray(viewData?.site_file_presence)

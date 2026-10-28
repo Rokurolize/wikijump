@@ -83,21 +83,73 @@ const EXTERNAL_THEME_HOSTS = new Set([
   "scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com"
 ])
 
+/**
+ * Split a files authority (`host` or `host:port` — the form Deepwell's
+ * DomainService::get_files_authority returns and the page view carries as
+ * site_file_domain) into its hostname and port. Anything that is not
+ * exactly that shape is not an authority and yields null, so the own-host
+ * admission below fails closed.
+ *
+ * @param {unknown} filesAuthority
+ * @returns {{ hostname: string; port: string } | null}
+ */
+const parseFilesAuthority = (filesAuthority) => {
+  if (typeof filesAuthority !== "string") return null
+  const authority = filesAuthority.trim().toLowerCase()
+  if (
+    authority === "" ||
+    authority.includes("/") ||
+    authority.includes("://") ||
+    authority.includes("@")
+  ) {
+    return null
+  }
+  const colon = authority.lastIndexOf(":")
+  if (colon === -1) return { hostname: authority, port: "" }
+  const hostname = authority.slice(0, colon)
+  const port = authority.slice(colon + 1)
+  if (hostname === "" || !/^[0-9]+$/u.test(port)) return null
+  return { hostname, port }
+}
+
+/**
+ * Whether an external theme URL is served from the viewed site's OWN files
+ * host. A site may run a base theme it serves itself — the SCP-JP Sigma-10
+ * migration shape, where the ported theme's code pages are published on
+ * the site's own files host. The URL may name the host with or without the
+ * serving port; any other port stays rejected, as does any other host.
+ *
+ * @param {URL} url
+ * @param {unknown} ownFilesAuthority
+ * @returns {boolean}
+ */
+const isOwnFilesThemeUrl = (url, ownFilesAuthority) => {
+  const authority = parseFilesAuthority(ownFilesAuthority)
+  if (authority === null) return false
+  if (url.hostname !== authority.hostname) return false
+  return url.port === "" || url.port === authority.port
+}
+
 // S755_EXTERNAL_RESOURCE_FAILURE_POLICY: admission only; the browser owns redirects, timeouts, MIME, and transfer-size failures, with no server fetch or stale fallback.
-const isAllowedExternalThemeUrl = (url) =>
+const isAllowedExternalThemeUrl = (url, ownFilesAuthority = null) =>
   url.protocol === "https:" &&
-  url.port === "" &&
   !url.username &&
   !url.password &&
-  (EXTERNAL_THEME_HOSTS.has(url.hostname) || url.hostname.endsWith(".wdfiles.com"))
+  ((url.port === "" &&
+    (EXTERNAL_THEME_HOSTS.has(url.hostname) || url.hostname.endsWith(".wdfiles.com"))) ||
+    isOwnFilesThemeUrl(url, ownFilesAuthority))
 
 /**
  * @param {{ type?: unknown; id?: unknown; url?: unknown; css?: unknown }
  *   | null
  *   | undefined} theme
+ * @param {unknown} [ownFilesAuthority] The viewed site's own files
+ *   authority (host or host:port); an external theme URL served from that
+ *   host is admitted alongside the global allowlist. Callers without a
+ *   viewed site (the ThemePreviewer) omit it and keep the global policy.
  * @returns {ThemeSetting}
  */
-export const normalizeThemeSetting = (theme) => {
+export const normalizeThemeSetting = (theme, ownFilesAuthority = null) => {
   if (
     theme?.type === "built_in" &&
     typeof theme.id === "number" &&
@@ -109,7 +161,7 @@ export const normalizeThemeSetting = (theme) => {
   if (theme?.type === "external" && typeof theme.url === "string") {
     try {
       const url = new URL(theme.url)
-      if (isAllowedExternalThemeUrl(url)) {
+      if (isAllowedExternalThemeUrl(url, ownFilesAuthority)) {
         return { type: "external", url: url.href }
       }
     } catch {
@@ -128,10 +180,10 @@ export const normalizeThemeSetting = (theme) => {
 }
 
 /**
- * Normalize a browser-requested ThemePreviewer stylesheet with the same
- * policy used for stored external themes. Invalid values fail closed so
- * the browser keeps the stored site theme and no server-side stylesheet
- * fetch is needed.
+ * Normalize a browser-requested ThemePreviewer stylesheet with the global
+ * stored-theme policy (no viewed site, so no own-files-host admission).
+ * Invalid values fail closed so the browser keeps the stored site theme
+ * and no server-side stylesheet fetch is needed.
  *
  * @param {unknown} value
  * @returns {string | null}
@@ -160,7 +212,7 @@ export const customThemeHeadHtml = (
   filesAuthority = null,
   isLocalFile = null
 ) => {
-  const normalized = normalizeThemeSetting(theme)
+  const normalized = normalizeThemeSetting(theme, filesAuthority)
   if (normalized.type !== "custom") return ""
   const css = localizeSiteFileUrlsInCss(normalized.css, site, filesAuthority, isLocalFile)
   return `<style data-wikidot-site-theme>${css}</style>`
@@ -409,7 +461,7 @@ export const localizeSiteFileUrlsInCss = (css, site, filesAuthority, isLocalFile
  * @returns {string | null}
  */
 export const resolveExternalThemeHref = (theme, site, filesAuthority, isLocalFile) => {
-  const normalized = normalizeThemeSetting(theme)
+  const normalized = normalizeThemeSetting(theme, filesAuthority)
   if (normalized.type !== "external") return null
   return (
     localizeSiteFileUrl(normalized.url, site, filesAuthority, isLocalFile) ??
