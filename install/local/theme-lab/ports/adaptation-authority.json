@@ -2488,8 +2488,8 @@
         "path": "authority-evidence/scpedia-current-generated-navigation-20261002/receipt.json",
         "sha256": "490f8025c4926f6b48e722d43887f12d1ddfe0c13000f60f4b693d1299afabbc",
         "baseline": {
-          "path": "authority-evidence/native-navigation-baseline-chromium-20261002/receipt.json",
-          "sha256": "38829f33d29e8b6f399aba80ad04059507da9386a311305106e49659e9d38e61"
+          "path": "authority-evidence/native-navigation-baseline-chromium-freeze2-20261028/receipt.json",
+          "sha256": "160d3c002003512fe9041a2d9e6093081c17a63ae51ea44d50f79f5063cc4e58"
         }
       }
     },

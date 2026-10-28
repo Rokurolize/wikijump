@@ -2967,45 +2967,45 @@
       "package": "al-slop",
       "purpose": "Current real-Wikidot mobile navigation A/B; directly reviewed all 16 screenshots at 320px and 390px. Re-captured 2026-10-28 against the frozen target snapshot with the Freeze-1 candidate after the JP fix batch changed the candidate source/CSS; supersedes the 20261007 capture, whose evidence files were not retained.",
       "candidate_set_sha256": "38722848ea1ef40e21014f1fca201bce97ac0248668be1fae763526ab1959c36",
-      "candidate_source_sha256": "1d9fdc59e8cddb2bee05e562b126686cd7608f50067a5168fec8779bbe74814f",
-      "candidate_css_sha256": "006c85b41da9002e2a701ef3db17185fee4c428e6f5d0e6a338af2d7ce370ee4",
+      "candidate_source_sha256": "4954b888b502397c1e8612addfc74dda5c6da91c8fb260ed19f8cdc323f73122",
+      "candidate_css_sha256": "0fb7e246567d58220ee4c98ff4009fa7fad14b2c0a685c0edffeb6a2738a7677",
       "capture_receipt": {
-        "path": "ports/authority-evidence/al-slop-current-navigation-20261028/receipt.json",
-        "sha256": "4131b82b3a5c73268078959e33c907eed855ff0cbca0860b5c87d5cf8db252fd"
+        "path": "ports/authority-evidence/al-slop-freeze2-navigation-20261028/receipt.json",
+        "sha256": "808c2eba129f4dc2439ecb410d391942c79b5cc134bdfb90aee2d4207bd6ffbb"
       },
       "visual_review": {
-        "path": "ports/authority-evidence/al-slop-current-navigation-20261028/visual-review.json",
-        "sha256": "9d502c5b878da029fe53a5d55e29f0d942e4b6a300ec981335c058ef1bcfa476"
+        "path": "ports/authority-evidence/al-slop-freeze2-navigation-20261028/visual-review.json",
+        "sha256": "6c5cc456f024a2eac1be7c6744861e9d00f740f6b9e39c52124f69cc5e1bf7be"
       }
     },
     {
       "package": "flopstyle-dark",
       "purpose": "Current Sigma-10 real-Wikidot credit/otherwise return-control A/B; directly reviewed all four screenshots at 320px and 390px. Re-captured 2026-10-28 against the frozen target snapshot with the Freeze-1 candidate after the JP fix batch changed the candidate source/CSS; supersedes the 20261007 capture, whose evidence files were not retained.",
       "candidate_set_sha256": "38722848ea1ef40e21014f1fca201bce97ac0248668be1fae763526ab1959c36",
-      "candidate_source_sha256": "ccb1b62f1368db3992b121d43c9a69f493e033e9c9f11a01145326a3b373f905",
-      "candidate_css_sha256": "519d88b43e366531bff3fb2b0a1ff722cb80c444efa952919631f943a4cd8a97",
+      "candidate_source_sha256": "a3702c545d95bd13b7ce148c343f482b52f13e3b589933e26682031d4052203d",
+      "candidate_css_sha256": "be744e1d57f1028199f07f0aee70fbd7a96a724c3627dc7a3affdbc23d99108c",
       "capture_receipt": {
-        "path": "ports/authority-evidence/flopstyle-dark-rev401-sigma10-credit-otherwise-20261028/receipt.json",
-        "sha256": "fb720967a574a0266491bab5b3a484502fa4a46a1e1fa638bb08021ecc668ae6"
+        "path": "ports/authority-evidence/flopstyle-dark-freeze2-sigma10-credit-otherwise-20261028/receipt.json",
+        "sha256": "713093294785323b0f125744944f7765e0175d832c7781c3d166effc516e185c"
       },
       "visual_review": {
-        "path": "ports/authority-evidence/flopstyle-dark-rev401-sigma10-credit-otherwise-20261028/visual-review.json",
-        "sha256": "2b61a72786299ab849d832631cc306508879ccb4b18f723fd2d615e2fc7a3faa"
+        "path": "ports/authority-evidence/flopstyle-dark-freeze2-sigma10-credit-otherwise-20261028/visual-review.json",
+        "sha256": "bd2dbce5958f568bef9283ae96af42816fa7ff0d73cec55d42691936520406c1"
       }
     },
     {
       "package": "space",
       "purpose": "Current real-Wikidot mobile navigation A/B; directly reviewed all 16 screenshots at 320px and 390px. The longest EN submenu continues below the captured viewport; lower-item scrolling is outside this review. Re-captured 2026-10-28 against the frozen target snapshot with the Freeze-1 candidate after the JP fix batch changed the candidate source/CSS; supersedes the 20261007 capture, whose evidence files were not retained.",
       "candidate_set_sha256": "38722848ea1ef40e21014f1fca201bce97ac0248668be1fae763526ab1959c36",
-      "candidate_source_sha256": "c3e4148bc860bab02cdf1ca71cf33f98a128b802de072c61ec185857fe818e1c",
-      "candidate_css_sha256": "eaa78c18bc1e583254f9dc0479f9b70e72451eb205efbe2a24c72fcd34f24735",
+      "candidate_source_sha256": "df6265436b06703f428f4df2ee6809634177378d104332f05e252ee77bae26f7",
+      "candidate_css_sha256": "9050a943386e3975914248717c6a354ea8c88dc45eb06120ae2f58625e3eb70e",
       "capture_receipt": {
-        "path": "ports/authority-evidence/space-current-navigation-20261028/receipt.json",
-        "sha256": "01003698c338eb1b1490b34ed3ff8036672b23ecd4cdceb50e3f5e03c0a7dbca"
+        "path": "ports/authority-evidence/space-freeze2-navigation-20261028/receipt.json",
+        "sha256": "922878781b705483ab88119466b6d49e33253f32100a0e0890cfea8f929d5d39"
       },
       "visual_review": {
-        "path": "ports/authority-evidence/space-current-navigation-20261028/visual-review.json",
-        "sha256": "338de08bbfbf5d61e71a3c954d62fc2bf1ffb2175aa13f7e9d582689486f6e48"
+        "path": "ports/authority-evidence/space-freeze2-navigation-20261028/visual-review.json",
+        "sha256": "1a0be61f8ddb2d7c48855ec37d2471b8731b1e0c81985a3464d23bedd6c11197"
       }
     }
   ],
