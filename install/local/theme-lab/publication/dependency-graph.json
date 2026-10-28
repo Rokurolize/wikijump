@@ -1,6 +1,6 @@
 {
   "schema": "theme_lab_publication_dependency_graph.v1",
-  "generated_at": "2026-10-22",
+  "generated_at": "2026-10-28",
   "authority": {
     "flopstyle_dark_rev401_audit": "evidence/audits/theme-lab-flopstyle-rev401-transitive-audit-20261005.json",
     "bhl_option_runtime_audit": "evidence/audits/theme-lab-bhl-option-runtime-coverage-audit-20261005.json",
@@ -7218,7 +7218,7 @@
         "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json"
       ],
       "visual_review": "ports/black-highlighter-theme/option-scenarios/runs/visual-review.json",
-      "current_authority_sha256": "f07c6428457ad8535b46cdad6856bec14f3ed2d3edcc38b19d9aa6b1874f04f6",
+      "current_authority_sha256": "9ed3274e1983a98efddd61381588f86baca724a06e59cff05c201b7661e2fe05",
       "theme_candidate_source_sha256": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
       "theme_candidate_css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577",
       "option_component_candidates": [
@@ -7292,7 +7292,7 @@
         "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json"
       ],
       "visual_review": "ports/black-highlighter-theme/option-scenarios/runs/visual-review.json",
-      "current_authority_sha256": "f07c6428457ad8535b46cdad6856bec14f3ed2d3edcc38b19d9aa6b1874f04f6",
+      "current_authority_sha256": "9ed3274e1983a98efddd61381588f86baca724a06e59cff05c201b7661e2fe05",
       "theme_candidate_source_sha256": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
       "theme_candidate_css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577",
       "option_component_candidates": [
@@ -7313,9 +7313,9 @@
   "edge_scope": "Explicit edges represent publication ordering constraints and actionable cross-page publication/runtime dependency actions. They are not an exhaustive rendering of every ordinary Wikidot include. Ordinary include observations and source identities are recorded per theme in campaign_snapshot.candidate_jp_includes and package dependency-input/source-includes manifests; excluded dependencies are listed separately.",
   "candidate_freeze": {
     "path": "frozen-candidate-set.json",
-    "candidate_set_sha256": "a4ffccd85bd3b781661ba915b24200906c6a97ee92ef5646f99052d9db3874a7",
+    "candidate_set_sha256": "867aafeb5615d006950c5524e2fc1fe7c4c1f9a02e8db3f6011eee1362e277bb",
     "state": "frozen-before-final-acceptance",
-    "frozen_at": "2026-10-22",
-    "readiness_audit_sha256": "b2400979c81e07d9b1a83bc6a4d7a837a2e5e0602b5c336512b190e107f05729"
+    "frozen_at": "2026-10-28",
+    "readiness_audit_sha256": "2e6242f008dc2147bbc0ca99ed21e0ac95a87c904ef2bbea9e83411bb3c192f9"
   }
 }
