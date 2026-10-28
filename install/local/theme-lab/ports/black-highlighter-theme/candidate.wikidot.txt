@@ -29,7 +29,7 @@
 任意のwikiで:
 
 [[div class="code" style="text-align: center;"]]
-@@@@
+@@[[include :scp-jp:theme:black-highlighter-theme]]@@
 [[/div]]
 
 [[div class="blockquote" style="text-align: center;"]]
@@ -38,22 +38,22 @@
 ++ オプションアドオン
 +++ [[[component:bhl-dark-sidebar|ダークサイドバー]]]
 [[div class="code"]]
-@@@@
+@@[[include :scp-jp:component:bhl-dark-sidebar]]@@
 [[/div]]
 
 +++ [[[component:collapsible-sidebar|折りたたみサイドバー]]]
 [[div class="code"]]
-@@@@
+@@[[include :scp-jp:component:collapsible-sidebar]]@@
 [[/div]]
 
 +++ [[[component:toggle-sidebar-bhl|トグルサイドバー]]]
 [[div class="code"]]
-@@@@
+@@[[include :scp-jp:component:toggle-sidebar-bhl]]@@
 [[/div]]
 
 +++ [[[component:centered-header-bhl|中央寄せヘッダー]]]
 [[div class="code"]]
-@@@@
+@@[[include :scp-jp:component:centered-header-bhl]]@@
 [[/div]]
 [[/div]]
 
@@ -207,6 +207,10 @@ body、[[span class="title-font"]]見出し[[/span]]、[[span class="header-font
 -----
 
 
+
+
+
+
 [[module CSS]]
 td { vertical-align: top; }
 td strong { white-space: nowrap; }
@@ -274,7 +278,12 @@ td strong { white-space: nowrap; }
 [[div class="creditRate"]]
 [[div class="rateBox"]]
 [[div class="rate-box-with-credit-button"]]
-[[module Rate]]
+[[div class="page-rate-widget-box"]]
+[[span class="rate-points"]]評価: +1[[/span]]
+[[span class="rateup btn btn-default"]]+[[/span]]
+[[span class="ratedown btn btn-default"]]–[[/span]]
+[[span class="cancel btn btn-default"]]x[[/span]]
+[[/div]]
 [[/div]]
 [[/div]]
 [[/div]]

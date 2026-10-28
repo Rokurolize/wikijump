@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "20d4d9c98052fc76fcf8573505509dc4d49c3b4852e2ea99580218ad34afe3a7",
+  "frozen_candidate_source_sha256": "c3e4148bc860bab02cdf1ca71cf33f98a128b802de072c61ec185857fe818e1c",
   "base_source_sha256": "72ef4e7545f439aa9d8a330c566a9489980eafa02cd8e08cff327b7171b3d6aa",
-  "raw_jp_overrides_sha256": "f716120edf59cda85ff259f2093d9adf11db2b5134b3c235a8c274ea81aa785f",
-  "jp_overrides_sha256": "2b7539e8bf40a3ec4370f99ab54ceac5d7b6eee530a972e0591475ace89ba09b",
-  "semantic_css_sha256": "1632bb330ec38a43e70b27347db8d46bda5a3452c74471a01a8f0fddc5688550",
-  "canonical_override_sha256": "79de734ce42c4648562acbdfe2de038eaa605af1530bd78815da19a6407f0333",
+  "raw_jp_overrides_sha256": "67c3a0867e3d7388201c47b0e7d535a6d2ad94380852c10dd0e965f5a2bc09d2",
+  "jp_overrides_sha256": "9813ec0658990f55a179a7851b4f159ade6f0e0e00308777707640e7be5927f0",
+  "semantic_css_sha256": "351cc7e6eb45c6fb7950a66a8e3f3743a1981a4f44999cb69761568e4cbd3c1c",
+  "canonical_override_sha256": "c9e84aafdd3036f898f24e2f3c8be29aef3ab3cf5a500657d6809f9068ad0d0e",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "db8407b17ff0f17e576e59e1142efc98e0653682bf0183567f8c92afc98ca32a",
+  "final_source_sha256": "4b6a72c49ff0e9ba8aa1aebae47e309268e1f24ba3ec043d52bd5fd9991670eb",
   "final_source_inputs": {
     "base_sha256": "72ef4e7545f439aa9d8a330c566a9489980eafa02cd8e08cff327b7171b3d6aa",
-    "jp_overrides_sha256": "2b7539e8bf40a3ec4370f99ab54ceac5d7b6eee530a972e0591475ace89ba09b"
+    "jp_overrides_sha256": "9813ec0658990f55a179a7851b4f159ade6f0e0e00308777707640e7be5927f0"
   },
   "ordered_include_sha256": "2f8ee5dd0773ea8801380dae8fbcbb55a1c4b34b4539cb1469ba1c8f46a3b206",
   "declaration_reviews": {},
-  "adaptation_block_count": 1,
-  "raw_override_rule_count": 1,
-  "canonical_override_rule_count": 1,
+  "adaptation_block_count": 4,
+  "raw_override_rule_count": 4,
+  "canonical_override_rule_count": 4,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -386,6 +386,72 @@
           "sha256": "f1e70f4fffaefbbb888cda9bfa748f283d0cae7657f34483f9876485f4a05bab"
         }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot space credit view: keep the credit modal on the theme dark ground so the body text stays readable.",
+      "rationale": "In the heritage credit composition the frozen credit-component sheet paints [id*=u-credit] div.modalbox with background rgb(var(--modal-bg)) !important; space defines no --modal-bg, so on the SCP-JP target the modal body resolves light (measured rgb(244,244,244)) while the modal text inherits the theme white body color, a measured contrast of 1.1 (defect Q1-11). The theme modal design is the dark void ground with light text, and the source already gives #u-credit-otherwise exactly that treatment. The same-target delta receipt shows re-asserting the dark ground for the credit view modal raises the body-text contrast to 17.82 at 320-1440px with no collateral geometry change.",
+      "sha256": "acf3eb04d4726268f45e317408a90923b0df3df3ade0c91d9902ea0c9b2aee7a",
+      "selectors": [
+        "#u-credit-view .modalbox"
+      ],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/space-credit-view-contrast-delta-20261028/receipt.json",
+          "sha256": "bd59de44c4c31b56037f4e16e3b9e8fc7e2f213012957ae2e0e276feb154709f"
+        }
+      ],
+      "scope": {
+        "target": "SCP-JP Sigma-9 current target acceptance",
+        "state": "credit.view"
+      },
+      "published_css_sha256": "eaa78c18bc1e583254f9dc0479f9b70e72451eb205efbe2a24c72fcd34f24735"
+    },
+    {
+      "marker": "SCP-JP Wikidot space credit rate bar: keep the module layout inside the credit modals so the bar shares its row with the license badge instead of overlapping it.",
+      "rationale": "The candidate-authored :is(div,ul).creditRate block rule (candidate.css L490-495) forces the credit rate bar to a full-width block inside the credit view modal, where it overlaps the CC license badge (Sigma-10 defect S10B-1, rows 43/44). The credit module layout is inline-flex floated right, sharing the row with the badge. This block restores the module layout inside the credit modals only; the page-level rate bar keeps the theme block layout. The Sigma-9 delta frame cannot host the Sigma-10 modal DOM (the fixture modal has no .creditRate element), so verification is assigned to the Sigma-10 recapture; the isolation and frame limitation are recorded in the cited note.",
+      "sha256": "c1f11202d9a76041f154d08c526f96ea50d9e14173e94d358afd35d18072f7f5",
+      "selectors": [
+        "[id*=u-credit] :is(div,ul).creditRate"
+      ],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/space-credit-rate-layout-20261028/notes.json",
+          "sha256": "0b4a288a22453b5097f4b148e9ce90b7c8aaab8a674b1641056d3714db5ca76c"
+        }
+      ],
+      "scope": {
+        "target": "SCP-JP Sigma-9 current target acceptance",
+        "state": "credit.view"
+      },
+      "published_css_sha256": "eaa78c18bc1e583254f9dc0479f9b70e72451eb205efbe2a24c72fcd34f24735"
+    },
+    {
+      "marker": "SCP-JP Wikidot space top bar: keep submenus closed on keyboard focus alone, matching the runtime default menu behavior.",
+      "rationale": "The flattened Sigma Plus include opens top-bar submenus on :focus-within (candidate.css L213-215), so keyboard focus alone opens a desktop dropdown; the runtime default does not open on focus (Sigma-10 defect S10B-3). The same-target delta receipt shows this block keeps the submenu closed on focus at 1024/1440px while hover opening is preserved; JS-driven .sfhover opening is excluded from the suppression.",
+      "sha256": "063012a7b1b3365c665dc6dae5efab5d889de4dab3f0e2ed084899ad7d541d86",
+      "selectors": [
+        "#top-bar :is(.top-bar,.mobile-top-bar) ul li:focus-within:not(:hover):not(.sfhover) ul"
+      ],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/space-topbar-focus-delta-20261028/receipt.json",
+          "sha256": "57688ece14a9a09f13215a11bd131a45f390e24514086140a6650d28ddfd0981"
+        }
+      ],
+      "scope": {
+        "target": "SCP-JP Sigma-9 current target acceptance",
+        "state": "navigation.focus"
+      },
+      "published_css_sha256": "eaa78c18bc1e583254f9dc0479f9b70e72451eb205efbe2a24c72fcd34f24735"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
@@ -400,6 +466,36 @@
       "at_contexts": [
         "@media (min-width: 768px) and (max-width: 1023px)"
       ],
+      "authority": "RUNTIME_INDEPENDENT"
+    },
+    {
+      "marker": "SCP-JP Wikidot space credit view: keep the credit modal on the theme dark ground so the body text stays readable.",
+      "rationale": "SCP-JP Wikidot space credit view: keep the credit modal on the theme dark ground so the body text stays readable.",
+      "sha256": "acf3eb04d4726268f45e317408a90923b0df3df3ade0c91d9902ea0c9b2aee7a",
+      "selectors": [
+        "#u-credit-view .modalbox"
+      ],
+      "at_contexts": [],
+      "authority": "RUNTIME_INDEPENDENT"
+    },
+    {
+      "marker": "SCP-JP Wikidot space credit rate bar: keep the module layout inside the credit modals so the bar shares its row with the license badge instead of overlapping it.",
+      "rationale": "SCP-JP Wikidot space credit rate bar: keep the module layout inside the credit modals so the bar shares its row with the license badge instead of overlapping it.",
+      "sha256": "c1f11202d9a76041f154d08c526f96ea50d9e14173e94d358afd35d18072f7f5",
+      "selectors": [
+        "[id*=u-credit] :is(div,ul).creditRate"
+      ],
+      "at_contexts": [],
+      "authority": "RUNTIME_INDEPENDENT"
+    },
+    {
+      "marker": "SCP-JP Wikidot space top bar: keep submenus closed on keyboard focus alone, matching the runtime default menu behavior.",
+      "rationale": "SCP-JP Wikidot space top bar: keep submenus closed on keyboard focus alone, matching the runtime default menu behavior.",
+      "sha256": "063012a7b1b3365c665dc6dae5efab5d889de4dab3f0e2ed084899ad7d541d86",
+      "selectors": [
+        "#top-bar :is(.top-bar,.mobile-top-bar) ul li:focus-within:not(:hover):not(.sfhover) ul"
+      ],
+      "at_contexts": [],
       "authority": "RUNTIME_INDEPENDENT"
     }
   ]

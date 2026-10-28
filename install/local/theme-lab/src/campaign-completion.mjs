@@ -453,7 +453,7 @@ export function checkCampaignCompletion(root, {captureContractReader = readCurre
           if(previous&&previous!==record.browser_version)throw new Error(`browser audit mixes ${record.browser_engine} versions`);
           browserVersions[record.browser_engine]=record.browser_version;
         }
-        const canonical=validateCanonicalScenarioMatrix({root,packageName:row.package,generation:'sigma9',matrix:audit.canonical_scenario,browserVersions});
+        const canonical=validateCanonicalScenarioMatrix({root,packageName:row.package,generation:'sigma9',matrix:audit.canonical_scenario,browserVersions,runContract:sigma9Contract});
         if(result.canonical_scenario_evidence?.generation!=='sigma9'||result.canonical_scenario_evidence?.scenario_sha256!==canonical.scenario_sha256||result.canonical_scenario_evidence?.matrix_receipt_sha256!==canonical.matrix_receipt_sha256||result.canonical_scenario_evidence?.measurement_contract_sha256!==canonical.measurement_contract_sha256)failures.push(`${row.package}: accepted result is not bound to current canonical scenario evidence`);
       }catch(error){failures.push(`${row.package}: canonical scenario matrix is missing or stale: ${error.message}`)}
       const semantic = audit.acceptance_model === SEMANTIC_BROWSER_MODEL;

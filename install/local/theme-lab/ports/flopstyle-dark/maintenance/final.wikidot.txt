@@ -5342,4 +5342,11 @@ EstrellaYoshteのロゴは、このテーマで広く使われる定番素材で
     }
   }
 }
+
+/* SCP-JP Wikidot flopstyle-dark history list: keep the history table inside the content column at narrow widths. */
+@media (max-width:400px) {
+  table.page-history {
+    font-size:.8em
+  }
+}
 [[/module]]

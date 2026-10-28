@@ -2,3 +2,18 @@
 @media (min-width: 768px) and (max-width: 1023px) {
   #side-bar { overflow-x: auto !important; }
 }
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot space credit view: keep the credit modal on the theme dark ground so the body text stays readable. */
+#u-credit-view .modalbox{background-color:rgb(var(--space-void))!important}
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot space credit rate bar: keep the module layout inside the credit modals so the bar shares its row with the license badge instead of overlapping it. */
+[id*=u-credit] :is(div,ul).creditRate{display:inline-flex;float:right;text-align:start}
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot space top bar: keep submenus closed on keyboard focus alone, matching the runtime default menu behavior. */
+#top-bar :is(.top-bar,.mobile-top-bar) ul li:focus-within:not(:hover):not(.sfhover) ul{pointer-events:none;opacity:0}

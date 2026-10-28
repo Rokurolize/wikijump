@@ -29,9 +29,9 @@
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/minimalist-bhl",
-  "candidate_source_hash": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
+  "candidate_source_hash": "919dbda6c608205b4da445faafbe1ccd8aa274a53f14beaaa53178bb4e22bc9e",
   "source_candidate_path": "install/local/theme-lab/ports/minimalist-bhl/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
+  "source_candidate_sha256": "919dbda6c608205b4da445faafbe1ccd8aa274a53f14beaaa53178bb4e22bc9e",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -39,11 +39,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/minimalist-bhl/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
+  "candidate_source_sha256": "919dbda6c608205b4da445faafbe1ccd8aa274a53f14beaaa53178bb4e22bc9e",
   "human_port_candidate_path": "install/local/theme-lab/ports/minimalist-bhl/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "66d2b5303c6b5c4530835fd993c8f9a9e48ab9ac15d3d81eb367d17a038a5391",
-  "candidate_preview_sha256": "90ea3a6c9b8e830c3a9f11bf7f04c74c22d76b64dfb9bdf61c0180e90248215c",
-  "candidate_css_sha256": "bb4018bd604b2abfbd17e84f3fd884d13c3891be34fdac52c3a6d30af295d245",
+  "candidate_preview_sha256": "75eb1b618d591224c5fe1e7183c7bd74843e81191ecea125f1b769ec21787aef",
+  "candidate_css_sha256": "c42321624f2b36b8e220a1fd75cfe2fbb10ba4b73af378d0688aff850ada3851",
   "page_attachment_manifest": null,
   "existing_jp_reconciliation": {
     "previous_source_sha256": "6e5daba96afeb10ce3e4f49bc436920f6c0ba2ac4937c072030c59e43e80f3a0",
@@ -85,15 +85,10 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "warn",
-    "port_verdict": "pass",
-    "target_status": "warn"
+    "status": "inconclusive",
+    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
   },
-  "state": "accepted-local-candidate-not-published",
-  "final_verdict": "warn",
-  "final_status": "current-full-acceptance",
-  "current_acceptance": {
-    "path": "../current-acceptance/minimalist-bhl/accepted-result.json",
-    "sha256": "5eb921f3ab5059a872d3d4de58d48f1061da0f632725c3df126c995afd40bc44"
-  }
+  "state": "authority-cleaned-local-candidate-not-published",
+  "final_verdict": "inconclusive",
+  "final_status": "adaptation-authority-cleaned"
 }

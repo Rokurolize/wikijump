@@ -1428,3 +1428,15 @@ form#edit-page-form .edit-help-34>a {
 #u-author_block>p>a {
     color: var(--linkColour) !important;
 }
+
+
+
+/* SCP-JP Wikidot page history: keep the history option row within the mobile viewport. */
+@media (max-width: 479px) {
+#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2){grid-template-columns:repeat(3,1fr)}
+}
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog. */
+[id*=u-credit] div.credit-back a{white-space:nowrap;flex-shrink:0}

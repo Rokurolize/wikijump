@@ -28,9 +28,9 @@
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/turbo-vision",
-  "candidate_source_hash": "69e1fa9c6a57ca01097a29beab1f58b67741f9e53f958e95616fb5f7b559e589",
+  "candidate_source_hash": "c26d77a0915b873a375a9e0e81dea259889394059ed82c4aacfd6ecf3ffb0c7a",
   "source_candidate_path": "install/local/theme-lab/ports/turbo-vision/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "69e1fa9c6a57ca01097a29beab1f58b67741f9e53f958e95616fb5f7b559e589",
+  "source_candidate_sha256": "c26d77a0915b873a375a9e0e81dea259889394059ed82c4aacfd6ecf3ffb0c7a",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -38,11 +38,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/turbo-vision/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "69e1fa9c6a57ca01097a29beab1f58b67741f9e53f958e95616fb5f7b559e589",
+  "candidate_source_sha256": "c26d77a0915b873a375a9e0e81dea259889394059ed82c4aacfd6ecf3ffb0c7a",
   "human_port_candidate_path": "install/local/theme-lab/ports/turbo-vision/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "7419ff6d01fb1b3c732c75b7ccf223152f11f05db7df0ee2b70a2230ff703d71",
-  "candidate_preview_sha256": "338815088793a8787510d4f4bb46df4859619377291f328e004f7c6149e5b0e4",
-  "candidate_css_sha256": "4ea34f42f05c6f1f845811620cdcd73395860284adeac42b847f385aa24e1cd3",
+  "candidate_preview_sha256": "6b2cdf623550c36176288bb5ba9ed1ee5fcd21c97435e413fb6a17880e16c5af",
+  "candidate_css_sha256": "19227e0d6d1d723955040f7b67d75f09cc9897eb30a2abd0b646db315fdc386d",
   "page_attachment_manifest": null,
   "existing_jp_reconciliation": {
     "previous_source_sha256": "325801b1dd4a3d1fb23f216c08a0ea56519d32da234638a8b5022c45a30d982c",
@@ -84,15 +84,10 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "warn",
-    "port_verdict": "pass",
-    "target_status": "warn"
+    "status": "inconclusive",
+    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
   },
-  "state": "accepted-local-candidate-not-published",
-  "final_verdict": "warn",
-  "final_status": "current-full-acceptance",
-  "current_acceptance": {
-    "path": "../current-acceptance/turbo-vision/accepted-result.json",
-    "sha256": "34493caf9a7d161a5f64acc24cbbcf3332fda71db20156b19522fa973f75e74c"
-  }
+  "state": "authority-cleaned-local-candidate-not-published",
+  "final_verdict": "inconclusive",
+  "final_status": "adaptation-authority-cleaned"
 }

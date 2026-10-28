@@ -140,3 +140,8 @@
 
 /* SCP-JP Wikidot Turbo Vision narrow navigation rows: reserve the source gray bar for wrapped labels. */
 @media(max-width:359px){#header{padding-bottom:42px;}#top-bar{height:40px;background-color:#aaa;}}
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot turbo-vision heading correction: keep wrapped pixel-font headings from striking through at mobile widths. */
+@media (max-width:768px){h1,h2,h3,#page-title{line-height:1.15}}

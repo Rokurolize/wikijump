@@ -504,4 +504,15 @@
 
 
 
-@import url("https://scp-jp.wdfiles.com/local--code/theme%3Aminimalist-bhl/1")
+@import url("https://scp-jp.wdfiles.com/local--code/theme%3Aminimalist-bhl/1");
+
+
+/* SCP-JP Wikidot page history: keep the history option row within the mobile viewport. */
+@media (max-width: 479px) {
+#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2){grid-template-columns:repeat(3,1fr)}
+}
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
+/* SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog. */
+[id*=u-credit] div.credit-back a{white-space:nowrap;flex-shrink:0}

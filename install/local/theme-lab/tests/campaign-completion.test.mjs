@@ -54,8 +54,8 @@ import {VISUAL_GATE_POLICY_SHA256,visualGatePolicyRow,visualGateSelectorsFor,bui
 import {scopedRunContractSha} from '../src/scoped-run-contract.mjs';
 import {candidateAssetDependencyState} from '../src/candidate-asset-dependencies.mjs';
 import {CANONICAL_INTERACTION_STATES,CANONICAL_SEMANTIC_PROBES} from '../src/theme-canonical-execution.mjs';
-import {themeScenarioConfigForPackage} from '../src/theme-scenario-factory.mjs';
 import {materializeThemeTestScenario} from '../src/theme-test-scenario-config.mjs';
+import {themeScenarioConfigForPackage} from '../src/theme-scenario-factory.mjs';
 import {result,digest,matrix,mockBrowserVersions,mockRuntimeSourceSha,mockBackendRuntimeIdentity,mockTargetSite,packageResultPath,packageAuditPath,migrationResultPath,migrationAuditPath,core,mockCaptureContracts,mockCampaign} from './support/current-campaign-fixture.mjs';
 test('promotion requires current identities, complete browser coverage and accepted migration',()=>{
  const mock=mockCampaign();try{
@@ -432,5 +432,24 @@ test('a receipt bound to a task-owned run contract is rejected when no contract 
   mock.document.run_contract={path:'ports/current-acceptance/run-contract-explicit-check.json',sha256:'a'.repeat(64)};
   mock.save();
   assert.ok(checkCampaignCompletion(mock.root).failures.some(value=>value.includes('bound to a task-owned run contract')));
+ }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
+});
+test("promotion accepts Sigma-9 canonical evidence produced under a task run contract",()=>{
+ const mock=mockCampaign();try{
+  const contractPath="ports/current-acceptance/run-contract-task.json";
+  const shared=JSON.parse(fs.readFileSync(path.join(mock.root,"ports/current-acceptance/run-contract.json"),"utf8"));
+  const taskContract={...shared,schema:"scp_jp_interactive_acceptance_run.v1",artifact_namespace:"current-acceptance/sigma9/task",target_site:{...shared.target_site,origin:"https://scpaiueouiuiuiui.wikijump.localhost:3415"}};
+  mock.write(contractPath,taskContract);
+  const materialized=materializeThemeTestScenario(mock.root,themeScenarioConfigForPackage(mock.root,{generation:"sigma9",packageName:"testtheme",runContract:contractPath}));
+  const engines=Object.fromEntries(["chromium","firefox","webkit"].map(engine=>[engine,Object.fromEntries(["anonymous","authenticated"].map(profile=>{const executionBase={schema:"theme_lab_canonical_execution.v1",backend_runtime_identity:mockBackendRuntimeIdentity,scenario_sha256:materialized.scenario_sha256,session_profile:profile,session_observation:{my_account_text:profile==="authenticated"?"Administrator":null,logout_link_present:profile==="authenticated",sign_in_link_present:profile!=="authenticated"},check_evidence:{verification_scope:"pass",target_acceptance:"pass",image_diagnostics:"pass",japanese_glyph_rendering:"pass"},interaction_states:CANONICAL_INTERACTION_STATES.map(id=>({id,status:"pass"})),semantic_probes:CANONICAL_SEMANTIC_PROBES.map(id=>({id,status:"pass"}))};const canonical_execution={...executionBase,canonical_execution_sha256:digest(JSON.stringify(executionBase))};const receiptBase={schema:"theme_lab_measurement_receipt.v1",scenario_sha256:materialized.scenario_sha256,measurement_contract_sha256:materialized.bindings.measurement_contract.sha256,engine,browser_version:mockBrowserVersions[engine],session_profile:profile,canonical_execution_sha256:canonical_execution.canonical_execution_sha256};return[profile,{canonical_execution,measurement_receipt:{...receiptBase,receipt_sha256:digest(JSON.stringify(receiptBase))}}]}))]));
+  const matrixBase={schema:"theme_lab_scenario_matrix.v1",scenario_sha256:materialized.scenario_sha256,measurement_contract_sha256:materialized.bindings.measurement_contract.sha256,engines};
+  const taskMatrix={...matrixBase,matrix_receipt_sha256:digest(JSON.stringify(matrixBase)),canonical_acceptance_eligible:false,blockers:["producer has no promotion authority"]};
+  mock.audit.canonical_scenario=taskMatrix;const auditBinding=mock.write(packageAuditPath,mock.audit);mock.document.packages[0].browser_audit=auditBinding;mock.full.browser_acceptance={...auditBinding,records:mock.audit.records.length};
+  mock.full.canonical_scenario_evidence={generation:"sigma9",scenario_sha256:materialized.scenario_sha256,matrix_receipt_sha256:taskMatrix.matrix_receipt_sha256,measurement_contract_sha256:materialized.bindings.measurement_contract.sha256};
+  mock.document.packages[0].receipt=mock.write(packageResultPath,mock.full);mock.save();
+  const checked=checkCampaignCompletion(mock.root,{sigma9RunContract:contractPath});
+  assert.ok(!checked.failures.some(value=>value.includes("canonical scenario")),checked.failures.join("\n"));
+  const checkedDefault=checkCampaignCompletion(mock.root);
+  assert.ok(checkedDefault.failures.some(value=>value.includes("canonical scenario matrix is missing or stale")),checkedDefault.failures.join("\n"));
  }finally{fs.rmSync(mock.workspace,{recursive:true,force:true})}
 });

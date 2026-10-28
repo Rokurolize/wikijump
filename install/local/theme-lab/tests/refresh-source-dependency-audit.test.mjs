@@ -40,6 +40,50 @@ function priorMap(entries) {
   };
 }
 
+// Audit-era bytes for every theme whose bytes moved past an audit, recovered
+// from git history: for each stale row, the newest blob in the file's history
+// whose SHA-256 equals the recorded hash (the same recorded-history mechanism
+// the basalt block at the bottom uses for commit 8f0573bdd3). Cached per audit.
+const eraPriorMaps = new WeakMap();
+function auditEraPriorMap(auditObject) {
+  if (eraPriorMaps.has(auditObject)) return eraPriorMaps.get(auditObject);
+  const findBlob = (repoRelative, expected, isCss) => {
+    const commits = spawnSync('git', ['-C', repo, 'log', '--all', '--format=%H', '--', repoRelative], {encoding: 'utf8'}).stdout.trim().split('\n').filter(Boolean).slice(0, 300);
+    for (const commit of commits) {
+      const blob = spawnSync('git', ['-C', repo, 'show', `${commit}:${repoRelative}`], {maxBuffer: 64 * 1024 * 1024}).stdout;
+      if (!blob?.length) continue;
+      if ((isCss ? sha(blob.toString('utf8')) : sha(blob)) === expected) return blob;
+    }
+    throw new Error(`audit-era bytes ${expected} not found in git history of ${repoRelative}`);
+  };
+  const entries = [];
+  for (const row of auditObject.themes) {
+    const current = currentThemeBytes(themeLab, graph, row.theme);
+    if (current.source === row.candidate_source_sha256 && current.css === (row.candidate_css_sha256 ?? null)) continue;
+    const node = graph.nodes.find(candidate => candidate.id === row.theme);
+    const sourceRelative = path.relative(repo, path.resolve(themeLab, 'publication', node.publication_source)).split(path.sep).join('/');
+    entries.push(findBlob(sourceRelative, row.candidate_source_sha256, false));
+    if (row.candidate_css_sha256) entries.push(findBlob(path.posix.join(path.posix.dirname(sourceRelative), 'candidate.css'), row.candidate_css_sha256, true));
+  }
+  const map = priorMap(entries);
+  eraPriorMaps.set(auditObject, map);
+  return map;
+}
+
+// Era priors for the shared 2026-10-06 audit plus any synthetic entries a test
+// adds for basalt; the synthetic hashes are distinct, so both maps coexist.
+function mergedPriorMap(extraEntries) {
+  const era = auditEraPriorMap(audit);
+  const extra = priorMap(extraEntries);
+  return sha256 => {
+    try {
+      return extra(sha256);
+    } catch {
+      return era(sha256);
+    }
+  };
+}
+
 describe('dependency surface', () => {
   test('captures include directives and @import rules from both source and CSS', () => {
     const surface = dependencySurface('a [[include :scp-jp:component:x]] b @import url(y);\n', '@import url(z);');
@@ -50,6 +94,18 @@ describe('dependency surface', () => {
     });
   });
 
+  test('an unterminated trailing @import does not absorb following content', () => {
+    const before = '[[module CSS]]\n@import url("https://example.com/theme.css");\n@import url("https://example.com/local--code/theme:x/1")\n[[/module]]\n[[include :scp-jp:component:interwiki-style\n| theme=https://example.com/theme:x/1\n]]\n';
+    const after = before + '[[module CSS]]\n/* appended adaptation module */\n.credit-back a { white-space: nowrap; }\n[[/module]]\n';
+    assert.deepEqual(dependencySurface(after, ''), dependencySurface(before, ''));
+  });
+
+  test('still detects a changed trailing @import target', () => {
+    const before = '@import url("https://example.com/theme:x/1")\n';
+    const after = '@import url("https://example.com/theme:y/1")\n';
+    assert.notDeepEqual(dependencySurface(after, ''), dependencySurface(before, ''));
+  });
+
   test('ignores ordinary CSS and text', () => {
     assert.deepEqual(dependencySurface('plain text', 'a { color: red; }'), {includes: [], source_imports: [], css_imports: []});
   });
@@ -58,21 +114,22 @@ describe('dependency surface', () => {
 describe('source-dependency audit refresh', () => {
   test('recomputes changed candidate hashes when the dependency surface is unchanged', () => {
     const prior = nonSurfacePrior();
+    const mutated = withBasalt(row => {
+      row.candidate_source_sha256 = sha(prior.source);
+      row.candidate_css_sha256 = sha(prior.css);
+    });
     const result = refreshSourceDependencyAudit({
-      audit: withBasalt(row => {
-        row.candidate_source_sha256 = sha(prior.source);
-        row.candidate_css_sha256 = sha(prior.css);
-      }),
+      audit: mutated,
       graph,
       root: themeLab,
       refreshedAt: DATE,
-      priorBytes: priorMap([prior.source, prior.css]),
+      priorBytes: mergedPriorMap([prior.source, prior.css]),
       predecessorSha256: 'f'.repeat(64),
     });
     const basalt = result.audit.themes.find(row => row.theme === 'theme:basalt');
     assert.equal(basalt.candidate_source_sha256, basaltNow.source);
     assert.equal(basalt.candidate_css_sha256, basaltNow.css);
-    assert.equal(result.changes.length, 1);
+    assert.equal(result.changes.length, themesWithStaleHashes(mutated).length);
     assert.equal(result.audit.generated_at, DATE);
     assert.equal(result.audit.predecessor.sha256, 'f'.repeat(64));
     assert.equal(result.audit.candidate_identity_refresh.refreshed_at, DATE);
@@ -87,15 +144,16 @@ describe('source-dependency audit refresh', () => {
 
   test('leaves the dependency rows and observed counts untouched', () => {
     const prior = nonSurfacePrior();
+    const mutated = withBasalt(row => {
+      row.candidate_source_sha256 = sha(prior.source);
+      row.candidate_css_sha256 = sha(prior.css);
+    });
     const result = refreshSourceDependencyAudit({
-      audit: withBasalt(row => {
-        row.candidate_source_sha256 = sha(prior.source);
-        row.candidate_css_sha256 = sha(prior.css);
-      }),
+      audit: mutated,
       graph,
       root: themeLab,
       refreshedAt: DATE,
-      priorBytes: priorMap([prior.source, prior.css]),
+      priorBytes: mergedPriorMap([prior.source, prior.css]),
       predecessorSha256: 'a'.repeat(64),
     });
     assert.deepEqual(result.audit.dependencies, audit.dependencies);
@@ -116,17 +174,19 @@ describe('source-dependency audit refresh', () => {
       graph,
       root: themeLab,
       refreshedAt: DATE,
-      priorBytes: priorMap([prior.source, prior.css]),
+      priorBytes: mergedPriorMap([prior.source, prior.css]),
       predecessorSha256: 'a'.repeat(64),
     });
     assert.equal(JSON.stringify(audit), before);
   });
 
   test('a theme whose hashes already match current bytes needs no prior bytes', () => {
-    const matching = withBasalt(row => {
-      row.candidate_source_sha256 = basaltNow.source;
-      row.candidate_css_sha256 = basaltNow.css;
-    });
+    const matching = structuredClone(audit);
+    for (const row of matching.themes) {
+      const current = currentThemeBytes(themeLab, graph, row.theme);
+      row.candidate_source_sha256 = current.source;
+      row.candidate_css_sha256 = current.css;
+    }
     const result = refreshSourceDependencyAudit({
       audit: matching,
       graph,
@@ -152,7 +212,7 @@ describe('source-dependency audit refresh', () => {
       graph,
       root: themeLab,
       refreshedAt: DATE,
-      priorBytes: priorMap([changedPrior, prior.css]),
+      priorBytes: mergedPriorMap([changedPrior, prior.css]),
       predecessorSha256: 'c'.repeat(64),
     }), /surface changed since the audit; a dependency audit is required/u);
   });
@@ -168,7 +228,7 @@ describe('source-dependency audit refresh', () => {
       graph,
       root: themeLab,
       refreshedAt: DATE,
-      priorBytes: priorMap([prior.source, changedCss]),
+      priorBytes: mergedPriorMap([prior.source, changedCss]),
       predecessorSha256: 'c'.repeat(64),
     }), /surface changed/u);
   });
@@ -213,7 +273,7 @@ describe('source-dependency audit refresh', () => {
       graph,
       root: themeLab,
       refreshedAt: DATE,
-      priorBytes: () => Buffer.alloc(0),
+      priorBytes: mergedPriorMap([]),
       predecessorSha256: 'e'.repeat(64),
     }), /unresolved dependencies/u);
   });
@@ -230,7 +290,7 @@ describe('source-dependency audit refresh', () => {
       graph,
       root: themeLab,
       refreshedAt: DATE,
-      priorBytes: priorMap([prior.source, prior.css]),
+      priorBytes: mergedPriorMap([prior.source, prior.css]),
       predecessorSha256: 'e'.repeat(64),
     }), /no candidate_identity_refresh row/u);
   });
@@ -245,7 +305,7 @@ describe('source-dependency audit refresh', () => {
       graph,
       root: themeLab,
       refreshedAt: DATE,
-      priorBytes: priorMap([prior.source]),
+      priorBytes: mergedPriorMap([prior.source]),
       predecessorSha256: 'e'.repeat(64),
     }), /gained a candidate.css/u);
   });
@@ -304,6 +364,17 @@ describe('basalt refresh from the recorded audit-era commit', {skip: priorCommit
     try {
       fs.writeFileSync(path.join(priorDir, sha(priorSource)), priorSource);
       fs.writeFileSync(path.join(priorDir, sha(priorCss)), priorCss);
+      // The listed audit (from the frozen candidate set) has its own stale
+      // themes on this branch; supply their audit-era bytes the same way.
+      const frozen = JSON.parse(fs.readFileSync(path.join(themeLab, 'publication/frozen-candidate-set.json'), 'utf8'));
+      const listedAudit = JSON.parse(fs.readFileSync(path.join(themeLab, frozen.authority.artifacts.find(artifact => artifact.id === 'source-dependency-audit').path), 'utf8'));
+      const listedPriors = auditEraPriorMap(listedAudit);
+      for (const row of listedAudit.themes) {
+        const current = currentThemeBytes(themeLab, graph, row.theme);
+        if (current.source === row.candidate_source_sha256 && current.css === (row.candidate_css_sha256 ?? null)) continue;
+        fs.writeFileSync(path.join(priorDir, row.candidate_source_sha256), listedPriors(row.candidate_source_sha256));
+        if (row.candidate_css_sha256) fs.writeFileSync(path.join(priorDir, row.candidate_css_sha256), listedPriors(row.candidate_css_sha256));
+      }
       const lines = [];
       assert.equal(main(['--refreshed-at', DATE, '--output-dir', outputDir, '--prior-bytes-dir', priorDir, '--root', themeLab], {log: line => lines.push(line), error: line => lines.push(line)}), 0);
       const written = JSON.parse(fs.readFileSync(path.join(outputDir, `theme-lab-source-dependency-freeze-audit-${DATE}.json`), 'utf8'));

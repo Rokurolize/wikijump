@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
+  "frozen_candidate_source_sha256": "919dbda6c608205b4da445faafbe1ccd8aa274a53f14beaaa53178bb4e22bc9e",
   "base_source_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
-  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "semantic_css_sha256": "14800d017ecd4df8fb0abff9d864b616848e792df60a536e9e7a3f82d2471bb8",
-  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "raw_jp_overrides_sha256": "add9de09b799f7e806914762f40dec125b97af6ec8bef5ee2e2300c414e5cc5b",
+  "jp_overrides_sha256": "d84284c97f9c70ab146deb83a08024f3d83ab1e32ad9f5818bb996ecf2ca4f3d",
+  "semantic_css_sha256": "cae3458c59fd4f318dfc438f7014b406a348feb83fe2beb58488cc20b8fd780a",
+  "canonical_override_sha256": "08a5e51adac41ef25e5bf5d13d7f1dc672f07924ed290df99ff5fb66fde9467f",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
+  "final_source_sha256": "bc62294322172c7d5bb72165fcc3e8681dd9247cd94ea8111b06f35287dd493e",
   "final_source_inputs": {
     "base_sha256": "8bec8d27d44cdfb153f01dcedd67a41ff7a1477c0d1fcce1c41494e59b7ef8d5",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "jp_overrides_sha256": "d84284c97f9c70ab146deb83a08024f3d83ab1e32ad9f5818bb996ecf2ca4f3d"
   },
   "ordered_include_sha256": "eec1f08d4ed8c510d3f66438b5a7e23345c6ab58b61edfc14bac7a16787a5b96",
   "declaration_reviews": {},
-  "adaptation_block_count": 0,
-  "raw_override_rule_count": 0,
-  "canonical_override_rule_count": 0,
+  "adaptation_block_count": 2,
+  "raw_override_rule_count": 2,
+  "canonical_override_rule_count": 2,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -360,8 +360,79 @@
           "sha256": "38a3de3d2a1987b57615dfa215eeaddde2fe31e5ffb5d7ce4f190656c18dcee2"
         }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot page history: keep the history option row within the mobile viewport.",
+      "rationale": "The verbatim upstream history-form rule lays the option cells out past the mobile viewport on the SCP-JP Sigma-9 target (delta receipt: 134px overflow at 320px and 67.5px at 390px without this block, zero at every measured width with it, and no collateral geometry change). The block is scoped to max-width:479px, the widths where the defect exists, because the unscoped form measurably shifted one out-of-pane link at desktop widths for this package. The correction is runtime-independent.",
+      "sha256": "331b282200027f17151fef832a23788dc9daf27370bd0bf7013da8fe4c07cb4f",
+      "selectors": [
+        "@media (max-width: 479px)",
+        "#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2)",
+        "}"
+      ],
+      "at_contexts": [
+        "@media (max-width: 479px)"
+      ],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/minimalist-bhl-history-form-delta-20261027/receipt.json",
+          "sha256": "22726921370b7997bdaec811146cf78a4f699628f89560379be341afd59b098a"
+        }
+      ],
+      "scope": {
+        "target": "SCP-JP Sigma-9 current target acceptance",
+        "state": "page.history"
+      },
+      "published_css_sha256": "c42321624f2b36b8e220a1fd75cfe2fbb10ba4b73af378d0688aff850ada3851"
+    },
+    {
+      "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
+      "rationale": "In the otherwise credit dialog the back link (戻る) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
+      "sha256": "741b04aa4099d6de0c6d70996c006c68a9087c61e24f2ccb2dd67039d7169f9e",
+      "selectors": [
+        "[id*=u-credit] div.credit-back a"
+      ],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/minimalist-bhl-credit-back-delta-20261028/receipt.json",
+          "sha256": "58ce104cf82beb5c078273cd6dad43e71401bd6db7921a1703854d52a2fee599"
+        }
+      ],
+      "scope": {
+        "target": "SCP-JP Sigma-9 current target acceptance",
+        "state": "credit.otherwise"
+      },
+      "published_css_sha256": "c42321624f2b36b8e220a1fd75cfe2fbb10ba4b73af378d0688aff850ada3851"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
-  "publishable_adaptations": []
+  "publishable_adaptations": [
+    {
+      "marker": "SCP-JP Wikidot page history: keep the history option row within the mobile viewport.",
+      "rationale": "SCP-JP Wikidot page history: keep the history option row within the mobile viewport.",
+      "sha256": "331b282200027f17151fef832a23788dc9daf27370bd0bf7013da8fe4c07cb4f",
+      "selectors": [
+        "#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2)"
+      ],
+      "at_contexts": [
+        "@media (max-width: 479px)"
+      ],
+      "authority": "RUNTIME_INDEPENDENT"
+    },
+    {
+      "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
+      "rationale": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
+      "sha256": "741b04aa4099d6de0c6d70996c006c68a9087c61e24f2ccb2dd67039d7169f9e",
+      "selectors": [
+        "[id*=u-credit] div.credit-back a"
+      ],
+      "at_contexts": [],
+      "authority": "RUNTIME_INDEPENDENT"
+    }
+  ]
 }

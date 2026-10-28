@@ -20,10 +20,17 @@ const serialize = value => `${JSON.stringify(value, null, 2)}\n`;
 const DATE = /^\d{4}-\d{2}-\d{2}$/u;
 
 export function dependencySurface(sourceText, cssText) {
+  // An @import match ends at its terminating semicolon or at end of line,
+  // whichever comes first. Theme sources carry a trailing @import with no
+  // semicolon (the self-referential theme import at the end of a CSS module);
+  // an unbounded [^;]* scan would stretch that match over whatever wikitext
+  // or adaptation modules follow it, so appended non-import content would
+  // masquerade as a changed import surface. Every @import statement in the
+  // theme corpus completes on its own line, so the line bound loses nothing.
   return {
     includes: [...sourceText.matchAll(/\[\[include\b[\s\S]*?\]\]/gu)].map(match => match[0]),
-    source_imports: [...sourceText.matchAll(/@import[^;]*/gu)].map(match => match[0]),
-    css_imports: [...cssText.matchAll(/@import[^;]*/gu)].map(match => match[0]),
+    source_imports: [...sourceText.matchAll(/@import[^;\n]*/gu)].map(match => match[0]),
+    css_imports: [...cssText.matchAll(/@import[^;\n]*/gu)].map(match => match[0]),
   };
 }
 

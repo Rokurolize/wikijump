@@ -27,9 +27,9 @@
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/extra-black-highlighter-theme",
-  "candidate_source_hash": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
+  "candidate_source_hash": "7a58af8257b5d4daba45c3aefaf1542a9e942333f8cbfdd2451c89b3e56bdba7",
   "source_candidate_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
+  "source_candidate_sha256": "7a58af8257b5d4daba45c3aefaf1542a9e942333f8cbfdd2451c89b3e56bdba7",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -37,11 +37,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "b0a5bdc62ba1eccb494b073861ed269baf71c0a3549dc2a1a5c3854d9d6d4a5a",
+  "candidate_source_sha256": "7a58af8257b5d4daba45c3aefaf1542a9e942333f8cbfdd2451c89b3e56bdba7",
   "human_port_candidate_path": "install/local/theme-lab/ports/extra-black-highlighter-theme/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "41599fe6d22ed63d835475a90f46f1382ed97c06f01c916415a5d649bd59e861",
-  "candidate_preview_sha256": "da2890818409c8d174ccd3f01d119deb2ec0e97a579184f5f878f5938af99e19",
-  "candidate_css_sha256": "1942887e382d16b8150cf95086a4944c7589def1ea0c2783d5d6dc341c445400",
+  "candidate_preview_sha256": "aca07f08e2b8af3cefa1b95bc19f8ab8737a44fa152426abcd8ffa292ec8f459",
+  "candidate_css_sha256": "ffc99c551f35faf592fefb35dcdfa2b7e23c20530bad4a70224b626ca30a62f2",
   "page_assets": [
     {
       "filename": "black-highlighter-logo.svg",
@@ -92,15 +92,10 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "warn",
-    "port_verdict": "pass",
-    "target_status": "warn"
+    "status": "inconclusive",
+    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
   },
-  "state": "accepted-local-candidate-not-published",
-  "final_verdict": "warn",
-  "final_status": "current-full-acceptance",
-  "current_acceptance": {
-    "path": "../current-acceptance/extra-black-highlighter-theme/accepted-result.json",
-    "sha256": "51674d94b6b2ee79638173bcb38097b621d1b12c56f6b47fb0a65145ec7e6042"
-  }
+  "state": "authority-cleaned-local-candidate-not-published",
+  "final_verdict": "inconclusive",
+  "final_status": "adaptation-authority-cleaned"
 }

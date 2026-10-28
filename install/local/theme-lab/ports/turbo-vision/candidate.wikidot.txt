@@ -33,7 +33,7 @@
 このテーマをあなたのページに適用する際には、以下のコードを挿入してください。
 
 [[div class="turbo-block bg-grey border-black text-black"]]
-@@@@
+@@[[include :scp-jp:theme:turbo-vision]]@@
 [[/div]]
 
 このコードはターボ・ビジョン テーマを“テーマ・モード”で適用します。
@@ -43,7 +43,7 @@
 ターボ・ブロックだけを使いたくて、それ以外は使いたくない場合は、"blocks=-"を追加してください。
 
 [[div class="turbo-block bg-grey border-black text-black"]]
-@@@@
+@@[[include :scp-jp:theme:turbo-vision blocks=-]]@@
 [[/div]]
 
 このコードはターボ・ビジョン テーマを“コンポーネント・モード”で適用します。これは[[[theme:black-highlighter-theme|]]]と互換性があります。
@@ -334,7 +334,10 @@ SCP-NUMBERは何でもありません。全くもって、何でもありませ�
 
 [[div class="blockquote"]]
 @@[[div class="turbo-block bg-orange border-white text-white" data-title="画像"]]@@
-@@@@
+@@[[include :scp-jp:component:image-block@@
+| name=@@https://scp-jp-storage.wdfiles.com/local--files/file%3A9042763-26-mn41/scpimage-small.webp@@
+| caption=こんにちは。ええ、ここは文章です。
+@@]]@@
 @@[[/div]]@@
 [[/div]]
 [[/div]]
@@ -1641,6 +1644,8 @@ div.page-rate-widget-box .rate-points {
 }
 [[/code]]
 [[/collapsible]]
+
+
 
 
 

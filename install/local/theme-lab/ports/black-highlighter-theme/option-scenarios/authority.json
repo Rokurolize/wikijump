@@ -1,6 +1,6 @@
 {
   "schema": "theme_lab_bhl_option_authority.v1",
-  "observed_at": "2026-10-27",
+  "observed_at": "2026-10-28",
   "authority": "shared SCP-JP corpus current snapshots plus retained exact public stylesheet response",
   "pages": [
     {
@@ -78,9 +78,9 @@
   ],
   "candidate": {
     "source_path": "../candidate.wikidot.source.txt",
-    "source_sha256": "c42238fa49ab82144ec93f30bf45d769e42019975946cfad3cee0b67a0a9a427",
+    "source_sha256": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
     "css_path": "../candidate.css",
-    "css_sha256": "08b5d9abd0af51ddfe535761e6b5c18484dab099672dfd08a2c39af4585cb98b",
+    "css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577",
     "base_css_path": null,
     "base_css_sha256": null
   },
@@ -133,7 +133,7 @@
   ],
   "framerail": {
     "fingerprint_tool": "../../../../src/framerail-source-fingerprint.mjs",
-    "fingerprint_sha256": "2d154a11fad89ca8a939a3e2c193241fb64f48bc4dd65dde99fade1f603ca716",
+    "fingerprint_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
     "runtime_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3395",
     "runtime_source_header": "x-theme-lab-runtime-source-sha",
     "runtime_version": "captured by runner at execution"
@@ -150,12 +150,12 @@
   ],
   "backend_runtime_identity": {
     "schema": "wikijump_deepwell_runtime_identity.v1",
-    "source_sha256": "0c1adb63c450bf32894be2bac808e7c18a26b16fe0472d9aa5801067ed458bc8",
-    "ftml_git_revision": "e6e86eb031fdf7ce3468baf033ce5c9b1399391a",
-    "container_id": "c8233de7fad8818e7d699630f17498a744fd30fcca3c4338776d25e6bf47a861",
-    "image_id": "sha256:e5411edf97745b3148b156b1ddc784270188c16bf9267ef1c1b3b937140fe03e",
-    "binary_sha256": "3faa5ecd7894f801ae3bc6a931752fbb9809108705cf9c03d3b5583484f7cbcd",
+    "source_sha256": "2a84ce2e9905e6f1871f3d0732e61f3370500a92bf37cbb2d8825d08366bea4e",
+    "ftml_git_revision": "ef502b8af7cd9a58f7f1b1edf3639f35f48bd982",
+    "container_id": "2f63d1764cc01886b7ee1fca9a9ddb00b1ae44fe11b6c3a583a1cb13e5e1e8fd",
+    "image_id": "sha256:4a5f140dec2707522d9728962bfc7e2d8d959e0a6bbe59f547554692e2e281c2",
+    "binary_sha256": "b04a033f0645a43c46e7ca0fe1055dc5788b80762ac12bb5224a90e17ed39bed",
     "config_sha256": "6eeb5715be1ac0d72784a10eb2a821b14995e9d0e29cd886a146e489ff16f638",
-    "identity_sha256": "d4f4fe2764272165d2239ff2819b847e167ac7aac7b6c3da40bdb3cb43f2b201"
+    "identity_sha256": "34700ffa57036c00ea958af1422a8828261b497b272000a34eb64d99a1db876a"
   }
 }

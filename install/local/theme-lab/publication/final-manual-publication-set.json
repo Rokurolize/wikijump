@@ -2965,47 +2965,47 @@
   "post_freeze_target_visual_reviews": [
     {
       "package": "al-slop",
-      "purpose": "Current real-Wikidot mobile navigation A/B; directly reviewed all 16 screenshots at 320px and 390px.",
+      "purpose": "Current real-Wikidot mobile navigation A/B; directly reviewed all 16 screenshots at 320px and 390px. Re-captured 2026-10-28 against the frozen target snapshot with the Freeze-1 candidate after the JP fix batch changed the candidate source/CSS; supersedes the 20261007 capture, whose evidence files were not retained.",
       "candidate_set_sha256": "38722848ea1ef40e21014f1fca201bce97ac0248668be1fae763526ab1959c36",
-      "candidate_source_sha256": "f6809160ccf1b35e74340d5e0421efecf8585246310203debbb5f0727b95eb8b",
-      "candidate_css_sha256": "00a8fff90043b8cc9164700b07080367ec1c29d29529635e34e6404a071e21e9",
+      "candidate_source_sha256": "1d9fdc59e8cddb2bee05e562b126686cd7608f50067a5168fec8779bbe74814f",
+      "candidate_css_sha256": "006c85b41da9002e2a701ef3db17185fee4c428e6f5d0e6a338af2d7ce370ee4",
       "capture_receipt": {
-        "path": "ports/authority-evidence/al-slop-current-navigation-20261007/receipt.json",
-        "sha256": "3963394b0152ff3b85e0d732684ae94628a2470b047f9870ebebf6f910a39c8f"
+        "path": "ports/authority-evidence/al-slop-current-navigation-20261028/receipt.json",
+        "sha256": "4131b82b3a5c73268078959e33c907eed855ff0cbca0860b5c87d5cf8db252fd"
       },
       "visual_review": {
-        "path": "ports/authority-evidence/al-slop-current-navigation-20261007/visual-review.json",
-        "sha256": "8eb6bd37c4d13c5c8dd051d2ff985614856e37d76f6a0ce82cdbf20b76e93850"
+        "path": "ports/authority-evidence/al-slop-current-navigation-20261028/visual-review.json",
+        "sha256": "9d502c5b878da029fe53a5d55e29f0d942e4b6a300ec981335c058ef1bcfa476"
       }
     },
     {
       "package": "flopstyle-dark",
-      "purpose": "Current Sigma-10 real-Wikidot credit/otherwise return-control A/B; directly reviewed all four screenshots at 320px and 390px.",
+      "purpose": "Current Sigma-10 real-Wikidot credit/otherwise return-control A/B; directly reviewed all four screenshots at 320px and 390px. Re-captured 2026-10-28 against the frozen target snapshot with the Freeze-1 candidate after the JP fix batch changed the candidate source/CSS; supersedes the 20261007 capture, whose evidence files were not retained.",
       "candidate_set_sha256": "38722848ea1ef40e21014f1fca201bce97ac0248668be1fae763526ab1959c36",
-      "candidate_source_sha256": "2b9004a9304ed089aa69da78d140bc03aa333b792751b57133d7429b499aa1e3",
-      "candidate_css_sha256": "cfb5865dd28e562413dc1cbed44ace29ff4d08eb4bdc8daafcfc87b4e98c8161",
+      "candidate_source_sha256": "ccb1b62f1368db3992b121d43c9a69f493e033e9c9f11a01145326a3b373f905",
+      "candidate_css_sha256": "519d88b43e366531bff3fb2b0a1ff722cb80c444efa952919631f943a4cd8a97",
       "capture_receipt": {
-        "path": "ports/authority-evidence/flopstyle-dark-rev401-sigma10-credit-otherwise-20261007/receipt.json",
-        "sha256": "97dc419cb87bf6420f448e363c657d4aecab1bad8f8b005d486b0c454305dbdd"
+        "path": "ports/authority-evidence/flopstyle-dark-rev401-sigma10-credit-otherwise-20261028/receipt.json",
+        "sha256": "fb720967a574a0266491bab5b3a484502fa4a46a1e1fa638bb08021ecc668ae6"
       },
       "visual_review": {
-        "path": "ports/authority-evidence/flopstyle-dark-rev401-sigma10-credit-otherwise-20261007/visual-review.json",
-        "sha256": "0ef847a90756f270111e2a05e9bc7d4b44f636d183016c812c9b2558b58e8ebf"
+        "path": "ports/authority-evidence/flopstyle-dark-rev401-sigma10-credit-otherwise-20261028/visual-review.json",
+        "sha256": "2b61a72786299ab849d832631cc306508879ccb4b18f723fd2d615e2fc7a3faa"
       }
     },
     {
       "package": "space",
-      "purpose": "Current real-Wikidot mobile navigation A/B; directly reviewed all 16 screenshots at 320px and 390px. The longest EN submenu continues below the captured viewport; lower-item scrolling is outside this review.",
+      "purpose": "Current real-Wikidot mobile navigation A/B; directly reviewed all 16 screenshots at 320px and 390px. The longest EN submenu continues below the captured viewport; lower-item scrolling is outside this review. Re-captured 2026-10-28 against the frozen target snapshot with the Freeze-1 candidate after the JP fix batch changed the candidate source/CSS; supersedes the 20261007 capture, whose evidence files were not retained.",
       "candidate_set_sha256": "38722848ea1ef40e21014f1fca201bce97ac0248668be1fae763526ab1959c36",
-      "candidate_source_sha256": "20d4d9c98052fc76fcf8573505509dc4d49c3b4852e2ea99580218ad34afe3a7",
-      "candidate_css_sha256": "1df89c43e1a5d880ac726dd3529fb0cd9bf5abf6513cb84c4a3544e390fed286",
+      "candidate_source_sha256": "c3e4148bc860bab02cdf1ca71cf33f98a128b802de072c61ec185857fe818e1c",
+      "candidate_css_sha256": "eaa78c18bc1e583254f9dc0479f9b70e72451eb205efbe2a24c72fcd34f24735",
       "capture_receipt": {
-        "path": "ports/authority-evidence/space-current-navigation-20261007/receipt.json",
-        "sha256": "75bea91f3610e040ba19929dd30019c3d13ffb370a97de11092b07088b8359b8"
+        "path": "ports/authority-evidence/space-current-navigation-20261028/receipt.json",
+        "sha256": "01003698c338eb1b1490b34ed3ff8036672b23ecd4cdceb50e3f5e03c0a7dbca"
       },
       "visual_review": {
-        "path": "ports/authority-evidence/space-current-navigation-20261007/visual-review.json",
-        "sha256": "700ee70d2a803d6001a03fc69cd79e0c789e96a18815b1acb8b6c5559e4073d0"
+        "path": "ports/authority-evidence/space-current-navigation-20261028/visual-review.json",
+        "sha256": "338de08bbfbf5d61e71a3c954d62fc2bf1ffb2175aa13f7e9d582689486f6e48"
       }
     }
   ],

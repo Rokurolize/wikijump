@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
+  "frozen_candidate_source_sha256": "8a565cdbb3e8c1a7ea9541a82b731cee709554b494b3167a53d092f5559dae35",
   "base_source_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
-  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "semantic_css_sha256": "50f8103cf890ddb6e62981a4c220ca335e72ea486469173b75ef17df10d60d5b",
-  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "raw_jp_overrides_sha256": "7e76b48a8a7ecb027ab107300b56d494fc1623a39555295cb49521f678c557ac",
+  "jp_overrides_sha256": "0ed77b321c0895acd23d5ed84390b1887e3dc391036a4631ea714065331fceb9",
+  "semantic_css_sha256": "d02015077390f7a0a9bc7084d7028a6210b52b0b4184126eae2e55433a3c78da",
+  "canonical_override_sha256": "4e578251c700aba7d0bbde77fda76e581d05b9ffbcae53ee1f86ed4d4a727534",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
+  "final_source_sha256": "d1ef5002907ef6684f6c2c4c40f8e5bb9c9a01f991440c8f886ffb750ca75a61",
   "final_source_inputs": {
     "base_sha256": "d0eb8af160c74eb7d72792b78567756792857a6b7851ed196cc7233b1f960869",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "jp_overrides_sha256": "0ed77b321c0895acd23d5ed84390b1887e3dc391036a4631ea714065331fceb9"
   },
   "ordered_include_sha256": "150dae8ecd8f3064f5b808b9b5c669821ecbe6ac081ebddca5964e8c1308f4ea",
   "declaration_reviews": {},
-  "adaptation_block_count": 0,
-  "raw_override_rule_count": 0,
-  "canonical_override_rule_count": 0,
+  "adaptation_block_count": 2,
+  "raw_override_rule_count": 4,
+  "canonical_override_rule_count": 4,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -456,8 +456,81 @@
           "sha256": "38a3de3d2a1987b57615dfa215eeaddde2fe31e5ffb5d7ce4f190656c18dcee2"
         }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot page history: keep the history option row within the mobile viewport.",
+      "rationale": "On the SCP-JP Sigma-9 target the verbatim upstream history-form rule lays the option cells out at 442px, overflowing the 390px mobile viewport by 67.5px (134px at 320px) and clipping the row (defect Q1-15, the D1 family; jakstyle was outside the five packages fixed in the D1 batch). The same-target delta receipt shows repeat(3,1fr) clears the overflow at every measured width (320-1440px) with no collateral geometry change outside the history form owning area.",
+      "sha256": "cb507f4e1a05c0b41c534c7238440693fd3b81c3b0316fe6ff00d3539c3e2953",
+      "selectors": [
+        "#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2)"
+      ],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/jakstyle-history-form-delta-20261028/receipt.json",
+          "sha256": "5ed75ee917d2f2d0096b8c940a2d9e6efbf1ac889b484bc57df401769d36dc29"
+        }
+      ],
+      "scope": {
+        "target": "SCP-JP Sigma-9 current target acceptance",
+        "state": "page.history"
+      },
+      "published_css_sha256": "66c73632860fbbc7cfab07f37eec5f8c3e816b3545988b727b1f4898addab014"
+    },
+    {
+      "marker": "SCP-JP Wikidot jakstyle files table: keep the file name readable at narrow widths and let the table spill inside its scroll wrapper.",
+      "rationale": "The inherited BHL grid lays the files table rows out at width:100% with 1.5fr/1.5fr/1fr/2fr tracks; at 320px the options cell min-content starves the file name track, crushing the name cell to 42px and wrapping the row to 422px tall (defect Q1-14). On the SCP-JP Sigma-9 target the same table keeps its natural width (461px) and spills inside its .file-list-scroll wrapper with a 293px name cell and 34px rows. The same-target delta receipt shows a 15rem floor on the name track restores a 240px name cell and 71.5px rows at 320/390px, with the spill landing in the scroll wrapper (table scroll width 488px) and no change at 768px and above.",
+      "sha256": "7f20c242007a6cf2e4e868e18560b4195dede4e2c9d3d2cfe6b58fa72fdad0ae",
+      "selectors": [
+        "table.page-files thead tr",
+        "table.page-files tr[id*=file-row]",
+        "[id*=files-] :is(table.page-files) tbody tr"
+      ],
+      "at_contexts": [
+        "@media (max-width: 767px)"
+      ],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/jakstyle-files-table-delta-20261028/receipt.json",
+          "sha256": "536c498af2f39200a274f354a7e1832d6a327098d8643e6c45437f487385e20b"
+        }
+      ],
+      "scope": {
+        "target": "SCP-JP Sigma-9 current target acceptance",
+        "state": "page.files"
+      },
+      "published_css_sha256": "66c73632860fbbc7cfab07f37eec5f8c3e816b3545988b727b1f4898addab014"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
-  "publishable_adaptations": []
+  "publishable_adaptations": [
+    {
+      "marker": "SCP-JP Wikidot page history: keep the history option row within the mobile viewport.",
+      "rationale": "SCP-JP Wikidot page history: keep the history option row within the mobile viewport.",
+      "sha256": "cb507f4e1a05c0b41c534c7238440693fd3b81c3b0316fe6ff00d3539c3e2953",
+      "selectors": [
+        "#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2)"
+      ],
+      "at_contexts": [],
+      "authority": "RUNTIME_INDEPENDENT"
+    },
+    {
+      "marker": "SCP-JP Wikidot jakstyle files table: keep the file name readable at narrow widths and let the table spill inside its scroll wrapper.",
+      "rationale": "SCP-JP Wikidot jakstyle files table: keep the file name readable at narrow widths and let the table spill inside its scroll wrapper.",
+      "sha256": "7f20c242007a6cf2e4e868e18560b4195dede4e2c9d3d2cfe6b58fa72fdad0ae",
+      "selectors": [
+        "[id*=files-] :is(table.page-files) tbody tr",
+        "table.page-files thead tr",
+        "table.page-files tr[id*=file-row]"
+      ],
+      "at_contexts": [
+        "@media (max-width:767px)"
+      ],
+      "authority": "RUNTIME_INDEPENDENT"
+    }
+  ]
 }

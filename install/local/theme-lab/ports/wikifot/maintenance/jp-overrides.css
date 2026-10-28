@@ -15,3 +15,10 @@
     max-width: calc(100% - 2em - 2px) !important;
   }
 }
+
+/* SCP-JP Wikidot Wikifot narrow gutter: keep the mobile content column off the left viewport edge. */
+@media (max-width: 767px) {
+  #main-content {
+    margin-left:1rem
+  }
+}

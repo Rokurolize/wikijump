@@ -1709,3 +1709,8 @@ div.page-rate-widget-box .rate-points {
 /* SCP-JP Wikidot Turbo Vision narrow navigation rows: reserve the source gray bar for wrapped labels. */
 @media(max-width:359px){#header{padding-bottom:42px;}#top-bar{height:40px;background-color:#aaa;}}
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot turbo-vision heading correction: keep wrapped pixel-font headings from striking through at mobile widths. */
+@media (max-width:768px){h1,h2,h3,#page-title{line-height:1.15}}
+[[/module]]
