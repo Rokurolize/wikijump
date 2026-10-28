@@ -7313,9 +7313,9 @@
   "edge_scope": "Explicit edges represent publication ordering constraints and actionable cross-page publication/runtime dependency actions. They are not an exhaustive rendering of every ordinary Wikidot include. Ordinary include observations and source identities are recorded per theme in campaign_snapshot.candidate_jp_includes and package dependency-input/source-includes manifests; excluded dependencies are listed separately.",
   "candidate_freeze": {
     "path": "frozen-candidate-set.json",
-    "candidate_set_sha256": "671cc7a31dfe9705554b4918fe57d0bdd3fd031dc02dd6a6d1a0d0e1575c0e67",
+    "candidate_set_sha256": "a4ffccd85bd3b781661ba915b24200906c6a97ee92ef5646f99052d9db3874a7",
     "state": "frozen-before-final-acceptance",
     "frozen_at": "2026-10-22",
-    "readiness_audit_sha256": "33d64168a69e0b92c6382454db5ffd25322e01eeb195606b85ce5626fbacb2a5"
+    "readiness_audit_sha256": "b2400979c81e07d9b1a83bc6a4d7a837a2e5e0602b5c336512b190e107f05729"
   }
 }

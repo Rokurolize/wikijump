@@ -1462,7 +1462,7 @@
   ],
   "authority": {
     "adaptation_authority_packages": 36,
-    "adaptation_authority_sha256": "3bd89cc51f87cb1a1b3cd3a4b99a68dc904ab9cb68e15371398978a23581aad4",
+    "adaptation_authority_sha256": "f94437708ab8857e0e2906af22422cf58ee6db6cd133200fd027e46459bf91d1",
     "bhl_option_authority_sha256": "f07c6428457ad8535b46cdad6856bec14f3ed2d3edcc38b19d9aa6b1874f04f6",
     "bhl_framerail_fingerprint_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
     "source_dependency_audit_sha256": "583caca56b49e4159f84638f9829beba23b58b3f517e770d11f1474c605a6a67",
@@ -1471,7 +1471,7 @@
       {
         "id": "adaptation-authority",
         "path": "ports/adaptation-authority.json",
-        "sha256": "3bd89cc51f87cb1a1b3cd3a4b99a68dc904ab9cb68e15371398978a23581aad4"
+        "sha256": "f94437708ab8857e0e2906af22422cf58ee6db6cd133200fd027e46459bf91d1"
       },
       {
         "id": "bhl-option-authority",
@@ -1511,7 +1511,7 @@
     "implementation_audit_sha256": "268e08ca3a34f0a245eaa3b48a2b28ff59e37a069280acecdabdb18cd0dd506b"
   },
   "identity_contract": "sha256(JSON.stringify({inventory,nodes,edges,attachments,targeted_scenarios,authority}))",
-  "candidate_set_sha256": "671cc7a31dfe9705554b4918fe57d0bdd3fd031dc02dd6a6d1a0d0e1575c0e67",
+  "candidate_set_sha256": "a4ffccd85bd3b781661ba915b24200906c6a97ee92ef5646f99052d9db3874a7",
   "targeted_evidence_bindings": [
     {
       "scenario_id": "bhl-options-toggle-header-dark",
@@ -1580,5 +1580,5 @@
       ]
     }
   ],
-  "readiness_audit_sha256": "33d64168a69e0b92c6382454db5ffd25322e01eeb195606b85ce5626fbacb2a5"
+  "readiness_audit_sha256": "b2400979c81e07d9b1a83bc6a4d7a837a2e5e0602b5c336512b190e107f05729"
 }
