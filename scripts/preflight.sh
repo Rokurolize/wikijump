@@ -242,7 +242,11 @@ group_theme_lab() {
       run_test "Theme Lab deterministic packages" node install/local/theme-lab/scripts/real-port-regression.mjs --verify-only
       run_test "Sigma-10 source evidence" node install/local/theme-lab/sigma10-migration/check-sources.mjs
       run_test "Sigma-10 historical evidence integrity" node install/local/theme-lab/sigma10-migration/check-final.mjs --historical-only
-      run_test_inconclusive_ok "Theme Lab current campaign completion" node install/local/theme-lab/scripts/check-campaign-completion.mjs
+      run_test "Theme Lab current campaign evidence restore" install/local/theme-lab/scripts/restore-checkout-campaign-evidence.sh
+      # W17: completion is a hard PASS/FAIL check, never INCONCLUSIVE. The run
+      # contracts are explicit parameters (shared contracts below; the Freeze-3
+      # successor contract paths plug in here per W17-FILL-SHEET.md at open).
+      run_test "Theme Lab current campaign completion" node install/local/theme-lab/scripts/check-campaign-completion.mjs --run-contract ports/current-acceptance/run-contract.json --sigma10-run-contract sigma10-migration/current-campaign/run-contract.json
     fi
   fi
 }

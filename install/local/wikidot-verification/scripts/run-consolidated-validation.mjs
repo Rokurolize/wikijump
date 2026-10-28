@@ -117,10 +117,10 @@ export function parsePreflightOutput(output) {
 // Keep that result explicitly inconclusive, and never allow unrelated checks
 // or an empty preflight to evade the normal final validation barrier.
 export function classifyConsolidatedChecks(preflightExit, groups, checks) {
-  const permitted = (check) =>
-    check.status === "inconclusive" &&
-    check.name === "Theme Lab current campaign completion" &&
-    groups.theme_lab === true;
+  // W17: no INCONCLUSIVE check passes code validation. Campaign completion
+  // used to be tolerated inconclusive when no campaign existed; it is a hard
+  // run_test now, so the allowlist is empty and any inconclusive check fails.
+  const permitted = () => false;
   const passed = preflightExit === 0 && checks.some((check) => check.status === "ok") &&
     checks.every((check) => check.status === "ok" || permitted(check));
   return {

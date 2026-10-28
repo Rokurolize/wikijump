@@ -13,16 +13,22 @@ import {
 } from "../scripts/run-consolidated-validation.mjs";
 import { validateConsolidatedValidation } from "../src/final-frozen-receipt-contract.mjs";
 
-const COMPATIBLE_OUTPUT = [
+// W17 world: completion and the campaign evidence restore are hard run_test
+// checks with explicit run contracts. A missing campaign fails them; nothing
+// is tolerated INCONCLUSIVE anymore.
+const W17_MISSING_CAMPAIGN_OUTPUT = [
   "preflight: groups: deepwell=false wws=false framerail=false theme_lab=true verification=false",
   "=== source-bound generated contracts",
   "--- source-bound generated contracts: ok (1s)",
   "=== Theme Lab adaptation authority",
   "--- Theme Lab adaptation authority: ok (1s)",
+  "=== Theme Lab authority evidence restore",
+  "--- Theme Lab authority evidence restore: ok (1s)",
+  "=== Theme Lab current campaign evidence restore",
+  "--- Theme Lab current campaign evidence restore: FAILED (1s)",
   "=== Theme Lab current campaign completion",
-  "--- Theme Lab current campaign completion: INCONCLUSIVE (1s)",
-  "preflight: INCONCLUSIVE (no current campaign): Theme Lab current campaign completion",
-  "preflight: all selected checks passed",
+  "--- Theme Lab current campaign completion: FAILED (1s)",
+  "preflight: FAILED: Theme Lab current campaign evidence restore Theme Lab current campaign completion",
 ];
 
 async function runFixture(t, label, lines, exitCode = 0, imageBuild = false) {
@@ -92,13 +98,13 @@ async function runFixture(t, label, lines, exitCode = 0, imageBuild = false) {
   return receipt;
 }
 
-test("missing current campaign produces sealed code PASS with explicit INCONCLUSIVE, but NOT publication acceptance", async (t) => {
-  const receipt = await runFixture(t, "no-current-campaign", COMPATIBLE_OUTPUT);
-  assert.equal(receipt.status, "pass");
-  assert.equal(receipt.preflight.exit, 0);
+test("missing current campaign fails the hard restore and completion checks", async (t) => {
+  const receipt = await runFixture(t, "no-current-campaign", W17_MISSING_CAMPAIGN_OUTPUT, 1);
+  assert.equal(receipt.status, "fail");
+  assert.equal(receipt.preflight.exit, 1);
   assert.deepEqual(
     receipt.checks.map((row) => row.status),
-    ["ok", "ok", "inconclusive"],
+    ["ok", "ok", "ok", "failed", "failed"],
   );
   assert.deepEqual(
     classifyConsolidatedChecks(
@@ -107,9 +113,12 @@ test("missing current campaign produces sealed code PASS with explicit INCONCLUS
       receipt.checks,
     ),
     {
-      passed: true,
-      failed: [],
-      inconclusive: ["Theme Lab current campaign completion"],
+      passed: false,
+      failed: [
+        "Theme Lab current campaign evidence restore",
+        "Theme Lab current campaign completion",
+      ],
+      inconclusive: [],
     },
   );
   assert.throws(
@@ -118,12 +127,34 @@ test("missing current campaign produces sealed code PASS with explicit INCONCLUS
         wikijump_commit: receipt.wikijump_commit,
         wikijump_tree: receipt.wikijump_tree,
       }),
-    /did not pass: Theme Lab current campaign completion/u,
+    /did not pass: Theme Lab current campaign evidence restore, Theme Lab current campaign completion/u,
+  );
+});
+
+test("an INCONCLUSIVE check can no longer bypass the barrier", async (t) => {
+  const output = W17_MISSING_CAMPAIGN_OUTPUT.map((line) =>
+    line.replaceAll(
+      "Theme Lab current campaign completion: FAILED",
+      "Theme Lab current campaign completion: INCONCLUSIVE",
+    ),
+  );
+  const receipt = await runFixture(t, "inconclusive-completion", output, 1);
+  assert.equal(receipt.status, "fail");
+  assert.deepEqual(
+    classifyConsolidatedChecks(
+      receipt.preflight.exit,
+      receipt.groups,
+      receipt.checks,
+    ).failed,
+    [
+      "Theme Lab current campaign evidence restore",
+      "Theme Lab current campaign completion",
+    ],
   );
 });
 
 test("source/authority failures and nonzero preflight exit never turn into PASS", async (t) => {
-  const failedAuthority = COMPATIBLE_OUTPUT.map((row) =>
+  const failedAuthority = W17_MISSING_CAMPAIGN_OUTPUT.map((row) =>
     row.replace(
       "Theme Lab adaptation authority: ok",
       "Theme Lab adaptation authority: FAILED",
@@ -137,18 +168,27 @@ test("source/authority failures and nonzero preflight exit never turn into PASS"
       receipt.groups,
       receipt.checks,
     ).failed,
-    ["Theme Lab adaptation authority"],
+    [
+      "Theme Lab adaptation authority",
+      "Theme Lab current campaign evidence restore",
+      "Theme Lab current campaign completion",
+    ],
   );
 });
 
 test("an arbitrary INCONCLUSIVE check cannot bypass the barrier", async (t) => {
-  const output = COMPATIBLE_OUTPUT.map((line) =>
-    line.replaceAll(
-      "Theme Lab current campaign completion",
-      "Theme Lab source evidence",
-    ),
+  const output = W17_MISSING_CAMPAIGN_OUTPUT.map((line) =>
+    line
+      .replaceAll(
+        "Theme Lab current campaign completion",
+        "Theme Lab source evidence",
+      )
+      .replaceAll(
+        "Theme Lab source evidence: FAILED",
+        "Theme Lab source evidence: INCONCLUSIVE",
+      ),
   );
-  const receipt = await runFixture(t, "wrong-inconclusive", output);
+  const receipt = await runFixture(t, "wrong-inconclusive", output, 1);
   assert.equal(receipt.status, "fail");
   assert.deepEqual(
     classifyConsolidatedChecks(
@@ -156,7 +196,10 @@ test("an arbitrary INCONCLUSIVE check cannot bypass the barrier", async (t) => {
       receipt.groups,
       receipt.checks,
     ).failed,
-    ["Theme Lab source evidence"],
+    [
+      "Theme Lab current campaign evidence restore",
+      "Theme Lab source evidence",
+    ],
   );
 });
 
