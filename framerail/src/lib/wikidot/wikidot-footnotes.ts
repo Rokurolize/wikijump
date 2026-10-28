@@ -1,14 +1,24 @@
 const LEGACY_SCROLL_HANDLER =
   /^\s*WIKIDOT\.page\.utils\.scrollToReference\s*\(\s*(['"])([^'"]+)\1\s*\)\s*;?\s*$/u
-const FOOTNOTE_TARGET_ID = /^footnote(?:ref)?-[A-Za-z0-9_-]+$/u
+// The reference families whose targets FTML's Wikidot-layout rendering
+// emits in the page body: footnotes (footnote-*, footnoteref-*),
+// bibliography entries (bibitem-*, from ((bibcite)) markers and the
+// [[bibliography]] table) and named equations (equation-*, referenced by
+// [[eref]]). Bibliography and equation references carry the same legacy
+// scroll handler and in-page targets as footnotes, so they share the
+// reveal, scroll and highlight treatment below (#3204, #3211).
+const REFERENCE_TARGET_ID = /^(?:footnote(?:ref)?|bibitem|equation)-[A-Za-z0-9_-]+$/u
+
+export function legacyReferenceTargetId(onclick: string | null) {
+  if (!onclick) return null
+
+  const match = LEGACY_SCROLL_HANDLER.exec(onclick)
+  const targetId = match?.[2]
+  return targetId && REFERENCE_TARGET_ID.test(targetId) ? targetId : null
+}
 
 function legacyFootnoteTarget(link: HTMLAnchorElement) {
-  const handler = link.getAttribute("onclick")
-  if (!handler) return null
-
-  const match = LEGACY_SCROLL_HANDLER.exec(handler)
-  const targetId = match?.[2]
-  return targetId && FOOTNOTE_TARGET_ID.test(targetId) ? targetId : null
+  return legacyReferenceTargetId(link.getAttribute("onclick"))
 }
 
 function initializeFootnoteLinks(
