@@ -257,8 +257,16 @@ async fn documented_ftml_owned_syntax_has_public_preview_regressions() {
             "wikitext": "[[note]]\nPublic preview note marker\n[[/note]]",
         }),
     );
-    assert!(note.body.contains("[[note]]"));
-    assert!(note.body.contains("[[/note]]"));
+    // Since the FTML pin at 82df3f47 (ftml #753), a bare [[note]] renders in
+    // the Wikidot layout (live evidence references-20261025-01); it no longer
+    // stays literal.
+    assert!(note.body.contains("wiki-note"), "{}", note.body);
+    assert!(
+        note.body.contains("Public preview note marker"),
+        "{}",
+        note.body,
+    );
+    assert!(!note.body.contains("[[note]]"), "{}", note.body);
 
     let paragraphs = run_endpoint!(
         runner,
