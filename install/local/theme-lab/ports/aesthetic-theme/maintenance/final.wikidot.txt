@@ -899,4 +899,10 @@ bodyフォントはOpen Sans。
 [id*=u-credit] div.credit-back a {
   white-space:nowrap;flex-shrink:0
 }
+
+/* SCP-JP Wikidot aesthetic-theme top bar labels: keep top navigation labels whole at narrow widths. */
+#top-bar .top-bar>ul>li>a,
+#top-bar .mobile-top-bar>ul>li>a {
+  word-break:keep-all
+}
 [[/module]]

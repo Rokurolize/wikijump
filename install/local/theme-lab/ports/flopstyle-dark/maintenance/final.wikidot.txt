@@ -5349,4 +5349,9 @@ EstrellaYoshteのロゴは、このテーマで広く使われる定番素材で
     font-size:.8em
   }
 }
+
+/* SCP-JP Wikidot flopstyle-dark narrow submenu: keep the open mobile submenu above the page-title artwork. */
+#top-bar .mobile-top-bar>ul>li>ul {
+  z-index:100
+}
 [[/module]]

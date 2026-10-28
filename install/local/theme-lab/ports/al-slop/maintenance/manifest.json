@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "1d9fdc59e8cddb2bee05e562b126686cd7608f50067a5168fec8779bbe74814f",
+  "frozen_candidate_source_sha256": "4954b888b502397c1e8612addfc74dda5c6da91c8fb260ed19f8cdc323f73122",
   "base_source_sha256": "ef64c472fbc4c6add75121aa68283f72d21823b9e7915c493c6c891bac559b70",
-  "raw_jp_overrides_sha256": "73e8450d16ddc05ad2d81e78809108a536f61d0f73582e69504d25e87a46df21",
-  "jp_overrides_sha256": "94b7fcc631396878ba1252a77883538d51701f911ce4d426ec0b22e410c76b9e",
-  "semantic_css_sha256": "764684b32559f297e7ce7e5026b877887e40862ea6e9bc27bd51d901f90dcb69",
-  "canonical_override_sha256": "9f71c35365ea0206d37b7228539bcc21d588c0db8029d705503e6b9de68e05d0",
+  "raw_jp_overrides_sha256": "0ea7f70ee15cda856e4e5cd553acc277169e0b8b846d6da0e05b537923248879",
+  "jp_overrides_sha256": "8de3ebb609dfba3c3d073b9aa3b2fbc459598f3fbe5d77d0faee587f3303519b",
+  "semantic_css_sha256": "c4e24872691242897f1d2286edc9ce5202cda2c7c48b63a21cd95665ea929024",
+  "canonical_override_sha256": "9891451eafc240f6ea59b6aab58aa2041d76fdc12b1bc08844b73ffa481c5e92",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "a893abb27b3a049aa48200c10a64c147f0e77a819e768bd34ee20275e67204b5",
+  "final_source_sha256": "d40bfa0b816c95a2ffbf7165f7cf8b772a1f696e4a842ef1f15b884d7a7823d6",
   "final_source_inputs": {
     "base_sha256": "ef64c472fbc4c6add75121aa68283f72d21823b9e7915c493c6c891bac559b70",
-    "jp_overrides_sha256": "94b7fcc631396878ba1252a77883538d51701f911ce4d426ec0b22e410c76b9e"
+    "jp_overrides_sha256": "8de3ebb609dfba3c3d073b9aa3b2fbc459598f3fbe5d77d0faee587f3303519b"
   },
   "ordered_include_sha256": "f1faa3f1e42c4bf345175965157fbf64135bebb0e7101f1bfecb5c99ef53a65d",
   "declaration_reviews": {},
-  "adaptation_block_count": 6,
-  "raw_override_rule_count": 6,
-  "canonical_override_rule_count": 6,
+  "adaptation_block_count": 7,
+  "raw_override_rule_count": 10,
+  "canonical_override_rule_count": 10,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -280,9 +280,8 @@
       "rationale": "The preserved Sigma Plus source grid expands beyond the real Japanese search control at 320px. On the frozen real SCP-JP header/menu DOM, candidate without this declaration escapes 22px at 320px; candidate with it keeps all links and submenus inside both edges at 320px and 390px. One source grid track becomes shrinkable; source typography, menu spacing, and colors remain intact.",
       "evidence": [
         {
-          "path": "authority-evidence/al-slop-responsive-grid-recert-20261027/receipt.json",
-          "sha256": "21f8530a91ea02f79c80efb511d037d78459c0e473b6421590a5211f816112ec",
-          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+          "path": "authority-evidence/al-slop-w13-recert-20261028/block-16/receipt.json",
+          "sha256": "bd61faa523e555898b52d1a9d3b768903732f07311e152b22d1dc056df7c305e"
         }
       ],
       "scope": {
@@ -299,18 +298,17 @@
           "#header"
         ]
       },
-      "published_css_sha256": "006c85b41da9002e2a701ef3db17185fee4c428e6f5d0e6a338af2d7ce370ee4"
+      "published_css_sha256": "0fb7e246567d58220ee4c98ff4009fa7fad14b2c0a685c0edffeb6a2738a7677"
     },
     {
       "marker": "SCP-JP Wikidot Al Slop desktop submenu fit: keep the long second-to-last target menu within the viewport.",
-      "authority": "TARGET_WIKIDOT_CERTIFIED",
+      "authority": "RUNTIME_INDEPENDENT",
       "origin": "target-certified-replacement",
-      "rationale": "The complete Al Slop source CSS introduces a right-edge overflow in the real SCP-JP desktop navigation at 768px and 1024px. A per-theme second-to-last submenu alignment removes it while the frozen source/target page remains within both viewport edges at 768px, 1024px, 1100px, and 1440px. Binding note (2026-10-27, D5 fix batch): the published_css_sha256 binding is removed for this block. Re-certification against the D5 candidate was attempted twice (retained snapshot and a fresh live acquisition of scp-173-jp, 768/1024 plus four extra widths); the with-variant passes everywhere and the block still performs its anchoring (penultimate submenu 617px to 552px at 768), but the without-variant no longer fails on current target snapshots - the original demonstration depended on the 2026-10-05 snapshot LI scroll-overflow, which current page content does not reproduce. The original certification therefore remains the evidence of need, unbound from the current candidate.css; the D5 change touches only the credit rating box background and cannot affect desktop navigation geometry. Re-binding belongs to the post-merge re-freeze stage.",
+      "rationale": "The complete Al Slop source CSS introduces a right-edge overflow in the real SCP-JP desktop navigation at 768px and 1024px. A per-theme second-to-last submenu alignment removes it while the frozen source/target page remains within both viewport edges at 768px, 1024px, 1100px, and 1440px. Binding note (2026-10-27, D5 fix batch): the published_css_sha256 binding is removed for this block. Re-certification against the D5 candidate was attempted twice (retained snapshot and a fresh live acquisition of scp-173-jp, 768/1024 plus four extra widths); the with-variant passes everywhere and the block still performs its anchoring (penultimate submenu 617px to 552px at 768), but the without-variant no longer fails on current target snapshots - the original demonstration depended on the 2026-10-05 snapshot LI scroll-overflow, which current page content does not reproduce. The original certification therefore remains the evidence of need, unbound from the current candidate.css; the D5 change touches only the credit rating box background and cannot affect desktop navigation geometry. Re-binding belongs to the post-merge re-freeze stage. W13 re-certification outcome: against the current reference the A/B no longer demonstrates independent need (the without-variant passes at every scoped viewport), so the block is downgraded from TARGET_WIKIDOT_CERTIFIED to RUNTIME_INDEPENDENT and retained as a defensive containment with the W13 A/B receipt as its evidence; the coordinator may restore certification if the reference changes.",
       "evidence": [
         {
-          "path": "authority-evidence/al-slop-desktop-submenu-current-20261005/receipt.json",
-          "sha256": "93542483c29ca081f2773dae64018acb977f4be9f83f524628c8f206ca00746b",
-          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+          "path": "authority-evidence/al-slop-w13-recert-20261028/block-17/receipt.json",
+          "sha256": "6d04c40ac708b933374bf21cd3449e614ec37452c4c7f98b4d249233a3ced024"
         }
       ],
       "scope": {
@@ -325,7 +323,8 @@
           "#header"
         ]
       },
-      "sha256": "1cd2c305dd795cb6320d2c8d7d8b6c51b0331e20ecdf4086367e37e94d856a22"
+      "sha256": "1cd2c305dd795cb6320d2c8d7d8b6c51b0331e20ecdf4086367e37e94d856a22",
+      "published_css_sha256": "0fb7e246567d58220ee4c98ff4009fa7fad14b2c0a685c0edffeb6a2738a7677"
     },
     {
       "marker": "SCP-JP Wikidot Al Slop heritage rating callouts: anchor tooltip images at the narrow article edge.",
@@ -335,9 +334,8 @@
       "rationale": "The retained SCP-040-JP page has a visible source heritage widget. Al Slop positions its rating tooltip images past the article edge, expanding the 320px/390px document to 354px/424px. Anchor those callouts at the button right edge at narrow widths and preserve source imagery and desktop placement.",
       "evidence": [
         {
-          "path": "authority-evidence/al-slop-heritage-callout-recert-20261027/receipt.json",
-          "sha256": "98356b296cb86e4c7afb030e30c6e761b7c2dc202f16e68d414326bd2ba21dfc",
-          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+          "path": "authority-evidence/al-slop-w13-recert-20261028/block-18/receipt.json",
+          "sha256": "2494a53dc2c8a1f3a1fe7ac37c4131512ba64148284d5a3edc0d104e2a5b1cd4"
         }
       ],
       "scope": {
@@ -353,7 +351,7 @@
           ".heritage-rating-module .cancel::before"
         ]
       },
-      "published_css_sha256": "006c85b41da9002e2a701ef3db17185fee4c428e6f5d0e6a338af2d7ce370ee4"
+      "published_css_sha256": "0fb7e246567d58220ee4c98ff4009fa7fad14b2c0a685c0edffeb6a2738a7677"
     },
     {
       "marker": "SCP-JP Wikidot Al Slop saved credit callouts: retain tooltip images inside their rating edge.",
@@ -363,9 +361,8 @@
       "rationale": "The saved native rating group places source tooltip images at the article edge. Their center anchoring expands the unthemed target document by 22px at 320, 390 and 768px. Anchor the same images at their own rating edge; preserve the separately evidenced heritage shape.",
       "evidence": [
         {
-          "path": "authority-evidence/al-slop-credit-callout-recert-20261027/receipt.json",
-          "sha256": "30045714a41f5abb96947878a7364cfbbdd4596d975dc9bbf98b71126d8dfd04",
-          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+          "path": "authority-evidence/al-slop-w13-recert-20261028/block-19/receipt.json",
+          "sha256": "cc94d19f160a61f0566a34288dc40b5506af1d515574b4ab21b371fe2bf9b0ed"
         }
       ],
       "scope": {
@@ -382,7 +379,7 @@
           ".creditRate > li .cancel::before"
         ]
       },
-      "published_css_sha256": "006c85b41da9002e2a701ef3db17185fee4c428e6f5d0e6a338af2d7ce370ee4"
+      "published_css_sha256": "0fb7e246567d58220ee4c98ff4009fa7fad14b2c0a685c0edffeb6a2738a7677"
     },
     {
       "marker": "SCP-JP Wikidot Al Slop narrow saved navigation: anchor the wrapped penultimate submenu at its row endpoint.",
@@ -392,9 +389,8 @@
       "rationale": "The native saved Sigma-10 shell wraps the penultimate mobile parent. With the rating callouts independently contained, this hidden submenu still expands the 320px document to 331px. Right-anchor only that narrow row endpoint; 390px and wider rows retain their original placement.",
       "evidence": [
         {
-          "path": "authority-evidence/al-slop-narrow-navigation-recert-20261027/receipt.json",
-          "sha256": "1423a1b0be0ec82abe73536de5906cfcb0f92a1d6f0f9da18b6a94cb05b226f0",
-          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+          "path": "authority-evidence/al-slop-w13-recert-20261028/block-20/receipt.json",
+          "sha256": "a97f20d3d806a2fdcf44cfba30ca6fd4b4cd9fd9def21578d2aad00929a08865"
         }
       ],
       "scope": {
@@ -409,7 +405,7 @@
           "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul a"
         ]
       },
-      "published_css_sha256": "006c85b41da9002e2a701ef3db17185fee4c428e6f5d0e6a338af2d7ce370ee4"
+      "published_css_sha256": "0fb7e246567d58220ee4c98ff4009fa7fad14b2c0a685c0edffeb6a2738a7677"
     },
     {
       "marker": "SCP-JP Wikidot Al Slop rating label: restore the design background behind the white rating points so the score stays readable.",
@@ -431,7 +427,27 @@
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "page.rate-widget"
       },
-      "published_css_sha256": "006c85b41da9002e2a701ef3db17185fee4c428e6f5d0e6a338af2d7ce370ee4"
+      "published_css_sha256": "0fb7e246567d58220ee4c98ff4009fa7fad14b2c0a685c0edffeb6a2738a7677"
+    },
+    {
+      "marker": "SCP-JP Wikidot al-slop narrow history: keep the revision table inside the viewport at phone widths.",
+      "rationale": "W13 G2-08/G2-07 family fix, settled in the acceptance frame. G2-08 member: al-slop narrow history list + diff (D6 displacement; comment column clipped). Before: {\"list\": \"d8be36fbaaf061fe83369a5f51bf5d822f75e22e6948ff8f2444673dab88af44\", \"diff\": \"475daf3eec\"}. After: {\"list\": \"a0be0bef619e6bc6a9e4bca2f202c02e677dd0622c3470ba53bc8329189e3522\", \"diff\": \"1100f2672d75d06f42d1adf440ee557e225aa8e116fc4e206e6fd84923fbb4b0\"}. Container capped at viewport width; table fixed-layout full width; all revision data readable, comment text complete (was clipped mid-word at the frame edge).",
+      "sha256": "ef153b071b5c3565ba8dee70f179ebcbf0454a16054cd64a472f49b8953c5c26",
+      "selectors": [],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/al-slop-history-delta-20261028/receipt.json",
+          "sha256": "9bb7419ff613bf9af0319729879b6a9c8a2a3db3c345c6e172082534c50e967c"
+        }
+      ],
+      "scope": {
+        "target": "w13-delta",
+        "state": "acceptance-frame"
+      },
+      "published_css_sha256": "0fb7e246567d58220ee4c98ff4009fa7fad14b2c0a685c0edffeb6a2738a7677"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
@@ -456,7 +472,7 @@
       "at_contexts": [
         "@media (min-width: 768px) and (max-width: 1100px)"
       ],
-      "authority": "TARGET_WIKIDOT_CERTIFIED"
+      "authority": "RUNTIME_INDEPENDENT"
     },
     {
       "marker": "SCP-JP Wikidot Al Slop heritage rating callouts: anchor tooltip images at the narrow article edge.",
@@ -500,6 +516,21 @@
         "div.rate-box-with-credit-button"
       ],
       "at_contexts": [],
+      "authority": "RUNTIME_INDEPENDENT"
+    },
+    {
+      "marker": "SCP-JP Wikidot al-slop narrow history: keep the revision table inside the viewport at phone widths.",
+      "rationale": "SCP-JP Wikidot al-slop narrow history: keep the revision table inside the viewport at phone widths.",
+      "sha256": "ef153b071b5c3565ba8dee70f179ebcbf0454a16054cd64a472f49b8953c5c26",
+      "selectors": [
+        ".page-history",
+        ".page-history table",
+        ".page-history td",
+        ".page-history th"
+      ],
+      "at_contexts": [
+        "@media (max-width:767px)"
+      ],
       "authority": "RUNTIME_INDEPENDENT"
     }
   ]

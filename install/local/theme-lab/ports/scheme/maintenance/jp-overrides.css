@@ -34,3 +34,10 @@ div#extra-div-6 {
     left: auto !important; right: 0 !important;
   }
 }
+
+/* SCP-JP Wikidot scheme narrow header: shrink the fixed gear emblem clear of the wordmark and the top bar. */
+@media (max-width:480px) {
+  div#extra-div-2 {
+    width:4.5rem;height:4.5rem;background-size:contain
+  }
+}

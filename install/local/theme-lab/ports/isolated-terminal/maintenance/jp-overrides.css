@@ -23,3 +23,14 @@
     display:block;max-width:100%;overflow-x:auto;width:max-content;
   }
 }
+
+/* SCP-JP Wikidot isolated-terminal narrow files: keep the file table inside the viewport at phone widths. */
+@media (max-width:767px) {
+  #action-area table.page-files {
+    width:100%;table-layout:fixed
+  }
+
+  #action-area table.page-files td {
+    overflow-wrap:anywhere
+  }
+}

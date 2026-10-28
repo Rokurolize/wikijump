@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "ccb1b62f1368db3992b121d43c9a69f493e033e9c9f11a01145326a3b373f905",
+  "frozen_candidate_source_sha256": "a3702c545d95bd13b7ce148c343f482b52f13e3b589933e26682031d4052203d",
   "base_source_sha256": "541622cca25acbb968a463e89f4b1465092b1658088c499211a479af6ca1021f",
-  "raw_jp_overrides_sha256": "7c3874538bfa8847bfd2dbf804df855048ce0610a5ad69a963f05d1945d08b6c",
-  "jp_overrides_sha256": "4e913ef3679e5120466195388833c2f87971aa18201d6e162707ea8f82122563",
-  "semantic_css_sha256": "202790982e8b5795dd806c782eeea9d3d3f02a0958bb8c018cf51a9d3ab885fa",
-  "canonical_override_sha256": "c242af11dd899d11a9d3d1898f0287cdf122988e1342e698e725def55bde0aa5",
+  "raw_jp_overrides_sha256": "069f1fe01fee0bccb675c50516554be594056b8e81f1b6adad463ef2b2dd2e4c",
+  "jp_overrides_sha256": "81231e11be6c6b0a6b604b0687841483cddd5c253af5ea5f08d19f920a7ffd77",
+  "semantic_css_sha256": "875420d87302162d09572117b960326a14a5bbddebe61a16770264fce1be3650",
+  "canonical_override_sha256": "0c7e486ec7b8573a6f36ee3437503f9ffc105458cbab6a69a5aff88ec5761e64",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "9d2e3cb0aea2dd1b9d19dde774cc7a2596ecfed7bea2d030ec67bcbbed0768c6",
+  "final_source_sha256": "6a072265f2fe1f7757fc74bbc24f8b7b3496ac5b28c7c0d1b9acd3bd3ddffd00",
   "final_source_inputs": {
     "base_sha256": "541622cca25acbb968a463e89f4b1465092b1658088c499211a479af6ca1021f",
-    "jp_overrides_sha256": "4e913ef3679e5120466195388833c2f87971aa18201d6e162707ea8f82122563"
+    "jp_overrides_sha256": "81231e11be6c6b0a6b604b0687841483cddd5c253af5ea5f08d19f920a7ffd77"
   },
   "ordered_include_sha256": "213b6eb3f09e9dfee8dd10a57bde6f81756a57dea0015a1ce87e425cce404c2d",
   "declaration_reviews": {},
-  "adaptation_block_count": 3,
-  "raw_override_rule_count": 7,
-  "canonical_override_rule_count": 7,
+  "adaptation_block_count": 4,
+  "raw_override_rule_count": 8,
+  "canonical_override_rule_count": 8,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -248,8 +248,8 @@
       "rationale": "Frozen real SCP-JP A/B establishes this specific target regression and verifies the minimum correction. Source styling, palette, dimensions, and unrelated menus remain owned by the imported theme.",
       "evidence": [
         {
-          "path": "authority-evidence/flopstyle-dark-navigation-recert-20261028/receipt.json",
-          "sha256": "f3e4490eac4c900325577c2312efe23ba9cc14a0a7ffd920e7ba34a9bdf0cfa7"
+          "path": "authority-evidence/flopstyle-dark-w13-recert-20261028/navigation-receipt.json/receipt.json",
+          "sha256": "15c948102dc7752ae5cd14b6cecf2890ba25f01610f3570ff98700d88160b4c7"
         }
       ],
       "scope": {
@@ -264,7 +264,7 @@
           "sha256": "bce06e2f87c6962d176e9f54f8bac47815860044b52a16562a139e98a0051b85"
         }
       },
-      "published_css_sha256": "519d88b43e366531bff3fb2b0a1ff722cb80c444efa952919631f943a4cd8a97"
+      "published_css_sha256": "be744e1d57f1028199f07f0aee70fbd7a96a724c3627dc7a3affdbc23d99108c"
     },
     {
       "marker": "Resolve preserved source CSS component includes",
@@ -298,8 +298,8 @@
       "rationale": "Firefox wraps the native third/fourth parents onto different rows. The Chromium anchors lose the third submenu off-left at 320px and the fourth off-left at 390px; the third hidden menu also expands the 390px document. Scope alternate row endpoints to Firefox and retain the separately certified Chromium behavior.",
       "evidence": [
         {
-          "path": "authority-evidence/flopstyle-dark-navigation-action-recert-20261028/receipt.json",
-          "sha256": "68e26c36580e5f70ea746afd26947a3ad2a18639eb5de0a695aeb30eb959bc66"
+          "path": "authority-evidence/flopstyle-dark-w13-recert-20261028/navigation-action-receipt.json/receipt.json",
+          "sha256": "5d01bd60275afd020e50b5bfeab65e412c410c37847e543bb6abc91448b24d03"
         }
       ],
       "scope": {
@@ -310,7 +310,7 @@
           390
         ]
       },
-      "published_css_sha256": "519d88b43e366531bff3fb2b0a1ff722cb80c444efa952919631f943a4cd8a97"
+      "published_css_sha256": "be744e1d57f1028199f07f0aee70fbd7a96a724c3627dc7a3affdbc23d99108c"
     },
     {
       "marker": "SCP-JP Wikidot flopstyle-dark history list: keep the history table inside the content column at narrow widths.",
@@ -334,7 +334,29 @@
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "page.history"
       },
-      "published_css_sha256": "519d88b43e366531bff3fb2b0a1ff722cb80c444efa952919631f943a4cd8a97"
+      "published_css_sha256": "be744e1d57f1028199f07f0aee70fbd7a96a724c3627dc7a3affdbc23d99108c"
+    },
+    {
+      "marker": "SCP-JP Wikidot flopstyle-dark narrow submenu: keep the open mobile submenu above the page-title artwork.",
+      "rationale": "At 320px the open mobile submenu's first entry is partly covered by dark fragments of the page-title artwork rendering over the panel (defect Q1-33; the dropdown renders cleanly at 390px and 768px). The submenu is absolutely positioned with z-index auto, so the title artwork wins the paint order where they overlap. Raising the dropdown's z-index keeps the open menu above the artwork. Verified in the acceptance frame: the W13 scoped recapture of nav.mobile-top submenu-expanded at narrow-mobile is byte-identical to the W11 defect frame before the block and shows the first entry uncovered with it.",
+      "sha256": "6ebe8021cc9b1581dea05bce1bf2ce5797d1fcf7d38128c65c4d0b081d214eb1",
+      "selectors": [
+        "#top-bar .mobile-top-bar>ul>li>ul"
+      ],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/flopstyle-dark-submenu-stacking-delta-20261028/receipt.json",
+          "sha256": "7ecc4b3e4af854f7abedf232ceee05e4c7c04030fedfcc2bc4a0aee16fbca5bb"
+        }
+      ],
+      "scope": {
+        "target": "SCP-JP Sigma-9 current target acceptance",
+        "state": "navigation.mobile"
+      },
+      "published_css_sha256": "be744e1d57f1028199f07f0aee70fbd7a96a724c3627dc7a3affdbc23d99108c"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
@@ -378,6 +400,16 @@
       "at_contexts": [
         "@media (max-width:400px)"
       ],
+      "authority": "RUNTIME_INDEPENDENT"
+    },
+    {
+      "marker": "SCP-JP Wikidot flopstyle-dark narrow submenu: keep the open mobile submenu above the page-title artwork.",
+      "rationale": "SCP-JP Wikidot flopstyle-dark narrow submenu: keep the open mobile submenu above the page-title artwork.",
+      "sha256": "6ebe8021cc9b1581dea05bce1bf2ce5797d1fcf7d38128c65c4d0b081d214eb1",
+      "selectors": [
+        "#top-bar .mobile-top-bar>ul>li>ul"
+      ],
+      "at_contexts": [],
       "authority": "RUNTIME_INDEPENDENT"
     }
   ]

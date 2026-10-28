@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "c9f511a9c22faa366c11a096a2a068d39d74321e88c038f6b38db00365b3fd84",
+  "frozen_candidate_source_sha256": "585e429f8a4fd472aed4e190461a23fba689aba968ebc38195971509fffa304e",
   "base_source_sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
-  "raw_jp_overrides_sha256": "a976ab1e2bbdaf1c1a61e0a4fc2dfd7a4725c17f2d8c96f2b5fdc55d93906328",
-  "jp_overrides_sha256": "830bdaa2eaa58771eea194beefbde00034ca5123a0663bfd71b1b0a7c9d819ee",
-  "semantic_css_sha256": "3067cb2a43e088692cc69b7820a9912938011c2cb3e2a19a76837d8d78bf44a0",
-  "canonical_override_sha256": "2bcee9e2ea940e9a4c1cf7953f4e3127ef3e3a9ab67bbe66d28d4ec73a6c22bb",
+  "raw_jp_overrides_sha256": "f0de6fc0ec97e126c1fe76c5132fbd11ecc91687c45955485d28670de92ca86c",
+  "jp_overrides_sha256": "70e7b48277f1042c7884308df765a5c0826ebe852639d135ee0c35704e6d9052",
+  "semantic_css_sha256": "59651fdd62205997931362cedcda956cfbf5e7be4a30606e250842a868596f1c",
+  "canonical_override_sha256": "e5988d620dff0c2c24573d2186e02e62bbffb09f80dc2d187e97c6960356cb09",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "d0aa5b01fe3ab2ba3dc32310cfae534c042e49be0e7d94cb0f2a193bc0f55e3c",
+  "final_source_sha256": "67decf0d72dd630d736280e67740dfc77e8834c980a1423e9c616dae13bb7c64",
   "final_source_inputs": {
     "base_sha256": "ece731ae73360d76e394eb747dda555a081de973e2c6444284385764cc320892",
-    "jp_overrides_sha256": "830bdaa2eaa58771eea194beefbde00034ca5123a0663bfd71b1b0a7c9d819ee"
+    "jp_overrides_sha256": "70e7b48277f1042c7884308df765a5c0826ebe852639d135ee0c35704e6d9052"
   },
   "ordered_include_sha256": "225db8ab14b085d9e4b79edcbad105a5a26c4813233687bf7202035ebfc348a4",
   "declaration_reviews": {},
   "adaptation_block_count": 5,
-  "raw_override_rule_count": 5,
-  "canonical_override_rule_count": 5,
+  "raw_override_rule_count": 6,
+  "canonical_override_rule_count": 6,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -210,7 +210,7 @@
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "page.history"
       },
-      "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
+      "published_css_sha256": "291cd47505fcdae005459e6ad82f9485cc1a803d32a2d802c6c4721ad7a586d7"
     },
     {
       "marker": "SCP-JP Wikidot redtape mobile submenu: list the mobile submenu in a single column like the target menu instead of a two-column grid with a dangling empty cell.",
@@ -232,14 +232,15 @@
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "navigation.mobile"
       },
-      "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
+      "published_css_sha256": "291cd47505fcdae005459e6ad82f9485cc1a803d32a2d802c6c4721ad7a586d7"
     },
     {
       "marker": "SCP-JP Wikidot redtape credit heritage: give the heritage rating module the dark pill ground of the target composition so its label stays readable in the credit modal.",
-      "rationale": "In the credit modal the heritage rating module box computes to the theme background (rgb(252,252,252)) because --rating-module-bg-color resolves to --swatch-background (white monochrome), while the target composition shows the heritage module as a dark pill and the campaign pilot shows redtape label text failing against the white box (defect Q1-7; the F5 comparison in the W02 triage found the box background itself divergent, so this is not the F5 identical state). The same-target delta receipt shows this block gives the modal module the theme dark accent ground (rgb(70,13,13)) with the on-dark text color (label contrast 8.9) and leaves the page-level heritage module unchanged. The pilot cascade balance differs from the fixture frame on the label color source, so the block sets both the ground and the text variables; full verification at the Sigma-9 recapture.",
-      "sha256": "e5b5775456a0538e7caaaeac021eda3a3524c9aec99ea1f2a8551a44fcc346c4",
+      "rationale": "In the credit modal the heritage rating module box computes to the theme background (rgb(252,252,252)) because --rating-module-bg-color resolves to --swatch-background (white monochrome), while the target composition shows the heritage module as a dark pill and the campaign pilot shows redtape label text failing against the white box (defect Q1-7; the F5 comparison in the W02 triage found the box background itself divergent, so this is not the F5 identical state). The same-target delta receipt shows this block gives the modal module the theme dark accent ground (rgb(70,13,13)) with the on-dark text color (label contrast 8.9) and leaves the page-level heritage module unchanged. The pilot cascade balance differs from the fixture frame on the label color source, so the block sets both the ground and the text variables; full verification at the Sigma-9 recapture. W13 (G2-13): the nested .page-rate-widget-box kept its own light ground inside the darkened module, leaving the rate segment white-on-white in the modal; the block now also clears the widget ground to transparent and sets its text to the on-dark color (W13 delta receipt: widget background rgb(252,252,252) -> transparent, rate-points color -> rgb(252,252,252) on the dark pill; screenshot-verified).",
+      "sha256": "1625c652813bfd0776ba4b7d2daedfae00ada0d35c3e64d2a3b668f23fbb07c8",
       "selectors": [
-        "[id*=u-credit] .heritage-rating-module"
+        "[id*=u-credit] .heritage-rating-module",
+        "[id*=u-credit] .heritage-rating-module .page-rate-widget-box"
       ],
       "at_contexts": [],
       "origin": "runtime-independent-css-containment",
@@ -248,13 +249,17 @@
         {
           "path": "authority-evidence/redtape-menu-heritage-delta-20261028/receipt.json",
           "sha256": "e433bb756ddb423f05832200f7605b45a291fd9ef4fd62c4a1151fc7637f64f8"
+        },
+        {
+          "path": "authority-evidence/redtape-heritage-ratebox-delta-20261028/receipt.json",
+          "sha256": "83df8ed2a41255fe5c75593cd3bd0ca59345dfbf3a5c60b29f5d332c5df18b40"
         }
       ],
       "scope": {
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "credit.view"
       },
-      "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
+      "published_css_sha256": "291cd47505fcdae005459e6ad82f9485cc1a803d32a2d802c6c4721ad7a586d7"
     },
     {
       "marker": "SCP-JP Wikidot redtape dialog headings: keep dialog body headings on the dialog text color so they stay readable on the white dialog ground.",
@@ -276,7 +281,7 @@
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "dialog.generic"
       },
-      "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
+      "published_css_sha256": "291cd47505fcdae005459e6ad82f9485cc1a803d32a2d802c6c4721ad7a586d7"
     },
     {
       "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
@@ -298,7 +303,7 @@
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "credit.otherwise"
       },
-      "published_css_sha256": "799e314bb7ab9ad9af9a141f9eb11b76227a7bfd5c32cc3c438012277402d92b"
+      "published_css_sha256": "291cd47505fcdae005459e6ad82f9485cc1a803d32a2d802c6c4721ad7a586d7"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
@@ -326,9 +331,10 @@
     {
       "marker": "SCP-JP Wikidot redtape credit heritage: give the heritage rating module the dark pill ground of the target composition so its label stays readable in the credit modal.",
       "rationale": "SCP-JP Wikidot redtape credit heritage: give the heritage rating module the dark pill ground of the target composition so its label stays readable in the credit modal.",
-      "sha256": "e5b5775456a0538e7caaaeac021eda3a3524c9aec99ea1f2a8551a44fcc346c4",
+      "sha256": "1625c652813bfd0776ba4b7d2daedfae00ada0d35c3e64d2a3b668f23fbb07c8",
       "selectors": [
-        "[id*=u-credit] .heritage-rating-module"
+        "[id*=u-credit] .heritage-rating-module",
+        "[id*=u-credit] .heritage-rating-module .page-rate-widget-box"
       ],
       "at_contexts": [],
       "authority": "RUNTIME_INDEPENDENT"

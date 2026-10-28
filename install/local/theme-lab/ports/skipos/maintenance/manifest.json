@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "d4433a2cdfa61e377dfd7bc925cc61b3add23aade773a891b968acf9a6ec2507",
+  "frozen_candidate_source_sha256": "5422f618f60c010cf39c702b8d70aff2dd1a889aca66751b27cf887396ca5ea7",
   "base_source_sha256": "d4433a2cdfa61e377dfd7bc925cc61b3add23aade773a891b968acf9a6ec2507",
-  "raw_jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "semantic_css_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "canonical_override_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "raw_jp_overrides_sha256": "54ecd734647f9d2301611d03c0f421962f6cdd33c634f7a92164b6d1d8ede8e5",
+  "jp_overrides_sha256": "4d9ef6ecefdea5179e9b0f50eb730eadb6ba40ad61d284665ebe86fd7d349ff2",
+  "semantic_css_sha256": "c1af0771d001d3ec4111659271aa06514bb2cfee1be5db03384d83fe4454b420",
+  "canonical_override_sha256": "41772ed7f8df62ff761efe0948d898c18e227287880ad5f73a9d7e33019bb113",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "d4433a2cdfa61e377dfd7bc925cc61b3add23aade773a891b968acf9a6ec2507",
+  "final_source_sha256": "38fe938afbbe330adfc58dfd5abdce19ef26ef94324901dd0c98ec86da453624",
   "final_source_inputs": {
     "base_sha256": "d4433a2cdfa61e377dfd7bc925cc61b3add23aade773a891b968acf9a6ec2507",
-    "jp_overrides_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "jp_overrides_sha256": "4d9ef6ecefdea5179e9b0f50eb730eadb6ba40ad61d284665ebe86fd7d349ff2"
   },
-  "ordered_include_sha256": "8515502f5b06090d501fe76bf26e5434011e917b039245b5785d09733dbb41c9",
+  "ordered_include_sha256": "b8f825e6db56e3bc095ebe4de9794f552f55a84afc2749d8b4eca6cdcc77a6a4",
   "declaration_reviews": {},
-  "adaptation_block_count": 0,
-  "raw_override_rule_count": 0,
-  "canonical_override_rule_count": 0,
+  "adaptation_block_count": 1,
+  "raw_override_rule_count": 1,
+  "canonical_override_rule_count": 1,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -295,8 +295,41 @@
           "decision_authority": "FROZEN_WIKIDOT_SOURCE"
         }
       ]
+    },
+    {
+      "marker": "SCP-JP Wikidot skipos action-area pane: give the opened action-area pane the theme's own dark glass ground at every width so pane content stays readable over the page.",
+      "rationale": "At the theme's container band crossings the opened action-area pane computes to a transparent background, so pane content renders over the bare page (defect Q1-29). The theme's own dark glass values (its --basalt-UI palette ground, also used by the footer) restore the pane ground. The W13 delta receipt measures the pane background rgba(0,0,0,0) without the block and rgba(25,25,39,0.686) with it at 499/500/501, 1079/1080/1081 and 1499/1500/1501 widths, with zero geometry change; the block is the W07-A session's prototype, adopted unchanged after this measurement.",
+      "sha256": "4540464c54c0423406107fbf4067969ebab3f5533510e73a3affa6ac747eabc0",
+      "selectors": [
+        "#action-area"
+      ],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/skipos-action-area-delta-20261028/receipt.json",
+          "sha256": "0f586726fa3ec34502cd0bed5844e89d91d6f57206e07cf77dc65f4104ec0076"
+        }
+      ],
+      "scope": {
+        "target": "SCP-JP Sigma-9 current target acceptance",
+        "state": "page.action-area"
+      },
+      "published_css_sha256": "db7104e8a069325316c07b8d20b0b1211abfe3b3fe34bc2aea1551a63c38b8cc"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
-  "publishable_adaptations": []
+  "publishable_adaptations": [
+    {
+      "marker": "SCP-JP Wikidot skipos action-area pane: give the opened action-area pane the theme's own dark glass ground at every width so pane content stays readable over the page.",
+      "rationale": "SCP-JP Wikidot skipos action-area pane: give the opened action-area pane the theme's own dark glass ground at every width so pane content stays readable over the page.",
+      "sha256": "4540464c54c0423406107fbf4067969ebab3f5533510e73a3affa6ac747eabc0",
+      "selectors": [
+        "#action-area"
+      ],
+      "at_contexts": [],
+      "authority": "RUNTIME_INDEPENDENT"
+    }
+  ]
 }

@@ -182,3 +182,16 @@ a[href="/system:page-tags/tag/テーマ#pages"] {
 [[footnoteblock]]
 
 [[/collapsible]]
+
+[[module CSS]]
+/* SCP-JP Wikidot yossistyle narrow files: keep the file table inside the viewport at phone widths. */
+@media (max-width:767px) {
+  #action-area table.page-files {
+    width:100%;table-layout:fixed
+  }
+
+  #action-area table.page-files td {
+    overflow-wrap:anywhere
+  }
+}
+[[/module]]

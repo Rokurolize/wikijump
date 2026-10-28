@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "267413c5754294971d048457f9712b6929d5421ffe2d3e54dfa47c47140e8bf0",
+  "frozen_candidate_source_sha256": "8e350e9f2a3444e2e8abd1d5a26e2618f91db4ace75e1bcb574a2903d25027f2",
   "base_source_sha256": "de3113777c594f85a686e5cff3a31f22252448db1a5fc70f980bbcce0bf263a1",
-  "raw_jp_overrides_sha256": "b210672faf63caddcb3ad82c09bafd3d2d7a4a9ecc7580d0d5c36f1385b1e5a2",
-  "jp_overrides_sha256": "9bf2bda1d7a611d947759a558600095c54e645fb1a082e29c69f8753e473c725",
-  "semantic_css_sha256": "14ccc0278bf3e337927b8c365c41d66d2fd9d4bd69a397c4aade9bfc1b994222",
-  "canonical_override_sha256": "8ea2cc39d90a2148c5f4702bc4a830f73be446d8d882cd6dc66b814c7e06e613",
+  "raw_jp_overrides_sha256": "926daf9cfbe26b6aaca37e2372f9b9665e7578cc29fd679cf1cc72aef8a18649",
+  "jp_overrides_sha256": "087739d27258faa8e585a730095933b86c117e47281fa7c9839ecbd3cb75698f",
+  "semantic_css_sha256": "7fe86478df5ad18b86a3eaa01b84ed42199ccd0dfdeb95c249673454af9703d4",
+  "canonical_override_sha256": "722638a9c69b72321390bb3b78bc3d86de8ffb8a3673f2ca51cf76d6635ae471",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "00009eeef6e77b229e63462999bb914629c3920f6644b77add8151d9d0458b34",
+  "final_source_sha256": "8b09fb6e674e1b2b85dddc0ef03d0d5f7522eb0cf8abd87c2bf68135ae88969c",
   "final_source_inputs": {
     "base_sha256": "de3113777c594f85a686e5cff3a31f22252448db1a5fc70f980bbcce0bf263a1",
-    "jp_overrides_sha256": "9bf2bda1d7a611d947759a558600095c54e645fb1a082e29c69f8753e473c725"
+    "jp_overrides_sha256": "087739d27258faa8e585a730095933b86c117e47281fa7c9839ecbd3cb75698f"
   },
   "ordered_include_sha256": "607e1ae1fcdb25ff85a2e3035ef0ac3eb9aa8b47ae2da0cedf2f8e5a52de0925",
   "declaration_reviews": {},
-  "adaptation_block_count": 2,
-  "raw_override_rule_count": 3,
-  "canonical_override_rule_count": 3,
+  "adaptation_block_count": 3,
+  "raw_override_rule_count": 4,
+  "canonical_override_rule_count": 4,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -297,9 +297,8 @@
       "rationale": "Read-only real SCP-JP A/B demonstrates right-edge submenu escape. Anchor only each overflowing menu at its actual row endpoint; retain source menu sizing, wrapping, palette and header.",
       "evidence": [
         {
-          "path": "authority-evidence/y2k-final-image-navigation-15-0-20261001/receipt.json",
-          "sha256": "02126ed805c95ac9b7fba2cffb92596868dfc8512be1be24dbe1e97dac9bd4f5",
-          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+          "path": "authority-evidence/y2k-w13-recert-20261028/block-15/receipt.json",
+          "sha256": "50dce628d27e7afd0258962d8be67bb7602c75b73dba68fefff7c536cb773998"
         }
       ],
       "scope": {
@@ -314,7 +313,7 @@
           ".mobile-top-bar > ul > li > ul a"
         ]
       },
-      "published_css_sha256": "65f2796fb65882751c4b2d521878ddb78a6a542425023a9a83eea30a90a92f5e"
+      "published_css_sha256": "450d8184621bdf1a9245790b2b3b32fa388e7e7fe61e7115eb898b0891fe7a6c"
     },
     {
       "marker": "SCP-JP Wikidot narrow image-block correction: include the native right margin and border in its available width.",
@@ -330,9 +329,8 @@
       ],
       "evidence": [
         {
-          "path": "authority-evidence/y2k-image-block-authority-20261001/receipt.json",
-          "sha256": "9f87f8e838b8ae9f34c8d8ff7a8e3a4a9e086134cc8cfd1a9153caa5e0f8e988",
-          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+          "path": "authority-evidence/y2k-w13-recert-20261028/block-16/receipt.json",
+          "sha256": "5885fd647eadaf81503a69637b5fd3562d5d41869c065bfa751a1fbbfaa4815f"
         }
       ],
       "scope": {
@@ -344,8 +342,28 @@
           1440
         ]
       },
-      "published_css_sha256": "65f2796fb65882751c4b2d521878ddb78a6a542425023a9a83eea30a90a92f5e",
+      "published_css_sha256": "450d8184621bdf1a9245790b2b3b32fa388e7e7fe61e7115eb898b0891fe7a6c",
       "published_base_css_sha256": null
+    },
+    {
+      "marker": "SCP-JP Wikidot y2k narrow top bar: give the narrow top bar the theme teal ground so its labels stay readable over the halftone band.",
+      "rationale": "W13 trial",
+      "sha256": "49b0637252fbd0356b14bb1e1d73407ebf099bd26f0c3ba32a6dd1549e036421",
+      "selectors": [],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/y2k-bar-delta-20261028/receipt.json",
+          "sha256": "5233f8b1969d25e2b4f024d4a8f90228319329883204690bb3c5f8bf29541d57"
+        }
+      ],
+      "scope": {
+        "target": "w13-delta",
+        "state": "acceptance-frame"
+      },
+      "published_css_sha256": "450d8184621bdf1a9245790b2b3b32fa388e7e7fe61e7115eb898b0891fe7a6c"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
@@ -375,6 +393,18 @@
         "@media (max-width: 479px)"
       ],
       "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot y2k narrow top bar: give the narrow top bar the theme teal ground so its labels stay readable over the halftone band.",
+      "rationale": "SCP-JP Wikidot y2k narrow top bar: give the narrow top bar the theme teal ground so its labels stay readable over the halftone band.",
+      "sha256": "49b0637252fbd0356b14bb1e1d73407ebf099bd26f0c3ba32a6dd1549e036421",
+      "selectors": [
+        "#top-bar"
+      ],
+      "at_contexts": [
+        "@media (max-width:767px)"
+      ],
+      "authority": "RUNTIME_INDEPENDENT"
     }
   ]
 }
