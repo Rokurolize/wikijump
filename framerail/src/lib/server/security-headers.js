@@ -39,12 +39,27 @@ const HSTS_HEADER = "max-age=31536000; includeSubDomains"
 const CURRENT_SITE_FILE_ORIGIN = "https://wikijump-current-site.invalid"
 const WIKIDOT_INTERWIKI_STYLE_SOURCES = auditedExternalAssetOrigins("styles").join(" ")
 const WIKIDOT_INTERWIKI_FONT_SOURCES = auditedExternalAssetOrigins("fonts").join(" ")
-const WIKIDOT_INTERWIKI_FRAME_POLICIES = new Map([
-  [
-    "/-/wikidot-interwiki/interwikiFrame.html",
-    `default-src 'none'; script-src 'unsafe-inline'; style-src 'self' 'unsafe-inline' ${CURRENT_SITE_FILE_ORIGIN} ${WIKIDOT_INTERWIKI_STYLE_SOURCES}; font-src 'self' data: ${CURRENT_SITE_FILE_ORIGIN} ${WIKIDOT_INTERWIKI_FONT_SOURCES}; img-src 'self' data: ${CURRENT_SITE_FILE_ORIGIN} https://*.wdfiles.com https://cdn.scpwiki.com https://d3g0gp89917ko0.cloudfront.net https://scp-jp.github.io; frame-ancestors 'self'`
-  ]
-])
+const WIKIDOT_INTERWIKI_FRAME_PATHNAME = "/-/wikidot-interwiki/interwikiFrame.html"
+
+// The interwiki frame's style runtime themes the frame with the page's own
+// theme, inserted as a stylesheet link into the frame. A mirror page's
+// theme can live on the other local mirror's files host, so on a local
+// deployment the frame policy carries the same mirror file origins the
+// main page policy adds in sveltekit-options.js; a policy naming only the
+// current site's files host leaves the interwiki box unthemed (#3376).
+// The origins baked here are the canonical ones; materializeSiteCsp adds
+// the request-port forms beside them, as it does for the main page policy.
+const wikidotInterwikiFramePolicyFor = (deploymentEnvironment) => {
+  let mirrorSuffix = ""
+  if (deploymentEnvironment === "local") {
+    const domains = platformDomains({ deploymentEnvironment })
+    const mirrorSources = LOCAL_MIRROR_FILE_ASSET_SITES.map((site) =>
+      platformHttpsOrigin(`${site}.${domains.files}`, domains)
+    )
+    mirrorSuffix = ` ${mirrorSources.join(" ")}`
+  }
+  return `default-src 'none'; script-src 'unsafe-inline'; style-src 'self' 'unsafe-inline' ${CURRENT_SITE_FILE_ORIGIN}${mirrorSuffix} ${WIKIDOT_INTERWIKI_STYLE_SOURCES}; font-src 'self' data: ${CURRENT_SITE_FILE_ORIGIN}${mirrorSuffix} ${WIKIDOT_INTERWIKI_FONT_SOURCES}; img-src 'self' data: ${CURRENT_SITE_FILE_ORIGIN}${mirrorSuffix} https://*.wdfiles.com https://cdn.scpwiki.com https://d3g0gp89917ko0.cloudfront.net https://scp-jp.github.io; frame-ancestors 'self'`
+}
 const LOCAL_WIKIDOT_STYLEFRAME_PATHNAME = "/-/wikidot-interwiki/styleFrame.html"
 // The style frame runs exactly one known script and nothing else.
 const WIKIDOT_STYLEFRAME_SCRIPT_SOURCE = `'sha256-${createHash("sha256")
@@ -70,7 +85,10 @@ const wikidotInterwikiFramePolicy = (
   ) {
     return WIKIDOT_STYLEFRAME_POLICY
   }
-  return WIKIDOT_INTERWIKI_FRAME_POLICIES.get(pathname)
+  if (pathname === WIKIDOT_INTERWIKI_FRAME_PATHNAME) {
+    return wikidotInterwikiFramePolicyFor(deploymentEnvironment)
+  }
+  return undefined
 }
 
 /** @param {unknown} value */
