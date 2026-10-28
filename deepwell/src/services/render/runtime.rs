@@ -24,6 +24,7 @@ use super::runtime_page_queries::{
     find_viewable_list_pages_rows,
 };
 use super::service::site_matches_wikidot_slug;
+use super::wikidot_hosts::strip_wikidot_com_include_site_suffix;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::site::Model as SiteModel;
 use crate::services::page_query::{PageQuery, PageQueryScoreFilterCache};
@@ -121,9 +122,20 @@ impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
                         })
                     })
                     .await?;
-                let current_site_matches = current_site
-                    .as_ref()
-                    .is_some_and(|site| site_matches_wikidot_slug(site, site_slug));
+                // Wikidot tolerates the full `*.wikidot.com` domain spelling
+                // as an include site name; FTML normalization turns it into
+                // `<base>-wikidot-com`. Map it back to the base slug so the
+                // mirror that already holds the target can serve it with no
+                // data change. The snapshot fallback below keeps the original
+                // slug, so genuinely foreign dotted sites keep their existing
+                // missing-connection keys.
+                let dotted_base = strip_wikidot_com_include_site_suffix(site_slug);
+                let current_site_matches = current_site.as_ref().is_some_and(|site| {
+                    site_matches_wikidot_slug(site, site_slug)
+                        || dotted_base
+                            .as_deref()
+                            .is_some_and(|base| site_matches_wikidot_slug(site, base))
+                });
 
                 if current_site_matches
                     && let Some(source) = self
@@ -138,7 +150,7 @@ impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
                     return Ok(Some(source));
                 }
 
-                let Some(site) = cache
+                let site = cache
                     .get_site_by_slug_or_try_insert_with(site_slug, || async {
                         SiteService::get_optional(self.ctx, Reference::from(site_slug))
                             .await
@@ -149,8 +161,29 @@ impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
                                 )
                             })
                     })
-                    .await?
-                else {
+                    .await?;
+                let site = match (site, dotted_base) {
+                    (Some(site), _) => Some(site),
+                    (None, Some(base)) if base != site_slug => {
+                        cache
+                            .get_site_by_slug_or_try_insert_with(&base, || async {
+                                SiteService::get_optional(
+                                    self.ctx,
+                                    Reference::from(base.as_str()),
+                                )
+                                .await
+                                .or_raise(|| {
+                                    Error::new(
+                                        format!("failed to get include site '{base}'"),
+                                        ErrorType::Site,
+                                    )
+                                })
+                            })
+                            .await?
+                    }
+                    (None, _) => None,
+                };
+                let Some(site) = site else {
                     return self
                         .fetch_imported_cross_site_source(
                             current_site_id,

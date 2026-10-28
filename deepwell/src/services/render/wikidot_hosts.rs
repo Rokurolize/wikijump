@@ -82,6 +82,37 @@ pub(super) fn is_wikidot_www_host(host: &str) -> bool {
     matches!(host.as_str(), "www.wikidot.com" | "www.wdfiles.com")
 }
 
+/// Wikidot tolerates the full `*.wikidot.com` domain spelling as an include
+/// site name (`doc-wiki-syntax:include` L0012: "The sitename can be a Wikidot
+/// subdomain (e.g. :www) or a full name, including a custom domain").
+///
+/// FTML's `PageRef` normalization maps `.` to `-`, so by the time the include
+/// resolver sees the site slug the dotted spelling has become
+/// `<base>-wikidot-com` (e.g. `:scp-jp.wikidot.com:` arrives as
+/// `scp-jp-wikidot-com`). Strip that suffix back to the base slug so the
+/// normal site-row lookup can find the mirror. Also accepts the raw dotted
+/// spelling for callers that still carry it.
+///
+/// Returns `None` when the slug carries no such suffix, or when stripping
+/// would leave an empty base. Callers must attempt the exact lookup first and
+/// only fall back to the stripped base for the site-row lookup; the snapshot
+/// fallback keeps the original slug so genuinely foreign dotted sites keep
+/// their existing missing-connection keys.
+pub(super) fn strip_wikidot_com_include_site_suffix(site_slug: &str) -> Option<String> {
+    let trimmed = site_slug.trim().trim_end_matches('.');
+    if trimmed.is_empty() {
+        return None;
+    }
+    let lower = trimmed.to_ascii_lowercase();
+    if let Some(base) = lower.strip_suffix(".wikidot.com") {
+        return (!base.is_empty()).then(|| base.to_owned());
+    }
+    if let Some(base) = lower.strip_suffix("-wikidot-com") {
+        return (!base.is_empty()).then(|| base.to_owned());
+    }
+    None
+}
+
 pub(super) fn direct_wdfiles_local_file_url(host: &str, path: &str) -> Option<String> {
     if !path.starts_with("/local--files/") || is_wikidot_www_host(host) {
         return None;
@@ -111,4 +142,83 @@ pub(super) fn direct_wdfiles_local_file_url(host: &str, path: &str) -> Option<St
 #[allow(dead_code)]
 pub(super) fn public_url_port_suffix(port: Option<u16>) -> String {
     port.map(|port| format!(":{port}")).unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::strip_wikidot_com_include_site_suffix;
+
+    fn stripped(site_slug: &str) -> Option<String> {
+        strip_wikidot_com_include_site_suffix(site_slug)
+    }
+
+    #[test]
+    fn dotted_include_sites_strip_to_their_base_slug() {
+        // Normalized forms, as the resolver receives them from FTML PageRef.
+        assert_eq!(stripped("scp-jp-wikidot-com"), Some("scp-jp".to_owned()));
+        assert_eq!(
+            stripped("scp-wiki-wikidot-com"),
+            Some("scp-wiki".to_owned())
+        );
+        assert_eq!(
+            stripped("scp-sandbox-3-wikidot-com"),
+            Some("scp-sandbox-3".to_owned())
+        );
+        // Raw dotted spellings, for callers that still carry dots.
+        assert_eq!(stripped("scp-jp.wikidot.com"), Some("scp-jp".to_owned()));
+        assert_eq!(stripped("SCP-JP.WIKIDOT.COM"), Some("scp-jp".to_owned()));
+        assert_eq!(stripped("scp-jp.wikidot.com."), Some("scp-jp".to_owned()));
+    }
+
+    #[test]
+    fn known_jstyles_spellings_map_as_expected() {
+        // fragment:scp-cn-1463-02 carries the dotted spelling; it must map
+        // onto the scp-jp mirror base (raw and normalized inputs).
+        assert_eq!(stripped("scp-jp.wikidot.com"), Some("scp-jp".to_owned()));
+        assert_eq!(stripped("scp-jp-wikidot-com"), Some("scp-jp".to_owned()));
+        // karathh and scp-karathh-paper carry `:scp-jp-sandbox3:` (already
+        // normalized below); those non-dotted spellings must pass through
+        // untouched so sandbox-site resolution is unaltered.
+        assert_eq!(stripped("scp-jp-sandbox3"), None);
+        assert_eq!(stripped("scp-jp-sandbox2"), None);
+    }
+
+    #[test]
+    fn non_dotted_include_sites_are_unchanged() {
+        for site_slug in [
+            "scp-jp",
+            "scp-wiki",
+            "scp-jp-sandbox3",
+            "scp-jp-sandbox2",
+            "snippets",
+            "scptestwiki",
+            "topia",
+            "scp-sandbox-3",
+            "www",
+            "",
+            "wikidot-com",
+            "-wikidot-com",
+            ".wikidot.com",
+        ] {
+            assert_eq!(
+                stripped(site_slug),
+                None,
+                "site must pass through: {site_slug}"
+            );
+        }
+    }
+
+    #[test]
+    fn page_ref_normalized_dotted_site_strips_to_mirror_base() {
+        // End-to-end shape: FTML normalizes `:scp-jp.wikidot.com:` to
+        // `scp-jp-wikidot-com`, and the resolver helper maps that onto `scp-jp`.
+        let page_ref =
+            ftml::data::PageRef::parse(":scp-jp.wikidot.com:component:jstyles")
+                .expect("dotted include target parses");
+        assert_eq!(page_ref.site(), Some("scp-jp-wikidot-com"));
+        assert_eq!(
+            page_ref.site().and_then(stripped),
+            Some("scp-jp".to_owned())
+        );
+    }
 }
