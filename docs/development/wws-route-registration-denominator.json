@@ -5,13 +5,13 @@
     "inputs": [
       {
         "path": "deepwell/Cargo.lock",
-        "git_blob": "0b59483a9b6083970cfc85e6b6b30c94bd5aa942",
-        "sha256": "a082cef5f2f17add20cd670b8eed9b99a076eee47660b63c78b31c393be879aa"
+        "git_blob": "492d3ff390f10b14734813f3c2c0179fda2328f5",
+        "sha256": "532143c73ec5180f4683af58ee7ce32e3d8d3cae875bdab000847f6aa4a163e6"
       },
       {
         "path": "deepwell/Cargo.toml",
-        "git_blob": "026d3ad114e2e8ef4fa49db6693b08e6165aa7ab",
-        "sha256": "2d46c11da3e5833dafe1ddfce5db3680fae534f68fa44df840b00ea7046492a0"
+        "git_blob": "f6173b9c48090926de67d1bb6da15502796bc0f8",
+        "sha256": "99f28c8c53c39448fc863e33e12fb62576f8e6f147efdb2c0bc27859cb09836b"
       },
       {
         "path": "deepwell/migrations/20260815010000_text_block_wikidot_sha1.sql",
@@ -50,8 +50,8 @@
       },
       {
         "path": "deepwell/tests/page.rs",
-        "git_blob": "1a27a5591d861bf4b0f00d27ce2c0b91f9b0e9fc",
-        "sha256": "d88fe0a43548716f817c65152dcdf0338dd63f113e6e51c4e2b15dfb7c4c8a33"
+        "git_blob": "5f71c99315ab280f0540b7027e8f0f17e9635921",
+        "sha256": "b16333c3da63283e548c4e343abdeb838dd8e73fa87f9f288b961f15ca823abf"
       },
       {
         "path": "wws/Cargo.lock",
