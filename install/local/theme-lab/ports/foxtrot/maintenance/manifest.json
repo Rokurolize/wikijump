@@ -449,11 +449,11 @@
       "sha256": "15c5280fde0e4808cf39a31b03d4424b4ca729f861d05161f34605a7f853ace5",
       "origin": "target-certified-replacement",
       "authority": "TARGET_WIKIDOT_CERTIFIED",
-      "rationale": "The complete default source stylesheet still requires the drawer separation and third-menu endpoint correction at mobile widths. The fourth parent wraps at 390px, so right-anchoring it creates a new left escape and is removed. Trusted native A/B exercises all eight parent actions with the retained correction. W13 re-certification note: on the current reference snapshot all four parents stay on one row in Chromium as well, so the row endpoint is the last parent; the block now right-anchors the last parent submenu too (the same remedy as the WebKit endpoint block), verified by the W13 re-certification A/B.",
+      "rationale": "The complete default source stylesheet still requires the drawer separation and third-menu endpoint correction at mobile widths. The fourth parent wraps at 390px, so right-anchoring it creates a new left escape and is removed. Trusted native A/B exercises all eight parent actions with the retained correction. Freeze-3 (OD-T3-b): the W13 extension that also right-anchored the last parent for all engines at 360-767px is reverted — on the current contract it caused the 13 surface_navigation_viewport_escape errors at 390px; the last-parent pin returns to the separate WebKit-only row-endpoint block, and this block re-certifies on the Freeze-3 candidate (without fails, with passes at 320/390).",
       "evidence": [
         {
-          "path": "authority-evidence/foxtrot-w13-recert-20261028/block22-receipt.json",
-          "sha256": "a9b9ace19176cd24524676e730319ec156b11a9555916a4a2167171669c6accb"
+          "path": "authority-evidence/foxtrot-freeze3-recert-20261029/block22/receipt.json",
+          "sha256": "fea256ff66767eaf8a714bb95aad7909647ec80a6ab7117540f7a0aca9d8d037"
         }
       ],
       "scope": {
@@ -464,7 +464,7 @@
           390
         ]
       },
-      "published_css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a"
+      "published_css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b"
     },
     {
       "marker": "SCP-JP Wikidot Foxtrot WebKit row endpoint: contain the fourth submenu where the engine keeps all parents on one row.",
@@ -476,6 +476,10 @@
         {
           "path": "authority-evidence/foxtrot-freeze3-fx2-20261029/fx2-receipt.json",
           "sha256": "cafbb6688ffceff1b9185ab320c2994df098ee7cc069bcc841e1fae6553c77d7"
+        },
+        {
+          "path": "authority-evidence/foxtrot-freeze3-20261029/receipt.json",
+          "sha256": "23c72b1386ebec757301334b469a065b35679717c45e993643966b91d46ac5c8"
         }
       ],
       "scope": {
@@ -511,7 +515,7 @@
         "target": "heritage-credit-button",
         "state": "credit.variant.heritage"
       },
-      "published_css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a"
+      "published_css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",

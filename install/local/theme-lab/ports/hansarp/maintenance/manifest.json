@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "64d5227d86a84ab67944599e6b5d5af73a5a898f2ef38c501ecee028d2c7c5ff",
+  "frozen_candidate_source_sha256": "ccf5f58cc71f0e9a6f7b988e5a74bbc889dd369625075c33da06773b57bc8f45",
   "base_source_sha256": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
-  "raw_jp_overrides_sha256": "4b2942fe4c837af1e35abd0c6e3fea092e728d4af0760d105427099c7b477daa",
-  "jp_overrides_sha256": "6a1c58863d200529c5cb8a17bc3c93a3b20678e74cce8e11c6537988a5dbfa58",
-  "semantic_css_sha256": "b836da805a91f7b20e458c367ad6face3b248d2b69b2eaa2951307cedb91639c",
-  "canonical_override_sha256": "2ba6639b7130bff7d08fcec1a428031668f1efbc3ce115ab7a2c6208bd0741d0",
+  "raw_jp_overrides_sha256": "e021e9f94ad27aaab44ca0c0770f1769a108e17bf779ef84f5621cfe9da746d6",
+  "jp_overrides_sha256": "a93e9a7f6471a4b83af3db6a910757046a1499040f4e5250253259069d0a93f5",
+  "semantic_css_sha256": "835366d5081b6e30b293826323131cc6d34119479ac90577b64cb874b0474fb5",
+  "canonical_override_sha256": "0db87ff9ca31f99906e52aa591223d05faf1fc34d6c10b190347491fa14feb57",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "0c85c54ff9553c4449eb10268afd9a989db1ca200bd452c470fcded136a2c1f1",
+  "final_source_sha256": "fcfe0c19ed02c8e75d03a2c164fc9192ceb97bd6161c5682ccb5065f08c7e69f",
   "final_source_inputs": {
     "base_sha256": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
-    "jp_overrides_sha256": "6a1c58863d200529c5cb8a17bc3c93a3b20678e74cce8e11c6537988a5dbfa58"
+    "jp_overrides_sha256": "a93e9a7f6471a4b83af3db6a910757046a1499040f4e5250253259069d0a93f5"
   },
   "ordered_include_sha256": "c78e9a83788409eaefc15c359fcb4481f5a4db39f8b72b619cf819a452412df2",
   "declaration_reviews": {},
-  "adaptation_block_count": 6,
-  "raw_override_rule_count": 9,
-  "canonical_override_rule_count": 9,
+  "adaptation_block_count": 7,
+  "raw_override_rule_count": 14,
+  "canonical_override_rule_count": 14,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -186,8 +186,8 @@
       "rationale": "The source rotated masthead extends left of the native SCP-JP viewport at 320, 390 and 768px. Translate the existing title by 20px at tablet/mobile widths and reduce only its 320px type scale enough to retain both edges, preserving rotation, face and wider layout.",
       "evidence": [
         {
-          "path": "authority-evidence/hansarp-w13-recert-20261028/block-12-receipt.json/receipt.json",
-          "sha256": "15bb8cd35572bc47cbcd6e55e601f1baf27f4ad155d8dda2b0d15a08e8beb852"
+          "path": "authority-evidence/hansarp-freeze3-recert-20261029/block-12-receipt.json/receipt.json",
+          "sha256": "527d3c5e78e90bd8b9b27480062f17db556ad042ff0e9fba41cccbf0096f519f"
         }
       ],
       "scope": {
@@ -204,7 +204,7 @@
           "#header h1 a span"
         ]
       },
-      "published_css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6"
+      "published_css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c"
     },
     {
       "marker": "SCP-JP Wikidot Hansarp narrow header slot: keep its rotated box within the available inline width.",
@@ -248,8 +248,8 @@
       "rationale": "The theme transforms the view-panel container, making its nested otherwise panel fixed relative to that container instead of the viewport. Native trusted otherwise clicks demonstrate 51–597px of panel escape. Remove only that containing transform and retain vertical centering with top/bottom and auto margins.",
       "evidence": [
         {
-          "path": "authority-evidence/hansarp-w13-recert-20261028/block-14-receipt.json/receipt.json",
-          "sha256": "8080ff51e50138ee28e81b097bd92aa5167af11f9d6ad6e283770882c76e21a0"
+          "path": "authority-evidence/hansarp-freeze3-recert-20261029/block-14-receipt.json/receipt.json",
+          "sha256": "eaa3d6cd5289bfd03f73c1850936db4dc72e18ebab12da72cedc19e91d390f29"
         }
       ],
       "scope": {
@@ -265,7 +265,7 @@
           "#u-credit-otherwise .modalbox"
         ]
       },
-      "published_css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6"
+      "published_css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c"
     },
     {
       "marker": "SCP-JP Wikidot Hansarp generated masthead title: fit its source lettering within the narrow title slot.",
@@ -275,8 +275,8 @@
       "rationale": "The source generated HANSARP lettering expands the native Firefox target to 357/410px at 320/390, while the same unthemed target fits. Fit only the narrow source lettering to the remaining header slot, preserving face, rotation, source repeated shadow, colors and zero-line-height layout.",
       "evidence": [
         {
-          "path": "authority-evidence/hansarp-w13-recert-20261028/block-15-receipt.json/receipt.json",
-          "sha256": "6c15e1f9201e07e26478e5f220c415c3a16823b573e58fe650e96893c87a16b0"
+          "path": "authority-evidence/hansarp-freeze3-recert-20261029/block-15-receipt.json/receipt.json",
+          "sha256": "02c31b78f1e3b6871a527eda8477f7cbcef090a397c9b639236557c7112e57f1"
         }
       ],
       "scope": {
@@ -292,38 +292,41 @@
           "#header h1 a::before"
         ]
       },
-      "published_css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6"
+      "published_css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c"
     },
     {
       "marker": "SCP-JP Wikidot Hansarp credit fader anchors: retain native backdrop stacking under the visible controls.",
       "sha256": "bbd8cd176e69656fa84abcba9aa00bd0fee182b4c5872316d82e48a12d19561b",
-      "authority": "REMOVE",
-      "origin": "target-certified-replacement",
-      "rationale": "The source generic link hover/focus rule transforms and raises the invisible native fader close anchor over modal controls. Native scrolled-return A/B fails without the correction and succeeds with it. Restore only the native absolute/auto-stack/untransformed backdrop anchor, retaining real outside-panel close clicks. W13 DISPOSITION (G2-01 session): re-certification against the current reference snapshot of the target page (acquired 2026-10-27; the 2026-09-29 snapshot the block was certified against is no longer retained in either reference cache) demonstrates no A/B need — without the block every row passes at 320/390/768/1440 on the block's own state and selectors (receipt hansarp-w13-recert-20261028/block-16). A certified block that cannot demonstrate need on the current reference is not publishable under the authority rule, so the block is removed; the rule text remains in git history and in this ledger entry for restoration if a future reference shows the divergence again.",
+      "authority": "RUNTIME_INDEPENDENT",
+      "origin": "runtime-independent-css-containment",
+      "rationale": "The source generic link hover/focus rule transforms and raises the invisible native fader close anchor over modal controls. W13 removed this block when re-certification against the then-current Wikidot snapshot showed no A/B need on the target page; the Sigma-10 campaign frame then failed all three credit.otherwise back-control-click rows (desktop/mobile/narrow-mobile) because the hovered fader anchor (full-viewport under the saved Credit cascade) intercepts the return-credits click. Freeze-3 (OD-T2 class B) restores the block verbatim (sha256 identical to the pre-removal text). The Freeze-3 toggle probe on the Sigma-10 acceptance frame reproduces the audit failure on the block-less candidate (hover raises the anchor: transform matrix(1.04856,0.0549528,...) with z-index 2, click times out at 1440/390/320) and passes the full open-otherwise/scroll/back-click/return sequence with the block restored at all three viewports.",
       "evidence": [
         {
-          "path": "authority-evidence/hansarp-w13-recert-20261028/block-16-receipt.json/receipt.json",
-          "sha256": "143ca8496a8c815da56024b6875d7297f7c9d87ec248f8c5c2e9f744ae722917"
+          "path": "authority-evidence/hansarp-freeze3-20261029/probe-credit-repro3.json",
+          "sha256": "2ecc9eb1a6b434de64663db12867f48d5fbb31aeebe6fdd52b6188a615898d63"
+        },
+        {
+          "path": "authority-evidence/hansarp-freeze3-20261029/receipt.json",
+          "sha256": "43c908844baca40b07d00d59eeaa05e1a2fa7c2f429c5b54d66d0ab896fc45a9"
+        },
+        {
+          "path": "authority-evidence/hansarp-freeze3-recert-20261029/block-16-receipt.json/receipt.json",
+          "sha256": "811e4b02b2bad97892e1580218c75102b34dc174ec3d29a975594c4b7231de4d"
         }
       ],
       "scope": {
-        "target_url": "https://pseudo-scp-jp.wikidot.com/sigma-10:main",
-        "state": "credit-fold-return",
-        "viewports": [
-          320,
-          390,
-          768,
-          1440
-        ],
-        "selectors": [
-          "#u-credit-view .modalbox"
-        ]
-      }
+        "target": "SCP-JP Sigma-10 current target acceptance",
+        "state": "credit.otherwise"
+      },
+      "selectors": [
+        "#main-content :is(#u-credit-view,#u-credit-otherwise) >.fader.foldable-list-container>a"
+      ],
+      "at_contexts": []
     },
     {
       "marker": "SCP-JP Wikidot Hansarp history options: size the history option tracks fluidly so the form fits the mobile viewport.",
-      "rationale": "The composed history rule sizes the option cell tracks as repeat(3,3rem 1fr); on the JP frame the fixed tracks push the history form past the mobile viewport (document 472px at 390px in the acceptance frame; the frozen real-content A/B measured the candidate at 404px against the native 390px, G2-25). The fluid repeat(3,1fr) sizing — the same correction the BHL family carries for this form (Q1-9/D1) — fits the form at 390px and gives the two-row option layout of the JP target at desktop widths (W13 delta receipt).",
-      "sha256": "9709e4b9e0f6f575e722574829cd92d7ac4b3b64fcca27b749798b6577e5b505",
+      "rationale": "The composed history rule sizes the option cell tracks as repeat(3,3rem 1fr); on the JP frame the fixed tracks push the history form past the mobile viewport (document 472px at 390px in the acceptance frame; the frozen real-content A/B measured the candidate at 404px against the native 390px, G2-25). The fluid repeat(3,1fr) sizing — the same correction the BHL family carries for this form (Q1-9/D1) — fits the form at 390px and gives the two-row option layout of the JP target at desktop widths (W13 delta receipt). Freeze-3 (OD-T2 class H): a 5px narrow-mobile (320px) residual remained because the 1fr tracks cannot shrink below their min-content; bounding the same tracks as repeat(3,minmax(0,1fr)) clears the residual in both shells (document 325px -> 320px, table 312.5px -> 288px, form scrollWidth 309 -> 288) with 390px geometry unchanged (Freeze-3 delta receipt).",
+      "sha256": "110c8fb319aef582a1d3a7a010a800046ef56e229374ff5bf4b1dac4ee896c08",
       "selectors": [
         "#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2)"
       ],
@@ -332,38 +335,66 @@
       "authority": "RUNTIME_INDEPENDENT",
       "evidence": [
         {
-          "path": "authority-evidence/hansarp-w13-delta-20261028/receipt.json",
-          "sha256": "bfc39b7da47a4f4496d51407a1f3e6471f837744c3526f7efc2f72b673ba7359"
+          "path": "authority-evidence/hansarp-freeze3-20261029/probe-history-s9-trials.json",
+          "sha256": "c657d1af39a36df9950e5118846d0916508198e13ee68eadbb28eb83870b2c6e"
+        },
+        {
+          "path": "authority-evidence/hansarp-freeze3-20261029/probe-history-s10-trials.json",
+          "sha256": "e2759a270dc247e3601f1e83c3e80fe01cdd16b575346a5445938e331d95c0b6"
+        },
+        {
+          "path": "authority-evidence/hansarp-freeze3-20261029/receipt.json",
+          "sha256": "43c908844baca40b07d00d59eeaa05e1a2fa7c2f429c5b54d66d0ab896fc45a9"
         }
       ],
       "scope": {
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "page.history"
       },
-      "published_css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6"
+      "published_css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c"
     },
     {
       "marker": "SCP-JP Wikidot Hansarp search: reveal the collapsed query input while the search control is hovered or keyboard-focused.",
-      "rationale": "The theme collapses the header search form to an icon box with the query input at display:none; the earlier reveal adaptation was removed in the authority cleanup, so the JP frame's search control cannot be typed into at all (defect Q2-6; the Sigma frame shows a 250px form with a visible input). This block restores the reveal on hover and on focus-within, with an 8rem input width (without a width the revealed input stays 27px at desktop). W13 delta receipt: input display none -> inline-block at 128px on hover at 1440px and 390px.",
-      "sha256": "c91110bc97281d2c05188c6e24a966eabd9f9138a2758e4b580f3399c1b85287",
+      "rationale": "The theme collapses the header search form to an icon box with the query input at display:none; the earlier reveal adaptation was removed in the authority cleanup, so the JP frame's search control cannot be typed into at all (defect Q2-6; the Sigma frame shows a 250px form with a visible input). This block restores the reveal on hover and on focus-within, with an 8rem input width (without a width the revealed input stays 27px at desktop). W13 delta receipt: input display none -> inline-block at 128px on hover at 1440px and 390px. Freeze-3 (OD-T2 class G): the in-flow 8rem reveal overflowed the tablet/mobile/narrow viewports by 29/41/43px in both shells because the revealed form is centered on the 23.4px search box (form centre approx viewport - 35.5px at <=768px), so the input's right edge lands at centre + 64px. At <=1024px the revealed input now grows leftwards instead: the form becomes the positioning context and the input is absolutely placed ending 1.75rem before the form's right edge (clear of the submit control), keeping the full 8rem usable width with measured document overflow 0px at 768/390/320 in both shells (Freeze-3 delta receipt). Desktop in-flow geometry is unchanged.",
+      "sha256": "197f9359f96aaeba174a599053682519858452e5757cec02b79626b359539ba9",
       "selectors": [
-        "#search-top-box-form:hover #search-top-box-input",
-        "#search-top-box-form:focus-within #search-top-box-input"
+        "#search-top-box-form:focus-within",
+        "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover",
+        "#search-top-box-form:hover #search-top-box-input"
       ],
-      "at_contexts": [],
+      "at_contexts": [
+        "@media(max-width:1024px)"
+      ],
       "origin": "runtime-independent-css-containment",
       "authority": "RUNTIME_INDEPENDENT",
       "evidence": [
         {
-          "path": "authority-evidence/hansarp-w13-delta-20261028/receipt.json",
-          "sha256": "bfc39b7da47a4f4496d51407a1f3e6471f837744c3526f7efc2f72b673ba7359"
+          "path": "authority-evidence/hansarp-freeze3-20261029/probe-search-s9-g23.json",
+          "sha256": "4b62fa4aadf3d535f43860cf812cb89a574d9d8f92d0c7416b1ef5ac99293cde"
+        },
+        {
+          "path": "authority-evidence/hansarp-freeze3-20261029/probe-search-s10-g23.json",
+          "sha256": "0ea252456dc9aef6a5d6a8e9f4c287521e222f6ef511849b72bb3790fad30bc9"
+        },
+        {
+          "path": "authority-evidence/hansarp-freeze3-20261029/receipt.json",
+          "sha256": "43c908844baca40b07d00d59eeaa05e1a2fa7c2f429c5b54d66d0ab896fc45a9"
+        },
+        {
+          "path": "authority-evidence/hansarp-freeze3-recert-20261029/search-focus-receipt.json/receipt.json",
+          "sha256": "f10137c8a82de91c9cb81608678332188448307b3df8459b7b2dca2b3bf3df55"
+        },
+        {
+          "path": "authority-evidence/hansarp-freeze3-recert-20261029/search-hover-receipt.json/receipt.json",
+          "sha256": "3d1f3c5a0b8fb4730d0e26a427ee70dec3d28fcae5e58fa5d8d2b29cf7b7c8b1"
         }
       ],
       "scope": {
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "shell.search"
       },
-      "published_css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6"
+      "published_css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c"
     },
     {
       "marker": "SCP-JP Wikidot Hansarp navigation labels: keep top-bar labels unbroken on narrow viewports.",
@@ -386,7 +417,7 @@
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "navigation"
       },
-      "published_css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6"
+      "published_css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
@@ -415,6 +446,16 @@
       "authority": "TARGET_WIKIDOT_CERTIFIED"
     },
     {
+      "marker": "SCP-JP Wikidot Hansarp credit fader anchors: retain native backdrop stacking under the visible controls.",
+      "rationale": "SCP-JP Wikidot Hansarp credit fader anchors: retain native backdrop stacking under the visible controls.",
+      "sha256": "bbd8cd176e69656fa84abcba9aa00bd0fee182b4c5872316d82e48a12d19561b",
+      "selectors": [
+        "#main-content :is(#u-credit-view,#u-credit-otherwise) >.fader.foldable-list-container>a"
+      ],
+      "at_contexts": [],
+      "authority": "RUNTIME_INDEPENDENT"
+    },
+    {
       "marker": "SCP-JP Wikidot Hansarp generated masthead title: fit its source lettering within the narrow title slot.",
       "rationale": "SCP-JP Wikidot Hansarp generated masthead title: fit its source lettering within the narrow title slot.",
       "sha256": "2961f9505858fc96e9f995c5eb32eda3fd08c4eddadfdef9e6fd0b7458736e54",
@@ -429,7 +470,7 @@
     {
       "marker": "SCP-JP Wikidot Hansarp history options: size the history option tracks fluidly so the form fits the mobile viewport.",
       "rationale": "SCP-JP Wikidot Hansarp history options: size the history option tracks fluidly so the form fits the mobile viewport.",
-      "sha256": "9709e4b9e0f6f575e722574829cd92d7ac4b3b64fcca27b749798b6577e5b505",
+      "sha256": "110c8fb319aef582a1d3a7a010a800046ef56e229374ff5bf4b1dac4ee896c08",
       "selectors": [
         "#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2)"
       ],
@@ -439,12 +480,16 @@
     {
       "marker": "SCP-JP Wikidot Hansarp search: reveal the collapsed query input while the search control is hovered or keyboard-focused.",
       "rationale": "SCP-JP Wikidot Hansarp search: reveal the collapsed query input while the search control is hovered or keyboard-focused.",
-      "sha256": "c91110bc97281d2c05188c6e24a966eabd9f9138a2758e4b580f3399c1b85287",
+      "sha256": "197f9359f96aaeba174a599053682519858452e5757cec02b79626b359539ba9",
       "selectors": [
+        "#search-top-box-form:focus-within",
         "#search-top-box-form:focus-within #search-top-box-input",
+        "#search-top-box-form:hover",
         "#search-top-box-form:hover #search-top-box-input"
       ],
-      "at_contexts": [],
+      "at_contexts": [
+        "@media(max-width:1024px)"
+      ],
       "authority": "RUNTIME_INDEPENDENT"
     },
     {
