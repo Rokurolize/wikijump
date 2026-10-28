@@ -70,3 +70,8 @@ SkipOSは[[[theme:bedrock|Bedrock]]]カーネルをベースにしています�
 @import url('https://scp-jp.wdfiles.com/local--code/theme%3Askipos/1');
 [[include :scp-jp:component:interwiki-style
 | theme=https://scp-jp.wdfiles.com/local--code/theme%3Askipos/1
+
+[[module CSS]]
+/* SCP-JP Wikidot skipos action-area pane: give the opened action-area pane the theme's own dark glass ground at every width so pane content stays readable over the page. */
+#action-area{background-color:rgb(25 25 39 / .686);backdrop-filter:blur(.75rem) saturate(1.05)}
+[[/module]]
