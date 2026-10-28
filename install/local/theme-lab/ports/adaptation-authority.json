@@ -9612,8 +9612,8 @@
         "candidate.wikidot.source.txt": "ccf5f58cc71f0e9a6f7b988e5a74bbc889dd369625075c33da06773b57bc8f45",
         "candidate.wikidot.txt": "c4c5954f86bf330d7014c6ecbe1643e1c7370bb08d48e6492e5c13d2c338508b",
         "maintenance/base.wikidot.txt": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
-        "maintenance/jp-overrides.css": "6a1c58863d200529c5cb8a17bc3c93a3b20678e74cce8e11c6537988a5dbfa58",
-        "maintenance/final.wikidot.txt": "0c85c54ff9553c4449eb10268afd9a989db1ca200bd452c470fcded136a2c1f1"
+        "maintenance/jp-overrides.css": "a93e9a7f6471a4b83af3db6a910757046a1499040f4e5250253259069d0a93f5",
+        "maintenance/final.wikidot.txt": "fcfe0c19ed02c8e75d03a2c164fc9192ceb97bd6161c5682ccb5065f08c7e69f"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
