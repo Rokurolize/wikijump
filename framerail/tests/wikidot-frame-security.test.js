@@ -209,6 +209,25 @@ test("keeps canonical file origins beside request-port forms at a rehearsal port
   )
 })
 
+test("materializes the viewed site's own files origin in font-src (sigma-10)", () => {
+  const response = new Response("", {
+    headers: {
+      "content-security-policy":
+        "font-src 'self' data: https://wikijump-current-site.invalid; style-src 'self' https://wikijump-current-site.invalid; img-src 'self' https://wikijump-current-site.invalid"
+    }
+  })
+  materializeSiteCsp(
+    response,
+    "scp-jp-sigma10",
+    "local",
+    "https://scp-jp-sigma10.wikijump.localhost:28443"
+  )
+  assert.equal(
+    response.headers.get("content-security-policy"),
+    "font-src 'self' data: https://scp-jp-sigma10.wjfiles.localhost https://scp-jp-sigma10.wjfiles.localhost:28443; style-src 'self' https://scp-jp-sigma10.wjfiles.localhost https://scp-jp-sigma10.wjfiles.localhost:28443; img-src 'self' https://scp-jp-sigma10.wjfiles.localhost https://scp-jp-sigma10.wjfiles.localhost:28443"
+  )
+})
+
 test("leaves local mirror file origins unchanged when no request port is known", () => {
   const response = new Response("", {
     headers: {

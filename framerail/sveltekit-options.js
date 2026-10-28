@@ -127,8 +127,13 @@ function styleSources() {
 
 /** @returns {CspSources} */
 function fontSources() {
+  // The viewed site's own files host serves the site theme's @font-face
+  // payload (e.g. Sigma-10), exactly as it serves its styles and images:
+  // materializeSiteCsp replaces this placeholder with the canonical and
+  // request-port forms per response. Without it, font-src carries only the
+  // mirror origins while style-src and img-src admit the viewed site.
   /** @type {CspSources} */
-  const sources = ["self", "data:", ...WIKIDOT_FONT_SOURCES]
+  const sources = ["self", "data:", CURRENT_SITE_FILE_ORIGIN, ...WIKIDOT_FONT_SOURCES]
   if (deploymentEnvironment === "local") sources.push(...LOCAL_SCP_FILE_ASSET_SOURCES)
   return sources
 }
