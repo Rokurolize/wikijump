@@ -5,6 +5,7 @@ import {measureTitleComposition} from './title-composition.mjs';
 import {measureTitleTextIntersections} from './title-text-intersections.mjs';
 import {BASELINE_DOCUMENT_CONTAINMENT_CONTRACT_SHA256,BASELINE_DOCUMENT_CONTAINMENT_SCHEMA} from './baseline-document-containment.mjs';
 import {validateVisualGateRecord,visualGateNeedsScreenshot} from './visual-gate.mjs';
+import {loadFaithfulDesignExemptions,matchFaithfulDesignContainment} from './finalize-visual-acceptance.mjs';
 
 export const SEMANTIC_BROWSER_MODEL = 'theme_lab_semantic_browser_acceptance.v1';
 const hash = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -85,7 +86,7 @@ function sourceReplacedSidebarSafety(row) {
 // No screenshot is needed to establish the observed action or document width.
 // Successful action execution proves only the maintained harness execution,
 // not complete usability, appearance, source intent or Wikidot parity.
-export function measuredFacts(row) {
+export function documentContainmentOverflows(row) {
   const viewport = row.visual_diagnostics?.viewport;
   const documentWidth = viewport?.document_width ?? viewport?.documentWidth;
   const width = viewport?.client_width ?? viewport?.width;
@@ -95,6 +96,11 @@ export function measuredFacts(row) {
     row.baseline_document_containment_contract_sha256===BASELINE_DOCUMENT_CONTAINMENT_CONTRACT_SHA256&&
     Number.isFinite(baselineContainment.document_width)&&Number.isFinite(baselineContainment.viewport_width)&&baselineContainment.viewport_width>0;
   const baselineOverflow=baselineComplete?Math.max(0,baselineContainment.document_width-baselineContainment.viewport_width):null;
+  return {candidateOverflow, baselineOverflow};
+}
+
+export function measuredFacts(row) {
+  const {candidateOverflow, baselineOverflow} = documentContainmentOverflows(row);
   const search = row.action_contract_observation;
   const exercisedSearch = search?.schema === 'theme_lab_search_action.v1' &&
     (search.mode === 'typed-focused' && search.typed_and_focused === true ||
@@ -267,13 +273,27 @@ export function planBrowserAcceptance(audit) {
       questions.set(id,question);
       required.push(id);
     }
+    const machineFailures = Object.keys(facts).filter(name => facts[name] === 'fail');
+    // A document_containment failure moves to machine_explanations only when a
+    // faithful-design exemption entry matches this observation exactly (theme,
+    // observation key, both measured overflows and the observation dependency
+    // hash). Any drift leaves the failure standing.
+    let containmentExemption = null;
+    if (facts.document_containment === 'fail') {
+      const {candidateOverflow, baselineOverflow} = documentContainmentOverflows(row);
+      containmentExemption = matchFaithfulDesignContainment(loadFaithfulDesignExemptions(), {
+        theme: row.theme, observationKey: key, candidateOverflowPx: candidateOverflow,
+        baselineOverflowPx: baselineOverflow, dependenciesSha256: hash(dependencies)});
+      if (containmentExemption) machineFailures.splice(machineFailures.indexOf('document_containment'), 1);
+    }
     observations.push({key, dependencies_sha256: hash(dependencies), facts, visual_questions: required,
       machine_explanations: [
         ...(transientOverlaySettled ? ['title_composition: source-proven canonical transient navigation overlay over a clean exact-context reading state whose title composition is either machine-clean or bound to source-identity review'] : []),
         ...(identityCompositionCovered ? ['title_composition: exact measured composition is covered by the source-identity review of the corresponding normal reading state'] : []),
+        ...(containmentExemption ? [`document_containment: faithful-design exemption ${containmentExemption.id} (decision ${containmentExemption.decision}); the measured candidate and baseline overflows remain recorded in the observation facts`] : []),
       ],
       source_fact_authority:transientOverlaySettled?NAVIGATION_OVERLAY_SOURCE:null,
-      machine_failures: Object.keys(facts).filter(name => facts[name] === 'fail'),
+      machine_failures: machineFailures,
       additional_machine_evidence: Object.keys(facts).filter(name => facts[name] === 'missing')});
     observations.at(-1).additional_source_authority = Object.keys(facts).filter(name => facts[name] === 'source-required');
   }
