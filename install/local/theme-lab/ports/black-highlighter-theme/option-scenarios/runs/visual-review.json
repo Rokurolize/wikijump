@@ -1,0 +1,1000 @@
+{
+  "schema": "theme_lab_bhl_option_visual_review.v2",
+  "status": "pass",
+  "reviewer": "Muse W10 lane (subagent 59efbf0b)",
+  "review_method": "direct visual inspection of the 23 screenshots whose bytes differ from the W08 reviewed set; the remaining 54 are byte-identical to screenshots already classified PASS_NATURAL in the W08 Freeze-1 review and inherit that human review",
+  "reviewed_at": "2026-10-28T08:04:00Z",
+  "candidate_set_sha256": "867aafeb5615d006950c5524e2fc1fe7c4c1f9a02e8db3f6011eee1362e277bb",
+  "source_authority_sha256": "9ed3274e1983a98efddd61381588f86baca724a06e59cff05c201b7661e2fe05",
+  "framerail_fingerprint_sha256": "73917c99b07d846cac41c92b7a0b9041b51f9578d275e05921d4eeb0c13e7ef1",
+  "backend_runtime_identity": {
+    "schema": "wikijump_deepwell_runtime_identity.v1",
+    "source_sha256": "2a84ce2e9905e6f1871f3d0732e61f3370500a92bf37cbb2d8825d08366bea4e",
+    "ftml_git_revision": "ef502b8af7cd9a58f7f1b1edf3639f35f48bd982",
+    "container_id": "2d13667a9f60be6f5eb811c50c3be95c6474e9a02f41933c4c07a4d763628b5b",
+    "image_id": "sha256:db7927fa45edfb29992712e3fb33bd7abcf0a294262116da150a6e70f0b133e8",
+    "binary_sha256": "d9f1697f97fce220f6d1004bd86c62a385dfd4327d6165501c20269a95c63618",
+    "config_sha256": "6eeb5715be1ac0d72784a10eb2a821b14995e9d0e29cd886a146e489ff16f638",
+    "identity_sha256": "53c7476f81925cc5d3886606334fae4697c4ea413bc7e932a2762696d9a0baf8"
+  },
+  "backend_runtime_identity_sha256": "53c7476f81925cc5d3886606334fae4697c4ea413bc7e932a2762696d9a0baf8",
+  "candidate_identity": {
+    "theme_candidate_source_sha256": "7d5b9b62dabf64d00edf200fd4a42567c43985479a8a0500b34a4a5ed90ef599",
+    "theme_candidate_css_sha256": "b675c758a7518328c672e44ad71ee74d900703020a845d6ec7ba1055cda73577"
+  },
+  "classification_counts": {
+    "PASS_NATURAL": 82
+  },
+  "scenarios": [
+    {
+      "id": "bhl-options-toggle-header-dark",
+      "status": "pass",
+      "reviewer": "Muse W10 lane (subagent 59efbf0b)",
+      "review_method": "direct visual inspection of the 23 screenshots whose bytes differ from the W08 reviewed set; the remaining 54 are byte-identical to screenshots already classified PASS_NATURAL in the W08 Freeze-1 review and inherit that human review",
+      "receipts": [
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "sha256": "abc64ddd9f8ce49b461e73d716630926f149879a4846c9f5840a9a0b9fe4e47a"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
+          "sha256": "6f9094ffddd47812261ab4bfd51f9e0b65a03dcac9c98c6b525ab9fb4c6e1b1a"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
+          "sha256": "7350a9bd8d75082770ae5dad305a6c6a6c4397dcb4f22d1148b7f1e13881f835"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "sha256": "9d7a9f5a4595ce333467f463666ef4bd68fbcdb7f081636d9e2de5c7fdfd64d7"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
+          "sha256": "27d75313467f89834f99b84c9be7558587ba7f6ce8c1d1df06c8a8186e7b2b0d"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
+          "sha256": "8ea6297d04ead0bbdd7d076433e223d86c68cd36ca184dc9c7d05c518bf67ebd"
+        }
+      ],
+      "screenshots": [
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-centered-desktop-desktop.png",
+          "sha256": "577014389311b8d312c0c9195767a44efc31602eb641a65f4a0bcc98527b4ea9",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "centered-desktop",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-centered-mobile-mobile.png",
+          "sha256": "41d3170c0bb7ca099217c6c2abfd6854dbbb26ded357e4dec2e382c38844e5ed",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "centered-mobile",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-centered-narrow-narrow-mobile.png",
+          "sha256": "684ce65faae2bd48d2c9c60ffc72e17abd9507f0d133872306272c8258e8abef",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "centered-narrow",
+          "viewport": "narrow-mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-rest-desktop.png",
+          "sha256": "577014389311b8d312c0c9195767a44efc31602eb641a65f4a0bcc98527b4ea9",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "toggle-rest",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-corner-button-open-desktop.png",
+          "sha256": "e089debac787459f3155084a979efabcd33b13d268eba52e143666e82b222393",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "toggle-corner-button-open",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-hover-after-button-open-desktop.png",
+          "sha256": "7ba315b5053bcb4c8da4d971fb19e839b186755fa868d082609c2786df190d64",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "toggle-hover-after-button-open",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-keyboard-focus-open-desktop.png",
+          "sha256": "87d27f0e22a8ba58c50c479f1a69174a85d4781098b4a47f183c477d7679cc5e",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "toggle-keyboard-focus-open",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-mobile-target-open-mobile.png",
+          "sha256": "4d3f756d2d3ebdca0ac5fe9f7be46c7200721285547140ea4724cd3d2c15e9f0",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "toggle-mobile-target-open",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-mobile-close-menu-mobile.png",
+          "sha256": "98ad736e29b898cb4283093e803f8c612d584f17819d1b2ec459f7bb8e48f7f5",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "toggle-mobile-close-menu",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-narrow-target-open-narrow-mobile.png",
+          "sha256": "28c513b9d604b7015e59c9f3aa8ab8fb55baa9696ec6f84e25217ecce1904a28",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "toggle-narrow-target-open",
+          "viewport": "narrow-mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-normal-desktop.png",
+          "sha256": "353b3d9f38f0f69609445010a156c0eb92403d29e1bd7f3775b8bfe07431390a",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "dark-normal",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-hover-desktop.png",
+          "sha256": "07acad5a3b285b4380d9d05153b0a655267d0e21cbc7fd3cf5d75019295278b0",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "dark-hover",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-keyboard-focus-desktop.png",
+          "sha256": "3904696a5d94808c730bad00dd8b5397a26cb4f33e9b26b3e679c03609742688",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "dark-keyboard-focus",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-current-desktop.png",
+          "sha256": "09ed2d7c96264f3674405bd0cf0db6c6a69badb2a8950470308d84e879447a3a",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "dark-current",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-normal-mobile.png",
+          "sha256": "94541534cf8d6e37f68936e8a9813a354336948348cbba6507b76ae1d8f0e5db",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "dark-mobile-normal",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-keyboard-focus-mobile.png",
+          "sha256": "5dea726be38eded26fcd1df7dc226316fbb944aed9aa901e3ab3fa5b28a83850",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "dark-mobile-keyboard-focus",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-current-mobile.png",
+          "sha256": "9d7c05e677f12ddce453dbfbcb7c54b72da8de30c2479451c3420271e7b22d58",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "dark-mobile-current",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-hover-mobile.png",
+          "sha256": "3cc616f87a9d27ad7805099b378a43d4d79dddedf822f230230313904f570087",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+          "state": "dark-mobile-hover",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-corner-button-open-desktop.png",
+          "sha256": "10c19748707d6a1ba648de9bc5ed3b51d0490dcb94b097f2de2927af61a51281",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
+          "state": "toggle-corner-button-open",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-hover-after-button-open-desktop.png",
+          "sha256": "688f98b71b1d656f0735f87bdb900e2bb5267a7a34b29f5b81cebcf0842969f5",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
+          "state": "toggle-hover-after-button-open",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-keyboard-focus-open-desktop.png",
+          "sha256": "a937c0b718b2cb19831a14b23964f9351aade8312b37d55e1dbfe2869934a385",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
+          "state": "toggle-keyboard-focus-open",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-mobile-target-open-mobile.png",
+          "sha256": "979a866cff7c1cad35fe8f9560b18f133abb046b704aec44ae4e14bdf5127d45",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
+          "state": "toggle-mobile-target-open",
+          "viewport": "mobile",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/combined-toggle-mobile-close-menu-mobile.png",
+          "sha256": "7ff65be1a7d0aa8311444ea30c261c59a10929bf20ae3350ee149c925cc9b043",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
+          "state": "toggle-mobile-close-menu",
+          "viewport": "mobile",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-corner-button-open-desktop.png",
+          "sha256": "245d45a12375760cb46172774d2a9c33b5d2952654c04dabffc931dca2afdaa6",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
+          "state": "toggle-corner-button-open",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-hover-after-button-open-desktop.png",
+          "sha256": "b9e9d8a1e57ad426c15dddf6af46dcab0aac4fa5fe9f4bc21cc4b14dbccf07d7",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
+          "state": "toggle-hover-after-button-open",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-keyboard-focus-open-desktop.png",
+          "sha256": "1faab70a40c987275a1a86316b04d55364d2efeec19737ffe9e5e6f3168421ff",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
+          "state": "toggle-keyboard-focus-open",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-mobile-target-open-mobile.png",
+          "sha256": "30717a08a6dac7f8f051b04d71b5ccb4070f4153013318280135ebd34619187e",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
+          "state": "toggle-mobile-target-open",
+          "viewport": "mobile",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/combined-toggle-mobile-close-menu-mobile.png",
+          "sha256": "6a5db5f142e9ac455124ed32ae587285368a892a019d104455241aaa7b18b6be",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
+          "state": "toggle-mobile-close-menu",
+          "viewport": "mobile",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-centered-desktop-desktop.png",
+          "sha256": "8b184ce559c7480a71f8026758b97c7f143ed0eed97ac4c446bf0bc22cafbacc",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "centered-desktop",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-centered-mobile-mobile.png",
+          "sha256": "6c196422ec0529358081391867708d3cb3e612cf4bf8a8e8cb510231fd6edfe0",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "centered-mobile",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-centered-narrow-narrow-mobile.png",
+          "sha256": "22bb351762f445f698cc171acb88c6cb5dad7581fe555732c3ad0530dcca8260",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "centered-narrow",
+          "viewport": "narrow-mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-rest-desktop.png",
+          "sha256": "8b184ce559c7480a71f8026758b97c7f143ed0eed97ac4c446bf0bc22cafbacc",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "toggle-rest",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-corner-button-open-desktop.png",
+          "sha256": "a7d1ab251f2ab94795f4417080e463ed7e5d688a334a92d799af329ff85ea070",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "toggle-corner-button-open",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-hover-after-button-open-desktop.png",
+          "sha256": "5ab76280c61a53fc6362ce0a1944b267d1f1c25538939169ddb588a9f1f5185b",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "toggle-hover-after-button-open",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-keyboard-focus-open-desktop.png",
+          "sha256": "a3a6463319b55833f69ea486a06b7aeb738f2d6aba4f76f1360da87801fbab6b",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "toggle-keyboard-focus-open",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-mobile-target-open-mobile.png",
+          "sha256": "610eadc4c563b697ac9c7bfd78e3bafebdb6cb100961d77e994045c0f4138dd0",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "toggle-mobile-target-open",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-mobile-close-menu-mobile.png",
+          "sha256": "6c196422ec0529358081391867708d3cb3e612cf4bf8a8e8cb510231fd6edfe0",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "toggle-mobile-close-menu",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-toggle-narrow-target-open-narrow-mobile.png",
+          "sha256": "df20c998e2d9be9c3f012bc1b58055d73067573e0cccc8a9bbeea4dfad7a3b1f",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "toggle-narrow-target-open",
+          "viewport": "narrow-mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-normal-desktop.png",
+          "sha256": "913f925cdabcf8bbefea8e90b7d4cf337cd923db6ccec209b362b00b2166d937",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "dark-normal",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-hover-desktop.png",
+          "sha256": "f4188e2f25dde4637eee40de7d0bbbc636314ddcc36765d8d5ddff16634b485f",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "dark-hover",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-keyboard-focus-desktop.png",
+          "sha256": "f861cbacdd77418d1afa95f469c6892bb5ee999276a333799411e7901f485351",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "dark-keyboard-focus",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-current-desktop.png",
+          "sha256": "3f3641b2b2abaeafd1b0fd92bea05aa576127a76fd61f82b440287cc0916b787",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "dark-current",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-mobile-normal-mobile.png",
+          "sha256": "236d503afb40e25070d58fe6938363c1decbe598102c60c2fa9495a803a2743f",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "dark-mobile-normal",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-mobile-keyboard-focus-mobile.png",
+          "sha256": "9946c31dbb4a0b5cbcb497346adaa3ac00bd21efa7b2c45e2dfee9c964238fc8",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "dark-mobile-keyboard-focus",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-mobile-current-mobile.png",
+          "sha256": "947d70d0b4a611d698f4fb32d3f6d226e150961cc4940cb4839b45c70d276061",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "dark-mobile-current",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/combined-dark-mobile-hover-mobile.png",
+          "sha256": "a758ff1bd5c94f8162f1a5e5245a6fdbf3d43f8ca78b9a429959cdf8c1cdb010",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+          "state": "dark-mobile-hover",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Directly inspected in the W10 visual review: BHL fixture page renders naturally in this state (sidebar toggle/dark variants); Japanese text intact, no clipping, overlap, or broken subresource."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-corner-button-open-desktop.png",
+          "sha256": "1e474c101e5fb73c192e238cdbbbf0a74f0e1aca06bb052c21b6beafc38d1b4d",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
+          "state": "toggle-corner-button-open",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-hover-after-button-open-desktop.png",
+          "sha256": "21edcfce451396e00395e57f16cdc021dac4664e3856008cfbd8e196a3a13a4a",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
+          "state": "toggle-hover-after-button-open",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-keyboard-focus-open-desktop.png",
+          "sha256": "47d4a799cfa65f5b894e04ca9076bfd5b2d8958cc55530d351e674afdb27a80a",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
+          "state": "toggle-keyboard-focus-open",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-mobile-target-open-mobile.png",
+          "sha256": "ae5c2a605131f42028a16f8eb36ad4ed32ab029e2caba06aa348f348a4e095ab",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
+          "state": "toggle-mobile-target-open",
+          "viewport": "mobile",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/combined-toggle-mobile-close-menu-mobile.png",
+          "sha256": "6561f5f4ee9ff7e256116dffa39fcb8b095f4d2fbefd6e137e7e80fefbba9722",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
+          "state": "toggle-mobile-close-menu",
+          "viewport": "mobile",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-corner-button-open-desktop.png",
+          "sha256": "4ef5acd13427ccbb1014011b8eb84c1d31ec4750f4ce659b0e36c421f11a5500",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
+          "state": "toggle-corner-button-open",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-hover-after-button-open-desktop.png",
+          "sha256": "84cf0056ca64235a10a095a300997999c46303690292df9b70d17af3f1cc7828",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
+          "state": "toggle-hover-after-button-open",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-keyboard-focus-open-desktop.png",
+          "sha256": "7b470f1c61acac550920792b129bbf7140f1c878751a4cf17dd1808a53339d91",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
+          "state": "toggle-keyboard-focus-open",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-mobile-target-open-mobile.png",
+          "sha256": "a2b7425a37097108389b756c334c091d77818fee03b3d32955b66af887b138ce",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
+          "state": "toggle-mobile-target-open",
+          "viewport": "mobile",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/combined-toggle-mobile-close-menu-mobile.png",
+          "sha256": "72b2f036be13f8a7c43b7b18053061b30d715ab469a3b2c2a0bb4ba3f1bc1843",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
+          "state": "toggle-mobile-close-menu",
+          "viewport": "mobile",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        }
+      ]
+    },
+    {
+      "id": "bhl-options-collapsible-sidebar",
+      "status": "pass",
+      "reviewer": "Muse W10 lane (subagent 59efbf0b)",
+      "review_method": "direct visual inspection of the 23 screenshots whose bytes differ from the W08 reviewed set; the remaining 54 are byte-identical to screenshots already classified PASS_NATURAL in the W08 Freeze-1 review and inherit that human review",
+      "receipts": [
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
+          "sha256": "b825f5f8c263eabeaec0b87c60228c9050e21ca0e9aff31d12a6ddea194418a4"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json",
+          "sha256": "df5db63706766490101ef1917d1b08a1ab2a6d447fe8d55ef047878e4a19a2a7"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json",
+          "sha256": "6b1166f9292ccab6bf693964fa6db4895bf9887417842fc82ad7aaf0bb1847c5"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
+          "sha256": "24bf1e6df16f97f0aca99dfcf24b2b92d06e74a8c20e841807889127c161a3bb"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json",
+          "sha256": "c93460c1c97361494c78d983d287e2eb62bbc062b64b778b2ee69251636ba4e0"
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json",
+          "sha256": "5521abc026b877837426cade7675f407aa442603c4b49db57a1c85a1f0be0f8f"
+        }
+      ],
+      "screenshots": [
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-rest-desktop.png",
+          "sha256": "035722802a82dce2f17cd32df79a073ab5a017314b631d31f1a5db162d3fe419",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
+          "state": "collapsible-rest",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-hover-expanded-desktop.png",
+          "sha256": "e7f5143488b661d04a6eb2510d4fd3d2094026afedb6d1bf5a3220b6ba1a4b12",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
+          "state": "collapsible-hover-expanded",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
+          "sha256": "915747298f57a90ea8e4938ae675aaaf52bac1eb2c0dda63eacbb6720940e644",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
+          "state": "collapsible-keyboard-focus-expanded",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-nested-entry-desktop.png",
+          "sha256": "80188fa33a5c6dfac54cd62b81f48643ed017d08c8a07ba29a8b405d02183f9a",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
+          "state": "collapsible-nested-entry",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-closed-desktop.png",
+          "sha256": "035722802a82dce2f17cd32df79a073ab5a017314b631d31f1a5db162d3fe419",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
+          "state": "collapsible-closed",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-mobile-mobile.png",
+          "sha256": "e70e023f61ce39663ea389f4fa95ab84fda9846cb89e4146f67d989c279ce570",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
+          "state": "collapsible-mobile",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/collapsible-collapsible-narrow-mobile-narrow-mobile.png",
+          "sha256": "6d3ebd279fdccea5f93f642a49ae0ef2f89eee864e53e2150d14691148b2bb55",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
+          "state": "collapsible-narrow-mobile",
+          "viewport": "narrow-mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/collapsible-collapsible-hover-expanded-desktop.png",
+          "sha256": "bef72eac435a576b02a1d5a9a8555f0814a100a4b6f4830eec6e323aab1c2b79",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json",
+          "state": "collapsible-hover-expanded",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
+          "sha256": "811566a130cf2197807ebe0696809d666d3022eaecdb84a679e1b0803635eda3",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json",
+          "state": "collapsible-keyboard-focus-expanded",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/firefox/collapsible-collapsible-nested-entry-desktop.png",
+          "sha256": "cc96f375ce16a0354e106e553dcbb2ed9cd8d8515444c89f27082aed2bd4a9de",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json",
+          "state": "collapsible-nested-entry",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/collapsible-collapsible-hover-expanded-desktop.png",
+          "sha256": "836f8729ec27bab097645659bfa6bbdc65087881954069606d04117de06f37f7",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json",
+          "state": "collapsible-hover-expanded",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
+          "sha256": "7c8141c1dc60eaf1c0384bd24c2db649c7538cc73d29e02f774d75431d626d3b",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json",
+          "state": "collapsible-keyboard-focus-expanded",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma9/webkit/collapsible-collapsible-nested-entry-desktop.png",
+          "sha256": "a8aeb9080a1c07315d204790057028438722d3d98e1e44410b0258f84398f201",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json",
+          "state": "collapsible-nested-entry",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-9",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-rest-desktop.png",
+          "sha256": "944a51c083c3ce7f6aadd89e401a56a75ecfd8f9da4f99ae940b3848b1e4db92",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
+          "state": "collapsible-rest",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-hover-expanded-desktop.png",
+          "sha256": "145a5e905969b20a5a6e99529e9e06ba2fba11b5edd297cb13f8b1f439e44c7a",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
+          "state": "collapsible-hover-expanded",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
+          "sha256": "be4bdfc18a42c8645d1c3057a0809f307b9991f7c1f1490f5651fbc33198e8fb",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
+          "state": "collapsible-keyboard-focus-expanded",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-nested-entry-desktop.png",
+          "sha256": "925d31a5ced7dc38c92c541acfaf5746275e3825b038b46e780831d2d1b5ab31",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
+          "state": "collapsible-nested-entry",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-closed-desktop.png",
+          "sha256": "944a51c083c3ce7f6aadd89e401a56a75ecfd8f9da4f99ae940b3848b1e4db92",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
+          "state": "collapsible-closed",
+          "viewport": "desktop",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-mobile-mobile.png",
+          "sha256": "2b18b08cbd3582868278551431023a9f4ec0ddde97f34fb8890b07d356d7e03d",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
+          "state": "collapsible-mobile",
+          "viewport": "mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/chromium/collapsible-collapsible-narrow-mobile-narrow-mobile.png",
+          "sha256": "b8a0d32cd530cfe354926722a6ed27ba1589f6375c5a34671c8a5e765b2a78e5",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
+          "state": "collapsible-narrow-mobile",
+          "viewport": "narrow-mobile",
+          "browser_engine": "chromium",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/collapsible-collapsible-hover-expanded-desktop.png",
+          "sha256": "082ebc2f1a11b34b2090c4545c30d313edb52a386156bcf477aed2ddd12d4297",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json",
+          "state": "collapsible-hover-expanded",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
+          "sha256": "24621b4bca700963bf83ec5565e6957af58b8e09e68a12f1de020b3a2428ba14",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json",
+          "state": "collapsible-keyboard-focus-expanded",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/firefox/collapsible-collapsible-nested-entry-desktop.png",
+          "sha256": "cb957289e8e9071b47191353ce50541aa3d1ec461e512faf884e9a847fc61f50",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json",
+          "state": "collapsible-nested-entry",
+          "viewport": "desktop",
+          "browser_engine": "firefox",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/collapsible-collapsible-hover-expanded-desktop.png",
+          "sha256": "cdcbf6cfce357e24761b95478ebb0ce30be2facb7ffdf78a3a91165aaa5c3b1b",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json",
+          "state": "collapsible-hover-expanded",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/collapsible-collapsible-keyboard-focus-expanded-desktop.png",
+          "sha256": "684e87a3ee6fdcaf248a28ebe8095417f95cfacd6c43f3fa2bec0d9f377af433",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json",
+          "state": "collapsible-keyboard-focus-expanded",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        },
+        {
+          "path": "ports/black-highlighter-theme/option-scenarios/captures/sigma10/webkit/collapsible-collapsible-nested-entry-desktop.png",
+          "sha256": "da196363b88111cd47d69ffee46bec13c5c64cf88ebce89bec8b59a59b3d2334",
+          "receipt_path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json",
+          "state": "collapsible-nested-entry",
+          "viewport": "desktop",
+          "browser_engine": "webkit",
+          "baseline": "Sigma-10",
+          "classification": "PASS_NATURAL",
+          "note": "Byte-identical (same sha256) to a screenshot classified PASS_NATURAL in the W08 Freeze-1 visual review; classification carried over by hash identity."
+        }
+      ]
+    }
+  ]
+}

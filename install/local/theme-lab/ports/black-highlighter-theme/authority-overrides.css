@@ -5,3 +5,6 @@
 
 /* SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog. */
 [id*=u-credit] div.credit-back a{white-space:nowrap;flex-shrink:0}
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+/* SCP-JP Wikidot black-highlighter-theme top bar labels: keep top navigation labels whole at narrow widths. */
+#top-bar .top-bar>ul>li>a,#top-bar .mobile-top-bar>ul>li>a{word-break:keep-all}
