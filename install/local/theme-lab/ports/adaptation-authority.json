@@ -5942,8 +5942,8 @@
         }
       },
       "current_navigation_evidence": {
-        "path": "authority-evidence/turbo-vision-final-three-trusted-navigation-v3-20261002/receipt.json",
-        "sha256": "11e14456397fa1c083ad2440aa97058805efa7a5907f0d6aa0287ffec89d1dc5"
+        "path": "authority-evidence/turbo-vision-freeze3-navigation-20261029/receipt.json",
+        "sha256": "3d1c348c6bd7f76ad3e9363ed331f443128eaaf30dd11957fa146bee3cec1e48"
       }
     },
     "skipos": {
