@@ -4536,7 +4536,7 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "credit.view"
           },
-          "published_css_sha256": "eaa78c18bc1e583254f9dc0479f9b70e72451eb205efbe2a24c72fcd34f24735"
+          "published_css_sha256": "382f0f02d9b2ce705aaae5d78a0cc11108f5b82209805105c352661db8e15ffd"
         },
         {
           "marker": "SCP-JP Wikidot space credit rate bar: keep the module layout inside the credit modals so the bar shares its row with the license badge instead of overlapping it.",
@@ -4558,7 +4558,7 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "credit.view"
           },
-          "published_css_sha256": "eaa78c18bc1e583254f9dc0479f9b70e72451eb205efbe2a24c72fcd34f24735"
+          "published_css_sha256": "382f0f02d9b2ce705aaae5d78a0cc11108f5b82209805105c352661db8e15ffd"
         },
         {
           "marker": "SCP-JP Wikidot space top bar: keep submenus closed on keyboard focus alone, matching the runtime default menu behavior.",
@@ -4580,22 +4580,46 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "navigation.focus"
           },
-          "published_css_sha256": "eaa78c18bc1e583254f9dc0479f9b70e72451eb205efbe2a24c72fcd34f24735"
+          "published_css_sha256": "382f0f02d9b2ce705aaae5d78a0cc11108f5b82209805105c352661db8e15ffd"
+        },
+        {
+          "marker": "SCP-JP Wikidot space credit modals: give the credit modal box a definite width at mobile widths so the otherwise columns do not collapse and the rate bar clears the license badges.",
+          "rationale": "In the Sigma-10 shell the credit modal box shrink-wraps its content inside the grid-centered container: the otherwise box measured 149px wide with a 66px content column at a 390px viewport, so the credit data collapsed to one or two characters per line (S10B-2), and in the credit view the rate bar reached the license-badge corner (S10B-1; the pre-freeze credit-rate correction block is present in the candidate but insufficient in this composition). Giving the modal box a definite width at mobile widths \u2014 min(36rem, 100vw - 2rem) \u2014 restores the full-width otherwise layout and separates the rate bar from the badges. W13 delta evidence: acceptance-frame captures before/after in the S10 shell (otherwise bc956c07\u2026 -> 26081f4e\u2026, view 723d8ce9\u2026 -> 1bbb0a90\u2026), narrow-mobile verified, and the S9 shell mobile frames re-captured well-formed with the block.",
+          "sha256": "f7a1d6a86271cc33e8c5b99fabc06be456f8fae6591c3a0bc09fc3997f806755",
+          "selectors": [
+            "[id*=u-credit] .modalbox"
+          ],
+          "at_contexts": [
+            "@media (max-width:768px)"
+          ],
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/space-w13-delta-20261028/receipt.json",
+              "sha256": "2f0997113f9e816ac0fe29246764e37b4261746d47e16388655655c801dfb0ac"
+            }
+          ],
+          "scope": {
+            "target": "SCP-JP Sigma-10 migration target acceptance",
+            "state": "credit.otherwise"
+          },
+          "published_css_sha256": "382f0f02d9b2ce705aaae5d78a0cc11108f5b82209805105c352661db8e15ffd"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "72ef4e7545f439aa9d8a330c566a9489980eafa02cd8e08cff327b7171b3d6aa",
         "candidate-input.css": "718d6bfc1705006f15a492f3cb96000489e32efc1df0ab50d5ffc10b41276367",
-        "authority-overrides.css": "67c3a0867e3d7388201c47b0e7d535a6d2ad94380852c10dd0e965f5a2bc09d2",
+        "authority-overrides.css": "080f283bda1bc240118805e64beaac3f5b03dadc383ae140b4e9bac5894814aa",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/sigma-plus.wikidot.txt": "dccfb8c281e6bf0268f7f472ef86690aa64181d3d916d1385838886bd89eafbf",
         "source-includes/sigma-plus-input.css": "5bd2d00b494a875d43fcd5e270a4b323c9ddbe16b6238fb5f5b80992c3b37b0a",
         "source-css-includes.json": "02e25771b7150b87385c11550cbce45a4ab7886bb9260b436c3928ede4709620"
       },
       "outputs": {
-        "candidate.css": "eaa78c18bc1e583254f9dc0479f9b70e72451eb205efbe2a24c72fcd34f24735",
-        "candidate-source.css": "337f2328753cb6dde03cb3f840db34c31cbfb4effbd67627d5144a62bc7630e8",
-        "candidate.wikidot.source.txt": "c3e4148bc860bab02cdf1ca71cf33f98a128b802de072c61ec185857fe818e1c",
+        "candidate.css": "382f0f02d9b2ce705aaae5d78a0cc11108f5b82209805105c352661db8e15ffd",
+        "candidate-source.css": "42a135f2e69e4cb7a1982a6f59de27d9450c75482ef5e7c746552176415bd365",
+        "candidate.wikidot.source.txt": "a310401c00c8d87a98658c87a08f94e03a78034e6fb56e8830ba9a8fd96c1900",
         "candidate.wikidot.txt": "14ee4d352b8e20c89e66347c4fc3bbe7fee64c8f527ebf1658a31dcd2b860ce9",
         "maintenance/base.wikidot.txt": "72ef4e7545f439aa9d8a330c566a9489980eafa02cd8e08cff327b7171b3d6aa",
         "maintenance/jp-overrides.css": "9813ec0658990f55a179a7851b4f159ade6f0e0e00308777707640e7be5927f0",
