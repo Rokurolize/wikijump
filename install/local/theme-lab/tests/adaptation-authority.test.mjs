@@ -102,6 +102,7 @@ test('historical module cleanup preserves original bases or an explicitly pinned
     'space':'72ef4e7545f439aa9d8a330c566a9489980eafa02cd8e08cff327b7171b3d6aa',
     'flopstyle-dark':'541622cca25acbb968a463e89f4b1465092b1658088c499211a479af6ca1021f',
     'inkblot':'a934ded09f94f4f6ece53627d01d18c84ee1bc500c98a032ecd7ed949a955917',
+    'paperstack':'6f335793beb03e96c14bc5e906153e3857da66a37a19e148900e97ae2505f1ca',
   };
   let checked=0;
   for(const [name,pkg] of Object.entries(ledger.packages)) {
