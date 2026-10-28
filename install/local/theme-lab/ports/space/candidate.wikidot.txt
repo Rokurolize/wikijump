@@ -18,7 +18,7 @@
 
 このテーマを使用するには、以下を挿入してください:
 
-> {{@@@@}}
+> {{@@[[include :scp-jp:theme:space]]@@}}
 
 普遍的宇宙テーマは[[[component:sigma-plus|]]]テーマです。
 
@@ -942,6 +942,12 @@ table.page-files .highlight { background: transparent; }
 }
 [[/code]]
 [[/collapsible]]
+
+
+
+
+
+
 
 
 

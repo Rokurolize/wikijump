@@ -1,13 +1,12 @@
 {
-  "source_sha256": "56fa81d898bd27ae68cb22fd87d43d485120372536c0df0925e2e5102dd6ce7b",
+  "source_sha256": "c3e4148bc860bab02cdf1ca71cf33f98a128b802de072c61ec185857fe818e1c",
   "squares_source_sha256": "85c7b8294847156d8e2ccc1dd79591d4c83db1f2cf767747d4fb59fc80ec42c0",
   "expanded_theme_squares": 0,
   "omitted_unseeded_includes": [
     "component:image-block",
     "component:sigma-plus",
     "credit:end-preview",
-    "credit:start-preview",
-    "theme:space"
+    "credit:start-preview"
   ],
   "standard_runtime_fixture": [
     "Rate",
