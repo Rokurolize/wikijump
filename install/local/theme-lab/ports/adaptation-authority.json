@@ -928,8 +928,9 @@
         }
       },
       "current_navigation_evidence": {
-        "path": "authority-evidence/foxtrot-component-refresh-navigation-chromium-20261005/receipt.json",
-        "sha256": "7971c30fb81e03fba8d13a46c669b1285d7b9dab8705d760927745d26a83ca06"
+        "path": "authority-evidence/foxtrot-freeze3-navigation-20261029/receipt.json",
+        "sha256": "27b71e8fce2f6fdaa31a0ce77b776c3443f0a847362485b5320e742705365580",
+        "published_css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b"
       }
     },
     "black-highlighter-theme": {

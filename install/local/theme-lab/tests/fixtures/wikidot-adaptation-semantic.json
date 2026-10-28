@@ -3590,8 +3590,8 @@
     },
     "foxtrot": {
       "evidence": {
-        "source_path": "authority-evidence/foxtrot-freeze2-navigation-20261028/receipt.json",
-        "source_sha256": "4c2b49e59d3064e37bd5969fb30d665200306eb8538fccd71597c0af69d1c307",
+        "source_path": "authority-evidence/foxtrot-freeze3-navigation-20261029/receipt.json",
+        "source_sha256": "27b71e8fce2f6fdaa31a0ce77b776c3443f0a847362485b5320e742705365580",
         "url": "https://scp-jp.wikidot.com/scp-173-jp",
         "browser_version": "156.0.8078.47",
         "snapshot_entry": "/o/778e97a6218d6fb6db2875232096a7c430bea73b22f4f2686e649fde167add29",
@@ -4496,7 +4496,7 @@
             "state": "navigation-action",
             "index": 0,
             "pass": true,
-            "css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
+            "css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -4827,7 +4827,7 @@
             "state": "navigation-action",
             "index": 1,
             "pass": true,
-            "css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
+            "css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -4996,7 +4996,7 @@
             "state": "navigation-action",
             "index": 2,
             "pass": true,
-            "css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
+            "css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -5255,7 +5255,7 @@
             "state": "navigation-action",
             "index": 3,
             "pass": true,
-            "css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
+            "css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -6280,7 +6280,7 @@
             "state": "navigation-action",
             "index": 0,
             "pass": true,
-            "css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
+            "css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -6611,7 +6611,7 @@
             "state": "navigation-action",
             "index": 1,
             "pass": true,
-            "css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
+            "css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -6780,7 +6780,7 @@
             "state": "navigation-action",
             "index": 2,
             "pass": true,
-            "css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
+            "css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -7039,7 +7039,7 @@
             "state": "navigation-action",
             "index": 3,
             "pass": true,
-            "css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
+            "css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -7169,8 +7169,8 @@
         ]
       },
       "ledger_current": {
-        "path": "authority-evidence/foxtrot-component-refresh-navigation-chromium-20261005/receipt.json",
-        "sha256": "7971c30fb81e03fba8d13a46c669b1285d7b9dab8705d760927745d26a83ca06"
+        "path": "authority-evidence/foxtrot-freeze3-navigation-20261029/receipt.json",
+        "sha256": "27b71e8fce2f6fdaa31a0ce77b776c3443f0a847362485b5320e742705365580"
       }
     },
     "hansarp": {
