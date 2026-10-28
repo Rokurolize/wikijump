@@ -15,18 +15,24 @@
 
 /* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
 
+/* SCP-JP Wikidot Hansarp credit fader anchors: retain native backdrop stacking under the visible controls. */
+#main-content :is(#u-credit-view,#u-credit-otherwise) >.fader.foldable-list-container>a{position:absolute;z-index:auto;transform:none;translate:none;}
+
+/* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
+
 /* SCP-JP Wikidot Hansarp generated masthead title: fit its source lettering within the narrow title slot. */
 @media(max-width:767px){#header h1 a::before{font-size:min(1em,calc((100vw - 40px - var(--header-height-on-desktop) + .75rem)/6.4));}}
 
 /* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
 
 /* SCP-JP Wikidot Hansarp history options: size the history option tracks fluidly so the form fits the mobile viewport. */
-#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2){grid-template-columns:repeat(3,1fr)}
+#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2){grid-template-columns:repeat(3,minmax(0,1fr))}
 
 /* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
 
 /* SCP-JP Wikidot Hansarp search: reveal the collapsed query input while the search control is hovered or keyboard-focused. */
 #search-top-box-form:hover #search-top-box-input,#search-top-box-form:focus-within #search-top-box-input{display:inline-block!important;width:8rem}
+@media(max-width:1024px){#search-top-box-form:hover,#search-top-box-form:focus-within{position:relative}#search-top-box-form:hover #search-top-box-input,#search-top-box-form:focus-within #search-top-box-input{position:absolute;right:1.75rem;top:0}}
 
 /* THEME_LAB_AUTHORITY_BLOCK_BOUNDARY */
 

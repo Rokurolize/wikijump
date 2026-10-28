@@ -28,9 +28,9 @@
   "existing_jp_audit": "existing-jp-valid-with-intentional-divergence",
   "technical_spec_version": "1.4",
   "package_path": "install/local/theme-lab/ports/hansarp",
-  "candidate_source_hash": "64d5227d86a84ab67944599e6b5d5af73a5a898f2ef38c501ecee028d2c7c5ff",
+  "candidate_source_hash": "ccf5f58cc71f0e9a6f7b988e5a74bbc889dd369625075c33da06773b57bc8f45",
   "source_candidate_path": "install/local/theme-lab/ports/hansarp/candidate.wikidot.source.txt",
-  "source_candidate_sha256": "64d5227d86a84ab67944599e6b5d5af73a5a898f2ef38c501ecee028d2c7c5ff",
+  "source_candidate_sha256": "ccf5f58cc71f0e9a6f7b988e5a74bbc889dd369625075c33da06773b57bc8f45",
   "candidate_origin": "current official SCP-JP page source",
   "existing_jp_source_differs_from_candidate": true,
   "preview_fixture_components": {
@@ -38,11 +38,11 @@
     "source_component": "install/local/theme-lab/ports/shared-fixtures/component-theme-squares.jp.wikidot.txt"
   },
   "candidate_source_path": "install/local/theme-lab/ports/hansarp/candidate.wikidot.source.txt",
-  "candidate_source_sha256": "64d5227d86a84ab67944599e6b5d5af73a5a898f2ef38c501ecee028d2c7c5ff",
+  "candidate_source_sha256": "ccf5f58cc71f0e9a6f7b988e5a74bbc889dd369625075c33da06773b57bc8f45",
   "human_port_candidate_path": "install/local/theme-lab/ports/hansarp/human-port-candidate.wikidot.txt",
   "human_port_candidate_sha256": "d779b6aa54d2983d24a74a5f80c5a961abad8a5152eec360d3541c38185a7fc5",
   "candidate_preview_sha256": "c4c5954f86bf330d7014c6ecbe1643e1c7370bb08d48e6492e5c13d2c338508b",
-  "candidate_css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
+  "candidate_css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
   "page_assets": [
     {
       "filename": "hansarplogo.png",
