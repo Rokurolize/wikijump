@@ -12,6 +12,13 @@ restored campaign is the one that passed.
 path of content-addressed-authority-store.py with a campaign-specific inventory
 reader, then verifies the restored receipt and run contracts against the
 inventory. Unlike the authority restore, it never reads the source worktree.
+
+Exception: paths in LIVING_FILES are living disposition records whose contents
+legitimately move after the campaign closes (the exemption ledger's contract
+bindings track the current acceptance instrument). Restore accepts the
+checkout's current version of a living file and never overwrites it; the
+frozen copy stays in the store and the published inventory. A checkout that
+has no living file yet receives the frozen copy as its starting point.
 """
 import argparse
 import importlib.util
@@ -41,6 +48,12 @@ RECEIPT = 'current-campaign-acceptance.json'
 SIGMA9_DEFAULT = 'ports/current-acceptance/run-contract.json'
 SIGMA10_DEFAULT = 'sigma10-migration/current-campaign/run-contract.json'
 PROBE = HERE / 'campaign-completion-probe.mjs'
+# Post-closure living files (owner decision, 2026-10-30, issue #3381). See the
+# module docstring: restore accepts the checkout's current version of these
+# paths instead of verifying them against the frozen inventory.
+LIVING_FILES = frozenset({
+    'ports/current-acceptance/faithful-design-exemptions.json',
+})
 # Directory trees (theme-lab relative) that the campaign depends on. Each one
 # is enumerated only if it exists; a missing tree simply contributes nothing,
 # and the completion check decides whether that is acceptable.
@@ -307,8 +320,33 @@ def restore(checkout_root, store_root, inventory_path, expected_sha, *, apply=Fa
     if info is None or not stat.S_ISDIR(info.st_mode):
         raise ValueError('restore destination is not a checkout with a Theme Lab directory')
     theme_lab = checkout / THEME_LAB_REL
+    inventoried, _objects = campaign_inventory_files(theme_lab, inventory_path, expected_sha)
+    living = {rel: inventoried[rel] for rel in LIVING_FILES if rel in inventoried}
+
+    def frozen_reader(destination, path, sha):
+        entries, objects = campaign_inventory_files(destination, path, sha)
+        for rel in living:
+            entries.pop(rel, None)
+        return entries, objects
+
     result = store.transfer(store_root, theme_lab, inventory_path, expected_sha, mode='restore',
-                            apply=apply, link=link, reader=campaign_inventory_files)
+                            apply=apply, link=link, reader=frozen_reader)
+    result['living_files'] = []
+    for rel, (digest, size) in sorted(living.items()):
+        target = authority.safe_file(theme_lab, rel, existing=False)
+        if target.exists():
+            result['living_files'].append({'path': rel, 'treatment': 'checkout-version-accepted'})
+            continue
+        if not apply:
+            result['living_files'].append({'path': rel, 'treatment': 'absent (verification only)'})
+            continue
+
+        def living_reader(destination, path, sha, _rel=rel, _entry=(digest, size)):
+            return {_rel: _entry}, {_entry[0]: _entry[1]}
+
+        store.transfer(store_root, theme_lab, inventory_path, expected_sha, mode='restore',
+                       apply=True, link=link, reader=living_reader)
+        result['living_files'].append({'path': rel, 'treatment': 'frozen-copy-restored'})
     result['bindings_verified'] = verify_bindings(theme_lab, inventory_path, required=apply)
     result['mode'] = 'campaign-restore'
     return result
