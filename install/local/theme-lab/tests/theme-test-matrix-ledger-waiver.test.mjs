@@ -75,3 +75,32 @@ test('a clean run carries no waiver block (hash-neutral shape)',async()=>{
   assert.ok(!('ledger_waivers' in result));
   assert.deepEqual(Object.keys(result).sort(),['blockers','canonical_acceptance_eligible','engines','matrix_receipt_sha256','measurement_contract_sha256','scenario_sha256','schema']);
 });
+
+test('a derived target_acceptance failure is excused when every failing state is waived',async()=>{
+  const failing=runWith((engine,profile)=>{
+    const execution=passExecution();
+    if(engine==='chromium'&&profile==='anonymous'){
+      execution.interaction_states=[{id:'settled',status:'fail',observation:settledFailObservation},{id:'responsive-shell',status:'pass'}];
+      execution.check_evidence={...execution.check_evidence,target_acceptance:'fail'};
+    }
+    return execution;
+  });
+  const result=await runThemeScenarioMatrix({...baseArgs(failing),ledgerDocument:coveringDocument()});
+  assert.equal(result.ledger_waivers.length,1);
+  assert.equal(result.ledger_waivers[0].entry_id,'OD-T1-synthetic-test');
+});
+
+test('a derived target_acceptance failure still throws when any state is unwaived',async()=>{
+  const failing=runWith((engine,profile)=>{
+    const execution=passExecution();
+    if(engine==='chromium'&&profile==='anonymous'){
+      execution.interaction_states=[{id:'settled',status:'fail',observation:{...settledFailObservation,candidate_document_overflow_px:12,overflow_delta_px:12}},{id:'responsive-shell',status:'pass'}];
+      execution.check_evidence={...execution.check_evidence,target_acceptance:'fail'};
+    }
+    return execution;
+  });
+  try{
+    await runThemeScenarioMatrix({...baseArgs(failing),ledgerDocument:coveringDocument()});
+    assert.fail('unwaived state must still throw');
+  }catch(error){assert.equal(error.message,'canonical execution failed for chromium/anonymous');}
+});

@@ -37,8 +37,12 @@ export async function runThemeScenarioMatrix({root,config,siteStateReceipt,rende
     }
     const waivers=matchCanonicalContainmentWaivers(ledger,{...waiverContext,failures:engineFailures});
     ledgerWaivers.push(...waivers);
+    const directlyWaived=failure=>waivers.some(waiver=>waiver.session_profile===failure.sessionProfile&&waiver.state===failure.id);
     for(const profile of measurement.session_profiles){
-      if(engineFailures.some(failure=>failure.sessionProfile===profile&&!waivers.some(waiver=>waiver.session_profile===profile&&waiver.state===failure.id)))throw new Error(`canonical execution failed for ${engine}/${profile}`);
+      const states=engineFailures.filter(failure=>failure.sessionProfile===profile&&failure.kind==='state');
+      const derivedCheckCovered=states.length>0&&states.every(directlyWaived);
+      const excused=failure=>directlyWaived(failure)||(failure.kind==='check'&&failure.id==='target_acceptance'&&derivedCheckCovered);
+      if(engineFailures.some(failure=>failure.sessionProfile===profile&&!excused(failure)))throw new Error(`canonical execution failed for ${engine}/${profile}`);
     }
     engines[engine]=profiles;
   }
