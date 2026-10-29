@@ -6,13 +6,13 @@
       "parser_functions": 3,
       "canonical_blocks": 63,
       "block_aliases": 48,
-      "typed_modules": 7,
+      "typed_modules": 9,
       "ast_variants": 48,
       "delayed_forms": 9,
       "generated_runtime_kinds": 2,
       "renderer_modules": 30,
-      "wikidot_fixtures": 138,
-      "total": 410
+      "wikidot_fixtures": 140,
+      "total": 414
     },
     "raw_surface_identities": [
       {
@@ -1112,6 +1112,14 @@
         "kind": "wikidot_fixture"
       },
       {
+        "surface_id": "ftml.fixture:test/span/leading-space",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/span/nested-edge-spaces",
+        "kind": "wikidot_fixture"
+      },
+      {
         "surface_id": "ftml.fixture:test/strikethrough/basic",
         "kind": "wikidot_fixture"
       },
@@ -1273,6 +1281,14 @@
       },
       {
         "surface_id": "ftml.module:Rate",
+        "kind": "typed_module"
+      },
+      {
+        "surface_id": "ftml.module:Redirect",
+        "kind": "typed_module"
+      },
+      {
+        "surface_id": "ftml.module:TagCloud",
         "kind": "typed_module"
       },
       {

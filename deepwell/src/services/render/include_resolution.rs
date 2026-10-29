@@ -4,7 +4,7 @@ use super::compat::text_fragments::CompatTextFragments;
 use super::include_attachment_owners::wikidot_include_directive_ranges;
 use super::literal_regions::LiteralRegionIndex;
 use crate::error::prelude::{Error, ErrorType, ExnError, Result};
-use ftml::data::PageRef;
+use ftml::data::{PageRef, canonical_include_site};
 use ftml::includes::{FetchedPage, IncludeRef};
 use ftml::prelude::Includer;
 use regex::{Regex, RegexBuilder};
@@ -72,7 +72,7 @@ pub(super) fn collect_include_display_pages(
             continue;
         }
         let target = &captures["target"];
-        let Ok(page_ref) = PageRef::parse(target) else {
+        let Ok(page_ref) = PageRef::parse_include(target) else {
             continue;
         };
         let raw_page = match target
@@ -271,10 +271,8 @@ pub(super) fn expand_malformed_include_targets(wikitext: &mut String) {
     for captures in SITE_ONLY_INCLUDE_TARGET_REGEX.captures_iter(wikitext) {
         let matched = captures.get(0).expect("include capture has a full match");
         if !literal_regions.contains(matched.start()) {
-            replacements.push((
-                matched.range(),
-                missing_include_source(&captures["site"], None),
-            ));
+            let site = canonical_include_site(&captures["site"]);
+            replacements.push((matched.range(), missing_include_source(&site, None)));
         }
     }
     for captures in EMPTY_SITE_INCLUDE_TARGET_REGEX.captures_iter(wikitext) {
@@ -417,6 +415,72 @@ mod tests {
         assert!(source.contains("href=\"/scp-wiki/edit/true\""));
         assert!(source.contains("Included page \"page\" does not exist"));
         assert!(source.contains("href=\"/page/edit/true\""));
+    }
+
+    #[test]
+    fn dotted_include_site_segments_key_on_the_canonical_site() {
+        // `<slug>.wikidot.com` names the same site as `<slug>` (Wikidot looks
+        // the segment up as a site or a host), so display-page keys must match
+        // the PageRef FTML's include parser emits for the dotted spelling.
+        for target in [
+            ":scp-wiki.wikidot.com:component:license-box",
+            ":SCP-WIKI.WIKIDOT.COM:component:license-box",
+            ":scp-wiki.wikidot.com.:component:license-box",
+        ] {
+            let source = format!("[[include {target}]]");
+            let pages = collect_include_display_pages(&source);
+            let canonical = PageRef::page_and_site("scp-wiki", "component:license-box");
+            assert_eq!(
+                pages
+                    .get(&canonical)
+                    .and_then(|values| values.front())
+                    .map(String::as_str),
+                Some("component:license-box"),
+                "dotted target must key on the canonical site: {target}",
+            );
+            assert!(
+                pages.contains_key(
+                    &PageRef::parse_include(target)
+                        .expect("dotted include target parses"),
+                ),
+                "display key must equal FTML's include PageRef: {target}",
+            );
+        }
+    }
+
+    #[test]
+    fn dashed_host_form_include_sites_stay_distinct_from_the_canonical_site() {
+        // `:scp-jp-wikidot-com:` is a different, nonexistent site on Wikidot
+        // (capture pv2-dashed-host-form): it must not key on `scp-jp`.
+        let pages = collect_include_display_pages(
+            "[[include :scp-jp-wikidot-com:component:jstyles]]",
+        );
+        assert!(pages.contains_key(&PageRef::page_and_site(
+            "scp-jp-wikidot-com",
+            "component:jstyles",
+        )));
+        assert!(
+            !pages.contains_key(&PageRef::page_and_site("scp-jp", "component:jstyles",))
+        );
+    }
+
+    #[test]
+    fn site_only_include_targets_canonicalize_host_form_sites() {
+        // Wikidot echoes the canonical site for a dotted miss
+        // (capture pv2-dotted-missing).
+        let mut source = "[[include :scp-jp.wikidot.com:]]".to_owned();
+        expand_malformed_include_targets(&mut source);
+        assert!(
+            source.contains("Included page \"scp-jp\" does not exist"),
+            "{source}",
+        );
+        assert!(source.contains("href=\"/scp-jp/edit/true\""), "{source}");
+        let mut dashed = "[[include :scp-jp-wikidot-com:]]".to_owned();
+        expand_malformed_include_targets(&mut dashed);
+        assert!(
+            dashed.contains("Included page \"scp-jp-wikidot-com\" does not exist"),
+            "{dashed}",
+        );
     }
 
     #[test]
