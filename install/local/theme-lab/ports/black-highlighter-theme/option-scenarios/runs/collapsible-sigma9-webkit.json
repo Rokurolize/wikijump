@@ -4,7 +4,7 @@
   "baseline": "Sigma-9",
   "browser_engine": "webkit",
   "browser_version": "27.2",
-  "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+  "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
   "candidate_set_state": "frozen-before-final-acceptance",
   "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
   "transport_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3410",
@@ -53,8 +53,8 @@
             "hit_id": "side-bar",
             "hit_class": "",
             "side_rect": {
-              "left": -280.1780700683594,
-              "right": 22.400054931640625
+              "left": -282,
+              "right": 24
             }
           }
         ],
@@ -62,7 +62,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -1686,7 +1686,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -3310,7 +3310,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 0,
@@ -4919,5 +4919,5 @@
       "page_errors": []
     }
   ],
-  "receipt_sha256": "94309cd3bd149261a7eff521bc37db9b197464677f22b07458cb9cf6ce827279"
+  "receipt_sha256": "095e588eaa124d3acc95980f5dbf08a360d8ff789a956fad0c97748849c80116"
 }

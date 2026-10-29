@@ -1757,4 +1757,10 @@ div.page-rate-widget-box .rate-points {
     overflow-wrap:anywhere
   }
 }
+
+/* SCP-JP Wikidot Turbo Vision documentation blockquote wrap: owner OPTION C (2026-10-29) — wrap long unbroken strings in blockquotes so they read in place at narrow widths; a localization quality improvement, divergence from verbatim upstream accepted for this package + finding. */
+.turbo-block .blockquote,
+.turbo-block .blockquote * {
+  overflow-wrap: anywhere;
+}
 [[/module]]

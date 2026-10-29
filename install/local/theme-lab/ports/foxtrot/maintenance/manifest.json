@@ -1,20 +1,20 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "1940fcb0c0dc1aebbe9fd6f9c638dc83b07895acda45649ad99dce75bc58b7c8",
+  "frozen_candidate_source_sha256": "94bec2085323e08e9fe302fa86df5a051c3d21f93dd57c9986a750cc591845f0",
   "base_source_sha256": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
-  "raw_jp_overrides_sha256": "8f15dcc38794c69b260f2c48471baabaa0ec84f715cf2559057deeac9eb05309",
-  "jp_overrides_sha256": "30e816ed83179db666057bcc6e7302243bbd2d5d587bbe851c05560b2327f7e9",
-  "semantic_css_sha256": "a2be5735eb0e135947fa0b90f4409b24830587862738968eb6da57959fb2ccd7",
-  "canonical_override_sha256": "1fc55b237582668185bdf5f5e6b0be90909c5c76b9fae9f94a533205af7d6271",
+  "raw_jp_overrides_sha256": "98ca1a684487e7bb5e51a03ec133bd88d33c6bc92abe96a80e0fd899fb7fe112",
+  "jp_overrides_sha256": "017656830e9bcea6c0e01fbaff63701da6f70da030b14a6fc329496d543e0166",
+  "semantic_css_sha256": "185091b29b86d2623085059101f9392c08627039621c09250dc6cd39166008bb",
+  "canonical_override_sha256": "430baa8eec4dc02422cd33fc97a8cbcfdcb4d6abe3253f7eed4306820bfa7094",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "7c8d75da65732b9cefc4f138f8f7ac3f3f5263219a1b30d9c23bd5971f0261ba",
+  "final_source_sha256": "ba45cc8fc88bdb469a5974d924538b68ce9d419540a8ce631b33f99b65dd4f24",
   "final_source_inputs": {
     "base_sha256": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
-    "jp_overrides_sha256": "30e816ed83179db666057bcc6e7302243bbd2d5d587bbe851c05560b2327f7e9"
+    "jp_overrides_sha256": "017656830e9bcea6c0e01fbaff63701da6f70da030b14a6fc329496d543e0166"
   },
   "ordered_include_sha256": "839fef7ae721bb851ef23cb3c782a6435f953785942a2f2c58e733a10e71c852",
   "declaration_reviews": {},
-  "adaptation_block_count": 2,
+  "adaptation_block_count": 3,
   "raw_override_rule_count": 5,
   "canonical_override_rule_count": 5,
   "exact_duplicate_rules_removed": 0,
@@ -446,14 +446,14 @@
     },
     {
       "marker": "SCP-JP Wikidot Foxtrot navigation correction: separate the drawer toggle from the header menu and contain row endpoint submenus.",
-      "sha256": "0038b036c90e6c41c068bb653eac94bf6ee7f85ed813d2c36c6103ddf80127dd",
+      "sha256": "15c5280fde0e4808cf39a31b03d4424b4ca729f861d05161f34605a7f853ace5",
       "origin": "target-certified-replacement",
       "authority": "TARGET_WIKIDOT_CERTIFIED",
-      "rationale": "The complete default source stylesheet still requires the drawer separation and third-menu endpoint correction at mobile widths. The fourth parent wraps at 390px, so right-anchoring it creates a new left escape and is removed. Trusted native A/B exercises all eight parent actions with the retained correction. W13 re-certification note: on the current reference snapshot all four parents stay on one row in Chromium as well, so the row endpoint is the last parent; the block now right-anchors the last parent submenu too (the same remedy as the WebKit endpoint block), verified by the W13 re-certification A/B.",
+      "rationale": "The complete default source stylesheet still requires the drawer separation and third-menu endpoint correction at mobile widths. The fourth parent wraps at 390px, so right-anchoring it creates a new left escape and is removed. Trusted native A/B exercises all eight parent actions with the retained correction. Freeze-3 (OD-T3-b): the W13 extension that also right-anchored the last parent for all engines at 360-767px is reverted — on the current contract it caused the 13 surface_navigation_viewport_escape errors at 390px; the last-parent pin returns to the separate WebKit-only row-endpoint block, and this block re-certifies on the Freeze-3 candidate (without fails, with passes at 320/390).",
       "evidence": [
         {
-          "path": "authority-evidence/foxtrot-w13-recert-20261028/block22-receipt.json",
-          "sha256": "a9b9ace19176cd24524676e730319ec156b11a9555916a4a2167171669c6accb"
+          "path": "authority-evidence/foxtrot-freeze3-recert-20261029/block22/receipt.json",
+          "sha256": "fea256ff66767eaf8a714bb95aad7909647ec80a6ab7117540f7a0aca9d8d037"
         }
       ],
       "scope": {
@@ -464,37 +464,35 @@
           390
         ]
       },
-      "published_css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a"
+      "published_css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b"
     },
     {
       "marker": "SCP-JP Wikidot Foxtrot WebKit row endpoint: contain the fourth submenu where the engine keeps all parents on one row.",
       "sha256": "aafd43797a2065561b9a42ad3269189cfba6c6d5501cb34275502c1bc7978a76",
-      "authority": "REMOVE",
-      "origin": "target-certified-replacement",
-      "rationale": "RECLASSIFIED REMOVE at W13 re-certification: the block's containment (right-anchoring the last parent's submenu at 360-767px) is now provided for every engine by the extended navigation correction block, whose W13 A/B demonstrates the need and the pass. Against the post-extension candidate, this block's own A/B shows no independent need (the without-variant passes at 320 and 390 in WebKit, normal and navigation-action), so it is not independently publishable under the authority rule. Its pre-extension W13 A/B did demonstrate need and pass; the rule text is preserved in git history and in this ledger entry.",
+      "authority": "RUNTIME_INDEPENDENT",
+      "origin": "runtime-independent-css-containment",
+      "rationale": "Freeze-3 restore (OD-T3-b branch (a)): W13 (1ec1cba28e) removed this WebKit-only block and extended the navigation correction block with the same pin for all engines at 360-767px; on the current contract that all-engines pin makes the fourth (li:last-child) submenu escape LEFT by 45.8px at 390px in Chromium (TL-02 full check, 13 surface_navigation_viewport_escape errors). The Freeze-3 E-fx2 toggle probe returns the pin to its Freeze-1 WebKit-only @supports scope: in Chromium the escape clears to 0 fails, and in WebKit the toggled candidate is row-identical to the pre-fix candidate in all 92 navigation bounds with the fourth submenu contained and the pin active. The block text is verbatim the pre-W13 text (sha256 identical to the pre-removal ledger entry). Freeze-3 delta evidence on the built candidate extends the toggle to Firefox.",
       "evidence": [
         {
-          "path": "authority-evidence/foxtrot-component-refresh-normal-webkit-20261005/receipt.json",
-          "sha256": "dc4da2e03b0cc2871699e26056bfbc8100c43edd6160b2e9aeb45db419a9bac5",
-          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+          "path": "authority-evidence/foxtrot-freeze3-fx2-20261029/fx2-receipt.json",
+          "sha256": "cafbb6688ffceff1b9185ab320c2994df098ee7cc069bcc841e1fae6553c77d7"
         },
         {
-          "path": "authority-evidence/foxtrot-component-refresh-navigation-webkit-20261005/receipt.json",
-          "sha256": "f8276df16b5cadd9504c20988193eb2f05c480925f81066d9e377f8d1b0062f1",
-          "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+          "path": "authority-evidence/foxtrot-freeze3-20261029/receipt.json",
+          "sha256": "23c72b1386ebec757301334b469a065b35679717c45e993643966b91d46ac5c8"
         }
       ],
       "scope": {
-        "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
-        "states": [
-          "normal",
-          "navigation-action"
-        ],
-        "viewports": [
-          320,
-          390
-        ]
-      }
+        "target": "SCP-JP Sigma-9 current target acceptance",
+        "state": "nav.mobile-top"
+      },
+      "selectors": [
+        "#top-bar .mobile-top-bar > ul > li:last-child > ul"
+      ],
+      "at_contexts": [
+        "@media(min-width:360px) and (max-width:767px)",
+        "@supports(-webkit-hyphens:none)"
+      ]
     },
     {
       "marker": "SCP-JP Wikidot foxtrot heritage credit button: restore a dark ground under the info glyph so it is not white-on-white.",
@@ -517,7 +515,7 @@
         "target": "heritage-credit-button",
         "state": "credit.variant.heritage"
       },
-      "published_css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a"
+      "published_css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
@@ -525,17 +523,28 @@
     {
       "marker": "SCP-JP Wikidot Foxtrot navigation correction: separate the drawer toggle from the header menu and contain row endpoint submenus.",
       "rationale": "SCP-JP Wikidot Foxtrot navigation correction: separate the drawer toggle from the header menu and contain row endpoint submenus.",
-      "sha256": "0038b036c90e6c41c068bb653eac94bf6ee7f85ed813d2c36c6103ddf80127dd",
+      "sha256": "15c5280fde0e4808cf39a31b03d4424b4ca729f861d05161f34605a7f853ace5",
       "selectors": [
-        "#top-bar .mobile-top-bar > ul > li:last-child > ul",
         "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul",
         "#top-bar .open-menu a"
       ],
       "at_contexts": [
-        "@media (max-width: 767px)",
-        "@media (min-width: 360px) and (max-width: 767px)"
+        "@media (max-width: 767px)"
       ],
       "authority": "TARGET_WIKIDOT_CERTIFIED"
+    },
+    {
+      "marker": "SCP-JP Wikidot Foxtrot WebKit row endpoint: contain the fourth submenu where the engine keeps all parents on one row.",
+      "rationale": "SCP-JP Wikidot Foxtrot WebKit row endpoint: contain the fourth submenu where the engine keeps all parents on one row.",
+      "sha256": "aafd43797a2065561b9a42ad3269189cfba6c6d5501cb34275502c1bc7978a76",
+      "selectors": [
+        "#top-bar .mobile-top-bar > ul > li:last-child > ul"
+      ],
+      "at_contexts": [
+        "@media(min-width:360px) and (max-width:767px)",
+        "@supports(-webkit-hyphens:none)"
+      ],
+      "authority": "RUNTIME_INDEPENDENT"
     },
     {
       "marker": "SCP-JP Wikidot foxtrot heritage credit button: restore a dark ground under the info glyph so it is not white-on-white.",

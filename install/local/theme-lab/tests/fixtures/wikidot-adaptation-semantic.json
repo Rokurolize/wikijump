@@ -3590,8 +3590,8 @@
     },
     "foxtrot": {
       "evidence": {
-        "source_path": "authority-evidence/foxtrot-freeze2-navigation-20261028/receipt.json",
-        "source_sha256": "4c2b49e59d3064e37bd5969fb30d665200306eb8538fccd71597c0af69d1c307",
+        "source_path": "authority-evidence/foxtrot-freeze3-navigation-20261029/receipt.json",
+        "source_sha256": "27b71e8fce2f6fdaa31a0ce77b776c3443f0a847362485b5320e742705365580",
         "url": "https://scp-jp.wikidot.com/scp-173-jp",
         "browser_version": "156.0.8078.47",
         "snapshot_entry": "/o/778e97a6218d6fb6db2875232096a7c430bea73b22f4f2686e649fde167add29",
@@ -4496,7 +4496,7 @@
             "state": "navigation-action",
             "index": 0,
             "pass": true,
-            "css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
+            "css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -4827,7 +4827,7 @@
             "state": "navigation-action",
             "index": 1,
             "pass": true,
-            "css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
+            "css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -4996,7 +4996,7 @@
             "state": "navigation-action",
             "index": 2,
             "pass": true,
-            "css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
+            "css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -5255,7 +5255,7 @@
             "state": "navigation-action",
             "index": 3,
             "pass": true,
-            "css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
+            "css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -6280,7 +6280,7 @@
             "state": "navigation-action",
             "index": 0,
             "pass": true,
-            "css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
+            "css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -6611,7 +6611,7 @@
             "state": "navigation-action",
             "index": 1,
             "pass": true,
-            "css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
+            "css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -6780,7 +6780,7 @@
             "state": "navigation-action",
             "index": 2,
             "pass": true,
-            "css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
+            "css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -7039,7 +7039,7 @@
             "state": "navigation-action",
             "index": 3,
             "pass": true,
-            "css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
+            "css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -7169,14 +7169,14 @@
         ]
       },
       "ledger_current": {
-        "path": "authority-evidence/foxtrot-component-refresh-navigation-chromium-20261005/receipt.json",
-        "sha256": "7971c30fb81e03fba8d13a46c669b1285d7b9dab8705d760927745d26a83ca06"
+        "path": "authority-evidence/foxtrot-freeze3-navigation-20261029/receipt.json",
+        "sha256": "27b71e8fce2f6fdaa31a0ce77b776c3443f0a847362485b5320e742705365580"
       }
     },
     "hansarp": {
       "evidence": {
-        "source_path": "authority-evidence/hansarp-freeze2-navigation-20261028/receipt.json",
-        "source_sha256": "1520185f342fa2bdee071f206cb098b3db9577134f4b830cc625bdc6db44a90b",
+        "source_path": "authority-evidence/hansarp-freeze3-navigation-20261029/receipt.json",
+        "source_sha256": "c42dd006acc113b9519a4701e91ef294937d82b435219610dcc296fa6b29a714",
         "url": "https://scp-jp.wikidot.com/scp-173-jp",
         "browser_version": "156.0.8078.47",
         "snapshot_entry": "/o/778e97a6218d6fb6db2875232096a7c430bea73b22f4f2686e649fde167add29",
@@ -8081,7 +8081,7 @@
             "state": "navigation-action",
             "index": 0,
             "pass": true,
-            "css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
+            "css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -8412,7 +8412,7 @@
             "state": "navigation-action",
             "index": 1,
             "pass": true,
-            "css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
+            "css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -8581,7 +8581,7 @@
             "state": "navigation-action",
             "index": 2,
             "pass": true,
-            "css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
+            "css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -8840,7 +8840,7 @@
             "state": "navigation-action",
             "index": 3,
             "pass": true,
-            "css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
+            "css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -9865,7 +9865,7 @@
             "state": "navigation-action",
             "index": 0,
             "pass": true,
-            "css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
+            "css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -10196,7 +10196,7 @@
             "state": "navigation-action",
             "index": 1,
             "pass": true,
-            "css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
+            "css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -10365,7 +10365,7 @@
             "state": "navigation-action",
             "index": 2,
             "pass": true,
-            "css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
+            "css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -10624,7 +10624,7 @@
             "state": "navigation-action",
             "index": 3,
             "pass": true,
-            "css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
+            "css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -10754,8 +10754,8 @@
         ]
       },
       "ledger_current": {
-        "path": "authority-evidence/hansarp-final-four-navigation-20261004/receipt.json",
-        "sha256": "d7a691e8ec5bfa81724a336ef91df41818bdbe0bce21e6c5c30eaa3b860c34e4"
+        "path": "authority-evidence/hansarp-freeze3-navigation-20261029/receipt.json",
+        "sha256": "c42dd006acc113b9519a4701e91ef294937d82b435219610dcc296fa6b29a714"
       }
     },
     "pataphysics": {
@@ -32268,8 +32268,8 @@
     },
     "turbo-vision": {
       "evidence": {
-        "source_path": "authority-evidence/turbo-vision-freeze2-navigation-20261028/receipt.json",
-        "source_sha256": "93dd6e2dac2a927d1579a04bab7c7100f649899981a571db3020010b73ce73b2",
+        "source_path": "authority-evidence/turbo-vision-freeze3-navigation-20261029/receipt.json",
+        "source_sha256": "3d1c348c6bd7f76ad3e9363ed331f443128eaaf30dd11957fa146bee3cec1e48",
         "url": "https://scp-jp.wikidot.com/scp-173-jp",
         "browser_version": "156.0.8078.47",
         "snapshot_entry": "/o/778e97a6218d6fb6db2875232096a7c430bea73b22f4f2686e649fde167add29",
@@ -33174,7 +33174,7 @@
             "state": "navigation",
             "index": 0,
             "pass": true,
-            "css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651",
+            "css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -33505,7 +33505,7 @@
             "state": "navigation",
             "index": 1,
             "pass": true,
-            "css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651",
+            "css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -33674,7 +33674,7 @@
             "state": "navigation",
             "index": 2,
             "pass": true,
-            "css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651",
+            "css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -33933,7 +33933,7 @@
             "state": "navigation",
             "index": 3,
             "pass": true,
-            "css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651",
+            "css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402",
             "interaction_error": null,
             "measurement": {
               "document_width": 320,
@@ -34958,7 +34958,7 @@
             "state": "navigation",
             "index": 0,
             "pass": true,
-            "css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651",
+            "css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -35289,7 +35289,7 @@
             "state": "navigation",
             "index": 1,
             "pass": true,
-            "css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651",
+            "css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -35458,7 +35458,7 @@
             "state": "navigation",
             "index": 2,
             "pass": true,
-            "css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651",
+            "css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -35717,7 +35717,7 @@
             "state": "navigation",
             "index": 3,
             "pass": true,
-            "css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651",
+            "css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402",
             "interaction_error": null,
             "measurement": {
               "document_width": 390,
@@ -35847,8 +35847,8 @@
         ]
       },
       "ledger_current": {
-        "path": "authority-evidence/turbo-vision-final-three-trusted-navigation-v3-20261002/receipt.json",
-        "sha256": "11e14456397fa1c083ad2440aa97058805efa7a5907f0d6aa0287ffec89d1dc5"
+        "path": "authority-evidence/turbo-vision-freeze3-navigation-20261029/receipt.json",
+        "sha256": "3d1c348c6bd7f76ad3e9363ed331f443128eaaf30dd11957fa146bee3cec1e48"
       }
     },
     "sigma": {

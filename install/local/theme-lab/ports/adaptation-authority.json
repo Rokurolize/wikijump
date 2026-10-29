@@ -822,14 +822,14 @@
         },
         {
           "marker": "SCP-JP Wikidot Foxtrot navigation correction: separate the drawer toggle from the header menu and contain row endpoint submenus.",
-          "sha256": "0038b036c90e6c41c068bb653eac94bf6ee7f85ed813d2c36c6103ddf80127dd",
+          "sha256": "15c5280fde0e4808cf39a31b03d4424b4ca729f861d05161f34605a7f853ace5",
           "origin": "target-certified-replacement",
           "authority": "TARGET_WIKIDOT_CERTIFIED",
-          "rationale": "The complete default source stylesheet still requires the drawer separation and third-menu endpoint correction at mobile widths. The fourth parent wraps at 390px, so right-anchoring it creates a new left escape and is removed. Trusted native A/B exercises all eight parent actions with the retained correction. W13 re-certification note: on the current reference snapshot all four parents stay on one row in Chromium as well, so the row endpoint is the last parent; the block now right-anchors the last parent submenu too (the same remedy as the WebKit endpoint block), verified by the W13 re-certification A/B.",
+          "rationale": "The complete default source stylesheet still requires the drawer separation and third-menu endpoint correction at mobile widths. The fourth parent wraps at 390px, so right-anchoring it creates a new left escape and is removed. Trusted native A/B exercises all eight parent actions with the retained correction. Freeze-3 (OD-T3-b): the W13 extension that also right-anchored the last parent for all engines at 360-767px is reverted — on the current contract it caused the 13 surface_navigation_viewport_escape errors at 390px; the last-parent pin returns to the separate WebKit-only row-endpoint block, and this block re-certifies on the Freeze-3 candidate (without fails, with passes at 320/390).",
           "evidence": [
             {
-              "path": "authority-evidence/foxtrot-w13-recert-20261028/block22-receipt.json",
-              "sha256": "a9b9ace19176cd24524676e730319ec156b11a9555916a4a2167171669c6accb"
+              "path": "authority-evidence/foxtrot-freeze3-recert-20261029/block22/receipt.json",
+              "sha256": "fea256ff66767eaf8a714bb95aad7909647ec80a6ab7117540f7a0aca9d8d037"
             }
           ],
           "scope": {
@@ -840,37 +840,35 @@
               390
             ]
           },
-          "published_css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a"
+          "published_css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b"
         },
         {
           "marker": "SCP-JP Wikidot Foxtrot WebKit row endpoint: contain the fourth submenu where the engine keeps all parents on one row.",
           "sha256": "aafd43797a2065561b9a42ad3269189cfba6c6d5501cb34275502c1bc7978a76",
-          "authority": "REMOVE",
-          "origin": "target-certified-replacement",
-          "rationale": "RECLASSIFIED REMOVE at W13 re-certification: the block's containment (right-anchoring the last parent's submenu at 360-767px) is now provided for every engine by the extended navigation correction block, whose W13 A/B demonstrates the need and the pass. Against the post-extension candidate, this block's own A/B shows no independent need (the without-variant passes at 320 and 390 in WebKit, normal and navigation-action), so it is not independently publishable under the authority rule. Its pre-extension W13 A/B did demonstrate need and pass; the rule text is preserved in git history and in this ledger entry.",
+          "authority": "RUNTIME_INDEPENDENT",
+          "origin": "runtime-independent-css-containment",
+          "rationale": "Freeze-3 restore (OD-T3-b branch (a)): W13 (1ec1cba28e) removed this WebKit-only block and extended the navigation correction block with the same pin for all engines at 360-767px; on the current contract that all-engines pin makes the fourth (li:last-child) submenu escape LEFT by 45.8px at 390px in Chromium (TL-02 full check, 13 surface_navigation_viewport_escape errors). The Freeze-3 E-fx2 toggle probe returns the pin to its Freeze-1 WebKit-only @supports scope: in Chromium the escape clears to 0 fails, and in WebKit the toggled candidate is row-identical to the pre-fix candidate in all 92 navigation bounds with the fourth submenu contained and the pin active. The block text is verbatim the pre-W13 text (sha256 identical to the pre-removal ledger entry). Freeze-3 delta evidence on the built candidate extends the toggle to Firefox.",
           "evidence": [
             {
-              "path": "authority-evidence/foxtrot-component-refresh-normal-webkit-20261005/receipt.json",
-              "sha256": "dc4da2e03b0cc2871699e26056bfbc8100c43edd6160b2e9aeb45db419a9bac5",
-              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+              "path": "authority-evidence/foxtrot-freeze3-fx2-20261029/fx2-receipt.json",
+              "sha256": "cafbb6688ffceff1b9185ab320c2994df098ee7cc069bcc841e1fae6553c77d7"
             },
             {
-              "path": "authority-evidence/foxtrot-component-refresh-navigation-webkit-20261005/receipt.json",
-              "sha256": "f8276df16b5cadd9504c20988193eb2f05c480925f81066d9e377f8d1b0062f1",
-              "decision_authority": "REAL_WIKIDOT_TARGET_AB"
+              "path": "authority-evidence/foxtrot-freeze3-20261029/receipt.json",
+              "sha256": "23c72b1386ebec757301334b469a065b35679717c45e993643966b91d46ac5c8"
             }
           ],
           "scope": {
-            "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
-            "states": [
-              "normal",
-              "navigation-action"
-            ],
-            "viewports": [
-              320,
-              390
-            ]
-          }
+            "target": "SCP-JP Sigma-9 current target acceptance",
+            "state": "nav.mobile-top"
+          },
+          "selectors": [
+            "#top-bar .mobile-top-bar > ul > li:last-child > ul"
+          ],
+          "at_contexts": [
+            "@media(min-width:360px) and (max-width:767px)",
+            "@supports(-webkit-hyphens:none)"
+          ]
         },
         {
           "marker": "SCP-JP Wikidot foxtrot heritage credit button: restore a dark ground under the info glyph so it is not white-on-white.",
@@ -893,13 +891,13 @@
             "target": "heritage-credit-button",
             "state": "credit.variant.heritage"
           },
-          "published_css_sha256": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a"
+          "published_css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
         "candidate-input.css": "204ba9991e64a43359ce626e5b6f775e709a1c482974f44896cd6c11326c7e73",
-        "authority-overrides.css": "e2816d3d7e2814f2b2e651be835e3971807a32de019f98c636e7cdad01efa9dc",
+        "authority-overrides.css": "50348d333a42a7a7463352ee50052f2619d1167e6daaaf0bbb9393a1bd0e0a22",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/toggle-sidebar.wikidot.txt": "5e6e6bf79aa9b08344865b1209693254db4c8d1aef7d579092bc6dd9c7c55e35",
         "source-includes/toggle-sidebar-input.css": "d4d80ebcc0e2afb61490420a96b3f0b4cc29dfc9de532029e062af1ee80028ae",
@@ -913,13 +911,13 @@
         "runtime-css-materialization.json": "7d17d16f28c2f1924970a2218b469f9f67ff8b7d079bbced8374b71ab6d8d005"
       },
       "outputs": {
-        "candidate.css": "230403bfd3c5355796b5c838e4cbce91db90a9367d10980a3b3041ab42e6ef0a",
-        "candidate-source.css": "876658aea9289bc76b9e83bdcfbae2bcee705115b14336fccebd76540cbfc5a3",
-        "candidate.wikidot.source.txt": "1940fcb0c0dc1aebbe9fd6f9c638dc83b07895acda45649ad99dce75bc58b7c8",
+        "candidate.css": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b",
+        "candidate-source.css": "a96f989b9cbfec6c01a312caeaae78f2f694a29141ab66f3b0ce17bec8402cec",
+        "candidate.wikidot.source.txt": "94bec2085323e08e9fe302fa86df5a051c3d21f93dd57c9986a750cc591845f0",
         "candidate.wikidot.txt": "49e6c67780fa597483e84c34e92e1f69c9c883b0385aa2044076593154c34fcb",
         "maintenance/base.wikidot.txt": "8dce692cf0194c44ad84690e4da0765c6c8d24248bb7206602deff66c6486262",
-        "maintenance/jp-overrides.css": "30e816ed83179db666057bcc6e7302243bbd2d5d587bbe851c05560b2327f7e9",
-        "maintenance/final.wikidot.txt": "7c8d75da65732b9cefc4f138f8f7ac3f3f5263219a1b30d9c23bd5971f0261ba"
+        "maintenance/jp-overrides.css": "017656830e9bcea6c0e01fbaff63701da6f70da030b14a6fc329496d543e0166",
+        "maintenance/final.wikidot.txt": "ba45cc8fc88bdb469a5974d924538b68ce9d419540a8ce631b33f99b65dd4f24"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -930,8 +928,9 @@
         }
       },
       "current_navigation_evidence": {
-        "path": "authority-evidence/foxtrot-component-refresh-navigation-chromium-20261005/receipt.json",
-        "sha256": "7971c30fb81e03fba8d13a46c669b1285d7b9dab8705d760927745d26a83ca06"
+        "path": "authority-evidence/foxtrot-freeze3-navigation-20261029/receipt.json",
+        "sha256": "27b71e8fce2f6fdaa31a0ce77b776c3443f0a847362485b5320e742705365580",
+        "published_css_sha256": "97f8003415d8cc463fc82677a4c2b35b1078985e945f73aca7fee09f70ba095b"
       }
     },
     "black-highlighter-theme": {
@@ -1044,7 +1043,7 @@
         },
         {
           "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
-          "rationale": "In the otherwise credit dialog the back link (\u623b\u308b) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
+          "rationale": "In the otherwise credit dialog the back link (戻る) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
           "sha256": "741b04aa4099d6de0c6d70996c006c68a9087c61e24f2ccb2dd67039d7169f9e",
           "selectors": [
             "[id*=u-credit] div.credit-back a"
@@ -1066,7 +1065,7 @@
         },
         {
           "marker": "SCP-JP Wikidot black-highlighter-theme top bar labels: keep top navigation labels whole at narrow widths.",
-          "rationale": "G2-12 (Q1-2): at 320px the mobile top-bar labels fragment mid-word (the longest label breaks across two lines). word-break:keep-all on the bar anchors \u2014 in the descendant selector form, since .mobile-top-bar is a child of #top-bar \u2014 keeps every label whole. Acceptance-frame delta: eb7bea46bb3a... -> 01e532e7134d... (frame inspected: all four parent labels on one line).",
+          "rationale": "G2-12 (Q1-2): at 320px the mobile top-bar labels fragment mid-word (the longest label breaks across two lines). word-break:keep-all on the bar anchors — in the descendant selector form, since .mobile-top-bar is a child of #top-bar — keeps every label whole. Acceptance-frame delta: eb7bea46bb3a... -> 01e532e7134d... (frame inspected: all four parent labels on one line).",
           "sha256": "0fcac6f8cc0ffe3513c21860ee495e9f7242e11c03bd05fef7da5603e43fd220",
           "selectors": [
             "#top-bar .mobile-top-bar>ul>li>a"
@@ -1670,7 +1669,7 @@
         },
         {
           "marker": "SCP-JP Wikidot isolated-terminal top bar labels: keep top navigation labels whole at narrow widths.",
-          "rationale": "WITHDRAWN in W13 after full measurement: (1) the compound-selector form (#top-bar.mobile-top-bar) matches nothing \u2014 .mobile-top-bar is a child of #top-bar \u2014 and produced byte-identical frames; (2) the corrected descendant form DOES unbreak the labels in the acceptance frame (b594e4aa... -> 7668c637...), but against the native reference page it breaks the package's three certified blocks: with the block present, the W13 re-certification A/Bs for the narrow-login, native-history, and narrow-tables blocks all FAIL their with-variant bounds at 320 and 390 (they pass without it). An RI block that breaks certified geometry on the reference page cannot ship; the acceptance-frame fragmentation for this package is deferred to a later wave with a remedy that does not disturb the native layout.",
+          "rationale": "WITHDRAWN in W13 after full measurement: (1) the compound-selector form (#top-bar.mobile-top-bar) matches nothing — .mobile-top-bar is a child of #top-bar — and produced byte-identical frames; (2) the corrected descendant form DOES unbreak the labels in the acceptance frame (b594e4aa... -> 7668c637...), but against the native reference page it breaks the package's three certified blocks: with the block present, the W13 re-certification A/Bs for the narrow-login, native-history, and narrow-tables blocks all FAIL their with-variant bounds at 320 and 390 (they pass without it). An RI block that breaks certified geometry on the reference page cannot ship; the acceptance-frame fragmentation for this package is deferred to a later wave with a remedy that does not disturb the native layout.",
           "sha256": "8dbe96173891ce6235f278556623dc96a5e63d8259ec3019bb8975d2e7610e73",
           "selectors": [
             "#top-bar .mobile-top-bar>ul>li>a"
@@ -3512,7 +3511,7 @@
           "sha256": "985d2f3995ef32767b02714495f40fb13ff969d4fd986667505025f5f0a96ded",
           "origin": "target-certified-replacement",
           "authority": "TARGET_WIKIDOT_CERTIFIED",
-          "rationale": "At 390px Classic increases the real SCP-JP fourth submenu escape by 4.703125px relative to the native target. Align only that endpoint from 360px through 767px. At 320\u2013359px, a separately certified narrow-navigation block keeps primary links in one row and contains the fourth submenu.",
+          "rationale": "At 390px Classic increases the real SCP-JP fourth submenu escape by 4.703125px relative to the native target. Align only that endpoint from 360px through 767px. At 320–359px, a separately certified narrow-navigation block keeps primary links in one row and contains the fourth submenu.",
           "evidence": [
             {
               "path": "authority-evidence/classic-mobile-endpoint-current-css-20261006/receipt.json",
@@ -4738,7 +4737,7 @@
         },
         {
           "marker": "SCP-JP Wikidot space credit modals: give the credit modal box a definite width at mobile widths so the otherwise columns do not collapse and the rate bar clears the license badges.",
-          "rationale": "In the Sigma-10 shell the credit modal box shrink-wraps its content inside the grid-centered container: the otherwise box measured 149px wide with a 66px content column at a 390px viewport, so the credit data collapsed to one or two characters per line (S10B-2), and in the credit view the rate bar reached the license-badge corner (S10B-1; the pre-freeze credit-rate correction block is present in the candidate but insufficient in this composition). Giving the modal box a definite width at mobile widths \u2014 min(36rem, 100vw - 2rem) \u2014 restores the full-width otherwise layout and separates the rate bar from the badges. W13 delta evidence: acceptance-frame captures before/after in the S10 shell (otherwise bc956c07\u2026 -> 26081f4e\u2026, view 723d8ce9\u2026 -> 1bbb0a90\u2026), narrow-mobile verified, and the S9 shell mobile frames re-captured well-formed with the block.",
+          "rationale": "In the Sigma-10 shell the credit modal box shrink-wraps its content inside the grid-centered container: the otherwise box measured 149px wide with a 66px content column at a 390px viewport, so the credit data collapsed to one or two characters per line (S10B-2), and in the credit view the rate bar reached the license-badge corner (S10B-1; the pre-freeze credit-rate correction block is present in the candidate but insufficient in this composition). Giving the modal box a definite width at mobile widths — min(36rem, 100vw - 2rem) — restores the full-width otherwise layout and separates the rate bar from the badges. W13 delta evidence: acceptance-frame captures before/after in the S10 shell (otherwise bc956c07… -> 26081f4e…, view 723d8ce9… -> 1bbb0a90…), narrow-mobile verified, and the S9 shell mobile frames re-captured well-formed with the block.",
           "sha256": "f7a1d6a86271cc33e8c5b99fabc06be456f8fae6591c3a0bc09fc3997f806755",
           "selectors": [
             "[id*=u-credit] .modalbox"
@@ -4762,7 +4761,7 @@
         },
         {
           "marker": "SCP-JP Wikidot space narrow history: keep the revision table inside the viewport at phone widths.",
-          "rationale": "G2-08 (D6 family): at 320px the revision table's container measures 331px wide and the comment column is clipped at the viewport edge. The block caps the history container at the viewport width and gives the table a fixed layout at full width with anywhere wrapping, so every column stays inside the viewport and all revision data remains readable (narrow columns wrap hard; two softer distributions were measured and rejected \u2014 auto layout collapses the columns pathologically). Acceptance-frame delta: ec2b1c11... (331px, clipped) -> ac982b5a... (280px, complete).",
+          "rationale": "G2-08 (D6 family): at 320px the revision table's container measures 331px wide and the comment column is clipped at the viewport edge. The block caps the history container at the viewport width and gives the table a fixed layout at full width with anywhere wrapping, so every column stays inside the viewport and all revision data remains readable (narrow columns wrap hard; two softer distributions were measured and rejected — auto layout collapses the columns pathologically). Acceptance-frame delta: ec2b1c11... (331px, clipped) -> ac982b5a... (280px, complete).",
           "sha256": "6dee3d6ecb23de8dad649fc9e3f395903c410e9d2324707e3ddb0d02ee68c190",
           "selectors": [
             ".page-history",
@@ -5300,7 +5299,7 @@
         },
         {
           "marker": "SCP-JP Wikidot jakstyle top bar labels: keep top navigation labels whole at narrow widths.",
-          "rationale": "G2-12 (Q1-2): at 320px the mobile top-bar labels fragment mid-word (the longest label breaks across two lines). word-break:keep-all on the bar anchors \u2014 in the descendant selector form, since .mobile-top-bar is a child of #top-bar \u2014 keeps every label whole. Acceptance-frame delta: 372901e068a4... -> 7bf288de11a4... (frame inspected: all four parent labels on one line).",
+          "rationale": "G2-12 (Q1-2): at 320px the mobile top-bar labels fragment mid-word (the longest label breaks across two lines). word-break:keep-all on the bar anchors — in the descendant selector form, since .mobile-top-bar is a child of #top-bar — keeps every label whole. Acceptance-frame delta: 372901e068a4... -> 7bf288de11a4... (frame inspected: all four parent labels on one line).",
           "sha256": "a11fa4e5b26a9c0bb1b16cd9b7bafc04e43b3bc74b5fceb7a629cb154c3db966",
           "selectors": [
             "#top-bar .mobile-top-bar>ul>li>a"
@@ -5669,15 +5668,15 @@
           "rationale": "Per-theme real SCP-JP A/B at 320px and 390px; every submenu/item/link stays inside both viewport edges. Preserve the wrapped row, source menu widths, palette and link layout. Space also retains its separate header grid correction; Turbo bounds only the invisible masthead responsible for remaining 320px document overflow.",
           "evidence": [
             {
-              "path": "authority-evidence/turbo-vision-w13-recert-20261028/block-11/receipt.json",
-              "sha256": "2186632d6cc01aa9c162ff80de4f1c820321a537bdfc8293258431f5adb75bb9"
+              "path": "authority-evidence/turbo-vision-freeze3-recert-20261029/block-11/receipt.json",
+              "sha256": "9f88c090f1aec2b3e943e2983497bbe1f4aa25ab7c2bd47bf83d9de31039112e"
             },
             {
-              "path": "authority-evidence/turbo-vision-w13-recert-20261028/block-11b/receipt.json",
-              "sha256": "1b4b27462eb8f2fb7783f1ea8cdac5ff197d64ea034fa9f839d81f250b9da9eb"
+              "path": "authority-evidence/turbo-vision-freeze3-recert-20261029/block-11b/receipt.json",
+              "sha256": "23eee1bbd1c62e08f2eb5c4a6ecdd7596266de54b6f1b4e0a7a88d75ffaaa42c"
             }
           ],
-          "published_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651",
+          "published_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402",
           "scope": {
             "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
             "viewports": [
@@ -5719,8 +5718,8 @@
           "rationale": "The complete Turbo Vision source CSS inherits Sigma positioning that places the real SCP-JP desktop top-bar 16px off the left edge. A bounded per-theme inset fixes the left edge while keeping the existing 16px right inset and leaves document width at the viewport at 768px, 1024px, and 1440px.",
           "evidence": [
             {
-              "path": "authority-evidence/turbo-vision-w13-recert-20261028/block-13/receipt.json",
-              "sha256": "d04184e0d89fc59b2f7a9b68b23265e1f8eb6ac751e2c2e8b1acdd17e6e1d7e1"
+              "path": "authority-evidence/turbo-vision-freeze3-recert-20261029/block-13/receipt.json",
+              "sha256": "e9bea25ffd8961975956b3a984d9d0471c6054fbb90121e5a12329f879a566db"
             }
           ],
           "scope": {
@@ -5737,7 +5736,7 @@
               "#top-bar .top-bar"
             ]
           },
-          "published_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651",
+          "published_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402",
           "sha256": "1815af33b6b70ad3ae2e97b5b850c3e5ffc24bd6c8ea04f332f52ba06252ed5f"
         },
         {
@@ -5754,8 +5753,8 @@
           ],
           "evidence": [
             {
-              "path": "authority-evidence/turbo-vision-w13-recert-20261028/block-14/receipt.json",
-              "sha256": "096d7851223a2df32ec062099a13df45900eea8a43bd535dbfa4baeb42671471"
+              "path": "authority-evidence/turbo-vision-freeze3-recert-20261029/block-14/receipt.json",
+              "sha256": "6ddde2583079f22f8530e5ad319cc7ebd90ebce0b1ebf0dd7dd556ee529a14fe"
             }
           ],
           "scope": {
@@ -5768,7 +5767,7 @@
             ]
           },
           "published_base_css_sha256": null,
-          "published_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651"
+          "published_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402"
         },
         {
           "marker": "SCP-JP Wikidot Turbo Vision mobile top-bar bound: preserve the right inset without negative left positioning.",
@@ -5778,8 +5777,8 @@
           "rationale": "The real target mobile top-bar sits 16px left of the viewport. Preserve its right inset and bound its width, leaving the separately certified desktop row unchanged.",
           "evidence": [
             {
-              "path": "authority-evidence/turbo-vision-w13-recert-20261028/block-15/receipt.json",
-              "sha256": "d7b0754a77a222223d1cc8d0722da66f11c9b2acc5cfed27cdb95e44ae54a55b"
+              "path": "authority-evidence/turbo-vision-freeze3-recert-20261029/block-15/receipt.json",
+              "sha256": "5629f6425e702f05556eab4b2b84d5e44bfc0f1fccb7a3564b6171d1e1e0844f"
             }
           ],
           "scope": {
@@ -5792,18 +5791,18 @@
               1440
             ]
           },
-          "published_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651"
+          "published_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402"
         },
         {
           "marker": "SCP-JP Wikidot native history list: preserve the seven columns inside their own horizontal scroller.",
           "sha256": "2094c32464d499abf47df40b62cc958016249707445299f7775fbf9df36f8832",
           "origin": "target-certified-replacement",
           "authority": "RUNTIME_INDEPENDENT",
-          "rationale": "The exact retained native History responses stay within the unthemed SCP-JP viewport, while this theme expands the document. Keep all seven columns and native radios in their own horizontal scroller. This proof establishes list geometry only. W13 re-certification outcome: against the current reference the A/B no longer demonstrates independent need (the without-variant passes at every scoped viewport), so the block is downgraded from TARGET_WIKIDOT_CERTIFIED to RUNTIME_INDEPENDENT and retained as a defensive containment with the W13 A/B receipt as its evidence; the coordinator may restore certification if the reference changes.",
+          "rationale": "The exact retained native History responses stay within the unthemed SCP-JP viewport, while this theme expands the document. Keep all seven columns and native radios in their own horizontal scroller. This proof establishes list geometry only. W13 re-certification outcome: against the current reference the A/B no longer demonstrates independent need (the without-variant passes at every scoped viewport), so the block is downgraded from TARGET_WIKIDOT_CERTIFIED to RUNTIME_INDEPENDENT and retained as a defensive containment with the W13 A/B receipt as its evidence; the coordinator may restore certification if the reference changes. Freeze-3 re-certification (turbo-vision-freeze3-recert-20261029/block-16, candidate b9e8c63b) again shows the without-variant passing at every scoped viewport, so the block remains RUNTIME_INDEPENDENT.",
           "evidence": [
             {
-              "path": "authority-evidence/turbo-vision-w13-recert-20261028/block-16/receipt.json",
-              "sha256": "38411abee8837be0ac8d00343b242d9edfca12ea9e853ec71b10be5b0a446fe9"
+              "path": "authority-evidence/turbo-vision-freeze3-recert-20261029/block-16/receipt.json",
+              "sha256": "afca67b5ca2ba06c95195691fc6e952ce0bb67173d4f6f61396a11bf6c716073"
             }
           ],
           "scope": {
@@ -5815,7 +5814,7 @@
               1440
             ]
           },
-          "published_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651"
+          "published_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402"
         },
         {
           "marker": "SCP-JP Wikidot Turbo Vision narrow navigation rows: reserve the source gray bar for wrapped labels.",
@@ -5825,8 +5824,8 @@
           "rationale": "At 320px, the first wrapped JP row sits 20px above the source gray navigation bar and its black text becomes unreadable on the navy masthead. Reserve two rows of the source gray bar below the unchanged pixel logo. Native visible text ranges fit both rows; 390px/tablet/desktop typography, source colors and positioning remain unchanged.",
           "evidence": [
             {
-              "path": "authority-evidence/turbo-vision-w13-recert-20261028/block-17/receipt.json",
-              "sha256": "567ecf17d959c93a3d79370a5a6c7df151f43be0900c3701c1a77c2c8bc6583c"
+              "path": "authority-evidence/turbo-vision-freeze3-recert-20261029/block-17/receipt.json",
+              "sha256": "0f8004003fb00d3e523ccc9521fb49e572160118b2804f96ec45dce30f7dfe49"
             }
           ],
           "scope": {
@@ -5842,7 +5841,7 @@
               "#top-bar"
             ]
           },
-          "published_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651"
+          "published_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402"
         },
         {
           "marker": "SCP-JP Wikidot turbo-vision heading correction: keep wrapped pixel-font headings from striking through at mobile widths.",
@@ -5869,7 +5868,7 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "page.normal"
           },
-          "published_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651"
+          "published_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402"
         },
         {
           "marker": "SCP-JP Wikidot turbo-vision narrow panes: keep the revision and file tables inside the viewport at phone widths.",
@@ -5889,26 +5888,49 @@
             "target": "w13-delta",
             "state": "acceptance-frame"
           },
-          "published_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651"
+          "published_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402"
+        },
+        {
+          "marker": "SCP-JP Wikidot Turbo Vision documentation blockquote wrap: owner OPTION C (2026-10-29) — wrap long unbroken strings in blockquotes so they read in place at narrow widths; a localization quality improvement, divergence from verbatim upstream accepted for this package + finding.",
+          "rationale": "Owner OPTION C (2026-10-29): the theme documentation blockquote carries a raw image URL as a classless span; at 320px the unbroken string measures 273px wide from left 60 to right 333 and overflows the document by 13px (current-contract full check w16-turbo-vision-full, raw result sha256 cf8b7993005e195e2805808e0953d39913ea0cb70e3873e81b5af6ee5173d9eb). The same-frame delta receipt reproduces the defect without the rule (13px, span 60/333/273, computed overflow-wrap normal) and clears it with the rule (zero error findings; computed overflow-wrap anywhere on the blockquote and its descendants, selector matched on the fixture blockquote element). Divergence from verbatim upstream is accepted for this package + finding as a localization quality improvement.",
+          "sha256": "debb27e2e77cb7e3a92eb61affd85fbf0257fa3a9b5b464b48e8d85a48d13ec5",
+          "selectors": [
+            ".turbo-block .blockquote",
+            ".turbo-block .blockquote *"
+          ],
+          "at_contexts": [],
+          "origin": "runtime-independent-css-containment",
+          "authority": "RUNTIME_INDEPENDENT",
+          "evidence": [
+            {
+              "path": "authority-evidence/turbo-vision-blockquote-delta-20261029/receipt.json",
+              "sha256": "062fdff930371adaa9f586ebdbc25b80e1c67f919ad05e7d933b1a6b1b0fbd39"
+            }
+          ],
+          "scope": {
+            "target": "SCP-JP Sigma-9 current target acceptance",
+            "state": "page.normal"
+          },
+          "published_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "b43f1d79215dab57e1a03bfe9c7250db9f25a5467e1429627f114b9dfa750340",
         "candidate-input.css": "277f938a1ab759664945e72cf4d5a1a5adc249e5c7d0cc234343711ab27116e6",
-        "authority-overrides.css": "8f061e1f11ce940d4a9519da2654de4bf373613d9273b2fea997712fe43bc64c",
+        "authority-overrides.css": "c0974288aa1e50ef62dbfceac188c226f879eaf26fc75807fbf4d85b61ee4e7b",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/toggle-sidebar.wikidot.txt": "5e6e6bf79aa9b08344865b1209693254db4c8d1aef7d579092bc6dd9c7c55e35",
         "source-includes/toggle-sidebar-input.css": "d4d80ebcc0e2afb61490420a96b3f0b4cc29dfc9de532029e062af1ee80028ae",
         "source-css-includes.json": "22ec56b4a00133c5e763223b56503807bbfc245c31c0a66324886fcf716ed5a9"
       },
       "outputs": {
-        "candidate.css": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651",
-        "candidate-source.css": "59e0c70fbdf2929bc2c9f65589e8b6c2d7b85df8273700450c8d6a0a2fb921ec",
-        "candidate.wikidot.source.txt": "8934e7d94e2eb582311c961eaf4042fd01107f7943b9547252e1e5bee08aa3c3",
+        "candidate.css": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402",
+        "candidate-source.css": "1b4e4c933c6d9bc0e04e19770deaff231af633a1abeb264add65f189787d7d6a",
+        "candidate.wikidot.source.txt": "e8acd56ebfe4e28b14825c26db3980a1d584e5b2532a9c9b818ec70aa9013647",
         "candidate.wikidot.txt": "6b2cdf623550c36176288bb5ba9ed1ee5fcd21c97435e413fb6a17880e16c5af",
         "maintenance/base.wikidot.txt": "b43f1d79215dab57e1a03bfe9c7250db9f25a5467e1429627f114b9dfa750340",
-        "maintenance/jp-overrides.css": "91e167399460ba6704ee74279ed906d608c40932462d07e568a411536c5113fc",
-        "maintenance/final.wikidot.txt": "18b8e57a271c425c17f7ef49a8cc700e4491ce222cf36959e8c8475718ddd6b0"
+        "maintenance/jp-overrides.css": "ba3b88029c1b0d260684287829fcfe0450e9e95abafec497b0b0d2427073c546",
+        "maintenance/final.wikidot.txt": "4b9ee9e2f1ec56cc6ec210d5b20609fa12984bc9f05eee5e3b1a20373faf58de"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -5919,8 +5941,8 @@
         }
       },
       "current_navigation_evidence": {
-        "path": "authority-evidence/turbo-vision-final-three-trusted-navigation-v3-20261002/receipt.json",
-        "sha256": "11e14456397fa1c083ad2440aa97058805efa7a5907f0d6aa0287ffec89d1dc5"
+        "path": "authority-evidence/turbo-vision-freeze3-navigation-20261029/receipt.json",
+        "sha256": "3d1c348c6bd7f76ad3e9363ed331f443128eaaf30dd11957fa146bee3cec1e48"
       }
     },
     "skipos": {
@@ -6370,7 +6392,7 @@
         },
         {
           "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
-          "rationale": "In the otherwise credit dialog the back link (\u623b\u308b) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
+          "rationale": "In the otherwise credit dialog the back link (戻る) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
           "sha256": "741b04aa4099d6de0c6d70996c006c68a9087c61e24f2ccb2dd67039d7169f9e",
           "selectors": [
             "[id*=u-credit] div.credit-back a"
@@ -6392,7 +6414,7 @@
         },
         {
           "marker": "SCP-JP Wikidot extra-black-highlighter-theme top bar labels: keep top navigation labels whole at narrow widths.",
-          "rationale": "G2-12 (Q1-2): at 320px the mobile top-bar labels fragment mid-word (the longest label breaks across two lines). word-break:keep-all on the bar anchors \u2014 in the descendant selector form, since .mobile-top-bar is a child of #top-bar \u2014 keeps every label whole. Acceptance-frame delta: 9b5b0fdd5526... -> 5b08f4640497... (frame inspected: all four parent labels on one line).",
+          "rationale": "G2-12 (Q1-2): at 320px the mobile top-bar labels fragment mid-word (the longest label breaks across two lines). word-break:keep-all on the bar anchors — in the descendant selector form, since .mobile-top-bar is a child of #top-bar — keeps every label whole. Acceptance-frame delta: 9b5b0fdd5526... -> 5b08f4640497... (frame inspected: all four parent labels on one line).",
           "sha256": "4507f1f5c1e32d931de19d00559616dd3f091d1634943b191f3a860cd76e56cc",
           "selectors": [
             "#top-bar .mobile-top-bar>ul>li>a"
@@ -6710,7 +6732,7 @@
         },
         {
           "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
-          "rationale": "In the otherwise credit dialog the back link (\u623b\u308b) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
+          "rationale": "In the otherwise credit dialog the back link (戻る) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
           "sha256": "741b04aa4099d6de0c6d70996c006c68a9087c61e24f2ccb2dd67039d7169f9e",
           "selectors": [
             "[id*=u-credit] div.credit-back a"
@@ -6732,7 +6754,7 @@
         },
         {
           "marker": "SCP-JP Wikidot aesthetic-theme top bar labels: keep top navigation labels whole at narrow widths.",
-          "rationale": "G2-12 (Q1-2): at 320px the mobile top-bar labels fragment mid-word (the longest label breaks across two lines). word-break:keep-all on the bar anchors \u2014 in the descendant selector form, since .mobile-top-bar is a child of #top-bar \u2014 keeps every label whole. Acceptance-frame delta: 9c53460aa60e... -> f43e357cdcba... (frame inspected: all four parent labels on one line).",
+          "rationale": "G2-12 (Q1-2): at 320px the mobile top-bar labels fragment mid-word (the longest label breaks across two lines). word-break:keep-all on the bar anchors — in the descendant selector form, since .mobile-top-bar is a child of #top-bar — keeps every label whole. Acceptance-frame delta: 9c53460aa60e... -> f43e357cdcba... (frame inspected: all four parent labels on one line).",
           "sha256": "eb7a84111a49aff864b5a0737bac58b3d8c3edf9cb71e33759df73ac6af06004",
           "selectors": [
             "#top-bar .mobile-top-bar>ul>li>a"
@@ -9109,7 +9131,7 @@
         },
         {
           "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
-          "rationale": "In the otherwise credit dialog the back link (\u623b\u308b) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
+          "rationale": "In the otherwise credit dialog the back link (戻る) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
           "sha256": "741b04aa4099d6de0c6d70996c006c68a9087c61e24f2ccb2dd67039d7169f9e",
           "selectors": [
             "[id*=u-credit] div.credit-back a"
@@ -9131,7 +9153,7 @@
         },
         {
           "marker": "SCP-JP Wikidot minimalist-bhl top bar labels: keep top navigation labels whole at narrow widths.",
-          "rationale": "G2-12 (Q1-2): at 320px the mobile top-bar labels fragment mid-word (the longest label breaks across two lines). word-break:keep-all on the bar anchors \u2014 in the descendant selector form, since .mobile-top-bar is a child of #top-bar \u2014 keeps every label whole. Acceptance-frame delta: 6909e691d365... -> 69d1ad730c62... (frame inspected: all four parent labels on one line).",
+          "rationale": "G2-12 (Q1-2): at 320px the mobile top-bar labels fragment mid-word (the longest label breaks across two lines). word-break:keep-all on the bar anchors — in the descendant selector form, since .mobile-top-bar is a child of #top-bar — keeps every label whole. Acceptance-frame delta: 6909e691d365... -> 69d1ad730c62... (frame inspected: all four parent labels on one line).",
           "sha256": "418c225cf6c29f18d7badf5c24157c2bd47677f1a5884f72f18551a89a95e178",
           "selectors": [
             "#top-bar .mobile-top-bar>ul>li>a"
@@ -9345,8 +9367,8 @@
           "rationale": "The source rotated masthead extends left of the native SCP-JP viewport at 320, 390 and 768px. Translate the existing title by 20px at tablet/mobile widths and reduce only its 320px type scale enough to retain both edges, preserving rotation, face and wider layout.",
           "evidence": [
             {
-              "path": "authority-evidence/hansarp-w13-recert-20261028/block-12-receipt.json/receipt.json",
-              "sha256": "15bb8cd35572bc47cbcd6e55e601f1baf27f4ad155d8dda2b0d15a08e8beb852"
+              "path": "authority-evidence/hansarp-freeze3-recert-20261029/block-12-receipt.json/receipt.json",
+              "sha256": "527d3c5e78e90bd8b9b27480062f17db556ad042ff0e9fba41cccbf0096f519f"
             }
           ],
           "scope": {
@@ -9363,7 +9385,7 @@
               "#header h1 a span"
             ]
           },
-          "published_css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6"
+          "published_css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c"
         },
         {
           "marker": "SCP-JP Wikidot Hansarp narrow header slot: keep its rotated box within the available inline width.",
@@ -9404,11 +9426,11 @@
           "sha256": "c9d7e360fac1ddcdf5c38306c91cb8bc7924171b0c50784d03cde1b707fef7ab",
           "authority": "TARGET_WIKIDOT_CERTIFIED",
           "origin": "target-certified-replacement",
-          "rationale": "The theme transforms the view-panel container, making its nested otherwise panel fixed relative to that container instead of the viewport. Native trusted otherwise clicks demonstrate 51\u2013597px of panel escape. Remove only that containing transform and retain vertical centering with top/bottom and auto margins.",
+          "rationale": "The theme transforms the view-panel container, making its nested otherwise panel fixed relative to that container instead of the viewport. Native trusted otherwise clicks demonstrate 51–597px of panel escape. Remove only that containing transform and retain vertical centering with top/bottom and auto margins.",
           "evidence": [
             {
-              "path": "authority-evidence/hansarp-w13-recert-20261028/block-14-receipt.json/receipt.json",
-              "sha256": "8080ff51e50138ee28e81b097bd92aa5167af11f9d6ad6e283770882c76e21a0"
+              "path": "authority-evidence/hansarp-freeze3-recert-20261029/block-14-receipt.json/receipt.json",
+              "sha256": "eaa3d6cd5289bfd03f73c1850936db4dc72e18ebab12da72cedc19e91d390f29"
             }
           ],
           "scope": {
@@ -9424,7 +9446,7 @@
               "#u-credit-otherwise .modalbox"
             ]
           },
-          "published_css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6"
+          "published_css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c"
         },
         {
           "marker": "SCP-JP Wikidot Hansarp generated masthead title: fit its source lettering within the narrow title slot.",
@@ -9434,8 +9456,8 @@
           "rationale": "The source generated HANSARP lettering expands the native Firefox target to 357/410px at 320/390, while the same unthemed target fits. Fit only the narrow source lettering to the remaining header slot, preserving face, rotation, source repeated shadow, colors and zero-line-height layout.",
           "evidence": [
             {
-              "path": "authority-evidence/hansarp-w13-recert-20261028/block-15-receipt.json/receipt.json",
-              "sha256": "6c15e1f9201e07e26478e5f220c415c3a16823b573e58fe650e96893c87a16b0"
+              "path": "authority-evidence/hansarp-freeze3-recert-20261029/block-15-receipt.json/receipt.json",
+              "sha256": "02c31b78f1e3b6871a527eda8477f7cbcef090a397c9b639236557c7112e57f1"
             }
           ],
           "scope": {
@@ -9451,38 +9473,41 @@
               "#header h1 a::before"
             ]
           },
-          "published_css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6"
+          "published_css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c"
         },
         {
           "marker": "SCP-JP Wikidot Hansarp credit fader anchors: retain native backdrop stacking under the visible controls.",
           "sha256": "bbd8cd176e69656fa84abcba9aa00bd0fee182b4c5872316d82e48a12d19561b",
-          "authority": "REMOVE",
-          "origin": "target-certified-replacement",
-          "rationale": "The source generic link hover/focus rule transforms and raises the invisible native fader close anchor over modal controls. Native scrolled-return A/B fails without the correction and succeeds with it. Restore only the native absolute/auto-stack/untransformed backdrop anchor, retaining real outside-panel close clicks. W13 DISPOSITION (G2-01 session): re-certification against the current reference snapshot of the target page (acquired 2026-10-27; the 2026-09-29 snapshot the block was certified against is no longer retained in either reference cache) demonstrates no A/B need \u2014 without the block every row passes at 320/390/768/1440 on the block's own state and selectors (receipt hansarp-w13-recert-20261028/block-16). A certified block that cannot demonstrate need on the current reference is not publishable under the authority rule, so the block is removed; the rule text remains in git history and in this ledger entry for restoration if a future reference shows the divergence again.",
+          "authority": "RUNTIME_INDEPENDENT",
+          "origin": "runtime-independent-css-containment",
+          "rationale": "The source generic link hover/focus rule transforms and raises the invisible native fader close anchor over modal controls. W13 removed this block when re-certification against the then-current Wikidot snapshot showed no A/B need on the target page; the Sigma-10 campaign frame then failed all three credit.otherwise back-control-click rows (desktop/mobile/narrow-mobile) because the hovered fader anchor (full-viewport under the saved Credit cascade) intercepts the return-credits click. Freeze-3 (OD-T2 class B) restores the block verbatim (sha256 identical to the pre-removal text). The Freeze-3 toggle probe on the Sigma-10 acceptance frame reproduces the audit failure on the block-less candidate (hover raises the anchor: transform matrix(1.04856,0.0549528,...) with z-index 2, click times out at 1440/390/320) and passes the full open-otherwise/scroll/back-click/return sequence with the block restored at all three viewports.",
           "evidence": [
             {
-              "path": "authority-evidence/hansarp-w13-recert-20261028/block-16-receipt.json/receipt.json",
-              "sha256": "143ca8496a8c815da56024b6875d7297f7c9d87ec248f8c5c2e9f744ae722917"
+              "path": "authority-evidence/hansarp-freeze3-20261029/probe-credit-repro3.json",
+              "sha256": "2ecc9eb1a6b434de64663db12867f48d5fbb31aeebe6fdd52b6188a615898d63"
+            },
+            {
+              "path": "authority-evidence/hansarp-freeze3-20261029/receipt.json",
+              "sha256": "43c908844baca40b07d00d59eeaa05e1a2fa7c2f429c5b54d66d0ab896fc45a9"
+            },
+            {
+              "path": "authority-evidence/hansarp-freeze3-recert-20261029/block-16-receipt.json/receipt.json",
+              "sha256": "811e4b02b2bad97892e1580218c75102b34dc174ec3d29a975594c4b7231de4d"
             }
           ],
           "scope": {
-            "target_url": "https://pseudo-scp-jp.wikidot.com/sigma-10:main",
-            "state": "credit-fold-return",
-            "viewports": [
-              320,
-              390,
-              768,
-              1440
-            ],
-            "selectors": [
-              "#u-credit-view .modalbox"
-            ]
-          }
+            "target": "SCP-JP Sigma-10 current target acceptance",
+            "state": "credit.otherwise"
+          },
+          "selectors": [
+            "#main-content :is(#u-credit-view,#u-credit-otherwise) >.fader.foldable-list-container>a"
+          ],
+          "at_contexts": []
         },
         {
           "marker": "SCP-JP Wikidot Hansarp history options: size the history option tracks fluidly so the form fits the mobile viewport.",
-          "rationale": "The composed history rule sizes the option cell tracks as repeat(3,3rem 1fr); on the JP frame the fixed tracks push the history form past the mobile viewport (document 472px at 390px in the acceptance frame; the frozen real-content A/B measured the candidate at 404px against the native 390px, G2-25). The fluid repeat(3,1fr) sizing \u2014 the same correction the BHL family carries for this form (Q1-9/D1) \u2014 fits the form at 390px and gives the two-row option layout of the JP target at desktop widths (W13 delta receipt).",
-          "sha256": "9709e4b9e0f6f575e722574829cd92d7ac4b3b64fcca27b749798b6577e5b505",
+          "rationale": "The composed history rule sizes the option cell tracks as repeat(3,3rem 1fr); on the JP frame the fixed tracks push the history form past the mobile viewport (document 472px at 390px in the acceptance frame; the frozen real-content A/B measured the candidate at 404px against the native 390px, G2-25). The fluid repeat(3,1fr) sizing — the same correction the BHL family carries for this form (Q1-9/D1) — fits the form at 390px and gives the two-row option layout of the JP target at desktop widths (W13 delta receipt). Freeze-3 (OD-T2 class H): a 5px narrow-mobile (320px) residual remained because the 1fr tracks cannot shrink below their min-content; bounding the same tracks as repeat(3,minmax(0,1fr)) clears the residual in both shells (document 325px -> 320px, table 312.5px -> 288px, form scrollWidth 309 -> 288) with 390px geometry unchanged (Freeze-3 delta receipt).",
+          "sha256": "110c8fb319aef582a1d3a7a010a800046ef56e229374ff5bf4b1dac4ee896c08",
           "selectors": [
             "#history-form-1>table>tbody>tr:first-child>td:nth-of-type(2)"
           ],
@@ -9491,38 +9516,66 @@
           "authority": "RUNTIME_INDEPENDENT",
           "evidence": [
             {
-              "path": "authority-evidence/hansarp-w13-delta-20261028/receipt.json",
-              "sha256": "bfc39b7da47a4f4496d51407a1f3e6471f837744c3526f7efc2f72b673ba7359"
+              "path": "authority-evidence/hansarp-freeze3-20261029/probe-history-s9-trials.json",
+              "sha256": "c657d1af39a36df9950e5118846d0916508198e13ee68eadbb28eb83870b2c6e"
+            },
+            {
+              "path": "authority-evidence/hansarp-freeze3-20261029/probe-history-s10-trials.json",
+              "sha256": "e2759a270dc247e3601f1e83c3e80fe01cdd16b575346a5445938e331d95c0b6"
+            },
+            {
+              "path": "authority-evidence/hansarp-freeze3-20261029/receipt.json",
+              "sha256": "43c908844baca40b07d00d59eeaa05e1a2fa7c2f429c5b54d66d0ab896fc45a9"
             }
           ],
           "scope": {
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "page.history"
           },
-          "published_css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6"
+          "published_css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c"
         },
         {
           "marker": "SCP-JP Wikidot Hansarp search: reveal the collapsed query input while the search control is hovered or keyboard-focused.",
-          "rationale": "The theme collapses the header search form to an icon box with the query input at display:none; the earlier reveal adaptation was removed in the authority cleanup, so the JP frame's search control cannot be typed into at all (defect Q2-6; the Sigma frame shows a 250px form with a visible input). This block restores the reveal on hover and on focus-within, with an 8rem input width (without a width the revealed input stays 27px at desktop). W13 delta receipt: input display none -> inline-block at 128px on hover at 1440px and 390px.",
-          "sha256": "c91110bc97281d2c05188c6e24a966eabd9f9138a2758e4b580f3399c1b85287",
+          "rationale": "The theme collapses the header search form to an icon box with the query input at display:none; the earlier reveal adaptation was removed in the authority cleanup, so the JP frame's search control cannot be typed into at all (defect Q2-6; the Sigma frame shows a 250px form with a visible input). This block restores the reveal on hover and on focus-within, with an 8rem input width (without a width the revealed input stays 27px at desktop). W13 delta receipt: input display none -> inline-block at 128px on hover at 1440px and 390px. Freeze-3 (OD-T2 class G): the in-flow 8rem reveal overflowed the tablet/mobile/narrow viewports by 29/41/43px in both shells because the revealed form is centered on the 23.4px search box (form centre approx viewport - 35.5px at <=768px), so the input's right edge lands at centre + 64px. At <=1024px the revealed input now grows leftwards instead: the form becomes the positioning context and the input is absolutely placed ending 1.75rem before the form's right edge (clear of the submit control), keeping the full 8rem usable width with measured document overflow 0px at 768/390/320 in both shells (Freeze-3 delta receipt). Desktop in-flow geometry is unchanged.",
+          "sha256": "197f9359f96aaeba174a599053682519858452e5757cec02b79626b359539ba9",
           "selectors": [
-            "#search-top-box-form:hover #search-top-box-input",
-            "#search-top-box-form:focus-within #search-top-box-input"
+            "#search-top-box-form:focus-within",
+            "#search-top-box-form:focus-within #search-top-box-input",
+            "#search-top-box-form:hover",
+            "#search-top-box-form:hover #search-top-box-input"
           ],
-          "at_contexts": [],
+          "at_contexts": [
+            "@media(max-width:1024px)"
+          ],
           "origin": "runtime-independent-css-containment",
           "authority": "RUNTIME_INDEPENDENT",
           "evidence": [
             {
-              "path": "authority-evidence/hansarp-w13-delta-20261028/receipt.json",
-              "sha256": "bfc39b7da47a4f4496d51407a1f3e6471f837744c3526f7efc2f72b673ba7359"
+              "path": "authority-evidence/hansarp-freeze3-20261029/probe-search-s9-g23.json",
+              "sha256": "4b62fa4aadf3d535f43860cf812cb89a574d9d8f92d0c7416b1ef5ac99293cde"
+            },
+            {
+              "path": "authority-evidence/hansarp-freeze3-20261029/probe-search-s10-g23.json",
+              "sha256": "0ea252456dc9aef6a5d6a8e9f4c287521e222f6ef511849b72bb3790fad30bc9"
+            },
+            {
+              "path": "authority-evidence/hansarp-freeze3-20261029/receipt.json",
+              "sha256": "43c908844baca40b07d00d59eeaa05e1a2fa7c2f429c5b54d66d0ab896fc45a9"
+            },
+            {
+              "path": "authority-evidence/hansarp-freeze3-recert-20261029/search-focus-receipt.json/receipt.json",
+              "sha256": "f10137c8a82de91c9cb81608678332188448307b3df8459b7b2dca2b3bf3df55"
+            },
+            {
+              "path": "authority-evidence/hansarp-freeze3-recert-20261029/search-hover-receipt.json/receipt.json",
+              "sha256": "3d1f3c5a0b8fb4730d0e26a427ee70dec3d28fcae5e58fa5d8d2b29cf7b7c8b1"
             }
           ],
           "scope": {
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "shell.search"
           },
-          "published_css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6"
+          "published_css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c"
         },
         {
           "marker": "SCP-JP Wikidot Hansarp navigation labels: keep top-bar labels unbroken on narrow viewports.",
@@ -9545,23 +9598,23 @@
             "target": "SCP-JP Sigma-9 current target acceptance",
             "state": "navigation"
           },
-          "published_css_sha256": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6"
+          "published_css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c"
         }
       ],
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
         "candidate-input.css": "de74faf9920df398c3582b4a8d810130a744ab9e8657645c4c1cdc030d626cad",
-        "authority-overrides.css": "4b2942fe4c837af1e35abd0c6e3fea092e728d4af0760d105427099c7b477daa",
+        "authority-overrides.css": "e021e9f94ad27aaab44ca0c0770f1769a108e17bf779ef84f5621cfe9da746d6",
         "asset-transforms.json": "4b0c068f13004ecbc65dc4139e0f97c4b8ef7f5125f3656610fabbe5fa838f11"
       },
       "outputs": {
-        "candidate.css": "92301f3d56671274a864124f53f6924f57f42fc0882739aec5b1336a824380c6",
-        "candidate-source.css": "031e243a37741d0e416134d25066921783e5a2ae8d8194b73d09d56f974b393b",
-        "candidate.wikidot.source.txt": "64d5227d86a84ab67944599e6b5d5af73a5a898f2ef38c501ecee028d2c7c5ff",
+        "candidate.css": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c",
+        "candidate-source.css": "89e644e05fa6f2589231400f588dc44c7a5ab0b9057ce86445ed6e82a79090a0",
+        "candidate.wikidot.source.txt": "ccf5f58cc71f0e9a6f7b988e5a74bbc889dd369625075c33da06773b57bc8f45",
         "candidate.wikidot.txt": "c4c5954f86bf330d7014c6ecbe1643e1c7370bb08d48e6492e5c13d2c338508b",
         "maintenance/base.wikidot.txt": "f49cccac6491e3330dc936559810cd41a9b260ff8f97caad58de5d06f6ff8e98",
-        "maintenance/jp-overrides.css": "6a1c58863d200529c5cb8a17bc3c93a3b20678e74cce8e11c6537988a5dbfa58",
-        "maintenance/final.wikidot.txt": "0c85c54ff9553c4449eb10268afd9a989db1ca200bd452c470fcded136a2c1f1"
+        "maintenance/jp-overrides.css": "a93e9a7f6471a4b83af3db6a910757046a1499040f4e5250253259069d0a93f5",
+        "maintenance/final.wikidot.txt": "fcfe0c19ed02c8e75d03a2c164fc9192ceb97bd6161c5682ccb5065f08c7e69f"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",
@@ -9572,9 +9625,9 @@
         }
       },
       "current_navigation_evidence": {
-        "path": "authority-evidence/hansarp-final-four-navigation-20261004/receipt.json",
-        "sha256": "d7a691e8ec5bfa81724a336ef91df41818bdbe0bce21e6c5c30eaa3b860c34e4",
-        "published_css_sha256": "d431fa5d54d10b03245b905157917fd0e41324fa6668d7406e434554ed428319"
+        "path": "authority-evidence/hansarp-freeze3-navigation-20261029/receipt.json",
+        "sha256": "c42dd006acc113b9519a4701e91ef294937d82b435219610dcc296fa6b29a714",
+        "published_css_sha256": "018358256020cce5ad1e0930293fb3839986a945dae59a93e07e2915e0cf8b3c"
       }
     },
     "night-rush-theme": {
@@ -10265,7 +10318,7 @@
         },
         {
           "marker": "SCP-JP Wikidot redtape dialog headings: keep dialog body headings on the dialog text color so they stay readable on the white dialog ground.",
-          "rationale": "Two redtape-authored choices collide in dialogs: its own owindow rule forces the dialog ground white, while its variable block sets --swatch-text-tertiary-color to the white accent, and the shared BHL rule colors dialog body headings rgb(var(--modal-body-header-txt)) = the tertiary color \u2014 measured heading rgb(244,244,244) on white, contrast 1.1 (defect Q1-8; the BHL reference computes a dark heading at 17.79). Redefining --modal-body-header-txt to the dialog own text color (bright accent) inside the owindow scope restores a readable heading (measured 5.9) with body text unchanged.",
+          "rationale": "Two redtape-authored choices collide in dialogs: its own owindow rule forces the dialog ground white, while its variable block sets --swatch-text-tertiary-color to the white accent, and the shared BHL rule colors dialog body headings rgb(var(--modal-body-header-txt)) = the tertiary color — measured heading rgb(244,244,244) on white, contrast 1.1 (defect Q1-8; the BHL reference computes a dark heading at 17.79). Redefining --modal-body-header-txt to the dialog own text color (bright accent) inside the owindow scope restores a readable heading (measured 5.9) with body text unchanged.",
           "sha256": "c1260f2f3be0e009ac13bb258b9eaaed584225e4eea8838aec805240c8e6eb7e",
           "selectors": [
             "#odialog-container .owindow"
@@ -10287,7 +10340,7 @@
         },
         {
           "marker": "SCP-JP Wikidot BHL credit otherwise correction: keep the back link on one line in the otherwise credit dialog.",
-          "rationale": "In the otherwise credit dialog the back link (\u623b\u308b) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
+          "rationale": "In the otherwise credit dialog the back link (戻る) is a flex item beside the credit label pseudo-element; the row shrinks it to one glyph width (18px), so the two glyphs stack (defect Q1-1, BHL family). The same-target delta receipt shows the link at two lines and the row at 47.5px tall without the correction, and one line (row 28px) with white-space:nowrap and flex-shrink:0 on the link, with no collateral geometry change at 320-1440px.",
           "sha256": "741b04aa4099d6de0c6d70996c006c68a9087c61e24f2ccb2dd67039d7169f9e",
           "selectors": [
             "[id*=u-credit] div.credit-back a"

@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "8934e7d94e2eb582311c961eaf4042fd01107f7943b9547252e1e5bee08aa3c3",
+  "frozen_candidate_source_sha256": "e8acd56ebfe4e28b14825c26db3980a1d584e5b2532a9c9b818ec70aa9013647",
   "base_source_sha256": "b43f1d79215dab57e1a03bfe9c7250db9f25a5467e1429627f114b9dfa750340",
-  "raw_jp_overrides_sha256": "9f69aebd94f44605702e676f5a7141918e922c62c6273926c3e39c364249cb5c",
-  "jp_overrides_sha256": "91e167399460ba6704ee74279ed906d608c40932462d07e568a411536c5113fc",
-  "semantic_css_sha256": "25caa29f4803344f6b02b0d8a5e04791cffb0ee32aaf2d22c04d16c0bf6d004e",
-  "canonical_override_sha256": "9faa872b6cfefc904db58eaec9dcf4be3797cc4d51af15bb4ba80623e772800f",
+  "raw_jp_overrides_sha256": "00211f559f2da850c6d966800d8a94b778129f104dba8a198a97979c901e6780",
+  "jp_overrides_sha256": "ba3b88029c1b0d260684287829fcfe0450e9e95abafec497b0b0d2427073c546",
+  "semantic_css_sha256": "8ae0bd6f93a93bce57a6a1fc54fcdb533cc9a77f0a534fe9cff5e9eb89a4a195",
+  "canonical_override_sha256": "f3f628145fa7ca6a2aac3f71543234cd45ad64e1305b1edb2b42b055e608695d",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "18b8e57a271c425c17f7ef49a8cc700e4491ce222cf36959e8c8475718ddd6b0",
+  "final_source_sha256": "4b9ee9e2f1ec56cc6ec210d5b20609fa12984bc9f05eee5e3b1a20373faf58de",
   "final_source_inputs": {
     "base_sha256": "b43f1d79215dab57e1a03bfe9c7250db9f25a5467e1429627f114b9dfa750340",
-    "jp_overrides_sha256": "91e167399460ba6704ee74279ed906d608c40932462d07e568a411536c5113fc"
+    "jp_overrides_sha256": "ba3b88029c1b0d260684287829fcfe0450e9e95abafec497b0b0d2427073c546"
   },
   "ordered_include_sha256": "2d9da036cfae7fd12cfc6366c1e5bafaaf37105d3e5a19172b72a4a4bc3763e8",
   "declaration_reviews": {},
-  "adaptation_block_count": 8,
-  "raw_override_rule_count": 19,
-  "canonical_override_rule_count": 19,
+  "adaptation_block_count": 9,
+  "raw_override_rule_count": 21,
+  "canonical_override_rule_count": 21,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -203,15 +203,15 @@
       "rationale": "Per-theme real SCP-JP A/B at 320px and 390px; every submenu/item/link stays inside both viewport edges. Preserve the wrapped row, source menu widths, palette and link layout. Space also retains its separate header grid correction; Turbo bounds only the invisible masthead responsible for remaining 320px document overflow.",
       "evidence": [
         {
-          "path": "authority-evidence/turbo-vision-w13-recert-20261028/block-11/receipt.json",
-          "sha256": "2186632d6cc01aa9c162ff80de4f1c820321a537bdfc8293258431f5adb75bb9"
+          "path": "authority-evidence/turbo-vision-freeze3-recert-20261029/block-11/receipt.json",
+          "sha256": "9f88c090f1aec2b3e943e2983497bbe1f4aa25ab7c2bd47bf83d9de31039112e"
         },
         {
-          "path": "authority-evidence/turbo-vision-w13-recert-20261028/block-11b/receipt.json",
-          "sha256": "1b4b27462eb8f2fb7783f1ea8cdac5ff197d64ea034fa9f839d81f250b9da9eb"
+          "path": "authority-evidence/turbo-vision-freeze3-recert-20261029/block-11b/receipt.json",
+          "sha256": "23eee1bbd1c62e08f2eb5c4a6ecdd7596266de54b6f1b4e0a7a88d75ffaaa42c"
         }
       ],
-      "published_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651",
+      "published_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402",
       "scope": {
         "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
         "viewports": [
@@ -253,8 +253,8 @@
       "rationale": "The complete Turbo Vision source CSS inherits Sigma positioning that places the real SCP-JP desktop top-bar 16px off the left edge. A bounded per-theme inset fixes the left edge while keeping the existing 16px right inset and leaves document width at the viewport at 768px, 1024px, and 1440px.",
       "evidence": [
         {
-          "path": "authority-evidence/turbo-vision-w13-recert-20261028/block-13/receipt.json",
-          "sha256": "d04184e0d89fc59b2f7a9b68b23265e1f8eb6ac751e2c2e8b1acdd17e6e1d7e1"
+          "path": "authority-evidence/turbo-vision-freeze3-recert-20261029/block-13/receipt.json",
+          "sha256": "e9bea25ffd8961975956b3a984d9d0471c6054fbb90121e5a12329f879a566db"
         }
       ],
       "scope": {
@@ -271,7 +271,7 @@
           "#top-bar .top-bar"
         ]
       },
-      "published_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651",
+      "published_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402",
       "sha256": "1815af33b6b70ad3ae2e97b5b850c3e5ffc24bd6c8ea04f332f52ba06252ed5f"
     },
     {
@@ -288,8 +288,8 @@
       ],
       "evidence": [
         {
-          "path": "authority-evidence/turbo-vision-w13-recert-20261028/block-14/receipt.json",
-          "sha256": "096d7851223a2df32ec062099a13df45900eea8a43bd535dbfa4baeb42671471"
+          "path": "authority-evidence/turbo-vision-freeze3-recert-20261029/block-14/receipt.json",
+          "sha256": "6ddde2583079f22f8530e5ad319cc7ebd90ebce0b1ebf0dd7dd556ee529a14fe"
         }
       ],
       "scope": {
@@ -302,7 +302,7 @@
         ]
       },
       "published_base_css_sha256": null,
-      "published_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651"
+      "published_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402"
     },
     {
       "marker": "SCP-JP Wikidot Turbo Vision mobile top-bar bound: preserve the right inset without negative left positioning.",
@@ -312,8 +312,8 @@
       "rationale": "The real target mobile top-bar sits 16px left of the viewport. Preserve its right inset and bound its width, leaving the separately certified desktop row unchanged.",
       "evidence": [
         {
-          "path": "authority-evidence/turbo-vision-w13-recert-20261028/block-15/receipt.json",
-          "sha256": "d7b0754a77a222223d1cc8d0722da66f11c9b2acc5cfed27cdb95e44ae54a55b"
+          "path": "authority-evidence/turbo-vision-freeze3-recert-20261029/block-15/receipt.json",
+          "sha256": "5629f6425e702f05556eab4b2b84d5e44bfc0f1fccb7a3564b6171d1e1e0844f"
         }
       ],
       "scope": {
@@ -326,18 +326,18 @@
           1440
         ]
       },
-      "published_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651"
+      "published_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402"
     },
     {
       "marker": "SCP-JP Wikidot native history list: preserve the seven columns inside their own horizontal scroller.",
       "sha256": "2094c32464d499abf47df40b62cc958016249707445299f7775fbf9df36f8832",
       "origin": "target-certified-replacement",
       "authority": "RUNTIME_INDEPENDENT",
-      "rationale": "The exact retained native History responses stay within the unthemed SCP-JP viewport, while this theme expands the document. Keep all seven columns and native radios in their own horizontal scroller. This proof establishes list geometry only. W13 re-certification outcome: against the current reference the A/B no longer demonstrates independent need (the without-variant passes at every scoped viewport), so the block is downgraded from TARGET_WIKIDOT_CERTIFIED to RUNTIME_INDEPENDENT and retained as a defensive containment with the W13 A/B receipt as its evidence; the coordinator may restore certification if the reference changes.",
+      "rationale": "The exact retained native History responses stay within the unthemed SCP-JP viewport, while this theme expands the document. Keep all seven columns and native radios in their own horizontal scroller. This proof establishes list geometry only. W13 re-certification outcome: against the current reference the A/B no longer demonstrates independent need (the without-variant passes at every scoped viewport), so the block is downgraded from TARGET_WIKIDOT_CERTIFIED to RUNTIME_INDEPENDENT and retained as a defensive containment with the W13 A/B receipt as its evidence; the coordinator may restore certification if the reference changes. Freeze-3 re-certification (turbo-vision-freeze3-recert-20261029/block-16, candidate b9e8c63b) again shows the without-variant passing at every scoped viewport, so the block remains RUNTIME_INDEPENDENT.",
       "evidence": [
         {
-          "path": "authority-evidence/turbo-vision-w13-recert-20261028/block-16/receipt.json",
-          "sha256": "38411abee8837be0ac8d00343b242d9edfca12ea9e853ec71b10be5b0a446fe9"
+          "path": "authority-evidence/turbo-vision-freeze3-recert-20261029/block-16/receipt.json",
+          "sha256": "afca67b5ca2ba06c95195691fc6e952ce0bb67173d4f6f61396a11bf6c716073"
         }
       ],
       "scope": {
@@ -349,7 +349,7 @@
           1440
         ]
       },
-      "published_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651"
+      "published_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402"
     },
     {
       "marker": "SCP-JP Wikidot Turbo Vision narrow navigation rows: reserve the source gray bar for wrapped labels.",
@@ -359,8 +359,8 @@
       "rationale": "At 320px, the first wrapped JP row sits 20px above the source gray navigation bar and its black text becomes unreadable on the navy masthead. Reserve two rows of the source gray bar below the unchanged pixel logo. Native visible text ranges fit both rows; 390px/tablet/desktop typography, source colors and positioning remain unchanged.",
       "evidence": [
         {
-          "path": "authority-evidence/turbo-vision-w13-recert-20261028/block-17/receipt.json",
-          "sha256": "567ecf17d959c93a3d79370a5a6c7df151f43be0900c3701c1a77c2c8bc6583c"
+          "path": "authority-evidence/turbo-vision-freeze3-recert-20261029/block-17/receipt.json",
+          "sha256": "0f8004003fb00d3e523ccc9521fb49e572160118b2804f96ec45dce30f7dfe49"
         }
       ],
       "scope": {
@@ -376,7 +376,7 @@
           "#top-bar"
         ]
       },
-      "published_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651"
+      "published_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402"
     },
     {
       "marker": "SCP-JP Wikidot turbo-vision heading correction: keep wrapped pixel-font headings from striking through at mobile widths.",
@@ -403,7 +403,7 @@
         "target": "SCP-JP Sigma-9 current target acceptance",
         "state": "page.normal"
       },
-      "published_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651"
+      "published_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402"
     },
     {
       "marker": "SCP-JP Wikidot turbo-vision narrow panes: keep the revision and file tables inside the viewport at phone widths.",
@@ -423,7 +423,30 @@
         "target": "w13-delta",
         "state": "acceptance-frame"
       },
-      "published_css_sha256": "c5719b8c8b44ede16fb276698944c8de4cdace6ed436359304df8a73fd0d8651"
+      "published_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402"
+    },
+    {
+      "marker": "SCP-JP Wikidot Turbo Vision documentation blockquote wrap: owner OPTION C (2026-10-29) — wrap long unbroken strings in blockquotes so they read in place at narrow widths; a localization quality improvement, divergence from verbatim upstream accepted for this package + finding.",
+      "rationale": "Owner OPTION C (2026-10-29): the theme documentation blockquote carries a raw image URL as a classless span; at 320px the unbroken string measures 273px wide from left 60 to right 333 and overflows the document by 13px (current-contract full check w16-turbo-vision-full, raw result sha256 cf8b7993005e195e2805808e0953d39913ea0cb70e3873e81b5af6ee5173d9eb). The same-frame delta receipt reproduces the defect without the rule (13px, span 60/333/273, computed overflow-wrap normal) and clears it with the rule (zero error findings; computed overflow-wrap anywhere on the blockquote and its descendants, selector matched on the fixture blockquote element). Divergence from verbatim upstream is accepted for this package + finding as a localization quality improvement.",
+      "sha256": "debb27e2e77cb7e3a92eb61affd85fbf0257fa3a9b5b464b48e8d85a48d13ec5",
+      "selectors": [
+        ".turbo-block .blockquote",
+        ".turbo-block .blockquote *"
+      ],
+      "at_contexts": [],
+      "origin": "runtime-independent-css-containment",
+      "authority": "RUNTIME_INDEPENDENT",
+      "evidence": [
+        {
+          "path": "authority-evidence/turbo-vision-blockquote-delta-20261029/receipt.json",
+          "sha256": "062fdff930371adaa9f586ebdbc25b80e1c67f919ad05e7d933b1a6b1b0fbd39"
+        }
+      ],
+      "scope": {
+        "target": "SCP-JP Sigma-9 current target acceptance",
+        "state": "page.normal"
+      },
+      "published_css_sha256": "b9e8c63b787dc95314a26d81fd6dc61ed99470cddb7fb5470985fef95b2dc402"
     }
   ],
   "adaptation_authority_schema": "theme_lab_adaptation_authority.v1",
@@ -535,6 +558,17 @@
       "at_contexts": [
         "@media (max-width:767px)"
       ],
+      "authority": "RUNTIME_INDEPENDENT"
+    },
+    {
+      "marker": "SCP-JP Wikidot Turbo Vision documentation blockquote wrap: owner OPTION C (2026-10-29) — wrap long unbroken strings in blockquotes so they read in place at narrow widths; a localization quality improvement, divergence from verbatim upstream accepted for this package + finding.",
+      "rationale": "SCP-JP Wikidot Turbo Vision documentation blockquote wrap: owner OPTION C (2026-10-29) — wrap long unbroken strings in blockquotes so they read in place at narrow widths; a localization quality improvement, divergence from verbatim upstream accepted for this package + finding.",
+      "sha256": "debb27e2e77cb7e3a92eb61affd85fbf0257fa3a9b5b464b48e8d85a48d13ec5",
+      "selectors": [
+        ".turbo-block .blockquote",
+        ".turbo-block .blockquote *"
+      ],
+      "at_contexts": [],
       "authority": "RUNTIME_INDEPENDENT"
     }
   ]

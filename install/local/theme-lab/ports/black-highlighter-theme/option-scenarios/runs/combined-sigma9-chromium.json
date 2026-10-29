@@ -4,7 +4,7 @@
   "baseline": "Sigma-9",
   "browser_engine": "chromium",
   "browser_version": "156.0.8078.4",
-  "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+  "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
   "candidate_set_state": "frozen-before-final-acceptance",
   "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
   "transport_origin": "https://scpaiueouiuiuiui.wikijump.localhost:3410",
@@ -47,7 +47,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 24,
@@ -1905,7 +1905,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 24,
@@ -3712,7 +3712,7 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-centered-mobile-mobile.png",
-      "screenshot_sha256": "41d3170c0bb7ca099217c6c2abfd6854dbbb26ded357e4dec2e382c38844e5ed",
+      "screenshot_sha256": "b1dbb59295b3b58c0a3e9160f54e6c95de3a2c74b712edf3549f9c960f240ac6",
       "candidate": {
         "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
         "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
@@ -3763,7 +3763,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 24,
@@ -5570,7 +5570,7 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-centered-narrow-narrow-mobile.png",
-      "screenshot_sha256": "684ce65faae2bd48d2c9c60ffc72e17abd9507f0d133872306272c8258e8abef",
+      "screenshot_sha256": "6bb9d03ecd2cd5ebc0ee223a40610d504de70c40e5da907436c92eff7b33d687",
       "candidate": {
         "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
         "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
@@ -5622,7 +5622,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 24,
@@ -7482,7 +7482,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 24,
@@ -9298,7 +9298,7 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-corner-button-open-desktop.png",
-      "screenshot_sha256": "09ed2d7c96264f3674405bd0cf0db6c6a69badb2a8950470308d84e879447a3a",
+      "screenshot_sha256": "ea7b96d90b30e3b28a1966b470051b069434aaeadead0d1b5aaa3dac7fce8b94",
       "candidate": {
         "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
         "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
@@ -9355,7 +9355,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 24,
@@ -11162,7 +11162,7 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-hover-after-button-open-desktop.png",
-      "screenshot_sha256": "0c9ed3e695b64cc6280e7e568920902b7d040c968692f1b1e716e1a06f07e77e",
+      "screenshot_sha256": "ffcea83e18764c733069cc85832bdba601a83916710381c0fac229b5b1e1b57d",
       "candidate": {
         "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
         "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
@@ -11214,7 +11214,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 24,
@@ -11381,7 +11381,7 @@
           "top": 0,
           "bottom": 900,
           "inline_style": null,
-          "left_css": "-0.647148px",
+          "left_css": "-0.650428px",
           "transform": "none",
           "position": "fixed",
           "display": "block",
@@ -13030,7 +13030,7 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-keyboard-focus-open-desktop.png",
-      "screenshot_sha256": "d3a94bc91caab4247605040efc8ff6b3bde07d768c4a6d7541ca6e223fee064d",
+      "screenshot_sha256": "87d27f0e22a8ba58c50c479f1a69174a85d4781098b4a47f183c477d7679cc5e",
       "candidate": {
         "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
         "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
@@ -13082,7 +13082,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 24,
@@ -14889,7 +14889,7 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-mobile-target-open-mobile.png",
-      "screenshot_sha256": "d97a178a277714585c50b942c32279974a96ef1e6a4395ebecbf165f3ca62434",
+      "screenshot_sha256": "a8bbd75372f9397e6b8c80b5b5ca96b678947a4d1d5cb5bcf585b4ee1e5a44fc",
       "candidate": {
         "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
         "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
@@ -14941,7 +14941,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 24,
@@ -16748,7 +16748,7 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-mobile-close-menu-mobile.png",
-      "screenshot_sha256": "41d3170c0bb7ca099217c6c2abfd6854dbbb26ded357e4dec2e382c38844e5ed",
+      "screenshot_sha256": "b1dbb59295b3b58c0a3e9160f54e6c95de3a2c74b712edf3549f9c960f240ac6",
       "candidate": {
         "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
         "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
@@ -16800,7 +16800,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 24,
@@ -18607,7 +18607,7 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-toggle-narrow-target-open-narrow-mobile.png",
-      "screenshot_sha256": "082e81bfed088ef969ee26bb249df580de508d32e8546c37f0b215fedbedef65",
+      "screenshot_sha256": "b472b03cf697a039a7456693f303cbdb464ce19c56d6c64c20cba520e043ef88",
       "candidate": {
         "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
         "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
@@ -18658,7 +18658,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 24,
@@ -20465,7 +20465,7 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-normal-desktop.png",
-      "screenshot_sha256": "9896d792953fc5ce0d3e6a468e0a857d7a32d39cb43df4d73b61668d1c1f6e7c",
+      "screenshot_sha256": "f7c6e389aec6fe5ea163ce5b953bc66d42322a4991d912e05cb8f3168ea8d831",
       "candidate": {
         "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
         "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
@@ -20516,7 +20516,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 24,
@@ -22323,7 +22323,7 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-hover-desktop.png",
-      "screenshot_sha256": "47973b079653c14dd18fe8a9fc1589bc3a3ab290dcf699e6e967db1b3ec52ef4",
+      "screenshot_sha256": "e04d594c58154add4413d0cbfd9b8316b6d0a6ef0e9df13bfbe264ce68b9c3ed",
       "candidate": {
         "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
         "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
@@ -22374,7 +22374,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 24,
@@ -24190,7 +24190,7 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-keyboard-focus-desktop.png",
-      "screenshot_sha256": "3904696a5d94808c730bad00dd8b5397a26cb4f33e9b26b3e679c03609742688",
+      "screenshot_sha256": "2020898a0a0911533c7cc2de6aa8f9ac7ba62e8f2963092e1cb70b38c73ee65a",
       "candidate": {
         "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
         "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
@@ -24241,7 +24241,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 24,
@@ -26057,7 +26057,7 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-current-desktop.png",
-      "screenshot_sha256": "0357da7b3f5abe171116d4fc42d11a37287c1c91a1ec181c4ba2fc6642df033f",
+      "screenshot_sha256": "816edae4081e06548c036bf704e42a8fb975192a53ea4d3699e853e826ce2cb7",
       "candidate": {
         "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
         "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
@@ -26108,7 +26108,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 24,
@@ -27915,7 +27915,7 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-normal-mobile.png",
-      "screenshot_sha256": "c270f3e217e0a0ce6eca45af6495f7db77c83607bcc87272f698c474707c8b71",
+      "screenshot_sha256": "33fdacd2d4d66b2c25f5b4cd1e975ce7aa79c774220e7e124ecf3c994773916c",
       "candidate": {
         "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
         "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
@@ -27966,7 +27966,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 24,
@@ -29782,7 +29782,7 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-keyboard-focus-mobile.png",
-      "screenshot_sha256": "cb8de4461f5187e776a834a5190d52e5cf071158f7a46aed75ad3e1b10706b5c",
+      "screenshot_sha256": "f7acd795791a43e5376f6bb15fc01183678cb6dfa184b62d193c937981a406e7",
       "candidate": {
         "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
         "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
@@ -29833,7 +29833,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 24,
@@ -31640,7 +31640,7 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-current-mobile.png",
-      "screenshot_sha256": "878825c32f25483cf35527c44cb4f30cd55020e92c7eb9a3cced4f0bfeeb21ae",
+      "screenshot_sha256": "75006b5e97c5da54d5ba2843390c27067fcab7216bbdb5883825130ce47002aa",
       "candidate": {
         "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
         "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
@@ -31691,7 +31691,7 @@
       },
       "action_error": null,
       "capture_runner_sha256": "22b38cfad102c28a49fc6a7fe3da04b1e3eae98eb30b2130ac7225eecd36d638",
-      "candidate_set_sha256": "9b97b89c6bf2d7810830fb14019ba65c5b39f836ec04276925fd53594db4536e",
+      "candidate_set_sha256": "a9163f7adba5906bd49b4e19b7d8db78ee9478ae1543a4c34cbcad20d3348051",
       "runtime_sigma_stylesheet_href": "/wikidot/styles/sigma-fe5388a32e12.css",
       "baseline_css_sha256": "2f58982dffd2a57f911971f7d7cd9706838c7a512bd8ffaaa0daea7c216517ba",
       "option_stylesheet_rule_count": 24,
@@ -33498,7 +33498,7 @@
       "external_requests_sent": 0,
       "external_requests_blocked": 6,
       "screenshot": "/home/roku/.local/state/wikijump/theme-lab/runtime-source-campaign-20261023/install/local/theme-lab/ports/black-highlighter-theme/option-scenarios/captures/sigma9/chromium/combined-dark-mobile-hover-mobile.png",
-      "screenshot_sha256": "4abe88d337f76c5b22340cc9bfecb58f344a004486a497b520715f2b30d32345",
+      "screenshot_sha256": "ef31872b6b838fcf81464c13642a61f685c875a56e770b4a73c2cfde34df270e",
       "candidate": {
         "source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
         "css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca"
@@ -33534,5 +33534,5 @@
       "page_errors": []
     }
   ],
-  "receipt_sha256": "95e42090c113cd7f141a99b681e6104095d4fbb48cc86ead119a6e6c42114e58"
+  "receipt_sha256": "d906d2265bd5d34da36641826d3da456492d249ba8d2b0c52ed9dc1479767c57"
 }
