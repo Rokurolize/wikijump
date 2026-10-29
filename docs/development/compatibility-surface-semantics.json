@@ -11,8 +11,8 @@
       "delayed_forms": 9,
       "generated_runtime_kinds": 2,
       "renderer_modules": 30,
-      "wikidot_fixtures": 138,
-      "total": 412
+      "wikidot_fixtures": 139,
+      "total": 413
     },
     "raw_surface_identities": [
       {
@@ -1109,6 +1109,10 @@
       },
       {
         "surface_id": "ftml.fixture:test/span/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/span/leading-space",
         "kind": "wikidot_fixture"
       },
       {
