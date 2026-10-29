@@ -246,7 +246,7 @@ group_theme_lab() {
       # W17: completion is a hard PASS/FAIL check, never INCONCLUSIVE. The run
       # contracts are explicit parameters (shared contracts below; the Freeze-3
       # successor contract paths plug in here per W17-FILL-SHEET.md at open).
-      run_test "Theme Lab current campaign completion" node install/local/theme-lab/scripts/check-campaign-completion.mjs --run-contract ports/current-acceptance/run-contract.json --sigma10-run-contract sigma10-migration/current-campaign/run-contract.json
+      run_test "Theme Lab current campaign completion" node install/local/theme-lab/scripts/check-campaign-completion.mjs --run-contract ports/current-acceptance/run-contract-campaign-20261028-s9.json --sigma10-run-contract sigma10-migration/current-campaign/run-contract-campaign-20261028-s10b.json
     fi
   fi
 }
