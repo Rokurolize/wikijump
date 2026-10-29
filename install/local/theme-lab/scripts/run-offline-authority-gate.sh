@@ -32,7 +32,7 @@ fi
 MANIFEST="${HERE}/../publication/current-head-authority-supplement.json"
 # Audited against the checked-in manifest, and intentionally updated only
 # through a reviewed authority inventory migration.
-MANIFEST_SHA=1c06a3aae872588663d95999dec769b29714d3ef16c7d014a42b294f11dc7b20
+MANIFEST_SHA=105d63dd6fdff6db36f6164d051471170777cfbb5661942f840cc4fd4329102f
 
 python3 "${HERE}/content-addressed-authority-store.py" \
   --mode restore --store-root "${STORE}" \

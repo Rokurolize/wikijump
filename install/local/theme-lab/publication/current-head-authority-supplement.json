@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.theme_lab_authority_archive_supplement_inventory.v1",
-  "snapshot_date": "2026-10-29",
-  "current_head": "95831f0a5068ef4c21378a00900ee9d367487b52",
+  "snapshot_date": "2026-10-30",
+  "current_head": "a0acf3b1e07bf0216a73e15fd32e34ec81b59e43",
   "verified_by": "sha256 pinned ledger roots plus content-addressed source objects",
   "files": [
     {
@@ -2560,8 +2560,8 @@
       "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-current-css-20261006/receipt.json",
       "size_bytes": 492534,
       "sha256": "11b4fdd7784d20bc018903a2cddca990d92c05c99f86c723bcd06b4cffcc1ca9",
-      "ledger_root": true,
-      "ledger_hash_verified": true,
+      "ledger_root": false,
+      "ledger_hash_verified": null,
       "missing_in_clean_head": true
     },
     {
@@ -2728,8 +2728,8 @@
       "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-final-css-20261006/receipt.json",
       "size_bytes": 173881,
       "sha256": "64bafba2e95194e713726699821d3bcbfebd9282d429c7505c0d59c508fc67d0",
-      "ledger_root": true,
-      "ledger_hash_verified": true,
+      "ledger_root": false,
+      "ledger_hash_verified": null,
       "missing_in_clean_head": true
     },
     {
@@ -31515,14 +31515,606 @@
       "ledger_root": false,
       "ledger_hash_verified": null,
       "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/measurement-css-layers.mjs",
+      "size_bytes": 533,
+      "sha256": "e2da8318c2b3b418341b1cc3c155a3e2e317dad00ef8331d37a3a88651f2d535",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/measurement-navigation-interaction.mjs",
+      "size_bytes": 4628,
+      "sha256": "ba4b963f59a5e85ad242ba83cc342b5796c42fe5910ac67671c8d0e33e52c97e",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/measurement-viewport-bounds.mjs",
+      "size_bytes": 1114,
+      "sha256": "3f63853560e7a05f0757cd8cde73b4ba657f2b8e9b421f4006b5c673bbedd8c9",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/measurement-wikidot-adaptation-ab.mjs",
+      "size_bytes": 26283,
+      "sha256": "fa2eae75bd2d284ecb759ced945e991a1099938404506cd8d4363f041e136f94",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/receipt.json",
+      "size_bytes": 1423940,
+      "sha256": "05e3fcd64edd133deaceaad06c4b87bb2b609315d9503c8593d8bc0ef35383dc",
+      "ledger_root": true,
+      "ledger_hash_verified": true,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-320-navigation-0.html.gz",
+      "size_bytes": 13086,
+      "sha256": "2fa2871e22786cbc5f48d712f5967d62699cfe669aa1abb0dd12480b91a65bda",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-320-navigation-0.png",
+      "size_bytes": 136895,
+      "sha256": "1fd044b855a1b49b3805fe4cba8d28b57da3d824acaa2d9ea658baa4e2fe6b36",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-320-navigation-1.html.gz",
+      "size_bytes": 13095,
+      "sha256": "fae42e1edc84db153c1127c531dc169dce2f1393a5440bb6dc175ead2beff5d4",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-320-navigation-1.png",
+      "size_bytes": 139476,
+      "sha256": "f89f4caf844235d506c68a4a538a6590f1ef187ed16980de9a01ec3464f52f55",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-320-navigation-2.html.gz",
+      "size_bytes": 13099,
+      "sha256": "0093ab057eabdb11b170530615c8217cc3e3df8dc8b4ac4c434be858baf2bf24",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-320-navigation-2.png",
+      "size_bytes": 138535,
+      "sha256": "ece23e11ccd0bed0a858622770c0f20fdfe2d6d0c89e836116d7c41f06b78e86",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-320-navigation-3.html.gz",
+      "size_bytes": 13105,
+      "sha256": "be08b69a3166b39e751c12f3e53ef2c002644a2749833ef95f8d1ffda30a3fba",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-320-navigation-3.png",
+      "size_bytes": 141259,
+      "sha256": "82ddfccde6982cfa3b360b2e340c233b4c2768700a7f63d723225c6575904508",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-359-navigation-0.html.gz",
+      "size_bytes": 13081,
+      "sha256": "b85ab99a119c3a3aa708fb9a6a51a5e344711cb8736b4d2c2b72d1454b66760c",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-359-navigation-0.png",
+      "size_bytes": 148314,
+      "sha256": "6c7bce5905f1e08c4c8c5073a09785be074fd0f9dd966c702e9bc3a22943b27e",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-359-navigation-1.html.gz",
+      "size_bytes": 13090,
+      "sha256": "01d49d42a973cb1634eb11bed3a88623818787309bb2e62e818389fbfaaf234b",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-359-navigation-1.png",
+      "size_bytes": 150995,
+      "sha256": "65fc29cf2021545752be4ceb14170606e557d8de4659fd9737dbddbb3ef268fa",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-359-navigation-2.html.gz",
+      "size_bytes": 13094,
+      "sha256": "27a74ed882ed063016d566e0b5d620bf7a0997fab78c97197f138fd94b782cea",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-359-navigation-2.png",
+      "size_bytes": 149053,
+      "sha256": "d2f13299bd21bdd113f9951dd02918fa45e6587752b64d24f87c03cf351da613",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-359-navigation-3.html.gz",
+      "size_bytes": 13100,
+      "sha256": "8a567116ed76d3055c0fb8e50b620b126bfb56ed2ff823508386571777b40b96",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-359-navigation-3.png",
+      "size_bytes": 151640,
+      "sha256": "64bfff647e27a749f189eb8aabce5c994f771ef709b4cf3f0e41ca899216e796",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-360-navigation-0.html.gz",
+      "size_bytes": 13084,
+      "sha256": "bd3bd346f0e54e1bfe14b3939c68ddd50c5a82e9daea55ae62d26aa60f50aa6f",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-360-navigation-0.png",
+      "size_bytes": 147921,
+      "sha256": "714fb3fc083e32a2ec3762f08c8f45a2169c7d9d9a513f943373ffb8a48424b5",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-360-navigation-1.html.gz",
+      "size_bytes": 13093,
+      "sha256": "1a7545ff22d532491f535903c97f7278dd321add72244b75545a284cb63b6f1d",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-360-navigation-1.png",
+      "size_bytes": 151383,
+      "sha256": "815aa141ca0af9d77fc5d7afdecfab7a1cd223604618501f3038947fdfae321b",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-360-navigation-2.html.gz",
+      "size_bytes": 13097,
+      "sha256": "f8744cd2ceae50d7a2fb8362ab2d3ccd2bed2b9bc37cd3265b9e35bff6ba4b5e",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-360-navigation-2.png",
+      "size_bytes": 149569,
+      "sha256": "d83517cbc75c2a2958b8dbe8b38ac9823225bcc8c131f1221c940125afd77115",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-360-navigation-3.html.gz",
+      "size_bytes": 13103,
+      "sha256": "1565326b9878cf4898a5ddfd0e1a9c67c851bb61f35428b14dbd528b330f867e",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/with-360-navigation-3.png",
+      "size_bytes": 153118,
+      "sha256": "5b181173a875249fc318df81334d8851fcf6534d209d1d32ec13d51d68a0ba38",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-320-navigation-0.html.gz",
+      "size_bytes": 12995,
+      "sha256": "da01fc966a1a9fe3db23e888498a4e65a215bad8650c589f026e5b10a72803e6",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-320-navigation-0.png",
+      "size_bytes": 138528,
+      "sha256": "6f43d93c812b01794c62a0326a1716c03afe98e08d3b201deb71ed824da3f6c2",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-320-navigation-1.html.gz",
+      "size_bytes": 13005,
+      "sha256": "fce8aed00ad752c5a5ece9d65e9102c546216d8022ed300a295e0781fdf39da8",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-320-navigation-1.png",
+      "size_bytes": 142856,
+      "sha256": "95555ba0ce5fdcdfebc046ac717364045d34417742827b4d65730202db84f750",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-320-navigation-2.html.gz",
+      "size_bytes": 13009,
+      "sha256": "d15a41e1399adcf5b4e9be398ff7101f99e3a1bc87bffb93bfc28a52fab28cc0",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-320-navigation-2.png",
+      "size_bytes": 146248,
+      "sha256": "a84989292e0fb483982e1c73ac50fbe645fe9245c268f4ab05eedddf7b4f9a18",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-320-navigation-3.html.gz",
+      "size_bytes": 13016,
+      "sha256": "83817cdf16d5eae0396ee6497639d6d8338698d0f6e784464cdb85e309844460",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-320-navigation-3.png",
+      "size_bytes": 145035,
+      "sha256": "33b4a74ec14ae1edbd15fcac3e3ad474424e9a9b96509199ef39a474fa2e8ed1",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-359-navigation-0.html.gz",
+      "size_bytes": 12993,
+      "sha256": "f5bc02823f546d811e724958faa6fc129e4c48fee00d2bcc9062b391fe7e5fae",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-359-navigation-0.png",
+      "size_bytes": 148304,
+      "sha256": "7ff5478a4bc63280ac8db1c660b306a5d4de7c4576a7b725357185d75aa4f0c6",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-359-navigation-1.html.gz",
+      "size_bytes": 13003,
+      "sha256": "844541ca8c7665248274a2526b80e453dd7e44f199988b2b298b026bf1536d0d",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-359-navigation-1.png",
+      "size_bytes": 151714,
+      "sha256": "0172e0d39b1f5b168b8106c7f3217ef724c9962186a2bc85078794766801022b",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-359-navigation-2.html.gz",
+      "size_bytes": 13006,
+      "sha256": "80390841e1fbd201adf556d3801ff2154101cab20fe00aa242e7f185674d9c47",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-359-navigation-2.png",
+      "size_bytes": 149760,
+      "sha256": "9000bb418fc5da5f2227a056fb4723fd12cebf76f7d35371cf56b65846f06ca8",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-359-navigation-3.html.gz",
+      "size_bytes": 13014,
+      "sha256": "2a2323a9b47a4abcbe2f6e71f0f97d7db8e5fcd1f93be5aa731e4545cbd9ea0e",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-359-navigation-3.png",
+      "size_bytes": 153703,
+      "sha256": "a16ac21a31cea615fb953c7089125da0c8856f38cb2bdc2a2ecf9a433901addf",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-360-navigation-0.html.gz",
+      "size_bytes": 12994,
+      "sha256": "c90299115ee738b0881f8332b37146df0c1fe9994de168a99d8706ea9e82d2a3",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-360-navigation-0.png",
+      "size_bytes": 147921,
+      "sha256": "714fb3fc083e32a2ec3762f08c8f45a2169c7d9d9a513f943373ffb8a48424b5",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-360-navigation-1.html.gz",
+      "size_bytes": 13004,
+      "sha256": "f2cee5ceb0080e1979661b17bfbdf4b6f790d488e4c6090562f4f5d4df357172",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-360-navigation-1.png",
+      "size_bytes": 151383,
+      "sha256": "815aa141ca0af9d77fc5d7afdecfab7a1cd223604618501f3038947fdfae321b",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-360-navigation-2.html.gz",
+      "size_bytes": 13008,
+      "sha256": "c430edb7a7d349523360976083855c276945de823c7608d8244d07570daf49b8",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-360-navigation-2.png",
+      "size_bytes": 149569,
+      "sha256": "d83517cbc75c2a2958b8dbe8b38ac9823225bcc8c131f1221c940125afd77115",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-360-navigation-3.html.gz",
+      "size_bytes": 13015,
+      "sha256": "b6528692b36659a4d51f5ed79324f2d5ffb8306730394ed0ab83c20ba9c012e5",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/without-360-navigation-3.png",
+      "size_bytes": 153118,
+      "sha256": "5b181173a875249fc318df81334d8851fcf6534d209d1d32ec13d51d68a0ba38",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/measurement-css-layers.mjs",
+      "size_bytes": 533,
+      "sha256": "e2da8318c2b3b418341b1cc3c155a3e2e317dad00ef8331d37a3a88651f2d535",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/measurement-navigation-interaction.mjs",
+      "size_bytes": 4628,
+      "sha256": "ba4b963f59a5e85ad242ba83cc342b5796c42fe5910ac67671c8d0e33e52c97e",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/measurement-viewport-bounds.mjs",
+      "size_bytes": 1114,
+      "sha256": "3f63853560e7a05f0757cd8cde73b4ba657f2b8e9b421f4006b5c673bbedd8c9",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/measurement-wikidot-adaptation-ab.mjs",
+      "size_bytes": 26283,
+      "sha256": "fa2eae75bd2d284ecb759ced945e991a1099938404506cd8d4363f041e136f94",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/receipt.json",
+      "size_bytes": 486655,
+      "sha256": "80579af7030d9eed8bb078e6ac5f9d71bd880027a4b99e426bf818bc5b8e43be",
+      "ledger_root": true,
+      "ledger_hash_verified": true,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/with-390-navigation-action-0.html.gz",
+      "size_bytes": 13073,
+      "sha256": "a56dc4a116358ea1e07d89ba7a600690fdedd98fdc3f755159250eb541db36fe",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/with-390-navigation-action-0.png",
+      "size_bytes": 153267,
+      "sha256": "d997f28ec0501a0fab51c6e8831b0c76720acf448f19449db008d2893e7575ad",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/with-390-navigation-action-1.html.gz",
+      "size_bytes": 13074,
+      "sha256": "fb285e6f9617bd534c4300a321b032c8f6fb11e8c5f9096572d4bfdbd7fbf906",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/with-390-navigation-action-1.png",
+      "size_bytes": 170432,
+      "sha256": "a30c673593448fe4dc402869ae01aa83404fe76e1af7822bba448583e5a2431b",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/with-390-navigation-action-2.html.gz",
+      "size_bytes": 13073,
+      "sha256": "9a79b42ba42b14c2ff45bb18a6861f467c8be245b3b3c7df892d77f1dd7febfa",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/with-390-navigation-action-2.png",
+      "size_bytes": 165011,
+      "sha256": "cabb0be731278b6b4365e97ad255bfecb86828b10c043edf4f8b7ae5dcb23bcb",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/with-390-navigation-action-3.html.gz",
+      "size_bytes": 13073,
+      "sha256": "f6fb6bb4feed283e747acde213ce977fe47d2dbc7d859afbd5e5871310209f84",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/with-390-navigation-action-3.png",
+      "size_bytes": 169752,
+      "sha256": "3c6b031d72b6f6bd670f1cc64f4f5d1f9cdcf98eb55000f4fbb6828a6c354a02",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/without-390-navigation-action-0.html.gz",
+      "size_bytes": 13007,
+      "sha256": "ca8935417f4d632c6c08a0876d0afbab4282623b5fd35cfa2c9c213ef554381f",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/without-390-navigation-action-0.png",
+      "size_bytes": 153267,
+      "sha256": "d997f28ec0501a0fab51c6e8831b0c76720acf448f19449db008d2893e7575ad",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/without-390-navigation-action-1.html.gz",
+      "size_bytes": 13008,
+      "sha256": "bdc483673397bb7a1ee93a3b32913a3a1b2e130496541ad3076df2607b074f4d",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/without-390-navigation-action-1.png",
+      "size_bytes": 170432,
+      "sha256": "a30c673593448fe4dc402869ae01aa83404fe76e1af7822bba448583e5a2431b",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/without-390-navigation-action-2.html.gz",
+      "size_bytes": 13008,
+      "sha256": "8c3b77e2f7deb5f7077c9f4cacf0ed5e8178646ec224cc429c3e4329dbea6744",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/without-390-navigation-action-2.png",
+      "size_bytes": 169935,
+      "sha256": "2df42bdd9ebee283d4ebc5225e4df5f55adcf4d77abb937c686a7a4c69af8561",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/without-390-navigation-action-3.html.gz",
+      "size_bytes": 13007,
+      "sha256": "2edaa4faacf9f7f84d424300d4836e0f4b9fad83a363f6b60e084584cd286375",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/without-390-navigation-action-3.png",
+      "size_bytes": 169816,
+      "sha256": "7d14b907609df5090568d8f285c606b6a5c8620221c10828517b0ce66a19c142",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": true
     }
   ],
   "summary": {
-    "files": 3939,
-    "bytes": 7577498433,
+    "files": 4013,
+    "bytes": 7584749865,
     "ledger_paths": 163,
     "ledger_hash_mismatches": 0,
-    "missing_in_clean": 2903,
+    "missing_in_clean": 2977,
     "replay_objects_appended": 238,
     "shared_fixture_entries_appended": 22,
     "native_history_artifact_entries_appended": 16,
