@@ -48,11 +48,15 @@ PROBE = HERE / 'campaign-completion-probe.mjs'
 # source-navigation-overlays evidence, current-acceptance source-oracles
 # (already under ports/current-acceptance), and only the runs/ and captures/
 # subtrees of black-highlighter-theme option-scenarios. ports/authority-evidence
-# is deliberately NOT inventoried here: the authority restore
-# (restore-checkout-authority-evidence.sh) already covers it.
+# is otherwise NOT inventoried here: the authority restore
+# (restore-checkout-authority-evidence.sh) already covers it, except the
+# source-navigation-overlays proof the campaign completion opens directly
+# (navigation-overlay-provenance.mjs) and the authority supplement omits.
 TREE_ROOTS = (
     'ports/current-acceptance',
     'ports/migration/sigma10-current',
+    'ports/migration/sigma10-campaign-20261028-s10b',
+    'ports/authority-evidence/source-navigation-overlays-20261001',
     'ports/black-highlighter-theme/option-scenarios/runs',
     'ports/black-highlighter-theme/option-scenarios/captures',
     'sigma10-migration/current-campaign',
@@ -65,7 +69,7 @@ EVIDENCE_CHILD = re.compile(r'(?:search-controls|sigma10-baseline|nav-source-sub
 # both the build and the restore side.
 ALLOWED = re.compile(
     r'current-campaign-acceptance\.json'
-    r'|(?:ports/(?:current-acceptance|migration/sigma10-current)'
+    r'|(?:ports/(?:current-acceptance|migration/sigma10-current|migration/sigma10-campaign-20261028-s10b|authority-evidence/source-navigation-overlays-20261001)'
     r'|ports/black-highlighter-theme/option-scenarios/(?:runs|captures)'
     r'|sigma10-migration/(?:current-campaign|sources|fixtures|baseline-probe)'
     r'|evidence/(?:search-controls|sigma10-baseline|nav-source-submenu|source-navigation-overlays)-[A-Za-z0-9][A-Za-z0-9._-]*)/.+'
