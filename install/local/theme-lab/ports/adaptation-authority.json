@@ -3511,11 +3511,11 @@
           "sha256": "c8154bf047b423750e4c0e70f82c390b1d20546adc79168d39b0229c1e16e4a3",
           "origin": "target-certified-replacement",
           "authority": "TARGET_WIKIDOT_CERTIFIED",
-          "rationale": "At 390px Classic increases the real SCP-JP fourth submenu escape by 4.703125px relative to the native target. Align only that endpoint from 360px through 767px. At 320–359px, a separately certified narrow-navigation block keeps primary links in one row and contains the fourth submenu.",
+          "rationale": "At 390px Classic increases the real SCP-JP fourth submenu escape by 4.703125px relative to the native target. Align only that endpoint from 360px through 767px; since issue #3389 (2026-10-30) the second-to-last submenu is right-aligned the same way, re-certified by read-only navigation-action A/B at 390px. At 320–359px, a separately certified narrow-navigation block keeps primary links in one row and contains the fourth submenu.",
           "evidence": [
             {
-              "path": "authority-evidence/classic-mobile-endpoint-current-css-20261006/receipt.json",
-              "sha256": "11b4fdd7784d20bc018903a2cddca990d92c05c99f86c723bcd06b4cffcc1ca9"
+              "path": "authority-evidence/classic-mobile-endpoint-dropdown-20261030/receipt.json",
+              "sha256": "80579af7030d9eed8bb078e6ac5f9d71bd880027a4b99e426bf818bc5b8e43be"
             }
           ],
           "scope": {
@@ -3525,7 +3525,7 @@
               390
             ]
           },
-          "published_css_sha256": "8d37bcdf89e9fd69aa69d369da18eb75e388106b088187de457d45c2d7342376"
+          "published_css_sha256": "5b00fb07f930b0a11e7526bb39b602c8d6c542e0cd75825e0351a74fe0298977"
         },
         {
           "marker": "SCP-JP Wikidot tablet sidebar: contain documented literal HTML-block preview source while preserving horizontal access.",
@@ -3545,7 +3545,7 @@
           "sha256": "a27391aa2640009e4437590ec940d1ac701f5facd288ed6e5c3d5964de4f89b0",
           "origin": "target-certified-replacement",
           "authority": "TARGET_WIKIDOT_CERTIFIED",
-          "rationale": "At 320px and 359px, read-only A/B against the current SCP-JP page shows the fourth primary navigation link wrapping outside #top-bar and over the tagline. Reducing only top-level horizontal link padding to 0.7em keeps all four destinations in the bar; right-aligning the fourth submenu prevents horizontal overflow. The max-width rule ends before 360px, where the separately certified endpoint rule remains active.",
+          "rationale": "At 320px and 359px, read-only A/B against the current SCP-JP page shows the fourth primary navigation link wrapping outside #top-bar and over the tagline. Reducing only top-level horizontal link padding to 0.7em keeps all four destinations in the bar; right-aligning the fourth submenu prevents horizontal overflow. The max-width rule ends before 360px, where the separately certified endpoint rule remains active. Issue #3389 (2026-10-30): the same right-alignment now also covers the third (second-to-last) submenu, whose dropdown escaped 11px at 320px in the TL-13 gate; re-certified by read-only navigation A/B captures at 320, 359 and 360px against the real SCP-JP page.",
           "selectors": [
             "#top-bar .mobile-top-bar > ul > li > a",
             "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul",
@@ -3556,20 +3556,20 @@
           ],
           "evidence": [
             {
-              "path": "authority-evidence/classic-narrow-mobile-navigation-final-css-20261006/receipt.json",
-              "sha256": "64bafba2e95194e713726699821d3bcbfebd9282d429c7505c0d59c508fc67d0"
+              "path": "authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/receipt.json",
+              "sha256": "05e3fcd64edd133deaceaad06c4b87bb2b609315d9503c8593d8bc0ef35383dc"
             }
           ],
           "scope": {
             "target_url": "https://scp-jp.wikidot.com/scp-173-jp",
-            "state": "navigation-row-layout",
+            "state": "navigation",
             "viewports": [
               320,
               359,
               360
             ]
           },
-          "published_css_sha256": "8d37bcdf89e9fd69aa69d369da18eb75e388106b088187de457d45c2d7342376"
+          "published_css_sha256": "5b00fb07f930b0a11e7526bb39b602c8d6c542e0cd75825e0351a74fe0298977"
         }
       ],
       "inputs": {
