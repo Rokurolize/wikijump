@@ -11,7 +11,7 @@ REPO="$(cd -- "${HERE}/../../../../" && pwd)"
 STORE="${THEME_LAB_AUTHORITY_STORE:-${HOME}/.local/state/wikijump/theme-lab/authority-object-store-v1}"
 MANIFEST="${HERE}/../publication/current-head-authority-supplement.json"
 # Same reviewed pin as run-offline-authority-gate.sh.
-MANIFEST_SHA=c3f583e6af70f0b942073e6f43da6b2695ed661a0f733a503fdd0e0a57c4638f
+MANIFEST_SHA=1c06a3aae872588663d95999dec769b29714d3ef16c7d014a42b294f11dc7b20
 
 if [[ ! -d "${STORE}" ]]; then
   echo "Theme Lab authority store not found: ${STORE} (set THEME_LAB_AUTHORITY_STORE)" >&2
