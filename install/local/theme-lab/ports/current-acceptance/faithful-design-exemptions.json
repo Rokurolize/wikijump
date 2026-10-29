@@ -28568,6 +28568,126 @@
         }
       ],
       "basis": "OD-T1 (owner decision 2026-10-29): recorded per-record exemption read only by the acceptance validators (TL-05); covers document_containment machine facts only. C1 evidence must exist before an entry takes effect; C4 entries report as explanations naming the entry; completion re-verifies. Generated from the cited audit record (C3 bindings inline); hansarp excluded per OD-T2."
+    },
+    {
+      "id": "OD-T1-classic-1ed279319fce-S10",
+      "instrument": "semantic_document_containment",
+      "decision": "OD-T1",
+      "package": "classic",
+      "run": "S10",
+      "character": "G2-23 FAITHFUL",
+      "match": {
+        "observation_key": "[\"classic\",\"firefox\",\"narrow-mobile\",\"page.normal\",\"settled\"]",
+        "candidate_overflow_px": 12,
+        "baseline_overflow_px": 0,
+        "dependencies_sha256": null
+      },
+      "candidate_sha256": "8d37bcdf89e9fd69aa69d369da18eb75e388106b088187de457d45c2d7342376",
+      "candidate_source_sha256": "9aa209eaeec59753e2f6dba8e0299281fb58793c720f4495559e2a1adbd48e09",
+      "measured": {
+        "candidate_overflow_px": 12,
+        "baseline_overflow_px": 0
+      },
+      "overflow_sources": [],
+      "overflow_sources_chain_sha256": null,
+      "evidence": [
+        {
+          "kind": "tl13-canonical-matrix-probe",
+          "run": "S10",
+          "observation_key": "[\"classic\",\"firefox\",\"narrow-mobile\",\"page.normal\",\"settled\"]",
+          "candidate_overflow_px": 12,
+          "baseline_overflow_px": 0,
+          "profiles": [
+            "anonymous",
+            "authenticated"
+          ],
+          "probe_script": "/tmp/probe-classic-failures.mjs",
+          "driver_log": "runtime-compose-campaign-20261023/freeze3-tl13/classic/matrix-s10.log",
+          "driver_done": "2026-10-29T19:34:00+09:00",
+          "backup_log": "runtime-compose-campaign-20261023/freeze3-tl13/pre-rerun-backup/classic.matrix-s10.log"
+        }
+      ],
+      "basis": "OD-T1b SUPPLEMENT (owner decision 2026-10-29, OWNER-DECISIONS.md): coverage completion for the Firefox narrow-mobile settled cell the S10 audit never sampled (TL13-FIREFOX-JUDGMENT.md mechanism identity YES — same element/trait as granted entry OD-T1-classic-e98fba2fa404-S10); exact key + exact 12/0 px, no tolerance; binds the same css/source shas; read only by the acceptance validators (TL-05); covers document_containment machine facts only; reports as explanations naming the entry; completion re-verifies. Probe-derived (no audit row exists): overflow_sources/chain and dependencies unavailable, recorded empty/null and never match."
+    },
+    {
+      "id": "OD-T1-penumbra-2a44b2f5d47d-S10",
+      "instrument": "semantic_document_containment",
+      "decision": "OD-T1",
+      "package": "penumbra",
+      "run": "S10",
+      "character": "G2-28, uniform single source element",
+      "match": {
+        "observation_key": "[\"penumbra\",\"firefox\",\"narrow-mobile\",\"page.normal\",\"settled\"]",
+        "candidate_overflow_px": 15,
+        "baseline_overflow_px": 0,
+        "dependencies_sha256": null
+      },
+      "candidate_sha256": "2d8436acd87691323a742583e715e7f69c96bfd53c355dac5b2fe27b8ceeb5da",
+      "candidate_source_sha256": "439b21910d1a4363c35845490fdc2585a286b26577c2d692f130c2f790681b9e",
+      "measured": {
+        "candidate_overflow_px": 15,
+        "baseline_overflow_px": 0
+      },
+      "overflow_sources": [],
+      "overflow_sources_chain_sha256": null,
+      "evidence": [
+        {
+          "kind": "tl13-canonical-matrix-probe",
+          "run": "S10",
+          "observation_key": "[\"penumbra\",\"firefox\",\"narrow-mobile\",\"page.normal\",\"settled\"]",
+          "candidate_overflow_px": 15,
+          "baseline_overflow_px": 0,
+          "profiles": [
+            "anonymous",
+            "authenticated"
+          ],
+          "probe_script": "/tmp/probe-classic-failures.mjs",
+          "driver_log": "runtime-compose-campaign-20261023/freeze3-tl13/penumbra/matrix-s10.log",
+          "driver_done": "2026-10-29T19:34:32+09:00",
+          "backup_log": "runtime-compose-campaign-20261023/freeze3-tl13/pre-rerun-backup/penumbra.matrix-s10.log"
+        }
+      ],
+      "basis": "OD-T1b SUPPLEMENT (owner decision 2026-10-29, OWNER-DECISIONS.md): coverage completion for the Firefox narrow-mobile settled cell the S10 audit never sampled (TL13-FIREFOX-JUDGMENT.md mechanism identity YES — same element/trait as granted entry OD-T1-penumbra-fafd7bb6f9bc-S10); exact key + exact 15/0 px, no tolerance; binds the same css/source shas; read only by the acceptance validators (TL-05); covers document_containment machine facts only; reports as explanations naming the entry; completion re-verifies. Probe-derived (no audit row exists): overflow_sources/chain and dependencies unavailable, recorded empty/null and never match."
+    },
+    {
+      "id": "OD-T1-flopstyle-dark-694bc4d38fb8-S10",
+      "instrument": "semantic_document_containment",
+      "decision": "OD-T1",
+      "package": "flopstyle-dark",
+      "run": "S10",
+      "character": "G2-24 FAITHFUL",
+      "match": {
+        "observation_key": "[\"flopstyle-dark\",\"firefox\",\"narrow-mobile\",\"page.normal\",\"settled\"]",
+        "candidate_overflow_px": 13,
+        "baseline_overflow_px": 0,
+        "dependencies_sha256": null
+      },
+      "candidate_sha256": "be744e1d57f1028199f07f0aee70fbd7a96a724c3627dc7a3affdbc23d99108c",
+      "candidate_source_sha256": "a3702c545d95bd13b7ce148c343f482b52f13e3b589933e26682031d4052203d",
+      "measured": {
+        "candidate_overflow_px": 13,
+        "baseline_overflow_px": 0
+      },
+      "overflow_sources": [],
+      "overflow_sources_chain_sha256": null,
+      "evidence": [
+        {
+          "kind": "tl13-canonical-matrix-probe",
+          "run": "S10",
+          "observation_key": "[\"flopstyle-dark\",\"firefox\",\"narrow-mobile\",\"page.normal\",\"settled\"]",
+          "candidate_overflow_px": 13,
+          "baseline_overflow_px": 0,
+          "profiles": [
+            "anonymous",
+            "authenticated"
+          ],
+          "probe_script": "/tmp/probe-classic-failures.mjs",
+          "driver_log": "runtime-compose-campaign-20261023/freeze3-tl13/flopstyle-dark/matrix-s10.log",
+          "driver_done": "2026-10-29T19:34:15+09:00",
+          "backup_log": "runtime-compose-campaign-20261023/freeze3-tl13/pre-rerun-backup/flopstyle-dark.matrix-s10.log"
+        }
+      ],
+      "basis": "OD-T1b SUPPLEMENT (owner decision 2026-10-29, OWNER-DECISIONS.md): coverage completion for the Firefox narrow-mobile settled cell the S10 audit never sampled (TL13-FIREFOX-JUDGMENT.md mechanism identity YES — same element/trait as granted entry OD-T1-flopstyle-dark-fff3e5c60a02-S10); exact key + exact 13/0 px, no tolerance; binds the same css/source shas; read only by the acceptance validators (TL-05); covers document_containment machine facts only; reports as explanations naming the entry; completion re-verifies. Probe-derived (no audit row exists): overflow_sources/chain and dependencies unavailable, recorded empty/null and never match."
     }
   ],
   "purpose": "Scoped faithful-design exemptions (TAIL-PLAN TL-05). Each entry waives exactly the recorded measured findings for one package while every measurement, selector set and candidate/contract binding matches exactly; any drift re-fails the finding. Waivers are reported as explanations naming the entry, never as silent passes.",
