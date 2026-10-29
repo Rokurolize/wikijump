@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "9aa209eaeec59753e2f6dba8e0299281fb58793c720f4495559e2a1adbd48e09",
+  "frozen_candidate_source_sha256": "949175fc8426148dd8ca3ee3d2034f615158bef393c31e2735529fa19ef29218",
   "base_source_sha256": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a",
-  "raw_jp_overrides_sha256": "92ad1bdd2895cc33a64fa335c46c55c2b57c98cd1c0e11c41dba3fa0940fc916",
-  "jp_overrides_sha256": "f624af884489ebe0ec695086818f0a136087d12a3a54b41be06777e189a66306",
-  "semantic_css_sha256": "fa8254125634be4f44b54b22a4a9f9bda47e3d285836e99ed2df88cb8910dc6a",
-  "canonical_override_sha256": "52adf0aa241e85974d1170b7cfadc147c7341c175c0e61d65cbac98a45fd1cca",
+  "raw_jp_overrides_sha256": "b06ba8786b6a52478b30853c075bf13790ff07f351dedd9bdc1abb5ce2e95bdf",
+  "jp_overrides_sha256": "86d7401c96928728597bd4d4694ef3c62db43790eb5cac00221e9657e6f19405",
+  "semantic_css_sha256": "a429b731cf5c021dd6ecdd8bfe6fbda6944dd1beb12a8b620ba3e2929b116c25",
+  "canonical_override_sha256": "528b4ae74ec2684f4f3cd7512d52ed06bb93720adae65e4e51d5b5f3e2cfe0fb",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "a9e1ec087457f2cae9bb3d9ee173d35f6285aa3408fc590a79f5552a40e6d196",
+  "final_source_sha256": "df6f8ba4489a61f9c2649cccbcf2e78e0e8cba089e88d583294a5269bbbcb428",
   "final_source_inputs": {
     "base_sha256": "26ed695187eeb1874b8e3cd3d1631d6d474294b071e169f007edb573510d6c2a",
-    "jp_overrides_sha256": "f624af884489ebe0ec695086818f0a136087d12a3a54b41be06777e189a66306"
+    "jp_overrides_sha256": "86d7401c96928728597bd4d4694ef3c62db43790eb5cac00221e9657e6f19405"
   },
   "ordered_include_sha256": "828ba497417c9320c594b3ccc5add1887bf885de2bf3077bdfd098348bdc999a",
   "declaration_reviews": {},
   "adaptation_block_count": 3,
-  "raw_override_rule_count": 4,
-  "canonical_override_rule_count": 4,
+  "raw_override_rule_count": 6,
+  "canonical_override_rule_count": 6,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -262,7 +262,7 @@
     },
     {
       "marker": "SCP-JP Wikidot Classic mobile endpoint correction: contain the last submenu above the wrapped narrow layout.",
-      "sha256": "985d2f3995ef32767b02714495f40fb13ff969d4fd986667505025f5f0a96ded",
+      "sha256": "c8154bf047b423750e4c0e70f82c390b1d20546adc79168d39b0229c1e16e4a3",
       "origin": "target-certified-replacement",
       "authority": "TARGET_WIKIDOT_CERTIFIED",
       "rationale": "At 390px Classic increases the real SCP-JP fourth submenu escape by 4.703125px relative to the native target. Align only that endpoint from 360px through 767px. At 320–359px, a separately certified narrow-navigation block keeps primary links in one row and contains the fourth submenu.",
@@ -296,12 +296,13 @@
     },
     {
       "marker": "SCP-JP Classic narrow mobile navigation: keep localized destinations inside one readable bar row.",
-      "sha256": "9c674af713922f9367df4447deb9c24b797e07e0d65c37fe7b649fed81cc10a2",
+      "sha256": "a27391aa2640009e4437590ec940d1ac701f5facd288ed6e5c3d5964de4f89b0",
       "origin": "target-certified-replacement",
       "authority": "TARGET_WIKIDOT_CERTIFIED",
       "rationale": "At 320px and 359px, read-only A/B against the current SCP-JP page shows the fourth primary navigation link wrapping outside #top-bar and over the tagline. Reducing only top-level horizontal link padding to 0.7em keeps all four destinations in the bar; right-aligning the fourth submenu prevents horizontal overflow. The max-width rule ends before 360px, where the separately certified endpoint rule remains active.",
       "selectors": [
         "#top-bar .mobile-top-bar > ul > li > a",
+        "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul",
         "#top-bar .mobile-top-bar > ul > li:last-child > ul"
       ],
       "at_contexts": [
@@ -330,9 +331,10 @@
     {
       "marker": "SCP-JP Wikidot Classic mobile endpoint correction: contain the last submenu above the wrapped narrow layout.",
       "rationale": "SCP-JP Wikidot Classic mobile endpoint correction: contain the last submenu above the wrapped narrow layout.",
-      "sha256": "985d2f3995ef32767b02714495f40fb13ff969d4fd986667505025f5f0a96ded",
+      "sha256": "c8154bf047b423750e4c0e70f82c390b1d20546adc79168d39b0229c1e16e4a3",
       "selectors": [
-        "#top-bar .mobile-top-bar > ul > li:last-child > ul"
+        "#top-bar .mobile-top-bar > ul > li:last-child > ul",
+        "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul"
       ],
       "at_contexts": [
         "@media (min-width: 360px) and (max-width: 767px)"
@@ -354,10 +356,11 @@
     {
       "marker": "SCP-JP Classic narrow mobile navigation: keep localized destinations inside one readable bar row.",
       "rationale": "SCP-JP Classic narrow mobile navigation: keep localized destinations inside one readable bar row.",
-      "sha256": "9c674af713922f9367df4447deb9c24b797e07e0d65c37fe7b649fed81cc10a2",
+      "sha256": "a27391aa2640009e4437590ec940d1ac701f5facd288ed6e5c3d5964de4f89b0",
       "selectors": [
         "#top-bar .mobile-top-bar > ul > li > a",
-        "#top-bar .mobile-top-bar > ul > li:last-child > ul"
+        "#top-bar .mobile-top-bar > ul > li:last-child > ul",
+        "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul"
       ],
       "at_contexts": [
         "@media (max-width: 359px)"
