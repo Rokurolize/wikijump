@@ -28692,7 +28692,7 @@
     {
       "id": "OD-T1-classic-bafb85e5f175-S10",
       "instrument": "semantic_document_containment",
-      "decision": "OD-T1b-S2",
+      "decision": "OD-T1",
       "package": "classic",
       "run": "S10",
       "character": "G2-23 FAITHFUL",
@@ -28732,7 +28732,7 @@
     {
       "id": "OD-T1-penumbra-545d241220a4-S10",
       "instrument": "semantic_document_containment",
-      "decision": "OD-T1b-S2",
+      "decision": "OD-T1",
       "package": "penumbra",
       "run": "S10",
       "character": "G2-28, uniform single source element",
