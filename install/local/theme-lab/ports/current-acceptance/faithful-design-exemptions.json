@@ -28688,6 +28688,86 @@
         }
       ],
       "basis": "OD-T1b SUPPLEMENT (owner decision 2026-10-29, OWNER-DECISIONS.md): coverage completion for the Firefox narrow-mobile settled cell the S10 audit never sampled (TL13-FIREFOX-JUDGMENT.md mechanism identity YES — same element/trait as granted entry OD-T1-flopstyle-dark-fff3e5c60a02-S10); exact key + exact 13/0 px, no tolerance; binds the same css/source shas; read only by the acceptance validators (TL-05); covers document_containment machine facts only; reports as explanations naming the entry; completion re-verifies. Probe-derived (no audit row exists): overflow_sources/chain and dependencies unavailable, recorded empty/null and never match."
+    },
+    {
+      "id": "OD-T1-classic-bafb85e5f175-S10",
+      "instrument": "semantic_document_containment",
+      "decision": "OD-T1b-S2",
+      "package": "classic",
+      "run": "S10",
+      "character": "G2-23 FAITHFUL",
+      "match": {
+        "observation_key": "[\"classic\",\"webkit\",\"narrow-mobile\",\"page.normal\",\"settled\"]",
+        "candidate_overflow_px": 6,
+        "baseline_overflow_px": 0,
+        "dependencies_sha256": null
+      },
+      "candidate_sha256": "8d37bcdf89e9fd69aa69d369da18eb75e388106b088187de457d45c2d7342376",
+      "candidate_source_sha256": "9aa209eaeec59753e2f6dba8e0299281fb58793c720f4495559e2a1adbd48e09",
+      "measured": {
+        "candidate_overflow_px": 6,
+        "baseline_overflow_px": 0
+      },
+      "overflow_sources": [],
+      "overflow_sources_chain_sha256": null,
+      "evidence": [
+        {
+          "kind": "m91-complete-set-probe",
+          "run": "S10",
+          "observation_key": "[\"classic\",\"webkit\",\"narrow-mobile\",\"page.normal\",\"settled\"]",
+          "candidate_overflow_px": 6,
+          "baseline_overflow_px": 0,
+          "profiles": [
+            "anonymous",
+            "authenticated"
+          ],
+          "probe_script": "/tmp/m91-complete-probe.mjs",
+          "dump": "/tmp/m91-complete-dump.json",
+          "plan_summary": "fidelity-master-plan/ODT1B-S2-PROBE.md",
+          "source_check": "criterion PASS vs #top-bar .mobile-top-bar third-item dropdown UL (granted chain UL x187 w144)"
+        }
+      ],
+      "basis": "OD-T1b-S2 (TL13-RULINGS-A-B ruling (b), LANE-ALLOCATION-24, BRIEF-M91): exact-match entry for the webkit narrow-mobile settled cell the S10 audit never sampled (complete-set probe M91 2026-10-29: webkit settled@320 6/0 both profiles; source check PASS — #top-bar .mobile-top-bar third-item dropdown UL (granted chain UL x187 w144)); same element/trait as granted entry OD-T1-classic-e98fba2fa404-S10; exact key + exact 6/0 px, no tolerance; binds the same css/source shas; read only by the acceptance validators; covers document_containment machine facts only; reports as explanations naming the entry; completion re-verifies. Probe-derived (no audit row exists): overflow_sources/chain and dependencies unavailable, recorded empty/null and never match."
+    },
+    {
+      "id": "OD-T1-penumbra-545d241220a4-S10",
+      "instrument": "semantic_document_containment",
+      "decision": "OD-T1b-S2",
+      "package": "penumbra",
+      "run": "S10",
+      "character": "G2-28, uniform single source element",
+      "match": {
+        "observation_key": "[\"penumbra\",\"webkit\",\"narrow-mobile\",\"page.normal\",\"settled\"]",
+        "candidate_overflow_px": 14,
+        "baseline_overflow_px": 0,
+        "dependencies_sha256": null
+      },
+      "candidate_sha256": "2d8436acd87691323a742583e715e7f69c96bfd53c355dac5b2fe27b8ceeb5da",
+      "candidate_source_sha256": "439b21910d1a4363c35845490fdc2585a286b26577c2d692f130c2f790681b9e",
+      "measured": {
+        "candidate_overflow_px": 14,
+        "baseline_overflow_px": 0
+      },
+      "overflow_sources": [],
+      "overflow_sources_chain_sha256": null,
+      "evidence": [
+        {
+          "kind": "m91-complete-set-probe",
+          "run": "S10",
+          "observation_key": "[\"penumbra\",\"webkit\",\"narrow-mobile\",\"page.normal\",\"settled\"]",
+          "candidate_overflow_px": 14,
+          "baseline_overflow_px": 0,
+          "profiles": [
+            "anonymous",
+            "authenticated"
+          ],
+          "probe_script": "/tmp/m91-complete-probe.mjs",
+          "dump": "/tmp/m91-complete-dump.json",
+          "plan_summary": "fidelity-master-plan/ODT1B-S2-PROBE.md",
+          "source_check": "criterion PASS vs #header h1 a transparent max-content title box (judgment)"
+        }
+      ],
+      "basis": "OD-T1b-S2 (TL13-RULINGS-A-B ruling (b), LANE-ALLOCATION-24, BRIEF-M91): exact-match entry for the webkit narrow-mobile settled cell the S10 audit never sampled (complete-set probe M91 2026-10-29: webkit settled@320 14/0 both profiles; source check PASS — #header h1 a transparent max-content title box (judgment)); same element/trait as granted entry OD-T1-penumbra-fafd7bb6f9bc-S10; exact key + exact 14/0 px, no tolerance; binds the same css/source shas; read only by the acceptance validators; covers document_containment machine facts only; reports as explanations naming the entry; completion re-verifies. Probe-derived (no audit row exists): overflow_sources/chain and dependencies unavailable, recorded empty/null and never match."
     }
   ],
   "purpose": "Scoped faithful-design exemptions (TAIL-PLAN TL-05). Each entry waives exactly the recorded measured findings for one package while every measurement, selector set and candidate/contract binding matches exactly; any drift re-fails the finding. Waivers are reported as explanations naming the entry, never as silent passes.",
