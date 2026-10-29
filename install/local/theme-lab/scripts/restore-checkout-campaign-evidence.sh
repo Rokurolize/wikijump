@@ -11,7 +11,7 @@ REPO="$(cd -- "${HERE}/../../../../" && pwd)"
 STORE="${THEME_LAB_EVIDENCE_STORE:-${HOME}/.local/state/wikijump/theme-lab/authority-object-store-v1}"
 MANIFEST="${HERE}/../publication/current-campaign-evidence-manifest.json"
 # Pinned when the manifest is published (set in the same commit as the manifest).
-MANIFEST_SHA=PIN_AFTER_PUBLICATION
+MANIFEST_SHA=51bfe7a808a96a02b0ef70aeeab345528cc7b2fc49f52fb4eb893b1e91a48abd
 
 if [[ ! -e "${MANIFEST}" && ! -L "${MANIFEST}" ]]; then
   cat >&2 <<MSG

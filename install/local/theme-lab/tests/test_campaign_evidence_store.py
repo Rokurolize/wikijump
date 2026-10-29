@@ -30,7 +30,12 @@ class CampaignEvidenceStoreTests(unittest.TestCase):
             'ports/current-acceptance/run-contract.json': b'{"schema":"scp_jp_interactive_acceptance_run.v1"}\n',
             'sigma10-migration/current-campaign/run-contract.json': b'{"schema":"scp_jp_sigma10_migration_run.v1"}\n',
             'ports/current-acceptance/audit/a.json': b'{"row":"first"}\n',
+            'ports/current-acceptance/source-oracles/objects/o.json': b'{"row":"oracle"}\n',
+            'ports/black-highlighter-theme/option-scenarios/runs/r.json': b'{"row":"run"}\n',
+            'ports/black-highlighter-theme/option-scenarios/captures/c.json': b'{"row":"capture"}\n',
             'evidence/search-controls-20261022/receipt.json': b'{"row":"second"}\n',
+            'evidence/nav-source-submenu-20261022/basalt.json': b'{"row":"submenu"}\n',
+            'evidence/source-navigation-overlays-20261022/overlay.json': b'{"row":"overlays"}\n',
         }
         for rel, body in self.files.items():
             target = self.theme_lab / rel
@@ -61,7 +66,7 @@ class CampaignEvidenceStoreTests(unittest.TestCase):
 
     def test_build_restore_roundtrip_verifies_receipt_and_run_contracts(self):
         built = self.build()
-        self.assertEqual((built['status'], built['inventory_files'], built['checker_status']), ('built', 5, 'pass'))
+        self.assertEqual((built['status'], built['inventory_files'], built['checker_status']), ('built', 10, 'pass'))
         doc = json.loads(self.output.read_text())
         self.assertEqual(doc['schema'], campaign.SCHEMA)
         self.assertEqual(doc['checker']['status'], 'pass')
@@ -70,7 +75,7 @@ class CampaignEvidenceStoreTests(unittest.TestCase):
         self.assertEqual(doc['run_contracts']['sigma10']['path'], 'sigma10-migration/current-campaign/run-contract.json')
 
         planned = self.restore()
-        self.assertEqual((planned['status'], planned['checkout_files_missing'], planned['bindings_verified']), ('verified-plan', 5, 0))
+        self.assertEqual((planned['status'], planned['checkout_files_missing'], planned['bindings_verified']), ('verified-plan', 10, 0))
         applied = self.restore(apply=True, link=True)
         self.assertEqual((applied['status'], applied['bindings_verified']), ('applied', 3))
         for rel, body in self.files.items():
@@ -164,6 +169,50 @@ class CampaignEvidenceStoreTests(unittest.TestCase):
                     'ports/current-acceptance/../../escape.json', 'current-campaign-acceptance.json.bak'):
             with self.subTest(rel=rel):
                 self.rewrite(add(rel))
+                with self.assertRaisesRegex(ValueError, 'disallowed or duplicate campaign inventory entry'):
+                    self.restore()
+                self.build()
+
+    def test_w17_additions_are_inventoried_but_nothing_outside_their_scope(self):
+        built = self.build()
+        self.assertEqual(built['status'], 'built')
+        doc = json.loads(self.output.read_text())
+        inventoried = {row['relative_path'] for row in doc['files']}
+        for rel in ('evidence/nav-source-submenu-20261022/basalt.json',
+                    'evidence/source-navigation-overlays-20261022/overlay.json',
+                    'ports/current-acceptance/source-oracles/objects/o.json',
+                    'ports/black-highlighter-theme/option-scenarios/runs/r.json',
+                    'ports/black-highlighter-theme/option-scenarios/captures/c.json'):
+            self.assertIn(rel, inventoried)
+        # Out-of-scope campaign trees are silently excluded from the build,
+        # never inventoried: option-scenarios outside runs/captures,
+        # authority-evidence (covered by the authority restore), and
+        # non-allowlisted evidence children.
+        extra = {
+            'ports/black-highlighter-theme/option-scenarios/sources/x.json': b'{}\n',
+            'ports/black-highlighter-theme/option-scenarios/authority.json': b'{}\n',
+            'ports/authority-evidence/y.json': b'{}\n',
+            'evidence/other-thing-20261022/z.json': b'{}\n',
+        }
+        for rel, body in extra.items():
+            target = self.theme_lab / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(body)
+        rebuilt = self.build()
+        self.assertEqual(rebuilt['inventory_files'], built['inventory_files'])
+        doc = json.loads(self.output.read_text())
+        inventoried = {row['relative_path'] for row in doc['files']}
+        for rel in extra:
+            self.assertNotIn(rel, inventoried)
+
+    def test_out_of_scope_entries_are_refused_on_the_restore_side(self):
+        self.build()
+        for rel in ('ports/authority-evidence/y.json',
+                    'ports/black-highlighter-theme/option-scenarios/sources/x.json',
+                    'ports/black-highlighter-theme/candidate.css'):
+            with self.subTest(rel=rel):
+                self.rewrite(lambda doc, rel=rel: doc['files'].append(
+                    {'relative_path': rel, 'sha256': '1' * 64, 'size_bytes': 1}))
                 with self.assertRaisesRegex(ValueError, 'disallowed or duplicate campaign inventory entry'):
                     self.restore()
                 self.build()
