@@ -117,6 +117,16 @@ if ! [[ "${JOBS}" =~ ^[0-9]+$ ]]; then
   exit 2
 fi
 
+# Per-group Cargo target directories live under one root shared by every
+# worktree on this machine, so a fresh worktree reuses the Rust build state
+# earlier validations paid for instead of recompiling the graph per
+# checkout. Cargo's fingerprinting keeps mixed source states correct in a
+# shared directory (worst case it rebuilds); validations are serialized by
+# policy, so cross-worktree lock contention is no worse than the intra-run
+# case the per-group split exists for. Set PREFLIGHT_TARGET_ROOT to a path
+# inside the repository to restore the old per-worktree layout.
+PREFLIGHT_TARGET_ROOT="${PREFLIGHT_TARGET_ROOT:-${XDG_STATE_HOME:-${HOME}/.local/state}/wikijump/preflight-target}"
+
 # The Rust groups shell out to cargo, and the Deepwell test stack spawns
 # sqlx; both live in ~/.cargo/bin, which a non-login shell may not have on
 # PATH. Name the environmental failure here instead of inside a group.
@@ -309,7 +319,7 @@ group_verification() {
 group_deepwell_lint() {
   # Clippy beside the test build needs its own target directory: cargo locks
   # a target directory, so a shared one would serialize the two.
-  if [[ "${JOBS}" != 1 ]]; then export CARGO_TARGET_DIR="${REPO_ROOT}/target/preflight-deepwell-lint"; fi
+  if [[ "${JOBS}" != 1 ]]; then export CARGO_TARGET_DIR="${PREFLIGHT_TARGET_ROOT}/deepwell-lint"; fi
   if group_selected deepwell; then
     run "deepwell fmt" cargo fmt --manifest-path deepwell/Cargo.toml --check
     if [[ "${MODE}" == "final" ]]; then
@@ -320,6 +330,10 @@ group_deepwell_lint() {
 }
 
 group_deepwell() {
+  # Beside the lint group, the test build needs its own target directory:
+  # cargo locks a target directory, so a shared one would serialize the
+  # two. The integration runner inherits CARGO_TARGET_DIR from here.
+  if [[ "${JOBS}" != 1 ]]; then export CARGO_TARGET_DIR="${PREFLIGHT_TARGET_ROOT}/deepwell-test"; fi
   if group_selected deepwell && [[ "${MODE}" == "final" ]]; then
     # Nextest partitions, each on its own task-owned stack, side by side.
     run_test "deepwell full tests" env WIKIJUMP_DEEPWELL_TEST_SHARDS="${WIKIJUMP_DEEPWELL_TEST_SHARDS:-12}" node \
@@ -330,7 +344,7 @@ group_deepwell() {
 group_wws() {
   # Beside Deepwell, a Rust group builds in its own target directory: cargo
   # locks a target directory, so a shared one would serialize the groups.
-  if [[ "${JOBS}" != 1 ]]; then export CARGO_TARGET_DIR="${REPO_ROOT}/target/preflight-wws"; fi
+  if [[ "${JOBS}" != 1 ]]; then export CARGO_TARGET_DIR="${PREFLIGHT_TARGET_ROOT}/wws"; fi
   if group_selected wws; then
     run "wws fmt" cargo fmt --manifest-path wws/Cargo.toml --check
     if [[ "${MODE}" == "final" ]]; then
@@ -366,7 +380,7 @@ group_framerail() {
 group_locales() {
   # Beside Deepwell, a Rust group builds in its own target directory: cargo
   # locks a target directory, so a shared one would serialize the groups.
-  if [[ "${JOBS}" != 1 ]]; then export CARGO_TARGET_DIR="${REPO_ROOT}/target/preflight-locales"; fi
+  if [[ "${JOBS}" != 1 ]]; then export CARGO_TARGET_DIR="${PREFLIGHT_TARGET_ROOT}/locales"; fi
   if group_selected locales; then
     run "locales fmt" cargo fmt --manifest-path locales/validator/Cargo.toml --all -- --check
     if [[ "${MODE}" == "final" ]]; then
