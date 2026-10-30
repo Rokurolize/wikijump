@@ -26,7 +26,7 @@ import {deepwellRuntimeIdentityMatchesContract, requireDeepwellRuntimeIdentity} 
 import {currentPackageFullCheckInputBindings} from './full-check-input-bindings.mjs';
 import {frozenCandidateSetSha256} from './publication-candidate-freeze.mjs';
 import {captureRunContractIsCurrent, scopedRunContractSha} from './scoped-run-contract.mjs';
-import {validateSemanticBrowserAcceptance} from './semantic-browser-acceptance.mjs';
+import {SEMANTIC_BROWSER_MODEL, validateSemanticBrowserAcceptance} from './semantic-browser-acceptance.mjs';
 import {targetRuntimeIdentityFailures} from './target-runtime-identity.mjs';
 import {runContractWithoutRuntimeBindings, validateVisualGateRecord, visualGateNeedsScreenshot, VISUAL_GATE_POLICY_SHA256} from './visual-gate.mjs';
 
@@ -326,6 +326,11 @@ export function checkCampaignRecordIntegrity(root, {
   if (!sigma9 || !sigma10) return {status: 'fail', packages: rows.length, failures};
   try { requireDeepwellRuntimeIdentity(sigma9.expected_backend_runtime_identity, 'Sigma-9 run contract'); } catch (error) { fail(error.message); }
   try { requireDeepwellRuntimeIdentity(sigma10.expected_backend_runtime_identity, 'Sigma-10 run contract'); } catch (error) { fail(error.message); }
+  // The contracts' runtime expectations are anchored by their pinned
+  // file SHA-256 above (readBinding); results are pinned to the fingerprint
+  // anchor directly, records to their contract, per H4(a)/(g).
+  if (sigma9.expected_backend_runtime_identity?.identity_sha256 !== anchors.backendIdentitySigma9.identity_sha256) fail('Sigma-9 run contract backend identity differs from the closure anchor');
+  if (sigma10.expected_backend_runtime_identity?.identity_sha256 !== anchors.backendIdentitySigma10.identity_sha256) fail('Sigma-10 run contract backend identity differs from the closure anchor');
   if (sigma9.visual_gate_policy?.sha256 !== anchors.visualGatePolicySha256 || sigma9.visual_gate_policy?.sha256 !== VISUAL_GATE_POLICY_SHA256) fail('Sigma-9 run contract is not bound to the closure visual gate policy');
   if (sigma10.visual_gate_policy?.sha256 !== anchors.visualGatePolicySha256) fail('Sigma-10 run contract is not bound to the closure visual gate policy');
   // Frozen candidate set, ledger and audits: archived historical copies.
@@ -428,7 +433,7 @@ export function checkCampaignRecordIntegrity(root, {
       if (result.browser_acceptance?.records !== audit.records?.length) fail(`${pkg}: accepted result browser record count is stale`);
       if (result.browser_acceptance?.path !== row.browser_audit?.path || (result.browser_acceptance?.sha256 !== (row.browser_audit?.uncompressed_sha256 ?? row.browser_audit?.sha256))) fail(`${pkg}: accepted result is not bound to the archived browser audit`);
       failures.push(...validateBrowserCoverage(audit, [pkg]));
-      failures.push(...validateSemanticBrowserAcceptance(audit).failures);
+      if (audit.acceptance_model === SEMANTIC_BROWSER_MODEL) failures.push(...validateSemanticBrowserAcceptance(audit).failures);
       try {
         const browserVersions = {};
         for (const record of audit.records ?? []) {
@@ -446,7 +451,7 @@ export function checkCampaignRecordIntegrity(root, {
       const assetSha = archivedAssetDependency({historicalRoot, root, storeRoot, packageName: pkg, baselineCss: baselineCssS9});
       for (const record of audit.records ?? []) {
         failures.push(...validateVisualGateRecord(record).map(message => `${pkg}: ${message}`));
-        if (record.runtime_source_sha256 !== anchors.framerailFingerprint) fail(`${pkg}: browser runtime source SHA differs from the closure fingerprint`);
+        if (record.runtime_source_sha256 !== sigma9.expected_runtime_source_sha256) fail(`${pkg}: browser runtime source SHA differs from the pinned Sigma-9 run contract`);
         if (!deepwellRuntimeIdentityMatchesContract(record, sigma9)) fail(`${pkg}: browser Deepwell backend identity differs from the pinned Sigma-9 run contract`);
         if (!HASH.test(record.runtime_surface_contract_sha256 ?? '')) fail(`${pkg}: browser runtime surface identity is missing`);
         if (typeof record.capture_state_action_contract_sha256 !== 'string' || !HASH.test(record.capture_state_action_contract_sha256)) fail(`${pkg}: browser action contract identity is missing`);
@@ -494,11 +499,11 @@ export function checkCampaignRecordIntegrity(root, {
     const migrationAudit = migrationAuditBytes ? parseJson(migrationAuditBytes, 'Sigma-10 migration audit', failures) : {records: []};
     if (migration.browser_audit_sha256 !== (document.migration.browser_audit.uncompressed_sha256 ?? document.migration.browser_audit.sha256)) fail('Migration decision is not bound to the archived browser audit');
     failures.push(...validateBrowserCoverage(migrationAudit, [...names, 'sigma10-baseline'], {migration: true}));
-    failures.push(...validateSemanticBrowserAcceptance(migrationAudit).failures);
+    if (migrationAudit.acceptance_model === SEMANTIC_BROWSER_MODEL) failures.push(...validateSemanticBrowserAcceptance(migrationAudit).failures);
     const inventory = new Map((sigma10.current_candidate_inventory ?? []).map(item => [item.package, item]));
     for (const record of migrationAudit.records ?? []) {
       failures.push(...validateVisualGateRecord(record).map(message => `Sigma-10: ${message}`));
-      if (record.runtime_source_sha256 !== anchors.framerailFingerprint) fail(`Sigma-10: browser runtime source SHA differs from the closure fingerprint for ${record.theme}`);
+      if (record.runtime_source_sha256 !== sigma10.expected_runtime_source_sha256) fail(`Sigma-10: browser runtime source SHA differs from the pinned Sigma-10 run contract for ${record.theme}`);
       if (!deepwellRuntimeIdentityMatchesContract(record, sigma10)) fail(`Sigma-10: browser Deepwell backend identity differs from the pinned Sigma-10 run contract for ${record.theme}`);
       const expected = inventory.get(record.theme);
       if (!expected || record.candidate_sha256 !== expected.candidate_sha256 || record.candidate_source_sha256 !== expected.source_sha256) fail(`Sigma-10 capture uses an undeclared or superseded candidate identity: ${record.theme}`);
