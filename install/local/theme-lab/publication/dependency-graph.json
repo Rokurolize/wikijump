@@ -1,6 +1,6 @@
 {
   "schema": "theme_lab_publication_dependency_graph.v1",
-  "generated_at": "2026-10-28",
+  "generated_at": "2026-10-30",
   "authority": {
     "flopstyle_dark_rev401_audit": "evidence/audits/theme-lab-flopstyle-rev401-transitive-audit-20261005.json",
     "bhl_option_runtime_audit": "evidence/audits/theme-lab-bhl-option-runtime-coverage-audit-20261005.json",
@@ -7315,7 +7315,7 @@
     "path": "frozen-candidate-set.json",
     "candidate_set_sha256": "a2545305daca8a2c722b123ed3381119f1bfc35d61d9cb4e7d517bfe1e6c3ac0",
     "state": "frozen-before-final-acceptance",
-    "frozen_at": "2026-10-28",
-    "readiness_audit_sha256": "b93c81be167edee32ee3243a9219329db3dbf90423b6feddea88e73fa1968a24"
+    "frozen_at": "2026-10-30",
+    "readiness_audit_sha256": "f75617a3a869226d8e53ab58fa1a81d088b9d5b9211818e6282ffa6e329e735e"
   }
 }
