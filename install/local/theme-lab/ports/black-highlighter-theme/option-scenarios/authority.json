@@ -149,13 +149,13 @@
     }
   ],
   "backend_runtime_identity": {
-    "schema": "wikijump_deepwell_runtime_identity.v1",
-    "source_sha256": "5e59292b6cffe4f135f5f1c298f797efb16e305dcc3c55ece6a9ff5592c7e5d7",
-    "ftml_git_revision": "3f8be45c12532d981652edf4343e02f36f1380db",
-    "container_id": "f4b462c8d4ba98c41243521e6a07edcf3d0f71ddab879a01ae794378d5f4903b",
-    "image_id": "sha256:6e9aa9ba2e52a13cec0aff9a9d92a3c4befe8cc4f68f9bb5ada8233c3893bcd6",
-    "binary_sha256": "c9f66382a5e1b64098737c934ed0d94278e3f683dda6dae323fb0909a97f190f",
+    "binary_sha256": "b92fc84f7984d1ad3f008f1399d293773b8fb67f9006db5c014e308030c1046b",
     "config_sha256": "6eeb5715be1ac0d72784a10eb2a821b14995e9d0e29cd886a146e489ff16f638",
-    "identity_sha256": "085b31debe7cbd86e6bb9a31acd320caede4ff675b302bcf98edbb971a4c6741"
+    "container_id": "3418f129098e1100feb3ee70278b47eae58e87c29c7ea41dc22dd2a43e9a7852",
+    "ftml_git_revision": "3f8be45c12532d981652edf4343e02f36f1380db",
+    "identity_sha256": "120fb06bdd9928f2c74a9fa616fb0c93700c67009f57a63dd38bbf4b8403cd41",
+    "image_id": "sha256:a5e06800dbb27714ac0de3c0193a9fd9a24e6b62b91a48d6c1ae4c208c8df2b4",
+    "schema": "wikijump_deepwell_runtime_identity.v1",
+    "source_sha256": "5e59292b6cffe4f135f5f1c298f797efb16e305dcc3c55ece6a9ff5592c7e5d7"
   }
 }

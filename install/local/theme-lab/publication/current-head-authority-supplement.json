@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.theme_lab_authority_archive_supplement_inventory.v1",
   "snapshot_date": "2026-10-30",
-  "current_head": "a0acf3b1e07bf0216a73e15fd32e34ec81b59e43",
+  "current_head": "6f1858e22100eb85d8b30dc6f39849ed0d819484",
   "verified_by": "sha256 pinned ledger roots plus content-addressed source objects",
   "files": [
     {
@@ -5840,8 +5840,8 @@
       "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-w13-recert-20261028/navigation-action-receipt.json/receipt.json",
       "size_bytes": 1193229,
       "sha256": "5d01bd60275afd020e50b5bfeab65e412c410c37847e543bb6abc91448b24d03",
-      "ledger_root": true,
-      "ledger_hash_verified": true,
+      "ledger_root": false,
+      "ledger_hash_verified": null,
       "missing_in_clean_head": true
     },
     {
@@ -6136,8 +6136,8 @@
       "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-w13-recert-20261028/navigation-receipt.json/receipt.json",
       "size_bytes": 958263,
       "sha256": "15c948102dc7752ae5cd14b6cecf2890ba25f01610f3570ff98700d88160b4c7",
-      "ledger_root": true,
-      "ledger_hash_verified": true,
+      "ledger_root": false,
+      "ledger_hash_verified": null,
       "missing_in_clean_head": true
     },
     {
@@ -32107,11 +32107,923 @@
       "ledger_root": false,
       "ledger_hash_verified": null,
       "missing_in_clean_head": true
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/measurement-css-layers.mjs",
+      "size_bytes": 533,
+      "sha256": "e2da8318c2b3b418341b1cc3c155a3e2e317dad00ef8331d37a3a88651f2d535",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/measurement-navigation-interaction.mjs",
+      "size_bytes": 4628,
+      "sha256": "ba4b963f59a5e85ad242ba83cc342b5796c42fe5910ac67671c8d0e33e52c97e",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/measurement-viewport-bounds.mjs",
+      "size_bytes": 1114,
+      "sha256": "3f63853560e7a05f0757cd8cde73b4ba657f2b8e9b421f4006b5c673bbedd8c9",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/measurement-wikidot-adaptation-ab.mjs",
+      "size_bytes": 26283,
+      "sha256": "fa2eae75bd2d284ecb759ced945e991a1099938404506cd8d4363f041e136f94",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/receipt.json",
+      "size_bytes": 941128,
+      "sha256": "e83697d5cad8b903b8a9abefc8b9a57373ce17a090638a853eda99db198d1a64",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/visual-review.json",
+      "size_bytes": 6836,
+      "sha256": "bce539cb6fcd08ab1fc7932441510a1bd9dab579859bc2a37c3dc3226234d3db",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/with-320-navigation-action-0.html.gz",
+      "size_bytes": 1253262,
+      "sha256": "338e249f6af447f30a3c3a01dd256215daa0eedb525dc4c7bb1cd736002f384d",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/with-320-navigation-action-0.png",
+      "size_bytes": 145890,
+      "sha256": "641e6fcd9475db7b4a50be06ba83b67c3cea029a3bc7fa56c7df43600faf1aca",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/with-320-navigation-action-1.html.gz",
+      "size_bytes": 1253263,
+      "sha256": "479d153d71cb6283b511200d33d82b12b7ff7be5b93c1db8a000817f5753d6a9",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/with-320-navigation-action-1.png",
+      "size_bytes": 161832,
+      "sha256": "d5a0525a9d396e31a6fc3b226559697f60e6b6e92999213743503dcfed0e18ff",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/with-320-navigation-action-2.html.gz",
+      "size_bytes": 1253264,
+      "sha256": "a13009f242ea2085ad957c56822e2d9efd26d6c32dbc90770c71aa653f560e37",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/with-320-navigation-action-2.png",
+      "size_bytes": 159719,
+      "sha256": "df9d7eef4d0933ef5e75dc07117174fb9116606f10293745d1736e4e014771f4",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/with-320-navigation-action-3.html.gz",
+      "size_bytes": 1253263,
+      "sha256": "34a256978c390bbd770252761673cdf2b1b6a065e8fcd791c28e32256c4c4c54",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/with-320-navigation-action-3.png",
+      "size_bytes": 164288,
+      "sha256": "6e167992464c8304bdb31241e19caa2e33da7b79d6415d0c4350490970c17262",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/with-390-navigation-action-0.html.gz",
+      "size_bytes": 1253265,
+      "sha256": "503d838d5d8d32a423308e84a82c89d4cc5866dce46d06475fe6f7cc0f7a45c1",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/with-390-navigation-action-0.png",
+      "size_bytes": 175804,
+      "sha256": "1b0deb500a4ebc9b930f58dd471ed256486314b516770bdaa3a278788ca3b688",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/with-390-navigation-action-1.html.gz",
+      "size_bytes": 1253265,
+      "sha256": "8582e1d338a6527e52d92fd891f8b547318d67c9c911c26a5cf76e78aa759759",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/with-390-navigation-action-1.png",
+      "size_bytes": 185448,
+      "sha256": "564054d23da2ac3d4afd3b5e7f0143d888449399a2119b0c9d74d8e5de40bcc0",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/with-390-navigation-action-2.html.gz",
+      "size_bytes": 1253266,
+      "sha256": "30c610d772e3cff21437f10983430572a877e01fb0712592dddbe15b6c4b1ede",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/with-390-navigation-action-2.png",
+      "size_bytes": 183960,
+      "sha256": "d7d38975fd5ccbb2ef27b81d90b297e8ac68ec9469aded714f10fa1f653a02b7",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/with-390-navigation-action-3.html.gz",
+      "size_bytes": 1253266,
+      "sha256": "11bd2d7cedc9ec900356e3cf7699463106e92e9aa5a6e580af98ec8224cbfb93",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/with-390-navigation-action-3.png",
+      "size_bytes": 194993,
+      "sha256": "21d2f4f074254ca65790e9b9adc081c5fd587f51cc326b5e24732932bb0687d2",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/without-320-navigation-action-0.html.gz",
+      "size_bytes": 1253137,
+      "sha256": "ca1db0b9133963c9c2a6aaf763ddd8fe34f2c8941e7d192da2b2a96d179b7c4c",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/without-320-navigation-action-0.png",
+      "size_bytes": 145890,
+      "sha256": "641e6fcd9475db7b4a50be06ba83b67c3cea029a3bc7fa56c7df43600faf1aca",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/without-320-navigation-action-1.html.gz",
+      "size_bytes": 1253138,
+      "sha256": "899cf3a17f0ca0f12e3c96ac97cdd79f33f8a8d11d5e5ebdc47b3f5232b77132",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/without-320-navigation-action-1.png",
+      "size_bytes": 161832,
+      "sha256": "d5a0525a9d396e31a6fc3b226559697f60e6b6e92999213743503dcfed0e18ff",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/without-320-navigation-action-2.html.gz",
+      "size_bytes": 1253138,
+      "sha256": "005121847bdf37ea106ee12da936ba1602d573a8a501d7a1c493059080171c50",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/without-320-navigation-action-2.png",
+      "size_bytes": 159719,
+      "sha256": "df9d7eef4d0933ef5e75dc07117174fb9116606f10293745d1736e4e014771f4",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/without-320-navigation-action-3.html.gz",
+      "size_bytes": 1253138,
+      "sha256": "b4c20e7e8954c01bd38ff7c000c837d5796eace5b155f7d78ed919cb0a2927d7",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/without-320-navigation-action-3.png",
+      "size_bytes": 164288,
+      "sha256": "1fc11712790d1c14d5ab5d7d5195a611b641bc259e5feefc3c3782584e47fa85",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/without-390-navigation-action-0.html.gz",
+      "size_bytes": 1253134,
+      "sha256": "2d5f8021e39ac3d59c67d081e1923f77545c8b2558b948bcb3e4e0daf28c7e9e",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/without-390-navigation-action-0.png",
+      "size_bytes": 175804,
+      "sha256": "1b0deb500a4ebc9b930f58dd471ed256486314b516770bdaa3a278788ca3b688",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/without-390-navigation-action-1.html.gz",
+      "size_bytes": 1253134,
+      "sha256": "68616a156a2b8c6e123b106ecb090d5627db4e7c6130dd325a786b68782327c5",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/without-390-navigation-action-1.png",
+      "size_bytes": 185448,
+      "sha256": "564054d23da2ac3d4afd3b5e7f0143d888449399a2119b0c9d74d8e5de40bcc0",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/without-390-navigation-action-2.html.gz",
+      "size_bytes": 1253135,
+      "sha256": "32a764b899a917d850d32029821aec5f72f3a9edfd531e36e7a93fdcdd646696",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/without-390-navigation-action-2.png",
+      "size_bytes": 183960,
+      "sha256": "d7d38975fd5ccbb2ef27b81d90b297e8ac68ec9469aded714f10fa1f653a02b7",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/without-390-navigation-action-3.html.gz",
+      "size_bytes": 1253134,
+      "sha256": "d0bad8481857647f23759ed3126a849570e4f4ad89b50e065c593b3d1adcf692",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/chromium/without-390-navigation-action-3.png",
+      "size_bytes": 194993,
+      "sha256": "21d2f4f074254ca65790e9b9adc081c5fd587f51cc326b5e24732932bb0687d2",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/measurement-css-layers.mjs",
+      "size_bytes": 533,
+      "sha256": "e2da8318c2b3b418341b1cc3c155a3e2e317dad00ef8331d37a3a88651f2d535",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/measurement-navigation-interaction.mjs",
+      "size_bytes": 4628,
+      "sha256": "ba4b963f59a5e85ad242ba83cc342b5796c42fe5910ac67671c8d0e33e52c97e",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/measurement-viewport-bounds.mjs",
+      "size_bytes": 1114,
+      "sha256": "3f63853560e7a05f0757cd8cde73b4ba657f2b8e9b421f4006b5c673bbedd8c9",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/measurement-wikidot-adaptation-ab.mjs",
+      "size_bytes": 26283,
+      "sha256": "fa2eae75bd2d284ecb759ced945e991a1099938404506cd8d4363f041e136f94",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/receipt.json",
+      "size_bytes": 1193737,
+      "sha256": "410504671ab77676e3606f4b9bf52d6fc1eeeeb913eb242938abdf1028e254f7",
+      "ledger_root": true,
+      "ledger_hash_verified": true,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/visual-review.json",
+      "size_bytes": 6941,
+      "sha256": "fe344983e34e43466439e54541b902658b87258e6f6528852f137765d42bdfc1",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/with-320-navigation-action-0.html.gz",
+      "size_bytes": 1253261,
+      "sha256": "5b0e0280bd899e6bc437ce3d829000b22377615fd6db5b1bed49983f07ee339b",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/with-320-navigation-action-0.png",
+      "size_bytes": 126636,
+      "sha256": "9affd86e0e3d55ea565cb5174462edc9a64e4ce0d698c1fca36e27b3b8a8cf33",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/with-320-navigation-action-1.html.gz",
+      "size_bytes": 1253262,
+      "sha256": "d471a3999aa618ce43876ea7ab79380e6e2ae377af49036e715904315f09c7b1",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/with-320-navigation-action-1.png",
+      "size_bytes": 143626,
+      "sha256": "f62ee821de533b422dd57b789c55d84cbe4a944934081191eaa11a6dd1109d67",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/with-320-navigation-action-2.html.gz",
+      "size_bytes": 1253262,
+      "sha256": "9d6ce1a0badb8d1e2cc7cdcf1299a7ecab62f3a1c17220637087f2921f838d0e",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/with-320-navigation-action-2.png",
+      "size_bytes": 144565,
+      "sha256": "c9424dca2b6cf0c8e5566e55d24c4939a96c26f1a71a4263ee03e90114decaa4",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/with-320-navigation-action-3.html.gz",
+      "size_bytes": 1253262,
+      "sha256": "62124cfdf626d6341a88583fcd28919fa1b17ffd573ac3c5d04500b0f68acf1a",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/with-320-navigation-action-3.png",
+      "size_bytes": 146872,
+      "sha256": "0f4cd47fc44b0c4353d7d804815fa32a3d76e12f2724f6c3569d72dc0f3767da",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/with-390-navigation-action-0.html.gz",
+      "size_bytes": 1253262,
+      "sha256": "822a0f4e3602071a1d55037927335cb68b7104d99a7bd7c86aaf6d5fc164f354",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/with-390-navigation-action-0.png",
+      "size_bytes": 164232,
+      "sha256": "d7cf1e6cd54e142cd9e27a0a70c2120f79f2d34ba02c85e72d949a4f4a1ec091",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/with-390-navigation-action-1.html.gz",
+      "size_bytes": 1253263,
+      "sha256": "b57effe81a50a68fd312af043cbb46387b6bcac6d1d2623de383e5df73d876cb",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/with-390-navigation-action-1.png",
+      "size_bytes": 167107,
+      "sha256": "2d4746f2f0de11b5e72439ba819c4133c6472666b9d97e90c2fb37a22ad9ae3a",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/with-390-navigation-action-2.html.gz",
+      "size_bytes": 1253264,
+      "sha256": "46f996fe2d5986ec36f5f85097eaad097b7de521fe2706a84572b9512f40c5ad",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/with-390-navigation-action-2.png",
+      "size_bytes": 170169,
+      "sha256": "8894efaf22aaebd9022a69c1e5afed4774c38243d66e1d4a59865cd26e30c59d",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/with-390-navigation-action-3.html.gz",
+      "size_bytes": 1253263,
+      "sha256": "cfd462cfa1a94522062ce64cb4144a237c3b2c0fdaac0122814fe66e8763abf9",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/with-390-navigation-action-3.png",
+      "size_bytes": 173735,
+      "sha256": "0fd760540db693bcf503a724ce3036197c6c23c9c579e931a62a57924dbf7459",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/without-320-navigation-action-0.html.gz",
+      "size_bytes": 1253134,
+      "sha256": "a06c999c1e5409ffea0fa789566b06997d5ba6f206ac948ae063b0e985680322",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/without-320-navigation-action-0.png",
+      "size_bytes": 126636,
+      "sha256": "9affd86e0e3d55ea565cb5174462edc9a64e4ce0d698c1fca36e27b3b8a8cf33",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/without-320-navigation-action-1.html.gz",
+      "size_bytes": 1253135,
+      "sha256": "b0cf2c461f5737a9f879e1ba41add3e72197b8cb5000cb6c3361287b12e31fa8",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/without-320-navigation-action-1.png",
+      "size_bytes": 143626,
+      "sha256": "f62ee821de533b422dd57b789c55d84cbe4a944934081191eaa11a6dd1109d67",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/without-320-navigation-action-2.html.gz",
+      "size_bytes": 1253135,
+      "sha256": "2a3a0e38dfba9272a7a267599e49ae5954293eab6dee92d30469e26588c037f9",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/without-320-navigation-action-2.png",
+      "size_bytes": 137308,
+      "sha256": "51007bee82b1cb6d92c9d2577693dd72f56059ddedf545c0831793d0abecad44",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/without-320-navigation-action-3.html.gz",
+      "size_bytes": 1253135,
+      "sha256": "44e590ff26d0a9af99fbc0017182e51bfbf623a22af404ebe77ec025f036527f",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/without-320-navigation-action-3.png",
+      "size_bytes": 146872,
+      "sha256": "0f4cd47fc44b0c4353d7d804815fa32a3d76e12f2724f6c3569d72dc0f3767da",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/without-390-navigation-action-0.html.gz",
+      "size_bytes": 1253133,
+      "sha256": "ab3c6b7fdb8b55593bec39626a89202656f5d2fc46093f9e1eb50644083cccc6",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/without-390-navigation-action-0.png",
+      "size_bytes": 164232,
+      "sha256": "d7cf1e6cd54e142cd9e27a0a70c2120f79f2d34ba02c85e72d949a4f4a1ec091",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/without-390-navigation-action-1.html.gz",
+      "size_bytes": 1253134,
+      "sha256": "01e1d3b4a3fb3797f92599685da6c55cbe07fb34aa63a7a4990540548e053c1a",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/without-390-navigation-action-1.png",
+      "size_bytes": 167107,
+      "sha256": "2d4746f2f0de11b5e72439ba819c4133c6472666b9d97e90c2fb37a22ad9ae3a",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/without-390-navigation-action-2.html.gz",
+      "size_bytes": 1253134,
+      "sha256": "51aa0bc8c01c42fd4f13b9c9df374cab45a99786d4338e41b95ece2fdcfabea5",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/without-390-navigation-action-2.png",
+      "size_bytes": 170169,
+      "sha256": "8894efaf22aaebd9022a69c1e5afed4774c38243d66e1d4a59865cd26e30c59d",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/without-390-navigation-action-3.html.gz",
+      "size_bytes": 1253134,
+      "sha256": "f0c59853290430bf4ff76a5ccb4bd14851f843f5a4f9c8f21d4aaf0a1e0a45f8",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-firefox-submenu-recert-20261030/firefox/without-390-navigation-action-3.png",
+      "size_bytes": 165578,
+      "sha256": "3a0349b8947edda85294f8938f2baaf1f2ce7710379f2fc47255b2139c3d1874",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/measurement-css-layers.mjs",
+      "size_bytes": 533,
+      "sha256": "e2da8318c2b3b418341b1cc3c155a3e2e317dad00ef8331d37a3a88651f2d535",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/measurement-navigation-interaction.mjs",
+      "size_bytes": 4628,
+      "sha256": "ba4b963f59a5e85ad242ba83cc342b5796c42fe5910ac67671c8d0e33e52c97e",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/measurement-viewport-bounds.mjs",
+      "size_bytes": 1114,
+      "sha256": "3f63853560e7a05f0757cd8cde73b4ba657f2b8e9b421f4006b5c673bbedd8c9",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/measurement-wikidot-adaptation-ab.mjs",
+      "size_bytes": 26283,
+      "sha256": "fa2eae75bd2d284ecb759ced945e991a1099938404506cd8d4363f041e136f94",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/receipt.json",
+      "size_bytes": 958263,
+      "sha256": "e679d09e3355975a77dc969b60185de7e5910a686469d303f8555f9160115621",
+      "ledger_root": true,
+      "ledger_hash_verified": true,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/visual-review.json",
+      "size_bytes": 6415,
+      "sha256": "a0d2e901d91523a9530e9a3777041cccd41bc1c79e7788acc35a53e00b2478af",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/with-320-navigation-0.html.gz",
+      "size_bytes": 1253271,
+      "sha256": "82bd0b014cb433ae1395135f8766f0d1222c89b0b9a06abf9ed37651c9d58147",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/with-320-navigation-0.png",
+      "size_bytes": 127352,
+      "sha256": "9c14fe654fb5992dd709afe17856ffad9207a7380edc50cf851a07e4cbbc7077",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/with-320-navigation-1.html.gz",
+      "size_bytes": 1253280,
+      "sha256": "1dbb72babac8e39d4904cc9eadfb905381ff188c219784a2b3e1b2bc3af793c7",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/with-320-navigation-1.png",
+      "size_bytes": 124383,
+      "sha256": "9df6fa63190e17bff7feca91074d3ead7cf8f482a979c81f7203d1e2580930bf",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/with-320-navigation-2.html.gz",
+      "size_bytes": 1253284,
+      "sha256": "4d5687a745e4de69ed4afbb882a00ef8c9e5a8a77ce2d8e6d2d1c78d9f1ceebd",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/with-320-navigation-2.png",
+      "size_bytes": 117727,
+      "sha256": "0a7c5bdc37601514dfc11957134fcfe5c533115f9ea53876a145920daf10c9a3",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/with-320-navigation-3.html.gz",
+      "size_bytes": 1253284,
+      "sha256": "04a28b816945dc1b2a57854888d7856e7a46bbf582de3b2837360a502e9a4874",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/with-320-navigation-3.png",
+      "size_bytes": 118711,
+      "sha256": "e404b539786884554d9532b5693cf5d476f1e84a6d3e8814d9831118f5ada54f",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/with-390-navigation-0.html.gz",
+      "size_bytes": 1253273,
+      "sha256": "0b1e573f06d5b437a4d0b25a6b7dcd2655020cfbf74c872d7fe5c9db7a38639f",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/with-390-navigation-0.png",
+      "size_bytes": 160197,
+      "sha256": "7321ce0f2296e1ba0abc455225b5edb0212dffa3650d8b6802c2d506a581ce67",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/with-390-navigation-1.html.gz",
+      "size_bytes": 1253281,
+      "sha256": "666fd84c9bc0b40204c4b220eeb0198975a50a6d9a8ab0a787df2feee7200ad3",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/with-390-navigation-1.png",
+      "size_bytes": 156842,
+      "sha256": "c3997263c4a66d3033d83dadc63af7fdd8b9d6f8b15c04c5dff756565a40fd78",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/with-390-navigation-2.html.gz",
+      "size_bytes": 1253285,
+      "sha256": "568bfb8bae2be03fe7ad67342dbfe8b21bf2bbec96c06a7dc43106dfc6d99b77",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/with-390-navigation-2.png",
+      "size_bytes": 150666,
+      "sha256": "da84b4d6629cd9f26878b460a413f3ca1f01b4d872d8d4d0e73fc3850054d05b",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/with-390-navigation-3.html.gz",
+      "size_bytes": 1253285,
+      "sha256": "ae30ac2d2462db9ff6b676118cd90480e6bb505fa1c9901f7c1fbab4dff174ee",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/with-390-navigation-3.png",
+      "size_bytes": 151058,
+      "sha256": "af13da3cfd325b4f2eb753537530a703eaf8724d845660eb4fc8fe25b04df588",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/without-320-navigation-0.html.gz",
+      "size_bytes": 1253195,
+      "sha256": "847c621434040791ce459d2e774c03ce693cd070879455548a8191f7fe94bf03",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/without-320-navigation-0.png",
+      "size_bytes": 127352,
+      "sha256": "9c14fe654fb5992dd709afe17856ffad9207a7380edc50cf851a07e4cbbc7077",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/without-320-navigation-1.html.gz",
+      "size_bytes": 1253208,
+      "sha256": "a6dd10596fbb514ad7823d5cc9a03cef5d11dfcf2884b9dac7994f3bea44ce33",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/without-320-navigation-1.png",
+      "size_bytes": 124383,
+      "sha256": "9df6fa63190e17bff7feca91074d3ead7cf8f482a979c81f7203d1e2580930bf",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/without-320-navigation-2.html.gz",
+      "size_bytes": 1253213,
+      "sha256": "72f7ec66dce296891c92f811630ddab2d4fc2ab2a93f6a045d24653bfa8ddfdc",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/without-320-navigation-2.png",
+      "size_bytes": 114821,
+      "sha256": "a59869eb85dd7649072cd09e9a57573a24126b59fa74ad0315698293f2fa2160",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/without-320-navigation-3.html.gz",
+      "size_bytes": 1253218,
+      "sha256": "4f13dfce0c34f7c7decaf756458a840cb532a5aa298101b45428522b3755c73b",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/without-320-navigation-3.png",
+      "size_bytes": 115634,
+      "sha256": "0dcab5095143f3c17e8d511be27719cb2050b693506eae273e650cf1afdaf181",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/without-390-navigation-0.html.gz",
+      "size_bytes": 1253196,
+      "sha256": "ba84cd48cf0d68e99e8f0a708fb09989eeafd9519618e0d26c56b8421f560421",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/without-390-navigation-0.png",
+      "size_bytes": 160197,
+      "sha256": "7321ce0f2296e1ba0abc455225b5edb0212dffa3650d8b6802c2d506a581ce67",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/without-390-navigation-1.html.gz",
+      "size_bytes": 1253209,
+      "sha256": "dc35609ed1bda33abd2ca5a0634627dfd96c8a246ce8d7c7e31bd2a91fc22567",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/without-390-navigation-1.png",
+      "size_bytes": 156842,
+      "sha256": "c3997263c4a66d3033d83dadc63af7fdd8b9d6f8b15c04c5dff756565a40fd78",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/without-390-navigation-2.html.gz",
+      "size_bytes": 1253214,
+      "sha256": "bf61138656332f9dad271b091a9daea1497483d9442b24caf8f0b4948722ee1a",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/without-390-navigation-2.png",
+      "size_bytes": 142308,
+      "sha256": "ab8e2438ba4b976102b1be401996a23ba99eb8953876d6c78b7c6af2abcb4825",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/without-390-navigation-3.html.gz",
+      "size_bytes": 1253219,
+      "sha256": "1d086eb61c8e26601c16c4f1dbbbf73d01c63ce9bd0747a850d8b7e10fab55ee",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
+    },
+    {
+      "relative_path": "install/local/theme-lab/ports/authority-evidence/flopstyle-dark-navigation-recert-20261030/without-390-navigation-3.png",
+      "size_bytes": 142460,
+      "sha256": "2c79428480cd031c33be090e2934b7b2617f195dbc3a00e64b3baf90a1ad3abd",
+      "ledger_root": false,
+      "ledger_hash_verified": null,
+      "missing_in_clean_head": false
     }
   ],
   "summary": {
-    "files": 4013,
-    "bytes": 7584749865,
+    "files": 4127,
+    "bytes": 7655508420,
     "ledger_paths": 163,
     "ledger_hash_mismatches": 0,
     "missing_in_clean": 2977,

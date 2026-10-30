@@ -1,6 +1,6 @@
 {
   "schema": "theme_lab_candidate_freeze_readiness_audit.v1",
-  "generated_at": "2026-10-30T05:47:20Z",
+  "generated_at": "2026-10-30T12:37:41Z",
   "decision": "ready-for-final-acceptance",
   "scope": "Freeze readiness only; Sigma-9, Sigma-10, and final theme visual acceptance are not part of this record.",
   "counts": {
@@ -133,8 +133,8 @@
       "node": "theme:flopstyle-dark",
       "action": "create",
       "path": "../ports/flopstyle-dark/candidate.wikidot.source.txt",
-      "source_sha256": "a3702c545d95bd13b7ce148c343f482b52f13e3b589933e26682031d4052203d",
-      "candidate_css_sha256": "be744e1d57f1028199f07f0aee70fbd7a96a724c3627dc7a3affdbc23d99108c"
+      "source_sha256": "4900476d5cf31e094370d52e8cb09ff1e24d939ef8edea00562658cacc07dbec",
+      "candidate_css_sha256": "4e9f17d162d5e0cf393e5a6d287c246b84efb0f82fdb97c05c56e3d537a8b446"
     },
     {
       "node": "theme:foxtrot",
@@ -675,17 +675,17 @@
     {
       "id": "adaptation-authority",
       "path": "ports/adaptation-authority.json",
-      "sha256": "73f4d4ac9a2e2f091885182034bc17ff25343c25bbb876321766bf30c498dad0"
+      "sha256": "c1a40d4c648556b3260f782f942081855637508c95cbdb72ce50bc8cf692363b"
     },
     {
       "id": "bhl-option-authority",
       "path": "ports/black-highlighter-theme/option-scenarios/authority.json",
-      "sha256": "e04d1586fb4a83be1901cdeeb44f3e34df6ea10a8d2165fdac5b5c0d85f0abb3"
+      "sha256": "9eb2bb241c1a6de470f6ce3abc77d860bc5b26a2b8bd8f711dfd6df869330ca9"
     },
     {
       "id": "source-dependency-audit",
       "path": "publication/evidence/audits/theme-lab-source-dependency-freeze-audit-2026-10-30.json",
-      "sha256": "8743ec2034a5a468c7b286174e3f46317249ec431a0fd03d31b0307f6048831d"
+      "sha256": "cb56bc02be72275ac204909e30b1b8a8f936a4a236b7bdc5abcc1c0068feb694"
     },
     {
       "id": "foreign-dependency-policy-audit",
@@ -695,7 +695,7 @@
   ],
   "freeze_record": {
     "state": "frozen-before-final-acceptance",
-    "candidate_set_sha256": "540079a6b4a37370fec4d56a6829e07ee867946703e49b1200199d3789c0638f",
+    "candidate_set_sha256": "a2545305daca8a2c722b123ed3381119f1bfc35d61d9cb4e7d517bfe1e6c3ac0",
     "final_acceptance": {
       "sigma9": "pending",
       "sigma10": "pending",
