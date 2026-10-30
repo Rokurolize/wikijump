@@ -154,6 +154,7 @@ test("checkpoint preflight avoids compiled checks for every selected group", (t)
     "cargo fmt --manifest-path deepwell/Cargo.toml --check",
     "cargo fmt --manifest-path wws/Cargo.toml --check",
     "pnpm --dir framerail lint",
+    "node install/local/theme-lab/scripts/check-runtime-drift.mjs",
     "pnpm --dir framerail test:unit",
     "cargo fmt --manifest-path locales/validator/Cargo.toml --all -- --check"
   ])
@@ -212,6 +213,7 @@ test("final preflight is the single explicit full-check barrier", (t) => {
     "cargo test --manifest-path wws/Cargo.toml --locked --all-features -- --nocapture --test-threads 1",
     "node --test wws/tests/resize-iframe.test.mjs",
     "pnpm --dir framerail lint",
+    "node install/local/theme-lab/scripts/check-runtime-drift.mjs",
     "pnpm --dir framerail test:unit",
     "pnpm --dir framerail build",
     "cargo fmt --manifest-path locales/validator/Cargo.toml --all -- --check",
@@ -305,7 +307,10 @@ test("explicit groups run without a change-set and unknown groups are refused", 
   assert.doesNotMatch(result.stdout, /nothing to check/)
   assert.match(result.stdout, /^preflight: groups: .*theme_lab=true/mu)
   const steps = [...result.stdout.matchAll(/^  would run: (.+)$/gmu)].map((match) => match[1])
-  assert.ok(steps.includes("Theme Lab current campaign completion"), result.stdout)
+  assert.ok(steps.includes("Theme Lab campaign record integrity"), result.stdout)
+  assert.ok(steps.includes("Theme Lab post-closure changes"), result.stdout)
+  assert.ok(steps.includes("Theme Lab runtime drift report"), result.stdout)
+  assert.ok(!steps.includes("Theme Lab current campaign completion"), result.stdout)
 
   const unknown = createHarness(t)
   const refused = unknown.runPreflight(["--base", remoteOid, "--final", "--groups", "theme_lba", "--list"], {

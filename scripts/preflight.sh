@@ -243,10 +243,16 @@ group_theme_lab() {
       run_test "Sigma-10 source evidence" node install/local/theme-lab/sigma10-migration/check-sources.mjs
       run_test "Sigma-10 historical evidence integrity" node install/local/theme-lab/sigma10-migration/check-final.mjs --historical-only
       run_test "Theme Lab current campaign evidence restore" install/local/theme-lab/scripts/restore-checkout-campaign-evidence.sh
-      # W17: completion is a hard PASS/FAIL check, never INCONCLUSIVE. The run
-      # contracts are explicit parameters (shared contracts below; the Freeze-3
-      # successor contract paths plug in here per W17-FILL-SHEET.md at open).
-      run_test "Theme Lab current campaign completion" node install/local/theme-lab/scripts/check-campaign-completion.mjs --run-contract ports/current-acceptance/run-contract-campaign-20261028-s9.json --sigma10-run-contract sigma10-migration/current-campaign/run-contract-campaign-20261028-s10b.json
+      # ALLOC-32 B: the frozen campaign record is verified historically
+      # against its own recorded identities (Check 1, hard PASS/FAIL, never
+      # INCONCLUSIVE); candidate changes are admitted live only with a
+      # complete successor entry (Check 2, --base is the change-set base the
+      # validation receipt carries); runtime drift is reported, not gated
+      # (Check 3). The original live completion checker remains the next
+      # campaign's closure checker and is no longer run post-closure.
+      run_test "Theme Lab campaign record integrity" node install/local/theme-lab/scripts/check-campaign-record-integrity.mjs
+      run_test "Theme Lab post-closure changes" node install/local/theme-lab/scripts/check-post-closure-changes.mjs --base "${MERGE_BASE}"
+      run_test "Theme Lab runtime drift report" node install/local/theme-lab/scripts/check-runtime-drift.mjs
     fi
   fi
 }
@@ -346,6 +352,10 @@ group_framerail() {
   # The unit tests and the build both regenerate .svelte-kit, so they stay in
   # one job.
   if group_selected framerail; then
+    # ALLOC-32 Check 3 also runs here, so a framerail PR's receipt shows
+    # what recorded runtime state its change supersedes (reporting only;
+    # the script fails only when it cannot compute the report).
+    run_test "Theme Lab runtime drift report" node install/local/theme-lab/scripts/check-runtime-drift.mjs
     run_test "framerail unit tests" pnpm --dir framerail test:unit
     if [[ "${MODE}" == "final" ]]; then
       run "framerail build" pnpm --dir framerail build
