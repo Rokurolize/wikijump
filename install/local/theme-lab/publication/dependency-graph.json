@@ -7316,6 +7316,6 @@
     "candidate_set_sha256": "540079a6b4a37370fec4d56a6829e07ee867946703e49b1200199d3789c0638f",
     "state": "frozen-before-final-acceptance",
     "frozen_at": "2026-10-28",
-    "readiness_audit_sha256": "360b111916bfa1debf09a80868d0bd63c052b7c42f477581fc3d81d79d7d910a"
+    "readiness_audit_sha256": "60204e0bde407eb79c7b90222513b570ca0441c56071f1cff0c3312a3e17d8cb"
   }
 }
