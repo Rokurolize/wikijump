@@ -1,0 +1,46 @@
+{
+  "schema": "theme_lab_post_closure_acceptance.v1",
+  "entries": [
+    {
+      "package": "classic",
+      "successor_id": "classic-successor-20261030-m122b",
+      "predecessor": {
+        "kind": "closure",
+        "receipt_sha256": "0482feb7961998a0ac10026f95eda4b0e70fce738fbca596fe32c6fd268b0f21"
+      },
+      "candidate": {
+        "css_sha256": "5b00fb07f930b0a11e7526bb39b602c8d6c542e0cd75825e0351a74fe0298977",
+        "source_sha256": "949175fc8426148dd8ca3ee3d2034f615158bef393c31e2735529fa19ef29218",
+        "preview_sha256": "c7c8cf8af8724870997cbe6e3e6b52e3d21a6d5646ad5fada2b031247f2b23bb",
+        "base_css_sha256": null,
+        "structure_sha256": null,
+        "asset_dependency_sha256": "ae21a458932ae350f0b0cc4fd3ae1dd72093aa01b850f9f5a07f0a4a9499b987",
+        "candidate_sha256": "5b00fb07f930b0a11e7526bb39b602c8d6c542e0cd75825e0351a74fe0298977"
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/classic/accepted-result-successor-20261030-m122b.json",
+        "sha256": "2a24263e5a82c2318fae6a9d62e9ba8fff17ee87e338e6d8aee732e206acb13f"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/classic/browser-audit-successor-20261030-m122b.json",
+        "sha256": "fd81e08264aa70d602fc4e18a6f88303c291c817c4cb008f5be3b069d06805a1"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/classic/visual-review-successor-20261030-m122b.json",
+        "sha256": "5936bba8ec35da025f8d6fcf4f48275b568e34e977fba83d13073479a478bddc"
+      },
+      "run_contract": {
+        "path": "ports/current-acceptance/run-contract-classic-successor-20261030-m122b.json",
+        "sha256": "cb0bd49743e03583de47139c961619c2f58fd763400a864eb313e7c9d6470e3c"
+      },
+      "sigma10_run_contract": {
+        "path": "sigma10-migration/current-campaign/run-contract-classic-successor-20261030-m122b.json",
+        "sha256": "e150fae6297f3c52b95e263e47a4de1bb4b3899cd0e100ca1c6de5a396d6a875"
+      },
+      "successor_manifest": {
+        "path": "publication/post-closure-evidence-classic.json",
+        "sha256": "cc77828356fb56fb75af179082bdbc3b91871851aa076cde6ab6117dd4b98811"
+      }
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "schema": "theme_lab_post_closure_evidence_manifest.v1",
+  "files": [
+    {
+      "relative_path": "ports/current-acceptance/classic/accepted-result-successor-20261030-m122b.json",
+      "sha256": "2a24263e5a82c2318fae6a9d62e9ba8fff17ee87e338e6d8aee732e206acb13f",
+      "size_bytes": 426922
+    },
+    {
+      "relative_path": "ports/current-acceptance/classic/browser-audit-successor-20261030-m122b.json",
+      "sha256": "fd81e08264aa70d602fc4e18a6f88303c291c817c4cb008f5be3b069d06805a1",
+      "size_bytes": 9589574
+    },
+    {
+      "relative_path": "ports/current-acceptance/classic/visual-review-successor-20261030-m122b.json",
+      "sha256": "5936bba8ec35da025f8d6fcf4f48275b568e34e977fba83d13073479a478bddc",
+      "size_bytes": 3630
+    },
+    {
+      "relative_path": "ports/current-acceptance/run-contract-classic-successor-20261030-m122b.json",
+      "sha256": "cb0bd49743e03583de47139c961619c2f58fd763400a864eb313e7c9d6470e3c",
+      "size_bytes": 3479
+    },
+    {
+      "relative_path": "sigma10-migration/current-campaign/run-contract-classic-successor-20261030-m122b.json",
+      "sha256": "e150fae6297f3c52b95e263e47a4de1bb4b3899cd0e100ca1c6de5a396d6a875",
+      "size_bytes": 26585
+    }
+  ]
+}

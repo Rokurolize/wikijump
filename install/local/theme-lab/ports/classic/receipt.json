@@ -112,10 +112,15 @@
     "publishable_without_authority": 0
   },
   "overall_acceptance": {
-    "status": "inconclusive",
-    "reason": "Historical CSS changed; previous local screenshot acceptance is superseded. Only the explicitly recaptured real-Wikidot authority states apply to current CSS."
+    "status": "warn",
+    "port_verdict": "pass",
+    "target_status": "warn"
   },
-  "state": "authority-cleaned-local-candidate-not-published",
-  "final_verdict": "inconclusive",
-  "final_status": "adaptation-authority-cleaned"
+  "state": "accepted-local-candidate-not-published",
+  "final_verdict": "warn",
+  "final_status": "current-full-acceptance",
+  "current_acceptance": {
+    "path": "../current-acceptance/classic/accepted-result.json",
+    "sha256": "2a24263e5a82c2318fae6a9d62e9ba8fff17ee87e338e6d8aee732e206acb13f"
+  }
 }
