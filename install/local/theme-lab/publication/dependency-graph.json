@@ -1035,7 +1035,7 @@
       "status": "source-dependency-reviewed-final-acceptance-pending",
       "publication_source": "../ports/classic/candidate.wikidot.source.txt",
       "candidate_source_sha256": "9aa209eaeec59753e2f6dba8e0299281fb58793c720f4495559e2a1adbd48e09",
-      "candidate_css_sha256": "8d37bcdf89e9fd69aa69d369da18eb75e388106b088187de457d45c2d7342376",
+      "candidate_css_sha256": "5b00fb07f930b0a11e7526bb39b602c8d6c542e0cd75825e0351a74fe0298977",
       "upstream": {
         "site": "scp-wiki",
         "slug": "theme:classic",
@@ -1215,7 +1215,7 @@
         ],
         "source_css_includes": []
       },
-      "source_sha256": "9aa209eaeec59753e2f6dba8e0299281fb58793c720f4495559e2a1adbd48e09"
+      "source_sha256": "949175fc8426148dd8ca3ee3d2034f615158bef393c31e2735529fa19ef29218"
     },
     {
       "id": "theme:cosmonaut",
@@ -7218,7 +7218,7 @@
         "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json"
       ],
       "visual_review": "ports/black-highlighter-theme/option-scenarios/runs/visual-review.json",
-      "current_authority_sha256": "d32aae2fa176504da1e5d04f78b6d046ee603f7e2b991864d345955e959c5cae",
+      "current_authority_sha256": "e04d1586fb4a83be1901cdeeb44f3e34df6ea10a8d2165fdac5b5c0d85f0abb3",
       "theme_candidate_source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
       "theme_candidate_css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca",
       "option_component_candidates": [
@@ -7292,7 +7292,7 @@
         "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json"
       ],
       "visual_review": "ports/black-highlighter-theme/option-scenarios/runs/visual-review.json",
-      "current_authority_sha256": "d32aae2fa176504da1e5d04f78b6d046ee603f7e2b991864d345955e959c5cae",
+      "current_authority_sha256": "e04d1586fb4a83be1901cdeeb44f3e34df6ea10a8d2165fdac5b5c0d85f0abb3",
       "theme_candidate_source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
       "theme_candidate_css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca",
       "option_component_candidates": [
@@ -7313,9 +7313,9 @@
   "edge_scope": "Explicit edges represent publication ordering constraints and actionable cross-page publication/runtime dependency actions. They are not an exhaustive rendering of every ordinary Wikidot include. Ordinary include observations and source identities are recorded per theme in campaign_snapshot.candidate_jp_includes and package dependency-input/source-includes manifests; excluded dependencies are listed separately.",
   "candidate_freeze": {
     "path": "frozen-candidate-set.json",
-    "candidate_set_sha256": "48f5f54e6967653a0ae71f48cef76654b01351064efadf8d65885736fa217b48",
+    "candidate_set_sha256": "540079a6b4a37370fec4d56a6829e07ee867946703e49b1200199d3789c0638f",
     "state": "frozen-before-final-acceptance",
     "frozen_at": "2026-10-28",
-    "readiness_audit_sha256": "3896910029ef7845dc9a7fb2d525320dead95af129e59cb0e83ab3774566cc08"
+    "readiness_audit_sha256": "60204e0bde407eb79c7b90222513b570ca0441c56071f1cff0c3312a3e17d8cb"
   }
 }

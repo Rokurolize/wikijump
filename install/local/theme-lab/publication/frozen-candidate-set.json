@@ -247,8 +247,8 @@
       "site": "scp-jp",
       "action": "update",
       "publication_source": "../ports/classic/candidate.wikidot.source.txt",
-      "source_sha256": "9aa209eaeec59753e2f6dba8e0299281fb58793c720f4495559e2a1adbd48e09",
-      "candidate_css_sha256": "8d37bcdf89e9fd69aa69d369da18eb75e388106b088187de457d45c2d7342376",
+      "source_sha256": "949175fc8426148dd8ca3ee3d2034f615158bef393c31e2735529fa19ef29218",
+      "candidate_css_sha256": "5b00fb07f930b0a11e7526bb39b602c8d6c542e0cd75825e0351a74fe0298977",
       "upstream": {
         "site": "scp-wiki",
         "slug": "theme:classic",
@@ -1368,7 +1368,7 @@
         "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json"
       ],
       "visual_review": "ports/black-highlighter-theme/option-scenarios/runs/visual-review.json",
-      "current_authority_sha256": "d32aae2fa176504da1e5d04f78b6d046ee603f7e2b991864d345955e959c5cae",
+      "current_authority_sha256": "e04d1586fb4a83be1901cdeeb44f3e34df6ea10a8d2165fdac5b5c0d85f0abb3",
       "theme_candidate_source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
       "theme_candidate_css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca",
       "option_component_candidates": [
@@ -1442,7 +1442,7 @@
         "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json"
       ],
       "visual_review": "ports/black-highlighter-theme/option-scenarios/runs/visual-review.json",
-      "current_authority_sha256": "d32aae2fa176504da1e5d04f78b6d046ee603f7e2b991864d345955e959c5cae",
+      "current_authority_sha256": "e04d1586fb4a83be1901cdeeb44f3e34df6ea10a8d2165fdac5b5c0d85f0abb3",
       "theme_candidate_source_sha256": "ed339b72f5d04e7e11f6d419596b7449ca397f549ef1e73f1d1e349c0c0e1bf8",
       "theme_candidate_css_sha256": "78954600d05073df1461599a2b73cc656d379f0289d798d6e2ad65c76df1ccca",
       "option_component_candidates": [
@@ -1462,26 +1462,26 @@
   ],
   "authority": {
     "adaptation_authority_packages": 36,
-    "adaptation_authority_sha256": "81940287b03b0e32dcf0114a127b9c0b4ccb97fcac2d678775c49904a0cfd941",
-    "bhl_option_authority_sha256": "d32aae2fa176504da1e5d04f78b6d046ee603f7e2b991864d345955e959c5cae",
+    "adaptation_authority_sha256": "73f4d4ac9a2e2f091885182034bc17ff25343c25bbb876321766bf30c498dad0",
+    "bhl_option_authority_sha256": "e04d1586fb4a83be1901cdeeb44f3e34df6ea10a8d2165fdac5b5c0d85f0abb3",
     "bhl_framerail_fingerprint_sha256": "abe648b26fc8a3097a593b7feaf90a5350e0e8bf4971c8a189b6faf8181b8f5d",
-    "source_dependency_audit_sha256": "1fe16e8dc187419436c7badab5b92f9180ba89035e9f169bfb73b7677c0f335e",
+    "source_dependency_audit_sha256": "8743ec2034a5a468c7b286174e3f46317249ec431a0fd03d31b0307f6048831d",
     "foreign_dependency_policy_audit_sha256": "a5a3516aaa578c5c61dcb4c1cb248bfe4bcd90dbb54e5bfba574a92b7d6842c6",
     "artifacts": [
       {
         "id": "adaptation-authority",
         "path": "ports/adaptation-authority.json",
-        "sha256": "81940287b03b0e32dcf0114a127b9c0b4ccb97fcac2d678775c49904a0cfd941"
+        "sha256": "73f4d4ac9a2e2f091885182034bc17ff25343c25bbb876321766bf30c498dad0"
       },
       {
         "id": "bhl-option-authority",
         "path": "ports/black-highlighter-theme/option-scenarios/authority.json",
-        "sha256": "d32aae2fa176504da1e5d04f78b6d046ee603f7e2b991864d345955e959c5cae"
+        "sha256": "e04d1586fb4a83be1901cdeeb44f3e34df6ea10a8d2165fdac5b5c0d85f0abb3"
       },
       {
         "id": "source-dependency-audit",
-        "path": "publication/evidence/audits/theme-lab-source-dependency-freeze-audit-2026-10-29.json",
-        "sha256": "1fe16e8dc187419436c7badab5b92f9180ba89035e9f169bfb73b7677c0f335e"
+        "path": "publication/evidence/audits/theme-lab-source-dependency-freeze-audit-2026-10-30.json",
+        "sha256": "8743ec2034a5a468c7b286174e3f46317249ec431a0fd03d31b0307f6048831d"
       },
       {
         "id": "foreign-dependency-policy-audit",
@@ -1489,7 +1489,7 @@
         "sha256": "a5a3516aaa578c5c61dcb4c1cb248bfe4bcd90dbb54e5bfba574a92b7d6842c6"
       }
     ],
-    "bhl_backend_runtime_identity_sha256": "bf7d76170e41747d911a71f5c4210a37ffe5a92064e14b8781dcd5cef0b3904f"
+    "bhl_backend_runtime_identity_sha256": "085b31debe7cbd86e6bb9a31acd320caede4ff675b302bcf98edbb971a4c6741"
   },
   "state": "frozen-before-final-acceptance",
   "readiness_audit": "evidence/audits/theme-lab-candidate-freeze-readiness-2026-10-30.json",
@@ -1511,38 +1511,38 @@
     "implementation_audit_sha256": "268e08ca3a34f0a245eaa3b48a2b28ff59e37a069280acecdabdb18cd0dd506b"
   },
   "identity_contract": "sha256(JSON.stringify({inventory,nodes,edges,attachments,targeted_scenarios,authority}))",
-  "candidate_set_sha256": "48f5f54e6967653a0ae71f48cef76654b01351064efadf8d65885736fa217b48",
+  "candidate_set_sha256": "540079a6b4a37370fec4d56a6829e07ee867946703e49b1200199d3789c0638f",
   "targeted_evidence_bindings": [
     {
       "scenario_id": "bhl-options-toggle-header-dark",
       "visual_review": {
         "path": "ports/black-highlighter-theme/option-scenarios/runs/visual-review.json",
-        "sha256": "fe11a40ee811f1e7c662dfe01a5e07665e76e664d02c919bdf07614de40c2436"
+        "sha256": "004e5e2299ef65f0c081be5194b4c0005dbabad886a751ae058b510f3d1d4c46"
       },
       "receipts": [
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
-          "sha256": "c391b9c9e3c5acbb8212abe4923cbb1dc19904f26114963f33ff3f77e17ed766"
+          "sha256": "8771bcad730aa246b6b221c4fc237d0003ca64bec1cd991383a607c1f5bb1b37"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
-          "sha256": "b9b015fadf607d65bf526c3ca007b9d2174e90185acb29187726850999966eb7"
+          "sha256": "88bf893dc479d6ffe5d42222dedf310c3da1fb132915543d3b1f8772954bff22"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
-          "sha256": "ebb0c385c4d62385eb7b3ede56539d299816f17045c4cd85d96b7d0784e71452"
+          "sha256": "046183d222a424d6003863d663ecbe4234211d47433b9fa946961ec6b878303f"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
-          "sha256": "f3309974e44ed0f1eaf6bb6c672b9e01576fc20bf595d495670266d0921bbf77"
+          "sha256": "cc68b33833c7295e9b8d68e9014e85f9433efb8de9c96caa4368b5a2af9a6d21"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
-          "sha256": "b66708ad1545400426d1e0f7cc9f04b67c110b5b97fb413ff88950a05249607f"
+          "sha256": "eb2a6919272d12f2ab2c2372f313697aceda012626cce4af75b4a48c08c7a2a2"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
-          "sha256": "306b55b512249e878396b207bc6694177f17643b3848a60f2e2fa8146e0534e5"
+          "sha256": "b2d4ac96116b08cf1ef7438cd3e7714646a1f24f9f9a829179659dc7b1593d9a"
         }
       ]
     },
@@ -1550,35 +1550,35 @@
       "scenario_id": "bhl-options-collapsible-sidebar",
       "visual_review": {
         "path": "ports/black-highlighter-theme/option-scenarios/runs/visual-review.json",
-        "sha256": "fe11a40ee811f1e7c662dfe01a5e07665e76e664d02c919bdf07614de40c2436"
+        "sha256": "004e5e2299ef65f0c081be5194b4c0005dbabad886a751ae058b510f3d1d4c46"
       },
       "receipts": [
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
-          "sha256": "3dc40b82b584d136a52f7ed7ea82fd9942ee517a570deea5d28dda64a6c30f2c"
+          "sha256": "136c3aae2df5066c71d94146d2654dc85fbeeadf3c5598274b139267ebed421a"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json",
-          "sha256": "ca5b3407a1220cb423233c6cc0a1012800b37489953896d6a61a4d72143dfb74"
+          "sha256": "571b2107c7cd617bc47f4bbe390fa6d40e7f0d411a60f79ed1b3905d16da941e"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json",
-          "sha256": "8331b4a3bf5cb1090fc3834ef12331613a8db08603f3331cee41e622d48dc886"
+          "sha256": "2076924db3315690d52c61c173c325332ccf9d24913e07666e1364c79f96de1b"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
-          "sha256": "63d2871ac3eb8d52c800173b72d7d1831147f503547cd5ad1ef3405af76d6512"
+          "sha256": "30283b47fb87aab990c1de6756f645e7e3472fdcc95bb16be93886df2e7a4ce6"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json",
-          "sha256": "222ce75360b2ae93969a6ea6aa2a80cbab1e84f858585090e156a5dbc30c1ec6"
+          "sha256": "164e4674464d2eac5fb5a0030f72ec5d116b65dea55a8b0c6025b06bc5b6f487"
         },
         {
           "path": "ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json",
-          "sha256": "c4c1502661848146f39cc1263626ca3eff6f9fe9167a5c46eb65bcc2dcc48cd9"
+          "sha256": "aacf88125338fb47c1d2295bb9715cef8717f44fd951ee1cffb48dab9335f951"
         }
       ]
     }
   ],
-  "readiness_audit_sha256": "3896910029ef7845dc9a7fb2d525320dead95af129e59cb0e83ab3774566cc08"
+  "readiness_audit_sha256": "60204e0bde407eb79c7b90222513b570ca0441c56071f1cff0c3312a3e17d8cb"
 }
