@@ -1,7 +1,7 @@
 {
   "schema": "theme_lab_candidate_freeze_readiness_audit.v1",
-  "generated_at": "2026-10-30T05:47:20Z",
-  "decision": "ready-for-final-acceptance",
+  "generated_at": "2026-10-30T07:43:34Z",
+  "decision": "identity-bound-evidence-pending",
   "scope": "Freeze readiness only; Sigma-9, Sigma-10, and final theme visual acceptance are not part of this record.",
   "counts": {
     "theme_nodes": 36,
@@ -35,7 +35,36 @@
       ]
     },
     "identity_findings": 0,
-    "pending_evidence": []
+    "pending_evidence": [
+      "targeted-evidence-stale bhl-options-toggle-header-dark visual review",
+      "targeted-evidence-stale bhl-options-toggle-header-dark receipt",
+      "targeted-evidence-stale bhl-options-toggle-header-dark receipt",
+      "targeted-evidence-stale bhl-options-toggle-header-dark receipt",
+      "targeted-evidence-stale bhl-options-toggle-header-dark receipt",
+      "targeted-evidence-stale bhl-options-toggle-header-dark receipt",
+      "targeted-evidence-stale bhl-options-toggle-header-dark receipt",
+      "targeted-evidence-stale bhl-options-collapsible-sidebar visual review",
+      "targeted-evidence-stale bhl-options-collapsible-sidebar receipt",
+      "targeted-evidence-stale bhl-options-collapsible-sidebar receipt",
+      "targeted-evidence-stale bhl-options-collapsible-sidebar receipt",
+      "targeted-evidence-stale bhl-options-collapsible-sidebar receipt",
+      "targeted-evidence-stale bhl-options-collapsible-sidebar receipt",
+      "targeted-evidence-stale bhl-options-collapsible-sidebar receipt",
+      "validator bhl-options-toggle-header-dark: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-chromium.json",
+      "validator bhl-options-toggle-header-dark: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-firefox.json",
+      "validator bhl-options-toggle-header-dark: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma9-webkit.json",
+      "validator bhl-options-toggle-header-dark: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-chromium.json",
+      "validator bhl-options-toggle-header-dark: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-firefox.json",
+      "validator bhl-options-toggle-header-dark: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/combined-sigma10-webkit.json",
+      "validator bhl-options-toggle-header-dark: visual review is not bound to the frozen candidate/source authority",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-chromium.json",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-firefox.json",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma9-webkit.json",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-chromium.json",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-firefox.json",
+      "validator bhl-options-collapsible-sidebar: targeted receipt is not bound to the frozen candidate set: ports/black-highlighter-theme/option-scenarios/runs/collapsible-sigma10-webkit.json",
+      "validator bhl-options-collapsible-sidebar: visual review is not bound to the frozen candidate/source authority"
+    ]
   },
   "source_artifacts": [
     {
@@ -133,8 +162,8 @@
       "node": "theme:flopstyle-dark",
       "action": "create",
       "path": "../ports/flopstyle-dark/candidate.wikidot.source.txt",
-      "source_sha256": "a3702c545d95bd13b7ce148c343f482b52f13e3b589933e26682031d4052203d",
-      "candidate_css_sha256": "be744e1d57f1028199f07f0aee70fbd7a96a724c3627dc7a3affdbc23d99108c"
+      "source_sha256": "4900476d5cf31e094370d52e8cb09ff1e24d939ef8edea00562658cacc07dbec",
+      "candidate_css_sha256": "4e9f17d162d5e0cf393e5a6d287c246b84efb0f82fdb97c05c56e3d537a8b446"
     },
     {
       "node": "theme:foxtrot",
@@ -675,7 +704,7 @@
     {
       "id": "adaptation-authority",
       "path": "ports/adaptation-authority.json",
-      "sha256": "73f4d4ac9a2e2f091885182034bc17ff25343c25bbb876321766bf30c498dad0"
+      "sha256": "c1a40d4c648556b3260f782f942081855637508c95cbdb72ce50bc8cf692363b"
     },
     {
       "id": "bhl-option-authority",
@@ -685,7 +714,7 @@
     {
       "id": "source-dependency-audit",
       "path": "publication/evidence/audits/theme-lab-source-dependency-freeze-audit-2026-10-30.json",
-      "sha256": "8743ec2034a5a468c7b286174e3f46317249ec431a0fd03d31b0307f6048831d"
+      "sha256": "cb56bc02be72275ac204909e30b1b8a8f936a4a236b7bdc5abcc1c0068feb694"
     },
     {
       "id": "foreign-dependency-policy-audit",
@@ -695,7 +724,7 @@
   ],
   "freeze_record": {
     "state": "frozen-before-final-acceptance",
-    "candidate_set_sha256": "540079a6b4a37370fec4d56a6829e07ee867946703e49b1200199d3789c0638f",
+    "candidate_set_sha256": "372d56c7b9608fe323aa495d4493e3ab3aa8f620f18cfd91faa20d22d4483db5",
     "final_acceptance": {
       "sigma9": "pending",
       "sigma10": "pending",

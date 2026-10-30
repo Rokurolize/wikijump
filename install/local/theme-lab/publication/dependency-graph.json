@@ -1624,7 +1624,7 @@
       "site": "scp-jp",
       "action": "create",
       "status": "final-acceptance-pending-after-freeze",
-      "candidate_css_sha256": "be744e1d57f1028199f07f0aee70fbd7a96a724c3627dc7a3affdbc23d99108c",
+      "candidate_css_sha256": "4e9f17d162d5e0cf393e5a6d287c246b84efb0f82fdb97c05c56e3d537a8b446",
       "candidate_source_sha256": "2b9004a9304ed089aa69da78d140bc03aa333b792751b57133d7429b499aa1e3",
       "acceptance": {
         "sigma9": "pending-after-freeze",
@@ -1815,7 +1815,7 @@
           }
         ]
       },
-      "source_sha256": "a3702c545d95bd13b7ce148c343f482b52f13e3b589933e26682031d4052203d"
+      "source_sha256": "4900476d5cf31e094370d52e8cb09ff1e24d939ef8edea00562658cacc07dbec"
     },
     {
       "id": "theme:foxtrot",
@@ -7313,9 +7313,9 @@
   "edge_scope": "Explicit edges represent publication ordering constraints and actionable cross-page publication/runtime dependency actions. They are not an exhaustive rendering of every ordinary Wikidot include. Ordinary include observations and source identities are recorded per theme in campaign_snapshot.candidate_jp_includes and package dependency-input/source-includes manifests; excluded dependencies are listed separately.",
   "candidate_freeze": {
     "path": "frozen-candidate-set.json",
-    "candidate_set_sha256": "540079a6b4a37370fec4d56a6829e07ee867946703e49b1200199d3789c0638f",
+    "candidate_set_sha256": "372d56c7b9608fe323aa495d4493e3ab3aa8f620f18cfd91faa20d22d4483db5",
     "state": "frozen-before-final-acceptance",
     "frozen_at": "2026-10-28",
-    "readiness_audit_sha256": "60204e0bde407eb79c7b90222513b570ca0441c56071f1cff0c3312a3e17d8cb"
+    "readiness_audit_sha256": "93990327d2db3cf9d7bd7c685bae6aa520f4c399c9f3d9571b53b0d2add0fae2"
   }
 }
