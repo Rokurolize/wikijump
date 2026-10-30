@@ -247,8 +247,8 @@
       "site": "scp-jp",
       "action": "update",
       "publication_source": "../ports/classic/candidate.wikidot.source.txt",
-      "source_sha256": "9aa209eaeec59753e2f6dba8e0299281fb58793c720f4495559e2a1adbd48e09",
-      "candidate_css_sha256": "8d37bcdf89e9fd69aa69d369da18eb75e388106b088187de457d45c2d7342376",
+      "source_sha256": "949175fc8426148dd8ca3ee3d2034f615158bef393c31e2735529fa19ef29218",
+      "candidate_css_sha256": "5b00fb07f930b0a11e7526bb39b602c8d6c542e0cd75825e0351a74fe0298977",
       "upstream": {
         "site": "scp-wiki",
         "slug": "theme:classic",
@@ -1462,16 +1462,16 @@
   ],
   "authority": {
     "adaptation_authority_packages": 36,
-    "adaptation_authority_sha256": "81940287b03b0e32dcf0114a127b9c0b4ccb97fcac2d678775c49904a0cfd941",
+    "adaptation_authority_sha256": "73f4d4ac9a2e2f091885182034bc17ff25343c25bbb876321766bf30c498dad0",
     "bhl_option_authority_sha256": "d32aae2fa176504da1e5d04f78b6d046ee603f7e2b991864d345955e959c5cae",
     "bhl_framerail_fingerprint_sha256": "abe648b26fc8a3097a593b7feaf90a5350e0e8bf4971c8a189b6faf8181b8f5d",
-    "source_dependency_audit_sha256": "1fe16e8dc187419436c7badab5b92f9180ba89035e9f169bfb73b7677c0f335e",
+    "source_dependency_audit_sha256": "8743ec2034a5a468c7b286174e3f46317249ec431a0fd03d31b0307f6048831d",
     "foreign_dependency_policy_audit_sha256": "a5a3516aaa578c5c61dcb4c1cb248bfe4bcd90dbb54e5bfba574a92b7d6842c6",
     "artifacts": [
       {
         "id": "adaptation-authority",
         "path": "ports/adaptation-authority.json",
-        "sha256": "81940287b03b0e32dcf0114a127b9c0b4ccb97fcac2d678775c49904a0cfd941"
+        "sha256": "73f4d4ac9a2e2f091885182034bc17ff25343c25bbb876321766bf30c498dad0"
       },
       {
         "id": "bhl-option-authority",
@@ -1480,8 +1480,8 @@
       },
       {
         "id": "source-dependency-audit",
-        "path": "publication/evidence/audits/theme-lab-source-dependency-freeze-audit-2026-10-29.json",
-        "sha256": "1fe16e8dc187419436c7badab5b92f9180ba89035e9f169bfb73b7677c0f335e"
+        "path": "publication/evidence/audits/theme-lab-source-dependency-freeze-audit-2026-10-30.json",
+        "sha256": "8743ec2034a5a468c7b286174e3f46317249ec431a0fd03d31b0307f6048831d"
       },
       {
         "id": "foreign-dependency-policy-audit",
@@ -1511,7 +1511,7 @@
     "implementation_audit_sha256": "268e08ca3a34f0a245eaa3b48a2b28ff59e37a069280acecdabdb18cd0dd506b"
   },
   "identity_contract": "sha256(JSON.stringify({inventory,nodes,edges,attachments,targeted_scenarios,authority}))",
-  "candidate_set_sha256": "48f5f54e6967653a0ae71f48cef76654b01351064efadf8d65885736fa217b48",
+  "candidate_set_sha256": "0351a2e8aef537b24108e04b99a9fc065fd063035e3450b099879ccd6bb18adf",
   "targeted_evidence_bindings": [
     {
       "scenario_id": "bhl-options-toggle-header-dark",
@@ -1580,5 +1580,5 @@
       ]
     }
   ],
-  "readiness_audit_sha256": "3896910029ef7845dc9a7fb2d525320dead95af129e59cb0e83ab3774566cc08"
+  "readiness_audit_sha256": "b77c1f6c95e120855f684204296a7e3bd96af721765cac4836d3145464723709"
 }
