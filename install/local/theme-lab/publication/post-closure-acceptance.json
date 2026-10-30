@@ -41,6 +41,47 @@
         "path": "publication/post-closure-evidence-classic.json",
         "sha256": "cc77828356fb56fb75af179082bdbc3b91871851aa076cde6ab6117dd4b98811"
       }
+    },
+    {
+      "package": "flopstyle-dark",
+      "successor_id": "flopstyle-dark-successor-20261030-m123",
+      "predecessor": {
+        "kind": "closure",
+        "receipt_sha256": "a9a9a72dc691a5e876757515b3f3aa214d5268dec784995adfa2e85cc7039967"
+      },
+      "candidate": {
+        "css_sha256": "4e9f17d162d5e0cf393e5a6d287c246b84efb0f82fdb97c05c56e3d537a8b446",
+        "source_sha256": "4900476d5cf31e094370d52e8cb09ff1e24d939ef8edea00562658cacc07dbec",
+        "preview_sha256": "a29c62ad16f1a380c47c63f74904a7875798e4a359dd7aa8503fc09bacab3e49",
+        "base_css_sha256": null,
+        "structure_sha256": null,
+        "asset_dependency_sha256": "03ccef4cda7f51e74cc4db20197a7e54d41e09f739ac0c03a9ce2eb1dc2b963c",
+        "candidate_sha256": "4e9f17d162d5e0cf393e5a6d287c246b84efb0f82fdb97c05c56e3d537a8b446"
+      },
+      "receipt": {
+        "path": "ports/current-acceptance/flopstyle-dark/accepted-result-successor-20261030-m123.json",
+        "sha256": "283cd39f09036dac48049aff58cd89a1285060643adaaedc4b4b5b624faea2cb"
+      },
+      "browser_audit": {
+        "path": "ports/current-acceptance/flopstyle-dark/browser-audit-successor-20261030-m123.json",
+        "sha256": "98ea3fcdc6e47ad63fb246a62ab545d78a301fe4260437a47274e80aaec5851b"
+      },
+      "visual_review": {
+        "path": "ports/current-acceptance/flopstyle-dark/visual-review-successor-20261030-m123.json",
+        "sha256": "dbf585ba03da34c588ad2f252ea856de2adbdbd1053f1786c851dae44bd134ee"
+      },
+      "run_contract": {
+        "path": "ports/current-acceptance/run-contract-flopstyle-dark-successor-20261030-m123.json",
+        "sha256": "b39d0f4c523e3043ccb33bf9bea73fc8ff8c8769df6d03d9902d26ad2bf28764"
+      },
+      "sigma10_run_contract": {
+        "path": "sigma10-migration/current-campaign/run-contract-flopstyle-dark-successor-20261030-m123.json",
+        "sha256": "a59ba575db95659e7c0f85909a87e1aebc2291610c468119c27e95c7043223fd"
+      },
+      "successor_manifest": {
+        "path": "publication/post-closure-evidence-flopstyle-dark.json",
+        "sha256": "39836dcd1e10c6fd5631b14921e3f2f8b3c85e7456ca4ac7cea9065c13a5c796"
+      }
     }
   ]
 }
