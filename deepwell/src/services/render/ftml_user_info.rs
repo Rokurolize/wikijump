@@ -256,7 +256,14 @@ fn stored_avatar_data_uri(mime: &str, data: &[u8]) -> Option<String> {
         "image/vnd.microsoft.icon",
     ];
 
-    let mime = mime.trim().to_ascii_lowercase();
+    // Stored blob MIME types can carry parameters (libmagic reports e.g.
+    // "image/jpeg; charset=binary"), so compare the bare media type.
+    let mime = mime
+        .split(';')
+        .next()
+        .unwrap_or_default()
+        .trim()
+        .to_ascii_lowercase();
     if !STORED_AVATAR_MIME_TYPES.contains(&mime.as_str()) {
         return None;
     }
@@ -410,6 +417,15 @@ mod tests {
         assert_eq!(
             stored_avatar_data_uri("IMAGE/JPEG", b"abc"),
             Some("data:image/jpeg;base64,YWJj".to_owned()),
+        );
+    }
+
+    #[test]
+    fn stored_avatar_data_uri_normalizes_mime_parameters() {
+        // libmagic-style stored MIME with a charset parameter.
+        assert_eq!(
+            stored_avatar_data_uri("image/jpeg; charset=binary", &[0xff, 0xd8, 0xff]),
+            Some("data:image/jpeg;base64,/9j/".to_owned()),
         );
     }
 
