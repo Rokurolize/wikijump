@@ -50,12 +50,16 @@ export function ensureFramerailDependencies(root = framerailRoot, run = spawnSyn
 export function main(argv = process.argv.slice(2)) {
   ensureFramerailDependencies();
   const files = collectTestFiles(argv);
-  // File-level parallelism for the suite. Measured on the 16-core WSL
-  // host (2026-10-31): concurrency 8 finishes the suite in 65-76 s solo
-  // against 100 s at 4, with identical pass sets across repeated runs.
-  // THEME_LAB_TEST_CONCURRENCY overrides it (back to 4 restores the old
-  // behaviour exactly).
-  const concurrency = process.env.THEME_LAB_TEST_CONCURRENCY ?? '8';
+  // File-level parallelism for the suite. The default stays at 4
+  // (owner decision, 2026-10-31): a higher default was measured faster
+  // solo (65-76 s at 8 against 100 s at 4 on the 16-core WSL host) but
+  // is not an accepted way to buy speed — in full validation runs the
+  // extra files only contend with the sibling groups, and the suite
+  // carries the wall-clock-deadline tests the wave structure protects.
+  // Suite speed comes from removing wasted work, not from widening
+  // this knob. THEME_LAB_TEST_CONCURRENCY still overrides it for
+  // experiments.
+  const concurrency = process.env.THEME_LAB_TEST_CONCURRENCY ?? '4';
   const result = spawnSync(
     process.execPath,
     ['--test', `--test-concurrency=${concurrency}`, '--test-timeout=240000', ...files],
