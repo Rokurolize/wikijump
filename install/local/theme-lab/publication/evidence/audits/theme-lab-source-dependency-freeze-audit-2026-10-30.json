@@ -98,8 +98,8 @@
       "observed_dependency_count": 0,
       "source_css_dependency_count": 6,
       "unresolved": 0,
-      "candidate_source_sha256": "a3702c545d95bd13b7ce148c343f482b52f13e3b589933e26682031d4052203d",
-      "candidate_css_sha256": "be744e1d57f1028199f07f0aee70fbd7a96a724c3627dc7a3affdbc23d99108c"
+      "candidate_source_sha256": "4900476d5cf31e094370d52e8cb09ff1e24d939ef8edea00562658cacc07dbec",
+      "candidate_css_sha256": "4e9f17d162d5e0cf393e5a6d287c246b84efb0f82fdb97c05c56e3d537a8b446"
     },
     {
       "theme": "theme:foxtrot",
@@ -3237,9 +3237,9 @@
         "action": "create",
         "status": "final-acceptance-pending-after-freeze",
         "publication_source": "../ports/flopstyle-dark/candidate.wikidot.source.txt",
-        "source_sha256": "a3702c545d95bd13b7ce148c343f482b52f13e3b589933e26682031d4052203d",
-        "candidate_source_sha256": "a3702c545d95bd13b7ce148c343f482b52f13e3b589933e26682031d4052203d",
-        "candidate_css_sha256": "be744e1d57f1028199f07f0aee70fbd7a96a724c3627dc7a3affdbc23d99108c",
+        "source_sha256": "4900476d5cf31e094370d52e8cb09ff1e24d939ef8edea00562658cacc07dbec",
+        "candidate_source_sha256": "4900476d5cf31e094370d52e8cb09ff1e24d939ef8edea00562658cacc07dbec",
+        "candidate_css_sha256": "4e9f17d162d5e0cf393e5a6d287c246b84efb0f82fdb97c05c56e3d537a8b446",
         "current_jp_source": null,
         "upstream": {
           "site": "scp-wiki",
@@ -3905,11 +3905,15 @@
       {
         "theme": "theme:classic",
         "reason": "Candidate hashes refreshed from current repository bytes at 2026-10-30; the include and @import surface is byte-identical to the audit-era bytes (source 9aa209eaeec59753e2f6dba8e0299281fb58793c720f4495559e2a1adbd48e09, CSS 8d37bcdf89e9fd69aa69d369da18eb75e388106b088187de457d45c2d7342376)."
+      },
+      {
+        "theme": "theme:flopstyle-dark",
+        "reason": "Candidate hashes refreshed from current repository bytes at 2026-10-30; the include and @import surface is byte-identical to the audit-era bytes (source a3702c545d95bd13b7ce148c343f482b52f13e3b589933e26682031d4052203d, CSS be744e1d57f1028199f07f0aee70fbd7a96a724c3627dc7a3affdbc23d99108c)."
       }
     ],
     "dependency_observations_unchanged": true
   },
   "predecessor": {
-    "sha256": "1fe16e8dc187419436c7badab5b92f9180ba89035e9f169bfb73b7677c0f335e"
+    "sha256": "8743ec2034a5a468c7b286174e3f46317249ec431a0fd03d31b0307f6048831d"
   }
 }
