@@ -230,7 +230,9 @@ export function checkPostClosureAcceptance(root, {
       candidate_sha256: css ? candidateIdentity(css, baseCss ?? Buffer.alloc(0)).candidateSha : null,
     });
   }
-  for (const entry of entries) if (entry.candidate && latest.has(entry.package)) latest.set(entry.package, entry.candidate);
+  // Only entries already accepted at --base advance the accepted binding;
+  // an entry admitted in this PR must not cover its own change.
+  for (const entry of entries) if (entry.candidate && latest.has(entry.package) && baseById.has(entry.successor_id)) latest.set(entry.package, entry.candidate);
   const sameCandidate = (a, b) => ['css_sha256', 'source_sha256', 'preview_sha256', 'base_css_sha256', 'structure_sha256', 'asset_dependency_sha256', 'candidate_sha256'].every(key => (a?.[key] ?? null) === (b?.[key] ?? null));
   const fingerprint = liveFramerailFingerprint ?? framerailSourceFingerprintSync(repoRoot);
   let changed = 0;
