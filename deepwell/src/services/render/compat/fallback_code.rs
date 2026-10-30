@@ -34,6 +34,22 @@ impl WikidotCompatibilityFallbackOutput {
     }
 }
 
+/// Where a compatibility render's `[[html]]` blocks are served from, and
+/// what its SCPnet interwiki frames report.
+///
+/// Hosted blocks are looked up under the slug of the page whose saved
+/// render registered them. A page's own blocks register under the page
+/// itself, but a navigation bar renders in the viewed page's context while
+/// its blocks stay registered under the navigation page, so a navigation
+/// render names that page as the owner. The interwiki frames always
+/// report the page being viewed, as they do on Wikidot.
+#[derive(Clone, Copy, Default)]
+pub(in crate::services::render) struct WikidotHtmlBlockEmission<'a> {
+    pub owner_page_slug: Option<&'a str>,
+    pub root_page_slug: Option<&'a str>,
+    pub page_language: Option<&'a str>,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::services::render) struct CompatCodeBlock {
     pub(in crate::services::render) start_line: usize,

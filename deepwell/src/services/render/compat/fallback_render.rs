@@ -37,8 +37,8 @@ use super::wikidot_inline_markers::{
     WikidotCompatInlineMarkerKind, next_wikidot_compat_inline_marker,
 };
 use super::{
-    WikidotCompatibilityFallbackOutput, sanitize_wikidot_compat_inline_tag,
-    scan_compat_code_blocks,
+    WikidotCompatibilityFallbackOutput, WikidotHtmlBlockEmission,
+    sanitize_wikidot_compat_inline_tag, scan_compat_code_blocks,
 };
 use crate::config::Config;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
@@ -321,6 +321,7 @@ impl RenderService {
         config: &Config,
         current_page: Option<&str>,
         link_titles: Option<&WikidotCompatLinkTitleMap>,
+        emission: WikidotHtmlBlockEmission<'_>,
     ) -> WikidotCompatibilityFallbackOutput {
         let localized =
             Self::localize_wikidot_local_file_urls(wikitext, current_site, config);
@@ -328,20 +329,22 @@ impl RenderService {
             let marker = line.trim_start().to_ascii_lowercase();
             marker.starts_with("[[code") || marker.starts_with("[[collapsible")
         }) {
-            return Self::render_wikidot_compatibility_fallback_output_for_context(
+            return Self::render_wikidot_compatibility_fallback_output_for_emission(
                 &localized,
                 current_page,
                 current_site.map(|site| site.slug.as_str()),
                 link_titles,
+                emission,
             );
         }
 
         if Self::wikidot_compat_text_has_markup(&localized) {
-            return Self::render_wikidot_compatibility_fallback_output_for_context(
+            return Self::render_wikidot_compatibility_fallback_output_for_emission(
                 &localized,
                 current_page,
                 current_site.map(|site| site.slug.as_str()),
                 link_titles,
+                emission,
             );
         }
 
@@ -393,6 +396,22 @@ impl RenderService {
         local_file_site_slug: Option<&str>,
         link_titles: Option<&WikidotCompatLinkTitleMap>,
     ) -> WikidotCompatibilityFallbackOutput {
+        Self::render_wikidot_compatibility_fallback_output_for_emission(
+            wikitext,
+            current_page,
+            local_file_site_slug,
+            link_titles,
+            WikidotHtmlBlockEmission::default(),
+        )
+    }
+
+    pub(in crate::services::render) fn render_wikidot_compatibility_fallback_output_for_emission(
+        wikitext: &str,
+        current_page: Option<&str>,
+        local_file_site_slug: Option<&str>,
+        link_titles: Option<&WikidotCompatLinkTitleMap>,
+        emission: WikidotHtmlBlockEmission<'_>,
+    ) -> WikidotCompatibilityFallbackOutput {
         let has_code_or_collapsible = wikitext.lines().any(|line| {
             let marker = line.trim_start().to_ascii_lowercase();
             marker.starts_with("[[code") || marker.starts_with("[[collapsible")
@@ -408,6 +427,7 @@ impl RenderService {
                         current_page,
                         local_file_site_slug,
                         link_titles,
+                        emission,
                         &mut html_block_texts,
                     ),
                 );
@@ -463,6 +483,7 @@ impl RenderService {
                     current_page,
                     local_file_site_slug,
                     link_titles,
+                    emission,
                     &mut html_block_texts,
                 );
                 let block = parsed_code_blocks.next().expect("peeked code block");
@@ -481,6 +502,7 @@ impl RenderService {
                     current_page,
                     local_file_site_slug,
                     link_titles,
+                    emission,
                     &mut html_block_texts,
                 );
                 Self::push_wikidot_compat_fallback_collapsible_open(&mut body, trimmed);
@@ -497,6 +519,7 @@ impl RenderService {
                         current_page,
                         local_file_site_slug,
                         link_titles,
+                        emission,
                         &mut html_block_texts,
                     );
                     body.push_str("</div></div></div>");
@@ -518,6 +541,7 @@ impl RenderService {
             current_page,
             local_file_site_slug,
             link_titles,
+            emission,
             &mut html_block_texts,
         );
         while collapsible_depth > 0 {
@@ -536,6 +560,7 @@ impl RenderService {
                         current_page,
                         local_file_site_slug,
                         link_titles,
+                        emission,
                         &mut html_block_texts,
                     ),
                 );
@@ -570,6 +595,7 @@ impl RenderService {
             None,
             None,
             None,
+            WikidotHtmlBlockEmission::default(),
             &mut html_block_texts,
         );
     }
@@ -580,6 +606,7 @@ impl RenderService {
         current_page: Option<&str>,
         local_file_site_slug: Option<&str>,
         link_titles: Option<&WikidotCompatLinkTitleMap>,
+        emission: WikidotHtmlBlockEmission<'_>,
         html_block_texts: &mut Vec<String>,
     ) {
         if chunk.is_empty() {
@@ -598,6 +625,7 @@ impl RenderService {
                 current_page,
                 local_file_site_slug,
                 link_titles,
+                emission,
                 html_block_texts,
             ));
         } else {
@@ -680,6 +708,7 @@ impl RenderService {
             current_page,
             local_file_site_slug,
             None,
+            WikidotHtmlBlockEmission::default(),
             &mut html_block_texts,
         )
     }
@@ -689,6 +718,7 @@ impl RenderService {
         current_page: Option<&str>,
         local_file_site_slug: Option<&str>,
         link_titles: Option<&WikidotCompatLinkTitleMap>,
+        emission: WikidotHtmlBlockEmission<'_>,
         html_block_texts: &mut Vec<String>,
     ) -> String {
         let text = Self::strip_wikidot_comments_from_text(text);
@@ -718,6 +748,7 @@ impl RenderService {
                         current_page,
                         local_file_site_slug,
                         link_titles,
+                        emission,
                         html_block_texts,
                     ));
                 } else if let Some(body) = tabview_body.as_mut() {
@@ -730,8 +761,10 @@ impl RenderService {
             if html_body.is_some() {
                 if trimmed.eq_ignore_ascii_case("[[/html]]") {
                     let body = html_body.take().unwrap_or_default();
-                    if let Some(iframe) = Self::wikidot_compat_html_block_iframe(
+                    if let Some(iframe) = Self::wikidot_compat_html_block_emission(
+                        &body,
                         current_page,
+                        emission,
                         html_block_texts.len() + 1,
                     ) {
                         html_block_texts.push(body);
@@ -1067,6 +1100,7 @@ impl RenderService {
         current_page: Option<&str>,
         local_file_site_slug: Option<&str>,
         link_titles: Option<&WikidotCompatLinkTitleMap>,
+        emission: WikidotHtmlBlockEmission<'_>,
         html_block_texts: &mut Vec<String>,
     ) -> String {
         let Some(tabs) = Self::parse_wikidot_compat_fallback_tabs(text) else {
@@ -1083,6 +1117,7 @@ impl RenderService {
                 current_page,
                 local_file_site_slug,
                 link_titles,
+                emission,
                 html_block_texts,
             ));
             output.push_str("<p>");
@@ -1125,6 +1160,7 @@ impl RenderService {
                 current_page,
                 local_file_site_slug,
                 link_titles,
+                emission,
                 html_block_texts,
             ));
             output.push_str("</div>");
@@ -1181,6 +1217,41 @@ impl RenderService {
 
     fn wikidot_compat_horizontal_rule_marker(marker: &str) -> bool {
         marker.len() >= 4 && marker.chars().all(|character| character == '-')
+    }
+
+    /// The iframe emitted for one `[[html]]` block of the compatibility
+    /// fallback.
+    ///
+    /// SCPnet interwiki frames go through the local interwiki routes, as
+    /// `[[embed]]`-carried ones do: the hosted wrapper cannot populate the
+    /// other-languages box, and an import may have replaced the stored
+    /// frame source with an empty inline document. Every other block
+    /// keeps the hosted iframe, keyed to the page whose saved render
+    /// registered the block — for a navigation bar that is the navigation
+    /// page itself, not the page being viewed. An interwiki frame still
+    /// counts as one of the render's blocks, so hosted indices agree with
+    /// the FTML render of the same assembly.
+    fn wikidot_compat_html_block_emission(
+        body: &str,
+        current_page: Option<&str>,
+        emission: WikidotHtmlBlockEmission<'_>,
+        block_index: usize,
+    ) -> Option<String> {
+        let current_page = current_page?;
+        if let Some(iframe) = Self::wikidot_html_block_interwiki_iframe(
+            body,
+            emission.root_page_slug.unwrap_or(current_page),
+            emission.page_language.unwrap_or("en"),
+        ) {
+            return Some(iframe);
+        }
+        Self::wikidot_compat_html_block_iframe(
+            emission
+                .owner_page_slug
+                .or(emission.root_page_slug)
+                .or(Some(current_page)),
+            block_index,
+        )
     }
 
     fn wikidot_compat_html_block_iframe(

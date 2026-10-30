@@ -32,7 +32,7 @@ mod structs;
 
 pub use self::service::SettingsService;
 pub use self::structs::{
-    GoogleAnalyticsSettings, MembershipSettings, NavigationPageHtml,
+    GoogleAnalyticsSettings, MembershipSettings, NavigationPage, NavigationPageHtml,
     NavigationPageWikitext, PageDiscussionSettings, PageRatingPermission,
     PageRatingSettings, PageRatingType, PageRatingVisibility, SiteSettings, ThemeSetting,
     ToolbarSettings, UpdateGoogleAnalyticsSettings, UpdateMembershipSettings,

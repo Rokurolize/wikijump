@@ -106,6 +106,7 @@ pub(in crate::services::render) fn seal_zero_row_list_pages_wrapper(
         sealed_body,
         page_info,
         &html_blocks,
+        None,
     );
     let trimmed_source = output.trim_matches(['\r', '\n']);
     if !trimmed_source.contains(['\r', '\n'])

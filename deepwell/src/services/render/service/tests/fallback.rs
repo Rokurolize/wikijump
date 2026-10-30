@@ -1426,6 +1426,175 @@ fn renders_wikidot_interwiki_embed_in_compat_fallback() {
     );
 }
 
+const NEUTRALIZED_INTERWIKI_FRAME: &str = r#"<iframe src="data:text/html,%3C!doctype%20html%3E%3Chtml%20lang=ja%3E%3Cbody%3E%3C/body%3E%3C/html%3E" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#;
+const NEUTRALIZED_STYLE_FRAME: &str = r#"<iframe src="data:text/html,%3C!doctype%20html%3E%3Chtml%20lang=ja%3E%3Cbody%3E%3C/body%3E%3C/html%3E" style="display: none"></iframe>"#;
+
+#[test]
+fn html_block_with_intact_interwiki_frame_rewrites_to_local_frame() {
+    let rewritten = rewrite_single_html_block_body(
+        r#"<iframe src="//interwiki.scp-jp.org/interwikiFrame.html?lang=jp&community=scp&pagename=%%name%%" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+    );
+
+    // The frame reports the page being rendered, not the component's
+    // placeholder, mirroring how the [[embed]] path binds it.
+    assert!(rewritten.contains(
+        r#"<iframe src="/-/wikidot-interwiki/interwikiFrame.html?lang=jp&community=scp&pagename=replay" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#
+    ));
+    assert!(!rewritten.contains("/replay/html/1"));
+    assert!(!rewritten.contains("%%name%%"));
+}
+
+#[test]
+fn html_block_with_intact_style_frame_rewrites_to_local_frame() {
+    let rewritten = rewrite_single_html_block_body(
+        r#"<iframe src="//interwiki.scp-jp.org/styleFrame.html?priority=0&theme=https://example.test/sigma.min.css" style="display: none"></iframe>"#,
+    );
+
+    assert!(rewritten.contains(
+        r#"<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=0&theme=https://example.test/sigma.min.css" style="display: none"></iframe>"#
+    ));
+    assert!(!rewritten.contains("/replay/html/1"));
+}
+
+#[test]
+fn html_block_with_neutralized_interwiki_frame_rebuilds_the_local_frame() {
+    let mut page_info = fallback_test_page_info("replay", "Replay");
+    page_info.language = Cow::Borrowed("ja");
+    let body = concat!(
+        "<p>",
+        r#"<iframe src="https://example.com/" allowtransparency="true" frameborder="0" class="html-block-iframe"></iframe>"#,
+        "</p>",
+    )
+    .to_owned();
+    let rewritten = RenderService::rewrite_wikidot_html_block_iframe_urls(
+        body,
+        &page_info,
+        &[NEUTRALIZED_INTERWIKI_FRAME.to_owned()],
+        None,
+    );
+
+    // The FTML language code ja maps to the interwiki branch code jp.
+    assert!(rewritten.contains(
+        r#"<iframe src="/-/wikidot-interwiki/interwikiFrame.html?lang=jp&community=scp&pagename=replay" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#
+    ));
+    assert!(!rewritten.contains("data:text/html"));
+    assert!(!rewritten.contains("/replay/html/1"));
+}
+
+#[test]
+fn html_block_with_neutralized_style_frame_rebuilds_the_local_frame() {
+    let rewritten = rewrite_single_html_block_body(NEUTRALIZED_STYLE_FRAME);
+
+    assert!(rewritten.contains(
+        r#"<iframe src="/-/wikidot-interwiki/styleFrame.html" style="display: none"></iframe>"#
+    ));
+    assert!(!rewritten.contains("data:text/html"));
+    assert!(!rewritten.contains("/replay/html/1"));
+}
+
+#[test]
+fn html_block_rewrite_keys_hosted_blocks_to_the_owner_page() {
+    let page_info = fallback_test_page_info("main", "Main");
+    let placeholder = r#"<iframe src="https://example.com/" allowtransparency="true" frameborder="0" class="html-block-iframe"></iframe>"#;
+    let body = format!("<p>{placeholder}</p><p>{placeholder}</p>");
+    let html_blocks = vec![
+        r#"<iframe src="//interwiki.scpwiki.com/interwikiFrame.html?lang=en&community=scp" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#
+            .to_owned(),
+        "<b>hosted</b>".to_owned(),
+    ];
+    let rewritten = RenderService::rewrite_wikidot_html_block_iframe_urls(
+        body,
+        &page_info,
+        &html_blocks,
+        Some("nav:side"),
+    );
+
+    // The interwiki frame binds to the viewed page even when the assembly
+    // is owned by another page, and a missing pagename is appended.
+    assert!(rewritten.contains("pagename=main"));
+    // The hosted block keys to the owner page and keeps its ordinal: the
+    // interwiki frame still occupies the first block slot.
+    assert!(rewritten.contains(r#"src="/nav:side/html/2""#));
+    assert!(!rewritten.contains("/main/html/"));
+}
+
+#[test]
+fn html_block_with_unrecognized_attribute_stays_hosted() {
+    let rewritten = rewrite_single_html_block_body(
+        r#"<iframe src="data:text/html,%3Chtml%3E" class="html-block-iframe scpnet-interwiki-frame" onload="alert(1)"></iframe>"#,
+    );
+
+    assert!(rewritten.contains(r#"src="/replay/html/1""#));
+    assert!(!rewritten.contains("wikidot-interwiki"));
+    assert!(!rewritten.contains("onload"));
+}
+
+#[test]
+fn wikidot_compatibility_fallback_rewrites_intact_interwiki_html_block() {
+    let source = concat!(
+        "[[html]]\n",
+        r#"<iframe src="//interwiki.scp-jp.org/interwikiFrame.html?lang=jp&community=scp&pagename=%%name%%" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+        "\n[[/html]]",
+    );
+
+    let output = RenderService::render_wikidot_compatibility_fallback_output_for_context(
+        source,
+        Some("scp-002"),
+        Some("scp-jp"),
+        None,
+    );
+
+    assert_eq!(output.html_block_texts.len(), 1);
+    assert!(output.body.contains(
+        r#"src="/-/wikidot-interwiki/interwikiFrame.html?lang=jp&community=scp&pagename=scp-002""#
+    ));
+    assert!(!output.body.contains("/scp-002/html/1"));
+}
+
+#[test]
+fn wikidot_compatibility_fallback_keys_nav_html_blocks_to_the_nav_page() {
+    let source = concat!(
+        "[[div class=\"scpnet-interwiki-wrapper interwiki-stylable\"]]\n",
+        "[[html]]\n",
+        NEUTRALIZED_INTERWIKI_FRAME,
+        "\n[[/html]]\n",
+        "[[/div]]\n",
+        "[[html]]\n",
+        NEUTRALIZED_STYLE_FRAME,
+        "\n[[/html]]\n",
+        "[[html]]\n",
+        "<b>hosted</b>\n",
+        "[[/html]]\n",
+    );
+
+    let output = RenderService::render_wikidot_compatibility_fallback_output_for_emission(
+        source,
+        Some("main"),
+        Some("scp-jp"),
+        None,
+        crate::services::render::WikidotHtmlBlockEmission {
+            owner_page_slug: Some("nav:side"),
+            root_page_slug: Some("main"),
+            page_language: Some("ja"),
+        },
+    );
+
+    // Every [[html]] block counts, interwiki frames included, so the
+    // hosted block keeps the index the FTML render gives it.
+    assert_eq!(output.html_block_texts.len(), 3);
+    assert!(output.body.contains(
+        r#"src="/-/wikidot-interwiki/interwikiFrame.html?lang=jp&community=scp&pagename=main""#
+    ));
+    assert!(
+        output
+            .body
+            .contains(r#"src="/-/wikidot-interwiki/styleFrame.html""#)
+    );
+    assert!(output.body.contains(r#"src="/nav:side/html/3""#));
+    assert!(!output.body.contains("/main/html/"));
+    assert!(!output.body.contains("data:text/html"));
+}
+
 #[test]
 fn leaves_unsupported_embed_literal_in_compat_fallback() {
     let rendered =
@@ -1454,6 +1623,7 @@ fn rewrite_single_html_block_body(html_block: &str) -> String {
         body,
         &page_info,
         &[html_block.to_owned()],
+        None,
     )
 }
 

@@ -70,7 +70,7 @@ use super::compat::wikidot_iframe::{
 use super::compat::wikidot_link_protection::{
     WikidotWikipediaLink, build_wikidot_wikipedia_link,
 };
-use super::compat::{CompatCodeBlock, scan_compat_code_blocks};
+use super::compat::{CompatCodeBlock, WikidotHtmlBlockEmission, scan_compat_code_blocks};
 use super::diagnostics::{
     CorpusRenderDimension, CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace,
     StageGuard,
@@ -152,7 +152,7 @@ use crate::hash::{TextHash, k12_hash};
 use crate::models::site::Model as SiteModel;
 use crate::services::ServiceContext;
 use crate::services::settings::{
-    NavigationPageWikitext, PageRatingType, SettingsService,
+    NavigationPage, NavigationPageWikitext, PageRatingType, SettingsService,
 };
 use crate::services::text_block::{MIME_HTML, TextBlock, TextBlockService};
 use crate::services::{
@@ -825,7 +825,12 @@ impl RenderService {
             &settings,
             RenderInnerOptions {
                 observed_user_info: None,
-                render_context: RenderContext::page_nav(site_id, category_id, page_id),
+                render_context: RenderContext::page_nav(
+                    site_id,
+                    category_id,
+                    page_id,
+                    None,
+                ),
                 viewer_user_id: None,
                 current_page_data_form_values: None,
                 max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
@@ -1157,6 +1162,8 @@ impl RenderService {
         .or_raise(make_error)?;
 
         let NavigationPageWikitext {
+            top_bar_page,
+            side_bar_page,
             top_bar_page_wikitext,
             side_bar_page_wikitext,
         } = SettingsService::get_nav_page_wikitext(ctx, site_id, Some(category_id))
@@ -1164,9 +1171,16 @@ impl RenderService {
             .or_raise(make_error)?;
 
         let nav_settings = &nav_settings;
-        let render_nav_page = |wikitext, scope| {
+        let render_nav_page = |wikitext, page: &NavigationPage, scope| {
             let render_cost_budget = render_cost_budget.clone();
             let current_page_data_form_values = current_page_data_form_values.clone();
+            // The bar's hosted blocks are registered under the bar's own
+            // page, so its emissions key there rather than to the viewed
+            // page (see RenderContext::page_nav).
+            let html_block_owner_slug = match page {
+                NavigationPage::Enabled(page_slug) => Some(page_slug.clone()),
+                NavigationPage::Disabled => None,
+            };
             async move {
                 match wikitext {
                     Some(wikitext) => {
@@ -1188,6 +1202,7 @@ impl RenderService {
                                     site_id,
                                     category_id,
                                     page_id,
+                                    html_block_owner_slug,
                                 ),
                                 viewer_user_id,
                                 current_page_data_form_values,
@@ -1220,8 +1235,16 @@ impl RenderService {
         };
 
         let (top_bar_render_result, side_bar_render_result) = join!(
-            render_nav_page(top_bar_page_wikitext, CorpusRenderScope::TopNav),
-            render_nav_page(side_bar_page_wikitext, CorpusRenderScope::SideNav),
+            render_nav_page(
+                top_bar_page_wikitext,
+                &top_bar_page,
+                CorpusRenderScope::TopNav,
+            ),
+            render_nav_page(
+                side_bar_page_wikitext,
+                &side_bar_page,
+                CorpusRenderScope::SideNav,
+            ),
         );
         let (top_bar_render, side_bar_render) =
             raise_multiple!(top_bar_render_result, side_bar_render_result; make_error);
@@ -1904,6 +1927,7 @@ impl RenderService {
         mut body: String,
         page_info: &PageInfo<'_>,
         html_blocks: &[String],
+        html_block_owner_slug: Option<&str>,
     ) -> String {
         const PLACEHOLDER: &str = concat!(
             r#"<iframe src="https://example.com/" allowtransparency="true" "#,
@@ -1923,6 +1947,12 @@ impl RenderService {
         } else {
             full_slug
         };
+        // Hosted blocks are served under the slug of the page whose saved
+        // render registered them. A body render registers its own blocks,
+        // but a navigation bar's blocks stay registered under the
+        // navigation page even though the bar renders in the viewed page's
+        // context, so its emissions key to that page instead.
+        let hosted_slug = html_block_owner_slug.unwrap_or(&full_slug);
         let mut search_start = 0;
         for index in 1..=html_blocks.len() {
             let Some(relative_start) = body[search_start..].find(PLACEHOLDER) else {
@@ -1930,18 +1960,25 @@ impl RenderService {
             };
             let start = search_start + relative_start;
             let end = start + PLACEHOLDER.len();
-            let iframe = Self::wikidot_direct_html_iframe(&html_blocks[index - 1])
-                .map(str::to_owned)
-                .unwrap_or_else(|| {
-                    format!(
-                        concat!(
-                            r#"<iframe src="/{}/html/{}" allowtransparency="true" "#,
-                            r#"frameborder="0" class="html-block-iframe"></iframe>"#,
-                        ),
-                        escape_list_pages_html_attr(&full_slug),
-                        index,
-                    )
-                });
+            let iframe = Self::wikidot_html_block_interwiki_iframe(
+                &html_blocks[index - 1],
+                &full_slug,
+                page_info.language.as_ref(),
+            )
+            .or_else(|| {
+                Self::wikidot_direct_html_iframe(&html_blocks[index - 1])
+                    .map(str::to_owned)
+            })
+            .unwrap_or_else(|| {
+                format!(
+                    concat!(
+                        r#"<iframe src="/{}/html/{}" allowtransparency="true" "#,
+                        r#"frameborder="0" class="html-block-iframe"></iframe>"#,
+                    ),
+                    escape_list_pages_html_attr(hosted_slug),
+                    index,
+                )
+            });
             body.replace_range(start..end, &iframe);
             search_start = start + iframe.len();
         }
@@ -1979,6 +2016,7 @@ impl RenderService {
             current_category_id,
             current_page_id,
             text_block_page_id,
+            html_block_owner_slug,
             lifecycle,
             suppress_nested_list_pages,
         } = render_context;
@@ -2042,6 +2080,7 @@ impl RenderService {
             render_current_page_id,
             viewer_user_id,
             text_block_page_id,
+            html_block_owner_slug,
             hosted_code_source,
             allow_wikidot_styleframe,
             lifecycle == RenderLifecycle::PagePreview,
@@ -2088,6 +2127,7 @@ impl RenderService {
             viewer_user_id,
             None,
             None,
+            None,
             true,
             true,
             Some(current_site),
@@ -2110,6 +2150,7 @@ impl RenderService {
         current_page_id: Option<i64>,
         viewer_user_id: Option<i64>,
         text_block_page_id: Option<i64>,
+        html_block_owner_slug: Option<String>,
         hosted_code_source: Option<Vec<CompatCodeBlock>>,
         allow_wikidot_styleframe: bool,
         page_preview: bool,
@@ -2180,6 +2221,13 @@ impl RenderService {
             };
             let fallback_render_stage =
                 StageGuard::new(trace, CorpusRenderStage::FallbackRender);
+            let root_page_full_slug = Self::page_info_full_slug(page_info);
+            let fallback_emission = WikidotHtmlBlockEmission {
+                owner_page_slug: html_block_owner_slug.as_deref(),
+                root_page_slug: (!root_page_full_slug.is_empty())
+                    .then_some(root_page_full_slug.as_str()),
+                page_language: Some(page_info.language.as_ref()),
+            };
             let fallback_output = Self::render_oversized_wikidot_compatibility_fallback(
                 &wikitext,
                 current_site.as_ref(),
@@ -2188,6 +2236,7 @@ impl RenderService {
                     .enable_html_blocks
                     .then_some(page_info.page.as_ref()),
                 Some(&fallback_link_titles),
+                fallback_emission,
             );
             let (
                 wikidot_css_modules,
@@ -2389,6 +2438,7 @@ impl RenderService {
             });
         }
         let render_page_info = Self::owned_page_info(page_info);
+        let render_html_block_owner_slug = html_block_owner_slug.clone();
         let render_settings = settings.clone();
         let render_config = config.clone();
         let render_current_site = current_site.clone();
@@ -2613,6 +2663,7 @@ impl RenderService {
                             std::mem::take(&mut html_output.body),
                             &render_page_info,
                             &html_block_texts,
+                            render_html_block_owner_slug.as_deref(),
                         );
                     }
                     let code_blocks = tree
