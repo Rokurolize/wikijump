@@ -7075,7 +7075,7 @@
         },
         {
           "marker": "SCP-JP Wikidot Flopstyle Dark Firefox submenu: anchor the third parent endpoint at mobile widths.",
-          "sha256": "13b8c7b7c322e51f9007d7ac002966b1215b57487c19f76ab097ce84e1a63a38",
+          "sha256": "e860ddfe63213f7ef4a882e027fa06e6d8ef1681f9cf5ed7d87b7324279a3d21",
           "origin": "target-certified-replacement",
           "authority": "TARGET_WIKIDOT_CERTIFIED",
           "rationale": "Firefox wraps the native third/fourth parents onto different rows. The Chromium anchors lose the third submenu off-left at 320px and the fourth off-left at 390px; the third hidden menu also expands the 390px document. Scope alternate row endpoints to Firefox and retain the separately certified Chromium behavior.",
@@ -7145,7 +7145,7 @@
       "inputs": {
         "maintenance/authority-base.wikidot.txt": "541622cca25acbb968a463e89f4b1465092b1658088c499211a479af6ca1021f",
         "candidate-input.css": "d811f7cbfdc58a636c845e006f230679d8828f71192b628cf6151116d750968d",
-        "authority-overrides.css": "069f1fe01fee0bccb675c50516554be594056b8e81f1b6adad463ef2b2dd2e4c",
+        "authority-overrides.css": "3eeac8c9c9881f55f566de4b523f70f5dc75d0b83a6061f610ccd1348f8410af",
         "asset-transforms.json": "0048f612fec2bc7a794f8f63b08552f2d064ae12427cd7de6a32c94a0a2a77dd",
         "source-includes/toggle-sidebar.wikidot.txt": "5e6e6bf79aa9b08344865b1209693254db4c8d1aef7d579092bc6dd9c7c55e35",
         "source-includes/toggle-sidebar-input.css": "d4d80ebcc0e2afb61490420a96b3f0b4cc29dfc9de532029e062af1ee80028ae",
@@ -7162,13 +7162,13 @@
         "source-includes/acs-animation-input.css": "9c2d54387591ead58b15b16791039c675b87d47c268b98800b48eed8f6662690"
       },
       "outputs": {
-        "candidate.css": "be744e1d57f1028199f07f0aee70fbd7a96a724c3627dc7a3affdbc23d99108c",
-        "candidate-source.css": "3a2a15914f17df1343e297468c8bc6f9a48d1bb629f3c4ecc00553ffc8d990b7",
-        "candidate.wikidot.source.txt": "a3702c545d95bd13b7ce148c343f482b52f13e3b589933e26682031d4052203d",
+        "candidate.css": "4e9f17d162d5e0cf393e5a6d287c246b84efb0f82fdb97c05c56e3d537a8b446",
+        "candidate-source.css": "37a88c8e8b968b7464d0f1b43d68a449964beee297ccbaebcac360b120fe93ce",
+        "candidate.wikidot.source.txt": "4900476d5cf31e094370d52e8cb09ff1e24d939ef8edea00562658cacc07dbec",
         "candidate.wikidot.txt": "a29c62ad16f1a380c47c63f74904a7875798e4a359dd7aa8503fc09bacab3e49",
         "maintenance/base.wikidot.txt": "541622cca25acbb968a463e89f4b1465092b1658088c499211a479af6ca1021f",
-        "maintenance/jp-overrides.css": "81231e11be6c6b0a6b604b0687841483cddd5c253af5ea5f08d19f920a7ffd77",
-        "maintenance/final.wikidot.txt": "6a072265f2fe1f7757fc74bbc24f8b7b3496ac5b28c7c0d1b9acd3bd3ddffd00"
+        "maintenance/jp-overrides.css": "3250fe10ea87092ccbcedbee9de7f3ea100e5a3370739ee7d7698f9c3d7adc42",
+        "maintenance/final.wikidot.txt": "e6b8b6f0679470dca2869741b4b9c9dc4e586c8476114662e6c2187968fc9f79"
       },
       "historical_candidate": {
         "css": "maintenance/historical-candidate.css",

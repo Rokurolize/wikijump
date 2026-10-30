@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "frozen_candidate_source_sha256": "a3702c545d95bd13b7ce148c343f482b52f13e3b589933e26682031d4052203d",
+  "frozen_candidate_source_sha256": "4900476d5cf31e094370d52e8cb09ff1e24d939ef8edea00562658cacc07dbec",
   "base_source_sha256": "541622cca25acbb968a463e89f4b1465092b1658088c499211a479af6ca1021f",
-  "raw_jp_overrides_sha256": "069f1fe01fee0bccb675c50516554be594056b8e81f1b6adad463ef2b2dd2e4c",
-  "jp_overrides_sha256": "81231e11be6c6b0a6b604b0687841483cddd5c253af5ea5f08d19f920a7ffd77",
-  "semantic_css_sha256": "875420d87302162d09572117b960326a14a5bbddebe61a16770264fce1be3650",
-  "canonical_override_sha256": "0c7e486ec7b8573a6f36ee3437503f9ffc105458cbab6a69a5aff88ec5761e64",
+  "raw_jp_overrides_sha256": "3eeac8c9c9881f55f566de4b523f70f5dc75d0b83a6061f610ccd1348f8410af",
+  "jp_overrides_sha256": "3250fe10ea87092ccbcedbee9de7f3ea100e5a3370739ee7d7698f9c3d7adc42",
+  "semantic_css_sha256": "214ecb98caecd47838125ead6e870f238eb2d3c913d244e929c659b958ea8125",
+  "canonical_override_sha256": "ff000076c43d7e91c211e00390f24b0fcf8e3dd9855558de12e381c0e9df2a75",
   "final_source": "maintenance/final.wikidot.txt",
-  "final_source_sha256": "6a072265f2fe1f7757fc74bbc24f8b7b3496ac5b28c7c0d1b9acd3bd3ddffd00",
+  "final_source_sha256": "e6b8b6f0679470dca2869741b4b9c9dc4e586c8476114662e6c2187968fc9f79",
   "final_source_inputs": {
     "base_sha256": "541622cca25acbb968a463e89f4b1465092b1658088c499211a479af6ca1021f",
-    "jp_overrides_sha256": "81231e11be6c6b0a6b604b0687841483cddd5c253af5ea5f08d19f920a7ffd77"
+    "jp_overrides_sha256": "3250fe10ea87092ccbcedbee9de7f3ea100e5a3370739ee7d7698f9c3d7adc42"
   },
   "ordered_include_sha256": "213b6eb3f09e9dfee8dd10a57bde6f81756a57dea0015a1ce87e425cce404c2d",
   "declaration_reviews": {},
   "adaptation_block_count": 4,
-  "raw_override_rule_count": 8,
-  "canonical_override_rule_count": 8,
+  "raw_override_rule_count": 12,
+  "canonical_override_rule_count": 12,
   "exact_duplicate_rules_removed": 0,
   "redundant_same_value_declarations_removed": 0,
   "empty_rules_removed": 0,
@@ -292,7 +292,7 @@
     },
     {
       "marker": "SCP-JP Wikidot Flopstyle Dark Firefox submenu: anchor the third parent endpoint at mobile widths.",
-      "sha256": "13b8c7b7c322e51f9007d7ac002966b1215b57487c19f76ab097ce84e1a63a38",
+      "sha256": "e860ddfe63213f7ef4a882e027fa06e6d8ef1681f9cf5ed7d87b7324279a3d21",
       "origin": "target-certified-replacement",
       "authority": "TARGET_WIKIDOT_CERTIFIED",
       "rationale": "Firefox wraps the native third/fourth parents onto different rows. The Chromium anchors lose the third submenu off-left at 320px and the fourth off-left at 390px; the third hidden menu also expands the 390px document. Scope alternate row endpoints to Firefox and retain the separately certified Chromium behavior.",
@@ -378,9 +378,12 @@
     {
       "marker": "SCP-JP Wikidot Flopstyle Dark Firefox submenu: anchor the third parent endpoint at mobile widths.",
       "rationale": "SCP-JP Wikidot Flopstyle Dark Firefox submenu: anchor the third parent endpoint at mobile widths.",
-      "sha256": "13b8c7b7c322e51f9007d7ac002966b1215b57487c19f76ab097ce84e1a63a38",
+      "sha256": "e860ddfe63213f7ef4a882e027fa06e6d8ef1681f9cf5ed7d87b7324279a3d21",
       "selectors": [
+        "#top-bar .mobile-top-bar > ul",
+        "#top-bar .mobile-top-bar > ul > li:last-child",
         "#top-bar .mobile-top-bar > ul > li:last-child > ul",
+        "#top-bar .mobile-top-bar > ul > li:nth-last-child(2)",
         "#top-bar .mobile-top-bar > ul > li:nth-last-child(2) > ul"
       ],
       "at_contexts": [
