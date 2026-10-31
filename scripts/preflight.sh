@@ -241,9 +241,21 @@ group_contracts() {
   fi
 }
 
-group_theme_lab() {
-  if group_selected theme_lab; then
-    run "Theme Lab tests" scripts/run-browser-test-no-external-network.sh npm --prefix install/local/theme-lab test
+# The Theme Lab group's checks form two chains. The test chain never
+# reads restored evidence: consolidated validation cleans the restored
+# trees before every run, so the suite already executes (and passes)
+# with the evidence absent. The evidence chain keeps every check in its
+# current relative order, after the restores whose output it reads —
+# the two restores stay in this one chain because running them
+# concurrently inflates both (each walks trees the other populates;
+# measured in the 2026-10-31 performance work). In jobs mode the two
+# chains run side by side (run_checks_concurrent, as in the
+# verification group); in list/serial mode they run in today's order.
+check_theme_lab_tests() {
+  run "Theme Lab tests" scripts/run-browser-test-no-external-network.sh npm --prefix install/local/theme-lab test
+}
+
+check_theme_lab_evidence() {
     run_test "Theme Lab authority evidence restore" install/local/theme-lab/scripts/restore-checkout-authority-evidence.sh
     run_test "Theme Lab adaptation authority" node install/local/theme-lab/ports/scripts/check-adaptation-authority.mjs
     if [[ "${MODE}" == "final" ]]; then
@@ -263,6 +275,16 @@ group_theme_lab() {
       run_test "Theme Lab campaign record integrity" node install/local/theme-lab/scripts/check-campaign-record-integrity.mjs
       run_test "Theme Lab post-closure changes" node install/local/theme-lab/scripts/check-post-closure-changes.mjs --base "${MERGE_BASE}"
       run_test "Theme Lab runtime drift report" node install/local/theme-lab/scripts/check-runtime-drift.mjs
+    fi
+}
+
+group_theme_lab() {
+  if group_selected theme_lab; then
+    if "${LIST}" || [[ "${JOBS}" == 1 ]]; then
+      check_theme_lab_tests
+      check_theme_lab_evidence
+    else
+      run_checks_concurrent check_theme_lab_tests check_theme_lab_evidence
     fi
   fi
 }
