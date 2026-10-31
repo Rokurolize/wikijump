@@ -503,12 +503,8 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                 "commented_by_unix" | "commented_by_id" if commented_by.is_empty() => {
                     String::new()
                 }
-                "commented_by_unix" => commented_by_slug
-                    .clone()
-                    .unwrap_or_else(|| captures[0].to_owned()),
-                "commented_by_id" => commented_by_id
-                    .clone()
-                    .unwrap_or_else(|| captures[0].to_owned()),
+                "commented_by_unix" => commented_by_slug.clone().unwrap_or_default(),
+                "commented_by_id" => commented_by_id.clone().unwrap_or_default(),
                 "commented_at" | "commentedat" => protect_list_pages_generated_html(
                     format_list_pages_created_at(
                         commented_at,
