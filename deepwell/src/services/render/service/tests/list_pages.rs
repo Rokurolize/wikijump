@@ -3637,6 +3637,84 @@ fn substitutes_imported_wikidot_snapshot_metadata_for_list_pages_rows() {
 }
 
 #[test]
+fn snapshot_commenter_without_local_thread_resolves_commented_by_id_and_unix_to_empty() {
+    let source_created_at = time::OffsetDateTime::from_unix_timestamp(1_781_900_521)
+        .expect("fixture timestamp should be valid");
+    let source_commented_at = time::OffsetDateTime::from_unix_timestamp(1_781_934_132)
+        .expect("fixture timestamp should be valid");
+    let page = FoundPageRow {
+        page_id: 101,
+        site_id: 1,
+        title: Some("Aspenq Pride Art 2026".to_owned()),
+        alt_title: None,
+        slug: Some("aspenq-pride-art-2026".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: None,
+        created_at: Some(source_created_at),
+        created_by: Some(ADMIN_USER_ID),
+        updated_at: Some(source_created_at),
+        updated_by: Some(ADMIN_USER_ID),
+        score: Some(28.0),
+        revision_count: None,
+    };
+    let mut users = BTreeMap::new();
+    users.insert(
+        ADMIN_USER_ID,
+        WikidotUserDisplay {
+            user_id: ADMIN_USER_ID,
+            name: "Administrator".to_owned(),
+            slug: Some("admin".to_owned()),
+            wikidot_profile: false,
+        },
+    );
+    let mut snapshots = BTreeMap::new();
+    snapshots.insert(
+        101,
+        ListPagesSnapshotDisplay {
+            title_shown: None,
+            created_at: source_created_at,
+            updated_at: source_created_at,
+            created_by_user_id: None,
+            created_by_name: Some("Aspenq".to_owned()),
+            created_by_slug: None,
+            updated_by_user_id: None,
+            updated_by_name: Some("Aspenq".to_owned()),
+            updated_by_slug: None,
+            comments: 10,
+            commented_at: Some(source_commented_at),
+            commented_by_name: Some("ikjseo".to_owned()),
+            rating_votes: Some(31),
+            parent_fullname: None,
+            source_revision_count: 37,
+        },
+    );
+
+    let rendered = substitute_list_pages_variables(
+        "last comment by %%commented_by%% (id: %%commented_by_id%%, unix: %%commented_by_unix%%)",
+        &page,
+        1,
+        1,
+        &list_pages_substitution_context_with_mode(
+            20,
+            &users,
+            &snapshots,
+            None,
+            &BTreeMap::new(),
+            false,
+        ),
+    );
+
+    // The snapshot carries the last commenter's name but no user ID or slug,
+    // and the page has no local discussion thread, so the ID and unix
+    // variables have no source: they resolve to an empty string instead of
+    // leaking the raw %%...%% token.
+    assert_eq!(rendered, "last comment by ikjseo (id: , unix: )");
+    assert!(!rendered.contains("%%commented_by_id%%"));
+    assert!(!rendered.contains("%%commented_by_unix%%"));
+}
+
+#[test]
 fn missing_snapshot_vote_count_uses_zero_vote_ratio_state() {
     let page = FoundPageRow {
         page_id: 101,
