@@ -124,6 +124,9 @@ debug = false
 # dependencies (ftml, argon2) dominate the integration suite.
 opt-level = 3
 
+[profile.dev.package.deepwell]
+opt-level = 1
+
 [profile.debugging]
 inherits = "dev"
 debug = true
