@@ -77,6 +77,43 @@ async function git(repository, ...args) {
   return stdout.trim();
 }
 
+const DIRTY_PATHS_SHOWN = 20;
+
+/**
+ * Entry count and first paths of `git status`, streamed. Restores can leave
+ * tens of thousands of untracked files, so the output is never buffered.
+ */
+async function gitStatusSummary(repository) {
+  const child = spawn("git", ["-C", repository, "status", "--porcelain=v1", "--untracked-files=all"], {
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  let count = 0;
+  const first = [];
+  let partial = "";
+  let stderr = "";
+  const takeLine = (line) => {
+    count += 1;
+    if (first.length < DIRTY_PATHS_SHOWN) first.push(line);
+  };
+  child.stdout.setEncoding("utf8");
+  child.stdout.on("data", (chunk) => {
+    const lines = (partial + chunk).split("\n");
+    partial = lines.pop();
+    lines.forEach(takeLine);
+  });
+  child.stderr.setEncoding("utf8");
+  child.stderr.on("data", (chunk) => {
+    if (stderr.length < 4096) stderr += chunk;
+  });
+  const code = await new Promise((resolve, reject) => {
+    child.on("error", reject);
+    child.on("close", resolve);
+  });
+  if (partial !== "") takeLine(partial);
+  if (code !== 0) fail(`git status failed with exit ${code}: ${stderr.trim()}`);
+  return {count, first};
+}
+
 async function sha256File(file) {
   return createHash("sha256").update(await fs.readFile(file)).digest("hex");
 }
@@ -191,8 +228,13 @@ export async function runConsolidatedValidation({
   imageBuild = true,
   buildImages = buildApplicationImages,
 }) {
-  const status = await git(repository, "status", "--porcelain=v1", "--untracked-files=all");
-  if (status !== "") fail("consolidated validation requires a clean checkout");
+  const status = await gitStatusSummary(repository);
+  if (status.count > 0) {
+    fail([
+      `consolidated validation requires a clean checkout: ${status.count} changed or untracked paths${status.count > status.first.length ? `, first ${status.first.length}` : ""}`,
+      ...status.first.map((line) => `  ${line}`),
+    ].join("\n"));
+  }
   const commit = await git(repository, "rev-parse", "HEAD^{commit}");
   const tree = await git(repository, "rev-parse", "HEAD^{tree}");
   const baseCommit = await git(repository, "rev-parse", `${base}^{commit}`);

@@ -254,3 +254,73 @@ test("nested child preflight status lines do not contaminate the enclosing check
     { name: "wikidot verification tests", status: "ok", duration_seconds: 63 },
   ]);
 });
+
+async function dirtyRepository(t, untrackedFiles, nameLength) {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), "consolidated-dirty-"));
+  t.after(() => fs.rm(temp, { recursive: true, force: true }));
+  const repo = path.join(temp, "repo");
+  execFileSync("git", ["init", "--quiet", repo]);
+  const git = (...args) =>
+    execFileSync("git", ["-C", repo, ...args], { encoding: "utf8" });
+  git("config", "user.email", "local-test@example.invalid");
+  git("config", "user.name", "Theme Lab validation fixture");
+  await fs.writeFile(path.join(repo, "tracked.txt"), "tracked\n");
+  git("add", ".");
+  git("commit", "-qm", "base");
+  const restored = path.join(repo, "restored");
+  await fs.mkdir(restored);
+  for (let start = 0; start < untrackedFiles; start += 500) {
+    await Promise.all(
+      Array.from({ length: Math.min(500, untrackedFiles - start) }, (_, i) =>
+        fs.writeFile(
+          path.join(restored, `${String(start + i).padStart(nameLength, "0")}.bin`),
+          "",
+        ),
+      ),
+    );
+  }
+  return { repo, temp };
+}
+
+const refusal = (repo, temp) =>
+  runConsolidatedValidation({
+    repository: repo,
+    base: "HEAD",
+    output: path.join(temp, "receipt.json"),
+    log: path.join(temp, "preflight.log"),
+    groups: "theme_lab",
+    imageBuild: false,
+    buildImages: async () => ({}),
+  });
+
+test("a tree with tens of thousands of untracked files is refused with the clean-checkout message, not a buffer crash", async (t) => {
+  const { repo, temp } = await dirtyRepository(t, 12000, 100);
+  const statusBytes = execFileSync(
+    "git",
+    ["-C", repo, "status", "--porcelain=v1", "--untracked-files=all"],
+    { maxBuffer: 64 * 1024 * 1024 },
+  ).length;
+  assert.ok(statusBytes > 1024 * 1024, `fixture must exceed the default execFile buffer, got ${statusBytes}`);
+  await assert.rejects(refusal(repo, temp), (error) => {
+    assert.doesNotMatch(error.code ?? "", /MAXBUFFER/u);
+    const lines = error.message.split("\n");
+    assert.equal(
+      lines[0],
+      "consolidated validation requires a clean checkout: 12000 changed or untracked paths, first 20",
+    );
+    assert.equal(lines.length, 21);
+    assert.match(lines[1], /^ {2}\?\? restored\/0+0\.bin$/u);
+    return true;
+  });
+});
+
+test("a single modified tracked file is refused with the clean-checkout message and its path", async (t) => {
+  const { repo, temp } = await dirtyRepository(t, 0, 4);
+  await fs.writeFile(path.join(repo, "tracked.txt"), "changed\n");
+  await assert.rejects(
+    refusal(repo, temp),
+    (error) =>
+      error.message ===
+      "consolidated validation requires a clean checkout: 1 changed or untracked paths\n   M tracked.txt",
+  );
+});
