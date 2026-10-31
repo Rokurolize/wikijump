@@ -1879,3 +1879,38 @@ fn comment_branch_closer_does_not_swallow_a_following_iftags_gate() {
         assert!(prepared.contains("AFTER-MARK"), "tags {tags:?}: {prepared}");
     }
 }
+
+#[test]
+fn wikidot_image_block_include_with_unterminated_quote_cannot_swallow_enclosing_block() {
+    // Regression (art-exchange-hub): an image-block include whose `link="`
+    // quote is never closed on its own line must not pair with a quote in
+    // later content. The directive-end scan used to run on to that later
+    // quote, and the pre-expansion replaced everything in between --
+    // including the enclosing collapsible's end marker -- with the
+    // generated image block, so the collapsible degraded to literal text.
+    let mut wikitext = concat!(
+        "[[collapsible show=\"Open\" hide=\"Close\"]]\n",
+        "[[include component:image-block name=https://scp-wiki.wikidot.com/local--files/hub-page/pic.webp|align=center|link=\"https://scp-wiki.wikidot.com/local--files/hub-page/pic.webp|width=100%|caption=A sketch by [[*user Artist]] ]]\n",
+        "[[/collapsible]]\n",
+        "[[[some-page|A Label \"Quoted\" title]]]\n",
+    )
+    .to_owned();
+
+    let page_info = fallback_test_page_info("hub-page", "Hub Page");
+    RenderService::expand_wikidot_image_block_includes(&mut wikitext, &page_info, None);
+
+    // The malformed directive is left for ftml's include expansion, and
+    // nothing outside it is consumed: the enclosing block keeps its end
+    // marker and the following content is untouched.
+    assert!(
+        wikitext
+            .contains("[[include component:image-block name=https://scp-wiki.wikidot.com/local--files/hub-page/pic.webp"),
+        "{wikitext}"
+    );
+    assert!(wikitext.contains("\n[[/collapsible]]\n"), "{wikitext}");
+    assert!(
+        wikitext.contains("[[[some-page|A Label \"Quoted\" title]]]"),
+        "{wikitext}"
+    );
+    assert!(!wikitext.contains("scp-image-caption"), "{wikitext}");
+}
