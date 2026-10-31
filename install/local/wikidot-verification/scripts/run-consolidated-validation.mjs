@@ -327,7 +327,7 @@ export async function runConsolidatedValidation({
   };
   const sealed = await sealJsonNoReplace(output, receipt);
   if (receipt.status === "pass") {
-    await recordPass({store, key: cacheKey.key, receiptPath: sealed.path, receiptSha256: sealed.sha256, environmentNames: cacheKey.environmentNames})
+    await recordPass({store, key: cacheKey.key, receiptPath: path.resolve(sealed.path), receiptSha256: sealed.sha256, environmentNames: cacheKey.environmentNames})
       .catch((error) => process.stderr.write(`consolidated validation: could not record the PASS for reuse: ${error?.message ?? error}\n`));
   }
   return {receipt, sealed};
