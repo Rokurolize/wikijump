@@ -587,6 +587,30 @@ async function writeCatalogOwnerFixture(root, ownerManifest = {
   await refreshCatalogHash(root)
 }
 
+let currentInventory
+// The CLI over the unmodified checkout is deterministic; the tests that only
+// read slices of its output share one run.
+function currentRepositoryInventory() {
+  currentInventory ??= (async () => {
+    const outputRoot = await fs.mkdtemp(path.join(repositoryRoot, ".compatibility-current-"))
+    try {
+      const outputPath = path.join(outputRoot, "inventory.json")
+      const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
+        cwd: repositoryRoot,
+        encoding: "utf8"
+      }).stdout.trim()
+      const result = spawnSync(process.execPath, [
+        cliPath, "--root", repositoryRoot, "--output", outputPath, "--source-revision", sourceRevision
+      ], { encoding: "utf8" })
+      assert.equal(result.status, 0, result.stderr)
+      return JSON.parse(await fs.readFile(outputPath, "utf8"))
+    } finally {
+      await fs.rm(outputRoot, { recursive: true, force: true })
+    }
+  })()
+  return currentInventory
+}
+
 function runCli(root, outputPath, env = process.env) {
   const changedTrackedFiles = spawnSync(
     "git",
@@ -1096,24 +1120,7 @@ test("CLI emits the pinned FTML raw manifest without changing the public denomin
 })
 
 test("CLI projects the audited registry issue owners and catalog implementation boundary", async (t) => {
-  const outputRoot = await fs.mkdtemp(path.join(repositoryRoot, ".compatibility-audited-ownership-"))
-  cleanupFixture(t, outputRoot)
-  const outputPath = path.join(outputRoot, "inventory.json")
-  const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
-    cwd: repositoryRoot,
-    encoding: "utf8"
-  }).stdout.trim()
-  const result = spawnSync(process.execPath, [
-    cliPath,
-    "--root",
-    repositoryRoot,
-    "--output",
-    outputPath,
-    "--source-revision",
-    sourceRevision
-  ], { encoding: "utf8" })
-  assert.equal(result.status, 0, result.stderr)
-  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  const inventory = structuredClone(await currentRepositoryInventory())
   const byId = new Map(inventory.surfaces.map((record) => [record.surface_id, record]))
   const catalog = inventory.surfaces.filter((record) => record.kind === "catalog_feature")
   const registryRows = inventory.surfaces.filter((record) => [
@@ -1181,24 +1188,7 @@ test("CLI projects the audited registry issue owners and catalog implementation 
 })
 
 test("CLI projects the current Deepwell contract evidence without promoting source-only test gaps", async (t) => {
-  const outputRoot = await fs.mkdtemp(path.join(repositoryRoot, ".compatibility-deepwell-contract-"))
-  cleanupFixture(t, outputRoot)
-  const outputPath = path.join(outputRoot, "inventory.json")
-  const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
-    cwd: repositoryRoot,
-    encoding: "utf8"
-  }).stdout.trim()
-  const result = spawnSync(process.execPath, [
-    cliPath,
-    "--root",
-    repositoryRoot,
-    "--output",
-    outputPath,
-    "--source-revision",
-    sourceRevision
-  ], { encoding: "utf8" })
-  assert.equal(result.status, 0, result.stderr)
-  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  const inventory = structuredClone(await currentRepositoryInventory())
   const rows = inventory.surfaces.filter((record) => record.kind === "deepwell_jsonrpc_method")
   const manifest = JSON.parse(
     await fs.readFile(path.join(repositoryRoot, "docs/development/deepwell-jsonrpc-contract-manifest.json"), "utf8")
@@ -1240,24 +1230,7 @@ test("CLI projects the current Deepwell contract evidence without promoting sour
 })
 
 test("CLI projects WWS route-contract evidence while keeping hash-domain evidence partial", async (t) => {
-  const outputRoot = await fs.mkdtemp(path.join(repositoryRoot, ".compatibility-wws-contract-"))
-  cleanupFixture(t, outputRoot)
-  const outputPath = path.join(outputRoot, "inventory.json")
-  const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
-    cwd: repositoryRoot,
-    encoding: "utf8"
-  }).stdout.trim()
-  const result = spawnSync(process.execPath, [
-    cliPath,
-    "--root",
-    repositoryRoot,
-    "--output",
-    outputPath,
-    "--source-revision",
-    sourceRevision
-  ], { encoding: "utf8" })
-  assert.equal(result.status, 0, result.stderr)
-  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  const inventory = structuredClone(await currentRepositoryInventory())
   const rows = inventory.surfaces.filter((record) => record.kind === "wws_route")
   assert.equal(rows.length, 50)
   assert.equal(rows.filter(({ evidence }) => evidence.status === "available").length, 47)
@@ -1281,24 +1254,7 @@ test("CLI projects WWS route-contract evidence while keeping hash-domain evidenc
 })
 
 test("CLI projects current Framerail route-action tests without inventing browser evidence", async (t) => {
-  const outputRoot = await fs.mkdtemp(path.join(repositoryRoot, ".compatibility-framerail-route-action-"))
-  cleanupFixture(t, outputRoot)
-  const outputPath = path.join(outputRoot, "inventory.json")
-  const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
-    cwd: repositoryRoot,
-    encoding: "utf8"
-  }).stdout.trim()
-  const result = spawnSync(process.execPath, [
-    cliPath,
-    "--root",
-    repositoryRoot,
-    "--output",
-    outputPath,
-    "--source-revision",
-    sourceRevision
-  ], { encoding: "utf8" })
-  assert.equal(result.status, 0, result.stderr)
-  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  const inventory = structuredClone(await currentRepositoryInventory())
   const rows = inventory.surfaces.filter(({ kind }) =>
     kind === "framerail_route" || kind === "framerail_server_action"
   )
@@ -1337,24 +1293,7 @@ test("CLI projects current Framerail route-action tests without inventing browse
 })
 
 test("CLI projects only directly exercised Framerail AMC server tests", async (t) => {
-  const outputRoot = await fs.mkdtemp(path.join(repositoryRoot, ".compatibility-framerail-amc-tests-"))
-  cleanupFixture(t, outputRoot)
-  const outputPath = path.join(outputRoot, "inventory.json")
-  const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
-    cwd: repositoryRoot,
-    encoding: "utf8"
-  }).stdout.trim()
-  const result = spawnSync(process.execPath, [
-    cliPath,
-    "--root",
-    repositoryRoot,
-    "--output",
-    outputPath,
-    "--source-revision",
-    sourceRevision
-  ], { encoding: "utf8" })
-  assert.equal(result.status, 0, result.stderr)
-  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  const inventory = structuredClone(await currentRepositoryInventory())
   const rows = inventory.surfaces.filter(({ kind }) =>
     kind === "framerail_amc_action_shape" || kind === "framerail_amc_module_shape"
   )

@@ -36,7 +36,18 @@ async function withSnapshotCheckout(commit, action) {
   const temp = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-test-quality-verify-"));
   const checkout = path.join(temp, "checkout");
   try {
-    await runAuditCommand("git", ["worktree", "add", "--detach", checkout, commit], {cwd: root, capture: true});
+    // The inventory reads only a few Theme Lab ports (the two authority-evidence
+    // trees below); the other ~21k tracked files under ports/ dominate checkout
+    // time and are never opened.
+    await runAuditCommand("git", ["worktree", "add", "--detach", "--no-checkout", checkout, commit], {cwd: root, capture: true});
+    const ports = "/install/local/theme-lab/ports";
+    const sparse = [
+      "/*", `!${ports}/*`, `${ports}/authority-evidence/`, `!${ports}/authority-evidence/*`,
+      `${ports}/authority-evidence/native-theme-previewer-blank-20261003/`,
+      `${ports}/authority-evidence/wikifot-native-site-theme-reset-20261003/`,
+    ];
+    await runAuditCommand("git", ["sparse-checkout", "set", "--no-cone", ...sparse], {cwd: checkout, capture: true});
+    await runAuditCommand("git", ["checkout", "--detach", commit], {cwd: checkout, capture: true});
     return await action(checkout);
   } finally {
     await runAuditCommand("git", ["worktree", "remove", "--force", checkout], {cwd: root, capture: true}).catch(() => {});
