@@ -83,7 +83,7 @@ use super::ftml_render::{
 use super::ftml_user_info::UserInfoSnapshot;
 use super::generator::COMPILED_GENERATOR;
 use super::iftags::{
-    resolve_outermost_wikidot_iftags,
+    mark_wikidot_generated_iftags_specs, resolve_outermost_wikidot_iftags,
     resolve_outermost_wikidot_iftags_before_include_expansion,
     resolve_outermost_wikidot_iftags_before_include_expansion_for_page_preview,
 };
