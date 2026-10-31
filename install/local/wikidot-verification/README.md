@@ -61,6 +61,15 @@ from the expanded bytes unless a contract explicitly says otherwise. The test
 suite rejects raw verification JSON/JSONL artifacts larger than 8 MiB to keep
 new campaign evidence from silently bloating checkouts and repeated I/O.
 
+## Deepwell test stacks seed once
+
+`scripts/run-deepwell-integration-validation.mjs` runs the Deepwell suite as nextest shards, each on its own PostgreSQL, Valkey, and MinIO containers with one active test at a time. The shard parent seeds one stack, captures its PostgreSQL dump, MinIO bucket trees, and Valkey keys, and every shard restores that capture instead of running the seeder itself. A failed capture or restore discards that stack and seeds it the old way, with a loud log line.
+
+The capture is keyed by everything that changes seeded state: migrations, the seeder directory, the locales it reads, `install/local/deepwell/config.toml`, the Deepwell binary, and the three image IDs. Every shard of one run shares the id layout of that one seeding; the seeder's own id layout varies between runs.
+
+- `WIKIJUMP_DEEPWELL_SEED_CAPTURE=off` restores per-stack seeding.
+- `WIKIJUMP_DEEPWELL_SEED_CAPTURE_ROOT=<dir>` keeps keyed captures across runs. This saves another 65 to 75 s (measured, 12 shards), but seeded rows then carry the capture's wall-clock times into later runs. Do not set it for a validation whose result is recorded as a PASS.
+
 ## Compatibility surface inventory
 
 `scripts/build-compatibility-surface-inventory.mjs` generates `docs/development/compatibility-surface-inventory.json` from the feature catalog, implementation ledger, source coverage, live observations, declared Deepwell JSON-RPC registry, SvelteKit routes and named server actions, Framerail AMC and XML-RPC registries, WWS routes, and the seven audits listed by `open43-blocked-evidence-routing.json`. Inventory v3 keeps the tracked Wikijump inventory content-addressed: it records a stable SHA-256 over the exact registry digest set instead of embedding the Wikijump commit/tree that contains the generated file. FTML remains pinned to its exact external commit/tree, and every registry file read keeps its SHA-256. The pinned `docs/development/compatibility-surface-semantics.json` registry holds the exact 295-record FTML raw denominator, the Catalog-to-FTML crosswalk, closed specification and implementation owner keys, legacy-owner mappings, and the typed edge vocabulary. Raw FTML implementation records remain outside the public feature denominator. Each public surface has one stable identifier, closed owners, typed implementation relationships where evidenced, and independent evidence, source, candidate, standing, and closure fields. The command rejects identity drift, duplicate identifiers or edges, same-count FTML substitutions, Catalog and ledger orphans, missing or extra ownership records, unsupported registry declarations, and values outside the closed vocabularies.
