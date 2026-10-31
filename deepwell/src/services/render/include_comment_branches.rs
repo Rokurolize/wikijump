@@ -23,13 +23,19 @@ use super::compat::text_fragments::CompatTextFragments;
 const UNRESOLVED_BRANCH_OPEN_PREFIX: &str = "[!-- {$";
 const COMMENT_BOUNDARY_MARKER: &str = "[!----]";
 const SELECTED_BRANCH_MARKER: &str = "[!-- --]";
+const PAIRED_BRANCH_CLOSE_PREFIX: &str = "[!{$";
+const PAIRED_BRANCH_CLOSE_SUFFIX: &str = "} --]";
 
 /// Removes Wikidot include-variable comment branches that remain hidden after
 /// variable substitution.
 ///
 /// Wikidot components use both compact comment boundaries (`[!----]`) and
-/// empty-comment boundaries (`[!-- --]`). A branch without either boundary
-/// is preserved literally so malformed input fails closed during FTML parsing.
+/// empty-comment boundaries (`[!-- --]`). Components also gate blocks with
+/// paired markers (`[!-- {$var}]` ... `[!{$var} --]`): on Wikidot, the
+/// comment opened by an unresolved opener runs to the `--]` in the paired
+/// closer, hiding the gated block. A branch with neither a boundary nor its
+/// own variable's paired closer is preserved literally so malformed input
+/// fails closed during FTML parsing.
 pub(super) fn remove_unresolved_include_comment_branches(wikitext: &mut String) {
     remove_unresolved_include_comment_branches_inner(wikitext, None);
 }
@@ -83,7 +89,18 @@ fn remove_unresolved_include_comment_branches_inner(
 
         if let Some(branch) = unresolved_branch.as_mut() {
             branch.source.push_str(line);
-            if is_unresolved_branch_open(marker) {
+            let paired_close = branch
+                .variable
+                .as_deref()
+                .zip(paired_branch_close_variable(marker))
+                .is_some_and(|(variable, closed_by)| variable == closed_by);
+            if paired_close {
+                // The branch's own paired closer terminates it even when a
+                // sibling gate's opener landed inside: sequential paired
+                // gates are siblings, not true nesting, and on Wikidot the
+                // comment ends at the closer's `--]` either way.
+                unresolved_branch = None;
+            } else if is_unresolved_branch_open(marker) {
                 branch.nested_opener = true;
             } else if !branch.nested_opener && is_boundary(marker) {
                 unresolved_branch = None;
@@ -108,6 +125,7 @@ fn remove_unresolved_include_comment_branches_inner(
             unresolved_branch = Some(UnresolvedBranch {
                 source: line.to_owned(),
                 nested_opener: false,
+                variable: unresolved_branch_variable(marker),
             });
         } else if !is_boundary(marker) {
             output.push_str(line);
@@ -155,10 +173,37 @@ fn split_line_ending(line: &str) -> (&str, &str) {
 struct UnresolvedBranch {
     source: String,
     nested_opener: bool,
+    /// The include variable the opener is keyed on, when it could be
+    /// parsed; the branch ends at that variable's paired closer.
+    variable: Option<String>,
 }
 
 fn is_unresolved_branch_open(line: &str) -> bool {
     line.starts_with(UNRESOLVED_BRANCH_OPEN_PREFIX)
+}
+
+/// Parses the include variable an unresolved branch opener is keyed on,
+/// e.g. `inc-animation` from `[!-- {$inc-animation}]`.
+fn unresolved_branch_variable(line: &str) -> Option<String> {
+    let rest = line.strip_prefix(UNRESOLVED_BRANCH_OPEN_PREFIX)?;
+    let name = &rest[..rest.find('}')?];
+    is_valid_branch_variable(name).then(|| name.to_owned())
+}
+
+/// Parses the include variable named by a paired branch closer, e.g.
+/// `inc-animation` from `[!{$inc-animation} --]`.
+fn paired_branch_close_variable(line: &str) -> Option<&str> {
+    let name = line
+        .strip_prefix(PAIRED_BRANCH_CLOSE_PREFIX)?
+        .strip_suffix(PAIRED_BRANCH_CLOSE_SUFFIX)?;
+    is_valid_branch_variable(name).then_some(name)
+}
+
+fn is_valid_branch_variable(name: &str) -> bool {
+    !name.is_empty()
+        && !name
+            .chars()
+            .any(|c| c.is_whitespace() || matches!(c, '{' | '}'))
 }
 
 /// Whether a line leaves a plain Wikidot comment unterminated: its last
@@ -448,5 +493,166 @@ mod tests {
         assert!(restored.contains("ROOT_BEFORE\n"), "{restored}");
         assert!(restored.contains("ROOT_AFTER\n"), "{restored}");
         assert!(!restored.contains("[!-- --]"), "{restored}");
+    }
+
+    #[test]
+    fn drops_paired_comment_gates_with_unresolved_variables() {
+        // The slim-acs idiom: optional sections are wrapped in paired
+        // comment markers keyed on an include variable. With the variable
+        // unpassed, Wikidot's comment spans from the opener to the paired
+        // closer, so each gated block is hidden while the rest of the
+        // component renders normally.
+        let mut wikitext = concat!(
+            "Component styles\n",
+            "[!-- {$inc-animation}]\n",
+            "[[div class=\"sacs-v4_animation\"]]\n",
+            "Animation body\n",
+            "[[/div]]\n",
+            "[!{$inc-animation} --]\n",
+            "Bar body\n",
+            "[!-- {$inc-darkmode}]\n",
+            "Dark body\n",
+            "[!{$inc-darkmode} --]\n",
+            "Tail\n",
+        )
+        .to_owned();
+
+        remove_unresolved_include_comment_branches(&mut wikitext);
+
+        assert_eq!(wikitext, "Component styles\nBar body\nTail\n");
+
+        let page_info = PageInfo {
+            page: Cow::Borrowed("scp-8790"),
+            category: None,
+            site: Cow::Borrowed("scp-wiki"),
+            title: Cow::Borrowed("SCP-8790"),
+            alt_title: None,
+            score: ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        ftml::preprocess_for_layout(&mut wikitext, settings.layout);
+        let tokens = ftml::tokenize(&wikitext);
+        let result = ftml::parse(&tokens, &page_info, &settings);
+        let (tree, errors) = result.into();
+        assert!(errors.is_empty(), "{errors:?}\n{wikitext}");
+        let html = HtmlRender.render(&tree, &page_info, &settings).body;
+
+        assert!(html.contains("Bar body"), "{html}");
+        assert!(html.contains("Tail"), "{html}");
+        assert!(!html.contains("sacs-v4_animation"), "{html}");
+        assert!(!html.contains("Animation body"), "{html}");
+        assert!(!html.contains("Dark body"), "{html}");
+        assert!(!html.contains("{$inc-"), "{html}");
+    }
+
+    #[test]
+    fn paired_comment_gate_with_dashes_value_keeps_the_block() {
+        // With the gate variable bound to `--`, substitution rewrites the
+        // opener into a complete empty comment before this pass runs, so no
+        // unresolved branch exists and the gated block survives pruning.
+        let mut wikitext = concat!(
+            "Before\n",
+            "[!-- --]\n",
+            "Shown body\n",
+            "[!--- --]\n",
+            "After\n",
+        )
+        .to_owned();
+
+        remove_unresolved_include_comment_branches(&mut wikitext);
+
+        assert!(wikitext.contains("Shown body\n"), "{wikitext}");
+        assert!(!wikitext.contains("[!-- {$"), "{wikitext}");
+
+        let page_info = PageInfo {
+            page: Cow::Borrowed("scp-8790"),
+            category: None,
+            site: Cow::Borrowed("scp-wiki"),
+            title: Cow::Borrowed("SCP-8790"),
+            alt_title: None,
+            score: ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        ftml::preprocess_for_layout(&mut wikitext, settings.layout);
+        let tokens = ftml::tokenize(&wikitext);
+        let result = ftml::parse(&tokens, &page_info, &settings);
+        let (tree, errors) = result.into();
+        assert!(errors.is_empty(), "{errors:?}\n{wikitext}");
+        let html = HtmlRender.render(&tree, &page_info, &settings).body;
+
+        assert!(html.contains("Shown body"), "{html}");
+        assert!(!html.contains("[!---"), "{html}");
+    }
+
+    #[test]
+    fn paired_closer_terminates_a_branch_despite_a_sibling_opener() {
+        // Sequential paired gates are siblings, not true nesting: a second
+        // gate's opener landing inside an unclosed first branch must not
+        // stop the first branch's own paired closer from terminating it.
+        let mut wikitext = concat!(
+            "Before\n",
+            "[!-- {$inc-first}]\n",
+            "First body\n",
+            "[!-- {$inc-second}]\n",
+            "Second body\n",
+            "[!{$inc-first} --]\n",
+            "After\n",
+        )
+        .to_owned();
+
+        remove_unresolved_include_comment_branches(&mut wikitext);
+
+        assert_eq!(wikitext, "Before\nAfter\n");
+    }
+
+    #[test]
+    fn paired_closer_for_another_variable_does_not_close_the_branch() {
+        let original = concat!(
+            "Before\n",
+            "[!-- {$inc-first}]\n",
+            "Body\n",
+            "[!{$inc-second} --]\n",
+            "After\n",
+        );
+        let mut wikitext = original.to_owned();
+
+        remove_unresolved_include_comment_branches(&mut wikitext);
+
+        assert_eq!(wikitext, original);
+    }
+
+    #[test]
+    fn source_local_cleanup_protects_a_paired_gate_without_its_closer() {
+        // A paired-idiom opener with no closer anywhere is genuinely
+        // unbounded, so the fail-closed protection still applies in full.
+        let original = concat!(
+            "CHILD_BEFORE\n",
+            "[!-- {$inc-animation}]\n",
+            "[[div class=\"sacs-v4_animation\"]]\n",
+            "Gated body\n",
+        );
+        let mut wikitext = original.to_owned();
+        let mut fragments = CompatTextFragments::new(original);
+
+        remove_unresolved_include_comment_branches_source_local(
+            &mut wikitext,
+            &mut fragments,
+        );
+        assert!(wikitext.contains("CHILD_BEFORE"), "{wikitext}");
+        assert!(!wikitext.contains("[!-- {$inc-animation}"), "{wikitext}");
+        assert!(!wikitext.contains("sacs-v4_animation"), "{wikitext}");
+        assert!(!wikitext.contains("Gated body"), "{wikitext}");
+
+        wikitext.push_str("ROOT_AFTER\n");
+        remove_unresolved_include_comment_branches(&mut wikitext);
+        let restored = fragments.restore(&wikitext);
+
+        assert!(restored.contains("[!-- {$inc-animation}]"), "{restored}");
+        assert!(restored.contains("Gated body"), "{restored}");
+        assert!(restored.contains("ROOT_AFTER\n"), "{restored}");
     }
 }
