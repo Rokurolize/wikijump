@@ -385,6 +385,7 @@ export async function restoreSeedCapture({run, containers, ports, buckets, direc
     ], {capture: true});
 
     const entries = JSON.parse(await readFile(join(directory, VALKEY_KEYS), "utf8"));
+    if (entries.length !== manifest.expect.valkeyKeyCount) restoreFail("captured Valkey key list does not match its manifest");
     const {restored} = await writeValkeyKeys(ports.cache, entries, now());
 
     const [rowCounts, listing, keyCount] = await Promise.all([
