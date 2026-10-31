@@ -904,7 +904,7 @@
     {
       "surface_id": "catalog-feature:syntax-engine",
       "sources": [
-        { "path": "deepwell/Cargo.toml", "anchor": "ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"d6c6b1b7463c0329e6d38db29c3f80db6187a9b9\" }" },
+        { "path": "deepwell/Cargo.toml", "anchor": "ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"c367e25a0ada93441005a0752db01e2e8a220e92\" }" },
         { "path": "deepwell/src/services/render/service.rs", "anchor": "pub async fn render(" },
         { "path": "deepwell/src/services/render/page_preview.rs", "anchor": "WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);" }
       ],
@@ -930,7 +930,7 @@
     {
       "surface_id": "catalog-feature:syntax-foldable-list",
       "sources": [
-        { "path": "deepwell/Cargo.toml", "anchor": "ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"d6c6b1b7463c0329e6d38db29c3f80db6187a9b9\" }" },
+        { "path": "deepwell/Cargo.toml", "anchor": "ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"c367e25a0ada93441005a0752db01e2e8a220e92\" }" },
         { "path": "deepwell/src/services/render/page_preview.rs", "anchor": "WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);" }
       ],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "foldable_list_initial_dom_matches_frozen_live_page_preview" }]
@@ -938,7 +938,7 @@
     {
       "surface_id": "catalog-feature:syntax-links",
       "sources": [
-        { "path": "deepwell/Cargo.toml", "anchor": "ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"d6c6b1b7463c0329e6d38db29c3f80db6187a9b9\" }" },
+        { "path": "deepwell/Cargo.toml", "anchor": "ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"c367e25a0ada93441005a0752db01e2e8a220e92\" }" },
         { "path": "deepwell/src/services/render/compat/wikidot_link_protection.rs", "anchor": "pub(in crate::services::render) fn protect_wikidot_compat_links(" },
         { "path": "deepwell/src/services/render/compat/wikidot_link_protection.rs", "anchor": "pub(in crate::services::render) fn build_wikidot_wikipedia_link(" }
       ],
