@@ -47,9 +47,14 @@ pub(super) struct ArticlePageCacheMetadata {
 }
 
 impl ArticlePageCache {
+    /// Builds the cache key for an anonymous article view.
+    ///
+    /// `public_content_cache_fence` is the fence the caller read before any
+    /// data it caches; `None` reads it here.
     pub(super) async fn metadata(
         ctx: &ServiceContext<'_>,
         input: &GetPageView,
+        public_content_cache_fence: Option<String>,
     ) -> Result<Option<ArticlePageCacheMetadata>> {
         if !matches!(input.session_token.as_deref(), None | Some("")) {
             return Ok(None);
@@ -173,8 +178,10 @@ impl ArticlePageCache {
             .page_updated_at
             .map(|value| value.unix_timestamp_nanos())
             .unwrap_or_default();
-        let public_content_cache_fence =
-            PublicContentCache::cache_fence(ctx, input.site_id).await?;
+        let public_content_cache_fence = match public_content_cache_fence {
+            Some(fence) => fence,
+            None => PublicContentCache::cache_fence(ctx, input.site_id).await?,
+        };
         let permission_fence =
             PermissionCache::cache_fence(ctx, input.site_id, None).await?;
         let permission_fence = permission_fence.cache_key_fragment();

@@ -62,6 +62,7 @@ use crate::services::page_revision::RerenderType;
 use crate::services::permission::{
     CheckPermissionContext, PermissionService, PermissionTarget,
 };
+use crate::services::public_cache::PublicContentCache;
 use crate::services::relation::{
     GetPageAttributions, GetSiteBan, PageAttribution, RelationService,
 };
@@ -322,6 +323,12 @@ impl ViewService {
         ctx: &ServiceContext<'_>,
         mut input: GetPageView,
     ) -> Result<GetArticleViewOutput> {
+        // The fence is read before anything the cached response holds. A
+        // write that commits after this read bumps the fence past it, so the
+        // response cannot be cached under a fence that announced a change it
+        // does not contain.
+        let public_content_cache_fence =
+            PublicContentCache::cache_fence(ctx, input.site_id).await?;
         let mut preload = Self::preload(
             ctx,
             GetPreloadView {
@@ -347,7 +354,9 @@ impl ViewService {
         }
         Self::apply_article_category_license(ctx, &mut preload.viewer, &input).await?;
         let response_cache_eligible = !preload.viewer.site_settings.toolbars.bottom;
-        let cache_metadata = ArticlePageCache::metadata(ctx, &input).await?;
+        let cache_metadata =
+            ArticlePageCache::metadata(ctx, &input, Some(public_content_cache_fence))
+                .await?;
         if let Some(cache_key) =
             cache_metadata.as_ref().map(|metadata| &metadata.cache_key)
             && let Some(mut page) = ArticlePageCache::get(ctx, cache_key).await?
@@ -583,7 +592,7 @@ impl ViewService {
             input.locales.push(site.locale);
         }
 
-        let cache_metadata = ArticlePageCache::metadata(ctx, &input).await?;
+        let cache_metadata = ArticlePageCache::metadata(ctx, &input, None).await?;
 
         Ok(GetArticleViewCacheMetadataOutput {
             article_page_cache_key: cache_metadata
