@@ -457,6 +457,7 @@ mod tests {
         for source in [
             "[[module CountPages category=\"news\"]]%%total%%[[/module]]",
             "[[module CountPages category=\"news\" tags=\"@URL|+fresh\"]]%%total%%[[/module]]",
+            "[[module CountPages category=\"*\"]]%%total%%[[/module]]",
         ] {
             assert!(wikitext_requires_runtime_render(source), "{source}");
             assert!(!wikitext_reads_url_arguments(source), "{source}");
@@ -464,7 +465,6 @@ mod tests {
 
         for source in [
             "[[module CountPages tags=\"@URL\"]]%%total%%[[/module]]",
-            "[[module CountPages category=\"*\"]]%%total%%[[/module]]",
             "[[code]]\n[[module CountPages category=\"news\"]]%%total%%[[/module]]\n[[/code]]",
             "[[module CountPages]][[/module]]",
         ] {

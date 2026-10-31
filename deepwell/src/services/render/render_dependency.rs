@@ -394,6 +394,7 @@ mod tests {
         for source in [
             "[[module CountPages category=\"news\"]]%%total%%[[/module]]",
             "[[module CountPages category=\"news\" tags=\"@URL|+fresh\"]]%%total%%[[/module]]",
+            "[[module CountPages category=\"*\"]]%%total%%[[/module]]",
         ] {
             let classes = classify_render_dependencies(source);
             assert!(
@@ -429,24 +430,20 @@ mod tests {
             );
         }
 
-        for source in [
-            "[[module CountPages tags=\"@URL\"]]%%total%%[[/module]]",
-            "[[module CountPages category=\"*\"]]%%total%%[[/module]]",
-        ] {
-            let classes = classify_render_dependencies(source);
-            assert!(
-                classes.contains(RenderDependencyClass::UnsupportedUnverified),
-                "{source}",
-            );
-            assert!(
-                !classes.contains(RenderDependencyClass::QueryDependent),
-                "{source}",
-            );
-            assert!(
-                !classes.contains(RenderDependencyClass::RevisionLocal),
-                "{source}",
-            );
-        }
+        let source = "[[module CountPages tags=\"@URL\"]]%%total%%[[/module]]";
+        let classes = classify_render_dependencies(source);
+        assert!(
+            classes.contains(RenderDependencyClass::UnsupportedUnverified),
+            "{source}",
+        );
+        assert!(
+            !classes.contains(RenderDependencyClass::QueryDependent),
+            "{source}",
+        );
+        assert!(
+            !classes.contains(RenderDependencyClass::RevisionLocal),
+            "{source}",
+        );
         assert!(
             classify_render_dependencies(
                 "[[module CountPages tags=\"@URL\"]]%%total%%[[/module]]",

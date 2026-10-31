@@ -42,7 +42,7 @@ use crate::types::{ConnectionType, Reference};
 use sea_orm::FromQueryResult;
 use sea_orm::{
     ColumnTrait, Condition, ConnectionTrait, EntityTrait, ExprTrait, JoinType,
-    QueryFilter, QueryOrder, QuerySelect, RelationTrait, Statement,
+    PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, RelationTrait, Statement,
 };
 use sea_query::extension::postgres::PgBinOper;
 use sea_query::{Expr, Query, SimpleExpr, Value};
@@ -96,6 +96,26 @@ use self::score_filter::{apply_score_filters, score_comparison_operator};
 
 #[derive(Debug)]
 pub struct PageQueryService;
+
+/// A page query with every SQL-side filter applied, stopped before the
+/// fetch-specific steps (the effective-revision-count column, ORDER BY, and
+/// the LIMIT/OFFSET window). Row fetches and exact counts share this builder
+/// so a count always describes the same row set a fetch would return.
+struct BuiltPageQuery<'a> {
+    query: sea_orm::Select<page::Entity>,
+    fields: FoundPageFields,
+    order: OrderBySelector,
+    offset: u32,
+    pagination: PaginationSelector,
+    data_form_fields: &'a [DataFormSelector<'a>],
+    candidate_limit: Option<u64>,
+    hard_candidate_limit: Option<u64>,
+    needs_tag_filter: bool,
+    projects_effective_revision_count: bool,
+    filtering_deferred_to_rust: bool,
+    ordering_deferred_to_rust: bool,
+    tag_custom_plan: bool,
+}
 
 impl PageQueryService {
     pub async fn find(
@@ -151,6 +171,78 @@ impl PageQueryService {
         score_filter_session: Option<&mut PageQueryScoreFilterSession>,
         hard_candidate_limit: Option<u64>,
     ) -> Result<PageQueryResultEnvelope> {
+        let built = Self::build_page_query(
+            ctx,
+            query,
+            score_filter_cache,
+            score_filter_session,
+            hard_candidate_limit,
+        )
+        .await?;
+        Self::fetch_built_page_query(ctx, built).await
+    }
+
+    /// Counts the pages matching a query without fetching any rows.
+    ///
+    /// The count runs over the same fully-filtered query a row fetch would
+    /// use (see `build_page_query`), with no LIMIT/OFFSET window applied, so
+    /// `metadata.candidate_count` is the total number of matching rows. The
+    /// remaining metadata mirrors a row fetch: the count is only marked
+    /// `exact_count_safe` when no filtering or ordering was deferred to Rust
+    /// and the candidate bound was not reached, which is what
+    /// `count_pages_exact_count_eligibility` consumes.
+    pub async fn count_with_metadata(
+        ctx: &ServiceContext<'_>,
+        query: PageQuery<'_>,
+    ) -> Result<PageQueryResultEnvelope> {
+        let make_error =
+            || Error::new("failed to create ListPages query", ErrorType::PageQuery);
+        let built = Self::build_page_query(ctx, query, None, None, None).await?;
+        let txn = ctx.transaction();
+        if built.tag_custom_plan {
+            txn.execute_unprepared("SET LOCAL plan_cache_mode = force_custom_plan")
+                .await
+                .or_raise(make_error)?;
+        }
+        let total = built.query.count(txn).await.or_raise(make_error)?;
+        if built.tag_custom_plan {
+            txn.execute_unprepared("SET LOCAL plan_cache_mode TO DEFAULT")
+                .await
+                .or_raise(make_error)?;
+        }
+        let candidate_count = usize::try_from(total).ok();
+        let defer_offset_limit = built.ordering_deferred_to_rust
+            || built.filtering_deferred_to_rust
+            || built.hard_candidate_limit.is_some();
+        let cap_exceeded = defer_offset_limit
+            && built
+                .candidate_limit
+                .and_then(|limit| usize::try_from(limit).ok())
+                .is_some_and(|limit| candidate_count.is_some_and(|count| count >= limit));
+        Ok(PageQueryResultEnvelope {
+            pages: FoundPages { pages: Vec::new() },
+            metadata: PageQueryResultMetadata {
+                candidate_count,
+                cap_exceeded,
+                sql_limit_offset_applied: false,
+                filtering_deferred_to_rust: built.filtering_deferred_to_rust,
+                ordering_deferred_to_rust: built.ordering_deferred_to_rust,
+                exact_count_safe: !built.filtering_deferred_to_rust
+                    && !built.ordering_deferred_to_rust
+                    && !cap_exceeded
+                    && candidate_count.is_some(),
+                unsupported_reason: None,
+            },
+        })
+    }
+
+    async fn build_page_query<'a>(
+        ctx: &ServiceContext<'_>,
+        query: PageQuery<'a>,
+        score_filter_cache: Option<&mut PageQueryScoreFilterCache>,
+        score_filter_session: Option<&mut PageQueryScoreFilterSession>,
+        hard_candidate_limit: Option<u64>,
+    ) -> Result<BuiltPageQuery<'a>> {
         let queried_site_id = query.queried_site_id.unwrap_or(query.current_site_id);
         let PageQuery {
             current_page_id,
@@ -466,6 +558,49 @@ impl PageQueryService {
 
         let projects_effective_revision_count =
             needs_effective_revision_projection(&fields, &order);
+        let score_order = matches!(&order.property, OrderProperty::Score);
+        let data_form_order =
+            matches!(&order.property, OrderProperty::DataFormFieldName { .. });
+
+        Ok(BuiltPageQuery {
+            query,
+            fields,
+            order,
+            offset,
+            pagination,
+            data_form_fields,
+            candidate_limit,
+            hard_candidate_limit,
+            needs_tag_filter,
+            projects_effective_revision_count,
+            filtering_deferred_to_rust: !data_form_fields.is_empty(),
+            ordering_deferred_to_rust: score_order || data_form_order,
+            tag_custom_plan: needs_tag_filter && score_and_votes_empty,
+        })
+    }
+
+    async fn fetch_built_page_query(
+        ctx: &ServiceContext<'_>,
+        built: BuiltPageQuery<'_>,
+    ) -> Result<PageQueryResultEnvelope> {
+        let make_error =
+            || Error::new("failed to create ListPages query", ErrorType::PageQuery);
+        let txn = ctx.transaction();
+        let BuiltPageQuery {
+            mut query,
+            fields,
+            order,
+            offset,
+            pagination,
+            data_form_fields,
+            candidate_limit,
+            hard_candidate_limit,
+            needs_tag_filter,
+            projects_effective_revision_count,
+            filtering_deferred_to_rust,
+            ordering_deferred_to_rust,
+            tag_custom_plan,
+        } = built;
         if projects_effective_revision_count {
             query = query.column_as(
                 SimpleExpr::Custom(effective_revision_count_sql("page.page_id").into()),
@@ -474,13 +609,8 @@ impl PageQueryService {
         }
 
         // Add on at the query-level (ORDER BY, LIMIT)
-        let score_order = matches!(&order.property, OrderProperty::Score);
-        let data_form_order =
-            matches!(&order.property, OrderProperty::DataFormFieldName { .. });
         query = apply_sql_ordering(query, &order, needs_tag_filter);
 
-        let filtering_deferred_to_rust = !data_form_fields.is_empty();
-        let ordering_deferred_to_rust = score_order || data_form_order;
         let defer_offset_limit = ordering_deferred_to_rust
             || filtering_deferred_to_rust
             || hard_candidate_limit.is_some();
@@ -516,7 +646,6 @@ impl PageQueryService {
         // executions PostgreSQL walks every page in order and probes each
         // revision's tags (a 4 ms query took 160 ms). Plan this query with its
         // values, then return the rest of the render to cached plans.
-        let tag_custom_plan = needs_tag_filter && score_and_votes_empty;
         if tag_custom_plan {
             txn.execute_unprepared("SET LOCAL plan_cache_mode = force_custom_plan")
                 .await

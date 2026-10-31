@@ -30,6 +30,11 @@ impl RenderService {
             url: _,
         } = page_context;
         let current_page_id = current_page_identity.unwrap_or(0);
+        // The all-category, unfiltered, unbounded shape is answered by the
+        // exact-count path below instead of the bounded row scan; when the
+        // exact count is not eligible the module is preserved literally.
+        let unbounded_all_category_shape =
+            count_pages_unbounded_all_category_shape(&arguments);
         let ListPagesArguments {
             current_page_only,
             category_selector_present,
@@ -98,11 +103,6 @@ impl RenderService {
             })
         {
             return Ok(CountPagesBlockRenderResult::PreserveOriginal);
-        }
-        if offset_beyond_render_window.is_some() {
-            return Ok(CountPagesBlockRenderResult::Expanded(
-                substitute_count_pages_variables(body, 0),
-            ));
         }
         let count_pages_query_limit = count_pages_explicit_limit
             .map(|limit| {
@@ -193,6 +193,24 @@ impl RenderService {
             },
         };
 
+        if unbounded_all_category_shape && !current_page_only {
+            return Self::render_count_pages_exact_total(
+                ctx,
+                current_site_id,
+                query,
+                body,
+                exclude_current_page,
+                offset > 0 || offset_beyond_render_window.is_some(),
+                permission_cache,
+            )
+            .await;
+        }
+        if offset_beyond_render_window.is_some() {
+            return Ok(CountPagesBlockRenderResult::Expanded(
+                substitute_count_pages_variables(body, 0),
+            ));
+        }
+
         let mut count_pages_metadata = None;
         let mut raw_scan_completion = CountPagesRawScanCompletion::Complete;
         let pages = if current_page_only && current_page_identity.is_none() {
@@ -265,5 +283,70 @@ impl RenderService {
         Ok(CountPagesBlockRenderResult::Expanded(
             substitute_count_pages_variables(body, total),
         ))
+    }
+
+    /// Answers an all-category, unfiltered, unbounded CountPages with an
+    /// exact count instead of the bounded row scan.
+    ///
+    /// The CountPages render viewer is anonymous, and the row scan's view
+    /// filter decides unattributed pages purely by (site, category) -- an
+    /// anonymous viewer holds no page attributions -- so restricting the
+    /// count to the categories the viewer may view yields exactly the
+    /// total the scan would report, without scanning rows. When the
+    /// exact-count eligibility machinery denies the invocation (a
+    /// post-query exclusion or offset, deferred filtering or ordering, a
+    /// reached candidate bound), the module is preserved literally, as
+    /// the literal gate did before.
+    async fn render_count_pages_exact_total(
+        ctx: &ServiceContext<'_>,
+        current_site_id: i64,
+        mut query: PageQuery<'_>,
+        body: &str,
+        exclude_current_page: bool,
+        post_query_offset_applied: bool,
+        permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
+    ) -> Result<CountPagesBlockRenderResult> {
+        let categories = CategoryService::get_all(ctx, current_site_id).await?;
+        let category_ids = categories
+            .iter()
+            .map(|category| Some(category.category_id))
+            .collect::<Vec<_>>();
+        let viewable = PermissionService::batch_check_page_view_without_page_roles(
+            ctx,
+            None,
+            current_site_id,
+            &category_ids,
+            permission_cache,
+        )
+        .await?;
+        let viewable_slugs = categories
+            .iter()
+            .zip(viewable.iter())
+            .filter(|(_, viewable)| **viewable)
+            .map(|(category, _)| Cow::Owned(category.slug.clone()))
+            .collect::<Vec<_>>();
+        if viewable_slugs.len() != categories.len() {
+            query.categories.included_categories =
+                IncludedCategories::List(&viewable_slugs);
+        }
+        let envelope = PageQueryService::count_with_metadata(ctx, query).await?;
+        let metadata = envelope.metadata;
+        let diagnostics = count_pages_exact_count_render_diagnostics(
+            metadata.clone(),
+            false,
+            exclude_current_page,
+            post_query_offset_applied,
+            None,
+            0,
+        );
+        debug!("CountPages exact count eligibility diagnostics: {diagnostics:?}");
+        if diagnostics.allowed
+            && let Some(total) = metadata.candidate_count
+        {
+            return Ok(CountPagesBlockRenderResult::Expanded(
+                substitute_count_pages_variables(body, total),
+            ));
+        }
+        Ok(CountPagesBlockRenderResult::PreserveOriginal)
     }
 }
