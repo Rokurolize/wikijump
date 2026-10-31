@@ -1238,7 +1238,7 @@ impl RenderService {
             render_nav_page(
                 top_bar_page_wikitext,
                 &top_bar_page,
-                CorpusRenderScope::TopNav,
+                CorpusRenderScope::TopNav
             ),
             render_nav_page(
                 side_bar_page_wikitext,

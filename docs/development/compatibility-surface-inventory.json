@@ -11731,7 +11731,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "2e85d2492db889dd23e1fa7d16dc38673a3a5b2f03003652de0f59d3d47e7821"
+      "source_input_set_sha256": "ec9326bd8c426c75b883dc903575d2e61fd8c35c60d01c8d3acc9592f58bdf21"
     },
     "ftml": {
       "commit": "3f8be45c12532d981652edf4343e02f36f1380db",
@@ -11892,7 +11892,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "6631cd03a9a737d5e678bf6b7a66ad653f965efdb7698df3627bc95222ac3164"
+        "sha256": "2423f3673436c5a4e91ea5e4952a659b952f3392b409dcf50700f6a7368f0e07"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -20473,7 +20473,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/render/service.rs#render_nav_page(top_bar_page_wikitext, CorpusRenderScope::TopNav)",
+          "deepwell/src/services/render/service.rs#render_nav_page(\n                top_bar_page_wikitext,\n                &top_bar_page,\n                CorpusRenderScope::TopNav\n            )",
           "deepwell/src/services/site/service.rs#if let Maybe::Set(top_bar_page) = input.top_bar_page"
         ]
       },

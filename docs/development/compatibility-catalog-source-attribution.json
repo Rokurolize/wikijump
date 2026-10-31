@@ -1088,7 +1088,7 @@
       "surface_id": "catalog-feature:site-navigation",
       "sources": [
         { "path": "deepwell/src/services/site/service.rs", "anchor": "if let Maybe::Set(top_bar_page) = input.top_bar_page" },
-        { "path": "deepwell/src/services/render/service.rs", "anchor": "render_nav_page(top_bar_page_wikitext, CorpusRenderScope::TopNav)" }
+        { "path": "deepwell/src/services/render/service.rs", "anchor": "render_nav_page(\n                top_bar_page_wikitext,\n                &top_bar_page,\n                CorpusRenderScope::TopNav\n            )" }
       ],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "rerender_uses_latest_navigation_page_revision" }]
     },
