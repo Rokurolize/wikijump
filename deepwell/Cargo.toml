@@ -120,6 +120,9 @@ debug = "line-tables-only"
 
 [profile.dev.package."*"]
 debug = false
+# Test runs render large documents and hash passwords; unoptimized
+# dependencies (ftml, argon2) dominate the integration suite.
+opt-level = 3
 
 [profile.debugging]
 inherits = "dev"
