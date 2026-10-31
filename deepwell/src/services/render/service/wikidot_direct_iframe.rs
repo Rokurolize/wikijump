@@ -71,6 +71,7 @@ impl RenderService {
             "align",
             "allow",
             "allowfullscreen",
+            "allowtransparency",
             "class",
             "frameborder",
             "height",

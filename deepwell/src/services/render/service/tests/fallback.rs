@@ -1553,26 +1553,21 @@ fn wikidot_compatibility_fallback_rewrites_intact_interwiki_html_block() {
 
 #[test]
 fn wikidot_compatibility_fallback_keys_nav_html_blocks_to_the_nav_page() {
-    let source = concat!(
-        "[[div class=\"scpnet-interwiki-wrapper interwiki-stylable\"]]\n",
-        "[[html]]\n",
-        NEUTRALIZED_INTERWIKI_FRAME,
-        "\n[[/html]]\n",
-        "[[/div]]\n",
-        "[[html]]\n",
-        NEUTRALIZED_STYLE_FRAME,
-        "\n[[/html]]\n",
-        "[[html]]\n",
-        "<b>hosted</b>\n",
-        "[[/html]]\n",
+    let source = format!(
+        "[[div class=\"scpnet-interwiki-wrapper interwiki-stylable\"]]\n\
+         [[html]]\n{frame}\n[[/html]]\n[[/div]]\n\
+         [[html]]\n{style}\n[[/html]]\n\
+         [[html]]\n<b>hosted</b>\n[[/html]]\n",
+        frame = NEUTRALIZED_INTERWIKI_FRAME,
+        style = NEUTRALIZED_STYLE_FRAME,
     );
 
     let output = RenderService::render_wikidot_compatibility_fallback_output_for_emission(
-        source,
+        &source,
         Some("main"),
         Some("scp-jp"),
         None,
-        crate::services::render::WikidotHtmlBlockEmission {
+        crate::services::render::service::WikidotHtmlBlockEmission {
             owner_page_slug: Some("nav:side"),
             root_page_slug: Some("main"),
             page_language: Some("ja"),

@@ -39,7 +39,7 @@ pub(super) enum RenderLifecycle {
     PagePreview,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) struct RenderContext {
     pub(super) current_site_id: Option<i64>,
     pub(super) current_category_id: Option<i64>,
@@ -207,7 +207,7 @@ impl RenderContext {
         }
     }
 
-    pub(super) fn list_pages_pager_route(self) -> ListPagesPagerRoute {
+    pub(super) fn list_pages_pager_route(&self) -> ListPagesPagerRoute {
         match self.lifecycle {
             RenderLifecycle::Standalone | RenderLifecycle::SavedPage => {
                 ListPagesPagerRoute::SavedPage
