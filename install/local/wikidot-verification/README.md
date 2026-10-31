@@ -656,3 +656,25 @@ its normal source-owned rerender/finalizer before saved-page acceptance.
 Import into the isolated candidate first. Standing still requires the normal
 promotion and fresh browser proof; a manifest or successful import is not a
 compatibility acceptance receipt.
+
+## Reusing an earlier consolidated PASS
+
+`scripts/run-consolidated-validation.mjs --reuse-pass` answers a repeat run
+from the sealed receipt of an earlier PASS, in under a second, instead of
+recomputing it. Without the flag every run recomputes in full, as before.
+
+A PASS is reused only when all of these are identical: the commit and tree,
+the base commit, the `--groups` selection, the image-build flag, the node,
+pnpm, cargo and rustc versions, the sources of the preflight and Deepwell
+runners, the heads of the `WIKIJUMP_FTML_CHECKOUT` and `WIKIDOT_PY_CHECKOUT`
+checkouts, and the validation environment (`WIKIJUMP_*`, `WIKIDOT_*`,
+`PREFLIGHT_*`, `THEME_LAB_*`, `CARGO_*`, `RUST*`). The indexed receipt must
+still exist and hash as recorded, must say `pass`, must point at an unchanged
+log, and must be under 24 hours old. Any other case prints the reason and runs
+in full. The reused receipt is the original one, written unchanged to
+`--output`, and stdout names it as `reused_pass_from`. The index lives in
+`<validation store>/pass-cache/` and does not add fields to the receipt.
+
+Time-dependent and external behavior is not re-observed on a reuse. Use a
+full run when the box, the Docker images, or the network state may have
+changed since the recorded PASS.
