@@ -100,6 +100,7 @@ impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
         current_site_id: i64,
         current_site_slug: &str,
         page_ref: &PageRef,
+        imported_source_site: Option<&str>,
         cache: &mut IncludeSourceCache,
     ) -> Result<Option<IncludeSource>> {
         match page_ref.site() {
@@ -171,6 +172,28 @@ impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
                 .await
             }
             _ => {
+                // Inside an imported cross-site include source, Wikidot
+                // resolves an unprefixed include against the source wiki.
+                // The holding site carries that wiki's pages only as
+                // foreign snapshots, which the ordinary page surface
+                // excludes by design (#2690), so consult the snapshot
+                // store scoped to the source site first and fall back to
+                // the ordinary surface when it holds no such snapshot.
+                if page_ref.site().is_none()
+                    && let Some(source_site) = imported_source_site
+                    && let Some(source) = self
+                        .fetch_imported_cross_site_source(
+                            current_site_id,
+                            current_site_slug,
+                            source_site,
+                            page_ref.page(),
+                            cache,
+                        )
+                        .await?
+                {
+                    return Ok(Some(source));
+                }
+
                 self.fetch_include_source_from_site(
                     current_site_id,
                     current_site_slug,
@@ -201,6 +224,7 @@ impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
                 site_slug: current_site_slug.to_owned(),
                 page_slug: page_slug.clone(),
                 wikitext: wikitext.clone(),
+                source_site: Some(source_site_slug.to_owned()),
             }));
         }
 
@@ -300,6 +324,7 @@ impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
             site_slug: current_site_slug.to_owned(),
             page_slug: page.slug,
             wikitext,
+            source_site: Some(source_site_slug.to_owned()),
         }))
     }
 
@@ -351,6 +376,7 @@ impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
             site_slug: site_slug.to_owned(),
             page_slug: trim_default(page_slug).to_owned(),
             wikitext,
+            source_site: None,
         }))
     }
 }
@@ -360,6 +386,12 @@ pub(super) struct IncludeSource {
     pub(super) site_slug: String,
     pub(super) page_slug: String,
     pub(super) wikitext: String,
+    /// Wikidot origin this source was imported from, when it was resolved
+    /// out of the holding site's foreign-snapshot store. Unprefixed
+    /// includes nested inside such a source resolve against that origin,
+    /// as they would on the source wiki. `None` for sources read from an
+    /// ordinary page surface.
+    pub(super) source_site: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

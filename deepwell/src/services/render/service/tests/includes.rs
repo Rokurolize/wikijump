@@ -1369,6 +1369,7 @@ fn nested_cross_site_includes_keep_the_original_lookup_site() {
     let context = IncludeExpansionContext {
         current_site_id: 11,
         current_site_slug: "sandbox-for-codex".to_owned(),
+        imported_source_site: None,
         attachment_owner: None,
         page_info: &page_info,
         settings: &settings,
@@ -1381,18 +1382,55 @@ fn nested_cross_site_includes_keep_the_original_lookup_site() {
         site_slug: "scp-wiki".to_owned(),
         page_slug: "main".to_owned(),
         wikitext: "[[include fragment:front-page-features]]".to_owned(),
+        source_site: None,
     };
 
     let nested = context.for_nested_source(&source);
 
     assert_eq!(nested.current_site_id, 11);
     assert_eq!(nested.current_site_slug, "sandbox-for-codex");
+    assert_eq!(nested.imported_source_site, None);
     assert_eq!(
         nested.attachment_owner,
         Some(AttachmentOwner {
             site_slug: "scp-wiki".to_owned(),
             page_slug: "main".to_owned(),
         }),
+    );
+}
+
+#[test]
+fn nested_imported_source_includes_carry_the_source_site() {
+    let page_info = fallback_test_page_info("consumer", "Consumer");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let context = IncludeExpansionContext {
+        current_site_id: 11,
+        current_site_slug: "scp-wiki".to_owned(),
+        imported_source_site: None,
+        attachment_owner: None,
+        page_info: &page_info,
+        settings: &settings,
+        page_preview: false,
+        expand_wikidot_image_blocks: true,
+        max_total_includes: 100,
+        render_cost_budget: RenderCostBudget::new_default(),
+    };
+    let source = IncludeSource {
+        site_slug: "scp-wiki".to_owned(),
+        page_slug: "workbench-siddo".to_owned(),
+        wikitext: "[[include component:avviso-iscriviti]]".to_owned(),
+        source_site: Some("fondazionescp".to_owned()),
+    };
+
+    let nested = context.for_nested_source(&source);
+
+    // The lookup site stays the callsite site; the imported origin travels
+    // separately so nested unprefixed includes can consult its snapshots.
+    assert_eq!(nested.current_site_id, 11);
+    assert_eq!(nested.current_site_slug, "scp-wiki");
+    assert_eq!(
+        nested.imported_source_site.as_deref(),
+        Some("fondazionescp")
     );
 }
 

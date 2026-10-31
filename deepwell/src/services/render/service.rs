@@ -3024,6 +3024,7 @@ impl RenderService {
             IncludeExpansionContext {
                 current_site_id,
                 current_site_slug: current_site_slug.to_owned(),
+                imported_source_site: None,
                 attachment_owner: source_attachment_owner,
                 page_info,
                 settings,
@@ -3185,6 +3186,7 @@ impl RenderService {
                         expansion_context.current_site_id,
                         &expansion_context.current_site_slug,
                         include.page_ref(),
+                        expansion_context.imported_source_site.as_deref(),
                         include_source_cache,
                     )
                     .await?;
@@ -3742,6 +3744,10 @@ impl IncludeExpansionBudget {
 struct IncludeExpansionContext<'a> {
     current_site_id: i64,
     current_site_slug: String,
+    /// Wikidot origin of the imported cross-site include source whose
+    /// wikitext is being expanded, if any. Unprefixed includes inside it
+    /// resolve against that origin's snapshots on the holding site.
+    imported_source_site: Option<String>,
     /// Canonical owner of relative attachments in this source. The ordinary
     /// render root remains `None` so its `PageInfo` identity is used.
     attachment_owner: Option<AttachmentOwner>,
@@ -3759,6 +3765,7 @@ impl<'a> IncludeExpansionContext<'a> {
             // Wikidot resolves an unqualified include inside a cross-site include against the original callsite site. The fetched source still owns its relative attachments.
             current_site_id: self.current_site_id,
             current_site_slug: self.current_site_slug.clone(),
+            imported_source_site: source.source_site.clone(),
             attachment_owner: Some(AttachmentOwner {
                 site_slug: source.site_slug.clone(),
                 page_slug: source.page_slug.clone(),
