@@ -47,9 +47,10 @@ pub(in crate::services::render) use self::query_helpers::{
     advance_literal_cursor_and_check_count_pages_capture_containment,
     count_pages_exact_count_render_diagnostics, count_pages_required_tag_batch_result,
     count_pages_required_tag_batch_selector, count_pages_should_remain_literal,
-    is_current_page_tag_selector, is_no_tags_selector, parse_list_pages_comparison,
-    parse_list_pages_order, parse_list_pages_page_type, parse_list_pages_score_selector,
-    split_list_pages_values, wikidot_list_pages_name_slug,
+    count_pages_unbounded_all_category_shape, is_current_page_tag_selector,
+    is_no_tags_selector, parse_list_pages_comparison, parse_list_pages_order,
+    parse_list_pages_page_type, parse_list_pages_score_selector, split_list_pages_values,
+    wikidot_list_pages_name_slug,
 };
 use self::query_helpers::{
     exact_raw_color_list_pages_name, list_pages_comparison_value,

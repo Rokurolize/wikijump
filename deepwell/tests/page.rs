@@ -26870,34 +26870,86 @@ async fn countpages_current_page_category_filters_remain_literal() {
 }
 
 #[tokio::test]
-async fn countpages_broad_category_without_limit_remains_literal() {
+async fn countpages_broad_category_without_limit_expands_to_exact_count() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
-    let html = render_countpages_test_fixture_with_targets(
+    let site_id = site.site.site_id;
+
+    let parse_total = |html: &str| -> i64 {
+        let marker = "BROAD_CATEGORY_COUNT=";
+        let start = html
+            .find(marker)
+            .expect("expanded CountPages should print its total")
+            + marker.len();
+        let digits: String = html[start..]
+            .chars()
+            .take_while(|c| c.is_ascii_digit())
+            .collect();
+        digits
+            .parse()
+            .expect("expanded CountPages total should be numeric")
+    };
+
+    let first_html = render_countpages_test_fixture_with_targets(
         &mut runner,
-        site.site.site_id,
-        "fixture-countpages-broad-category-literal",
-        "verification-count-broad-category-literal",
+        site_id,
+        "fixture-countpages-broad-category-exact",
+        "verification-count-broad-category-exact",
         r#"category="*""#,
         "BROAD_CATEGORY_COUNT=%%total%%",
         &[(
             "target-a",
-            "Fixture CountPages Broad Category Literal Target",
-            "Fixture CountPages broad category literal marker.",
+            "Fixture CountPages Broad Category Exact Target",
+            "Fixture CountPages broad category exact marker.",
         )],
     )
     .await;
 
     assert!(
-        html.contains("BROAD_CATEGORY_COUNT=%%total%%")
-            || html.contains("[[module CountPages")
-            || html.contains("module CountPages"),
-        "CountPages category=* without a limit should remain literal/degraded:\n{html}"
+        !first_html.contains("%%total%%") && !first_html.contains("[[module CountPages"),
+        "CountPages category=* without a limit should expand, not remain literal:\n{first_html}"
     );
+    let first_total = parse_total(&first_html);
     assert!(
-        !html.contains("BROAD_CATEGORY_COUNT=1"),
-        "CountPages category=* without a limit must not materialize the whole site:\n{html}"
+        first_total > 1,
+        "CountPages category=* without a limit should count the whole site, got {first_total}"
+    );
+
+    // The fixture helper creates six more pages (parent, three targets,
+    // excluded, index), so the exact total must grow by exactly six.
+    let second_html = render_countpages_test_fixture_with_targets(
+        &mut runner,
+        site_id,
+        "fixture-countpages-broad-category-exact-more",
+        "verification-count-broad-category-exact-more",
+        r#"category="*""#,
+        "BROAD_CATEGORY_COUNT=%%total%%",
+        &[
+            (
+                "target-a",
+                "Fixture CountPages Broad Category Exact More Target A",
+                "Fixture CountPages broad category exact more marker A.",
+            ),
+            (
+                "target-b",
+                "Fixture CountPages Broad Category Exact More Target B",
+                "Fixture CountPages broad category exact more marker B.",
+            ),
+            (
+                "target-c",
+                "Fixture CountPages Broad Category Exact More Target C",
+                "Fixture CountPages broad category exact more marker C.",
+            ),
+        ],
+    )
+    .await;
+
+    let second_total = parse_total(&second_html);
+    assert_eq!(
+        second_total,
+        first_total + 6,
+        "CountPages category=* total must track every created page exactly"
     );
 }
 

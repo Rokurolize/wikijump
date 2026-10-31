@@ -1412,18 +1412,44 @@ fn parses_wikidot_camel_case_list_pages_order_argument() {
 }
 
 #[test]
-fn count_pages_default_selector_executes_but_all_categories_remains_literal() {
+fn count_pages_all_categories_shape_is_decided_by_exact_count_eligibility() {
     let no_filter = parse_list_pages_arguments(r#""#)
         .expect("broad CountPages selector should parse");
     assert!(!count_pages_should_remain_literal(&no_filter));
+    assert!(!count_pages_unbounded_all_category_shape(&no_filter));
 
+    // The all-category, unfiltered, unbounded shape no longer stays
+    // literal at the gate: the render answers it through the exact-count
+    // path and preserves it only when that count is not eligible.
     let all_categories = parse_list_pages_arguments(r#" category="*" "#)
         .expect("all-category CountPages selector should parse");
-    assert!(count_pages_should_remain_literal(&all_categories));
+    assert!(!count_pages_should_remain_literal(&all_categories));
+    assert!(count_pages_unbounded_all_category_shape(&all_categories));
 
     let exclusion_only = parse_list_pages_arguments(r#" category="* -deleted" "#)
         .expect("exclusion-only CountPages selector should parse");
-    assert!(count_pages_should_remain_literal(&exclusion_only));
+    assert!(!count_pages_should_remain_literal(&exclusion_only));
+    assert!(count_pages_unbounded_all_category_shape(&exclusion_only));
+
+    // The shape the imported JP system pages use: the category selector
+    // resolves to the all-category selector, and the separate argument is a display flag only.
+    let jp_shape = parse_list_pages_arguments_with_url(
+        r#" separate="@URL" category="@URL|*" "#,
+        UrlArguments::default(),
+    )
+    .expect("JP list-all-pages CountPages selector should parse");
+    assert!(!count_pages_should_remain_literal(&jp_shape));
+    assert!(count_pages_unbounded_all_category_shape(&jp_shape));
+
+    // An explicit bound or a static filter takes the invocation out of
+    // the shape, back to the ordinary bounded paths.
+    let bounded = parse_list_pages_arguments(r#" category="*" limit="20" "#)
+        .expect("bounded all-category CountPages selector should parse");
+    assert!(!count_pages_unbounded_all_category_shape(&bounded));
+
+    let filtered = parse_list_pages_arguments(r#" category="*" tags="codex" "#)
+        .expect("filtered all-category CountPages selector should parse");
+    assert!(!count_pages_unbounded_all_category_shape(&filtered));
 }
 
 #[test]

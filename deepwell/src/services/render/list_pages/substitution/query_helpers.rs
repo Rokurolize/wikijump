@@ -44,10 +44,11 @@ pub(in crate::services::render) fn count_pages_should_remain_literal(
                 .saturating_add(u64::from(arguments.exclude_current_page))
                 > u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS)
         })
-        || (arguments.category_selector_present
-            && arguments.category_all
-            && arguments.count_pages_explicit_limit.is_none()
-            && !count_pages_has_static_filter(arguments))
+        // The all-category, unfiltered, unbounded shape is deliberately
+        // absent here: `count_pages_unbounded_all_category_shape` names it,
+        // and `render_count_pages_block` answers it through the exact-count
+        // path, preserving the module literally only when that count is not
+        // eligible. The bounded row scan is never used for the shape.
         || (arguments.current_page_only
             && (arguments.category_selector_present
                 || arguments.page_type != PageTypeSelector::Normal
@@ -70,6 +71,20 @@ pub(in crate::services::render) fn count_pages_should_remain_literal(
                 || !arguments.data_form_fields.is_empty()
                 || arguments.slug.is_some()
                 || arguments.name_pattern.is_some()))
+}
+
+/// The CountPages shape an unbounded row scan cannot answer safely: an
+/// all-category selector with no static filter and no explicit bound.
+/// `render_count_pages_block` routes exactly this shape to the exact-count
+/// path and preserves the module literally when the exact count is not
+/// eligible for the invocation.
+pub(in crate::services::render) fn count_pages_unbounded_all_category_shape(
+    arguments: &ListPagesArguments,
+) -> bool {
+    arguments.category_selector_present
+        && arguments.category_all
+        && arguments.count_pages_explicit_limit.is_none()
+        && !count_pages_has_static_filter(arguments)
 }
 
 pub(in crate::services::render) fn advance_literal_cursor_and_check_count_pages_capture_containment(

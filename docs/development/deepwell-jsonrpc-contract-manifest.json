@@ -6077,6 +6077,7 @@
         "alternatives": [
           "deepwell/tests/import.rs#import_file_requires_imported_parent_page",
           "deepwell/tests/list_pages.rs#child_listpages_expands_site_domain_and_parent_fullname",
+          "deepwell/tests/list_pages.rs#countpages_all_categories_unfiltered_expands_to_exact_count",
           "deepwell/tests/list_pages.rs#countpages_static_filter_direct_fragment_renders_zero_without_raw_markers",
           "deepwell/tests/list_pages.rs#created_by_exclusion_omits_the_containing_pages_author",
           "deepwell/tests/list_pages.rs#delayed_listpages_rows_keep_authored_html_blocks_literal_in_preview",
