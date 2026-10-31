@@ -1923,68 +1923,6 @@ impl RenderService {
         }
     }
 
-    pub(in crate::services::render) fn rewrite_wikidot_html_block_iframe_urls(
-        mut body: String,
-        page_info: &PageInfo<'_>,
-        html_blocks: &[String],
-        html_block_owner_slug: Option<&str>,
-    ) -> String {
-        const PLACEHOLDER: &str = concat!(
-            r#"<iframe src="https://example.com/" allowtransparency="true" "#,
-            r#"frameborder="0" class="html-block-iframe"></iframe>"#,
-        );
-        if html_blocks.is_empty() || !body.contains(PLACEHOLDER) {
-            return body;
-        }
-
-        let full_slug = Self::page_info_full_slug(page_info);
-        // PagePreviewModule uses `search:site` for the otherwise anonymous
-        // preview page identity. Keep that route fallback local to HTML-block
-        // registration: treating it as the query's current page changes
-        // ListPages selection and exclusion semantics.
-        let full_slug = if full_slug.is_empty() {
-            "search:site".to_owned()
-        } else {
-            full_slug
-        };
-        // Hosted blocks are served under the slug of the page whose saved
-        // render registered them. A body render registers its own blocks,
-        // but a navigation bar's blocks stay registered under the
-        // navigation page even though the bar renders in the viewed page's
-        // context, so its emissions key to that page instead.
-        let hosted_slug = html_block_owner_slug.unwrap_or(&full_slug);
-        let mut search_start = 0;
-        for index in 1..=html_blocks.len() {
-            let Some(relative_start) = body[search_start..].find(PLACEHOLDER) else {
-                break;
-            };
-            let start = search_start + relative_start;
-            let end = start + PLACEHOLDER.len();
-            let iframe = Self::wikidot_html_block_interwiki_iframe(
-                &html_blocks[index - 1],
-                &full_slug,
-                page_info.language.as_ref(),
-            )
-            .or_else(|| {
-                Self::wikidot_direct_html_iframe(&html_blocks[index - 1])
-                    .map(str::to_owned)
-            })
-            .unwrap_or_else(|| {
-                format!(
-                    concat!(
-                        r#"<iframe src="/{}/html/{}" allowtransparency="true" "#,
-                        r#"frameborder="0" class="html-block-iframe"></iframe>"#,
-                    ),
-                    escape_list_pages_html_attr(hosted_slug),
-                    index,
-                )
-            });
-            body.replace_range(start..end, &iframe);
-            search_start = start + iframe.len();
-        }
-        body
-    }
-
     pub(super) async fn render_inner(
         ctx: &ServiceContext<'_>,
         wikitext: String,
