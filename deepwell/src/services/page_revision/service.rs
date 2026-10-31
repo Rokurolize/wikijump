@@ -677,6 +677,7 @@ impl PageRevisionService {
         let NavigationPageWikitext {
             top_bar_page_wikitext,
             side_bar_page_wikitext,
+            ..
         } = SettingsService::get_nav_page_wikitext(ctx, site_id, Some(category_id))
             .await
             .or_raise(make_error)?;
@@ -1008,6 +1009,7 @@ impl PageRevisionService {
         let NavigationPageWikitext {
             top_bar_page_wikitext,
             side_bar_page_wikitext,
+            ..
         } = SettingsService::get_nav_page_wikitext(ctx, site_id, Some(category_id))
             .await
             .or_raise(make_error)?;

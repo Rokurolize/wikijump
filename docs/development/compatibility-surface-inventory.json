@@ -11731,7 +11731,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "2e85d2492db889dd23e1fa7d16dc38673a3a5b2f03003652de0f59d3d47e7821"
+      "source_input_set_sha256": "8804cf1201d025c0cb29c2bde569059dd61a2bd496a36ddd36fc624008fa8598"
     },
     "ftml": {
       "commit": "3f8be45c12532d981652edf4343e02f36f1380db",
@@ -11892,7 +11892,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "6631cd03a9a737d5e678bf6b7a66ad653f965efdb7698df3627bc95222ac3164"
+        "sha256": "07d102fc6b3fb26f167433a2287b9e35c05edb0a0d4473c42383caadf4ba9374"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -14806,7 +14806,7 @@
         "status": "implemented",
         "references": [
           "deepwell/src/services/data_form/layout.rs#pub fn substitute_wikidot_data_form_layout_variables_with_display(",
-          "deepwell/src/services/render/service.rs#pub(in crate::services::render) fn rewrite_wikidot_html_block_iframe_urls(",
+          "deepwell/src/services/render/service/wikidot_direct_iframe.rs#pub(in crate::services::render) fn rewrite_wikidot_html_block_iframe_urls(",
           "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte#field.field_type === \"wiki\""
         ]
       },
@@ -20473,7 +20473,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/render/service.rs#render_nav_page(top_bar_page_wikitext, CorpusRenderScope::TopNav)",
+          "deepwell/src/services/render/service.rs#render_nav_page(\n                top_bar_page_wikitext,\n                &top_bar_page,\n                CorpusRenderScope::TopNav\n            )",
           "deepwell/src/services/site/service.rs#if let Maybe::Set(top_bar_page) = input.top_bar_page"
         ]
       },
@@ -21488,7 +21488,7 @@
         "status": "implemented",
         "references": [
           "deepwell/src/services/render/page_preview.rs#settings.enable_html_blocks = false;",
-          "deepwell/src/services/render/service.rs#pub(in crate::services::render) fn rewrite_wikidot_html_block_iframe_urls("
+          "deepwell/src/services/render/service/wikidot_direct_iframe.rs#pub(in crate::services::render) fn rewrite_wikidot_html_block_iframe_urls("
         ]
       },
       "candidate": {

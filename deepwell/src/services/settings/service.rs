@@ -541,6 +541,8 @@ impl SettingsService {
         let (top_bar_page_wikitext, side_bar_page_wikitext) = raise_multiple!(top_bar_wikitext_result, side_bar_wikitext_result; make_error);
 
         Ok(NavigationPageWikitext {
+            top_bar_page,
+            side_bar_page,
             top_bar_page_wikitext,
             side_bar_page_wikitext,
         })

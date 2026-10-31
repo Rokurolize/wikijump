@@ -1247,16 +1247,24 @@ fn page_view_and_nav_contexts_keep_current_page_without_text_block_target() {
         current_category_id: Some(9),
         current_page_id: Some(11),
         text_block_page_id: None,
+        html_block_owner_slug: None,
         lifecycle: RenderLifecycle::SavedPage,
         suppress_nested_list_pages: false,
     };
 
     for context in [
         RenderContext::page_view(7, 9, 11),
-        RenderContext::page_nav(7, 9, 11),
+        RenderContext::page_nav(7, 9, 11, None),
     ] {
         assert_eq!(context, expected);
     }
+
+    assert_eq!(
+        RenderContext::page_nav(7, 9, 11, Some("nav:side".to_owned()))
+            .html_block_owner_slug
+            .as_deref(),
+        Some("nav:side"),
+    );
 }
 
 #[test]
@@ -1268,6 +1276,7 @@ fn page_render_context_uses_current_page_as_text_block_target() {
             current_category_id: Some(9),
             current_page_id: Some(11),
             text_block_page_id: Some(11),
+            html_block_owner_slug: None,
             lifecycle: RenderLifecycle::SavedPage,
             suppress_nested_list_pages: false,
         },

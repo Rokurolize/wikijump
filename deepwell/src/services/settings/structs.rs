@@ -224,9 +224,12 @@ pub struct NavigationPageSlugs {
     pub side_bar_page: NavigationPage,
 }
 
-/// Contains the page wikitexts for the navigation pages for a category.
+/// Contains the page wikitexts for the navigation pages for a category,
+/// along with the slugs of the pages they came from.
 #[derive(Debug)]
 pub struct NavigationPageWikitext {
+    pub top_bar_page: NavigationPage,
+    pub side_bar_page: NavigationPage,
     pub top_bar_page_wikitext: Option<String>,
     pub side_bar_page_wikitext: Option<String>,
 }

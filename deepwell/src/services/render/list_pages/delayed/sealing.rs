@@ -222,6 +222,7 @@ pub(super) fn seal_list_pages_delayed_output_with_modes(
         sealed_body,
         page_info,
         &html_blocks,
+        None,
     );
     sealed_body = strip_generated_list_pages_html_markers(sealed_body);
     // A residual alignment opener here belongs to one selected page summary.

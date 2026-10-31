@@ -39,12 +39,17 @@ pub(super) enum RenderLifecycle {
     PagePreview,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) struct RenderContext {
     pub(super) current_site_id: Option<i64>,
     pub(super) current_category_id: Option<i64>,
     pub(super) current_page_id: Option<i64>,
     pub(super) text_block_page_id: Option<i64>,
+    /// Slug of the page whose saved render registered the hosted text
+    /// blocks this render assembles, when that is not the page being
+    /// rendered. Navigation bars render in the viewed page's context, but
+    /// their hosted blocks stay registered under the navigation page.
+    pub(super) html_block_owner_slug: Option<String>,
     pub(super) lifecycle: RenderLifecycle,
     pub(super) suppress_nested_list_pages: bool,
 }
@@ -104,6 +109,7 @@ impl RenderContext {
             current_site_id: None,
             current_category_id: None,
             current_page_id: None,
+            html_block_owner_slug: None,
             text_block_page_id: None,
             lifecycle: RenderLifecycle::Standalone,
             suppress_nested_list_pages: false,
@@ -115,6 +121,7 @@ impl RenderContext {
             current_site_id: Some(site_id),
             current_category_id: Some(category_id),
             current_page_id: Some(page_id),
+            html_block_owner_slug: None,
             text_block_page_id: Some(page_id),
             lifecycle: RenderLifecycle::SavedPage,
             suppress_nested_list_pages: false,
@@ -126,17 +133,24 @@ impl RenderContext {
             current_site_id: Some(site_id),
             current_category_id: Some(category_id),
             current_page_id: Some(page_id),
+            html_block_owner_slug: None,
             text_block_page_id: None,
             lifecycle: RenderLifecycle::SavedPage,
             suppress_nested_list_pages: false,
         }
     }
 
-    pub(super) fn page_nav(site_id: i64, category_id: i64, current_page_id: i64) -> Self {
+    pub(super) fn page_nav(
+        site_id: i64,
+        category_id: i64,
+        current_page_id: i64,
+        html_block_owner_slug: Option<String>,
+    ) -> Self {
         Self {
             current_site_id: Some(site_id),
             current_category_id: Some(category_id),
             current_page_id: Some(current_page_id),
+            html_block_owner_slug,
             text_block_page_id: None,
             lifecycle: RenderLifecycle::SavedPage,
             suppress_nested_list_pages: false,
@@ -148,6 +162,7 @@ impl RenderContext {
             current_site_id: Some(site_id),
             current_category_id: None,
             current_page_id: Some(0),
+            html_block_owner_slug: None,
             text_block_page_id: None,
             lifecycle: RenderLifecycle::AjaxModule,
             suppress_nested_list_pages: false,
@@ -162,6 +177,7 @@ impl RenderContext {
             current_site_id: Some(site_id),
             current_category_id: None,
             current_page_id,
+            html_block_owner_slug: None,
             text_block_page_id: None,
             lifecycle: RenderLifecycle::PagePreview,
             suppress_nested_list_pages: false,
@@ -178,6 +194,7 @@ impl RenderContext {
             current_site_id: Some(site_id),
             current_category_id: (!page_preview).then_some(category_id),
             current_page_id: (!page_preview).then_some(page_id),
+            html_block_owner_slug: None,
             text_block_page_id: None,
             lifecycle: if page_preview {
                 RenderLifecycle::PagePreview
@@ -190,7 +207,7 @@ impl RenderContext {
         }
     }
 
-    pub(super) fn list_pages_pager_route(self) -> ListPagesPagerRoute {
+    pub(super) fn list_pages_pager_route(&self) -> ListPagesPagerRoute {
         match self.lifecycle {
             RenderLifecycle::Standalone | RenderLifecycle::SavedPage => {
                 ListPagesPagerRoute::SavedPage
@@ -214,6 +231,7 @@ mod tests {
                 current_site_id: Some(7),
                 current_category_id: None,
                 current_page_id: None,
+                html_block_owner_slug: None,
                 text_block_page_id: None,
                 lifecycle: RenderLifecycle::PagePreview,
                 suppress_nested_list_pages: false,
