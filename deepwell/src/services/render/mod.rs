@@ -50,6 +50,7 @@ mod link_modules;
 #[allow(dead_code)]
 mod list_pages;
 mod literal_regions;
+mod mail_form_module;
 mod membership_actions;
 mod metacomponent;
 mod module_arguments;

@@ -36,6 +36,7 @@ use super::diagnostics::{
 use super::file_modules::expand_file_modules;
 use super::list_pages::{CountPagesExpansionOptions, ListPagesRuntimeDisplay};
 use super::literal_regions::LiteralRegionIndex;
+use super::mail_form_module::{parse_mail_form_definition, render_mail_form_module};
 use super::module_arguments::{
     WikidotModuleArgumentValueKind, wikidot_module_argument, wikidot_module_arguments,
     wikidot_module_arguments_ignoring_bare_flags,
@@ -333,6 +334,10 @@ static LISTDRAFTS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 static SIMPLETODO_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+SimpleToDo\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
         .expect("SimpleToDo module expression is valid")
+});
+static MAILFORM_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)\[\[module\s+MailForm\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
+        .expect("MailForm module expression is valid")
 });
 static SENDINVITATIONS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+SendInvitations\b(?:[^\]"]+|"[^"]*")*\]\]"#)
@@ -697,6 +702,55 @@ fn redirect_preview_destination_notice(head: &str) -> Option<String> {
             escape_redirect_notice_text(destination),
         )
     })
+}
+
+/// Find the body of the MailForm module occurrence whose head ends at
+/// `open_end`, mirroring the Rate module's occurrence handling: an immediate
+/// `[[/module]]` means an empty body, otherwise the body must start on the
+/// next line and run to the closer paired with this opener.
+fn mail_form_occurrence_body<'a>(
+    source: &'a str,
+    module_start: usize,
+    open_end: usize,
+    literal_regions: &LiteralRegionIndex,
+) -> (usize, Option<&'a str>) {
+    let suffix = &source[open_end..];
+    if suffix.starts_with("[[/module]]") {
+        return (open_end + "[[/module]]".len(), Some(""));
+    }
+
+    if !suffix
+        .chars()
+        .next()
+        .is_some_and(|character| matches!(character, '\n' | '\r'))
+    {
+        return (open_end, None);
+    }
+
+    let Some(close) = matching_source_scope_close(source, literal_regions, module_start)
+    else {
+        return (open_end, None);
+    };
+    (close.end, Some(&source[open_end..close.start]))
+}
+
+/// A MailForm module only expands when it owns its lines: FTML would not
+/// treat a mid-line or trailing-text occurrence as a module block either.
+fn mail_form_occurrence_is_block_owned(source: &str, start: usize, end: usize) -> bool {
+    let line_start = source[..start].rfind('\n').map_or(0, |index| index + 1);
+    if !source[line_start..start].trim().is_empty() {
+        return false;
+    }
+    // The closer must end its own line as well: a block's last line is the
+    // line holding the end of the paired closer.
+    let last_line_start = source[..end].rfind('\n').map_or(0, |index| index + 1);
+    if !source[last_line_start..end].ends_with("[[/module]]") {
+        return false;
+    }
+    let line_end = source[end..]
+        .find('\n')
+        .map_or(source.len(), |index| end + index);
+    source[end..line_end].trim().is_empty()
 }
 
 fn render_unavailable_page_module(name: &str) -> String {
@@ -1064,6 +1118,60 @@ impl RenderService {
         output
     }
 
+    fn expand_mail_form_modules(
+        wikitext: String,
+        settings: &WikitextSettings,
+        page_id: Option<i64>,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> String {
+        if !settings.enable_page_syntax || !MAILFORM_MODULE_REGEX.is_match(&wikitext) {
+            return wikitext;
+        }
+
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        let mut mail_form_instance = 0usize;
+        for captures in MAILFORM_MODULE_REGEX.captures_iter(&wikitext) {
+            let matched = captures
+                .get(0)
+                .expect("a MailForm capture always has a complete match");
+            if literal_regions.contains(matched.start()) {
+                continue;
+            }
+            let (occurrence_end, body) = mail_form_occurrence_body(
+                &wikitext,
+                matched.start(),
+                matched.end(),
+                &literal_regions,
+            );
+            let Some(body) = body else {
+                continue;
+            };
+            if !mail_form_occurrence_is_block_owned(
+                &wikitext,
+                matched.start(),
+                occurrence_end,
+            ) {
+                continue;
+            }
+            let head = captures.name("head").map_or("", |head| head.as_str());
+            let definition = parse_mail_form_definition(head, body);
+            mail_form_instance += 1;
+            let rendered =
+                render_mail_form_module(&definition, mail_form_instance, page_id);
+            output.push_str(&wikitext[cursor..matched.start()]);
+            output.push_str(&compat_html.push_block_html(rendered));
+            cursor = occurrence_end;
+        }
+        if cursor == 0 {
+            return wikitext;
+        }
+        output.push_str(&wikitext[cursor..]);
+        output
+    }
+
     fn expand_send_invitations_modules(
         wikitext: String,
         settings: &WikitextSettings,
@@ -1378,6 +1486,12 @@ impl RenderService {
             compat_html,
         );
         wikitext = Self::expand_simpletodo_modules(wikitext, settings, compat_html);
+        wikitext = Self::expand_mail_form_modules(
+            wikitext,
+            settings,
+            options.current_page_id,
+            compat_html,
+        );
         wikitext = Self::expand_send_invitations_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_membership_email_invitation_modules(
             ctx,
@@ -1918,5 +2032,116 @@ mod localized_module_accessible_name_tests {
         );
         let search_all_html = compat_html.restore(&expanded);
         assert!(search_all_html.contains(r#"aria-label="すべてのWikiを検索""#));
+    }
+}
+
+#[cfg(test)]
+mod mail_form_module_tests {
+    use std::borrow::Cow;
+
+    use super::RenderService;
+    use crate::services::render::compat::CompatHtmlFragments;
+    use crate::services::render::compat::text_fragments::CompatTextFragments;
+    use ftml::data::{PageInfo, ScoreValue};
+    use ftml::layout::Layout;
+    use ftml::render::{Render, html::HtmlRender};
+    use ftml::settings::{WikitextMode, WikitextSettings};
+
+    const FAKE_LOGIN_SOURCE: &str = concat!(
+        "[[module MailForm to=\"aaaa (DUMMY)\" button=\"\"]]\n",
+        "# name\n",
+        " * title: ID\n",
+        " * type: text\n",
+        " * default: driosua\n",
+        " * rules:\n",
+        "  * required: true\n",
+        "  * maxLength: 10\n",
+        "  * minLength: 100\n",
+        "[[/module]]\n",
+    );
+
+    fn expand(source: &str) -> String {
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let mut compat_html = CompatHtmlFragments::new(source);
+        let expanded = RenderService::expand_mail_form_modules(
+            source.to_owned(),
+            &settings,
+            Some(1793489522),
+            &mut compat_html,
+        );
+        compat_html.restore(&expanded)
+    }
+
+    fn render_expanded(source: &str) -> String {
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let page_info = PageInfo {
+            page: Cow::Borrowed("scp-4757"),
+            category: None,
+            site: Cow::Borrowed("scp-wiki"),
+            title: Cow::Borrowed("SCP-4757"),
+            alt_title: None,
+            score: ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let compat_text = CompatTextFragments::new(source);
+        let mut compat_html = CompatHtmlFragments::new(source);
+        let mut protected = RenderService::expand_mail_form_modules(
+            source.to_owned(),
+            &settings,
+            Some(1793489522),
+            &mut compat_html,
+        );
+        ftml::preprocess_for_layout(&mut protected, settings.layout);
+        let tokens = ftml::tokenize(&protected);
+        let (tree, _errors) = ftml::parse(&tokens, &page_info, &settings).into();
+        let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
+        let rendered = compat_html.restore(&rendered);
+        compat_text.restore(&rendered)
+    }
+
+    #[test]
+    fn mail_form_expands_to_the_live_form_shape() {
+        let rendered = render_expanded(FAKE_LOGIN_SOURCE);
+        for expected in [
+            r#"<div class="mailform-box" id="mailform-box-1">"#,
+            r#"<input name="name" class="text" type="text" value="driosua" size="30" maxlength="10"/>"#,
+            "_1793489522</div>",
+        ] {
+            assert!(
+                rendered.contains(expected),
+                "missing {expected:?} in {rendered}"
+            );
+        }
+        assert!(!rendered.contains("No such module"), "{rendered}");
+    }
+
+    #[test]
+    fn paired_mail_forms_get_sequential_instances() {
+        let source = format!("{FAKE_LOGIN_SOURCE}\n{FAKE_LOGIN_SOURCE}");
+        let expanded = expand(&source);
+        assert!(expanded.contains(r#"id="mailform-box-1""#), "{expanded}");
+        assert!(expanded.contains(r#"id="mailform-box-2""#), "{expanded}");
+        assert!(expanded.contains(r#"id="mailformdef-2""#), "{expanded}");
+    }
+
+    #[test]
+    fn mail_form_inside_a_code_block_is_not_expanded() {
+        let source = format!("[[code]]\n{FAKE_LOGIN_SOURCE}[[/code]]\n");
+        assert_eq!(expand(&source), source);
+    }
+
+    #[test]
+    fn unclosed_mail_form_is_left_untouched() {
+        let source = "[[module MailForm to=\"aaaa (DUMMY)\"]]\n# name\n * title: ID\n";
+        assert_eq!(expand(source), source);
+    }
+
+    #[test]
+    fn inline_mail_form_is_not_expanded() {
+        let source = format!("before {FAKE_LOGIN_SOURCE}");
+        assert_eq!(expand(&source), source);
+        let source = format!("{} after\n", FAKE_LOGIN_SOURCE.trim_end());
+        assert_eq!(expand(&source), source);
     }
 }
