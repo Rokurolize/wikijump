@@ -372,6 +372,18 @@ fn find_wikidot_directive_end_with_value_quote_policy(
     let mut depth = 1usize;
     while offset < scan_limit {
         if let Some(expected) = quote {
+            if bytes[offset] == b'\n' {
+                // A quoted span cannot cross a line boundary. Wikidot
+                // include arguments give quotes no cross-line semantics
+                // (ftml's include grammar reads the argument tail as raw
+                // text up to the directive's own `]]`), so a quote left
+                // unterminated on its line must not pair with a quote in
+                // later content: the scan would otherwise run far past the
+                // directive and swallow unrelated text, including the end
+                // markers of enclosing blocks. Fail closed, exactly as an
+                // unterminated quote at the scan limit already does.
+                return None;
+            }
             if bytes[offset] == expected && !quote_is_escaped_at(source, offset) {
                 quote = None;
             }
@@ -920,6 +932,43 @@ mod tests {
                 unclosed.len(),
             ),
             None,
+        );
+    }
+
+    #[test]
+    fn image_block_directive_end_unterminated_quote_cannot_pair_with_later_lines() {
+        // The quote opened by `link="` is never closed on its own line. It
+        // must not pair with the quote in the later link label: that would
+        // place the directive's end at that label's `]]` and swallow the
+        // lines in between (here, an enclosing block's end marker).
+        let crossed = concat!(
+            "[[include component:image-block name=a.png|link=\"https://example.com/a.png|width=100%]]\n",
+            "[[/collapsible]]\n",
+            "[[[some-page|Label \"Quoted\" title]]]\n",
+        );
+        assert_eq!(
+            find_wikidot_image_block_directive_end(
+                crossed,
+                "[[include component:image-block ".len(),
+                crossed.len(),
+            ),
+            None,
+        );
+
+        // A quote that opens and closes on the same line still shields the
+        // `]]` inside it, even in a directive spanning several lines.
+        let multiline = concat!(
+            "[[include component:image-block\n",
+            "caption=\"quoted ]] | closer\" |\n",
+            "width=100%]]\n",
+        );
+        assert_eq!(
+            find_wikidot_image_block_directive_end(
+                multiline,
+                "[[include component:image-block ".len(),
+                multiline.len(),
+            ),
+            Some(multiline.len() - 1),
         );
     }
 
