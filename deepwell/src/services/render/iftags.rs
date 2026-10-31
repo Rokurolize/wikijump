@@ -53,6 +53,7 @@ pub(super) fn resolve_outermost_wikidot_iftags(
         UnmatchedBoundaryMode::Preserve,
         false,
     );
+    strip_wikidot_generated_spec_markers(wikitext);
 }
 
 pub(super) fn resolve_outermost_wikidot_iftags_before_include_expansion(
@@ -318,17 +319,147 @@ fn preserve_nested_tokens(
     output
 }
 
+/// Marker appended to an `[[iftags]]` spec whose head is produced by a
+/// Wikidot parser function (for example `[[#ifexpr ...]]`), recorded by
+/// [`mark_wikidot_generated_iftags_specs`] before render preparation
+/// evaluates the function. A spec a function evaluates to nothing is the
+/// OFF state of the frozen theme-source idiom, unlike an authored bare
+/// gate, whose empty spec follows the page's tags. The marker never names
+/// a real tag (Wikidot tags carry no `:`), so a gate that reaches FTML
+/// with the marker still present fails closed instead of leaking its body.
+pub(super) const WIKIDOT_GENERATED_SPEC_MARKER: &str = "+wikijump:generated-spec";
+
+/// Append the generated-spec marker to every `[[iftags]]` head whose spec
+/// is produced by a Wikidot parser function, before preparation evaluates
+/// the function and erases the distinction from an authored bare gate.
+///
+/// The scan is deliberately conservative: it follows only heads that close
+/// without a newline at the head's own nesting level, and skips heads
+/// inside literal regions. A head it cannot follow keeps the authored
+/// treatment.
+pub(super) fn mark_wikidot_generated_iftags_specs(wikitext: &mut String) {
+    if !wikitext.contains("[[#")
+        || !wikitext
+            .as_bytes()
+            .windows("[[iftags".len())
+            .any(|window| window.eq_ignore_ascii_case(b"[[iftags"))
+    {
+        return;
+    }
+
+    let literal_regions = LiteralRegionIndex::new_wikidot_conditional_syntax(wikitext);
+    let mut insertions = Vec::new();
+    let mut search = 0usize;
+    while search < wikitext.len() {
+        let Some(open) = wikitext.as_bytes()[search..]
+            .windows("[[iftags".len())
+            .position(|window| window.eq_ignore_ascii_case(b"[[iftags"))
+        else {
+            break;
+        };
+        let start = search + open;
+        search = start + "[[iftags".len();
+        if literal_regions.contains(start) {
+            continue;
+        }
+        let Some(head_len) = wikidot_iftags_head_len(&wikitext[start..]) else {
+            continue;
+        };
+        let head_end = start + head_len;
+        if wikitext[start..head_end].contains("[[#") {
+            insertions.push(head_end - "]]".len());
+        }
+        search = search.max(head_end);
+    }
+
+    for position in insertions.into_iter().rev() {
+        wikitext.insert_str(position, WIKIDOT_GENERATED_SPEC_MARKER);
+        wikitext.insert(position, ' ');
+    }
+}
+
+/// Length of the `[[iftags ...]]` head starting at `source`, following
+/// nested `[[...]]` constructs (a parser function in the spec carries its
+/// own brackets). Returns `None` for a head that does not close on its own
+/// nesting level without crossing a newline.
+fn wikidot_iftags_head_len(source: &str) -> Option<usize> {
+    let bytes = source.as_bytes();
+    let mut depth = 0usize;
+    let mut index = 0usize;
+    while index < bytes.len() {
+        if depth <= 1 && matches!(bytes[index], b'\n' | b'\r') {
+            return None;
+        }
+        if source[index..].starts_with("[[") {
+            depth += 1;
+            index += 2;
+            continue;
+        }
+        if source[index..].starts_with("]]") {
+            depth = depth.checked_sub(1)?;
+            index += 2;
+            if depth == 0 {
+                return Some(index);
+            }
+            continue;
+        }
+        index += 1;
+        if index > 16_384 {
+            return None;
+        }
+    }
+    None
+}
+
+/// Remove the generated-spec marker from heads that stay in the text after
+/// the final resolution pass (nested pairs preserved as literal text and
+/// unrecoverable heads), so the visible head carries the plain evaluated
+/// spec. The marker is always the final spec token.
+fn strip_wikidot_generated_spec_markers(wikitext: &mut String) {
+    if !wikitext.contains(WIKIDOT_GENERATED_SPEC_MARKER) {
+        return;
+    }
+    let suffix = format!(" {WIKIDOT_GENERATED_SPEC_MARKER}]]");
+    let stripped =
+        IFTAGS_TOKEN_REGEX.replace_all(wikitext, |captures: &regex::Captures<'_>| {
+            let Some(open) = captures.name("open") else {
+                return captures[0].to_owned();
+            };
+            let open = open.as_str();
+            match open.strip_suffix(&suffix) {
+                Some(head) => format!("{head}]]"),
+                None => open.to_owned(),
+            }
+        });
+    if let std::borrow::Cow::Owned(stripped) = stripped {
+        *wikitext = stripped;
+    }
+}
+
 pub(super) fn wikidot_tag_conditions_match(spec: &str, tags: &[Cow<'_, str>]) -> bool {
+    // An authored bare gate carries no conditions to check against the
+    // page: on Wikidot's saved-page route it passes exactly when the page
+    // carries at least one tag, and fails on a tag-less page (the context
+    // of the frozen PagePreview observations). A spec a parser function
+    // evaluated to nothing never reaches this branch: preparation marks
+    // such heads, and the marker-only case below keeps them off.
     if spec.trim().is_empty() {
-        return false;
+        return !tags.is_empty();
     }
 
     let mut required = true;
     let mut prohibited = true;
     let mut present = false;
     let mut had_present = false;
+    let mut had_condition = false;
+    let mut saw_generated_marker = false;
 
     for raw_condition in spec.split_whitespace() {
+        if raw_condition == WIKIDOT_GENERATED_SPEC_MARKER {
+            saw_generated_marker = true;
+            continue;
+        }
+        had_condition = true;
         let (operator, tag) = raw_condition.split_at(usize::from(
             raw_condition.starts_with('+') || raw_condition.starts_with('-'),
         ));
@@ -345,6 +476,13 @@ pub(super) fn wikidot_tag_conditions_match(spec: &str, tags: &[Cow<'_, str>]) ->
                 present |= has_tag;
             }
         }
+    }
+
+    if saw_generated_marker && !had_condition {
+        // The spec held only the generated-spec marker: a parser function
+        // produced the spec and evaluated to nothing, which is the OFF
+        // state regardless of the page's tags.
+        return false;
     }
 
     if !had_present {
@@ -371,6 +509,68 @@ mod tests {
             resolve_outermost_wikidot_iftags(&mut source, &tags, &mut preserved);
         }
         preserved.restore(&source)
+    }
+
+    #[test]
+    fn bare_gate_follows_whether_the_page_carries_tags() {
+        let source = "before\n[[iftags]]shown[[/iftags]]\nafter\n";
+        assert_eq!(resolve(source, &["alpha"], 1), "before\nshown\nafter\n");
+        assert_eq!(resolve(source, &[], 1), "before\n\nafter\n");
+    }
+
+    #[test]
+    fn empty_spec_matches_only_when_the_page_carries_tags() {
+        let tags = [Cow::Borrowed("alpha")];
+        assert!(wikidot_tag_conditions_match("", &tags));
+        assert!(wikidot_tag_conditions_match("  ", &tags));
+        assert!(!wikidot_tag_conditions_match("", &[]));
+        assert!(!wikidot_tag_conditions_match("  ", &[]));
+    }
+
+    #[test]
+    fn generated_spec_marker_only_matches_when_real_conditions_pass() {
+        let tags = [Cow::Borrowed("alpha")];
+        // A spec a parser function evaluated to nothing stays off even on
+        // a tagged page.
+        assert!(!wikidot_tag_conditions_match(
+            WIKIDOT_GENERATED_SPEC_MARKER,
+            &tags
+        ));
+        // With real conditions present the marker is inert.
+        assert!(wikidot_tag_conditions_match(
+            &format!("- {WIKIDOT_GENERATED_SPEC_MARKER}"),
+            &tags
+        ));
+        assert!(wikidot_tag_conditions_match(
+            &format!("+alpha {WIKIDOT_GENERATED_SPEC_MARKER}"),
+            &tags
+        ));
+        assert!(!wikidot_tag_conditions_match(
+            &format!("+beta {WIKIDOT_GENERATED_SPEC_MARKER}"),
+            &tags
+        ));
+    }
+
+    #[test]
+    fn marking_generated_heads_leaves_authored_heads_untouched() {
+        let mut source = concat!(
+            "[[iftags]]bare[[/iftags]]\n",
+            "[[iftags +alpha]]plain[[/iftags]]\n",
+            "[[iftags [[#ifexpr 1 == 0 | - ]]]]generated[[/iftags]]\n",
+        )
+        .to_owned();
+        mark_wikidot_generated_iftags_specs(&mut source);
+        assert!(source.contains("[[iftags]]bare"), "{source}");
+        assert!(source.contains("[[iftags +alpha]]plain"), "{source}");
+        assert_eq!(
+            source.matches(WIKIDOT_GENERATED_SPEC_MARKER).count(),
+            1,
+            "{source}"
+        );
+        assert!(
+            source.contains(&format!("- ]] {WIKIDOT_GENERATED_SPEC_MARKER}]]")),
+            "{source}"
+        );
     }
 
     #[test]

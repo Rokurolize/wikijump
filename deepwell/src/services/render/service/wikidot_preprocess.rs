@@ -7,9 +7,9 @@ use super::{
     WIKIDOT_INCLUDE_OPEN_REGEX, WIKIDOT_LITERAL_INCLUDE_SENTINEL,
     WIKIDOT_MULTILINE_LABELED_LINK_REGEX, WikidotImageBlockArgument,
     find_wikidot_image_block_directive_end, ftml, has_include_opening_candidate,
-    is_include_variable_name, owned_url, parse_wikidot_include_argument,
-    percent_encode_path_segment, preserve_argument_quotes, relative,
-    resolve_outermost_wikidot_iftags,
+    is_include_variable_name, mark_wikidot_generated_iftags_specs, owned_url,
+    parse_wikidot_include_argument, percent_encode_path_segment,
+    preserve_argument_quotes, relative, resolve_outermost_wikidot_iftags,
     resolve_outermost_wikidot_iftags_before_include_expansion,
     resolve_outermost_wikidot_iftags_before_include_expansion_for_page_preview,
     resolve_unbound_include_variable_iftags,
@@ -26,6 +26,7 @@ impl RenderService {
     ) {
         resolve_unbound_include_variable_iftags(wikitext);
         if wikitext.contains("[[#") {
+            mark_wikidot_generated_iftags_specs(wikitext);
             *wikitext = resolve_wikidot_parser_functions_outside_list_pages(wikitext);
         }
         Self::resolve_wikidot_iftags(wikitext, page_info, preserved);
@@ -133,6 +134,7 @@ impl RenderService {
             resolve_unbound_include_variable_iftags(wikitext);
         }
         if include_depth == 0 && wikitext.contains("[[#") {
+            mark_wikidot_generated_iftags_specs(wikitext);
             *wikitext = Self::resolve_wikidot_parser_functions_before_include_collection(
                 wikitext,
             );

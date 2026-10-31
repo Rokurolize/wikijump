@@ -3204,7 +3204,11 @@ fn matches_live_wikidot_tag_predicate_matrix() {
     assert!(!wikidot_tag_conditions_match("+alpha +beta", &tags));
     assert!(wikidot_tag_conditions_match("+alpha -beta", &tags));
     assert!(!wikidot_tag_conditions_match("+alpha -alpha", &tags));
-    assert!(!wikidot_tag_conditions_match("", &tags));
+    // A bare gate has no conditions to check: it passes exactly when the
+    // page carries at least one tag (the saved-route behavior; the frozen
+    // PagePreview observations are all tag-less and bind it as false).
+    assert!(wikidot_tag_conditions_match("", &tags));
+    assert!(!wikidot_tag_conditions_match("", &[]));
     assert!(wikidot_tag_conditions_match("-", &tags));
 }
 
@@ -3253,6 +3257,59 @@ fn resolves_parser_generated_iftags_predicates_before_tag_matching() {
     }
     assert!(!wikitext.contains("[[iftags"), "{wikitext}");
     assert!(!wikitext.contains("[[#if"), "{wikitext}");
+}
+
+#[test]
+fn authored_and_generated_empty_iftags_specs_diverge_in_preparation() {
+    // The tagged saved-route population carries authored bare gates whose
+    // bodies render live (css-theme-preparation-tool among them), while
+    // the frozen parser-predicate matrix binds a parser function that
+    // evaluates its spec to nothing as the OFF state. Preparation marks
+    // generated heads before evaluating them so both behaviors hold.
+    let page_info = ftml::data::PageInfo {
+        tags: vec![Cow::Borrowed("alpha")],
+        ..fallback_test_page_info("tagged-page", "Tagged Page")
+    };
+    let mut wikitext = concat!(
+        "[[iftags]]\n",
+        "AUTHORED_BARE_TAGGED\n",
+        "[[/iftags]]\n",
+        "[[iftags [[#ifexpr 1 == 0 | - ]]]]\n",
+        "GENERATED_EMPTY_TAGGED\n",
+        "[[/iftags]]\n",
+        "[[iftags [[#ifexpr 1 == 1 | +alpha | +beta ]]]]\n",
+        "GENERATED_ALPHA_TAGGED\n",
+        "[[/iftags]]\n",
+    )
+    .to_owned();
+
+    prepare_test_wikidot_conditionals_before_include_expansion(&mut wikitext, &page_info);
+
+    assert!(wikitext.contains("AUTHORED_BARE_TAGGED"), "{wikitext}");
+    assert!(!wikitext.contains("GENERATED_EMPTY_TAGGED"), "{wikitext}");
+    assert!(wikitext.contains("GENERATED_ALPHA_TAGGED"), "{wikitext}");
+    assert!(!wikitext.contains("[[iftags"), "{wikitext}");
+    assert!(!wikitext.contains("generated-spec"), "{wikitext}");
+}
+
+#[test]
+fn authored_bare_iftags_stays_closed_on_a_tagless_page_in_preparation() {
+    let page_info = fallback_test_page_info("plain-page", "Plain Page");
+    let mut wikitext = concat!(
+        "[[iftags]]\n",
+        "AUTHORED_BARE_UNTAGGED\n",
+        "[[/iftags]]\n",
+        "[[iftags [[#ifexpr 1 == 1 | - ]]]]\n",
+        "GENERATED_MINUS_UNTAGGED\n",
+        "[[/iftags]]\n",
+    )
+    .to_owned();
+
+    prepare_test_wikidot_conditionals_before_include_expansion(&mut wikitext, &page_info);
+
+    assert!(!wikitext.contains("AUTHORED_BARE_UNTAGGED"), "{wikitext}");
+    assert!(wikitext.contains("GENERATED_MINUS_UNTAGGED"), "{wikitext}");
+    assert!(!wikitext.contains("[[iftags"), "{wikitext}");
 }
 
 #[test]
@@ -3454,6 +3511,17 @@ fn resolves_empty_and_empty_negative_iftags_like_saved_wikidot() {
     resolve_test_wikidot_iftags(&mut wikitext, &page_info);
 
     assert_eq!(wikitext, "\nOMEGA_EMPTY_NEGATIVE\n");
+}
+
+#[test]
+fn resolves_no_argument_iftags_on_a_tagged_page_like_saved_wikidot() {
+    let mut page_info = fallback_test_page_info("tagged-page", "Tagged Page");
+    page_info.tags = vec![Cow::Borrowed("essay"), Cow::Borrowed("_cc")];
+    let mut wikitext = "[[iftags]]OMEGA_NO_ARGUMENT[[/iftags]]\n".to_owned();
+
+    resolve_test_wikidot_iftags(&mut wikitext, &page_info);
+
+    assert_eq!(wikitext, "OMEGA_NO_ARGUMENT\n");
 }
 
 #[test]
