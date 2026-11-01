@@ -330,6 +330,31 @@ test("verification and specification inputs run only the final verification barr
   }
 })
 
+test("specification generator is excluded only when PREFLIGHT_SKIP_WIKIDOT_SPECIFICATION_GENERATOR=1", (t) => {
+  const skipped = createHarness(t)
+  const skippedResult = skipped.runPreflight(["--base", remoteOid, "--final"], {
+    PREFLIGHT_REMOTE_SCOPE: "verification",
+    PREFLIGHT_SKIP_WIKIDOT_SPECIFICATION_GENERATOR: "1"
+  })
+  assert.equal(skippedResult.status, 0, skippedResult.stderr)
+  assert.ok(
+    !skipped.commands().includes("node scripts/generate-wikidot-specifications.mjs --check"),
+    skipped.commands().join("\n")
+  )
+  assert.match(
+    skippedResult.stdout,
+    /^preflight: wikidot specification generator skipped \(PREFLIGHT_SKIP_WIKIDOT_SPECIFICATION_GENERATOR=1\).*WIKIDOT_DOCUMENTATION_CORPUS/mu
+  )
+
+  const ran = createHarness(t)
+  const ranResult = ran.runPreflight(["--base", remoteOid, "--final"], {
+    PREFLIGHT_REMOTE_SCOPE: "verification"
+  })
+  assert.equal(ranResult.status, 0, ranResult.stderr)
+  assert.ok(ran.commands().includes("node scripts/generate-wikidot-specifications.mjs --check"))
+  assert.doesNotMatch(ranResult.stdout, /specification generator skipped/u)
+})
+
 test("explicit groups run without a change-set and unknown groups are refused", (t) => {
   const listed = createHarness(t)
   const result = listed.runPreflight(["--base", remoteOid, "--final", "--groups", "theme_lab", "--list"], {

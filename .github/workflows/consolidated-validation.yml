@@ -23,8 +23,13 @@ name: Consolidated validation
 # One check inside the verification group is likewise local-only: the
 # wikidot specification generator reads the scp-wiki-translation
 # documentation corpus (WIKIDOT_DOCUMENTATION_CORPUS), which is operator
-# data in no Git repository. It fails in CI for that reason alone; the
-# run's receipt records it, and this is expected, not a regression.
+# data in no Git repository, so on a hosted runner the check can only
+# report its evidence absent. The job therefore sets
+# PREFLIGHT_SKIP_WIKIDOT_SPECIFICATION_GENERATOR=1: preflight excludes
+# the check and says so in its log, instead of failing every nightly
+# run on that one check. The plan step names the exclusion in the job
+# summary and as a warning annotation. The check still runs locally,
+# where the corpus exists.
 #
 # The standing application images are not built here: the runner is
 # invoked with its own --no-image-build flag because the
@@ -66,6 +71,11 @@ jobs:
       WIKIJUMP_FTML_CHECKOUT: ${{ github.workspace }}/ftml
       WIKIDOT_PY_CHECKOUT: ${{ github.workspace }}/wikidot.py
       THEME_LAB_TEST_CONCURRENCY: "4"
+      # Excludes the one verification-group check whose input (the
+      # scp-wiki-translation documentation corpus) exists in no Git
+      # repository; see the header. The plan step names the exclusion
+      # in the summary and as a warning annotation.
+      PREFLIGHT_SKIP_WIKIDOT_SPECIFICATION_GENERATOR: "1"
       # A hosted runner has 4 cores; the local default of 12 task-owned
       # Deepwell stacks would thrash it. Same tests, fewer stacks at once.
       WIKIJUMP_DEEPWELL_TEST_SHARDS: "3"
@@ -303,6 +313,19 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
             echo "::warning title=Local-only validation groups::Selected but not run in CI: $(join_by ', ' "${skipped[@]}"). These groups run locally; this informational run does not cover them."
           fi
+          for g in "${run_groups[@]}"; do
+            if [ "$g" = "verification" ]; then
+              {
+                echo ""
+                echo "### Checks excluded in CI"
+                echo ""
+                echo "- \`wikidot specification generator\` (verification group)"
+                echo ""
+                echo "The check reads the scp-wiki-translation documentation corpus (\`WIKIDOT_DOCUMENTATION_CORPUS\`), operator data that exists in no Git repository, so it cannot run on a hosted runner. The gate step sets \`PREFLIGHT_SKIP_WIKIDOT_SPECIFICATION_GENERATOR=1\` and preflight excludes the check, saying so in its log. The check still runs locally, where the corpus exists; this informational run does **not** cover it."
+              } >> "$GITHUB_STEP_SUMMARY"
+              echo "::warning title=Local-only check excluded::The verification group's 'wikidot specification generator' check is excluded in CI (PREFLIGHT_SKIP_WIKIDOT_SPECIFICATION_GENERATOR=1): it reads the scp-wiki-translation documentation corpus (WIKIDOT_DOCUMENTATION_CORPUS), operator data in no Git repository. The check runs locally; this run does not cover it."
+            fi
+          done
 
       - name: Build the Deepwell integration images
         if: contains(steps.plan.outputs.run_groups, 'deepwell') || contains(steps.plan.outputs.run_groups, 'wws')
