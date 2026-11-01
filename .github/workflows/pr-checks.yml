@@ -218,6 +218,21 @@ jobs:
           ref: ${{ steps.siblings.outputs.wikidot_py_rev }}
           fetch-depth: 0
 
+      - name: Configure the runner's git identity
+        if: steps.plan.outputs.verification == '1'
+        run: |
+          # Same ambient precondition as the local environment: without
+          # a git identity, git's ident heuristic resolves the machine's
+          # own hostname during fixture clones, which the test network
+          # guard treats as an external lookup.
+          git config --global user.email "ci@localhost"
+          git config --global user.name "wikijump-ci"
+
+      - name: Prepare the wikidot.py locked test environment
+        if: steps.plan.outputs.verification == '1'
+        working-directory: .ci-siblings/wikidot.py
+        run: uv sync --locked
+
       - name: Wikidot verification suite
         if: steps.plan.outputs.verification == '1'
         working-directory: install/local/wikidot-verification

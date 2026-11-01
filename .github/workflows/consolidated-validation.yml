@@ -124,6 +124,14 @@ jobs:
           ref: ${{ steps.pins.outputs.wikidot_py_rev }}
           fetch-depth: 0
 
+      - name: Prepare the wikidot.py locked test environment
+        working-directory: wikidot.py
+        run: |
+          # The AMC regression wrapper requires the checkout's own
+          # .venv (uv.lock) and never resolves dependencies at test
+          # time; build it here, in setup.
+          uv sync --locked
+
       - name: Set up Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -203,14 +211,17 @@ jobs:
           # dependencies the contract canary builds against.
           cargo fetch --manifest-path ftml/Cargo.toml
 
-      - name: Register the runner hostname locally
+      - name: Configure the runner's git identity
         run: |
-          # The test network guard treats resolving the machine's own
-          # hostname through DNS as an external attempt (a local-path
-          # git clone in the standing tests triggers it). Resolving the
-          # hostname via /etc/hosts is the local configuration the guard
-          # expects; genuinely external connects stay blocked.
-          echo "127.0.0.1 $(hostname)" | sudo tee -a /etc/hosts
+          # Ambient precondition parity with the coordinator's machine:
+          # with no git identity configured, git's clone ident heuristic
+          # resolves the machine's own hostname, which the test network
+          # guard (by design) treats as an external lookup and flags the
+          # standing test suite as non-hermetic. A configured identity -
+          # as the local environment has - never takes that path. The
+          # guard still blocks every genuinely external connect.
+          git config --global user.email "ci@localhost"
+          git config --global user.name "wikijump-ci"
 
       - name: Plan the selected groups
         id: plan
