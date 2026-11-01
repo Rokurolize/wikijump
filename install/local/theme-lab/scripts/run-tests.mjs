@@ -59,10 +59,13 @@ export function main(argv = process.argv.slice(2)) {
   // Suite speed comes from removing wasted work, not from widening
   // this knob. THEME_LAB_TEST_CONCURRENCY still overrides it for
   // experiments.
+  // --test-force-exit: a test file whose process outlives its tests (for
+  // example a leaked browser) otherwise blocks the whole run with no timeout;
+  // --test-timeout only bounds individual tests.
   const concurrency = process.env.THEME_LAB_TEST_CONCURRENCY ?? '4';
   const result = spawnSync(
     process.execPath,
-    ['--test', `--test-concurrency=${concurrency}`, '--test-timeout=240000', ...files],
+    ['--test', `--test-concurrency=${concurrency}`, '--test-timeout=240000', '--test-force-exit', ...files],
     {cwd: themeLabRoot, stdio: 'inherit'},
   );
   if (result.error) throw result.error;
