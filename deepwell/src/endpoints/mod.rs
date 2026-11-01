@@ -62,6 +62,7 @@ pub mod all {
     pub use super::info::*;
     pub use super::link::*;
     pub use super::locale::*;
+    pub use super::mail_form::*;
     pub use super::message::*;
     pub use super::mirror_scope::*;
     pub use super::normalize::*;
@@ -99,6 +100,7 @@ pub mod import;
 pub mod info;
 pub mod link;
 pub mod locale;
+pub mod mail_form;
 pub mod message;
 pub mod mirror_scope;
 pub mod normalize;

@@ -260,7 +260,11 @@
     {
       "surface_id": "catalog-feature:module-mailform",
       "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "finalize_runtime_module_residuals" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views" }]
+      "tests": [
+        { "path": "deepwell/tests/page.rs", "anchor": "mailform_renders_form_in_preview_and_saved_views" },
+        { "path": "deepwell/tests/page.rs", "anchor": "mailform_submission_answers_wikidot_shaped_field_errors" },
+        { "path": "deepwell/tests/page.rs", "anchor": "mailform_submission_success_is_recorded_not_delivered" }
+      ]
     },
     {
       "surface_id": "catalog-feature:module-managesite",

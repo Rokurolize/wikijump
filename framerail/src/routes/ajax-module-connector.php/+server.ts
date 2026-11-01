@@ -14,6 +14,7 @@ import { crossSitePostResponse } from "$lib/server/cross-site-post"
 import { client } from "$lib/server/deepwell"
 import { siteEducationalUpgrade } from "$lib/server/deepwell/admin"
 import { forumPostCreate, wikidotForumModule } from "$lib/server/deepwell/forum"
+import { mailFormSubmit } from "$lib/server/deepwell/mail-form"
 import { wikidotMembersListModule } from "$lib/server/deepwell/membership"
 import { adminView, preloadView } from "$lib/server/deepwell/views"
 import { pageFileList } from "$lib/server/deepwell/page-file"
@@ -155,6 +156,7 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
         page: pageId
       }),
     createForumPost: (input) => forumPostCreate(input, requestContext),
+    submitMailForm: (input) => mailFormSubmit(input, requestContext),
     renderEditMetaModule: async ({
       siteId: requestSiteId,
       pageId

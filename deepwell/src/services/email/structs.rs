@@ -152,3 +152,18 @@ pub enum EmailProviderClassification {
     /// No detected email infrastructure.
     NoProvider,
 }
+
+/// A Wikidot MailForm submission composed as the email Wikidot would
+/// send for it: the authored `to=` recipients (Wikidot user names, as
+/// authored), the email title, and the serialized form data.
+///
+/// Wikijump has no outbound email facility, so instances of this struct
+/// are only ever recorded by the local no-delivery sink
+/// (`EmailService::send_mail_form_message`); nothing resolves the
+/// recipients to mailboxes and nothing is transmitted.
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct MailFormMessage {
+    pub recipients: String,
+    pub title: String,
+    pub body: String,
+}

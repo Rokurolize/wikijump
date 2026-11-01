@@ -18,21 +18,30 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-//! Display-parity support for the Wikidot `[[module MailForm]]` module.
+//! Support for the Wikidot `[[module MailForm]]` module.
 //!
 //! Wikidot's MailForm collects form input and emails it to the `to=`
-//! recipients. Wikijump has no outbound email facility, so this expander
-//! covers the display surface only: it parses the authored field definition
-//! (the nested-list body grammar documented on Wikidot's MailForm module
-//! page) and emits the same markup shape live Wikidot serves -- a
-//! `.mailform-box` div wrapping a `table.form` with one row per field, a
-//! `.buttons` div, and the hidden `mailformdef-<instance>` definition-handle
-//! div. The handle is stateless: a digest of the canonical definition plus
-//! the rendering page's id, in the same `<32 hex>_<page id>` shape Wikidot
-//! uses. No submission is ever sent from here; `validate_mail_form_submission`
-//! implements the authored validation rules so a future connector handler can
-//! answer submissions with Wikidot-shaped field errors, and rules-passing
-//! submissions there must be answered as "not delivered", never as a success.
+//! recipients. Wikijump's emulation follows the standing policy for this
+//! module: the display and the interaction behavior match live Wikidot --
+//! the form renders with the same markup, and submissions are validated
+//! against the authored rules and answered with Wikidot's response shapes
+//! (per-field errors, or the success outcome with its `successPage`
+//! redirect) -- but no email is ever actually sent. A rules-passing
+//! submission is recorded in deepwell's local no-delivery sink (see
+//! `EmailService::send_mail_form_message`) and reported to the reader
+//! exactly as Wikidot reports a sent form; the sink record, explicitly
+//! marked not delivered, is the only trace.
+//!
+//! This module owns the definition model: it parses the authored field
+//! definition (the nested-list body grammar documented on Wikidot's
+//! MailForm module page) and renders the same markup shape live Wikidot
+//! serves -- a `.mailform-box` div wrapping a `table.form` with one row
+//! per field, a `.buttons` div, and the hidden `mailformdef-<instance>`
+//! definition-handle div. The handle is stateless: a digest of the
+//! canonical definition plus the rendering page's id, in the same
+//! `<32 hex>_<page id>` shape Wikidot uses, so a submission resolves its
+//! definition by re-deriving it from the page's current wikitext (see
+//! `find_mail_form_definition` below).
 //!
 //! Markup details are pinned to live captures (scp-4757, scp-7079, scp-5232
 //! on scp-wiki, fetched 2026-11-01): text inputs carry `value` only when a
@@ -44,17 +53,24 @@
 //! is not rendered) and checkbox inputs (no mirrored page authors one).
 
 use std::collections::HashMap;
+use std::sync::LazyLock;
+
+use ftml::settings::WikitextSettings;
+use regex::Regex;
 
 use sha1::{Digest, Sha1};
 
+use super::compat::CompatHtmlFragments;
+use super::literal_regions::LiteralRegionIndex;
 use super::module_arguments::wikidot_module_argument;
+use super::native_list_context::matching_source_scope_close;
 use super::service::{escape_list_pages_html_attr, escape_list_pages_html_text};
 
 /// Wikidot's documented default for a field's `size` option.
 const MAIL_FORM_DEFAULT_SIZE: u32 = 30;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub(super) enum MailFormFieldType {
+pub(crate) enum MailFormFieldType {
     #[default]
     Text,
     Textarea,
@@ -67,27 +83,27 @@ pub(super) enum MailFormFieldType {
 /// Length limits are byte lengths, matching the PHP `strlen` semantics of
 /// Wikidot's server-side validation.
 #[derive(Clone, Debug, Default, PartialEq)]
-pub(super) struct MailFormRules {
-    pub(super) required: bool,
-    pub(super) min_length: Option<usize>,
-    pub(super) max_length: Option<usize>,
-    pub(super) match_pattern: Option<String>,
-    pub(super) number: bool,
-    pub(super) min_value: Option<f64>,
-    pub(super) max_value: Option<f64>,
+pub(crate) struct MailFormRules {
+    pub(crate) required: bool,
+    pub(crate) min_length: Option<usize>,
+    pub(crate) max_length: Option<usize>,
+    pub(crate) match_pattern: Option<String>,
+    pub(crate) number: bool,
+    pub(crate) min_value: Option<f64>,
+    pub(crate) max_value: Option<f64>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub(super) struct MailFormField {
-    pub(super) name: String,
-    pub(super) title: Option<String>,
-    pub(super) field_type: MailFormFieldType,
-    pub(super) size: Option<u32>,
-    pub(super) default: Option<String>,
-    pub(super) hint: Option<String>,
+pub(crate) struct MailFormField {
+    pub(crate) name: String,
+    pub(crate) title: Option<String>,
+    pub(crate) field_type: MailFormFieldType,
+    pub(crate) size: Option<u32>,
+    pub(crate) default: Option<String>,
+    pub(crate) hint: Option<String>,
     /// `(value, label)` pairs for `select` fields, in authored order.
-    pub(super) options: Vec<(String, String)>,
-    pub(super) rules: MailFormRules,
+    pub(crate) options: Vec<(String, String)>,
+    pub(crate) rules: MailFormRules,
 }
 
 impl MailFormField {
@@ -110,13 +126,13 @@ impl MailFormField {
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
-pub(super) struct MailFormDefinition {
-    pub(super) recipients: Option<String>,
-    pub(super) button: Option<String>,
-    pub(super) format_csv: bool,
-    pub(super) email_title: Option<String>,
-    pub(super) success_page: Option<String>,
-    pub(super) fields: Vec<MailFormField>,
+pub(crate) struct MailFormDefinition {
+    pub(crate) recipients: Option<String>,
+    pub(crate) button: Option<String>,
+    pub(crate) format_csv: bool,
+    pub(crate) email_title: Option<String>,
+    pub(crate) success_page: Option<String>,
+    pub(crate) fields: Vec<MailFormField>,
 }
 
 /// Parse a MailForm module head and body into a definition.
@@ -125,7 +141,7 @@ pub(super) struct MailFormDefinition {
 /// that do not fit the field grammar are ignored rather than failing the
 /// whole form, so a page always renders the fields that were authored
 /// recognizably.
-pub(super) fn parse_mail_form_definition(head: &str, body: &str) -> MailFormDefinition {
+pub(crate) fn parse_mail_form_definition(head: &str, body: &str) -> MailFormDefinition {
     let mut definition = MailFormDefinition {
         recipients: wikidot_module_argument(head, "to").map(str::to_owned),
         button: wikidot_module_argument(head, "button").map(str::to_owned),
@@ -268,9 +284,10 @@ fn mail_form_rule_flag(value: &str) -> bool {
 /// The stateless definition handle rendered into the hidden
 /// `mailformdef-<instance>` div, in Wikidot's `<md5>_<page id>` shape. The
 /// digest is the first 32 hex characters of the SHA-1 of a canonical
-/// serialization of the definition; it keys nothing server-side in this
-/// display-parity scope.
-pub(super) fn mail_form_definition_handle(
+/// serialization of the definition; a submission names its definition by
+/// presenting this handle back, and the definition is re-derived from the
+/// page wikitext and matched against it.
+pub(crate) fn mail_form_definition_handle(
     definition: &MailFormDefinition,
     instance: usize,
     page_id: Option<i64>,
@@ -310,7 +327,7 @@ pub(super) fn mail_form_definition_handle(
 }
 
 /// Render one MailForm module occurrence as the HTML live Wikidot serves.
-pub(super) fn render_mail_form_module(
+pub(crate) fn render_mail_form_module(
     definition: &MailFormDefinition,
     instance: usize,
     page_id: Option<i64>,
@@ -433,12 +450,8 @@ fn render_mail_form_field_row(
     output.push_str("</td></tr>");
 }
 
-// Retained for the future connector submission handler (see the module
-// docs): production code does not call it yet, but its unit tests are the
-// executable specification of the authored-rule semantics.
-#[allow(dead_code)]
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(super) enum MailFormRuleViolation {
+pub(crate) enum MailFormRuleViolation {
     Required,
     MinLength(usize),
     MaxLength(usize),
@@ -448,19 +461,17 @@ pub(super) enum MailFormRuleViolation {
     MaxValue(f64),
 }
 
-#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq)]
-pub(super) struct MailFormFieldError {
-    pub(super) field: String,
-    pub(super) violation: MailFormRuleViolation,
+pub(crate) struct MailFormFieldError {
+    pub(crate) field: String,
+    pub(crate) violation: MailFormRuleViolation,
 }
 
 /// Validate submitted values against the authored rules, in field order.
 ///
 /// An empty value on an optional field skips the remaining rules, as on
 /// Wikidot; on a required field it reports only the `Required` violation.
-#[allow(dead_code)]
-pub(super) fn validate_mail_form_submission(
+pub(crate) fn validate_mail_form_submission(
     definition: &MailFormDefinition,
     values: &HashMap<String, String>,
 ) -> Vec<MailFormFieldError> {
@@ -531,7 +542,6 @@ pub(super) fn validate_mail_form_submission(
 /// Wikidot authors write `match` rules as Perl-style patterns (`/…/`, with an
 /// optional trailing `i` flag). An authored pattern that does not compile is
 /// not failed closed: the rule is skipped rather than rejecting every value.
-#[allow(dead_code)]
 fn mail_form_pattern_matches(pattern: &str, value: &str) -> bool {
     let Some(regex) = compile_mail_form_pattern(pattern) else {
         return true;
@@ -539,7 +549,6 @@ fn mail_form_pattern_matches(pattern: &str, value: &str) -> bool {
     regex.is_match(value)
 }
 
-#[allow(dead_code)]
 fn compile_mail_form_pattern(pattern: &str) -> Option<regex::Regex> {
     let pattern = pattern.trim();
     let (body, case_insensitive) = match pattern.strip_prefix('/') {
@@ -555,6 +564,172 @@ fn compile_mail_form_pattern(pattern: &str) -> Option<regex::Regex> {
         body.to_owned()
     };
     regex::Regex::new(&body).ok()
+}
+
+/// The message a field's `.field-error-message` cell shows when the
+/// submitted value violates this rule. Wikidot's connector answers a
+/// failed submission with `status: "form_errors"` and a map from field
+/// name to one such message, which its MailFormModule script writes into
+/// the matching row's error cell.
+pub(crate) fn mail_form_error_message(violation: &MailFormRuleViolation) -> String {
+    match violation {
+        MailFormRuleViolation::Required => "This field is required.".to_owned(),
+        MailFormRuleViolation::MinLength(_) => "This field is too short.".to_owned(),
+        MailFormRuleViolation::MaxLength(_) => "This field is too long.".to_owned(),
+        MailFormRuleViolation::Match => "This field has an invalid value.".to_owned(),
+        MailFormRuleViolation::Number => "This field should be a number.".to_owned(),
+        MailFormRuleViolation::MinValue(_) => "This field is too small.".to_owned(),
+        MailFormRuleViolation::MaxValue(_) => "This field is too large.".to_owned(),
+    }
+}
+
+static MAILFORM_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)\[\[module\s+MailForm\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
+        .expect("MailForm module expression is valid")
+});
+
+/// Find the body of the MailForm module occurrence whose head ends at
+/// `open_end`, mirroring the Rate module's occurrence handling: an immediate
+/// `[[/module]]` means an empty body, otherwise the body must start on the
+/// next line and run to the closer paired with this opener.
+fn mail_form_occurrence_body<'a>(
+    source: &'a str,
+    module_start: usize,
+    open_end: usize,
+    literal_regions: &LiteralRegionIndex,
+) -> (usize, Option<&'a str>) {
+    let suffix = &source[open_end..];
+    if suffix.starts_with("[[/module]]") {
+        return (open_end + "[[/module]]".len(), Some(""));
+    }
+
+    if !suffix
+        .chars()
+        .next()
+        .is_some_and(|character| matches!(character, '\n' | '\r'))
+    {
+        return (open_end, None);
+    }
+
+    let Some(close) = matching_source_scope_close(source, literal_regions, module_start)
+    else {
+        return (open_end, None);
+    };
+    (close.end, Some(&source[open_end..close.start]))
+}
+
+/// A MailForm module only expands when it owns its lines: FTML would not
+/// treat a mid-line or trailing-text occurrence as a module block either.
+fn mail_form_occurrence_is_block_owned(source: &str, start: usize, end: usize) -> bool {
+    let line_start = source[..start].rfind('\n').map_or(0, |index| index + 1);
+    if !source[line_start..start].trim().is_empty() {
+        return false;
+    }
+    // The closer must end its own line as well: a block's last line is the
+    // line holding the end of the paired closer.
+    let last_line_start = source[..end].rfind('\n').map_or(0, |index| index + 1);
+    if !source[last_line_start..end].ends_with("[[/module]]") {
+        return false;
+    }
+    let line_end = source[end..]
+        .find('\n')
+        .map_or(source.len(), |index| end + index);
+    source[end..line_end].trim().is_empty()
+}
+
+/// One expanded MailForm module occurrence in a page's wikitext: the byte
+/// range it spans (opener through the paired closer) plus its head and
+/// body slices. Occurrences are enumerated exactly as the render-time
+/// expander sees them -- occurrences inside literal regions, without a
+/// paired closer, or not owning their lines are not occurrences at all --
+/// so the per-page instance numbering a reader's form carries is the
+/// same numbering a submission resolves against.
+struct MailFormOccurrence<'a> {
+    start: usize,
+    end: usize,
+    head: &'a str,
+    body: &'a str,
+}
+
+fn mail_form_occurrences(wikitext: &str) -> Vec<MailFormOccurrence<'_>> {
+    let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(wikitext);
+    let mut occurrences = Vec::new();
+    for captures in MAILFORM_MODULE_REGEX.captures_iter(wikitext) {
+        let matched = captures
+            .get(0)
+            .expect("a MailForm capture always has a complete match");
+        if literal_regions.contains(matched.start()) {
+            continue;
+        }
+        let (occurrence_end, body) = mail_form_occurrence_body(
+            wikitext,
+            matched.start(),
+            matched.end(),
+            &literal_regions,
+        );
+        let Some(body) = body else {
+            continue;
+        };
+        if !mail_form_occurrence_is_block_owned(wikitext, matched.start(), occurrence_end)
+        {
+            continue;
+        }
+        occurrences.push(MailFormOccurrence {
+            start: matched.start(),
+            end: occurrence_end,
+            head: captures.name("head").map_or("", |head| head.as_str()),
+            body,
+        });
+    }
+    occurrences
+}
+
+/// Resolve the MailForm definition a submission's `formdef` handle names.
+///
+/// The handle rendered into the page is stateless (a digest of the
+/// canonical definition plus the page id), so the page's current wikitext
+/// is the registry: re-enumerate its expanded occurrences and return the
+/// definition whose handle matches the presented one.
+pub(crate) fn find_mail_form_definition(
+    wikitext: &str,
+    page_id: i64,
+    handle: &str,
+) -> Option<MailFormDefinition> {
+    for (index, occurrence) in mail_form_occurrences(wikitext).into_iter().enumerate() {
+        let definition = parse_mail_form_definition(occurrence.head, occurrence.body);
+        if mail_form_definition_handle(&definition, index + 1, Some(page_id)) == handle {
+            return Some(definition);
+        }
+    }
+    None
+}
+
+pub(super) fn expand_mail_form_modules(
+    wikitext: String,
+    settings: &WikitextSettings,
+    page_id: Option<i64>,
+    compat_html: &mut CompatHtmlFragments,
+) -> String {
+    if !settings.enable_page_syntax || !MAILFORM_MODULE_REGEX.is_match(&wikitext) {
+        return wikitext;
+    }
+
+    let occurrences = mail_form_occurrences(&wikitext);
+    if occurrences.is_empty() {
+        return wikitext;
+    }
+
+    let mut output = String::with_capacity(wikitext.len());
+    let mut cursor = 0;
+    for (index, occurrence) in occurrences.into_iter().enumerate() {
+        let definition = parse_mail_form_definition(occurrence.head, occurrence.body);
+        let rendered = render_mail_form_module(&definition, index + 1, page_id);
+        output.push_str(&wikitext[cursor..occurrence.start]);
+        output.push_str(&compat_html.push_block_html(rendered));
+        cursor = occurrence.end;
+    }
+    output.push_str(&wikitext[cursor..]);
+    output
 }
 
 #[cfg(test)]
@@ -839,5 +1014,115 @@ mod tests {
         assert!(check("3.5").is_empty());
         // Optional and empty: no violations.
         assert!(check("").is_empty());
+    }
+}
+
+#[cfg(test)]
+mod mail_form_expansion_tests {
+    use std::borrow::Cow;
+
+    use crate::services::render::compat::CompatHtmlFragments;
+    use crate::services::render::compat::text_fragments::CompatTextFragments;
+    use ftml::data::{PageInfo, ScoreValue};
+    use ftml::layout::Layout;
+    use ftml::render::{Render, html::HtmlRender};
+    use ftml::settings::{WikitextMode, WikitextSettings};
+
+    const FAKE_LOGIN_SOURCE: &str = concat!(
+        "[[module MailForm to=\"aaaa (DUMMY)\" button=\"\"]]\n",
+        "# name\n",
+        " * title: ID\n",
+        " * type: text\n",
+        " * default: driosua\n",
+        " * rules:\n",
+        "  * required: true\n",
+        "  * maxLength: 10\n",
+        "  * minLength: 100\n",
+        "[[/module]]\n",
+    );
+
+    fn expand(source: &str) -> String {
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let mut compat_html = CompatHtmlFragments::new(source);
+        let expanded = super::expand_mail_form_modules(
+            source.to_owned(),
+            &settings,
+            Some(1793489522),
+            &mut compat_html,
+        );
+        compat_html.restore(&expanded)
+    }
+
+    fn render_expanded(source: &str) -> String {
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let page_info = PageInfo {
+            page: Cow::Borrowed("scp-4757"),
+            category: None,
+            site: Cow::Borrowed("scp-wiki"),
+            title: Cow::Borrowed("SCP-4757"),
+            alt_title: None,
+            score: ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let compat_text = CompatTextFragments::new(source);
+        let mut compat_html = CompatHtmlFragments::new(source);
+        let mut protected = super::expand_mail_form_modules(
+            source.to_owned(),
+            &settings,
+            Some(1793489522),
+            &mut compat_html,
+        );
+        ftml::preprocess_for_layout(&mut protected, settings.layout);
+        let tokens = ftml::tokenize(&protected);
+        let (tree, _errors) = ftml::parse(&tokens, &page_info, &settings).into();
+        let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
+        let rendered = compat_html.restore(&rendered);
+        compat_text.restore(&rendered)
+    }
+
+    #[test]
+    fn mail_form_expands_to_the_live_form_shape() {
+        let rendered = render_expanded(FAKE_LOGIN_SOURCE);
+        for expected in [
+            r#"<div class="mailform-box" id="mailform-box-1">"#,
+            r#"<input name="name" class="text" type="text" value="driosua" size="30" maxlength="10"/>"#,
+            "_1793489522</div>",
+        ] {
+            assert!(
+                rendered.contains(expected),
+                "missing {expected:?} in {rendered}"
+            );
+        }
+        assert!(!rendered.contains("No such module"), "{rendered}");
+    }
+
+    #[test]
+    fn paired_mail_forms_get_sequential_instances() {
+        let source = format!("{FAKE_LOGIN_SOURCE}\n{FAKE_LOGIN_SOURCE}");
+        let expanded = expand(&source);
+        assert!(expanded.contains(r#"id="mailform-box-1""#), "{expanded}");
+        assert!(expanded.contains(r#"id="mailform-box-2""#), "{expanded}");
+        assert!(expanded.contains(r#"id="mailformdef-2""#), "{expanded}");
+    }
+
+    #[test]
+    fn mail_form_inside_a_code_block_is_not_expanded() {
+        let source = format!("[[code]]\n{FAKE_LOGIN_SOURCE}[[/code]]\n");
+        assert_eq!(expand(&source), source);
+    }
+
+    #[test]
+    fn unclosed_mail_form_is_left_untouched() {
+        let source = "[[module MailForm to=\"aaaa (DUMMY)\"]]\n# name\n * title: ID\n";
+        assert_eq!(expand(source), source);
+    }
+
+    #[test]
+    fn inline_mail_form_is_not_expanded() {
+        let source = format!("before {FAKE_LOGIN_SOURCE}");
+        assert_eq!(expand(&source), source);
+        let source = format!("{} after\n", FAKE_LOGIN_SOURCE.trim_end());
+        assert_eq!(expand(&source), source);
     }
 }

@@ -14710,8 +14710,7 @@ async fn simpletodo_and_sendinvitations_modules_match_live_preview_basics() {
 }
 
 #[tokio::test]
-async fn mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views()
- {
+async fn mailform_renders_form_in_preview_and_saved_views() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
@@ -14719,11 +14718,11 @@ async fn mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_
     let source = concat!(
         "BEFORE\n",
         "[[module MailForm to=\"dummy\" button=\"Send\"]]\n",
-        "* first-field\n",
+        "# first-field\n",
         " * title: First field\n",
         " * default: harmless\n",
         " * type: text\n",
-        "* second-field\n",
+        "# second-field\n",
         " * title: Second field\n",
         " * type: textarea\n",
         "[[/module]]\n",
@@ -14741,17 +14740,17 @@ async fn mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_
         wikidot_page_preview,
         json!({
             "site_id": site_id,
-            "title": "MailForm fail-closed preview",
+            "title": "MailForm render preview",
             "wikitext": source,
         }),
     );
-    assert_mailform_is_literal_and_inert(&preview.body);
+    assert_mailform_renders_form(&preview.body);
 
     create_listpages_test_page(
         &mut runner,
         site_id,
-        "fixture-mailform-fail-closed",
-        "Fixture MailForm Fail Closed",
+        "fixture-mailform-render",
+        "Fixture MailForm Render",
         source,
     )
     .await;
@@ -14767,7 +14766,7 @@ async fn mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_
         json!({
             "site_id": site_id,
             "session_token": null,
-            "route": {"slug": "fixture-mailform-fail-closed", "extra": ""},
+            "route": {"slug": "fixture-mailform-render", "extra": ""},
             "locales": ["en-US", "en"],
         }),
     );
@@ -14777,29 +14776,265 @@ async fn mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_
         } => compiled_body_html,
         other => panic!("expected found MailForm view, got {other:?}"),
     };
-    assert_mailform_is_literal_and_inert(&body);
+    assert_mailform_renders_form(&body);
 }
 
-fn assert_mailform_is_literal_and_inert(body: &str) {
-    assert!(
-        body.contains("BEFORE")
-            && body.contains("<em>MailForm</em>")
-            && body.contains("No such module")
-            && body.contains("AFTER"),
-        "MailForm without a trusted action contract must fail closed between authored boundaries:\n{body}",
-    );
-    for forbidden in [
-        r#"<div class="mailform-box""#,
-        "<form",
-        "javascript:",
-        "mailformdef-",
-        "MailFormModule.listeners",
+fn assert_mailform_renders_form(body: &str) {
+    for expected in [
+        "BEFORE",
+        "AFTER",
+        r#"<div class="mailform-box" id="mailform-box-1">"#,
+        r#"<form id="mailform-1" action="javascript:WIKIDOT.modules.MailFormModule.listeners.send(null, '1')">"#,
+        r#"<tr id="mailform-row-1-first-field"><td>First field</td>"#,
+        r#"<div class="field-error-message"></div>"#,
+        r#"<div id="mailformdef-1" style="display: none;">"#,
     ] {
         assert!(
-            !body.contains(forbidden),
-            "fail-closed MailForm output must not expose active control {forbidden:?}:\n{body}",
+            body.contains(expected),
+            "MailForm should render Wikidot's form markup, missing {expected:?}:\n{body}",
         );
     }
+    assert!(
+        !body.contains("No such module"),
+        "MailForm must not degrade to the unavailable-module error:\n{body}",
+    );
+}
+
+/// Extract the `formdef` definition handle a rendered page carries for
+/// the given MailForm instance, as a browser submission presents it.
+fn mailform_rendered_definition_handle(body: &str, instance: usize) -> String {
+    let marker = format!(r#"<div id="mailformdef-{instance}" style="display: none;">"#);
+    let start = body
+        .find(&marker)
+        .expect("rendered page should carry a mailformdef handle")
+        + marker.len();
+    let end = body[start..]
+        .find("</div>")
+        .expect("mailformdef handle div should close")
+        + start;
+    body[start..end].to_owned()
+}
+
+/// Create a saved page carrying one MailForm module and return the
+/// definition handle its rendered view carries.
+async fn mailform_fixture_handle(
+    runner: &mut TestRunner,
+    site_id: i64,
+    slug: &str,
+    title: &str,
+    source: &str,
+) -> String {
+    create_listpages_test_page(runner, site_id, slug, title, source).await;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let body = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found MailForm view, got {other:?}"),
+    };
+    mailform_rendered_definition_handle(&body, 1)
+}
+
+#[tokio::test]
+async fn mailform_submission_answers_wikidot_shaped_field_errors() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    // The SCiPnet fake-login prop shape: one field whose authored rules
+    // no value can satisfy (required, at least 100 and at most 10 bytes).
+    let source = concat!(
+        "[[module MailForm to=\"aaaa (DUMMY)\" button=\"\"]]\n",
+        "# name\n",
+        " * title: ID\n",
+        " * type: text\n",
+        " * default: driosua\n",
+        " * rules:\n",
+        "  * required: true\n",
+        "  * maxLength: 10\n",
+        "  * minLength: 100\n",
+        "[[/module]]\n",
+    );
+    let handle = mailform_fixture_handle(
+        &mut runner,
+        site_id,
+        "fixture-mailform-form-errors",
+        "Fixture MailForm Form Errors",
+        source,
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+
+    let empty = run_endpoint!(
+        runner,
+        mail_form_submit,
+        json!({"site_id": site_id, "formdef": handle, "values": {}}),
+    );
+    assert_eq!(empty.status, "form_errors");
+    assert_eq!(empty.errors.len(), 1);
+    assert_eq!(empty.errors[0].field, "name");
+    assert_eq!(empty.errors[0].message, "This field is required.");
+
+    let short = run_endpoint!(
+        runner,
+        mail_form_submit,
+        json!({"site_id": site_id, "formdef": handle, "values": {"name": "abc"}}),
+    );
+    assert_eq!(short.status, "form_errors");
+    assert_eq!(short.errors.len(), 1);
+    assert_eq!(short.errors[0].field, "name");
+    assert_eq!(short.errors[0].message, "This field is too short.");
+
+    let long = run_endpoint!(
+        runner,
+        mail_form_submit,
+        json!({
+            "site_id": site_id,
+            "formdef": handle,
+            "values": {"name": "x".repeat(105)},
+        }),
+    );
+    assert_eq!(long.status, "form_errors");
+    assert_eq!(long.errors.len(), 1);
+    assert_eq!(long.errors[0].field, "name");
+    assert_eq!(long.errors[0].message, "This field is too long.");
+
+    // A handle naming a definition the page does not carry is refused.
+    let page_id = handle.rsplit('_').next().expect("handle has a page suffix");
+    let forged = format!("00000000000000000000000000000000_{page_id}");
+    run_endpoint_err!(
+        runner,
+        mail_form_submit,
+        json!({"site_id": site_id, "formdef": forged, "values": {}}),
+    );
+}
+
+#[tokio::test]
+async fn mailform_submission_success_is_recorded_not_delivered() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let source = concat!(
+        "[[module MailForm to=\"site-admin\" title=\"Contact\" successPage=\"form-thanks\"]]\n",
+        "# name\n",
+        " * title: Your name\n",
+        " * type: text\n",
+        " * rules:\n",
+        "  * required: true\n",
+        "# comments\n",
+        " * title: Extra comments\n",
+        " * type: textarea\n",
+        "[[/module]]\n",
+    );
+    let handle = mailform_fixture_handle(
+        &mut runner,
+        site_id,
+        "fixture-mailform-success",
+        "Fixture MailForm Success",
+        source,
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let output = run_endpoint!(
+        runner,
+        mail_form_submit,
+        json!({
+            "site_id": site_id,
+            "formdef": handle,
+            "values": {"name": "Roku", "comments": "hello"},
+        }),
+    );
+    assert_eq!(output.status, "ok");
+    assert!(output.errors.is_empty());
+    assert_eq!(output.success_page.as_deref(), Some("form-thanks"));
+    assert!(
+        output
+            .success_msg
+            .as_deref()
+            .is_some_and(|message| message.contains("The form has been sent")),
+        "success should carry Wikidot's sent message: {output:?}",
+    );
+    // The reader sees Wikidot's sent outcome; internally nothing was
+    // delivered -- the composed message sits in the no-delivery sink
+    // record, explicitly marked not delivered.
+    assert_eq!(output.delivery.as_deref(), Some("not_delivered"));
+    let message = output
+        .message
+        .expect("a successful submission should record the sink message");
+    assert_eq!(message.recipients, "site-admin");
+    assert_eq!(message.title, "Contact");
+    assert_eq!(message.body, "Your name: Roku\nExtra comments: hello\n");
+
+    // Defaults: no authored recipients, title, or success page.
+    let default_source = concat!(
+        "[[module MailForm]]\n",
+        "# note\n",
+        " * type: text\n",
+        "[[/module]]\n",
+    );
+    let default_handle = mailform_fixture_handle(
+        &mut runner,
+        site_id,
+        "fixture-mailform-success-default",
+        "Fixture MailForm Success Default",
+        default_source,
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let output = run_endpoint!(
+        runner,
+        mail_form_submit,
+        json!({
+            "site_id": site_id,
+            "formdef": default_handle,
+            "values": {"note": "hi"},
+        }),
+    );
+    assert_eq!(output.status, "ok");
+    assert_eq!(output.success_page, None);
+    assert_eq!(output.delivery.as_deref(), Some("not_delivered"));
+    let message = output
+        .message
+        .expect("a successful submission should record the sink message");
+    assert_eq!(message.recipients, "site administrators");
+    assert_eq!(message.title, "Wikidot.com - MailForm form data");
+    assert_eq!(message.body, "note: hi\n");
 }
 
 #[tokio::test]

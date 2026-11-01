@@ -556,6 +556,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
         wikidot_page_discussion_create
     );
     register!("wikidot_page_preview", wikidot_page_preview);
+    register!("mail_form_submit", mail_form_submit);
     register!("wikidot_legacy_set_tags", wikidot_legacy_set_tags);
     register!("page_edit", page_edit);
     register!("page_create_permission", page_create_permission);
