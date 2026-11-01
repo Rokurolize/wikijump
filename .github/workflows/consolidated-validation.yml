@@ -176,6 +176,16 @@ jobs:
           tar -xzf "${machete}.tar.gz" --strip-components=1 -C "$HOME/.cargo/bin" "${machete}/cargo-machete"
           sqlx --version
           cargo machete --version
+          # The Deepwell integration shards run under cargo-nextest;
+          # install the same release the local environment uses.
+          nextest="cargo-nextest-0.9.138-x86_64-unknown-linux-gnu"
+          curl -fsSLO "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.138/${nextest}.tar.gz"
+          curl -fsSLO "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.138/${nextest}.tar.gz.sha256"
+          test "$(tr -d '[:space:]' < "${nextest}.tar.gz.sha256")" = "$(sha256sum "${nextest}.tar.gz" | cut -d ' ' -f 1)"
+          mkdir -p /tmp/nextest-bin
+          tar -xzf "${nextest}.tar.gz" -C /tmp/nextest-bin
+          install -m 0755 "$(find /tmp/nextest-bin -name cargo-nextest -type f | head -1)" "$HOME/.cargo/bin/cargo-nextest"
+          cargo nextest --version
 
       - name: Install system build dependencies
         run: |
