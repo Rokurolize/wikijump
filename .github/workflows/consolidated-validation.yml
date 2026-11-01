@@ -176,7 +176,10 @@ jobs:
           cargo fetch --locked --manifest-path wikijump/deepwell/Cargo.toml
           cargo fetch --locked --manifest-path wikijump/wws/Cargo.toml
           cargo fetch --locked --manifest-path wikijump/locales/validator/Cargo.toml
-          cargo fetch --locked --manifest-path ftml/Cargo.toml
+          # The FTML repository tracks no Cargo.lock (library convention),
+          # so its fetch cannot be --locked; it only warms the crates.io
+          # dependencies the contract canary builds against.
+          cargo fetch --manifest-path ftml/Cargo.toml
 
       - name: Plan the selected groups
         id: plan
