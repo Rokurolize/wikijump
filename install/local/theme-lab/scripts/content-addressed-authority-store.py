@@ -132,12 +132,14 @@ def install_file(source, destination, digest, size):
         Path(tmp).unlink(missing_ok=True)
 
 
-def link_file(blob, destination, digest, size):
+def link_file(blob, destination, digest, size, verified_identities=None):
     """Hardlink an already verified read-only blob: no copy, no overwrite.
 
     Falls back to the checked copy when the store is on another filesystem.
-    The blob is rechecked after linking, so a blob swapped between the plan
-    and the link cannot enter the checkout.
+    A blob swapped between the plan and the link cannot enter the checkout:
+    the linked file must be the inode whose bytes were hashed under this
+    digest in this run (`verified_identities`, keyed by device and inode), and
+    anything else is hashed in full.
     """
     if blob.stat().st_mode & 0o222:
         raise ValueError(f'stored blob is writable, refusing to share it: {blob}')
@@ -150,7 +152,10 @@ def link_file(blob, destination, digest, size):
         install_file(blob, destination, digest, size)
         return
     try:
-        verify_file(destination, digest, size, 'linked evidence')
+        info = destination.lstat()
+        if not (verified_identities and info.st_size == size
+                and verified_identities.get((info.st_dev, info.st_ino)) == digest):
+            verify_file(destination, digest, size, 'linked evidence')
     except ValueError:
         destination.unlink()
         raise
@@ -250,7 +255,7 @@ def transfer(store_root, destination_root, inventory_path, expected_sha, *, mode
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target = authority.safe_file(destination, rel, existing=False)
                 if link:
-                    link_file(blob_path(store, digest), target, digest, size)
+                    link_file(blob_path(store, digest), target, digest, size, verified_identities)
                 else:
                     install_file(blob_path(store, digest), target, digest, size)
 

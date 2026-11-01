@@ -38,6 +38,7 @@ emit_scope() {
         locales/validator/src/main.rs
       ;;
     deepwell) printf '%s\\0' deepwell/src/lib.rs ;;
+    theme_lab) printf '%s\\0' install/local/theme-lab/src/example.mjs ;;
     deepwell_space) printf '%s\\0' 'deepwell/src/file with space.rs' ;;
     none) ;;
     docs) printf '%s\\0' docs/development.md ;;
@@ -264,6 +265,37 @@ test("final preflight runs groups side by side with the same checks, ordered log
   const firstDeepwell = order.findIndex((command) =>
     command.includes("run-deepwell-integration-validation.mjs"))
   assert.ok(lastTimed >= 0 && firstDeepwell > lastTimed, order.join("\n"))
+})
+
+test("the archival Theme Lab checks run only when Theme Lab or the barrier script changed, or when forced", (t) => {
+  const archive = [
+    "node install/local/theme-lab/sigma10-migration/check-final.mjs --historical-only",
+    "node install/local/theme-lab/scripts/check-campaign-record-integrity.mjs"
+  ]
+  const always = [
+    "node install/local/theme-lab/ports/scripts/check-adaptation-authority.mjs",
+    "node install/local/theme-lab/scripts/check-post-closure-changes.mjs --base " + remoteOid
+  ]
+  const ran = (scope, overrides = {}) => {
+    const harness = createHarness(t)
+    const result = harness.runPreflight(["--base", remoteOid, "--final", "--groups", "theme_lab"], {
+      PREFLIGHT_REMOTE_SCOPE: scope,
+      ...overrides
+    })
+    assert.equal(result.status, 0, result.stdout + result.stderr)
+    return { commands: harness.commands(), stdout: result.stdout }
+  }
+
+  const unchanged = ran("deepwell")
+  for (const command of always) assert.ok(unchanged.commands.some((line) => line.endsWith(command.replace(/^node /u, "")) || line === command), command)
+  for (const command of archive) assert.ok(!unchanged.commands.some((line) => line.includes(command.slice(5))), command)
+  assert.match(unchanged.stdout, /^preflight: Theme Lab archive checks skipped .*PREFLIGHT_THEME_LAB_ARCHIVE=always/mu)
+  assert.doesNotMatch(unchanged.stdout, /Theme Lab campaign record integrity: ok/u)
+
+  for (const run of [ran("theme_lab"), ran("deepwell", { PREFLIGHT_THEME_LAB_ARCHIVE: "always" })]) {
+    for (const command of archive) assert.ok(run.commands.some((line) => line.includes(command.slice(5))), command)
+    assert.doesNotMatch(run.stdout, /archive checks skipped/u)
+  }
 })
 
 test("verification and specification inputs run only the final verification barrier", async (t) => {

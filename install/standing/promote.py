@@ -816,6 +816,9 @@ def promote(args, source_root, runtime_home, override_file, identity, evidence, 
             output = args.validation_store / f"{identity['wikijump_tree']}-{int(time.time())}.json"
             run_logged(
                 [
+                    # A promotion always runs the archival Theme Lab checks
+                    # that a pull request skips when it leaves Theme Lab alone.
+                    "env", "PREFLIGHT_THEME_LAB_ARCHIVE=always",
                     "node", str(VERIFICATION / "scripts" / "run-consolidated-validation.mjs"),
                     "--repository", str(source_root),
                     "--base", standing_sha,
