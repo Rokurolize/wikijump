@@ -2,7 +2,8 @@ node_modules/
 pnpm-lock.yaml
 
 # SHA-pinned authority evidence restored from the content-addressed store
-# (scripts/content-addressed-authority-store.py, publication/current-head-authority-supplement.json).
+# (scripts/content-addressed-authority-store.py, restore inventory derived by
+# scripts/derive-authority-inventory.mjs).
 # These bytes live in the store, not in Git.
 /ports/authority-evidence/al-slop-credit-callout-current-20261005/
 /ports/authority-evidence/al-slop-desktop-submenu-current-20261005/
@@ -11,7 +12,9 @@ pnpm-lock.yaml
 /ports/authority-evidence/al-slop-narrow-navigation-current-20261005/
 /ports/authority-evidence/al-slop-responsive-grid-current-20261005/
 /ports/authority-evidence/classic-mobile-endpoint-current-css-20261006/
+/ports/authority-evidence/classic-mobile-endpoint-dropdown-20261030/
 /ports/authority-evidence/classic-narrow-mobile-navigation-final-css-20261006/
+/ports/authority-evidence/classic-narrow-mobile-navigation-dropdown-20261030/
 /ports/authority-evidence/cosmonaut-final-three-authority-5-credit-license-v3-20261002/
 /ports/authority-evidence/cosmonaut-final-three-authority-6-navigation-action-v3-20261002/
 /ports/authority-evidence/cosmonaut-final-three-trusted-navigation-v3-20261002/
