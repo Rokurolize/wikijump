@@ -45,7 +45,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: consolidated-validation-${{ github.ref_name }}
+  # Nightly runs serialize per ref; a manual dispatch is an intentional
+  # separate run and gets its own group, so dispatching one informational
+  # run never cancels another.
+  group: consolidated-validation-${{ github.ref_name }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'nightly' }}
   cancel-in-progress: true
 
 jobs:
