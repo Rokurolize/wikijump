@@ -321,5 +321,6 @@ test('a runtime-only change passes', () => {
 });
 
 test('C6: the live instrument-proper digest equals the closure anchor on this tree', () => {
-  assert.equal(computeInstrumentProperDigest(), 'df8e0b532decad8636fc7d5488c44d6c08e0bdc525a02eae8330c19554487a0a');
+  assert.equal(computeInstrumentProperDigest(), 'df8e0b532decad8636fc7d5488c44d6c08e0bdc525a02eae8330c19554487a0a',
+    'this change edits the closure measurement instrument (see computeInstrumentProperDigest); every later post-closure admission would fail Check 2 as incomparable with the closure. Revert the instrument change, or treat it as new-campaign work.');
 });

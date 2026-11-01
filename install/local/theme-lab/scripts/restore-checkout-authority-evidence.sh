@@ -24,3 +24,4 @@ INVENTORY_SHA="$(sha256sum "${INVENTORY}" | cut -d' ' -f1)"
 python3 -I "${HERE}/content-addressed-authority-store.py" \
   --mode restore --store-root "${STORE}" --destination-root "${REPO}" \
   --inventory "${INVENTORY}" --inventory-sha256 "${INVENTORY_SHA}" --apply --link
+"${HERE}/exclude-restored-authority-evidence.sh" "${REPO}" "${INVENTORY}"

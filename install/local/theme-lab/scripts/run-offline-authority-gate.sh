@@ -40,6 +40,7 @@ python3 "${HERE}/content-addressed-authority-store.py" \
   --mode restore --store-root "${STORE}" \
   --destination-root "${REPO}" \
   --inventory "${INVENTORY}" --inventory-sha256 "${INVENTORY_SHA}" --apply
+"${HERE}/exclude-restored-authority-evidence.sh" "${REPO}" "${INVENTORY}"
 
 node "${HERE}/../ports/scripts/check-adaptation-authority.mjs"
 node "${HERE}/real-port-regression.mjs" --maintained --verify-only
