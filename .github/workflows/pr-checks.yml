@@ -90,7 +90,12 @@ jobs:
 
       - name: Enable pnpm via Corepack
         if: steps.plan.outputs.node == '1'
-        run: corepack enable
+        run: |
+          corepack enable
+          # Both packages pin pnpm@11.10.0; activate exactly that version,
+          # or Corepack serves its own default and pnpm refuses with
+          # ERR_PNPM_BAD_PM_VERSION.
+          corepack prepare pnpm@11.10.0 --activate
 
       - name: Install the pinned Rust toolchain
         if: steps.plan.outputs.rust == '1'
