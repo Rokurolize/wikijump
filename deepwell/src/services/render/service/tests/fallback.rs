@@ -1802,3 +1802,320 @@ fn direct_html_iframe_with_scheme_free_src_forms_falls_back_to_hosted_frame() {
             .contains("javascript:")
     );
 }
+
+#[test]
+fn wikidot_line_block_scans_treat_one_line_blocks_as_complete() {
+    // Multi-line html block: a position in the body is inside, a position
+    // after the closer line is not.
+    let source = "[[html]]\n<p>x</p>\n[[/html]]\nafter\n";
+    assert!(RenderService::is_inside_wikidot_html_block(
+        source,
+        source.find("<p>").unwrap()
+    ));
+    assert!(!RenderService::is_inside_wikidot_html_block(
+        source,
+        source.find("after").unwrap()
+    ));
+
+    // One-line html block (the fragment:scp-7869-iteration-one shape): a
+    // position between the opener and the closer is inside, everything
+    // after the line is outside.
+    let source = "[[html]]<hr>[[/html]]\nafter\n";
+    assert!(RenderService::is_inside_wikidot_html_block(
+        source,
+        source.find("<hr>").unwrap()
+    ));
+    assert!(!RenderService::is_inside_wikidot_html_block(
+        source,
+        source.find("after").unwrap()
+    ));
+
+    // An unclosed html block still covers the rest of the document.
+    let source = "[[html]]\n<p>x</p>\nafter\n";
+    assert!(RenderService::is_inside_wikidot_html_block(
+        source,
+        source.find("after").unwrap()
+    ));
+
+    // One-line code block (the djkaktus-s-proposal shape, repeated four
+    // times ahead of the component carrying its interwiki frames).
+    let source = "[[code]][MEMETIC KILL AGENT NEUTRALIZED][[/code]]\nafter\n";
+    assert!(RenderService::is_inside_wikidot_code_block(
+        source,
+        source.find("MEMETIC").unwrap()
+    ));
+    assert!(!RenderService::is_inside_wikidot_code_block(
+        source,
+        source.find("after").unwrap()
+    ));
+
+    // A one-line code block with attributes closes on its line too, and
+    // the multi-line baseline is unchanged.
+    let source = "[[code type=\"css\"]].x { color: red; }[[/code]]\nafter\n";
+    assert!(!RenderService::is_inside_wikidot_code_block(
+        source,
+        source.find("after").unwrap()
+    ));
+    let source = "[[code]]\nlet x = 1;\n[[/code]]\nafter\n";
+    assert!(RenderService::is_inside_wikidot_code_block(
+        source,
+        source.find("let x").unwrap()
+    ));
+    assert!(!RenderService::is_inside_wikidot_code_block(
+        source,
+        source.find("after").unwrap()
+    ));
+}
+
+#[test]
+fn embed_after_one_line_html_block_is_claimed() {
+    // fragment:scp-7869-iteration-one authors `[[html]]<hr>[[/html]]` ahead
+    // of its theme includes; the embeds the themes carry must still be
+    // claimed exactly as if the block were written on its own.
+    let mut wikitext = concat!(
+        "[[html]]<hr>[[/html]]\n",
+        "[[embed]]\n",
+        r#"<iframe src="//interwiki.scpwiki.com/styleFrame.html?priority=1&theme=https://example.com/a.css&css={$css}" style="display: none"></iframe>"#,
+        "\n[[/embed]]\n",
+    )
+    .to_owned();
+
+    let iframes = RenderService::protect_wikidot_embed_iframes(&mut wikitext);
+    assert_eq!(
+        iframes,
+        vec![
+            r#"<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=1&theme=https://example.com/a.css&css={$css}" style="display: none"></iframe>"#
+                .to_owned()
+        ],
+    );
+    assert!(!wikitext.contains("[[embed]]"));
+}
+
+#[test]
+fn embed_after_one_line_code_block_is_claimed() {
+    let mut wikitext = concat!(
+        "[[code]][MEMETIC KILL AGENT NEUTRALIZED][[/code]]\n",
+        "[[embed]]\n",
+        r#"<iframe src="//interwiki.scpwiki.com/styleFrame.html?priority=1&theme=https://example.com/a.css&css={$css}" style="display: none"></iframe>"#,
+        "\n[[/embed]]\n",
+    )
+    .to_owned();
+
+    let iframes = RenderService::protect_wikidot_embed_iframes(&mut wikitext);
+    assert_eq!(
+        iframes,
+        vec![
+            r#"<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=1&theme=https://example.com/a.css&css={$css}" style="display: none"></iframe>"#
+                .to_owned()
+        ],
+    );
+    assert!(!wikitext.contains("[[embed]]"));
+}
+
+fn render_embed_claims_after_preparation(
+    wikitext: &str,
+) -> (Vec<String>, String, String) {
+    let page_info = fallback_test_page_info("embed-include", "Embed Include");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let outer = RenderService::prepare_outer_render_wikitext(
+        super::super::ExpandedRenderWikitext {
+            theme_previewer_blank: false,
+            wikidot_compat_html: CompatHtmlFragments::new(wikitext),
+            wikidot_compat_text: CompatTextFragments::new(wikitext),
+            wikitext: wikitext.to_owned(),
+            included_pages: Vec::new(),
+            expanded_include_count: 0,
+            url_offset_list_pages_content_bytes: 0,
+            runtime_css_insertions: Vec::new(),
+        },
+        &page_info,
+        &settings,
+    );
+    let inner = RenderService::prepare_inner_render_wikitext(outer, &settings);
+    let claims = inner.wikidot_embed_iframes.clone();
+    let prepared = inner.wikitext.clone();
+    let tokens = ftml::tokenize(&inner.wikitext);
+    let (tree, _errors) = ftml::parse(&tokens, &page_info, &settings).into();
+    let html = HtmlRender.render(&tree, &page_info, &settings).body;
+    let html = RenderService::restore_protected_wikidot_embed_iframes(html, &claims);
+    let html = inner.protection.restore(|protection| {
+        let html = protection.compat_html().restore(&html);
+        protection.compat_text().restore(&html)
+    });
+    (claims, prepared, html)
+}
+
+/// The interwiki-style component body as include expansion produces it:
+/// callsite variables substituted, the unbound `{$css}` left in place, and
+/// the documentation comment intact ahead of the block.
+fn interwiki_style_component(priority: &str, theme: &str) -> String {
+    let mut source = String::new();
+    source.push_str(
+        "[!--\nStyling component for the EN Interwiki.\n--]\n\n[[embed]]\n<iframe src=\"//interwiki.scpwiki.com/styleFrame.html?priority=",
+    );
+    source.push_str(priority);
+    source.push_str("&theme=");
+    source.push_str(theme);
+    source.push_str("&css={$css}\" style=\"display: none\"></iframe>\n[[/embed]]\n");
+    source
+}
+
+#[test]
+fn include_carried_styleframe_embeds_are_claimed_and_rendered() {
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+
+    // Two carriage levels, assembled the way production expansion inlines
+    // them: page -> theme -> component (twice, at priorities 1 and 2).
+    let theme_source = concat!(
+        "[[module CSS]]\n",
+        ".theme { display: block; }\n",
+        "[[/module]]\n",
+        "\n",
+        "[[div_ style=\"display: none\"]]\n",
+        "[[include :scp-wiki:component:interwiki-style\n",
+        "| priority=1\n",
+        "| theme=https://example.com/a.css\n",
+        "]]\n",
+        "\n",
+        "[[include :scp-wiki:component:interwiki-style\n",
+        "| priority=2\n",
+        "| theme=https://example.com/b.css\n",
+        "]]\n",
+        "[[/div]]\n",
+    );
+    let (theme_assembled, _) = ftml::include(
+        theme_source,
+        &settings,
+        PreparedIncluder {
+            pages: vec![
+                Some(interwiki_style_component("1", "https://example.com/a.css")),
+                Some(interwiki_style_component("2", "https://example.com/b.css")),
+            ],
+            missing_replacements: Default::default(),
+        },
+        include_error,
+    )
+    .expect("theme includes should expand");
+
+    // The root page authors the one-line html block ahead of the include,
+    // as fragment:scp-7869-iteration-one does ahead of its theme includes.
+    let root_source = concat!(
+        "[[html]]<hr>[[/html]]\n",
+        "[[include :scp-wiki:theme:black-highlighter-theme]]\n",
+        "Body text.\n",
+    );
+    let (assembled, _) = ftml::include(
+        root_source,
+        &settings,
+        PreparedIncluder {
+            pages: vec![Some(theme_assembled)],
+            missing_replacements: Default::default(),
+        },
+        include_error,
+    )
+    .expect("root include should expand");
+
+    let (claims, prepared, html) = render_embed_claims_after_preparation(&assembled);
+    assert_eq!(claims.len(), 2, "{prepared}");
+    assert!(
+        claims[0].contains("priority=1&theme=https://example.com/a.css"),
+        "{claims:?}"
+    );
+    assert!(
+        claims[1].contains("priority=2&theme=https://example.com/b.css"),
+        "{claims:?}"
+    );
+    assert!(!prepared.contains("[[embed]]"), "{prepared}");
+    assert!(
+        html.contains(
+            r#"<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=1&theme=https://example.com/a.css&css={$css}" style="display: none"></iframe>"#
+        ),
+        "{html}"
+    );
+    assert!(
+        html.contains(
+            r#"<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=2&theme=https://example.com/b.css&css={$css}" style="display: none"></iframe>"#
+        ),
+        "{html}"
+    );
+    assert!(!html.contains("[[embed]]"), "{html}");
+    assert!(!html.contains("&lt;iframe"), "{html}");
+}
+
+#[test]
+fn include_carried_unsupported_embed_payloads_fail_closed() {
+    // A payload that arrives through an include gets no weaker treatment
+    // than one authored on the page itself: each of these is replaced by
+    // the same no-match error an own-surface block produces.
+    for payload in [
+        r#"<iframe src="//evil.example/widget" style="display: none"></iframe>"#,
+        r#"<iframe src="//interwiki.example.com/styleFrame.html?priority=1" style="display: none"></iframe>"#,
+        r#"<iframe src="//interwiki.scpwiki.com/styleFrame.html?priority=1" style="display: none" onload="alert(1)"></iframe>"#,
+    ] {
+        let assembled = format!(
+            "[[html]]<hr>[[/html]]\n[[div_ style=\"display: none\"]]\n[[embed]]\n{payload}\n[[/embed]]\n[[/div]]\n"
+        );
+        let (claims, prepared, _html) = render_embed_claims_after_preparation(&assembled);
+        assert_eq!(
+            claims,
+            vec![
+                r#"<div class="error-block">Sorry, no match for the embedded content.</div>"#
+                    .to_owned()
+            ],
+            "{payload}: {prepared}"
+        );
+    }
+}
+
+#[test]
+fn list_pages_embed_after_one_line_html_block_is_protected() {
+    let mut body = concat!(
+        "[[html]]<hr>[[/html]]\n",
+        "[[embed]]\n",
+        r#"<iframe src="//interwiki.scpwiki.com/styleFrame.html?priority=1&theme=https://example.com/a.css&css={$css}" style="display: none"></iframe>"#,
+        "\n[[/embed]]\n",
+    )
+    .to_owned();
+    let mut fragments = CompatHtmlFragments::new(&body);
+
+    RenderService::protect_list_pages_wikidot_embed_iframes(&mut body, &mut fragments);
+
+    assert!(!body.contains("[[embed]]"), "{body}");
+    let restored = fragments.restore(&body);
+    assert!(
+        restored.contains(
+            r#"<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=1&theme=https://example.com/a.css&css={$css}" style="display: none"></iframe>"#
+        ),
+        "{restored}"
+    );
+}
+
+#[test]
+fn include_carried_embedvideo_resolves_after_one_line_html_block() {
+    // [[embedvideo]] is an FTML typed element rather than a claimed
+    // [[embed]] block, so carriage through an include already reaches the
+    // parser; this pins that the one-line html block ahead of it changes
+    // nothing and the full YouTube payload set resolves.
+    let source = concat!(
+        "[[html]]<hr>[[/html]]\n",
+        "[[embedvideo]]\n",
+        r#"<iframe width="560" height="315" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>"#,
+        "\n[[/embedvideo]]\n",
+    );
+    let page_info = fallback_test_page_info("embedvideo-include", "EmbedVideo Include");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let tokenization = ftml::tokenize(source);
+    let (tree, errors) = ftml::parse(&tokenization, &page_info, &settings).into();
+    assert!(errors.is_empty(), "{errors:#?}");
+    let mut output = HtmlRender.render(&tree, &page_info, &settings);
+    assert!(RenderService::resolve_wikidot_embed_video_requirements(
+        &mut output
+    ));
+    assert!(
+        output
+            .body
+            .contains("https://www.youtube.com/embed/dQw4w9WgXcQ"),
+        "{}",
+        output.body
+    );
+}
