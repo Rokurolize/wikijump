@@ -1,8 +1,7 @@
 # Claude Code cloud sessions
 
 How Wikijump is set up for Claude Code cloud sessions (Anthropic-hosted
-environments), alongside the existing Codex Cloud scripts
-(`scripts/codex-cloud-setup.sh`, `scripts/codex-cloud-maintenance.sh`).
+environments).
 
 ## Environment (created once per account, at claude.ai/code)
 
