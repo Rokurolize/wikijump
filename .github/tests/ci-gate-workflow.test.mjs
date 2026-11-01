@@ -31,15 +31,36 @@ const forbiddenCiCommands = [
   /\bpnpm\s+[^\n]*\blint\b/u
 ]
 
-test("automatic CI gate is absent", () => {
+test("targeted PR checks are the merge signal; the full suite is informational", () => {
+  // The PR workflow runs fast path-scoped targeted checks only.
+  const prChecks = workflow("pr-checks.yml")
+  const prTrigger = triggerBlock(prChecks)
+  assert.match(prTrigger, /pull_request:/u)
+  assert.doesNotMatch(prTrigger, /schedule:|merge_group:|push:/u)
+  assert.match(prChecks, /cargo test/u)
+  assert.match(prChecks, /test:unit/u)
+  assert.doesNotMatch(prChecks, /run-consolidated-validation/u)
+
+  // The full consolidated suite runs nightly and on dispatch only,
+  // never on pull requests, and keeps its sealed receipt as an artifact.
+  const full = workflow("consolidated-validation.yml")
+  const fullTrigger = triggerBlock(full)
+  assert.match(fullTrigger, /workflow_dispatch:/u)
+  assert.match(fullTrigger, /schedule:/u)
+  assert.doesNotMatch(fullTrigger, /pull_request:|merge_group:|push:/u)
+  assert.match(full, /run-consolidated-validation\.mjs/u)
+  assert.match(full, /upload-artifact/u)
+  assert.doesNotMatch(full, /(?:wikidot\.com|wdfiles)/iu)
+
+  // The retired gate name stays retired.
   const names = readdirSync(path.join(root, ".github/workflows"))
   assert.equal(names.includes("ci-gate.yaml"), false)
+  // The manual-only policy stubs keep their triggers.
   for (const name of validationWorkflows) {
-    const trigger = triggerBlock(workflow(name))
-    assert.doesNotMatch(trigger, /pull_request:|merge_group:|push:/u, name)
+    const stubTrigger = triggerBlock(workflow(name))
+    assert.doesNotMatch(stubTrigger, /pull_request:|merge_group:|push:/u, name)
   }
 })
-
 test("Browser CI is manual-only and runs no browser validation", () => {
   const source = workflow("full-ci.yaml")
   const trigger = triggerBlock(source)

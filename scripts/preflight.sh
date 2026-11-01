@@ -6,7 +6,7 @@
 #
 # The point is to fail here rather than eight minutes into a CI run. Which
 # checks apply is decided by .github/scripts/classify-changes.mjs, the same
-# script ci-gate.yaml uses, so this cannot drift from CI's own idea of what a
+# script the consolidated-validation workflow uses, so this cannot drift from CI's own idea of what a
 # change touches.
 #
 # Usage:
