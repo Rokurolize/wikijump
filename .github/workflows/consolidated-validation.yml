@@ -128,7 +128,7 @@ jobs:
           # sqlx-cli matches the sqlx version in deepwell/Cargo.lock
           # (0.9.0); preflight refuses the Deepwell group without sqlx.
           cargo install sqlx-cli --version 0.9.0 --locked
-          machete="cargo-machete-v0.9.2-x86_64-unknown-linux-gnu"
+          machete="cargo-machete-v0.9.2-x86_64-unknown-linux-musl"
           curl -fsSLO "https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.2/${machete}.tar.gz"
           curl -fsSLO "https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.2/${machete}.tar.gz.sha256"
           sha256sum --check "${machete}.tar.gz.sha256"
