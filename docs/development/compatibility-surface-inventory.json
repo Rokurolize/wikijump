@@ -3297,6 +3297,11 @@
       "target": "wikijump.deepwell"
     },
     {
+      "source": "deepwell-jsonrpc:mail_form_submit",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
       "source": "deepwell-jsonrpc:member_get",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
@@ -11731,7 +11736,7 @@
   },
   "provenance": {
     "wikijump": {
-      "source_input_set_sha256": "aeac59c6a956830bc72800371eff92ac1024c97fc1404090ab9a432f2a9cf924"
+      "source_input_set_sha256": "b32effbc22321b4e82908e2c30c4f52f1a8b7448f870eee7593cdb022db5471c"
     },
     "ftml": {
       "commit": "230a07fdebec5bde9b8d0757c36d4440513cbe1b",
@@ -11748,7 +11753,7 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "0592a6fa6182ea64764575cf788e4363d58976767367b5d45fb3c0ab4a0c5d41"
+        "sha256": "2ad9f8534fbd723b5ff110c82477a7434c10c9ebff1188992b9287499748bd45"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
@@ -11809,6 +11814,10 @@
       {
         "path": "deepwell/src/endpoints/locale.rs",
         "sha256": "a7727e0dbac698ad3ed149b66814305b70a012a4b33355e786b17588726ccfe1"
+      },
+      {
+        "path": "deepwell/src/endpoints/mail_form.rs",
+        "sha256": "adea704c4a063a7ca4fcb4bdf263cbed8900281fd136b7dd26924436e9b7a843"
       },
       {
         "path": "deepwell/src/endpoints/message.rs",
@@ -11892,7 +11901,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "f9f3a87a18f5a88d9011872c44e1a13cd2ad4765e28f0e6a7ab80981798ef0b4"
+        "sha256": "785acc84609302f6d6806436db20538d757d73658a79c3322e699bff4b3f962a"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -11900,7 +11909,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "48f32f4e947bebe999d2468a3e24bedb9a71ff329b61b3e20739bf2eb5ac588f"
+        "sha256": "dbf3d3674f4250e9536b18adf4952ab1222704c17012a54770ff62f8aaec2e69"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11964,7 +11973,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "1487d8051cdf5065bd056b9893b16698420d79db47c1c5e25a09f2b0f8b77a75"
+        "sha256": "d05665138d9f1297ef7d67de24188183b525597b1e2c3a1f16dab89fc5c2e820"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11984,7 +11993,7 @@
       },
       {
         "path": "framerail/src/lib/server/ajax-module-connector.js",
-        "sha256": "738c27871f8e49009ccbcc786431a29090ac0da6c6e7c4b1a2ff9d16ecab6811"
+        "sha256": "6abb06bcf4175b4da91f953fe4a516d58657943ad0de27f85f974095432de1f3"
       },
       {
         "path": "framerail/src/lib/server/load/page/page-actions.ts",
@@ -12172,7 +12181,7 @@
       },
       {
         "path": "framerail/src/routes/ajax-module-connector.php/+server.ts",
-        "sha256": "802aae45ef7f8acfd19dd8eb5fe7c58edf874b26fc0e146d3896f78c97753a14"
+        "sha256": "fb7d79186c13ddd69c15b1d101352196c987481ef8a94e2f40683b6e74d78dcb"
       },
       {
         "path": "framerail/src/routes/common--images/jquery-raty/[asset]/+server.ts",
@@ -12391,10 +12400,10 @@
     ]
   },
   "counts": {
-    "total": 1012,
+    "total": 1013,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 207,
+      "deepwell_jsonrpc_method": 208,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 27,
       "framerail_route": 41,
@@ -17451,7 +17460,9 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views"
+          "deepwell/tests/page.rs#mailform_renders_form_in_preview_and_saved_views",
+          "deepwell/tests/page.rs#mailform_submission_answers_wikidot_shaped_field_errors",
+          "deepwell/tests/page.rs#mailform_submission_success_is_recorded_not_delivered"
         ]
       },
       "evidence": {
@@ -26089,6 +26100,51 @@
         "status": "implemented",
         "references": [
           "deepwell/src/endpoints/auth.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:mail_form_submit",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:mail_form_submit",
+        "deepwell/src/endpoints/mail_form.rs#mail_form_submit"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/page.rs#mailform_submission_answers_wikidot_shaped_field_errors"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/mail_form.rs"
         ]
       },
       "candidate": {
@@ -41846,9 +41902,7 @@
         "cases": [
           "A1037_MAILFORM_READ_ONLY_FAIL_CLOSED"
         ],
-        "tests": [
-          "deepwell/tests/page.rs::mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views"
-        ]
+        "tests": []
       },
       "evidence": {
         "status": "available",

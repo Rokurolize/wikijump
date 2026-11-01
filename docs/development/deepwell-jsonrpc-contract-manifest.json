@@ -3,7 +3,7 @@
   "source_identities": {
     "jsonrpc_registry": {
       "path": "deepwell/src/api.rs",
-      "sha256": "0592a6fa6182ea64764575cf788e4363d58976767367b5d45fb3c0ab4a0c5d41"
+      "sha256": "2ad9f8534fbd723b5ff110c82477a7434c10c9ebff1188992b9287499748bd45"
     },
     "request_context_middleware": {
       "path": "deepwell/src/middleware.rs",
@@ -26,7 +26,7 @@
       "classification": "historical"
     }
   ],
-  "method_count": 207,
+  "method_count": 208,
   "methods": [
     {
       "method": "account_delete_complete",
@@ -4517,6 +4517,61 @@
       }
     },
     {
+      "method": "mail_form_submit",
+      "endpoint_owner": {
+        "component": "deepwell",
+        "handler": "mail_form_submit",
+        "source": "deepwell/src/endpoints/mail_form.rs#mail_form_submit",
+        "source_sha256": "adea704c4a063a7ca4fcb4bdf263cbed8900281fd136b7dd26924436e9b7a843",
+        "function_sha256": "669989c89db1f95d76dcdf1cf77ff3d5bf18dd5364c3800932533c34c9773d2a"
+      },
+      "params_schema": {
+        "transport": "jsonrpsee::types::params::Params<'static>",
+        "parameter_name": "params",
+        "decoder": "parse!(params)"
+      },
+      "actor_context": {
+        "transport_authentication": {
+          "header_symbol": "AUTHORIZATION",
+          "header": "Authorization",
+          "scheme": "Bearer",
+          "token_format": "64 lowercase hexadecimal characters",
+          "duplicate_values": "rejected"
+        },
+        "request_context_headers": [
+          {
+            "header": "X-Deepwell-Session-Token",
+            "target": "session_token"
+          },
+          {
+            "header": "X-Deepwell-Site-Id",
+            "target": "site_id"
+          },
+          {
+            "header": "X-Deepwell-Page",
+            "target": "page_ref"
+          }
+        ],
+        "requirements": [],
+        "requirement_sources": [
+          "deepwell/src/endpoints/mail_form.rs#mail_form_submit"
+        ]
+      },
+      "mutation_class": {
+        "classification": "read_only",
+        "source_signals": []
+      },
+      "transaction_isolation": "default",
+      "test_witness": {
+        "kind": "endpoint_behavioral",
+        "reference": "deepwell/tests/page.rs#mailform_submission_answers_wikidot_shaped_field_errors",
+        "alternatives": [
+          "deepwell/tests/page.rs#mailform_submission_success_is_recorded_not_delivered"
+        ],
+        "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+      }
+    },
+    {
       "method": "member_get",
       "endpoint_owner": {
         "component": "deepwell",
@@ -8843,7 +8898,7 @@
           "deepwell/tests/page.rs#listdrafts_module_matches_live_empty_draft_state",
           "deepwell/tests/page.rs#listpages_generated_html_preview_saved_section_controls",
           "deepwell/tests/page.rs#listusers_module_matches_live_preview_and_runtime_viewer",
-          "deepwell/tests/page.rs#mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views",
+          "deepwell/tests/page.rs#mailform_renders_form_in_preview_and_saved_views",
           "deepwell/tests/page.rs#members_module_ssr_and_ajax_share_100_row_duplicate_relation_boundary",
           "deepwell/tests/page.rs#page_view_rerenders_stale_persisted_compiled_artifact",
           "deepwell/tests/page.rs#page_view_separates_generated_css_modules_from_compiled_body_html",
@@ -12500,7 +12555,7 @@
           "deepwell/tests/page.rs#listpages_generated_html_preview_saved_section_controls",
           "deepwell/tests/page.rs#listusers_module_matches_live_preview_and_runtime_viewer",
           "deepwell/tests/page.rs#loginstatus_page_source_matches_live_unavailable_module",
-          "deepwell/tests/page.rs#mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views",
+          "deepwell/tests/page.rs#mailform_renders_form_in_preview_and_saved_views",
           "deepwell/tests/page.rs#members_module_queries_only_visible_site_members_and_roles",
           "deepwell/tests/page.rs#members_module_renders_directory_larger_than_legacy_scan_budget",
           "deepwell/tests/page.rs#members_module_ssr_and_ajax_share_100_row_duplicate_relation_boundary",

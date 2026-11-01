@@ -36,6 +36,7 @@ use super::diagnostics::{
 use super::file_modules::expand_file_modules;
 use super::list_pages::{CountPagesExpansionOptions, ListPagesRuntimeDisplay};
 use super::literal_regions::LiteralRegionIndex;
+use super::mail_form_module::expand_mail_form_modules;
 use super::module_arguments::{
     WikidotModuleArgumentValueKind, wikidot_module_argument, wikidot_module_arguments,
     wikidot_module_arguments_ignoring_bare_flags,
@@ -1378,6 +1379,12 @@ impl RenderService {
             compat_html,
         );
         wikitext = Self::expand_simpletodo_modules(wikitext, settings, compat_html);
+        wikitext = expand_mail_form_modules(
+            wikitext,
+            settings,
+            options.current_page_id,
+            compat_html,
+        );
         wikitext = Self::expand_send_invitations_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_membership_email_invitation_modules(
             ctx,

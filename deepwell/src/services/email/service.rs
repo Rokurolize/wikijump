@@ -21,6 +21,7 @@
 use super::structs::{
     EmailClassification, EmailProviderClassification, EmailValidationOutput,
     MailCheckFailureResponse, MailCheckResponse, MailCheckSuccessResponse,
+    MailFormMessage,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::runtime::ServerState;
@@ -306,6 +307,25 @@ impl EmailService {
             to_email,
             purpose.as_str(),
             expires_at,
+        );
+    }
+
+    /// Record a Wikidot MailForm submission's would-be email in the
+    /// local no-delivery sink.
+    ///
+    /// NO DELIVERY: this is a sink, not a sender. Wikijump emulates
+    /// Wikidot's MailForm behavior for readers (the submission is
+    /// validated and answered as Wikidot answers it), but no email ever
+    /// leaves the system: the composed message is written to the
+    /// structured log explicitly marked not delivered, and that record
+    /// is the only trace. Real SMTP delivery is a later slice with its
+    /// own review (TODO WJ-1384) and is the only path allowed to replace
+    /// this sink.
+    pub async fn send_mail_form_message(message: &MailFormMessage) {
+        info!(
+            "MailForm submission recorded, NOT delivered (local sink): \
+             to='{}', title='{}', body='{}'",
+            message.recipients, message.title, message.body,
         );
     }
 

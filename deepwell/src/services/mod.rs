@@ -64,6 +64,7 @@ pub mod import;
 pub mod job;
 pub mod legacy_action;
 pub mod link;
+pub mod mail_form;
 pub mod membership;
 pub mod message;
 pub mod message_report;
