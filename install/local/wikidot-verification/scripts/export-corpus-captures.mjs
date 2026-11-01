@@ -199,6 +199,20 @@ export async function main(argv = process.argv.slice(2)) {
     return exportable.length > 0 ? 0 : 3;
   }
 
+  if (captures.length === 0) {
+    // Every requested page was already classified during input reading
+    // (the not-exportable-from-store case): report the listing instead of
+    // treating an empty capture set as a structural error.
+    console.log(JSON.stringify({
+      run_id: args.runId,
+      branch_root: path.join(args.exportRoot, args.branch),
+      exported: [],
+      not_exportable: preProblems,
+      response_count: 0,
+    }, null, 2));
+    return preProblems.length > 0 ? 3 : 2;
+  }
+
   const summary = exportCorpusCaptures({
     exportRoot: args.exportRoot,
     branch: args.branch,

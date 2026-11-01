@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {execFileSync} from "node:child_process";
+import {execFileSync, spawnSync} from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -377,6 +377,31 @@ test("export command re-emits a stored corpus and lists projection-only pages", 
   assert.ok(fs.existsSync(path.join(
     exportRoot, "en", "pages", "credit:backmodule", "api-response.json",
   )));
+});
+
+test("export command reports an all-projection corpus with exit 3 and no writes", () => {
+  const corpusRoot = tempRoot();
+  const pageDir = path.join(corpusRoot, "en", "pages", "projection-only");
+  fs.mkdirSync(pageDir, {recursive: true});
+  fs.writeFileSync(path.join(pageDir, "source.wikidot.txt"), "x\n");
+  fs.writeFileSync(path.join(pageDir, "meta.json"), "{}\n");
+  fs.writeFileSync(path.join(pageDir, "entity_id.txt"), "00000000-0000-4000-8000-000000000000\n");
+  const exportRoot = path.join(tempRoot(), "out");
+  const result = spawnSync(process.execPath, [
+    path.join(PACKAGE_ROOT, "scripts", "export-corpus-captures.mjs"),
+    "--from-corpus", corpusRoot,
+    "--branch", "en",
+    "--site", "scp-wiki",
+    "--export-root", exportRoot,
+    "--run-id", "cli-run-none",
+    "--all-pages",
+  ], {encoding: "utf8"});
+  assert.equal(result.status, 3);
+  const summary = JSON.parse(result.stdout);
+  assert.deepEqual(summary.exported, []);
+  assert.equal(summary.not_exportable.length, 1);
+  assert.equal(summary.not_exportable[0].fullname, "projection-only");
+  assert.ok(!fs.existsSync(path.join(exportRoot, "en")));
 });
 
 test("canonicalization strips capability parameters from download urls", () => {
