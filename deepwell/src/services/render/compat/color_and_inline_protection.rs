@@ -383,10 +383,7 @@ fn find_wikidot_size_open(text: &str) -> Option<(usize, usize, &str)> {
     let mut index = 0;
     while index < bytes.len() {
         if bytes[index] == b'<' {
-            match text[index..].find('>') {
-                Some(offset) => index += offset + 1,
-                None => return None,
-            }
+            index += text[index..].find('>')? + 1;
         } else if text[index..].starts_with("[[size") {
             match wikidot_protected_inline_size_open(&text[index..]) {
                 Some((open_len, value)) => return Some((index, open_len, value)),
@@ -409,10 +406,7 @@ fn find_wikidot_size_close(text: &str) -> Option<(usize, usize)> {
     let mut index = 0;
     while index < bytes.len() {
         if bytes[index] == b'<' {
-            match text[index..].find('>') {
-                Some(offset) => index += offset + 1,
-                None => return None,
-            }
+            index += text[index..].find('>')? + 1;
         } else if text[index..].starts_with(close_marker) {
             depth -= 1;
             if depth == 0 {

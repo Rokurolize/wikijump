@@ -12,9 +12,9 @@ cd "${ROOT}"
 # Resolve the installed toolchain before entering the external-network guard.
 # Using rustup's proxy from inside the guard can attempt a channel metadata
 # lookup even when the requested toolchain is already installed.
-export WIKIJUMP_OFFLINE_CARGO="$(rustup which --toolchain 1.95.0 cargo)"
-export RUSTC="$(rustup which --toolchain 1.95.0 rustc)"
-export RUSTDOC="$(rustup which --toolchain 1.95.0 rustdoc)"
+export WIKIJUMP_OFFLINE_CARGO="$(rustup which --toolchain 1.99.1 cargo)"
+export RUSTC="$(rustup which --toolchain 1.99.1 rustc)"
+export RUSTDOC="$(rustup which --toolchain 1.99.1 rustdoc)"
 
 "${GUARD}" "${WIKIJUMP_OFFLINE_CARGO}" test \
   --offline \
