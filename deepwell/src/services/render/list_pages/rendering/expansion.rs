@@ -544,7 +544,6 @@ impl RenderService {
                     let ListPagesBlockPlan::Render {
                         arguments,
                         template,
-                        legacy_tail: _,
                         ..
                     } = &block.plan
                     else {

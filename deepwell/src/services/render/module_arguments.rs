@@ -245,9 +245,7 @@ pub(in crate::services::render) fn wikidot_list_pages_arguments(
             break;
         }
 
-        if head.as_bytes().get(cursor..cursor.saturating_add(4))
-            == Some(&[b'[', b'!', b'-', b'-'][..])
-        {
+        if head.as_bytes().get(cursor..cursor.saturating_add(4)) == Some(&b"[!--"[..]) {
             cursor = wikidot_list_pages_comment_end(head, cursor).unwrap_or(head.len());
             continue;
         }

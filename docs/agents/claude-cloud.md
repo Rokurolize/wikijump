@@ -15,7 +15,7 @@ environments).
   BASH_MAX_TIMEOUT_MS=1800000
   ```
 - **Setup script:** the contents of `scripts/claude-cloud-setup.sh`.
-  It installs Node 24, Rust 1.95.0 and pnpm 11.10.0, installs the
+  It installs Node 24, Rust 1.99.1 and pnpm 11.10.0, installs the
   `/usr/local/bin/wikijump-claude-services` helper, and prefetches the
   pnpm and cargo dependencies so the environment snapshot starts warm.
 - **Network secrets:** none. GitHub traffic goes through the session
