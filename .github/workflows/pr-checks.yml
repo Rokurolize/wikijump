@@ -170,6 +170,22 @@ jobs:
           cargo test --manifest-path deepwell/Cargo.toml --lib --locked
           cargo clippy --manifest-path deepwell/Cargo.toml --locked -- -D warnings
 
+      - name: Start the ambient Valkey the WWS tests expect
+        if: steps.plan.outputs.wws == '1'
+        run: |
+          # Two WWS avatar tests build their state with
+          # redis://127.0.0.1/ and exercise the cache-miss path; the
+          # local environment has the dev cache on that port. Run the
+          # project's own Valkey image there.
+          docker build -t wikijump-local-development-cache install/local/valkey
+          docker run -d --name ci-wws-cache -p 127.0.0.1:6379:6379 wikijump-local-development-cache
+          for attempt in $(seq 1 30); do
+            if docker exec ci-wws-cache valkey-cli ping 2>/dev/null | grep -q PONG; then exit 0; fi
+            sleep 1
+          done
+          echo "ambient valkey did not come up" >&2
+          exit 1
+
       - name: WWS targeted tests and formatting
         if: steps.plan.outputs.wws == '1'
         env:

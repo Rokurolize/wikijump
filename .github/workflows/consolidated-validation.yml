@@ -289,7 +289,7 @@ jobs:
           fi
 
       - name: Build the Deepwell integration images
-        if: contains(steps.plan.outputs.run_groups, 'deepwell')
+        if: contains(steps.plan.outputs.run_groups, 'deepwell') || contains(steps.plan.outputs.run_groups, 'wws')
         working-directory: wikijump
         run: |
           # The Deepwell test stacks run only the project's pre-built
@@ -297,6 +297,23 @@ jobs:
           # barrier; build them here, in setup, where pulling the base
           # images is allowed.
           bash scripts/build-deepwell-integration-images.sh
+
+      - name: Start the ambient Valkey the WWS tests expect
+        if: contains(steps.plan.outputs.run_groups, 'wws')
+        run: |
+          # Two WWS avatar tests build their state with
+          # redis://127.0.0.1/ (the default port) and exercise the
+          # cache-miss path: with nothing listening, the cache call
+          # errors and the handler takes the wrong error branch. The
+          # local environment has the dev cache there; CI runs the
+          # project's own Valkey image on the same port.
+          docker run -d --name ci-wws-cache -p 127.0.0.1:6379:6379 wikijump-local-development-cache
+          for attempt in $(seq 1 30); do
+            if docker exec ci-wws-cache valkey-cli ping 2>/dev/null | grep -q PONG; then exit 0; fi
+            sleep 1
+          done
+          echo "ambient valkey did not come up" >&2
+          exit 1
 
       - name: Run the consolidated validation
         id: gate
