@@ -2207,3 +2207,99 @@ test("capture lock refuses an unsealed stale owner when durable state is unavail
     });
   }
 });
+
+test("cacheOnly replay serves a retained avatar response for every separator spelling", async (t) => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-browser-avatar-spellings-"));
+  t.after(() => fs.rm(cacheDir, { recursive: true, force: true }));
+  const identity = "candidate-evidence:avatar-spellings";
+  const firstGate = createBrowserRequestGate({ intervalMs: 0 });
+  const firstCache = createBrowserResponseCache({ persistentDir: cacheDir, persistentIdentity: identity, evidenceReplay: true });
+  await firstCache.load();
+  const firstContext = createContext();
+  await installBrowserRequestGate(firstContext, { gate: firstGate, responseCache: firstCache });
+  // Record through the doubly-escaped spelling a local render requests after
+  // the compiled avatar URL passes one more HTML-escaping layer than
+  // Wikidot's own output.
+  await firstContext.routes[0].handler(createRoute("https://www.wikidot.com/avatar.php?userid=424242&amp;amp;size=small&amp;amp;timestamp=1793525364", {
+    resourceType: "image",
+    fetchResponse: createFetchResponse({ status: 404, headers: { "cache-control": "public, max-age=600" }, body: "not found" }),
+  }));
+  await firstCache.flush();
+
+  const secondGate = createBrowserRequestGate({ intervalMs: 0 });
+  const secondCache = createBrowserResponseCache({ persistentDir: cacheDir, persistentIdentity: identity, evidenceReplay: true });
+  await secondCache.load();
+  const secondContext = createContext();
+  await installBrowserRequestGate(secondContext, { gate: secondGate, responseCache: secondCache, cacheOnly: true });
+  for (const url of [
+    "https://www.wikidot.com/avatar.php?userid=424242&amp;size=small",
+    "https://www.wikidot.com/avatar.php?userid=424242&amp;size=small&amp;timestamp=1788341729",
+    "https://www.wikidot.com/avatar.php?userid=424242&size=small&timestamp=1788341729",
+    "https://www.wikidot.com/avatar.php?userid=424242&amp;amp;size=small&amp;amp;timestamp=1793525364",
+  ]) {
+    const replay = createRoute(url, { resourceType: "image" });
+    await secondContext.routes[0].handler(replay);
+    assert.deepEqual(replay.actions, [{ type: "fulfill", status: 404 }], url);
+  }
+  assert.equal(secondGate.snapshot().enforcement_failed, false);
+  assert.equal(secondGate.snapshot().external_network_requests, 0);
+});
+
+test("candidate cacheOnly avatar image miss aborts with attribution instead of failing closed", async (t) => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-browser-avatar-miss-"));
+  t.after(() => fs.rm(cacheDir, { recursive: true, force: true }));
+  const gate = createBrowserRequestGate({ intervalMs: 0 });
+  const responseCache = createBrowserResponseCache({ persistentDir: cacheDir, persistentIdentity: "candidate-avatar-miss", evidenceReplay: true });
+  await responseCache.load();
+  const context = createContext();
+  const attribution = await installBrowserRequestGate(context, { gate, responseCache, cacheOnly: true });
+  const miss = createRoute("https://www.wikidot.com/avatar.php?userid=5525011&amp;amp;size=small&amp;amp;timestamp=1793525364", { resourceType: "image" });
+
+  await context.routes[0].handler(miss);
+
+  assert.deepEqual(miss.actions, [{ type: "abort", reason: "blockedbyclient" }]);
+  assert.equal(gate.snapshot().enforcement_failed, false);
+  assert.equal(gate.snapshot().unsupported_requests_blocked, 1);
+  assert.deepEqual(gate.snapshot().blocked_hosts, { "www.wikidot.com": 1 });
+  assert.equal(gate.snapshot().external_network_requests, 0);
+  assert.deepEqual(attribution.classifyRequestFailure(miss.request()), {
+    decision: "unretained_avatar_image",
+    abort_reason: "blockedbyclient",
+  });
+  await gate.flush();
+});
+
+test("candidate cacheOnly avatar handling stays scoped to wikidot avatar images", async (t) => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-browser-avatar-scope-"));
+  t.after(() => fs.rm(cacheDir, { recursive: true, force: true }));
+  const gate = createBrowserRequestGate({ intervalMs: 0 });
+  const responseCache = createBrowserResponseCache({ persistentDir: cacheDir, persistentIdentity: "candidate-avatar-scope", evidenceReplay: true });
+  await responseCache.load();
+  // A retained avatar for one user must never answer a request for another.
+  assert.equal(responseCache.store("https://www.wikidot.com/avatar.php?userid=111111&amp;size=small", {
+    status: 200, headers: { "content-type": "image/png" }, body: Buffer.from("other user"),
+  }), true);
+  await responseCache.flush();
+  const context = createContext();
+  await installBrowserRequestGate(context, { gate, responseCache, cacheOnly: true });
+
+  const otherUser = createRoute("https://www.wikidot.com/avatar.php?userid=222222&amp;size=small&amp;timestamp=1793525364", { resourceType: "image" });
+  await context.routes[0].handler(otherUser);
+  assert.deepEqual(otherUser.actions, [{ type: "abort", reason: "blockedbyclient" }]);
+  assert.equal(gate.snapshot().enforcement_failed, false);
+
+  // The same URL requested as a non-image resource is not an avatar image:
+  // its cache miss still fails the replay closed.
+  const stylesheet = createRoute("https://www.wikidot.com/avatar.php?userid=333333&amp;size=small", { resourceType: "stylesheet" });
+  await context.routes[0].handler(stylesheet);
+  assert.equal(gate.snapshot().enforcement_failed, true);
+  await assert.rejects(gate.flush(), /candidate response cache miss: https:\/\/www\.wikidot\.com\/avatar\.php\?userid=333333/);
+
+  // An avatar.php path on any other host is not the Wikidot avatar endpoint.
+  const otherHostGate = createBrowserRequestGate({ intervalMs: 0 });
+  const otherHostContext = createContext();
+  await installBrowserRequestGate(otherHostContext, { gate: otherHostGate, responseCache, cacheOnly: true });
+  const otherHost = createRoute("https://example.test/avatar.php?userid=111111&amp;size=small", { resourceType: "image" });
+  await otherHostContext.routes[0].handler(otherHost);
+  assert.equal(otherHostGate.snapshot().enforcement_failed, true);
+});
