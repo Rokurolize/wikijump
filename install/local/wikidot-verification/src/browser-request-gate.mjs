@@ -27,9 +27,68 @@ const RESPONSE_CACHE_REQUEST_IDENTITY_HEADERS = [
   "if-range",
 ];
 
+const WIKIDOT_AVATAR_PHP_URL = /^https:\/\/www\.wikidot\.com\/avatar\.php\?/u;
+
+/**
+ * The canonical response-cache key for a Wikidot printuser avatar URL.
+ *
+ * Wikidot compiles the avatar URL with `&amp;` separators and a compile-time
+ * `timestamp` parameter. A rendering pipeline that passes the compiled URL
+ * through another HTML-escaping layer makes the browser request a spelling
+ * whose separators are escaped again (`&amp;amp;`), and the timestamp changes
+ * on every render, so no exact-URL key can ever be recorded for the request a
+ * local render actually issues. The response is identified by the userid (and
+ * size) alone, so canonicalize every separator spelling to the `&amp;` form
+ * the retained evidence is recorded under and drop the volatile timestamp:
+ * one retained response then answers every spelling of the same avatar
+ * request, and a request for any other userid still keys differently.
+ */
+function canonicalAvatarResponseCacheKey(value) {
+  return value
+    .replace(/&(amp;)+/gu, "&amp;")
+    .replace(/&(?!amp;)/gu, "&amp;")
+    .replace(/&amp;timestamp=[^&]*/gu, "")
+    .replace(/\?timestamp=[^&]*&amp;/u, "?")
+    .replace(/\?timestamp=[^&]*$/u, "");
+}
+
 function responseCacheKey(value) {
-  if (/^https:\/\/www\.wikidot\.com\/avatar\.php\?/u.test(value)) return value.replace(/(?:&amp;|&)timestamp=[^&]*/u, "");
-  return value;
+  if (!WIKIDOT_AVATAR_PHP_URL.test(value)) return value;
+  // The request-identity suffix is not part of the URL: canonicalize only the
+  // URL head and keep the suffix byte-identical.
+  const marker = "#__wikijump_evidence_request=";
+  const markerIndex = value.indexOf(marker);
+  const head = markerIndex === -1 ? value : value.slice(0, markerIndex);
+  const tail = markerIndex === -1 ? "" : value.slice(markerIndex);
+  return canonicalAvatarResponseCacheKey(head) + tail;
+}
+
+function isWikidotAvatarImageRequest(url, resourceType) {
+  return resourceType === "image" && WIKIDOT_AVATAR_PHP_URL.test(url);
+}
+
+/**
+ * A cache-only replay request for a Wikidot avatar image whose response the
+ * retained evidence does not hold.
+ *
+ * Avatar responses are the one public response class the evidence capture
+ * cannot guarantee to retain: the URL is volatile (see
+ * canonicalAvatarResponseCacheKey), and avatar.php answers with responses
+ * the capture must bypass instead of retaining whenever they carry
+ * Set-Cookie or a request-dependent Vary, so a sealed reference can
+ * legitimately hold no response for a user a local render asks about. The
+ * request gate converts this error into an attributed blockedbyclient abort,
+ * accounted like every other gate abort, instead of failing the whole replay
+ * closed; a miss for any other request remains a replay-integrity failure.
+ * The parity comparison still judges the rendered page, avatar included,
+ * against the live reference.
+ */
+export class UnretainedAvatarResponseError extends Error {
+  constructor(url) {
+    super(`candidate response cache miss: ${url}`);
+    this.name = "UnretainedAvatarResponseError";
+    this.url = url;
+  }
 }
 
 function reusableStoredHeaders(headers) {
@@ -1260,6 +1319,9 @@ export async function resolveEvidenceReplaySubresourceRedirect({
     let targetEntry = responseCache.lookup(targetCacheKey, {requestHeaders});
     if (targetEntry === null) {
       if (cacheOnly) {
+        if (isWikidotAvatarImageRequest(sourceUrl, resourceType)) {
+          throw new UnretainedAvatarResponseError(target.href);
+        }
         throw new Error(`candidate response cache miss: ${target.href}`);
       } else if (fetchRetainedEntry !== null) {
         targetEntry = await fetchRetainedEntry(target.href);
@@ -1399,7 +1461,12 @@ async function servePublicRoute(route, {gate, responseCache, cacheOnly = false, 
       throw new Error(`candidate response cache cannot serve ${request.url()}`);
     }
     const cached = lookupRetainedReplayEntry(request, responseCache, requestHeaders);
-    if (cached === null) throw new Error(`candidate response cache miss: ${request.url()}`);
+    if (cached === null) {
+      if (isWikidotAvatarImageRequest(request.url(), request.resourceType())) {
+        throw new UnretainedAvatarResponseError(request.url());
+      }
+      throw new Error(`candidate response cache miss: ${request.url()}`);
+    }
     await fulfillRetainedEntry(route, { gate, responseCache, request, entry: cached, cacheOnly: true });
     return;
   }
@@ -1556,6 +1623,17 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
           const remaining = gateServedRequests.get(replayIdentity) ?? 0;
           if (remaining > 1) gateServedRequests.set(replayIdentity, remaining - 1);
           else gateServedRequests.delete(replayIdentity);
+        }
+        if (error instanceof UnretainedAvatarResponseError) {
+          // The retained evidence legitimately holds no response for this
+          // avatar (see UnretainedAvatarResponseError), so the request is
+          // blocked and accounted like any other gate abort instead of
+          // failing the replay closed. The decision string is validated
+          // against REQUEST_GATE_ABORT_DECISIONS in
+          // standing-browser-parity-contract.mjs.
+          gate.recordUnsupportedRequestBlocked(url.hostname);
+          await abortWithAttribution(route, "unretained_avatar_image");
+          return;
         }
         throw error;
       }
