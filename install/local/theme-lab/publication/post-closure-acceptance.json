@@ -1,5 +1,5 @@
 {
-  "schema": "theme_lab_post_closure_acceptance.v1",
+  "schema": "theme_lab_post_closure_acceptance.v2",
   "entries": [
     {
       "package": "classic",
@@ -28,18 +28,6 @@
       "visual_review": {
         "path": "ports/current-acceptance/classic/visual-review-successor-20261030-m122b.json",
         "sha256": "5936bba8ec35da025f8d6fcf4f48275b568e34e977fba83d13073479a478bddc"
-      },
-      "run_contract": {
-        "path": "ports/current-acceptance/run-contract-classic-successor-20261030-m122b.json",
-        "sha256": "cb0bd49743e03583de47139c961619c2f58fd763400a864eb313e7c9d6470e3c"
-      },
-      "sigma10_run_contract": {
-        "path": "sigma10-migration/current-campaign/run-contract-classic-successor-20261030-m122b.json",
-        "sha256": "e150fae6297f3c52b95e263e47a4de1bb4b3899cd0e100ca1c6de5a396d6a875"
-      },
-      "successor_manifest": {
-        "path": "publication/post-closure-evidence-classic.json",
-        "sha256": "cc77828356fb56fb75af179082bdbc3b91871851aa076cde6ab6117dd4b98811"
       }
     },
     {
@@ -69,18 +57,6 @@
       "visual_review": {
         "path": "ports/current-acceptance/flopstyle-dark/visual-review-successor-20261030-m123.json",
         "sha256": "dbf585ba03da34c588ad2f252ea856de2adbdbd1053f1786c851dae44bd134ee"
-      },
-      "run_contract": {
-        "path": "ports/current-acceptance/run-contract-flopstyle-dark-successor-20261030-m123.json",
-        "sha256": "b39d0f4c523e3043ccb33bf9bea73fc8ff8c8769df6d03d9902d26ad2bf28764"
-      },
-      "sigma10_run_contract": {
-        "path": "sigma10-migration/current-campaign/run-contract-flopstyle-dark-successor-20261030-m123.json",
-        "sha256": "a59ba575db95659e7c0f85909a87e1aebc2291610c468119c27e95c7043223fd"
-      },
-      "successor_manifest": {
-        "path": "publication/post-closure-evidence-flopstyle-dark.json",
-        "sha256": "39836dcd1e10c6fd5631b14921e3f2f8b3c85e7456ca4ac7cea9065c13a5c796"
       }
     }
   ]

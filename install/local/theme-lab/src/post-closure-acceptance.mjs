@@ -1,38 +1,25 @@
 // Theme Lab post-closure changes (ALLOC-32 R4 Check 2).
 //
-// Live once, at admission; historical forever after. A candidate whose live
-// inputs differ from its latest accepted binding (the closure record, or
-// its latest successor entry) must carry a successor entry admitted in the
-// PR being checked (--base names the PR's base commit). Entries that
-// already existed at --base are verified historically, against their own
-// recorded identities and their own successor manifest. New entries are
-// verified live. Instrument drift fails (C6); runtime-only drift does not.
+// A candidate changed after campaign closure is admitted by one successor
+// entry in publication/post-closure-acceptance.json (append-only, schema
+// theme_lab_post_closure_acceptance.v2): {schema, entries: [{package,
+// successor_id, predecessor: {kind: 'closure'|'successor', receipt_sha256},
+// candidate: {...CANDIDATE_KEYS}, receipt, browser_audit, visual_review}]},
+// where each evidence binding is {path, sha256}. The receipt and browser
+// audit are the fresh capture set; the visual review is the review record.
 //
-// Successor record: publication/post-closure-acceptance.json, append-only,
-// schema theme_lab_post_closure_acceptance.v1:
-//   {schema, entries: [{
-//     package, successor_id,
-//     predecessor: {kind: 'closure'|'successor', receipt_sha256},
-//     candidate: {css_sha256, source_sha256, preview_sha256,
-//                 base_css_sha256, structure_sha256,
-//                 asset_dependency_sha256, candidate_sha256},
-//     receipt: {path, sha256}, browser_audit: {path, sha256},
-//     visual_review: {path, sha256},
-//     run_contract: {path, sha256},
-//     sigma10_run_contract: {path, sha256},
-//     successor_manifest: {path, sha256},
-//   }]}
-// Successor evidence manifest (its own, never the closure manifest):
-// schema theme_lab_post_closure_evidence_manifest.v1:
-//   {schema, files: [{relative_path, sha256, size_bytes}]}
-// Frozen run-contract files are never rewritten; successor contracts are
-// new files named by the entry.
+// Only packages the change-set (--base against the working tree) touches are
+// verified: their port files, shared replay inputs, resolved local assets,
+// evidence files, ledger row or successor entries. For those, the entry chain,
+// the tracked evidence bytes and their candidate bindings must hold, the live
+// candidate must equal the latest entry, and a newly added entry requires the
+// closure instrument. Untouched packages whose live candidate is unadmitted are
+// reported as pending_admission, never as failures.
 
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
-import {fileURLToPath} from 'node:url';
 
 import {collectViewportOverflow, inspectPlatformFonts} from './browser-lab.mjs';
 import {
@@ -42,32 +29,57 @@ import {
 } from './verdict.mjs';
 import {applyRuntimeSurfaceParityGate, RUNTIME_SURFACE_PARITY} from './runtime-surface-parity.mjs';
 import {measureTargetBaselineViewportOverflow} from './target-baseline-viewport-probe.mjs';
-import {TARGET_ACCEPTANCE_CONTRACT, TARGET_ACCEPTANCE_CONTRACT_SHA256} from './target-acceptance-contract.mjs';
+import {TARGET_ACCEPTANCE_CONTRACT} from './target-acceptance-contract.mjs';
 import {candidateIdentity} from '../ports/scripts/candidate-identity.mjs';
-import {validateCombinedAcceptance, validateCurrentSigma10Contract} from './campaign-completion.mjs';
+import {validateCombinedAcceptance} from './campaign-completion.mjs';
 import {CLOSURE_ANCHORS, DEFAULT_HISTORICAL_ROOT} from './campaign-record-integrity.mjs';
 import {candidateAssetDependencyState} from './candidate-asset-dependencies.mjs';
 import {currentPackageBaseCss} from './candidate-base-contract.mjs';
-import {deepwellRuntimeIdentityMatchesContract} from './deepwell-runtime-identity.mjs';
 import {verifyFaithfulDesignWaivers} from './finalize-visual-acceptance.mjs';
-import {framerailSourceFingerprintSync} from './framerail-source-fingerprint.mjs';
 import {playwrightBrowserVersions} from './playwright-browser-versions.mjs';
-import {captureRunContractIsCurrent} from './scoped-run-contract.mjs';
 
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
-const HASH = /^[a-f0-9]{64}$/u;
-const themeLabRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const POST_CLOSURE_PATH = 'publication/post-closure-acceptance.json';
-export const POST_CLOSURE_SCHEMA = 'theme_lab_post_closure_acceptance.v1';
+export const POST_CLOSURE_SCHEMA = 'theme_lab_post_closure_acceptance.v2';
+const BASE_SCHEMAS = new Set(['theme_lab_post_closure_acceptance.v1', POST_CLOSURE_SCHEMA]);
+export const V2_KEYS = ['package', 'successor_id', 'predecessor', 'candidate', 'receipt', 'browser_audit', 'visual_review'];
+const CANDIDATE_KEYS = ['css_sha256', 'source_sha256', 'preview_sha256', 'base_css_sha256', 'structure_sha256', 'asset_dependency_sha256', 'candidate_sha256'];
+const SHARED_INPUTS = ['ports/interactive-visual-fixture/runtime-asset-replay.css', 'fixtures/scp-jp-sigma9-offline.css'];
+const LEDGER_PATH = 'ports/adaptation-authority.json';
 
 const readFileOrNull = file => { try { return fs.readFileSync(file); } catch { return null; } };
-const readJsonOrNull = file => { const bytes = readFileOrNull(file); if (!bytes) return null; try { return JSON.parse(bytes.toString('utf8')); } catch { return null; } };
+const parseOrNull = text => { if (text === null) return null; try { return JSON.parse(text); } catch { return null; } };
+const readJsonOrNull = file => parseOrNull(readFileOrNull(file)?.toString('utf8') ?? null);
 const canonical = value => JSON.stringify(sortValue(value));
 function sortValue(value) {
   if (Array.isArray(value)) return value.map(sortValue);
   if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().map(key => [key, sortValue(value[key])]));
   return value;
 }
+const projectV2 = entry => Object.fromEntries(V2_KEYS.map(key => [key, entry?.[key]]));
+const sameCandidate = (a, b) => CANDIDATE_KEYS.every(key => (a?.[key] ?? null) === (b?.[key] ?? null));
+
+const candidateBound = (doc, candidate) => doc?.candidate_css_sha256 === candidate?.css_sha256
+  && doc?.candidate_source_sha256 === candidate?.source_sha256
+  && doc?.candidate_preview_sha256 === candidate?.preview_sha256;
+
+// Each evidence binding of an entry, with what its bytes must say.
+const EVIDENCE_KINDS = [
+  {key: 'receipt', label: 'receipt', verify: (doc, entry, name, label) => [
+    ...(candidateBound(doc, entry.candidate) && (doc.candidate_base_css_sha256 ?? null) === (entry.candidate?.base_css_sha256 ?? null)
+      ? [] : [`${label}: receipt is not bound to the entry's candidate`]),
+    ...validateCombinedAcceptance(doc, name).map(message => message.replace('current', 'successor')),
+    ...verifyFaithfulDesignWaivers(doc, name),
+  ]},
+  {key: 'browser_audit', label: 'browser audit', verify: (doc, entry, name, label) => {
+    const records = Array.isArray(doc?.records) ? doc.records : [];
+    if (!records.length) return [`${label}: browser audit has no records`];
+    return records.every(record => record?.candidate_sha256 === entry.candidate?.candidate_sha256)
+      ? [] : [`${label}: browser audit records a candidate other than the entry's`];
+  }},
+  {key: 'visual_review', label: 'visual review', verify: (doc, entry, name, label) =>
+    candidateBound(doc, entry.candidate) ? [] : [`${label}: visual review is not bound to the entry's candidate`]},
+];
 
 // C6: the instrument-proper digest. Same construction as
 // TARGET_ACCEPTANCE_CONTRACT_SHA256 (src/target-acceptance-contract.mjs),
@@ -95,27 +107,25 @@ export function computeInstrumentProperDigest({contract = TARGET_ACCEPTANCE_CONT
 }
 
 function declaredSourceName(root, packageName) {
-  const ledger = readJsonOrNull(path.join(root, 'ports/adaptation-authority.json'));
+  const ledger = readJsonOrNull(path.join(root, LEDGER_PATH));
   const declared = ledger?.packages?.[packageName]?.source_file;
   if (typeof declared === 'string' && declared) return declared;
   return fs.existsSync(path.join(root, 'ports', packageName, 'candidate.wikidot.source.txt')) ? 'candidate.wikidot.source.txt' : 'candidate.wikidot.txt';
 }
 
-function candidateBindings(root, packageName) {
+function candidateBindings(root, packageName, localAssetPathCache = new Map()) {
   const dir = path.join(root, 'ports', packageName);
-  const sourceName = declaredSourceName(root, packageName);
   const read = name => readFileOrNull(path.join(dir, name));
   const css = read('candidate.css');
-  const source = read(sourceName);
+  const source = read(declaredSourceName(root, packageName));
   const preview = read('candidate.wikidot.txt');
   let base = null;
   try { base = currentPackageBaseCss(dir, packageName); } catch { base = read('candidate-base.css'); }
   const structure = read('acceptance-structure.json');
-  const runtimeSupportCss = readFileOrNull(path.join(root, 'ports/interactive-visual-fixture/runtime-asset-replay.css'))?.toString('utf8') ?? '';
-  const baselineCss = readFileOrNull(path.join(root, 'fixtures/scp-jp-sigma9-offline.css'))?.toString('utf8') ?? '';
+  const [runtimeSupportCss, baselineCss] = SHARED_INPUTS.map(relative => readFileOrNull(path.join(root, relative))?.toString('utf8') ?? '');
   const asset = (css && source) ? candidateAssetDependencyState({
     portsDir: path.join(root, 'ports'), themeDir: dir, runtimeSupportCss, baselineCss,
-    baseCss: base ?? Buffer.alloc(0), candidateCss: css, candidateSource: source,
+    baseCss: base ?? Buffer.alloc(0), candidateCss: css, candidateSource: source, localAssetPathCache,
   }).asset_dependency_sha256 : null;
   return {
     css_sha256: css ? sha(css) : null,
@@ -128,196 +138,144 @@ function candidateBindings(root, packageName) {
   };
 }
 
-function gitShow(repoRoot, commit, relativeFromRepo) {
-  try {
-    return execFileSync('git', ['show', `${commit}:${relativeFromRepo}`], {cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore']});
-  } catch { return null; }
+const runGit = (repoRoot, args) => execFileSync('git', ['--literal-pathspecs', ...args], {cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 << 20});
+const gitOrNull = (repoRoot, args) => { try { return runGit(repoRoot, args); } catch { return null; } };
+const nulList = output => (output ?? '').split('\0').filter(Boolean);
+
+function instrumentDriftFailures(anchors, instrumentContract, liveBrowserVersions, repoRoot) {
+  const failures = [];
+  const digest = computeInstrumentProperDigest({contract: instrumentContract, recordedTargetPageRuntimeSha256: anchors.recordedTargetPageRuntimeSha256});
+  if (digest !== anchors.targetAcceptanceContractSha256) failures.push('instrument-proper digest differs from the closure anchor (instrument drift)');
+  let versions = liveBrowserVersions;
+  // An unreadable Playwright registry leaves the file-based digest as the pinned check.
+  if (!versions) { try { versions = playwrightBrowserVersions(path.join(repoRoot, 'framerail')); } catch { versions = {}; } }
+  for (const [engine, version] of Object.entries(versions)) {
+    if (anchors.browserVersions[engine] && version !== anchors.browserVersions[engine]) failures.push(`capture-contract instrument drift: ${engine} browser version ${version} differs from the closure ${anchors.browserVersions[engine]}`);
+  }
+  return failures;
+}
+
+function stateOf(live, closure, entries) {
+  if (!entries.length) return sameCandidate(live, closure) ? 'closure' : 'unadmitted';
+  return sameCandidate(live, entries.at(-1).candidate) ? 'admitted' : 'unadmitted';
 }
 
 export function checkPostClosureAcceptance(root, {
   base = null,
   historicalRoot = DEFAULT_HISTORICAL_ROOT,
   anchors = CLOSURE_ANCHORS,
-  liveFramerailFingerprint = null,
   instrumentContract = TARGET_ACCEPTANCE_CONTRACT,
   liveBrowserVersions = null,
-  // Injectable like the original checker's captureContractReader: the
-  // production default is the original Sigma-10 contract validator.
-  currentSigma10Validator = validateCurrentSigma10Contract,
 } = {}) {
-  const failures = [];
-  const fail = message => failures.push(message);
-  if (!base) { fail('post-closure check requires --base <commit>'); return {status: 'fail', changed_packages: 0, admitted: 0, failures}; }
+  const globalFailures = [];
+  const failed = () => ({status: 'fail', base, changed_packages: 0, admitted: 0, packages: [], pending_admission: [], failures: globalFailures});
+  if (!base) { globalFailures.push('post-closure check requires --base <commit>'); return failed(); }
   const repoRoot = path.resolve(root, '../../..');
   const themeLabRelative = path.relative(repoRoot, root).split(path.sep).join('/');
-  // C6 first: instrument drift fails regardless of candidate changes.
-  const instrumentDigest = computeInstrumentProperDigest({contract: instrumentContract, recordedTargetPageRuntimeSha256: anchors.recordedTargetPageRuntimeSha256});
-  if (instrumentDigest !== anchors.targetAcceptanceContractSha256) fail('instrument-proper digest differs from the closure anchor (instrument drift)');
-  if (liveBrowserVersions) {
-    for (const [engine, version] of Object.entries(liveBrowserVersions)) {
-      if (anchors.browserVersions[engine] && version !== anchors.browserVersions[engine]) fail(`capture-contract instrument drift: ${engine} browser version ${version} differs from the closure ${anchors.browserVersions[engine]}`);
-    }
-  } else {
-    try {
-      const versions = playwrightBrowserVersions(path.join(repoRoot, 'framerail'));
-      for (const [engine, version] of Object.entries(versions)) if (anchors.browserVersions[engine] && version !== anchors.browserVersions[engine]) fail(`capture-contract instrument drift: ${engine} browser version ${version} differs from the closure ${anchors.browserVersions[engine]}`);
-    } catch { /* registry unreadable: the file-based instrument digest above is the pinned check in this lane; successor admission re-checks versions live */ }
-  }
-  // Roster (C5) and closure bindings.
-  const liveLedger = readJsonOrNull(path.join(root, 'ports/adaptation-authority.json'));
-  const liveNames = Object.keys(liveLedger?.packages ?? {}).sort();
-  const closureNames = [...anchors.packages].sort();
-  if (liveNames.join('\0') !== closureNames.join('\0')) fail('package roster differs from the closure roster (adding, removing or renaming a package is campaign work)');
+  const toRepo = relative => `${themeLabRelative}/${relative}`;
+  const fromRepo = repoPath => repoPath.startsWith(`${themeLabRelative}/`) ? repoPath.slice(themeLabRelative.length + 1) : null;
+  if (gitOrNull(repoRoot, ['rev-parse', '--verify', '--quiet', `${base}^{commit}`]) === null) { globalFailures.push(`--base ${base} does not name a commit`); return failed(); }
+
+  const head = readJsonOrNull(path.join(root, POST_CLOSURE_PATH));
+  if (head?.schema !== POST_CLOSURE_SCHEMA || !Array.isArray(head.entries)) { globalFailures.push(`post-closure acceptance record is missing, invalid, or not ${POST_CLOSURE_SCHEMA}`); return failed(); }
+  const baseText = gitOrNull(repoRoot, ['show', `${base}:${toRepo(POST_CLOSURE_PATH)}`]);
+  const baseDoc = baseText === null ? {entries: []} : parseOrNull(baseText);
+  if (baseText !== null && (!BASE_SCHEMAS.has(baseDoc?.schema) || !Array.isArray(baseDoc.entries))) { globalFailures.push('post-closure acceptance record at --base is invalid'); return failed(); }
+
+  const liveLedger = readJsonOrNull(path.join(root, LEDGER_PATH));
+  const baseLedger = parseOrNull(gitOrNull(repoRoot, ['show', `${base}:${toRepo(LEDGER_PATH)}`]));
+  const names = [...anchors.packages].sort();
+  if (Object.keys(liveLedger?.packages ?? {}).sort().join('\0') !== names.join('\0')) globalFailures.push('package roster differs from the closure roster (adding, removing or renaming a package is campaign work)');
   const acceptance = readJsonOrNull(path.join(historicalRoot, 'current-campaign-acceptance.json'));
-  if (!acceptance) fail('archived acceptance document is unavailable in historical/');
+  if (!acceptance) globalFailures.push('archived acceptance document is unavailable in historical/');
   const closureReceiptSha = new Map((acceptance?.packages ?? []).map(row => [row.package, row.receipt?.sha256]));
-  const baselineS9 = readFileOrNull(path.join(historicalRoot, 'fixtures/scp-jp-sigma9-offline.css'))?.toString('utf8') ?? '';
-  void baselineS9;
-  // Successor record and its state at --base.
-  const currentBytes = readFileOrNull(path.join(root, POST_CLOSURE_PATH));
-  const current = currentBytes ? JSON.parse(currentBytes.toString('utf8')) : {schema: POST_CLOSURE_SCHEMA, entries: []};
-  if (current.schema !== POST_CLOSURE_SCHEMA) fail('post-closure acceptance record schema is invalid');
-  const entries = current.entries ?? [];
-  const baseText = gitShow(repoRoot, base, `${themeLabRelative}/${POST_CLOSURE_PATH}`);
-  let baseEntries = [];
-  let baseRecordPresent = false;
-  if (baseText !== null) {
-    try { const baseDoc = JSON.parse(baseText); baseEntries = baseDoc.entries ?? []; baseRecordPresent = true; } catch { fail('post-closure acceptance record at --base is invalid'); }
+  const seenIds = new Set();
+  for (const entry of head.entries) {
+    if (!names.includes(entry?.package)) globalFailures.push(`successor entry ${entry?.successor_id} names a package outside the closure roster`);
+    if (seenIds.has(entry?.successor_id)) globalFailures.push(`successor id ${entry?.successor_id} appears more than once`);
+    seenIds.add(entry?.successor_id);
   }
-  void baseRecordPresent;
-  const baseById = new Map(baseEntries.map(entry => [entry.successor_id, entry]));
-  const verifySuccessorManifest = (entry, label) => {
-    const manifestPath = entry.successor_manifest?.path;
-    const bytes = manifestPath ? readFileOrNull(path.join(root, manifestPath)) : null;
-    if (!bytes) { fail(`${label}: successor manifest is unavailable`); return; }
-    if (sha(bytes) !== entry.successor_manifest?.sha256) { fail(`${label}: successor manifest pin does not match its bytes`); return; }
-    let manifest;
-    try { manifest = JSON.parse(bytes.toString('utf8')); } catch { fail(`${label}: successor manifest is invalid JSON`); return; }
-    if (manifest.schema !== 'theme_lab_post_closure_evidence_manifest.v1') fail(`${label}: successor manifest schema is invalid`);
-    const files = new Map((manifest.files ?? []).map(row => [row.relative_path, row]));
-    for (const [key, binding] of [['receipt', entry.receipt], ['browser_audit', entry.browser_audit], ['visual_review', entry.visual_review]]) {
-      const listed = binding ? files.get(binding.path) : null;
-      if (!listed || listed.sha256 !== binding.sha256) fail(`${label}: successor manifest does not bind the ${key}`);
-      const evidence = binding ? readFileOrNull(path.join(root, binding.path)) : null;
-      if (!evidence || sha(evidence) !== binding.sha256) fail(`${label}: successor ${key} bytes are unavailable or stale`);
+
+  const realRoot = fs.realpathSync(root);
+  const packages = names.map(name => {
+    const localAssetPathCache = new Map();
+    const live = candidateBindings(root, name, localAssetPathCache);
+    const closure = candidateBindings(historicalRoot, name);
+    const entries = head.entries.filter(entry => entry?.package === name);
+    const baseEntries = baseDoc.entries.filter(entry => entry?.package === name);
+    const evidencePaths = [...entries, ...baseEntries].flatMap(entry => EVIDENCE_KINDS.map(kind => entry?.[kind.key]?.path)).filter(value => typeof value === 'string' && value);
+    const assetPaths = [...localAssetPathCache.values()].filter(Boolean).map(file => path.relative(realRoot, file).split(path.sep).join('/')).filter(relative => !relative.startsWith('..'));
+    return {
+      name, live, closure, entries, baseEntries,
+      pathspecs: [`ports/${name}`, ...SHARED_INPUTS, ...assetPaths, ...evidencePaths],
+      ledgerChanged: canonical(liveLedger?.packages?.[name]) !== canonical(baseLedger?.packages?.[name]),
+      entriesChanged: canonical(entries.map(projectV2)) !== canonical(baseEntries.map(projectV2)),
+      state: stateOf(live, closure, entries),
+      failures: [],
+    };
+  });
+
+  const union = [...new Set(packages.flatMap(row => row.pathspecs))].map(toRepo);
+  const touched = [
+    ...nulList(runGit(repoRoot, ['diff', '--no-renames', '--name-only', '-z', base, '--', ...union])),
+    ...nulList(runGit(repoRoot, ['ls-files', '--others', '--exclude-standard', '-z', '--', ...union])),
+  ].map(fromRepo).filter(Boolean);
+  const touches = specs => touched.some(file => specs.some(spec => file === spec || file.startsWith(`${spec}/`)));
+  for (const row of packages) row.inScope = row.ledgerChanged || row.entriesChanged || touches(row.pathspecs);
+
+  const inScope = packages.filter(row => row.inScope);
+  const evidenceToCheck = inScope.flatMap(row => row.entries.flatMap(entry => EVIDENCE_KINDS.map(kind => entry[kind.key]?.path))).filter(value => typeof value === 'string' && value);
+  // With no pathspec, ls-files would list the whole index.
+  const tracked = new Set(evidenceToCheck.length ? nulList(runGit(repoRoot, ['ls-files', '-z', '--', ...evidenceToCheck.map(toRepo)])).map(fromRepo) : []);
+  let instrumentFailures = null;
+  for (const row of inScope) {
+    const fail = message => row.failures.push(message);
+    const {name, entries} = row;
+    const headById = new Map(entries.map(entry => [entry?.successor_id, entry]));
+    for (const baseEntry of row.baseEntries) {
+      const now = headById.get(baseEntry.successor_id);
+      if (!now) fail(`${name}: successor entry ${baseEntry.successor_id} present at --base was removed`);
+      else if (canonical(projectV2(baseEntry)) !== canonical(now)) fail(`${name}: successor entry ${baseEntry.successor_id} present at --base was rewritten`);
     }
-  };
-  // C4: entries that existed at --base are historical now.
-  for (const baseEntry of baseEntries) {
-    const now = entries.find(entry => entry.successor_id === baseEntry.successor_id);
-    if (!now) { fail(`successor entry ${baseEntry.successor_id} present at --base was removed`); continue; }
-    if (canonical(now) !== canonical(baseEntry)) fail(`successor entry ${baseEntry.successor_id} present at --base was rewritten`);
-    verifySuccessorManifest(now, `successor ${baseEntry.successor_id}`);
-  }
-  // Latest accepted binding per package (closure, then successors in order).
-  const latest = new Map();
-  for (const name of closureNames) {
-    const dir = path.join(historicalRoot, 'ports', name);
-    const readH = file => readFileOrNull(path.join(dir, file));
-    const css = readH('candidate.css');
-    const source = readH(declaredSourceName(historicalRoot, name));
-    const preview = readH('candidate.wikidot.txt');
-    let baseCss = null;
-    try { baseCss = currentPackageBaseCss(dir, name); } catch { baseCss = readH('candidate-base.css'); }
-    const structure = readH('acceptance-structure.json');
-    const runtimeSupportCss = readFileOrNull(path.join(historicalRoot, 'ports/interactive-visual-fixture/runtime-asset-replay.css'))?.toString('utf8') ?? '';
-    const baselineCss = readFileOrNull(path.join(historicalRoot, 'fixtures/scp-jp-sigma9-offline.css'))?.toString('utf8') ?? '';
-    const asset = (css && source) ? candidateAssetDependencyState({portsDir: path.join(historicalRoot, 'ports'), themeDir: dir, runtimeSupportCss, baselineCss, baseCss: baseCss ?? Buffer.alloc(0), candidateCss: css, candidateSource: source}).asset_dependency_sha256 : null;
-    latest.set(name, {
-      css_sha256: css ? sha(css) : null, source_sha256: source ? sha(source) : null,
-      preview_sha256: preview ? sha(preview) : null, base_css_sha256: baseCss ? sha(baseCss) : null,
-      structure_sha256: structure ? sha(structure) : null, asset_dependency_sha256: asset,
-      candidate_sha256: css ? candidateIdentity(css, baseCss ?? Buffer.alloc(0)).candidateSha : null,
+    entries.forEach((entry, index) => {
+      const label = `${name}: successor ${entry.successor_id}`;
+      if (Object.keys(entry).sort().join('\0') !== [...V2_KEYS].sort().join('\0')) fail(`${label}: entry keys are not the v2 shape`);
+      const previous = entries[index - 1];
+      const expectedPredecessor = previous
+        ? {kind: 'successor', receipt_sha256: previous.receipt?.sha256}
+        : {kind: 'closure', receipt_sha256: closureReceiptSha.get(name)};
+      if (canonical(entry.predecessor) !== canonical(expectedPredecessor)) fail(`${label}: predecessor does not bind the ${expectedPredecessor.kind} receipt`);
+      if (sameCandidate(entry.candidate, previous ? previous.candidate : row.closure)) fail(`${label}: candidate equals its predecessor's, so the entry admits nothing`);
+      for (const kind of EVIDENCE_KINDS) {
+        const binding = entry[kind.key];
+        const bytes = binding?.path ? readFileOrNull(path.join(root, binding.path)) : null;
+        if (!bytes) { fail(`${label}: ${kind.label} ${binding?.path ?? '(no path)'} is unavailable`); continue; }
+        if (sha(bytes) !== binding.sha256) { fail(`${label}: ${kind.label} ${binding.path} does not match its recorded sha256`); continue; }
+        if (!tracked.has(binding.path)) fail(`${label}: ${kind.label} ${binding.path} is not tracked in Git; successor evidence must be committed`);
+        const doc = parseOrNull(bytes.toString('utf8'));
+        if (!doc) { fail(`${label}: ${kind.label} is invalid JSON`); continue; }
+        row.failures.push(...kind.verify(doc, entry, name, label));
+      }
     });
+    if (row.state === 'unadmitted') fail(`${name}: candidate changed since its latest admitted identity without a successor entry naming it`);
+    const baseIds = new Set(row.baseEntries.map(entry => entry.successor_id));
+    if (entries.some(entry => !baseIds.has(entry.successor_id))) {
+      instrumentFailures ??= instrumentDriftFailures(anchors, instrumentContract, liveBrowserVersions, repoRoot);
+      for (const message of instrumentFailures) fail(`${name}: ${message}`);
+    }
   }
-  // Only entries already accepted at --base advance the accepted binding;
-  // an entry admitted in this PR must not cover its own change.
-  for (const entry of entries) if (entry.candidate && latest.has(entry.package) && baseById.has(entry.successor_id)) latest.set(entry.package, entry.candidate);
-  const sameCandidate = (a, b) => ['css_sha256', 'source_sha256', 'preview_sha256', 'base_css_sha256', 'structure_sha256', 'asset_dependency_sha256', 'candidate_sha256'].every(key => (a?.[key] ?? null) === (b?.[key] ?? null));
-  const fingerprint = liveFramerailFingerprint ?? framerailSourceFingerprintSync(repoRoot);
-  let changed = 0;
-  let admitted = 0;
-  for (const name of closureNames) {
-    const live = candidateBindings(root, name);
-    if (sameCandidate(live, latest.get(name))) continue;
-    changed++;
-    // A change is covered only by a successor admitted in this PR (absent
-    // at --base) whose candidate binding equals the live candidate exactly.
-    const covering = entries.filter(entry => entry.package === name && !baseById.has(entry.successor_id));
-    const entry = covering.find(candidate => sameCandidate(candidate.candidate, live));
-    if (!entry) { fail(`${name}: candidate changed after its latest accepted binding without a complete successor entry in this PR`); continue; }
-    admitted++;
-    // C2: predecessor binding.
-    const prior = entries.filter(other => other.package === name && other.successor_id !== entry.successor_id && baseById.has(other.successor_id)).at(-1);
-    if (prior) {
-      if (entry.predecessor?.kind !== 'successor' || entry.predecessor?.receipt_sha256 !== prior.receipt?.sha256) fail(`${name}: successor predecessor does not bind the prior successor receipt`);
-    } else if (entry.predecessor?.kind !== 'closure' || entry.predecessor?.receipt_sha256 !== closureReceiptSha.get(name)) {
-      fail(`${name}: successor predecessor does not bind the closure receipt`);
-    }
-    if (entry.run_contract?.path === anchors.sigma9RunContract.path || entry.sigma10_run_contract?.path === anchors.sigma10RunContract.path) fail(`${name}: successor rewrites a frozen run contract instead of naming a new file`);
-    verifySuccessorManifest(entry, `${name} successor`);
-    // C3: admission is live.
-    const receiptBytes = readFileOrNull(path.join(root, entry.receipt?.path ?? ''));
-    const auditBytes = readFileOrNull(path.join(root, entry.browser_audit?.path ?? ''));
-    const visualBytes = readFileOrNull(path.join(root, entry.visual_review?.path ?? ''));
-    if (!receiptBytes || sha(receiptBytes) !== entry.receipt?.sha256) fail(`${name}: successor receipt bytes are unavailable or stale`);
-    if (!auditBytes || sha(auditBytes) !== entry.browser_audit?.sha256) fail(`${name}: successor browser audit bytes are unavailable or stale`);
-    if (!visualBytes || sha(visualBytes) !== entry.visual_review?.sha256) fail(`${name}: successor visual review bytes are unavailable or stale`);
-    let result = null, audit = null, visual = null, contract = null, sigmaContract = null;
-    try { result = receiptBytes ? JSON.parse(receiptBytes.toString('utf8')) : null; } catch { fail(`${name}: successor receipt is invalid JSON`); }
-    try { audit = auditBytes ? JSON.parse(auditBytes.toString('utf8')) : null; } catch { fail(`${name}: successor browser audit is invalid JSON`); }
-    try { visual = visualBytes ? JSON.parse(visualBytes.toString('utf8')) : null; } catch { fail(`${name}: successor visual review is invalid JSON`); }
-    const contractBytes = readFileOrNull(path.join(root, entry.run_contract?.path ?? ''));
-    if (!contractBytes || sha(contractBytes) !== entry.run_contract?.sha256) fail(`${name}: successor run contract bytes are unavailable or stale`);
-    else try { contract = JSON.parse(contractBytes.toString('utf8')); } catch { fail(`${name}: successor run contract is invalid JSON`); }
-    const sigmaBytes = readFileOrNull(path.join(root, entry.sigma10_run_contract?.path ?? ''));
-    if (!sigmaBytes || sha(sigmaBytes) !== entry.sigma10_run_contract?.sha256) fail(`${name}: successor Sigma-10 run contract bytes are unavailable or stale`);
-    else try { sigmaContract = JSON.parse(sigmaBytes.toString('utf8')); } catch { fail(`${name}: successor Sigma-10 run contract is invalid JSON`); }
-    if (result) {
-      if (result.candidate_css_sha256 !== live.css_sha256 || result.candidate_source_sha256 !== live.source_sha256 || result.candidate_preview_sha256 !== live.preview_sha256 || (result.candidate_base_css_sha256 ?? null) !== live.base_css_sha256) fail(`${name}: successor result is not bound to the live candidate inputs`);
-      if (result.target_runtime_identity?.source_sha256 !== fingerprint) fail(`${name}: successor result does not bind the live framerail fingerprint`);
-      if (contract && !deepwellRuntimeIdentityMatchesContract(result.target_runtime_identity?.backend_runtime_identity ? {backend_runtime_identity: result.target_runtime_identity.backend_runtime_identity} : {}, contract)) {
-        // deepwellRuntimeIdentityMatchesContract expects a record-shaped row;
-        // the identity object comparison is the same predicate.
-        if (result.target_runtime_identity?.backend_runtime_identity?.identity_sha256 !== contract.expected_backend_runtime_identity?.identity_sha256) fail(`${name}: successor result backend identity differs from its run contract`);
-      }
-      if (result.target_acceptance_contract_sha256 !== TARGET_ACCEPTANCE_CONTRACT_SHA256) fail(`${name}: successor result uses a superseded live target acceptance contract`);
-      failures.push(...validateCombinedAcceptance(result, name).map(message => message.replace('current', 'successor')));
-      failures.push(...verifyFaithfulDesignWaivers(result, name));
-      if (visual && (visual.candidate_css_sha256 !== live.css_sha256 || visual.candidate_source_sha256 !== live.source_sha256 || visual.candidate_preview_sha256 !== live.preview_sha256)) fail(`${name}: successor visual review is not bound to the live candidate`);
-    }
-    if (contract) {
-      const liveFrozen = readJsonOrNull(path.join(root, 'publication/frozen-candidate-set.json'));
-      if (contract.candidate_set_sha256 !== liveFrozen?.candidate_set_sha256) fail(`${name}: successor run contract is not bound to the re-frozen candidate set`);
-      const node = (liveFrozen?.nodes ?? []).find(item => item.id === `theme:${name}`);
-      if (!node || node.candidate_css_sha256 !== live.css_sha256 || node.source_sha256 !== live.source_sha256) fail(`${name}: re-frozen candidate set does not contain the live candidate node`);
-      const auditArtifact = (liveFrozen?.authority?.artifacts ?? []).find(item => item.id === 'source-dependency-audit');
-      if (auditArtifact) {
-        const bytes = readFileOrNull(path.join(root, auditArtifact.path));
-        if (!bytes || sha(bytes) !== auditArtifact.sha256) fail(`${name}: source-dependency audit successor is stale or unavailable`);
-      }
-    }
-    if (sigmaContract) {
-      const row = (sigmaContract.current_candidate_inventory ?? []).find(item => item.package === name);
-      if (!row || row.candidate_sha256 !== live.candidate_sha256 || row.source_sha256 !== live.source_sha256) fail(`${name}: Sigma-10 current candidate inventory does not bind the live candidate`);
-      const sigma10Failures = currentSigma10Validator(root, entry.sigma10_run_contract.path);
-      for (const message of sigma10Failures) fail(`${name}: ${message}`);
-    } else {
-      fail(`${name}: successor lacks a Sigma-10 run contract binding`);
-    }
-    if (audit && contract) {
-      for (const record of audit.records ?? []) {
-        if (record.candidate_sha256 !== live.candidate_sha256) fail(`${name}: successor matrix uses a superseded candidate`);
-        if (record.runtime_source_sha256 !== fingerprint) fail(`${name}: successor matrix does not bind the live framerail fingerprint`);
-        if (record.backend_runtime_identity?.identity_sha256 !== contract.expected_backend_runtime_identity?.identity_sha256) fail(`${name}: successor matrix backend identity differs from its run contract`);
-        if (!captureRunContractIsCurrent(record, contract, entry.run_contract.sha256)) fail(`${name}: successor matrix was not captured under the successor run contract`);
-      }
-    }
-    // Entries bound to an older candidate cannot cover a live change; the
-    // exact-candidate covering test above is what rejects them.
-    for (const other of covering) if (other !== entry && !sameCandidate(other.candidate, live)) fail(`${name}: an additional successor entry is bound to a stale candidate`);
-  }
-  // Successor entries for unchanged packages at admission are also bound
-  // live when new; unchanged packages with only base entries are C4 above.
-  return {status: failures.length ? 'fail' : 'pass', changed_packages: changed, admitted, failures};
+
+  const failures = [...globalFailures, ...inScope.flatMap(row => row.failures)];
+  return {
+    status: failures.length ? 'fail' : 'pass',
+    base,
+    changed_packages: packages.filter(row => !sameCandidate(row.live, row.closure)).length,
+    admitted: packages.filter(row => row.state === 'admitted').length,
+    packages: packages.map(row => ({
+      package: row.name, in_scope: row.inScope, state: row.state,
+      successor_id: row.entries.at(-1)?.successor_id ?? null, failures: row.failures,
+    })),
+    pending_admission: packages.filter(row => !row.inScope && row.state === 'unadmitted').map(row => row.name),
+    failures,
+  };
 }
