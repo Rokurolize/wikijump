@@ -20,6 +20,12 @@ name: Consolidated validation
 #               is not in Git and is not published anywhere a runner
 #               could fetch. The group fails closed without the store.
 #
+# One check inside the verification group is likewise local-only: the
+# wikidot specification generator reads the scp-wiki-translation
+# documentation corpus (WIKIDOT_DOCUMENTATION_CORPUS), which is operator
+# data in no Git repository. It fails in CI for that reason alone; the
+# run's receipt records it, and this is expected, not a regression.
+#
 # The standing application images are not built here: the runner is
 # invoked with its own --no-image-build flag because the
 # docker-build-*.yaml workflows already build those images on pull
@@ -95,6 +101,11 @@ jobs:
           ftml_rev="$(sed -n '/^name = "ftml"$/,/^$/p' deepwell/Cargo.lock | grep -oE '[0-9a-f]{40}' | head -1)"
           test -n "$ftml_rev"
           echo "ftml_rev=$ftml_rev" >> "$GITHUB_OUTPUT"
+          # The wikidot.py revision the tree pins is the supported-source
+          # lock the inventory tooling itself reads.
+          wikidot_py_rev="$(node -e 'const fs = require("fs"); const v = JSON.parse(fs.readFileSync("docs/development/wikidot-py-supported-source.json", "utf8")); if (v.schema !== "wikijump.wikidot_py_supported_source.v1" || !/^[0-9a-f]{40}$/.test(v.commit ?? "")) process.exit(1); process.stdout.write(v.commit)')"
+          test -n "$wikidot_py_rev"
+          echo "wikidot_py_rev=$wikidot_py_rev" >> "$GITHUB_OUTPUT"
           echo "Base: $base  FTML: $ftml_rev  Head: $(git rev-parse HEAD)"
 
       - name: Check out FTML at the pinned revision
@@ -105,13 +116,13 @@ jobs:
           ref: ${{ steps.pins.outputs.ftml_rev }}
           fetch-depth: 0
 
-      - name: Check out wikidot.py
+      - name: Check out wikidot.py at the pinned revision
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           repository: Rokurolize/wikidot.py
           path: wikidot.py
-          # The wikijump tree records no wikidot.py revision pin; the
-          # local sibling checkout tracks the default branch the same way.
+          ref: ${{ steps.pins.outputs.wikidot_py_rev }}
+          fetch-depth: 0
 
       - name: Set up Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -183,6 +194,15 @@ jobs:
           # so its fetch cannot be --locked; it only warms the crates.io
           # dependencies the contract canary builds against.
           cargo fetch --manifest-path ftml/Cargo.toml
+
+      - name: Register the runner hostname locally
+        run: |
+          # The test network guard treats resolving the machine's own
+          # hostname through DNS as an external attempt (a local-path
+          # git clone in the standing tests triggers it). Resolving the
+          # hostname via /etc/hosts is the local configuration the guard
+          # expects; genuinely external connects stay blocked.
+          echo "127.0.0.1 $(hostname)" | sudo tee -a /etc/hosts
 
       - name: Plan the selected groups
         id: plan
