@@ -343,7 +343,20 @@ check_standing_receipt_tests() {
   run_test "standing receipt tests" node --test 'install/standing/tests/*.test.mjs'
 }
 
+# The specification generator reads the scp-wiki-translation documentation
+# corpus (WIKIDOT_DOCUMENTATION_CORPUS): operator data that exists in no Git
+# repository, so an environment without the corpus (a hosted CI runner) can
+# never get a verdict from it — the generator can only report its evidence
+# absent. Such an environment sets PREFLIGHT_SKIP_WIKIDOT_SPECIFICATION_GENERATOR=1
+# to exclude the check outright instead of failing every run on that absence.
+# A skipped run says so in the log; it does not appear as a check (the same
+# treatment as the Theme Lab archive checks). With the variable unset the
+# check always runs, exactly as before.
 check_wikidot_specification_generator() {
+  if [[ "${PREFLIGHT_SKIP_WIKIDOT_SPECIFICATION_GENERATOR:-}" == "1" ]]; then
+    echo "preflight: wikidot specification generator skipped (PREFLIGHT_SKIP_WIKIDOT_SPECIFICATION_GENERATOR=1): the check reads the scp-wiki-translation documentation corpus (WIKIDOT_DOCUMENTATION_CORPUS), operator data that is not available in this environment; unset the variable to run it"
+    return 0
+  fi
   run_test_inconclusive_ok "wikidot specification generator" node scripts/generate-wikidot-specifications.mjs --check
 }
 
