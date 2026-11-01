@@ -133,7 +133,9 @@ jobs:
           machete="cargo-machete-v0.9.2-x86_64-unknown-linux-musl"
           curl -fsSLO "https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.2/${machete}.tar.gz"
           curl -fsSLO "https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.2/${machete}.tar.gz.sha256"
-          sha256sum --check "${machete}.tar.gz.sha256"
+          # The upstream .sha256 asset is a bare hash with no filename,
+          # so compare it directly instead of sha256sum --check.
+          test "$(tr -d '[:space:]' < "${machete}.tar.gz.sha256")" = "$(sha256sum "${machete}.tar.gz" | cut -d ' ' -f 1)"
           tar -xzf "${machete}.tar.gz" --strip-components=1 -C "$HOME/.cargo/bin" "${machete}/cargo-machete"
           sqlx --version
           cargo machete --version
