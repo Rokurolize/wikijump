@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Theme Lab post-closure changes (ALLOC-32 R4 Check 2). FATAL. --base
 // <commit> is required; the validation runner supplies its receipt's
-// base_commit. Missing base fails.
+// base_commit. Missing base fails. Packages outside the change-set whose
+// candidate is unadmitted are listed in pending_admission without failing.
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {checkPostClosureAcceptance} from '../src/post-closure-acceptance.mjs';
@@ -33,6 +34,6 @@ try {
   }, null, 2));
   process.exitCode = result.status === 'pass' ? 0 : 1;
 } catch (error) {
-  console.log(JSON.stringify({command: 'post-closure-changes', result: 'POST-CLOSURE CHANGES NOT ACCEPTED', overall_acceptance: {status: 'fail'}, failures: [error.message]}, null, 2));
+  console.log(JSON.stringify({command: 'post-closure-changes', result: 'POST-CLOSURE CHANGES NOT ACCEPTED', overall_acceptance: {status: 'fail'}, packages: [], pending_admission: [], failures: [error.message]}, null, 2));
   process.exitCode = 1;
 }

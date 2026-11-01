@@ -9,9 +9,8 @@ import {execFileSync} from 'node:child_process';
 import {candidateIdentity} from '../ports/scripts/candidate-identity.mjs';
 import {candidateAssetDependencyState} from '../src/candidate-asset-dependencies.mjs';
 import {CLOSURE_ANCHORS} from '../src/campaign-record-integrity.mjs';
-import {createDeepwellRuntimeIdentity} from '../src/deepwell-runtime-identity.mjs';
-import {checkPostClosureAcceptance, computeInstrumentProperDigest} from '../src/post-closure-acceptance.mjs';
-import {TARGET_ACCEPTANCE_CONTRACT, TARGET_ACCEPTANCE_CONTRACT_SHA256} from '../src/target-acceptance-contract.mjs';
+import {checkPostClosureAcceptance, computeInstrumentProperDigest, POST_CLOSURE_PATH, POST_CLOSURE_SCHEMA, V2_KEYS} from '../src/post-closure-acceptance.mjs';
+import {TARGET_ACCEPTANCE_CONTRACT} from '../src/target-acceptance-contract.mjs';
 
 const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const write = (root, relative, content) => {
@@ -20,60 +19,54 @@ const write = (root, relative, content) => {
   fs.writeFileSync(file, typeof content === 'string' ? content : JSON.stringify(content));
   return file;
 };
+const readJson = (root, relative) => JSON.parse(fs.readFileSync(path.join(root, relative), 'utf8'));
 const git = (cwd, ...args) => execFileSync('git', args, {cwd, encoding: 'utf8'});
+const commit = (repo, message) => {
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-q', '--allow-empty', '-m', message);
+  return git(repo, 'rev-parse', 'HEAD').trim();
+};
+const CLOSURE_RECEIPT_SHA = '1'.repeat(64);
 
-const FINGERPRINT = 'f'.repeat(64);
-const BACKEND = createDeepwellRuntimeIdentity({
-  source_sha256: 'd'.repeat(64), ftml_git_revision: 'f'.repeat(40),
-  container_id: 'c'.repeat(64), image_id: `sha256:${'b'.repeat(64)}`,
-  binary_sha256: '9'.repeat(64), config_sha256: '8'.repeat(64),
-});
-
-// Minimal live + historical fixture for one package (testtheme), with the
-// anchor roster overridden to match, production defaults otherwise.
-function buildFixture({candidateCss = 'body { color: black; }'} = {}) {
+// Live and historical trees for the given packages, an empty v2 record, and
+// the anchor roster overridden to match; production defaults otherwise.
+function buildFixture({packages = ['testtheme']} = {}) {
   const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'theme-lab-post-closure-'));
   const repo = path.join(workspace, 'repo');
   const root = path.join(repo, 'install/local/theme-lab');
   const historical = path.join(workspace, 'historical');
   for (const base of [root, historical]) {
-    write(base, 'ports/adaptation-authority.json', {packages: {testtheme: {}}});
-    write(base, 'ports/testtheme/candidate.css', candidateCss);
-    write(base, 'ports/testtheme/candidate.wikidot.source.txt', 'Theme source');
-    write(base, 'ports/testtheme/candidate.wikidot.txt', 'JP preview');
-    write(base, 'ports/testtheme/manifest.json', {reference_url: 'https://scp-wiki.wikidot.com/theme:testtheme'});
+    write(base, 'ports/adaptation-authority.json', {packages: Object.fromEntries(packages.map(name => [name, {}]))});
+    for (const name of packages) {
+      write(base, `ports/${name}/candidate.css`, 'body { color: black; }');
+      write(base, `ports/${name}/candidate.wikidot.source.txt`, 'Theme source');
+      write(base, `ports/${name}/candidate.wikidot.txt`, 'JP preview');
+      write(base, `ports/${name}/manifest.json`, {reference_url: `https://scp-wiki.wikidot.com/theme:${name}`});
+    }
     write(base, 'ports/interactive-visual-fixture/runtime-asset-replay.css', '');
     write(base, 'fixtures/scp-jp-sigma9-offline.css', 'baseline');
   }
   write(historical, 'current-campaign-acceptance.json', {
     schema: 'theme_lab_current_campaign_acceptance.v1',
-    packages: [{package: 'testtheme', receipt: {path: 'ports/current-acceptance/testtheme/accepted-result.json', sha256: '1'.repeat(64)}}],
+    packages: packages.map(name => ({package: name, receipt: {path: `ports/current-acceptance/${name}/accepted-result.json`, sha256: CLOSURE_RECEIPT_SHA}})),
   });
-  write(root, 'publication/frozen-candidate-set.json', {
-    candidate_set_sha256: '2'.repeat(64),
-    nodes: [{id: 'theme:testtheme', candidate_css_sha256: digest(candidateCss), source_sha256: digest('Theme source')}],
-    authority: {artifacts: []},
-  });
+  write(root, POST_CLOSURE_PATH, {schema: POST_CLOSURE_SCHEMA, entries: []});
   git(repo, 'init', '-q');
   git(repo, 'config', 'user.email', 'test@example.invalid');
   git(repo, 'config', 'user.name', 'test');
-  const anchors = {
-    ...CLOSURE_ANCHORS,
-    packages: ['testtheme'],
-    browserVersions: {chromium: '1.0'},
-    sigma9RunContract: {path: 'ports/current-acceptance/run-contract-campaign-20261028-s9.json', sha256: '3'.repeat(64)},
-    sigma10RunContract: {path: 'sigma10-migration/current-campaign/run-contract-campaign-20261028-s10b.json', sha256: '4'.repeat(64)},
-  };
-  const options = {
-    base: null, historicalRoot: historical, anchors,
-    liveFramerailFingerprint: FINGERPRINT, liveBrowserVersions: {chromium: '1.0'},
-    currentSigma10Validator: () => [],
-  };
-  return {workspace, repo, root, historical, anchors, options};
+  const anchors = {...CLOSURE_ANCHORS, packages, browserVersions: {chromium: '1.0'}};
+  const options = {historicalRoot: historical, anchors, liveBrowserVersions: {chromium: '1.0'}};
+  const check = (overrides = {}) => checkPostClosureAcceptance(root, {...options, ...overrides});
+  return {workspace, repo, root, check};
 }
 
-const candidateOf = root => {
-  const dir = path.join(root, 'ports/testtheme');
+function withFixture(options, body) {
+  const fixture = buildFixture(options);
+  try { body(fixture); } finally { fs.rmSync(fixture.workspace, {recursive: true, force: true}); }
+}
+
+const candidateOf = (root, name) => {
+  const dir = path.join(root, 'ports', name);
   const css = fs.readFileSync(path.join(dir, 'candidate.css'));
   const source = fs.readFileSync(path.join(dir, 'candidate.wikidot.source.txt'));
   const preview = fs.readFileSync(path.join(dir, 'candidate.wikidot.txt'));
@@ -88,175 +81,243 @@ const candidateOf = root => {
   };
 };
 
-// Add a complete successor entry for the live candidate and commit the
-// pre-PR state (without the entry) as the git base.
-function addSuccessor(fixture, {candidateOverride = null} = {}) {
-  const {root, repo} = fixture;
-  // Base commit: the tree before the successor record exists.
-  git(repo, 'add', '-A');
-  git(repo, 'commit', '-q', '-m', 'base');
-  const base = git(repo, 'rev-parse', 'HEAD').trim();
-  const candidate = candidateOverride ?? candidateOf(root);
+const changeCandidate = (root, name = 'testtheme', css = 'body { color: red; }') => write(root, `ports/${name}/candidate.css`, css);
+
+// Append a v2 successor entry for the live candidate of `name`, with its
+// capture set and visual review written and (unless track is false) staged.
+function addSuccessor({repo, root}, {name = 'testtheme', candidateOverride = null, track = true} = {}) {
+  const record = readJson(root, POST_CLOSURE_PATH);
+  const previous = record.entries.filter(entry => entry.package === name).at(-1);
+  const successorId = `${name}-successor-${record.entries.length + 1}`;
+  const candidate = candidateOverride ?? candidateOf(root, name);
   const binding = (relative, content) => {
     write(root, relative, content);
+    if (track) git(repo, 'add', path.join('install/local/theme-lab', relative));
     return {path: relative, sha256: digest(fs.readFileSync(path.join(root, relative)))};
   };
-  const result = {
-    verdict: 'pass',
-    overall_acceptance: {status: 'pass', port_verdict: 'pass', target_status: 'pass'},
-    port_decision: {verdict: 'pass'}, target_acceptance: {status: 'pass'},
-    candidate_css_sha256: candidate.css_sha256, candidate_source_sha256: candidate.source_sha256,
-    candidate_preview_sha256: candidate.preview_sha256, candidate_base_css_sha256: null,
-    target_runtime_identity: {source_sha256: FINGERPRINT, backend_runtime_identity: BACKEND},
-    target_acceptance_contract_sha256: TARGET_ACCEPTANCE_CONTRACT_SHA256,
-    verification_scope: {mode: 'full', deferred: []},
-  };
-  const receipt = binding('ports/current-acceptance/testtheme/accepted-result-successor.json', result);
-  const audit = binding('ports/current-acceptance/testtheme/browser-audit-successor.json', {
-    records: [{candidate_sha256: candidate.candidate_sha256, runtime_source_sha256: FINGERPRINT, backend_runtime_identity: BACKEND, run_contract_sha256: '5'.repeat(64)}],
-  });
-  const visual = binding('ports/current-acceptance/testtheme/visual-review-successor.json', {
-    schema: 'theme_lab_visual_acceptance.v1',
-    candidate_css_sha256: candidate.css_sha256, candidate_source_sha256: candidate.source_sha256,
-    candidate_preview_sha256: candidate.preview_sha256,
-  });
-  const contract = binding('ports/current-acceptance/run-contract-successor-s9.json', {
-    candidate_set_sha256: '2'.repeat(64), expected_backend_runtime_identity: BACKEND,
-  });
-  // The fabricated audit record binds the successor contract by exact SHA.
-  const auditDoc = JSON.parse(fs.readFileSync(path.join(root, audit.path), 'utf8'));
-  auditDoc.records[0].run_contract_sha256 = contract.sha256;
-  fs.writeFileSync(path.join(root, audit.path), JSON.stringify(auditDoc));
-  audit.sha256 = digest(fs.readFileSync(path.join(root, audit.path)));
-  const sigmaContract = binding('sigma10-migration/current-campaign/run-contract-successor-s10.json', {
-    current_candidate_inventory: [{package: 'testtheme', candidate_sha256: candidate.candidate_sha256, source_sha256: candidate.source_sha256}],
-  });
-  const manifestFiles = [receipt, audit, visual].map(item => ({
-    relative_path: item.path, sha256: item.sha256, size_bytes: fs.statSync(path.join(root, item.path)).size,
-  }));
-  const manifest = binding('publication/post-closure-evidence-testtheme.json', {
-    schema: 'theme_lab_post_closure_evidence_manifest.v1', files: manifestFiles,
-  });
+  const dir = `ports/current-acceptance/${name}`;
   const entry = {
-    package: 'testtheme', successor_id: 'testtheme-successor-1',
-    predecessor: {kind: 'closure', receipt_sha256: '1'.repeat(64)},
-    candidate, receipt, browser_audit: audit, visual_review: visual,
-    run_contract: contract, sigma10_run_contract: sigmaContract, successor_manifest: manifest,
+    package: name, successor_id: successorId,
+    predecessor: previous ? {kind: 'successor', receipt_sha256: previous.receipt.sha256} : {kind: 'closure', receipt_sha256: CLOSURE_RECEIPT_SHA},
+    candidate,
+    receipt: binding(`${dir}/accepted-result-${successorId}.json`, {
+      verdict: 'pass',
+      overall_acceptance: {status: 'pass', port_verdict: 'pass', target_status: 'pass'},
+      port_decision: {verdict: 'pass'}, target_acceptance: {status: 'pass'},
+      candidate_css_sha256: candidate.css_sha256, candidate_source_sha256: candidate.source_sha256,
+      candidate_preview_sha256: candidate.preview_sha256, candidate_base_css_sha256: null,
+    }),
+    browser_audit: binding(`${dir}/browser-audit-${successorId}.json`, {records: [{candidate_sha256: candidate.candidate_sha256}]}),
+    visual_review: binding(`${dir}/visual-review-${successorId}.json`, {
+      schema: 'theme_lab_visual_acceptance.v1',
+      candidate_css_sha256: candidate.css_sha256, candidate_source_sha256: candidate.source_sha256,
+      candidate_preview_sha256: candidate.preview_sha256,
+    }),
   };
-  write(root, 'publication/post-closure-acceptance.json', {schema: 'theme_lab_post_closure_acceptance.v1', entries: [entry]});
-  return {base, entry};
+  record.entries.push(entry);
+  write(root, POST_CLOSURE_PATH, record);
+  return entry;
 }
 
-test('Check 2 requires --base', () => {
-  const fixture = buildFixture();
-  try {
-    const checked = checkPostClosureAcceptance(fixture.root, {...fixture.options, base: null});
+const packageRow = (checked, name) => checked.packages.find(row => row.package === name);
+
+test('Check 2 requires a --base that names a commit', () => withFixture({}, fixture => {
+  commit(fixture.repo, 'base');
+  const missing = fixture.check({base: null});
+  assert.equal(missing.status, 'fail');
+  assert.ok(missing.failures.some(failure => failure.includes('--base')), missing.failures.join('\n'));
+  const invalid = fixture.check({base: 'no-such-ref'});
+  assert.equal(invalid.status, 'fail');
+  assert.ok(invalid.failures.some(failure => failure.includes('no-such-ref')), invalid.failures.join('\n'));
+}));
+
+test('a candidate change with no successor entry fails, attributed to its package', () => withFixture({}, fixture => {
+  const base = commit(fixture.repo, 'base');
+  changeCandidate(fixture.root);
+  const checked = fixture.check({base});
+  assert.equal(checked.status, 'fail');
+  const row = packageRow(checked, 'testtheme');
+  assert.equal(row.in_scope, true);
+  assert.equal(row.state, 'unadmitted');
+  assert.ok(row.failures.some(failure => failure.includes('without a successor entry naming it')), row.failures.join('\n'));
+  assert.deepEqual(checked.failures, row.failures);
+}));
+
+test('the same change with a complete v2 successor entry passes and is admitted', () => withFixture({}, fixture => {
+  const base = commit(fixture.repo, 'base');
+  changeCandidate(fixture.root);
+  const entry = addSuccessor(fixture);
+  assert.deepEqual(Object.keys(entry).sort(), [...V2_KEYS].sort());
+  const checked = fixture.check({base});
+  assert.equal(checked.status, 'pass', checked.failures.join('\n'));
+  assert.deepEqual(packageRow(checked, 'testtheme'), {package: 'testtheme', in_scope: true, state: 'admitted', successor_id: entry.successor_id, failures: []});
+  assert.equal(checked.changed_packages, 1);
+  assert.equal(checked.admitted, 1);
+}));
+
+test('a second successor chains to the first and admits the newer candidate', () => withFixture({}, fixture => {
+  changeCandidate(fixture.root);
+  addSuccessor(fixture);
+  const base = commit(fixture.repo, 'first successor');
+  changeCandidate(fixture.root, 'testtheme', 'body { color: blue; }');
+  const second = addSuccessor(fixture);
+  const checked = fixture.check({base});
+  assert.equal(checked.status, 'pass', checked.failures.join('\n'));
+  assert.equal(packageRow(checked, 'testtheme').successor_id, second.successor_id);
+}));
+
+test('a successor whose predecessor skips the prior successor fails', () => withFixture({}, fixture => {
+  changeCandidate(fixture.root);
+  addSuccessor(fixture);
+  const base = commit(fixture.repo, 'first successor');
+  changeCandidate(fixture.root, 'testtheme', 'body { color: blue; }');
+  addSuccessor(fixture);
+  const record = readJson(fixture.root, POST_CLOSURE_PATH);
+  record.entries[1].predecessor = {kind: 'closure', receipt_sha256: CLOSURE_RECEIPT_SHA};
+  write(fixture.root, POST_CLOSURE_PATH, record);
+  const checked = fixture.check({base});
+  assert.equal(checked.status, 'fail');
+  assert.ok(checked.failures.some(failure => failure.includes('predecessor')), checked.failures.join('\n'));
+}));
+
+test('a successor entry that admits the closure candidate unchanged fails', () => withFixture({}, fixture => {
+  const base = commit(fixture.repo, 'base');
+  addSuccessor(fixture);
+  const checked = fixture.check({base});
+  assert.equal(checked.status, 'fail');
+  assert.ok(checked.failures.some(failure => failure.includes('admits nothing')), checked.failures.join('\n'));
+}));
+
+test('a successor entry bound to a stale candidate fails', () => withFixture({}, fixture => {
+  const base = commit(fixture.repo, 'base');
+  changeCandidate(fixture.root);
+  addSuccessor(fixture, {candidateOverride: {...candidateOf(fixture.root, 'testtheme'), css_sha256: '6'.repeat(64)}});
+  const checked = fixture.check({base});
+  assert.equal(checked.status, 'fail');
+  assert.equal(packageRow(checked, 'testtheme').state, 'unadmitted');
+}));
+
+test('successor evidence present only in the worktree fails until committed', () => withFixture({}, fixture => {
+  const base = commit(fixture.repo, 'base');
+  changeCandidate(fixture.root);
+  addSuccessor(fixture, {track: false});
+  const checked = fixture.check({base});
+  assert.equal(checked.status, 'fail');
+  const untracked = checked.failures.filter(failure => failure.includes('successor evidence must be committed'));
+  assert.equal(untracked.length, 3, checked.failures.join('\n'));
+}));
+
+test('a successor entry rewritten after --base fails', () => withFixture({}, fixture => {
+  changeCandidate(fixture.root);
+  addSuccessor(fixture);
+  const base = commit(fixture.repo, 'admit successor');
+  const record = readJson(fixture.root, POST_CLOSURE_PATH);
+  record.entries[0].visual_review = {...record.entries[0].visual_review, sha256: '7'.repeat(64)};
+  write(fixture.root, POST_CLOSURE_PATH, record);
+  const checked = fixture.check({base});
+  assert.equal(checked.status, 'fail');
+  assert.ok(packageRow(checked, 'testtheme').failures.some(failure => failure.includes('rewritten')), checked.failures.join('\n'));
+}));
+
+test('a successor entry removed after --base fails', () => withFixture({}, fixture => {
+  changeCandidate(fixture.root);
+  addSuccessor(fixture);
+  const base = commit(fixture.repo, 'admit successor');
+  write(fixture.root, POST_CLOSURE_PATH, {schema: POST_CLOSURE_SCHEMA, entries: []});
+  const checked = fixture.check({base});
+  assert.equal(checked.status, 'fail');
+  assert.ok(packageRow(checked, 'testtheme').failures.some(failure => failure.includes('removed')), checked.failures.join('\n'));
+}));
+
+test('a v1 entry at --base and its v2 projection at HEAD pass', () => withFixture({}, fixture => {
+  changeCandidate(fixture.root);
+  const entry = addSuccessor(fixture);
+  const v1 = {...entry, run_contract: {path: 'ports/current-acceptance/run-contract-successor.json', sha256: '3'.repeat(64)}, successor_manifest: {path: 'publication/post-closure-evidence-testtheme.json', sha256: '4'.repeat(64)}};
+  write(fixture.root, POST_CLOSURE_PATH, {schema: 'theme_lab_post_closure_acceptance.v1', entries: [v1]});
+  const base = commit(fixture.repo, 'v1 record');
+  write(fixture.root, POST_CLOSURE_PATH, {schema: POST_CLOSURE_SCHEMA, entries: [entry]});
+  // Touch the package so its entries are verified against --base.
+  write(fixture.root, 'ports/testtheme/manifest.json', {reference_url: 'https://scp-wiki.wikidot.com/theme:testtheme', note: 'touched'});
+  const checked = fixture.check({base});
+  assert.equal(checked.status, 'pass', checked.failures.join('\n'));
+  assert.equal(packageRow(checked, 'testtheme').in_scope, true);
+  assert.equal(packageRow(checked, 'testtheme').state, 'admitted');
+}));
+
+test('an unadmitted package the change-set does not touch is pending, not a failure', () => withFixture({packages: ['othertheme', 'testtheme']}, fixture => {
+  changeCandidate(fixture.root, 'testtheme');
+  const base = commit(fixture.repo, 'unadmitted testtheme change');
+  changeCandidate(fixture.root, 'othertheme');
+  addSuccessor(fixture, {name: 'othertheme'});
+  const checked = fixture.check({base});
+  assert.equal(checked.status, 'pass', checked.failures.join('\n'));
+  assert.deepEqual(checked.pending_admission, ['testtheme']);
+  assert.deepEqual(packageRow(checked, 'testtheme'), {package: 'testtheme', in_scope: false, state: 'unadmitted', successor_id: null, failures: []});
+  assert.equal(packageRow(checked, 'othertheme').state, 'admitted');
+  assert.equal(packageRow(checked, 'othertheme').in_scope, true);
+}));
+
+test('an untracked new port file brings its package into scope', () => withFixture({}, fixture => {
+  changeCandidate(fixture.root);
+  const base = commit(fixture.repo, 'unadmitted change at base');
+  write(fixture.root, 'ports/testtheme/acceptance-structure.json', {sections: []});
+  const checked = fixture.check({base});
+  assert.equal(checked.status, 'fail');
+  assert.equal(packageRow(checked, 'testtheme').in_scope, true);
+}));
+
+test('a ledger row change brings its package into scope', () => withFixture({}, fixture => {
+  changeCandidate(fixture.root);
+  const base = commit(fixture.repo, 'unadmitted change at base');
+  write(fixture.root, 'ports/adaptation-authority.json', {packages: {testtheme: {note: 'edited'}}});
+  const checked = fixture.check({base});
+  assert.equal(checked.status, 'fail');
+  assert.equal(packageRow(checked, 'testtheme').in_scope, true);
+}));
+
+const driftedInstrument = {
+  ...TARGET_ACCEPTANCE_CONTRACT,
+  viewport_overflow: {...TARGET_ACCEPTANCE_CONTRACT.viewport_overflow, tolerance_px: 999},
+};
+
+test('instrument drift fails a change-set that adds a successor entry', () => {
+  assert.notEqual(computeInstrumentProperDigest({contract: driftedInstrument}), CLOSURE_ANCHORS.targetAcceptanceContractSha256);
+  withFixture({}, fixture => {
+    const base = commit(fixture.repo, 'base');
+    changeCandidate(fixture.root);
+    addSuccessor(fixture);
+    const checked = fixture.check({base, instrumentContract: driftedInstrument});
     assert.equal(checked.status, 'fail');
-    assert.ok(checked.failures.some(failure => failure.includes('--base')));
-  } finally { fs.rmSync(fixture.workspace, {recursive: true, force: true}); }
+    assert.ok(packageRow(checked, 'testtheme').failures.some(failure => failure.includes('instrument drift')), checked.failures.join('\n'));
+    const browserDrift = fixture.check({base, liveBrowserVersions: {chromium: '2.0'}});
+    assert.ok(browserDrift.failures.some(failure => failure.includes('chromium browser version 2.0')), browserDrift.failures.join('\n'));
+  });
 });
 
-test('C7: a candidate change with no successor entry fails Check 2', () => {
-  const fixture = buildFixture();
-  try {
-    git(fixture.repo, 'add', '-A');
-    git(fixture.repo, 'commit', '-q', '-m', 'base');
-    const base = git(fixture.repo, 'rev-parse', 'HEAD').trim();
-    write(fixture.root, 'ports/testtheme/candidate.css', 'body { color: red; }');
-    const checked = checkPostClosureAcceptance(fixture.root, {...fixture.options, base});
-    assert.equal(checked.status, 'fail');
-    assert.ok(checked.failures.some(failure => failure.includes('without a complete successor entry')), checked.failures.join('\n'));
-  } finally { fs.rmSync(fixture.workspace, {recursive: true, force: true}); }
-});
+test('instrument drift passes when the change-set adds no successor entry', () => withFixture({}, fixture => {
+  changeCandidate(fixture.root);
+  addSuccessor(fixture);
+  const base = commit(fixture.repo, 'admitted before drift');
+  write(fixture.root, 'ports/testtheme/manifest.json', {reference_url: 'https://scp-wiki.wikidot.com/theme:testtheme', note: 'touched'});
+  const checked = fixture.check({base, instrumentContract: driftedInstrument, liveBrowserVersions: {chromium: '2.0'}});
+  assert.equal(checked.status, 'pass', checked.failures.join('\n'));
+  assert.equal(packageRow(checked, 'testtheme').in_scope, true);
+}));
 
-test('C7: the same change with a complete successor entry passes Check 2', () => {
-  const fixture = buildFixture();
-  try {
-    write(fixture.root, 'ports/testtheme/candidate.css', 'body { color: red; }');
-    // The re-frozen living set must contain the changed live node.
-    const frozenFile = path.join(fixture.root, 'publication/frozen-candidate-set.json');
-    const frozen = JSON.parse(fs.readFileSync(frozenFile, 'utf8'));
-    frozen.nodes[0].candidate_css_sha256 = digest('body { color: red; }');
-    fs.writeFileSync(frozenFile, JSON.stringify(frozen));
-    const {base} = addSuccessor(fixture);
-    // addSuccessor committed the base before the entry existed; the change
-    // itself was already in that commit, which is fine: change detection
-    // compares live inputs to the closure binding, not to git.
-    const checked = checkPostClosureAcceptance(fixture.root, {...fixture.options, base});
-    assert.equal(checked.status, 'pass', checked.failures.join('\n'));
-    assert.equal(checked.changed_packages, 1);
-    assert.equal(checked.admitted, 1);
-  } finally { fs.rmSync(fixture.workspace, {recursive: true, force: true}); }
-});
-
-test('C7: a successor with one stale live binding at admission fails Check 2', () => {
-  const fixture = buildFixture();
-  try {
-    write(fixture.root, 'ports/testtheme/candidate.css', 'body { color: red; }');
-    const frozenFile = path.join(fixture.root, 'publication/frozen-candidate-set.json');
-    const frozen = JSON.parse(fs.readFileSync(frozenFile, 'utf8'));
-    frozen.nodes[0].candidate_css_sha256 = digest('body { color: red; }');
-    fs.writeFileSync(frozenFile, JSON.stringify(frozen));
-    const stale = {...candidateOf(fixture.root), css_sha256: '6'.repeat(64)};
-    const {base} = addSuccessor(fixture, {candidateOverride: stale});
-    const checked = checkPostClosureAcceptance(fixture.root, {...fixture.options, base});
-    assert.equal(checked.status, 'fail');
-  } finally { fs.rmSync(fixture.workspace, {recursive: true, force: true}); }
-});
-
-test('C7/C4: a successor entry rewritten after --base fails Check 2', () => {
-  const fixture = buildFixture();
-  try {
-    const {entry} = addSuccessor(fixture);
-    // Commit the record with the entry, then rewrite the entry.
-    git(fixture.repo, 'add', '-A');
-    git(fixture.repo, 'commit', '-q', '-m', 'admit successor');
-    const base = git(fixture.repo, 'rev-parse', 'HEAD').trim();
-    const recordFile = path.join(fixture.root, 'publication/post-closure-acceptance.json');
-    const record = JSON.parse(fs.readFileSync(recordFile, 'utf8'));
-    record.entries[0] = {...entry, successor_id: entry.successor_id, receipt: {path: entry.receipt.path, sha256: '7'.repeat(64)}};
-    fs.writeFileSync(recordFile, JSON.stringify(record));
-    const checked = checkPostClosureAcceptance(fixture.root, {...fixture.options, base});
-    assert.equal(checked.status, 'fail');
-    assert.ok(checked.failures.some(failure => failure.includes('rewritten')), checked.failures.join('\n'));
-  } finally { fs.rmSync(fixture.workspace, {recursive: true, force: true}); }
-});
-
-test('C7/C6: an instrument-proper change fails Check 2', () => {
-  const instrumentContract = {
-    ...TARGET_ACCEPTANCE_CONTRACT,
-    viewport_overflow: {...TARGET_ACCEPTANCE_CONTRACT.viewport_overflow, tolerance_px: 999},
-  };
-  assert.notEqual(computeInstrumentProperDigest({contract: instrumentContract}), CLOSURE_ANCHORS.targetAcceptanceContractSha256);
-  const fixture = buildFixture();
-  try {
-    git(fixture.repo, 'add', '-A');
-    git(fixture.repo, 'commit', '-q', '-m', 'base');
-    const base = git(fixture.repo, 'rev-parse', 'HEAD').trim();
-    const checked = checkPostClosureAcceptance(fixture.root, {...fixture.options, base, instrumentContract});
-    assert.equal(checked.status, 'fail');
-    assert.ok(checked.failures.some(failure => failure.includes('instrument drift')), checked.failures.join('\n'));
-  } finally { fs.rmSync(fixture.workspace, {recursive: true, force: true}); }
-});
-
-test('C7/C6: a runtime-only change passes Check 2', () => {
+test('a runtime-only change passes', () => {
   const runtimeMovedContract = {
     ...TARGET_ACCEPTANCE_CONTRACT,
     static_inputs: {...TARGET_ACCEPTANCE_CONTRACT.static_inputs, target_page_runtime_sha256: 'a'.repeat(64)},
   };
   assert.equal(computeInstrumentProperDigest({contract: runtimeMovedContract}), CLOSURE_ANCHORS.targetAcceptanceContractSha256);
-  const fixture = buildFixture();
-  try {
-    git(fixture.repo, 'add', '-A');
-    git(fixture.repo, 'commit', '-q', '-m', 'base');
-    const base = git(fixture.repo, 'rev-parse', 'HEAD').trim();
-    const checked = checkPostClosureAcceptance(fixture.root, {
-      ...fixture.options, base,
-      liveFramerailFingerprint: 'e'.repeat(64), instrumentContract: runtimeMovedContract,
-    });
+  withFixture({}, fixture => {
+    const base = commit(fixture.repo, 'base');
+    changeCandidate(fixture.root);
+    addSuccessor(fixture);
+    const checked = fixture.check({base, instrumentContract: runtimeMovedContract});
     assert.equal(checked.status, 'pass', checked.failures.join('\n'));
-    assert.equal(checked.changed_packages, 0);
-  } finally { fs.rmSync(fixture.workspace, {recursive: true, force: true}); }
+    assert.equal(checked.changed_packages, 1);
+  });
 });
 
 test('C6: the live instrument-proper digest equals the closure anchor on this tree', () => {
