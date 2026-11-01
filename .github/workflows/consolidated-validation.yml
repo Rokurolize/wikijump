@@ -1,18 +1,19 @@
 name: Consolidated validation
 
-# The full consolidated validation gate runs here, on GitHub's machines,
-# instead of as a long local barrier on every pull request. Lanes commit
-# with fast targeted local checks; this workflow runs
+# The full consolidated validation suite runs here as an INFORMATIONAL
+# signal only: nightly on develop and on manual dispatch. It is not a
+# pull-request check and nothing may gate a merge or a promotion on it -
+# merge evidence is the fast targeted checks in pr-checks.yml. This
+# workflow runs
 # install/local/wikidot-verification/scripts/run-consolidated-validation.mjs
-# (the same runner, unmodified) on the PR head, seals the same receipt,
-# and uploads it as an artifact.
-# install/standing/fetch-ci-validation-receipt.mjs lands a CI receipt in
-# the local validation store for install/standing/promote.py to reuse.
+# (the same runner, unmodified), seals the same receipt it seals locally,
+# and uploads it as an artifact for inspection.
+# install/standing/scripts/fetch-ci-validation-receipt.mjs can land a CI
+# receipt in the local validation store.
 #
-# A group whose inputs are local state cannot run here. When the diff
-# selects one, this workflow names it in the job summary and in a warning
-# annotation, and runs every remaining selected group; the coordinator
-# runs the named group locally before merge. Today the only local-only
+# A group whose inputs are local state cannot run here. Such groups are
+# absent from this run and the job summary names them loudly; they run
+# locally when a change actually touches them. Today the only local-only
 # group is:
 #   theme_lab - its evidence lives in the local Theme Lab authority
 #               object store (~/.local/state/wikijump/theme-lab), which
@@ -26,7 +27,9 @@ name: Consolidated validation
 # it reuses. Local promotion runs still build them.
 
 on:
-  pull_request:
+  schedule:
+    # Nightly on develop (03:17 JST). Informational only.
+    - cron: "17 18 * * *"
   workflow_dispatch:
     inputs:
       groups:
@@ -42,7 +45,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: consolidated-validation-${{ github.event.pull_request.number || github.ref_name }}
+  group: consolidated-validation-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -67,11 +70,10 @@ jobs:
           sudo docker image prune --all --force >/dev/null 2>&1 || true
           df -h /
 
-      - name: Check out the PR head
+      - name: Check out the head
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           path: wikijump
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
 
       - name: Resolve the base and the pinned FTML revision
@@ -80,7 +82,7 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin develop
-          base='${{ github.event.pull_request.base.sha || inputs.base }}'
+          base='${{ inputs.base }}'
           if [ -z "$base" ]; then base="$(git rev-parse origin/develop)"; fi
           echo "base=$(git rev-parse "${base}^{commit}")" >> "$GITHUB_OUTPUT"
           echo "head=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
@@ -176,6 +178,9 @@ jobs:
           set -euo pipefail
           base='${{ steps.pins.outputs.base }}'
           requested='${{ inputs.groups }}'
+          if [ -z "$requested" ] && [ '${{ github.event_name }}' = 'schedule' ]; then
+            requested='deepwell,wws,framerail,locales,workflow,verification'
+          fi
           list="$(scripts/preflight.sh --base "$base" --final --list)"
           echo "$list"
           groups_line="$(grep '^preflight: groups: ' <<<"$list" | sed 's/^preflight: groups: //')"
@@ -209,7 +214,7 @@ jobs:
           echo "run_groups=$(join_by , "${run_groups[@]}")" >> "$GITHUB_OUTPUT"
           echo "skipped_groups=$(join_by , "${skipped[@]}")" >> "$GITHUB_OUTPUT"
           {
-            echo "## Consolidated validation plan"
+            echo "## Consolidated validation plan (informational - not a merge gate)"
             echo ""
             echo "- Base: \`$base\`"
             echo "- Selected groups: \`$(join_by ', ' "${selected[@]}")\`"
@@ -222,9 +227,9 @@ jobs:
               echo ""
               for g in "${skipped[@]}"; do echo "- \`$g\`"; done
               echo ""
-              echo "These groups' inputs are local state (see the workflow header). The coordinator runs them locally before merge; a green CI check here does **not** cover them."
+              echo "These groups' inputs are local state (see the workflow header), so this informational run does **not** cover them; they are exercised locally when a change touches them."
             } >> "$GITHUB_STEP_SUMMARY"
-            echo "::warning title=Local-only validation groups::Selected but not run in CI: $(join_by ', ' "${skipped[@]}"). The coordinator must run these locally before merge."
+            echo "::warning title=Local-only validation groups::Selected but not run in CI: $(join_by ', ' "${skipped[@]}"). These groups run locally; this informational run does not cover them."
           fi
 
       - name: Run the consolidated validation
@@ -241,9 +246,9 @@ jobs:
           mkdir -p "$RUNNER_TEMP/receipt"
           echo "receipt_path=$out" >> "$GITHUB_OUTPUT"
           args=(--repository "$PWD" --base "$base" --output "$out" --no-image-build)
-          if [ -n '${{ inputs.groups }}' ] || [ -n '${{ steps.plan.outputs.skipped_groups }}' ]; then
-            args+=(--groups '${{ steps.plan.outputs.run_groups }}')
-          fi
+          # The plan step's output is the final selection (diff, input, or
+          # the nightly set) with local-only groups already removed.
+          args+=(--groups '${{ steps.plan.outputs.run_groups }}')
           node install/local/wikidot-verification/scripts/run-consolidated-validation.mjs "${args[@]}"
 
       - name: Upload the sealed receipt
