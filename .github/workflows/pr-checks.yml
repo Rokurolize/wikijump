@@ -256,6 +256,15 @@ jobs:
           export PATH="$HOME/.local/bin:$PATH"
           uv sync --locked
 
+      - name: Fetch the full history for the verification suite
+        if: steps.plan.outputs.verification == '1'
+        run: |
+          # The suite's source-attribution tests resolve historical
+          # commits of this repository (the audited evidence files cite
+          # nested sources by commit), which the depth-1 checkout above
+          # does not carry; without this they fail on missing objects.
+          git fetch --unshallow origin
+
       - name: Wikidot verification suite
         if: steps.plan.outputs.verification == '1'
         working-directory: install/local/wikidot-verification
