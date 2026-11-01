@@ -159,6 +159,14 @@ jobs:
           sqlx --version
           cargo machete --version
 
+      - name: Install system build dependencies
+        run: |
+          # deepwell's filemagic dependency probes libmagic via
+          # pkg-config at build time; the WSL has it, a bare runner does
+          # not.
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libmagic-dev
+
       - name: Start sccache
         uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
 
@@ -264,6 +272,16 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
             echo "::warning title=Local-only validation groups::Selected but not run in CI: $(join_by ', ' "${skipped[@]}"). These groups run locally; this informational run does not cover them."
           fi
+
+      - name: Build the Deepwell integration images
+        if: contains(steps.plan.outputs.run_groups, 'deepwell')
+        working-directory: wikijump
+        run: |
+          # The Deepwell test stacks run only the project's pre-built
+          # backing-service images and refuse to pull during the hermetic
+          # barrier; build them here, in setup, where pulling the base
+          # images is allowed.
+          bash scripts/build-deepwell-integration-images.sh
 
       - name: Run the consolidated validation
         id: gate
