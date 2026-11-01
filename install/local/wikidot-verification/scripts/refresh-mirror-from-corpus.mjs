@@ -229,13 +229,16 @@ export function planMirrorReconciliation(pages, corpus, scope = {}) {
   return {deletes, renames, creates, skipped};
 }
 
-function localPagesSql(site, slugs) {
+export function localPagesSql(site, slugs) {
   const filter = slugs.length ? ` AND p.slug IN (${slugs.map(sqlQuote).join(',')})` : '';
   // The seed (system user) and mirror-import revisions are the only
   // revisions a mirror page may have for it to be refreshed. The import
   // snapshot join carries the stable source entity id used to pair
   // renames; pages without a snapshot cannot be paired and are never
-  // delete candidates.
+  // delete candidates. Foreign include-source snapshots (#2690) are storage,
+  // not pages of the mirror, so the corpus of the mirror's branch never
+  // refreshes, renames, or tombstones them; the predicate is Deepwell's
+  // foreign_snapshot_exclusion_sql.
   return `SELECT json_build_object('slug', p.slug, 'sha', encode(sha256(convert_to(t.contents, 'UTF8')), 'hex'),
       'title', r.title, 'tags', r.tags,
       'importOnly', bool_and(r2.user_id = -2 OR (r2.user_id = -1 AND coalesce(r2.comments, '') LIKE ${sqlQuote(`${IMPORT_COMMENT_PREFIX}%`)})),
@@ -246,6 +249,12 @@ function localPagesSql(site, slugs) {
     JOIN page_revision r2 ON r2.page_id = p.page_id
     LEFT JOIN wikidot_page_snapshot snap ON snap.page_id = p.page_id
     WHERE s.slug = ${sqlQuote(site)} AND p.deleted_at IS NULL${filter}
+      AND NOT EXISTS (
+        SELECT 1 FROM wikidot_page_snapshot foreign_snapshot
+        WHERE foreign_snapshot.page_id = p.page_id
+          AND foreign_snapshot.source_site <> s.slug
+          AND foreign_snapshot.source_site NOT IN (
+            SELECT source_branch FROM wikidot_corpus_import_run run WHERE run.site_id = s.site_id))
     GROUP BY p.slug, t.contents, r.title, r.tags, snap.source_entity_id;`;
 }
 
