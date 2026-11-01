@@ -101,9 +101,13 @@ jobs:
         if: steps.plan.outputs.rust == '1'
         run: |
           set -euo pipefail
-          # rust-toolchain.toml pins channel 1.95.0 for both Rust repos.
-          rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt,rust-src
-          rustup default 1.95.0
+          # The channel and components come from the tree's own
+          # rust-toolchain.toml, so a toolchain bump needs no workflow
+          # change.
+          channel="$(sed -n 's/^channel = "\([0-9.]*\)"/\1/p' rust-toolchain.toml)"
+          test -n "$channel"
+          rustup toolchain install "$channel" --profile minimal --component clippy,rustfmt,rust-src
+          rustup default "$channel"
 
       - name: Install system build dependencies
         if: steps.plan.outputs.deepwell == '1'
