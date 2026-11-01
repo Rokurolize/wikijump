@@ -390,12 +390,12 @@ fn wikidot_iftags_head_len(source: &str) -> Option<usize> {
         if depth <= 1 && matches!(bytes[index], b'\n' | b'\r') {
             return None;
         }
-        if source[index..].starts_with("[[") {
+        if bytes[index..].starts_with(b"[[") {
             depth += 1;
             index += 2;
             continue;
         }
-        if source[index..].starts_with("]]") {
+        if bytes[index..].starts_with(b"]]") {
             depth = depth.checked_sub(1)?;
             index += 2;
             if depth == 0 {
@@ -570,6 +570,108 @@ mod tests {
         assert!(
             source.contains(&format!("- ]] {WIKIDOT_GENERATED_SPEC_MARKER}]]")),
             "{source}"
+        );
+    }
+
+    #[test]
+    fn marking_heads_with_multibyte_first_tag_does_not_panic() {
+        // Regression for the Standing promotion render-ahead panic: the
+        // head-length scan walked the spec byte by byte and sliced the
+        // source at every offset, which panics inside a multibyte first
+        // tag. These are the four spec shapes carried by real pages
+        // (component:raisa-ribbon, component:the-buck-stops-here-base-1,
+        // component:note-source, theme:brokedown-database).
+        for spec in [
+            "+\u{d15c}\u{d50c}\u{b9bf}",
+            "+\u{ad6c}\u{c131}\u{c694}\u{c18c}",
+            "+_\u{6e90}\u{4ee3}\u{7801}",
+            "+\u{7248}\u{5f0f}",
+        ] {
+            let mut source = format!(
+                "[[iftags {spec}]]authored[[/iftags]]\n[[iftags [[#ifexpr 1 == 0 | - ]]]]generated[[/iftags]]\n"
+            );
+            mark_wikidot_generated_iftags_specs(&mut source);
+            assert!(
+                source.contains(&format!("[[iftags {spec}]]authored")),
+                "{source}"
+            );
+            assert_eq!(
+                source.matches(WIKIDOT_GENERATED_SPEC_MARKER).count(),
+                1,
+                "{source}"
+            );
+        }
+    }
+
+    #[test]
+    fn marking_heads_with_mixed_and_later_multibyte_tags_does_not_panic() {
+        let mut source = concat!(
+            "[[iftags +alpha +\u{d15c}\u{d50c}\u{b9bf} -\u{7248}\u{5f0f}]]mixed[[/iftags]]\n",
+            "[[iftags +alpha \u{ad6c}\u{c131}\u{c694}\u{c18c}]]later[[/iftags]]\n",
+            "[[iftags [[#ifexpr 1 == 0 | - ]]]]generated[[/iftags]]\n",
+        )
+        .to_owned();
+        mark_wikidot_generated_iftags_specs(&mut source);
+        assert!(
+            source.contains(
+                "[[iftags +alpha +\u{d15c}\u{d50c}\u{b9bf} -\u{7248}\u{5f0f}]]mixed"
+            ),
+            "{source}"
+        );
+        assert!(
+            source.contains("[[iftags +alpha \u{ad6c}\u{c131}\u{c694}\u{c18c}]]later"),
+            "{source}"
+        );
+        assert_eq!(
+            source.matches(WIKIDOT_GENERATED_SPEC_MARKER).count(),
+            1,
+            "{source}"
+        );
+    }
+
+    #[test]
+    fn multibyte_tag_conditions_keep_ascii_semantics() {
+        let tags = [
+            Cow::Borrowed("\u{ad6c}\u{c131}\u{c694}\u{c18c}"),
+            Cow::Borrowed("alpha"),
+        ];
+        assert!(wikidot_tag_conditions_match(
+            "+\u{ad6c}\u{c131}\u{c694}\u{c18c}",
+            &tags
+        ));
+        assert!(!wikidot_tag_conditions_match(
+            "+\u{d15c}\u{d50c}\u{b9bf}",
+            &tags
+        ));
+        assert!(wikidot_tag_conditions_match("-\u{7248}\u{5f0f}", &tags));
+        assert!(!wikidot_tag_conditions_match(
+            "-\u{ad6c}\u{c131}\u{c694}\u{c18c}",
+            &tags
+        ));
+        assert!(wikidot_tag_conditions_match(
+            "\u{ad6c}\u{c131}\u{c694}\u{c18c}",
+            &tags
+        ));
+        assert!(!wikidot_tag_conditions_match(
+            "\u{6e90}\u{4ee3}\u{7801}",
+            &tags
+        ));
+        assert!(wikidot_tag_conditions_match(
+            "+alpha +\u{ad6c}\u{c131}\u{c694}\u{c18c} -\u{7248}\u{5f0f}",
+            &tags
+        ));
+    }
+
+    #[test]
+    fn resolves_gates_with_multibyte_tags() {
+        let source = concat!(
+            "[[iftags +\u{ad6c}\u{c131}\u{c694}\u{c18c}]]yes[[/iftags]]\n",
+            "[[iftags +\u{d15c}\u{d50c}\u{b9bf}]]no[[/iftags]]\n",
+            "[[iftags -\u{7248}\u{5f0f}]]kept[[/iftags]]\n",
+        );
+        assert_eq!(
+            resolve(source, &["\u{ad6c}\u{c131}\u{c694}\u{c18c}"], 1),
+            "yes\n\nkept\n"
         );
     }
 
