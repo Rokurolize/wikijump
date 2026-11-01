@@ -70,7 +70,10 @@ use super::compat::wikidot_iframe::{
 use super::compat::wikidot_link_protection::{
     WikidotWikipediaLink, build_wikidot_wikipedia_link,
 };
-use super::compat::{CompatCodeBlock, WikidotHtmlBlockEmission, scan_compat_code_blocks};
+use super::compat::{
+    CompatCodeBlock, WikidotHtmlBlockEmission, mark_comment_wrapped_code_blocks,
+    scan_compat_code_blocks,
+};
 use super::diagnostics::{
     CorpusRenderDimension, CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace,
     StageGuard,
@@ -1983,8 +1986,15 @@ impl RenderService {
 
         // Hosted `/local--code/` text comes from the page's own source, which
         // include expansion and FTML preprocessing no longer show verbatim.
-        let hosted_code_source =
-            text_block_page_id.and_then(|_| scan_compat_code_blocks(&wikitext).ok());
+        // Blocks inside comments are flagged on the scan: FTML drops them
+        // before parsing while Wikidot still hosts them, so persistence
+        // recovers them from the scan (see persist_hosted_code_blocks).
+        let hosted_code_source = text_block_page_id.and_then(|_| {
+            scan_compat_code_blocks(&wikitext).ok().map(|mut blocks| {
+                mark_comment_wrapped_code_blocks(&wikitext, &mut blocks);
+                blocks
+            })
+        });
         let expanded = Self::expand_render_wikitext(
             ctx,
             wikitext,
@@ -2362,6 +2372,7 @@ impl RenderService {
                     &fallback_code_blocks,
                     hosted_code_source.as_deref(),
                     current_site.as_ref(),
+                    false,
                 )
                 .await
                 .or_raise(make_error)?;
@@ -2799,6 +2810,7 @@ impl RenderService {
                     &code_blocks,
                     hosted_code_source.as_deref(),
                     current_site.as_ref(),
+                    true,
                 )
                 .await
                 .or_raise(make_error)?;
