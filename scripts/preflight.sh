@@ -160,6 +160,13 @@ run() {
   fi
 }
 
+# True when a check of that exact name has already failed in this run.
+failed_check() {
+  local failed
+  for failed in "${FAILED[@]}"; do [[ "${failed}" == "$1" ]] && return 0; done
+  return 1
+}
+
 run_test() {
   local name="$1"; shift
   run "${name}" "${TEST_NETWORK_GUARD}" "$@"
@@ -258,12 +265,19 @@ check_theme_lab_tests() {
 check_theme_lab_evidence() {
     run_test "Theme Lab authority evidence restore" install/local/theme-lab/scripts/restore-checkout-authority-evidence.sh
     run_test "Theme Lab adaptation authority" node install/local/theme-lab/ports/scripts/check-adaptation-authority.mjs
+    # The deterministic-packages and Sigma-10 historical checks repeat the
+    # per-package authority check; once it has passed on this tree, they skip
+    # re-hashing the same evidence.
+    local authority_evidence_verified=0
+    if ! "${LIST}" && ! failed_check "Theme Lab authority evidence restore" && ! failed_check "Theme Lab adaptation authority"; then
+      authority_evidence_verified=1
+    fi
     if [[ "${MODE}" == "final" ]]; then
       run_test "Theme Lab Python tests" python3 -m unittest discover -s install/local/theme-lab/tests -p 'test_*.py'
       run_test "Theme Lab maintainable sources" node install/local/theme-lab/ports/scripts/prepare-maintainable-sources.mjs --check
-      run_test "Theme Lab deterministic packages" node install/local/theme-lab/scripts/real-port-regression.mjs --verify-only
+      run_test "Theme Lab deterministic packages" env THEME_LAB_AUTHORITY_EVIDENCE_VERIFIED="${authority_evidence_verified}" node install/local/theme-lab/scripts/real-port-regression.mjs --verify-only
       run_test "Sigma-10 source evidence" node install/local/theme-lab/sigma10-migration/check-sources.mjs
-      run_test "Sigma-10 historical evidence integrity" node install/local/theme-lab/sigma10-migration/check-final.mjs --historical-only
+      run_test "Sigma-10 historical evidence integrity" env THEME_LAB_AUTHORITY_EVIDENCE_VERIFIED="${authority_evidence_verified}" node install/local/theme-lab/sigma10-migration/check-final.mjs --historical-only
       run_test "Theme Lab current campaign evidence restore" install/local/theme-lab/scripts/restore-checkout-campaign-evidence.sh
       # ALLOC-32 B: the frozen campaign record is verified historically
       # against its own recorded identities (Check 1, hard PASS/FAIL, never
