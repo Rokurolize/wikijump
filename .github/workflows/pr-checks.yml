@@ -231,7 +231,10 @@ jobs:
       - name: Prepare the wikidot.py locked test environment
         if: steps.plan.outputs.verification == '1'
         working-directory: .ci-siblings/wikidot.py
-        run: uv sync --locked
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          export PATH="$HOME/.local/bin:$PATH"
+          uv sync --locked
 
       - name: Wikidot verification suite
         if: steps.plan.outputs.verification == '1'

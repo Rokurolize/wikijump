@@ -130,6 +130,10 @@ jobs:
           # The AMC regression wrapper requires the checkout's own
           # .venv (uv.lock) and never resolves dependencies at test
           # time; build it here, in setup.
+          # uv is not on the hosted runner's PATH; install it, then
+          # build the locked environment.
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          export PATH="$HOME/.local/bin:$PATH"
           uv sync --locked
 
       - name: Set up Node
