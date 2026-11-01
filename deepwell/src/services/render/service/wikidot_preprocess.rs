@@ -676,29 +676,47 @@ impl RenderService {
     }
 
     pub(super) fn is_inside_wikidot_code_block(source: &str, start: usize) -> bool {
-        let mut in_code = false;
-        for line in source[..start].lines() {
-            let marker = line.trim_start().to_ascii_lowercase();
-            if marker.starts_with("[[code") {
-                in_code = true;
-            } else if marker.starts_with("[[/code]]") {
-                in_code = false;
-            }
-        }
-        in_code
+        Self::is_inside_wikidot_line_block(source, start, "[[code", "[[/code]]")
     }
 
     pub(super) fn is_inside_wikidot_html_block(source: &str, start: usize) -> bool {
-        let mut in_html = false;
+        Self::is_inside_wikidot_line_block(source, start, "[[html", "[[/html]]")
+    }
+
+    /// Whether `start` falls inside a line-delimited raw block (`[[code]]`
+    /// or `[[html]]`), judged from the line-start openers and closers that
+    /// precede it.
+    ///
+    /// A closer that shares its opener's line closes the block again on
+    /// that line: one-line blocks such as `[[html]]<hr>[[/html]]` or
+    /// `[[code]]x[[/code]]` are complete blocks, so the state must not stay
+    /// open for the rest of the document. Leaving it open misjudged every
+    /// later position as block content — in the assembled render of
+    /// fragment:scp-7869-iteration-one, a one-line html block ahead of the
+    /// theme includes made the include-carried `[[embed]]` blocks look
+    /// like html content, so embed claiming skipped them and they printed
+    /// as literal text.
+    fn is_inside_wikidot_line_block(
+        source: &str,
+        start: usize,
+        opener: &str,
+        closer: &str,
+    ) -> bool {
+        let mut inside = false;
         for line in source[..start].lines() {
             let marker = line.trim_start().to_ascii_lowercase();
-            if marker.starts_with("[[html") {
-                in_html = true;
-            } else if marker.starts_with("[[/html]]") {
-                in_html = false;
+            if let Some(rest) = marker.strip_prefix(opener) {
+                if !inside && rest.contains(closer) {
+                    // The block opens and closes on this one line, so it
+                    // has no net effect on the state.
+                    continue;
+                }
+                inside = true;
+            } else if marker.starts_with(closer) {
+                inside = false;
             }
         }
-        in_html
+        inside
     }
 
     /// Whether `start` falls inside an inline raw `@@ ... @@` pair.
