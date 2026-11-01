@@ -220,9 +220,9 @@ impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
             source_page_slug.to_owned(),
         );
         if let Some(cached) = cache.imported_cross_site_sources.get(&cache_key) {
-            return Ok(cached.as_ref().map(|(page_slug, wikitext)| IncludeSource {
+            return Ok(cached.as_ref().map(|wikitext| IncludeSource {
                 site_slug: current_site_slug.to_owned(),
-                page_slug: page_slug.clone(),
+                page_slug: source_page_slug.to_owned(),
                 wikitext: wikitext.clone(),
                 source_site: Some(source_site_slug.to_owned()),
             }));
@@ -317,12 +317,14 @@ impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
             return Ok(None);
         };
 
+        // The holding page's slug is storage only; the source fullname is
+        // the Wikidot identity that owns the source's relative attachments.
         cache
             .imported_cross_site_sources
-            .insert(cache_key, Some((page.slug.clone(), wikitext.clone())));
+            .insert(cache_key, Some(wikitext.clone()));
         Ok(Some(IncludeSource {
             site_slug: current_site_slug.to_owned(),
-            page_slug: page.slug,
+            page_slug: source_page_slug.to_owned(),
             wikitext,
             source_site: Some(source_site_slug.to_owned()),
         }))
@@ -403,7 +405,7 @@ enum IncludeSourceCacheEntry {
 #[derive(Debug, Default)]
 pub(super) struct IncludeSourceCache {
     sources_by_site: HashMap<i64, HashMap<String, IncludeSourceCacheEntry>>,
-    imported_cross_site_sources: HashMap<(i64, String, String), Option<(String, String)>>,
+    imported_cross_site_sources: HashMap<(i64, String, String), Option<String>>,
     sites_by_id: HashMap<i64, Option<SiteModel>>,
     sites_by_slug: HashMap<String, Option<SiteModel>>,
     pub(super) attachment_provenance: AttachmentProvenanceRegistry,

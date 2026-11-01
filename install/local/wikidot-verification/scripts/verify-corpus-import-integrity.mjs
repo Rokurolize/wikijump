@@ -127,9 +127,9 @@ export function readIntegrityManifest(manifestText, selectedSlugs = []) {
 
 export function buildIntegrityQuery(args, rows) {
   const requested = rows
-    .map((row) => `(${sqlQuote(row.fullname)})`)
+    .map((row) => `(${sqlQuote(row.fullname)}, ${sqlQuote(row.source_site)})`)
     .join(",\n  ");
-  return `WITH requested(slug) AS (VALUES\n  ${requested}\n)
+  return `WITH requested(slug, source_site) AS (VALUES\n  ${requested}\n)
 SELECT requested.slug,
   COALESCE(page.page_id::text, ''),
   COALESCE(revision.revision_id::text, ''),
@@ -138,7 +138,26 @@ SELECT requested.slug,
   COALESCE(length(body.contents)::text, '-1'),
   COALESCE(latest_item.state, '')
 FROM requested
-LEFT JOIN page ON page.site_id = ${sqlInt(args.siteId)} AND page.slug = requested.slug AND page.deleted_at IS NULL
+LEFT JOIN LATERAL (
+  SELECT candidate.page_id, candidate.latest_revision_id
+  FROM (
+    SELECT 0 AS priority, held.page_id, held.latest_revision_id
+    FROM wikidot_page_snapshot held_snapshot
+    JOIN page held ON held.page_id = held_snapshot.page_id
+    WHERE held.site_id = ${sqlInt(args.siteId)}
+      AND held.deleted_at IS NULL
+      AND held_snapshot.source_site = requested.source_site
+      AND held_snapshot.source_fullname = requested.slug
+    UNION ALL
+    SELECT 1, named.page_id, named.latest_revision_id
+    FROM page named
+    WHERE named.site_id = ${sqlInt(args.siteId)}
+      AND named.slug = requested.slug
+      AND named.deleted_at IS NULL
+  ) candidate
+  ORDER BY candidate.priority, candidate.page_id
+  LIMIT 1
+) page ON true
 LEFT JOIN page_revision revision ON revision.revision_id = page.latest_revision_id
 LEFT JOIN text source ON source.hash = revision.wikitext_hash
 LEFT JOIN text body ON body.hash = revision.compiled_body_html_hash

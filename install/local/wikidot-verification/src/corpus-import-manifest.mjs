@@ -1020,8 +1020,10 @@ export function corpusBranchAccess(pagesRoot) {
  *
  * Fail-closed rules: requested roots absent from the target branch throw;
  * foreign records with missing or malformed meta/entity files, duplicate
- * entity ids, metadata mismatches, and local-slug collisions with the
- * target branch become `gaps` entries (never silent renames or drops).
+ * entity ids, metadata mismatches, and a second record of one source page
+ * become `gaps` entries (never silent renames or drops). A foreign page may
+ * share its fullname with a target-branch page or with another site's page:
+ * the applier stores foreign rows under `_foreign:<source_site>:<fullname>`.
  * Returns `{ rows, gaps, summary }`.
  */
 export function buildCrossSiteDependencyManifest({
@@ -1080,7 +1082,7 @@ export function buildCrossSiteDependencyManifest({
   const rows = [];
   const gaps = [...closure.gaps];
   const entityIds = new Map();
-  const emittedSlugs = new Map();
+  const emittedSources = new Map();
   let sameSiteDependencyCount = 0;
   for (const node of closure.included) {
     if (node.branch === targetBranch) {
@@ -1112,30 +1114,20 @@ export function buildCrossSiteDependencyManifest({
       });
       continue;
     }
-    if (targetSlugs.has(node.slug)) {
+    const sourceIdentity = `${node.site}:${node.slug}`;
+    if (emittedSources.has(sourceIdentity)) {
       gaps.push({
         identity: `${node.branch}:${node.slug}`,
         branch: node.branch,
         site: node.site,
         via: node.via,
-        reason: 'slug-collision',
-        detail: `target branch ${targetBranch} already has a page named ${node.slug}`,
-      });
-      continue;
-    }
-    if (emittedSlugs.has(node.slug)) {
-      gaps.push({
-        identity: `${node.branch}:${node.slug}`,
-        branch: node.branch,
-        site: node.site,
-        via: node.via,
-        reason: 'slug-collision',
-        detail: `local slug ${node.slug} already emitted for ${emittedSlugs.get(node.slug)}`,
+        reason: 'duplicate-source',
+        detail: `${sourceIdentity} already emitted from ${emittedSources.get(sourceIdentity)}`,
       });
       continue;
     }
     entityIds.set(entityId, `${node.branch}:${node.slug}`);
-    emittedSlugs.set(node.slug, `${node.branch}:${node.slug}`);
+    emittedSources.set(sourceIdentity, `${node.branch}:${node.slug}`);
     const sourcePath = path.join(pageDir, 'source.wikidot.txt');
     const row = rowFromRecord({
       sourceSite: node.site,
