@@ -13,7 +13,6 @@ const triggerBlock = (source) =>
   source.slice(source.indexOf("on:\n"), source.indexOf("\npermissions:"))
 
 const validationWorkflows = [
-  "codex-cloud.yaml",
   "full-ci.yaml",
   "wikidot-verification.yaml"
 ]
@@ -59,14 +58,6 @@ test("Wikidot verification is manual-only and runs no verification", () => {
   assert.doesNotMatch(trigger, /pull_request:|push:|merge_group:/u)
   assert.match(source, /persistent identity-bound response cache/u)
   assert.match(source, /cache hit must perform zero external requests/u)
-  assert.doesNotMatch(source, /^\s*uses:/mu)
-})
-
-test("Codex Cloud validation publishes no CI-side tests or lint", () => {
-  const source = workflow("codex-cloud.yaml")
-
-  assert.match(source, /Codex Cloud script validation is intentionally disabled in GitHub Actions/u)
-  assert.match(source, /Run Bash syntax, ShellCheck, and regression tests in the maintained local workspace/u)
   assert.doesNotMatch(source, /^\s*uses:/mu)
 })
 
@@ -281,12 +272,9 @@ test("Theme Lab inputs select their own acceptance gates without selecting runti
   for (const gate of ["check-adaptation-authority.mjs", "prepare-maintainable-sources.mjs --check", "real-port-regression.mjs --verify-only", "sigma10-migration/check-final.mjs"]) assert.ok(preflight.includes(gate), gate)
 })
 
-test("specification supplements and test-quality audit scripts select only verification", () => {
+test("specification supplements select only verification", () => {
   for (const file of [
     "scripts/data/wikidot-spec-supplements.json",
-    "scripts/run-test-quality-audit.mjs",
-    "scripts/refresh-test-quality-snapshot.mjs",
-    "scripts/lib/test-quality-snapshot.mjs",
   ]) {
     const selected = classifyChanges([file])
     assert.equal(selected.verification, true, file)

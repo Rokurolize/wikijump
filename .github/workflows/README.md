@@ -47,10 +47,6 @@ candidate cases, standing parity, and retained-evidence replay all run locally
 in WSL so the identity-bound persistent response cache can be reused across
 every retry. A cache hit is expected to perform zero external requests.
 
-`codex-cloud.yaml` is retained only as a manual policy notice for the Codex
-cloud environment scripts. Bash syntax, ShellCheck, and regression validation
-run locally rather than in GitHub Actions.
-
 ## Keeping triggers honest
 
 A guard that reads a file must run when that file changes. The workflow policy
