@@ -90,8 +90,8 @@
       },
       {
         "path": "wws/src/handler/redirect.rs",
-        "git_blob": "978d0d6ff7dc5079be6609305f7ff251046be503",
-        "sha256": "9465f89fe6b0334d97a0b0d49b7c4762c92384fd655c5a45869311d198fab439"
+        "git_blob": "7b79693ad33e1656beb078ff9747960bb21a9351",
+        "sha256": "ca097929531cd4c2f74c2c88602420be2dd3733816ba54e564a2e7821cb7acd6"
       },
       {
         "path": "wws/src/handler/resized_image.rs",
@@ -115,8 +115,8 @@
       },
       {
         "path": "wws/src/route.rs",
-        "git_blob": "dc0c29fc9a5f83a430f3d863ddf8872d18606115",
-        "sha256": "fd80900327a6212c39feebacd10d55a2b414bb848569f5fab4ddb3762121b924"
+        "git_blob": "f2cf78cd5f1f65a6eeed752f9aa5fef37d5d9f9b",
+        "sha256": "6f30661310113ced70de2441f2a7e7496e043d97017ca47cdf921e968d8033cf"
       }
     ]
   },
@@ -213,7 +213,7 @@
       "registered_handler_symbol": "handle_file_redirect",
       "handler_definition_path": "wws/src/handler/redirect.rs",
       "route_registration_reference": "wws/src/route.rs#L60",
-      "handler_definition_reference": "wws/src/handler/redirect.rs#L60",
+      "handler_definition_reference": "wws/src/handler/redirect.rs#L92",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -268,7 +268,7 @@
       "registered_handler_symbol": "handle_code_redirect",
       "handler_definition_path": "wws/src/handler/redirect.rs",
       "route_registration_reference": "wws/src/route.rs#L46",
-      "handler_definition_reference": "wws/src/handler/redirect.rs#L41",
+      "handler_definition_reference": "wws/src/handler/redirect.rs#L73",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -290,7 +290,7 @@
       "registered_handler_symbol": "handle_html_redirect",
       "handler_definition_path": "wws/src/handler/redirect.rs",
       "route_registration_reference": "wws/src/route.rs#L58",
-      "handler_definition_reference": "wws/src/handler/redirect.rs#L53",
+      "handler_definition_reference": "wws/src/handler/redirect.rs#L85",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -323,7 +323,7 @@
       "registered_handler_symbol": "handle_code_redirect",
       "handler_definition_path": "wws/src/handler/redirect.rs",
       "route_registration_reference": "wws/src/route.rs#L66",
-      "handler_definition_reference": "wws/src/handler/redirect.rs#L41",
+      "handler_definition_reference": "wws/src/handler/redirect.rs#L73",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -334,7 +334,7 @@
       "registered_handler_symbol": "handle_download_redirect",
       "handler_definition_path": "wws/src/handler/redirect.rs",
       "route_registration_reference": "wws/src/route.rs#L69",
-      "handler_definition_reference": "wws/src/handler/redirect.rs#L67",
+      "handler_definition_reference": "wws/src/handler/redirect.rs#L99",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -345,7 +345,7 @@
       "registered_handler_symbol": "handle_file_redirect",
       "handler_definition_path": "wws/src/handler/redirect.rs",
       "route_registration_reference": "wws/src/route.rs#L68",
-      "handler_definition_reference": "wws/src/handler/redirect.rs#L60",
+      "handler_definition_reference": "wws/src/handler/redirect.rs#L92",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -356,7 +356,7 @@
       "registered_handler_symbol": "handle_html_redirect",
       "handler_definition_path": "wws/src/handler/redirect.rs",
       "route_registration_reference": "wws/src/route.rs#L67",
-      "handler_definition_reference": "wws/src/handler/redirect.rs#L53",
+      "handler_definition_reference": "wws/src/handler/redirect.rs#L85",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -521,7 +521,7 @@
       "registered_handler_symbol": "handle_default_code_redirect",
       "handler_definition_path": "wws/src/handler/redirect.rs",
       "route_registration_reference": "wws/src/route.rs#L61",
-      "handler_definition_reference": "wws/src/handler/redirect.rs#L48",
+      "handler_definition_reference": "wws/src/handler/redirect.rs#L80",
       "fallback_handler_symbol": "redirect_to_main",
       "fallback_handler_definition_reference": "wws/src/handler/redirect.rs#L29"
     }

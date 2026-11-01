@@ -374,6 +374,45 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn underscore_local_code_route_redirects_to_the_internal_code_route() {
+        let state = build_server_state(false, test_secrets()).await.unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            axum::serve(listener, build_router(state)).await.unwrap();
+        });
+        let client = reqwest::Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .unwrap();
+
+        // The plain spelling is served by its registered route; the
+        // underscore spelling matches no route, so the router fallback
+        // answers it. Both land on the internal code route (the plain
+        // handler's redirect carries its decoded captures, hence the
+        // plain colon in the first target).
+        for (path, location) in [
+            ("/local--code/category%3Apage/2", "/-/code/category:page/2"),
+            (
+                "/local--code_/category%3Apage/2",
+                "/-/code/category%3Apage/2",
+            ),
+        ] {
+            let response = client
+                .get(format!("http://{address}{path}"))
+                .header(crate::handler::HEADER_SITE_ID, "1")
+                .send()
+                .await
+                .unwrap();
+
+            assert_eq!(response.status(), StatusCode::PERMANENT_REDIRECT);
+            assert_eq!(response.headers().get(LOCATION).unwrap(), location);
+        }
+
+        server.abort();
+    }
+
+    #[tokio::test]
     async fn public_basic_error_route_rejects_external_get_head_and_post() {
         let state = build_server_state(false, test_secrets()).await.unwrap();
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
