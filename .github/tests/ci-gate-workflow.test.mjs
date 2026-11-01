@@ -31,12 +31,24 @@ const forbiddenCiCommands = [
   /\bpnpm\s+[^\n]*\blint\b/u
 ]
 
-test("automatic CI gate is absent", () => {
+test("consolidated validation gate runs the local barrier in CI", () => {
+  const source = workflow("consolidated-validation.yml")
+  const trigger = triggerBlock(source)
+  assert.match(trigger, /pull_request:/u)
+  assert.match(trigger, /workflow_dispatch:/u)
+  assert.doesNotMatch(trigger, /merge_group:|push:/u)
+  // The workflow runs the same runner as the local barrier and keeps its
+  // sealed receipt as an artifact for the promotion receipt bridge.
+  assert.match(source, /run-consolidated-validation\.mjs/u)
+  assert.match(source, /upload-artifact/u)
+  assert.doesNotMatch(source, /(?:wikidot\.com|wdfiles)/iu)
+  // The retired gate name stays retired.
   const names = readdirSync(path.join(root, ".github/workflows"))
   assert.equal(names.includes("ci-gate.yaml"), false)
+  // The manual-only policy stubs keep their triggers.
   for (const name of validationWorkflows) {
-    const trigger = triggerBlock(workflow(name))
-    assert.doesNotMatch(trigger, /pull_request:|merge_group:|push:/u, name)
+    const stubTrigger = triggerBlock(workflow(name))
+    assert.doesNotMatch(stubTrigger, /pull_request:|merge_group:|push:/u, name)
   }
 })
 

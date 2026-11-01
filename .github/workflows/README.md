@@ -4,27 +4,65 @@ Every workflow here costs wall-clock time on a pull request, so each one needs a
 
 ## Pull-request validation
 
-There is no automatic pull-request or merge-queue CI validation workflow.
-The former `CI / gate` workflow was removed because its narrow repository
-metadata checks neither established behavioral correctness nor justified an
-automatic repository checkout for every PR. GitHub Actions does not run tests,
-installs, builds, linters, browsers, or compatibility acquisition for PRs.
-Validation belongs in the maintained WSL workspace, where persistent evidence
-caches survive retries and repeated runs.
+The full validation barrier runs in GitHub Actions.
+`consolidated-validation.yml` runs on every pull request (and on manual
+dispatch): it checks out the PR head, checks out FTML at the revision
+`deepwell/Cargo.lock` pins and wikidot.py beside it, installs the pinned
+Rust toolchain, Node and pnpm, and runs
+`install/local/wikidot-verification/scripts/run-consolidated-validation.mjs`
+- the same runner as the local barrier, unmodified - for the groups the
+diff selects. The sealed receipt and its preflight log are uploaded as a
+workflow artifact; `install/standing/scripts/fetch-ci-validation-receipt.mjs`
+verifies a CI receipt against the requested head and lands it in the local
+validation store, where `install/standing/promote.py` reuses it like a
+locally sealed one. External actions in every workflow stay pinned to full
+commit SHAs.
 
-Run `scripts/preflight.sh` explicitly when a lightweight local checkpoint is useful. It classifies the current working tree and branch changes against the selected base and runs only the path-relevant local checks. Machine-readable `docs/development/*.json` authority selects the verification group even though ordinary documentation remains cheap. Every verification, Deepwell, WWS, or Framerail checkpoint also runs the repository generated-contract verifier. Pushes do not invoke validation implicitly; automatic Git hooks were removed because they can accidentally mix unrelated uncommitted work into branch delivery.
+Development does not wait on the local barrier any more: run fast targeted
+checks locally, commit and push, and let the Actions check carry the full
+gate. `scripts/preflight.sh` remains available as a lightweight local
+checkpoint. It classifies the current working tree and branch changes
+against the selected base and runs only the path-relevant local checks.
+Machine-readable `docs/development/*.json` authority selects the
+verification group even though ordinary documentation remains cheap. Every
+verification, Deepwell, WWS, or Framerail checkpoint also runs the
+repository generated-contract verifier. Pushes do not invoke local
+validation implicitly; automatic Git hooks were removed because they can
+accidentally mix unrelated uncommitted work into branch delivery.
 
-Theme Lab has its own path-owned group: its tests, adaptation-authority gate, maintenance bindings, deterministic packages and Sigma source/evidence checks run without selecting runtime components. Runtime paths and unknown paths retain their existing gates.
+One group cannot run in Actions. Theme Lab's evidence lives in the local
+authority object store, which is not in Git and is not published anywhere a
+runner could fetch, so the group fails closed there. When a diff selects
+`theme_lab`, the workflow names it in its job summary and in a warning
+annotation and runs every other selected group; the coordinator runs Theme
+Lab locally before merge. Theme Lab keeps its own path-owned group: its
+tests, adaptation-authority gate, maintenance bindings, deterministic
+packages and Sigma source/evidence checks run without selecting runtime
+components. Runtime paths and unknown paths retain their existing gates.
 
-Run `scripts/preflight.sh --final` on the PR head before merging, through `install/local/wikidot-verification/scripts/run-consolidated-validation.mjs` so the receipt is kept for the standing promotion. This is the one local final barrier and adds dependency hygiene, every selected Clippy pass, full test suite, validator, and the Framerail production build. Its generated-contract check also regenerates the compatibility surface inventory from the inventory's exact pinned source revision and requires byte-for-byte reproduction; this deliberately avoids the inventory's self-reference trap where pinning it to the commit that contains itself can never converge. Verification tooling and Wikidot specification inputs select the verifier package tests, standing promotion precondition, specification generator check, and implementation-ledger check without selecting a Rust component. Campaign closure additionally requires the digest-bound consolidated-validation receipt consumed by final-zero. The Deepwell suite runs as four nextest partitions side by side, each on its own task-owned stack (`WIKIJUMP_DEEPWELL_TEST_SHARDS`). `install/local/wikidot-verification/scripts/run-consolidated-validation.mjs` runs the barrier, builds the standing application images alongside it (so the post-merge promotion of the same runtime inputs rebuilds from the BuildKit cache), and keeps the receipt where `install/standing/promote.py` reuses it for every check group the merge does not change.
+The CI invocation passes the runner's own `--no-image-build` flag: the
+`docker-build-*.yaml` workflows already build the standing application
+images on pull requests, and promote.py does not require the image check
+in a receipt it reuses. A local run of the runner still builds the images
+alongside the barrier, so the post-merge promotion of the same runtime
+inputs rebuilds from the BuildKit cache. Local full gates also remain the
+path for promotion-bound heads until CI receipts cover them, and for the
+local-only groups above.
 
-No `CI / gate` status is produced for pull requests or merge queues. Do not
-configure that removed status as a required branch-protection check. External
-actions in the remaining workflows stay pinned to full commit SHAs.
-
-GitHub Actions availability does not determine acceptance. Development,
-regression testing, and integration rehearsals run locally, and landing does
-not wait for an Actions validation result.
+The final barrier adds dependency hygiene, every selected Clippy pass,
+full test suite, validator, and the Framerail production build. Its
+generated-contract check also regenerates the compatibility surface
+inventory from the inventory's exact pinned source revision and requires
+byte-for-byte reproduction; this deliberately avoids the inventory's
+self-reference trap where pinning it to the commit that contains itself can
+never converge. Verification tooling and Wikidot specification inputs
+select the verifier package tests, standing promotion precondition,
+specification generator check, and implementation-ledger check without
+selecting a Rust component. Campaign closure additionally requires the
+digest-bound consolidated-validation receipt consumed by final-zero. The
+Deepwell suite runs as nextest partitions side by side, each on its own
+task-owned stack (`WIKIJUMP_DEEPWELL_TEST_SHARDS`; a hosted runner takes
+fewer stacks at once than the local box).
 
 `full-ci.yaml` is retained only as a manual policy notice. It never runs
 Playwright in GitHub Actions. Browser validation is local WSL work.

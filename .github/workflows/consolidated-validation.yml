@@ -1,0 +1,285 @@
+name: Consolidated validation
+
+# The full consolidated validation gate runs here, on GitHub's machines,
+# instead of as a long local barrier on every pull request. Lanes commit
+# with fast targeted local checks; this workflow runs
+# install/local/wikidot-verification/scripts/run-consolidated-validation.mjs
+# (the same runner, unmodified) on the PR head, seals the same receipt,
+# and uploads it as an artifact.
+# install/standing/fetch-ci-validation-receipt.mjs lands a CI receipt in
+# the local validation store for install/standing/promote.py to reuse.
+#
+# A group whose inputs are local state cannot run here. When the diff
+# selects one, this workflow names it in the job summary and in a warning
+# annotation, and runs every remaining selected group; the coordinator
+# runs the named group locally before merge. Today the only local-only
+# group is:
+#   theme_lab - its evidence lives in the local Theme Lab authority
+#               object store (~/.local/state/wikijump/theme-lab), which
+#               is not in Git and is not published anywhere a runner
+#               could fetch. The group fails closed without the store.
+#
+# The standing application images are not built here: the runner is
+# invoked with its own --no-image-build flag because the
+# docker-build-*.yaml workflows already build those images on pull
+# requests, and promote.py does not require the image check in a receipt
+# it reuses. Local promotion runs still build them.
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      groups:
+        description: "Comma-separated groups to run (default: selected by the diff)"
+        required: false
+        type: string
+      base:
+        description: "Base commit or ref to diff against (default: origin/develop)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: consolidated-validation-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: Consolidated validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    env:
+      WIKIJUMP_FTML_CHECKOUT: ${{ github.workspace }}/ftml
+      WIKIDOT_PY_CHECKOUT: ${{ github.workspace }}/wikidot.py
+      THEME_LAB_TEST_CONCURRENCY: "4"
+      # A hosted runner has 4 cores; the local default of 12 task-owned
+      # Deepwell stacks would thrash it. Same tests, fewer stacks at once.
+      WIKIJUMP_DEEPWELL_TEST_SHARDS: "3"
+      CARGO_INCREMENTAL: "0"
+      CARGO_TERM_COLOR: always
+    steps:
+      - name: Free runner disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache /usr/local/share/powershell
+          sudo docker image prune --all --force >/dev/null 2>&1 || true
+          df -h /
+
+      - name: Check out the PR head
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          path: wikijump
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Resolve the base and the pinned FTML revision
+        id: pins
+        working-directory: wikijump
+        run: |
+          set -euo pipefail
+          git fetch origin develop
+          base='${{ github.event.pull_request.base.sha || inputs.base }}'
+          if [ -z "$base" ]; then base="$(git rev-parse origin/develop)"; fi
+          echo "base=$(git rev-parse "${base}^{commit}")" >> "$GITHUB_OUTPUT"
+          echo "head=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          # The FTML revision the tree pins lives in deepwell/Cargo.lock as
+          # the ftml package's git source revision; the verification
+          # tooling extracts it the same way (ftmlPin()).
+          ftml_rev="$(sed -n '/^name = "ftml"$/,/^$/p' deepwell/Cargo.lock | grep -oE '[0-9a-f]{40}' | head -1)"
+          test -n "$ftml_rev"
+          echo "ftml_rev=$ftml_rev" >> "$GITHUB_OUTPUT"
+          echo "Base: $base  FTML: $ftml_rev  Head: $(git rev-parse HEAD)"
+
+      - name: Check out FTML at the pinned revision
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          repository: Rokurolize/ftml
+          path: ftml
+          ref: ${{ steps.pins.outputs.ftml_rev }}
+          fetch-depth: 0
+
+      - name: Check out wikidot.py
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          repository: Rokurolize/wikidot.py
+          path: wikidot.py
+          # The wikijump tree records no wikidot.py revision pin; the
+          # local sibling checkout tracks the default branch the same way.
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24.22.1"
+
+      - name: Enable pnpm via Corepack
+        run: corepack enable
+
+      - name: Install the pinned Rust toolchain
+        working-directory: wikijump
+        run: |
+          rustup toolchain install 1.95.0 --component clippy,rustfmt,rust-src
+          rustup show active-toolchain
+
+      - name: Install sqlx-cli and cargo-machete
+        run: |
+          set -euo pipefail
+          # sqlx-cli matches the sqlx version in deepwell/Cargo.lock
+          # (0.9.0); preflight refuses the Deepwell group without sqlx.
+          cargo install sqlx-cli --version 0.9.0 --locked
+          machete="cargo-machete-v0.9.2-x86_64-unknown-linux-gnu"
+          curl -fsSLO "https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.2/${machete}.tar.gz"
+          curl -fsSLO "https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.2/${machete}.tar.gz.sha256"
+          sha256sum --check "${machete}.tar.gz.sha256"
+          tar -xzf "${machete}.tar.gz" --strip-components=1 -C "$HOME/.cargo/bin" "${machete}/cargo-machete"
+          sqlx --version
+          cargo machete --version
+
+      - name: Start sccache
+        uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
+
+      - name: Cache the Cargo registry
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: cargo-registry-${{ hashFiles('wikijump/deepwell/Cargo.lock', 'wikijump/wws/Cargo.lock', 'wikijump/locales/validator/Cargo.lock', 'ftml/Cargo.lock') }}
+          restore-keys: cargo-registry-
+
+      - name: Cache the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-store-${{ hashFiles('wikijump/framerail/pnpm-lock.yaml', 'wikijump/install/local/wikidot-verification/pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-
+
+      - name: Install JavaScript dependencies
+        run: |
+          pnpm --dir wikijump/framerail install --frozen-lockfile
+          pnpm --dir wikijump/install/local/wikidot-verification install --frozen-lockfile
+
+      - name: Fetch Cargo dependencies
+        env:
+          RUSTC_WRAPPER: sccache
+        run: |
+          cargo fetch --locked --manifest-path wikijump/deepwell/Cargo.toml
+          cargo fetch --locked --manifest-path wikijump/wws/Cargo.toml
+          cargo fetch --locked --manifest-path wikijump/locales/validator/Cargo.toml
+          cargo fetch --locked --manifest-path ftml/Cargo.toml
+
+      - name: Plan the selected groups
+        id: plan
+        working-directory: wikijump
+        run: |
+          set -euo pipefail
+          base='${{ steps.pins.outputs.base }}'
+          requested='${{ inputs.groups }}'
+          list="$(scripts/preflight.sh --base "$base" --final --list)"
+          echo "$list"
+          groups_line="$(grep '^preflight: groups: ' <<<"$list" | sed 's/^preflight: groups: //')"
+          declare -A sel=()
+          for pair in $groups_line; do sel["${pair%%=*}"]="${pair##*=}"; done
+          if [ -n "$requested" ]; then
+            for g in "${!sel[@]}"; do sel[$g]=false; done
+            IFS=',' read -ra want <<<"$requested"
+            for g in "${want[@]}"; do
+              if [ -z "${sel[$g]+set}" ]; then echo "::error::unknown group in the groups input: $g"; exit 1; fi
+              sel[$g]=true
+            done
+          fi
+          # Groups whose inputs are local state and cannot run on a
+          # hosted runner. Keep this list honest: a group belongs here
+          # only with its blocker recorded in the workflow header.
+          local_only="theme_lab"
+          run_groups=()
+          skipped=()
+          selected=()
+          for g in deepwell wws framerail locales workflow theme_lab verification; do
+            if [ "${sel[$g]:-false}" = "true" ]; then
+              selected+=("$g")
+              case " $local_only " in
+                *" $g "*) skipped+=("$g") ;;
+                *) run_groups+=("$g") ;;
+              esac
+            fi
+          done
+          join_by() { local IFS="$1"; shift; echo "$*"; }
+          echo "run_groups=$(join_by , "${run_groups[@]}")" >> "$GITHUB_OUTPUT"
+          echo "skipped_groups=$(join_by , "${skipped[@]}")" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Consolidated validation plan"
+            echo ""
+            echo "- Base: \`$base\`"
+            echo "- Selected groups: \`$(join_by ', ' "${selected[@]}")\`"
+            echo "- Groups run in CI: \`$(join_by ', ' "${run_groups[@]}")\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "${#skipped[@]}" -gt 0 ]; then
+            {
+              echo ""
+              echo "### Local-only groups selected but not run in CI"
+              echo ""
+              for g in "${skipped[@]}"; do echo "- \`$g\`"; done
+              echo ""
+              echo "These groups' inputs are local state (see the workflow header). The coordinator runs them locally before merge; a green CI check here does **not** cover them."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning title=Local-only validation groups::Selected but not run in CI: $(join_by ', ' "${skipped[@]}"). The coordinator must run these locally before merge."
+          fi
+
+      - name: Run the consolidated validation
+        id: gate
+        if: steps.plan.outputs.run_groups != ''
+        working-directory: wikijump
+        env:
+          RUSTC_WRAPPER: sccache
+        run: |
+          set -euo pipefail
+          base='${{ steps.pins.outputs.base }}'
+          head='${{ steps.pins.outputs.head }}'
+          out="$RUNNER_TEMP/receipt/validation-ci-${head:0:12}.json"
+          mkdir -p "$RUNNER_TEMP/receipt"
+          echo "receipt_path=$out" >> "$GITHUB_OUTPUT"
+          args=(--repository "$PWD" --base "$base" --output "$out" --no-image-build)
+          if [ -n '${{ inputs.groups }}' ] || [ -n '${{ steps.plan.outputs.skipped_groups }}' ]; then
+            args+=(--groups '${{ steps.plan.outputs.run_groups }}')
+          fi
+          node install/local/wikidot-verification/scripts/run-consolidated-validation.mjs "${args[@]}"
+
+      - name: Upload the sealed receipt
+        if: always() && steps.plan.outputs.run_groups != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: consolidated-validation-${{ steps.pins.outputs.head }}
+          path: |
+            ${{ runner.temp }}/receipt/validation-ci-*.json
+            ${{ runner.temp }}/receipt/validation-ci-*.json.log
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Summarize the receipt
+        if: always() && steps.plan.outputs.run_groups != ''
+        run: |
+          node --input-type=module <<'EOF'
+          import fs from "node:fs";
+          import path from "node:path";
+          const dir = path.join(process.env.RUNNER_TEMP, "receipt");
+          const file = fs.readdirSync(dir).find((name) => name.endsWith(".json"));
+          const lines = ["", "## Consolidated validation result", ""];
+          if (!file) {
+            lines.push("No receipt was sealed; the gate step failed before sealing. See the gate log.");
+          } else {
+            const receipt = JSON.parse(fs.readFileSync(path.join(dir, file), "utf8"));
+            lines.push(`- Receipt: \`${file}\``);
+            lines.push(`- Status: **${receipt.status}**`);
+            lines.push(`- Head: \`${receipt.wikijump_commit}\` (tree \`${receipt.wikijump_tree}\`)`);
+            lines.push(`- Base: \`${receipt.base_commit}\``);
+            lines.push("");
+            lines.push("| Check | Result | Seconds |");
+            lines.push("| --- | --- | --- |");
+            for (const check of receipt.checks) {
+              lines.push(`| ${check.name} | ${check.status} | ${check.duration_seconds ?? ""} |`);
+            }
+          }
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${lines.join("\n")}\n`);
+          EOF
