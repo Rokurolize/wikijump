@@ -20,7 +20,6 @@
 
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum MailCheckResponse {

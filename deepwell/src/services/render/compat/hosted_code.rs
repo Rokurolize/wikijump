@@ -10,7 +10,6 @@
  * (at your option) any later version.
  */
 
-
 use super::fallback_code::CompatCodeBlock;
 use crate::error::prelude::Result;
 use crate::models::site::Model as SiteModel;
