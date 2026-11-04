@@ -20,7 +20,6 @@
 
 use regex::Regex;
 
-
 pub fn replace_in_place(string: &mut String, pattern: &str, replacement: &str) {
     assert!(
         !pattern.is_empty(),
