@@ -15,11 +15,15 @@ SkipOSは[[[theme:bedrock|Bedrock]]]カーネルをベースにしています�
 ++++ 第四見出し
 +++++ 第五見出し
 ++++++ 第六見出し
+[[/collapsible]]
+[[tabview]]
 [[tab タブレーター]]
 これはタブ表示です。
+[[/tab]]
 [[tab タブ化]]
 見てください。ここにもテキストがあります。
 なんと古風な。
+[[/tab]]
 [[tab 長いタブ]]
 これは長いタブです。大量のテキストが入っています。[[footnote]] これは脚注です。 [[/footnote]]
 これは長いタブです。大量のテキストが入っています。
@@ -29,12 +33,18 @@ SkipOSは[[[theme:bedrock|Bedrock]]]カーネルをベースにしています�
 これは長いタブです。大量のテキストが入っています。
 これは長いタブです。大量のテキストが入っています。
 これは長いタブです。大量のテキストが入っています。
+[[/tab]]
 [[tab 空のタブ]]
+[[/tab]]
 [[tab 空のタブ]]
+[[/tab]]
 [[tab スーパー・メガ・タブ]]
 こんにちは
+[[/tab]]
 [[tab 超特大・超長尺メガタブII アルティメット: 清算]]
 こんにちは2
+[[/tab]]
+[[/tabview]]
 > これは引用ブロックです。各行の先頭に「> 」を置くと作成できます。
 > 追加テキスト
 > これは水平線です
@@ -70,8 +80,11 @@ SkipOSは[[[theme:bedrock|Bedrock]]]カーネルをベースにしています�
 @import url('https://scp-jp.wdfiles.com/local--code/theme%3Askipos/1');
 [[include :scp-jp:component:interwiki-style
 | theme=https://scp-jp.wdfiles.com/local--code/theme%3Askipos/1
+]]
 
 [[module CSS]]
 /* SCP-JP Wikidot skipos action-area pane: give the opened action-area pane the theme's own dark glass ground at every width so pane content stays readable over the page. */
 #action-area{background-color:rgb(25 25 39 / .686);backdrop-filter:blur(.75rem) saturate(1.05)}
 [[/module]]
+[[/collapsible]]
+[[/iftags]]

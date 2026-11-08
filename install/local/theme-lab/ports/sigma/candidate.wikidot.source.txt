@@ -82,6 +82,8 @@ Sunny-Dオレンジ
 +++++ 国会議員
 
 ++++++ 尊きロード・メイヤー閣下
+[[/collapsible]]
+[[tabview]]
 [[tab タブレータ]]
 これはタブビューです。
 [[/tab]]
@@ -128,6 +130,7 @@ Sunny-Dオレンジ
 [[tab 空タブ]]
 はっ！嘘でした！
 [[/tab]]
+[[/tabview]]
 > これは引用ブロックです。各行の先頭に「> 」を置くと作成できます。
 >
 > {{もっと文章}}
@@ -182,3 +185,4 @@ Sunny-Dオレンジ
 [[span style="font-family: BauhausLTDemi;"]]ヘッダーフォントはLTDemiです。[[/span]]
 [[span style="font-family: 'Trebuchet MS', Trebuchet;"]]サブヘッダーフォントはTrebuchet MSです。[[/span]]
 [[span style="font-family: 'Andale Mono', 'Courier New', Courier;"]]等幅フォントはAndale Monoです。[[/span]]
+[[/iftags]]
