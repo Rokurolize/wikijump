@@ -118,6 +118,13 @@ export const AUDITED_EXTERNAL_ASSET_ORIGINS: readonly AuditedExternalAssetOrigin
       fonts: true,
       evidence:
         "Indestructible Type's font-hosting GitHub Pages site. Both retained shared-corpus copies of `component:classified-decoration-base` `@import` `https://indestructibletype-fonthosting.github.io/renner.css` (EN capture b498634ff254edb806041276dbd088d8c9ed415d7fac1f05ff3dada1c21501d9, JP capture d0230d2f49ab3776d8d503367e06ba5d168a5fadcca7c8036af2331b5a5112e5), and current Wikidot loads both that stylesheet and its WOFF2 with HTTP 200 while Wikijump's `style-src` blocked them (issue #2213)."
+    },
+    {
+      origin: "https://rokurolize.github.io",
+      styles: true,
+      fonts: true,
+      evidence:
+        "Rokurolize GitHub Pages host. Serves the published trees of the theme-port forks the SCP-JP theme work is based on (Rokurolize/Basalt, Rokurolize/sigma). The Basalt fork's published tree pairs its bedrock stylesheet (`https://rokurolize.github.io/Basalt/basalt-bedrock-min.css`) with the WOFF2 files under its `fonts/` directory, which the stylesheet `@font-face`s through relative URLs, so the font files load from this origin as well."
     }
   ])
 
