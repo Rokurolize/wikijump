@@ -104,6 +104,10 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
   for (const origin of ["https://fonts.gstatic.com", "https://nu-scptheme.github.io"]) {
     assert(directives["font-src"]?.some((source) => source === origin))
   }
+  for (const origin of ["https://rokurolize.github.io"]) {
+    assert(directives["style-src"]?.some((source) => source === origin))
+    assert(directives["font-src"]?.some((source) => source === origin))
+  }
   const classifiedDecorationGrant = AUDITED_EXTERNAL_ASSET_ORIGINS.find(
     (entry) => entry.origin === "https://indestructibletype-fonthosting.github.io"
   )
