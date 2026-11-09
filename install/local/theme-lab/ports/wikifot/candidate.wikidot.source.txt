@@ -312,3 +312,11 @@ body{cursor:wait}#u-darkmode:target .toggle{display:none}#u-darkmode:target .wik
 #main-content{margin-left:1rem}
 }
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot Wikifot credit correction: the theme page's ThemePreviewer (theme_url=" ") makes Wikidot replace the wiki theme stylesheet import with an empty one, so the Sigma-10 base sheet never loads — and with it the FontAwesome 4.3 it imports. The credit module's own CSS draws the rate and credit glyphs in FontAwesome (fa-info, fa-plus, fa-minus, fa-times), so without the font they all paint blank and the credit button collapses to an empty box. Re-import the same FontAwesome the base sheet carries. The cancel glyph also takes the widget's own link color: the credit CSS colors it cream for the dark rate bar, which this theme's design removes. */
+@import url(https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css);
+.creditRate .page-rate-widget-box .cancel a {
+  color: #00a;
+}
+[[/module]]

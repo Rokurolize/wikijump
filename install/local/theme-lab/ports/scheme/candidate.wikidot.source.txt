@@ -1192,3 +1192,10 @@ div#extra-div-6 { width: 100%; left: 18px; overflow-x: clip; }
 /* SCP-JP Wikidot scheme narrow header: shrink the fixed gear emblem clear of the wordmark and the top bar. */
 @media (max-width:480px){div#extra-div-2{width:4.5rem;height:4.5rem;background-size:contain}}
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot Scheme credit correction: the theme colors the credit glyph with the gold rate bar's text color (.rate-box-with-credit-button .fa-info, #6b5829), but the credit button itself keeps the credit module's dark-red background (#663333), leaving the glyph illegible (contrast 1.46). Restore the credit module's own glyph color on the button only; the gold bar and its text are unchanged. */
+.rate-box-with-credit-button .creditButton a.fa-info {
+  color: #fff6f0;
+}
+[[/module]]
