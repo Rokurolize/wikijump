@@ -26508,7 +26508,7 @@ INNER_TOTAL=%%total%%; INNER_COUNT=%%count%%; [[[start|start link]]]
     // Frozen Wikidot oracle: countpages-inside-listpages-live.json,
     // case standalone-countpages-opening-inside-listpages-body. One matching
     // page produces exactly one empty ListPages item.
-    let list_pages_box = r#"<div class="list-pages-box">"#;
+    let list_pages_box = r#"<div class="list-pages-box" data-lp-id="lp-"#;
     let list_pages_item = r#"<div class="list-pages-item">"#;
     assert_eq!(
         html.matches(list_pages_box).count(),
