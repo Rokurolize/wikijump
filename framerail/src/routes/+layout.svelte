@@ -329,7 +329,7 @@
     <link href="/wikidot/styles/pagerate-db0bffe086ed.css" rel="stylesheet" />
     {#if !viewData?.theme_previewer_blank}
       {#if effectiveTheme.type === "built_in"}
-        <link href="/wikidot/styles/sigma-fe5388a32e12.css" rel="stylesheet" />
+        <link href="/wikidot/styles/sigma-076b14dcd8d4.css" rel="stylesheet" />
       {/if}
       {#if effectiveTheme.type === "external"}
         <link

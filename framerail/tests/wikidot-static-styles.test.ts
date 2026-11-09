@@ -20,8 +20,8 @@ const styles = [
       "https://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/css/pagerate/PageRateWidgetModule.css"
   },
   {
-    file: "sigma-fe5388a32e12.css",
-    sha256: "fe5388a32e12934d38006694d6a64b66761990aaea536745773908bd0400edde",
+    file: "sigma-076b14dcd8d4.css",
+    sha256: "076b14dcd8d4023b78f9b56bb8eab164bd0c3ca636940aa7f77afca0101707c3",
     source: "https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css"
   }
 ]
@@ -240,7 +240,7 @@ test("the Wikidot error dialog exposes the real visible display state", async ()
 
 test("vendored Sigma CSS keeps every nested resource reference absolute", async () => {
   const sigma = await fs.readFile(
-    new URL("../static/wikidot/styles/sigma-fe5388a32e12.css", import.meta.url),
+    new URL("../static/wikidot/styles/sigma-076b14dcd8d4.css", import.meta.url),
     "utf8"
   )
   const urls = [...sigma.matchAll(/url\((['"]?)([^)'"\s]+)\1\)/giu)].map(
