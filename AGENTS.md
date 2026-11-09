@@ -40,6 +40,11 @@ Development happens on this fork, `Rokurolize/wikijump`. Open pull requests agai
 - **Launcher environment:** `scripts/preflight.sh` shells out to `cargo`, and the Deepwell test stack spawns `sqlx`; both tools live in `$HOME/.cargo/bin`. Run it from a login shell, or an environment whose PATH includes `$HOME/.cargo/bin`. `preflight.sh` checks for the tools up front and names a missing one.
 - **Compatibility checks:** Before submitting a PR involving rendered constructs, read `install/local/wikidot-verification/README.md` and run the applicable corpus-pinned-literal and Wikijump-identifier-leak checks.
 
+## Content licensing
+
+- **Wiki-derived content:** The areas declared in [`install/local/theme-lab/ATTRIBUTION.md`](install/local/theme-lab/ATTRIBUTION.md), [`deepwell/seeder/ATTRIBUTION.md`](deepwell/seeder/ATTRIBUTION.md), [`install/local/wikidot-verification/ATTRIBUTION.md`](install/local/wikidot-verification/ATTRIBUTION.md), and [`framerail/static/wikidot/ATTRIBUTION.md`](framerail/static/wikidot/ATTRIBUTION.md) hold material derived from SCP Foundation wiki and SCP-JP wiki pages. That material is licensed CC BY-SA 3.0, not under the project AGPL (license texts in [`LICENSES/`](LICENSES/); the font files in the Theme Lab area are mostly SIL Open Font License 1.1, as its attribution file declares). Editing it is editing CC BY-SA material: keep the attribution intact, and adaptations remain CC BY-SA 3.0.
+- **No bulk wiki content:** Do not commit bulk verbatim wiki content (full page sources) to this repository; it is managed outside version control, and the shared corpus named in the Context pointers below is where page source lives. Add new wiki-derived material only when the same change updates the area's attribution file.
+
 ## Agent authority and local development credentials
 
 - The user authorizes the coding agent to work in this WSL checkout and its local development runtimes. The agent may inspect local credentials, private test actors, local-only environment files, and task-owned runtime data as needed. Never commit credentials, display them in chat or logs, put them in issues or PRs, or copy them into tracked source files.
