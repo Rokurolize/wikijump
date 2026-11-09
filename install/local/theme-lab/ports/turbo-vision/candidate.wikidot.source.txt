@@ -1724,3 +1724,12 @@ div.page-rate-widget-box .rate-points {
 /* SCP-JP Wikidot Turbo Vision documentation blockquote wrap: owner OPTION C (2026-10-29) — wrap long unbroken strings in blockquotes so they read in place at narrow widths; a localization quality improvement, divergence from verbatim upstream accepted for this package + finding. */
 .turbo-block .blockquote, .turbo-block .blockquote * { overflow-wrap: anywhere; }
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot credit module correction: the EN theme styles the credit anchor through a <p> wrapper inside .creditButton, but the JP credit module emits the anchor as a direct child of .creditButton, so the EN rules never match on JP. Retargeted to the JP structure with the EN declarations unchanged. */
+
+#page-content .rate-box-with-credit-button .creditButton a {
+    border-left-color: #011657;
+    border: 3px solid #011657;
+}
+[[/module]]
