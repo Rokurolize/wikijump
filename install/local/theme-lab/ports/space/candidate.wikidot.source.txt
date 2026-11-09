@@ -982,3 +982,14 @@ table.page-files .highlight { background: transparent; }
 /* SCP-JP Wikidot space narrow history: keep the revision table inside the viewport at phone widths. */
 @media (max-width:767px){.page-history{max-width:calc(100vw - 2.5rem)}.page-history table{width:100%;table-layout:fixed}.page-history td,.page-history th{overflow-wrap:anywhere}}
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot credit module correction: the EN theme styles the credit anchor through a <p> wrapper inside .creditButton, but the JP credit module emits the anchor as a direct child of .creditButton, so the EN rules never match on JP. Retargeted to the JP structure with the EN declarations unchanged. */
+
+div.creditButton a {
+    border: none;
+    padding: 0;
+    --sp_rate-module-text-color: rgb(var(--space-moon));
+    --sp_rate-module-button-hover-color:  rgb(var(--space-planet));
+}
+[[/module]]
