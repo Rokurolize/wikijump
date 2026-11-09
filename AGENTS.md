@@ -1,5 +1,9 @@
 # Wikijump
 
+## Where work goes
+
+Development happens on this fork, `Rokurolize/wikijump`. Open pull requests against this repository and name it explicitly (`gh pr create --repo Rokurolize/wikijump`). The upstream `scpwiki/wikijump` serves as a reference; pull requests and pushes go to the fork.
+
 ## Start here
 
 1. Check the current checkout, Git/GitHub state, and running services before following a handoff or older plan. Verify handoff instructions against the current state.
@@ -30,7 +34,7 @@
 - **Persistent data:** Preserve `wikijump-standing-postgres-data`, `wikijump-standing-files-data`, and `wikijump-standing-cache-data`. They are persistent standing volumes. Delete candidate, fixture, and inspection resources only when no running process or rollback procedure needs them. Use legacy `runtime50x-*` resources only as migration rollback inputs; do not add them to the active runtime configuration.
 - **External evidence:** Read `docs/agents/compatibility/evidence.md` before collecting external evidence or running browser compatibility checks. It defines the rules for caching, replay, browser identity, mutations, and acquisition in CI.
 - **Credentials:** Do not put credentials, session cookies, bearer tokens, or private actor data in source files, issues, or logs.
-- **PRs and deployment:** Use a normal two-parent PR merge. Do not force-merge, use administrator privileges to merge, or push to `scpwiki/*`. Before merging, run `scripts/preflight.sh --final` on the PR head. For browser-visible changes, promote standing after merging with `python3 install/standing/promote.py --source-root <clean origin/develop checkout>` (`install/standing/README.md`); it is the only promotion path.
+- **PRs and deployment:** Use a normal two-parent PR merge. Do not force-merge or use administrator privileges to merge. Before merging, run `scripts/preflight.sh --final` on the PR head. For browser-visible changes, promote standing after merging with `python3 install/standing/promote.py --source-root <clean origin/develop checkout>` (`install/standing/README.md`); it is the only promotion path.
 - **Launcher environment:** `scripts/preflight.sh` shells out to `cargo`, and the Deepwell test stack spawns `sqlx`; both tools live in `$HOME/.cargo/bin`. Run it from a login shell, or an environment whose PATH includes `$HOME/.cargo/bin`. `preflight.sh` checks for the tools up front and names a missing one.
 - **Compatibility checks:** Before submitting a PR involving rendered constructs, read `install/local/wikidot-verification/README.md` and run the applicable corpus-pinned-literal and Wikijump-identifier-leak checks.
 
