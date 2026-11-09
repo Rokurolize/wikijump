@@ -79,3 +79,14 @@ Copyright (c) 2019-2026, Wikijump Team
 Based on Wikidot - free wiki collaboration software
 Copyright (c) 2008, Wikidot Inc.
 ```
+
+## Third-party content
+
+Wikijump's code is AGPL 3.0, but the repository also carries third-party content that keeps its own license terms and is not covered by the project license. The declared areas are:
+
+* Theme ports, publication sources, and replay assets in [`install/local/theme-lab/`](install/local/theme-lab/ATTRIBUTION.md): material adapted from SCP Foundation wiki and SCP-JP wiki theme and component pages, licensed CC BY-SA 3.0; most of the captured font files there are licensed under the SIL Open Font License 1.1, and a small number of fonts whose license could not be confirmed from the files are itemized in the same attribution file.
+* Wiki-derived seed content in [`deepwell/seeder/`](deepwell/seeder/ATTRIBUTION.md): components, article and theme copies, fragments, and attachments adapted or copied from SCP Foundation wiki pages, licensed CC BY-SA 3.0, which the seeder redistributes into every new site.
+* Frozen live-page observations in [`install/local/wikidot-verification/`](install/local/wikidot-verification/ATTRIBUTION.md): captures of SCP Foundation wiki and SCP-JP wiki page output used as verification evidence, licensed CC BY-SA 3.0.
+* Pinned stylesheets in [`framerail/static/wikidot/`](framerail/static/wikidot/ATTRIBUTION.md): byte-pinned copies of the SCP Foundation wiki Sigma theme (CC BY-SA 3.0) and of two Wikidot platform stylesheets, served for rendering compatibility.
+
+The license texts are in [`LICENSES/CC-BY-SA-3.0.txt`](LICENSES/CC-BY-SA-3.0.txt) and [`LICENSES/OFL-1.1.txt`](LICENSES/OFL-1.1.txt). Bulk verbatim wiki content (full page sources) is not stored in this repository; it is managed outside version control.
