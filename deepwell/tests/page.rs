@@ -26678,8 +26678,13 @@ AFTER_INLINE
         "live Wikidot preserves text surrounding the inline CountPages line as downstream page source:\n{html}",
     );
     assert_eq!(
+        html.matches(r#"<div class="list-pages-box" data-lp-id="lp-"#).count(),
+        1,
+        "the eligible outer ListPages box carries the AJAX identity:\n{html}",
+    );
+    assert_eq!(
         html.matches(r#"<div class="list-pages-box">"#).count(),
-        2,
+        1,
         "live Wikidot emits the default outer ListPages box plus a second legacy list-pages-box around following text:\n{html}",
     );
     for forbidden in [

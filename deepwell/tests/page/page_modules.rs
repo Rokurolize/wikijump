@@ -2830,7 +2830,9 @@ async fn list_pages_saved_view_preserves_argument_order_around_the_pager() {
     assert!(
         reverse_order.contains(&format!("ROW3:{ITEM_PREFIX}-3|"))
             && reverse_order.contains(&format!("href=\"/{HOLDER}/p/1/tag/alpha\""))
-            && reverse_order.contains(r#"<div class="pager" data-lp-key="p"><span class="pager-no">"#),
+            && reverse_order.contains(
+                r#"<div class="pager" data-lp-key="p"><span class="pager-no">"#
+            ),
         "the pager replaces a numeric page argument in place without reordering later arguments:\n{reverse_order}",
     );
     assert!(
@@ -4601,9 +4603,21 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
         "the identified preview must resolve the NextPage selection:\n{}",
         identified_next_previous.body,
     );
+    let selected_item = |section: &str| {
+        section
+            .find(r#"<div class="list-pages-item">"#)
+            .map(|index| &section[index..])
+    };
     assert_eq!(
-        identified_next, saved_next,
+        selected_item(identified_next),
+        selected_item(saved_next),
         "the identified preview must resolve the same NextPage selection as the saved render:\n{}",
+        identified_next_previous.body,
+    );
+    assert!(
+        identified_next.contains(r#"<div class="list-pages-box">"#)
+            && saved_next.contains(r#"<div class="list-pages-box" data-lp-id="lp-"#),
+        "the saved render carries the AJAX identity while the slug-less preview keeps the plain box:\n{}",
         identified_next_previous.body,
     );
     let identified_prev = section(
@@ -4622,8 +4636,15 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
         identified_next_previous.body,
     );
     assert_eq!(
-        identified_prev, saved_prev,
+        selected_item(identified_prev),
+        selected_item(saved_prev),
         "the identified preview must resolve the same PreviousPage selection as the saved render:\n{}",
+        identified_next_previous.body,
+    );
+    assert!(
+        identified_prev.contains(r#"<div class="list-pages-box">"#)
+            && saved_prev.contains(r#"<div class="list-pages-box" data-lp-id="lp-"#),
+        "the saved render carries the AJAX identity while the slug-less preview keeps the plain box:\n{}",
         identified_next_previous.body,
     );
 

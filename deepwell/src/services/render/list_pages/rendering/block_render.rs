@@ -1441,6 +1441,7 @@ impl RenderService {
         if !seal_zero_row_wrapper
             && ajax_eligible
             && pager_route == ListPagesPagerRoute::SavedPage
+            && !page_info.page.is_empty()
             && let Some(marker) = box_open_marker
             && let Some(current_page_id) = current_page_identity
         {
