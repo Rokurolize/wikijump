@@ -164,7 +164,7 @@ async fn page_edit_endpoint_requires_a_lease_for_source_saves() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    assert_contains_error!(leaseless, ErrorType::PageEditLockConflict);
+    assert_contains_error!(leaseless, ErrorType::PageEditLockMissing);
 
     let acquired = run_endpoint!(
         runner,
