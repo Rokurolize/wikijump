@@ -1103,9 +1103,12 @@ pub async fn page_watchers(
         let user = UserService::get_optional(ctx, Reference::Id(user_id))
             .await
             .or_raise(make_error)?;
-        let identity = user
-            .and_then(|user| user.into_public_identity())
-            .ok_or_raise(make_error)?;
+        let Some(user) = user else {
+            return Err(make_error().into());
+        };
+        let Some(identity) = user.into_public_identity() else {
+            continue;
+        };
         watchers.push(identity);
     }
     watchers.sort_by_key(|identity| {
