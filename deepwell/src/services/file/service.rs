@@ -23,7 +23,7 @@ use super::structs::{
     EditFileOutput, GetFile, MoveFile, MoveFileOutput, RestoreFile, RestoreFileOutput,
     RollbackFile, VisibleFileRow, is_fully_imported_page,
 };
-use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
+use crate::error::prelude::{Error, ErrorType, ExnError, OptionExt, Result, ResultExt};
 use crate::hash::slice_to_blob_hash;
 use crate::models::file::{self, Entity as File, Model as FileModel};
 use crate::models::file_revision::Model as FileRevisionModel;
@@ -103,27 +103,6 @@ impl FileService {
                 .or_raise(make_error)?;
         }
 
-        let FinalizeBlobUploadOutput {
-            s3_hash,
-            mime,
-            size,
-            content_type,
-            created: _,
-        } = match direct_upload {
-            None => BlobService::finish_page_upload(
-                ctx,
-                user_id,
-                site_id,
-                page_id,
-                &uploaded_blob_id,
-            )
-            .await
-            .or_raise(make_error)?,
-            Some(data) => BlobService::direct_upload(ctx, data)
-                .await
-                .or_raise(make_error)?,
-        };
-
         let model = file::ActiveModel {
             name: Set(name.clone()),
             site_id: Set(site_id),
@@ -143,39 +122,78 @@ impl FileService {
             Err(error) => return Err(error).or_raise(make_error),
         };
 
-        let output = FileRevisionService::create_first(
-            ctx,
-            CreateFirstFileRevision {
-                page_id,
-                site_id,
-                file_id: file.file_id,
-                user_id,
-                name,
+        let tail = async {
+            let FinalizeBlobUploadOutput {
                 s3_hash,
-                size,
                 mime,
-                content_type: Some(content_type),
-                revision_comments,
-            },
-        )
-        .await
-        .or_raise(make_error)?;
+                size,
+                content_type,
+                created: _,
+            } = match direct_upload {
+                None => BlobService::finish_page_upload(
+                    ctx,
+                    user_id,
+                    site_id,
+                    page_id,
+                    &uploaded_blob_id,
+                )
+                .await
+                .or_raise(make_error)?,
+                Some(data) => BlobService::direct_upload(ctx, data)
+                    .await
+                    .or_raise(make_error)?,
+            };
 
-        AuditService::log(
-            ctx,
-            ip_address,
-            AuditEvent::FileCreate {
-                user_id,
-                site_id,
-                page_id,
-                file_id: output.file_id,
-                revision_id: output.file_revision_id,
-            },
-        )
-        .await
-        .or_raise(make_error)?;
+            let output = FileRevisionService::create_first(
+                ctx,
+                CreateFirstFileRevision {
+                    page_id,
+                    site_id,
+                    file_id: file.file_id,
+                    user_id,
+                    name,
+                    s3_hash,
+                    size,
+                    mime,
+                    content_type: Some(content_type),
+                    revision_comments,
+                },
+            )
+            .await
+            .or_raise(make_error)?;
 
-        Ok(output)
+            AuditService::log(
+                ctx,
+                ip_address,
+                AuditEvent::FileCreate {
+                    user_id,
+                    site_id,
+                    page_id,
+                    file_id: output.file_id,
+                    revision_id: output.file_revision_id,
+                },
+            )
+            .await
+            .or_raise(make_error)?;
+
+            Ok::<_, ExnError>(output)
+        }
+        .await;
+
+        match tail {
+            Ok(output) => Ok(output),
+            Err(error) => {
+                if let Err(cleanup_error) =
+                    File::delete_by_id(file.file_id).exec(txn).await
+                {
+                    error!(
+                        "failed to remove file row {} after a failed create: {cleanup_error}",
+                        file.file_id,
+                    );
+                }
+                Err(error)
+            }
+        }
     }
 
     pub async fn edit(
