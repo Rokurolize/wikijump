@@ -4603,11 +4603,11 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
         "the identified preview must resolve the NextPage selection:\n{}",
         identified_next_previous.body,
     );
-    let selected_item = |section: &str| {
+    fn selected_item(section: &str) -> Option<&str> {
         section
             .find(r#"<div class="list-pages-item">"#)
             .map(|index| &section[index..])
-    };
+    }
     assert_eq!(
         selected_item(identified_next),
         selected_item(saved_next),

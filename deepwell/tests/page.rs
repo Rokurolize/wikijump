@@ -26678,7 +26678,8 @@ AFTER_INLINE
         "live Wikidot preserves text surrounding the inline CountPages line as downstream page source:\n{html}",
     );
     assert_eq!(
-        html.matches(r#"<div class="list-pages-box" data-lp-id="lp-"#).count(),
+        html.matches(r#"<div class="list-pages-box" data-lp-id="lp-"#)
+            .count(),
         1,
         "the eligible outer ListPages box carries the AJAX identity:\n{html}",
     );
