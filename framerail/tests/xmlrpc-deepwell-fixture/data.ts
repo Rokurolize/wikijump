@@ -677,6 +677,24 @@ x^2 + y^2 = z^2
       '@import url("/navigation-style-duplicate-theme.css"); #cascade-probe { color: rgb(0, 0, 255); }'
     ]
   },
+  "listpages-spinner": {
+    page_id: 3000510,
+    revision_id: 9000510,
+    page_created_at: "2026-11-09T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-11-09T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    from_wikidot: true,
+    title: "ListPages Spinner",
+    slug: "listpages-spinner",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: '[[module ListPages category="*" perPage="1"]]%%title%%[[/module]]',
+    compiled_body_html:
+      '<div class="list-pages-box" data-lp-id="lp-9f2c1a4b3d5e6f708192a3b4" data-lp-key="p" data-lp-page="3000510" data-lp-route="listpages-spinner" data-lp-generation="b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4dd4e">\n<ul><li><strong><a id="listpages-spinner-row-one" href="/listpages-spinner-row-one">Spinner Row One</a></strong></li></ul>\n<div class="pager" data-lp-key="p"><span class="pager-no">page 1 of 2</span><span class="current">1</span><span class="target"><a id="listpages-spinner-page-two" href="/listpages-spinner/p/2">2</a></span><span class="target"><a href="/listpages-spinner/p/2">next »</a></span></div>\n</div>'
+  },
   "listpages-navigation": {
     page_id: 3000400,
     revision_id: 9000400,

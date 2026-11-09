@@ -173,6 +173,30 @@ impl CompatHtmlFragments {
         })
     }
 
+    pub(in crate::services::render) fn replace_list_pages_box_open(
+        &mut self,
+        marker: &str,
+        html: String,
+    ) -> bool {
+        let Some(index) = marker
+            .strip_prefix(&self.namespace)
+            .and_then(|suffix| suffix.strip_suffix('X'))
+            .and_then(|digits| digits.parse::<usize>().ok())
+        else {
+            return false;
+        };
+        let Some(CompatFragment::BlockHtml {
+            html: current,
+            list_pages_row_boundary: Some(ListPagesContainerBoundary::Open),
+            ..
+        }) = self.fragments.get_mut(index)
+        else {
+            return false;
+        };
+        *current = html;
+        true
+    }
+
     pub(in crate::services::render) fn push_block_html_unwrapping_residual_div_prefix(
         &mut self,
         html: String,

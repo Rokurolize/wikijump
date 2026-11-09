@@ -25921,7 +25921,7 @@ async fn listpages_perpage_renders_wikidot_pager_controls() {
         "fixture-listpages-pager-target-00",
         "Fixture ListPages Pager Target 19",
         "fixture-listpages-pager-target-19",
-        r#"<div class="pager">"#,
+        r#"<div class="pager" data-lp-key="p">"#,
         r#"<span class="current">1</span>"#,
         ">2</a>",
         ">3</a>",

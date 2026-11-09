@@ -107,8 +107,9 @@ pub(super) use self::generated_html::{
 #[cfg(test)]
 pub(super) use self::pagination::ListPagesPagerArgs;
 pub(super) use self::pagination::{
-    ListPagesPagerRoute, list_pages_feed_info_html, list_pages_pager_window,
-    push_list_pages_pager,
+    ListPagesPagerRoute, list_pages_ajax_box_opening, list_pages_ajax_identity,
+    list_pages_feed_info_html, list_pages_fragment_supports_ajax_pagination,
+    list_pages_pager_window, push_list_pages_pager,
 };
 #[cfg(test)]
 pub(super) use self::parents::ListPagesParentDisplay;

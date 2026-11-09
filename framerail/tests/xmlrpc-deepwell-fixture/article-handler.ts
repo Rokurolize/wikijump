@@ -579,6 +579,26 @@ const pageForArticleRoute = (requestRoute: { slug: string; extra: string }) => {
       ].join("")
     }
   }
+  if (route.slug === "listpages-spinner") {
+    if (route.extra !== "" && route.extra !== "p/2") {
+      return null
+    }
+    if (route.extra === "") {
+      return page
+    }
+    return {
+      ...page,
+      compiled_body_html: [
+        '<div class="list-pages-box" data-lp-id="lp-9f2c1a4b3d5e6f708192a3b4" data-lp-key="p" data-lp-page="3000510" data-lp-route="listpages-spinner" data-lp-generation="b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4dd4e">',
+        "\n<ul><li><strong>",
+        '<a id="listpages-spinner-row-two" href="/listpages-spinner-row-two">Spinner Row Two</a>',
+        "</strong></li></ul>\n",
+        '<div class="pager" data-lp-key="p"><span class="pager-no">page 2 of 2</span>',
+        '<span class="target"><a id="listpages-spinner-page-one" href="/listpages-spinner/p/1">1</a></span>',
+        '<span class="current">2</span></div>\n</div>'
+      ].join("")
+    }
+  }
   if (route.slug === "search:site") {
     return SEARCH_SITE_EXTRA.test(route.extra) ? page : null
   }
