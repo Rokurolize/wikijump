@@ -55,6 +55,7 @@
     installWikidotHovertips
   } from "$lib/wikidot/wikidot-hovertips"
   import { installWikidotOdates } from "$lib/wikidot/wikidot-odates"
+  import { installListPagesPagination } from "$lib/wikidot/wikidot-list-pages"
   import ManageSitePanel from "$lib/wikidot/ManageSitePanel.svelte"
   import WikidotBottomToolbar from "$lib/wikidot/WikidotBottomToolbar.svelte"
   import WikidotLoginDialog from "$lib/wikidot/WikidotLoginDialog.svelte"
@@ -253,6 +254,9 @@
     const uninstallOdates = isImportedWikidotLayout
       ? installWikidotOdates(document)
       : () => {}
+    const uninstallListPagesPagination = isImportedWikidotLayout
+      ? installListPagesPagination(window)
+      : () => {}
     const wikidotSearchForm =
       document.querySelector<HTMLFormElement>("#search-top-box-form")
     const wikidotSearchInput = document.querySelector<HTMLInputElement>(
@@ -274,6 +278,7 @@
       uninstallLoginActionHandler()
       uninstallHovertips()
       uninstallOdates()
+      uninstallListPagesPagination()
       wikidotSearchForm?.removeEventListener("submit", submitWikidotSearch)
       wikidotSearchInput?.removeEventListener("focus", clearWikidotSearchPrompt)
     }

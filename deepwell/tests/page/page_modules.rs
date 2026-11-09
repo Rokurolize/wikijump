@@ -1037,8 +1037,8 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
 
     let title_prev = section(&html, "TITLE_PREV_START", "TITLE_PREV_END");
     assert!(
-        title_prev.contains(r#"<div class="list-pages-box">"#)
-            && title_prev.contains(r#"<div class="list-pages-item">"#)
+        title_prev.contains(r#"<div class="list-pages-box" data-lp-id="lp-"#)
+            && title_prev.contains(r#"<div class="list-pages-item">"#,)
             && title_prev.contains(
                 r#"PREV_TITLE=<a href="/fixture-nextpreviouspage:charlie">Charlie NextPreviousPage</a>|Charlie NextPreviousPage|charlie|fixture-nextpreviouspage:charlie"#,
             ),
@@ -1085,7 +1085,7 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
         r#"style="background-image:url(https://www.wikidot.com/userkarma.php?u={CREATOR_ID})""#
     );
     for expected in [
-        r#"<div class="list-pages-box">"#,
+        r#"<div class="list-pages-box" data-lp-id="lp-"#,
         r#"<div class="list-pages-item">"#,
         r#"<h1><span><a href="/fixture-nextpreviouspage:bravo">Bravo NextPreviousPage</a></span></h1>"#,
         r#"<p>by <span class="printuser avatarhover">"#,
@@ -2830,7 +2830,9 @@ async fn list_pages_saved_view_preserves_argument_order_around_the_pager() {
     assert!(
         reverse_order.contains(&format!("ROW3:{ITEM_PREFIX}-3|"))
             && reverse_order.contains(&format!("href=\"/{HOLDER}/p/1/tag/alpha\""))
-            && reverse_order.contains(r#"<div class="pager"><span class="pager-no">"#),
+            && reverse_order.contains(
+                r#"<div class="pager" data-lp-key="p"><span class="pager-no">"#
+            ),
         "the pager replaces a numeric page argument in place without reordering later arguments:\n{reverse_order}",
     );
     assert!(
@@ -4601,9 +4603,21 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
         "the identified preview must resolve the NextPage selection:\n{}",
         identified_next_previous.body,
     );
+    fn selected_item(section: &str) -> Option<&str> {
+        section
+            .find(r#"<div class="list-pages-item">"#)
+            .map(|index| &section[index..])
+    }
     assert_eq!(
-        identified_next, saved_next,
+        selected_item(identified_next),
+        selected_item(saved_next),
         "the identified preview must resolve the same NextPage selection as the saved render:\n{}",
+        identified_next_previous.body,
+    );
+    assert!(
+        identified_next.contains(r#"<div class="list-pages-box">"#)
+            && saved_next.contains(r#"<div class="list-pages-box" data-lp-id="lp-"#),
+        "the saved render carries the AJAX identity while the slug-less preview keeps the plain box:\n{}",
         identified_next_previous.body,
     );
     let identified_prev = section(
@@ -4622,8 +4636,15 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
         identified_next_previous.body,
     );
     assert_eq!(
-        identified_prev, saved_prev,
+        selected_item(identified_prev),
+        selected_item(saved_prev),
         "the identified preview must resolve the same PreviousPage selection as the saved render:\n{}",
+        identified_next_previous.body,
+    );
+    assert!(
+        identified_prev.contains(r#"<div class="list-pages-box">"#)
+            && saved_prev.contains(r#"<div class="list-pages-box" data-lp-id="lp-"#),
+        "the saved render carries the AJAX identity while the slug-less preview keeps the plain box:\n{}",
         identified_next_previous.body,
     );
 

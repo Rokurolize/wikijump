@@ -3865,9 +3865,9 @@ async fn listpages_uses_limit_as_total_and_defaults_pagination_to_twenty() {
                 "the live-compatible pager should render for {attributes:?}:\n{preview}",
             );
             assert!(
-                preview
-                    .contains(r#"<div class="pager"><span class="pager-no">page 1 of "#,)
-                    && preview.contains(r#"href="/ajax-module-connector.php/p/2""#,),
+                preview.contains(
+                    r#"<div class="pager" data-lp-key="p"><span class="pager-no">page 1 of "#,
+                ) && preview.contains(r#"href="/ajax-module-connector.php/p/2""#),
                 "preview pagers must have direct span children and Ajax-module hrefs for {attributes:?}:\n{preview}",
             );
             assert!(
@@ -3909,7 +3909,7 @@ async fn listpages_unwrapped_separate_row_is_adjacent_to_its_pager() {
         body,
         concat!(
             r#"<div class="list-pages-item"><p>component:image-block|</p></div>"#,
-            r#"<div class="pager"><span class="pager-no">page 1 of 2</span>"#,
+            r#"<div class="pager" data-lp-key="p"><span class="pager-no">page 1 of 2</span>"#,
             r#"<span class="current">1</span>"#,
             r#"<span class="target"><a href="/ajax-module-connector.php/p/2">2</a></span>"#,
             r#"<span class="target"><a href="/ajax-module-connector.php/p/2">next »</a></span>"#,
@@ -7281,7 +7281,7 @@ async fn row_bearing_generated_include_keeps_the_pager_block_boundary() {
     .body;
 
     assert!(
-        preview.contains(r#"<div class="pager">"#)
+        preview.contains(r#"<div class="pager" data-lp-key="p">"#)
             && preview.contains("AFTER-INCLUDE</p>")
             && !preview.contains("WIKIJUMPWIKIDOTCOMPATHTML"),
         "the pager must remain a trusted sibling block after row syntax:\n{preview}",
@@ -7562,7 +7562,7 @@ async fn wikidot_ajax_listpages_p_parameter_selects_the_rendered_page() {
     assert!(
         output
             .body
-            .contains(r#"<div class="pager"><span class="pager-no">"#)
+            .contains(r#"<div class="pager" data-lp-key="p"><span class="pager-no">"#,)
             && output
                 .body
                 .contains(r#"href="/ajax-module-connector.php/p/1""#),

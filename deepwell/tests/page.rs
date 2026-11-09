@@ -25921,7 +25921,7 @@ async fn listpages_perpage_renders_wikidot_pager_controls() {
         "fixture-listpages-pager-target-00",
         "Fixture ListPages Pager Target 19",
         "fixture-listpages-pager-target-19",
-        r#"<div class="pager">"#,
+        r#"<div class="pager" data-lp-key="p">"#,
         r#"<span class="current">1</span>"#,
         ">2</a>",
         ">3</a>",
@@ -26508,7 +26508,7 @@ INNER_TOTAL=%%total%%; INNER_COUNT=%%count%%; [[[start|start link]]]
     // Frozen Wikidot oracle: countpages-inside-listpages-live.json,
     // case standalone-countpages-opening-inside-listpages-body. One matching
     // page produces exactly one empty ListPages item.
-    let list_pages_box = r#"<div class="list-pages-box">"#;
+    let list_pages_box = r#"<div class="list-pages-box" data-lp-id="lp-"#;
     let list_pages_item = r#"<div class="list-pages-item">"#;
     assert_eq!(
         html.matches(list_pages_box).count(),
@@ -26678,8 +26678,14 @@ AFTER_INLINE
         "live Wikidot preserves text surrounding the inline CountPages line as downstream page source:\n{html}",
     );
     assert_eq!(
+        html.matches(r#"<div class="list-pages-box" data-lp-id="lp-"#)
+            .count(),
+        1,
+        "the eligible outer ListPages box carries the AJAX identity:\n{html}",
+    );
+    assert_eq!(
         html.matches(r#"<div class="list-pages-box">"#).count(),
-        2,
+        1,
         "live Wikidot emits the default outer ListPages box plus a second legacy list-pages-box around following text:\n{html}",
     );
     for forbidden in [

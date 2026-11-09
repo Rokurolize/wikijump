@@ -563,7 +563,7 @@ async fn listpages_live_evidenced_noop_arguments_render_rows() {
         "accepted ListPages presentation arguments should still render rows:\n{html}"
     );
     assert!(
-        html.contains(r#"<div class="list-pages-box">"#),
+        html.contains(r#"<div class="list-pages-box" data-lp-id="lp-"#),
         "the live fixed ListPages wrapper should remain present:\n{html}"
     );
     for forbidden in [
@@ -716,7 +716,7 @@ async fn listpages_append_line_matches_wikidot_row_and_pager_ordering() {
         .expect("second ordered row should render");
     let post = html.find(POST).expect("postlude should render with rows");
     let pager = html
-        .find(r#"<div class="pager">"#)
+        .find(r#"<div class="pager" data-lp-key="p">"#)
         .expect("perPage should render the pager after appendLine");
     assert!(
         pre < alpha && alpha < beta && beta < post && post < pager,
@@ -3432,7 +3432,10 @@ async fn listpages_legacy_skip_current_and_tag_target_match_live_wikidot() {
     for marker in ["SKIP_YES", "SKIP_TRUE", "SAME_TAGS"] {
         let section = section(marker);
         assert!(section.contains(TARGET_SLUG), "{marker}:\n{section}");
-        assert!(!section.contains(HOLDER_SLUG), "{marker}:\n{section}");
+        assert!(
+            !section.contains(&format!("<p>{HOLDER_SLUG}")),
+            "{marker}:\n{section}"
+        );
         assert!(
             !section.contains("[[module ListPages"),
             "{marker}:\n{section}"
@@ -3546,7 +3549,7 @@ async fn listpages_unclosed_empty_body_uses_the_live_default_template() {
 
     let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
     for expected in [
-        r#"<div class="list-pages-box">"#,
+        r#"<div class="list-pages-box" data-lp-id="lp-"#,
         r#"<div class="list-pages-item">"#,
         "<h1>",
         r#"href="/fixture-listpages-default-template-target""#,

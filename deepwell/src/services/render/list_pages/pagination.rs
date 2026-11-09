@@ -27,6 +27,8 @@ use super::super::url_arguments::list_pages_page_argument_key;
 use super::ListPagesArguments;
 use crate::services::render::UrlArguments;
 use ftml::data::PageInfo;
+use sha2::{Digest, Sha256};
+use std::borrow::Cow;
 use std::collections::BTreeSet;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -95,7 +97,10 @@ pub(in crate::services::render) fn push_list_pages_pager(
         return;
     }
 
-    output.push_str(r#"<div class="pager">"#);
+    let page_key = list_pages_page_argument_key(url_attr_prefix);
+    output.push_str(r#"<div class="pager" data-lp-key=""#);
+    output.push_str(&escape_list_pages_html_attr(&page_key));
+    output.push_str(r#"">"#);
     output.push_str(&format!(
         r#"<span class="pager-no">page {current_page} of {page_count}</span>"#
     ));
@@ -335,6 +340,329 @@ fn list_pages_pager_href_path(
     format!("/{}", segments.join("/"))
 }
 
+pub(in crate::services::render) struct ListPagesAjaxIdentity {
+    pub(in crate::services::render) id: String,
+    pub(in crate::services::render) key: String,
+    pub(in crate::services::render) page: i64,
+    pub(in crate::services::render) route: String,
+    pub(in crate::services::render) generation: String,
+}
+
+pub(in crate::services::render) fn list_pages_ajax_identity(
+    site_id: i64,
+    page_id: i64,
+    module_offset: usize,
+    page_slug: &str,
+    url_attr_prefix: Option<&str>,
+) -> ListPagesAjaxIdentity {
+    let key = list_pages_page_argument_key(url_attr_prefix).into_owned();
+    let mut id_hasher = Sha256::new();
+    id_hasher.update(b"wikijump-listpages-ajax-id");
+    id_hasher.update([0]);
+    id_hasher.update(site_id.to_le_bytes());
+    id_hasher.update(page_id.to_le_bytes());
+    id_hasher.update((module_offset as u64).to_le_bytes());
+    let id = format!("lp-{}", &hex::encode(id_hasher.finalize())[..24]);
+
+    let mut generation_hasher = Sha256::new();
+    generation_hasher.update(b"wikijump-listpages-ajax-generation");
+    generation_hasher.update([0]);
+    generation_hasher.update(site_id.to_le_bytes());
+    generation_hasher.update(page_id.to_le_bytes());
+    generation_hasher.update((module_offset as u64).to_le_bytes());
+    let generation = hex::encode(generation_hasher.finalize());
+
+    ListPagesAjaxIdentity {
+        id,
+        key,
+        page: page_id,
+        route: page_slug.to_owned(),
+        generation,
+    }
+}
+
+pub(in crate::services::render) fn list_pages_ajax_box_opening(
+    identity: &ListPagesAjaxIdentity,
+) -> String {
+    format!(
+        concat!(
+            r#"<div class="list-pages-box" data-lp-id="{}" data-lp-key="{}" "#,
+            r#"data-lp-page="{}" data-lp-route="{}" data-lp-generation="{}">"#,
+        ),
+        identity.id,
+        escape_list_pages_html_attr(&identity.key),
+        identity.page,
+        escape_list_pages_html_attr(&identity.route),
+        identity.generation,
+    )
+}
+
+fn list_pages_ajax_tag_name_end(tag: &str) -> Option<usize> {
+    let mut len = 0;
+    for byte in tag.bytes() {
+        if byte.is_ascii_alphanumeric() {
+            len += 1;
+        } else {
+            break;
+        }
+    }
+    if len == 0 { None } else { Some(len) }
+}
+
+fn list_pages_ajax_forbidden_class(token: &str) -> bool {
+    let lower = token.to_ascii_lowercase();
+    let rest = if let Some(rest) = lower.strip_prefix("footnote") {
+        rest
+    } else if let Some(rest) = lower.strip_prefix("bib") {
+        if rest.is_empty() || rest == "cite" || rest == "item" || rest == "items" {
+            return true;
+        }
+        if let Some(suffix) = rest
+            .strip_prefix("cite")
+            .or_else(|| rest.strip_prefix("item"))
+            .or_else(|| rest.strip_prefix("items"))
+            && (suffix.starts_with('-') || suffix.starts_with('_'))
+        {
+            return true;
+        }
+        if rest.starts_with('-') || rest.starts_with('_') {
+            return true;
+        }
+        return false;
+    } else if lower == "math-equation"
+        || lower == "equation-ref"
+        || lower == "eref"
+        || lower == "yui-navset"
+        || lower == "wikidot-hybrid-module"
+        || lower == "foldable-list-container"
+    {
+        return true;
+    } else {
+        return lower.starts_with("math-equation-")
+            || lower.starts_with("math-equation_")
+            || lower.starts_with("equation-ref-")
+            || lower.starts_with("equation-ref_")
+            || lower.starts_with("eref-")
+            || lower.starts_with("eref_")
+            || lower.starts_with("yui-navset-")
+            || lower.starts_with("yui-navset_")
+            || lower.starts_with("wikidot-hybrid-module-")
+            || lower.starts_with("wikidot-hybrid-module_")
+            || lower.starts_with("foldable-list-container-")
+            || lower.starts_with("foldable-list-container_");
+    };
+    if rest.is_empty() || rest == "s" || rest == "ref" {
+        return true;
+    }
+    rest.starts_with("s-")
+        || rest.starts_with("s_")
+        || rest.starts_with("ref-")
+        || rest.starts_with("ref_")
+        || rest.starts_with('-')
+        || rest.starts_with('_')
+}
+
+fn list_pages_ajax_user_info_anchor(tag: &str, name: &str, value: &str) -> bool {
+    if !tag.eq_ignore_ascii_case("a") || !name.eq_ignore_ascii_case("onclick") {
+        return false;
+    }
+    let body = value.strip_prefix("WIKIDOT.page.listeners.userInfo(");
+    let Some(tail) = body else {
+        return false;
+    };
+    let digits = tail.bytes().take_while(u8::is_ascii_digit).count();
+    if !(1..=10).contains(&digits) {
+        return false;
+    }
+    if tail.as_bytes().first() == Some(&b'0') {
+        return false;
+    }
+    &tail.as_bytes()[digits..] == b"); return false;"
+}
+
+fn list_pages_ajax_scan_tag(tag: &str) -> bool {
+    let bytes = tag.as_bytes();
+    let mut index = 0;
+    while index < bytes.len() {
+        while index < bytes.len()
+            && (bytes[index].is_ascii_whitespace() || bytes[index] == b'/')
+        {
+            index += 1;
+        }
+        if index >= bytes.len() {
+            break;
+        }
+        if bytes[index] == b'>' {
+            break;
+        }
+        let name_start = index;
+        while index < bytes.len()
+            && (bytes[index].is_ascii_alphanumeric()
+                || bytes[index] == b'-'
+                || bytes[index] == b'_'
+                || bytes[index] == b':'
+                || bytes[index] == b'.')
+        {
+            index += 1;
+        }
+        if name_start == index {
+            index += 1;
+            continue;
+        }
+        let name = &tag[name_start..index];
+        if name.contains(':') || name.contains('.') {
+            continue;
+        }
+        let is_event_handler =
+            name.len() > 2 && name.as_bytes()[..2].eq_ignore_ascii_case(b"on");
+        while index < bytes.len() && bytes[index].is_ascii_whitespace() {
+            index += 1;
+        }
+        if is_event_handler && (index >= bytes.len() || bytes[index] != b'=') {
+            return false;
+        }
+        if index < bytes.len() && bytes[index] == b'=' {
+            index += 1;
+            while index < bytes.len() && bytes[index].is_ascii_whitespace() {
+                index += 1;
+            }
+            let value = if index < bytes.len()
+                && (bytes[index] == b'"' || bytes[index] == b'\'')
+            {
+                let quote = bytes[index];
+                index += 1;
+                let value_start = index;
+                while index < bytes.len() && bytes[index] != quote {
+                    index += 1;
+                }
+                let value = &tag[value_start..index];
+                if index < bytes.len() {
+                    index += 1;
+                }
+                value
+            } else {
+                return false;
+            };
+            if is_event_handler {
+                let tag_name_end = list_pages_ajax_tag_name_end(tag);
+                let tag_name = tag_name_end.map(|end| &tag[..end]).unwrap_or_default();
+                if !list_pages_ajax_user_info_anchor(tag_name, name, value) {
+                    return false;
+                }
+            }
+            if name.eq_ignore_ascii_case("class")
+                && value
+                    .split(|byte: char| byte.is_ascii_whitespace())
+                    .any(list_pages_ajax_forbidden_class)
+            {
+                return false;
+            }
+        }
+    }
+    true
+}
+
+fn strip_list_pages_wikidot_comments(fragment: &str) -> Cow<'_, str> {
+    let mut stripped: Option<String> = None;
+    let mut cursor = 0;
+    while let Some(relative_open) = fragment[cursor..].find("[!--") {
+        let open = cursor + relative_open;
+        let Some(relative_close) = fragment[open..].find("--]") else {
+            break;
+        };
+        stripped
+            .get_or_insert_with(|| String::with_capacity(fragment.len()))
+            .push_str(&fragment[cursor..open]);
+        cursor = open + relative_close + "--]".len();
+    }
+    match stripped {
+        Some(mut result) => {
+            result.push_str(&fragment[cursor..]);
+            Cow::Owned(result)
+        }
+        None => Cow::Borrowed(fragment),
+    }
+}
+
+pub(in crate::services::render) fn list_pages_fragment_supports_ajax_pagination(
+    fragment: &str,
+) -> bool {
+    const DANGEROUS_TAGS: [&str; 7] = [
+        "script", "style", "link", "iframe", "object", "embed", "form",
+    ];
+    const WIKITEXT_CONSTRUCTS: [&str; 3] = ["[[html", "[[module", "[[include"];
+    let without_comments = strip_list_pages_wikidot_comments(fragment);
+    let fragment: &str = &without_comments;
+    let lower = fragment.to_ascii_lowercase();
+    for construct in WIKITEXT_CONSTRUCTS {
+        if lower.contains(construct) {
+            return false;
+        }
+    }
+    if lower.contains("list-pages-box") {
+        return false;
+    }
+    let bytes = fragment.as_bytes();
+    let mut index = 0;
+    while index < bytes.len() {
+        let Some(open) = fragment[index..].find('<') else {
+            break;
+        };
+        index += open;
+        let rest = &fragment[index + 1..];
+        if rest.starts_with("!--") {
+            if let Some(end) = rest.find("-->") {
+                index += 1 + end + 3;
+                continue;
+            }
+            return false;
+        }
+        let tag_body = &fragment[index + 1..];
+        let stripped = tag_body.strip_prefix('/').unwrap_or(tag_body);
+        let tag_name_end = list_pages_ajax_tag_name_end(stripped);
+        let Some(name_end) = tag_name_end else {
+            index += 1;
+            continue;
+        };
+        let name = stripped[..name_end].to_ascii_lowercase();
+        if DANGEROUS_TAGS.contains(&name.as_str()) {
+            let next = stripped[name_end..].bytes().next();
+            if !matches!(next, Some(byte) if byte.is_ascii_alphanumeric()) {
+                return false;
+            }
+        }
+        let mut cursor = index + 1;
+        let mut tag_end = None;
+        while cursor < bytes.len() {
+            match bytes[cursor] {
+                b'"' | b'\'' => {
+                    let quote = bytes[cursor];
+                    cursor += 1;
+                    while cursor < bytes.len() && bytes[cursor] != quote {
+                        cursor += 1;
+                    }
+                    cursor += 1;
+                }
+                b'>' => {
+                    tag_end = Some(cursor);
+                    break;
+                }
+                _ => cursor += 1,
+            }
+        }
+        let Some(end) = tag_end else {
+            return false;
+        };
+        if !tag_body.starts_with('/')
+            && !list_pages_ajax_scan_tag(&fragment[index + 1..end])
+        {
+            return false;
+        }
+        index = end + 1;
+    }
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -455,5 +783,105 @@ mod tests {
         );
         assert!(!html.contains("wikidot.com"));
         assert!(html.contains("/common--theme/base/images/feed/feed-icon-14x14.png"));
+    }
+
+    #[test]
+    fn ajax_identity_is_deterministic_and_prefixed() {
+        let first = list_pages_ajax_identity(7, 19377471, 512, "scp-series", None);
+        let second = list_pages_ajax_identity(7, 19377471, 512, "scp-series", None);
+        assert_eq!(first.id, second.id);
+        assert_eq!(first.generation, second.generation);
+        assert!(first.id.starts_with("lp-"), "{}", first.id);
+        assert_eq!(first.id.len(), 3 + 24, "{}", first.id);
+        assert!(first.id[3..].bytes().all(|byte| byte.is_ascii_hexdigit()));
+        assert_eq!(first.generation.len(), 64, "{}", first.generation);
+        assert!(
+            first
+                .generation
+                .bytes()
+                .all(|byte| byte.is_ascii_hexdigit()),
+            "{}",
+            first.generation
+        );
+        assert_eq!(first.key, "p");
+        assert_eq!(first.page, 19377471);
+
+        let prefixed =
+            list_pages_ajax_identity(7, 19377471, 512, "scp-series", Some("x"));
+        assert_eq!(prefixed.key, "x_p");
+        assert_eq!(first.id, prefixed.id);
+        assert_eq!(first.generation, prefixed.generation);
+
+        let moved = list_pages_ajax_identity(7, 19377471, 513, "scp-series", None);
+        assert_ne!(first.id, moved.id);
+        assert_ne!(first.generation, moved.generation);
+    }
+
+    #[test]
+    fn ajax_box_opening_carries_the_live_attribute_shapes() {
+        let identity = list_pages_ajax_identity(7, 19377471, 512, "scp-series", None);
+        let opening = list_pages_ajax_box_opening(&identity);
+        assert!(opening.starts_with(r#"<div class="list-pages-box" data-lp-id=""#));
+        assert!(opening.contains(r#" data-lp-key="p""#));
+        assert!(opening.contains(r#" data-lp-page="19377471""#));
+        assert!(opening.contains(r#" data-lp-route="scp-series""#));
+        assert!(opening.ends_with('>'));
+    }
+
+    #[test]
+    fn ajax_pagination_accepts_plain_rows_and_user_info_byline() {
+        assert!(list_pages_fragment_supports_ajax_pagination(
+            "<ul><li><strong><a href=\"/lpspin:t12\">LPSPIN T12</a></strong></li></ul>",
+        ));
+        assert!(list_pages_fragment_supports_ajax_pagination(concat!(
+            r#"<div class="list-pages-item"><h1><span><a href="/lpspin:t12">T12</a></span></h1>"#,
+            r#"<p>by <span class="printuser avatarhover">"#,
+            r#"<a href="https://www.wikidot.com/user:info/someone" "#,
+            r#"onclick="WIKIDOT.page.listeners.userInfo(8955132); return false;">"#,
+            r#"someone</a></span> "#,
+            r#"<span class="odate time_1794216746">09 Nov 2026</span></p></div>"#,
+        ),));
+    }
+
+    #[test]
+    fn ajax_pagination_rejects_active_and_nested_content() {
+        for fragment in [
+            r#"<p><iframe src="//example.com/frame.html"></iframe></p>"#,
+            r#"<p><script>alert(1)</script></p>"#,
+            r#"<p><object data="/file"></object></p>"#,
+            "[[html]]<p>authored block</p>[[/html]]",
+            "[[module ListPages category=\"*\"]][[/module]]",
+            "[[include :scp-wiki:component:test]]",
+            r#"<div class="list-pages-box"><p>nested</p></div>"#,
+            r#"<p><a href="/x" onclick="alert(1)">x</a></p>"#,
+            r#"<p><a href="/x" onclick>x</a></p>"#,
+            r#"<p class="footnote">note</p>"#,
+            r#"<div class="yui-navset"><p>tabs</p></div>"#,
+            "<!-- unterminated comment <p>",
+            "[!-- unterminated wikidot comment [[module CountPages]]",
+        ] {
+            assert!(
+                !list_pages_fragment_supports_ajax_pagination(fragment),
+                "should reject {fragment:?}",
+            );
+        }
+    }
+
+    #[test]
+    fn ajax_pagination_ignores_comments_and_unrelated_names() {
+        assert!(list_pages_fragment_supports_ajax_pagination(
+            "<!-- <iframe src=\"x\"></iframe> --><p>ok</p>",
+        ));
+        assert!(list_pages_fragment_supports_ajax_pagination(concat!(
+            "CONTROL_BEFORE\n[!--\n",
+            "[[module CountPages category=\"*\" limit=\"10\"]]\n",
+            "--]\nCONTROL_AFTER",
+        )));
+        assert!(list_pages_fragment_supports_ajax_pagination(
+            "<p>discusses the format element and footnote text</p>",
+        ));
+        assert!(list_pages_fragment_supports_ajax_pagination(
+            r#"<p class="printuser">by someone</p>"#,
+        ));
     }
 }

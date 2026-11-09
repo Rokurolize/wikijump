@@ -1,4 +1,4 @@
-use super::super::pagination::ListPagesPagerArgs;
+use super::super::pagination::{ListPagesPagerArgs, ListPagesPagerRoute};
 use super::super::rendering_support::{
     ListPagesBlockRenderArgs, ListPagesSelectedContentArgs,
 };
@@ -19,25 +19,27 @@ use super::{
     append_list_pages_runtime_text_ranges, escape_html_text,
     finish_or_defer_list_pages_delayed_output_with_modes, has_include_opening_candidate,
     has_list_pages_module_opening_candidate, is_list_pages_visible_tag,
+    list_pages_ajax_box_opening, list_pages_ajax_identity,
     list_pages_body_uses_first_image, list_pages_content_query_target,
     list_pages_created_by_slug, list_pages_feed_info_html,
     list_pages_feed_only_render_result, list_pages_first_paragraph,
-    list_pages_parent_fullname, list_pages_render_diagnostics,
-    list_pages_row_markup_bytes, list_pages_row_scan_target,
-    list_pages_runtime_container_open, list_pages_runtime_row_container_close,
-    list_pages_runtime_row_container_open, list_pages_template_has_block_section,
-    list_pages_template_starts_with_inline_anchor, list_pages_unknown_link_target_slugs,
-    load_list_pages_child_counts, load_list_pages_data_form_definitions,
-    load_list_pages_first_images, load_list_pages_parent_displays,
-    native_numbered_list_content, neutralize_authored_markers, page_category,
-    page_query_cap_requires_original_module, parse_static_wikidot_data_form_values,
-    prepare_delayed_list_pages_row_with_budget, push_list_pages_generated_output,
-    push_list_pages_generated_output_with_cost, push_list_pages_pager,
-    push_list_pages_trailing_runtime_blocks, render_list_pages_default_summary_source,
-    render_list_pages_selected_content_source, render_page_query_uses_single_scan,
-    resolve_list_pages_first_image, seal_zero_row_list_pages_wrapper,
-    seed_random_list_pages_order, select_list_pages_rows,
-    should_render_current_page_list_pages_row, wikidot_content_section,
+    list_pages_fragment_supports_ajax_pagination, list_pages_parent_fullname,
+    list_pages_render_diagnostics, list_pages_row_markup_bytes,
+    list_pages_row_scan_target, list_pages_runtime_container_open,
+    list_pages_runtime_row_container_close, list_pages_runtime_row_container_open,
+    list_pages_template_has_block_section, list_pages_template_starts_with_inline_anchor,
+    list_pages_unknown_link_target_slugs, load_list_pages_child_counts,
+    load_list_pages_data_form_definitions, load_list_pages_first_images,
+    load_list_pages_parent_displays, native_numbered_list_content,
+    neutralize_authored_markers, page_category, page_query_cap_requires_original_module,
+    parse_static_wikidot_data_form_values, prepare_delayed_list_pages_row_with_budget,
+    push_list_pages_generated_output, push_list_pages_generated_output_with_cost,
+    push_list_pages_pager, push_list_pages_trailing_runtime_blocks,
+    render_list_pages_default_summary_source, render_list_pages_selected_content_source,
+    render_page_query_uses_single_scan, resolve_list_pages_first_image,
+    seal_zero_row_list_pages_wrapper, seed_random_list_pages_order,
+    select_list_pages_rows, should_render_current_page_list_pages_row,
+    wikidot_content_section,
 };
 
 impl RenderService {
@@ -48,6 +50,7 @@ impl RenderService {
             ctx,
             page_context,
             pager_route,
+            module_offset,
             compat_html,
             viewer_user_id,
             page_info,
@@ -880,6 +883,7 @@ impl RenderService {
             .flatten()
             .all(|source| !has_include_opening_candidate(source));
         let mut output = String::new();
+        let mut box_open_marker: Option<String> = None;
         if wrapper && !seal_zero_row_wrapper {
             let opening =
                 list_pages_runtime_container_open(compat_html, "list-pages-box");
@@ -893,7 +897,22 @@ impl RenderService {
                     "wrapper opening exceeds generated-output budget",
                 ));
             }
+            box_open_marker = Some(opening);
         }
+        let mut ajax_eligible =
+            list_pages_fragment_supports_ajax_pagination(template.body())
+                && template
+                    .head_section()
+                    .is_none_or(list_pages_fragment_supports_ajax_pagination)
+                && template
+                    .foot_section()
+                    .is_none_or(list_pages_fragment_supports_ajax_pagination)
+                && prepend_line
+                    .as_deref()
+                    .is_none_or(list_pages_fragment_supports_ajax_pagination)
+                && append_line
+                    .as_deref()
+                    .is_none_or(list_pages_fragment_supports_ajax_pagination);
         let mut included_pages = Vec::new();
         let mut runtime_css_insertions = Vec::new();
         let mut delayed_occurrences = Vec::new();
@@ -1288,6 +1307,11 @@ impl RenderService {
             }
             let logical_body_bytes = prepared_row.logical_body_bytes;
             let rendered_body = prepared_row.body;
+            if ajax_eligible
+                && !list_pages_fragment_supports_ajax_pagination(&rendered_body)
+            {
+                ajax_eligible = false;
+            }
             let generated_row_open = if separate {
                 format!("{}\n\n", list_pages_runtime_row_container_open(compat_html),)
             } else {
@@ -1413,6 +1437,25 @@ impl RenderService {
                 settings,
                 compat_html,
             )?;
+        }
+        if !seal_zero_row_wrapper
+            && ajax_eligible
+            && pager_route == ListPagesPagerRoute::SavedPage
+            && !page_info.page.is_empty()
+            && let Some(marker) = box_open_marker
+            && let Some(current_page_id) = current_page_identity
+        {
+            let identity = list_pages_ajax_identity(
+                current_site_id,
+                current_page_id,
+                module_offset,
+                page_info.page.as_ref(),
+                url_attr_prefix.as_deref(),
+            );
+            compat_html.replace_list_pages_box_open(
+                &marker,
+                list_pages_ajax_box_opening(&identity),
+            );
         }
         if wants_content {
             expansion_budget.consume_content_rows(rendered_rows);

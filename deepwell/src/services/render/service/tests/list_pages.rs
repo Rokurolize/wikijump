@@ -2015,14 +2015,15 @@ fn generated_list_pages_pager_still_renders_without_forgeable_marker() {
         total_selected: 5,
     });
 
-    assert!(wikitext.starts_with(r#"<div class="pager">"#));
+    assert!(wikitext.starts_with(r#"<div class="pager" data-lp-key="p">"#));
     assert!(!wikitext.contains("data-wikijump-compat-pager"));
 
     let rendered = render_trusted_wikidot_block_html(wikitext);
 
     assert!(
-        rendered
-            .contains(r#"<div class="pager"><span class="pager-no">page 1 of 3</span>"#,),
+        rendered.contains(
+            r#"<div class="pager" data-lp-key="p"><span class="pager-no">page 1 of 3</span>"#,
+        ),
         "generated pager should preserve the expected block structure",
     );
     assert!(
