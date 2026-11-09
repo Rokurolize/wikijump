@@ -5332,3 +5332,9 @@ EstrellaYoshteのロゴは、このテーマで広く使われる定番素材で
 /* SCP-JP Wikidot flopstyle-dark narrow submenu: keep the open mobile submenu above the page-title artwork. */
 #top-bar .mobile-top-bar>ul>li>ul{z-index:100}
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot credit module correction: the JP credit module emits the info anchor as a direct child of .creditButton (EN wraps it in a <p>), so the theme's creditButton p rules never reach it. The same declarations are retargeted to the JP structure. The EN .creditButtonStandalone variant has no JP counterpart and is not carried over. */
+#page-content .creditButton a { padding: 0; border: 0; font-size: .9rem; }
+.rate-box-with-credit-button .creditButton a { color: var(--textColorAlt); }
+[[/module]]

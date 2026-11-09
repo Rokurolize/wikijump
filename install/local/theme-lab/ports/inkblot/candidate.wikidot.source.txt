@@ -1024,3 +1024,8 @@ blockquote, div.blockquote {
   #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto; right: 0; }
 }
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot credit module correction: the JP credit module emits the info anchor as a direct child of .creditButton (EN wraps it in a <p>), so the theme's creditButton p rules never reach it. The same declarations are retargeted to the JP structure. */
+#page-content .creditButton a { color: #333; border: none; line-height: 1rem; margin-left: 0; }
+[[/module]]

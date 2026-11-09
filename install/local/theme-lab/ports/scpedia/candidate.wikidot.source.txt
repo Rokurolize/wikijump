@@ -980,3 +980,8 @@ div#action-area h1 {
 /* SCP-JP Sigma-10 base wordmark correction: the JP base puts a Japanese suffix after the header title link via ::after (EN Sigma-10 defines no such pseudo-element). SCPedia draws its own wordmark, so remove the base suffix. */
 #header h1 a::after { content: none; }
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot credit module correction: the JP credit module emits the info anchor as a direct child of .creditButton (EN wraps it in a <p>), so the theme's creditButton p rules never reach it. The same declarations are retargeted to the JP structure. */
+div.creditButton a { color: #202122; border: none; }
+[[/module]]

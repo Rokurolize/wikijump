@@ -907,3 +907,9 @@ table.page-files th {
 /* SCP-JP Wikidot jakstyle top bar labels: keep top navigation labels whole at narrow widths. */
 #top-bar .top-bar>ul>li>a,#top-bar .mobile-top-bar>ul>li>a{word-break:keep-all}
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot credit module correction: the JP credit module emits the info anchor as a direct child of .creditButton (EN wraps it in a <p>), so the theme's >p> chains never reach it, and the JP modal carries a single .credit block where EN splits .credit.first and .credit.otherwise. The same declarations are retargeted to the JP structure. */
+#page-content .creditRate.creditModule .rate-box-with-credit-button>.creditButton>a:after { background-color: rgb(var(--dark-accent)); text-decoration: underline rgb(var(--black-monochrome)); }
+[id*=u-credit] .credit { padding: 0.3125rem; }
+[[/module]]
