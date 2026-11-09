@@ -2740,3 +2740,9 @@ div.buttons.alignleft {
 /* SCP-JP Wikidot monotypical credit correction: keep the modal rating in document flow below the license control. */
 #u-credit-view .modalbox .modalbox-ratemodule { position: static; }
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot credit module correction: the JP credit module emits the info anchor as a direct child of .creditButton (EN wraps it in a <p>), so the theme's .creditButton p a rules never reach it. The same declarations are retargeted to the JP structure; EN's .creditButton p display:contents step has no JP counterpart, as the anchor is already the direct child. */
+.rate-box-with-credit-button .creditButton a { margin: 0; border: none; display: inline-grid; width: 1.5em; height: 1.5em; font-size: 1em; padding: .125em; box-sizing: border-box; place-content: center; border-radius: var(--radius-adjust); color: var(--textColor); background-color: var(--secondaryBackgroundColor); }
+.rate-box-with-credit-button .creditButton a:is(:hover,:focus) { color: var(--primaryBackgroundColor); background-color: var(--linkColor); }
+[[/module]]

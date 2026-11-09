@@ -1024,3 +1024,9 @@ blockquote, div.blockquote {
   #top-bar .mobile-top-bar > ul > li:last-child > ul { left: auto; right: 0; }
 }
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Wikidot credit module correction: the JP credit module emits the info anchor as a direct child of .creditButton (EN wraps it in a <p>), so the theme's creditButton p rules never reach it. The same declarations are retargeted to the JP structure. EN Inkblot also strips the credit rate box to a transparent dotted frame and shapes the button as a 1rem accent circle over the page ground; the JP module paints the button #633, hiding both, so the theme's container declarations are re-asserted where the JP credit stylesheet cannot override them. */
+#page-content .creditButton a { color: #333; border: none; line-height: 1rem; margin-left: 0; }
+#page-content .rate-box-with-credit-button .creditButton { background-color: var(--inkblot-accent, transparent); border: none; box-shadow: none; width: 1rem; height: 1rem; border-radius: 50%; }
+[[/module]]
