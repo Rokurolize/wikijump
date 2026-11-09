@@ -28,6 +28,7 @@ use super::ListPagesArguments;
 use crate::services::render::UrlArguments;
 use ftml::data::PageInfo;
 use sha2::{Digest, Sha256};
+use std::borrow::Cow;
 use std::collections::BTreeSet;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -561,6 +562,28 @@ fn list_pages_ajax_scan_tag(tag: &str) -> bool {
     true
 }
 
+fn strip_list_pages_wikidot_comments(fragment: &str) -> Cow<'_, str> {
+    let mut stripped: Option<String> = None;
+    let mut cursor = 0;
+    while let Some(relative_open) = fragment[cursor..].find("[!--") {
+        let open = cursor + relative_open;
+        let Some(relative_close) = fragment[open..].find("--]") else {
+            break;
+        };
+        stripped
+            .get_or_insert_with(|| String::with_capacity(fragment.len()))
+            .push_str(&fragment[cursor..open]);
+        cursor = open + relative_close + "--]".len();
+    }
+    match stripped {
+        Some(mut result) => {
+            result.push_str(&fragment[cursor..]);
+            Cow::Owned(result)
+        }
+        None => Cow::Borrowed(fragment),
+    }
+}
+
 pub(in crate::services::render) fn list_pages_fragment_supports_ajax_pagination(
     fragment: &str,
 ) -> bool {
@@ -568,6 +591,8 @@ pub(in crate::services::render) fn list_pages_fragment_supports_ajax_pagination(
         "script", "style", "link", "iframe", "object", "embed", "form",
     ];
     const WIKITEXT_CONSTRUCTS: [&str; 3] = ["[[html", "[[module", "[[include"];
+    let without_comments = strip_list_pages_wikidot_comments(fragment);
+    let fragment: &str = &without_comments;
     let lower = fragment.to_ascii_lowercase();
     for construct in WIKITEXT_CONSTRUCTS {
         if lower.contains(construct) {
@@ -833,6 +858,7 @@ mod tests {
             r#"<p class="footnote">note</p>"#,
             r#"<div class="yui-navset"><p>tabs</p></div>"#,
             "<!-- unterminated comment <p>",
+            "[!-- unterminated wikidot comment [[module CountPages]]",
         ] {
             assert!(
                 !list_pages_fragment_supports_ajax_pagination(fragment),
@@ -846,6 +872,11 @@ mod tests {
         assert!(list_pages_fragment_supports_ajax_pagination(
             "<!-- <iframe src=\"x\"></iframe> --><p>ok</p>",
         ));
+        assert!(list_pages_fragment_supports_ajax_pagination(concat!(
+            "CONTROL_BEFORE\n[!--\n",
+            "[[module CountPages category=\"*\" limit=\"10\"]]\n",
+            "--]\nCONTROL_AFTER",
+        )));
         assert!(list_pages_fragment_supports_ajax_pagination(
             "<p>discusses the format element and footnote text</p>",
         ));
