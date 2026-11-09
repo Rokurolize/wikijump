@@ -1090,12 +1090,49 @@ async fn leaseless_source_save_is_rejected_and_changes_nothing() {
     )
     .await;
     let error = result.expect_err("a source save without a lease must fail");
-    assert_contains_error!(error, ErrorType::PageEditLockConflict);
+    assert_contains_error!(error, ErrorType::PageEditLockMissing);
     assert_eq!(revision_count(&runner, page_id).await, 1);
     assert_eq!(
         latest_revision_id(&runner, site_id, page_id).await,
         revision_id
     );
+
+    let rival = grant(
+        &acquire(
+            &runner,
+            site_id,
+            page_id,
+            USER_A,
+            PageEditLockMode::Page,
+            None,
+        )
+        .await,
+    );
+    let result = edit(
+        &runner,
+        site_id,
+        page_id,
+        USER_B,
+        revision_id,
+        text_body("leaseless rival v1"),
+        None,
+    )
+    .await;
+    let error = result.expect_err("a leaseless save against a live rival lock must fail");
+    assert_contains_error!(error, ErrorType::PageEditLockConflict);
+    assert_eq!(revision_count(&runner, page_id).await, 1);
+    PageEditLockService::release(
+        runner.context(),
+        ReleasePageEditLock {
+            site_id,
+            page: Reference::Id(page_id),
+            user_id: USER_A,
+            lock_id: rival.lock_id,
+            lock_secret: rival.lock_secret.clone(),
+        },
+    )
+    .await
+    .expect("rival lock release should succeed");
 
     let a = grant(
         &acquire(
