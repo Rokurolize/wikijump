@@ -310,7 +310,11 @@ async fn documented_ftml_owned_syntax_has_public_preview_regressions() {
             "wikitext": "@<Public preview umlaut: &#252;>@",
         }),
     );
-    assert!(escaping.body.contains("Public preview umlaut: ü"));
+    assert!(
+        escaping
+            .body
+            .contains("Public&#32;preview&#32;umlaut:&#32;ü")
+    );
     assert!(!escaping.body.contains("@<"));
 }
 
@@ -14386,7 +14390,7 @@ async fn searchall_module_matches_live_form_and_unavailable_route_contract() {
         (
             "searchall-literal",
             "@@[[module SearchAll]]@@",
-            "[[module SearchAll]]",
+            "[[module&#32;SearchAll]]",
         ),
     ] {
         let preview = run_endpoint!(
@@ -15881,8 +15885,8 @@ async fn site_utility_modules_preserve_literal_and_reject_unsupported_shapes() {
     );
 
     assert!(
-        preview.body.contains("[[module Clone]]")
-            && preview.body.contains("[[module ManageSite]]"),
+        preview.body.contains("[[module&#32;Clone]]")
+            && preview.body.contains("[[module&#32;ManageSite]]"),
         "literal-owned utility syntax must remain visible text:\n{}",
         preview.body,
     );
