@@ -975,3 +975,8 @@ div#action-area h1 {
 /* SCP-JP Wikidot scpedia narrow header: move the top bar below the subtitle in the compact header. */
 @media (max-width:767px){#header{padding-bottom:3.4rem}#top-bar{top:8.4rem}}
 [[/module]]
+
+[[module CSS]]
+/* SCP-JP Sigma-10 base wordmark correction: the JP base puts a Japanese suffix after the header title link via ::after (EN Sigma-10 defines no such pseudo-element). SCPedia draws its own wordmark, so remove the base suffix. */
+#header h1 a::after { content: none; }
+[[/module]]
