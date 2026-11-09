@@ -4446,10 +4446,9 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
         .html_output
         .body;
     assert!(
-        raw_footnote_non_current_range_preview.contains("footnoteref")
-            && raw_footnote_non_current_range_preview.contains("footnotes-footer")
-            && raw_footnote_non_current_range_preview.contains("NOTE"),
-        "only the current-page raw footnote boundary should be consumed:\n{raw_footnote_non_current_range_preview}",
+        raw_footnote_non_current_range_preview.contains("Invalid range argument.")
+            && !raw_footnote_non_current_range_preview.contains("list-pages-box"),
+        "a non-current range without a current page must emit the live invalid-range error instead of executing:\n{raw_footnote_non_current_range_preview}",
     );
 
     let raw_collapsible_boundary_preview = RenderService::render_wikidot_page_preview(
@@ -5167,7 +5166,7 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
     assert!(
         zero_row_before_escaped_inline.contains(r#"<div class="list-pages-box"></div>"#)
             && zero_row_before_escaped_inline
-                .contains(r#"<span style="white-space: pre-wrap;"> </span>"#)
+                .contains(r#"<span style="white-space: pre-wrap;">&#32;</span>"#)
             && zero_row_before_escaped_inline.contains("AFTER")
             && !zero_row_before_escaped_inline.contains("WIKIJUMPWIKIDOTCOMPATHTML"),
         "the generated wrapper must remain a sibling block before escaped source:\n\
@@ -6343,7 +6342,7 @@ async fn linked_listpages_values_keep_typed_owner_boundaries_in_preview() {
             "@@%%title_linked%%@@",
             concat!(
                 "<span style=\"white-space: pre-wrap;\">",
-                "[[[component:image-block | Standard Image Block]]]</span>",
+                "[[[component:image-block&#32;|&#32;Standard&#32;Image&#32;Block]]]</span>",
             ),
         ),
         (
@@ -8511,18 +8510,20 @@ async fn listpages_respects_corpus_literal_context_ownership() {
         "an unclosed comment must preserve ordinary source literally through EOF:\n{unclosed_comment}",
     );
 
-    let unmatched_closers = RenderService::render_wikidot_page_preview(
-        runner.context(),
-        site_id,
-        "Unmatched comment closers",
-        "raw ---]\nraw ----]".to_owned(),
-    )
-    .await
-    .expect("comment-shaped closers outside a comment should remain visible")
-    .html_output
-    .body;
-    assert!(
-        unmatched_closers.contains("raw —-]") && unmatched_closers.contains("raw ——]"),
-        "outside a comment, three- and four-hyphen runs retain ordinary typography and a visible bracket:\n{unmatched_closers}",
-    );
+    for (source, expected) in [("raw ---]", "raw —-]"), ("raw ----]", "raw ——]")] {
+        let unmatched_closer = RenderService::render_wikidot_page_preview(
+            runner.context(),
+            site_id,
+            "Unmatched comment closers",
+            source.to_owned(),
+        )
+        .await
+        .expect("comment-shaped closers outside a comment should remain visible")
+        .html_output
+        .body;
+        assert!(
+            unmatched_closer.contains(expected),
+            "outside a comment, three- and four-hyphen runs retain ordinary typography and a visible bracket:\n{unmatched_closer}",
+        );
+    }
 }
