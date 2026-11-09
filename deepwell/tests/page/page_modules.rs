@@ -1037,8 +1037,8 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
 
     let title_prev = section(&html, "TITLE_PREV_START", "TITLE_PREV_END");
     assert!(
-        title_prev.contains(r#"<div class="list-pages-box">"#)
-            && title_prev.contains(r#"<div class="list-pages-item">"#)
+        title_prev.contains(r#"<div class="list-pages-box" data-lp-id="lp-"#)
+            && title_prev.contains(r#"<div class="list-pages-item">"#,)
             && title_prev.contains(
                 r#"PREV_TITLE=<a href="/fixture-nextpreviouspage:charlie">Charlie NextPreviousPage</a>|Charlie NextPreviousPage|charlie|fixture-nextpreviouspage:charlie"#,
             ),
@@ -1085,7 +1085,7 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
         r#"style="background-image:url(https://www.wikidot.com/userkarma.php?u={CREATOR_ID})""#
     );
     for expected in [
-        r#"<div class="list-pages-box">"#,
+        r#"<div class="list-pages-box" data-lp-id="lp-"#,
         r#"<div class="list-pages-item">"#,
         r#"<h1><span><a href="/fixture-nextpreviouspage:bravo">Bravo NextPreviousPage</a></span></h1>"#,
         r#"<p>by <span class="printuser avatarhover">"#,
@@ -2830,7 +2830,7 @@ async fn list_pages_saved_view_preserves_argument_order_around_the_pager() {
     assert!(
         reverse_order.contains(&format!("ROW3:{ITEM_PREFIX}-3|"))
             && reverse_order.contains(&format!("href=\"/{HOLDER}/p/1/tag/alpha\""))
-            && reverse_order.contains(r#"<div class="pager"><span class="pager-no">"#),
+            && reverse_order.contains(r#"<div class="pager" data-lp-key="p"><span class="pager-no">"#),
         "the pager replaces a numeric page argument in place without reordering later arguments:\n{reverse_order}",
     );
     assert!(
