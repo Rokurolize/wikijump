@@ -194,4 +194,33 @@ mod tests {
         assert_eq!(output.body.matches("title=\"\"").count(), 2);
         assert!(output.body.contains("getElementsByTagName(\"a\")"));
     }
+
+    #[test]
+    fn typed_social_requirement_inside_anchor_renders_module_body_for_page_preview() {
+        let mut output = ftml_social_output(r#"[[a href="/A"]]x[[social]]y[[/a]]"#);
+        assert!(output.body.contains("wj-social"));
+        assert!(output.body.contains(r#"<a href="/A">"#));
+        assert!(RenderService::resolve_wikidot_social_requirements(
+            &mut output,
+            &page_info(),
+            None,
+            true,
+        ));
+        assert!(!output.body.contains("wj-social"));
+        assert!(output.body.contains(r#"<a href="/A">x"#));
+        assert!(output.body.contains("y</a>"));
+        assert!(output.body.contains("<span id=\"social"));
+        assert!(output.body.contains("title=\"BlinkList\""));
+        assert!(output.body.contains("title=\"del.icio.us\""));
+        assert!(
+            output.body.contains(
+                "http%3A%2F%2Fscp-wiki.wikidot.com%2Fajax-module-connector.php"
+            )
+        );
+        let anchor_open = output.body.find(r#"<a href="/A">"#).expect("outer anchor");
+        let social_open = output.body.find("<span id=\"social").expect("social span");
+        let anchor_close = output.body.rfind("</a>").expect("anchor close");
+        assert!(anchor_open < social_open && social_open < anchor_close);
+        assert!(output.body[anchor_open..=anchor_close].matches("<a ").count() > 2);
+    }
 }
