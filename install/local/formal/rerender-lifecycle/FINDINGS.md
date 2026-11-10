@@ -1,8 +1,20 @@
 # Re-render / hosted text-block lifecycle — findings
 
-Model: `RerenderLifecycle.tla` (177 lines). Runner: `check.sh` (current
+## Update for check_render_freshness and add_blocks
+
+`JobCommit` now follows `check_render_freshness`. A job whose revision is no longer latest aborts. It does not write the block row. `NoResurrect` passes. `check.sh` turns that guard off in `resurrectopen`, and `NoResurrect` fails with the old shape. A save's revision id changes at `SaveCommit`, when the new revision is committed.
+
+`NoStaleOrphan` fails on the current code. `add_blocks` uploads the new object before the freshness check. The abort rolls the row switch back. `cleanup_uploaded_text_blocks` runs only on `add_blocks`' own error path, so the uploaded object stays in the bucket. The trace is job `a` uploads object 2 for revision 1, the save commits revision 2 and row 3, then `a` aborts and object 2 is still in `objects`.
+
+`TextBlockReplace.tla` is the unique-violation retry inside `add_blocks`, bounded at `TEXT_BLOCK_REPLACE_ATTEMPTS` 3. `OverlapCommits` passes. `check.sh mutations` sets `RetryOn` false and that invariant fails.
+
+`delete_blocks` now deletes the rows in the transaction and defers object deletion through `clear_objects_after_commit`. The older note that page deletion deletes objects inside the transaction does not describe this code. Promotion, clone, and restore were not remodeled. `NoDanglingRead` still fails.
+
+The sections below are the earlier reading. Where they disagree with this update, this update is the current result.
+
+Model: `RerenderLifecycle.tla`. Runner: `check.sh` (current
 protocol, clone, restore and witness configurations), `check.sh mutations`
-(four one-element mutations). Anchors: `extract.py` (17 code facts, exit 2
+(the original four mutations, plus the freshness guard and the retry flag). Anchors: `extract.py` (17 code facts, exit 2
 on drift). No production code was changed.
 
 ## Step 0 — what the code does (file:line anchors)

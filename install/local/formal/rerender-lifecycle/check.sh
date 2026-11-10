@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
 # Checks the re-render / hosted text-block lifecycle against the source tree.
-#   ./check.sh            current protocol: CommittedRowLive, the FIX restore
-#                         and fan-out settling must PASS; NoDanglingRead and
-#                         NoResurrect are known-failing findings (EXPECTED-FAIL
-#                         with asserted trace shapes, model not tuned away);
-#                         clone-paused must PASS, clone-unpaused and the CUR
-#                         restore must FAIL with their shapes; crash, duplicate
-#                         delivery, restore and clone witnesses must FAIL
-#                         (reachable, so the passes above are not vacuous).
-#   ./check.sh mutations  four one-element mutations must FAIL their property.
+#   ./check.sh            current protocol: CommittedRowLive, NoResurrect, the
+#                         FIX restore, clone-paused, and fan-out settling PASS.
+#                         NoDanglingRead and NoStaleOrphan are findings.
+#                         FreshnessGuard off fails NoResurrect. Clone-unpaused
+#                         and the CUR restore fail with their shapes. Crash,
+#                         duplicate delivery, restore, and clone witnesses fail.
+#   ./check.sh mutations  the one-element mutations must fail their property.
 # Exit 2: code drifted from the model's anchors, or toolchain missing.
 set -uo pipefail
 
@@ -27,14 +25,26 @@ echo "$TLA_SHA256  $JAR" | sha256sum -c --quiet - || { echo "tla2tools.jar check
 WORK="${RERENDER_LIFECYCLE_WORK:-$(mktemp -d)}"
 mkdir -p "$WORK"
 [[ -n "${RERENDER_LIFECYCLE_WORK:-}" ]] || trap 'rm -rf "$WORK"' EXIT
-cp "$HERE/RerenderLifecycle.tla" "$WORK/"
-python3 -I "$HERE/extract.py" || exit 2
+cp "$HERE/RerenderLifecycle.tla" "$HERE/TextBlockReplace.tla" "$WORK/"
+python3 -I "$HERE/extract.py" "$WORK" || exit 2
 
 tlc_run() { # name cfgfile [module] [dir]
   local dir="${4:-$WORK}"
-  (cd "$dir" && java -XX:+UseParallelGC -cp "$JAR" tlc2.TLC -deadlock -workers 8 \
-      -config "$2" -metadir "$dir/states-$1" "${3:-RerenderLifecycle}.tla") > "$WORK/$1.log" 2>&1
-  return $?
+  local attempt rc
+  for attempt in 1 2; do
+    (cd "$dir" && java -XX:+UseParallelGC -cp "$JAR" tlc2.TLC -deadlock -workers 1 \
+        -config "$2" -metadir "$dir/states-$1" "${3:-RerenderLifecycle}.tla") > "$WORK/$1.log" 2>&1
+    rc=$?
+    if [[ $rc -eq 0 ]] || grep -q 'is violated' "$WORK/$1.log"; then
+      return "$rc"
+    fi
+    if [[ $attempt -eq 1 ]] && grep -q 'NullPointerException' "$WORK/$1.log"; then
+      rm -rf "$dir/states-$1"
+      continue
+    fi
+    return "$rc"
+  done
+  return "$rc"
 }
 
 expect_fail() { # name cfgfile [module] [dir]
@@ -50,9 +60,9 @@ expect_fail() { # name cfgfile [module] [dir]
   return 1
 }
 
-expect_pass() { # name cfgfile
+expect_pass() { # name cfgfile [module] [dir]
   local start=$SECONDS
-  tlc_run "$1" "$2"; local rc=$?
+  tlc_run "$1" "$2" "${3:-}" "${4:-}"; local rc=$?
   if [[ $rc -eq 0 ]]; then
     echo "PASS $1 ($((SECONDS-start))s, $(grep -oE '[0-9,]+ distinct states found' "$WORK/$1.log" | head -1))"
     return 0
@@ -94,6 +104,10 @@ for chunk in re.split(r"^State \d+:.*$", log, flags=re.M)[1:]:
         "restored": scalar("restored") == "TRUE", "rDone": scalar("rDone") == "TRUE",
         "snapOut": int(scalar("snapOut")),
     })
+    jpc = re.search(r"/\\ jPc = \[([^\]]+)\]", chunk)
+    jnew = re.search(r"/\\ jNew = \[([^\]]+)\]", chunk)
+    states[-1]["jPc"] = dict(re.findall(r'(\w+)\s+\|->\s+"(\w+)"', jpc.group(1))) if jpc else {}
+    states[-1]["jNew"] = {k: int(v) for k, v in re.findall(r"(\w+)\s+\|->\s+(\d+)", jnew.group(1))} if jnew else {}
     m = re.search(r"/\\ cloneObjs = \{([^}]*)\}", chunk)
     states[-1]["cloneObjs"] = {int(x) for x in re.findall(r"\d+", m.group(1))} if m else set()
 assert states, "no states parsed"
@@ -118,6 +132,14 @@ elif kind == "clone":
     assert final["cloneDone"] and final["cloneGen"] not in final["cloneObjs"], final
     assert any(s["rowGen"].get("p1") not in (None, final["cloneGen"]) for s in states[i:]), final
     print(f"clone shape ok: dbcopy@{i} clone names an object its bucket copy lacks")
+elif kind == "orphan":
+    aborted = [name for name, value in final["jPc"].items() if value == "aborted"]
+    assert aborted, final["jPc"]
+    name = aborted[0]
+    page = "p1" if name in ("a", "b") else "p2"
+    gen = final["jNew"][name]
+    assert gen in final["objects"] and final["rowGen"][page] != gen, (name, gen, final)
+    print(f"orphan shape ok: {name} aborted with object {gen} still in the bucket")
 elif kind == "restore":
     # a post-flip job replaced the blocks, then the unguarded restore
     # put the snapshot output back over the newer blocks
@@ -142,6 +164,7 @@ CONSTANTS
   ReaderOn = $7
   DupOn = $8
   FanoutOn = $9
+$(sed 's/^/  /' "$WORK/guards.cfg")
 SPECIFICATION Spec
 INVARIANT TypeOK
 ${10}
@@ -181,6 +204,23 @@ PY
       echo "MUTATION $m DID NOT FAIL" >&2; exit 1
     fi
   done
+  cfg "$WORK/m-fresh.cfg" FIX TRUE TRUE FALSE FALSE FALSE TRUE FALSE 'INVARIANT NoResurrect'
+  sed -E 's/^(  FreshnessGuard = ).*/\1FALSE/' "$WORK/m-fresh.cfg" > "$WORK/m-fresh-run.cfg"
+  mv "$WORK/m-fresh-run.cfg" "$WORK/m-fresh.cfg"
+  if expect_fail mutation-fresh m-fresh.cfg; then :; else
+    echo "MUTATION fresh DID NOT FAIL" >&2; exit 1
+  fi
+  cat > "$WORK/m-retry.cfg" <<EOF
+CONSTANTS
+  RetryOn = FALSE
+  MaxAttempts = 3
+SPECIFICATION Spec
+INVARIANT TypeOK
+INVARIANT OverlapCommits
+EOF
+  if expect_fail mutation-retry m-retry.cfg TextBlockReplace; then :; else
+    echo "MUTATION retry DID NOT FAIL" >&2; exit 1
+  fi
   exit 0
 fi
 
@@ -193,6 +233,8 @@ cfg "$WORK/Settles.cfg" FIX TRUE FALSE FALSE FALSE FALSE FALSE TRUE 'PROPERTY Fa
 # Known findings in the current protocol (recorded, not tuned away).
 cfg "$WORK/Dangling.cfg" FIX TRUE TRUE FALSE FALSE TRUE TRUE FALSE 'INVARIANT NoDanglingRead'
 cfg "$WORK/Resurrect.cfg" FIX TRUE TRUE FALSE FALSE FALSE TRUE FALSE 'INVARIANT NoResurrect'
+sed -E 's/^(  FreshnessGuard = ).*/\1FALSE/' "$WORK/Resurrect.cfg" > "$WORK/ResurrectOpen.cfg"
+cfg "$WORK/Orphan.cfg" FIX TRUE TRUE FALSE FALSE FALSE TRUE FALSE 'INVARIANT NoStaleOrphan'
 # Clone without the pause, and the unguarded (pre-#3456) restore rule.
 cfg "$WORK/CloneUnpaused.cfg" FIX FALSE FALSE TRUE FALSE FALSE FALSE FALSE 'INVARIANT CloneConsistent'
 cfg "$WORK/RestoreCur.cfg" CUR TRUE FALSE FALSE TRUE FALSE FALSE FALSE 'INVARIANT RestorePairsOwnBlocks'
@@ -209,8 +251,15 @@ expect_pass clonepaused ClonePaused.cfg || status=1
 expect_pass settles Settles.cfg || status=1
 expect_fail dangling Dangling.cfg || status=1
 shape_check "$WORK/dangling.log" dangling || status=1
-expect_fail resurrect Resurrect.cfg || status=1
-shape_check "$WORK/resurrect.log" resurrect || status=1
+expect_pass resurrect Resurrect.cfg || status=1
+expect_fail resurrectopen ResurrectOpen.cfg || status=1
+shape_check "$WORK/resurrectopen.log" resurrect || status=1
+if grep -q 'CleanupOnAbort = FALSE' "$WORK/guards.cfg"; then
+  expect_fail orphan Orphan.cfg || status=1
+  shape_check "$WORK/orphan.log" orphan || status=1
+else
+  expect_pass orphan Orphan.cfg || status=1
+fi
 expect_fail cloneunpaused CloneUnpaused.cfg || status=1
 shape_check "$WORK/cloneunpaused.log" clone || status=1
 expect_fail restorecur RestoreCur.cfg || status=1
@@ -219,4 +268,22 @@ expect_fail wcrash WCrash.cfg || status=1
 expect_fail wdup WDup.cfg || status=1
 expect_fail wrestore WRestore.cfg || status=1
 expect_fail wclone WClone.cfg || status=1
+cat > "$WORK/Replace.cfg" <<EOF
+CONSTANTS
+  RetryOn = $(sed -n 's/ReplaceRetry = //p' "$WORK/guards.cfg")
+  MaxAttempts = 3
+SPECIFICATION Spec
+INVARIANT TypeOK
+INVARIANT OverlapCommits
+EOF
+expect_pass replace Replace.cfg TextBlockReplace || status=1
+cat > "$WORK/ReplaceWitness.cfg" <<EOF
+CONSTANTS
+  RetryOn = $(sed -n 's/ReplaceRetry = //p' "$WORK/guards.cfg")
+  MaxAttempts = 3
+SPECIFICATION Spec
+INVARIANT TypeOK
+INVARIANT NeverBoth
+EOF
+expect_fail replacewitness ReplaceWitness.cfg TextBlockReplace || status=1
 exit $status
