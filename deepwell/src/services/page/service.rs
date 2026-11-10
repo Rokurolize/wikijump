@@ -40,8 +40,8 @@ use crate::services::page_revision::{
 };
 use crate::services::permission::{PermissionService, PermissionTarget};
 use crate::services::{
-    CategoryService, FilterService, PageEditLockService, PageRevisionService, ParentService,
-    TextBlockService, TextService,
+    CategoryService, FilterService, PageEditLockService, PageRevisionService,
+    ParentService, TextBlockService, TextService,
 };
 use crate::types::Maybe;
 use crate::types::{
