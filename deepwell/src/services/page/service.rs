@@ -40,7 +40,7 @@ use crate::services::page_revision::{
 };
 use crate::services::permission::{PermissionService, PermissionTarget};
 use crate::services::{
-    CategoryService, FilterService, PageEditLockService, PageRevisionService,
+    CategoryService, FilterService, PageEditLockService, PageRevisionService, ParentService,
     TextBlockService, TextService,
 };
 use crate::types::Maybe;
@@ -1462,6 +1462,28 @@ WHERE page.site_id = $1
 
         let page = model.update(txn).await.or_raise(make_error)?;
         assert_latest_revision(&page);
+
+        let parents = ParentService::get_parents(ctx, site_id, Reference::Id(page_id))
+            .await
+            .or_raise(make_error)?;
+        for parent in &parents {
+            let cyclic = ParentService::check_cycle(ctx, parent.parent_page_id, page_id)
+                .await
+                .or_raise(make_error)?;
+            if cyclic {
+                error!(
+                    "Restoring page {} with parent {} creates a cycle",
+                    page_id, parent.parent_page_id
+                );
+                bail!(Error::new(
+                    format!(
+                        "Restoring page {} with parent {} creates a cycle",
+                        page_id, parent.parent_page_id
+                    ),
+                    ErrorType::PageParent
+                ));
+            }
+        }
 
         let output = PageRevisionService::apply_resurrection_followups(ctx, id, revision)
             .await
