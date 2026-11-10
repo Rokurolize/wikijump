@@ -82,8 +82,15 @@ def guard_flags() -> tuple[bool, bool, bool]:
     add_at = blocks.index("pub async fn add_blocks(")
     next_fn = blocks.index("async fn replace_block_rows(", add_at)
     add_body = blocks[add_at:next_fn]
-    ok_tail = add_body[add_body.rindex("Ok(())"):]
-    cleanup_on_abort = "cleanup_uploaded_text_blocks" in ok_tail
+    render_end = revision.index("async fn rerender_inner(", render_at)
+    render_body = revision[render_at:render_end]
+    fresh_call = render_body.index("Self::check_render_freshness(ctx, id, revision)")
+    drain_at = render_body.rfind("ctx.discard_uncommitted_text_blocks()")
+    cleanup_on_abort = (
+        "ctx.track_uncommitted_text_blocks" in add_body
+        and render_body.count("ctx.discard_uncommitted_text_blocks()") >= 2
+        and drain_at > fresh_call
+    )
     retry = (
         "TEXT_BLOCK_REPLACE_ATTEMPTS" in blocks
         and "SqlErr::UniqueConstraintViolation" in add_body
