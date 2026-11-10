@@ -1292,7 +1292,7 @@ impl PageRevisionService {
             tags: &revision.tags,
         };
 
-        let output = Self::render_and_update_links(
+        let output = match Self::render_and_update_links(
             ctx,
             id,
             wikitext,
@@ -1300,9 +1300,22 @@ impl PageRevisionService {
             allow_corpus_dense_includes,
             trace,
         )
-        .await?;
+        .await
+        {
+            Ok(output) => output,
+            Err(error) => {
+                ctx.discard_uncommitted_text_blocks().await;
+                return Err(error);
+            }
+        };
 
-        let freshness = Self::check_render_freshness(ctx, id, revision).await?;
+        let freshness = match Self::check_render_freshness(ctx, id, revision).await {
+            Ok(freshness) => freshness,
+            Err(error) => {
+                ctx.discard_uncommitted_text_blocks().await;
+                return Err(error);
+            }
+        };
 
         Ok(FreshRenderOutput { output, freshness })
     }

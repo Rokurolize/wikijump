@@ -132,7 +132,7 @@ impl ClaimFence {
         format!(
             "{item}.import_run_id = {run} \
              AND {item}.source_entity_id = {entity}::uuid \
-             AND {item}.attempts = {attempt} \
+             AND {item}.attempts = {attempt} - 1 \
              AND {item}.state = 'render_running'"
         )
     }
@@ -141,7 +141,7 @@ impl ClaimFence {
         format!(
             "{item}.import_run_id = {patch}.import_run_id \
              AND {item}.source_entity_id = {patch}.source_entity_id::uuid \
-             AND {item}.attempts = {patch}.attempt \
+             AND {item}.attempts = {patch}.attempt - 1 \
              AND {item}.state = 'render_running'"
         )
     }
@@ -199,7 +199,7 @@ impl RenderFinalizerPass {
                                 WHERE observation.import_run_id = item.import_run_id
                                 AND observation.source_entity_id = item.source_entity_id
                                 AND observation.pass = 'pass1'
-                                AND observation.attempt = item.attempts
+                                AND observation.attempt = (CASE WHEN item.state = 'render_running' THEN item.attempts + 1 ELSE item.attempts END)
                                 AND (
                                     (
                                         item.state = 'render_failed'
@@ -236,7 +236,7 @@ impl RenderFinalizerPass {
                             WHERE observation.import_run_id = item.import_run_id
                             AND observation.source_entity_id = item.source_entity_id
                             AND observation.pass = 'pass2'
-                            AND observation.attempt = item.attempts
+                            AND observation.attempt = (CASE WHEN item.state = 'render_running' THEN item.attempts + 1 ELSE item.attempts END)
                             AND (
                                 (
                                     item.state = 'render_failed'
@@ -546,7 +546,6 @@ impl CorpusRenderFinalizerService {
                 UPDATE wikidot_corpus_import_item AS item
                 SET
                     state = 'render_running',
-                    attempts = item.attempts + 1,
                     lease_until = NOW() + ($4::bigint * INTERVAL '1 second'),
                     error = NULL,
                     updated_at = NOW()
@@ -558,7 +557,7 @@ impl CorpusRenderFinalizerService {
                     item.import_run_id,
                     item.source_fullname,
                     item.page_id,
-                    item.attempts,
+                    (item.attempts + 1) AS attempts,
                     candidates.reasons
             ), observations AS (
                 INSERT INTO wikidot_corpus_render_observation (
@@ -577,6 +576,8 @@ impl CorpusRenderFinalizerService {
                     page_id,
                     'running'
                 FROM claimed
+                ON CONFLICT (import_run_id, source_entity_id, pass, attempt)
+                DO UPDATE SET outcome = EXCLUDED.outcome
                 RETURNING import_run_id, source_entity_id, pass, attempt
             )
             SELECT
@@ -1026,7 +1027,7 @@ impl CorpusRenderFinalizerService {
                         ON observation.import_run_id = item.import_run_id
                         AND observation.source_entity_id = item.source_entity_id
                         AND observation.pass = $6::text
-                        AND observation.attempt = item.attempts
+                        AND observation.attempt = item.attempts + 1
                         AND observation.outcome IN (
                             'running',
                             CASE $6::text WHEN 'pass1' THEN 'rendered' ELSE 'done' END
@@ -1037,6 +1038,7 @@ impl CorpusRenderFinalizerService {
                 ), item_update AS (
                     UPDATE wikidot_corpus_import_item AS item
                     SET state = 'render_failed',
+                        attempts = item.attempts + 1,
                         lease_until = NULL,
                         error = jsonb_build_object(
                             'message', $4::text,
@@ -1172,7 +1174,7 @@ impl CorpusRenderFinalizerService {
                         WHERE observation.import_run_id = item.import_run_id
                         AND observation.source_entity_id = item.source_entity_id
                         AND observation.pass = patches.pass
-                        AND observation.attempt = item.attempts
+                        AND observation.attempt = item.attempts + 1
                         AND observation.outcome = patches.outcome
                         AND observation.complete = FALSE
                     )
@@ -1206,7 +1208,7 @@ impl CorpusRenderFinalizerService {
                     WHERE observation.import_run_id = item_update.import_run_id
                     AND observation.source_entity_id = item_update.source_entity_id
                     AND observation.pass = item_update.pass
-                    AND observation.attempt = item_update.attempts
+                    AND observation.attempt = item_update.attempts + 1
                     AND observation.outcome = item_update.outcome
                     AND observation.complete = FALSE
                     RETURNING 1
@@ -1548,13 +1550,13 @@ mod tests {
         assert_eq!(
             fence.item_sql("item", "$1", "$2", "$3"),
             "item.import_run_id = $1 AND item.source_entity_id = $2::uuid \
-             AND item.attempts = $3 AND item.state = 'render_running'",
+             AND item.attempts = $3 - 1 AND item.state = 'render_running'",
         );
         assert_eq!(
             ClaimFence::patch_sql("item", "patches"),
             "item.import_run_id = patches.import_run_id \
              AND item.source_entity_id = patches.source_entity_id::uuid \
-             AND item.attempts = patches.attempt AND item.state = 'render_running'",
+             AND item.attempts = patches.attempt - 1 AND item.state = 'render_running'",
         );
     }
 

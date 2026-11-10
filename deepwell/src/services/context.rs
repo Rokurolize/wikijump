@@ -28,6 +28,7 @@ use crate::services::job::{Job, JobService};
 use crate::services::page_revision::{PageRevisionService, RerenderType};
 use crate::services::permission::{PermissionCache, PermissionService};
 use crate::services::public_cache::PublicContentCache;
+use crate::services::text_block::cleanup_uploaded_text_blocks;
 use crate::types::{PageId, Permission, Reference, RerenderDepth};
 use exn::ErrorExt;
 use redis::aio::MultiplexedConnection as RedisMultiplexedConnection;
@@ -161,6 +162,7 @@ pub struct ServiceContext<'txn> {
     request_ctx: RequestContext,
     user_permissions: OnceCell<HashSet<Permission<'static>>>,
     post_commit_actions: Mutex<Vec<PostCommitAction>>,
+    uncommitted_text_blocks: Mutex<Vec<String>>,
     commit_authentication_rejection: AtomicBool,
     link_graph_read: AtomicBool,
 }
@@ -224,6 +226,7 @@ impl<'txn> ServiceContext<'txn> {
             request_ctx: RequestContext::default(),
             user_permissions: OnceCell::new(),
             post_commit_actions: Mutex::new(Vec::new()),
+            uncommitted_text_blocks: Mutex::new(Vec::new()),
             commit_authentication_rejection: AtomicBool::new(false),
             link_graph_read: AtomicBool::new(false),
         }
@@ -437,6 +440,24 @@ impl<'txn> ServiceContext<'txn> {
         })?;
         actions.push(action);
         Ok(())
+    }
+
+    pub(crate) fn track_uncommitted_text_blocks(&self, filenames: &[String]) -> Result<()> {
+        let mut uploads = self.uncommitted_text_blocks.lock().map_err(|_| {
+            Error::new("failed to track text block uploads", ErrorType::TextBlock).raise()
+        })?;
+        uploads.extend(filenames.iter().cloned());
+        Ok(())
+    }
+
+    pub async fn discard_uncommitted_text_blocks(&self) {
+        let filenames = {
+            let Ok(mut uploads) = self.uncommitted_text_blocks.lock() else {
+                return;
+            };
+            std::mem::take(&mut *uploads)
+        };
+        cleanup_uploaded_text_blocks(&self.state.s3_tblocks_bucket, &filenames).await;
     }
 
     pub(crate) fn drain_post_commit_actions(&self) -> Result<Vec<PostCommitAction>> {
