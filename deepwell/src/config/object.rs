@@ -162,6 +162,16 @@ pub struct Config {
     pub maximum_message_body_bytes: usize,
 
     pub maximum_message_recipients: usize,
+
+    pub page_create_user_max_attempts: i64,
+
+    pub page_create_site_max_attempts: i64,
+
+    pub page_edit_user_max_attempts: i64,
+
+    pub register_ip_max_attempts: i64,
+
+    pub register_global_max_attempts: i64,
 }
 
 impl Config {
@@ -284,6 +294,11 @@ impl Config {
             maximum_message_subject_bytes: 128,
             maximum_message_body_bytes: 10_000,
             maximum_message_recipients: 3,
+            page_create_user_max_attempts: 60,
+            page_create_site_max_attempts: 600,
+            page_edit_user_max_attempts: 120,
+            register_ip_max_attempts: 20,
+            register_global_max_attempts: 100,
         }
     }
 }
@@ -291,6 +306,16 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn integration_testing_caps_match_issuance_defaults() {
+        let config = Config::integration_testing();
+        assert_eq!(config.page_create_user_max_attempts, 60);
+        assert_eq!(config.page_create_site_max_attempts, 600);
+        assert_eq!(config.page_edit_user_max_attempts, 120);
+        assert_eq!(config.register_ip_max_attempts, 20);
+        assert_eq!(config.register_global_max_attempts, 100);
+    }
 
     #[test]
     fn operational_logger_level_caps_trace_at_debug() {
