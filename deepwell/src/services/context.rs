@@ -346,7 +346,13 @@ impl<'txn> ServiceContext<'txn> {
         }
         let insert_at = actions
             .iter()
-            .position(|action| matches!(action, PostCommitAction::RerenderPage { .. }))
+            .position(|action| {
+                matches!(
+                    action,
+                    PostCommitAction::RerenderPage { .. }
+                        | PostCommitAction::RerenderPageImmediate { .. }
+                )
+            })
             .unwrap_or(actions.len());
         actions.insert(insert_at, PostCommitAction::PublicContentSite { site_id });
         Ok(())
