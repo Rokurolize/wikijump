@@ -18,10 +18,14 @@
 (* Assumed: block type collapsed; compiled_at as pre/post switch start    *)
 (* (app clock = DB clock); unpromoted render-ahead replacement, block-    *)
 (* count change, and page-deletion delete_blocks argued in FINDINGS.md.   *)
+(* FreshnessGuard is check_render_freshness: a job whose read revision    *)
+(* is no longer latest aborts instead of committing. CleanupOnAbort is    *)
+(* false in the current code: that abort rolls the row switch back and    *)
+(* leaves the uploaded object in the bucket.                               *)
 (***************************************************************************)
 EXTENDS Integers, FiniteSets
 CONSTANTS RestoreDesign, ClonePaused, AllowCrash, CloneOn, RestoreOn,
-          ReaderOn, DupOn, FanoutOn
+          ReaderOn, DupOn, FanoutOn, FreshnessGuard, CleanupOnAbort
 Pages == {"p1", "p2"}         \* p2 depends on p1
 Jobs == {"a", "b", "f"}       \* a,b: duplicate deliveries for p1; f: fan-out for p2
 JobPage == [a |-> "p1", b |-> "p1", f |-> "p2"]
@@ -55,7 +59,7 @@ Init ==
 JobStart(j) ==    \* reads its inputs (latest revision) here
     /\ ~Frozen /\ jPc[j] = "idle"
     /\ (j = "b" => DupOn) /\ (j = "f" => FanoutOn)
-    /\ (j # "b" \/ jPc["a"] \in {"read", "prev", "up", "committed", "crashed"})
+    /\ (j # "b" \/ jPc["a"] \in {"read", "prev", "up", "committed", "crashed", "aborted"})
     /\ jIn' = [jIn EXCEPT ![j] = rev[JobPage[j]]]
     /\ jPc' = [jPc EXCEPT ![j] = "read"]
     /\ UNCHANGED <<rev, rowGen, blkVer, blkGen, outRev, outVer, outTime, maxBlk, objects, nextGen, jPrev, jNew, sPc, sPrev, sNew, saveDone, rPc, rGen, reads, miss, cPc, cloneGen, cloneObjs, cloneDone, snapOut, snapGen, snapRev, snapped, flipped, restored, rDone, crashLeft, crashed>>
@@ -69,18 +73,22 @@ JobUpload(j) ==   \* S3 upload: outside any DB transaction
     /\ jNew' = [jNew EXCEPT ![j] = nextGen] /\ nextGen' = nextGen + 1
     /\ objects' = objects \cup {nextGen} /\ jPc' = [jPc EXCEPT ![j] = "up"]
     /\ UNCHANGED <<rev, rowGen, blkVer, blkGen, outRev, outVer, outTime, maxBlk, jIn, jPrev, sPc, sPrev, sNew, saveDone, rPc, rGen, reads, miss, cPc, cloneGen, cloneObjs, cloneDone, snapOut, snapGen, snapRev, snapped, flipped, restored, rDone, crashLeft, crashed>>
-JobCommit(j) ==   \* row switch + revision compiled columns, one DB commit
+JobCommit(j) ==   \* row switch, or check_render_freshness abort after add_blocks
     /\ ~Frozen /\ jPc[j] = "up" /\ LET p == JobPage[j] IN
-       /\ rowGen' = [rowGen EXCEPT ![p] = jNew[j]]
-       /\ blkVer' = [blkVer EXCEPT ![p] = jIn[j]]
-       /\ blkGen' = [blkGen EXCEPT ![p] = IF flipped THEN "new" ELSE "old"]
-       /\ outRev' = [outRev EXCEPT ![p] = jIn[j]]
-       /\ outVer' = [outVer EXCEPT ![p] = jIn[j]]
-       /\ maxBlk' = [maxBlk EXCEPT ![p] = IF jIn[j] > maxBlk[p] THEN jIn[j] ELSE maxBlk[p]]
-       /\ outTime' = [outTime EXCEPT ![p] = IF flipped THEN "post" ELSE outTime[p]]
-    /\ jPc' = [jPc EXCEPT ![j] = "committed"]
-    /\ restored' = IF JobPage[j] = "p1" THEN FALSE ELSE restored
-    /\ UNCHANGED <<rev, objects, nextGen, jIn, jPrev, jNew, sPc, sPrev, sNew, saveDone, rPc, rGen, reads, miss, cPc, cloneGen, cloneObjs, cloneDone, snapOut, snapGen, snapRev, snapped, flipped, rDone, crashLeft, crashed>>
+       IF FreshnessGuard /\ rev[p] # jIn[j]
+       THEN /\ jPc' = [jPc EXCEPT ![j] = "aborted"]
+            /\ objects' = IF CleanupOnAbort THEN objects \ {jNew[j]} ELSE objects
+            /\ UNCHANGED <<rev, rowGen, blkVer, blkGen, outRev, outVer, outTime, maxBlk, nextGen, jIn, jPrev, jNew, sPc, sPrev, sNew, saveDone, rPc, rGen, reads, miss, cPc, cloneGen, cloneObjs, cloneDone, snapOut, snapGen, snapRev, snapped, flipped, restored, rDone, crashLeft, crashed>>
+       ELSE /\ rowGen' = [rowGen EXCEPT ![p] = jNew[j]]
+            /\ blkVer' = [blkVer EXCEPT ![p] = jIn[j]]
+            /\ blkGen' = [blkGen EXCEPT ![p] = IF flipped THEN "new" ELSE "old"]
+            /\ outRev' = [outRev EXCEPT ![p] = jIn[j]]
+            /\ outVer' = [outVer EXCEPT ![p] = jIn[j]]
+            /\ maxBlk' = [maxBlk EXCEPT ![p] = IF jIn[j] > maxBlk[p] THEN jIn[j] ELSE maxBlk[p]]
+            /\ outTime' = [outTime EXCEPT ![p] = IF flipped THEN "post" ELSE outTime[p]]
+            /\ jPc' = [jPc EXCEPT ![j] = "committed"]
+            /\ restored' = IF p = "p1" THEN FALSE ELSE restored
+            /\ UNCHANGED <<rev, objects, nextGen, jIn, jPrev, jNew, sPc, sPrev, sNew, saveDone, rPc, rGen, reads, miss, cPc, cloneGen, cloneObjs, cloneDone, snapOut, snapGen, snapRev, snapped, flipped, rDone, crashLeft, crashed>>
 JobCleanup(j) ==  \* post-commit delete of the objects read as previous
     /\ ~Frozen /\ jPc[j] = "committed"
     /\ objects' = objects \ {jPrev[j]} /\ jPc' = [jPc EXCEPT ![j] = "done"]
@@ -93,8 +101,8 @@ JobCrash(j) ==    \* crash between upload / commit / delete
 \* --- Saver: one save on p1 (new revision; p2 inputs move with it) ---
 SaveBegin ==      \* inputs read here; the block read is a later step
     /\ ~Frozen /\ sPc = "idle"
-    /\ rev' = [p \in Pages |-> 2] /\ sPc' = "read"
-    /\ UNCHANGED <<rowGen, blkVer, blkGen, outRev, outVer, outTime, maxBlk, objects, nextGen, jPc, jIn, jPrev, jNew, sPrev, sNew, saveDone, rPc, rGen, reads, miss, cPc, cloneGen, cloneObjs, cloneDone, snapOut, snapGen, snapRev, snapped, flipped, restored, rDone, crashLeft, crashed>>
+    /\ sPc' = "read"
+    /\ UNCHANGED <<rev, rowGen, blkVer, blkGen, outRev, outVer, outTime, maxBlk, objects, nextGen, jPc, jIn, jPrev, jNew, sPrev, sNew, saveDone, rPc, rGen, reads, miss, cPc, cloneGen, cloneObjs, cloneDone, snapOut, snapGen, snapRev, snapped, flipped, restored, rDone, crashLeft, crashed>>
 SavePrev ==       \* add_blocks reads the previous filenames for p1
     /\ ~Frozen /\ sPc = "read" /\ sPrev' = rowGen["p1"] /\ sPc' = "prev"
     /\ UNCHANGED <<rev, rowGen, blkVer, blkGen, outRev, outVer, outTime, maxBlk, objects, nextGen, jPc, jIn, jPrev, jNew, sNew, saveDone, rPc, rGen, reads, miss, cPc, cloneGen, cloneObjs, cloneDone, snapOut, snapGen, snapRev, snapped, flipped, restored, rDone, crashLeft, crashed>>
@@ -112,7 +120,8 @@ SaveCommit ==     \* revision insert + block row switch in one commit; queues f
     /\ outTime' = [outTime EXCEPT !["p1"] = IF flipped THEN "post" ELSE outTime["p1"]]
     /\ jPc' = [jPc EXCEPT !["f"] = IF jPc["f"] = "wait" THEN "idle" ELSE jPc["f"]]
     /\ sPc' = "committed" /\ saveDone' = TRUE /\ restored' = FALSE
-    /\ UNCHANGED <<rev, objects, nextGen, jIn, jPrev, jNew, sPrev, sNew, rPc, rGen, reads, miss, cPc, cloneGen, cloneObjs, cloneDone, snapOut, snapGen, snapRev, snapped, flipped, rDone, crashLeft, crashed>>
+    /\ rev' = [p \in Pages |-> 2]
+    /\ UNCHANGED <<objects, nextGen, jIn, jPrev, jNew, sPrev, sNew, rPc, rGen, reads, miss, cPc, cloneGen, cloneObjs, cloneDone, snapOut, snapGen, snapRev, snapped, flipped, rDone, crashLeft, crashed>>
 SaveCleanup ==
     /\ ~Frozen /\ sPc = "committed" /\ objects' = objects \ {sPrev} /\ sPc' = "done"
     /\ UNCHANGED <<rev, rowGen, blkVer, blkGen, outRev, outVer, outTime, maxBlk, nextGen, jPc, jIn, jPrev, jNew, sPrev, sNew, saveDone, rPc, rGen, reads, miss, cPc, cloneGen, cloneObjs, cloneDone, snapOut, snapGen, snapRev, snapped, flipped, restored, rDone, crashLeft, crashed>>
@@ -169,6 +178,8 @@ RestorePairsOwnBlocks ==
     rDone => (restored => (blkVer["p1"] = snapOut /\ blkGen["p1"] = snapGen))
 \* Fan-out settles after the save (checked with crashes disabled).
 FanOutSettles == saveDone ~> (blkVer["p2"] = 2)
+\* A freshness abort deletes the object add_blocks uploaded. False today.
+NoStaleOrphan == \A j \in Jobs : jPc[j] = "aborted" => jNew[j] \notin objects
 \* Non-vacuity witnesses (each must FAIL: the path is reachable).
 NeverCrashed == ~crashed
 NeverDupDone == ~(jPc["a"] = "done" /\ jPc["b"] = "done")

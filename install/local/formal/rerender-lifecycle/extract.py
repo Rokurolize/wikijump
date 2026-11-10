@@ -46,8 +46,8 @@ ANCHORS = [
     ("wws/src/handler/text_block.rs", "head_object(&s3_filename)",
      "the reader fetches the S3 object after the DB lookup, as a second step"),
     ("deepwell/src/services/text_block/service.rs",
-     "bucket.delete_object(filename).await.or_raise(make_error)?",
-     "page-deletion delete_blocks deletes S3 objects inside the transaction"),
+     "fn clear_objects_after_commit",
+     "page deletion deletes rows in the transaction and defers object deletion"),
     ("deepwell/src/services/page_revision/render_ahead.rs",
      "INSERT INTO page_revision_render_ahead",
      "render-ahead writes compiled columns to the ahead table, not the revision"),
@@ -60,7 +60,61 @@ ANCHORS = [
 ]
 
 
+def guard_flags() -> tuple[bool, bool, bool]:
+    revision = (ROOT / "deepwell/src/services/page_revision/service.rs").read_text(encoding="utf-8")
+    blocks = (ROOT / "deepwell/src/services/text_block/service.rs").read_text(encoding="utf-8")
+    fresh = "latest.revision_id != revision.revision_id" in revision
+    inverted = "latest.revision_id == revision.revision_id" in revision
+    if fresh == inverted:
+        raise SystemExit(
+            "MODEL DRIFT: check_render_freshness comparison is neither != nor =="
+        )
+    try:
+        render_at = revision.index("async fn render_revision(")
+        call_at = revision.index("Self::check_render_freshness(ctx, id, revision)", render_at)
+        render_call = revision.index("Self::render_and_update_links(", render_at)
+    except ValueError as error:
+        raise SystemExit(f"MODEL DRIFT: render_revision anchor missing ({error})") from error
+    if not (render_at < render_call < call_at):
+        raise SystemExit(
+            "MODEL DRIFT: check_render_freshness is no longer after render_and_update_links"
+        )
+    add_at = blocks.index("pub async fn add_blocks(")
+    next_fn = blocks.index("async fn replace_block_rows(", add_at)
+    add_body = blocks[add_at:next_fn]
+    ok_tail = add_body[add_body.rindex("Ok(())"):]
+    cleanup_on_abort = "cleanup_uploaded_text_blocks" in ok_tail
+    retry = (
+        "TEXT_BLOCK_REPLACE_ATTEMPTS" in blocks
+        and "SqlErr::UniqueConstraintViolation" in add_body
+        and "attempt >= TEXT_BLOCK_REPLACE_ATTEMPTS" in add_body
+    )
+    if "const TEXT_BLOCK_REPLACE_ATTEMPTS: u32 = 3;" not in blocks:
+        raise SystemExit("MODEL DRIFT: TEXT_BLOCK_REPLACE_ATTEMPTS is not 3")
+    return fresh, cleanup_on_abort, retry
+
+
 def main() -> int:
+    try:
+        fresh, cleanup_on_abort, retry = guard_flags()
+    except SystemExit as error:
+        print(error, file=sys.stderr)
+        print("The code no longer matches the model's anchors; review the model.",
+              file=sys.stderr)
+        return 2
+    print(
+        "guards "
+        f"FreshnessGuard={fresh} CleanupOnAbort={cleanup_on_abort} ReplaceRetry={retry}"
+    )
+    if len(sys.argv) > 1:
+        out = Path(sys.argv[1])
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "guards.cfg").write_text(
+            "FreshnessGuard = " + ("TRUE" if fresh else "FALSE") + "\n"
+            "CleanupOnAbort = " + ("TRUE" if cleanup_on_abort else "FALSE") + "\n"
+            "ReplaceRetry = " + ("TRUE" if retry else "FALSE") + "\n",
+            encoding="utf-8",
+        )
     missing = []
     for rel, needle, fact in ANCHORS:
         path = ROOT / rel
