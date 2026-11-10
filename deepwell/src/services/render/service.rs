@@ -418,6 +418,14 @@ impl RenderProtectionBundle {
     }
 }
 
+pub(in crate::services::render) fn public_include_expansion_limit(config: &Config) -> usize {
+    config.public_max_include_expansions
+}
+
+pub(in crate::services::render) fn corpus_include_expansion_limit(config: &Config) -> usize {
+    config.corpus_max_include_expansions
+}
+
 #[derive(Debug)]
 struct OuterPreparedRenderWikitext {
     wikitext: String,
@@ -429,8 +437,7 @@ struct OuterPreparedRenderWikitext {
 }
 
 pub(super) const MAX_INCLUDE_EXPANSION_DEPTH: usize = 8;
-pub(super) const MAX_INCLUDE_EXPANSION_TOTAL: usize = 256;
-const MAX_CORPUS_INCLUDE_EXPANSION_TOTAL: usize = 4096;
+pub(super) const LEGACY_PUBLIC_MAX_INCLUDE_EXPANSIONS: usize = 256;
 pub(super) const DEFAULT_LISTPAGES_PER_PAGE: u64 = 20;
 pub(super) const MAX_LISTPAGES_RENDER_LIMIT: u64 = 250;
 pub(super) const MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER: usize =
@@ -787,7 +794,7 @@ impl RenderService {
                 render_context: RenderContext::none(),
                 viewer_user_id: None,
                 current_page_data_form_values: None,
-                max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
+                max_include_expansions: public_include_expansion_limit(ctx.config()),
                 render_cost_budget,
                 trace: None,
                 persist_compiled_text: true,
@@ -837,7 +844,7 @@ impl RenderService {
                 ),
                 viewer_user_id: None,
                 current_page_data_form_values: None,
-                max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
+                max_include_expansions: public_include_expansion_limit(ctx.config()),
                 render_cost_budget: RenderCostBudget::new_default(),
                 trace: None,
                 persist_compiled_text: false,
@@ -900,7 +907,7 @@ impl RenderService {
                 render_context: RenderContext::ajax_module(site_id),
                 viewer_user_id: ctx.request().user_id,
                 current_page_data_form_values: None,
-                max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
+                max_include_expansions: public_include_expansion_limit(ctx.config()),
                 render_cost_budget: RenderCostBudget::new_default(),
                 trace: None,
                 persist_compiled_text: false,
@@ -945,7 +952,7 @@ impl RenderService {
                 page_id,
             },
             RenderPageOptions {
-                max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
+                max_include_expansions: public_include_expansion_limit(ctx.config()),
                 viewer_user_id: None,
                 current_page_data_form_values: None,
                 persist_page_artifacts: true,
@@ -971,7 +978,7 @@ impl RenderService {
             layout,
             id,
             RenderPageOptions {
-                max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
+                max_include_expansions: public_include_expansion_limit(ctx.config()),
                 viewer_user_id: None,
                 current_page_data_form_values: Some(current_page_data_form_values),
                 persist_page_artifacts: true,
@@ -998,7 +1005,7 @@ impl RenderService {
             layout,
             id,
             RenderPageOptions {
-                max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
+                max_include_expansions: public_include_expansion_limit(ctx.config()),
                 viewer_user_id,
                 current_page_data_form_values: None,
                 persist_page_artifacts: false,
@@ -1023,7 +1030,7 @@ impl RenderService {
             layout,
             id,
             RenderPageOptions {
-                max_include_expansions: MAX_CORPUS_INCLUDE_EXPANSION_TOTAL,
+                max_include_expansions: corpus_include_expansion_limit(ctx.config()),
                 viewer_user_id: None,
                 current_page_data_form_values: None,
                 persist_page_artifacts: true,
@@ -1049,7 +1056,7 @@ impl RenderService {
             layout,
             id,
             RenderPageOptions {
-                max_include_expansions: MAX_CORPUS_INCLUDE_EXPANSION_TOTAL,
+                max_include_expansions: corpus_include_expansion_limit(ctx.config()),
                 viewer_user_id: None,
                 current_page_data_form_values: None,
                 persist_page_artifacts: true,
@@ -1079,13 +1086,13 @@ impl RenderService {
             trace,
         }: RenderPageOptions<'_>,
     ) -> Result<RenderPageOutput> {
-        let max_include_expansions = if max_include_expansions
-            < MAX_CORPUS_INCLUDE_EXPANSION_TOTAL
+        let corpus_limit = corpus_include_expansion_limit(ctx.config());
+        let max_include_expansions = if max_include_expansions < corpus_limit
             && SiteService::get_optional(ctx, Reference::Id(site_id))
                 .await?
                 .is_some_and(|site| site_is_wikidot_local_asset_mirror(&site))
         {
-            MAX_CORPUS_INCLUDE_EXPANSION_TOTAL
+            corpus_limit
         } else {
             max_include_expansions
         };
@@ -1264,7 +1271,7 @@ impl RenderService {
                 current_page_id: Some(id.page_id),
                 viewer_user_id: None,
                 current_page_data_form_values: None,
-                max_include_expansions: MAX_CORPUS_INCLUDE_EXPANSION_TOTAL,
+                max_include_expansions: corpus_include_expansion_limit(ctx.config()),
                 render_cost_budget: RenderCostBudget::new_default(),
                 trace: None,
                 url: UrlArguments::default(),
@@ -1865,7 +1872,7 @@ impl RenderService {
             url,
         } = options;
         let trusted_corpus_render =
-            max_include_expansions == MAX_CORPUS_INCLUDE_EXPANSION_TOTAL;
+            max_include_expansions == corpus_include_expansion_limit(ctx.config());
         let list_pages_pager_route = render_context.list_pages_pager_route();
         let RenderContext {
             current_site_id,

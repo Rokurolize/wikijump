@@ -13,7 +13,7 @@
 use super::generator::COMPILED_GENERATOR;
 use super::render_budget::RenderCostBudget;
 use super::render_options::{RenderContext, RenderInnerOptions};
-use super::service::{MAX_INCLUDE_EXPANSION_TOTAL, RenderInnerOutput, RenderService};
+use super::service::{RenderInnerOutput, RenderService, public_include_expansion_limit};
 use super::{RenderOutput, UrlArguments};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::{PageService, ServiceContext, SiteService};
@@ -107,7 +107,7 @@ impl RenderService {
                     ),
                     viewer_user_id: ctx.request().user_id().ok(),
                     current_page_data_form_values: None,
-                    max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,
+                    max_include_expansions: public_include_expansion_limit(ctx.config()),
                     render_cost_budget: RenderCostBudget::new_default(),
                     trace: None,
                     persist_compiled_text: false,
