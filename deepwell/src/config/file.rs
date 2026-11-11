@@ -296,6 +296,10 @@ struct RenderLimits {
     public_max_include_expansions: usize,
     #[serde(default = "default_corpus_max_include_expansions")]
     corpus_max_include_expansions: usize,
+    #[serde(default = "default_public_max_gallery_requirements")]
+    public_max_gallery_requirements: usize,
+    #[serde(default = "default_corpus_max_gallery_requirements")]
+    corpus_max_gallery_requirements: usize,
 }
 
 impl Default for RenderLimits {
@@ -303,6 +307,8 @@ impl Default for RenderLimits {
         RenderLimits {
             public_max_include_expansions: default_public_max_include_expansions(),
             corpus_max_include_expansions: default_corpus_max_include_expansions(),
+            public_max_gallery_requirements: default_public_max_gallery_requirements(),
+            corpus_max_gallery_requirements: default_corpus_max_gallery_requirements(),
         }
     }
 }
@@ -313,6 +319,14 @@ fn default_public_max_include_expansions() -> usize {
 
 fn default_corpus_max_include_expansions() -> usize {
     4096
+}
+
+fn default_public_max_gallery_requirements() -> usize {
+    512
+}
+
+fn default_corpus_max_gallery_requirements() -> usize {
+    128
 }
 
 fn default_true() -> bool {
@@ -478,6 +492,8 @@ impl ConfigFile {
                 RenderLimits {
                     public_max_include_expansions,
                     corpus_max_include_expansions,
+                    public_max_gallery_requirements,
+                    corpus_max_gallery_requirements,
                 },
         } = self;
 
@@ -635,6 +651,8 @@ impl ConfigFile {
             register_global_max_attempts,
             public_max_include_expansions,
             corpus_max_include_expansions,
+            public_max_gallery_requirements,
+            corpus_max_gallery_requirements,
         }
     }
 }
@@ -806,6 +824,8 @@ mod tests {
             render_limits: RenderLimits {
                 public_max_include_expansions: 4096,
                 corpus_max_include_expansions: 4096,
+                public_max_gallery_requirements: 512,
+                corpus_max_gallery_requirements: 128,
             },
         }
     }
@@ -922,6 +942,8 @@ mod tests {
         assert_eq!(config.register_global_max_attempts, 101);
         assert_eq!(config.public_max_include_expansions, 4096);
         assert_eq!(config.corpus_max_include_expansions, 4096);
+        assert_eq!(config.public_max_gallery_requirements, 512);
+        assert_eq!(config.corpus_max_gallery_requirements, 128);
     }
 
     #[test]
@@ -929,7 +951,7 @@ mod tests {
         let toml = toml::to_string(&sample_config_file()).unwrap();
 
         let absent_toml = toml.replace(
-            "[render-limits]\npublic-max-include-expansions = 4096\ncorpus-max-include-expansions = 4096\n",
+            "[render-limits]\npublic-max-include-expansions = 4096\ncorpus-max-include-expansions = 4096\npublic-max-gallery-requirements = 512\ncorpus-max-gallery-requirements = 128\n",
             "",
         );
         assert_ne!(toml, absent_toml);
@@ -942,6 +964,8 @@ mod tests {
             absent_config.render_limits.corpus_max_include_expansions,
             4096
         );
+        assert_eq!(absent_config.render_limits.public_max_gallery_requirements, 512);
+        assert_eq!(absent_config.render_limits.corpus_max_gallery_requirements, 128);
 
         let parsed_toml = toml.replace(
             "public-max-include-expansions = 4096",
