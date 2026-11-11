@@ -393,7 +393,7 @@ pub async fn user_password_change(
         ));
     }
 
-    PasswordService::new_account_hash(&new_password)?;
+    PasswordService::new_account_hash(&new_password).await?;
 
     info!("Changing the password of user ID {}", user.user_id);
     UserService::update(

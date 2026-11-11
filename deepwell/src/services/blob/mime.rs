@@ -104,7 +104,9 @@ impl MimeAnalyzer {
             // cancelled. Dropping the response must not take the worker
             // thread down with it, or every later upload fails.
             if sender.send(result).is_err() {
-                debug!("Content analysis request was dropped before the response arrived");
+                debug!(
+                    "Content analysis request was dropped before the response arrived"
+                );
             }
         }
     }
@@ -117,15 +119,9 @@ impl MimeAnalyzer {
         let (resp_send, resp_recv): (ResponseSender, ResponseReceiver) =
             oneshot::channel();
 
-        self.sink
-            .send((buffer, resp_send))
-            .await
-            .map_err(|_| {
-                Error::new(
-                    "the MIME analyzer worker is not running",
-                    ErrorType::Blob,
-                )
-            })?;
+        self.sink.send((buffer, resp_send)).await.map_err(|_| {
+            Error::new("the MIME analyzer worker is not running", ErrorType::Blob)
+        })?;
 
         let resp = resp_recv.await.map_err(|_| {
             Error::new(
