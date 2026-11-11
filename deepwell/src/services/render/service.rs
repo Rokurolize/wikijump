@@ -437,7 +437,6 @@ struct OuterPreparedRenderWikitext {
 }
 
 pub(super) const MAX_INCLUDE_EXPANSION_DEPTH: usize = 8;
-pub(super) const LEGACY_PUBLIC_MAX_INCLUDE_EXPANSIONS: usize = 256;
 pub(super) const DEFAULT_LISTPAGES_PER_PAGE: u64 = 20;
 pub(super) const MAX_LISTPAGES_RENDER_LIMIT: u64 = 250;
 pub(super) const MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER: usize =
