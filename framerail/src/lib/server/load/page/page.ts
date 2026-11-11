@@ -5,7 +5,7 @@ import {
   WIKIDOT_LAYOUT
 } from "$lib/layout/wikidot-shell-decision"
 import { articleRouteWithQueryNoRender } from "$lib/server/page-norender-query"
-import { resolvePageRedirect } from "$lib/server/page-redirect"
+import { resolvePageRedirect, throwPageRedirect } from "$lib/server/page-redirect"
 import { authGetSession } from "$lib/server/auth/get-session"
 import {
   pageCreatePermission,
@@ -38,7 +38,7 @@ import {
   buildWikidotRequestInfo,
   requestHostFromRequest
 } from "$lib/server/wikidot-request-info"
-import { error, redirect } from "@sveltejs/kit"
+import { error } from "@sveltejs/kit"
 
 import type { PageView } from "$lib/server/deepwell/views"
 import type { Optional } from "$lib/types"
@@ -260,6 +260,6 @@ function runRedirect(
 ): void {
   const resolved = resolvePageRedirect(viewData, originalSlug, extra, requestUrl)
   if (resolved) {
-    redirect(resolved.status, resolved.location)
+    throwPageRedirect(resolved)
   }
 }
