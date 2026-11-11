@@ -31,7 +31,7 @@ pub fn replace_in_place(string: &mut String, pattern: &str, replacement: &str) {
         let index = start_index + substr_index;
         let end = index + pattern.len();
         string.replace_range(index..end, replacement);
-        start_index = end + replacement.len() - 1;
+        start_index = index + replacement.len();
     }
 }
 
@@ -86,6 +86,23 @@ fn test_replace_in_place() {
     test!("class pass hassle dash" => "cly py hyle dash", "ass" => "y");
     test!("apple banana cherry" => "applexi banana chexirry", "e" => "exi");
     test!("e ee eee" => "eye eyeeye eyeeyeeye", "e" => "eye");
+}
+
+#[test]
+fn test_replace_in_place_with_multi_byte_pattern() {
+    macro_rules! test {
+        ($input:expr => $output:expr, $pattern:expr => $replacement:expr $(,)?) => {{
+            let mut string = str!($input);
+            replace_in_place(&mut string, $pattern, $replacement);
+            assert_eq!(string, $output, "Replaced contents did not match expected");
+        }};
+    }
+
+    test!("xabab" => "x", "ab" => "");
+    test!("baaa" => "b", "aaa" => "");
+    test!("a-b-c" => "a_b_c", "-" => "_");
+    test!("one--two" => "one__two", "--" => "__");
+    test!("aaa" => "Xa", "aa" => "X");
 }
 
 #[test]
