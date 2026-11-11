@@ -139,10 +139,7 @@ pub async fn fetch_blob(
         )));
     }
 
-    Ok((
-        BlobData { size, mime },
-        Body::from_stream(stream.bytes),
-    ))
+    Ok((BlobData { size, mime }, Body::from_stream(stream.bytes)))
 }
 
 pub async fn fetch_full_body(

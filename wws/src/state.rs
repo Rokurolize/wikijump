@@ -61,7 +61,7 @@ pub async fn build_server_state(
 ) -> Result<ServerState> {
     let deepwell = Deepwell::connect(&deepwell_url, &deepwell_rpc_token)?;
     if check_deepwell {
-        deepwell.check().await;
+        deepwell.check().await?;
     }
 
     let cache = Cache::connect(&redis_url)?;

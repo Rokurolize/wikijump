@@ -181,10 +181,12 @@ async fn serve_full(
     let body = if params.is_head {
         Body::empty()
     } else {
+        let site_id = require_internal_header!(get_site_id(headers));
+
         match fetch_full_body(
             state,
             headers,
-            get_site_id(headers),
+            site_id,
             file_info,
             page_slug,
             params.filename,
@@ -367,7 +369,7 @@ async fn handle_local_file_fetch(
         "Returning local file data",
     );
 
-    let site_id = get_site_id(&headers);
+    let site_id = require_internal_header!(get_site_id(&headers));
     let file_info =
         match fetch_file_info(&state, &headers, site_id, &mut page_slug, &filename).await
         {
@@ -406,7 +408,7 @@ pub async fn handle_file_fetch(
         "Returning file data",
     );
 
-    let site_id = get_site_id(&headers);
+    let site_id = require_internal_header!(get_site_id(&headers));
     let file_info =
         match fetch_file_info(&state, &headers, site_id, &mut page_slug, &filename).await
         {
@@ -438,7 +440,7 @@ pub async fn handle_file_download(
         "Returning file download",
     );
 
-    let site_id = get_site_id(&headers);
+    let site_id = require_internal_header!(get_site_id(&headers));
     let file_info =
         match fetch_file_info(&state, &headers, site_id, &mut page_slug, &filename).await
         {
