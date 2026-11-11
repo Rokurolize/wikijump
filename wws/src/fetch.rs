@@ -124,8 +124,12 @@ pub async fn fetch_blob(
         )));
     }
     let (result, _) = head;
-    let size = result.content_length.expect("File size should be known");
-    let mime = result.content_type.expect("File mime type should be known");
+    let size = result
+        .content_length
+        .ok_or(Error::MissingS3Header("Content-Length"))?;
+    let mime = result
+        .content_type
+        .ok_or(Error::MissingS3Header("Content-Type"))?;
 
     let stream = state.s3_files_bucket.get_object_stream(s3_hash).await?;
     if stream.status_code != StatusCode::OK.as_u16() {
@@ -136,10 +140,7 @@ pub async fn fetch_blob(
     }
 
     Ok((
-        BlobData {
-            size: size as i64,
-            mime,
-        },
+        BlobData { size, mime },
         Body::from_stream(stream.bytes),
     ))
 }
