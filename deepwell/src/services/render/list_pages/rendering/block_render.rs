@@ -1059,14 +1059,7 @@ impl RenderService {
                                 .collect(),
                             language: Cow::Owned(page_info.language.to_string()),
                         };
-                        let render_passes = usize::from(wants_rendered_content)
-                            + usize::from(wants_summary)
-                            + usize::from(wants_first_paragraph);
-                        let max_include_expansions = include_budget
-                            .remaining
-                            .checked_div(rendered_rows.max(1))
-                            .and_then(|per_row| per_row.checked_div(render_passes.max(1)))
-                            .unwrap_or(0);
+                        let max_include_expansions = include_budget.remaining;
                         let rendered_content = if wants_rendered_content {
                             let mut rendered = render_list_pages_selected_content_source(
                                 ListPagesSelectedContentArgs {
