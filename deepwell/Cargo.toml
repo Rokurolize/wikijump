@@ -51,7 +51,7 @@ ref-map = "0.2"
 regex = "1"
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
 rsmq_async = "18"
-rust-s3 = { version = "0.38", features = ["with-tokio", "tokio-rustls-tls"], default-features = false }
+rust-s3 = { version = "0.38", features = ["with-tokio", "tokio-rustls-tls-ring"], default-features = false }
 rust-otp = "3"
 sea-orm = { version = "2", features = ["sqlx-postgres", "runtime-tokio-rustls", "postgres-array", "stream", "macros", "with-json", "with-time", "with-ipnetwork"], default-features = false }
 sea-query = "1"
@@ -86,7 +86,7 @@ pretty_assertions = "1"
 self_cell = "1"
 
 [build-dependencies]
-built = { version = "0.8", features = ["chrono", "git2"] }
+built = { version = "0.8", features = ["chrono"] }
 
 # Lints
 

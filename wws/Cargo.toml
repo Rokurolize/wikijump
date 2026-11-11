@@ -31,7 +31,7 @@ rand = "0.10"
 redis = { version = "1", features = ["aio", "connection-manager", "tokio-comp", "tokio-rustls-comp"], default-features = false }
 ref-map = "0.2"
 resvg = "0.49"
-rust-s3 = { version = "0.38", features = ["with-tokio", "tokio-rustls-tls"], default-features = false }
+rust-s3 = { version = "0.38", features = ["with-tokio", "tokio-rustls-tls-ring"], default-features = false }
 serde = { version = "1", features = ["derive"] }
 sha1 = "0.11"
 str-macro = "1"
@@ -44,7 +44,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 wikidot-normalize = "0.12"
 
 [build-dependencies]
-built = { version = "0.8", features = ["git2"] }
+built = { version = "0.8" }
 
 [dev-dependencies]
 jsonrpsee-types = "0.26"

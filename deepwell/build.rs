@@ -9,10 +9,13 @@ fn main() {
 
     // The promotion builder passes the source commit explicitly because
     // Docker build contexts exclude the .git directory, which is where
-    // the `built` crate would otherwise read it from (WJ-1279).
+    // the commit would otherwise be read from (WJ-1279). A local build
+    // reads it from the `git` executable instead.
+    let commit = git_commit();
+    println!("cargo:rustc-env=DEEPWELL_GIT_COMMIT={commit}");
     println!(
-        "cargo:rustc-env=DEEPWELL_GIT_COMMIT={}",
-        std::env::var("WIKIJUMP_GIT_COMMIT").unwrap_or_default(),
+        "cargo:rustc-env=DEEPWELL_GIT_COMMIT_SHORT={}",
+        short_hash(&commit),
     );
     println!("cargo:rerun-if-env-changed=WIKIJUMP_GIT_COMMIT");
 
@@ -44,4 +47,31 @@ fn cargo_version() -> String {
         }
         _ => "unknown".to_owned(),
     }
+}
+
+/// The commit this binary was built from, or an empty string when there is
+/// none to read. The `git` executable is used rather than a Git library so
+/// that the build does not compile one.
+fn git_commit() -> String {
+    if let Ok(commit) = std::env::var("WIKIJUMP_GIT_COMMIT")
+        && !commit.is_empty()
+    {
+        return commit;
+    }
+
+    let git = std::env::var("GIT").unwrap_or_else(|_| "git".to_owned());
+
+    match std::process::Command::new(git)
+        .args(["rev-parse", "HEAD"])
+        .output()
+    {
+        Ok(output) if output.status.success() => {
+            String::from_utf8_lossy(&output.stdout).trim().to_owned()
+        }
+        _ => String::new(),
+    }
+}
+
+fn short_hash(commit: &str) -> String {
+    commit.chars().take(8).collect()
 }

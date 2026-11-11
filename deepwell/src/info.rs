@@ -32,9 +32,9 @@ pub const CARGO_VERSION: &str = env!("DEEPWELL_CARGO_VERSION");
 
 #[allow(unused_imports)]
 pub use self::build::{
-    BUILT_TIME_UTC as BUILT_TIME_UTC_STR, CFG_ENDIAN, GIT_COMMIT_HASH, NUM_JOBS,
-    PKG_AUTHORS, PKG_DESCRIPTION, PKG_LICENSE, PKG_NAME, PKG_REPOSITORY, PKG_VERSION,
-    RUSTC_VERSION, TARGET,
+    BUILT_TIME_UTC as BUILT_TIME_UTC_STR, CFG_ENDIAN, NUM_JOBS, PKG_AUTHORS,
+    PKG_DESCRIPTION, PKG_LICENSE, PKG_NAME, PKG_REPOSITORY, PKG_VERSION, RUSTC_VERSION,
+    TARGET,
 };
 
 pub static BUILT_TIME_UTC: LazyLock<OffsetDateTime> = LazyLock::new(|| {
@@ -67,22 +67,26 @@ pub static VERSION: LazyLock<String> =
 pub static FULL_VERSION: LazyLock<String> =
     LazyLock::new(|| format!("{}\n\n{}", *VERSION, *COMPILE_INFO));
 
-/// The git commit this binary was built from. The `built` crate reads
-/// the .git directory, which Docker build contexts exclude, so the
-/// promotion builder passes the source commit explicitly and build.rs
-/// bakes it in as DEEPWELL_GIT_COMMIT (WJ-1279). The explicit value
-/// wins; local builds fall back to the `built` crate's reading.
-pub static GIT_COMMIT: LazyLock<Option<&'static str>> =
-    LazyLock::new(|| match option_env!("DEEPWELL_GIT_COMMIT") {
-        Some(commit) if !commit.is_empty() => Some(commit),
-        _ => build::GIT_COMMIT_HASH,
-    });
+/// The git commit this binary was built from. The promotion builder passes
+/// the source commit explicitly because Docker build contexts exclude the
+/// .git directory; build.rs reads it from the `git` executable otherwise
+/// (WJ-1279). The explicit value wins.
+pub static GIT_COMMIT: LazyLock<Option<&'static str>> = LazyLock::new(|| {
+    let commit = env!("DEEPWELL_GIT_COMMIT");
+    if commit.is_empty() {
+        None
+    } else {
+        Some(commit)
+    }
+});
 
 /// The FTML commit this binary pins, read from Cargo.lock by build.rs.
 pub const FTML_COMMIT: &str = env!("DEEPWELL_FTML_COMMIT");
 
-pub static GIT_COMMIT_HASH_SHORT: LazyLock<Option<&'static str>> =
-    LazyLock::new(|| GIT_COMMIT.map(|s| &s[..usize::min(8, s.len())]));
+pub static GIT_COMMIT_HASH_SHORT: LazyLock<Option<&'static str>> = LazyLock::new(|| {
+    let short = env!("DEEPWELL_GIT_COMMIT_SHORT");
+    if short.is_empty() { None } else { Some(short) }
+});
 
 pub static HOSTNAME: LazyLock<String> = LazyLock::new(|| {
     // According to the gethostname(3p) man page,

@@ -73,6 +73,7 @@ Development happens on this fork, `Rokurolize/wikijump`. Open pull requests agai
 - **Wikidot acquisition tools:** The corpus fetcher is in `/home/roku/src/Rokurolize/scp-wiki-translation`, including `scripts/fetch_wikidot.py`, `scripts/corpus_sync.py`, and `scp_wiki_wikidot/`. The direct Ajax client is the local fork at `/home/roku/src/Rokurolize/wikidot.py`. Before bypassing the corpus tools, read `/home/roku/src/Rokurolize/wikidot.py/AGENTS.md`, then `llms.txt` in the same repository. Direct read-only access uses `client.site.get(<site>).page.get(<slug>).source.wiki_text`. Theme Lab's `acquire_wikidot_source.py` can collect evidence but does not replace the shared corpus checks.
 - **Runtime identity:** Read `docs/deployment/runtime-drift-policy.md` before promoting candidates, measuring standing, or fixing runtime drift.
 - **Cargo build storage:** Read `docs/development/cargo-target-policy.md` before candidate builds or cleaning build targets.
+- **Build performance:** Read `docs/development/build-performance.md` before changing Cargo profiles, dependency features, linker settings, or the build scripts.
 - **Issues and PRs:** Read `docs/agents/issue-tracker.md` for GitHub issue and dependency management.
 - **Triage:** Read `docs/agents/triage-labels.md` before changing issue triage or workflow labels.
 - **Domain documentation:** Read `docs/agents/domain.md` before creating or reorganizing domain documentation or ADRs.

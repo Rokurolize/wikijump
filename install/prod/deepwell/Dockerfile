@@ -42,8 +42,15 @@ RUN rustup target add x86_64-unknown-linux-musl
 # wrapper runs this binary before the prebuilt Deepwell server starts.  It does
 # not depend on the Deepwell sources, so it is built before they are copied and
 # a source change reuses this layer.
+#
+# cargo install compiles into a temporary target directory unless one is
+# named, so the sqlx-cli build was repeated from scratch whenever this layer
+# was rebuilt.  A cache mount for the target directory keeps that
+# compilation between builds.
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
+    --mount=type=cache,target=/tmp/sqlx-target,sharing=locked \
+    CARGO_TARGET_DIR=/tmp/sqlx-target \
     cargo install sqlx-cli --version 0.9.0 --locked \
     --target x86_64-unknown-linux-musl \
     --root /tmp/sqlx-root \
@@ -58,13 +65,17 @@ WORKDIR /src/deepwell
 # so a source change recompiles only what it affects; the binary is copied out
 # of the cache because cache mounts are not part of the image.  Standing
 # promotion builds pass CARGO_PROFILE=standing (see deepwell/Cargo.toml).
+#
+# Only the server binary is built.  The package also carries three helper
+# binaries, and each one pays its own whole-program LTO link, which is the
+# most expensive step of a release build; the image copies none of them.
 ARG CARGO_PROFILE=release
 # Source commit for the platform information page (WJ-1279).
 ARG WIKIJUMP_GIT_COMMIT=
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
     --mount=type=cache,target=/src/deepwell/target,id=deepwell-target,sharing=locked \
-    cargo build --profile "${CARGO_PROFILE}" --locked \
+    cargo build --profile "${CARGO_PROFILE}" --locked --bin deepwell \
     && install -D "target/${CARGO_PROFILE}/deepwell" /out/deepwell
 
 #
