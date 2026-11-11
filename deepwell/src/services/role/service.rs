@@ -22,6 +22,7 @@ use super::structs::{
     DeleteRoleInput, GetUserRolesInput, GrantUserRoleInput, InternalCreateRoleInput,
     InternalReparentRoleInput, RevokeUserRoleInput, UpdateRoleInput,
 };
+use crate::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
 use crate::error::prelude::{Result, ResultExt};
 use crate::error::{Error, ErrorType};
 use crate::models::role::{self, Entity as Role, Model as RoleModel};
@@ -350,6 +351,22 @@ impl RoleService {
         )
         .await
         .or_raise(make_error)?;
+
+        if user_id != SYSTEM_USER_ID && user_id != ADMIN_USER_ID && assigning_user_id != SYSTEM_USER_ID && assigning_user_id != ADMIN_USER_ID {
+            let is_member = crate::services::RelationService::site_member_exists(
+                ctx,
+                crate::services::relation::GetSiteMember { site_id, user_id },
+            )
+            .await
+            .or_raise(make_error)?;
+
+            if !is_member {
+                bail!(Error::new(
+                    format!("user ID {} is not a member of site ID {}", user_id, site_id),
+                    ErrorType::SiteMembership,
+                ));
+            }
+        }
 
         let role = Self::get(ctx, site_id, role_id.into()).await?;
 
