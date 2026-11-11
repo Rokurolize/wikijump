@@ -152,7 +152,7 @@ max-attempts = 3
 # The intent is to avoid overloading the database by allowing a
 # short sleep period in between background tasks.
 #
-# See the JobService (src/service/job/service.rs) for information
+# See the JobService (src/services/job/service.rs) for information
 # on the job queue and main loop.
 delay-ms = 5
 

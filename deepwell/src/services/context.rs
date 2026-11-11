@@ -448,7 +448,10 @@ impl<'txn> ServiceContext<'txn> {
         Ok(())
     }
 
-    pub(crate) fn track_uncommitted_text_blocks(&self, filenames: &[String]) -> Result<()> {
+    pub(crate) fn track_uncommitted_text_blocks(
+        &self,
+        filenames: &[String],
+    ) -> Result<()> {
         let mut uploads = self.uncommitted_text_blocks.lock().map_err(|_| {
             Error::new("failed to track text block uploads", ErrorType::TextBlock).raise()
         })?;
@@ -508,17 +511,19 @@ impl<'txn> ServiceContext<'txn> {
     ) -> Result<()> {
         let mut rsmq = Rsmq::clone(&state.rsmq);
         let mut actions = VecDeque::from(actions);
+        let mut first_error = None;
+
         while let Some(action) = actions.pop_front() {
-            match action {
+            let action_result = match action {
                 PostCommitAction::PermissionUser { site_id, user_id } => {
                     PermissionCache::invalidate_user_for_state(state, site_id, user_id)
-                        .await?;
+                        .await
                 }
                 PostCommitAction::PermissionSite { site_id } => {
-                    PermissionCache::invalidate_site_for_state(state, site_id).await?;
+                    PermissionCache::invalidate_site_for_state(state, site_id).await
                 }
                 PostCommitAction::PublicContentSite { site_id } => {
-                    PublicContentCache::invalidate_site_for_state(state, site_id).await?;
+                    PublicContentCache::invalidate_site_for_state(state, site_id).await
                 }
                 PostCommitAction::RerenderPage { id, depth, r#type } => {
                     JobService::queue_job_inner(
@@ -526,7 +531,7 @@ impl<'txn> ServiceContext<'txn> {
                         &Job::RerenderPage { id, depth, r#type },
                         None,
                     )
-                    .await?;
+                    .await
                 }
                 PostCommitAction::RerenderPageImmediate { id, depth, r#type } => {
                     let make_error = || {
@@ -538,46 +543,70 @@ impl<'txn> ServiceContext<'txn> {
                             ErrorType::Page,
                         )
                     };
-                    let transaction =
-                        state.database.begin().await.or_raise(make_error)?;
-                    let ctx = ServiceContext::new(state, &transaction);
-                    match rerender_trust {
-                        PostCommitRerenderTrust::Public => {
-                            PageRevisionService::rerender(&ctx, id, depth, r#type).await
+
+                    async {
+                        let transaction =
+                            state.database.begin().await.or_raise(make_error)?;
+                        let ctx = ServiceContext::new(state, &transaction);
+                        match rerender_trust {
+                            PostCommitRerenderTrust::Public => {
+                                PageRevisionService::rerender(&ctx, id, depth, r#type).await
+                            }
+                            PostCommitRerenderTrust::CorpusFinalizer => {
+                                PageRevisionService::rerender_dependent_for_corpus_finalizer(
+                                    &ctx, id, depth, r#type,
+                                )
+                                .await
+                            }
                         }
-                        PostCommitRerenderTrust::CorpusFinalizer => {
-                            PageRevisionService::rerender_dependent_for_corpus_finalizer(
-                                &ctx, id, depth, r#type,
-                            )
-                            .await
-                        }
+                        .or_raise(make_error)?;
+                        let followups =
+                            ctx.drain_post_commit_actions().or_raise(make_error)?;
+                        transaction.commit().await.or_raise(make_error)?;
+                        actions.extend(followups);
+                        Ok(())
                     }
-                    .or_raise(make_error)?;
-                    let followups =
-                        ctx.drain_post_commit_actions().or_raise(make_error)?;
-                    transaction.commit().await.or_raise(make_error)?;
-                    actions.extend(followups);
+                    .await
                 }
                 PostCommitAction::DeleteTextBlockObjects { filenames } => {
-                    for filename in filenames {
-                        state
-                            .s3_tblocks_bucket
-                            .delete_object(&filename)
-                            .await
-                            .or_raise(|| {
-                                Error::new(
-                                    format!(
-                                        "failed to delete replaced S3 text block '{filename}'"
-                                    ),
-                                    ErrorType::TextBlock,
-                                )
-                            })?;
+                    async {
+                        for filename in filenames {
+                            state
+                                .s3_tblocks_bucket
+                                .delete_object(&filename)
+                                .await
+                                .or_raise(|| {
+                                    Error::new(
+                                        format!(
+                                            "failed to delete replaced S3 text block '{filename}'"
+                                        ),
+                                        ErrorType::TextBlock,
+                                    )
+                                })?;
+                        }
+
+                        Ok(())
                     }
+                    .await
+                }
+            };
+
+            // One failed action must not discard the rest: the transaction
+            // is already committed, so the remaining cache invalidations
+            // and rerender jobs have no other chance to run.
+            if let Err(error) = action_result {
+                error!("Post-commit action failed: {error}");
+
+                if first_error.is_none() {
+                    first_error = Some(error);
                 }
             }
         }
 
-        Ok(())
+        match first_error {
+            Some(error) => Err(error),
+            None => Ok(()),
+        }
     }
 
     pub async fn run_post_commit_actions(&self) -> Result<()> {

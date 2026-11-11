@@ -53,10 +53,22 @@ impl MimeAnalyzer {
         let (sink, source) = mpsc::channel(64);
 
         thread::spawn(|| {
-            let mime_magic = Self::load_magic(MagicFlags::MIME)
-                .expect("Unable to load MIME magic database");
-            let descriptor_magic = Self::load_magic(MagicFlags::NONE)
-                .expect("Unable to load descriptor magic database");
+            let mime_magic = match Self::load_magic(MagicFlags::MIME) {
+                Ok(magic) => magic,
+                Err(error) => {
+                    error!("Unable to load MIME magic database: {error}");
+                    return;
+                }
+            };
+
+            let descriptor_magic = match Self::load_magic(MagicFlags::NONE) {
+                Ok(magic) => magic,
+                Err(error) => {
+                    error!("Unable to load descriptor magic database: {error}");
+                    return;
+                }
+            };
+
             Self::main_loop(mime_magic, descriptor_magic, source);
         });
 
@@ -86,7 +98,16 @@ impl MimeAnalyzer {
                     .buffer(&bytes)
                     .map(|description| (mime, description))
             });
-            sender.send(result).expect("Response channel is closed");
+
+            // The caller can go away between sending the request and
+            // receiving the response, for example when its request is
+            // cancelled. Dropping the response must not take the worker
+            // thread down with it, or every later upload fails.
+            if sender.send(result).is_err() {
+                debug!(
+                    "Content analysis request was dropped before the response arrived"
+                );
+            }
         }
     }
 
@@ -98,12 +119,17 @@ impl MimeAnalyzer {
         let (resp_send, resp_recv): (ResponseSender, ResponseReceiver) =
             oneshot::channel();
 
-        self.sink
-            .send((buffer, resp_send))
-            .await
-            .expect("MIME channel is closed");
+        self.sink.send((buffer, resp_send)).await.map_err(|_| {
+            Error::new("the MIME analyzer worker is not running", ErrorType::Blob)
+        })?;
 
-        let resp = resp_recv.await.expect("Response channel is closed");
+        let resp = resp_recv.await.map_err(|_| {
+            Error::new(
+                "the MIME analyzer worker dropped the response",
+                ErrorType::Blob,
+            )
+        })?;
+
         let (mime, description) = resp.or_raise(|| {
             Error::new(
                 format!("failed to analyze buffer of length {}", buffer_len,),

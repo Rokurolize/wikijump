@@ -1031,13 +1031,13 @@
         "framerail/src/lib/server/deepwell/page-file.ts:pageFileRevisionHistory",
         "deepwell/src/endpoints/file_revision.rs:file_revision_page_history",
         "deepwell/src/services/file_revision/service.rs:get_page_history",
-        "framerail/src/lib/server/wikidot-history-timeline.js",
+        "framerail/src/lib/server/wikidot-history-timeline.ts",
         "framerail/src/routes/[slug]/[...extra]/HistoryPane.svelte",
-        "framerail/src/lib/server/ajax-module-connector-page-reads.js:renderWikidotPageRevisionList"
+        "framerail/src/lib/server/ajax-module-connector-page-reads.ts:renderWikidotPageRevisionList"
       ],
       "test_reference": [
-        "framerail/tests/wikidot-history-timeline.test.js",
-        "framerail/tests/ajax-module-connector-page-reads.test.js",
+        "framerail/tests/wikidot-history-timeline.test.ts",
+        "framerail/tests/ajax-module-connector-page-reads.test.ts",
         "install/local/theme-lab/tests/history-parity-evidence.test.mjs"
       ],
       "evidence_date": "2026-09-29",
@@ -1089,12 +1089,12 @@
       ],
       "implementation_reference": [
         "framerail/src/routes/[slug]/[...extra]/HistoryPane.svelte",
-        "framerail/src/lib/wikidot-history-contract.js",
-        "framerail/src/lib/server/ajax-module-connector-page-reads.js"
+        "framerail/src/lib/wikidot-history-contract.ts",
+        "framerail/src/lib/server/ajax-module-connector-page-reads.ts"
       ],
       "test_reference": [
         "framerail/tests/page-workflows.spec.ts",
-        "framerail/tests/ajax-module-connector-page-reads.test.js",
+        "framerail/tests/ajax-module-connector-page-reads.test.ts",
         "install/local/theme-lab/tests/history-parity-evidence.test.mjs"
       ],
       "evidence_date": "2026-09-29",

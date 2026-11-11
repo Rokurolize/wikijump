@@ -27,6 +27,26 @@ macro_rules! try_response {
     };
 }
 
+/// Unwraps a value read from an internal request header, or answers the
+/// request with a not-found response.
+///
+/// The internal headers are set by the reverse proxy. A request that
+/// arrives without them is not a Wikijump request, so it gets the same
+/// answer as an unknown page instead of taking the handler down.
+macro_rules! require_internal_header {
+    ($value:expr $(,)?) => {
+        match $value {
+            Some(value) => value,
+            None => {
+                error!("Request is missing a required internal header");
+                return axum::response::IntoResponse::into_response(
+                    axum::http::StatusCode::NOT_FOUND,
+                );
+            }
+        }
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use axum::body;

@@ -352,7 +352,11 @@ impl RoleService {
         .await
         .or_raise(make_error)?;
 
-        if user_id != SYSTEM_USER_ID && user_id != ADMIN_USER_ID && assigning_user_id != SYSTEM_USER_ID && assigning_user_id != ADMIN_USER_ID {
+        if user_id != SYSTEM_USER_ID
+            && user_id != ADMIN_USER_ID
+            && assigning_user_id != SYSTEM_USER_ID
+            && assigning_user_id != ADMIN_USER_ID
+        {
             let is_member = crate::services::RelationService::site_member_exists(
                 ctx,
                 crate::services::relation::GetSiteMember { site_id, user_id },

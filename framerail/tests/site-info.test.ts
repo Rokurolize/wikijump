@@ -36,3 +36,17 @@ test("rejects requests without an internal site slug", () => {
     /Missing wws internal header 'X-Wikijump-Site-Slug'/
   )
 })
+
+test("rejects a malformed internal site id", () => {
+  for (const siteId of ["not-a-number", "", "12abc", "0", "-1", "1.5"]) {
+    const headers = new Headers({
+      "X-Wikijump-Site-Id": siteId,
+      "X-Wikijump-Site-Slug": "example"
+    })
+
+    assert.throws(
+      () => loadSiteInfo(headers),
+      /Invalid wws internal header 'X-Wikijump-Site-Id'/
+    )
+  }
+})

@@ -104,8 +104,8 @@ impl Deepwell {
         Ok(self.client.request(method, params).await?)
     }
 
-    pub async fn check(&self) {
-        self.ping().await.expect("Unable to connect to DEEPWELL");
+    pub async fn check(&self) -> Result<()> {
+        self.ping().await
     }
 
     pub async fn ping(&self) -> Result<()> {

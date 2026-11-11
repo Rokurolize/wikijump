@@ -22,6 +22,7 @@ use crate::config::Config;
 use crate::error::prelude::{Error, ErrorType, Result};
 use crate::services::ServiceContext;
 use argon2::{Argon2, PasswordHasher, PasswordVerifier};
+use tokio::task;
 use tokio::time;
 
 #[derive(Debug)]
@@ -30,7 +31,7 @@ pub struct PasswordService;
 pub const ACCOUNT_PASSWORD_MIN_CODE_POINTS: usize = 15;
 
 impl PasswordService {
-    pub fn new_account_hash(password: &str) -> Result<String> {
+    pub async fn new_account_hash(password: &str) -> Result<String> {
         let length = password.chars().count();
         if length < ACCOUNT_PASSWORD_MIN_CODE_POINTS {
             bail!(Error::new(
@@ -42,7 +43,9 @@ impl PasswordService {
             ));
         }
 
-        Self::new_hash(password)
+        // Argon2 is deliberately expensive, so it runs on a blocking
+        // thread rather than on a runtime worker.
+        Self::new_hash_async(password.to_owned()).await
     }
 
     pub fn new_hash(password: &str) -> Result<String> {
@@ -53,6 +56,12 @@ impl PasswordService {
             .to_string();
 
         Ok(hash)
+    }
+
+    pub async fn new_hash_async(password: String) -> Result<String> {
+        task::spawn_blocking(move || Self::new_hash(&password))
+            .await
+            .map_err(join_error)?
     }
 
     pub async fn verify(
@@ -78,7 +87,16 @@ impl PasswordService {
         sleep: bool,
     ) -> Result<()> {
         info!("Attempting to verify password");
-        let result = Self::verify_internal(password, hash);
+
+        // Argon2 is deliberately expensive, so it runs on a blocking
+        // thread rather than on a runtime worker.
+        let password = password.to_owned();
+        let hash = hash.to_owned();
+        let result =
+            task::spawn_blocking(move || Self::verify_internal(&password, &hash))
+                .await
+                .map_err(join_error)?;
+
         match result {
             Ok(()) => Ok(()),
             Err(error) => {
@@ -116,6 +134,13 @@ impl PasswordService {
     pub async fn failure_sleep(config: &Config) {
         time::sleep(config.authentication_fail_delay).await;
     }
+}
+
+fn join_error(error: task::JoinError) -> Error {
+    Error::new(
+        format!("failed to run the password operation: {error}"),
+        ErrorType::Cryptography(str!(error)),
+    )
 }
 
 fn convert_argon_error(error: argon2::password_hash::Error) -> Error {
@@ -174,12 +199,14 @@ mod tests {
         );
     }
 
-    #[test]
-    fn account_password_hash_requires_fifteen_unicode_code_points() {
+    #[tokio::test]
+    async fn account_password_hash_requires_fifteen_unicode_code_points() {
         for (password, expected_length) in
             [("", 0), (" ", 1), ("a", 1), ("fourteen-chars", 14)]
         {
-            let error = PasswordService::new_account_hash(password).unwrap_err();
+            let error = PasswordService::new_account_hash(password)
+                .await
+                .unwrap_err();
             assert!(matches!(
                 error.error_type,
                 ErrorType::UserPasswordTooShort { length, minimum }
@@ -188,7 +215,7 @@ mod tests {
         }
 
         let password = "ééééééééééééééé";
-        let hash = PasswordService::new_account_hash(password).unwrap();
+        let hash = PasswordService::new_account_hash(password).await.unwrap();
         PasswordService::verify_internal(password, &hash).unwrap();
     }
 

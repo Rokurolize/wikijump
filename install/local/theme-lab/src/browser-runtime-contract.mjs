@@ -27,7 +27,7 @@ export function runtimeFilesForObservation(surface, viewport) {
     ...(surface === 'dialog.generic'
     ? ['framerail/src/lib/popup/error.svelte', 'framerail/src/routes/[slug]/[...extra]/PageView.svelte', 'framerail/src/lib/wikidot/wikidot-locale.ts']
     : surface.startsWith('page.history')
-      ? ['framerail/src/routes/[slug]/[...extra]/HistoryPane.svelte', 'framerail/src/lib/wikidot-history-contract.js']
+      ? ['framerail/src/routes/[slug]/[...extra]/HistoryPane.svelte', 'framerail/src/lib/wikidot-history-contract.ts']
       : surface.startsWith('page.files') ? ['framerail/src/routes/[slug]/[...extra]/FileList.svelte']
         : surface.startsWith('nav.') || surface.startsWith('shell.')
           ? ['framerail/src/lib/sigma-esque/wikidot.svelte', 'framerail/src/routes/+layout.svelte']
@@ -41,7 +41,7 @@ export function runtimeFilesForObservation(surface, viewport) {
   // even though PageView imports the renderer from a separate component.
   if (surface.startsWith('page.')) files.push('framerail/src/routes/[slug]/[...extra]/WikidotFoundPageTags.svelte', 'framerail/src/lib/wikidot/wikidot-page-tags.ts');
   if (viewport === 'mobile' || viewport === 'narrow-mobile') files.push('framerail/src/lib/sigma-esque/wikidot.svelte');
-  if (surface === 'shell.search' && viewport !== 'mobile' && viewport !== 'narrow-mobile') files.push('framerail/src/lib/wikidot/wikidot-search.js');
+  if (surface === 'shell.search' && viewport !== 'mobile' && viewport !== 'narrow-mobile') files.push('framerail/src/lib/wikidot/wikidot-search.ts');
   const pane=paneRoot(surface);if(pane)files.push(`${PAGE_ROUTE}/${pane}`);
   return [...new Set(files)];
 }

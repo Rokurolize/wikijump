@@ -40,4 +40,4 @@ forgot-password = Forgot Password
 
 ### Validation
 
-The [Rust program in the `validator` directory](https://github.com/scpwiki/wikijump/tree/develop/locales/validator) is modelled after how the DEEPWELL API service reads these locale files, and performs several checks. This is automatically run as [part of CI](https://github.com/scpwiki/wikijump/blob/develop/.github/workflows/locales.yaml), to automatically catch several different kinds of errors before changes are merged.
+The [Rust program in the `validator` directory](https://github.com/Rokurolize/wikijump/tree/develop/locales/validator) is modelled after how the DEEPWELL API service reads these locale files, and performs several checks. It runs as part of the `locales` group of the consolidated validation workflow, and locally through `scripts/preflight.sh`, to catch several different kinds of errors before changes are merged.
