@@ -448,7 +448,10 @@ impl<'txn> ServiceContext<'txn> {
         Ok(())
     }
 
-    pub(crate) fn track_uncommitted_text_blocks(&self, filenames: &[String]) -> Result<()> {
+    pub(crate) fn track_uncommitted_text_blocks(
+        &self,
+        filenames: &[String],
+    ) -> Result<()> {
         let mut uploads = self.uncommitted_text_blocks.lock().map_err(|_| {
             Error::new("failed to track text block uploads", ErrorType::TextBlock).raise()
         })?;

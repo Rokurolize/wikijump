@@ -320,19 +320,19 @@ async fn aborted_add_blocks_uploads_are_deleted() {
     )
     .await
     .expect("add_blocks should succeed inside the transaction");
-    let uploaded = TextBlockService::get_block_by_index(&ctx, page_id, TextBlockType::Html, 1)
-        .await
-        .expect("block lookup should succeed")
-        .expect("the switched row should name the new object")
-        .s3_filename;
+    let uploaded =
+        TextBlockService::get_block_by_index(&ctx, page_id, TextBlockType::Html, 1)
+            .await
+            .expect("block lookup should succeed")
+            .expect("the switched row should name the new object")
+            .s3_filename;
     let response = ctx
         .s3_tblocks_bucket()
         .head_object(&uploaded)
         .await
         .expect("HEAD should succeed for the uploaded object");
     assert_eq!(
-        response.1,
-        200,
+        response.1, 200,
         "the uploaded object should exist before the abort"
     );
 
@@ -344,8 +344,7 @@ async fn aborted_add_blocks_uploads_are_deleted() {
         .await
         .expect("HEAD should succeed after the drain");
     assert_eq!(
-        response.1,
-        404,
+        response.1, 404,
         "the uncommitted upload should be deleted by the drain"
     );
 

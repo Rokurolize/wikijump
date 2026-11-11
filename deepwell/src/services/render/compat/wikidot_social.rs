@@ -221,6 +221,11 @@ mod tests {
         let social_open = output.body.find("<span id=\"social").expect("social span");
         let anchor_close = output.body.rfind("</a>").expect("anchor close");
         assert!(anchor_open < social_open && social_open < anchor_close);
-        assert!(output.body[anchor_open..=anchor_close].matches("<a ").count() > 2);
+        assert!(
+            output.body[anchor_open..=anchor_close]
+                .matches("<a ")
+                .count()
+                > 2
+        );
     }
 }
