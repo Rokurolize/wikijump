@@ -206,6 +206,7 @@ test("final preflight is the single explicit full-check barrier", (t) => {
     "cargo fmt --manifest-path deepwell/Cargo.toml --check",
     "cargo machete deepwell",
     "cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps -- -D warnings",
+    "cargo fetch --manifest-path deepwell/Cargo.toml --locked",
     "node install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs",
     "cargo fmt --manifest-path wws/Cargo.toml --check",
     "cargo machete wws",
