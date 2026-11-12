@@ -67,6 +67,7 @@ pub struct TestRunnerRequestContext {
 }
 
 impl TestRunnerRequestContext {
+    #[allow(dead_code)]
     pub async fn new() -> Self {
         Self::new_with_config(Config::integration_testing()).await
     }
@@ -135,6 +136,7 @@ self_cell!(
 );
 
 impl TestRunner {
+    #[allow(dead_code)]
     pub async fn setup() -> Self {
         let request_ctx = TestRunnerRequestContext::new().await;
         Self::new(request_ctx, TestRunnerRequestContext::build_service_context)
