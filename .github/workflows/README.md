@@ -40,8 +40,11 @@ Playwright in GitHub Actions. Browser validation is local WSL work.
 
 ## Post-merge and deployment
 
-`docker-build-*.yaml` build the container images per service and environment,
-all delegating to `docker-build-template.yaml` so the build logic exists once.
+`docker-build-*.yaml` build the container images per service and environment.
+The `.dev` and `.prod` workflows delegate to `docker-build-template.yaml` so
+the build logic exists once; the `.local` workflows build directly, with
+`docker build -f install/local/<service>/Dockerfile .` from the repository
+root.
 `docker-push-silo.yaml` publishes the Silo-compatible object-storage image, and
 is path-filtered to `install/local/silo/*` because nothing else can change it.
 

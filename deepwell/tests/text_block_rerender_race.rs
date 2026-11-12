@@ -292,6 +292,111 @@ async fn older_rerender_does_not_overwrite_newer_blocks() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn aborted_add_blocks_uploads_are_deleted() {
+    let state = setup_state().await;
+    let fixture = create_fixture_page(
+        &state,
+        String::from("[[html]]SEED-BLOCK-CONTENT[[/html]]\n\nseed page"),
+    )
+    .await;
+    let page_id = fixture.page_id.page_id;
+    assert_eq!(
+        stored_html_block(&state, page_id).await.as_deref(),
+        Some("SEED-BLOCK-CONTENT"),
+    );
+
+    let txn = state.database.begin().await.expect("write txn");
+    let ctx = ServiceContext::new(&state, &txn);
+    TextBlockService::add_blocks(
+        &ctx,
+        page_id,
+        TextBlockType::Html,
+        &[TextBlock {
+            text: "UNCOMMITTED-CONTENT",
+            text_type: None,
+            mime: MIME_HTML,
+            name: None,
+        }],
+    )
+    .await
+    .expect("add_blocks should succeed inside the transaction");
+    let uploaded =
+        TextBlockService::get_block_by_index(&ctx, page_id, TextBlockType::Html, 1)
+            .await
+            .expect("block lookup should succeed")
+            .expect("the switched row should name the new object")
+            .s3_filename;
+    let response = ctx
+        .s3_tblocks_bucket()
+        .head_object(&uploaded)
+        .await
+        .expect("HEAD should succeed for the uploaded object");
+    assert_eq!(
+        response.1, 200,
+        "the uploaded object should exist before the abort"
+    );
+
+    ctx.discard_uncommitted_text_blocks().await;
+
+    let response = ctx
+        .s3_tblocks_bucket()
+        .head_object(&uploaded)
+        .await
+        .expect("HEAD should succeed after the drain");
+    assert_eq!(
+        response.1, 404,
+        "the uncommitted upload should be deleted by the drain"
+    );
+
+    drop(ctx);
+    txn.rollback().await.expect("rollback should succeed");
+    assert_eq!(
+        stored_html_block(&state, page_id).await.as_deref(),
+        Some("SEED-BLOCK-CONTENT"),
+        "the rolled-back replacement should leave the committed block untouched",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn committed_add_blocks_uploads_survive() {
+    let state = setup_state().await;
+    let fixture = create_fixture_page(
+        &state,
+        String::from("[[html]]SEED-BLOCK-CONTENT[[/html]]\n\nseed page"),
+    )
+    .await;
+    let page_id = fixture.page_id.page_id;
+
+    let txn = state.database.begin().await.expect("write txn");
+    let ctx = ServiceContext::new(&state, &txn);
+    TextBlockService::add_blocks(
+        &ctx,
+        page_id,
+        TextBlockType::Html,
+        &[TextBlock {
+            text: "COMMITTED-CONTENT",
+            text_type: None,
+            mime: MIME_HTML,
+            name: None,
+        }],
+    )
+    .await
+    .expect("add_blocks should succeed inside the transaction");
+    assert_eq!(
+        stored_html_block(&state, page_id).await.as_deref(),
+        Some("SEED-BLOCK-CONTENT"),
+        "the switched row should not be visible before the commit",
+    );
+    drop(ctx);
+    txn.commit().await.expect("commit should succeed");
+    assert_eq!(
+        stored_html_block(&state, page_id).await.as_deref(),
+        Some("COMMITTED-CONTENT"),
+        "the commit should keep the tracked upload live",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn overlapping_add_blocks_do_not_abort_the_writer() {
     let state = setup_state().await;
     let fixture = create_fixture_page(

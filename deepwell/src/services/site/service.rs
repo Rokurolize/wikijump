@@ -864,6 +864,30 @@ impl SiteService {
             )
         };
 
+        let slug_owner = Site::find()
+            .filter(
+                Condition::all()
+                    .add(site::Column::Slug.eq(new_slug))
+                    .add(site::Column::DeletedAt.is_null())
+                    .add(site::Column::SiteId.ne(site.site_id)),
+            )
+            .one(ctx.transaction())
+            .await
+            .or_raise(make_error)?;
+
+        if slug_owner.is_some() {
+            error!(
+                "Site slug '{new_slug}' is held by another site, cannot rename site ID {}",
+                site.site_id,
+            );
+            bail!(Error::new(
+                format!(
+                    "cannot update site, another site already has the slug '{new_slug}'"
+                ),
+                ErrorType::SiteExists
+            ));
+        }
+
         match AliasService::get_optional(ctx, AliasType::Site, new_slug)
             .await
             .or_raise(make_error)?

@@ -34,7 +34,7 @@ pub async fn redirect_to_main(
     if let Some(destination) = local_code_underscore_redirect(uri.path()) {
         return Redirect::permanent(&destination).into_response();
     }
-    let site_id = get_site_id(&headers);
+    let site_id = require_internal_header!(get_site_id(&headers));
     let path = get_path(&uri);
     let domain = try_response!(state.get_site_domain_or_response(site_id));
     let destination = format!("https://{domain}{path}");

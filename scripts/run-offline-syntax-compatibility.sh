@@ -4,9 +4,17 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 if [[ "${WIKIJUMP_TEST_NETWORK_GUARD_ACTIVE:-}" != "1" ]]; then
-  export WIKIJUMP_OFFLINE_CARGO="$(rustup which --toolchain 1.99.1 cargo)"
-  export WIKIJUMP_OFFLINE_RUSTC="$(rustup which --toolchain 1.99.1 rustc)"
-  export WIKIJUMP_OFFLINE_RUSTDOC="$(rustup which --toolchain 1.99.1 rustdoc)"
+  # The channel comes from the tree's own rust-toolchain.toml, so a
+  # toolchain bump needs no change here.
+  channel="$(sed -n 's/^channel = "\([0-9.]*\)"/\1/p' "${ROOT}/rust-toolchain.toml")"
+  if [[ -z "${channel}" ]]; then
+    echo "offline syntax compatibility could not read the Rust channel from rust-toolchain.toml" >&2
+    exit 2
+  fi
+
+  export WIKIJUMP_OFFLINE_CARGO="$(rustup which --toolchain "${channel}" cargo)"
+  export WIKIJUMP_OFFLINE_RUSTC="$(rustup which --toolchain "${channel}" rustc)"
+  export WIKIJUMP_OFFLINE_RUSTDOC="$(rustup which --toolchain "${channel}" rustdoc)"
   exec "${ROOT}/scripts/run-test-no-external-network.sh" "$0" "$@"
 fi
 

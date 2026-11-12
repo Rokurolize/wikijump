@@ -582,6 +582,7 @@ pub(in crate::services::render) struct ListPagesSelectedContentArgs<'a, 'ctx, 'i
     pub(in crate::services::render) current_page_id: i64,
     pub(in crate::services::render) viewer_user_id: Option<i64>,
     pub(in crate::services::render) max_include_expansions: usize,
+    pub(in crate::services::render) trusted_corpus_render: bool,
     pub(in crate::services::render) render_cost_budget: SharedRenderCostBudget,
     pub(in crate::services::render) url: UrlArguments<'url>,
 }

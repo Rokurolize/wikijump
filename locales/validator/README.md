@@ -1,6 +1,6 @@
-## wikijiump-locales-validator
+## wikijump-locales-validator
 
-Checks through the files in the `/locales/fluent` directory to ensure that they are in order and do not contain errors. This is meant to run in CI when any changes are made to Fluent files.
+Checks through the files in the `/locales/fluent` directory to ensure that they are in order and do not contain errors. This runs in the `locales` group of the consolidated validation workflow, and locally through `scripts/preflight.sh`, so that errors are caught before changes are merged.
 
 Like the rest of Wikijump, this is licensed as AGPL 3.0 or later.
 

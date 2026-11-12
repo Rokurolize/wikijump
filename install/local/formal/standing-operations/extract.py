@@ -183,8 +183,8 @@ def upgrade_anchors(facts: list[str]) -> None:
         "pg_upgrade --check",
         "pg_upgrade \"${upgrade_args[@]}\"",
         "find /volume -mindepth 1 -maxdepth 1 ! -name .pg-upgrade-new -exec rm -rf {} +",
-        "find \"${new}\" -mindepth 1 -maxdepth 1 -exec mv -t /volume {} +",
-        "rmdir \"${new}\"",
+        'cp -al "${new}/." /volume/',
+        'rm -rf "${new}"',
     ):
         if needle not in text:
             raise ModelDrift(f"{UPGRADE}: missing {needle}")

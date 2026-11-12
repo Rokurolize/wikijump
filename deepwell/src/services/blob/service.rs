@@ -245,15 +245,19 @@ impl BlobService {
                 .await
                 .or_raise(make_error)?;
 
-        BlobPending::delete_by_id(pending_blob_id)
-            .exec(txn)
-            .await
-            .or_raise(make_error)?;
-
+        // Delete the stored object before the pending-blob row, the same
+        // order BlobService::prune() uses. Removing the row first would
+        // leave an object that no cleanup path can find if the delete
+        // failed.
         if Self::exists(ctx, &s3_path).await.or_raise(make_error)? {
             let bucket = ctx.s3_files_bucket();
             bucket.delete_object(&s3_path).await.or_raise(make_error)?;
         }
+
+        BlobPending::delete_by_id(pending_blob_id)
+            .exec(txn)
+            .await
+            .or_raise(make_error)?;
 
         Ok(())
     }

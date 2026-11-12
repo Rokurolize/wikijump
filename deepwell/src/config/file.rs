@@ -47,6 +47,10 @@ pub struct ConfigFile {
     email: Email,
     file: FileSection,
     message: Message,
+    #[serde(default)]
+    issuance_caps: IssuanceCaps,
+    #[serde(default)]
+    render_limits: RenderLimits,
 }
 
 #[derive(Debug, Clone)]
@@ -238,6 +242,93 @@ struct Message {
     maximum_recipients: usize,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "kebab-case")]
+struct IssuanceCaps {
+    #[serde(default = "default_page_create_user_max_attempts")]
+    page_create_user_max_attempts: i64,
+    #[serde(default = "default_page_create_site_max_attempts")]
+    page_create_site_max_attempts: i64,
+    #[serde(default = "default_page_edit_user_max_attempts")]
+    page_edit_user_max_attempts: i64,
+    #[serde(default = "default_register_ip_max_attempts")]
+    register_ip_max_attempts: i64,
+    #[serde(default = "default_register_global_max_attempts")]
+    register_global_max_attempts: i64,
+}
+
+impl Default for IssuanceCaps {
+    fn default() -> Self {
+        IssuanceCaps {
+            page_create_user_max_attempts: default_page_create_user_max_attempts(),
+            page_create_site_max_attempts: default_page_create_site_max_attempts(),
+            page_edit_user_max_attempts: default_page_edit_user_max_attempts(),
+            register_ip_max_attempts: default_register_ip_max_attempts(),
+            register_global_max_attempts: default_register_global_max_attempts(),
+        }
+    }
+}
+
+fn default_page_create_user_max_attempts() -> i64 {
+    60
+}
+
+fn default_page_create_site_max_attempts() -> i64 {
+    600
+}
+
+fn default_page_edit_user_max_attempts() -> i64 {
+    120
+}
+
+fn default_register_ip_max_attempts() -> i64 {
+    20
+}
+
+fn default_register_global_max_attempts() -> i64 {
+    100
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "kebab-case")]
+struct RenderLimits {
+    #[serde(default = "default_public_max_include_expansions")]
+    public_max_include_expansions: usize,
+    #[serde(default = "default_corpus_max_include_expansions")]
+    corpus_max_include_expansions: usize,
+    #[serde(default = "default_public_max_gallery_requirements")]
+    public_max_gallery_requirements: usize,
+    #[serde(default = "default_corpus_max_gallery_requirements")]
+    corpus_max_gallery_requirements: usize,
+}
+
+impl Default for RenderLimits {
+    fn default() -> Self {
+        RenderLimits {
+            public_max_include_expansions: default_public_max_include_expansions(),
+            corpus_max_include_expansions: default_corpus_max_include_expansions(),
+            public_max_gallery_requirements: default_public_max_gallery_requirements(),
+            corpus_max_gallery_requirements: default_corpus_max_gallery_requirements(),
+        }
+    }
+}
+
+fn default_public_max_include_expansions() -> usize {
+    4096
+}
+
+fn default_corpus_max_include_expansions() -> usize {
+    4096
+}
+
+fn default_public_max_gallery_requirements() -> usize {
+    512
+}
+
+fn default_corpus_max_gallery_requirements() -> usize {
+    128
+}
+
 fn default_true() -> bool {
     true
 }
@@ -389,6 +480,21 @@ impl ConfigFile {
                     maximum_body_bytes: maximum_message_body_bytes,
                     maximum_recipients: maximum_message_recipients,
                 },
+            issuance_caps:
+                IssuanceCaps {
+                    page_create_user_max_attempts,
+                    page_create_site_max_attempts,
+                    page_edit_user_max_attempts,
+                    register_ip_max_attempts,
+                    register_global_max_attempts,
+                },
+            render_limits:
+                RenderLimits {
+                    public_max_include_expansions,
+                    corpus_max_include_expansions,
+                    public_max_gallery_requirements,
+                    corpus_max_gallery_requirements,
+                },
         } = self;
 
         const RSMQ_DELAY_LIMIT: u64 = 9999999;
@@ -538,6 +644,15 @@ impl ConfigFile {
             maximum_message_subject_bytes,
             maximum_message_body_bytes,
             maximum_message_recipients,
+            page_create_user_max_attempts,
+            page_create_site_max_attempts,
+            page_edit_user_max_attempts,
+            register_ip_max_attempts,
+            register_global_max_attempts,
+            public_max_include_expansions,
+            corpus_max_include_expansions,
+            public_max_gallery_requirements,
+            corpus_max_gallery_requirements,
         }
     }
 }
@@ -699,6 +814,19 @@ mod tests {
                 maximum_body_bytes: 10_000,
                 maximum_recipients: 3,
             },
+            issuance_caps: IssuanceCaps {
+                page_create_user_max_attempts: 61,
+                page_create_site_max_attempts: 601,
+                page_edit_user_max_attempts: 121,
+                register_ip_max_attempts: 21,
+                register_global_max_attempts: 101,
+            },
+            render_limits: RenderLimits {
+                public_max_include_expansions: 4096,
+                corpus_max_include_expansions: 4096,
+                public_max_gallery_requirements: 512,
+                corpus_max_gallery_requirements: 128,
+            },
         }
     }
 
@@ -807,6 +935,91 @@ mod tests {
         assert_eq!(config.maximum_message_subject_bytes, 128);
         assert_eq!(config.maximum_message_body_bytes, 10_000);
         assert_eq!(config.maximum_message_recipients, 3);
+        assert_eq!(config.page_create_user_max_attempts, 61);
+        assert_eq!(config.page_create_site_max_attempts, 601);
+        assert_eq!(config.page_edit_user_max_attempts, 121);
+        assert_eq!(config.register_ip_max_attempts, 21);
+        assert_eq!(config.register_global_max_attempts, 101);
+        assert_eq!(config.public_max_include_expansions, 4096);
+        assert_eq!(config.corpus_max_include_expansions, 4096);
+        assert_eq!(config.public_max_gallery_requirements, 512);
+        assert_eq!(config.corpus_max_gallery_requirements, 128);
+    }
+
+    #[test]
+    fn render_limit_defaults_and_parses() {
+        let toml = toml::to_string(&sample_config_file()).unwrap();
+
+        let absent_toml = toml.replace(
+            "[render-limits]\npublic-max-include-expansions = 4096\ncorpus-max-include-expansions = 4096\npublic-max-gallery-requirements = 512\ncorpus-max-gallery-requirements = 128\n",
+            "",
+        );
+        assert_ne!(toml, absent_toml);
+        let absent_config: ConfigFile = toml::from_str(&absent_toml).unwrap();
+        assert_eq!(
+            absent_config.render_limits.public_max_include_expansions,
+            4096
+        );
+        assert_eq!(
+            absent_config.render_limits.corpus_max_include_expansions,
+            4096
+        );
+        assert_eq!(
+            absent_config.render_limits.public_max_gallery_requirements,
+            512
+        );
+        assert_eq!(
+            absent_config.render_limits.corpus_max_gallery_requirements,
+            128
+        );
+
+        let parsed_toml = toml.replace(
+            "public-max-include-expansions = 4096",
+            "public-max-include-expansions = 512",
+        );
+        let parsed_config: ConfigFile = toml::from_str(&parsed_toml).unwrap();
+        let config = parsed_config.into_config(extra_config());
+        assert_eq!(config.public_max_include_expansions, 512);
+    }
+
+    #[test]
+    fn issuance_cap_defaults_and_parses() {
+        let toml = toml::to_string(&sample_config_file()).unwrap();
+
+        let absent_toml = toml.replace(
+            "[issuance-caps]\npage-create-user-max-attempts = 61\npage-create-site-max-attempts = 601\npage-edit-user-max-attempts = 121\nregister-ip-max-attempts = 21\nregister-global-max-attempts = 101\n",
+            "",
+        );
+        assert_ne!(toml, absent_toml);
+        let absent_config: ConfigFile = toml::from_str(&absent_toml).unwrap();
+        assert_eq!(
+            absent_config.issuance_caps.page_create_user_max_attempts,
+            60,
+        );
+        assert_eq!(
+            absent_config.issuance_caps.page_create_site_max_attempts,
+            600,
+        );
+        assert_eq!(absent_config.issuance_caps.page_edit_user_max_attempts, 120,);
+        assert_eq!(absent_config.issuance_caps.register_ip_max_attempts, 20);
+        assert_eq!(
+            absent_config.issuance_caps.register_global_max_attempts,
+            100,
+        );
+
+        let parsed_toml = toml
+            .replace(
+                "page-create-user-max-attempts = 61",
+                "page-create-user-max-attempts = 9",
+            )
+            .replace(
+                "register-ip-max-attempts = 21",
+                "register-ip-max-attempts = 0",
+            );
+        let parsed_config: ConfigFile = toml::from_str(&parsed_toml).unwrap();
+        let config = parsed_config.into_config(extra_config());
+        assert_eq!(config.page_create_user_max_attempts, 9);
+        assert_eq!(config.register_ip_max_attempts, 0);
     }
 
     #[test]

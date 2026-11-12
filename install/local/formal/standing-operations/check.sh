@@ -84,36 +84,6 @@ override_cfg() {
   done
 }
 
-surviving_shape() {
-  python3 - "$1" <<'PY'
-import re, sys
-log = open(sys.argv[1], encoding="utf-8").read()
-if "Invariant SurvivingContainerKept is violated" not in log:
-    raise SystemExit("surviving finding did not name SurvivingContainerKept")
-states = re.split(r"^State \d+:.*$", log, flags=re.M)[1:]
-assert states, "no states parsed"
-final = states[-1]
-if 'outcome = "recreated"' not in final:
-    raise SystemExit(final)
-
-def mapping(label):
-    match = re.search(rf"{label} = \[([^\]]*)\]", final)
-    assert match, final
-    body = match.group(1).replace('"', "")
-    return dict(re.findall(r"(\w+) \|-> (\w+)", body))
-
-present = mapping("present")
-kept = mapping("containerKept")
-started = mapping("started")
-survivors = [
-    name for name, value in present.items()
-    if value == "TRUE" and kept.get(name) == "FALSE" and started.get(name) == "base"
-]
-assert survivors, (present, kept, started)
-print("surviving shape ok: " + ", ".join(survivors) + " recreated from the pinned image")
-PY
-}
-
 if [[ "${1:-}" == "mutations" ]]; then
   declare -a rows=(
     "m-identity parking.cfg ParkingRollback IdentityGuard FALSE NoUnverifiedImage"
@@ -138,11 +108,10 @@ if [[ "${1:-}" == "mutations" ]]; then
 fi
 
 cfg_with "$WORK/parking.cfg" "$WORK/parking-pass.cfg" \
-  NoUnverifiedImage NoRebuildWhenAllPresent ActivatedRunsNew
+  NoUnverifiedImage NoRebuildWhenAllPresent ActivatedRunsNew SurvivingContainerKept
 cfg_with "$WORK/parking.cfg" "$WORK/parking-restore.cfg" NeverRestored
 cfg_with "$WORK/parking.cfg" "$WORK/parking-refuse.cfg" NeverRefused
 cfg_with "$WORK/parking.cfg" "$WORK/parking-recreate.cfg" NeverRecreated
-cfg_with "$WORK/parking.cfg" "$WORK/parking-surviving.cfg" SurvivingContainerKept
 cfg_with "$WORK/volume.cfg" "$WORK/volume-pass.cfg" PassMeansVerified
 cfg_with "$WORK/volume.cfg" "$WORK/volume-pass-witness.cfg" NeverPasses
 cfg_with "$WORK/volume.cfg" "$WORK/volume-fail.cfg" NeverFailed
@@ -162,8 +131,6 @@ expect_pass parking "$WORK/parking-pass.cfg" ParkingRollback || note $?
 expect_fail parking-restore "$WORK/parking-restore.cfg" ParkingRollback || note $?
 expect_fail parking-refuse "$WORK/parking-refuse.cfg" ParkingRollback || note $?
 expect_fail parking-recreate "$WORK/parking-recreate.cfg" ParkingRollback || note $?
-expect_fail parking-surviving "$WORK/parking-surviving.cfg" ParkingRollback || note $?
-surviving_shape "$WORK/parking-surviving.log" || note $?
 expect_pass volume "$WORK/volume-pass.cfg" VolumeCutover || note $?
 expect_fail volume-pass "$WORK/volume-pass-witness.cfg" VolumeCutover || note $?
 if grep -q 'DigestGuard = TRUE' "$WORK/volume.cfg"; then

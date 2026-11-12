@@ -2,7 +2,7 @@
 EXTENDS Integers, FiniteSets
 
 CONSTANTS BanBlocksCreate, BanClearsMember, BanClearsRoles, CleanupCurrentOnly,
-          GrantBlockedByBan, InviteOnce, ReviewOnce
+          GrantBlockedByBan, InviteOnce, ReviewOnce, RemoveClearsRoles, GrantRequiresMember
 
 VARIABLES member, cause, application, invite, inviteReused, reviewReused, grants,
           row, seen, phase, wrongGone
@@ -101,12 +101,14 @@ RemoveMember ==
   /\ member
   /\ member' = FALSE
   /\ cause' = "none"
-  /\ UNCHANGED <<application, invite, inviteReused, reviewReused, grants, row, seen, phase, wrongGone>>
+  /\ grants' = IF RemoveClearsRoles THEN {} ELSE grants
+  /\ UNCHANGED <<application, invite, inviteReused, reviewReused, row, seen, phase, wrongGone>>
 
 Grant(role) ==
   /\ role \in Roles
   /\ role \notin grants
   /\ GrantBlockedByBan => ~ActiveBan
+  /\ GrantRequiresMember => member
   /\ grants' = grants \union {role}
   /\ UNCHANGED <<member, cause, application, invite, inviteReused, reviewReused, row, seen, phase, wrongGone>>
 

@@ -22,7 +22,7 @@ test('a menu crossing empty title-container space is a machine fact; actual text
   const offscreen = await page.evaluate(measureTitleComposition);
   assert.deepEqual((await page.evaluate(measureTitleTextIntersections, offscreen.overlaps)).intersections, []);
 });
-import {wikidotRevisionSourceHtml} from '../../../../framerail/src/lib/wikidot-history-contract.js';
+import {wikidotRevisionSourceHtml} from '../../../../framerail/src/lib/wikidot-history-contract.ts';
 
 test('composition observes inherited hiding and clipping instead of treating hidden boxes as visual failures', async t => {
   const browser = await loadChromium().launch({headless: true});

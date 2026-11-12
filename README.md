@@ -1,24 +1,14 @@
 # Wikijump
 
 <p align="center">
-  <a href="https://github.com/Rokurolize/wikijump/actions/workflows/deepwell.yaml?query=branch%3Adevelop">
-    <img src="https://github.com/Rokurolize/wikijump/actions/workflows/deepwell.yaml/badge.svg?branch=develop"
-         alt="Deepwell CI status on develop">
+  <a href="https://github.com/Rokurolize/wikijump/actions/workflows/pr-checks.yml?query=branch%3Adevelop">
+    <img src="https://github.com/Rokurolize/wikijump/actions/workflows/pr-checks.yml/badge.svg?branch=develop"
+         alt="Pull request checks status on develop">
   </a>
 
-  <a href="https://github.com/Rokurolize/wikijump/actions/workflows/wws.yaml?query=branch%3Adevelop">
-    <img src="https://github.com/Rokurolize/wikijump/actions/workflows/wws.yaml/badge.svg?branch=develop"
-         alt="WWS CI status on develop">
-  </a>
-
-  <a href="https://github.com/Rokurolize/wikijump/actions/workflows/framerail.yaml?query=branch%3Adevelop">
-    <img src="https://github.com/Rokurolize/wikijump/actions/workflows/framerail.yaml/badge.svg?branch=develop"
-         alt="Framerail CI status on develop">
-  </a>
-
-  <a href="https://github.com/Rokurolize/wikijump/actions/workflows/locales.yaml?query=branch%3Adevelop">
-    <img src="https://github.com/Rokurolize/wikijump/actions/workflows/locales.yaml/badge.svg?branch=develop"
-         alt="Localization CI status on develop">
+  <a href="https://github.com/Rokurolize/wikijump/actions/workflows/consolidated-validation.yml?query=branch%3Adevelop">
+    <img src="https://github.com/Rokurolize/wikijump/actions/workflows/consolidated-validation.yml/badge.svg?branch=develop"
+         alt="Consolidated validation status on develop">
   </a>
 </p>
 

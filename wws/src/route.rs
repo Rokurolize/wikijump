@@ -468,6 +468,34 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn requests_without_internal_headers_are_not_found_instead_of_panicking() {
+        let state = build_server_state(false, test_secrets()).await.unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            axum::serve(listener, build_router(state)).await.unwrap();
+        });
+        let client = reqwest::Client::new();
+
+        for path in [
+            "/local--files/some-page/x.png",
+            "/-/file/some-page/file.txt",
+            "/-/download/some-page/file.txt",
+            "/robots.txt",
+            "/.well-known",
+        ] {
+            let response = client
+                .get(format!("http://{address}{path}"))
+                .send()
+                .await
+                .unwrap_or_else(|error| panic!("{path} did not answer: {error}"));
+            assert_eq!(response.status(), StatusCode::NOT_FOUND, "{path}");
+        }
+
+        server.abort();
+    }
+
+    #[tokio::test]
     async fn non_numeric_avatar_user_id_is_not_found() {
         let state = build_server_state(false, test_secrets()).await.unwrap();
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
