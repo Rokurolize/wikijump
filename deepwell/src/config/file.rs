@@ -964,8 +964,14 @@ mod tests {
             absent_config.render_limits.corpus_max_include_expansions,
             4096
         );
-        assert_eq!(absent_config.render_limits.public_max_gallery_requirements, 512);
-        assert_eq!(absent_config.render_limits.corpus_max_gallery_requirements, 128);
+        assert_eq!(
+            absent_config.render_limits.public_max_gallery_requirements,
+            512
+        );
+        assert_eq!(
+            absent_config.render_limits.corpus_max_gallery_requirements,
+            128
+        );
 
         let parsed_toml = toml.replace(
             "public-max-include-expansions = 4096",
