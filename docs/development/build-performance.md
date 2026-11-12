@@ -16,11 +16,13 @@ The workflows that matter for this repository are the ones in the table under
 
 | Workflow | Command | Before | After |
 | --- | --- | --- | --- |
-| Cold build | `cargo build --manifest-path deepwell/Cargo.toml` | 346.0 s | 317.4 s |
-| Cold check | `cargo check --manifest-path deepwell/Cargo.toml --all-targets` | 227.0 s | 168.0 s |
+| Cold build | `cargo build --manifest-path deepwell/Cargo.toml` | 346.0 s | 280.6 s |
+| Cold check | `cargo check --manifest-path deepwell/Cargo.toml --all-targets` | 227.0 s | 159.0 s |
 | Incremental check | `cargo check --manifest-path deepwell/Cargo.toml --all-targets` after touching `src/lib.rs` | 9.2 s | 9.9 s |
-| Test build | `cargo test --manifest-path deepwell/Cargo.toml --no-run` | 376.1 s | 364.7 s |
+| Test build | `cargo test --manifest-path deepwell/Cargo.toml --no-run` | 376.1 s | 351.9 s |
 | Image build | `cargo build --manifest-path deepwell/Cargo.toml --release --bin deepwell` | 584.8 s | 577.8 s |
+| PR check: library tests | `cargo test --manifest-path deepwell/Cargo.toml --lib` | 257.1 s | 165.6 s |
+| PR check: Clippy | `cargo clippy --manifest-path deepwell/Cargo.toml --tests` | 142.3 s | 120.4 s |
 
 The incremental check is the loop a developer runs most often, and it was
 already fast; the cold build, the cold check, and the image build are the ones
@@ -31,9 +33,9 @@ is why its "before" number is the same as the old all-targets release build.
 These numbers come from a sixteen-core host. The GitHub Actions runners have
 four cores, so what matters there is how much work a build does rather than
 how long it takes on a wide machine. The cold build's total compiler time
-fell from 1792.9 s to 1599.2 s, a reduction of 10.8 %, and the release build's
-whole-program LTO step fell from 520.1 s to 406.2 s of compiler time because
-three of the four binaries are no longer built.
+fell from 1792.9 s to 1216.7 s, a reduction of 32.1 %, and the release
+build's whole-program LTO step fell from 520.1 s to 406.2 s of compiler time
+because three of the four binaries are no longer built.
 
 ### Where the time went
 
@@ -41,20 +43,23 @@ three of the four binaries are no longer built.
 the longest units were the Deepwell crate itself (168.7 s), `libgit2-sys`
 (113.6 s), and `aws-lc-sys` (108.2 s). The two C libraries were pulled in only
 to give the `built` crate a way to read the Git commit, and to give `rustls`
-its default cryptography provider.
+its default cryptography provider. Procedural macros, 37 packages here,
+accounted for a further 394.5 s of compile time, compiled at the same
+optimisation level as the dependencies the tests use at run time.
 
 The release build was almost entirely one step: with whole-program LTO, the
 `deepwell` binary unit took 406.2 s of the 584.8 s build, and the three other
 binaries took another 113.9 s.
 
 The test build was almost entirely linking: 73 integration test binaries, each
-linking the whole Deepwell dependency graph, accounted for 1468.9 s of
+linking the whole Deepwell dependency graph, accounted for 1371.1 s of
 compiler time.
 
 ## What changed
 
 The changes are in `deepwell/Cargo.toml`, `deepwell/build.rs`,
-`deepwell/src/info.rs`, `wws/Cargo.toml`, and the two Deepwell Dockerfiles.
+`deepwell/src/info.rs`, `wws/Cargo.toml`, `.github/workflows/pr-checks.yml`,
+and the two Deepwell Dockerfiles.
 
 ### The Git commit no longer needs a Git library
 
@@ -112,6 +117,34 @@ is named, so the `sqlx-cli` build in `install/prod/deepwell/Dockerfile` was
 repeated from scratch whenever that layer was rebuilt. The layer now mounts a
 cache for the target directory, the same way the Deepwell build itself does.
 
+### Procedural macros are not optimized for the test run
+
+The development profile's `[profile.dev.package."*"]` sets `opt-level = 3`
+for every dependency because the integration suite's run time depends on the
+code the tests execute, and ftml and argon2 dominate it. That wildcard also
+raised the optimisation level of the procedural macros, which run while the
+compiler works and are never executed by a test.
+
+The 37 procedural macro packages in the Deepwell graph are now built at
+opt-level 0. Compilation of `serde_derive` fell from 21.8 s to 3.4 s,
+`sea-orm-macros` from 27.4 s to 5.5 s, and the Deepwell crate's own `rustc`
+process from 168.7 s to 147.0 s. A stale entry is not silent: Cargo warns
+when a profile package spec matches no package, so an override that stops
+applying announces itself in the build log. WWS carries no override because
+its dependencies already build at opt-level 0 (it sets no wildcard), so the
+same list would have been a no-op there.
+
+### The pull request checks use their own profile
+
+The `pr-checks.yml` Deepwell step runs the library tests and Clippy, and
+never the integration suite, so the optimisation level that suite needs buys
+the check nothing and costs it minutes on a four-core runner. Deepwell now
+carries a `ci` profile that inherits `dev` and builds the dependencies at
+opt-level 0, and the workflow asks for `--profile ci` for both commands. The
+same 1992 library tests run, in 4.4 s rather than 1.7 s, on a build that is
+far cheaper: 165.6 s against 257.1 s for the library tests, and 120.4 s
+against 142.3 s for Clippy, which is what the runners actually pay.
+
 ## Upstream suggestions that were measured and not taken
 
 The [Cargo build performance guide](https://doc.rust-lang.org/cargo/guide/build-performance.html)
@@ -148,8 +181,8 @@ of units, so the units stay at their default.
 
 `-Zthreads` and its successor `--jobs-frontend` are still unstable, and the
 repository pins a stable toolchain for both CI and production images. The
-work they would help is the Deepwell crate's own compilation, 153.1 s of the
-317.4 s cold build, which is one `rustc` process. Enabling it would mean a
+work they would help is the Deepwell crate's own compilation, 147.0 s of the
+280.6 s cold build, which is one `rustc` process. Enabling it would mean a
 second toolchain and a second target directory, because the flag changes
 every unit's fingerprint.
 
@@ -197,7 +230,7 @@ target directory, which lists every unit with its start time and duration.
 Two large costs are outside this repository's reach, and one is a deliberate
 trade.
 
-The Deepwell crate itself takes 153.1 s to compile in the cold build, because
+The Deepwell crate itself takes 147.0 s to compile in the cold build, because
 it is one `rustc` process over roughly 216,000 lines of Rust. Splitting it
 into several crates would let Cargo compile them side by side, and it is the
 only change that would substantially shorten the cold build on a machine with
