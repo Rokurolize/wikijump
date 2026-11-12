@@ -1,12 +1,14 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+import { isRedirect } from "@sveltejs/kit"
+
 import {
   resolvePageRedirect,
   throwPageRedirect
 } from "../src/lib/server/page-redirect.ts"
 
-test("absolute Wikidot module redirect targets emit a Response Location header", () => {
+test("absolute Wikidot module redirect targets throw a SvelteKit redirect", () => {
   try {
     throwPageRedirect({
       status: 301,
@@ -14,12 +16,23 @@ test("absolute Wikidot module redirect targets emit a Response Location header",
     })
     assert.fail("expected throwPageRedirect to throw")
   } catch (thrown) {
-    assert.ok(thrown instanceof Response)
+    assert.ok(isRedirect(thrown))
     assert.equal(thrown.status, 301)
-    assert.equal(
-      thrown.headers.get("Location"),
-      "https://scp-wiki.wikidot.com/peppersghost"
-    )
+    assert.equal(thrown.location, "https://scp-wiki.wikidot.com/peppersghost")
+  }
+})
+
+test("same-origin absolute redirect targets throw a SvelteKit redirect", () => {
+  try {
+    throwPageRedirect({
+      status: 301,
+      location: "https://example.test/other-page"
+    })
+    assert.fail("expected throwPageRedirect to throw")
+  } catch (thrown) {
+    assert.ok(isRedirect(thrown))
+    assert.equal(thrown.status, 301)
+    assert.equal(thrown.location, "https://example.test/other-page")
   }
 })
 

@@ -12,10 +12,7 @@ export interface ResolvedPageRedirect {
 
 export function throwPageRedirect(resolved: ResolvedPageRedirect): never {
   if (/^https?:\/\//i.test(resolved.location)) {
-    throw new Response(null, {
-      status: resolved.status,
-      headers: { Location: resolved.location }
-    })
+    redirect(resolved.status, resolved.location, { external: true })
   }
   redirect(resolved.status, resolved.location)
 }
