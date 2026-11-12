@@ -418,11 +418,15 @@ impl RenderProtectionBundle {
     }
 }
 
-pub(in crate::services::render) fn public_include_expansion_limit(config: &Config) -> usize {
+pub(in crate::services::render) fn public_include_expansion_limit(
+    config: &Config,
+) -> usize {
     config.public_max_include_expansions
 }
 
-pub(in crate::services::render) fn corpus_include_expansion_limit(config: &Config) -> usize {
+pub(in crate::services::render) fn corpus_include_expansion_limit(
+    config: &Config,
+) -> usize {
     config.corpus_max_include_expansions
 }
 
@@ -794,6 +798,7 @@ impl RenderService {
                 viewer_user_id: None,
                 current_page_data_form_values: None,
                 max_include_expansions: public_include_expansion_limit(ctx.config()),
+                trusted_corpus_render: false,
                 render_cost_budget,
                 trace: None,
                 persist_compiled_text: true,
@@ -844,6 +849,7 @@ impl RenderService {
                 viewer_user_id: None,
                 current_page_data_form_values: None,
                 max_include_expansions: public_include_expansion_limit(ctx.config()),
+                trusted_corpus_render: false,
                 render_cost_budget: RenderCostBudget::new_default(),
                 trace: None,
                 persist_compiled_text: false,
@@ -907,6 +913,7 @@ impl RenderService {
                 viewer_user_id: ctx.request().user_id,
                 current_page_data_form_values: None,
                 max_include_expansions: public_include_expansion_limit(ctx.config()),
+                trusted_corpus_render: false,
                 render_cost_budget: RenderCostBudget::new_default(),
                 trace: None,
                 persist_compiled_text: false,
@@ -952,6 +959,7 @@ impl RenderService {
             },
             RenderPageOptions {
                 max_include_expansions: public_include_expansion_limit(ctx.config()),
+                trusted_corpus_render: false,
                 viewer_user_id: None,
                 current_page_data_form_values: None,
                 persist_page_artifacts: true,
@@ -978,6 +986,7 @@ impl RenderService {
             id,
             RenderPageOptions {
                 max_include_expansions: public_include_expansion_limit(ctx.config()),
+                trusted_corpus_render: false,
                 viewer_user_id: None,
                 current_page_data_form_values: Some(current_page_data_form_values),
                 persist_page_artifacts: true,
@@ -1005,6 +1014,7 @@ impl RenderService {
             id,
             RenderPageOptions {
                 max_include_expansions: public_include_expansion_limit(ctx.config()),
+                trusted_corpus_render: false,
                 viewer_user_id,
                 current_page_data_form_values: None,
                 persist_page_artifacts: false,
@@ -1030,6 +1040,7 @@ impl RenderService {
             id,
             RenderPageOptions {
                 max_include_expansions: corpus_include_expansion_limit(ctx.config()),
+                trusted_corpus_render: true,
                 viewer_user_id: None,
                 current_page_data_form_values: None,
                 persist_page_artifacts: true,
@@ -1056,6 +1067,7 @@ impl RenderService {
             id,
             RenderPageOptions {
                 max_include_expansions: corpus_include_expansion_limit(ctx.config()),
+                trusted_corpus_render: true,
                 viewer_user_id: None,
                 current_page_data_form_values: None,
                 persist_page_artifacts: true,
@@ -1078,6 +1090,7 @@ impl RenderService {
         }: PageId,
         RenderPageOptions {
             max_include_expansions,
+            trusted_corpus_render,
             viewer_user_id,
             current_page_data_form_values,
             persist_page_artifacts,
@@ -1086,14 +1099,15 @@ impl RenderService {
         }: RenderPageOptions<'_>,
     ) -> Result<RenderPageOutput> {
         let corpus_limit = corpus_include_expansion_limit(ctx.config());
-        let max_include_expansions = if max_include_expansions < corpus_limit
+        let (max_include_expansions, trusted_corpus_render) = if max_include_expansions
+            < corpus_limit
             && SiteService::get_optional(ctx, Reference::Id(site_id))
                 .await?
                 .is_some_and(|site| site_is_wikidot_local_asset_mirror(&site))
         {
-            corpus_limit
+            (corpus_limit, true)
         } else {
-            max_include_expansions
+            (max_include_expansions, trusted_corpus_render)
         };
         let page_settings = WikitextSettings::from_mode(WikitextMode::Page, layout);
         let nav_settings = WikitextSettings::from_mode(WikitextMode::PageNav, layout);
@@ -1135,6 +1149,7 @@ impl RenderService {
                 viewer_user_id,
                 current_page_data_form_values: current_page_data_form_values.clone(),
                 max_include_expansions,
+                trusted_corpus_render,
                 render_cost_budget: render_cost_budget.clone(),
                 trace: trace.map(|trace| (trace, CorpusRenderScope::Body)),
                 persist_compiled_text: persist_page_artifacts,
@@ -1180,6 +1195,7 @@ impl RenderService {
                                 viewer_user_id,
                                 current_page_data_form_values,
                                 max_include_expansions,
+                                trusted_corpus_render,
                                 render_cost_budget: render_cost_budget.clone(),
                                 trace: trace.map(|trace| (trace, scope)),
                                 persist_compiled_text: persist_page_artifacts,
@@ -1271,6 +1287,7 @@ impl RenderService {
                 viewer_user_id: None,
                 current_page_data_form_values: None,
                 max_include_expansions: corpus_include_expansion_limit(ctx.config()),
+                trusted_corpus_render: true,
                 render_cost_budget: RenderCostBudget::new_default(),
                 trace: None,
                 url: UrlArguments::default(),
@@ -1390,6 +1407,7 @@ impl RenderService {
             viewer_user_id,
             current_page_data_form_values,
             max_include_expansions,
+            trusted_corpus_render,
             render_cost_budget,
             trace,
             url,
@@ -1403,7 +1421,8 @@ impl RenderService {
         let current_page_id = (!page_preview).then_some(current_page_id).flatten();
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
-        let mut include_budget = IncludeExpansionBudget::new(max_include_expansions);
+        let mut include_budget =
+            IncludeExpansionBudget::new(max_include_expansions, trusted_corpus_render);
         let initial_include_expansions = include_budget.remaining;
         let mut include_source_cache = IncludeSourceCache::default();
         select_root_metacomponent_documentation(
@@ -1865,13 +1884,12 @@ impl RenderService {
             viewer_user_id,
             current_page_data_form_values,
             max_include_expansions,
+            trusted_corpus_render,
             render_cost_budget,
             trace,
             persist_compiled_text,
             url,
         } = options;
-        let trusted_corpus_render =
-            max_include_expansions == corpus_include_expansion_limit(ctx.config());
         let list_pages_pager_route = render_context.list_pages_pager_route();
         let RenderContext {
             current_site_id,
@@ -1923,6 +1941,7 @@ impl RenderService {
                 viewer_user_id,
                 current_page_data_form_values,
                 max_include_expansions,
+                trusted_corpus_render,
                 render_cost_budget: render_cost_budget.clone(),
                 trace,
                 url,
@@ -3658,13 +3677,15 @@ pub(super) struct IncludeExpansionOptions<'a> {
 pub(super) struct IncludeExpansionBudget {
     pub(super) maximum: usize,
     pub(super) remaining: usize,
+    pub(super) trusted_corpus_render: bool,
 }
 
 impl IncludeExpansionBudget {
-    pub(super) fn new(maximum: usize) -> Self {
+    pub(super) fn new(maximum: usize, trusted_corpus_render: bool) -> Self {
         Self {
             maximum,
             remaining: maximum,
+            trusted_corpus_render,
         }
     }
 

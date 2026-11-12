@@ -934,8 +934,14 @@ mod tests {
         );
         assert_ne!(toml, absent_toml);
         let absent_config: ConfigFile = toml::from_str(&absent_toml).unwrap();
-        assert_eq!(absent_config.render_limits.public_max_include_expansions, 4096);
-        assert_eq!(absent_config.render_limits.corpus_max_include_expansions, 4096);
+        assert_eq!(
+            absent_config.render_limits.public_max_include_expansions,
+            4096
+        );
+        assert_eq!(
+            absent_config.render_limits.corpus_max_include_expansions,
+            4096
+        );
 
         let parsed_toml = toml.replace(
             "public-max-include-expansions = 4096",

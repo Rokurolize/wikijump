@@ -23,12 +23,12 @@ mod common;
 
 use self::common::TestRunner;
 use deepwell::config::Config;
+use deepwell::services::RequestContext;
 use deepwell::services::page::CreatePage;
 use deepwell::services::render::UrlArguments;
 use deepwell::services::{PageService, RenderService};
 use deepwell::types::PageId;
 use ftml::data::{PageInfo, ScoreValue};
-use deepwell::services::{RequestContext};
 use ftml::layout::Layout;
 use serde_json::json;
 use std::borrow::Cow;
