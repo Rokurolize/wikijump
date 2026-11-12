@@ -27,7 +27,7 @@ use crate::models::page_vote::{self, Entity as PageVote, Model as PageVoteModel}
 use crate::services::ServiceContext;
 use crate::utils::now;
 use paste::paste;
-use sea_orm::IntoActiveModel;
+use sea_orm::sea_query::Expr;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, EntityTrait, PaginatorTrait, QueryFilter,
     QueryOrder, QuerySelect, Set,
@@ -109,9 +109,22 @@ impl VoteService {
                 return Ok(None);
             }
 
-            let mut model = vote.into_active_model();
-            model.deleted_at = Set(Some(now()));
-            model.update(txn).await.or_raise(make_error)?;
+            let result = PageVote::update_many()
+                .col_expr(page_vote::Column::DeletedAt, Expr::value(Some(now())))
+                .filter(
+                    Condition::all()
+                        .add(page_vote::Column::PageVoteId.eq(vote.page_vote_id))
+                        .add(page_vote::Column::DeletedAt.is_null())
+                        .add(page_vote::Column::DisabledAt.is_null()),
+                )
+                .exec(txn)
+                .await
+                .or_raise(make_error)?;
+
+            match result.rows_affected {
+                1 => {}
+                _ => bail!(make_error()),
+            }
         }
 
         let model = page_vote::ActiveModel {
@@ -191,20 +204,36 @@ impl VoteService {
         };
 
         let txn = ctx.transaction();
-        let mut vote = Self::get(ctx, key, rating_system)
+        let model = Self::get(ctx, key, rating_system)
             .await
-            .or_raise(make_error)?
-            .into_active_model();
+            .or_raise(make_error)?;
 
-        if enable {
-            vote.disabled_at = Set(None);
-            vote.disabled_by = Set(None);
+        let (disabled_at, disabled_by) = if enable {
+            (None, None)
         } else {
-            vote.disabled_at = Set(Some(now()));
-            vote.disabled_by = Set(Some(acting_user_id));
+            (Some(now()), Some(acting_user_id))
+        };
+
+        let result = PageVote::update_many()
+            .col_expr(page_vote::Column::DisabledAt, Expr::value(disabled_at))
+            .col_expr(page_vote::Column::DisabledBy, Expr::value(disabled_by))
+            .filter(
+                Condition::all()
+                    .add(page_vote::Column::PageVoteId.eq(model.page_vote_id))
+                    .add(page_vote::Column::DeletedAt.is_null()),
+            )
+            .exec(txn)
+            .await
+            .or_raise(make_error)?;
+
+        match result.rows_affected {
+            1 => {}
+            _ => bail!(make_error()),
         }
 
-        let model = vote.update(txn).await.or_raise(make_error)?;
+        let model = Self::get(ctx, key, rating_system)
+            .await
+            .or_raise(make_error)?;
         Ok(model)
     }
 
@@ -234,11 +263,29 @@ impl VoteService {
             bail!(make_error());
         }
 
-        let mut vote = vote.into_active_model();
+        let deleted_at = now();
+        let result = PageVote::update_many()
+            .col_expr(page_vote::Column::DeletedAt, Expr::value(Some(deleted_at)))
+            .filter(
+                Condition::all()
+                    .add(page_vote::Column::PageVoteId.eq(vote.page_vote_id))
+                    .add(page_vote::Column::DeletedAt.is_null())
+                    .add(page_vote::Column::DisabledAt.is_null()),
+            )
+            .exec(txn)
+            .await
+            .or_raise(make_error)?;
 
-        vote.deleted_at = Set(Some(now()));
+        match result.rows_affected {
+            1 => {}
+            _ => bail!(make_error()),
+        }
 
-        let model = vote.update(txn).await.or_raise(make_error)?;
+        let model = PageVote::find_by_id(vote.page_vote_id)
+            .one(txn)
+            .await
+            .or_raise(make_error)?
+            .ok_or_else(make_error)?;
         Ok(model)
     }
 
