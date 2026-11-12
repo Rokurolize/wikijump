@@ -1,7 +1,7 @@
 ---- MODULE VoteHistory ----
 EXTENDS Integers
 
-CONSTANTS ScoreIgnoresDisabled, RecastKeepsDisabled
+CONSTANTS ScoreIgnoresDisabled, RecastKeepsDisabled, RemoveKeepsDisabled
 
 MaxHist == 3
 Values == {-1, 1}
@@ -75,6 +75,7 @@ Enable ==
 
 Remove ==
   /\ kind \in {"current", "disabled"}
+  /\ (kind = "disabled" => ~RemoveKeepsDisabled)
   /\ history < MaxHist
   /\ kind' = "absent"
   /\ score' = 0

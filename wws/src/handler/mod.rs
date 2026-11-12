@@ -55,37 +55,16 @@ pub enum TargetServer {
     Files,
 }
 
-fn get_header<'a>(
-    headers: &'a HeaderMap,
-    header: HeaderName,
-    missing_header_message: &'static str,
-    not_utf8_header_message: &'static str,
-) -> &'a str {
-    headers
-        .get(header)
-        .expect(missing_header_message)
-        .to_str()
-        .expect(not_utf8_header_message)
+fn get_header(headers: &HeaderMap, header: HeaderName) -> Option<&str> {
+    headers.get(header)?.to_str().ok()
 }
 
-fn get_site_id(headers: &HeaderMap) -> i64 {
-    get_header(
-        headers,
-        HEADER_SITE_ID,
-        "No site ID header in request",
-        "Site ID header is not UTF-8",
-    )
-    .parse()
-    .expect("Site ID is not a valid integer")
+fn get_site_id(headers: &HeaderMap) -> Option<i64> {
+    get_header(headers, HEADER_SITE_ID)?.parse().ok()
 }
 
-fn get_site_slug(headers: &HeaderMap) -> &str {
-    get_header(
-        headers,
-        HEADER_SITE_SLUG,
-        "No site slug header in request",
-        "Site slug header is not UTF-8",
-    )
+fn get_site_slug(headers: &HeaderMap) -> Option<&str> {
+    get_header(headers, HEADER_SITE_SLUG)
 }
 
 pub(crate) fn get_session_token(headers: &HeaderMap) -> Option<&str> {
@@ -108,16 +87,11 @@ pub(crate) fn get_session_token(headers: &HeaderMap) -> Option<&str> {
     None
 }
 
-fn get_target_server(headers: &HeaderMap) -> TargetServer {
-    let value = headers
-        .get(HEADER_TARGET_SERVER)
-        .expect("No target server header in request")
-        .as_bytes();
-
-    match value {
-        b"main" => TargetServer::Main,
-        b"files" => TargetServer::Files,
-        _ => panic!("Invalid header value: {value:?}"),
+fn get_target_server(headers: &HeaderMap) -> Option<TargetServer> {
+    match get_header(headers, HEADER_TARGET_SERVER)? {
+        "main" => Some(TargetServer::Main),
+        "files" => Some(TargetServer::Files),
+        _ => None,
     }
 }
 
@@ -132,8 +106,17 @@ mod tests {
         headers.insert(HEADER_SITE_ID, HeaderValue::from_static("42"));
         headers.insert(HEADER_SITE_SLUG, HeaderValue::from_static("scp-wiki"));
 
-        assert_eq!(get_site_id(&headers), 42);
-        assert_eq!(get_site_slug(&headers), "scp-wiki");
+        assert_eq!(get_site_id(&headers), Some(42));
+        assert_eq!(get_site_slug(&headers), Some("scp-wiki"));
+    }
+
+    #[test]
+    fn missing_or_malformed_site_headers_are_absent() {
+        let mut headers = HeaderMap::new();
+        headers.insert(HEADER_SITE_ID, HeaderValue::from_static("not-a-number"));
+
+        assert_eq!(get_site_id(&headers), None);
+        assert_eq!(get_site_slug(&headers), None);
     }
 
     #[test]
@@ -141,9 +124,18 @@ mod tests {
         let mut headers = HeaderMap::new();
 
         headers.insert(HEADER_TARGET_SERVER, HeaderValue::from_static("main"));
-        assert_eq!(get_target_server(&headers), TargetServer::Main);
+        assert_eq!(get_target_server(&headers), Some(TargetServer::Main));
 
         headers.insert(HEADER_TARGET_SERVER, HeaderValue::from_static("files"));
-        assert_eq!(get_target_server(&headers), TargetServer::Files);
+        assert_eq!(get_target_server(&headers), Some(TargetServer::Files));
+    }
+
+    #[test]
+    fn target_server_rejects_a_missing_or_unknown_value() {
+        let mut headers = HeaderMap::new();
+        assert_eq!(get_target_server(&headers), None);
+
+        headers.insert(HEADER_TARGET_SERVER, HeaderValue::from_static("other"));
+        assert_eq!(get_target_server(&headers), None);
     }
 }

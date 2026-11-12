@@ -144,7 +144,7 @@
     let unedged = rootParents.toSorted((a, b) => a - b)
     let ordered: number[] = []
     let parentMapClone: Map<number, number[]> = new Map(
-      JSON.parse(JSON.stringify(Array.from(parentMap)))
+      [...parentMap].map(([pageId, parents]) => [pageId, [...parents]])
     )
     while (unedged.length) {
       let node = unedged.shift()!

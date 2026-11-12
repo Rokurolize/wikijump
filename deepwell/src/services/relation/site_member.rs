@@ -23,10 +23,13 @@ use super::site_ban::GetSiteBan;
 use super::structs::{RelationDirection, RelationObject, RelationReference};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::relation::Model as RelationModel;
+use crate::models::user_role::{self, Entity as UserRole};
 use crate::services::ServiceContext;
 use crate::services::audit::{AuditEvent, AuditService};
+use crate::services::role::{RevokeUserRoleInput, RoleService};
 use crate::types::RelationType;
 use deepwell_relation_impl_derive::impl_relation;
+use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter};
 use serde::Serialize;
 use std::net::IpAddr;
 
@@ -137,6 +140,32 @@ impl RelationService {
         )
         .await
         .or_raise(make_error)?;
+
+        let user_roles = UserRole::find()
+            .filter(
+                Condition::all()
+                    .add(user_role::Column::UserId.eq(user_id))
+                    .add(user_role::Column::SiteId.eq(site_id))
+                    .add(user_role::Column::DeletedAt.is_null()),
+            )
+            .all(ctx.transaction())
+            .await
+            .or_raise(make_error)?;
+
+        for user_role in user_roles {
+            RoleService::revoke_role_from_user(
+                ctx,
+                RevokeUserRoleInput {
+                    user_id,
+                    role_id: user_role.role_id,
+                    site_id,
+                    revoking_user_id: removed_by,
+                    ip_address,
+                },
+            )
+            .await
+            .or_raise(make_error)?;
+        }
 
         AuditService::log(
             ctx,

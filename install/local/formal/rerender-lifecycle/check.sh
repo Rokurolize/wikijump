@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Checks the re-render / hosted text-block lifecycle against the source tree.
-#   ./check.sh            current protocol: CommittedRowLive, NoResurrect, the
-#                         FIX restore, clone-paused, and fan-out settling PASS.
-#                         NoDanglingRead and NoStaleOrphan are findings.
+#   ./check.sh            current protocol: CommittedRowLive, NoResurrect,
+#                         NoStaleOrphan, the FIX restore, clone-paused, and
+#                         fan-out settling PASS. NoDanglingRead stays an
+#                         EXPECTED-FAIL witness: the product reader retries
+#                         a missed fetch, the TLA reader has no retry action.
 #                         FreshnessGuard off fails NoResurrect. Clone-unpaused
 #                         and the CUR restore fail with their shapes. Crash,
 #                         duplicate delivery, restore, and clone witnesses fail.

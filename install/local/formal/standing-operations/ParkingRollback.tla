@@ -97,19 +97,20 @@ RefusedAfterFirst ==
 Want(s) ==
   IF ~present[s] /\ snap[s] = "intact" THEN "snapshot"
   ELSE IF ~present[s] /\ snap[s] = "mutated" THEN "other"
+  ELSE IF present[s] THEN "same"
   ELSE "base"
 
 RecreateFrom(image) ==
   /\ outcome' = "recreated"
-  /\ started' = image
-  /\ containerKept' = [s \in Services |-> FALSE]
+  /\ started' = [s \in Services |-> IF present[s] THEN "same" ELSE image[s]]
+  /\ containerKept' = [s \in Services |-> present[s]]
   /\ Freeze
 
 RecreateChecked ==
   IF lie /\ RecreateGuard THEN
     /\ outcome' = "refused"
     /\ started' = [s \in Services |-> Want(s)]
-    /\ containerKept' = [s \in Services |-> FALSE]
+    /\ containerKept' = [s \in Services |-> present[s]]
     /\ Freeze
   ELSE IF lie /\ ~RecreateGuard THEN
     RecreateFrom([s \in Services |-> "other"])

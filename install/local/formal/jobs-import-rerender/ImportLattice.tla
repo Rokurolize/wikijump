@@ -32,11 +32,10 @@ Claim1 ==
                      \/ (phase = "running" /\ lease = "expired")
        ELSE phase # "done"
     /\ phase' = "running"
-    /\ attempts' = attempts + 1
     /\ hold1' = TRUE
     /\ lease' = "open"
     /\ pass' = 1
-    /\ UNCHANGED <<hold2>>
+    /\ UNCHANGED <<attempts, hold2>>
 
 Claim2 ==
     /\ room
@@ -49,11 +48,10 @@ Claim2 ==
                      \/ (phase = "running" /\ lease = "expired")
        ELSE phase # "done"
     /\ phase' = "running"
-    /\ attempts' = attempts + 1
     /\ hold2' = TRUE
     /\ lease' = "open"
     /\ pass' = 2
-    /\ UNCHANGED <<hold1>>
+    /\ UNCHANGED <<attempts, hold1>>
 
 Complete ==
     /\ lease = "open"
@@ -66,15 +64,16 @@ Fail ==
     /\ lease = "open"
     /\ (hold1 \/ hold2)
     /\ phase' = "failed"
+    /\ attempts' = attempts + 1
     /\ lease' = "none"
     /\ hold1' = FALSE
     /\ hold2' = FALSE
-    /\ UNCHANGED <<attempts, pass>>
+    /\ UNCHANGED <<pass>>
 
 Crash ==
     /\ lease = "open"
     /\ (hold1 \/ hold2)
-    /\ (AllowFinalCrash \/ attempts < MaxAttempts)
+    /\ (AllowFinalCrash \/ attempts < MaxAttempts - 1)
     /\ lease' = "expired"
     /\ hold1' = FALSE
     /\ hold2' = FALSE

@@ -26,7 +26,10 @@ use deepwell::services::membership::{
     JoinActorState, MembershipJoinOutcome, MembershipPolicy, MembershipService,
 };
 use deepwell::services::permission::PermissionService;
-use deepwell::services::relation::{RelationObject, RelationService, SiteBanData};
+use deepwell::services::relation::{
+    CreateSiteMember, RelationObject, RelationService, SiteBanData, SiteMemberAccepted,
+    SiteMemberData,
+};
 use deepwell::services::role::{
     GetUserRolesInput, GrantUserRoleInput, InternalCreateRoleInput, RoleService,
     UpdateRolePermissionsInput,
@@ -489,6 +492,21 @@ async fn grant_role_management(runner: &TestRunner, site_id: i64, user_id: i64, 
     )
     .await
     .expect("Failed to create role manager role");
+
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id,
+            user_id,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::Accepted(SYSTEM_USER_ID),
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("Failed to create site member for role manager");
 
     PermissionService::update_permissions_for_role(
         runner.context(),
@@ -1108,6 +1126,19 @@ async fn role_assignment_and_membership_require_role_assign() {
         ..Default::default()
     });
 
+    run_endpoint!(
+        runner,
+        membership_set,
+        json!({
+            "site_id": f.site_id,
+            "user_id": f.target_user_id,
+            "metadata": membership_metadata.clone(),
+            "created_by": SYSTEM_USER_ID,
+
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
     let user_role = run_endpoint!(
         runner,
         grant_role_to_user,
@@ -1121,19 +1152,6 @@ async fn role_assignment_and_membership_require_role_assign() {
         }),
     );
     assert_eq!(user_role.assigned_by, f.user_id);
-
-    run_endpoint!(
-        runner,
-        membership_set,
-        json!({
-            "site_id": f.site_id,
-            "user_id": f.target_user_id,
-            "metadata": membership_metadata.clone(),
-            "created_by": SYSTEM_USER_ID,
-
-            "ip_address": common::IP_ADDRESS,
-        }),
-    );
 
     let membership = run_endpoint!(
         runner,

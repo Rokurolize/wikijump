@@ -86,7 +86,7 @@ Frozen browser DOM evidence and the byte-exact regression oracle:
 
 - `install/local/theme-lab/evidence/wikidot-runtime-surface-20260929.normal/scp-wiki-scp-173-normal-20260929-5d64b862fb46/live.dom.html`
 - `install/local/theme-lab/evidence/wikidot-runtime-surface-20260929.normal/scp-jp-scp-173-normal-20260929-7984e750c954/live.dom.html`
-- `framerail/tests/wikidot-footer.test.js`
+- `framerail/tests/wikidot-footer.test.ts`
 
 ### Standard secondary page actions and hovertip text nodes
 

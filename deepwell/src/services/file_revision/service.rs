@@ -503,8 +503,24 @@ impl FileRevisionService {
 
         let _ = user_id;
 
+        let existing = FileRevision::find()
+            .filter(
+                Condition::all()
+                    .add(file_revision::Column::RevisionId.eq(revision_id))
+                    .add(file_revision::Column::SiteId.eq(site_id))
+                    .add(file_revision::Column::PageId.eq(page_id))
+                    .add(file_revision::Column::FileId.eq(file_id)),
+            )
+            .one(txn)
+            .await
+            .or_raise(make_error)?;
+
+        let Some(existing) = existing else {
+            bail!(make_error());
+        };
+
         let model = file_revision::ActiveModel {
-            revision_id: Set(revision_id),
+            revision_id: Set(existing.revision_id),
             hidden: Set(hidden),
             ..Default::default()
         };

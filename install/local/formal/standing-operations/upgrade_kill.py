@@ -83,6 +83,38 @@ def write_stubs(stubs: Path) -> None:
             return args[args.index(flag) + 1]
 
         if name == "cp":
+            args = sys.argv[1:]
+            if os.environ.get("PARTIAL_MV") == "1" and any(".pg-upgrade-new" in a for a in args):
+                non_flag = [a for a in args if not a.startswith("-")]
+                if len(non_flag) >= 2 and Path(non_flag[-1]) == Path("/volume") and ".pg-upgrade-new" in non_flag[0]:
+                    import shutil
+                    src = Path(non_flag[0])
+                    dst = Path(non_flag[-1])
+                    def complete(path, version):
+                        need = ("PG_VERSION", "pg_hba.conf", "postgresql.conf", "base", "global")
+                        if (path / "UNSTARTABLE").exists():
+                            return False
+                        if not all((path / item).exists() for item in need):
+                            return False
+                        return (path / "PG_VERSION").read_text().strip() == version
+                    entries = list(src.iterdir())
+                    for idx, entry in enumerate(entries):
+                        target = dst / entry.name
+                        if entry.is_dir():
+                            shutil.copytree(entry, target, copy_function=os.link)
+                        else:
+                            if target.exists():
+                                target.unlink()
+                            os.link(entry, target)
+                        side = dst / ".pg-upgrade-new"
+                        if not (complete(dst, "17") or complete(dst, "19") or complete(side, "19")):
+                            os.kill(int(os.environ["UPGRADE_PID"]), signal.SIGKILL)
+                            os._exit(137)
+                        if idx == 0:
+                            os.kill(int(os.environ["UPGRADE_PID"]), signal.SIGKILL)
+                            os._exit(137)
+                    os.kill(int(os.environ["UPGRADE_PID"]), signal.SIGKILL)
+                    os._exit(137)
             os.execv("/usr/bin/cp", ["/usr/bin/cp", *sys.argv[1:]])
         if name == "rm":
             os.execv("/usr/bin/rm", ["/usr/bin/rm", *sys.argv[1:]])
@@ -321,18 +353,10 @@ def check_real(script: Path, entry: Path) -> int:
         prepare(work, "oldcat")
         run_upgrade_bound(work, script, "upgrade", {"PARTIAL_MV": "1"})
         got = verdict(work / "volume")
-        volume = work / "volume"
-        side = volume / ".pg-upgrade-new"
-        root_missing = [name for name in REQUIRED if not (volume / name).exists()]
-        side_missing = [name for name in REQUIRED if not (side / name).exists()]
-        if got == "neither" and root_missing and side_missing:
-            print(
-                "EXPECTED-FAIL upgrade-move (neither) "
-                f"root missing {','.join(root_missing)} "
-                f"sidecar missing {','.join(side_missing)}"
-            )
+        if got in ("new", "new-sidecar"):
+            print(f"PASS  upgrade-move ({got})")
         else:
-            print(f"UNEXPECTED upgrade-move verdict {got}", file=sys.stderr)
+            print(f"FAIL  upgrade-move verdict {got}", file=sys.stderr)
             status = 1
     finally:
         shutil.rmtree(work, ignore_errors=True)
@@ -413,7 +437,7 @@ def check_mutations(script: Path, entry: Path) -> int:
     broken = Path(tempfile.mkdtemp(prefix="upgrade-broken-"))
     try:
         moved = script.read_text(encoding="utf-8").replace(
-            'find "${new}" -mindepth 1 -maxdepth 1 -exec mv -t /volume {} +',
+            'cp -al "${new}/." /volume/',
             'rm -rf "${new}"',
             1,
         )

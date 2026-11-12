@@ -100,7 +100,13 @@ def membership_constants(facts: list[str]) -> dict[str, bool]:
     grant_start, grant = text(ROLE, "pub async fn grant_role_to_user(")
     require(ROLE, grant_start, grant, ".insert(txn)")
     grant_blocked = before(grant, "check_site_ban(", ".insert(txn)")
-    facts.append(f"grant role {ROLE}:{grant_start} blocked_by_ban={grant_blocked}")
+    grant_requires = before(grant, "site_member_exists(", ".insert(txn)")
+    facts.append(f"grant role {ROLE}:{grant_start} blocked_by_ban={grant_blocked} requires_member={grant_requires}")
+
+    remove_start, remove = text(MEMBER, "pub async fn remove_site_member(")
+    require(MEMBER, remove_start, remove, "remove_site_member_inner(")
+    remove_clears = "revoke_role_from_user(" in remove
+    facts.append(f"remove member {MEMBER}:{remove_start} clears_roles={remove_clears}")
 
     invite_start, invite = text(MEMBERSHIP, "async fn email_invitation_row(")
     invite_once = "accepted = FALSE" in invite
@@ -119,6 +125,8 @@ def membership_constants(facts: list[str]) -> dict[str, bool]:
         "GrantBlockedByBan": grant_blocked,
         "InviteOnce": invite_once,
         "ReviewOnce": review_once,
+        "RemoveClearsRoles": remove_clears,
+        "GrantRequiresMember": grant_requires,
     }
 
 

@@ -72,7 +72,6 @@ export function classifyChanges(paths, all = false) {
     if (verificationInput(file)) selected.verification = true
 
     if (
-      file === ".github/workflows/ci-gate.yaml" ||
       file === ".github/scripts/classify-changes.mjs" ||
       file === ".github/tests/ci-gate-workflow.test.mjs" ||
       file === "scripts/preflight.sh"

@@ -28,7 +28,7 @@ const WELL_KNOWN_NOT_CONFIGURED: &str =
     "No .well-known resource is configured for this WWS target.\n";
 
 pub async fn handle_well_known(headers: HeaderMap) -> Response {
-    let _target_server = get_target_server(&headers);
+    let _target_server = require_internal_header!(get_target_server(&headers));
 
     Response::builder()
         .status(StatusCode::NOT_FOUND)
