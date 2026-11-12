@@ -101,6 +101,10 @@ impl VoteService {
             .await
             .or_raise(make_error)?
         {
+            if vote.disabled_at.is_some() {
+                bail!(make_error());
+            }
+
             if vote.value == value {
                 return Ok(None);
             }
@@ -222,10 +226,15 @@ impl VoteService {
         };
 
         let txn = ctx.transaction();
-        let mut vote = Self::get(ctx, key, rating_system)
+        let vote = Self::get(ctx, key, rating_system)
             .await
-            .or_raise(make_error)?
-            .into_active_model();
+            .or_raise(make_error)?;
+
+        if vote.disabled_at.is_some() {
+            bail!(make_error());
+        }
+
+        let mut vote = vote.into_active_model();
 
         vote.deleted_at = Set(Some(now()));
 

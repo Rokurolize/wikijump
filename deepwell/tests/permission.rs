@@ -1252,7 +1252,7 @@ async fn site_membership_changes_invalidate_cached_view_permissions() {
     );
 
     assert!(
-        check(
+        !check(
             &runner,
             Some(f.user_a),
             f.site_id,
@@ -1261,7 +1261,7 @@ async fn site_membership_changes_invalidate_cached_view_permissions() {
             Action::View,
         )
         .await,
-        "explicit RoleA page:view should remain valid after membership removal"
+        "explicit RoleA page:view is revoked together with membership removal"
     );
 }
 

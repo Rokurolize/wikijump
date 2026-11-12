@@ -20,7 +20,7 @@
 
 //! Automatically restart server when configuration changes are detected.
 //!
-//! This is gated behind the `notify` feature, and will restart the entire
+//! This is gated behind the `watch` feature, and will restart the entire
 //! process when changes to the localization files or the server configuration
 //! file are detected.
 //!

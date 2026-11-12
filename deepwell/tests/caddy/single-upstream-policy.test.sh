@@ -15,6 +15,13 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+for image in caddy:alpine python:3-alpine; do
+  if ! docker image inspect "$image" >/dev/null 2>&1; then
+    echo "Caddy single-upstream policy test requires the image to exist locally: $image" >&2
+    exit 1
+  fi
+done
+
 for fixture in \
   "$repo_root/deepwell/tests/caddy/Caddyfile.basic_local" \
   "$repo_root/deepwell/tests/caddy/Caddyfile.basic_localdev"; do

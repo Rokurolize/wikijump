@@ -4,11 +4,11 @@
 
 `JobCommit` now follows `check_render_freshness`. A job whose revision is no longer latest aborts. It does not write the block row. `NoResurrect` passes. `check.sh` turns that guard off in `resurrectopen`, and `NoResurrect` fails with the old shape. A save's revision id changes at `SaveCommit`, when the new revision is committed.
 
-`NoStaleOrphan` fails on the current code. `add_blocks` uploads the new object before the freshness check. The abort rolls the row switch back. `cleanup_uploaded_text_blocks` runs only on `add_blocks`' own error path, so the uploaded object stays in the bucket. The trace is job `a` uploads object 2 for revision 1, the save commits revision 2 and row 3, then `a` aborts and object 2 is still in `objects`.
+`NoStaleOrphan` passes. `add_blocks` uploads the new object before the freshness check, so the upload is tracked on the context on its `Ok` path (`ctx.track_uncommitted_text_blocks`) and `render_revision` drains the tracked uploads (`ctx.discard_uncommitted_text_blocks`) on both error branches, including the freshness abort. The expired `Ok`-path leak from the earlier reading is gone: job `a` uploads object 2 for revision 1, the save commits revision 2 and row 3, then `a` aborts and the drain deletes object 2 from the bucket before the row switch rolls back.
 
 `TextBlockReplace.tla` is the unique-violation retry inside `add_blocks`, bounded at `TEXT_BLOCK_REPLACE_ATTEMPTS` 3. `OverlapCommits` passes. `check.sh mutations` sets `RetryOn` false and that invariant fails.
 
-`delete_blocks` now deletes the rows in the transaction and defers object deletion through `clear_objects_after_commit`. The older note that page deletion deletes objects inside the transaction does not describe this code. Promotion, clone, and restore were not remodeled. `NoDanglingRead` still fails.
+`delete_blocks` now deletes the rows in the transaction and defers object deletion through `clear_objects_after_commit`. The older note that page deletion deletes objects inside the transaction does not describe this code. Promotion, clone, and restore were not remodeled. `NoDanglingRead` still fails in the model because the TLA reader has no retry action; the product reader retries a missed fetch (`wws` commit `0bcf29972a`, issue #3463), so the single-request HTTP 500 described under F1 no longer reaches the user. The `dangling` config stays as an EXPECTED-FAIL witness pinning the lookup→cleanup→fetch interleaving.
 
 The sections below are the earlier reading. Where they disagree with this update, this update is the current result.
 
@@ -142,7 +142,7 @@ included). `check.sh` exits 0; about 13–19 s wall in total (14 TLC JVM launche
 | restorefix (FIX) | job a+saver+restore | PASS `RestorePairsOwnBlocks` (952) |
 | clonepaused | job a+saver+clone | PASS `CloneConsistent` (861) |
 | settles (no crash) | jobs+saver | PASS `FanOutSettles` (569) |
-| dangling | jobs+saver+reader | EXPECTED-FAIL `NoDanglingRead` (1,187), shape asserted |
+| dangling | jobs+saver+reader | EXPECTED-FAIL `NoDanglingRead` (1,187), shape asserted; product-fixed, model witness |
 | resurrect | jobs+saver | EXPECTED-FAIL `NoResurrect` (1,236), shape asserted |
 | cloneunpaused | job a+saver+clone | EXPECTED-FAIL `CloneConsistent` (332), shape asserted |
 | restorecur (CUR) | job a+saver+restore | EXPECTED-FAIL `RestorePairsOwnBlocks` (538), shape asserted |
@@ -156,15 +156,17 @@ EXPECTED-FAIL on its named property): MA delete-before-commit →
 reuse the live object name) → `CommittedRowLive` (184). No mutation was
 tuned: each failed on its first run as designed.
 
-**F1 — reader miss (current protocol, finding).** `NoDanglingRead`
-fails: a WWS lookup returns a live filename, the replacing job's
-post-commit cleanup deletes that object, and the reader's S3 fetch then
-misses (trace shape: lookup@4, delete@6, miss@7). User-visible effect: a
-single `/local--code/<page>/<n>` or HTML-block request answers HTTP 500
-(`TextBlockS3Fetch`); a retry succeeds. Window: one request's
-lookup→fetch gap (duration unmeasured), opened by any replacement commit whose
-cleanup lands inside it. Lasting effect: none — `CommittedRowLive`
-passing proves every *committed* row always names a live object.
+**F1 — reader miss (product-fixed, model witness).** A WWS lookup returns a
+live filename, the replacing job's post-commit cleanup deletes that object,
+and the reader's S3 fetch then misses (trace shape: lookup@4, delete@6,
+miss@7). WWS now re-runs the lookup and serves the replacement on a 404
+(bounded at `MAX_TEXT_BLOCK_ATTEMPTS` 3), so the single-request HTTP 500
+(`TextBlockS3Fetch`) described earlier no longer reaches the user; only
+three consecutive lookup→cleanup→fetch races inside one request can still
+serve it. `CommittedRowLive` passing proves every *committed* row always
+names a live object. `NoDanglingRead` stays EXPECTED-FAIL because the TLA
+reader has no retry action, so one model miss is a violation; the config
+is kept as a witness pinning the interleaving, not as an open defect.
 
 **F2 — older job overwrites newer blocks (current protocol, finding).**
 `NoResurrect` fails at block level: a job that read revision 1's inputs
@@ -274,12 +276,11 @@ was fixed, and the model was not tuned to make any of them disappear.
    issue must also test the unmodeled overlap residual in *Limit of
    the model* above (overlapping `delete_many`/`insert_many` may abort
    a save or job with a unique violation instead of overwriting).
-2. **Reader 500 in the lookup→fetch gap (F1).** A `/local--code` or
-   HTML-block request whose DB lookup races a replacement's post-commit
-   cleanup answers one HTTP 500. Transient and self-healing on retry;
-   file at low priority, or close as accepted if the coordinator judges
-   a one-request 500 inside a millisecond window acceptable — the model
-   proves no lasting corruption sits behind it.
+2. **Reader 500 in the lookup→fetch gap (F1, closed).** WWS re-runs the
+   lookup on a fetch miss (bounded at 3 attempts), so the single-request
+   500 is gone; only three consecutive races inside one request can still
+   serve it. No lasting corruption sits behind it (`CommittedRowLive`).
+   Kept as a model witness only; the TLA reader has no retry action.
 3. **`delete_blocks` deletes objects before its transaction commits
    (Step 0.4a, code reading, not modeled).** A rollback after page
    deletion's S3 sweep leaves live `text_block` rows naming deleted

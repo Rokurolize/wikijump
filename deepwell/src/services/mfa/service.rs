@@ -82,7 +82,9 @@ impl MfaService {
 
         debug!("Generating MFA secrets for user ID {}", user.user_id);
         let totp_secret = generate_totp_secret();
-        let recovery = RecoveryCodes::generate(ctx.config()).or_raise(make_error)?;
+        let recovery = RecoveryCodes::generate(ctx.config())
+            .await
+            .or_raise(make_error)?;
 
         debug!("Committing MFA secrets for user ID {}", user.user_id);
         let enrolled = UserService::set_mfa_secrets_if_unset(
@@ -157,7 +159,9 @@ impl MfaService {
         }
 
         debug!("Generating recovery codes for user ID {}", user.user_id);
-        let recovery = RecoveryCodes::generate(ctx.config()).or_raise(make_error)?;
+        let recovery = RecoveryCodes::generate(ctx.config())
+            .await
+            .or_raise(make_error)?;
 
         debug!("Committing recovery codes for user ID {}", user.user_id);
         UserService::set_mfa_secrets(

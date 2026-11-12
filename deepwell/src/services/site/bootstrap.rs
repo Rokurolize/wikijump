@@ -27,8 +27,8 @@ use crate::services::ServiceContext;
 use crate::services::page::{CreatePage, PageService};
 use crate::services::permission::PermissionService;
 use crate::services::relation::{
-    PageAttributionEntry, PageAttributionKind, PageAttributionMetadata, RelationService,
-    SetPageAttributions,
+    CreateSiteMember, PageAttributionEntry, PageAttributionKind, PageAttributionMetadata,
+    RelationService, SetPageAttributions, SiteMemberAccepted, SiteMemberData,
 };
 use crate::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
@@ -223,6 +223,20 @@ impl SiteService {
                 )
                 .into());
             };
+            RelationService::create_site_member(
+                ctx,
+                CreateSiteMember {
+                    site_id,
+                    user_id: creator,
+                    metadata: SiteMemberData {
+                        accepted: SiteMemberAccepted::CreatedSite,
+                    },
+                    created_by: creator,
+                },
+                ip_address,
+            )
+            .await
+            .or_raise(make_error)?;
             RoleService::grant_role_to_user(
                 ctx,
                 GrantUserRoleInput {

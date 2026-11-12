@@ -49,6 +49,9 @@ pub enum Error {
     #[error("blob missing from S3 for an existing file record: {s3_hash}")]
     MissingBlob { s3_hash: String },
 
+    #[error("S3 response is missing a required header: {0}")]
+    MissingS3Header(&'static str),
+
     #[error("Redis error: {0}")]
     Redis(#[from] redis::RedisError),
 

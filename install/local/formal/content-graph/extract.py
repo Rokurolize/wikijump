@@ -207,6 +207,12 @@ def vote_constants(facts: list[str]) -> dict[str, bool]:
     keeps = "disabled_at.is_some()" in add
     facts.append(f"vote add {VOTE}:{add_start} recast_keeps_disabled={keeps}")
 
+    remove_start, remove = text(VOTE, "pub async fn remove(")
+    require(VOTE, remove_start, remove, "Self::get(")
+    require(VOTE, remove_start, remove, "deleted_at = Set(Some(now()))")
+    remove_keeps = "disabled_at.is_some()" in remove
+    facts.append(f"vote remove {VOTE}:{remove_start} remove_keeps_disabled={remove_keeps}")
+
     get_start, get = text(VOTE, "pub async fn get_optional(")
     require(VOTE, get_start, get, "DeletedAt.is_null()")
     facts.append(f"vote read {VOTE}:{get_start}")
@@ -219,7 +225,7 @@ def vote_constants(facts: list[str]) -> dict[str, bool]:
     score_start, score = text(SCORE, "fn build_condition(")
     ignores = "DisabledAt.is_null()" in score and "DeletedAt.is_null()" in score
     facts.append(f"score filter {SCORE}:{score_start} ignores_disabled={ignores}")
-    return {"keeps": keeps, "ignores": ignores}
+    return {"keeps": keeps, "remove_keeps": remove_keeps, "ignores": ignores}
 
 
 def parent_constants(facts: list[str]) -> dict[str, bool]:
@@ -291,6 +297,7 @@ def main() -> int:
                 f"discussion_unique={discussion['unique']}",
                 f"revision_unique={revision['unique']}",
                 f"recast_keeps_disabled={vote['keeps']}",
+                f"remove_keeps_disabled={vote['remove_keeps']}",
                 f"score_ignores_disabled={vote['ignores']}",
                 f"check_live_cycle={parent['checks']}",
                 f"restore_rechecks={parent['rechecks']}",
@@ -340,6 +347,7 @@ def main() -> int:
             [
                 f"ScoreIgnoresDisabled = {flag(vote['ignores'])}",
                 f"RecastKeepsDisabled = {flag(vote['keeps'])}",
+                f"RemoveKeepsDisabled = {flag(vote['remove_keeps'])}",
             ],
         )
         write_cfg(

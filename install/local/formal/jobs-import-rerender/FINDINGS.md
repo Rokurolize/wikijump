@@ -18,9 +18,9 @@ One item, two passes, `DEFAULT_MAX_ATTEMPTS` 3. Claim and the observation insert
 
 `AttemptsBound` and `OneHolder` hold. An expired lease with attempts still left is claimed again (`EarlyRecovers`). A `rendered` item with attempts left leaves that state (`Pass2Claims`).
 
-`TerminalOrRetry` fails. Pass 1 can fail, be claimed again, and succeed on the attempt that reaches 3. The item is then `rendered` with `attempts = 3`. Pass 2's claim requires `attempts < max`, so the item stays `rendered`. It is not `done`, not `render_failed`, and not retryable.
+`TerminalOrRetry` passes. Claims no longer consume an attempt: the claim leaves `attempts` alone and exports the current attempt number (`item.attempts + 1`), an expired-lease reclaim reuses the same attempt number, and only `mark_item_failed` increments. Pass 1 can therefore fail twice and succeed on attempt 3 with `attempts = 2` still below the bound, so Pass 2 still claims the `rendered` item and takes it to `done`.
 
-`Restartable` fails. A crash on the attempt that reaches 3 leaves `render_running` with an expired lease. The next finalizer invocation does not select it.
+`Restartable` passes. A crash on the third attempt leaves `render_running` with an expired lease and `attempts = 2`, so the next finalizer invocation reclaims it into the same attempt number; a failed third attempt is the one that records `attempts = 3` and goes terminal.
 
 `check.sh mutations` drops the pass split and `OneHolder` fails. It also claims past the bound and `AttemptsBound` fails.
 

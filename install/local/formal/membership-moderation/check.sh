@@ -88,10 +88,11 @@ if [[ "${1:-}" == "mutations" ]]; then
     "m-ban-create member.cfg MembershipBan BanBlocksCreate FALSE ActiveBanClearsMember"
     "m-ban-member member.cfg MembershipBan BanClearsMember FALSE ActiveBanClearsMember"
     "m-ban-roles member.cfg MembershipBan BanClearsRoles FALSE ActiveBanClearsGrants"
-    "m-grant member.cfg MembershipBan GrantBlockedByBan FALSE ActiveBanClearsGrants"
     "m-cleanup member.cfg MembershipBan CleanupCurrentOnly FALSE CleanupOnlyObserved"
     "m-invite member.cfg MembershipBan InviteOnce FALSE InviteAtMostOnce"
     "m-review member.cfg MembershipBan ReviewOnce FALSE ReviewAtMostOnce"
+    "m-remove member.cfg MembershipBan RemoveClearsRoles FALSE RemoveRevokesGrants"
+    "m-grant-member member.cfg MembershipBan GrantRequiresMember FALSE RemoveRevokesGrants"
     "m-parent forest.cfg RoleForest ParentEditGuard FALSE ParentSubset"
     "m-child forest.cfg RoleForest ChildEditGuard FALSE ParentSubset"
     "m-cascade forest.cfg RoleForest CascadeRemoves FALSE ParentSubset"
@@ -111,7 +112,7 @@ fi
 
 cfg_with "$WORK/member.cfg" "$WORK/member-pass.cfg" \
   ActiveBanClearsMember ActiveBanClearsGrants MemberOnlyByAccept \
-  CleanupOnlyObserved InviteAtMostOnce ReviewAtMostOnce
+  CleanupOnlyObserved InviteAtMostOnce ReviewAtMostOnce RemoveRevokesGrants
 cfg_with "$WORK/member.cfg" "$WORK/member-joined.cfg" NeverJoined
 cfg_with "$WORK/member.cfg" "$WORK/member-banned.cfg" NeverBanned
 cfg_with "$WORK/member.cfg" "$WORK/member-grants.cfg" RemoveRevokesGrants
@@ -134,7 +135,7 @@ status=0
 expect_pass member "$WORK/member-pass.cfg" MembershipBan || note $?
 expect_fail member-joined "$WORK/member-joined.cfg" MembershipBan NeverJoined || note $?
 expect_fail member-banned "$WORK/member-banned.cfg" MembershipBan NeverBanned || note $?
-expect_fail member-grants "$WORK/member-grants.cfg" MembershipBan RemoveRevokesGrants || note $?
+expect_pass member-grants "$WORK/member-grants.cfg" MembershipBan || note $?
 if grep -q 'CleanupCurrentOnly = TRUE' "$WORK/member.cfg"; then
   expect_fail member-replacement "$WORK/member-replacement.cfg" MembershipBan ReplacementRemoved || note $?
 fi

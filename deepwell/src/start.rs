@@ -20,7 +20,7 @@
 
 //! Entrypoint to the server-based execution mode of deepwell.
 
-#[cfg(feature = "notify")]
+#[cfg(feature = "watch")]
 use crate::watch::setup_autorestart;
 
 use crate::config::SetupConfig;
@@ -81,7 +81,7 @@ pub async fn start() -> Result<()> {
                 _watcher = setup_autorestart(&config).or_raise(make_error)?;
             }
             _ => {
-                error!("The --watch-files option requires the 'watch' feature");
+                error!("The --watch option requires the 'watch' feature");
                 process::exit(1);
             }
         }

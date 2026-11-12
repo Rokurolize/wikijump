@@ -46,7 +46,7 @@ pub struct RecoveryCodes {
 }
 
 impl RecoveryCodes {
-    pub fn generate(config: &Config) -> Result<Self> {
+    pub async fn generate(config: &Config) -> Result<Self> {
         let make_error = || {
             Error::new(
                 format!(
@@ -57,25 +57,29 @@ impl RecoveryCodes {
             )
         };
 
-        let mut rng = rand::rng();
-        assert_is_csprng(&rng);
+        let recovery_codes = {
+            let mut rng = rand::rng();
+            assert_is_csprng(&rng);
 
-        let recovery_codes = iter::repeat_n((), config.recovery_code_count)
-            .map(|_| {
-                let mut code =
-                    Alphanumeric.sample_string(&mut rng, config.recovery_code_length);
+            iter::repeat_n((), config.recovery_code_count)
+                .map(|_| {
+                    let mut code =
+                        Alphanumeric.sample_string(&mut rng, config.recovery_code_length);
 
-                code.insert(config.recovery_code_length / 2, '-');
-                code
-            })
-            .collect::<Vec<String>>();
+                    code.insert(config.recovery_code_length / 2, '-');
+                    code
+                })
+                .collect::<Vec<String>>()
+        };
 
         let recovery_codes_hashed = {
             let mut hashes = Vec::new();
 
             for code in &recovery_codes {
                 debug!("Hashing recovery code");
-                let hash = PasswordService::new_hash(code).or_raise(make_error)?;
+                let hash = PasswordService::new_hash_async(code.clone())
+                    .await
+                    .or_raise(make_error)?;
                 hashes.push(hash);
             }
 
@@ -133,10 +137,10 @@ mod tests {
         );
     }
 
-    #[test]
-    fn recovery_codes_are_returned_with_matching_argon_hashes() {
+    #[tokio::test]
+    async fn recovery_codes_are_returned_with_matching_argon_hashes() {
         let config = Config::integration_testing();
-        let codes = RecoveryCodes::generate(&config).unwrap();
+        let codes = RecoveryCodes::generate(&config).await.unwrap();
 
         assert_eq!(codes.recovery_codes.len(), config.recovery_code_count);
         assert_eq!(

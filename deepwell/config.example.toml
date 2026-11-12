@@ -152,7 +152,7 @@ max-attempts = 3
 # The intent is to avoid overloading the database by allowing a
 # short sleep period in between background tasks.
 #
-# See the JobService (src/service/job/service.rs) for information
+# See the JobService (src/services/job/service.rs) for information
 # on the job queue and main loop.
 delay-ms = 5
 
@@ -444,3 +444,53 @@ maximum-body-bytes = 200000
 # The maximum number of recipients allowed in one message.
 # This refers to the sum of direct recipients, CC, and BCC targets.
 maximum-recipients = 6
+
+
+[render-limits]
+
+# Maximum number of Wikidot include expansions counted during one public page
+# render (create, edit, view, and unsaved preview). Wikidot does not impose an
+# equivalent total-include ceiling; this value is a runaway-expansion guard.
+# Nested include depth remains capped separately at 8 expansions.
+#
+# If this section is absent, the defaults shown here apply.
+public-max-include-expansions = 4096
+
+# Maximum total include expansions during corpus import, trusted corpus rerender,
+# and ListPages selected-content paths that already used the higher corpus budget.
+corpus-max-include-expansions = 4096
+
+# Maximum number of Wikidot gallery requirements resolved during one public
+# page render. Wikidot does not impose an equivalent gallery ceiling; this
+# value is a runaway-resolution guard.
+public-max-gallery-requirements = 512
+
+# Maximum number of gallery requirements resolved during a trusted corpus
+# render.
+corpus-max-gallery-requirements = 128
+
+[issuance-caps]
+
+# Anti-abuse issuance caps, each counted over a fixed one-hour window.
+#
+# A positive value allows at most that many attempts in the window.
+# Set any value to 0 to disable that cap entirely (no counting is done).
+# Disabling is intended for local and test deployments only; production
+# should keep the defaults below.
+#
+# If this section is absent, the defaults shown here apply.
+
+# Page creations per user per hour.
+page-create-user-max-attempts = 60
+
+# Page creations per site per hour.
+page-create-site-max-attempts = 600
+
+# Page edits per user per hour.
+page-edit-user-max-attempts = 120
+
+# Account registrations per IP address per hour.
+register-ip-max-attempts = 20
+
+# Account registrations across the deployment per hour.
+register-global-max-attempts = 100
