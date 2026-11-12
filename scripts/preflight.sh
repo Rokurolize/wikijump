@@ -237,6 +237,11 @@ group_deepwell() {
   # two. The integration runner inherits CARGO_TARGET_DIR from here.
   if [[ "${JOBS}" != 1 ]]; then export CARGO_TARGET_DIR="${PREFLIGHT_TARGET_ROOT}/deepwell-test"; fi
   if group_selected deepwell && [[ "${MODE}" == "final" ]]; then
+    # The integration runner builds with --offline, so the complete
+    # lockfile graph (including crates only an --all-features metadata
+    # resolution reaches) must already sit in the local registry cache.
+    # Fetch is a no-op when it does, and downloads it when it does not.
+    run "deepwell fetch" cargo fetch --manifest-path deepwell/Cargo.toml --locked
     # Nextest partitions, each on its own task-owned stack, side by side.
     run_test "deepwell full tests" env WIKIJUMP_DEEPWELL_TEST_SHARDS="${WIKIJUMP_DEEPWELL_TEST_SHARDS:-12}" node \
       install/local/wikidot-verification/scripts/run-deepwell-integration-validation.mjs
