@@ -49,6 +49,8 @@ pub struct ConfigFile {
     message: Message,
     #[serde(default)]
     issuance_caps: IssuanceCaps,
+    #[serde(default)]
+    render_limits: RenderLimits,
 }
 
 #[derive(Debug, Clone)]
@@ -287,6 +289,32 @@ fn default_register_global_max_attempts() -> i64 {
     100
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "kebab-case")]
+struct RenderLimits {
+    #[serde(default = "default_public_max_include_expansions")]
+    public_max_include_expansions: usize,
+    #[serde(default = "default_corpus_max_include_expansions")]
+    corpus_max_include_expansions: usize,
+}
+
+impl Default for RenderLimits {
+    fn default() -> Self {
+        RenderLimits {
+            public_max_include_expansions: default_public_max_include_expansions(),
+            corpus_max_include_expansions: default_corpus_max_include_expansions(),
+        }
+    }
+}
+
+fn default_public_max_include_expansions() -> usize {
+    4096
+}
+
+fn default_corpus_max_include_expansions() -> usize {
+    4096
+}
+
 fn default_true() -> bool {
     true
 }
@@ -446,6 +474,11 @@ impl ConfigFile {
                     register_ip_max_attempts,
                     register_global_max_attempts,
                 },
+            render_limits:
+                RenderLimits {
+                    public_max_include_expansions,
+                    corpus_max_include_expansions,
+                },
         } = self;
 
         const RSMQ_DELAY_LIMIT: u64 = 9999999;
@@ -600,6 +633,8 @@ impl ConfigFile {
             page_edit_user_max_attempts,
             register_ip_max_attempts,
             register_global_max_attempts,
+            public_max_include_expansions,
+            corpus_max_include_expansions,
         }
     }
 }
@@ -768,6 +803,10 @@ mod tests {
                 register_ip_max_attempts: 21,
                 register_global_max_attempts: 101,
             },
+            render_limits: RenderLimits {
+                public_max_include_expansions: 4096,
+                corpus_max_include_expansions: 4096,
+            },
         }
     }
 
@@ -881,6 +920,36 @@ mod tests {
         assert_eq!(config.page_edit_user_max_attempts, 121);
         assert_eq!(config.register_ip_max_attempts, 21);
         assert_eq!(config.register_global_max_attempts, 101);
+        assert_eq!(config.public_max_include_expansions, 4096);
+        assert_eq!(config.corpus_max_include_expansions, 4096);
+    }
+
+    #[test]
+    fn render_limit_defaults_and_parses() {
+        let toml = toml::to_string(&sample_config_file()).unwrap();
+
+        let absent_toml = toml.replace(
+            "[render-limits]\npublic-max-include-expansions = 4096\ncorpus-max-include-expansions = 4096\n",
+            "",
+        );
+        assert_ne!(toml, absent_toml);
+        let absent_config: ConfigFile = toml::from_str(&absent_toml).unwrap();
+        assert_eq!(
+            absent_config.render_limits.public_max_include_expansions,
+            4096
+        );
+        assert_eq!(
+            absent_config.render_limits.corpus_max_include_expansions,
+            4096
+        );
+
+        let parsed_toml = toml.replace(
+            "public-max-include-expansions = 4096",
+            "public-max-include-expansions = 512",
+        );
+        let parsed_config: ConfigFile = toml::from_str(&parsed_toml).unwrap();
+        let config = parsed_config.into_config(extra_config());
+        assert_eq!(config.public_max_include_expansions, 512);
     }
 
     #[test]

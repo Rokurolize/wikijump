@@ -172,6 +172,10 @@ pub struct Config {
     pub register_ip_max_attempts: i64,
 
     pub register_global_max_attempts: i64,
+
+    pub public_max_include_expansions: usize,
+
+    pub corpus_max_include_expansions: usize,
 }
 
 impl Config {
@@ -299,6 +303,8 @@ impl Config {
             page_edit_user_max_attempts: 120,
             register_ip_max_attempts: 20,
             register_global_max_attempts: 100,
+            public_max_include_expansions: 256,
+            corpus_max_include_expansions: 4096,
         }
     }
 }

@@ -446,6 +446,21 @@ maximum-body-bytes = 200000
 maximum-recipients = 6
 
 
+[render-limits]
+
+# Maximum number of Wikidot include expansions counted during one public page
+# render (create, edit, view, and unsaved preview). Wikidot does not impose an
+# equivalent total-include ceiling; this value is a runaway-expansion guard.
+# Nested include depth remains capped separately at 8 expansions.
+#
+# If this section is absent, the defaults shown here apply.
+public-max-include-expansions = 4096
+
+# Maximum total include expansions during corpus import, trusted corpus rerender,
+# and ListPages selected-content paths that already used the higher corpus budget.
+corpus-max-include-expansions = 4096
+
+
 [issuance-caps]
 
 # Anti-abuse issuance caps, each counted over a fixed one-hour window.

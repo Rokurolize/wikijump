@@ -50,6 +50,7 @@ pub(super) struct RenderInnerOptions<'a> {
     pub(super) viewer_user_id: Option<i64>,
     pub(super) current_page_data_form_values: Option<BTreeMap<String, String>>,
     pub(super) max_include_expansions: usize,
+    pub(super) trusted_corpus_render: bool,
     pub(super) render_cost_budget: SharedRenderCostBudget,
     pub(super) trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,
     pub(super) persist_compiled_text: bool,
@@ -60,6 +61,7 @@ pub(super) struct RenderInnerOptions<'a> {
 #[derive(Clone, Debug)]
 pub(super) struct RenderPageOptions<'a> {
     pub(super) max_include_expansions: usize,
+    pub(super) trusted_corpus_render: bool,
     pub(super) viewer_user_id: Option<i64>,
     pub(super) current_page_data_form_values: Option<BTreeMap<String, String>>,
 
@@ -78,6 +80,7 @@ pub(super) struct RenderExpansionOptions<'a> {
     pub(super) viewer_user_id: Option<i64>,
     pub(super) current_page_data_form_values: Option<BTreeMap<String, String>>,
     pub(super) max_include_expansions: usize,
+    pub(super) trusted_corpus_render: bool,
     pub(super) render_cost_budget: SharedRenderCostBudget,
     pub(super) trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,
     pub(super) url: UrlArguments<'a>,
