@@ -57,6 +57,27 @@ export const AUDITED_EXTERNAL_ASSET_ORIGINS: readonly AuditedExternalAssetOrigin
         "Google Fonts font-file host for the stylesheets that Google Fonts serves."
     },
     {
+      origin: "https://api.fonts.coollabs.io",
+      styles: true,
+      fonts: false,
+      evidence:
+        "Cool Labs Fonts stylesheet API (a Google Fonts-compatible css2 endpoint). The production SCP-JP cosmonaut theme @imports its Berkshire Swash, Atkinson Hyperlegible and Anonymous Pro stylesheets from this origin; measured loading with HTTP 200 on live Wikidot and blocked by style-src on the staff-lab Sigma-10 site during the 2026-11-13 Sigma-10 migration comparison."
+    },
+    {
+      origin: "https://cdn.fonts.coollabs.io",
+      styles: false,
+      fonts: true,
+      evidence:
+        "Cool Labs Fonts font-file host for the stylesheets that api.fonts.coollabs.io serves (the same stylesheet/file split as fonts.googleapis.com and fonts.gstatic.com)."
+    },
+    {
+      origin: "https://fontlibrary.org",
+      styles: true,
+      fonts: true,
+      evidence:
+        "Font Library, an open font CDN. The simple-yonder theme @imports its Glacial Indifference face stylesheet from this origin; measured blocked by style-src on the staff-lab Sigma-10 site during the 2026-11-13 Sigma-10 migration comparison, while live Wikidot loads it."
+    },
+    {
       origin: "https://maxcdn.bootstrapcdn.com",
       styles: true,
       fonts: true,
