@@ -102,7 +102,7 @@ async fn sha1_s3_object(bucket: &Bucket, s3_filename: &str) -> Result<Vec<u8>> {
     Ok(digest.finalize().to_vec())
 }
 
-async fn cleanup_uploaded_text_blocks(bucket: &Bucket, filenames: &[String]) {
+pub(crate) async fn cleanup_uploaded_text_blocks(bucket: &Bucket, filenames: &[String]) {
     for filename in filenames {
         if let Err(error) = bucket.delete_object(filename).await {
             warn!("Failed to clean up uploaded S3 text block '{filename}': {error}");
@@ -261,6 +261,11 @@ impl TextBlockService {
         }
 
         if let Err(error) = ctx.defer_text_block_cleanup(displaced_filenames) {
+            cleanup_uploaded_text_blocks(bucket, &new_filenames).await;
+            return Err(error);
+        }
+
+        if let Err(error) = ctx.track_uncommitted_text_blocks(&new_filenames) {
             cleanup_uploaded_text_blocks(bucket, &new_filenames).await;
             return Err(error);
         }

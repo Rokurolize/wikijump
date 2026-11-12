@@ -437,6 +437,9 @@ export const installListPagesPagination = (root: ListPagesRoot): (() => void) =>
   root.addEventListener("popstate", onPopState)
   return () => {
     sequence += 1
+    // Stop the in-flight request and its timers; without this the fetch
+    // and both timeouts outlive the script that started them.
+    clearPending()
     root.document.removeEventListener("click", onClick, true)
     root.removeEventListener("popstate", onPopState)
     style.parentNode?.removeChild(style)

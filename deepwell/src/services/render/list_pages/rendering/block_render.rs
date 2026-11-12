@@ -1081,6 +1081,8 @@ impl RenderService {
                                     current_page_id: page.page_id,
                                     viewer_user_id,
                                     max_include_expansions,
+                                    trusted_corpus_render: include_budget
+                                        .trusted_corpus_render,
                                     render_cost_budget: render_cost_budget.clone(),
                                     url,
                                 },
@@ -1123,6 +1125,8 @@ impl RenderService {
                                         current_page_id: page.page_id,
                                         viewer_user_id,
                                         max_include_expansions,
+                                        trusted_corpus_render: include_budget
+                                            .trusted_corpus_render,
                                         render_cost_budget: render_cost_budget.clone(),
                                         url,
                                     },
@@ -1143,6 +1147,8 @@ impl RenderService {
                                         current_page_id: page.page_id,
                                         viewer_user_id,
                                         max_include_expansions,
+                                        trusted_corpus_render: include_budget
+                                            .trusted_corpus_render,
                                         render_cost_budget: render_cost_budget.clone(),
                                         url,
                                     },
@@ -1186,6 +1192,8 @@ impl RenderService {
                                             current_page_id: page.page_id,
                                             viewer_user_id,
                                             max_include_expansions,
+                                            trusted_corpus_render: include_budget
+                                                .trusted_corpus_render,
                                             render_cost_budget: render_cost_budget
                                                 .clone(),
                                             url,

@@ -605,6 +605,16 @@ impl PermissionService {
             None => false,
         };
 
+        let reloaded;
+        let user_permissions = if cache_fence.is_some() {
+            reloaded = Self::get_permissions_for_user(ctx, user_id, site_id, None)
+                .await
+                .or_raise(make_error)?;
+            &reloaded
+        } else {
+            user_permissions
+        };
+
         let has_permission = Self::evaluate_in_permission_set(
             user_permissions,
             resource,

@@ -47,10 +47,10 @@ pub async fn handle_robots_txt(
     State(state): State<ServerState>,
     headers: HeaderMap,
 ) -> Response {
-    if get_target_server(&headers) == TargetServer::Files {
+    if get_target_server(&headers) == Some(TargetServer::Files) {
         return robots_response(ROBOTS_TXT_ALLOW_ALL, StatusCode::OK);
     }
-    let site_id = get_site_id(&headers);
+    let site_id = require_internal_header!(get_site_id(&headers));
     // robots.txt must reflect domain changes immediately, so it reads
     // Deepwell directly instead of the cached site domain.
     match state.deepwell.get_sitemap_presence(site_id).await {

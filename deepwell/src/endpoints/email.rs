@@ -246,7 +246,7 @@ pub async fn password_reset_complete(
         .into());
     }
 
-    PasswordService::new_account_hash(&new_password)?;
+    PasswordService::new_account_hash(&new_password).await?;
 
     UserService::update(
         ctx,

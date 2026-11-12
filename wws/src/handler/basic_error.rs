@@ -31,22 +31,12 @@ use axum_extra::TypedHeader;
 use headers::Host;
 use std::result::Result as StdResult;
 
-fn get_page_slug(headers: &HeaderMap) -> &str {
-    get_header(
-        headers,
-        HEADER_PAGE_SLUG,
-        "No page slug header in request",
-        "Page slug header is not UTF-8",
-    )
+fn get_page_slug(headers: &HeaderMap) -> Option<&str> {
+    get_header(headers, HEADER_PAGE_SLUG)
 }
 
-fn get_filename(headers: &HeaderMap) -> &str {
-    get_header(
-        headers,
-        HEADER_FILENAME,
-        "No filename header in request",
-        "Filename header is not UTF-8",
-    )
+fn get_filename(headers: &HeaderMap) -> Option<&str> {
+    get_header(headers, HEADER_FILENAME)
 }
 
 fn basic_error_from_request<'a>(
@@ -60,24 +50,29 @@ fn basic_error_from_request<'a>(
 
     let input = match error_code {
         "site-slug" => {
-            let site_slug = get_site_slug(headers);
+            let site_slug =
+                get_site_slug(headers).ok_or(FallbackError::BasicErrorDirect)?;
             BasicError::SiteSlug { site_slug }
         }
         "site-custom" => BasicError::SiteCustom { host },
         "page-slug" => {
-            let site_id = get_site_id(headers);
-            let page_slug = get_page_slug(headers);
+            let site_id = get_site_id(headers).ok_or(FallbackError::BasicErrorDirect)?;
+            let page_slug =
+                get_page_slug(headers).ok_or(FallbackError::BasicErrorDirect)?;
             BasicError::PageSlug { site_id, page_slug }
         }
         "page-fetch" => {
-            let site_id = get_site_id(headers);
-            let page_slug = get_page_slug(headers);
+            let site_id = get_site_id(headers).ok_or(FallbackError::BasicErrorDirect)?;
+            let page_slug =
+                get_page_slug(headers).ok_or(FallbackError::BasicErrorDirect)?;
             BasicError::PageFetch { site_id, page_slug }
         }
         "file-name" => {
-            let site_id = get_site_id(headers);
-            let page_slug = get_page_slug(headers);
-            let filename = get_filename(headers);
+            let site_id = get_site_id(headers).ok_or(FallbackError::BasicErrorDirect)?;
+            let page_slug =
+                get_page_slug(headers).ok_or(FallbackError::BasicErrorDirect)?;
+            let filename =
+                get_filename(headers).ok_or(FallbackError::BasicErrorDirect)?;
             BasicError::FileName {
                 site_id,
                 page_slug,
@@ -85,9 +80,11 @@ fn basic_error_from_request<'a>(
             }
         }
         "file-fetch" => {
-            let site_id = get_site_id(headers);
-            let page_slug = get_page_slug(headers);
-            let filename = get_filename(headers);
+            let site_id = get_site_id(headers).ok_or(FallbackError::BasicErrorDirect)?;
+            let page_slug =
+                get_page_slug(headers).ok_or(FallbackError::BasicErrorDirect)?;
+            let filename =
+                get_filename(headers).ok_or(FallbackError::BasicErrorDirect)?;
             BasicError::FileFetch {
                 site_id,
                 page_slug,

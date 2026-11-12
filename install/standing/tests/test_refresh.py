@@ -264,6 +264,78 @@ class RefreshStandingTest(unittest.TestCase):
             self.assertNotIn("caddy", command)
             self.assertNotIn("database", command)
 
+    def test_partial_missing_keeps_surviving_containers(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            runtime = Path(temporary_dir)
+            images = {
+                service: {"id": "sha256:" + str(index + 1) * 64}
+                for index, service in enumerate(REFRESH.SERVICES)
+            }
+            REFRESH.write_environment(runtime / ".env", {
+                "STANDING_PROJECT_NAME": "wikijump-standing",
+                **{f"STANDING_{s.upper()}_IMAGE": images[s]["id"] for s in REFRESH.SERVICES},
+            })
+            parked = {}
+            for index, service in enumerate(REFRESH.SERVICES):
+                container_id = chr(97 + index) * 64
+                parked[service] = {
+                    "parked_name": f"rollback-{service}",
+                    "original_name": f"wikijump-standing-{service}-1",
+                    "was_running": True,
+                    "container": {
+                        "container_id": container_id,
+                        "image_id": images[service]["id"],
+                        "running": False,
+                    },
+                }
+            def exists(kind, reference, cwd):
+                return kind == "container" and "rollback-deepwell" not in reference
+            restore_calls = []
+            def fake_restore(subset, home):
+                restore_calls.append(sorted(subset))
+                if len(subset) == len(REFRESH.SERVICES):
+                    raise subprocess.CalledProcessError(1, ["docker", "inspect", "rollback-deepwell"])
+                return {
+                    service: {
+                        "container_id": subset[service]["container"]["container_id"],
+                        "image_id": images[service]["id"],
+                        "running": True,
+                    }
+                    for service in subset
+                }
+            restored = {
+                service: {
+                    "running": True,
+                    "image_id": images[service]["id"],
+                    "container_id": parked[service]["container"]["container_id"],
+                }
+                for service in REFRESH.SERVICES
+            }
+            restored["deepwell"]["container_id"] = "d" * 64
+            calls = []
+            def capture(*args, cwd):
+                calls.append(args)
+                return ""
+            with (
+                mock.patch.object(REFRESH, "restore_parked_containers", side_effect=fake_restore),
+                mock.patch.object(REFRESH, "resource_exists", side_effect=exists),
+                mock.patch.object(REFRESH, "command", side_effect=capture),
+                mock.patch.object(REFRESH, "runtime_containers", return_value=restored),
+            ):
+                result = REFRESH.restore_or_recreate_previous_containers(
+                    parked, runtime, runtime / "override.yaml", images
+                )
+            self.assertEqual(result["mode"], "recreated-from-pinned-images")
+            self.assertEqual(sorted(result["missing_parked"]), ["deepwell"])
+            self.assertEqual(sorted(result["preserved_parked"]), ["framerail", "wws"])
+            self.assertEqual(restore_calls[1], ["framerail", "wws"])
+            up = [call for call in calls if call[:2] == ("docker", "compose")]
+            self.assertEqual(len(up), 1)
+            self.assertIn("deepwell", up[0])
+            self.assertNotIn("framerail", up[0])
+            self.assertNotIn("wws", up[0])
+            self.assertIn("--force-recreate", up[0])
+
     def test_missing_parked_fallback_rejects_wrong_image_or_unpinned_environment(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory)

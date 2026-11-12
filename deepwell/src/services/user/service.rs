@@ -446,7 +446,9 @@ impl UserService {
                 if password.is_empty() {
                     str!(DISABLED_PASSWORD_HASH)
                 } else {
-                    PasswordService::new_account_hash(&password).or_raise(make_error)?
+                    PasswordService::new_account_hash(&password)
+                        .await
+                        .or_raise(make_error)?
                 }
             }
             UserType::System | UserType::Site => {
@@ -1111,8 +1113,8 @@ impl UserService {
         if let Maybe::Set(password) = input.password {
             let password_hash = match user.user_type {
                 UserType::Regular if password.is_empty() => str!(DISABLED_PASSWORD_HASH),
-                UserType::Regular => PasswordService::new_account_hash(&password)?,
-                _ => PasswordService::new_hash(&password)?,
+                UserType::Regular => PasswordService::new_account_hash(&password).await?,
+                _ => PasswordService::new_hash_async(password.clone()).await?,
             };
             model.password = Set(password_hash);
         }

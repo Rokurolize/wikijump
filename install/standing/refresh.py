@@ -483,8 +483,10 @@ def restore_or_recreate_previous_containers(
     container object is gone, rollback recreates the exact parked filesystem
     through Compose from the verified tag instead of the older base image.
     Only when a snapshot is missing too does rollback fall back to the pinned
-    base images. The saved .env must already refer to the old, verified image
-    IDs. No volumes or non-application services are modified here.
+    base images. Parked containers that remain are renamed and started back and
+    kept; Compose runs only for the services whose parked object is gone. The
+    saved .env must already refer to the old, verified image IDs. No volumes
+    or non-application services are modified here.
     """
     try:
         restored = restore_parked_containers(parked, runtime_home)
@@ -499,6 +501,14 @@ def restore_or_recreate_previous_containers(
         ]
         if not missing:
             raise
+        surviving = [
+            service for service in parked if service not in missing
+        ]
+        if surviving:
+            restore_parked_containers(
+                {service: parked[service] for service in surviving},
+                runtime_home,
+            )
         actual_env = read_environment(runtime_home / ".env")
         if actual_env.get("STANDING_PROJECT_NAME") != "wikijump-standing":
             raise RuntimeError("rollback is not targeting the standing Compose project") from restore_error
@@ -539,7 +549,7 @@ def restore_or_recreate_previous_containers(
         command(
             *compose_command(
                 runtime_home, "up", "--detach", "--no-deps", "--no-build",
-                "--pull", "never", "--force-recreate", *SERVICES,
+                "--pull", "never", "--force-recreate", *missing,
                 override_file=override_file,
             ),
             cwd=runtime_home,
@@ -550,10 +560,20 @@ def restore_or_recreate_previous_containers(
                 raise RuntimeError(
                     f"recreated rollback service {service} does not run its previous image"
                 ) from restore_error
+        for service in surviving:
+            entry = parked[service]
+            container = entry.get("container")
+            expected_id = container.get("container_id") if isinstance(container, dict) else None
+            if expected_id is not None and current[service]["container_id"] != expected_id:
+                raise RuntimeError(
+                    f"surviving rollback service {service} lost its parked container"
+                ) from restore_error
         if not tagged:
             return {"mode": "recreated-from-pinned-images", "missing_parked": missing,
+                    "preserved_parked": surviving,
                     "services": {service: current[service] for service in SERVICES}}
         return {"mode": "parked-image", "missing_parked": missing,
+                "preserved_parked": surviving,
                 "parked_image_services": sorted(tagged),
                 "base_image_services": sorted(set(SERVICES) - set(tagged)),
                 "services": {service: current[service] for service in SERVICES}}

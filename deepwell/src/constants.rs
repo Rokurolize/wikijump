@@ -18,14 +18,15 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#![allow(dead_code)]
-
 use std::net::{IpAddr, Ipv6Addr};
 
 // See seeder data for these values
 pub const ADMIN_USER_ID: i64 = -1;
 pub const SYSTEM_USER_ID: i64 = -2;
 pub const ANONYMOUS_USER_ID: i64 = -3;
+
+// Only the test suite reads this one.
+#[allow(dead_code)]
 pub const UNKNOWN_USER_ID: i64 = -4;
 pub const SAMPLE_USER_ID: i64 = -5;
 

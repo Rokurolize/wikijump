@@ -134,7 +134,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-          key: cargo-registry-${{ hashFiles('wikijump/deepwell/Cargo.lock', 'wikijump/wws/Cargo.lock', 'wikijump/locales/validator/Cargo.lock', 'ftml/Cargo.lock') }}
+          key: cargo-registry-${{ hashFiles('wikijump/deepwell/Cargo.lock', 'wikijump/wws/Cargo.lock', 'wikijump/locales/validator/Cargo.lock') }}
           restore-keys: cargo-registry-
 
       - name: Cache the pnpm store
@@ -156,10 +156,9 @@ jobs:
           cargo fetch --locked --manifest-path wikijump/deepwell/Cargo.toml
           cargo fetch --locked --manifest-path wikijump/wws/Cargo.toml
           cargo fetch --locked --manifest-path wikijump/locales/validator/Cargo.toml
-          # The FTML repository tracks no Cargo.lock (library convention),
-          # so its fetch cannot be --locked; it only warms the crates.io
-          # dependencies the contract canary builds against.
-          cargo fetch --manifest-path ftml/Cargo.toml
+          # The Deepwell fetch also warms the crates.io dependencies of the
+          # pinned FTML git dependency, so no separate FTML checkout is
+          # needed here.
 
       - name: Configure the runner's git identity
         run: |

@@ -19,8 +19,8 @@ Framerail の記事キャッシュと Redis transport にある三つの増幅�
 
 ## 1. 記事キャッシュの期限走査 — 改善済み
 
-対象: `framerail/src/lib/server/cache/article-response/byte-limited-cache.js`、
-`expiry-heap.js`。FIFOのmemory storeとLRUのhot cacheが共用する。
+対象: `framerail/src/lib/server/cache/article-response/byte-limited-cache.ts`、
+`expiry-heap.ts`。FIFOのmemory storeとLRUのhot cacheが共用する。
 
 ```text
 current:

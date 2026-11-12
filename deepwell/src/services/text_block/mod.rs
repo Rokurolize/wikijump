@@ -24,4 +24,5 @@ mod structs;
 
 pub use self::mime::{MIME_HTML, mime_for_language};
 pub use self::service::TextBlockService;
+pub(crate) use self::service::cleanup_uploaded_text_blocks;
 pub use self::structs::{TextBlock, TextBlockIndex};
