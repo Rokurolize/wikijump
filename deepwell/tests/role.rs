@@ -981,6 +981,21 @@ async fn grant_and_revoke_role() {
     )
     .await;
 
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id: f.site_id,
+            user_id: f.target_user_id,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::Accepted(SYSTEM_USER_ID),
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("Failed to create site member for target user");
+
     let user_role = run_endpoint!(
         runner,
         grant_role_to_user,
@@ -1285,6 +1300,21 @@ async fn role_reparent_and_revoke_validate_role_site() {
     )
     .await;
 
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id: site_a.site_id,
+            user_id: site_a.target_user_id,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::Accepted(SYSTEM_USER_ID),
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("Failed to create site member for target user");
+
     let granted = run_endpoint!(
         runner,
         grant_role_to_user,
@@ -1369,6 +1399,21 @@ async fn role_grant_expiration() {
         &runner, f.site_id, "Member", None,
     )
     .await;
+
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id: f.site_id,
+            user_id: f.target_user_id,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::Accepted(SYSTEM_USER_ID),
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("Failed to create site member for target user");
 
     let expired = run_endpoint!(
         runner,
