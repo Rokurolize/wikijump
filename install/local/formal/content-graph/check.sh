@@ -158,7 +158,7 @@ fi
 expect_pass vote "$WORK/vote-pass.cfg" VoteHistory || note $?
 expect_fail vote-cast "$WORK/vote-cast.cfg" VoteHistory || note $?
 expect_fail vote-disabled "$WORK/vote-disabled.cfg" VoteHistory || note $?
-if grep -q 'RecastKeepsDisabled = TRUE' "$WORK/vote.cfg"; then
+if grep -q 'RecastKeepsDisabled = TRUE' "$WORK/vote.cfg" && grep -q 'RemoveKeepsDisabled = TRUE' "$WORK/vote.cfg"; then
   expect_pass vote-recast "$WORK/vote-recast.cfg" VoteHistory || note $?
 else
   expect_fail vote-recast "$WORK/vote-recast.cfg" VoteHistory || note $?

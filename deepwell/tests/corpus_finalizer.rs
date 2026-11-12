@@ -290,6 +290,275 @@ async fn corpus_pass2_rerenders_imported_dense_dependents_with_the_corpus_ceilin
     cleanup_namespace(&redis_url, &namespace).await;
 }
 
+struct ImportBudgetFixture {
+    state: ServerState,
+    import_run_id: i64,
+    entity_id: String,
+    page_id: i64,
+}
+
+impl ImportBudgetFixture {
+    async fn new(namespace: &str) -> Self {
+        let run_id = Uuid::new_v4().simple().to_string();
+        let mut config = Config::integration_testing();
+        config.rerender_skip = vec![(10, None)];
+        let state = build_server_state_without_workers_with_job_queue_namespace(
+            config,
+            Secrets::load(),
+            namespace,
+        )
+        .await
+        .expect("isolated import budget state should build");
+
+        let page_slug = format!("component:import-budget-{run_id}");
+        let entity_id = Uuid::new_v4().to_string();
+        let backend = state.database.get_database_backend();
+        let transaction = state
+            .database
+            .begin()
+            .await
+            .expect("import budget fixture transaction should begin");
+        let (site_id, page_id) = {
+            let ctx = ServiceContext::new(&state, &transaction);
+            let site_id = SiteService::get(&ctx, Reference::Slug(Cow::Borrowed("test")))
+                .await
+                .expect("seeded test site should exist")
+                .site_id;
+            let page_id = create_page(
+                &ctx,
+                site_id,
+                &page_slug,
+                String::from(
+                    "[[module ListPages range=\".\"]]\nCited as %%title%%\n[[/module]]",
+                ),
+            )
+            .await;
+            (site_id, page_id)
+        };
+        let import_run_id = transaction
+            .query_one_raw(Statement::from_sql_and_values(
+                backend,
+                "INSERT INTO wikidot_corpus_import_run(site_id, source_branch, source_site, manifest_sha256, manifest_row_count, complete_inventory, state) VALUES ($1, 'en', 'import-budget', decode(repeat('ab', 32), 'hex'), 1, false, 'rendering') RETURNING import_run_id",
+                [Value::from(site_id)],
+            ))
+            .await
+            .expect("import budget run should be inserted")
+            .expect("import budget run should be returned")
+            .try_get::<i64>("", "import_run_id")
+            .expect("import budget run ID should be present");
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                backend,
+                "INSERT INTO wikidot_corpus_import_item(import_run_id, source_entity_id, source_fullname, page_id, source_sha256, meta_sha256, state) VALUES ($1, $2::uuid, $3, NULL, decode(repeat('ab', 32), 'hex'), decode(repeat('cd', 32), 'hex'), 'render_pending')",
+                [
+                    Value::from(import_run_id),
+                    Value::from(entity_id.clone()),
+                    Value::from(page_slug),
+                ],
+            ))
+            .await
+            .expect("import budget item should be inserted");
+        transaction
+            .commit()
+            .await
+            .expect("import budget fixture transaction should commit");
+
+        Self {
+            state,
+            import_run_id,
+            entity_id,
+            page_id,
+        }
+    }
+
+    async fn run_pass(&self, pass: &str) -> JsonValue {
+        let import_run_id = self.import_run_id.to_string();
+        let pass = pass.to_owned();
+        run_corpus_render_finalizer(&self.state, |name| match name {
+            "DEEPWELL_RENDER_IMPORT_RUN_ID" => Some(import_run_id.clone()),
+            "DEEPWELL_RENDER_PASS" => Some(pass.clone()),
+            "DEEPWELL_RENDER_CONCURRENCY" => Some(String::from("1")),
+            "DEEPWELL_RENDER_DRY_RUN" => Some(String::from("false")),
+            _ => None,
+        })
+        .await
+        .expect("finalizer pass should run")
+    }
+
+    async fn item_state_and_attempts(&self) -> (String, i32) {
+        let row = self
+            .state
+            .database
+            .query_one_raw(Statement::from_sql_and_values(
+                self.state.database.get_database_backend(),
+                "SELECT state, attempts FROM wikidot_corpus_import_item WHERE import_run_id = $1 AND source_entity_id = $2::uuid",
+                [
+                    Value::from(self.import_run_id),
+                    Value::from(self.entity_id.clone()),
+                ],
+            ))
+            .await
+            .expect("item row should load")
+            .expect("item row should exist");
+        (
+            row.try_get::<String>("", "state")
+                .expect("item state should decode"),
+            row.try_get::<i32>("", "attempts")
+                .expect("item attempts should decode"),
+        )
+    }
+
+    async fn link_page(&self) {
+        self.state
+            .database
+            .execute_raw(Statement::from_sql_and_values(
+                self.state.database.get_database_backend(),
+                "UPDATE wikidot_corpus_import_item SET page_id = $1 WHERE import_run_id = $2 AND source_entity_id = $3::uuid",
+                [
+                    Value::from(self.page_id),
+                    Value::from(self.import_run_id),
+                    Value::from(self.entity_id.clone()),
+                ],
+            ))
+            .await
+            .expect("item page link should update");
+    }
+
+    async fn attempt_observation(&self, pass: &str, attempt: i32) -> (String, bool) {
+        let row = self
+            .state
+            .database
+            .query_one_raw(Statement::from_sql_and_values(
+                self.state.database.get_database_backend(),
+                "SELECT outcome, complete FROM wikidot_corpus_render_observation WHERE import_run_id = $1 AND source_entity_id = $2::uuid AND pass = $3 AND attempt = $4",
+                [
+                    Value::from(self.import_run_id),
+                    Value::from(self.entity_id.clone()),
+                    Value::from(pass),
+                    Value::from(attempt),
+                ],
+            ))
+            .await
+            .expect("observation row should load")
+            .expect("observation row should exist");
+        (
+            row.try_get::<String>("", "outcome")
+                .expect("observation outcome should decode"),
+            row.try_get::<bool>("", "complete")
+                .expect("observation complete should decode"),
+        )
+    }
+}
+
+async fn fail_twice_without_a_page(fixture: &ImportBudgetFixture) {
+    for expected_attempts in 1..=2 {
+        let summary = fixture.run_pass("pass1").await;
+        assert_eq!(summary_count(&summary, "claimed"), 1, "{summary}");
+        assert_eq!(
+            summary_count(&summary, "render_failed"),
+            1,
+            "a page-less item must fail its pass 1 attempt: {summary}",
+        );
+        assert_eq!(
+            fixture.item_state_and_attempts().await,
+            (String::from("render_failed"), expected_attempts),
+            "each failure consumes one attempt",
+        );
+    }
+}
+
+#[tokio::test]
+async fn import_item_reaching_rendered_on_last_attempt_still_reaches_done() {
+    let redis_url =
+        env::var("REDIS_URL").expect("REDIS_URL must be set for integration tests");
+    let namespace = format!("rsmq-import-budget-{}", Uuid::new_v4().simple());
+    let fixture = ImportBudgetFixture::new(&namespace).await;
+
+    fail_twice_without_a_page(&fixture).await;
+    fixture.link_page().await;
+
+    let summary = fixture.run_pass("pass1").await;
+    assert_eq!(summary_count(&summary, "claimed"), 1, "{summary}");
+    assert_eq!(summary_count(&summary, "rendered"), 1, "{summary}");
+    assert_eq!(
+        fixture.item_state_and_attempts().await,
+        (String::from("rendered"), 2),
+        "the successful third attempt leaves attempts below the bound",
+    );
+
+    let summary = fixture.run_pass("pass2").await;
+    assert_eq!(
+        summary_count(&summary, "claimed"),
+        1,
+        "pass 2 must claim an item rendered on its last attempt: {summary}",
+    );
+    assert_eq!(summary_count(&summary, "done"), 1, "{summary}");
+    assert_eq!(
+        fixture.item_state_and_attempts().await,
+        (String::from("done"), 2),
+        "pass 2 completes without consuming another attempt beyond the bound",
+    );
+
+    cleanup_namespace(&redis_url, &namespace).await;
+}
+
+#[tokio::test]
+async fn crashed_final_attempt_is_reclaimed_into_the_same_attempt() {
+    let redis_url =
+        env::var("REDIS_URL").expect("REDIS_URL must be set for integration tests");
+    let namespace = format!("rsmq-import-reclaim-{}", Uuid::new_v4().simple());
+    let fixture = ImportBudgetFixture::new(&namespace).await;
+
+    fail_twice_without_a_page(&fixture).await;
+    fixture.link_page().await;
+    fixture
+        .state
+        .database
+        .execute_raw(Statement::from_sql_and_values(
+            fixture.state.database.get_database_backend(),
+            "UPDATE wikidot_corpus_import_item SET state = 'render_running', lease_until = NOW() - INTERVAL '1 second' WHERE import_run_id = $1 AND source_entity_id = $2::uuid",
+            [
+                Value::from(fixture.import_run_id),
+                Value::from(fixture.entity_id.clone()),
+            ],
+        ))
+        .await
+        .expect("crashed claim state should update");
+    fixture
+        .state
+        .database
+        .execute_raw(Statement::from_sql_and_values(
+            fixture.state.database.get_database_backend(),
+            "INSERT INTO wikidot_corpus_render_observation(import_run_id, source_entity_id, pass, attempt, outcome) VALUES ($1, $2::uuid, 'pass1', 3, 'running')",
+            [
+                Value::from(fixture.import_run_id),
+                Value::from(fixture.entity_id.clone()),
+            ],
+        ))
+        .await
+        .expect("crashed attempt observation should insert");
+
+    let summary = fixture.run_pass("pass1").await;
+    assert_eq!(
+        summary_count(&summary, "claimed"),
+        1,
+        "the expired final attempt must be claimable again: {summary}",
+    );
+    assert_eq!(summary_count(&summary, "rendered"), 1, "{summary}");
+    assert_eq!(
+        fixture.item_state_and_attempts().await,
+        (String::from("rendered"), 2),
+        "the reclaim resumes attempt 3 without consuming another attempt",
+    );
+    assert_eq!(
+        fixture.attempt_observation("pass1", 3).await,
+        (String::from("rendered"), true),
+        "the crashed attempt keeps a single completed observation row",
+    );
+
+    cleanup_namespace(&redis_url, &namespace).await;
+}
+
 #[tokio::test]
 async fn corpus_pass2_keeps_the_public_ceiling_for_local_dense_dependents() {
     let redis_url =

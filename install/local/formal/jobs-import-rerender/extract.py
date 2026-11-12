@@ -113,7 +113,22 @@ def main() -> int:
         if "item.attempts < $2" not in fin:
             raise ModelDrift(f"{FINALIZER}: claim no longer requires attempts < max")
         if "attempts = item.attempts + 1" not in fin:
-            raise ModelDrift(f"{FINALIZER}: claim no longer increments attempts")
+            raise ModelDrift(f"{FINALIZER}: failure no longer increments attempts")
+        claim_at = fin.index(", claimed AS (")
+        obs_at = fin.index("), observations AS (", claim_at)
+        claimed_span = fin[claim_at:obs_at]
+        if "attempts = item.attempts + 1" in claimed_span:
+            raise ModelDrift(f"{FINALIZER}: claim increments attempts again")
+        if "(item.attempts + 1) AS attempts" not in claimed_span:
+            raise ModelDrift(f"{FINALIZER}: claimed attempt number is no longer attempts + 1")
+        if "ON CONFLICT (import_run_id, source_entity_id, pass, attempt)" not in fin:
+            raise ModelDrift(f"{FINALIZER}: observation insert no longer reuses crashed attempts")
+        if fin.count("CASE WHEN item.state = 'render_running' THEN item.attempts + 1") != 2:
+            raise ModelDrift(f"{FINALIZER}: running retry no longer pairs attempts + 1")
+        if "AND {item}.attempts = {attempt} - 1" not in fin:
+            raise ModelDrift(f"{FINALIZER}: item fence no longer pins attempts - 1")
+        if "AND {item}.attempts = {patch}.attempt - 1" not in fin:
+            raise ModelDrift(f"{FINALIZER}: patch fence no longer pins attempts - 1")
         if "FOR UPDATE OF item SKIP LOCKED" not in fin:
             raise ModelDrift(f"{FINALIZER}: claim lost SKIP LOCKED")
         if "SET state = 'render_failed'" not in fin:

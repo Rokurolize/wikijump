@@ -49,7 +49,7 @@ This script makes several changes to the emitted files before finishing to accou
 
 The primary organization of the crate is as follows:
 
-* `api/` &mdash; Web server definition, such as its routes and related structures.
+* `api.rs` &mdash; Web server definition, such as its routes and related structures.
   * Exposes the internal API for use by Framerail.
 * `endpoints/` &mdash; Implementations for individual endpoints described above.
 * `services/` &mdash; "Services", or logical encapsulations of different concepts or operations.
@@ -66,10 +66,10 @@ JSON-RPC methods are registered in `api.rs`, decoded and authorized in `endpoint
 
 ### Compilation
 
-This executable targets the latest stable Rust. At time of writing, that is `1.94.0`.
+This executable targets the latest stable Rust. The pinned toolchain is `1.99.1`, as recorded in the repository's `rust-toolchain.toml`.
 
 At present the crate has one feature:
-* `notify` &mdash; Enables a feature to track the locale directory and configuration file, reloading the server if they are modified. This should be used in local builds only, not in production.
+* `watch` &mdash; Enables a feature to track the locale directory and configuration file, reloading the server if they are modified. This should be used in local builds only, not in production.
 
 ```sh
 $ cargo build [--features ...] [--release]
@@ -78,12 +78,12 @@ $ cargo build [--features ...] [--release]
 ### Execution
 
 ```sh
-$ cargo build --features <deploy|local> -- [-q] [-p <port>] <config-file>
+$ cargo run -- [-q] [-p <port>] <config-file>
 ```
 
 There are a number of arguments beyond the ones shown. Run with `--help` for all relevant information.
 
-This runs a local instance of DEEPWELL with the given configuration file. Set `DEEPWELL_RPC_TOKEN` to 64 lowercase hexadecimal characters, such as the output of `openssl rand -hex 32`, before startup. When debugging (i.e. on `--features local` only), you can also pass in `-w` or `--watch-files` to have the process to restart automatically when the configuration file or any localization files change.
+This runs a local instance of DEEPWELL with the given configuration file. Set `DEEPWELL_RPC_TOKEN` to 64 lowercase hexadecimal characters, such as the output of `openssl rand -hex 32`, before startup. When debugging, you can also pass in `-w` or `--watch` (on a build with the `watch` feature) to have the process restart automatically when the configuration file or any localization files change.
 
 This does not seem to work with Docker, so you should instead manually stop the `api` container and run it locally with the flag. That will properly watch changes and restart itself.
 

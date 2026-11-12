@@ -6,9 +6,17 @@ GUARD="${ROOT}/scripts/run-test-no-external-network.sh"
 
 cd "${ROOT}"
 
-export WIKIJUMP_OFFLINE_CARGO="$(rustup which --toolchain 1.99.1 cargo)"
-export RUSTC="$(rustup which --toolchain 1.99.1 rustc)"
-export RUSTDOC="$(rustup which --toolchain 1.99.1 rustdoc)"
+# The channel comes from the tree's own rust-toolchain.toml, so a toolchain
+# bump needs no change here.
+channel="$(sed -n 's/^channel = "\([0-9.]*\)"/\1/p' "${ROOT}/rust-toolchain.toml")"
+if [[ -z "${channel}" ]]; then
+  echo "offline product compatibility could not read the Rust channel from rust-toolchain.toml" >&2
+  exit 2
+fi
+
+export WIKIJUMP_OFFLINE_CARGO="$(rustup which --toolchain "${channel}" cargo)"
+export RUSTC="$(rustup which --toolchain "${channel}" rustc)"
+export RUSTDOC="$(rustup which --toolchain "${channel}" rustdoc)"
 
 "${GUARD}" "${WIKIJUMP_OFFLINE_CARGO}" test \
   --offline \

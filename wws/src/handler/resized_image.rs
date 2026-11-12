@@ -102,7 +102,7 @@ pub async fn handle_resized_image(
     Path((mut page_slug, filename, variant_filename)): Path<(String, String, String)>,
     headers: HeaderMap,
 ) -> Response {
-    let site_id = get_site_id(&headers);
+    let site_id = require_internal_header!(get_site_id(&headers));
     let Some(variant) = ResizeVariant::from_filename(&variant_filename) else {
         return resized_not_found(&state, &headers, site_id, &page_slug, &filename).await;
     };

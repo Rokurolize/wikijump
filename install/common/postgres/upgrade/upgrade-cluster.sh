@@ -75,8 +75,8 @@ pg_upgrade "${upgrade_args[@]}"
 # --link has made the old cluster unstartable, and its data lives on through the
 # hard links in the new cluster, so nothing below can lose a relation file.
 find /volume -mindepth 1 -maxdepth 1 ! -name .pg-upgrade-new -exec rm -rf {} +
-find "${new}" -mindepth 1 -maxdepth 1 -exec mv -t /volume {} +
-rmdir "${new}"
+cp -al "${new}/." /volume/
+rm -rf "${new}"
 
 # Planner statistics carry over except extended statistics; fill in what is
 # missing before the server takes traffic.

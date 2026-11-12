@@ -35,8 +35,8 @@ use crate::services::page_revision::{PageRevisionService, RerenderType};
 use crate::services::parent::ParentDescription;
 use crate::services::permission::PermissionService;
 use crate::services::relation::{
-    PageAttributionEntry, PageAttributionKind, PageAttributionMetadata, RelationService,
-    SetPageAttributions,
+    CreateSiteMember, PageAttributionEntry, PageAttributionKind, PageAttributionMetadata,
+    RelationService, SetPageAttributions, SiteMemberAccepted, SiteMemberData,
 };
 use crate::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
@@ -632,6 +632,21 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                 let user = UserService::get_real(&ctx, Reference::from(ADMIN_USER_ID))
                     .await
                     .or_raise(make_error)?;
+
+                RelationService::create_site_member(
+                    &ctx,
+                    CreateSiteMember {
+                        site_id,
+                        user_id: user.user_id,
+                        metadata: SiteMemberData {
+                            accepted: SiteMemberAccepted::CreatedSite,
+                        },
+                        created_by: SYSTEM_USER_ID,
+                    },
+                    SEED_IP_ADDRESS,
+                )
+                .await
+                .or_raise(make_error)?;
 
                 RoleService::grant_role_to_user(
                     &ctx,

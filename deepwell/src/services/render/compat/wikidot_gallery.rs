@@ -35,8 +35,6 @@ const WIKIDOT_GALLERY_SELECTION_ERROR: &str =
 const WIKIDOT_GALLERY_EMPTY_ERROR: &str = r#"<div class="error-block">Sorry, we couldn't find any images attached to this page.</div>"#;
 const MAX_GALLERY_FILES: u64 = 500;
 const MAX_GALLERY_ENTRIES: usize = 500;
-const MAX_GALLERY_REQUIREMENTS: usize = 32;
-const MAX_CORPUS_GALLERY_REQUIREMENTS: usize = 128;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum GallerySize {
@@ -242,10 +240,11 @@ impl RenderService {
         let context = current_site_id
             .zip(current_site)
             .filter(|(site_id, site)| *site_id == site.site_id);
+        let config = ctx.config();
         let max_requirements = if trusted_corpus_render {
-            MAX_CORPUS_GALLERY_REQUIREMENTS
+            config.corpus_max_gallery_requirements
         } else {
-            MAX_GALLERY_REQUIREMENTS
+            config.public_max_gallery_requirements
         };
         if requirements.len() > max_requirements {
             return Ok(false);
@@ -583,12 +582,6 @@ fn render_gallery_dom(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn gallery_requirement_limits_keep_ordinary_and_corpus_boundaries_separate() {
-        assert_eq!(MAX_GALLERY_REQUIREMENTS, 32);
-        assert_eq!(MAX_CORPUS_GALLERY_REQUIREMENTS, 128);
-    }
 
     #[test]
     fn gallery_dom_matches_the_frozen_static_thumbnail_shape_without_scripts() {

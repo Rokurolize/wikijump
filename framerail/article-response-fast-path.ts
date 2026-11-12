@@ -15,7 +15,11 @@ import {
   renewCspNonce
 } from "./src/lib/server/cache/article-response/entry.ts"
 import { applyStaticSecurityHeadersToNodeResponse } from "./src/lib/server/security-headers.ts"
-import { parseAcceptLangHeader, withFallbackLocale } from "./src/lib/locales.ts"
+import {
+  FALLBACK_LOCALE,
+  parseAcceptLangHeader,
+  withFallbackLocale
+} from "./src/lib/locales.ts"
 import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from "node:http"
 import { promisify } from "node:util"
 import zlib from "node:zlib"
@@ -67,7 +71,6 @@ interface FastPathEntry extends FastPathVariant {
 type FastPathFenceCache = ReturnType<typeof createMemoryArticleResponseFenceCache>
 type FastPathLocalHotCache = ReturnType<typeof createLocalArticleResponseHotCache>
 
-const FALLBACK_LOCALE = "en"
 const SITE_ID_HEADER = "x-wikijump-site-id"
 const SITE_SLUG_HEADER = "x-wikijump-site-slug"
 const MIN_COMPRESSED_REPLAY_BODY_BYTES = 2048

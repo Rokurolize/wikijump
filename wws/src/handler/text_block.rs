@@ -69,7 +69,7 @@ pub async fn handle_html_terminal(
     Path((_page_slug, id, _domain)): Path<(String, String, String)>,
     headers: HeaderMap,
 ) -> Response {
-    let site_id = get_site_id(&headers);
+    let site_id = require_internal_header!(get_site_id(&headers));
     let Some(sha1) = parse_wikidot_html_route_id(&id) else {
         return state
             .build_basic_error_response(
@@ -175,7 +175,7 @@ async fn handle_text_block(
     page_slug: &str,
     block_id: BlockId,
 ) -> Response {
-    let site_id = get_site_id(headers);
+    let site_id = require_internal_header!(get_site_id(headers));
     let page_id =
         try_response!(state.get_page_fresh_or_response(headers, site_id, page_slug));
     let session_token = get_session_token(headers);
@@ -291,6 +291,15 @@ async fn serve_text_block(
         "Fetching {} text block from S3 object '{s3_filename}' (index {index})",
         block_type.value()
     );
+
+    let Some(site_id) = get_site_id(headers) else {
+        error!("Text block request is missing the internal site id header");
+        return TextBlockServeOutcome::Answered(
+            axum::response::IntoResponse::into_response(
+                axum::http::StatusCode::NOT_FOUND,
+            ),
+        );
+    };
 
     let (metadata, status_code) =
         match state.s3_tblocks_bucket.head_object(&s3_filename).await {
@@ -467,7 +476,7 @@ async fn serve_text_block(
                     .build_basic_error_response(
                         headers,
                         BasicError::TextBlock {
-                            site_id: get_site_id(headers),
+                            site_id,
                             index: expected_sha1,
                             block_type: TextBlockType::Html,
                             reason: TextBlockErrorReason::Missing,

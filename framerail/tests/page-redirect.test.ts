@@ -1,7 +1,40 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { resolvePageRedirect } from "../src/lib/server/page-redirect.ts"
+import { isRedirect } from "@sveltejs/kit"
+
+import {
+  resolvePageRedirect,
+  throwPageRedirect
+} from "../src/lib/server/page-redirect.ts"
+
+test("absolute Wikidot module redirect targets throw a SvelteKit redirect", () => {
+  try {
+    throwPageRedirect({
+      status: 301,
+      location: "https://scp-wiki.wikidot.com/peppersghost"
+    })
+    assert.fail("expected throwPageRedirect to throw")
+  } catch (thrown) {
+    assert.ok(isRedirect(thrown))
+    assert.equal(thrown.status, 301)
+    assert.equal(thrown.location, "https://scp-wiki.wikidot.com/peppersghost")
+  }
+})
+
+test("same-origin absolute redirect targets throw a SvelteKit redirect", () => {
+  try {
+    throwPageRedirect({
+      status: 301,
+      location: "https://example.test/other-page"
+    })
+    assert.fail("expected throwPageRedirect to throw")
+  } catch (thrown) {
+    assert.ok(isRedirect(thrown))
+    assert.equal(thrown.status, 301)
+    assert.equal(thrown.location, "https://example.test/other-page")
+  }
+})
 
 test("Wikidot module redirects preserve relative query and fragment", () => {
   assert.deepEqual(

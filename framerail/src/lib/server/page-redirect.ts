@@ -3,9 +3,18 @@ export interface PageRedirectData {
   redirect_kind?: "wikidot_module" | "random_helper" | null
 }
 
+import { redirect } from "@sveltejs/kit"
+
 export interface ResolvedPageRedirect {
   status: 301 | 302 | 308
   location: string
+}
+
+export function throwPageRedirect(resolved: ResolvedPageRedirect): never {
+  if (/^https?:\/\//i.test(resolved.location)) {
+    redirect(resolved.status, resolved.location, { external: true })
+  }
+  redirect(resolved.status, resolved.location)
 }
 
 export function resolvePageRedirect(

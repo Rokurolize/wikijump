@@ -1161,3 +1161,114 @@ async fn refresh_to_newer_aggregate_counts_local_vote_once() {
         "one live local vote row must exist",
     );
 }
+
+#[tokio::test]
+async fn disabled_vote_cannot_be_recast_or_removed_until_enabled() {
+    const SLUG: &str = "security-vote-disabled-recast-20261112";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(SLUG.into())),
+    });
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Disabled vote recast test page.",
+            "title": "Disabled Vote Recast",
+            "alt_title": null,
+            "slug": SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create disabled vote recast test page",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let initial = run_endpoint!(
+        runner,
+        vote_set,
+        json!({
+            "page_id": page.page_id,
+            "user_id": ADMIN_USER_ID,
+            "value": 1,
+        }),
+    )
+    .expect("initial vote should be stored");
+    assert_eq!(initial.value, 1);
+
+    let disabled = run_endpoint!(
+        runner,
+        vote_action,
+        json!({
+            "page_id": page.page_id,
+            "user_id": ADMIN_USER_ID,
+            "enable": false,
+            "acting_user_id": ADMIN_USER_ID,
+        }),
+    );
+    assert!(disabled.disabled_at.is_some());
+
+    let error = run_endpoint_err!(
+        runner,
+        vote_set,
+        json!({
+            "page_id": page.page_id,
+            "user_id": ADMIN_USER_ID,
+            "value": -1,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PageVote);
+
+    let error = run_endpoint_err!(
+        runner,
+        vote_remove,
+        json!({
+            "page_id": page.page_id,
+            "user_id": ADMIN_USER_ID,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PageVote);
+
+    let current = run_endpoint!(
+        runner,
+        vote_get,
+        json!({
+            "page_id": page.page_id,
+            "user_id": ADMIN_USER_ID,
+        }),
+    )
+    .expect("disabled vote should still be the current vote");
+    assert_eq!(current.value, 1);
+    assert!(current.disabled_at.is_some());
+
+    let enabled = run_endpoint!(
+        runner,
+        vote_action,
+        json!({
+            "page_id": page.page_id,
+            "user_id": ADMIN_USER_ID,
+            "enable": true,
+            "acting_user_id": ADMIN_USER_ID,
+        }),
+    );
+    assert!(enabled.disabled_at.is_none());
+
+    let removed = run_endpoint!(
+        runner,
+        vote_remove,
+        json!({
+            "page_id": page.page_id,
+            "user_id": ADMIN_USER_ID,
+        }),
+    );
+    assert_eq!(removed.value, 1);
+}
