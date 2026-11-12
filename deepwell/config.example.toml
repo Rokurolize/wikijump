@@ -469,7 +469,6 @@ public-max-gallery-requirements = 512
 # render.
 corpus-max-gallery-requirements = 128
 
-
 [issuance-caps]
 
 # Anti-abuse issuance caps, each counted over a fixed one-hour window.
