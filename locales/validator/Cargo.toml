@@ -9,7 +9,7 @@ categories = []
 exclude = [".gitignore"]
 
 version = "0.1.0"
-authors = ["Emmie Maeda <emmie.maeda@gmail.com>"]
+authors = ["Rokurolize <1701388+Rokurolize@users.noreply.github.com>"]
 edition = "2024"
 rust-version = "1.95.0"
 
