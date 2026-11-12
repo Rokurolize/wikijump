@@ -460,6 +460,14 @@ public-max-include-expansions = 4096
 # and ListPages selected-content paths that already used the higher corpus budget.
 corpus-max-include-expansions = 4096
 
+# Maximum number of Wikidot gallery requirements resolved during one public
+# page render. Wikidot does not impose an equivalent gallery ceiling; this
+# value is a runaway-resolution guard.
+public-max-gallery-requirements = 512
+
+# Maximum number of gallery requirements resolved during a trusted corpus
+# render.
+corpus-max-gallery-requirements = 128
 
 [issuance-caps]
 

@@ -176,6 +176,10 @@ pub struct Config {
     pub public_max_include_expansions: usize,
 
     pub corpus_max_include_expansions: usize,
+
+    pub public_max_gallery_requirements: usize,
+
+    pub corpus_max_gallery_requirements: usize,
 }
 
 impl Config {
@@ -305,6 +309,8 @@ impl Config {
             register_global_max_attempts: 100,
             public_max_include_expansions: 256,
             corpus_max_include_expansions: 4096,
+            public_max_gallery_requirements: 32,
+            corpus_max_gallery_requirements: 128,
         }
     }
 }
