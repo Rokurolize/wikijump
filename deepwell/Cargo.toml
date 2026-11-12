@@ -51,7 +51,7 @@ ref-map = "0.2"
 regex = "1"
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
 rsmq_async = "18"
-rust-s3 = { version = "0.38", features = ["with-tokio", "tokio-rustls-tls"], default-features = false }
+rust-s3 = { version = "0.38", features = ["with-tokio", "tokio-rustls-tls-ring"], default-features = false }
 rust-otp = "3"
 sea-orm = { version = "2", features = ["sqlx-postgres", "runtime-tokio-rustls", "postgres-array", "stream", "macros", "with-json", "with-time", "with-ipnetwork"], default-features = false }
 sea-query = "1"
@@ -86,7 +86,7 @@ pretty_assertions = "1"
 self_cell = "1"
 
 [build-dependencies]
-built = { version = "0.8", features = ["chrono", "git2"] }
+built = { version = "0.8", features = ["chrono"] }
 
 # Lints
 
@@ -126,6 +126,133 @@ debug = false
 opt-level = 3
 
 [profile.dev.package.deepwell]
+opt-level = 1
+
+# Procedural macros run while the compiler works, never while the tests run,
+# so the optimisation level above buys nothing at test time and only costs
+# build time. These packages are the exceptions to the wildcard.
+[profile.dev.package.askama_macros]
+opt-level = 0
+
+[profile.dev.package.async-stream-impl]
+opt-level = 0
+
+[profile.dev.package.async-trait]
+opt-level = 0
+
+[profile.dev.package.const-random-macro]
+opt-level = 0
+
+[profile.dev.package.cssparser-macros]
+opt-level = 0
+
+[profile.dev.package.darling_macro]
+opt-level = 0
+
+[profile.dev.package.derive-where]
+opt-level = 0
+
+[profile.dev.package.derive_more-impl]
+opt-level = 0
+
+[profile.dev.package.displaydoc]
+opt-level = 0
+
+[profile.dev.package.enum-map-derive]
+opt-level = 0
+
+[profile.dev.package.futures-macro]
+opt-level = 0
+
+[profile.dev.package.jsonrpsee-proc-macros]
+opt-level = 0
+
+[profile.dev.package.lightningcss-derive]
+opt-level = 0
+
+[profile.dev.package.maybe-async]
+opt-level = 0
+
+[profile.dev.package.ouroboros_macro]
+opt-level = 0
+
+[profile.dev.package.paste]
+opt-level = 0
+
+[profile.dev.package.pastey]
+opt-level = 0
+
+[profile.dev.package.pest_derive]
+opt-level = 0
+
+[profile.dev.package.phf_macros]
+opt-level = 0
+
+[profile.dev.package.pin-project-internal]
+opt-level = 0
+
+[profile.dev.package.ptr_meta_derive]
+opt-level = 0
+
+[profile.dev.package.rkyv_derive]
+opt-level = 0
+
+[profile.dev.package.rustversion]
+opt-level = 0
+
+[profile.dev.package.sea-bae]
+opt-level = 0
+
+[profile.dev.package.sea-orm-macros]
+opt-level = 0
+
+[profile.dev.package.sea-query-derive]
+opt-level = 0
+
+[profile.dev.package.serde_derive]
+opt-level = 0
+
+[profile.dev.package.serde_repr]
+opt-level = 0
+
+[profile.dev.package.strum_macros]
+opt-level = 0
+
+[profile.dev.package.thiserror-impl]
+opt-level = 0
+
+[profile.dev.package.time-macros]
+opt-level = 0
+
+[profile.dev.package.tokio-macros]
+opt-level = 0
+
+[profile.dev.package.tracing-attributes]
+opt-level = 0
+
+[profile.dev.package.wasm-bindgen-macro]
+opt-level = 0
+
+[profile.dev.package.yoke-derive]
+opt-level = 0
+
+[profile.dev.package.zerofrom-derive]
+opt-level = 0
+
+[profile.dev.package.zerovec-derive]
+opt-level = 0
+
+# The pull request checks compile the library tests and Clippy, and never the
+# integration suite, so they do not need the optimisation level that the
+# integration suite's run time depends on. This profile builds the
+# dependencies without optimisation, which is much cheaper to compile.
+[profile.ci]
+inherits = "dev"
+
+[profile.ci.package."*"]
+opt-level = 0
+
+[profile.ci.package.deepwell]
 opt-level = 1
 
 [profile.debugging]

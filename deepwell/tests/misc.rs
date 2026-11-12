@@ -70,10 +70,7 @@ async fn misc() {
     assert_eq!(info.compile_info.endian, deepwell::info::CFG_ENDIAN);
     assert_eq!(info.compile_info.target, deepwell::info::TARGET);
     assert_eq!(info.compile_info.threads, deepwell::info::NUM_JOBS);
-    assert_eq!(
-        info.compile_info.git_commit,
-        deepwell::info::GIT_COMMIT_HASH,
-    );
+    assert_eq!(info.compile_info.git_commit, *deepwell::info::GIT_COMMIT);
     assert_eq!(info.config_path, runner.config().raw_toml_path);
     assert_eq!(info.hostname, *deepwell::info::HOSTNAME);
     assert!(info.current_time > OffsetDateTime::UNIX_EPOCH);

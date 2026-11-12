@@ -74,3 +74,7 @@ and `cargo clean` controls:
 - <https://doc.rust-lang.org/cargo/reference/build-cache.html>
 - <https://doc.rust-lang.org/cargo/commands/cargo-clean.html>
 - <https://doc.rust-lang.org/cargo/guide/build-performance.html>
+
+How long a build takes, and which of the guide's suggestions this repository
+has measured and taken or rejected, is in
+[Build performance](./build-performance.md).

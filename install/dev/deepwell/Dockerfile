@@ -45,7 +45,7 @@ RUN patch /src/deepwell/seeder/sites.json /src/deepwell/seeder/sites.dev.patch
 RUN mkdir .cargo && cargo vendor > .cargo/config.toml
 
 # Build deepwell server
-RUN cargo build --release
+RUN cargo build --release --bin deepwell
 
 #
 # Final image
