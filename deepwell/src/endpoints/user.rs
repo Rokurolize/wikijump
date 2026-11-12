@@ -53,6 +53,14 @@ pub async fn user_create(
     if privileged_creation {
         MutationAuthorization::require_platform_staff(ctx, "privileged user creation")?;
     } else {
+        if !ctx.config().allow_registration {
+            return Err(Error::new(
+                "user registration is disabled on this instance",
+                ErrorType::PermissionDenied,
+            )
+            .into());
+        }
+
         check_registration_rate_limit(ctx, &input.ip_address.to_string()).await?;
     }
 

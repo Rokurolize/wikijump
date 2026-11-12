@@ -6,6 +6,7 @@ import {
 
 import { isUserExistsError } from "$lib/server/deepwell/public-error"
 import { translate } from "$lib/server/deepwell/translate"
+import { info } from "$lib/server/deepwell"
 import { userCreate } from "$lib/server/deepwell/user"
 import {
   clearRegisterPasswords,
@@ -63,6 +64,7 @@ export async function loadRegisterPage(request: Request, preloadData: PreloadDat
     "password.placeholder": {},
     "confirm-password": {},
     "register.toast": {},
+    "register.disabled-notice": {},
     "create-account": {},
     "login": {},
 
@@ -83,8 +85,11 @@ export async function loadRegisterPage(request: Request, preloadData: PreloadDat
 
   const registerForm = await superValidate(valibot(registerSchema))
 
+  const { registration_open } = await info()
+
   return {
     isLoggedIn,
+    registrationOpen: registration_open,
     internationalization,
     registerForm,
     legalDestinations: legalDestinations(),
@@ -106,6 +111,14 @@ export async function registerAction({ request, getClientAddress }: RequestEvent
   if (isRegistrationHoneypotTripped(form.data.leaveBlank)) {
     return fail(
       400,
+      redactAuthActionPayload({ form: clearRegisterPasswords(form) }, submittedPasswords)
+    )
+  }
+
+  const { registration_open } = await info()
+  if (!registration_open) {
+    return fail(
+      403,
       redactAuthActionPayload({ form: clearRegisterPasswords(form) }, submittedPasswords)
     )
   }

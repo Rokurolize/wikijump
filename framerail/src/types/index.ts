@@ -94,6 +94,7 @@ export interface Locales {
   "logout.toast": string
   register: string
   "register.toast": string
+  "register.disabled-notice": string
   "register.legal-notice": string
   "register.legal-terms": string
   "register.legal-conjunction": string

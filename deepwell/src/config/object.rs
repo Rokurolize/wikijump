@@ -141,6 +141,13 @@ pub struct Config {
 
     pub minimum_name_chars: usize,
 
+    /// Whether visitors may register new regular accounts.
+    /// Deployments that cannot deliver verification email should
+    /// close registration so visitors are not stranded with an
+    /// account they can never verify. Privileged creation by
+    /// platform staff is unaffected.
+    pub allow_registration: bool,
+
     pub mock_mailcheck: bool,
 
     pub automation_email: String,
@@ -291,6 +298,7 @@ impl Config {
             refill_name_change: None,
             minimum_name_bytes: 4,
             minimum_name_chars: 2,
+            allow_registration: true,
             mock_mailcheck: true,
             automation_email: str!("noreply@wikijump.com"),
             notification_email: str!("notifications@wikijump.com"),

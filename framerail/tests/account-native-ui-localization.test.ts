@@ -84,6 +84,7 @@ test("registration requests its inline validation and locale-label messages", as
       translateCalls.push(params)
       return {}
     }
+    if (method === "info") return { registration_open: true }
     throw new Error(`Unexpected Deepwell method ${method}`)
   }
 

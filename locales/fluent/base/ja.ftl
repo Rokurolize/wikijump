@@ -3,6 +3,7 @@
 
 register = 登録
   .toast = 登録しました。
+  .disabled-notice = このWikijumpではアカウントの新規作成を受け付けていません。アカウントは管理者が作成します。
   .legal-notice = アカウントを作成すると、
   .legal-terms = 利用規約
   .legal-conjunction = および

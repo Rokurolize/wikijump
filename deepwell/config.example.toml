@@ -379,6 +379,7 @@ maximum-name-changes = 3
 # See WJ-1122.
 minimum-name-bytes = 4
 minimum-name-chars = 2
+allow-registration = true
 
 # Every this many days, all users get another name change token (up to the cap).
 # See the "job" section above to configure how often this is checked.

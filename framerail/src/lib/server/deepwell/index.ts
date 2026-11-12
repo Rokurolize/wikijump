@@ -68,6 +68,7 @@ interface Info {
   current_time: string
   hostname: string
   config_path: string
+  registration_open: boolean
 }
 
 interface PackageInfo {
