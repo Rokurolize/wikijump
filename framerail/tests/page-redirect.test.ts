@@ -16,7 +16,10 @@ test("absolute Wikidot module redirect targets emit a Response Location header",
   } catch (thrown) {
     assert.ok(thrown instanceof Response)
     assert.equal(thrown.status, 301)
-    assert.equal(thrown.headers.get("Location"), "https://scp-wiki.wikidot.com/peppersghost")
+    assert.equal(
+      thrown.headers.get("Location"),
+      "https://scp-wiki.wikidot.com/peppersghost"
+    )
   }
 })
 
