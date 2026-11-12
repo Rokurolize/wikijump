@@ -87,6 +87,7 @@ default-name-changes = 2
 maximum-name-changes = 3
 minimum-name-bytes = 4
 minimum-name-chars = 2
+allow-registration = true
 refill-name-change-days = 90
 
 [email]

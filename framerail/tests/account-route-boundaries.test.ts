@@ -87,6 +87,7 @@ test("account route loads expose their public SvelteKit page data", async () => 
         }
       }
     }
+    if (method === "info") return { registration_open: true }
     throw new Error(`Unexpected Deepwell method ${method}`)
   }
 
@@ -406,6 +407,7 @@ test("register binds account creation to the request address and redacts submitt
     if (method === "user_create") {
       return { user_id: 42, name: "registration-fixture", slug: "registration-fixture" }
     }
+    if (method === "info") return { registration_open: true }
     throw new Error(`Unexpected Deepwell method ${method}`)
   }
 
@@ -432,6 +434,7 @@ test("register binds account creation to the request address and redacts submitt
   assert.equal(result.form.data.confirmPassword, "")
   assert.equal(JSON.stringify(result).includes(password), false)
   assert.deepEqual(calls, [
+    { method: "info", params: {} },
     {
       method: "user_create",
       params: {
@@ -481,6 +484,7 @@ test("register offers only deployment-advertised locales and rejects others befo
 test("register load advertises Japanese alongside the supported UI locales", async () => {
   client.request = async (method: any) => {
     if (method === "translate") return {}
+    if (method === "info") return { registration_open: true }
     throw new Error(`Unexpected Deepwell method ${method}`)
   }
 

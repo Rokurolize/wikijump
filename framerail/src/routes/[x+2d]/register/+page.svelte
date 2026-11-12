@@ -41,7 +41,11 @@
   )
 </script>
 
-{#if isRegistered}
+{#if data.registrationOpen === false}
+  <p role="status" class="register-disabled">
+    {data.internationalization?.["register.disabled-notice"]}
+  </p>
+{:else if isRegistered}
   <p role="status" class="register-success">
     {data.internationalization?.["register.toast"]}
     <a href={resolve("-/login")}>{data.internationalization?.login}</a>

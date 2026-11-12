@@ -33,6 +33,7 @@ pub struct Info {
     pub current_time: OffsetDateTime,
     pub hostname: &'static str,
     pub config_path: PathBuf,
+    pub registration_open: bool,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -82,6 +83,7 @@ pub async fn server_info(
             ftml_commit: info::FTML_COMMIT,
         },
         config_path: config.raw_toml_path.clone(),
+        registration_open: config.allow_registration,
         hostname: &info::HOSTNAME,
         current_time: now(),
     })

@@ -214,6 +214,8 @@ struct UserSection {
     refill_name_change_days: u64,
     minimum_name_bytes: usize,
     minimum_name_chars: usize,
+    #[serde(default = "default_true")]
+    allow_registration: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -459,6 +461,7 @@ impl ConfigFile {
                     refill_name_change_days,
                     minimum_name_bytes,
                     minimum_name_chars,
+                    allow_registration,
                 },
             email:
                 Email {
@@ -633,6 +636,7 @@ impl ConfigFile {
             },
             minimum_name_bytes,
             minimum_name_chars,
+            allow_registration,
             mock_mailcheck,
             automation_email,
             notification_email,
@@ -796,6 +800,7 @@ mod tests {
                 refill_name_change_days: 7,
                 minimum_name_bytes: 4,
                 minimum_name_chars: 2,
+                allow_registration: true,
             },
             email: Email {
                 mock_mailcheck: true,
@@ -924,6 +929,7 @@ mod tests {
         );
         assert_eq!(config.minimum_name_bytes, 4);
         assert_eq!(config.minimum_name_chars, 2);
+        assert!(config.allow_registration);
         assert!(config.mock_mailcheck);
         assert_eq!(config.automation_email, "noreply@example.com");
         assert_eq!(config.notification_email, "notifications@example.com");
@@ -1148,5 +1154,24 @@ mod tests {
         config_file.job.prune_session_secs = 9_999_999;
 
         config_file.into_config(extra_config());
+    }
+
+    #[test]
+    fn registration_defaults_open_and_can_be_closed() {
+        let config_file = sample_config_file();
+        assert!(config_file.user.allow_registration);
+
+        let mut closed = sample_config_file();
+        closed.user.allow_registration = false;
+        let toml = toml::to_string(&closed).unwrap();
+        assert!(toml.contains("allow-registration = false"));
+        let parsed: ConfigFile = toml::from_str(&toml).unwrap();
+        assert!(!parsed.user.allow_registration);
+        assert!(!parsed.into_config(extra_config()).allow_registration);
+
+        let without_key = toml.replace("allow-registration = false\n", "");
+        assert_ne!(without_key, toml);
+        let parsed_default: ConfigFile = toml::from_str(&without_key).unwrap();
+        assert!(parsed_default.user.allow_registration);
     }
 }

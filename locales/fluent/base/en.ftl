@@ -108,6 +108,7 @@ logout = Logout
 
 register = Register
   .toast = You have been registered.
+  .disabled-notice = Account creation is not available on this Wikijump instance. Accounts are created by the instance administrators.
   .legal-notice = By creating an account you accept our{ " " }
   .legal-terms = Terms of Service
   .legal-conjunction = { " " }and{ " " }
