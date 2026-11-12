@@ -12022,6 +12022,17 @@ async fn members_list_ajax_paginates_only_filtered_site_identities() {
         .site
         .site_id;
     let transaction = runner.context().transaction();
+    let seeded_admin_name = transaction
+        .query_one_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "SELECT name FROM \"user\" WHERE user_id = $1",
+            [Value::from(ADMIN_USER_ID)],
+        ))
+        .await
+        .expect("seeded admin user should be readable")
+        .expect("seeded admin user should exist")
+        .try_get::<String>("", "name")
+        .expect("seeded admin user should have a name");
 
     transaction
         .execute_raw(Statement::from_sql_and_values(
@@ -12141,9 +12152,11 @@ async fn members_list_ajax_paginates_only_filtered_site_identities() {
 
     let page_two = run_endpoint!(runner, wikidot_members_list_module, request("2"));
     assert_eq!(page_two.status, "ok");
-    assert_eq!(page_two.body.matches("<tr>").count(), 2);
+    assert_eq!(page_two.body.matches("<tr>").count(), 3);
     assert!(
         page_two.body.find("AMC Member 100") < page_two.body.find("AMC Member 101")
+            && page_two.body.find("AMC Member 101")
+                < page_two.body.find(&seeded_admin_name)
             && !page_two.body.contains("AMC Member 099")
             && !page_two.body.contains("AMC Member 102")
             && page_two
@@ -30007,6 +30020,17 @@ async fn members_module_arguments_follow_live_leniency() {
         .expect("seeded SCP Wiki site should exist");
     let site_id = site.site.site_id;
     let transaction = runner.context().transaction();
+    let seeded_admin_name = transaction
+        .query_one_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "SELECT name FROM \"user\" WHERE user_id = $1",
+            [Value::from(ADMIN_USER_ID)],
+        ))
+        .await
+        .expect("seeded admin user should be readable")
+        .expect("seeded admin user should exist")
+        .try_get::<String>("", "name")
+        .expect("seeded admin user should have a name");
     transaction
         .execute_raw(Statement::from_sql_and_values(
             transaction.get_database_backend(),
@@ -30131,8 +30155,11 @@ async fn members_module_arguments_follow_live_leniency() {
 
     let from = marked_module_section(&preview, "MFROM");
     assert!(
-        from.contains("No users.") && !from.contains("No such module"),
-        "the from= alias selects another group instead of failing:\n{from}",
+        from.contains(&seeded_admin_name)
+            && !from.contains("Alpha Member")
+            && !from.contains("Zeta Member")
+            && !from.contains("No such module"),
+        "the from= alias selects the admins group instead of failing:\n{from}",
     );
 
     let userid = marked_module_section(&preview, "MUSERID");
