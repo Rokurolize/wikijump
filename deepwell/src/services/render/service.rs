@@ -18,7 +18,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-mod exposed_leading_indent;
 mod local_code_urls;
 mod native_list;
 mod post_render_compat;
@@ -1772,10 +1771,6 @@ impl RenderService {
                 &mut wikidot_compat_text,
             );
             Self::normalize_wikidot_alignment_markers(
-                &mut expanded.wikitext,
-                &mut wikidot_compat_text,
-            );
-            Self::protect_exposed_leading_indent_after_comment_lines(
                 &mut expanded.wikitext,
                 &mut wikidot_compat_text,
             );
