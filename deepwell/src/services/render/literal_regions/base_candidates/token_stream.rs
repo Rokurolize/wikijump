@@ -19,7 +19,9 @@
  */
 
 use super::{DelimiterIdentity, DelimiterKind};
-use crate::services::render::literal_regions::token_boundaries::TextTokenIndex;
+use crate::services::render::literal_regions::token_boundaries::{
+    TextTokenIndex, math_dollar_closes,
+};
 use crate::services::render::literal_regions::wikidot::{
     PhysicalLines, physical_line_body,
 };
@@ -260,7 +262,7 @@ fn scan_literal(bytes: &[u8], start: usize) -> Option<TokenStep> {
             TokenStep::other(start + 2)
         }
         b'[' => TokenStep::other(start + 1),
-        b'$' if has(bytes, start, b"$]]") => {
+        b'$' if has(bytes, start, b"$]]") && math_dollar_closes(bytes, start) => {
             TokenStep::delimiter(DelimiterKind::InlineMathClose, start + 3)
         }
         b']' => TokenStep::other(scan_same(bytes, start, b']')),
@@ -499,6 +501,9 @@ mod tests {
             "@<https://e.test/a>>@",
             "@<https://e.test/a~~~>@",
             "https://e.test/a@@b foo@bar.example@<tail",
+            "foo$]]]x",
+            "https://e.test/a$]]",
+            "[[$ hidden $]]] live",
         ] {
             assert_eq!(
                 indexed_delimiters(source),

@@ -13,7 +13,7 @@
 use super::parser_candidates::{ParserOwnerCandidate, ParserOwnerKind};
 #[cfg(test)]
 use super::parser_candidates::{ParserOwnerCertainty, select_parser_owner_candidates};
-use super::token_boundaries::{TextTokenIndex, right_bracket_token};
+use super::token_boundaries::{TextTokenIndex, math_dollar_closes, right_bracket_token};
 use std::ops::Range;
 
 #[cfg(test)]
@@ -203,6 +203,18 @@ fn merge_candidate_streams(
         });
     }
     merged
+}
+
+#[cfg(test)]
+fn right_link_delimiter_spans(source: &str) -> Vec<Range<usize>> {
+    let text_tokens = TextTokenIndex::new(source);
+    let index = TokenIndex::new_with_text_tokens(source, &text_tokens);
+    index
+        .events
+        .iter()
+        .filter(|event| event.delimiter == Some(Delimiter::RightLink))
+        .map(|event| event.span.clone())
+        .collect()
 }
 
 #[cfg(test)]
@@ -425,7 +437,11 @@ impl TokenIndex {
                     );
                     cursor += 2;
                 }
-                b'$' if bytes.get(cursor..cursor + 3) == Some(&b"$]]"[..]) => cursor += 3,
+                b'$' if bytes.get(cursor..cursor + 3) == Some(&b"$]]"[..])
+                    && math_dollar_closes(bytes, cursor) =>
+                {
+                    cursor += 3;
+                }
                 b'-' if bytes.get(cursor..cursor + 3) == Some(&b"--]"[..]) => {
                     index.push_event(
                         cursor..cursor + 3,
@@ -969,7 +985,9 @@ fn triple_link_target_valid(target: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{TEXT_OWNER_WORK, collect_text_owner_ranges};
+    use super::{TEXT_OWNER_WORK, collect_text_owner_ranges, right_link_delimiter_spans};
+    use ftml::parsing::Token;
+    use std::ops::Range;
 
     fn owned(source: &str, needle: &str) -> bool {
         let offset = source.find(needle).expect("needle should occur in source");
@@ -1022,6 +1040,26 @@ mod tests {
     fn color_descriptor_suppresses_pinned_link_candidates_but_not_body_syntax() {
         let source = "##red[https://e.test | body [[module CountPages]]X[[/module]] ]##";
         assert!(!owned(source, "[[module CountPages"));
+    }
+
+    fn pinned_right_link_spans(source: &str) -> Vec<Range<usize>> {
+        ftml::tokenize(source)
+            .tokens()
+            .iter()
+            .filter(|extracted| extracted.token == Token::RightLink)
+            .map(|extracted| extracted.span.clone())
+            .collect()
+    }
+
+    #[test]
+    fn right_link_delimiters_match_pinned_tokens_when_dollar_does_not_close_math() {
+        for source in ["foo$]]]x"] {
+            assert_eq!(
+                right_link_delimiter_spans(source),
+                pinned_right_link_spans(source),
+                "{source:?}",
+            );
+        }
     }
 
     #[test]
