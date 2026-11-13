@@ -121,11 +121,7 @@ impl RenderService {
         wikitext: &str,
         _page_info: &PageInfo<'_>,
     ) -> bool {
-        if wikitext.len() > MAX_FTML_COMPAT_PARSE_BYTES {
-            return true;
-        }
-
-        false
+        wikitext.len() > MAX_FTML_COMPAT_PARSE_BYTES
     }
 
     pub(in crate::services::render) fn ftml_compat_render_timeout(

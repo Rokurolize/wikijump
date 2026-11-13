@@ -4,7 +4,7 @@
 # WWS build
 #
 
-FROM rust:1.99.1@sha256:09027f873d45b8ecd1dc86f1fa13b7a62b875c961f017a0e331267b350430137 AS rust
+FROM rust:1.100.0@sha256:e19840879045c951c905d0eaa9887f3439c62000e429963371b376bac8d38c31 AS rust
 
 # The pinned image still trusts the compromised emSign ECC Root CA - G3 and
 # Comodo AAA cross-sign. Refresh the OS bundle before any HTTPS bootstrap.
@@ -19,7 +19,7 @@ RUN apt-get update && \
 # image still ships rustup 1.29.0 and has not been rebuilt upstream, so a
 # re-pin does not fix it. Replace the image's rustup with 1.29.2 here,
 # before any rustup or cargo network use. The Rust toolchain itself stays
-# 1.99.1 per rust-toolchain.toml.
+# 1.100.0 per rust-toolchain.toml.
 RUN set -eux; \
     curl -fsSL -o /tmp/rustup-init https://static.rust-lang.org/rustup/archive/1.29.2/x86_64-unknown-linux-gnu/rustup-init; \
     printf '%s  %s\n' "5be191e8c70a5007074254cb74d78dbfdd25cd5a61c27de7b8e5410122ec24f4" /tmp/rustup-init | sha256sum -c -; \
