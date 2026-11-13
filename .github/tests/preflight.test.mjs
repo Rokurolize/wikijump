@@ -84,7 +84,7 @@ case "$1" in
 esac
 `)
 
-  for (const command of ["cargo", "pnpm", "python3"]) {
+  for (const command of ["cargo", "cargo-nextest", "pnpm", "python3"]) {
     writeExecutable(path.join(bin, command), `#!/usr/bin/env bash
 set -euo pipefail
 # One write per line, so parallel groups cannot interleave entries.
@@ -211,7 +211,7 @@ test("final preflight is the single explicit full-check barrier", (t) => {
     "cargo fmt --manifest-path wws/Cargo.toml --check",
     "cargo machete wws",
     "cargo clippy --manifest-path wws/Cargo.toml --tests --no-deps -- -D warnings",
-    "cargo test --manifest-path wws/Cargo.toml --locked --all-features -- --nocapture --test-threads 1",
+    "cargo nextest run --manifest-path wws/Cargo.toml --locked --all-features --no-fail-fast --test-threads 1",
     "node --test wws/tests/resize-iframe.test.mjs",
     "pnpm --dir framerail lint",
     "pnpm --dir framerail check",

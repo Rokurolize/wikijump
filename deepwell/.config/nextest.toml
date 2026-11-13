@@ -10,9 +10,9 @@ slow-timeout = { period = "15s", terminate-after = 1 }
 # shared CI runners. Bounded at 180s, far below the 600s binary backstop.
 # Measured on the 2026-11-14 before-capture: 17.98s / 16.94s.
 [[profile.default.overrides]]
-filter = 'test(=listpages_permission_scaling::view_permission_scaling_is_flat_in_row_count)'
+filter = 'test(=view_permission_scaling_is_flat_in_row_count) & binary_id(=deepwell::listpages_permission_scaling)'
 slow-timeout = { period = "180s", terminate-after = 1 }
 
 [[profile.default.overrides]]
-filter = 'test(=page::listpages_following_paragraph_boundary_counts_toward_generated_output_budget)'
+filter = 'test(=listpages_following_paragraph_boundary_counts_toward_generated_output_budget) & binary_id(=deepwell::page)'
 slow-timeout = { period = "180s", terminate-after = 1 }
