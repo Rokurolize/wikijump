@@ -459,3 +459,96 @@ test("large flat element traces do not rescan all siblings for every path", asyn
   assert.equal(observation.first_divergence_trace.elements.at(-1).path, "div[10000]");
   assert.equal(rootChildrenReads, 0);
 });
+
+test("settled observation inventories loaded stylesheets and rendered image sources", async () => {
+  const box = { x: 0, y: 0, width: 20, height: 20 };
+  const visibleImage = {
+    complete: true,
+    naturalWidth: 10,
+    naturalHeight: 10,
+    currentSrc: "https://example.test/visible.png",
+    src: "https://example.test/visible.png",
+    parentElement: null,
+    getBoundingClientRect: () => box,
+    closest: () => null,
+  };
+  const hiddenImage = {
+    complete: true,
+    naturalWidth: 10,
+    naturalHeight: 10,
+    currentSrc: "https://example.test/hidden.png",
+    src: "https://example.test/hidden.png",
+    parentElement: null,
+    getBoundingClientRect: () => ({ ...box, width: 0 }),
+    closest: () => null,
+  };
+  const accessibleSheet = {
+    href: "https://example.test/theme.css",
+    cssRules: { length: 4 },
+  };
+  const inaccessibleSheet = {
+    get href() {
+      return "https://other.test/cross.css";
+    },
+    get cssRules() {
+      throw new DOMException("SecurityError");
+    },
+  };
+  const fakeDocument = {
+    images: [visibleImage, hiddenImage],
+    styleSheets: [inaccessibleSheet, accessibleSheet],
+    documentElement: {},
+    querySelector: () => null,
+    querySelectorAll: () => [],
+  };
+  const fakePage = {
+    evaluate: async (callback, argument) => {
+      const previous = {
+        document: globalThis.document,
+        getComputedStyle: globalThis.getComputedStyle,
+        Node: globalThis.Node,
+        window: globalThis.window,
+      };
+      globalThis.document = fakeDocument;
+      globalThis.getComputedStyle = () => ({
+        display: "block",
+        visibility: "visible",
+        opacity: "1",
+        getPropertyValue: () => "",
+      });
+      globalThis.Node = { TEXT_NODE: 3 };
+      globalThis.window = { scrollX: 0, scrollY: 0 };
+      try {
+        return callback(argument);
+      } finally {
+        Object.assign(globalThis, previous);
+      }
+    },
+  };
+  const observation = await captureDocumentObservation(fakePage, {
+    contract: {
+      geometry_selectors: [],
+      first_paint_geometry_selectors: [],
+      presence_probes: [],
+      first_paint_custom_properties: {},
+    },
+    phase: "settled",
+    viewport: { width: 1366, height: 900 },
+  });
+  assert.deepEqual(observation.rendered_image_srcs, [
+    "https://example.test/visible.png",
+  ]);
+  assert.equal(observation.rendered_images, 1);
+  assert.deepEqual(observation.loaded_stylesheets, [
+    {
+      href: "https://example.test/theme.css",
+      rule_count: 4,
+      rules_inaccessible: false,
+    },
+    {
+      href: "https://other.test/cross.css",
+      rule_count: null,
+      rules_inaccessible: true,
+    },
+  ]);
+});
