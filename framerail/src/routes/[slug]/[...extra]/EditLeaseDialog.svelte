@@ -158,7 +158,7 @@
     width: 30%;
     padding: 10px;
     margin: 40vh auto;
-    color: var(--text);
+    color: var(--wj-text);
     text-align: center;
     background-color: var(--background);
     border: 1px solid var(--border);

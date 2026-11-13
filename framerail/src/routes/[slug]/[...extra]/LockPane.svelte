@@ -312,7 +312,7 @@
 
   input[type="datetime-local"] {
     padding: 0.5em 1em;
-    color: var(--text);
+    color: var(--wj-text);
     background-color: var(--background);
     border: 1px solid var(--border);
     border-radius: 0.5em;

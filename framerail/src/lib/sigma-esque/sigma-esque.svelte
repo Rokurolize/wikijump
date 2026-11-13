@@ -30,7 +30,7 @@
   $tablet-max-width: 767px;
 
   :root {
-    --text: #111;
+    --wj-text: #111;
     --background: #fff;
     --border: #0006;
     --mild-text: #f0f0f0;
@@ -73,7 +73,7 @@
     align-items: stretch;
     justify-content: stretch;
     min-height: 100vh;
-    color: var(--text);
+    color: var(--wj-text);
     background-color: var(--background);
 
     textarea,
@@ -85,7 +85,7 @@
       padding: 0.5em 1em;
       font-family: var(--font-sans), sans-serif;
       line-height: 1.5;
-      color: var(--text);
+      color: var(--wj-text);
       background-color: var(--background);
       border: 1px solid var(--border);
       border-radius: var(--size-border-radius);
@@ -195,7 +195,7 @@
       font-family: var(--font-display);
       font-size: var(--size-action-button-font);
       font-weight: 550;
-      color: var(--text);
+      color: var(--wj-text);
       background-color: var(--background);
       border: 1px solid var(--border);
       border-radius: var(--size-border-radius);
@@ -223,7 +223,7 @@
           font-family: inherit;
           font-size: inherit;
           font-weight: inherit;
-          color: var(--text);
+          color: var(--wj-text);
           background-color: var(--background);
           border: 0;
           border-radius: 0;
@@ -243,7 +243,7 @@
 
   @media (prefers-color-scheme: light) {
     :root {
-      --text: #111;
+      --wj-text: #111;
       --background: #fff;
       --border: #0006;
       --mild-text: #f0f0f0;
@@ -253,7 +253,7 @@
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --text: #b6c2cf;
+      --wj-text: #b6c2cf;
       --background: #222;
       --border: #b6c2cf;
       --mild-text: #bbb;

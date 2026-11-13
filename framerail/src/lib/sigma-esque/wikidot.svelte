@@ -94,7 +94,7 @@
   $tablet-max-width: 767px;
 
   :root {
-    --text: #111;
+    --wj-text: #111;
     --background: #fff;
     --border: #0006;
     --mild-text: #f0f0f0;
@@ -138,7 +138,7 @@
 
   @media (prefers-color-scheme: light) {
     :root {
-      --text: #111;
+      --wj-text: #111;
       --background: #fff;
       --border: #0006;
       --mild-text: #f0f0f0;
@@ -148,7 +148,7 @@
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --text: #b6c2cf;
+      --wj-text: #b6c2cf;
       --background: #222;
       --border: #b6c2cf;
       --mild-text: #bbb;
