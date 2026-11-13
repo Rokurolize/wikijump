@@ -4,7 +4,8 @@ import browserSupport from "./playwright.browser-support.config"
 
 const config: PlaywrightTestConfig = {
   ...browserSupport,
-  testMatch: "**/wikidot-typography-parity.spec.ts",
+  testMatch:
+    "**/{wikidot-typography-parity,wikidot-typography-recapture}.spec.ts",
   projects: [
     {
       name: "chromium",
@@ -17,6 +18,10 @@ const config: PlaywrightTestConfig = {
     {
       name: "webkit",
       use: { ...devices["Desktop Safari"], ignoreHTTPSErrors: true }
+    },
+    {
+      name: "mobile-chromium",
+      use: { ...devices["Pixel 7"], ignoreHTTPSErrors: true }
     }
   ]
 }

@@ -237,6 +237,40 @@ export const pages: Record<string, FixturePage> = {
       "#header h2 span { margin-left: 1px; }"
     ]
   },
+  "theme:wikidot-default": {
+    page_id: 3000311,
+    revision_id: 9000311,
+    page_created_at: "2026-07-13T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-07-13T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Vendored Wikidot Default",
+    slug: "theme:wikidot-default",
+    tags: ["theme"],
+    rating: 0,
+    wikitext: "Vendored shell typography body marker.",
+    compiled_body_html: "<p>Vendored shell typography body marker.</p>"
+  },
+  "theme:content-scaled": {
+    page_id: 3000312,
+    revision_id: 9000312,
+    page_created_at: "2026-07-13T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-07-13T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Content Scaled Theme",
+    slug: "theme:content-scaled",
+    tags: ["theme"],
+    rating: 0,
+    wikitext:
+      "[[module CSS]]\n#page-content { font-size: 0.9em; }\n[[/module]]\nContent-scaled typography body marker.",
+    compiled_body_html: "<p>Content-scaled typography body marker.</p>",
+    compiled_body_styles: ["#page-content { font-size: 0.9em; }"]
+  },
   "wikidot-login-probe": {
     page_id: 3000395,
     revision_id: 9000395,

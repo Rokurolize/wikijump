@@ -1,106 +1,91 @@
 import { expect, test } from "./hermetic-playwright"
 
+import {
+  HISTORIC_YOSSISTYLE_TYPOGRAPHY_DESKTOP,
+  YOSSISTYLE_RELATIONS
+} from "./wikidot-typography-recapture-historic"
+
+import {
+  readTypographySnapshot,
+  typographyMismatches,
+  typographyRelationMismatches,
+  type TypographyRelationExpectations,
+  type TypographySnapshot
+} from "./wikidot-typography-parity-helpers"
+
 const SITE_HEADERS = {
   "X-Wikijump-Site-Id": "6000005",
   "X-Wikijump-Site-Slug": "scp-wiki"
 }
 
-const LIVE_YOSSISTYLE_TYPOGRAPHY = {
-  body: {
-    fontFamily: "verdana, arial, helvetica, sans-serif",
-    fontSize: "12.8px",
-    fontWeight: "400",
-    lineHeight: "normal",
-    textRendering: "auto"
+type TypographyParityCase = Readonly<{
+  slug: string
+  bodyText: string
+  generatedStyleCount: number
+  relations: TypographyRelationExpectations
+  desktopSnapshot?: TypographySnapshot
+}>
+
+const TYPOGRAPHY_PARITY_CASES: readonly TypographyParityCase[] = [
+  {
+    slug: "theme:yossistyle",
+    bodyText: "XML-RPC theme body marker.",
+    generatedStyleCount: 2,
+    relations: YOSSISTYLE_RELATIONS,
+    desktopSnapshot: HISTORIC_YOSSISTYLE_TYPOGRAPHY_DESKTOP
   },
-  content: {
-    fontFamily: "verdana, arial, helvetica, sans-serif",
-    fontSize: "12.8px",
-    fontWeight: "400",
-    lineHeight: "19.2px",
-    textRendering: "auto"
+  {
+    slug: "theme:wikidot-default",
+    bodyText: "Vendored shell typography body marker.",
+    generatedStyleCount: 0,
+    relations: {
+      titlePerBody: 2,
+      contentPerBody: 1,
+      leadingPerContent: 1.5
+    }
   },
-  title: {
-    fontFamily: "verdana, arial, helvetica, sans-serif",
-    fontSize: "25.6px",
-    fontWeight: "400",
-    lineHeight: "normal",
-    textRendering: "auto"
-  }
-} as const
-
-const QUANTIZATION_TOLERANCE_PX = 0.02
-
-const PX_VALUE = /^(-?\d+(?:\.\d+)?)px$/
-
-type TypographySnapshot = Readonly<Record<string, Readonly<Record<string, string>>>>
-
-const typographyMismatches = (
-  actual: TypographySnapshot,
-  expected: TypographySnapshot
-): string[] => {
-  const mismatches: string[] = []
-  for (const [element, properties] of Object.entries(expected)) {
-    for (const [property, expectedValue] of Object.entries(properties)) {
-      const actualValue = actual[element]?.[property]
-      const expectedPx = PX_VALUE.exec(expectedValue)
-      const actualPx = actualValue === undefined ? null : PX_VALUE.exec(actualValue)
-      if (expectedPx && actualPx) {
-        const difference = Math.abs(Number(actualPx[1]) - Number(expectedPx[1]))
-        if (difference > QUANTIZATION_TOLERANCE_PX) {
-          mismatches.push(
-            `${element}.${property}: expected ${expectedValue}, got ${actualValue}`
-          )
-        }
-      } else if (actualValue !== expectedValue) {
-        mismatches.push(
-          `${element}.${property}: expected ${expectedValue}, got ${actualValue}`
-        )
-      }
+  {
+    slug: "theme:content-scaled",
+    bodyText: "Content-scaled typography body marker.",
+    generatedStyleCount: 1,
+    relations: {
+      titlePerBody: 2,
+      contentPerBody: 0.9,
+      leadingPerContent: 1.5
     }
   }
-  return mismatches
+]
+
+for (const typographyCase of TYPOGRAPHY_PARITY_CASES) {
+  test(`imported ${typographyCase.slug} typography matches recorded references`, async ({
+    page
+  }, testInfo) => {
+    test.skip(
+      !process.env.PLAYWRIGHT_HTTPS_APP_PORT,
+      "requires the hermetic HTTPS Vite fixture"
+    )
+    const mobile = testInfo.project.name.startsWith("mobile-")
+    const host = `https://localhost:${process.env.PLAYWRIGHT_HTTPS_APP_PORT}`
+    await page.setExtraHTTPHeaders(SITE_HEADERS)
+    const response = await page.goto(`${host}/${typographyCase.slug}`, {
+      waitUntil: "networkidle"
+    })
+    expect(response?.status()).toBe(200)
+    await expect(page.locator("#page-content p")).toHaveText(typographyCase.bodyText)
+    await expect(
+      page.locator("head style[data-wikidot-generated-css]")
+    ).toHaveCount(typographyCase.generatedStyleCount)
+
+    const actual = await readTypographySnapshot(page)
+    const relationMismatches = typographyRelationMismatches(
+      actual,
+      typographyCase.relations,
+      mobile
+    )
+    expect(relationMismatches).toEqual([])
+
+    if (!mobile && typographyCase.desktopSnapshot) {
+      expect(typographyMismatches(actual, typographyCase.desktopSnapshot)).toEqual([])
+    }
+  })
 }
-
-test("imported-page typography follows the recorded Wikidot live reference", async ({
-  page
-}) => {
-  test.skip(
-    !process.env.PLAYWRIGHT_HTTPS_APP_PORT,
-    "requires the hermetic HTTPS Vite fixture"
-  )
-  const host = `https://localhost:${process.env.PLAYWRIGHT_HTTPS_APP_PORT}`
-  await page.setExtraHTTPHeaders(SITE_HEADERS)
-  const response = await page.goto(`${host}/theme:yossistyle`, {
-    waitUntil: "networkidle"
-  })
-  expect(response?.status()).toBe(200)
-
-  await expect(page.locator("#page-content p")).toHaveText("XML-RPC theme body marker.")
-  await expect(page.locator("head style[data-wikidot-generated-css]")).toHaveCount(2)
-
-  const actual = await page.evaluate(() => {
-    const typography = (element: Element | null) => {
-      if (!element) throw new Error("typography probe target is missing")
-      const style = getComputedStyle(element)
-      const properties = [
-        ["fontFamily", "font-family"],
-        ["fontSize", "font-size"],
-        ["fontWeight", "font-weight"],
-        ["lineHeight", "line-height"],
-        ["textRendering", "text-rendering"]
-      ] as const
-      return Object.fromEntries(
-        properties.map(([key, property]) => [key, style.getPropertyValue(property)])
-      )
-    }
-
-    return {
-      body: typography(document.body),
-      content: typography(document.querySelector("#page-content p")),
-      title: typography(document.querySelector("#page-title"))
-    }
-  })
-
-  expect(typographyMismatches(actual, LIVE_YOSSISTYLE_TYPOGRAPHY)).toEqual([])
-})
