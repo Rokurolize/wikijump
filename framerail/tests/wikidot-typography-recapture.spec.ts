@@ -30,7 +30,8 @@ test("retained live Wikidot recapture stays separate from the historic fixture r
   ).not.toEqual([])
 })
 
-test("live Wikidot recapture satisfies its own typography relationships", async ({}, testInfo) => {
+test("live Wikidot recapture satisfies its own typography relationships", ({ page }, testInfo) => {
+  void page
   const engineKey = ENGINE_RECAPTURE_KEYS[testInfo.project.name]
   test.skip(!engineKey, "recapture reference does not cover this engine")
   const mobile = testInfo.project.name.startsWith("mobile-")
