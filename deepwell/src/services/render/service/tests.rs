@@ -361,6 +361,39 @@ fn compatibility_protection_preserves_ftml_lexical_ownership() {
     }
 }
 
+fn render_wikidot_page_body_with_compat_restore(wikitext: &str) -> String {
+    let page_info = fallback_test_page_info("nav:top", "Top Bar");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut source = wikitext.to_owned();
+    RenderService::trim_wikidot_document_leading_whitespace(&mut source);
+    let outer = RenderService::prepare_outer_render_wikitext(
+        super::ExpandedRenderWikitext {
+            theme_previewer_blank: false,
+            wikidot_compat_html: CompatHtmlFragments::new(&source),
+            wikidot_compat_text: CompatTextFragments::new(&source),
+            wikitext: source,
+            included_pages: Vec::new(),
+            expanded_include_count: 0,
+            url_offset_list_pages_content_bytes: 0,
+            runtime_css_insertions: Vec::new(),
+        },
+        &page_info,
+        &settings,
+    );
+    let inner = RenderService::prepare_inner_render_wikitext(outer, &settings);
+    let tokens = ftml::tokenize(&inner.wikitext);
+    let (tree, _errors) = ftml::parse(&tokens, &page_info, &settings).into();
+    let html = HtmlRender.render(&tree, &page_info, &settings).body;
+    let html = inner.protection.restore(|protection| protection.compat_text().restore(&html));
+    RenderService::restore_wikidot_render_compatibility_for_context_with_resources(
+        &html,
+        None,
+        &Config::integration_testing(),
+        true,
+        &[],
+    )
+}
+
 fn render_wikidot_trimmed_page_body(wikitext: &str) -> String {
     let page_info = fallback_test_page_info("scp-7243", "SCP-7243");
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
@@ -2422,6 +2455,20 @@ fn long_bullet_lists_render_inline_syntax_like_wikidot() {
     assert!(html.starts_with("<ul> <li>"), "{html}");
     assert!(!html.contains("onclick"), "{html}");
     assert!(!html.contains("data-wikijump"), "{html}");
+}
+
+#[test]
+fn seeded_topbar_ios_cache_notification_has_no_literal_div_markers() {
+    let html = render_wikidot_page_body_with_compat_restore(include_str!(
+        "../../../../seeder/scp-topbar.ftml"
+    ));
+
+    assert!(
+        html.contains(r#"<div class="side-block ios-cache-issue-notification">"#),
+        "{html}"
+    );
+    assert!(!html.contains("[[div_"), "{html}");
+    assert!(!html.contains("[[/div]]"), "{html}");
 }
 
 #[test]

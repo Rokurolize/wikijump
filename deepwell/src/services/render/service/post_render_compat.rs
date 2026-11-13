@@ -133,6 +133,56 @@ impl RenderService {
         }
     }
 
+    fn restore_residual_wikidot_div_markers_on_line(
+        line_body: &str,
+        restored_open_count: &mut usize,
+    ) -> String {
+        let mut rebuilt = String::with_capacity(line_body.len());
+        let mut cursor = 0usize;
+        let bytes = line_body.as_bytes();
+        while cursor < line_body.len() {
+            let Some(relative) = line_body[cursor..].find("[[") else {
+                rebuilt.push_str(&line_body[cursor..]);
+                break;
+            };
+            let start = cursor + relative;
+            if !line_body[start..].starts_with("[[div")
+                && !line_body[start..].starts_with("[[/div]]")
+            {
+                rebuilt.push_str(&line_body[cursor..=start]);
+                cursor = start + 1;
+                continue;
+            }
+            let Some(relative_end) = line_body[start..].find("]]") else {
+                rebuilt.push_str(&line_body[cursor..]);
+                break;
+            };
+            let end = start + relative_end + 2;
+            let marker = &line_body[start..end];
+            if bytes.get(start + 2) == Some(&b'/') {
+                if marker.eq_ignore_ascii_case("[[/div]]") && *restored_open_count > 0 {
+                    rebuilt.push_str(&line_body[cursor..start]);
+                    rebuilt.push_str("</div>");
+                    *restored_open_count -= 1;
+                    cursor = end;
+                    continue;
+                }
+            } else {
+                let decoded = Self::decode_residual_wikidot_marker_quotes(marker);
+                if let Some(attributes) = Self::wikidot_residual_div_attributes(&decoded) {
+                    rebuilt.push_str(&line_body[cursor..start]);
+                    rebuilt.push_str(&format!("<div{attributes}>"));
+                    *restored_open_count += 1;
+                    cursor = end;
+                    continue;
+                }
+            }
+            rebuilt.push_str(&line_body[cursor..=start]);
+            cursor = start + 1;
+        }
+        rebuilt
+    }
+
     pub(in crate::services::render) fn restore_standalone_residual_wikidot_div_markers(
         html: &str,
     ) -> String {
@@ -144,45 +194,20 @@ impl RenderService {
             let (line_body, line_end) = line
                 .strip_suffix('\n')
                 .map_or((line, ""), |body| (body, "\n"));
-            let trimmed = line_body.trim();
             let protected = raw_text_depth > 0;
 
-            if !protected && trimmed.starts_with("[[div") && trimmed.ends_with("]]") {
-                let marker = trimmed.replace("&quot;", "\"").replace("&#34;", "\"");
-                if let Some(attributes) = Self::wikidot_residual_div_attributes(&marker) {
-                    restored_open_count += 1;
-                    Self::push_replaced_standalone_wikidot_marker_line(
-                        &mut output,
-                        line_body,
-                        line_end,
-                        &format!("<div{attributes}>"),
-                    );
-                    raw_text_depth = Self::update_residual_div_raw_text_depth(
-                        raw_text_depth,
-                        line_body,
-                    );
-                    continue;
-                }
+            if protected {
+                output.push_str(line_body);
+                output.push_str(line_end);
+            } else if line_body.contains("[[div") || line_body.contains("[[/div") {
+                let rebuilt =
+                    Self::restore_residual_wikidot_div_markers_on_line(line_body, &mut restored_open_count);
+                output.push_str(&rebuilt);
+                output.push_str(line_end);
+            } else {
+                output.push_str(line_body);
+                output.push_str(line_end);
             }
-
-            if !protected
-                && trimmed.eq_ignore_ascii_case("[[/div]]")
-                && restored_open_count > 0
-            {
-                restored_open_count -= 1;
-                Self::push_replaced_standalone_wikidot_marker_line(
-                    &mut output,
-                    line_body,
-                    line_end,
-                    "</div>",
-                );
-                raw_text_depth =
-                    Self::update_residual_div_raw_text_depth(raw_text_depth, line_body);
-                continue;
-            }
-
-            output.push_str(line_body);
-            output.push_str(line_end);
             raw_text_depth =
                 Self::update_residual_div_raw_text_depth(raw_text_depth, line_body);
         }

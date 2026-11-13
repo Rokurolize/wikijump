@@ -232,6 +232,24 @@ fn ignores_untrusted_or_unmatched_wikidot_tabview_resource_requirements() {
 }
 
 #[test]
+fn restores_embedded_residual_scored_div_after_nested_blocks() {
+    let html = concat!(
+        r#"<div class="side-block ios-cache-issue-notification">"#,
+        r#"<div class="hide-ios-cache-issue-notification"></div></div>[[div_]]"#,
+        "\n",
+        r#"<div class="collapsible-block">body</div>"#,
+        "\n[[/div]]\n",
+    );
+
+    let restored = RenderService::restore_residual_wikidot_div_paragraph_markers(html);
+
+    assert!(restored.contains(r#"<div class="side-block ios-cache-issue-notification">"#));
+    assert!(restored.contains("><div>"), "{restored}");
+    assert!(!restored.contains("[[div_"), "{restored}");
+    assert!(!restored.contains("[[/div]]"), "{restored}");
+}
+
+#[test]
 fn restores_residual_wikidot_div_markers_around_tabview() {
     let html = concat!(
         r#"<p>[[div class=&quot;m-wrapper standalone series&quot;]]</p>"#,
