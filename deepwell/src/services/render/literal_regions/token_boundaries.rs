@@ -356,6 +356,48 @@ pub(in crate::services::render) fn right_bracket_token(
     }
 }
 
+fn has_bytes(bytes: &[u8], start: usize, literal: &[u8]) -> bool {
+    bytes
+        .get(start..start.saturating_add(literal.len()))
+        .is_some_and(|candidate| candidate == literal)
+}
+
+// Pinned ftml tokenizer rule (ftml 9bcfe3b9258ff7c4e3bb62ac7d192008cae9a7d3):
+// `$]]]` is the tail of a triple link, not a math closer, unless a `[[$` math
+// opener is still open or the run is followed by another `]`.
+fn math_dollar_closes(bytes: &[u8], start: usize) -> bool {
+    if !(has_bytes(bytes, start, b"$]]]") && bytes.get(start + 4) != Some(&b']')) {
+        return true;
+    }
+    let mut index = 0;
+    let mut math_open = false;
+    while index < start {
+        if has_bytes(bytes, index, b"[!--") {
+            let rest = &bytes[index + 4..];
+            if let Some(relative) = rest.windows(3).position(|window| window == b"--]") {
+                index = index + 4 + relative + 3;
+                continue;
+            }
+        }
+        if has_bytes(bytes, index, b"[[[") {
+            index += 3;
+            continue;
+        }
+        if has_bytes(bytes, index, b"[[$") {
+            math_open = true;
+            index += 3;
+            continue;
+        }
+        if math_open && has_bytes(bytes, index, b"$]]") {
+            math_open = false;
+            index += 3;
+            continue;
+        }
+        index += 1;
+    }
+    math_open
+}
+
 pub(in crate::services::render) fn classify_wikidot_right_bracket_and_advance_text_tokens(
     bytes: &[u8],
     start: usize,
@@ -365,6 +407,7 @@ pub(in crate::services::render) fn classify_wikidot_right_bracket_and_advance_te
     if start > 0
         && bytes[start - 1] == b'$'
         && !text_tokens.advance_and_contains(start - 1)
+        && math_dollar_closes(bytes, start - 1)
     {
         return (false, 2.min(end - start));
     }
