@@ -146,17 +146,49 @@ def changed_paths(source_root: Path, before: str, after: str) -> list[str]:
 # Rehearsal
 
 
-def rehearsal_reason(mode: str, migrations: list[str]) -> str | None:
+def standing_serving_images(environment: dict[str, str], runtime_home: Path) -> dict[str, dict[str, object]]:
+    records: dict[str, dict[str, object]] = {}
+    for service in SERVICES:
+        key = f"STANDING_{service.upper()}_IMAGE"
+        reference = environment.get(key, "")
+        if not reference:
+            raise ValueError(f"the standing runtime does not record {key}")
+        records[service] = refresh.image_identity(reference, runtime_home)
+    return records
+
+
+def serving_images_will_change(serving: dict[str, dict[str, object]], identity: dict[str, str]) -> bool:
+    for image in serving.values():
+        labels = image["labels"]
+        if not isinstance(labels, dict):
+            raise ValueError("a standing serving image is missing Docker labels")
+        if labels.get("com.rokurolize.wikijump.sha") != identity["wikijump_sha"]:
+            return True
+        if labels.get("com.rokurolize.wikijump.ftml_sha") != identity["ftml_sha"]:
+            return True
+    return False
+
+
+def rehearsal_reason(
+    mode: str,
+    migrations: list[str],
+    *,
+    serving_images_change: bool,
+) -> str | None:
     """Why activation must be rehearsed first, or None when a failed
     activation can be undone. New migrations cannot be: the old build's
     migration check refuses a schema it does not know, so the parked
     containers would not start again. A renderer generation change can,
     because activation keeps the replaced saved-page output (see
     `snapshot_saved_page_output`)."""
-    if migrations:
-        return "the schema migrations change"
+    if mode == "never":
+        return None
     if mode == "always":
         return "requested"
+    if migrations:
+        return "the schema migrations change"
+    if serving_images_change:
+        return "the serving images change"
     return None
 
 
@@ -1019,9 +1051,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--rehearse",
-        choices=("auto", "always"),
+        choices=("auto", "always", "never"),
         default="auto",
-        help="auto rehearses only when a failed activation cannot be undone",
+        help="auto rehearses when migrations or serving images change; never skips rehearsal",
     )
     parser.add_argument("--health-timeout-seconds", type=int, default=600)
     return parser.parse_args()
@@ -1076,13 +1108,19 @@ def promote(args, source_root, runtime_home, override_file, identity, evidence, 
         expected_generator = refresh.expected_compiled_generator(source_root)
         stale = saved_page_staleness(STANDING_DATABASE, expected_generator)
         migrations = sorted(path for path in changed if path.startswith("deepwell/migrations/"))
-        reason = rehearsal_reason(args.rehearse, migrations)
+        environment = refresh.read_environment(runtime_home / ".env")
+        serving = standing_serving_images(environment, runtime_home)
+        serving_images_change = serving_images_will_change(serving, identity)
+        reason = rehearsal_reason(
+            args.rehearse, migrations, serving_images_change=serving_images_change
+        )
         return {
             "changed_paths": len(changed),
             "expected_compiled_generator": expected_generator,
             "stale_pages_before": stale,
             "render_ahead": stale > 0,
             "migration_changes": migrations,
+            "serving_images": {service: image["id"] for service, image in serving.items()},
             "rehearse": reason is not None,
             "rehearsal_reason": reason,
         }
@@ -1153,19 +1191,20 @@ def promote(args, source_root, runtime_home, override_file, identity, evidence, 
                 pool.shutdown(wait=True)
                 remove_volumes(*rehearsal_volumes.values())
             raise
+    rehearsal_state: dict[str, object] = {"preserve_resources": False}
     try:
         return finish(
             args, source_root, runtime_home, override_file, identity, evidence,
-            stages, plan, reference, built, rehearsal_volumes,
+            stages, plan, reference, built, rehearsal_volumes, rehearsal_state,
         )
     finally:
-        if plan["rehearse"]:
+        if plan["rehearse"] and not rehearsal_state["preserve_resources"]:
             remove_volumes(*rehearsal_volumes.values())
 
 
 def finish(
     args, source_root, runtime_home, override_file, identity, evidence,
-    stages, plan, reference, built, rehearsal_volumes,
+    stages, plan, reference, built, rehearsal_volumes, rehearsal_state,
 ) -> int:
     """Rehearse, migrate the live database, render ahead, activate and
     prove, after the build."""
@@ -1209,7 +1248,7 @@ def finish(
     def rehearsal_stage():
         return rehearse(
             source_root, evidence, stages, plan, reference, rehearsal_volumes,
-            target, images["deepwell"],
+            target, images["deepwell"], rehearsal_state,
         )
 
     def live_migration_stage():
@@ -1238,10 +1277,14 @@ def finish(
     return 0
 
 
-def rehearse(source_root, evidence, stages, plan, reference, volumes, target, deepwell_image) -> dict[str, object]:
+def rehearse(
+    source_root, evidence, stages, plan, reference, volumes, target, deepwell_image,
+    rehearsal_state,
+) -> dict[str, object]:
     project = f"wjcand-rehearsal-{target[:12]}"
     candidate_root = evidence / "rehearsal"
     ports = {"public": reference["candidate_port"], "rpc": free_port(), "object_store": free_port()}
+    clean_success = False
     try:
         def start_stage():
             stdout = run_logged(
@@ -1303,16 +1346,33 @@ def rehearse(source_root, evidence, stages, plan, reference, volumes, target, de
             return {"stale_pages_remaining": 0, "canary": canary, "browser_parity": parity}
 
         result = stages.run("rehearsal-checks", check_stage)
+        clean_success = True
         return {"status": "pass", "project": project, **result}
+    except BaseException:
+        rehearsal_state["preserve_resources"] = True
+        print(
+            json.dumps(
+                {
+                    "status": "rehearsal_failed",
+                    "project": project,
+                    "candidate_root": str(candidate_root),
+                    "rehearsal_volumes": volumes,
+                }
+            ),
+            file=sys.stderr,
+            flush=True,
+        )
+        raise
     finally:
-        compose = candidate_root / "compose.json"
-        if compose.exists():
-            subprocess.run(
-                ["docker", "compose", "-p", project, "-f", str(compose), "down", "--volumes", "--remove-orphans"],
-                capture_output=True,
-                env={**os.environ, "DEEPWELL_RPC_TOKEN": "0" * 64},
-            )
-        remove_volumes(volumes["files"], volumes["files_upper"], volumes["database"])
+        if clean_success:
+            compose = candidate_root / "compose.json"
+            if compose.exists():
+                subprocess.run(
+                    ["docker", "compose", "-p", project, "-f", str(compose), "down", "--volumes", "--remove-orphans"],
+                    capture_output=True,
+                    env={**os.environ, "DEEPWELL_RPC_TOKEN": "0" * 64},
+                )
+            remove_volumes(volumes["files"], volumes["files_upper"], volumes["database"])
 
 
 def activate(
