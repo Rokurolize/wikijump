@@ -28,7 +28,7 @@ fn rewrite(source: &str) -> String {
 }
 
 #[test]
-fn scp744_rate_row_and_article_gate_rewrite_to_divs() {
+fn scp744_rate_row_and_article_gate_keep_native_markers() {
     let source = concat!(
         "[[>]]\n",
         "[[module Rate]]\n",
@@ -45,30 +45,9 @@ fn scp744_rate_row_and_article_gate_rewrite_to_divs() {
         "[[/=]]\n",
     );
     let rewritten = rewrite(source);
-    assert!(
-        rewritten.contains("[[div style=\"text-align: right;\"]]"),
-        "right opener must rewrite, got:\n{rewritten}"
-    );
-    assert!(
-        rewritten.contains("[[div style=\"text-align: center;\"]]"),
-        "center opener must rewrite, got:\n{rewritten}"
-    );
-    assert!(
-        rewritten.contains("[[div style=\"text-align: left;\"]]"),
-        "left opener must rewrite, got:\n{rewritten}"
-    );
-    assert!(
-        !rewritten.contains("[[>]]")
-            && !rewritten.contains("[[/>]]")
-            && !rewritten.contains("[[=]]")
-            && !rewritten.contains("[[/=]]")
-            && !rewritten.contains("[[<]]")
-            && !rewritten.contains("[[/<]]"),
-        "no alignment marker may leak as literal text, got:\n{rewritten}"
-    );
-    assert!(
-        rewritten.contains("article body stays here") && rewritten.contains("tail block"),
-        "body text must survive the rewrite, got:\n{rewritten}"
+    assert_eq!(
+        rewritten, source,
+        "paired markers must reach the parser untouched, got:\n{rewritten}"
     );
 }
 
