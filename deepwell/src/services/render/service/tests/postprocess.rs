@@ -243,7 +243,9 @@ fn restores_embedded_residual_scored_div_after_nested_blocks() {
 
     let restored = RenderService::restore_residual_wikidot_div_paragraph_markers(html);
 
-    assert!(restored.contains(r#"<div class="side-block ios-cache-issue-notification">"#));
+    assert!(
+        restored.contains(r#"<div class="side-block ios-cache-issue-notification">"#)
+    );
     assert!(restored.contains("><div>"), "{restored}");
     assert!(!restored.contains("[[div_"), "{restored}");
     assert!(!restored.contains("[[/div]]"), "{restored}");

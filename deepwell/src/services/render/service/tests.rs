@@ -384,7 +384,9 @@ fn render_wikidot_page_body_with_compat_restore(wikitext: &str) -> String {
     let tokens = ftml::tokenize(&inner.wikitext);
     let (tree, _errors) = ftml::parse(&tokens, &page_info, &settings).into();
     let html = HtmlRender.render(&tree, &page_info, &settings).body;
-    let html = inner.protection.restore(|protection| protection.compat_text().restore(&html));
+    let html = inner
+        .protection
+        .restore(|protection| protection.compat_text().restore(&html));
     RenderService::restore_wikidot_render_compatibility_for_context_with_resources(
         &html,
         None,

@@ -169,7 +169,8 @@ impl RenderService {
                 }
             } else {
                 let decoded = Self::decode_residual_wikidot_marker_quotes(marker);
-                if let Some(attributes) = Self::wikidot_residual_div_attributes(&decoded) {
+                if let Some(attributes) = Self::wikidot_residual_div_attributes(&decoded)
+                {
                     rebuilt.push_str(&line_body[cursor..start]);
                     rebuilt.push_str(&format!("<div{attributes}>"));
                     *restored_open_count += 1;
@@ -200,8 +201,10 @@ impl RenderService {
                 output.push_str(line_body);
                 output.push_str(line_end);
             } else if line_body.contains("[[div") || line_body.contains("[[/div") {
-                let rebuilt =
-                    Self::restore_residual_wikidot_div_markers_on_line(line_body, &mut restored_open_count);
+                let rebuilt = Self::restore_residual_wikidot_div_markers_on_line(
+                    line_body,
+                    &mut restored_open_count,
+                );
                 output.push_str(&rebuilt);
                 output.push_str(line_end);
             } else {
