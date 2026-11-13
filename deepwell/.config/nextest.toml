@@ -1,0 +1,18 @@
+[profile.default]
+slow-timeout = { period = "15s", terminate-after = 1 }
+
+# Two boundary tests build the fixtures their assertions are about: one proves
+# ListPages view-permission checks are flat across a 16x row-count series
+# (R=10..160, a provisioned site and Role/Permission wiring per row count), and
+# one proves the paragraph-repair byte boundary refuses an exactly-16-MiB
+# generated module whose per-row substitutions total 20,701 repeats. Their cost
+# is intrinsic to what they verify; a tighter bound would kill correct runs on
+# shared CI runners. Bounded at 180s, far below the 600s binary backstop.
+# Measured on the 2026-11-14 before-capture: 17.98s / 16.94s.
+[[profile.default.overrides]]
+filter = 'test(=view_permission_scaling_is_flat_in_row_count) & binary_id(=deepwell::listpages_permission_scaling)'
+slow-timeout = { period = "180s", terminate-after = 1 }
+
+[[profile.default.overrides]]
+filter = 'test(=listpages_following_paragraph_boundary_counts_toward_generated_output_budget) & binary_id(=deepwell::page)'
+slow-timeout = { period = "180s", terminate-after = 1 }

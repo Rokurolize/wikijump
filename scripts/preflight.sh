@@ -257,7 +257,12 @@ group_wws() {
     if [[ "${MODE}" == "final" ]]; then
       run "wws dependencies" cargo machete wws
       run "wws clippy" cargo clippy --manifest-path wws/Cargo.toml --tests --no-deps -- -D warnings
-      run_test "wws full tests" cargo test --manifest-path wws/Cargo.toml --locked --all-features -- --nocapture --test-threads 1
+      if ! command -v cargo-nextest >/dev/null 2>&1; then
+        echo "wws full tests: cargo-nextest is required (the per-test timeout is enforced there); install cargo-nextest or run scripts/preflight.sh without --final" >&2
+        FAILED+=("wws full tests (cargo-nextest missing)")
+      else
+        run_test "wws full tests" cargo nextest run --manifest-path wws/Cargo.toml --locked --all-features --no-fail-fast --test-threads 1
+      fi
       run_test "wws resize iframe tests" node --test wws/tests/resize-iframe.test.mjs
     fi
   fi
