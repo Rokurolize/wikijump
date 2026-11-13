@@ -320,6 +320,8 @@ fn render_css_module_code_block(
             language: Some(Cow::Borrowed("css")),
             name: None,
             wikidot_block_open_elements: Vec::new(),
+            wikidot_label_spans: Vec::new(),
+            wikidot_code_format_wrappers: Vec::new(),
         })],
         wikitext_len: body.len(),
         ..SyntaxTree::default()

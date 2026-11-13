@@ -217,6 +217,8 @@ fn wikidot_compatibility_fallback_preserves_hosted_code_block_metadata() {
             language: Some(Cow::Borrowed("css")),
             name: Some(Cow::Borrowed("theme")),
             wikidot_block_open_elements: Vec::new(),
+            wikidot_label_spans: Vec::new(),
+            wikidot_code_format_wrappers: Vec::new(),
         }],
     );
 }
