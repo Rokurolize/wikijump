@@ -54,8 +54,8 @@ test("local Docker development pins tools and keeps Rust caches scoped", () => {
     "utf8",
   );
 
-  assert.match(deepwellDockerfile, /FROM rust:1\.99\.1@sha256:[0-9a-f]{64}/u);
-  assert.match(wwsDockerfile, /FROM rust:1\.99\.1@sha256:[0-9a-f]{64}/u);
+  assert.match(deepwellDockerfile, /FROM rust:1\.100\.0@sha256:[0-9a-f]{64}/u);
+  assert.match(wwsDockerfile, /FROM rust:1\.100\.0@sha256:[0-9a-f]{64}/u);
   assert.match(framerailDockerfile, /FROM node:24\.22\.1-alpine@sha256:[0-9a-f]{64}/u);
   assert.match(framerailDockerfile, /npm install --global pnpm@11\.10\.0/u);
   assert.doesNotMatch(`${deepwellDockerfile}\n${wwsDockerfile}\n${framerailDockerfile}`, /:latest\b/u);
