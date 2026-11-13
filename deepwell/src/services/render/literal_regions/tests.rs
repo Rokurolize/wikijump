@@ -442,3 +442,32 @@ fn html_restoration_index_includes_tags_comments_and_raw_text() {
     assert!(index.contains(offsets[3]));
     assert!(index.contains(offsets[4]));
 }
+
+#[test]
+fn module_recognition_keeps_content_after_html_like_text_in_table_cells() {
+    let source = concat!(
+        "[[div class=\"table3\"]]\n",
+        "||~ Item(s) ||~ Chamber ||~ Description||\n",
+        "||< Precious metals, jewellery, currency.||< A ||<  Items are stored in chests, in piles, or on the floor and edges of the chamber.||\n",
+        "[[/div]]\n",
+        "[[footnoteblock]]\n",
+        "[[module CSS]]\n",
+        ".collection { display: block; }\n",
+        "[[/module]]\n",
+        "[[module Rate]]\n",
+    );
+    let index = LiteralRegionIndex::new_wikidot_module_recognition(source);
+
+    for needle in [
+        "||< Precious metals",
+        "Items are stored",
+        "[[/div]]",
+        "[[footnoteblock]]",
+        "[[module CSS]]",
+        ".collection { display: block; }",
+        "[[/module]]",
+    ] {
+        let offset = source.find(needle).expect(needle);
+        assert!(!index.contains(offset), "{needle}");
+    }
+}
