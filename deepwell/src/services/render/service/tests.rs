@@ -2825,7 +2825,7 @@ fn include_argument_pipes_are_collected_before_parser_function_evaluation() {
     assert_eq!(includes.len(), 1);
     assert_eq!(
         includes[0].variables().get("x").map(Cow::as_ref),
-        Some("[[#if 1 "),
+        Some("[[#if 1"),
     );
     assert_eq!(includes[0].variables().get("n").map(Cow::as_ref), Some("1"),);
 }

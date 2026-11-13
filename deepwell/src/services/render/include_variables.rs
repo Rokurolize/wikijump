@@ -234,7 +234,7 @@ pub(super) fn prepare_include_source_variables_and_comment_branches(
 }
 
 pub(super) fn trim_include_variable_value(value: &str) -> &str {
-    value.trim_end_matches([' ', '\t', '\r', '\n'])
+    value.trim_matches([' ', '\t', '\n', '\r', '\0', '\u{000b}'])
 }
 
 pub(super) fn default_include_variable_value(name: &str) -> Option<String> {

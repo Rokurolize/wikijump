@@ -1171,7 +1171,7 @@ fn collects_single_line_wikidot_include_variables() {
     );
     assert_eq!(
         includes[0].variables().get("wide").map(Cow::as_ref),
-        Some("a "),
+        Some("a"),
     );
     assert_eq!(
         includes[0].variables().get("hidetitle").map(Cow::as_ref),
@@ -1213,7 +1213,7 @@ fn collects_single_line_wikidot_include_variables() {
             .variables()
             .get("bg-img")
             .map(Cow::as_ref),
-        Some("background-color: #fff "),
+        Some("background-color: #fff"),
     );
 }
 
