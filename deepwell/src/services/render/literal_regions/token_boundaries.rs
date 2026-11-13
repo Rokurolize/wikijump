@@ -365,7 +365,10 @@ fn has_bytes(bytes: &[u8], start: usize, literal: &[u8]) -> bool {
 // Pinned ftml tokenizer rule (ftml 9bcfe3b9258ff7c4e3bb62ac7d192008cae9a7d3):
 // `$]]]` is the tail of a triple link, not a math closer, unless a `[[$` math
 // opener is still open or the run is followed by another `]`.
-fn math_dollar_closes(bytes: &[u8], start: usize) -> bool {
+pub(in crate::services::render) fn math_dollar_closes(
+    bytes: &[u8],
+    start: usize,
+) -> bool {
     if !(has_bytes(bytes, start, b"$]]]") && bytes.get(start + 4) != Some(&b']')) {
         return true;
     }
