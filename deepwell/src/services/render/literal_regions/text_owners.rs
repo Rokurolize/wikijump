@@ -1053,13 +1053,12 @@ mod tests {
 
     #[test]
     fn right_link_delimiters_match_pinned_tokens_when_dollar_does_not_close_math() {
-        for source in ["foo$]]]x"] {
-            assert_eq!(
-                right_link_delimiter_spans(source),
-                pinned_right_link_spans(source),
-                "{source:?}",
-            );
-        }
+        let source = "foo$]]]x";
+        assert_eq!(
+            right_link_delimiter_spans(source),
+            pinned_right_link_spans(source),
+            "{source:?}",
+        );
     }
 
     #[test]
