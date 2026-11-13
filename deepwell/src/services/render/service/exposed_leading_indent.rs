@@ -13,7 +13,10 @@ impl RenderService {
                 .find('\n')
                 .map_or(wikitext.len(), |relative| cursor + relative);
             let line = &wikitext[cursor..line_end];
-            if line.bytes().all(|byte| matches!(byte, b' ' | b'\t' | b'\r')) {
+            if line
+                .bytes()
+                .all(|byte| matches!(byte, b' ' | b'\t' | b'\r'))
+            {
                 if line_end >= wikitext.len() {
                     return false;
                 }
@@ -66,11 +69,10 @@ mod tests {
     fn protect(source: &str) -> (String, CompatTextFragments, bool) {
         let mut wikitext = source.to_owned();
         let mut preserved = CompatTextFragments::new(source);
-        let applied =
-            RenderService::protect_exposed_leading_indent_after_comment_lines(
-                &mut wikitext,
-                &mut preserved,
-            );
+        let applied = RenderService::protect_exposed_leading_indent_after_comment_lines(
+            &mut wikitext,
+            &mut preserved,
+        );
         (wikitext, preserved, applied)
     }
 
