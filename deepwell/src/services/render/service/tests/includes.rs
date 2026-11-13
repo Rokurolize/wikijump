@@ -1108,11 +1108,10 @@ fn strips_included_comment_usage_examples_after_expansion() {
     );
     assert!(
         rendered.contains(
-            "<div class=\"error-block\">Sorry, no match for the embedded content.</div>"
+            "<iframe src=\"/-/wikidot-interwiki/styleFrame.html?priority=1\"></iframe>"
         ),
         "{rendered:?}",
     );
-    assert!(!rendered.contains("styleFrame.html"), "{rendered:?}");
     assert!(!rendered.contains("Usage:"));
     assert!(!rendered.contains("[[include :scp-wiki:component:interwiki-style"));
 }
