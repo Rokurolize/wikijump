@@ -29,6 +29,13 @@ export const AUDITED_EXTERNAL_ASSET_ORIGINS: readonly AuditedExternalAssetOrigin
         "jsDelivr CDN, cited by the retained Theme Lab port manifests (e.g. `install/local/theme-lab/ports/cosmonaut/manifest.json`)."
     },
     {
+      origin: "https://fastly.jsdelivr.net",
+      styles: false,
+      fonts: true,
+      evidence:
+        "jsDelivr's Fastly edge host. The production SCP-KO dear-dictator theme declares its noonfonts faces (GapyeongHanseokbong-Bold, ONE-Mobile-Title, JeonjuCraftGoR) with @font-face sources on this host; live Wikidot loads them, but framerail's page Content-Security-Policy blocked all three during the 2026-11-13 Sigma-10 migration comparison, so the theme fell back to substitute fonts on the staff-lab Sigma-10 site. Only font files are served from this host; the declaring stylesheet is the theme's own."
+    },
+    {
       origin: "https://d3g0gp89917ko0.cloudfront.net",
       styles: true,
       fonts: true,
