@@ -20,13 +20,26 @@ import promote  # noqa: E402
 class RehearsalReasonTest(unittest.TestCase):
     def test_new_migrations_are_rehearsed_because_they_cannot_be_undone(self) -> None:
         self.assertEqual(
-            promote.rehearsal_reason("auto", ["deepwell/migrations/x.sql"]),
+            promote.rehearsal_reason(
+                "auto", ["deepwell/migrations/x.sql"], serving_images_change=False
+            ),
             "the schema migrations change",
         )
 
+    def test_serving_image_changes_are_rehearsed(self) -> None:
+        self.assertEqual(
+            promote.rehearsal_reason("auto", [], serving_images_change=True),
+            "the serving images change",
+        )
+
     def test_an_undoable_activation_is_not_rehearsed_unless_requested(self) -> None:
-        self.assertIsNone(promote.rehearsal_reason("auto", []))
-        self.assertEqual(promote.rehearsal_reason("always", []), "requested")
+        self.assertIsNone(promote.rehearsal_reason("auto", [], serving_images_change=False))
+        self.assertEqual(promote.rehearsal_reason("always", [], serving_images_change=False), "requested")
+
+    def test_rehearse_never_skips_rehearsal_even_with_migrations_or_image_changes(self) -> None:
+        self.assertIsNone(
+            promote.rehearsal_reason("never", ["deepwell/migrations/x.sql"], serving_images_change=True)
+        )
 
 
 class BrowserReferenceTest(unittest.TestCase):
