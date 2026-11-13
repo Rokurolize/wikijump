@@ -655,7 +655,7 @@ pub(super) fn preserve_argument_quotes(raw: &str, value: &str) -> String {
 }
 
 fn trim_forwarded_variable_value(value: &str) -> &str {
-    value.trim_end_matches([' ', '\t', '\r', '\n'])
+    value.trim_matches([' ', '\t', '\n', '\r', '\0', '\u{000b}'])
 }
 
 fn image_attachment_values(
