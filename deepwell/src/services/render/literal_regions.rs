@@ -501,8 +501,8 @@ fn collect_html_tag_ranges(source: &str, ranges: &mut Vec<Range<usize>>) {
     while let Some(relative_start) = source[cursor..].find('<') {
         let start = cursor + relative_start;
         let Some(end) = html_tag_end(source, start) else {
-            ranges.push(start..source.len());
-            break;
+            cursor = start + 1;
+            continue;
         };
         ranges.push(start..end);
         cursor = end;
@@ -583,7 +583,8 @@ fn collect_html_literal_ranges(
     while let Some(relative_start) = source[cursor..].find('<') {
         let tag_start = cursor + relative_start;
         let Some(tag_end) = html_tag_end(source, tag_start) else {
-            break;
+            cursor = tag_start + 1;
+            continue;
         };
         let tag = &source[tag_start..tag_end];
         let Some((name, closing, self_closing)) = html_tag_name(tag) else {
@@ -619,6 +620,14 @@ fn collect_html_literal_ranges(
 
 fn html_tag_end(source: &str, start: usize) -> Option<usize> {
     let bytes = source.as_bytes();
+    let open = start + 1;
+    let tag_name = match bytes.get(open) {
+        Some(b'/' | b'!' | b'?') => open + 1,
+        _ => open,
+    };
+    if !bytes.get(tag_name).is_some_and(u8::is_ascii_alphabetic) {
+        return None;
+    }
     let mut cursor = start + 1;
     let mut quote = None;
     while let Some(byte) = bytes.get(cursor).copied() {
