@@ -9,7 +9,7 @@ categories = ["asynchronous", "caching", "web-programming::http-server"]
 exclude = [".gitignore"]
 
 version = "2026.10.23"
-authors = ["Emmie Smith <emmie.maeda@gmail.com>"]
+authors = ["Rokurolize <1701388+Rokurolize@users.noreply.github.com>"]
 edition = "2024"
 rust-version = "1.95.0"
 
