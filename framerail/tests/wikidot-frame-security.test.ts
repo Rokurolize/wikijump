@@ -209,6 +209,32 @@ test("keeps canonical file origins beside request-port forms at a rehearsal port
   )
 })
 
+test("admits the configured files port when the request arrives on another port", () => {
+  const previous = process.env.WIKIJUMP_HTTPS_PORT
+  process.env.WIKIJUMP_HTTPS_PORT = "28443"
+  try {
+    const response = new Response("", {
+      headers: {
+        "content-security-policy":
+          "style-src 'self' https://wikijump-current-site.invalid https://scp-wiki.wjfiles.localhost https://scp-jp.wjfiles.localhost"
+      }
+    })
+    materializeSiteCsp(
+      response,
+      "scp-jp-sigma10",
+      "local",
+      "https://codex-wsl-maintenance.example:8443"
+    )
+    assert.equal(
+      response.headers.get("content-security-policy"),
+      "style-src 'self' https://scp-jp-sigma10.wjfiles.localhost:28443 https://scp-jp-sigma10.wjfiles.localhost:8443 https://scp-wiki.wjfiles.localhost:28443 https://scp-wiki.wjfiles.localhost:8443 https://scp-jp.wjfiles.localhost:28443 https://scp-jp.wjfiles.localhost:8443"
+    )
+  } finally {
+    if (previous === undefined) delete process.env.WIKIJUMP_HTTPS_PORT
+    else process.env.WIKIJUMP_HTTPS_PORT = previous
+  }
+})
+
 test("materializes the viewed site's own files origin in font-src (sigma-10)", () => {
   const response = new Response("", {
     headers: {

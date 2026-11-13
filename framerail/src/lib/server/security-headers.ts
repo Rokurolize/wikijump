@@ -137,18 +137,21 @@ export const materializeSiteCsp = (
   const { files } = domains
   const portSuffix = port ? `:${port}` : ""
   const fileOriginForms = (host: string) => {
-    const canonical = platformHttpsOrigin(host, domains)
-    const served = `https://${host}${portSuffix}`
-    return portSuffix && served !== canonical ? `${canonical} ${served}` : served
+    const forms = new Set<string>()
+    forms.add(platformHttpsOrigin(host, domains))
+    if (portSuffix) forms.add(`https://${host}${portSuffix}`)
+    return [...forms].join(" ")
   }
   const replacements = new Map([
     [CURRENT_SITE_FILE_ORIGIN, fileOriginForms(`${slug}.${files}`)]
   ])
-  if (deploymentEnvironment === "local" && port) {
+  if (deploymentEnvironment === "local") {
     for (const mirrorSite of LOCAL_MIRROR_FILE_ASSET_SITES) {
-      const baked = platformHttpsOrigin(`${mirrorSite}.${files}`, domains)
-      const served = `https://${mirrorSite}.${files}${portSuffix}`
-      if (baked !== served) replacements.set(baked, `${baked} ${served}`)
+      const host = `${mirrorSite}.${files}`
+      const forms = fileOriginForms(host)
+      replacements.set(`https://${host}`, forms)
+      const configured = platformHttpsOrigin(host, domains)
+      if (configured !== `https://${host}`) replacements.set(configured, forms)
     }
   }
   const materialized = materializeExactCspSources(policy, replacements)
