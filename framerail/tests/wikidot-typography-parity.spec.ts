@@ -72,9 +72,9 @@ for (const typographyCase of TYPOGRAPHY_PARITY_CASES) {
     })
     expect(response?.status()).toBe(200)
     await expect(page.locator("#page-content p")).toHaveText(typographyCase.bodyText)
-    await expect(
-      page.locator("head style[data-wikidot-generated-css]")
-    ).toHaveCount(typographyCase.generatedStyleCount)
+    await expect(page.locator("head style[data-wikidot-generated-css]")).toHaveCount(
+      typographyCase.generatedStyleCount
+    )
 
     const actual = await readTypographySnapshot(page)
     const relationMismatches = typographyRelationMismatches(

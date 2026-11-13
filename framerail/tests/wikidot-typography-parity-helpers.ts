@@ -61,18 +61,14 @@ export const typographyRelationMismatches = (
 
   const mismatches: string[] = []
   const relationTolerance = 0.02
-  const contentPerBody = mobile
-    ? (mobileContentPerBody ?? 0.9)
-    : expected.contentPerBody
+  const contentPerBody = mobile ? (mobileContentPerBody ?? 0.9) : expected.contentPerBody
   if (Math.abs(titlePx / bodyPx - expected.titlePerBody) > relationTolerance) {
     mismatches.push(
       `title/body: expected ${expected.titlePerBody}, got ${titlePx / bodyPx}`
     )
   }
   if (Math.abs(contentPx / bodyPx - contentPerBody) > relationTolerance) {
-    mismatches.push(
-      `content/body: expected ${contentPerBody}, got ${contentPx / bodyPx}`
-    )
+    mismatches.push(`content/body: expected ${contentPerBody}, got ${contentPx / bodyPx}`)
   }
   if (Math.abs(leadingPx / contentPx - expected.leadingPerContent) > relationTolerance) {
     mismatches.push(

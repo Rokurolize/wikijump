@@ -1,6 +1,4 @@
-import liveRecapture from "./fixtures/wikidot-typography-recapture/yossistyle-live-wikidot-20261113.json" with {
-  type: "json"
-}
+import liveRecapture from "./fixtures/wikidot-typography-recapture/yossistyle-live-wikidot-20261113.json" with { type: "json" }
 
 import {
   HISTORIC_YOSSISTYLE_TYPOGRAPHY_DESKTOP,
@@ -26,16 +24,24 @@ test("retained live Wikidot recapture stays separate from the historic fixture r
   expect(liveRecapture.same_source_as_historic_fixture).toBe(false)
   const desktopTypography = liveRecapture.engines["desktop-chromium"].typography
   expect(
-    typographyMismatches(desktopTypography as TypographySnapshot, HISTORIC_YOSSISTYLE_TYPOGRAPHY_DESKTOP)
+    typographyMismatches(
+      desktopTypography as TypographySnapshot,
+      HISTORIC_YOSSISTYLE_TYPOGRAPHY_DESKTOP
+    )
   ).not.toEqual([])
 })
 
-test("live Wikidot recapture satisfies its own typography relationships", ({ page }, testInfo) => {
+test("live Wikidot recapture satisfies its own typography relationships", ({
+  page
+}, testInfo) => {
   void page
   const engineKey = ENGINE_RECAPTURE_KEYS[testInfo.project.name]
   test.skip(!engineKey, "recapture reference does not cover this engine")
   const mobile = testInfo.project.name.startsWith("mobile-")
-  const typography = liveRecapture.engines[engineKey as keyof typeof liveRecapture.engines]
-    .typography as TypographySnapshot
-  expect(typographyRelationMismatches(typography, YOSSISTYLE_RELATIONS, mobile)).toEqual([])
+  const typography = liveRecapture.engines[
+    engineKey as keyof typeof liveRecapture.engines
+  ].typography as TypographySnapshot
+  expect(typographyRelationMismatches(typography, YOSSISTYLE_RELATIONS, mobile)).toEqual(
+    []
+  )
 })

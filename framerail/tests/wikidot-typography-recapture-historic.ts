@@ -1,4 +1,7 @@
-import type { TypographyRelationExpectations, TypographySnapshot } from "./wikidot-typography-parity-helpers"
+import type {
+  TypographyRelationExpectations,
+  TypographySnapshot
+} from "./wikidot-typography-parity-helpers"
 
 export const HISTORIC_YOSSISTYLE_TYPOGRAPHY_DESKTOP: TypographySnapshot = {
   body: {

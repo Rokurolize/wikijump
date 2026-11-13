@@ -4,8 +4,7 @@ import browserSupport from "./playwright.browser-support.config"
 
 const config: PlaywrightTestConfig = {
   ...browserSupport,
-  testMatch:
-    "**/{wikidot-typography-parity,wikidot-typography-recapture}.spec.ts",
+  testMatch: "**/{wikidot-typography-parity,wikidot-typography-recapture}.spec.ts",
   projects: [
     {
       name: "chromium",
