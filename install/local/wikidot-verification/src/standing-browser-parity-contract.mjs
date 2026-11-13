@@ -188,6 +188,51 @@ function multiset(items) {
   return result;
 }
 
+function renderedImageSrcDiff(localSrcs, liveSrcs) {
+  const local = [...new Set(localSrcs ?? [])].sort((left, right) =>
+    left.localeCompare(right),
+  );
+  const live = [...new Set(liveSrcs ?? [])].sort((left, right) =>
+    left.localeCompare(right),
+  );
+  const liveSet = new Set(live);
+  const localSet = new Set(local);
+  return {
+    only_local: local.filter((src) => !liveSet.has(src)),
+    only_live: live.filter((src) => !localSet.has(src)),
+  };
+}
+
+export function buildParityObservability(local, live) {
+  const localDocument = local.document ?? {};
+  const liveDocument = live.document ?? {};
+  const localSrcs = localDocument.rendered_image_srcs ?? [];
+  const liveSrcs = liveDocument.rendered_image_srcs ?? [];
+  return {
+    local: {
+      failures: [...(local.failures ?? [])].sort((left, right) =>
+        failureKey(left).localeCompare(failureKey(right)),
+      ),
+      expected_failures: [...(local.expected_failures ?? [])].sort(
+        (left, right) => failureKey(left).localeCompare(failureKey(right)),
+      ),
+      loaded_stylesheets: localDocument.loaded_stylesheets ?? [],
+      rendered_image_srcs: localSrcs,
+    },
+    live: {
+      failures: [...(live.failures ?? [])].sort((left, right) =>
+        failureKey(left).localeCompare(failureKey(right)),
+      ),
+      expected_failures: [...(live.expected_failures ?? [])].sort(
+        (left, right) => failureKey(left).localeCompare(failureKey(right)),
+      ),
+      loaded_stylesheets: liveDocument.loaded_stylesheets ?? [],
+      rendered_image_srcs: liveSrcs,
+    },
+    rendered_image_src_diff: renderedImageSrcDiff(localSrcs, liveSrcs),
+  };
+}
+
 export function multisetDistance(leftItems, rightItems) {
   const left = multiset(leftItems);
   const right = multiset(rightItems);
@@ -996,6 +1041,7 @@ export function compareCaptures(
     domcontentloaded_immediate_first_divergent_element:
       immediateFirstDivergentElement,
     settled_first_divergent_element: settledFirstDivergentElement,
+    parity_observability: buildParityObservability(local, live),
     anomalies,
   };
 }

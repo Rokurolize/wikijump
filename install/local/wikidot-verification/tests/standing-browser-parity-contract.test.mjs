@@ -4,6 +4,7 @@ import test from "node:test";
 import { canaryForUrl } from "../src/standing-browser-canaries.mjs";
 import {
   DEFAULT_THRESHOLDS,
+  buildParityObservability,
   compareAttributeSignatures,
   compareCaptures,
   evaluateFirstPaintCustomProperties,
@@ -722,5 +723,68 @@ test("the unretained avatar classification requires an avatar URL", () => {
     result.anomalies.some(
       (anomaly) => anomaly.code === "local_only_request_gate_abort",
     ),
+  );
+});
+
+test("parity observability records request failures and image src diffs without changing pass status", () => {
+  const failure = {
+    kind: "http_error",
+    url: "https://cdn.example.test/missing.css",
+    resource_type: "stylesheet",
+    status: 404,
+  };
+  const local = capture({
+    failures: [failure],
+    document: {
+      presence_probes: [],
+      loaded_stylesheets: [
+        { href: "https://example.test/a.css", rule_count: 12, rules_inaccessible: false },
+      ],
+      rendered_image_srcs: [
+        "https://example.test/one.png",
+        "https://example.test/two.png",
+      ],
+    },
+  });
+  const live = capture({
+    input_url: "https://scp-wiki.wikidot.com/scp-9506",
+    final_url: "https://scp-wiki.wikidot.com/scp-9506",
+    document: {
+      presence_probes: [],
+      loaded_stylesheets: [
+        { href: "https://example.test/a.css", rule_count: 12, rules_inaccessible: false },
+      ],
+      rendered_image_srcs: ["https://example.test/one.png"],
+    },
+  });
+  const observability = buildParityObservability(local, live);
+  assert.deepEqual(observability.local.failures, [failure]);
+  assert.deepEqual(observability.rendered_image_src_diff, {
+    only_local: ["https://example.test/two.png"],
+    only_live: [],
+  });
+  const unchanged = compareCaptures(local, live, DEFAULT_THRESHOLDS, [], null);
+  const withDiff = compareCaptures(
+    {
+      ...local,
+      rendered_images: 3,
+      document: {
+        ...local.document,
+        rendered_image_srcs: [
+          "https://example.test/one.png",
+          "https://example.test/two.png",
+          "https://example.test/extra.png",
+        ],
+      },
+    },
+    { ...live, rendered_images: 1 },
+    DEFAULT_THRESHOLDS,
+    [],
+    null,
+  );
+  assert.equal(unchanged.status, withDiff.status);
+  assert.notDeepEqual(
+    unchanged.parity_observability.rendered_image_src_diff,
+    withDiff.parity_observability.rendered_image_src_diff,
   );
 });

@@ -182,6 +182,37 @@ export async function captureDocumentObservation(
       });
       const root = document.querySelector("#page-content");
       const images = [...document.images].filter(rendered);
+      const loadedStylesheets = [];
+      const styleSheets = document.styleSheets
+        ? [...document.styleSheets]
+        : [];
+      for (const [index, sheet] of styleSheets.entries()) {
+        let href = null;
+        let ruleCount = null;
+        let rulesInaccessible = false;
+        try {
+          href = sheet.href || `inline:${index}`;
+          ruleCount = sheet.cssRules?.length ?? 0;
+        } catch {
+          rulesInaccessible = true;
+          try {
+            href = sheet.href || `inline:${index}`;
+          } catch {
+            href = `inline:${index}`;
+          }
+        }
+        loadedStylesheets.push({
+          href,
+          rule_count: ruleCount,
+          rules_inaccessible: rulesInaccessible,
+        });
+      }
+      loadedStylesheets.sort((left, right) =>
+        String(left.href).localeCompare(String(right.href)),
+      );
+      const renderedImageSrcs = images
+        .map((image) => image.currentSrc || image.src)
+        .sort((left, right) => left.localeCompare(right));
       const pageChromeSkeleton = {
         schema: skeletonContract?.schema ?? null,
         links: (skeletonContract?.links ?? []).map((link) => {
@@ -335,6 +366,8 @@ export async function captureDocumentObservation(
             JSON.stringify(left).localeCompare(JSON.stringify(right)),
           ),
         rendered_images: images.length,
+        rendered_image_srcs: renderedImageSrcs,
+        loaded_stylesheets: loadedStylesheets,
         broken_images: images
           .filter((image) => !image.complete || image.naturalWidth <= 0)
           .map((image) => ({
@@ -814,6 +847,8 @@ export async function captureBrowserParityObservation({
       attribute_signatures: document.attribute_signatures,
       dom_signatures: document.dom_signatures,
       rendered_images: document.rendered_images,
+      rendered_image_srcs: document.rendered_image_srcs,
+      loaded_stylesheets: document.loaded_stylesheets,
       broken_images: document.broken_images,
       settled_viewport_screenshot: await capturedScreenshot(
         viewportPath,
@@ -831,6 +866,8 @@ export async function captureBrowserParityObservation({
       dom_signature: null,
       attribute_signatures: [],
       rendered_images: 0,
+      rendered_image_srcs: [],
+      loaded_stylesheets: [],
       broken_images: [],
     };
     failures.sort((left, right) =>
@@ -865,6 +902,8 @@ export async function captureBrowserParityObservation({
       dom_signature: partial.dom_signature,
       attribute_signatures: partial.attribute_signatures,
       rendered_images: partial.rendered_images,
+      rendered_image_srcs: partial.rendered_image_srcs ?? [],
+      loaded_stylesheets: partial.loaded_stylesheets ?? [],
       broken_images: partial.broken_images,
       settled_viewport_screenshot: await capturedScreenshot(
         viewportPath,
