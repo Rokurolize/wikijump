@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+mod exposed_leading_indent;
 mod local_code_urls;
 mod native_list;
 mod post_render_compat;
@@ -174,7 +175,7 @@ use ftml::prelude::{
     Includer, Layout, PageInfo, ParseError, ScoreValue, WikitextMode, WikitextSettings,
 };
 use ftml::render::html::HtmlOutput;
-use ftml::tree::{CodeBlock, VariableMap};
+use ftml::tree::{AttributeMap, CodeBlock, VariableMap};
 use ftml::{self};
 use regex::Regex;
 use std::borrow::Cow;
@@ -1774,6 +1775,10 @@ impl RenderService {
                 &mut expanded.wikitext,
                 &mut wikidot_compat_text,
             );
+            Self::protect_exposed_leading_indent_after_comment_lines(
+                &mut expanded.wikitext,
+                &mut wikidot_compat_text,
+            );
             Self::normalize_wikidot_cross_closed_div_collapsibles(&mut expanded.wikitext);
             Self::normalize_wikidot_div_style_url_quotes(&mut expanded.wikitext);
             Self::protect_wikidot_unbound_include_variables(
@@ -2181,6 +2186,8 @@ impl RenderService {
                              language,
                              name,
                              wikidot_block_open_elements,
+                             wikidot_label_spans,
+                             wikidot_code_format_wrappers,
                          }| CodeBlock {
                             contents: Cow::Owned(
                                 protection.restore_compat_text_with_cleanup(
@@ -2200,6 +2207,12 @@ impl RenderService {
                                 .iter()
                                 .map(|element| element.to_owned())
                                 .collect(),
+                            wikidot_label_spans: wikidot_label_spans
+                                .iter()
+                                .map(AttributeMap::to_owned)
+                                .collect(),
+                            wikidot_code_format_wrappers: wikidot_code_format_wrappers
+                                .clone(),
                         },
                     )
                     .collect();
@@ -2582,6 +2595,8 @@ impl RenderService {
                                   language,
                                   name,
                                   wikidot_block_open_elements,
+                                  wikidot_label_spans,
+                                  wikidot_code_format_wrappers,
                               }| {
                             let contents = Self::restore_wikidot_code_block_compatibility(
                                         &protection.compat_html().restore_plain(contents),
@@ -2605,6 +2620,12 @@ impl RenderService {
                                         .iter()
                                         .map(|element| element.to_owned())
                                         .collect(),
+                                wikidot_label_spans: wikidot_label_spans
+                                    .iter()
+                                    .map(AttributeMap::to_owned)
+                                    .collect(),
+                                wikidot_code_format_wrappers:
+                                    wikidot_code_format_wrappers.clone(),
                             }
                         })
                         .collect();

@@ -106,6 +106,7 @@ struct BlockClose {
     identity: DelimiterIdentity,
     end: usize,
     quote_depth: usize,
+    raw_line_start: bool,
 }
 
 pub(super) fn collect_block_candidates(source: &str) -> Vec<BlockCandidate> {
@@ -232,11 +233,7 @@ fn parse_block_opener(
         }
         BlockFamily::Html => match heads.map_head_end[name_end] {
             NO_OFFSET => (name_end, false),
-            end => {
-                let content_start = expanded_offset(end);
-                let exact = source[name_end..content_start - 2].trim().is_empty();
-                (content_start, exact)
-            }
+            end => (expanded_offset(end), true),
         },
         BlockFamily::Raw => match bytes.get(name_end) {
             Some(_) if expanded_offset(heads.whitespace_end[name_end]) > name_end => {
@@ -321,6 +318,7 @@ fn parse_block_close(
         },
         end,
         quote_depth: line.quote_depth,
+        raw_line_start: bytes[..start].ends_with(b"\n"),
     })
 }
 
@@ -392,7 +390,11 @@ fn pair_candidates(
                 && opener.exact_head
                 && opener.parser_reachable
                 && opener.family != BlockFamily::Embed
-                && (opener.quote_depth == 0 || opener.family.parser_accepts_quote());
+                && (opener.quote_depth == 0 || opener.family.parser_accepts_quote())
+                // Wikidot closes a legacy math block only at a line-start closer.
+                && close.is_none_or(|close| {
+                    opener.family != BlockFamily::Math || close.raw_line_start
+                });
             BlockCandidate {
                 range: opener.identity.start
                     ..close.map_or(opener.boundary, |close| close.end),
@@ -497,7 +499,7 @@ mod tests {
         let candidates = candidates(source);
 
         assert_eq!(candidates.len(), 8);
-        for index in [0, 1, 4, 5] {
+        for index in [0, 1, 4] {
             assert_eq!(
                 candidates[index].provenance,
                 BaseCandidateProvenance::ClosedOwner,
@@ -505,7 +507,7 @@ mod tests {
                 candidates[index],
             );
         }
-        for index in [2, 3, 6] {
+        for index in [2, 3, 5, 6] {
             assert_eq!(
                 candidates[index].provenance,
                 BaseCandidateProvenance::FailClosedProtection,
@@ -546,7 +548,7 @@ mod tests {
         assert_eq!(candidates[0].terminator.unwrap().start, math_close);
         assert_eq!(
             candidates[0].provenance,
-            BaseCandidateProvenance::ClosedOwner
+            BaseCandidateProvenance::FailClosedProtection
         );
         assert_eq!(
             candidates[1].terminator.unwrap().start,
@@ -603,25 +605,25 @@ mod tests {
         let html = "[[html garbage]]x[[/html]]";
         assert_eq!(
             candidates(html)[0].provenance,
-            BaseCandidateProvenance::FailClosedProtection,
+            BaseCandidateProvenance::ClosedOwner,
         );
-        assert!(pinned_tree(html).html_blocks.is_empty());
+        assert!(!pinned_tree(html).html_blocks.is_empty());
     }
 
     #[test]
-    fn empty_math_is_owned_by_the_pinned_parser() {
+    fn empty_math_is_protection_only_like_the_pinned_parser() {
         for source in ["[[math]][[/math]]", "> [[math]]\n> \u{a0}\n> [[/math]]"] {
             let candidates = candidates(source);
             assert_eq!(candidates.len(), 1, "{source:?}");
             assert_eq!(
                 candidates[0].provenance,
-                BaseCandidateProvenance::ClosedOwner,
+                BaseCandidateProvenance::FailClosedProtection,
                 "{source:?}",
             );
             assert!(candidates[0].terminator.is_some(), "{source:?}");
         }
         assert!(
-            pinned_tree("[[math]][[/math]]")
+            !pinned_tree("[[math]][[/math]]")
                 .elements
                 .iter()
                 .any(|element| matches!(element, Element::Math { .. }))

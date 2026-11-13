@@ -302,6 +302,8 @@ mod tests {
             language: Some(std::borrow::Cow::Owned("css".to_owned())),
             name: None,
             wikidot_block_open_elements: Vec::new(),
+            wikidot_label_spans: Vec::new(),
+            wikidot_code_format_wrappers: Vec::new(),
         }
     }
 
