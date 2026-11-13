@@ -703,7 +703,7 @@ fn removes_list_break_before_same_line_restored_separator_content() {
 }
 
 #[test]
-fn normalizes_alignment_markers_that_own_a_block() {
+fn preserves_paired_alignment_markers_for_native_alignment_blocks() {
     let mut source = concat!(
         "[[=]]\n",
         "[[<]]\n",
@@ -719,9 +719,9 @@ fn normalizes_alignment_markers_that_own_a_block() {
 
     RenderService::normalize_wikidot_alignment_markers(&mut source, &mut preserved);
 
-    assert!(source.contains("[[div style=\"text-align: center;\"]]\n"));
-    assert!(source.contains("[[div style=\"text-align: left;\"]]\n"));
-    assert!(source.contains("[[/div]]\n[[/div]]\n"));
+    assert!(source.contains("[[=]]\n"));
+    assert!(source.contains("[[<]]\n"));
+    assert!(source.contains("[[/<]]\n[[/=]]\n"));
     assert!(source.contains("[[code]]\n[[=]]\n[[/code]]"));
 }
 
@@ -840,22 +840,30 @@ fn keeps_unpaired_alignment_markers_literal() {
 
 #[test]
 fn renders_paired_alignment_markers_as_a_block() {
-    for source in [
-        "[[=]]\nA\n[[/=]]\n\nz",
-        " [[=]]\nA\n[[/=]]\n\nz",
-        "[[=]]\nA\n [[/=]]\n\nz",
-    ] {
-        let body = render_wikidot_alignment_body(source);
+    let body = render_wikidot_alignment_body("[[=]]\nA\n[[/=]]\n\nz");
 
-        assert!(
-            body.contains("<div style=\"text-align: center;\">"),
-            "the alignment block must be rendered: {body}",
-        );
-        assert!(
-            !body.contains("[[=]]") && !body.contains("[[/=]]"),
-            "the markers must not print as text: {body}",
-        );
-    }
+    assert!(
+        body.contains("<div style=\"text-align: center;\">"),
+        "the alignment block must be rendered: {body}",
+    );
+    assert!(
+        !body.contains("[[=]]") && !body.contains("[[/=]]"),
+        "the markers must not print as text: {body}",
+    );
+}
+
+#[test]
+fn prints_indented_paired_alignment_markers_as_text() {
+    let body = render_wikidot_alignment_body(" [[=]]\nA\n[[/=]]\n\nz");
+
+    assert!(
+        body.contains("[[=]]"),
+        "the indented opener must print as text: {body}",
+    );
+    assert!(
+        !body.contains("text-align"),
+        "no alignment block may be rendered: {body}",
+    );
 }
 
 fn render_wikidot_expanded_alignment_body(top: &str, fragment: &str) -> String {

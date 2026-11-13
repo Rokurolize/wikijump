@@ -3904,3 +3904,67 @@ fn render_protection_bundle_restore_consumes_on_success_path() {
         empty_protection_bundle().restore(|protection| protection.inline_html().len());
     assert_eq!(restored, 0);
 }
+
+#[test]
+fn renders_alignment_wrapped_collapsible_with_escaped_div_sample() {
+    let source = concat!(
+        "[[=]]\n",
+        "[[collapsible show=\"+ More memos\" hide=\"- Hide\"]]\n",
+        "\n",
+        "With icons by [[*user EstrellaYoshte]] ([[[https://scp-wiki.wikidot.com/desk-of-junior-designer-s-yvonne|see here]]])\n",
+        "\n",
+        "[[div class=\"classification_memo\"]]\n",
+        "**{{@@[[div class=\"classification_memo\"]]@@}}**\n",
+        "[[/div]]\n",
+        "\n",
+        "[[div class=\"ettra_memo\"]]\n",
+        "**{{@@[[div class=\"ettra_memo\"]]@@}}**\n",
+        "[[/div]]\n",
+        "\n",
+        "[[div class=\"ethics_memo\"]]\n",
+        "**{{@@[[div class=\"ethics_memo\"]]@@}}**\n",
+        "[[/div]]\n",
+        "\n",
+        "[[div class=\"temporal_memo\"]]\n",
+        "**{{@@[[div class=\"temporal_memo\"]]@@}}**\n",
+        "[[/div]]\n",
+        "\n",
+        "[[div class=\"overwatch_memo\"]]\n",
+        "**{{@@[[div class=\"overwatch_memo\"]]@@}}**\n",
+        "[[/div]]\n",
+        "\n",
+        "[[div class=\"miscomm_memo\"]]\n",
+        "**{{@@[[div class=\"miscomm_memo\"]]@@}}**\n",
+        "[[/div]]\n",
+        "\n",
+        "[[/collapsible]]\n",
+        "[[/=]]\n",
+    );
+    let html = render_wikidot_page_body_with_compat_restore(source);
+
+    assert!(
+        html.contains("collapsible-block"),
+        "the collapsible must fold, not print literally:\n{html}"
+    );
+    assert!(
+        html.contains("<div class=\"classification_memo\">")
+            && html.contains("<div class=\"ettra_memo\">")
+            && html.contains("<div class=\"ethics_memo\">")
+            && html.contains("<div class=\"temporal_memo\">")
+            && html.contains("<div class=\"overwatch_memo\">")
+            && html.contains("<div class=\"miscomm_memo\">"),
+        "every memo div must render:\n{html}"
+    );
+    assert!(
+        !html.contains("[[collapsible"),
+        "no collapsible marker may print literally:\n{html}"
+    );
+    assert!(
+        !html.contains("[[/collapsible]]"),
+        "no collapsible closer may print literally:\n{html}"
+    );
+    assert!(
+        !html.contains("[[/div]]"),
+        "no div closer may print literally:\n{html}"
+    );
+}

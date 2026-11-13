@@ -12,6 +12,7 @@ struct WikidotAlignmentMarker {
     alignment: WikidotAlignment,
     is_closer: bool,
     trailing_whitespace: bool,
+    leading_indent: bool,
     skipped: bool,
 }
 
@@ -52,7 +53,10 @@ impl RenderService {
         let mut owns_block = vec![false; markers.len()];
         let mut split_raw = vec![false; markers.len()];
         for (opener, closer) in pairs {
-            if markers[opener].trailing_whitespace || markers[closer].trailing_whitespace
+            if markers[opener].trailing_whitespace
+                || markers[closer].trailing_whitespace
+                || markers[opener].leading_indent
+                || markers[closer].leading_indent
             {
                 continue;
             }
@@ -69,9 +73,7 @@ impl RenderService {
         let mut last = 0usize;
         for (index, marker) in markers.iter().enumerate() {
             output.push_str(&source[last..marker.range.start]);
-            if owns_block[index] {
-                output.push_str(Self::wikidot_alignment_div(marker));
-            } else if marker.skipped || split_raw[index] {
+            if owns_block[index] || marker.skipped || split_raw[index] {
                 output.push_str(&source[marker.range.clone()]);
             } else {
                 output.push_str(
@@ -107,6 +109,7 @@ impl RenderService {
                 alignment,
                 is_closer,
                 trailing_whitespace: marker_end < line_body_end,
+                leading_indent: leading > 0,
                 skipped,
             });
         }
@@ -123,17 +126,6 @@ impl RenderService {
             "[[/<]]" | "[[/&lt;]]" => Some((WikidotAlignment::Left, true)),
             "[[/>]]" | "[[/&gt;]]" => Some((WikidotAlignment::Right, true)),
             _ => None,
-        }
-    }
-
-    fn wikidot_alignment_div(marker: &WikidotAlignmentMarker) -> &'static str {
-        if marker.is_closer {
-            return "[[/div]]";
-        }
-        match marker.alignment {
-            WikidotAlignment::Center => "[[div style=\"text-align: center;\"]]",
-            WikidotAlignment::Left => "[[div style=\"text-align: left;\"]]",
-            WikidotAlignment::Right => "[[div style=\"text-align: right;\"]]",
         }
     }
 }
