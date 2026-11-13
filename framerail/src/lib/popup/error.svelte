@@ -204,8 +204,8 @@
     margin: 40vh auto;
     color: var(--wj-text);
     text-align: center;
-    background-color: var(--background);
-    border: 1px solid var(--border);
+    background-color: var(--wj-background);
+    border: 1px solid var(--wj-border);
     border-radius: 10px;
   }
   .modal-container > .modal h2 {

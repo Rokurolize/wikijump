@@ -31,11 +31,11 @@
 
   :root {
     --wj-text: #111;
-    --background: #fff;
-    --border: #0006;
-    --mild-text: #f0f0f0;
-    --accent: #0066cc;
-    --error: #b42d0a;
+    --wj-background: #fff;
+    --wj-border: #0006;
+    --wj-mild-text: #f0f0f0;
+    --wj-accent: #0066cc;
+    --wj-error: #b42d0a;
 
     --size-body-font: 16px;
     --size-action-button-font: 14px;
@@ -74,7 +74,7 @@
     justify-content: stretch;
     min-height: 100vh;
     color: var(--wj-text);
-    background-color: var(--background);
+    background-color: var(--wj-background);
 
     textarea,
     input[type="text"],
@@ -86,17 +86,17 @@
       font-family: var(--font-sans), sans-serif;
       line-height: 1.5;
       color: var(--wj-text);
-      background-color: var(--background);
-      border: 1px solid var(--border);
+      background-color: var(--wj-background);
+      border: 1px solid var(--wj-border);
       border-radius: var(--size-border-radius);
 
       &.error {
-        outline: 1px solid var(--error);
+        outline: 1px solid var(--wj-error);
       }
     }
 
     input[type="radio"] {
-      accent-color: var(--accent);
+      accent-color: var(--wj-accent);
     }
 
     .debug {
@@ -156,10 +156,10 @@
     }
 
     hr {
-      color: var(--mild-text);
+      color: var(--wj-mild-text);
     }
     a {
-      color: var(--accent);
+      color: var(--wj-accent);
     }
 
     .page-title {
@@ -196,8 +196,8 @@
       font-size: var(--size-action-button-font);
       font-weight: 550;
       color: var(--wj-text);
-      background-color: var(--background);
-      border: 1px solid var(--border);
+      background-color: var(--wj-background);
+      border: 1px solid var(--wj-border);
       border-radius: var(--size-border-radius);
 
       &.cast-vote,
@@ -224,7 +224,7 @@
           font-size: inherit;
           font-weight: inherit;
           color: var(--wj-text);
-          background-color: var(--background);
+          background-color: var(--wj-background);
           border: 0;
           border-radius: 0;
           &:first-child {
@@ -244,20 +244,20 @@
   @media (prefers-color-scheme: light) {
     :root {
       --wj-text: #111;
-      --background: #fff;
-      --border: #0006;
-      --mild-text: #f0f0f0;
-      --accent: #0066cc;
+      --wj-background: #fff;
+      --wj-border: #0006;
+      --wj-mild-text: #f0f0f0;
+      --wj-accent: #0066cc;
     }
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
       --wj-text: #b6c2cf;
-      --background: #222;
-      --border: #b6c2cf;
-      --mild-text: #bbb;
-      --accent: #44aaff;
+      --wj-background: #222;
+      --wj-border: #b6c2cf;
+      --wj-mild-text: #bbb;
+      --wj-accent: #44aaff;
     }
   }
 

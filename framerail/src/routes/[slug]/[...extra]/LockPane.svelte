@@ -313,8 +313,8 @@
   input[type="datetime-local"] {
     padding: 0.5em 1em;
     color: var(--wj-text);
-    background-color: var(--background);
-    border: 1px solid var(--border);
+    background-color: var(--wj-background);
+    border: 1px solid var(--wj-border);
     border-radius: 0.5em;
   }
 
@@ -360,7 +360,7 @@
     border-radius: 0.25em;
 
     &:hover {
-      color: var(--background);
+      color: var(--wj-background);
       background-color: var(--danger, #c0392b);
     }
   }
