@@ -3194,7 +3194,7 @@ fn matches_live_wikidot_tag_predicate_matrix() {
     assert!(!wikidot_tag_conditions_match("+alpha +beta", &tags));
     assert!(wikidot_tag_conditions_match("+alpha -beta", &tags));
     assert!(!wikidot_tag_conditions_match("+alpha -alpha", &tags));
-    assert!(wikidot_tag_conditions_match("", &tags));
+    assert!(!wikidot_tag_conditions_match("", &tags));
     assert!(!wikidot_tag_conditions_match("", &[]));
     assert!(wikidot_tag_conditions_match("-", &tags));
 }
@@ -3244,7 +3244,7 @@ fn resolves_parser_generated_iftags_predicates_before_tag_matching() {
 }
 
 #[test]
-fn authored_and_generated_empty_iftags_specs_diverge_in_preparation() {
+fn authored_and_generated_empty_iftags_specs_are_both_hidden() {
     let page_info = ftml::data::PageInfo {
         tags: vec![Cow::Borrowed("alpha")],
         ..fallback_test_page_info("tagged-page", "Tagged Page")
@@ -3264,7 +3264,7 @@ fn authored_and_generated_empty_iftags_specs_diverge_in_preparation() {
 
     prepare_test_wikidot_conditionals_before_include_expansion(&mut wikitext, &page_info);
 
-    assert!(wikitext.contains("AUTHORED_BARE_TAGGED"), "{wikitext}");
+    assert!(!wikitext.contains("AUTHORED_BARE_TAGGED"), "{wikitext}");
     assert!(!wikitext.contains("GENERATED_EMPTY_TAGGED"), "{wikitext}");
     assert!(wikitext.contains("GENERATED_ALPHA_TAGGED"), "{wikitext}");
     assert!(!wikitext.contains("[[iftags"), "{wikitext}");
@@ -3485,14 +3485,14 @@ fn resolves_empty_and_empty_negative_iftags_like_saved_wikidot() {
 }
 
 #[test]
-fn resolves_no_argument_iftags_on_a_tagged_page_like_saved_wikidot() {
+fn hides_no_argument_iftags_on_a_tagged_page_like_saved_wikidot() {
     let mut page_info = fallback_test_page_info("tagged-page", "Tagged Page");
     page_info.tags = vec![Cow::Borrowed("essay"), Cow::Borrowed("_cc")];
     let mut wikitext = "[[iftags]]OMEGA_NO_ARGUMENT[[/iftags]]\n".to_owned();
 
     resolve_test_wikidot_iftags(&mut wikitext, &page_info);
 
-    assert_eq!(wikitext, "OMEGA_NO_ARGUMENT\n");
+    assert_eq!(wikitext, "\n");
 }
 
 #[test]
