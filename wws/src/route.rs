@@ -62,6 +62,14 @@ pub fn build_router(state: ServerState) -> Router {
             any(handle_code_redirect),
         )
         .route(
+            "/local--code/{page_slug}",
+            any(handle_default_code_redirect),
+        )
+        .route(
+            "/local--code_/{page_slug}",
+            any(handle_default_code_redirect),
+        )
+        .route(
             "/local--html/{page_slug}/{id}/{domain}",
             get(handle_html_terminal),
         )
@@ -401,6 +409,40 @@ mod tests {
 
             assert_eq!(response.status(), StatusCode::PERMANENT_REDIRECT);
             assert_eq!(response.headers().get(LOCATION).unwrap(), location);
+        }
+
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn local_code_routes_without_an_index_redirect_to_the_first_block() {
+        let state = build_server_state(false, test_secrets()).await.unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            axum::serve(listener, build_router(state)).await.unwrap();
+        });
+        let client = reqwest::Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .unwrap();
+
+        for path in [
+            "/local--code/category%3Apage",
+            "/local--code_/category%3Apage",
+        ] {
+            let response = client
+                .get(format!("http://{address}{path}"))
+                .header(crate::handler::HEADER_SITE_ID, "1")
+                .send()
+                .await
+                .unwrap();
+
+            assert_eq!(response.status(), StatusCode::PERMANENT_REDIRECT);
+            assert_eq!(
+                response.headers().get(LOCATION).unwrap(),
+                "/-/code/category:page/1"
+            );
         }
 
         server.abort();

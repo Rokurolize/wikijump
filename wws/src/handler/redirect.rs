@@ -110,6 +110,16 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn default_code_redirect_targets_code_block_one() {
+        assert_permanent_redirect(
+            handle_default_code_redirect(Path("theme:shushusoin".into()))
+                .await
+                .into_response(),
+            "/-/code/theme:shushusoin/1",
+        );
+    }
+
+    #[tokio::test]
     async fn code_redirect_targets_internal_code_route() {
         assert_permanent_redirect(
             handle_code_redirect(Path(("scp-173".into(), "2".into())))

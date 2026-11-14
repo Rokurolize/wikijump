@@ -149,11 +149,12 @@ export const materializeSiteCsp = (
   ])
   if (deploymentEnvironment === "local") {
     for (const mirrorSite of LOCAL_MIRROR_FILE_ASSET_SITES) {
-      const host = `${mirrorSite}.${files}`
-      const forms = originForms(host)
-      replacements.set(`https://${host}`, forms)
-      const configured = platformHttpsOrigin(host, domains)
-      if (configured !== `https://${host}`) replacements.set(configured, forms)
+      for (const host of [`${mirrorSite}.${files}`, `${mirrorSite}.${main}`]) {
+        const forms = originForms(host)
+        replacements.set(`https://${host}`, forms)
+        const configured = platformHttpsOrigin(host, domains)
+        if (configured !== `https://${host}`) replacements.set(configured, forms)
+      }
     }
   }
   const materialized = materializeExactCspSources(policy, replacements)

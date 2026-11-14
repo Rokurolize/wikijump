@@ -17,7 +17,9 @@ if (!directives) throw new Error("CSP directives are missing")
 test("local included components can load styles and fonts from the reviewed mirrors", () => {
   for (const origin of [
     "https://scp-wiki.wjfiles.localhost",
-    "https://scp-jp.wjfiles.localhost"
+    "https://scp-jp.wjfiles.localhost",
+    "https://scp-wiki.wikijump.localhost",
+    "https://scp-jp.wikijump.localhost"
   ] as const) {
     for (const directive of ["style-src", "font-src"] as const) {
       assert(directives[directive]?.includes(origin), `${directive} needs ${origin}`)
