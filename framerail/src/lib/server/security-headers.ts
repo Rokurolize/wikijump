@@ -149,10 +149,7 @@ export const materializeSiteCsp = (
   ])
   if (deploymentEnvironment === "local") {
     for (const mirrorSite of LOCAL_MIRROR_FILE_ASSET_SITES) {
-      for (const host of [
-        `${mirrorSite}.${files}`,
-        `${mirrorSite}.${main}`
-      ]) {
+      for (const host of [`${mirrorSite}.${files}`, `${mirrorSite}.${main}`]) {
         const forms = originForms(host)
         replacements.set(`https://${host}`, forms)
         const configured = platformHttpsOrigin(host, domains)
