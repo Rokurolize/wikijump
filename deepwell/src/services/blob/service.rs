@@ -309,6 +309,7 @@ impl BlobService {
 
         debug!("Download uploaded blob from S3 uploads to get metadata");
         let response = bucket.get_object(s3_path).await.or_raise(make_error)?;
+        let declared_mime = response_content_type(&response);
 
         let data: Vec<u8> = match response.status_code() {
             200 => response.into(),
@@ -401,7 +402,9 @@ impl BlobService {
             ));
         }
 
-        let result = Self::direct_upload(ctx, data).await.or_raise(make_error)?;
+        let result = Self::direct_upload(ctx, data, declared_mime)
+            .await
+            .or_raise(make_error)?;
 
         bucket.delete_object(&s3_path).await.or_raise(make_error)?;
 
@@ -420,6 +423,7 @@ impl BlobService {
     pub(crate) async fn direct_upload(
         ctx: &ServiceContext<'_>,
         data: Vec<u8>,
+        declared_mime: Option<String>,
     ) -> Result<FinalizeBlobUploadOutput> {
         let bucket = ctx.s3_files_bucket();
 
@@ -444,12 +448,7 @@ impl BlobService {
             Some(result) => {
                 debug!("Blob with hash {hex_hash} already exists");
 
-                let mime = result.content_type.ok_or_raise(|| {
-                    Error::new(
-                        format!("blob with hash {} already exists in S3", hex_hash),
-                        ErrorType::BlobBackend,
-                    )
-                })?;
+                let mime = select_mime(declared_mime, result.content_type, analyzed_mime);
 
                 Ok(FinalizeBlobUploadOutput {
                     s3_hash,
@@ -462,7 +461,7 @@ impl BlobService {
             None => {
                 debug!("Blob with hash {hex_hash} to be created");
 
-                let mime = analyzed_mime;
+                let mime = select_mime(declared_mime, None, analyzed_mime);
 
                 let response = bucket
                     .put_object_with_content_type(&hex_hash, &data, &mime)
@@ -1346,6 +1345,26 @@ impl BlobService {
     }
 }
 
+fn response_content_type(response: &ResponseData) -> Option<String> {
+    response
+        .headers()
+        .into_iter()
+        .find(|(name, _)| name.eq_ignore_ascii_case("content-type"))
+        .map(|(_, value)| value.trim().to_owned())
+        .filter(|value| !value.is_empty())
+}
+
+fn select_mime(
+    declared: Option<String>,
+    stored: Option<String>,
+    analyzed: String,
+) -> String {
+    declared
+        .filter(|mime| !mime.trim().is_empty())
+        .or_else(|| stored.filter(|mime| !mime.trim().is_empty()))
+        .unwrap_or(analyzed)
+}
+
 #[must_use]
 fn s3_error(response: &ResponseData, action: &str) -> Error {
     let error_message = match str::from_utf8(response.bytes()) {
@@ -1425,9 +1444,40 @@ impl<T: Hash + Ord + Eq> SamplerCounter<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::BlobService;
+    use super::{BlobService, select_mime};
     use crate::error::ErrorType;
     use crate::hash::BLOB_HASH_LENGTH;
+
+    #[test]
+    fn declared_svg_mime_is_kept_for_new_and_existing_blobs() {
+        let new_blob = select_mime(
+            Some(str!("image/svg+xml")),
+            None,
+            str!("application/x-www-form-urlencoded"),
+        );
+        assert_eq!(new_blob, "image/svg+xml");
+
+        let existing_blob = select_mime(
+            Some(str!("image/svg+xml")),
+            Some(str!("application/x-www-form-urlencoded")),
+            str!("application/x-www-form-urlencoded"),
+        );
+        assert_eq!(existing_blob, "image/svg+xml");
+
+        let sniffed_fallback = select_mime(None, None, str!("image/png; charset=binary"));
+        assert_eq!(sniffed_fallback, "image/png; charset=binary");
+
+        let stored_fallback = select_mime(
+            None,
+            Some(str!("image/jpeg")),
+            str!("application/octet-stream"),
+        );
+        assert_eq!(stored_fallback, "image/jpeg");
+
+        let blank_declaration =
+            select_mime(Some(str!("  ")), None, str!("image/png; charset=binary"));
+        assert_eq!(blank_declaration, "image/png; charset=binary");
+    }
 
     #[test]
     fn checked_blob_hash_accepts_exact_length_hash() {
