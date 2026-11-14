@@ -388,7 +388,7 @@ fn strip_wikidot_generated_spec_markers(wikitext: &mut String) {
 
 pub(super) fn wikidot_tag_conditions_match(spec: &str, tags: &[Cow<'_, str>]) -> bool {
     if spec.trim().is_empty() {
-        return !tags.is_empty();
+        return false;
     }
 
     let mut required = true;
@@ -453,17 +453,17 @@ mod tests {
     }
 
     #[test]
-    fn bare_gate_follows_whether_the_page_carries_tags() {
+    fn bare_gate_never_matches() {
         let source = "before\n[[iftags]]shown[[/iftags]]\nafter\n";
-        assert_eq!(resolve(source, &["alpha"], 1), "before\nshown\nafter\n");
+        assert_eq!(resolve(source, &["alpha"], 1), "before\n\nafter\n");
         assert_eq!(resolve(source, &[], 1), "before\n\nafter\n");
     }
 
     #[test]
-    fn empty_spec_matches_only_when_the_page_carries_tags() {
+    fn empty_spec_never_matches() {
         let tags = [Cow::Borrowed("alpha")];
-        assert!(wikidot_tag_conditions_match("", &tags));
-        assert!(wikidot_tag_conditions_match("  ", &tags));
+        assert!(!wikidot_tag_conditions_match("", &tags));
+        assert!(!wikidot_tag_conditions_match("  ", &tags));
         assert!(!wikidot_tag_conditions_match("", &[]));
         assert!(!wikidot_tag_conditions_match("  ", &[]));
     }
