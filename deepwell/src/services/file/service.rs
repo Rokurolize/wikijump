@@ -139,7 +139,7 @@ impl FileService {
                 )
                 .await
                 .or_raise(make_error)?,
-                Some(data) => BlobService::direct_upload(ctx, data)
+                Some(data) => BlobService::direct_upload(ctx, data, None)
                     .await
                     .or_raise(make_error)?,
             };
@@ -285,7 +285,7 @@ impl FileService {
                     )
                     .await
                     .or_raise(make_error)?,
-                    Maybe::Set(data) => BlobService::direct_upload(ctx, data)
+                    Maybe::Set(data) => BlobService::direct_upload(ctx, data, None)
                         .await
                         .or_raise(make_error)?,
                 };

@@ -1431,7 +1431,7 @@ impl ImportService {
             size,
             content_type,
             created: blob_created,
-        } = BlobService::direct_upload(ctx, data)
+        } = BlobService::direct_upload(ctx, data, None)
             .await
             .or_raise(make_error)?;
 
