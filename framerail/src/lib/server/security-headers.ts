@@ -37,6 +37,7 @@ const SECURITY_HEADERS = {
 
 const HSTS_HEADER = "max-age=31536000; includeSubDomains"
 const CURRENT_SITE_FILE_ORIGIN = "https://wikijump-current-site.invalid"
+const CURRENT_SITE_MAIN_ORIGIN = "https://wikijump-current-site-main.invalid"
 const WIKIDOT_INTERWIKI_STYLE_SOURCES = auditedExternalAssetOrigins("styles").join(" ")
 const WIKIDOT_INTERWIKI_FONT_SOURCES = auditedExternalAssetOrigins("fonts").join(" ")
 const WIKIDOT_INTERWIKI_FRAME_PATHNAME = "/-/wikidot-interwiki/interwikiFrame.html"
@@ -52,7 +53,7 @@ const wikidotInterwikiFramePolicyFor = (
     )
     mirrorSuffix = ` ${mirrorSources.join(" ")}`
   }
-  return `default-src 'none'; script-src 'unsafe-inline'; style-src 'self' 'unsafe-inline' ${CURRENT_SITE_FILE_ORIGIN}${mirrorSuffix} ${WIKIDOT_INTERWIKI_STYLE_SOURCES}; font-src 'self' data: ${CURRENT_SITE_FILE_ORIGIN}${mirrorSuffix} ${WIKIDOT_INTERWIKI_FONT_SOURCES}; img-src 'self' data: ${CURRENT_SITE_FILE_ORIGIN}${mirrorSuffix} https://*.wdfiles.com https://cdn.scpwiki.com https://d3g0gp89917ko0.cloudfront.net https://scp-jp.github.io; frame-ancestors 'self'`
+  return `default-src 'none'; script-src 'unsafe-inline'; style-src 'self' 'unsafe-inline' ${CURRENT_SITE_FILE_ORIGIN} ${CURRENT_SITE_MAIN_ORIGIN}${mirrorSuffix} ${WIKIDOT_INTERWIKI_STYLE_SOURCES}; font-src 'self' data: ${CURRENT_SITE_FILE_ORIGIN} ${CURRENT_SITE_MAIN_ORIGIN}${mirrorSuffix} ${WIKIDOT_INTERWIKI_FONT_SOURCES}; img-src 'self' data: ${CURRENT_SITE_FILE_ORIGIN} ${CURRENT_SITE_MAIN_ORIGIN}${mirrorSuffix} https://*.wdfiles.com https://cdn.scpwiki.com https://d3g0gp89917ko0.cloudfront.net https://scp-jp.github.io; frame-ancestors 'self'`
 }
 const LOCAL_WIKIDOT_STYLEFRAME_PATHNAME = "/-/wikidot-interwiki/styleFrame.html"
 // The style frame runs exactly one known script and nothing else.
@@ -134,21 +135,22 @@ export const materializeSiteCsp = (
     }
   }
   const domains = platformDomains({ deploymentEnvironment })
-  const { files } = domains
+  const { files, main } = domains
   const portSuffix = port ? `:${port}` : ""
-  const fileOriginForms = (host: string) => {
+  const originForms = (host: string) => {
     const forms = new Set<string>()
     forms.add(platformHttpsOrigin(host, domains))
     if (portSuffix) forms.add(`https://${host}${portSuffix}`)
     return [...forms].join(" ")
   }
   const replacements = new Map([
-    [CURRENT_SITE_FILE_ORIGIN, fileOriginForms(`${slug}.${files}`)]
+    [CURRENT_SITE_FILE_ORIGIN, originForms(`${slug}.${files}`)],
+    [CURRENT_SITE_MAIN_ORIGIN, originForms(`${slug}.${main}`)]
   ])
   if (deploymentEnvironment === "local") {
     for (const mirrorSite of LOCAL_MIRROR_FILE_ASSET_SITES) {
       const host = `${mirrorSite}.${files}`
-      const forms = fileOriginForms(host)
+      const forms = originForms(host)
       replacements.set(`https://${host}`, forms)
       const configured = platformHttpsOrigin(host, domains)
       if (configured !== `https://${host}`) replacements.set(configured, forms)

@@ -33,6 +33,10 @@ type CspDirectives = NonNullable<NonNullable<Config["csp"]>["directives"]>
 type CspSources = NonNullable<CspDirectives["img-src"]>
 
 const CURRENT_SITE_FILE_ORIGIN = "https://wikijump-current-site.invalid"
+// Re-owned `local--code`/`local--files` URLs can be emitted on the site's own
+// main-domain origin, not only on the files host; materializeSiteCsp replaces
+// this placeholder with that origin per response.
+const CURRENT_SITE_MAIN_ORIGIN = "https://wikijump-current-site-main.invalid"
 const WIKIDOT_LEGACY_IMAGE_SOURCES: CspSources = ["https://d3g0gp89917ko0.cloudfront.net"]
 const WIKIDOT_LEGACY_SCRIPT_SOURCES: CspSources = []
 // The read-only local mirrors (LOCAL_MIRROR_FILE_ASSET_SITES in
@@ -90,6 +94,7 @@ function imageSources(): CspSources {
     "data:",
     "blob:",
     CURRENT_SITE_FILE_ORIGIN,
+    CURRENT_SITE_MAIN_ORIGIN,
     ...WIKIDOT_IMAGE_SOURCES
   ]
 
@@ -106,6 +111,7 @@ function styleSources(): CspSources {
     "self",
     "unsafe-inline",
     CURRENT_SITE_FILE_ORIGIN,
+    CURRENT_SITE_MAIN_ORIGIN,
     ...WIKIDOT_STYLE_SOURCES
   ]
   if (deploymentEnvironment === "local") sources.push(...LOCAL_SCP_FILE_ASSET_SOURCES)
@@ -122,6 +128,7 @@ function fontSources(): CspSources {
     "self",
     "data:",
     CURRENT_SITE_FILE_ORIGIN,
+    CURRENT_SITE_MAIN_ORIGIN,
     ...WIKIDOT_FONT_SOURCES
   ]
   if (deploymentEnvironment === "local") sources.push(...LOCAL_SCP_FILE_ASSET_SOURCES)

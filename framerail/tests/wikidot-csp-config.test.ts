@@ -135,6 +135,14 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
   ]) {
     assert(!sources?.some((source) => source === "https://*.wikidot.com"))
   }
+  for (const directive of ["img-src", "style-src", "font-src"] as const) {
+    assert(
+      directives[directive]?.some(
+        (source) => source === "https://wikijump-current-site-main.invalid"
+      ),
+      `${directive} admits the site's main-domain origin placeholder`
+    )
+  }
   assert(
     directives["img-src"]?.some(
       (source) => source === "https://wikijump-current-site.invalid"
