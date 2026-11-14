@@ -80,6 +80,13 @@ const domains = platformDomains({ deploymentEnvironment })
 const LOCAL_SCP_FILE_ASSET_SOURCES = LOCAL_SCP_FILE_ASSET_SITES.map((site) =>
   platformHttpsOrigin(`${site}.${domains.files}`, domains)
 ) as CspSources
+// The same reviewed mirrors, on the main-domain authority: the files host
+// answers requests outside its registered routes with a redirect to the
+// site's main-domain authority, so a cross-site re-owned URL can reach it
+// there too.
+const LOCAL_SCP_MAIN_ASSET_SOURCES = LOCAL_SCP_FILE_ASSET_SITES.map((site) =>
+  platformHttpsOrigin(`${site}.${domains.main}`, domains)
+) as CspSources
 const testOutDir = process.env.NODE_TEST_CONTEXT
   ? resolve(tmpdir(), `wikijump-framerail-svelte-kit-test-${process.pid}`)
   : null
@@ -100,6 +107,7 @@ function imageSources(): CspSources {
 
   if (deploymentEnvironment === "local") {
     sources.push(...LOCAL_SCP_FILE_ASSET_SOURCES)
+    sources.push(...LOCAL_SCP_MAIN_ASSET_SOURCES)
     sources.push(...WIKIDOT_LEGACY_IMAGE_SOURCES)
   }
 
@@ -114,7 +122,10 @@ function styleSources(): CspSources {
     CURRENT_SITE_MAIN_ORIGIN,
     ...WIKIDOT_STYLE_SOURCES
   ]
-  if (deploymentEnvironment === "local") sources.push(...LOCAL_SCP_FILE_ASSET_SOURCES)
+  if (deploymentEnvironment === "local") {
+    sources.push(...LOCAL_SCP_FILE_ASSET_SOURCES)
+    sources.push(...LOCAL_SCP_MAIN_ASSET_SOURCES)
+  }
   return sources
 }
 
@@ -131,7 +142,10 @@ function fontSources(): CspSources {
     CURRENT_SITE_MAIN_ORIGIN,
     ...WIKIDOT_FONT_SOURCES
   ]
-  if (deploymentEnvironment === "local") sources.push(...LOCAL_SCP_FILE_ASSET_SOURCES)
+  if (deploymentEnvironment === "local") {
+    sources.push(...LOCAL_SCP_FILE_ASSET_SOURCES)
+    sources.push(...LOCAL_SCP_MAIN_ASSET_SOURCES)
+  }
   return sources
 }
 

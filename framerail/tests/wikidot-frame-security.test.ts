@@ -288,6 +288,38 @@ test("materializes the viewed site's main-domain origin in style/font/img source
   }
 })
 
+test("materializes the cross-site re-owned mirror origins in style/font/img sources (scp-jp)", () => {
+  // A page viewed on Sigma-10 whose hosted CSS/code is owned by the scp-jp
+  // site re-owns to that site's authorities at render; both must be usable.
+  const previousPort = process.env.WIKIJUMP_HTTPS_PORT
+  const previousMainDomain = process.env.WIKIJUMP_MAIN_DOMAIN
+  process.env.WIKIJUMP_HTTPS_PORT = "28443"
+  process.env.WIKIJUMP_MAIN_DOMAIN = "localhost"
+  try {
+    const response = new Response("", {
+      headers: {
+        "content-security-policy":
+          "font-src 'self' data: https://scp-wiki.wjfiles.localhost https://scp-jp.wjfiles.localhost https://scp-wiki.localhost https://scp-jp.localhost; style-src 'self' https://scp-wiki.wjfiles.localhost https://scp-jp.wjfiles.localhost https://scp-wiki.localhost https://scp-jp.localhost; img-src 'self' https://scp-wiki.wjfiles.localhost https://scp-jp.wjfiles.localhost https://scp-wiki.localhost https://scp-jp.localhost"
+      }
+    })
+    materializeSiteCsp(
+      response,
+      "scp-jp-sigma10",
+      "local",
+      "https://scp-jp-sigma10.localhost:8443"
+    )
+    assert.equal(
+      response.headers.get("content-security-policy"),
+      "font-src 'self' data: https://scp-wiki.wjfiles.localhost:28443 https://scp-wiki.wjfiles.localhost:8443 https://scp-jp.wjfiles.localhost:28443 https://scp-jp.wjfiles.localhost:8443 https://scp-wiki.localhost:28443 https://scp-wiki.localhost:8443 https://scp-jp.localhost:28443 https://scp-jp.localhost:8443; style-src 'self' https://scp-wiki.wjfiles.localhost:28443 https://scp-wiki.wjfiles.localhost:8443 https://scp-jp.wjfiles.localhost:28443 https://scp-jp.wjfiles.localhost:8443 https://scp-wiki.localhost:28443 https://scp-wiki.localhost:8443 https://scp-jp.localhost:28443 https://scp-jp.localhost:8443; img-src 'self' https://scp-wiki.wjfiles.localhost:28443 https://scp-wiki.wjfiles.localhost:8443 https://scp-jp.wjfiles.localhost:28443 https://scp-jp.wjfiles.localhost:8443 https://scp-wiki.localhost:28443 https://scp-wiki.localhost:8443 https://scp-jp.localhost:28443 https://scp-jp.localhost:8443"
+    )
+  } finally {
+    if (previousPort === undefined) delete process.env.WIKIJUMP_HTTPS_PORT
+    else process.env.WIKIJUMP_HTTPS_PORT = previousPort
+    if (previousMainDomain === undefined) delete process.env.WIKIJUMP_MAIN_DOMAIN
+    else process.env.WIKIJUMP_MAIN_DOMAIN = previousMainDomain
+  }
+})
+
 test("leaves local mirror file origins unchanged when no request port is known", () => {
   const response = new Response("", {
     headers: {
