@@ -254,6 +254,40 @@ test("materializes the viewed site's own files origin in font-src (sigma-10)", (
   )
 })
 
+test("materializes the viewed site's main-domain origin in style/font/img sources (sigma-10)", () => {
+  const previousPort = process.env.WIKIJUMP_HTTPS_PORT
+  const previousMainDomain = process.env.WIKIJUMP_MAIN_DOMAIN
+  process.env.WIKIJUMP_HTTPS_PORT = "28443"
+  process.env.WIKIJUMP_MAIN_DOMAIN = "localhost"
+  try {
+    const response = new Response("", {
+      headers: {
+        "content-security-policy":
+          "font-src 'self' data: https://wikijump-current-site-main.invalid; style-src 'self' https://wikijump-current-site-main.invalid; img-src 'self' https://wikijump-current-site-main.invalid"
+      }
+    })
+    materializeSiteCsp(
+      response,
+      "scp-jp-sigma10",
+      "local",
+      "https://codex-wsl-maintenance.example:8443"
+    )
+    assert.equal(
+      response.headers.get("content-security-policy"),
+      "font-src 'self' data: https://scp-jp-sigma10.localhost:28443 https://scp-jp-sigma10.localhost:8443; style-src 'self' https://scp-jp-sigma10.localhost:28443 https://scp-jp-sigma10.localhost:8443; img-src 'self' https://scp-jp-sigma10.localhost:28443 https://scp-jp-sigma10.localhost:8443"
+    )
+    assert.doesNotMatch(
+      response.headers.get("content-security-policy") ?? "",
+      /wikijump-current-site/u
+    )
+  } finally {
+    if (previousPort === undefined) delete process.env.WIKIJUMP_HTTPS_PORT
+    else process.env.WIKIJUMP_HTTPS_PORT = previousPort
+    if (previousMainDomain === undefined) delete process.env.WIKIJUMP_MAIN_DOMAIN
+    else process.env.WIKIJUMP_MAIN_DOMAIN = previousMainDomain
+  }
+})
+
 test("leaves local mirror file origins unchanged when no request port is known", () => {
   const response = new Response("", {
     headers: {
@@ -468,9 +502,9 @@ test("keeps the interwiki frame policy unchanged outside local deployments", () 
   const fontSources = auditedExternalAssetOrigins("fonts").join(" ")
   const expected =
     `default-src 'none'; script-src 'unsafe-inline'; ` +
-    `style-src 'self' 'unsafe-inline' https://wikijump-current-site.invalid ${styleSources}; ` +
-    `font-src 'self' data: https://wikijump-current-site.invalid ${fontSources}; ` +
-    `img-src 'self' data: https://wikijump-current-site.invalid https://*.wdfiles.com https://cdn.scpwiki.com https://d3g0gp89917ko0.cloudfront.net https://scp-jp.github.io; ` +
+    `style-src 'self' 'unsafe-inline' https://wikijump-current-site.invalid https://wikijump-current-site-main.invalid ${styleSources}; ` +
+    `font-src 'self' data: https://wikijump-current-site.invalid https://wikijump-current-site-main.invalid ${fontSources}; ` +
+    `img-src 'self' data: https://wikijump-current-site.invalid https://wikijump-current-site-main.invalid https://*.wdfiles.com https://cdn.scpwiki.com https://d3g0gp89917ko0.cloudfront.net https://scp-jp.github.io; ` +
     `frame-ancestors 'self'`
   for (const deploymentEnvironment of ["dev", "prod"] as const) {
     const interwiki = new Response("")
