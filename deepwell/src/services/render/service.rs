@@ -86,7 +86,8 @@ use super::ftml_render::{
 use super::ftml_user_info::UserInfoSnapshot;
 use super::generator::COMPILED_GENERATOR;
 use super::iftags::{
-    mark_wikidot_generated_iftags_specs, resolve_outermost_wikidot_iftags,
+    enclosed_iftags_ranges, mark_wikidot_generated_iftags_specs,
+    remove_enclosed_iftags_markers, resolve_outermost_wikidot_iftags,
     resolve_outermost_wikidot_iftags_before_include_expansion,
     resolve_outermost_wikidot_iftags_before_include_expansion_for_page_preview,
 };
@@ -1442,7 +1443,7 @@ impl RenderService {
             }
         };
         let IncludeExpansion {
-            wikitext: expanded_wikitext,
+            wikitext: mut expanded_wikitext,
             included_pages: expanded_included_pages,
             expanded_include_count,
         } = {
@@ -1467,6 +1468,7 @@ impl RenderService {
             .await
             .or_raise(make_error)?
         };
+        remove_enclosed_iftags_markers(&mut expanded_wikitext);
         wikitext = expanded_wikitext;
         included_pages.extend(expanded_included_pages);
         include_budget.consume(expanded_include_count);
@@ -3006,6 +3008,7 @@ impl RenderService {
                 expand_wikidot_image_blocks,
                 max_total_includes: budget.maximum,
                 render_cost_budget,
+                raw_zone: false,
             },
             source_cache,
             compat_text,
@@ -3013,6 +3016,7 @@ impl RenderService {
             budget.remaining,
         )
         .await?;
+        remove_enclosed_iftags_markers(&mut expansion.wikitext);
         source_cache
             .attachment_provenance
             .restore_unresolved(&mut expansion.wikitext);
@@ -3043,11 +3047,12 @@ impl RenderService {
                     depth,
                 );
             } else {
-                Self::prepare_wikidot_conditionals_before_include_expansion(
+                Self::prepare_wikidot_conditionals_before_include_expansion_with_mode(
                     &mut wikitext,
                     expansion_context.page_info,
                     compat_text,
                     depth,
+                    expansion_context.raw_zone,
                 );
             }
             Self::mask_wikidot_literal_include_markers(&mut wikitext);
@@ -3100,6 +3105,13 @@ impl RenderService {
                 });
             }
 
+            let includes_enclosed = include_enclosure_flags(
+                &wikitext,
+                includes.len(),
+                depth,
+                expansion_context.raw_zone,
+            );
+
             if depth >= MAX_INCLUDE_EXPANSION_DEPTH {
                 return Err(Error::new(
                     format!(
@@ -3115,7 +3127,7 @@ impl RenderService {
             let mut nested_included_pages = Vec::with_capacity(includes.len());
             let mut nested_include_counts = Vec::with_capacity(includes.len());
 
-            for include in &includes {
+            for (index, include) in includes.iter().enumerate() {
                 if let Err(error) = expansion_context
                     .render_cost_budget
                     .charge(1, "include expansion")
@@ -3196,7 +3208,10 @@ impl RenderService {
                 );
                 select_included_metacomponent_documentation(&mut source.wikitext);
 
-                let nested_context = expansion_context.for_nested_source(&source);
+                let nested_raw_zone =
+                    includes_enclosed.get(index).copied().unwrap_or(true);
+                let nested_context =
+                    expansion_context.for_nested_source(&source, nested_raw_zone);
                 let expansion = Self::expand_includes_for_site(
                     ctx,
                     source.wikitext,
@@ -3221,11 +3236,20 @@ impl RenderService {
                 nested_include_counts.push(expansion.expanded_include_count);
 
                 let mut nested_wikitext = expansion.wikitext;
-                Self::prepare_wikidot_conditionals_for_include_expansion(
-                    &mut nested_wikitext,
-                    expansion_context.page_info,
-                    compat_text,
-                );
+                if nested_raw_zone {
+                    Self::prepare_wikidot_conditionals_for_include_expansion_with_mode(
+                        &mut nested_wikitext,
+                        expansion_context.page_info,
+                        compat_text,
+                        true,
+                    );
+                } else {
+                    Self::prepare_wikidot_conditionals_for_include_expansion(
+                        &mut nested_wikitext,
+                        expansion_context.page_info,
+                        compat_text,
+                    );
+                }
                 remove_nested_include_boundaries(&mut nested_wikitext);
                 fetched_pages.push(Some(nested_wikitext));
                 nested_included_pages.push(expansion.included_pages);
@@ -3722,10 +3746,15 @@ struct IncludeExpansionContext<'a> {
     expand_wikidot_image_blocks: bool,
     max_total_includes: usize,
     render_cost_budget: super::render_budget::SharedRenderCostBudget,
+    raw_zone: bool,
 }
 
 impl<'a> IncludeExpansionContext<'a> {
-    fn for_nested_source(&self, source: &AuthorizedIncludeSource) -> Self {
+    fn for_nested_source(
+        &self,
+        source: &AuthorizedIncludeSource,
+        raw_zone: bool,
+    ) -> Self {
         Self {
             current_site_id: self.current_site_id,
             current_site_slug: self.current_site_slug.clone(),
@@ -3740,8 +3769,36 @@ impl<'a> IncludeExpansionContext<'a> {
             expand_wikidot_image_blocks: self.expand_wikidot_image_blocks,
             max_total_includes: self.max_total_includes,
             render_cost_budget: self.render_cost_budget.clone(),
+            raw_zone: raw_zone || self.raw_zone,
         }
     }
+}
+
+fn include_enclosure_flags(
+    wikitext: &str,
+    include_count: usize,
+    depth: usize,
+    raw_zone: bool,
+) -> Vec<bool> {
+    if raw_zone {
+        return vec![true; include_count];
+    }
+    if depth != 0 {
+        return vec![false; include_count];
+    }
+    let enclosed_bodies = enclosed_iftags_ranges(wikitext);
+    let directive_ranges = wikidot_include_directive_ranges(wikitext);
+    if directive_ranges.len() != include_count {
+        return vec![false; include_count];
+    }
+    directive_ranges
+        .iter()
+        .map(|range| {
+            enclosed_bodies
+                .iter()
+                .any(|body| range.start >= body.start && range.end <= body.end)
+        })
+        .collect()
 }
 
 #[derive(Debug)]

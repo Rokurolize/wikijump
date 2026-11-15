@@ -34,6 +34,9 @@ enum UnmatchedBoundaryMode {
     Preserve,
 }
 
+pub(super) const ENCLOSED_IFTAGS_OPEN: &str = "[!-- wikijump-enclosed-iftags --]";
+pub(super) const ENCLOSED_IFTAGS_END: &str = "[!-- wikijump-enclosed-iftags-end --]";
+
 pub(super) fn resolve_outermost_wikidot_iftags(
     wikitext: &mut String,
     tags: &[Cow<'_, str>],
@@ -45,6 +48,7 @@ pub(super) fn resolve_outermost_wikidot_iftags(
         preserved,
         UnmatchedBoundaryMode::Preserve,
         false,
+        false,
     );
     strip_wikidot_generated_spec_markers(wikitext);
 }
@@ -53,6 +57,7 @@ pub(super) fn resolve_outermost_wikidot_iftags_before_include_expansion(
     wikitext: &mut String,
     tags: &[Cow<'_, str>],
     preserved: &mut CompatTextFragments,
+    mark_enclosed_bodies: bool,
 ) {
     resolve_outermost_wikidot_iftags_with_mode(
         wikitext,
@@ -60,6 +65,7 @@ pub(super) fn resolve_outermost_wikidot_iftags_before_include_expansion(
         preserved,
         UnmatchedBoundaryMode::Defer,
         false,
+        mark_enclosed_bodies,
     );
 }
 
@@ -73,6 +79,7 @@ pub(super) fn resolve_outermost_wikidot_iftags_before_include_expansion_for_page
         preserved,
         UnmatchedBoundaryMode::Defer,
         true,
+        false,
     );
 }
 
@@ -82,6 +89,7 @@ fn resolve_outermost_wikidot_iftags_with_mode(
     preserved: &mut CompatTextFragments,
     unmatched_mode: UnmatchedBoundaryMode,
     force_inactive: bool,
+    mark_enclosed_bodies: bool,
 ) {
     let literal_regions = LiteralRegionIndex::new_wikidot_conditional_syntax(wikitext);
     let mut stack = Vec::<OpenGate>::new();
@@ -147,12 +155,17 @@ fn resolve_outermost_wikidot_iftags_with_mode(
             continue;
         };
         let text = if !force_inactive && wikidot_tag_conditions_match(&outer.spec, tags) {
-            preserve_nested_tokens(
+            let body = preserve_nested_tokens(
                 wikitext,
                 outer.end..token.start(),
                 &outer.nested_tokens,
                 preserved,
-            )
+            );
+            if mark_enclosed_bodies && body_contains_include(&body) {
+                format!("{ENCLOSED_IFTAGS_OPEN}\n{body}{ENCLOSED_IFTAGS_END}")
+            } else {
+                body
+            }
         } else {
             String::new()
         };
@@ -291,6 +304,68 @@ fn preserve_nested_tokens(
     }
     output.push_str(&source[cursor..body.end]);
     output
+}
+
+fn body_contains_include(body: &str) -> bool {
+    body.to_ascii_lowercase().contains("[[include")
+}
+
+pub(super) fn preserve_all_ordinary_wikidot_iftags(
+    wikitext: &mut String,
+    preserved: &mut CompatTextFragments,
+) {
+    let literal_regions = LiteralRegionIndex::new_wikidot_conditional_syntax(wikitext);
+    let mut replacements = Vec::<Replacement>::new();
+    for captures in IFTAGS_TOKEN_REGEX.captures_iter(wikitext) {
+        let token = captures.get(0).expect("iftags token");
+        if literal_regions.containing_range(token.start()).is_some() {
+            continue;
+        }
+        replacements.push(Replacement {
+            range: token.start()..token.end(),
+            text: preserved.push_escaped_html_text(token.as_str()),
+        });
+    }
+    if replacements.is_empty() {
+        return;
+    }
+    replacements.sort_unstable_by_key(|replacement| replacement.range.start);
+    let mut output = String::with_capacity(wikitext.len());
+    let mut cursor = 0;
+    for replacement in replacements {
+        if replacement.range.start < cursor {
+            continue;
+        }
+        output.push_str(&wikitext[cursor..replacement.range.start]);
+        output.push_str(&replacement.text);
+        cursor = replacement.range.end;
+    }
+    output.push_str(&wikitext[cursor..]);
+    *wikitext = output;
+}
+
+pub(super) fn remove_enclosed_iftags_markers(wikitext: &mut String) {
+    if !wikitext.contains(ENCLOSED_IFTAGS_OPEN) {
+        return;
+    }
+    *wikitext = wikitext
+        .replace(ENCLOSED_IFTAGS_OPEN, "")
+        .replace(ENCLOSED_IFTAGS_END, "");
+}
+
+pub(super) fn enclosed_iftags_ranges(source: &str) -> Vec<Range<usize>> {
+    let mut ranges = Vec::new();
+    let mut search = 0usize;
+    while let Some(start) = source[search..].find(ENCLOSED_IFTAGS_OPEN) {
+        let open_end = search + start + ENCLOSED_IFTAGS_OPEN.len();
+        let Some(close) = source[open_end..].find(ENCLOSED_IFTAGS_END) else {
+            break;
+        };
+        let body_end = open_end + close;
+        ranges.push(open_end..body_end);
+        search = body_end + ENCLOSED_IFTAGS_END.len();
+    }
+    ranges
 }
 
 pub(super) const WIKIDOT_GENERATED_SPEC_MARKER: &str = "+wikijump:generated-spec";
@@ -704,11 +779,13 @@ mod tests {
             &mut target,
             &tags,
             &mut preserved,
+            false,
         );
         resolve_outermost_wikidot_iftags_before_include_expansion(
             &mut caller_suffix,
             &tags,
             &mut preserved,
+            false,
         );
         assert!(target.contains("[[iftags +alpha]]"));
         assert!(caller_suffix.contains("[[/iftags]]"));
@@ -740,6 +817,7 @@ mod tests {
             &mut target,
             &tags,
             &mut preserved,
+            false,
         );
         assert_eq!(
             target,
@@ -769,6 +847,7 @@ mod tests {
             &mut source,
             &tags,
             &mut preserved,
+            false,
         );
         assert_eq!(source, "\n[[include visible]]\n");
     }

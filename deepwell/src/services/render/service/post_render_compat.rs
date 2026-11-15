@@ -3,6 +3,14 @@ use super::{
     WIKIDOT_OBFUSCATED_EMAIL_BODY_REGEX, WIKIDOT_RECOVERABLE_REVERSED_EMAIL_BODY_REGEX,
 };
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ResidualStandaloneEvent {
+    RawTextOpen(usize),
+    RawTextClose(usize),
+    MarkerOpen,
+    MarkerClose,
+}
+
 impl RenderProtectionBundle {
     pub(in crate::services::render) fn restore_nested_compatibility_markers(
         &self,
@@ -133,55 +141,83 @@ impl RenderService {
         }
     }
 
-    fn restore_residual_wikidot_div_markers_on_line(
-        line_body: &str,
-        restored_open_count: &mut usize,
-    ) -> String {
-        let mut rebuilt = String::with_capacity(line_body.len());
-        let mut cursor = 0usize;
-        let bytes = line_body.as_bytes();
-        while cursor < line_body.len() {
-            let Some(relative) = line_body[cursor..].find("[[") else {
-                rebuilt.push_str(&line_body[cursor..]);
-                break;
-            };
-            let start = cursor + relative;
-            if !line_body[start..].starts_with("[[div")
-                && !line_body[start..].starts_with("[[/div]]")
-            {
-                rebuilt.push_str(&line_body[cursor..=start]);
-                cursor = start + 1;
-                continue;
-            }
-            let Some(relative_end) = line_body[start..].find("]]") else {
-                rebuilt.push_str(&line_body[cursor..]);
-                break;
-            };
-            let end = start + relative_end + 2;
-            let marker = &line_body[start..end];
-            if bytes.get(start + 2) == Some(&b'/') {
-                if marker.eq_ignore_ascii_case("[[/div]]") && *restored_open_count > 0 {
-                    rebuilt.push_str(&line_body[cursor..start]);
-                    rebuilt.push_str("</div>");
-                    *restored_open_count -= 1;
-                    cursor = end;
-                    continue;
-                }
-            } else {
-                let decoded = Self::decode_residual_wikidot_marker_quotes(marker);
-                if let Some(attributes) = Self::wikidot_residual_div_attributes(&decoded)
-                {
-                    rebuilt.push_str(&line_body[cursor..start]);
-                    rebuilt.push_str(&format!("<div{attributes}>"));
-                    *restored_open_count += 1;
-                    cursor = end;
-                    continue;
-                }
-            }
-            rebuilt.push_str(&line_body[cursor..=start]);
-            cursor = start + 1;
+    fn residual_standalone_raw_text_tag(
+        line: &str,
+        start: usize,
+    ) -> Option<(usize, bool)> {
+        let bytes = line.as_bytes();
+        if bytes.get(start) != Some(&b'<') {
+            return None;
         }
-        rebuilt
+        let lower = line[start..].to_ascii_lowercase();
+        let lower_bytes = lower.as_bytes();
+        let mut index = 1usize;
+        let closing = lower_bytes.get(index) == Some(&b'/');
+        if closing {
+            index += 1;
+        }
+        let name_start = index;
+        while index < lower_bytes.len()
+            && (lower_bytes[index].is_ascii_alphanumeric() || lower_bytes[index] == b'-')
+        {
+            index += 1;
+        }
+        let name = &lower[name_start..index];
+        const RAW_TEXT: &[&str] = &["pre", "code", "textarea", "style", "script", "tt"];
+        if !RAW_TEXT.contains(&name) {
+            return None;
+        }
+        let tag_end = line[start..].find('>').map(|offset| start + offset + 1)?;
+        Some((tag_end, !closing))
+    }
+
+    fn residual_standalone_find_next_event(
+        line: &str,
+        start: usize,
+    ) -> Option<(usize, ResidualStandaloneEvent)> {
+        let bytes = line.as_bytes();
+        let mut index = start;
+        while index < bytes.len() {
+            match bytes[index] {
+                b'<' => {
+                    if let Some((tag_end, is_open)) =
+                        Self::residual_standalone_raw_text_tag(line, index)
+                    {
+                        return Some((
+                            index,
+                            if is_open {
+                                ResidualStandaloneEvent::RawTextOpen(tag_end)
+                            } else {
+                                ResidualStandaloneEvent::RawTextClose(tag_end)
+                            },
+                        ));
+                    }
+                    if let Some(tag_end) =
+                        line[index..].find('>').map(|offset| index + offset + 1)
+                    {
+                        index = tag_end;
+                        continue;
+                    }
+                    return None;
+                }
+                b'[' if index + 8 <= bytes.len()
+                    && line[index..index + 8].eq_ignore_ascii_case("[[/div]]") =>
+                {
+                    return Some((index, ResidualStandaloneEvent::MarkerClose));
+                }
+                b'[' if index + 5 <= bytes.len()
+                    && &bytes[index..index + 5] == b"[[div" =>
+                {
+                    return Some((index, ResidualStandaloneEvent::MarkerOpen));
+                }
+                _ => index += 1,
+            }
+        }
+        None
+    }
+
+    fn residual_standalone_marker_end(line: &str, start: usize) -> Option<usize> {
+        line[start..].find("]]").map(|offset| start + offset + 2)
     }
 
     pub(in crate::services::render) fn restore_standalone_residual_wikidot_div_markers(
@@ -195,24 +231,58 @@ impl RenderService {
             let (line_body, line_end) = line
                 .strip_suffix('\n')
                 .map_or((line, ""), |body| (body, "\n"));
-            let protected = raw_text_depth > 0;
-
-            if protected {
-                output.push_str(line_body);
-                output.push_str(line_end);
-            } else if line_body.contains("[[div") || line_body.contains("[[/div") {
-                let rebuilt = Self::restore_residual_wikidot_div_markers_on_line(
-                    line_body,
-                    &mut restored_open_count,
-                );
-                output.push_str(&rebuilt);
-                output.push_str(line_end);
-            } else {
-                output.push_str(line_body);
-                output.push_str(line_end);
+            let mut cursor = 0usize;
+            while let Some((index, event)) =
+                Self::residual_standalone_find_next_event(line_body, cursor)
+            {
+                match event {
+                    ResidualStandaloneEvent::RawTextOpen(tag_end) => {
+                        output.push_str(&line_body[cursor..tag_end]);
+                        raw_text_depth += 1;
+                        cursor = tag_end;
+                    }
+                    ResidualStandaloneEvent::RawTextClose(tag_end) => {
+                        output.push_str(&line_body[cursor..tag_end]);
+                        raw_text_depth = raw_text_depth.saturating_sub(1);
+                        cursor = tag_end;
+                    }
+                    ResidualStandaloneEvent::MarkerOpen => {
+                        let marker_end =
+                            Self::residual_standalone_marker_end(line_body, index)
+                                .unwrap_or(line_body.len());
+                        output.push_str(&line_body[cursor..index]);
+                        if raw_text_depth == 0 {
+                            let marker = &line_body[index..marker_end];
+                            let decoded =
+                                Self::decode_residual_wikidot_marker_quotes(marker);
+                            if let Some(attributes) =
+                                Self::wikidot_residual_div_attributes(&decoded)
+                            {
+                                output.push_str(&format!("<div{attributes}>"));
+                                restored_open_count += 1;
+                            } else {
+                                output.push_str(marker);
+                            }
+                        } else {
+                            output.push_str(&line_body[index..marker_end]);
+                        }
+                        cursor = marker_end;
+                    }
+                    ResidualStandaloneEvent::MarkerClose => {
+                        let marker_end = index + "[[/div]]".len();
+                        output.push_str(&line_body[cursor..index]);
+                        if raw_text_depth == 0 && restored_open_count > 0 {
+                            output.push_str("</div>");
+                            restored_open_count -= 1;
+                        } else {
+                            output.push_str(&line_body[index..marker_end]);
+                        }
+                        cursor = marker_end;
+                    }
+                }
             }
-            raw_text_depth =
-                Self::update_residual_div_raw_text_depth(raw_text_depth, line_body);
+            output.push_str(&line_body[cursor..]);
+            output.push_str(line_end);
         }
 
         output
@@ -237,7 +307,7 @@ impl RenderService {
         line: &str,
     ) -> usize {
         let lower = line.to_ascii_lowercase();
-        for tag in ["pre", "code", "textarea", "style", "script"] {
+        for tag in ["pre", "code", "textarea", "style", "script", "tt"] {
             depth += lower.matches(&format!("<{tag}")).count();
             depth = depth.saturating_sub(lower.matches(&format!("</{tag}>")).count());
         }

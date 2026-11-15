@@ -1,3 +1,4 @@
+use super::super::iftags::preserve_all_ordinary_wikidot_iftags;
 use super::super::include_attachment_owners::DirectiveEndScan;
 use super::{
     AttachmentOwner, AttachmentProvenanceRegistry, BTreeMap, CompatTextFragments,
@@ -23,12 +24,27 @@ impl RenderService {
         page_info: &ftml::data::PageInfo<'_>,
         preserved: &mut CompatTextFragments,
     ) {
+        Self::prepare_wikidot_conditionals_for_include_expansion_with_mode(
+            wikitext, page_info, preserved, false,
+        );
+    }
+
+    pub(in crate::services::render) fn prepare_wikidot_conditionals_for_include_expansion_with_mode(
+        wikitext: &mut String,
+        page_info: &ftml::data::PageInfo<'_>,
+        preserved: &mut CompatTextFragments,
+        preserve_ordinary_iftags: bool,
+    ) {
         resolve_unbound_include_variable_iftags(wikitext);
         if wikitext.contains("[[#") {
             mark_wikidot_generated_iftags_specs(wikitext);
             *wikitext = resolve_wikidot_parser_functions_outside_list_pages(wikitext);
         }
-        Self::resolve_wikidot_iftags(wikitext, page_info, preserved);
+        if preserve_ordinary_iftags {
+            preserve_all_ordinary_wikidot_iftags(wikitext, preserved);
+        } else {
+            Self::resolve_wikidot_iftags(wikitext, page_info, preserved);
+        }
     }
 
     pub(super) fn normalize_wikidot_cross_closed_div_collapsibles(wikitext: &mut String) {
@@ -120,11 +136,28 @@ impl RenderService {
         }
     }
 
+    #[cfg(test)]
     pub(super) fn prepare_wikidot_conditionals_before_include_expansion(
         wikitext: &mut String,
         page_info: &ftml::data::PageInfo<'_>,
         preserved: &mut CompatTextFragments,
         include_depth: usize,
+    ) {
+        Self::prepare_wikidot_conditionals_before_include_expansion_with_mode(
+            wikitext,
+            page_info,
+            preserved,
+            include_depth,
+            false,
+        );
+    }
+
+    pub(super) fn prepare_wikidot_conditionals_before_include_expansion_with_mode(
+        wikitext: &mut String,
+        page_info: &ftml::data::PageInfo<'_>,
+        preserved: &mut CompatTextFragments,
+        include_depth: usize,
+        preserve_ordinary_iftags: bool,
     ) {
         if include_depth == 0 {
             resolve_unbound_include_variable_iftags(wikitext);
@@ -135,10 +168,14 @@ impl RenderService {
                 wikitext,
             );
         }
+        if preserve_ordinary_iftags {
+            return;
+        }
         resolve_outermost_wikidot_iftags_before_include_expansion(
             wikitext,
             &page_info.tags,
             preserved,
+            include_depth == 0,
         );
     }
 
