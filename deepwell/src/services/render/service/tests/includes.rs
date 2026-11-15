@@ -1397,6 +1397,7 @@ fn nested_cross_site_includes_keep_the_original_lookup_site() {
         expand_wikidot_image_blocks: true,
         max_total_includes: 100,
         render_cost_budget: RenderCostBudget::new_default(),
+        raw_zone: false,
     };
     let source = AuthorizedIncludeSource::for_test(
         "scp-wiki".to_owned(),
@@ -1405,7 +1406,7 @@ fn nested_cross_site_includes_keep_the_original_lookup_site() {
         None,
     );
 
-    let nested = context.for_nested_source(&source);
+    let nested = context.for_nested_source(&source, false);
 
     assert_eq!(nested.current_site_id, 11);
     assert_eq!(nested.current_site_slug, "sandbox-for-codex");
@@ -1434,6 +1435,7 @@ fn nested_imported_source_includes_carry_the_source_site() {
         expand_wikidot_image_blocks: true,
         max_total_includes: 100,
         render_cost_budget: RenderCostBudget::new_default(),
+        raw_zone: false,
     };
     let source = AuthorizedIncludeSource::for_test(
         "scp-wiki".to_owned(),
@@ -1442,7 +1444,7 @@ fn nested_imported_source_includes_carry_the_source_site() {
         Some("fondazionescp".to_owned()),
     );
 
-    let nested = context.for_nested_source(&source);
+    let nested = context.for_nested_source(&source, false);
 
     assert_eq!(nested.current_site_id, 11);
     assert_eq!(nested.current_site_slug, "scp-wiki");
@@ -1995,4 +1997,266 @@ fn included_interwiki_style_embed_survives_production_preparation() {
     assert!(!html.contains("Usage:"), "{html}");
     assert!(!html.contains("[[include"), "{html}");
     assert!(!html.contains("error-block"), "{html}");
+}
+
+#[test]
+fn include_enclosure_flags_mark_includes_directly_inside_active_enclosed_gates() {
+    let mut page_info = fallback_test_page_info("page", "Page");
+    page_info.tags = vec![Cow::Borrowed("テーマ")];
+    let mut source = concat!(
+        "[[iftags +テーマ]]\n",
+        "[[include component:feature-and-news]]\n",
+        "[[/iftags]]\n",
+        "[[include component:other]]\n",
+    )
+    .to_string();
+    let mut preserved = CompatTextFragments::new(&source);
+    RenderService::prepare_wikidot_conditionals_before_include_expansion(
+        &mut source,
+        &page_info,
+        &mut preserved,
+        0,
+    );
+
+    let flags = super::super::include_enclosure_flags(&source, 2, 0, false);
+
+    assert_eq!(flags, vec![true, false]);
+}
+
+#[test]
+fn include_enclosure_flags_stay_false_when_the_outer_gate_is_inactive() {
+    let mut page_info = fallback_test_page_info("page", "Page");
+    page_info.tags = vec![Cow::Borrowed("管理")];
+    let mut source = concat!(
+        "[[iftags +テーマ]]\n",
+        "[[include component:feature-and-news]]\n",
+        "[[/iftags]]\n",
+        "[[include component:other]]\n",
+    )
+    .to_string();
+    let mut preserved = CompatTextFragments::new(&source);
+    RenderService::prepare_wikidot_conditionals_before_include_expansion(
+        &mut source,
+        &page_info,
+        &mut preserved,
+        0,
+    );
+
+    let flags = super::super::include_enclosure_flags(&source, 1, 0, false);
+
+    assert_eq!(flags, vec![false]);
+}
+
+#[test]
+fn include_enclosure_flags_fall_back_to_false_on_directive_count_mismatch() {
+    let source = "[[include component:other]]\n".to_string();
+
+    let flags = super::super::include_enclosure_flags(&source, 2, 0, false);
+
+    assert_eq!(flags, vec![false, false]);
+}
+
+#[test]
+fn include_enclosure_flags_propagate_raw_zone_at_any_depth() {
+    let source = "[[include component:other]]\n".to_string();
+
+    let flags = super::super::include_enclosure_flags(&source, 1, 3, true);
+
+    assert_eq!(flags, vec![true]);
+}
+
+#[test]
+fn raw_zone_include_preparation_preserves_ordinary_iftags_as_literal_text() {
+    let mut page_info = fallback_test_page_info("page", "Page");
+    page_info.tags = vec![Cow::Borrowed("テーマ")];
+    let component = "[[iftags +管理 -ハブ]]\nstaff area\n[[/iftags]]";
+    let mut source = component.to_string();
+    let mut preserved = CompatTextFragments::new(&source);
+
+    RenderService::prepare_wikidot_conditionals_for_include_expansion_with_mode(
+        &mut source,
+        &page_info,
+        &mut preserved,
+        true,
+    );
+
+    assert!(!source.contains("[[iftags"), "{source}");
+    assert!(!source.contains("[[/iftags]]"), "{source}");
+    let restored = preserved.restore(&source);
+    assert!(restored.contains("[[iftags +管理 -ハブ]]"), "{restored}");
+    assert!(restored.contains("staff area"), "{restored}");
+    assert!(restored.contains("[[/iftags]]"), "{restored}");
+}
+
+#[test]
+fn ordinary_include_preparation_still_evaluates_ordinary_iftags() {
+    let mut page_info = fallback_test_page_info("page", "Page");
+    page_info.tags = vec![Cow::Borrowed("管理")];
+    let component = "[[iftags +管理 -ハブ]]\nstaff area\n[[/iftags]]";
+    let mut source = component.to_string();
+    let mut preserved = CompatTextFragments::new(&source);
+
+    RenderService::prepare_wikidot_conditionals_for_include_expansion(
+        &mut source,
+        &page_info,
+        &mut preserved,
+    );
+
+    let restored = preserved.restore(&source);
+    assert!(restored.contains("staff area"), "{restored}");
+    assert!(!restored.contains("[[iftags"), "{restored}");
+}
+
+#[test]
+fn ordinary_include_preparation_drops_nonmatching_ordinary_iftags() {
+    let mut page_info = fallback_test_page_info("page", "Page");
+    page_info.tags = vec![Cow::Borrowed("テーマ")];
+    let component = "[[iftags +管理 -ハブ]]\nstaff area\n[[/iftags]]";
+    let mut source = component.to_string();
+    let mut preserved = CompatTextFragments::new(&source);
+
+    RenderService::prepare_wikidot_conditionals_for_include_expansion(
+        &mut source,
+        &page_info,
+        &mut preserved,
+    );
+
+    let restored = preserved.restore(&source);
+    assert!(!restored.contains("staff area"), "{restored}");
+}
+
+#[test]
+fn enclosed_iftags_markers_are_removed_from_the_expanded_output() {
+    let (open, end) = (
+        super::super::super::iftags::ENCLOSED_IFTAGS_OPEN,
+        super::super::super::iftags::ENCLOSED_IFTAGS_END,
+    );
+    let mut source = format!("before {open}\nincluded body\n{end} after");
+
+    super::super::super::iftags::remove_enclosed_iftags_markers(&mut source);
+
+    assert_eq!(source, "before \nincluded body\n after");
+}
+
+fn render_pre_expanded_wikidot_page_body(
+    wikitext: String,
+    wikidot_compat_text: CompatTextFragments,
+    tags: &[&'static str],
+) -> String {
+    let mut page_info = fallback_test_page_info("theme:af2026theme", "AF2026テーマ");
+    page_info.tags = tags.iter().map(|&tag| Cow::Borrowed(tag)).collect();
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let outer = RenderService::prepare_outer_render_wikitext(
+        super::super::ExpandedRenderWikitext {
+            theme_previewer_blank: false,
+            wikidot_compat_html: CompatHtmlFragments::new(&wikitext),
+            wikidot_compat_text,
+            wikitext,
+            included_pages: Vec::new(),
+            expanded_include_count: 1,
+            url_offset_list_pages_content_bytes: 0,
+            runtime_css_insertions: Vec::new(),
+        },
+        &page_info,
+        &settings,
+    );
+    let inner = RenderService::prepare_inner_render_wikitext(outer, &settings);
+    let tokens = ftml::tokenize(&inner.wikitext);
+    let (tree, _errors) = ftml::parse(&tokens, &page_info, &settings).into();
+    let html = HtmlRender.render(&tree, &page_info, &settings).body;
+    let html = inner
+        .protection
+        .restore(|protection| protection.compat_text().restore(&html));
+    RenderService::restore_wikidot_render_compatibility_for_context_with_resources(
+        &html,
+        None,
+        &Config::integration_testing(),
+        true,
+        &[],
+    )
+}
+
+fn expand_test_enclosed_include(
+    root: &str,
+    component: &str,
+    tags: &[&'static str],
+) -> (String, CompatTextFragments) {
+    let mut page_info = fallback_test_page_info("theme:af2026theme", "AF2026テーマ");
+    page_info.tags = tags.iter().map(|&tag| Cow::Borrowed(tag)).collect();
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+
+    let mut source = root.to_string();
+    let mut compat_text = CompatTextFragments::new(&source);
+    RenderService::prepare_wikidot_conditionals_before_include_expansion(
+        &mut source,
+        &page_info,
+        &mut compat_text,
+        0,
+    );
+    let flags = super::super::include_enclosure_flags(&source, 1, 0, false);
+
+    let mut nested_source = component.to_string();
+    if flags[0] {
+        RenderService::prepare_wikidot_conditionals_for_include_expansion_with_mode(
+            &mut nested_source,
+            &page_info,
+            &mut compat_text,
+            true,
+        );
+    } else {
+        RenderService::prepare_wikidot_conditionals_for_include_expansion(
+            &mut nested_source,
+            &page_info,
+            &mut compat_text,
+        );
+    }
+
+    let expanded = ftml::include(
+        &source,
+        &settings,
+        PreparedIncluder {
+            pages: vec![Some(nested_source)],
+            missing_replacements: Default::default(),
+        },
+        include_error,
+    )
+    .expect("test include should expand")
+    .0;
+    let mut expanded = expanded;
+    super::super::super::iftags::remove_enclosed_iftags_markers(&mut expanded);
+    (expanded, compat_text)
+}
+
+#[test]
+fn include_gate_nested_in_an_active_outer_gate_prints_literally_after_expansion() {
+    let component = "[[iftags +管理 -ハブ]]\n+ スタッフ各位\n[[/iftags]]\n";
+    let root = concat!(
+        "[[iftags +テーマ]]\n",
+        "[[include component:feature-and-news]]\n",
+        "[[/iftags]]\n",
+    );
+
+    let (expanded, compat_text) =
+        expand_test_enclosed_include(root, component, &["テーマ"]);
+    let html = render_pre_expanded_wikidot_page_body(expanded, compat_text, &["テーマ"]);
+
+    assert!(html.contains("[[iftags +管理 -ハブ]]"), "{html}");
+    assert!(html.contains("[[/iftags]]"), "{html}");
+    assert!(html.contains("スタッフ各位"), "{html}");
+    assert!(!html.contains("wikijump-enclosed-iftags"), "{html}");
+}
+
+#[test]
+fn include_gate_is_evaluated_when_the_include_is_outside_any_gate() {
+    let component = "[[iftags +管理 -ハブ]]\n+ スタッフ各位\n[[/iftags]]\n";
+    let root = "[[include component:feature-and-news]]\n";
+
+    let (expanded, compat_text) =
+        expand_test_enclosed_include(root, component, &["テーマ"]);
+    let html = render_pre_expanded_wikidot_page_body(expanded, compat_text, &["テーマ"]);
+
+    assert!(
+        !html.contains("スタッフ各位"),
+        "the nested gate must be evaluated: {html}"
+    );
 }
