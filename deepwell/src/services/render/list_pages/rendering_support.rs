@@ -55,12 +55,14 @@ use std::collections::{BTreeMap, BTreeSet};
 pub(in crate::services::render) enum ListPagesBlockPlan {
     Static(String),
     PreserveOriginal(&'static str),
-    Render {
-        arguments: ListPagesArguments,
-        template: ListPagesTemplatePlan,
-        batch_key: Option<ExactNameListPagesBatchKey>,
-        legacy_tail: Option<String>,
-    },
+    Render(Box<ListPagesRenderPlan>),
+}
+
+pub(in crate::services::render) struct ListPagesRenderPlan {
+    pub(in crate::services::render) arguments: ListPagesArguments,
+    pub(in crate::services::render) template: ListPagesTemplatePlan,
+    pub(in crate::services::render) batch_key: Option<ExactNameListPagesBatchKey>,
+    pub(in crate::services::render) legacy_tail: Option<String>,
 }
 
 pub(in crate::services::render) struct ListPagesBlock {
@@ -404,7 +406,7 @@ pub(in crate::services::render) fn list_pages_html_encoded_head_owns_script_tail
 
 #[derive(Debug)]
 pub(in crate::services::render) enum ListPagesBlockRenderResult {
-    Expanded(ListPagesRenderedBlock),
+    Expanded(Box<ListPagesRenderedBlock>),
     PreserveOriginal(&'static str),
 }
 
@@ -426,7 +428,7 @@ pub(in crate::services::render) fn list_pages_feed_only_render_result(
             "RSS output exceeds generated-output budget",
         );
     }
-    ListPagesBlockRenderResult::Expanded(ListPagesRenderedBlock {
+    ListPagesBlockRenderResult::Expanded(Box::new(ListPagesRenderedBlock {
         expansion: IncludeExpansion {
             wikitext: feed_info,
             included_pages: Vec::new(),
@@ -434,7 +436,7 @@ pub(in crate::services::render) fn list_pages_feed_only_render_result(
         },
         pending_delayed: None,
         runtime_css_insertions: Vec::new(),
-    })
+    }))
 }
 
 pub(in crate::services::render) fn prepare_list_pages_rendered_block(

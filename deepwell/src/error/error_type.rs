@@ -173,10 +173,10 @@ pub enum ErrorType {
         minimum: usize,
     },
     ExpectedWikijumpUser {
-        was_user: WikidotUserModel,
+        was_user: Box<WikidotUserModel>,
     },
     ExpectedWikidotUser {
-        was_user: WikijumpUserModel,
+        was_user: Box<WikijumpUserModel>,
     },
 
     SiteSlugEmpty,

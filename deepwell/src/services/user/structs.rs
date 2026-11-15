@@ -33,8 +33,8 @@ use time::{Date, OffsetDateTime};
 
 #[derive(Debug, Clone)]
 pub enum User {
-    Wikijump(WikijumpUserModel),
-    Wikidot(WikidotUserModel),
+    Wikijump(Box<WikijumpUserModel>),
+    Wikidot(Box<WikidotUserModel>),
 }
 
 impl User {
@@ -97,7 +97,7 @@ impl User {
 
     pub fn unwrap_wikijump(self) -> Result<WikijumpUserModel> {
         match self {
-            User::Wikijump(user) => Ok(user),
+            User::Wikijump(user) => Ok(*user),
             User::Wikidot(user) => bail!(Error::new(
                 "expected a wikijump user",
                 ErrorType::ExpectedWikijumpUser { was_user: user },
@@ -107,7 +107,7 @@ impl User {
 
     pub fn unwrap_wikidot(self) -> Result<WikidotUserModel> {
         match self {
-            User::Wikidot(user) => Ok(user),
+            User::Wikidot(user) => Ok(*user),
             User::Wikijump(user) => bail!(Error::new(
                 "expected a wikidot user",
                 ErrorType::ExpectedWikidotUser { was_user: user },
@@ -135,14 +135,14 @@ impl User {
 impl From<WikijumpUserModel> for User {
     #[inline]
     fn from(user: WikijumpUserModel) -> User {
-        User::Wikijump(user)
+        User::Wikijump(Box::new(user))
     }
 }
 
 impl From<WikidotUserModel> for User {
     #[inline]
     fn from(user: WikidotUserModel) -> User {
-        User::Wikidot(user)
+        User::Wikidot(Box::new(user))
     }
 }
 
@@ -280,9 +280,9 @@ impl UserOutput {
     pub fn new(user: User, viewer_user_id: Option<i64>) -> Self {
         match user {
             User::Wikijump(user) => {
-                UserOutput::Wikijump(WikijumpUserOutput::new(user, viewer_user_id))
+                UserOutput::Wikijump(WikijumpUserOutput::new(*user, viewer_user_id))
             }
-            User::Wikidot(user) => UserOutput::Wikidot(user),
+            User::Wikidot(user) => UserOutput::Wikidot(*user),
         }
     }
 }
@@ -300,7 +300,9 @@ impl UserOutput {
             UserOutput::Wikijump(user) => Ok(user),
             UserOutput::Wikidot(user) => bail!(Error::new(
                 "expected a wikijump user",
-                ErrorType::ExpectedWikijumpUser { was_user: user },
+                ErrorType::ExpectedWikijumpUser {
+                    was_user: Box::new(user),
+                },
             )),
         }
     }
@@ -330,7 +332,7 @@ impl Serialize for UserOutput {
         match self {
             UserOutput::Wikijump(user) => user.serialize(serializer),
             UserOutput::Wikidot(user) => {
-                User::Wikidot(user.clone()).serialize(serializer)
+                User::Wikidot(Box::new(user.clone())).serialize(serializer)
             }
         }
     }
@@ -442,7 +444,8 @@ fn user_output_never_serializes_credential_material() {
     let viewers = [None, Some(7), Some(42), Some(ADMIN_USER_ID)];
 
     for viewer in viewers {
-        let output = UserOutput::new(User::Wikijump(output_test_user()), viewer);
+        let output =
+            UserOutput::new(User::Wikijump(Box::new(output_test_user())), viewer);
         let json = serde_json::to_string(&output).expect("output serializes");
 
         for forbidden in [
@@ -466,7 +469,8 @@ fn user_output_never_serializes_credential_material() {
 #[test]
 fn user_output_email_only_for_self_or_platform_staff() {
     let email_for = |viewer| {
-        let output = UserOutput::new(User::Wikijump(output_test_user()), viewer);
+        let output =
+            UserOutput::new(User::Wikijump(Box::new(output_test_user())), viewer);
         let value: serde_json::Value =
             serde_json::to_value(&output).expect("output serializes");
         value.get("email").cloned()
@@ -549,7 +553,7 @@ fn user_serialization() {
     }
 
     check!(
-        User::Wikidot(WikidotUserModel {
+        User::Wikidot(Box::new(WikidotUserModel {
             user_id: 1000,
             created_at: datetime!(2006-09-13 11:22:29 UTC),
             fetched_at: datetime!(2026-01-01 20:00:00 UTC),
@@ -565,7 +569,7 @@ fn user_serialization() {
             website: Some(str!("https://example.com")),
             karma: 0,
             is_pro: false,
-        }),
+        })),
         r#"
 {
   "user_id": 1000,
@@ -588,7 +592,7 @@ fn user_serialization() {
     );
 
     check!(
-        User::Wikidot(WikidotUserModel {
+        User::Wikidot(Box::new(WikidotUserModel {
             user_id: 4598089,
             created_at: datetime!(2018-09-11 22:47:35 UTC),
             fetched_at: datetime!(2026-01-01 20:01:00 UTC),
@@ -604,7 +608,7 @@ fn user_serialization() {
             website: Some(str!("https://scpwiki.com/aismallard")),
             karma: 5,
             is_pro: false,
-        }),
+        })),
         r#"
 {
   "user_id": 4598089,
@@ -629,7 +633,7 @@ fn user_serialization() {
     );
 
     check!(
-        User::Wikidot(WikidotUserModel {
+        User::Wikidot(Box::new(WikidotUserModel {
             user_id: 21,
             created_at: datetime!(2006-08-09 20:04:19 UTC),
             fetched_at: datetime!(2026-01-01 20:02:00 UTC),
@@ -645,7 +649,7 @@ fn user_serialization() {
             website: None,
             karma: 2,
             is_pro: false,
-        }),
+        })),
         r#"
 {
   "user_id": 21,
@@ -670,7 +674,7 @@ fn user_serialization() {
     );
 
     check!(
-        User::Wikijump(WikijumpUserModel {
+        User::Wikijump(Box::new(WikijumpUserModel {
             user_id: -1,
             user_type: UserType::Regular,
             created_at: datetime!(2020-01-01 00:00:00 UTC),
@@ -699,7 +703,7 @@ fn user_serialization() {
             biography: Some(str!("Root platform administrator")),
             website: None,
             user_page: Some(str!("https://wikijump.com/-/admin")),
-        }),
+        })),
         r#"
 {
   "user_id": -1,
@@ -736,7 +740,7 @@ fn user_serialization() {
     );
 
     check!(
-        User::Wikijump(WikijumpUserModel {
+        User::Wikijump(Box::new(WikijumpUserModel {
             user_id: 30000,
             user_type: UserType::Site,
             created_at: datetime!(2026-02-03 04:05:06 UTC),
@@ -765,7 +769,7 @@ fn user_serialization() {
             biography: None,
             website: None,
             user_page: None,
-        }),
+        })),
         r#"
 {
   "user_id": 30000,
@@ -802,7 +806,7 @@ fn user_serialization() {
     );
 
     check!(
-        User::Wikijump(WikijumpUserModel {
+        User::Wikijump(Box::new(WikijumpUserModel {
             user_id: 123456789,
             user_type: UserType::Bot,
             created_at: datetime!(2020-01-01 00:00:00 UTC),
@@ -836,7 +840,7 @@ fn user_serialization() {
             biography: None,
             website: Some(str!("https://somebot.fakesite")),
             user_page: None,
-        }),
+        })),
         r#"
 {
   "user_id": 123456789,

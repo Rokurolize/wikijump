@@ -1,6 +1,6 @@
 use super::super::rendering_support::{
     ListPagesBlockRenderArgs, ListPagesExpansionArgs, ListPagesGeneratedIncludesArgs,
-    ListPagesNestedExpansionArgs,
+    ListPagesNestedExpansionArgs, ListPagesRenderPlan,
 };
 use super::{
     AuthorizedPageSelector, BTreeMap, BTreeSet, CategoryService, CompatHtmlFragments,
@@ -324,11 +324,13 @@ impl RenderService {
                                 .is_some_and(|title| !title.is_empty())
                     })
                     .and_then(|arguments| {
-                        compile_template("").map(|template| ListPagesBlockPlan::Render {
-                            arguments,
-                            template,
-                            batch_key: None,
-                            legacy_tail: None,
+                        compile_template("").map(|template| {
+                            ListPagesBlockPlan::Render(Box::new(ListPagesRenderPlan {
+                                arguments,
+                                template,
+                                batch_key: None,
+                                legacy_tail: None,
+                            }))
                         })
                     });
                 let missing_static_parent =
@@ -389,12 +391,14 @@ impl RenderService {
                             {
                                 fail_closed_unknown_tracking_plan(compat_html)
                             }
-                            Some(template) => ListPagesBlockPlan::Render {
-                                arguments,
-                                template,
-                                batch_key: None,
-                                legacy_tail: None,
-                            },
+                            Some(template) => ListPagesBlockPlan::Render(Box::new(
+                                ListPagesRenderPlan {
+                                    arguments,
+                                    template,
+                                    batch_key: None,
+                                    legacy_tail: None,
+                                },
+                            )),
                             None => unsupported_plan(module_original, body),
                         }
                     } else {
@@ -440,11 +444,15 @@ impl RenderService {
                     {
                         compile_template("").map_or_else(
                             || unsupported_plan(module_original, body),
-                            |template| ListPagesBlockPlan::Render {
-                                arguments,
-                                template,
-                                batch_key: None,
-                                legacy_tail: Some(legacy_tail),
+                            |template| {
+                                ListPagesBlockPlan::Render(Box::new(
+                                    ListPagesRenderPlan {
+                                        arguments,
+                                        template,
+                                        batch_key: None,
+                                        legacy_tail: Some(legacy_tail),
+                                    },
+                                ))
                             },
                         )
                     } else if list_pages_body_has_standalone_count_pages_opening(body) {
@@ -455,12 +463,12 @@ impl RenderService {
                             &arguments,
                             current_category.as_ref(),
                         );
-                        ListPagesBlockPlan::Render {
+                        ListPagesBlockPlan::Render(Box::new(ListPagesRenderPlan {
                             arguments,
                             template,
                             batch_key,
                             legacy_tail: None,
-                        }
+                        }))
                     } else if let Some(template) = compile_template(body) {
                         if unsafe_unknown_tracking_template(&template) {
                             fail_closed_unknown_tracking_plan(compat_html)
@@ -471,12 +479,12 @@ impl RenderService {
                                 &arguments,
                                 current_category.as_ref(),
                             );
-                            ListPagesBlockPlan::Render {
+                            ListPagesBlockPlan::Render(Box::new(ListPagesRenderPlan {
                                 arguments,
                                 template,
                                 batch_key,
                                 legacy_tail: None,
-                            }
+                            }))
                         }
                     } else {
                         unsupported_plan(module_original, body)
@@ -506,10 +514,7 @@ impl RenderService {
 
         while let Some(block) = blocks.next() {
             let batch_key = match &block.plan {
-                ListPagesBlockPlan::Render {
-                    batch_key: Some(key),
-                    ..
-                } => Some(key.clone()),
+                ListPagesBlockPlan::Render(plan) => plan.batch_key.clone(),
                 _ => None,
             };
             if let Some(batch_key) = batch_key {
@@ -518,10 +523,8 @@ impl RenderService {
                     && blocks.peek().is_some_and(|next| {
                         matches!(
                             &next.plan,
-                            ListPagesBlockPlan::Render {
-                                batch_key: Some(key),
-                                ..
-                            } if key == &batch_key
+                            ListPagesBlockPlan::Render(plan)
+                                if plan.batch_key.as_ref() == Some(&batch_key)
                         )
                     })
                 {
@@ -533,14 +536,11 @@ impl RenderService {
                 let mut display_requirements =
                     ListPagesBatchDisplayRequirements::default();
                 for block in &batch {
-                    let ListPagesBlockPlan::Render {
-                        arguments,
-                        template,
-                        ..
-                    } = &block.plan
-                    else {
+                    let ListPagesBlockPlan::Render(plan) = &block.plan else {
                         unreachable!();
                     };
+                    let arguments = &plan.arguments;
+                    let template = &plan.template;
                     unique_slugs.insert(arguments.slug.as_ref().unwrap().to_string());
                     let mut block_fields = template.fields();
                     block_fields.revision_count |= matches!(
@@ -587,15 +587,15 @@ impl RenderService {
                         &css_yield_openers,
                         &mut css_yield_opener_index,
                     );
-                    let ListPagesBlockPlan::Render {
+                    let ListPagesBlockPlan::Render(plan) = block.plan else {
+                        unreachable!();
+                    };
+                    let ListPagesRenderPlan {
                         arguments,
                         template,
                         legacy_tail,
                         ..
-                    } = block.plan
-                    else {
-                        unreachable!();
-                    };
+                    } = *plan;
                     let offset_origin = arguments.offset_origin;
                     let uses_content = template.uses_content();
                     let slug = arguments.slug.as_ref().unwrap().to_string();
@@ -644,7 +644,7 @@ impl RenderService {
                                 included_pages: replacement_included_pages,
                                 expanded_include_count: _,
                             }) = prepare_list_pages_rendered_block(
-                                rendered,
+                                *rendered,
                                 boundaries,
                                 expansion_budget,
                                 compat_html,
@@ -712,12 +712,13 @@ impl RenderService {
                         expanded.push(' ');
                     }
                 }
-                ListPagesBlockPlan::Render {
-                    arguments,
-                    template,
-                    legacy_tail,
-                    ..
-                } => {
+                ListPagesBlockPlan::Render(plan) => {
+                    let ListPagesRenderPlan {
+                        arguments,
+                        template,
+                        legacy_tail,
+                        ..
+                    } = *plan;
                     let offset_origin = arguments.offset_origin;
                     let uses_content = template.uses_content();
                     let rendered = Box::pin(Self::render_list_pages_block(
@@ -761,7 +762,7 @@ impl RenderService {
                                 included_pages: replacement_included_pages,
                                 expanded_include_count: _,
                             }) = prepare_list_pages_rendered_block(
-                                rendered,
+                                *rendered,
                                 boundaries,
                                 expansion_budget,
                                 compat_html,

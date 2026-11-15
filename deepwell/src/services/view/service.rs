@@ -765,7 +765,7 @@ impl ViewService {
                     .or_raise(make_error)?;
 
                 return Ok(GetPageViewOutput::Permissions {
-                    options,
+                    options: Box::new(options),
                     redirect_page: None,
                     redirect_kind: None,
                     compiled_body_html,
@@ -781,8 +781,8 @@ impl ViewService {
         #[derive(Debug)]
         enum PageStatus {
             Found {
-                page: PageModel,
-                page_revision: PageRevisionModel,
+                page: Box<PageModel>,
+                page_revision: Box<PageRevisionModel>,
                 wikidot_snapshot: Option<WikidotPageSnapshotView>,
                 wikidot_breadcrumbs: Vec<WikidotPageBreadcrumbView>,
                 attributions: Vec<PageAttribution>,
@@ -1077,8 +1077,8 @@ impl ViewService {
 
                     PageReturn {
                         page_status: PageStatus::Found {
-                            page,
-                            page_revision,
+                            page: Box::new(page),
+                            page_revision: Box::new(page_revision),
                             wikidot_snapshot,
                             wikidot_breadcrumbs,
                             attributions,
@@ -1549,7 +1549,7 @@ impl ViewService {
                         .await
                         .or_raise(make_error)?;
                 GetPageViewOutput::Found {
-                    options,
+                    options: Box::new(options),
                     page,
                     page_revision,
                     wikidot_snapshot,
@@ -1576,7 +1576,7 @@ impl ViewService {
                 }
             }
             PageStatus::Missing => GetPageViewOutput::Missing {
-                options,
+                options: Box::new(options),
                 redirect_page,
                 redirect_kind,
                 wikitext,
@@ -1593,7 +1593,7 @@ impl ViewService {
                 theme,
             },
             PageStatus::Private => GetPageViewOutput::Permissions {
-                options,
+                options: Box::new(options),
                 redirect_page,
                 redirect_kind,
                 compiled_body_html,
@@ -1604,7 +1604,7 @@ impl ViewService {
                 banned: false,
             },
             PageStatus::Banned => GetPageViewOutput::Permissions {
-                options,
+                options: Box::new(options),
                 redirect_page,
                 redirect_kind,
                 compiled_body_html,
@@ -1829,7 +1829,7 @@ ORDER BY breadcrumb_chain.depth ASC
                     .or_raise(make_error)?
                 {
                     Some(user) => GetUserViewOutput::UserFound {
-                        user: UserOutput::new(user, viewer_user_id),
+                        user: Box::new(UserOutput::new(user, viewer_user_id)),
                     },
                     None => GetUserViewOutput::UserMissing,
                 }
@@ -1837,7 +1837,7 @@ ORDER BY breadcrumb_chain.depth ASC
 
             None => match user_session {
                 Some(session) => GetUserViewOutput::UserFound {
-                    user: UserOutput::Wikijump(session.user),
+                    user: Box::new(UserOutput::Wikijump(session.user)),
                 },
                 None => GetUserViewOutput::UserMissing,
             },

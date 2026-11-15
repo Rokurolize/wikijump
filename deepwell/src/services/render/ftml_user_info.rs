@@ -337,7 +337,7 @@ async fn load_visible_wikidot_users(
 }
 
 fn wikidot_user_info(user: WikidotUserModel) -> Option<UserInfo<'static>> {
-    User::Wikidot(user).into_public_identity()
+    User::Wikidot(Box::new(user)).into_public_identity()
 }
 
 impl UserInfoResolver for UserInfoSnapshot {

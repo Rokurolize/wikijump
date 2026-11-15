@@ -1808,9 +1808,10 @@ async fn wikidot_user() {
         .unwrap_wikijump()
         .expect("Returned user not of type Wikijump");
 
-    let expected = UserOutput::new(User::Wikijump(wikijump_user), Some(ADMIN_USER_ID))
-        .unwrap_wikijump()
-        .expect("Returned user not of type Wikijump");
+    let expected =
+        UserOutput::new(User::Wikijump(Box::new(wikijump_user)), Some(ADMIN_USER_ID))
+            .unwrap_wikijump()
+            .expect("Returned user not of type Wikijump");
     assert_eq!(user, expected, "Wikijump user data doesn't match returned",);
     assert_eq!(user.created_at, datetime!(2009-05-01 16:32:20 UTC));
     assert_eq!(user.name, USER_NAME);

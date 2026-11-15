@@ -253,7 +253,7 @@ impl RenderService {
                     ));
                 }
                 let output = compat_html.push_block_html(html);
-                return Ok(ListPagesBlockRenderResult::Expanded(
+                return Ok(ListPagesBlockRenderResult::Expanded(Box::new(
                     ListPagesRenderedBlock {
                         expansion: IncludeExpansion {
                             wikitext: output,
@@ -263,7 +263,7 @@ impl RenderService {
                         pending_delayed: None,
                         runtime_css_insertions: Vec::new(),
                     },
-                ));
+                )));
             }
             let mut viewable_target_ids = Vec::new();
             for target in target_pages {
@@ -1505,7 +1505,7 @@ impl RenderService {
                     page_existence: list_pages_page_existence.as_ref(),
                 },
             )?;
-        Ok(ListPagesBlockRenderResult::Expanded(
+        Ok(ListPagesBlockRenderResult::Expanded(Box::new(
             ListPagesRenderedBlock {
                 expansion: IncludeExpansion {
                     wikitext: output,
@@ -1516,6 +1516,6 @@ impl RenderService {
                 pending_delayed,
                 runtime_css_insertions,
             },
-        ))
+        )))
     }
 }

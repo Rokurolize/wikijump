@@ -80,7 +80,7 @@ pub struct MultiFactorAuthenticateUser<'a> {
 
 #[derive(Debug, Clone)]
 pub enum MultiFactorAuthenticateOutput {
-    Authenticated(UserModel),
+    Authenticated(Box<UserModel>),
     Rejected,
 }
 
