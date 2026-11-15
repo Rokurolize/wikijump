@@ -1586,6 +1586,15 @@ fn color_span_bodies_with_raw_markers_keep_each_span_closed() {
     assert!(html.contains("</span>!</p>"), "{html}");
 }
 
+#[test]
+fn color_span_raw_body_renders_as_raw_span_not_literal_markers() {
+    let html = render_wikidot_inline_markup_after_protection("##red|@@hello@@##\n");
+
+    assert!(html.contains("white-space: pre-wrap"), "{html}");
+    assert!(html.contains("hello"), "{html}");
+    assert!(!html.contains("@@hello@@"), "{html}");
+}
+
 fn render_wikidot_inline_markup_after_protection(wikitext: &str) -> String {
     let page_info = fallback_test_page_info("color-span", "Color Span");
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
