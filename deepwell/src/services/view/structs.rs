@@ -94,11 +94,16 @@ pub enum PageRedirectKind {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "snake_case", tag = "type", content = "data")]
+// Page-view response DTO: the struct-variant shape is the API wire format, and
+// the variant size is the sum of many small heap fields (no single dominant
+// field; the largest, PageOptions, is already boxed), so there is no single
+// field whose boxing resolves this without changing the wire format.
+#[allow(clippy::large_enum_variant)]
 pub enum GetPageViewOutput {
     Found {
-        options: PageOptions,
-        page: PageModel,
-        page_revision: PageRevisionModel,
+        options: Box<PageOptions>,
+        page: Box<PageModel>,
+        page_revision: Box<PageRevisionModel>,
         wikidot_snapshot: Option<WikidotPageSnapshotView>,
         wikidot_breadcrumbs: Vec<WikidotPageBreadcrumbView>,
         attributions: Vec<PageAttribution>,
@@ -134,7 +139,7 @@ pub enum GetPageViewOutput {
     },
 
     Missing {
-        options: PageOptions,
+        options: Box<PageOptions>,
         redirect_page: Option<String>,
         #[serde(default)]
         redirect_kind: Option<PageRedirectKind>,
@@ -159,7 +164,7 @@ pub enum GetPageViewOutput {
     },
 
     Permissions {
-        options: PageOptions,
+        options: Box<PageOptions>,
         redirect_page: Option<String>,
         #[serde(default)]
         redirect_kind: Option<PageRedirectKind>,
@@ -201,7 +206,7 @@ pub struct GetUserView<'a> {
 #[derive(Serialize, Debug, Clone)]
 #[serde(rename_all = "snake_case", tag = "type", content = "data")]
 pub enum GetUserViewOutput {
-    UserFound { user: UserOutput },
+    UserFound { user: Box<UserOutput> },
     UserMissing,
 }
 
@@ -393,7 +398,7 @@ mod user_session_tests {
         let json = value.to_string();
 
         let expected_user = serde_json::to_value(UserOutput::new(
-            User::Wikijump(session_test_user()),
+            User::Wikijump(Box::new(session_test_user())),
             Some(42),
         ))
         .expect("user output serializes");

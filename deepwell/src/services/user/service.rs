@@ -93,7 +93,7 @@ impl UserService {
             .collect::<BTreeSet<_>>();
         let mut identities = wikijump_users
             .into_iter()
-            .filter_map(|user| User::Wikijump(user).into_public_identity())
+            .filter_map(|user| User::Wikijump(Box::new(user)).into_public_identity())
             .map(|identity| (identity.user_id, identity))
             .collect::<BTreeMap<_, _>>();
 
@@ -113,7 +113,7 @@ impl UserService {
         identities.extend(
             wikidot_users
                 .into_iter()
-                .filter_map(|user| User::Wikidot(user).into_public_identity())
+                .filter_map(|user| User::Wikidot(Box::new(user)).into_public_identity())
                 .map(|identity| (identity.user_id, identity)),
         );
         Ok(identities)
@@ -607,7 +607,7 @@ impl UserService {
             karma,
             is_pro,
         } = match existing_user {
-            User::Wikidot(user) => user,
+            User::Wikidot(user) => *user,
             User::Wikijump(user) => {
                 bail!(Error::new(
                     format!(
@@ -750,7 +750,7 @@ impl UserService {
         if let Some(user) = wikijump_user {
             if matches!(user.user_type, UserType::Regular | UserType::Bot) {
                 debug!("Found Wikijump user '{}' (ID {})", user.slug, user.user_id);
-                return Ok(Some(User::Wikijump(user)));
+                return Ok(Some(User::Wikijump(Box::new(user))));
             }
 
             if let Reference::Slug(slug) = &reference {
@@ -764,12 +764,12 @@ impl UserService {
                     .await
                     .or_raise(make_error)?;
                 if wikidot_user.is_some() {
-                    return Ok(wikidot_user.map(User::Wikidot));
+                    return Ok(wikidot_user.map(|user| User::Wikidot(Box::new(user))));
                 }
             }
 
             debug!("Found Wikijump user '{}' (ID {})", user.slug, user.user_id);
-            return Ok(Some(User::Wikijump(user)));
+            return Ok(Some(User::Wikijump(Box::new(user))));
         }
 
         fn i64_to_i32(value: i64) -> Option<i32> {
@@ -798,7 +798,7 @@ impl UserService {
                 .or_raise(make_error)?,
         };
 
-        Ok(wikidot_user.map(User::Wikidot))
+        Ok(wikidot_user.map(|user| User::Wikidot(Box::new(user))))
     }
 
     async fn resolve_user_reference<'a>(

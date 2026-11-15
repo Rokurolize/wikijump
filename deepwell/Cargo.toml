@@ -94,8 +94,6 @@ built = { version = "0.8", features = ["chrono"] }
 unsafe_code = "forbid"
 missing_debug_implementations = "deny"
 
-[lints.clippy]
-large_enum_variant = "allow"
 
 [package.metadata.cargo-machete]
 ignored = ["rust-s3"]  # renamed to s3

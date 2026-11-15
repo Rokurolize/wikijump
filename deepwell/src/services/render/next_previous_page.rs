@@ -308,16 +308,17 @@ impl RenderService {
                 .await?;
 
             match rendered {
-                ListPagesBlockRenderResult::Expanded(ListPagesRenderedBlock {
-                    expansion:
-                        IncludeExpansion {
-                            wikitext: replacement,
-                            included_pages: replacement_included_pages,
-                            expanded_include_count: _,
-                        },
-                    pending_delayed,
-                    runtime_css_insertions: _,
-                }) => {
+                ListPagesBlockRenderResult::Expanded(block) => {
+                    let ListPagesRenderedBlock {
+                        expansion:
+                            IncludeExpansion {
+                                wikitext: replacement,
+                                included_pages: replacement_included_pages,
+                                expanded_include_count: _,
+                            },
+                        pending_delayed,
+                        runtime_css_insertions: _,
+                    } = *block;
                     let replacement = if let Some(pending_delayed) = pending_delayed {
                         seal_protected_list_pages_delayed_output(
                             &replacement,

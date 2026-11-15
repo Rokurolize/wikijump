@@ -229,7 +229,7 @@ impl AuthenticationService {
         match verification {
             Ok(()) => {
                 AuthenticationAttemptService::clear(ctx, &[mfa_bucket]).await?;
-                Ok(MultiFactorAuthenticateOutput::Authenticated(user))
+                Ok(MultiFactorAuthenticateOutput::Authenticated(Box::new(user)))
             }
             Err(error) if error.error_type == ErrorType::InvalidAuthentication => {
                 SessionService::record_failed_mfa_attempt(ctx, session_token)
