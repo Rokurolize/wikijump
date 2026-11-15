@@ -9,7 +9,7 @@ name: PR checks
 # checks for the area it touches and runs nothing else:
 #
 #   deepwell/**                            cargo test --lib + clippy (deepwell crate)
-#   wws/**                                 cargo test --all-features + fmt check
+#   wws/**                                 cargo test --all-features + fmt check + clippy
 #   framerail/**                           pnpm test:unit
 #   install/local/wikidot-verification/**  pnpm test (the package suite)
 #   install/standing/**                    python3 -m unittest (the standing tooling tests)
@@ -195,7 +195,7 @@ jobs:
           echo "ambient valkey did not come up" >&2
           exit 1
 
-      - name: WWS targeted tests and formatting
+      - name: WWS targeted tests, formatting and Clippy
         if: steps.plan.outputs.wws == '1'
         env:
           RUSTC_WRAPPER: sccache
@@ -203,6 +203,7 @@ jobs:
           set -euo pipefail
           cargo fmt --manifest-path wws/Cargo.toml --check
           cargo test --manifest-path wws/Cargo.toml --locked --all-features
+          cargo clippy --manifest-path wws/Cargo.toml --all-targets --all-features --locked -- -D warnings
 
       - name: Framerail lint and unit tests
         if: steps.plan.outputs.framerail == '1'
