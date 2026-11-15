@@ -378,6 +378,16 @@ fn conditional_index_rejects_url_owned_comment_closer() {
 }
 
 #[test]
+fn conditional_index_accepts_extended_hyphen_comment_closers() {
+    let source = "[!------ INT-Block Start ------]\nX\n[!------ INT-Block Ende ------]\n[[iftags +x]]\nB\n[[/iftags]]\n";
+    let index = LiteralRegionIndex::new_wikidot_conditional_syntax(source);
+
+    assert!(index.contains(source.find("INT-Block Start").unwrap()));
+    assert!(!index.contains(source.find("[[iftags").unwrap()));
+    assert!(!index.contains(source.rfind("[[/iftags]]").unwrap()));
+}
+
+#[test]
 fn conditional_index_rejects_malformed_literal_block_closer() {
     let source = "[[code]]\n[[/code]]]\n[[/iftags]]\n[[/code]]\n[[/iftags]]";
     let index = LiteralRegionIndex::new_wikidot_conditional_syntax(source);

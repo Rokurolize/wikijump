@@ -13,8 +13,8 @@
 use std::ops::Range;
 
 use super::token_boundaries::{
-    TextTokenCursor, WikidotTagScan, comment_close_is_token, find_block_close,
-    find_right_raw, find_token_unowned_delimiter, right_bracket_token, scan_wikidot_tag,
+    TextTokenCursor, WikidotTagScan, find_block_close, find_right_raw,
+    find_token_unowned_delimiter, right_bracket_token, scan_wikidot_tag,
     wikidot_trimmed_name,
 };
 pub(in crate::services::render) use super::token_boundaries::{
@@ -340,7 +340,6 @@ fn collect_wikidot_literal_ranges(
                 }
                 WikidotLiteralState::Comment { start }
                     if remaining.starts_with(b"--]")
-                        && comment_close_is_token(bytes, cursor)
                         && !text_tokens.advance_and_contains(cursor) =>
                 {
                     cursor += 3;
