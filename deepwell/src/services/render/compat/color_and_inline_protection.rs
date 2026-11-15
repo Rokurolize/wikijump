@@ -115,16 +115,6 @@ pub(in crate::services::render) fn protect_wikidot_color_spans(
                 return captures[0].to_owned();
             };
             let body = &captures["body"];
-            if body.contains("@@") {
-                let html = render_wikidot_color_span_html(&color, body);
-                let marker = protected_spans.fragments.push_html(html.clone());
-                #[cfg(test)]
-                protected_spans.spans.push(ProtectedWikidotColorSpan {
-                    marker: marker.clone(),
-                    html,
-                });
-                return marker;
-            }
             let open_tag = format!(
                 r#"<span style="color: {}">"#,
                 escape_list_pages_html_attr(&color),
