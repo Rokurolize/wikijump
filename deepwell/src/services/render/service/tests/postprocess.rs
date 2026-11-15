@@ -307,6 +307,15 @@ fn restores_standalone_residual_wikidot_div_lines() {
 }
 
 #[test]
+fn scans_standalone_residual_div_markers_safely_around_multibyte_text() {
+    let html = "Twitterや、ニコニコ動画や[任意のSNS]のコメント欄のリンクから直接このページに飛んできた人ではありませんか？\n";
+
+    let restored = RenderService::restore_residual_wikidot_div_paragraph_markers(html);
+
+    assert_eq!(restored, html);
+}
+
+#[test]
 fn leaves_standalone_residual_wikidot_div_lines_inside_pre() {
     let html = concat!(
         "<pre>\n",

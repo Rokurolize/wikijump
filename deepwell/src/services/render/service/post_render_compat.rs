@@ -201,7 +201,7 @@ impl RenderService {
                     return None;
                 }
                 b'[' if index + 8 <= bytes.len()
-                    && line[index..index + 8].eq_ignore_ascii_case("[[/div]]") =>
+                    && bytes[index..index + 8].eq_ignore_ascii_case(b"[[/div]]") =>
                 {
                     return Some((index, ResidualStandaloneEvent::MarkerClose));
                 }
