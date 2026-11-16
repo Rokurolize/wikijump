@@ -1080,7 +1080,16 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                     "." => {
                         range_current_page_only = true;
                         range_displaced_limit = Some(limit);
-                        limit = Some(1);
+                        // An explicit zero limit is an instruction to render
+                        // no rows: live Wikidot renders nothing for
+                        // `limit="@URL|0" range="."` at the base URL (the
+                        // shushuin / nebulae pager modules), so the
+                        // current-page range's implicit one-row limit must
+                        // not raise it. `limit` can only be `Some(0)` here
+                        // when a `limit` argument set it.
+                        if limit != Some(0) {
+                            limit = Some(1);
+                        }
                     }
                     "others" | "other" => {
                         range_exclude_current_page = true;
