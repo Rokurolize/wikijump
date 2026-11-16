@@ -3791,14 +3791,11 @@ impl<'a> IncludeExpansionContext<'a> {
 fn include_enclosure_flags(
     wikitext: &str,
     include_count: usize,
-    depth: usize,
+    _depth: usize,
     raw_zone: bool,
 ) -> Vec<bool> {
     if raw_zone {
         return vec![true; include_count];
-    }
-    if depth != 0 {
-        return vec![false; include_count];
     }
     let enclosed_bodies = enclosed_iftags_ranges(wikitext);
     let directive_ranges = wikidot_include_directive_ranges(wikitext);

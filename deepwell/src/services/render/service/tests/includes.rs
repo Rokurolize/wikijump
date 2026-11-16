@@ -2273,3 +2273,93 @@ fn include_gate_is_evaluated_when_the_include_is_outside_any_gate() {
         "the nested gate must be evaluated: {html}"
     );
 }
+
+#[test]
+fn include_enclosure_flags_mark_includes_inside_active_enclosed_gates_at_depth() {
+    let mut page_info = fallback_test_page_info("page", "Page");
+    page_info.tags = vec![Cow::Borrowed("テーマ")];
+    let mut source = concat!(
+        "[[iftags +テーマ]]\n",
+        "[[include component:feature-and-news]]\n",
+        "[[/iftags]]\n",
+        "[[include component:other]]\n",
+    )
+    .to_string();
+    let mut preserved = CompatTextFragments::new(&source);
+    RenderService::prepare_wikidot_conditionals_before_include_expansion(
+        &mut source,
+        &page_info,
+        &mut preserved,
+        1,
+    );
+
+    let flags = super::super::include_enclosure_flags(&source, 2, 1, false);
+
+    assert_eq!(flags, vec![true, false]);
+}
+
+#[test]
+fn include_gate_inside_an_included_pages_active_gate_prints_literally_after_expansion() {
+    // Sample page (tags: テーマ) includes a theme page; the theme page includes
+    // a gated component twice: once outside its own +テーマ gate and once
+    // inside it. Only the inside copy's documentation survives, with the
+    // component's gate markers printed literally (theme:shancheng-jp shape).
+    let mut page_info = fallback_test_page_info("sample", "Sample");
+    page_info.tags = vec![Cow::Borrowed("テーマ")];
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut compat_text = CompatTextFragments::new("");
+
+    let component = "[[iftags +component]]\nmeta component docs\n[[/iftags]]\n";
+    let theme = concat!(
+        "[[include component:sigma-plus]]\n",
+        "[[iftags +テーマ]]\n",
+        "[[include component:sigma-plus]]\n",
+        "[[/iftags]]\n",
+    );
+
+    let mut theme_source = theme.to_string();
+    RenderService::prepare_wikidot_conditionals_before_include_expansion(
+        &mut theme_source,
+        &page_info,
+        &mut compat_text,
+        1,
+    );
+    let flags = super::super::include_enclosure_flags(&theme_source, 2, 1, false);
+    assert_eq!(flags, vec![false, true]);
+
+    // The copy outside the gate is evaluated against the sample's tags and
+    // dropped; the copy inside the gate is a raw zone and preserved literally.
+    let mut outside = component.to_string();
+    RenderService::prepare_wikidot_conditionals_for_include_expansion(
+        &mut outside,
+        &page_info,
+        &mut compat_text,
+    );
+    let mut inside = component.to_string();
+    RenderService::prepare_wikidot_conditionals_for_include_expansion_with_mode(
+        &mut inside,
+        &page_info,
+        &mut compat_text,
+        true,
+    );
+
+    let expanded = ftml::include(
+        &theme_source,
+        &settings,
+        PreparedIncluder {
+            pages: vec![Some(outside), Some(inside)],
+            missing_replacements: Default::default(),
+        },
+        include_error,
+    )
+    .expect("theme include should expand")
+    .0;
+    let mut expanded = expanded;
+    super::super::super::iftags::remove_enclosed_iftags_markers(&mut expanded);
+    let html = render_pre_expanded_wikidot_page_body(expanded, compat_text, &["テーマ"]);
+
+    assert!(html.contains("meta component docs"), "{html}");
+    assert_eq!(html.matches("meta component docs").count(), 1, "{html}");
+    assert!(html.contains("[[iftags +component]]"), "{html}");
+    assert!(!html.contains("wikijump-enclosed-iftags"), "{html}");
+}
