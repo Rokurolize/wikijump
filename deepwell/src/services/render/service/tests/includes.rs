@@ -2349,6 +2349,7 @@ fn include_gate_inside_an_included_pages_active_gate_prints_literally_after_expa
         PreparedIncluder {
             pages: vec![Some(outside), Some(inside)],
             missing_replacements: Default::default(),
+            language: "en".to_owned(),
         },
         include_error,
     )
