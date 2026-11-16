@@ -160,6 +160,13 @@ export const AUDITED_EXTERNAL_ASSET_ORIGINS: readonly AuditedExternalAssetOrigin
       fonts: false,
       evidence:
         "Hormress GitHub Pages host for the Parallel theme family (theme:parallel and its JP port candidates). theme:parallel-jp and its derivatives theme:betwixt-jp, theme:normal-jp and theme:yore-jp @import the theme's stylesheets from this origin (Parallel/parallel-min.css, Parallel/normalize-min.css and the Parallel/branch/normal_projection/*.css widget and preset sheets); live Wikidot loads them, but framerail's page Content-Security-Policy blocked the stylesheet fetches on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep, leaving theme-decoration-sample-betwixt-jp and theme-decoration-sample-candela-jp (both Parallel-derived) on the default background. The same host's images are audited separately in WIKIDOT_IMAGE_SOURCES (sveltekit-options.ts). No font or script use from this origin was observed."
+    },
+    {
+      origin: "https://bhl.scpwikicn.com",
+      styles: true,
+      fonts: false,
+      evidence:
+        "Black Highlighter's CN distribution host (the SCP-CN branch's BHL mirror). theme:highlighter-bhl @imports its base stylesheets from this origin (css/min/normalize.min.css and css/min/black-highlighter.min.css); live Wikidot loads them, but framerail's page Content-Security-Policy blocked the stylesheet fetches on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep. The served black-highlighter.min.css references no external files (every url() is a data: URI) and declares no @font-face, so no font use from this origin exists. The same host's logo image is audited separately in WIKIDOT_IMAGE_SOURCES (sveltekit-options.ts)."
     }
   ])
 
