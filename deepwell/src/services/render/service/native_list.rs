@@ -239,10 +239,6 @@ fn push_list_pages_table_inline_segment(output: &mut String, value: &str) {
     output.push_str(&escape_list_pages_html_text(rest));
 }
 
-pub(in crate::services::render) fn render_native_list_inline_html(value: &str) -> String {
-    render_native_list_inline_html_with_titles(value, None)
-}
-
 pub(in crate::services::render) fn render_native_list_inline_html_with_titles(
     value: &str,
     link_titles: Option<&WikidotCompatLinkTitleMap>,

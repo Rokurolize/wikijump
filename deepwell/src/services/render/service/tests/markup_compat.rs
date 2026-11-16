@@ -895,6 +895,7 @@ fn renders_protected_wikidot_color_spans_as_html_after_ftml_parsing() {
 fn protected_wikidot_inline_typography_does_not_rewrite_tag_attributes() {
     let rendered = super::super::render_wikidot_protected_inline_body_html(
         "[https://example.com/a--b go -- now...]",
+        None,
     );
 
     assert_eq!(
@@ -1747,6 +1748,7 @@ fn bold_color_span_renders_nested_size_block() {
 fn protected_inline_body_renders_size_blocks() {
     let rendered = super::super::render_wikidot_protected_inline_body_html(
         "[[size 75%]]small[[/size]] and [[size larger]]big[[/size]]",
+        None,
     );
 
     assert_eq!(
@@ -1759,6 +1761,7 @@ fn protected_inline_body_renders_size_blocks() {
 fn protected_inline_body_renders_nested_size_blocks() {
     let rendered = super::super::render_wikidot_protected_inline_body_html(
         "[[size large]]a[[size small]]b[[/size]]c[[/size]]",
+        None,
     );
 
     assert_eq!(
@@ -1771,6 +1774,7 @@ fn protected_inline_body_renders_nested_size_blocks() {
 fn protected_inline_body_leaves_malformed_size_markers_literal() {
     let rendered = super::super::render_wikidot_protected_inline_body_html(
         "[[size bogus]]x[[/size]] and [[size 12px]]unclosed",
+        None,
     );
 
     assert!(rendered.contains("[[size bogus]]"), "{rendered}");
@@ -1807,6 +1811,82 @@ fn bold_color_protection_does_not_swallow_raw_spans() {
         html.contains("<span style=\"white-space: pre-wrap;\">--</span>"),
         "{html}",
     );
+    assert!(
+        !html.contains(WIKIDOT_INLINE_HTML_SENTINEL_PREFIX),
+        "{html}",
+    );
+}
+
+#[test]
+fn bold_color_protection_marks_missing_page_links_as_newpage() {
+    // existing:component-af2024theme shape: a triple link inside a bold
+    // color span. The protection pre-renders the span body with the native
+    // inline renderer, which can only mark missing targets when it is
+    // given the page-existence snapshot; without it the link lost
+    // Wikidot's redlink class while the same link outside any span (e.g.
+    // [[[most-recently-created-translated]]] on the same page) kept it.
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut titles = WikidotCompatLinkTitleMap::new();
+    titles.set_page_existence(
+        "scp-wiki".to_owned(),
+        PageExistenceSnapshot::from_pages([
+            (("scp-wiki".to_owned(), "author:mary0228".to_owned()), false),
+            (("scp-wiki".to_owned(), "theme:blankstyle".to_owned()), true),
+        ]),
+    );
+
+    let mut source = "**##b01|[[[author:mary0228|\u{524d}\u{539f}\u{535a}\u{58eb}]]] 18\u{3055}\u{3044}##**".to_owned();
+    let spans = RenderService::protect_wikidot_inline_html_spans_with_link_titles(
+        &mut source,
+        &settings,
+        Some(&titles),
+    );
+    assert_eq!(spans.len(), 1);
+    assert_eq!(
+        spans[0].html,
+        concat!(
+            r#"<strong><span style="color: #b01">"#,
+            r#"<a class="newpage" href="/author:mary0228">"#,
+            "\u{524d}\u{539f}\u{535a}\u{58eb}</a> 18\u{3055}\u{3044}</span></strong>",
+        )
+    );
+
+    let mut source = "**##b01|[[[theme:blankstyle|Blankstyle]]]##**".to_owned();
+    let spans = RenderService::protect_wikidot_inline_html_spans_with_link_titles(
+        &mut source,
+        &settings,
+        Some(&titles),
+    );
+    assert_eq!(spans.len(), 1);
+    assert_eq!(
+        spans[0].html,
+        r#"<strong><span style="color: #b01"><a href="/theme:blankstyle">Blankstyle</a></span></strong>"#
+    );
+}
+
+#[test]
+fn bold_color_span_page_links_keep_newpage_class_through_full_render() {
+    let mut titles = WikidotCompatLinkTitleMap::new();
+    titles.set_page_existence(
+        "scp-wiki".to_owned(),
+        PageExistenceSnapshot::from_pages([(
+            ("scp-wiki".to_owned(), "author:mary0228".to_owned()),
+            false,
+        )]),
+    );
+
+    let html = render_wikidot_page_body_with_link_titles(
+        "**##b01|[[[author:mary0228|\u{524d}\u{539f}\u{535a}\u{58eb}]]] 18\u{3055}\u{3044}##**\n",
+        Some(&titles),
+    );
+
+    assert!(
+        html.contains(
+            r#"<strong><span style="color: #b01"><a class="newpage" href="/author:mary0228">"#
+        ),
+        "{html}",
+    );
+    assert!(!html.contains(r#"<a href="/author:mary0228">"#), "{html}");
     assert!(
         !html.contains(WIKIDOT_INLINE_HTML_SENTINEL_PREFIX),
         "{html}",

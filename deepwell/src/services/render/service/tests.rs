@@ -397,6 +397,57 @@ fn render_wikidot_page_body_with_compat_restore(wikitext: &str) -> String {
     )
 }
 
+fn render_wikidot_page_body_with_link_titles(
+    wikitext: &str,
+    link_titles: Option<&WikidotCompatLinkTitleMap>,
+) -> String {
+    let page_info = fallback_test_page_info("nav:top", "Top Bar");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut source = wikitext.to_owned();
+    RenderService::trim_wikidot_document_leading_whitespace(&mut source);
+    let outer = RenderService::prepare_outer_render_wikitext_with_link_titles(
+        super::ExpandedRenderWikitext {
+            theme_previewer_blank: false,
+            wikidot_compat_html: CompatHtmlFragments::new(&source),
+            wikidot_compat_text: CompatTextFragments::new(&source),
+            wikitext: source,
+            included_pages: Vec::new(),
+            expanded_include_count: 0,
+            url_offset_list_pages_content_bytes: 0,
+            runtime_css_insertions: Vec::new(),
+        },
+        &page_info,
+        &settings,
+        link_titles,
+    );
+    let inner = RenderService::prepare_inner_render_wikitext(outer, &settings);
+    let tokens = ftml::tokenize(&inner.wikitext);
+    let (tree, _errors) = ftml::parse(&tokens, &page_info, &settings).into();
+    let html = HtmlRender.render(&tree, &page_info, &settings).body;
+    let html = inner.protection.restore(|protection| {
+        let body = protection.compat_html().restore(&html);
+        let body = protection
+            .compat_html()
+            .restore_remaining_markers_as_text(&body);
+        let body = RenderService::restore_protected_wikidot_color_spans(
+            body,
+            protection.color_spans(),
+        );
+        let body = RenderService::restore_protected_wikidot_inline_html(
+            body,
+            protection.inline_html(),
+        );
+        protection.compat_text().restore(&body)
+    });
+    RenderService::restore_wikidot_render_compatibility_for_context_with_resources(
+        &html,
+        None,
+        &Config::integration_testing(),
+        true,
+        &[],
+    )
+}
+
 fn render_wikidot_trimmed_page_body(wikitext: &str) -> String {
     let page_info = fallback_test_page_info("scp-7243", "SCP-7243");
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
