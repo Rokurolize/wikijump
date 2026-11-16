@@ -446,6 +446,30 @@ fn protects_wikidot_bold_underline_spans_before_ftml_parsing() {
 }
 
 #[test]
+fn bold_underline_protection_does_not_swallow_anchor_closers() {
+    // theme:darkcode shape: one table line carrying two [[a]] anchors whose
+    // bodies end in the crossed sequence __**//--{{X}}--//**__ . The first
+    // anchor's closing **__ is a crossed closer, not a bold-underline
+    // opener; the protection must not fabricate a span across the [[/a]] and
+    // [[a]] boundary, which leaks the first anchor's closer as literal text.
+    let html = render_wikidot_page_body_with_compat_restore(
+        "| [[a href=\"https://scp-jp.wikidot.com/\"]]__**//--{{\u{30ea}\u{30f3}\u{30af}}}--//**__[[/a]] | [[a href=\"https://scp-jp.wikidot.com/\"]]__**//--{{\u{30ea}\u{30f3}\u{30af}}}--//**__[[/a]]\n",
+    );
+
+    assert!(!html.contains("[[/a]]"), "{html}");
+    assert_eq!(
+        html.matches("<a href=\"https://scp-jp.wikidot.com/\">")
+            .count(),
+        2,
+        "{html}",
+    );
+    assert!(
+        !html.contains(WIKIDOT_INLINE_HTML_SENTINEL_PREFIX),
+        "{html}",
+    );
+}
+
+#[test]
 fn protects_nested_bold_underline_closers_without_crossing_table_cells() {
     const ROW_COUNT: usize = 128;
 

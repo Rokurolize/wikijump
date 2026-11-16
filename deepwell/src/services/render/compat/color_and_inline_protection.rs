@@ -229,6 +229,9 @@ pub(in crate::services::render) fn protect_wikidot_inline_html_spans(
         &protected,
         &WIKIDOT_BOLD_UNDERLINE_SPAN_REGEX,
         |captures| {
+            if captures["body"].contains("[[") || captures["body"].contains("]]") {
+                return captures[0].to_owned();
+            }
             let marker = wikidot_inline_html_marker();
             spans.push(ProtectedWikidotInlineHtml {
                 marker: marker.clone(),
