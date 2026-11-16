@@ -32,7 +32,13 @@ const configuredHttpsPort = (value: string | undefined): number => {
   return port
 }
 
-export const LOCAL_MIRROR_FILE_ASSET_SITES = ["scp-wiki", "scp-jp", "scpko"]
+export const LOCAL_MIRROR_FILE_ASSET_SITES = [
+  "scp-wiki",
+  "scp-jp",
+  "scpko",
+  "scp-wiki-cn",
+  "etinjat"
+]
 
 export const platformDomains = ({
   deploymentEnvironment = parseDeploymentEnvironment(),

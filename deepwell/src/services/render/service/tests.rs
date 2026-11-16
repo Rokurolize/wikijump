@@ -4106,3 +4106,112 @@ fn localized_wikidot_local_file_url_uses_scpko_mirror() {
         None,
     );
 }
+
+#[test]
+fn localized_wikidot_local_file_url_uses_scp_wiki_cn_mirror() {
+    let mut config = Config::integration_testing();
+    config.files_domain = str!(".wjfiles.localhost");
+    config.files_domain_no_dot = str!("wjfiles.localhost");
+    let current_site = wikidot_site("scp-jp-sigma10", Some("scp-jp-sigma10.localhost"));
+
+    // The scp-wiki-cn mirror tenant is a reserved local asset mirror, so
+    // code URLs on either scp-wiki-cn host form localize to its files
+    // authority. (The CN theme pages on the mirror carry their CSS in
+    // code blocks addressed by absolute scp-wiki-cn.wikidot.com URLs;
+    // theme:nameless-jp @imports theme:nameless blocks 1-3 that way,
+    // and the tenant serves all three.)
+    for host in ["scp-wiki-cn.wikidot.com", "scp-wiki-cn.wdfiles.com"] {
+        assert_eq!(
+            RenderService::localized_wikidot_local_file_url(
+                host,
+                "/local--code/theme%3Anameless/1",
+                &current_site,
+                &config,
+            ),
+            Some(str!(
+                "https://scp-wiki-cn.wjfiles.localhost/local--code/theme%3Anameless/1"
+            )),
+            "{host}",
+        );
+    }
+
+    // A Wikidot slug with no local mirror tenant keeps the original URL
+    // for code paths (the localizer returns None).
+    assert_eq!(
+        RenderService::localized_wikidot_local_file_url(
+            "pokm.wikidot.com",
+            "/local--code/theme%3Astarry-library/1",
+            &current_site,
+            &config,
+        ),
+        None,
+    );
+
+    // Outside the local lab (the files domain is not a .localhost
+    // domain), the reserved-mirror branch never fires.
+    let config = Config::integration_testing();
+    assert_eq!(
+        RenderService::localized_wikidot_local_file_url(
+            "scp-wiki-cn.wikidot.com",
+            "/local--code/theme%3Anameless/1",
+            &current_site,
+            &config,
+        ),
+        None,
+    );
+}
+
+#[test]
+fn localized_wikidot_local_file_url_uses_etinjat_mirror() {
+    let mut config = Config::integration_testing();
+    config.files_domain = str!(".wjfiles.localhost");
+    config.files_domain_no_dot = str!("wjfiles.localhost");
+    let current_site = wikidot_site("scp-jp-sigma10", Some("scp-jp-sigma10.localhost"));
+
+    // The etinjat mirror tenant is a reserved local asset mirror, so
+    // code URLs on either etinjat host form localize to its files
+    // authority. (theme:brokedown-database and theme:magazine-jp
+    // @import etinjat component code blocks by absolute
+    // etinjat.wikidot.com /code/ URLs, which the code-URL localizer
+    // converts to the local--code path used here; the tenant serves
+    // both components' blocks.)
+    for host in ["etinjat.wikidot.com", "etinjat.wdfiles.com"] {
+        assert_eq!(
+            RenderService::localized_wikidot_local_file_url(
+                host,
+                "/local--code/component%3Acollapsible-sidebar/1",
+                &current_site,
+                &config,
+            ),
+            Some(str!(
+                "https://etinjat.wjfiles.localhost/local--code/component%3Acollapsible-sidebar/1"
+            )),
+            "{host}",
+        );
+    }
+
+    // A Wikidot slug with no local mirror tenant keeps the original URL
+    // for code paths (the localizer returns None).
+    assert_eq!(
+        RenderService::localized_wikidot_local_file_url(
+            "pokm.wikidot.com",
+            "/local--code/theme%3Astarry-library/1",
+            &current_site,
+            &config,
+        ),
+        None,
+    );
+
+    // Outside the local lab (the files domain is not a .localhost
+    // domain), the reserved-mirror branch never fires.
+    let config = Config::integration_testing();
+    assert_eq!(
+        RenderService::localized_wikidot_local_file_url(
+            "etinjat.wikidot.com",
+            "/local--code/component%3Acollapsible-sidebar/1",
+            &current_site,
+            &config,
+        ),
+        None,
+    );
+}
