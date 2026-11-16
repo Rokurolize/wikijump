@@ -59,8 +59,13 @@ async fn setup_runner() -> (TestRunner, i64) {
     (runner, site_id)
 }
 
-async fn create_page(runner: &mut TestRunner, site_id: i64, slug: &str, wikitext: &str) {
-    let created = PageService::create(
+async fn create_page(
+    runner: &mut TestRunner,
+    site_id: i64,
+    slug: &str,
+    wikitext: &str,
+) -> deepwell::services::page::CreatePageOutput {
+    PageService::create(
         runner.context(),
         CreatePage {
             site_id,
@@ -77,7 +82,13 @@ async fn create_page(runner: &mut TestRunner, site_id: i64, slug: &str, wikitext
         },
     )
     .await
-    .unwrap_or_else(|error| panic!("page {slug} should be created: {error:?}"));
+    .unwrap_or_else(|error| panic!("page {slug} should be created: {error:?}"))
+}
+
+fn assert_no_parser_errors(
+    created: &deepwell::services::page::CreatePageOutput,
+    slug: &str,
+) {
     assert!(
         created.parser_errors.is_empty(),
         "page {slug} should render without parser errors: {:?}",
@@ -137,10 +148,30 @@ async fn self_include_with_parameter_change_renders_to_the_depth_bound() {
         "INCDEPTH-SELF-MARK maxw=[{{$maxw}}]\n[[include {component_slug} | maxw=10000px]]"
     );
 
-    create_page(&mut runner, site_id, &component_slug, &component_source).await;
+    let component_created =
+        create_page(&mut runner, site_id, &component_slug, &component_source).await;
+    assert_no_parser_errors(&component_created, &component_slug);
 
     let consumer_source = format!("[[include {component_slug} | maxw=10000px]]");
-    create_page(&mut runner, site_id, &consumer_slug, &consumer_source).await;
+    let consumer_created =
+        create_page(&mut runner, site_id, &consumer_slug, &consumer_source).await;
+    // The expansion bottoms out at the component's parameterized self-include,
+    // which stays in the wikitext as literal text (the live behavior). ftml
+    // still renders it literally, but records an InvalidInclude diagnostic for
+    // the directive plus fallback errors for its brackets. Pin exactly that
+    // set: the create succeeds and no other parse problem is present.
+    let mut kinds: Vec<_> = consumer_created
+        .parser_errors
+        .iter()
+        .map(|error| format!("{:?}", error.kind()))
+        .collect();
+    kinds.sort();
+    assert_eq!(
+        kinds,
+        ["InvalidInclude", "NoRulesMatch", "NoRulesMatch"],
+        "consumer create should only carry the leftover-include diagnostics: {:?}",
+        consumer_created.parser_errors,
+    );
 
     let body = render_slug(&mut runner, site_id, &consumer_slug, &consumer_source).await;
     assert_eq!(
@@ -170,8 +201,10 @@ async fn mutual_include_cycle_renders_to_the_depth_bound() {
     let cyca_source = format!("INCDEPTH-CYCA-MARK\n[[include {cycb_slug}]]");
     let cycb_source = format!("INCDEPTH-CYCB-MARK\n[[include {cyca_slug}]]");
 
-    create_page(&mut runner, site_id, &cyca_slug, &cyca_source).await;
-    create_page(&mut runner, site_id, &cycb_slug, &cycb_source).await;
+    let cyca_created = create_page(&mut runner, site_id, &cyca_slug, &cyca_source).await;
+    assert_no_parser_errors(&cyca_created, &cyca_slug);
+    let cycb_created = create_page(&mut runner, site_id, &cycb_slug, &cycb_source).await;
+    assert_no_parser_errors(&cycb_created, &cycb_slug);
 
     let body = render_slug(&mut runner, site_id, &cyca_slug, &cyca_source).await;
     assert_eq!(
@@ -209,7 +242,9 @@ async fn acyclic_chain_renders_to_the_depth_bound() {
     };
 
     for k in 0..=12 {
-        create_page(&mut runner, site_id, &chain_slug(k), &chain_source(k)).await;
+        let created =
+            create_page(&mut runner, site_id, &chain_slug(k), &chain_source(k)).await;
+        assert_no_parser_errors(&created, &chain_slug(k));
     }
 
     let body = render_slug(&mut runner, site_id, &chain_slug(0), &chain_source(0)).await;
