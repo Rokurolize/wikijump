@@ -1820,12 +1820,18 @@ impl RenderService {
 
         observer(CorpusReplayPreparationStage::OuterProtection);
         let started = Instant::now();
-        let wikidot_inline_html =
-            Self::protect_wikidot_inline_html_spans_with_link_titles(
-                &mut expanded.wikitext,
-                settings,
-                link_titles,
-            );
+        let wikidot_inline_html = match link_titles {
+            Some(link_titles) => {
+                Self::protect_wikidot_inline_html_spans_with_link_titles(
+                    &mut expanded.wikitext,
+                    settings,
+                    Some(link_titles),
+                )
+            }
+            None => {
+                Self::protect_wikidot_inline_html_spans(&mut expanded.wikitext, settings)
+            }
+        };
         let wikidot_color_spans =
             Self::protect_wikidot_color_spans(&mut expanded.wikitext, settings);
         expanded.wikitext = Self::protect_unrendered_wikidot_color_markers(
@@ -2119,12 +2125,15 @@ impl RenderService {
             }
             None => None,
         };
-        let outer = Self::prepare_outer_render_wikitext_with_link_titles(
-            expanded,
-            page_info,
-            settings,
-            protected_link_titles.as_ref(),
-        );
+        let outer = match protected_link_titles.as_ref() {
+            Some(link_titles) => Self::prepare_outer_render_wikitext_with_link_titles(
+                expanded,
+                page_info,
+                settings,
+                Some(link_titles),
+            ),
+            None => Self::prepare_outer_render_wikitext(expanded, page_info, settings),
+        };
         if let Some((trace, scope)) = trace {
             trace.add_us(
                 scope,
@@ -3518,10 +3527,10 @@ impl RenderService {
                     }
                 }
                 for link in WIKIDOT_LOCAL_LINK_REGEX.captures_iter(body) {
-                    if let Some(page_ref) = native_list_page_link_ref(&link["target"]) {
-                        if !references.contains(&page_ref) {
-                            references.push(page_ref);
-                        }
+                    if let Some(page_ref) = native_list_page_link_ref(&link["target"])
+                        && !references.contains(&page_ref)
+                    {
+                        references.push(page_ref);
                     }
                 }
             }
