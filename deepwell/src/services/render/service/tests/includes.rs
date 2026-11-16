@@ -2456,7 +2456,12 @@ fn include_gate_raw_zone_covers_bare_gate_and_following_gate_in_wrapped_page() {
         &mut compat_text,
         1,
     );
-    let flags = super::super::include_enclosure_flags(&theme_source, 1, 1, false);
+    let flags = super::super::include_enclosure_flags(
+        &theme_source,
+        &enclosure_test_includes(&["component:betterfootnotes"]),
+        1,
+        false,
+    );
     assert_eq!(flags, vec![true]);
 
     // The gated theme page inside the wrapper's bare gate is prepared in raw
@@ -2587,7 +2592,12 @@ fn include_gate_pair_inside_an_included_pages_active_gate_prints_literally() {
         &mut compat_text,
         1,
     );
-    let flags = super::super::include_enclosure_flags(&theme_source, 1, 1, false);
+    let flags = super::super::include_enclosure_flags(
+        &theme_source,
+        &enclosure_test_includes(&["component:anomaly-class-bar-source"]),
+        1,
+        false,
+    );
     assert_eq!(flags, vec![true]);
 
     let mut component_source = component.to_string();
