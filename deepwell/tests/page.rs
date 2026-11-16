@@ -8102,13 +8102,14 @@ async fn file_mutation_deferred_actions_fence_warm_anonymous_gallery_cache() {
     ];
     let pending_blob_id = cuid();
     png.extend_from_slice(pending_blob_id.as_bytes());
-    let (pending, png) = create_committed_page_pending_blob_with_data_fixture(
+    let (pending, png) = create_committed_page_pending_blob_with_typed_data_fixture(
         &runner,
         ADMIN_USER_ID,
         site.site_id,
         page_id,
         pending_blob_id,
         png,
+        "image/png",
     )
     .await;
     let created = run_endpoint!(
@@ -20820,11 +20821,32 @@ async fn create_committed_page_pending_blob_with_data_fixture(
     pending_blob_id: String,
     data: Vec<u8>,
 ) -> (PagePendingBlobFixture, Vec<u8>) {
+    create_committed_page_pending_blob_with_typed_data_fixture(
+        runner,
+        user_id,
+        site_id,
+        page_id,
+        pending_blob_id,
+        data,
+        "application/octet-stream",
+    )
+    .await
+}
+
+async fn create_committed_page_pending_blob_with_typed_data_fixture(
+    runner: &TestRunner,
+    user_id: i64,
+    site_id: i64,
+    page_id: i64,
+    pending_blob_id: String,
+    data: Vec<u8>,
+    content_type: &str,
+) -> (PagePendingBlobFixture, Vec<u8>) {
     let s3_path = format!("uploads/{pending_blob_id}");
     let response = runner
         .state()
         .s3_files_bucket
-        .put_object(&s3_path, &data)
+        .put_object_with_content_type(&s3_path, &data, content_type)
         .await
         .expect("pending blob fixture should be uploaded");
     if response.status_code() != 200 {
