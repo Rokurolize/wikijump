@@ -2886,6 +2886,150 @@ fn enclosed_include_attribute_gates_stay_unevaluated_despite_include_mentions() 
     assert!(!html.contains("wikijump-enclosed-iftags"), "{html}");
 }
 
+fn expand_o7k_geometry(
+    root: &str,
+    sources: &[&str],
+    depth: usize,
+    tags: &[&'static str],
+) -> (String, CompatTextFragments, Vec<bool>) {
+    let mut page_info = fallback_test_page_info("theme:07k-jp", "07K");
+    page_info.tags = tags.iter().map(|&tag| Cow::Borrowed(tag)).collect();
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+
+    let mut source = root.to_string();
+    let mut compat_text = CompatTextFragments::new(&source);
+    RenderService::prepare_wikidot_conditionals_before_include_expansion(
+        &mut source,
+        &page_info,
+        &mut compat_text,
+        depth,
+    );
+    let mut collected = Vec::new();
+    ftml::include(
+        &source,
+        &settings,
+        super::super::CollectingIncluder {
+            includes: &mut collected,
+            language: "en",
+        },
+        include_error,
+    )
+    .expect("test include collection should succeed");
+    assert_eq!(collected.len(), sources.len(), "test geometry drifted");
+    let flags = super::super::include_enclosure_flags(&source, &collected, depth, false);
+
+    let mut pages = Vec::new();
+    for (index, include_source) in sources.iter().enumerate() {
+        let mut nested_source = include_source.to_string();
+        if flags[index] {
+            RenderService::prepare_wikidot_conditionals_for_include_expansion_with_mode(
+                &mut nested_source,
+                &page_info,
+                &mut compat_text,
+                true,
+            );
+        } else {
+            RenderService::prepare_wikidot_conditionals_for_include_expansion(
+                &mut nested_source,
+                &page_info,
+                &mut compat_text,
+            );
+        }
+        pages.push(Some(nested_source));
+    }
+
+    let expanded = ftml::include(
+        &source,
+        &settings,
+        PreparedIncluder {
+            pages,
+            missing_replacements: Default::default(),
+            language: "en".to_owned(),
+        },
+        include_error,
+    )
+    .expect("test include should expand")
+    .0;
+    let mut expanded = expanded;
+    super::super::super::iftags::remove_enclosed_iftags_markers(&mut expanded);
+    (expanded, compat_text, flags)
+}
+
+#[test]
+fn o7k_gated_docs_survive_blockquote_exhibit_in_gate_body() {
+    // theme:07k-jp geometry: a gated documentation component is included
+    // once outside the theme's own gate and once inside it, and the gate
+    // body also carries a blockquote exhibit of an include. The textual
+    // directive scan counts the exhibit (on the real page, 15 scanned
+    // directives vs 14 collected includes); alignment must still give
+    // the in-gate copy its raw-zone flag so the documentation prints
+    // literally exactly once, as on live Wikidot.
+    let component = concat!(
+        "[[iftags +コンポーネント]]\n",
+        "CENTERED-DOCS\n",
+        "Lt Flops\n",
+        "[[/iftags]]\n",
+        "CENTERED-FUNCTIONAL\n",
+    );
+    let root = concat!(
+        "[[include :scp-jp:component:centered-header-sigma-9]]\n",
+        "[[iftags +テーマ]]\n",
+        "[[include :scp-jp:component:centered-header-sigma-9]]\n",
+        "> [[include :scp-jp:theme:07k]]\n",
+        "[[include :scp-jp:component:image-block |name=https://example.com/x.png]]\n",
+        "[[/iftags]]\n",
+    );
+    let (expanded, compat_text, flags) = expand_o7k_geometry(
+        root,
+        &[component, component, "IMAGE-BLOCK-RENDERED\n"],
+        0,
+        &["en", "テーマ"],
+    );
+    assert_eq!(flags, vec![false, true, true]);
+    let html = render_pre_expanded_wikidot_page_body(expanded, compat_text, &["テーマ"]);
+    assert_eq!(html.matches("Lt Flops").count(), 1, "{html}");
+    assert_eq!(html.matches("CENTERED-DOCS").count(), 1, "{html}");
+    assert!(html.contains("[[iftags +コンポーネント]]"), "{html}");
+    assert_eq!(html.matches("CENTERED-FUNCTIONAL").count(), 2, "{html}");
+    assert!(html.contains("IMAGE-BLOCK-RENDERED"), "{html}");
+    assert!(!html.contains("wikijump-enclosed-iftags"), "{html}");
+}
+
+#[test]
+fn o7k_gated_docs_survive_blockquote_exhibit_in_gate_body_at_depth() {
+    // The same theme geometry one include deeper (a sample page viewing
+    // the theme): the theme source is prepared at depth 1, and the
+    // exhibit must not break the enclosure alignment there either.
+    let component = concat!(
+        "[[iftags +コンポーネント]]\n",
+        "CENTERED-DOCS\n",
+        "Lt Flops\n",
+        "[[/iftags]]\n",
+        "CENTERED-FUNCTIONAL\n",
+    );
+    let root = concat!(
+        "[[include :scp-jp:component:centered-header-sigma-9]]\n",
+        "[[iftags +テーマ]]\n",
+        "[[include :scp-jp:component:centered-header-sigma-9]]\n",
+        "> [[include :scp-jp:theme:07k]]\n",
+        "[[include :scp-jp:component:image-block |name=https://example.com/x.png]]\n",
+        "[[/iftags]]\n",
+    );
+    let (expanded, compat_text, flags) = expand_o7k_geometry(
+        root,
+        &[component, component, "IMAGE-BLOCK-RENDERED\n"],
+        1,
+        &["テーマ"],
+    );
+    assert_eq!(flags, vec![false, true, true]);
+    let html = render_pre_expanded_wikidot_page_body(expanded, compat_text, &["テーマ"]);
+    assert_eq!(html.matches("Lt Flops").count(), 1, "{html}");
+    assert!(html.contains("[[iftags +コンポーネント]]"), "{html}");
+    assert_eq!(html.matches("CENTERED-FUNCTIONAL").count(), 2, "{html}");
+    assert!(html.contains("IMAGE-BLOCK-RENDERED"), "{html}");
+    assert!(!html.contains("wikijump-enclosed-iftags"), "{html}");
+}
+
 fn kings_palace_guard_block() -> String {
     // The self-recursion guard from theme:king-s-palace-jp: a
     // parameterized self-include inside a display:none div, wrapped
