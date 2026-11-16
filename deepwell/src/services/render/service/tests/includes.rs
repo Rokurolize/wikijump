@@ -2364,3 +2364,170 @@ fn include_gate_inside_an_included_pages_active_gate_prints_literally_after_expa
     assert!(html.contains("[[iftags +component]]"), "{html}");
     assert!(!html.contains("wikijump-enclosed-iftags"), "{html}");
 }
+
+#[test]
+fn generated_spec_iftags_resolve_at_include_depth() {
+    // A generated-spec gate ([[iftags [[#ifexpr ...]]]]) must be prepared the
+    // same way at every include depth: the parser function is resolved first,
+    // then the resulting spec is matched against the page tags. While the
+    // preparation was depth-0-only, an included page's generated gates were
+    // matched against the literal ifexpr text and always dropped.
+    let mut page_info = fallback_test_page_info("page", "Page");
+    page_info.tags = vec![Cow::Borrowed("テーマ")];
+
+    let prepare = |source: &str, depth: usize| {
+        let mut source = source.to_owned();
+        let mut preserved = CompatTextFragments::new(&source);
+        RenderService::prepare_wikidot_conditionals_before_include_expansion(
+            &mut source,
+            &page_info,
+            &mut preserved,
+            depth,
+        );
+        preserved.restore(&source)
+    };
+
+    for depth in [0, 1] {
+        let out = prepare(
+            "[[iftags [[#ifexpr 1 == 1 | - ]]]]\nGEN_TRUE\n[[/iftags]]\n",
+            depth,
+        );
+        assert!(out.contains("GEN_TRUE"), "depth {depth}: {out}");
+        assert!(!out.contains("[[iftags"), "depth {depth}: {out}");
+        assert!(!out.contains("generated-spec"), "depth {depth}: {out}");
+
+        let out = prepare(
+            "[[iftags [[#ifexpr 1 == 0 | - ]]]]\nGEN_FALSE\n[[/iftags]]\n",
+            depth,
+        );
+        assert!(!out.contains("GEN_FALSE"), "depth {depth}: {out}");
+
+        let out = prepare(
+            "[[iftags [[#ifexpr 1 == 1 | +テーマ | +beta ]]]]\nGEN_TAGGED\n[[/iftags]]\n",
+            depth,
+        );
+        assert!(out.contains("GEN_TAGGED"), "depth {depth}: {out}");
+
+        let out = prepare(
+            "[[iftags [[#ifexpr 1 == 0 | +テーマ | +beta ]]]]\nGEN_UNTAGGED\n[[/iftags]]\n",
+            depth,
+        );
+        assert!(!out.contains("GEN_UNTAGGED"), "depth {depth}: {out}");
+
+        // The theme:suprematism-jp shape: the include variable is unbound
+        // (the including sample passes no arguments), so the generated spec
+        // is empty and the documentation section is dropped -- the same
+        // outcome the direct view produces at depth 0.
+        let out = prepare(
+            "[[iftags [[#ifexpr {$scp} == (true) | - ]]]]\nSCP_DOCS\n[[/iftags]]\n",
+            depth,
+        );
+        assert!(!out.contains("SCP_DOCS"), "depth {depth}: {out}");
+
+        // With the variable bound by the includer, production substitutes it
+        // into the included source before preparation; the gate then passes.
+        let out = prepare(
+            "[[iftags [[#ifexpr (true) == (true) | - ]]]]\nBOUND_DOCS\n[[/iftags]]\n",
+            depth,
+        );
+        assert!(out.contains("BOUND_DOCS"), "depth {depth}: {out}");
+    }
+}
+
+#[test]
+fn generated_spec_gate_in_raw_zone_at_depth_is_prepared_once() {
+    // Raw-zone (enclosed) content keeps its gates as exhibits at any depth,
+    // but the generated-spec preparation still runs during the depth>=1
+    // prepare: the parser function in the head is resolved and the marker is
+    // present exactly once, and a later preparation pass over the same text
+    // (the post-expansion prepare) does not duplicate it.
+    let mut page_info = fallback_test_page_info("page", "Page");
+    page_info.tags = vec![Cow::Borrowed("テーマ")];
+    let mut source =
+        "[[iftags [[#ifexpr {$scp} == (true) | - ]]]]\nRAW_DOCS\n[[/iftags]]\n"
+            .to_owned();
+    let mut preserved = CompatTextFragments::new(&source);
+
+    RenderService::prepare_wikidot_conditionals_before_include_expansion_with_mode(
+        &mut source,
+        &page_info,
+        &mut preserved,
+        1,
+        true,
+    );
+    assert!(source.contains("RAW_DOCS"), "{source}");
+    assert!(source.contains("[[iftags"), "{source}");
+    assert_eq!(source.matches("generated-spec").count(), 1, "{source}");
+
+    RenderService::prepare_wikidot_conditionals_before_include_expansion_with_mode(
+        &mut source,
+        &page_info,
+        &mut preserved,
+        1,
+        true,
+    );
+    assert_eq!(source.matches("generated-spec").count(), 1, "{source}");
+}
+
+#[test]
+fn suprematism_include_chain_matches_direct_view_outcome() {
+    // theme:suprematism-jp shape: a sample (tags: テーマ) includes a theme;
+    // inside the theme's kept +テーマ gate sits a license component whose own
+    // +コンポーネント documentation gate leaks as an exhibit, and after the
+    // gate the theme carries an ifexpr-generated documentation gate whose
+    // variable the sample does not bind.
+    let mut page_info = fallback_test_page_info("sample", "Sample");
+    page_info.tags = vec![Cow::Borrowed("テーマ")];
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut compat_text = CompatTextFragments::new("");
+
+    let component = "[[iftags +コンポーネント]]\nlicense docs\n[[/iftags]]\n";
+    let theme = concat!(
+        "[[iftags +テーマ]]\n",
+        "[[include component:license-box-theme]]\n",
+        "[[/iftags]]\n",
+        "[[iftags [[#ifexpr {$scp} == (true) | - ]]]]\n",
+        "source code docs\n",
+        "[[/iftags]]\n",
+    );
+
+    let mut theme_source = theme.to_string();
+    RenderService::prepare_wikidot_conditionals_before_include_expansion(
+        &mut theme_source,
+        &page_info,
+        &mut compat_text,
+        1,
+    );
+    let flags = super::super::include_enclosure_flags(&theme_source, 1, 1, false);
+    assert_eq!(flags, vec![true]);
+
+    let mut inside = component.to_string();
+    RenderService::prepare_wikidot_conditionals_for_include_expansion_with_mode(
+        &mut inside,
+        &page_info,
+        &mut compat_text,
+        true,
+    );
+
+    let expanded = ftml::include(
+        &theme_source,
+        &settings,
+        PreparedIncluder {
+            pages: vec![Some(inside)],
+            missing_replacements: Default::default(),
+            language: "en".to_owned(),
+        },
+        include_error,
+    )
+    .expect("theme include should expand")
+    .0;
+    let mut expanded = expanded;
+    super::super::super::iftags::remove_enclosed_iftags_markers(&mut expanded);
+    let html = render_pre_expanded_wikidot_page_body(expanded, compat_text, &["テーマ"]);
+
+    assert!(html.contains("license docs"), "{html}");
+    assert_eq!(html.matches("license docs").count(), 1, "{html}");
+    assert!(html.contains("[[iftags +コンポーネント]]"), "{html}");
+    assert!(!html.contains("source code docs"), "{html}");
+    assert!(!html.contains("wikijump-enclosed-iftags"), "{html}");
+}

@@ -399,7 +399,9 @@ pub(super) fn mark_wikidot_generated_iftags_specs(wikitext: &mut String) {
             continue;
         };
         let head_end = start + head_len;
-        if wikitext[start..head_end].contains("[[#") {
+        if wikitext[start..head_end].contains("[[#")
+            && !wikitext[start..head_end].contains(WIKIDOT_GENERATED_SPEC_MARKER)
+        {
             insertions.push(head_end - "]]".len());
         }
         search = search.max(head_end);
@@ -582,6 +584,21 @@ mod tests {
         );
         assert!(
             source.contains(&format!("- ]] {WIKIDOT_GENERATED_SPEC_MARKER}]]")),
+            "{source}"
+        );
+    }
+
+    #[test]
+    fn marking_generated_heads_is_idempotent() {
+        let mut source =
+            "[[iftags [[#ifexpr 1 == 0 | - ]]]]generated[[/iftags]]\n".to_owned();
+        mark_wikidot_generated_iftags_specs(&mut source);
+        let once = source.clone();
+        mark_wikidot_generated_iftags_specs(&mut source);
+        assert_eq!(source, once);
+        assert_eq!(
+            source.matches(WIKIDOT_GENERATED_SPEC_MARKER).count(),
+            1,
             "{source}"
         );
     }
