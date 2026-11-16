@@ -30,10 +30,10 @@ export const AUDITED_EXTERNAL_ASSET_ORIGINS: readonly AuditedExternalAssetOrigin
     },
     {
       origin: "https://fastly.jsdelivr.net",
-      styles: false,
+      styles: true,
       fonts: true,
       evidence:
-        "jsDelivr's Fastly edge host. The production SCP-KO dear-dictator theme declares its noonfonts faces (GapyeongHanseokbong-Bold, ONE-Mobile-Title, JeonjuCraftGoR) with @font-face sources on this host; live Wikidot loads them, but framerail's page Content-Security-Policy blocked all three during the 2026-11-13 Sigma-10 migration comparison, so the theme fell back to substitute fonts on the staff-lab Sigma-10 site. Only font files are served from this host; the declaring stylesheet is the theme's own."
+        "jsDelivr's Fastly edge host. The production SCP-KO dear-dictator theme declares its noonfonts faces (GapyeongHanseokbong-Bold, ONE-Mobile-Title, JeonjuCraftGoR) with @font-face sources on this host; live Wikidot loads them, but framerail's page Content-Security-Policy blocked all three during the 2026-11-13 Sigma-10 migration comparison, so the theme fell back to substitute fonts on the staff-lab Sigma-10 site. Stylesheets are served from this host too: theme:the-track-changers and its JP port @import the crimson-anemone Basalt variant's basalt.css and components/collapsible-sidebar.css (@main) from it, and theme:dream-of-the-stars-jp (@2.3.16), theme:paradigm-inapplicable-jp (@2.4.4) and theme:paradigm-reconstruction-jp (@2.3.16) @import its dustjacket.css; the browser recorded failed style-src fetches for the track-changers pair on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep, leaving the page on the default background while live Wikidot loads them."
     },
     {
       origin: "https://d3g0gp89917ko0.cloudfront.net",

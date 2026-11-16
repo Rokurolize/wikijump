@@ -110,6 +110,12 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
     assert(directives["style-src"]?.some((source) => source === origin))
     assert(directives["font-src"]?.some((source) => source === origin))
   }
+  for (const directive of ["style-src", "font-src", "img-src"] as const) {
+    assert(
+      directives[directive]?.some((source) => source === "https://fastly.jsdelivr.net"),
+      `${directive} admits the audited jsDelivr Fastly edge host`
+    )
+  }
   const classifiedDecorationGrant = AUDITED_EXTERNAL_ASSET_ORIGINS.find(
     (entry) => entry.origin === "https://indestructibletype-fonthosting.github.io"
   )
