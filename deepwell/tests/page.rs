@@ -23910,9 +23910,9 @@ async fn listpages_zero_row_content_modules_do_not_exhaust_the_work_budget() {
 }
 
 #[tokio::test]
-async fn listpages_current_page_content_shares_the_module_work_budget() {
-    const INDEX_SLUG: &str = "fixture-listpages-current-page-content-budget-index";
-    const CONTENT_MARKER: &str = "CURRENT_PAGE_CONTENT_BUDGET_BODY";
+async fn listpages_current_page_content_modules_beyond_three_still_render() {
+    const INDEX_SLUG: &str = "fixture-listpages-current-page-content-modules-index";
+    const CONTENT_MARKER: &str = "CURRENT_PAGE_CONTENT_MODULES_BODY";
 
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -23922,7 +23922,7 @@ async fn listpages_current_page_content_shares_the_module_work_budget() {
         &mut runner,
         site_id,
         INDEX_SLUG,
-        "ListPages Current Page Content Budget Index",
+        "ListPages Current Page Content Modules Index",
         CONTENT_MARKER,
     )
     .await;
@@ -23934,12 +23934,12 @@ async fn listpages_current_page_content_shares_the_module_work_budget() {
             "page": INDEX_SLUG,
         }),
     )
-    .expect("current-page content budget index should exist");
+    .expect("current-page content modules index should exist");
     let page_info = PageInfo {
         page: Cow::Borrowed(INDEX_SLUG),
         category: None,
         site: Cow::Borrowed("scp-wiki"),
-        title: Cow::Borrowed("ListPages Current Page Content Budget Index"),
+        title: Cow::Borrowed("ListPages Current Page Content Modules Index"),
         alt_title: None,
         score: ScoreValue::Integer(0),
         tags: Vec::new(),
@@ -23969,17 +23969,26 @@ async fn listpages_current_page_content_shares_the_module_work_budget() {
         UrlArguments::default(),
     )
     .await
-    .expect("current-page content budget overflow should preserve the later module");
+    .expect("current-page content modules should render");
     let html = output.html_output.body;
+    // Live Wikidot renders every content-backed ListPages module on a
+    // page, including current-page (range=".") ones: theme:nebulae's four
+    // variant modules are range="." modules. The operative work bounds are
+    // the per-render content-row budget, the generated-output byte budget,
+    // and the overall module budget; the pre-#3750 content-module count
+    // cap of three preserved the fourth module as literal source text,
+    // which is never Wikidot behavior.
     assert_eq!(
         html.matches(CONTENT_MARKER).count(),
-        3,
-        "only the first three current-page content modules may expand:\n{html}",
+        4,
+        "all four current-page content modules should render:\n{html}",
     );
-    assert!(
-        html.contains("FOUR %%content%%"),
-        "the fourth current-page content module must remain literal:\n{html}",
-    );
+    for label in ["ONE", "TWO", "THREE", "FOUR"] {
+        assert!(
+            html.contains(label) && !html.contains(&format!("{label} %%content%%")),
+            "current-page content module {label} must render its row:\n{html}",
+        );
+    }
 }
 
 #[tokio::test]
