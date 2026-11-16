@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use super::super::ftml_render::WikidotCompatLinkTitleMap;
 use super::super::literal_regions::LiteralRegionIndex;
 #[cfg(test)]
 use super::super::service::WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX;
@@ -25,7 +26,7 @@ use super::super::service::{
     WIKIDOT_BOLD_COLOR_SPAN_REGEX, WIKIDOT_BOLD_OUTER_COLOR_SPAN_REGEX,
     WIKIDOT_BOLD_UNDERLINE_SPAN_REGEX, WIKIDOT_COLOR_SPAN_REGEX,
     WIKIDOT_ESCAPED_NBSP_REGEX, WIKIDOT_INLINE_HTML_SENTINEL_PREFIX,
-    escape_list_pages_html_attr, render_native_list_inline_html,
+    escape_list_pages_html_attr, render_native_list_inline_html_with_titles,
     render_native_list_inline_wikidot_strong,
     render_native_list_inline_wikidot_underlines,
 };
@@ -159,6 +160,7 @@ fn replace_active_inline_matches(
 pub(in crate::services::render) fn protect_wikidot_inline_html_spans(
     wikitext: &mut String,
     settings: &WikitextSettings,
+    link_titles: Option<&WikidotCompatLinkTitleMap>,
 ) -> Vec<ProtectedWikidotInlineHtml> {
     if !settings.enable_page_syntax {
         return Vec::new();
@@ -195,7 +197,11 @@ pub(in crate::services::render) fn protect_wikidot_inline_html_spans(
                 marker: marker.clone(),
                 html: format!(
                     "<strong>{}</strong>",
-                    render_wikidot_color_span_html(&color, &captures["body"]),
+                    render_wikidot_color_span_html(
+                        &color,
+                        &captures["body"],
+                        link_titles
+                    ),
                 ),
             });
             marker
@@ -219,7 +225,11 @@ pub(in crate::services::render) fn protect_wikidot_inline_html_spans(
                 marker: marker.clone(),
                 html: format!(
                     "<strong>{}</strong>",
-                    render_wikidot_color_span_html(&color, &captures["body"]),
+                    render_wikidot_color_span_html(
+                        &color,
+                        &captures["body"],
+                        link_titles
+                    ),
                 ),
             });
             marker
@@ -240,7 +250,10 @@ pub(in crate::services::render) fn protect_wikidot_inline_html_spans(
                 marker: marker.clone(),
                 html: format!(
                     "<strong><u>{}</u></strong>",
-                    render_wikidot_protected_inline_body_html(&captures["body"]),
+                    render_wikidot_protected_inline_body_html(
+                        &captures["body"],
+                        link_titles
+                    ),
                 ),
             });
             marker
@@ -302,19 +315,23 @@ pub(in crate::services::render) fn parse_wikidot_compat_color_descriptor<'a>(
 pub(in crate::services::render) fn render_wikidot_color_span_html(
     color: &str,
     body: &str,
+    link_titles: Option<&WikidotCompatLinkTitleMap>,
 ) -> String {
     format!(
         r#"<span style="color: {color}">{body}</span>"#,
         color = escape_list_pages_html_attr(color),
-        body = render_wikidot_protected_inline_body_html(body),
+        body = render_wikidot_protected_inline_body_html(body, link_titles),
     )
 }
 
 pub(in crate::services::render) fn render_wikidot_protected_inline_body_html(
     body: &str,
+    link_titles: Option<&WikidotCompatLinkTitleMap>,
 ) -> String {
     let rendered = render_native_list_inline_wikidot_underlines(
-        &render_native_list_inline_wikidot_strong(&render_native_list_inline_html(body)),
+        &render_native_list_inline_wikidot_strong(
+            &render_native_list_inline_html_with_titles(body, link_titles),
+        ),
     );
 
     let rendered = render_wikidot_protected_inline_sizes(&rendered);

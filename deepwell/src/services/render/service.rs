@@ -28,9 +28,8 @@ mod wikidot_preprocess;
 pub(super) use native_list::{
     collect_wikidot_compat_empty_label_link_slugs, native_list_page_link_slug,
     native_numbered_list_content, render_list_pages_numbered_rows_with_titles,
-    render_list_pages_table_rows, render_native_list_inline_html,
-    render_native_list_inline_html_with_titles, render_native_list_inline_wikidot_spans,
-    render_native_list_inline_wikidot_strong,
+    render_list_pages_table_rows, render_native_list_inline_html_with_titles,
+    render_native_list_inline_wikidot_spans, render_native_list_inline_wikidot_strong,
     render_native_list_inline_wikidot_underlines, wikidot_inline_span_marker_open,
 };
 #[cfg(test)]
@@ -81,7 +80,8 @@ use super::diagnostics::{
 use super::forum_modules::resolve_typed_root_recent_threads_runtime_modules;
 use super::ftml_render::{
     FtmlRenderOutput, InnerPreparedRenderWikitext, ParsedFtmlRender,
-    WikidotCompatLinkTitleMap, native_list_page_link_ref,
+    WikidotCompatLinkTitleMap, collect_fallback_page_references,
+    native_list_page_link_ref,
 };
 use super::ftml_user_info::UserInfoSnapshot;
 use super::generator::COMPILED_GENERATOR;
@@ -1755,18 +1755,42 @@ impl RenderService {
         page_info: &PageInfo<'_>,
         settings: &WikitextSettings,
     ) -> OuterPreparedRenderWikitext {
-        Self::prepare_outer_render_wikitext_observed(
+        Self::prepare_outer_render_wikitext_with_link_titles(
+            expanded, page_info, settings, None,
+        )
+    }
+
+    fn prepare_outer_render_wikitext_with_link_titles(
+        expanded: ExpandedRenderWikitext,
+        page_info: &PageInfo<'_>,
+        settings: &WikitextSettings,
+        link_titles: Option<&WikidotCompatLinkTitleMap>,
+    ) -> OuterPreparedRenderWikitext {
+        Self::prepare_outer_render_wikitext_observed_impl(
             expanded,
             page_info,
             settings,
+            link_titles,
             &mut |_| {},
         )
     }
 
     fn prepare_outer_render_wikitext_observed(
+        expanded: ExpandedRenderWikitext,
+        page_info: &PageInfo<'_>,
+        settings: &WikitextSettings,
+        observer: &mut impl FnMut(CorpusReplayPreparationStage),
+    ) -> OuterPreparedRenderWikitext {
+        Self::prepare_outer_render_wikitext_observed_impl(
+            expanded, page_info, settings, None, observer,
+        )
+    }
+
+    fn prepare_outer_render_wikitext_observed_impl(
         mut expanded: ExpandedRenderWikitext,
         page_info: &PageInfo<'_>,
         settings: &WikitextSettings,
+        link_titles: Option<&WikidotCompatLinkTitleMap>,
         observer: &mut impl FnMut(CorpusReplayPreparationStage),
     ) -> OuterPreparedRenderWikitext {
         let mut timings = CorpusReplayStageTimings::default();
@@ -1797,7 +1821,11 @@ impl RenderService {
         observer(CorpusReplayPreparationStage::OuterProtection);
         let started = Instant::now();
         let wikidot_inline_html =
-            Self::protect_wikidot_inline_html_spans(&mut expanded.wikitext, settings);
+            Self::protect_wikidot_inline_html_spans_with_link_titles(
+                &mut expanded.wikitext,
+                settings,
+                link_titles,
+            );
         let wikidot_color_spans =
             Self::protect_wikidot_color_spans(&mut expanded.wikitext, settings);
         expanded.wikitext = Self::protect_unrendered_wikidot_color_markers(
@@ -2067,7 +2095,36 @@ impl RenderService {
         if !allow_wikidot_styleframe {
             Self::neutralize_untrusted_wikidot_styleframe_embeds(&mut expanded.wikitext);
         }
-        let outer = Self::prepare_outer_render_wikitext(expanded, page_info, settings);
+        let protected_link_titles = match current_site_id {
+            Some(site_id) => {
+                let page_references =
+                    Self::collect_protected_inline_page_references(&expanded.wikitext);
+                if page_references.is_empty() {
+                    None
+                } else {
+                    let page_existence = LinkService::resolve_page_existence(
+                        ctx,
+                        site_id,
+                        &page_info.site,
+                        &page_references,
+                        viewer_user_id,
+                    )
+                    .await
+                    .or_raise(make_error)?;
+                    let mut link_titles = WikidotCompatLinkTitleMap::new();
+                    link_titles
+                        .set_page_existence(page_info.site.to_string(), page_existence);
+                    Some(link_titles)
+                }
+            }
+            None => None,
+        };
+        let outer = Self::prepare_outer_render_wikitext_with_link_titles(
+            expanded,
+            page_info,
+            settings,
+            protected_link_titles.as_ref(),
+        );
         if let Some((trace, scope)) = trace {
             trace.add_us(
                 scope,
@@ -3433,7 +3490,43 @@ impl RenderService {
         wikitext: &mut String,
         settings: &WikitextSettings,
     ) -> Vec<ProtectedWikidotInlineHtml> {
-        protect_wikidot_inline_html_spans(wikitext, settings)
+        protect_wikidot_inline_html_spans(wikitext, settings, None)
+    }
+
+    fn protect_wikidot_inline_html_spans_with_link_titles(
+        wikitext: &mut String,
+        settings: &WikitextSettings,
+        link_titles: Option<&WikidotCompatLinkTitleMap>,
+    ) -> Vec<ProtectedWikidotInlineHtml> {
+        protect_wikidot_inline_html_spans(wikitext, settings, link_titles)
+    }
+
+    fn collect_protected_inline_page_references(wikitext: &str) -> Vec<PageRef> {
+        let mut references: Vec<PageRef> = Vec::new();
+        for pattern in [
+            &WIKIDOT_BOLD_OUTER_COLOR_SPAN_REGEX,
+            &WIKIDOT_BOLD_COLOR_SPAN_REGEX,
+        ] {
+            for captures in pattern.captures_iter(wikitext) {
+                let body = &captures["body"];
+                if !body.contains("[[[") && !body.contains("[/") {
+                    continue;
+                }
+                for page_ref in collect_fallback_page_references(body) {
+                    if !references.contains(&page_ref) {
+                        references.push(page_ref);
+                    }
+                }
+                for link in WIKIDOT_LOCAL_LINK_REGEX.captures_iter(body) {
+                    if let Some(page_ref) = native_list_page_link_ref(&link["target"]) {
+                        if !references.contains(&page_ref) {
+                            references.push(page_ref);
+                        }
+                    }
+                }
+            }
+        }
+        references
     }
 
     fn restore_protected_wikidot_color_spans(
