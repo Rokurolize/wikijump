@@ -51,6 +51,14 @@ const WIKIDOT_IMAGE_SOURCES: CspSources = [
   "https://scpsandboxcn.wikidot.com",
   "https://*.wdfiles.com",
   "https://cdn.scpwiki.com",
+  // jsDelivr's Fastly edge host also serves theme logo and icon images that
+  // theme stylesheets reference as CSS image URLs: the walk-in-the-dark
+  // theme's header logos (Etinjat/CSS LOGO_YXH_red.svg and LOGO_CN_white.svg,
+  // consumed through its --logo-image custom property) and the
+  // brokedown-database theme's LOGO_SCP.svg icon. Live Wikidot loads them;
+  // the staff-lab Sigma-10 site's img-src omitted the host during the
+  // 2026-11-17 check-wiki parity sweep.
+  "https://fastly.jsdelivr.net",
   "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com",
   "https://d2qhngyckgiutd.cloudfront.net",
   // Header logos and decorative images that theme stylesheets reference from
