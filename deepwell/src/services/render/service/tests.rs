@@ -4516,3 +4516,29 @@ fn localized_wikidot_local_file_url_uses_scp_int_mirror() {
         None,
     );
 }
+
+#[test]
+fn cross_tree_rate_span_matches_live_three_span_shape() {
+    // Live Wikidot renders a span wrapping only a Rate module as three
+    // spans (leading empty, filled, trailing empty). ftml also emits a
+    // separate empty paragraph for the span's opening segment; the
+    // restore must not let it become a fourth span.
+    let rendered = render_rate_module_through_ftml(
+        "[[span id=\"activeRate\"]]\n[[module Rate]]\n[[/span]]",
+    );
+    assert_eq!(
+        rendered.matches("<span id=\"u-activeRate\">").count(),
+        3,
+        "{rendered}"
+    );
+    assert!(
+        rendered.starts_with(
+            "<p><span id=\"u-activeRate\"></span></p><span id=\"u-activeRate\">"
+        ),
+        "{rendered}"
+    );
+    assert!(
+        rendered.ends_with("</span><p><span id=\"u-activeRate\"></span></p>"),
+        "{rendered}"
+    );
+}
