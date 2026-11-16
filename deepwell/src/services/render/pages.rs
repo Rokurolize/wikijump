@@ -516,6 +516,7 @@ impl PagesModulePage {
                 name: name.clone(),
                 slug: self.wikidot_user_slug.clone(),
                 wikidot_profile: true,
+                avatar_data: None,
             });
         }
 
@@ -527,6 +528,7 @@ impl PagesModulePage {
                 name: name.clone(),
                 slug: self.local_user_slug.clone(),
                 wikidot_profile: false,
+                avatar_data: None,
             })
     }
 }

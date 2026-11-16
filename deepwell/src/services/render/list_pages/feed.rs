@@ -313,6 +313,7 @@ impl RenderService {
                                     name: name.to_owned(),
                                     slug: snapshot.created_by_slug.clone(),
                                     wikidot_profile: true,
+                                    avatar_data: None,
                                 };
                                 render_list_pages_wikidot_feed_user(
                                     user_id,

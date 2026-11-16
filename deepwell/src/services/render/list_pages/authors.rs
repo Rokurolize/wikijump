@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+use super::super::ftml_user_info::load_stored_avatar;
 use super::super::service::RenderService;
 use super::{
     Cow, CurrentPageAuthorSource, ListPagesAuthorCacheKey, ListPagesRuntimeDisplay,
@@ -86,6 +87,7 @@ impl RenderService {
                         name,
                         slug: user.slug,
                         wikidot_profile: true,
+                        avatar_data: None,
                     },
                 ))
             }));
@@ -102,17 +104,22 @@ impl RenderService {
                 .await
                 .or_raise(make_error)?;
 
-            displays.extend(users.into_iter().map(|user| {
-                (
+            for user in users {
+                let avatar_data = match &user.avatar_s3_hash {
+                    Some(hash) => load_stored_avatar(ctx, hash).await,
+                    None => None,
+                };
+                displays.insert(
                     user.user_id,
                     WikidotUserDisplay {
                         user_id: user.user_id,
                         name: user.name,
                         slug: Some(user.slug),
                         wikidot_profile: false,
+                        avatar_data,
                     },
-                )
-            }));
+                );
+            }
         }
 
         Ok(displays)

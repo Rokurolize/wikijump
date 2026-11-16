@@ -21,3 +21,6 @@
 pub(crate) const WIKIDOT_USER_INFO_URL: &str = "https://www.wikidot.com/user:info/";
 
 pub(crate) const WIKIDOT_AVATAR_BASE: &str = "https://www.wikidot.com";
+
+pub(crate) const WIKIDOT_DEFAULT_AVATAR_URL: &str =
+    "https://www.wikidot.com/common--images/avatars/default/a16.png";

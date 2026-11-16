@@ -27,7 +27,9 @@ use super::super::service::{
     RenderService, escape_list_pages_html_attr, escape_list_pages_html_text,
     format_wikidot_list_pages_date,
 };
-use super::super::wikidot_user_resources::{WIKIDOT_AVATAR_BASE, WIKIDOT_USER_INFO_URL};
+use super::super::wikidot_user_resources::{
+    WIKIDOT_AVATAR_BASE, WIKIDOT_DEFAULT_AVATAR_URL, WIKIDOT_USER_INFO_URL,
+};
 use super::parents::ListPagesParentDisplay;
 use super::substitution::{ListPagesSnapshotDisplay, WikidotUserDisplay};
 #[cfg(test)]
@@ -213,7 +215,7 @@ pub(in crate::services::render) fn render_list_pages_wikidot_user(
         return user_id.to_string();
     };
     if !user.wikidot_profile {
-        return escape_list_pages_html_text(&user.name);
+        return render_list_pages_local_user(user, false);
     }
     let slug = user.slug.as_deref().unwrap_or(&user.name);
     let avatar_timestamp = time::OffsetDateTime::now_utc().unix_timestamp();
@@ -245,7 +247,7 @@ pub(in crate::services::render) fn render_list_pages_wikidot_feed_user(
         return user_id.to_string();
     };
     if !user.wikidot_profile {
-        return escape_list_pages_html_text(&user.name);
+        return render_list_pages_local_user(user, true);
     }
     let slug = user.slug.as_deref().unwrap_or(&user.name);
     format!(
@@ -267,6 +269,53 @@ pub(in crate::services::render) fn render_list_pages_wikidot_feed_user(
     )
 }
 
+fn render_list_pages_local_user(user: &WikidotUserDisplay, feed: bool) -> String {
+    let slug = user.slug.as_deref().unwrap_or(&user.name);
+    let profile_url = format!("/user:info/{}", escape_list_pages_html_attr(slug));
+    let avatar_src = user
+        .avatar_data
+        .as_deref()
+        .map(escape_list_pages_html_attr)
+        .unwrap_or_else(|| WIKIDOT_DEFAULT_AVATAR_URL.to_owned());
+    let name_attr = escape_list_pages_html_attr(&user.name);
+    let name_text = escape_list_pages_html_text(&user.name);
+    if feed {
+        format!(
+            concat!(
+                r#"<span class="printuser avatarhover">"#,
+                r#"<a href="{profile_url}" >"#,
+                r#"<img class="small" src="{avatar_src}" "#,
+                r#"alt="{name_attr}" style="background-image:url({avatar_base}/userkarma.php?u={user_id})" />"#,
+                r#"</a><a href="{profile_url}" >{name_text}</a>"#,
+                r#"</span>"#
+            ),
+            profile_url = profile_url,
+            avatar_src = avatar_src,
+            name_attr = name_attr,
+            name_text = name_text,
+            avatar_base = WIKIDOT_AVATAR_BASE,
+            user_id = user.user_id,
+        )
+    } else {
+        format!(
+            concat!(
+                r#"<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">"#,
+                r#"<a href="{profile_url}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">"#,
+                r#"<img class="small" src="{avatar_src}" "#,
+                r#"alt="{name_attr}" style="background-image:url({avatar_base}/userkarma.php?u={user_id})" />"#,
+                r#"</a><a href="{profile_url}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">{name_text}</a>"#,
+                r#"</span>"#
+            ),
+            profile_url = profile_url,
+            avatar_src = avatar_src,
+            name_attr = name_attr,
+            name_text = name_text,
+            avatar_base = WIKIDOT_AVATAR_BASE,
+            user_id = user.user_id,
+        )
+    }
+}
+
 pub(in crate::services::render) fn render_list_pages_snapshot_user(name: &str) -> String {
     escape_list_pages_html_text(name)
 }
@@ -284,6 +333,7 @@ pub(in crate::services::render) fn render_list_pages_snapshot_wikidot_user(
         name: name.to_owned(),
         slug: slug.map(str::to_owned),
         wikidot_profile: true,
+        avatar_data: None,
     };
     render_list_pages_wikidot_user(user_id, Some(&display))
 }
@@ -435,6 +485,7 @@ mod tests {
             name: r##"quoted" onload="alert(1)""##.to_owned(),
             slug: Some("quoted-user".to_owned()),
             wikidot_profile: true,
+            avatar_data: None,
         };
 
         let html = render_list_pages_wikidot_user(42, Some(&user));
@@ -457,6 +508,62 @@ mod tests {
             "unexpected feed user markup: {feed_html}"
         );
         assert!(!feed_html.contains(r#"alt="quoted" onload="alert(1)""#));
+    }
+
+    #[test]
+    fn local_users_render_as_printuser_chips_with_local_profile_links() {
+        let user = WikidotUserDisplay {
+            user_id: 20001208,
+            name: "staff.operator".to_owned(),
+            slug: Some("staff-operator".to_owned()),
+            wikidot_profile: false,
+            avatar_data: None,
+        };
+
+        let html = render_list_pages_wikidot_user(20001208, Some(&user));
+        assert_eq!(
+            html,
+            concat!(
+                r#"<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">"#,
+                r#"<a href="/user:info/staff-operator" onclick="WIKIDOT.page.listeners.userInfo(20001208); return false;">"#,
+                r#"<img class="small" src="https://www.wikidot.com/common--images/avatars/default/a16.png" "#,
+                r#"alt="staff.operator" style="background-image:url(https://www.wikidot.com/userkarma.php?u=20001208)" />"#,
+                r#"</a><a href="/user:info/staff-operator" onclick="WIKIDOT.page.listeners.userInfo(20001208); return false;">staff.operator</a>"#,
+                r#"</span>"#
+            )
+        );
+
+        let feed_html =
+            render_list_pages_wikidot_feed_user(20001208, Some(&user), 1_700_000_000);
+        assert_eq!(
+            feed_html,
+            concat!(
+                r#"<span class="printuser avatarhover">"#,
+                r#"<a href="/user:info/staff-operator" >"#,
+                r#"<img class="small" src="https://www.wikidot.com/common--images/avatars/default/a16.png" "#,
+                r#"alt="staff.operator" style="background-image:url(https://www.wikidot.com/userkarma.php?u=20001208)" />"#,
+                r#"</a><a href="/user:info/staff-operator" >staff.operator</a>"#,
+                r#"</span>"#
+            )
+        );
+    }
+
+    #[test]
+    fn local_user_chips_use_the_stored_avatar_when_one_was_loaded() {
+        let user = WikidotUserDisplay {
+            user_id: 77,
+            name: "Local Author".to_owned(),
+            slug: Some("local-author".to_owned()),
+            wikidot_profile: false,
+            avatar_data: Some("data:image/png;base64,iVBORw0KGgo=".to_owned()),
+        };
+
+        let html = render_list_pages_wikidot_user(77, Some(&user));
+        assert!(
+            html.contains(r#"src="data:image/png;base64,iVBORw0KGgo=""#),
+            "stored avatar missing from chip: {html}"
+        );
+        assert!(html.contains(r#"href="/user:info/local-author""#));
     }
 
     #[test]
@@ -589,6 +696,7 @@ mod tests {
                 name: "Alice".to_owned(),
                 slug: Some("alice-user".to_owned()),
                 wikidot_profile: false,
+                avatar_data: None,
             },
         );
 

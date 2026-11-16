@@ -2907,6 +2907,7 @@ fn substitutes_wikidot_list_pages_author_and_created_at_variables() {
             name: "scpaiueouiuiuiui".to_owned(),
             slug: Some("scpaiueouiuiuiui".to_owned()),
             wikidot_profile: true,
+            avatar_data: None,
         },
     );
 
@@ -3012,6 +3013,7 @@ fn substitutes_wikidot_list_pages_author_and_created_at_variables() {
             name: "SeekGull".to_owned(),
             slug: Some("seekgull".to_owned()),
             wikidot_profile: false,
+            avatar_data: None,
         },
     );
     let local_mirror_author = FoundPageRow {
@@ -3025,7 +3027,18 @@ fn substitutes_wikidot_list_pages_author_and_created_at_variables() {
         1,
         &list_pages_substitution_context(20, &local_users, None, &BTreeMap::new()),
     );
-    assert_eq!(rendered, "SeekGull / SeekGull");
+    assert_eq!(
+        rendered,
+        concat!(
+            "SeekGull / ",
+            r#"<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">"#,
+            r#"<a href="/user:info/seekgull" onclick="WIKIDOT.page.listeners.userInfo(-20); return false;">"#,
+            r#"<img class="small" src="https://www.wikidot.com/common--images/avatars/default/a16.png" "#,
+            r#"alt="SeekGull" style="background-image:url(https://www.wikidot.com/userkarma.php?u=-20)" />"#,
+            r#"</a><a href="/user:info/seekgull" onclick="WIKIDOT.page.listeners.userInfo(-20); return false;">SeekGull</a>"#,
+            r#"</span>"#
+        )
+    );
     assert!(!rendered.contains("wikidot.com/user:info"));
 }
 
@@ -3255,6 +3268,7 @@ fn substitutes_wikidot_list_pages_created_by_unix_from_account_unix_name() {
             name: "Dr Wondertainment".to_owned(),
             slug: Some("dr-wondertainment".to_owned()),
             wikidot_profile: true,
+            avatar_data: None,
         },
     )]);
 
@@ -3276,6 +3290,7 @@ fn substitutes_wikidot_list_pages_created_by_unix_from_account_unix_name() {
             name: "Dr Wondertainment".to_owned(),
             slug: None,
             wikidot_profile: true,
+            avatar_data: None,
         },
     )]);
     assert_eq!(
@@ -3301,6 +3316,7 @@ fn substitutes_wikidot_list_pages_created_by_unix_from_account_unix_name() {
             name: "Administrator".to_owned(),
             slug: Some("administrator".to_owned()),
             wikidot_profile: false,
+            avatar_data: None,
         },
     )]);
     let imported_page = FoundPageRow {
@@ -3472,6 +3488,7 @@ fn substitutes_wikidot_list_pages_author_tool_variables() {
             name: "Calibold".to_owned(),
             slug: Some("calibold".to_owned()),
             wikidot_profile: true,
+            avatar_data: None,
         },
     );
 
@@ -3661,6 +3678,7 @@ fn substitutes_imported_wikidot_snapshot_metadata_for_list_pages_rows() {
             name: "Administrator".to_owned(),
             slug: Some("admin".to_owned()),
             wikidot_profile: false,
+            avatar_data: None,
         },
     );
     let mut snapshots = BTreeMap::new();
@@ -3746,6 +3764,7 @@ fn snapshot_commenter_without_local_thread_resolves_commented_by_id_and_unix_to_
             name: "Administrator".to_owned(),
             slug: Some("admin".to_owned()),
             wikidot_profile: false,
+            avatar_data: None,
         },
     );
     let mut snapshots = BTreeMap::new();
@@ -4042,6 +4061,7 @@ fn substituted_identity_and_tag_values_render_as_literal_text() {
             name: payload_name.to_owned(),
             slug: Some("wj-pentest-display".to_owned()),
             wikidot_profile: false,
+            avatar_data: None,
         },
     );
     let rendered = substitute_list_pages_variables(
@@ -4094,6 +4114,7 @@ fn substituted_payload_values_cannot_form_modules_for_the_page_parser() {
                 .to_owned(),
             slug: Some("wj-pentest-display".to_owned()),
             wikidot_profile: false,
+            avatar_data: None,
         },
     );
     let data_form_values = BTreeMap::new();
@@ -4170,6 +4191,7 @@ fn substituted_issue_exact_closed_module_payloads_render_as_literal_text() {
             name: payload_name.to_owned(),
             slug: Some("wj-pentest-display".to_owned()),
             wikidot_profile: false,
+            avatar_data: None,
         },
     );
     let data_form_values = BTreeMap::new();
@@ -4310,6 +4332,7 @@ fn substituted_quote_breakout_values_cannot_escape_double_quoted_attributes() {
             name: "WJ-PENTEST-DISPLAY".to_owned(),
             slug: Some("wj-pentest-display".to_owned()),
             wikidot_profile: false,
+            avatar_data: None,
         },
     );
     let data_form_values = BTreeMap::new();
@@ -4593,6 +4616,7 @@ fn substituted_identity_and_tag_values_escape_html_inside_html_blocks() {
                 .to_owned(),
             slug: Some("wj-html-display".to_owned()),
             wikidot_profile: false,
+            avatar_data: None,
         },
     );
     let stamp = time::OffsetDateTime::from_unix_timestamp(1_781_900_521)
@@ -4767,6 +4791,7 @@ fn substituted_ordinary_values_keep_visible_output_inside_html_blocks() {
             name: "Lt Masipag".to_owned(),
             slug: Some("lt-masipag".to_owned()),
             wikidot_profile: false,
+            avatar_data: None,
         },
     );
     let data_form_values = BTreeMap::new();
@@ -4803,6 +4828,7 @@ fn substituted_ordinary_identity_and_tag_values_pass_through_verbatim() {
             name: "Lt Masipag".to_owned(),
             slug: Some("lt-masipag".to_owned()),
             wikidot_profile: false,
+            avatar_data: None,
         },
     );
     assert_eq!(

@@ -256,9 +256,13 @@
     // declared format in the viewer's timezone has to run everywhere,
     // otherwise the server-rendered UTC fallback text stays visible.
     const uninstallOdates = installWikidotOdates(document)
-    const uninstallListPagesPagination = isImportedWikidotLayout
-      ? installListPagesPagination(window)
-      : () => {}
+    // ListPages boxes are content, not import provenance: deepwell emits
+    // them on any page that uses the module, and live Wikidot's module
+    // script runs on every page, no-oping when no box is present. Gating
+    // this installer on the imported layout left non-imported pages whose
+    // ListPages boxes carry the module identity without the status element
+    // and pagination lifecycle the themes key on.
+    const uninstallListPagesPagination = installListPagesPagination(window)
     const wikidotSearchForm =
       document.querySelector<HTMLFormElement>("#search-top-box-form")
     const wikidotSearchInput = document.querySelector<HTMLInputElement>(
