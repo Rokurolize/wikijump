@@ -22,12 +22,14 @@ test("local included components can load styles and fonts from the reviewed mirr
     "https://scp-wiki-cn.wjfiles.localhost",
     "https://etinjat.wjfiles.localhost",
     "https://evernight-aquarium.wjfiles.localhost",
+    "https://scp-int.wjfiles.localhost",
     "https://scp-wiki.wikijump.localhost",
     "https://scp-jp.wikijump.localhost",
     "https://scpko.wikijump.localhost",
     "https://scp-wiki-cn.wikijump.localhost",
     "https://etinjat.wikijump.localhost",
-    "https://evernight-aquarium.wikijump.localhost"
+    "https://evernight-aquarium.wikijump.localhost",
+    "https://scp-int.wikijump.localhost"
   ] as const) {
     for (const directive of ["style-src", "font-src"] as const) {
       assert(directives[directive]?.includes(origin), `${directive} needs ${origin}`)
@@ -100,7 +102,8 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
     "https://scpko.wjfiles.localhost",
     "https://scp-wiki-cn.wjfiles.localhost",
     "https://etinjat.wjfiles.localhost",
-    "https://evernight-aquarium.wjfiles.localhost"
+    "https://evernight-aquarium.wjfiles.localhost",
+    "https://scp-int.wjfiles.localhost"
   ]) {
     assert(directives["img-src"]?.some((source) => source === origin))
   }

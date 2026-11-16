@@ -4474,3 +4474,45 @@ fn localized_wikidot_local_file_url_uses_evernight_aquarium_mirror() {
         None,
     );
 }
+
+#[test]
+fn localized_wikidot_local_file_url_uses_scp_int_mirror() {
+    let mut config = Config::integration_testing();
+    config.files_domain = str!(".wjfiles.localhost");
+    config.files_domain_no_dot = str!("wjfiles.localhost");
+    let current_site = wikidot_site("scp-jp-sigma10", Some("scp-jp-sigma10.localhost"));
+
+    // The scp-int mirror tenant is a reserved local asset mirror, so code
+    // URLs on either scp-int host form localize to its files authority.
+    // (SCP themes @import component:colstyle's fold-state stylesheet by
+    // absolute scp-int.wikidot.com page-code URL, e.g. theme:zattou;
+    // before this, the URL survived unchanged and the page CSP blocked
+    // it, leaving coltop collapsibles permanently open.)
+    for host in ["scp-int.wikidot.com", "scp-int.wdfiles.com"] {
+        assert_eq!(
+            RenderService::localized_wikidot_local_file_url(
+                host,
+                "/local--code/component%3Acolstyle/1",
+                &current_site,
+                &config,
+            ),
+            Some(str!(
+                "https://scp-int.wjfiles.localhost/local--code/component%3Acolstyle/1"
+            )),
+            "{host}",
+        );
+    }
+
+    // Outside the local lab (the files domain is not a .localhost
+    // domain), the reserved-mirror branch never fires.
+    let config = Config::integration_testing();
+    assert_eq!(
+        RenderService::localized_wikidot_local_file_url(
+            "scp-int.wikidot.com",
+            "/local--code/component%3Acolstyle/1",
+            &current_site,
+            &config,
+        ),
+        None,
+    );
+}

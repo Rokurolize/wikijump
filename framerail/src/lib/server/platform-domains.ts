@@ -38,7 +38,8 @@ export const LOCAL_MIRROR_FILE_ASSET_SITES = [
   "scpko",
   "scp-wiki-cn",
   "etinjat",
-  "evernight-aquarium"
+  "evernight-aquarium",
+  "scp-int"
 ]
 
 export const platformDomains = ({

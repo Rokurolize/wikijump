@@ -4104,6 +4104,7 @@ fn local_lab_has_reserved_scp_asset_mirror(config: &Config, site_slug: &str) -> 
                 | "scp-wiki-cn"
                 | "etinjat"
                 | "evernight-aquarium"
+                | "scp-int"
         )
 }
 
