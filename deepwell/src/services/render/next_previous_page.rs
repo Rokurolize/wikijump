@@ -287,6 +287,7 @@ impl RenderService {
                     },
                     pager_route: ListPagesPagerRoute::SavedPage,
                     module_offset: occurrence.start,
+                    module_block_position: false,
                     compat_html,
                     viewer_user_id: None,
                     page_info,

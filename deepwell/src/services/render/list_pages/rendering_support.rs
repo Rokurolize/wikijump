@@ -356,6 +356,42 @@ pub(in crate::services::render) fn list_pages_template_has_block_section(
     })
 }
 
+/// Whether a ListPages module occurrence occupies block position in the
+/// page source: nothing but whitespace between the previous blank line
+/// (or the start of the source) and the module start, and nothing but
+/// whitespace between the module end and the next blank line (or the end
+/// of the source). A module in block position owns its output's block
+/// structure (live Wikidot keeps the rendered body's paragraph wrapper,
+/// e.g. the `existing:component-af2026theme` tips module inside its div);
+/// a module embedded in a text line is inline, and the outer paragraph
+/// owns the only wrapper.
+pub(in crate::services::render) fn list_pages_module_in_block_position(
+    source: &str,
+    start: usize,
+    end: usize,
+) -> bool {
+    let before = &source[..start];
+    let before_run = &before[before.trim_end().len()..];
+    let before_ok = if before_run.is_empty() {
+        // The module either starts the source or directly abuts
+        // non-whitespace content (inline).
+        start == 0
+    } else {
+        before_run.matches('\n').count() >= 2
+    };
+    if !before_ok {
+        return false;
+    }
+    let after = &source[end..];
+    let after_run = &after[..after.len() - after.trim_start().len()];
+    if after_run.is_empty() {
+        // The module either ends the source or directly abuts
+        // non-whitespace content (inline).
+        return end == source.len();
+    }
+    after_run.matches('\n').count() >= 2
+}
+
 pub(in crate::services::render) fn list_pages_template_starts_with_inline_anchor(
     template: &ListPagesTemplatePlan,
 ) -> bool {
@@ -514,6 +550,7 @@ pub(in crate::services::render) struct ListPagesBlockRenderArgs<'a, 'ctx, 'info,
     pub(in crate::services::render) page_context: ListPagesPageContext<'url>,
     pub(in crate::services::render) pager_route: ListPagesPagerRoute,
     pub(in crate::services::render) module_offset: usize,
+    pub(in crate::services::render) module_block_position: bool,
     pub(in crate::services::render) compat_html: &'a mut CompatHtmlFragments,
     pub(in crate::services::render) viewer_user_id: Option<i64>,
     pub(in crate::services::render) page_info: &'a PageInfo<'info>,
@@ -775,6 +812,47 @@ impl RenderService {
 
 #[cfg(test)]
 mod tests {
+    use super::list_pages_module_in_block_position;
+
+    fn block_position(source: &str) -> bool {
+        let start = source.find("[[module").expect("module start");
+        let end = source.find("[[/module]]").expect("module end") + "[[/module]]".len();
+        list_pages_module_in_block_position(source, start, end)
+    }
+
+    #[test]
+    fn module_block_position_matches_paragraph_segment() {
+        // The af2026 tips shape: module alone in its paragraph segment
+        // inside a div.
+        assert!(block_position(
+            "[[div_ class=\"tips\"]]\n\n[[module ListPages]]\nbody\n[[/module]]\n\n[[/div]]"
+        ));
+        // Module at the very start / end of the source.
+        assert!(block_position("[[module ListPages]]\nbody\n[[/module]]"));
+        assert!(block_position(
+            "text\n\n[[module ListPages]]\nbody\n[[/module]]\n\nmore"
+        ));
+        // Inline in a text line: the outer paragraph owns the wrapper.
+        assert!(!block_position(
+            "BEGIN|[[module ListPages]]body[[/module]]|END"
+        ));
+        // Abutting text on either side is inline.
+        assert!(!block_position(
+            "x[[module ListPages]]body[[/module]]\n\nmore"
+        ));
+        assert!(!block_position(
+            "text\n\n[[module ListPages]]body[[/module]]x"
+        ));
+        // On its own lines but inside one paragraph segment (no blank
+        // lines around): unchanged, treated as inline.
+        assert!(!block_position(
+            "[[div]]\n[[module ListPages]]\nbody\n[[/module]]\n[[/div]]"
+        ));
+        assert!(!block_position(
+            "text\n[[module ListPages]]\nbody\n[[/module]]\nmore"
+        ));
+    }
+
     use super::*;
     use ftml::data::{PageInfo, ScoreValue};
     use ftml::layout::Layout;

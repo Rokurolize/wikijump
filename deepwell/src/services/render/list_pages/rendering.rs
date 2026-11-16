@@ -44,8 +44,9 @@ use super::current_data_form::{
 };
 use super::parents::{load_list_pages_child_counts, load_list_pages_parent_displays};
 use super::rendering_support::{
-    ListPagesBlock, ListPagesBlockPlan, list_pages_raw_footnote_prefix_end,
-    list_pages_template_has_block_section, list_pages_template_starts_with_inline_anchor,
+    ListPagesBlock, ListPagesBlockPlan, list_pages_module_in_block_position,
+    list_pages_raw_footnote_prefix_end, list_pages_template_has_block_section,
+    list_pages_template_starts_with_inline_anchor,
 };
 use super::scanner::{
     CountPagesCloseReachabilityIndex, has_count_pages_module_opening_candidate,
