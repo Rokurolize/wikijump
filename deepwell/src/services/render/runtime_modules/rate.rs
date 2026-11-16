@@ -44,10 +44,35 @@ fn rate_module_footnote_scope_ends(
     source: &str,
     literal_regions: &LiteralRegionIndex,
 ) -> Vec<(usize, usize)> {
-    let mut ranges = collect_unproven_scope_ranges(source, literal_regions)
+    let collected = collect_unproven_scope_ranges_with_closure(source, literal_regions);
+    // The end of the last footnote close on the page. An unclosed
+    // footnote opener still ends there: live pairs the first close with
+    // the open footnote. When no close follows at all, the opener is
+    // inert literal text on live (its close was lost, e.g. eaten by an
+    // include-argument truncation like the one on
+    // theme:redsquare-jp), so it must not turn every later rate module
+    // into footnote text (muse-probe-rate-unclosedfn,
+    // muse-probe-rate-infootnote).
+    let last_close_end = collected
+        .iter()
+        .filter(|(range, closed)| {
+            *closed && wikidot_scope_head_is(source, range.start, "footnote")
+        })
+        .map(|(range, _)| range.end)
+        .max()
+        .unwrap_or(0);
+    let mut ranges = collected
         .into_iter()
-        .filter(|range| wikidot_scope_head_is(source, range.start, "footnote"))
-        .map(|range| (range.start, range.end))
+        .filter(|(range, _)| wikidot_scope_head_is(source, range.start, "footnote"))
+        .filter_map(|(range, closed)| {
+            if closed {
+                Some((range.start, range.end))
+            } else if last_close_end > range.start {
+                Some((range.start, last_close_end))
+            } else {
+                None
+            }
+        })
         .collect::<Vec<_>>();
     ranges.sort_unstable_by_key(|(start, _)| *start);
     let mut max_end = 0;
@@ -73,20 +98,29 @@ fn rate_module_is_inline_source_text(
     occurrence_end: usize,
 ) -> bool {
     let occurrence = &source[module_start..occurrence_end];
-    if occurrence
-        .find("]]")
-        .is_some_and(|head_end| occurrence[head_end + 2..].starts_with("[[/module]]"))
-    {
+    let Some(head_end) = occurrence.find("]]").map(|index| index + 2) else {
+        return true;
+    };
+    if occurrence[head_end..].starts_with("[[/module]]") {
         return true;
     }
     let line_start = source[..module_start]
         .rfind('\n')
         .map_or(0, |index| index + 1);
+    if !source[line_start..module_start].trim().is_empty() {
+        return true;
+    }
+    if module_start + head_end != occurrence_end {
+        // The occurrence carries a body bound by a real [[/module]]:
+        // text after that close is following content, not part of the
+        // module's own line (live renders it after the widget:
+        // muse-probe-rate-closetail).
+        return false;
+    }
     let line_end = source[occurrence_end..]
         .find('\n')
         .map_or(source.len(), |index| occurrence_end + index);
-    !source[line_start..module_start].trim().is_empty()
-        || !source[occurrence_end..line_end].trim().is_empty()
+    !source[occurrence_end..line_end].trim().is_empty()
 }
 
 fn rate_module_cross_tree_inline_scope_ranges(
@@ -422,8 +456,8 @@ impl RenderService {
 #[cfg(test)]
 mod tests {
     use super::{
-        rate_module_cross_tree_inline_scope_ranges, rate_module_is_inline_source_text,
-        rate_module_is_inside_cross_tree_inline_scope,
+        rate_module_cross_tree_inline_scope_ranges, rate_module_footnote_scope_ends,
+        rate_module_is_inline_source_text, rate_module_is_inside_cross_tree_inline_scope,
         rate_module_is_inside_footnote_scope, rate_module_occurrence_body,
     };
     use crate::services::render::literal_regions::LiteralRegionIndex;
@@ -516,5 +550,124 @@ mod tests {
                 "{expected_name}: {source}",
             );
         }
+    }
+
+    #[test]
+    fn rate_body_close_inside_color_span_is_literal_text() {
+        // Live renders the widget and shows the exhibit as colored text
+        // (sandbox: muse-probe-rate-farclose; the shape is
+        // theme:inkblot-jp's documentation exhibit).
+        let source = concat!(
+            "[[module Rate]]\n",
+            "body text line\n",
+            "**##var(--c-keyword)|[[/module]]##**\n",
+        );
+        let open_end = "[[module Rate]]".len();
+        let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(source);
+
+        assert_eq!(
+            rate_module_occurrence_body(source, 0, open_end, &literal_regions),
+            (open_end, None),
+        );
+        assert!(!rate_module_is_inline_source_text(source, 0, open_end));
+    }
+
+    #[test]
+    fn rate_body_close_inside_bold_span_is_literal_text() {
+        // Sandbox: muse-probe-rate-boldclose.
+        let source = concat!(
+            "[[module Rate]]\n",
+            "prose line\n",
+            "**bold [[/module]] text**\n",
+            "visible tail\n",
+        );
+        let open_end = "[[module Rate]]".len();
+        let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(source);
+
+        assert_eq!(
+            rate_module_occurrence_body(source, 0, open_end, &literal_regions),
+            (open_end, None),
+        );
+    }
+
+    #[test]
+    fn rate_body_close_with_trailing_text_still_binds() {
+        // Live consumes the body and renders the trailing text after the
+        // widget (sandbox: muse-probe-rate-closetail).
+        let source = concat!(
+            "[[module Rate]]\n",
+            "body line\n",
+            "[[/module]] trailing words\n",
+            "visible tail\n",
+        );
+        let open_end = "[[module Rate]]".len();
+        let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(source);
+
+        let (end, body) =
+            rate_module_occurrence_body(source, 0, open_end, &literal_regions);
+        assert_eq!(body, Some("\nbody line\n"));
+        assert_eq!(end, source.find(" trailing words").unwrap(),);
+        assert!(!rate_module_is_inline_source_text(source, 0, end));
+    }
+
+    #[test]
+    fn unclosed_footnote_without_any_close_produces_no_scope() {
+        // The theme:redsquare-jp shape: an include-argument truncation
+        // (which live performs identically) eats the footnote close, and
+        // live leaves the opener inert (sandbox:
+        // muse-probe-rate-unclosedfn).
+        let source = "caption [[footnote]]never closed\n\n[[module Rate]]\n";
+        let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(source);
+
+        let ranges = rate_module_footnote_scope_ends(source, &literal_regions);
+        assert!(ranges.is_empty(), "{ranges:?}");
+    }
+
+    #[test]
+    fn closed_footnote_scope_still_covers_its_body() {
+        // Sandbox: muse-probe-rate-infootnote (module inside a closed
+        // footnote stays footnote text; the one after renders).
+        let source = concat!(
+            "intro [[footnote]]note [[module Rate]] inner[[/footnote]]\n",
+            "[[module Rate]]\n",
+        );
+        let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(source);
+        let ranges = rate_module_footnote_scope_ends(source, &literal_regions);
+
+        let inner = source.find("[[module Rate]]").unwrap();
+        assert!(rate_module_is_inside_footnote_scope(
+            &ranges,
+            inner,
+            inner + "[[module Rate]]".len(),
+        ));
+        let outer = source.rfind("[[module Rate]]").unwrap();
+        assert!(!rate_module_is_inside_footnote_scope(
+            &ranges,
+            outer,
+            outer + "[[module Rate]]".len(),
+        ));
+    }
+
+    #[test]
+    fn unclosed_footnote_ends_at_the_last_footnote_close() {
+        let source = concat!(
+            "[[footnote]]outer [[footnote]]inner[[/footnote]] after\n",
+            "[[module Rate]]\n",
+        );
+        let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(source);
+        let ranges = rate_module_footnote_scope_ends(source, &literal_regions);
+
+        let module_start = source.find("[[module Rate]]").unwrap();
+        assert!(!rate_module_is_inside_footnote_scope(
+            &ranges,
+            module_start,
+            module_start + "[[module Rate]]".len(),
+        ));
+        let outer_body = source.find("outer").unwrap();
+        assert!(rate_module_is_inside_footnote_scope(
+            &ranges,
+            outer_body,
+            outer_body + "outer".len(),
+        ));
     }
 }

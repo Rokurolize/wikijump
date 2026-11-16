@@ -44,7 +44,8 @@ use super::module_arguments::{
 };
 use super::module_tokens::scan_source_modules;
 use super::native_list_context::{
-    collect_unproven_scope_ranges, matching_source_scope_close,
+    collect_unproven_scope_ranges, collect_unproven_scope_ranges_with_closure,
+    matching_source_scope_close,
 };
 use super::new_page_module::{
     MAX_NEW_PAGE_MODULES_PER_RENDER, NEWPAGE_MODULE_REGEX, NewPageTemplateOption,
