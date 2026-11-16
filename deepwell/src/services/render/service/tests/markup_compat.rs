@@ -1777,3 +1777,38 @@ fn protected_inline_body_leaves_malformed_size_markers_literal() {
     assert!(rendered.contains("[[size 12px]]unclosed"), "{rendered}");
     assert!(!rendered.contains("font-size"), "{rendered}");
 }
+
+#[test]
+fn bold_color_protection_does_not_swallow_raw_spans() {
+    // existing:old-theme-basalt shape: the documentation exhibits write raw
+    // spans inside bold color spans ({{**##c8c7ff|@@--@@title##**}}). The
+    // bold-color protection pre-renders the body with a text-level renderer
+    // that cannot represent raw spans, so the @@ delimiters leaked as
+    // literal text (with the raw content typographically rewritten, e.g.
+    // -- became an em dash). A body carrying @@ must be left to the normal
+    // pipeline, where the raw span forms inside the color span.
+    let html =
+        render_wikidot_page_body_with_compat_restore("{{**##c8c7ff|@@--@@title##**}}");
+    assert!(!html.contains("@@"), "{html}");
+    assert!(
+        html.contains("<span style=\"white-space: pre-wrap;\">--</span>title"),
+        "{html}",
+    );
+    assert!(
+        !html.contains(WIKIDOT_INLINE_HTML_SENTINEL_PREFIX),
+        "{html}",
+    );
+
+    // The same text-level body renderer serves the bold-underline
+    // protection; its @@ bodies take the normal pipeline too.
+    let html = render_wikidot_page_body_with_compat_restore("**__@@--@@__**");
+    assert!(!html.contains("@@"), "{html}");
+    assert!(
+        html.contains("<span style=\"white-space: pre-wrap;\">--</span>"),
+        "{html}",
+    );
+    assert!(
+        !html.contains(WIKIDOT_INLINE_HTML_SENTINEL_PREFIX),
+        "{html}",
+    );
+}

@@ -181,7 +181,7 @@ pub(in crate::services::render) fn protect_wikidot_inline_html_spans(
         &protected,
         &WIKIDOT_BOLD_OUTER_COLOR_SPAN_REGEX,
         |captures| {
-            if captures["body"].contains("##") {
+            if captures["body"].contains("##") || captures["body"].contains("@@") {
                 return captures[0].to_owned();
             }
             let Some(color) = parse_wikidot_compat_color_descriptor(
@@ -205,7 +205,7 @@ pub(in crate::services::render) fn protect_wikidot_inline_html_spans(
         &protected,
         &WIKIDOT_BOLD_COLOR_SPAN_REGEX,
         |captures| {
-            if captures["body"].contains("##") {
+            if captures["body"].contains("##") || captures["body"].contains("@@") {
                 return captures[0].to_owned();
             }
             let Some(color) = parse_wikidot_compat_color_descriptor(
@@ -229,7 +229,10 @@ pub(in crate::services::render) fn protect_wikidot_inline_html_spans(
         &protected,
         &WIKIDOT_BOLD_UNDERLINE_SPAN_REGEX,
         |captures| {
-            if captures["body"].contains("[[") || captures["body"].contains("]]") {
+            if captures["body"].contains("[[")
+                || captures["body"].contains("]]")
+                || captures["body"].contains("@@")
+            {
                 return captures[0].to_owned();
             }
             let marker = wikidot_inline_html_marker();
