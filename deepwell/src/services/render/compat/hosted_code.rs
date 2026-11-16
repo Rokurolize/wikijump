@@ -35,12 +35,39 @@ pub(in crate::services::render) async fn persist_hosted_code_blocks(
             config,
         )
     };
+    let owned = select_hosted_code_blocks(
+        code_blocks,
+        hosted_code_source,
+        include_comment_blocks,
+        localize,
+    );
+    let blocks = owned
+        .iter()
+        .map(|block| TextBlock {
+            text: &block.text,
+            text_type: block.language.as_deref(),
+            mime: mime_for_language(&block.language),
+            name: block.name.as_deref(),
+        })
+        .collect::<Vec<_>>();
+    TextBlockService::add_blocks(ctx, page_id, TextBlockType::Code, &blocks).await
+}
+
+fn select_hosted_code_blocks<F>(
+    code_blocks: &[CodeBlock<'_>],
+    hosted_code_source: Option<&[CompatCodeBlock]>,
+    include_comment_blocks: bool,
+    localize: F,
+) -> Vec<OwnedHostedCodeBlock>
+where
+    F: Fn(&str) -> String,
+{
     let comment_source = include_comment_blocks
         .then_some(hosted_code_source)
         .flatten()
         .filter(|raw| raw.iter().any(|block| block.comment_wrapped))
         .filter(|raw| visible_scan_blocks_render_in_order(code_blocks, raw, &localize));
-    let owned = match comment_source {
+    match comment_source {
         Some(raw) => merged_hosted_code_blocks(code_blocks, raw, localize)
             .into_iter()
             .map(|block| OwnedHostedCodeBlock {
@@ -48,8 +75,26 @@ pub(in crate::services::render) async fn persist_hosted_code_blocks(
                 language: block.language,
                 name: block.name,
             })
-            .collect::<Vec<_>>(),
+            .collect(),
         None => {
+            // Wikidot serves local--code from the raw page source,
+            // independent of [[iftags]] display gating: preprocessing can
+            // drop every code block before ftml (e.g. all of them inside a
+            // bare [[iftags]] region, whose body must stay hidden), leaving
+            // the render with none. The source scan still found them, so
+            // register them in source order.
+            if code_blocks.is_empty()
+                && let Some(raw) = hosted_code_source.filter(|raw| !raw.is_empty())
+            {
+                return raw
+                    .iter()
+                    .map(|block| OwnedHostedCodeBlock {
+                        text: wikidot_hosted_code(&localize(&block.contents)),
+                        language: block.language.clone(),
+                        name: block.name.clone(),
+                    })
+                    .collect();
+            }
             let rendered = code_blocks
                 .iter()
                 .map(|block| block.contents.as_ref())
@@ -65,19 +110,9 @@ pub(in crate::services::render) async fn persist_hosted_code_blocks(
                         name: name.as_deref().map(str::to_owned),
                     },
                 )
-                .collect::<Vec<_>>()
+                .collect()
         }
-    };
-    let blocks = owned
-        .iter()
-        .map(|block| TextBlock {
-            text: &block.text,
-            text_type: block.language.as_deref(),
-            mime: mime_for_language(&block.language),
-            name: block.name.as_deref(),
-        })
-        .collect::<Vec<_>>();
-    TextBlockService::add_blocks(ctx, page_id, TextBlockType::Code, &blocks).await
+    }
 }
 
 struct OwnedHostedCodeBlock {
@@ -276,6 +311,7 @@ fn is_wikidot_discarded_control(character: char) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use super::super::fallback_code::scan_compat_code_blocks;
     use super::*;
 
     fn raw(contents: &str) -> CompatCodeBlock {
@@ -526,6 +562,54 @@ mod tests {
                 .iter()
                 .all(|block| block.language.as_deref() == Some("css"))
         );
+    }
+
+    #[test]
+    fn source_scan_registers_blocks_dropped_with_a_bare_iftags_region() {
+        // Regression shape from existing:component-af2024theme: every
+        // [[code]] block sits inside one bare [[iftags]] region.
+        // Preprocessing drops the region before ftml (the gated body must
+        // stay hidden; see iftags::tests::bare_gate_never_matches), so the
+        // render produces no code blocks at all. Wikidot serves
+        // local--code from the raw page source regardless of the gate, so
+        // the source scan's blocks must still register in source order.
+        let source = concat!(
+            "[[iftags]]\n",
+            "[[code type=\"css\"]]\n",
+            "body { background: #060a1d; }\n",
+            "[[/code]]\n",
+            "[[code type=\"css\"]]\n",
+            ".neon { color: #ffffff; }\n",
+            "[[/code]]\n",
+            "[[/iftags]]\n",
+        );
+        let raw = scan_compat_code_blocks(source).unwrap();
+        assert_eq!(raw.len(), 2);
+        assert!(raw.iter().all(|block| !block.comment_wrapped));
+
+        let owned = select_hosted_code_blocks(&[], Some(&raw), true, identity);
+        assert_eq!(owned.len(), 2);
+        assert_eq!(owned[0].text, "body { background: #060a1d; }\n");
+        assert_eq!(owned[0].language.as_deref(), Some("css"));
+        assert_eq!(owned[0].name, None);
+        assert_eq!(owned[1].text, ".neon { color: #ffffff; }\n");
+        assert_eq!(owned[1].language.as_deref(), Some("css"));
+    }
+
+    #[test]
+    fn source_scan_registers_nothing_without_blocks_or_a_scan() {
+        assert!(select_hosted_code_blocks(&[], None, true, identity).is_empty());
+        assert!(select_hosted_code_blocks(&[], Some(&[]), true, identity).is_empty());
+    }
+
+    #[test]
+    fn rendered_blocks_still_win_over_the_source_scan() {
+        let source = [raw("a")];
+        let owned =
+            select_hosted_code_blocks(&[tree("a")], Some(&source), true, identity);
+        assert_eq!(owned.len(), 1);
+        assert_eq!(owned[0].text, "a\n");
+        assert_eq!(owned[0].language.as_deref(), Some("css"));
     }
 
     #[test]
