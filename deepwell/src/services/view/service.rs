@@ -228,6 +228,17 @@ async fn render_wikidot_data_form_wiki_values(
     })?
 }
 
+/// One row of a page breadcrumb chain, ordered from the page itself
+/// (depth 0) up to the root ancestor. Produced either from the live
+/// `page_parent` relations or from the import-time snapshot chain.
+#[derive(FromQueryResult, Debug)]
+struct BreadcrumbChainRow {
+    slug: String,
+    title_shown: Option<String>,
+    page_category_id: Option<i64>,
+    incomplete: bool,
+}
+
 #[derive(Debug)]
 pub struct ViewService;
 
@@ -344,7 +355,6 @@ impl ViewService {
                 wikidot_breadcrumbs,
                 ..
             } = &mut page
-                && page_model.from_wikidot
             {
                 *wikidot_breadcrumbs = Self::get_wikidot_breadcrumbs(
                     ctx,
@@ -1676,14 +1686,121 @@ impl ViewService {
         user_id: Option<i64>,
         page_id: i64,
     ) -> Result<Vec<WikidotPageBreadcrumbView>> {
-        #[derive(FromQueryResult, Debug)]
-        struct WikidotBreadcrumbRow {
-            source_fullname: String,
-            title_shown: Option<String>,
-            page_category_id: Option<i64>,
-            incomplete: bool,
+        // Breadcrumbs are a live navigation element, so the current
+        // `page_parent` relations are authoritative: a parent set (or
+        // changed) through the parent service shows up here, as it does
+        // on Wikidot. The import-time snapshot chain remains as a
+        // fallback for pages with no live parent relation at all.
+        if let Some(breadcrumbs) =
+            Self::get_live_page_breadcrumbs(ctx, site_id, user_id, page_id).await?
+        {
+            return Ok(breadcrumbs);
         }
 
+        Self::get_wikidot_snapshot_breadcrumbs(ctx, site_id, user_id, page_id).await
+    }
+
+    /// Builds the breadcrumb chain from the live `page_parent` relations.
+    ///
+    /// Returns `Ok(None)` when the page has no live parent relation, so
+    /// the caller falls back to the snapshot chain. A live chain that is
+    /// cyclic or deeper than the depth cap yields an empty chain instead:
+    /// the live relations govern, and no stale snapshot ancestry is
+    /// resurrected for a page whose parent was changed after import.
+    async fn get_live_page_breadcrumbs(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        user_id: Option<i64>,
+        page_id: i64,
+    ) -> Result<Option<Vec<WikidotPageBreadcrumbView>>> {
+        let txn = ctx.transaction();
+        let statement = Statement::from_string(
+            txn.get_database_backend(),
+            format!(
+                r#"
+WITH RECURSIVE
+primary_parent AS (
+  SELECT DISTINCT ON (page_parent.child_page_id)
+    page_parent.child_page_id,
+    page_parent.parent_page_id
+  FROM page_parent
+  JOIN page parent_page
+    ON parent_page.page_id = page_parent.parent_page_id
+   AND parent_page.deleted_at IS NULL
+   AND parent_page.site_id = {site_id}
+  ORDER BY page_parent.child_page_id, page_parent.created_at ASC,
+    page_parent.parent_page_id ASC
+),
+breadcrumb_chain(
+  depth, page_id, visited_page_ids, cycle_detected
+) AS (
+  SELECT
+    0, page.page_id, ARRAY[page.page_id], false
+  FROM page
+  WHERE page.page_id = {page_id}
+    AND page.site_id = {site_id}
+    AND page.deleted_at IS NULL
+  UNION ALL
+  SELECT
+    breadcrumb_chain.depth + 1,
+    primary_parent.parent_page_id,
+    breadcrumb_chain.visited_page_ids || primary_parent.parent_page_id,
+    primary_parent.parent_page_id = ANY(breadcrumb_chain.visited_page_ids)
+  FROM breadcrumb_chain
+  JOIN primary_parent
+    ON primary_parent.child_page_id = breadcrumb_chain.page_id
+  WHERE breadcrumb_chain.depth < 12
+    AND NOT breadcrumb_chain.cycle_detected
+)
+SELECT
+  page.slug,
+  page_revision.title AS title_shown,
+  page.page_category_id,
+  breadcrumb_chain.cycle_detected OR (
+    breadcrumb_chain.depth = 12
+    AND EXISTS (
+      SELECT 1
+      FROM primary_parent
+      WHERE primary_parent.child_page_id = breadcrumb_chain.page_id
+    )
+  ) AS incomplete
+FROM breadcrumb_chain
+JOIN page
+  ON page.page_id = breadcrumb_chain.page_id
+LEFT JOIN page_revision
+  ON page_revision.revision_id = page.latest_revision_id
+ORDER BY breadcrumb_chain.depth ASC
+"#,
+            ),
+        );
+
+        let rows = BreadcrumbChainRow::find_by_statement(statement)
+            .all(txn)
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to load page breadcrumb chain",
+                    ErrorType::GetView(ViewType::Page),
+                )
+            })?;
+
+        // The anchor row on its own means the page has no live parent
+        // relation; let the snapshot chain serve as the fallback.
+        if rows.len() <= 1 {
+            return Ok(None);
+        }
+
+        let breadcrumbs = Self::build_breadcrumbs(ctx, site_id, user_id, rows).await?;
+
+        Ok(Some(breadcrumbs))
+    }
+
+    async fn get_wikidot_snapshot_breadcrumbs(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        user_id: Option<i64>,
+        page_id: i64,
+    ) -> Result<Vec<WikidotPageBreadcrumbView>> {
         let txn = ctx.transaction();
         let statement = Statement::from_string(
             txn.get_database_backend(),
@@ -1718,7 +1835,7 @@ breadcrumb_chain(
     AND NOT breadcrumb_chain.cycle_detected
 )
 SELECT
-  breadcrumb_chain.source_fullname,
+  breadcrumb_chain.source_fullname AS slug,
   breadcrumb_chain.title_shown,
   page.page_category_id,
   breadcrumb_chain.cycle_detected OR (
@@ -1734,7 +1851,7 @@ ORDER BY breadcrumb_chain.depth ASC
             ),
         );
 
-        let rows = WikidotBreadcrumbRow::find_by_statement(statement)
+        let rows = BreadcrumbChainRow::find_by_statement(statement)
             .all(txn)
             .await
             .or_raise(|| {
@@ -1744,13 +1861,22 @@ ORDER BY breadcrumb_chain.depth ASC
                 )
             })?;
 
+        Self::build_breadcrumbs(ctx, site_id, user_id, rows).await
+    }
+
+    async fn build_breadcrumbs(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        user_id: Option<i64>,
+        rows: Vec<BreadcrumbChainRow>,
+    ) -> Result<Vec<WikidotPageBreadcrumbView>> {
         if rows.iter().any(|row| row.incomplete) {
             return Ok(Vec::new());
         }
 
         let mut breadcrumbs = Vec::new();
-        for WikidotBreadcrumbRow {
-            source_fullname,
+        for BreadcrumbChainRow {
+            slug,
             title_shown,
             page_category_id,
             incomplete: _,
@@ -1779,8 +1905,8 @@ ORDER BY breadcrumb_chain.depth ASC
             }
 
             breadcrumbs.push(WikidotPageBreadcrumbView {
-                title: title_shown.unwrap_or_else(|| source_fullname.clone()),
-                slug: source_fullname,
+                title: title_shown.unwrap_or_else(|| slug.clone()),
+                slug,
             });
         }
 

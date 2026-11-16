@@ -33,6 +33,7 @@ use deepwell::services::permission::PermissionService;
 use deepwell::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
 };
+use deepwell::services::view::GetPageViewOutput;
 use deepwell::services::{
     PageRevisionService, PageService, RequestContext, ServiceContext,
 };
@@ -806,5 +807,85 @@ async fn direct_parent_metadata_rejects_missing_deleted_and_cross_site_parents()
             DirectParentMetadataResult::Undisclosed
         ),
         "a parent from another site must not be projected",
+    );
+}
+
+#[tokio::test]
+async fn page_view_breadcrumbs_follow_live_page_parents() {
+    const GRANDPARENT_SLUG: &str = "fixture-breadcrumb-grandparent";
+    const PARENT_SLUG: &str = "fixture-breadcrumb-parent";
+    const CHILD_SLUG: &str = "fixture-breadcrumb-child";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_page(&mut runner, site_id, GRANDPARENT_SLUG, "Grandparent body").await;
+    create_page(&mut runner, site_id, PARENT_SLUG, "Parent body").await;
+    create_page(&mut runner, site_id, CHILD_SLUG, "Child body").await;
+
+    // These pages are locally created, so they have no
+    // `wikidot_page_snapshot` rows: the live `page_parent` relations
+    // set here are the only parent information the view can use.
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(CHILD_SLUG))),
+    });
+    run_endpoint!(
+        runner,
+        parent_set,
+        json!({
+            "site_id": site_id,
+            "parent": GRANDPARENT_SLUG,
+            "child": PARENT_SLUG,
+        }),
+    );
+    run_endpoint!(
+        runner,
+        parent_set,
+        json!({
+            "site_id": site_id,
+            "parent": PARENT_SLUG,
+            "child": CHILD_SLUG,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": CHILD_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        wikidot_breadcrumbs,
+        ..
+    } = view
+    else {
+        panic!("expected a found page view, got {view:?}");
+    };
+
+    let chain: Vec<(&str, &str)> = wikidot_breadcrumbs
+        .iter()
+        .map(|crumb| (crumb.slug.as_str(), crumb.title.as_str()))
+        .collect();
+    assert_eq!(
+        chain,
+        vec![
+            (GRANDPARENT_SLUG, GRANDPARENT_SLUG),
+            (PARENT_SLUG, PARENT_SLUG),
+            (CHILD_SLUG, CHILD_SLUG),
+        ],
+        "page view breadcrumbs should follow the live page_parent chain",
     );
 }
