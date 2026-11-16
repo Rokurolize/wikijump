@@ -4380,3 +4380,97 @@ fn localized_wikidot_local_file_url_uses_etinjat_mirror() {
         None,
     );
 }
+#[test]
+fn localized_wikidot_local_file_url_uses_evernight_aquarium_mirror() {
+    let mut config = Config::integration_testing();
+    config.files_domain = str!(".wjfiles.localhost");
+    config.files_domain_no_dot = str!("wjfiles.localhost");
+    let current_site = wikidot_site("scp-jp-sigma10", Some("scp-jp-sigma10.localhost"));
+
+    // The evernight-aquarium mirror tenant is a reserved local asset
+    // mirror, so its code URLs localize to its files authority on
+    // either host form. (theme:andesite-jp @imports
+    // component:non-savingpage block 1 by absolute
+    // evernight-aquarium.wikidot.com /code/ URL, which the code-URL
+    // localizer converts to the local--code path used here, and the
+    // tenant serves the block.)
+    for host in [
+        "evernight-aquarium.wikidot.com",
+        "evernight-aquarium.wdfiles.com",
+    ] {
+        assert_eq!(
+            RenderService::localized_wikidot_local_file_url(
+                host,
+                "/local--code/component%3Anon-savingpage/1",
+                &current_site,
+                &config,
+            ),
+            Some(str!(
+                "https://evernight-aquarium.wjfiles.localhost/local--code/component%3Anon-savingpage/1"
+            )),
+            "{host}",
+        );
+    }
+
+    // File URLs on the wikidot.com host form localize the same way.
+    // (The paradigm, dream-of-the-stars and progress-institute
+    // themes address the tenant's attachments by /local--files/
+    // URLs on this host form; every referenced attachment has been
+    // mirrored onto the tenant and verified serving, so localizing
+    // them is safe. CN-MIRROR-LISTS deferred this slug until that
+    // mirroring was done.)
+    assert_eq!(
+        RenderService::localized_wikidot_local_file_url(
+            "evernight-aquarium.wikidot.com",
+            "/local--files/files/wl_border.png",
+            &current_site,
+            &config,
+        ),
+        Some(str!(
+            "https://evernight-aquarium.wjfiles.localhost/local--files/files/wl_border.png"
+        )),
+    );
+
+    // File URLs on the wdfiles.com host form are claimed by the
+    // current site instead: the cross-site wdfiles rule for
+    // /local--files/ paths runs before the reserved-mirror branch
+    // and is slug-independent (it resolves file references in
+    // imported content to the importing site's own attachments).
+    // That precedence is unchanged by this slug's admission.
+    assert_eq!(
+        RenderService::localized_wikidot_local_file_url(
+            "evernight-aquarium.wdfiles.com",
+            "/local--files/files/wl_border.png",
+            &current_site,
+            &config,
+        ),
+        Some(str!(
+            "https://scp-jp-sigma10.wjfiles.localhost/local--files/files/wl_border.png"
+        )),
+    );
+
+    // A Wikidot slug with no local mirror tenant keeps the original URL
+    // for code paths (the localizer returns None).
+    assert_eq!(
+        RenderService::localized_wikidot_local_file_url(
+            "pokm.wikidot.com",
+            "/local--code/theme%3Astarry-library/1",
+            &current_site,
+            &config,
+        ),
+        None,
+    );
+
+    // Outside the local lab (the files domain is not a .localhost
+    // domain), the reserved-mirror branch never fires.
+    let config = Config::integration_testing();
+    assert_eq!(
+        RenderService::localized_wikidot_local_file_url(
+            "evernight-aquarium.wikidot.com",
+            "/local--code/component%3Anon-savingpage/1",
+            &current_site,
+            &config,
+        ),
+        None,
+    );
+}
