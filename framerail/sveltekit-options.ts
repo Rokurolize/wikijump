@@ -68,6 +68,29 @@ const WIKIDOT_IMAGE_SOURCES: CspSources = [
   // host during the 2026-11-17 check-wiki parity sweep. The same host's
   // stylesheets are audited in audited-external-asset-origins.ts.
   "https://hormress.github.io",
+  // Image CDN hotlinked by the peroxide, rima and ink theme pages:
+  // theme:peroxide-jp and theme:rima-jp embed their screenshot galleries
+  // as [[image]] content from this host (hash-named PNGs under /i/2026/),
+  // and theme:ink-jp does the same for two images. Live Wikidot loads
+  // them; the staff-lab Sigma-10 site's img-src omitted the host during
+  // the 2026-11-17 check-wiki parity sweep, breaking all 17 images on
+  // each of the peroxide and rima pages.
+  "https://cdn.mer.run",
+  // GitHub Pages host of the Suprematism theme's author:
+  // theme:suprematism-jp embeds its preview screenshots and the Malevich
+  // "White on White" image from this host (supreroomartists/Suprematism/)
+  // as [[image]] and image-block content, and theme:trauma-jp references
+  // the same Malevich image. Live Wikidot loads them; the staff-lab
+  // Sigma-10 site's img-src omitted the host during the 2026-11-17
+  // check-wiki parity sweep, breaking all 11 images on suprematism-jp.
+  "https://lemoncat233.github.io",
+  // Black Highlighter's CN distribution host: theme:betwixt,
+  // theme:kitchen-jp and theme:waxed-oxidized-cut-copper-slab-jp embed
+  // its /img/logo.svg through component:image-block. Live Wikidot loads
+  // it; the staff-lab Sigma-10 site's img-src omitted the host during
+  // the 2026-11-17 check-wiki parity sweep. The same host's stylesheets
+  // are audited in audited-external-asset-origins.ts.
+  "https://bhl.scpwikicn.com",
   "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com",
   "https://d2qhngyckgiutd.cloudfront.net",
   // Header logos and decorative images that theme stylesheets reference from

@@ -126,6 +126,30 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
     !directives["font-src"]?.some((source) => source === "https://hormress.github.io"),
     "font-src does not admit the Parallel theme host (no font use observed)"
   )
+  for (const origin of [
+    "https://cdn.mer.run",
+    "https://lemoncat233.github.io",
+    "https://bhl.scpwikicn.com"
+  ]) {
+    assert(
+      directives["img-src"]?.some((source) => source === origin),
+      `img-src admits the evidenced image host ${origin}`
+    )
+    assert(
+      !directives["font-src"]?.some((source) => source === origin),
+      `font-src does not admit ${origin} (no font use observed)`
+    )
+  }
+  assert(
+    directives["style-src"]?.some((source) => source === "https://bhl.scpwikicn.com"),
+    "style-src admits the audited Black Highlighter CN host"
+  )
+  for (const origin of ["https://cdn.mer.run", "https://lemoncat233.github.io"]) {
+    assert(
+      !directives["style-src"]?.some((source) => source === origin),
+      `style-src does not admit the image-only host ${origin}`
+    )
+  }
   const classifiedDecorationGrant = AUDITED_EXTERNAL_ASSET_ORIGINS.find(
     (entry) => entry.origin === "https://indestructibletype-fonthosting.github.io"
   )
