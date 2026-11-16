@@ -1,7 +1,8 @@
 mod source_scopes;
 
 pub(super) use source_scopes::{
-    collect_unproven_scope_ranges, matching_source_scope_close,
+    collect_unproven_scope_ranges, collect_unproven_scope_ranges_with_closure,
+    matching_source_scope_close,
 };
 
 #[cfg(test)]

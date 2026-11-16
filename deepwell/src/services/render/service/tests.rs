@@ -1607,6 +1607,85 @@ fn standalone_rate_breaks_cross_tree_inline_scopes_but_inline_rate_stays_literal
 }
 
 #[test]
+fn rate_module_renders_when_only_close_is_inside_color_span_exhibit() {
+    // theme:inkblot-jp's documentation exhibit shape; live renders the
+    // widget and shows the exhibit as colored text (sandbox:
+    // muse-probe-rate-farclose).
+    let rendered = render_rate_module_through_ftml(concat!(
+        "[[module Rate]]\n",
+        "body text line\n",
+        "**##var(--c-keyword)|[[/module]]##**\n",
+    ));
+    assert!(
+        rendered.contains("<div class=\"page-rate-widget-box\">"),
+        "{rendered}"
+    );
+    assert!(rendered.contains("body text line"), "{rendered}");
+    assert!(rendered.contains("[[/module]]"), "{rendered}");
+    assert!(!rendered.contains("TODO: module Rate"), "{rendered}");
+}
+
+#[test]
+fn rate_module_renders_after_unclosed_footnote() {
+    // theme:redsquare-jp's shape: the footnote close was eaten by an
+    // include-argument truncation, so the opener is inert on live and
+    // later modules render (sandbox: muse-probe-rate-unclosedfn).
+    let rendered = render_rate_module_through_ftml(concat!(
+        "caption [[footnote]]never closed\n",
+        "\n",
+        "[[module Rate]]\n",
+    ));
+    assert!(
+        rendered.contains("<div class=\"page-rate-widget-box\">"),
+        "{rendered}"
+    );
+    assert!(!rendered.contains("[[module Rate]]"), "{rendered}");
+}
+
+#[test]
+fn rate_module_inside_closed_footnote_stays_literal() {
+    // Sandbox: muse-probe-rate-infootnote (the module inside a closed
+    // footnote stays footnote text; the one after it renders).
+    let source = concat!(
+        "intro [[footnote]]note [[module Rate]] inner[[/footnote]]\n",
+        "[[module Rate]]\n",
+    );
+    let page_info =
+        fallback_test_page_info("rate-footnote-closed", "Rate footnote closed");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut fragments = CompatHtmlFragments::new(source);
+    let mut compat_text = CompatTextFragments::new(source);
+    let protected = RenderService::expand_rate_modules_with_registry(
+        source.to_owned(),
+        &page_info,
+        &settings,
+        RateModuleContext {
+            rating_type: PageRatingType::PlusMinus,
+            score: page_info.score,
+            rating_votes: None,
+        },
+        &mut fragments,
+        &mut compat_text,
+    );
+    let mut protected = protected;
+    ftml::preprocess_for_layout(&mut protected, settings.layout);
+    let tokens = ftml::tokenize(&protected);
+    let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
+    let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
+    let rendered = fragments.restore(&rendered);
+    let rendered = compat_text.restore(&rendered);
+
+    assert_eq!(
+        rendered
+            .matches("<div class=\"page-rate-widget-box\">")
+            .count(),
+        1,
+        "{rendered}"
+    );
+    assert!(rendered.contains("[[module Rate]]"), "{rendered}");
+}
+
+#[test]
 fn rate_module_renders_directly_inside_header_cells_and_list_items() {
     for (source, parent) in [
         (
