@@ -171,3 +171,43 @@ test("Wikidot-compatible tabviews switch panels without inline script execution"
     )
   ).toEqual([])
 })
+
+test("Wikidot-compatible tabviews switch from parse time, before hydration", async ({
+  page
+}) => {
+  await page.setExtraHTTPHeaders(headers)
+  // A standalone document in the exact post-deepwell shape: the compat
+  // script directly follows the navset and no application bundle ever
+  // loads, so switching can only come from tabview-compat.js. Wikidot's
+  // YUI TabView accepts clicks from DOMContentLoaded; the pre-hydration
+  // window must not be dead on Wikijump.
+  await page.route("**/tabview-compat-probe", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: `<!doctype html><html><body>
+        <div id="dummy-ondomready-block"></div>
+        <div id="page-content"><div id="wiki-tabview-0123456789abcdef0123456789abcdef" class="yui-navset"><ul class="yui-nav"><li class="selected"><a href="javascript:;"><em>First</em></a></li><li><a href="javascript:;"><em>Second</em></a></li></ul><div class="yui-content"><div id="wiki-tab-0-0" style="display: block;"><p>First panel</p></div><div id="wiki-tab-0-1" style="display:none"><p>Second panel</p></div></div></div><script type="text/javascript" src="/wikidot/scripts/tabview-compat.js"></script></div>
+      </body></html>`
+    })
+  )
+  await page.goto("/tabview-compat-probe", { waitUntil: "domcontentloaded" })
+
+  const tabview = page.locator("#page-content > .yui-navset")
+  const tabs = tabview.locator(".yui-nav > li")
+  const panels = tabview.locator(".yui-content > div")
+  await expect(panels.nth(0)).toBeVisible()
+  await expect(panels.nth(1)).toBeHidden()
+
+  await tabs.nth(1).locator("a").click()
+  await expect(tabs.nth(1)).toHaveClass(/selected/)
+  await expect(tabs.nth(1)).toHaveAttribute("title", "active")
+  await expect(tabs.nth(0)).not.toHaveClass(/selected/)
+  await expect(panels.nth(1)).toBeVisible()
+  await expect(panels.nth(0)).toBeHidden()
+
+  await tabs.nth(0).locator("a").click()
+  await expect(tabs.nth(0)).toHaveClass(/selected/)
+  await expect(tabs.nth(0)).toHaveAttribute("title", "active")
+  await expect(panels.nth(0)).toBeVisible()
+  await expect(panels.nth(1)).toBeHidden()
+})
