@@ -23,7 +23,7 @@ use super::include_comment_branches::remove_unresolved_include_comment_branches_
 use super::include_variable_iftags::resolve_include_variable_iftags;
 use super::service::{
     INCLUDE_VARIABLE_CLOSE_SENTINEL, INCLUDE_VARIABLE_OPEN_SENTINEL,
-    INCLUDE_VARIABLE_REGEX, MAX_INCLUDE_EXPANSION_DEPTH,
+    INCLUDE_VARIABLE_REGEX,
 };
 use crate::error::prelude::{Error, ErrorType, ExnError, Result};
 use ftml::data::PageInfo;
@@ -33,6 +33,7 @@ use std::borrow::Cow;
 use std::collections::HashSet;
 
 pub(super) const MAX_INCLUDE_VARIABLE_EXPANDED_BYTES: usize = 768_000;
+pub(super) const MAX_INCLUDE_VARIABLE_PASSES: usize = 8;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct PassProjection {
@@ -64,7 +65,7 @@ pub(super) fn apply_include_variables(
     apply_include_variables_with_limits(
         content,
         include,
-        MAX_INCLUDE_EXPANSION_DEPTH,
+        MAX_INCLUDE_VARIABLE_PASSES,
         MAX_INCLUDE_VARIABLE_EXPANDED_BYTES,
     )
 }

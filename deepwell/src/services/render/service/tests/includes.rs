@@ -1517,8 +1517,8 @@ fn include_variable_rebuild_does_not_repeat_a_self_referential_prefix() {
 }
 
 #[test]
-fn include_variable_rebuild_stops_at_the_existing_depth_limit() {
-    let variables = (0..=super::super::MAX_INCLUDE_EXPANSION_DEPTH)
+fn include_variable_rebuild_stops_at_the_variable_pass_limit() {
+    let variables = (0..=super::super::MAX_INCLUDE_VARIABLE_PASSES)
         .map(|depth| {
             (
                 Cow::Owned(format!("v{depth}")),
@@ -1534,7 +1534,7 @@ fn include_variable_rebuild_stops_at_the_existing_depth_limit() {
 
     assert_eq!(
         source,
-        format!("{{$v{}}}", super::super::MAX_INCLUDE_EXPANSION_DEPTH),
+        format!("{{$v{}}}", super::super::MAX_INCLUDE_VARIABLE_PASSES),
     );
 }
 
@@ -1544,7 +1544,7 @@ fn include_variable_rebuild_matches_reverse_replacement_output() {
         content: &mut String,
         include: &IncludeRef<'_>,
     ) {
-        for _ in 0..super::super::MAX_INCLUDE_EXPANSION_DEPTH {
+        for _ in 0..super::super::MAX_INCLUDE_VARIABLE_PASSES {
             let mut matches = Vec::new();
 
             for capture in super::super::INCLUDE_VARIABLE_REGEX.captures_iter(content) {

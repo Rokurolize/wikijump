@@ -7599,7 +7599,7 @@ async fn render_scoped_include_source_cache_preserves_occurrence_semantics() {
         tags: Vec::new(),
         language: Cow::Borrowed("en"),
     };
-    let cycle_error = RenderService::render_page(
+    let cycle_output = RenderService::render_page(
         runner.context(),
         format!("[[include {CYCLE_COMPONENT_SLUG}]]\n"),
         &page_info,
@@ -7612,10 +7612,18 @@ async fn render_scoped_include_source_cache_preserves_occurrence_semantics() {
         UrlArguments::default(),
     )
     .await
-    .expect_err("raw-source cache hits must not bypass include cycle depth checks");
-    assert!(
-        format!("{cycle_error:?}").contains("include expansion exceeded maximum depth 8"),
-        "cached recursion should retain the established depth failure: {cycle_error:?}",
+    .expect("raw-source cache hits must not bypass the include depth bound");
+    let cycle_literal = format!("[[include {CYCLE_COMPONENT_SLUG}]]");
+    assert_eq!(
+        cycle_output
+            .html_output
+            .body
+            .matches(&cycle_literal)
+            .count(),
+        1,
+        "cached recursion should stop at the depth bound and leave the \
+         innermost include literal, matching live Wikidot: {}",
+        cycle_output.html_output.body,
     );
 }
 
