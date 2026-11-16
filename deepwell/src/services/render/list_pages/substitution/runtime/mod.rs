@@ -756,16 +756,17 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     })
                     .unwrap_or_else(|| captures[0].to_owned()),
                 "content" | "text" | "long" | "body" => {
+                    // Wikidot substitutes the listed page's raw wikitext
+                    // source, with [[...]] constructs shown as literal
+                    // text; the section form below already did this, and
+                    // the whole-content form is the same substitution
+                    // without a section selector.
                     let section = captures
                         .name("argument")
                         .and_then(|matched| matched.as_str().parse().ok());
-                    if section.is_none()
-                        && let Some(rendered_content) =
-                            context.page_rendered_content
-                    {
-                        push_list_pages_rendered_fragment(rendered_content, compat_html)
-                    } else {
-                        context.page_wikitext.map(|wikitext| {
+                    context
+                        .page_wikitext
+                        .map(|wikitext| {
                             protect_list_pages_content_insertion(
                                 &wikidot_content_section(wikitext, section),
                                 compat_text,
@@ -773,7 +774,6 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                             )
                         })
                         .unwrap_or_default()
-                    }
                 }
                 "summary" | "description" | "short" => summary.to_owned(),
                 "first_paragraph" => first_paragraph.clone(),

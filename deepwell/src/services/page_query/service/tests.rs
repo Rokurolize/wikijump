@@ -1,7 +1,7 @@
 use super::{
-    category_local_wikidot_name_patterns, date_span_bounds, list_pages_deferred_ordering,
-    needs_effective_revision_projection, project_effective_revision_count,
-    wikidot_name_condition, wikidot_name_pattern,
+    apply_sql_ordering, category_local_wikidot_name_patterns, date_span_bounds,
+    list_pages_deferred_ordering, needs_effective_revision_projection,
+    project_effective_revision_count, wikidot_name_condition, wikidot_name_pattern,
 };
 use crate::models::page;
 use crate::services::page_query::{
@@ -249,4 +249,27 @@ fn maximum_year_date_spans_use_an_open_upper_bound() {
         ))
         .build(DatabaseBackend::Postgres);
     assert!(greater.sql.contains("FALSE"), "{}", greater.sql);
+}
+
+#[test]
+fn updated_at_ordering_uses_creation_time_for_never_edited_pages() {
+    // LISTPAGES-DEEP D1: order="updated_at" must rank a never-edited page
+    // by its created_at. page.updated_at is NULL for such pages, and a
+    // bare DESC sort would place every NULL first (NULLS FIRST), ahead of
+    // a page whose latest revision is genuinely the newest.
+    for (ascending, direction) in [(false, "DESC"), (true, "ASC")] {
+        let order = OrderBySelector {
+            property: OrderProperty::UpdatedAt,
+            ascending,
+        };
+        let sql = apply_sql_ordering(page::Entity::find(), &order, false)
+            .build(DatabaseBackend::Postgres)
+            .sql;
+        assert!(
+            sql.contains(&format!(
+                "COALESCE(page.updated_at, page.created_at) {direction}"
+            )),
+            "{sql}",
+        );
+    }
 }

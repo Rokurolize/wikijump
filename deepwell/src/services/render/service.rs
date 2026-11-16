@@ -3570,18 +3570,75 @@ impl RenderService {
         let literal_regions = LiteralRegionIndex::new_wikidot_protection(&wikitext);
         let mut output = String::with_capacity(wikitext.len());
         let mut cursor = 0;
-        for (start, _) in wikitext.match_indices("##") {
+        while let Some(start) =
+            wikitext[cursor..].find("##").map(|offset| cursor + offset)
+        {
             output.push_str(&wikitext[cursor..start]);
+            // A color span with a functional descriptor (var(--x),
+            // rgb(...), ...) cannot be claimed by the regex color-span
+            // protection, whose descriptor class excludes parentheses,
+            // but ftml renders such spans natively. Escaping either of
+            // its markers here would leave the whole span as literal
+            // text in the output (with the descriptor's -- rewritten by
+            // dash handling), so a well-formed functional span keeps
+            // both of its markers and is left for ftml. The span check
+            // runs before the literal-region check because a span's two
+            // markers can fall on opposite sides of a region boundary
+            // (an unclosed [[tag in the body shields only the closer);
+            // copying the span verbatim is byte-identical inside a
+            // literal region too. A ## that continues a longer # run is
+            // not a span opener, matching the literal-hash pins.
+            let span_end = if start > 0 && wikitext.as_bytes()[start - 1] == b'#' {
+                None
+            } else {
+                wikidot_functional_color_span_end(&wikitext, start)
+            };
+            if let Some(span_end) = span_end {
+                output.push_str(&wikitext[start..span_end]);
+                cursor = span_end;
+                continue;
+            }
             if literal_regions.contains(start) {
                 output.push_str("##");
-            } else {
-                output.push_str(&fragments.push("##"));
+                cursor = start + 2;
+                continue;
             }
+            output.push_str(&fragments.push("##"));
             cursor = start + 2;
         }
         output.push_str(&wikitext[cursor..]);
         output
     }
+}
+
+/// If the `##` at `start` opens a color span with a functional descriptor
+/// (e.g. `##var(--c-keyword)|body##`), returns the offset just past the
+/// span's closing `##`. Functional descriptors are the forms ftml's
+/// Wikidot color rule accepts but the regex color-span protection cannot
+/// express, because its descriptor class excludes parentheses: a non-empty
+/// descriptor of letters, digits, parentheses, commas, hyphens and spaces
+/// that contains a function open, followed by a non-empty body and a
+/// closing `##` on the same line.
+fn wikidot_functional_color_span_end(source: &str, start: usize) -> Option<usize> {
+    let rest = &source[start + 2..];
+    let line = &rest[..rest.find('\n').unwrap_or(rest.len())];
+    let pipe = line.find('|')?;
+    let descriptor = &line[..pipe];
+    if descriptor.is_empty()
+        || !descriptor.contains('(')
+        || !descriptor.bytes().all(|byte| {
+            byte.is_ascii_alphanumeric()
+                || matches!(byte, b'(' | b')' | b',' | b'-' | b' ' | b'\t')
+        })
+    {
+        return None;
+    }
+    let body = &line[pipe + 1..];
+    let close = body.find("##")?;
+    if close == 0 {
+        return None;
+    }
+    Some(start + 2 + pipe + 1 + close + 2)
 }
 
 pub(super) fn format_wikidot_list_pages_date(

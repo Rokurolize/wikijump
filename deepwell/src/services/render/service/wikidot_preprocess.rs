@@ -162,7 +162,7 @@ impl RenderService {
         if include_depth == 0 {
             resolve_unbound_include_variable_iftags(wikitext);
         }
-        if include_depth == 0 && wikitext.contains("[[#") {
+        if wikitext.contains("[[#") {
             mark_wikidot_generated_iftags_specs(wikitext);
             *wikitext = Self::resolve_wikidot_parser_functions_before_include_collection(
                 wikitext,

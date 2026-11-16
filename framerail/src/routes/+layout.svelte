@@ -251,9 +251,11 @@
     const uninstallHovertips = isImportedWikidotLayout
       ? installWikidotHovertips(document)
       : () => {}
-    const uninstallOdates = isImportedWikidotLayout
-      ? installWikidotOdates(document)
-      : () => {}
+    // Odate spans occur in rendered wikitext on every site, not only in
+    // imported Wikidot layouts; as with OZONE, the rewrite to the span's
+    // declared format in the viewer's timezone has to run everywhere,
+    // otherwise the server-rendered UTC fallback text stays visible.
+    const uninstallOdates = installWikidotOdates(document)
     const uninstallListPagesPagination = isImportedWikidotLayout
       ? installListPagesPagination(window)
       : () => {}

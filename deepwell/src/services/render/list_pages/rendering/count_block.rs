@@ -123,6 +123,13 @@ impl RenderService {
         } else {
             categories
         };
+        let current_page_matches_category_selector =
+            Self::current_page_matches_category_selector(
+                category_all,
+                &categories,
+                &excluded_categories,
+                page_info,
+            );
         let included_categories = if category_all {
             IncludedCategories::All
         } else {
@@ -207,6 +214,7 @@ impl RenderService {
         let sample = if current_page_only && current_page_identity.is_none() {
             CountPagesSample::Complete(FoundPages { pages: Vec::new() })
         } else if current_page_only
+            && current_page_matches_category_selector
             && should_render_current_page_list_pages_row(current_page_only, limit, offset)
         {
             CountPagesSample::Complete(

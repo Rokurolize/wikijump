@@ -67,15 +67,22 @@ export function wikidotFoldableLists(node: HTMLElement): { destroy: () => void }
     for (const container of node.querySelectorAll("div.foldable-list-container")) {
       let owner = container.parentElement
       while (owner && owner.tagName !== "LI") owner = owner.parentElement
-      const ownedList = owner?.querySelector("ul")
-      if (ownedList) initializeFoldableList(ownedList)
-      for (const list of container.querySelectorAll("ul")) {
-        initializeFoldableList(list)
-      }
       const dialogOwner = container.closest("li")
       const dialog = dialogOwner?.querySelector(
         "#credit-view, #u-credit-view, .modalcontainer"
       )
+      // Only a list that actually carries the dialog this container
+      // controls is the item's foldable content (the credit panel list).
+      // Other lists inside the item are authored structure, such as the
+      // colmod placeholder list: Wikidot leaves them untouched, with no
+      // inserted toggle anchor and no inline display.
+      const ownedList = owner?.querySelector("ul")
+      if (ownedList && dialog && ownedList.contains(dialog)) {
+        initializeFoldableList(ownedList)
+      }
+      for (const list of container.querySelectorAll("ul")) {
+        initializeFoldableList(list)
+      }
       if (dialog) {
         dialog.setAttribute("role", "dialog")
         dialog.setAttribute("aria-modal", "true")
