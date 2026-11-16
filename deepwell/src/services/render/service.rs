@@ -4084,7 +4084,7 @@ fn local_lab_has_reserved_scp_asset_mirror(config: &Config, site_slug: &str) -> 
         .ends_with(".localhost")
         && matches!(
             site_slug.to_ascii_lowercase().as_str(),
-            "scp-wiki" | "scp-jp" | "scpko"
+            "scp-wiki" | "scp-jp" | "scpko" | "scp-wiki-cn" | "etinjat"
         )
 }
 
