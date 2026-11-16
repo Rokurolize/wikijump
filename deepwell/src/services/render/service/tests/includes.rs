@@ -834,6 +834,7 @@ fn expands_included_fragment_wikidot_image_blocks_before_generic_includes() {
         PreparedIncluder {
             pages: vec![Some(fragment_wikitext)],
             missing_replacements: Default::default(),
+            language: "en".to_owned(),
         },
         include_error,
     )
@@ -1002,6 +1003,7 @@ fn skips_generic_includes_inside_wikidot_comments() {
         &settings,
         CollectingIncluder {
             includes: &mut includes,
+            language: "en",
         },
         include_error,
     )
@@ -1036,6 +1038,7 @@ fn skips_generic_includes_inside_wikidot_literal_regions() {
         &settings,
         CollectingIncluder {
             includes: &mut includes,
+            language: "en",
         },
         include_error,
     )
@@ -1076,6 +1079,7 @@ fn strips_included_comment_usage_examples_after_expansion() {
         &settings,
         CollectingIncluder {
             includes: &mut nested_includes,
+            language: "en",
         },
         include_error,
     )
@@ -1088,6 +1092,7 @@ fn strips_included_comment_usage_examples_after_expansion() {
         PreparedIncluder {
             pages: vec![Some(component_source)],
             missing_replacements: Default::default(),
+            language: "en".to_owned(),
         },
         include_error,
     )
@@ -1136,6 +1141,7 @@ fn keeps_selected_comment_branch_includes_collectable() {
         &settings,
         CollectingIncluder {
             includes: &mut includes,
+            language: "en",
         },
         include_error,
     )
@@ -1159,6 +1165,7 @@ fn collects_single_line_wikidot_include_variables() {
         &settings,
         CollectingIncluder {
             includes: &mut includes,
+            language: "en",
         },
         include_error,
     )
@@ -1198,6 +1205,7 @@ fn collects_single_line_wikidot_include_variables() {
         &settings,
         CollectingIncluder {
             includes: &mut multiline_includes,
+            language: "en",
         },
         include_error,
     )
@@ -1258,6 +1266,7 @@ fn multiline_include_variables_preserve_a_self_referential_class_prefix() {
         &settings,
         CollectingIncluder {
             includes: &mut includes,
+            language: "en",
         },
         include_error,
     )
@@ -1357,6 +1366,7 @@ fn nested_include_argument_self_reference_uses_later_fallback() {
         &settings,
         CollectingIncluder {
             includes: &mut includes,
+            language: "en",
         },
         include_error,
     )
@@ -1811,6 +1821,7 @@ fn malformed_include_comment_branch_cannot_claim_sibling_boundary() {
         PreparedIncluder {
             pages: vec![Some(start), Some(malformed), Some(end)],
             missing_replacements: Default::default(),
+            language: "en".to_owned(),
         },
         include_error,
     )
@@ -1940,6 +1951,7 @@ fn included_interwiki_style_embed_survives_production_preparation() {
         PreparedIncluder {
             pages: vec![Some(component_source)],
             missing_replacements: Default::default(),
+            language: "en".to_owned(),
         },
         include_error,
     )
@@ -2217,6 +2229,7 @@ fn expand_test_enclosed_include(
         PreparedIncluder {
             pages: vec![Some(nested_source)],
             missing_replacements: Default::default(),
+            language: "en".to_owned(),
         },
         include_error,
     )

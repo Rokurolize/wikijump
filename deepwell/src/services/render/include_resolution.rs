@@ -2,6 +2,7 @@ use super::compat::text_fragments::CompatTextFragments;
 use super::include_attachment_owners::wikidot_include_directive_ranges;
 use super::literal_regions::LiteralRegionIndex;
 use crate::error::prelude::{Error, ErrorType, ExnError, Result};
+use crate::utils::locale_is_japanese;
 use ftml::data::{PageRef, canonical_include_site};
 use ftml::includes::{FetchedPage, IncludeRef};
 use ftml::prelude::Includer;
@@ -26,8 +27,12 @@ static INCLUDE_TARGET_REGEX: LazyLock<Regex> = LazyLock::new(|| {
         .unwrap()
 });
 
-pub(super) fn missing_include_source(page: &str, site: Option<&str>) -> String {
-    let message = missing_include_message(page, site);
+pub(super) fn missing_include_source(
+    page: &str,
+    site: Option<&str>,
+    language: &str,
+) -> String {
+    let message = missing_include_message(page, site, language);
     format!("[[div class=\"error-block\"]]\n{message}\n[[/div]]")
 }
 
@@ -35,20 +40,31 @@ fn spaced_empty_separator_missing_include_source(
     page: &str,
     site: Option<&str>,
     compat_text: &mut CompatTextFragments,
+    language: &str,
 ) -> String {
     let opener = compat_text.push_escaped_html_text(r#"[[div class="error-block"]]"#);
-    let message = missing_include_message(page, site);
+    let message = missing_include_message(page, site, language);
     format!("{opener}\n{message}")
 }
 
-fn missing_include_message(page: &str, site: Option<&str>) -> String {
+fn missing_include_message(page: &str, site: Option<&str>, language: &str) -> String {
     let edit_url = match site {
         Some(site) => format!("http://{site}.wikidot.com/{page}/edit/true"),
         None => format!("/{page}/edit/true"),
     };
-    format!(
-        "Included page \"{page}\" does not exist ([[a href=\"{edit_url}\"]]create it now[[/a]])"
-    )
+    if locale_is_japanese(language) {
+        // Wikidot's Japanese rendering of this message, as served by
+        // Japanese-language sites: the page name follows the topic
+        // marker with no quotation marks, and the create-page link
+        // directly abuts the closing parenthesis.
+        format!(
+            "インクルードを行おうとしたページ、 {page}は存在しません([[a href=\"{edit_url}\"]]ページを作成する[[/a]])"
+        )
+    } else {
+        format!(
+            "Included page \"{page}\" does not exist ([[a href=\"{edit_url}\"]]create it now[[/a]])"
+        )
+    }
 }
 
 pub(super) fn collect_include_display_pages(
@@ -100,6 +116,7 @@ pub(super) fn collect_missing_include_replacements(
     fetched_pages: &[Option<String>],
     include_display_pages: &mut HashMap<PageRef, VecDeque<String>>,
     compat_text: &mut CompatTextFragments,
+    language: &str,
 ) -> VecDeque<String> {
     includes
         .iter()
@@ -118,9 +135,10 @@ pub(super) fn collect_missing_include_replacements(
                     &display_page,
                     include.page_ref().site(),
                     compat_text,
+                    language,
                 )
             } else {
-                missing_include_source(&display_page, include.page_ref().site())
+                missing_include_source(&display_page, include.page_ref().site(), language)
             }
         })
         .collect()
@@ -130,6 +148,7 @@ pub(super) fn collect_missing_include_replacements(
 pub(super) struct PreparedIncluder {
     pub(super) pages: Vec<Option<String>>,
     pub(super) missing_replacements: VecDeque<String>,
+    pub(super) language: String,
 }
 
 impl<'t> Includer<'t> for PreparedIncluder {
@@ -159,7 +178,10 @@ impl<'t> Includer<'t> for PreparedIncluder {
 
     fn no_such_include(&mut self, page_ref: &PageRef) -> Result<Cow<'t, str>> {
         let Some(replacement) = self.missing_replacements.pop_front() else {
-            return Ok(wikidot_no_such_include_replacement(page_ref));
+            return Ok(wikidot_no_such_include_replacement(
+                page_ref,
+                &self.language,
+            ));
         };
         Ok(Cow::Owned(replacement))
     }
@@ -167,11 +189,16 @@ impl<'t> Includer<'t> for PreparedIncluder {
 
 pub(super) fn wikidot_no_such_include_replacement(
     page_ref: &PageRef,
+    language: &str,
 ) -> Cow<'static, str> {
     if is_optional_no_visible_wikidot_include(page_ref) {
         Cow::Borrowed("")
     } else {
-        Cow::Owned(missing_include_source(page_ref.page(), page_ref.site()))
+        Cow::Owned(missing_include_source(
+            page_ref.page(),
+            page_ref.site(),
+            language,
+        ))
     }
 }
 
@@ -238,7 +265,7 @@ fn strip_trailing_colon_include_target(target: &str) -> Option<String> {
     Some(normalized)
 }
 
-pub(super) fn expand_malformed_include_targets(wikitext: &mut String) {
+pub(super) fn expand_malformed_include_targets(wikitext: &mut String, language: &str) {
     normalize_trailing_colon_include_targets(wikitext);
     if !EMPTY_INCLUDE_TARGET_REGEX.is_match(wikitext)
         && !SITE_ONLY_INCLUDE_TARGET_REGEX.is_match(wikitext)
@@ -253,13 +280,16 @@ pub(super) fn expand_malformed_include_targets(wikitext: &mut String) {
             !matched.as_str().eq_ignore_ascii_case("[[include ]]")
                 && !literal_regions.contains(matched.start())
         })
-        .map(|matched| (matched.range(), missing_include_source("", None)))
+        .map(|matched| (matched.range(), missing_include_source("", None, language)))
         .collect::<Vec<_>>();
     for captures in SITE_ONLY_INCLUDE_TARGET_REGEX.captures_iter(wikitext) {
         let matched = captures.get(0).expect("include capture has a full match");
         if !literal_regions.contains(matched.start()) {
             let site = canonical_include_site(&captures["site"]);
-            replacements.push((matched.range(), missing_include_source(&site, None)));
+            replacements.push((
+                matched.range(),
+                missing_include_source(&site, None, language),
+            ));
         }
     }
     for captures in EMPTY_SITE_INCLUDE_TARGET_REGEX.captures_iter(wikitext) {
@@ -267,7 +297,7 @@ pub(super) fn expand_malformed_include_targets(wikitext: &mut String) {
         if !literal_regions.contains(matched.start()) {
             replacements.push((
                 matched.range(),
-                missing_include_source(&captures["page"], None),
+                missing_include_source(&captures["page"], None, language),
             ));
         }
     }
@@ -290,7 +320,7 @@ mod tests {
             "[[include :destinox:metodologia:]]\n",
         )
         .to_owned();
-        expand_malformed_include_targets(&mut source);
+        expand_malformed_include_targets(&mut source, "en");
         assert!(source.contains("[[include :scp-wiki:component:license-box]]"));
         assert!(source.contains("[[include component:license-box-end]]"));
         assert!(
@@ -332,6 +362,7 @@ mod tests {
             &[None::<String>],
             &mut display_pages,
             &mut compat_text,
+            "en",
         );
         let replacement = replacements.front().expect("replacement exists");
         assert!(
@@ -365,7 +396,7 @@ mod tests {
         let mut source =
             "[[include ]]\n[[include  ]]\n[[include   ]]\n[[include     ]]\n[[include\t]]"
                 .to_owned();
-        expand_malformed_include_targets(&mut source);
+        expand_malformed_include_targets(&mut source, "en");
         assert!(source.starts_with("[[include ]]\n"));
         assert_eq!(
             source.matches("Included page \"\" does not exist").count(),
@@ -378,7 +409,7 @@ mod tests {
     fn argumentless_include_without_spacing_remains_literal() {
         let mut source = "[[include]] [[INCLUDE]]".to_owned();
         let original = source.clone();
-        expand_malformed_include_targets(&mut source);
+        expand_malformed_include_targets(&mut source, "en");
         assert_eq!(source, original);
     }
 
@@ -386,14 +417,14 @@ mod tests {
     fn empty_include_targets_inside_literal_blocks_remain_literal() {
         let mut source = "[[code]]\n[[include ]]\n[[/code]]".to_owned();
         let original = source.clone();
-        expand_malformed_include_targets(&mut source);
+        expand_malformed_include_targets(&mut source, "en");
         assert_eq!(source, original);
     }
 
     #[test]
     fn incomplete_cross_site_targets_fall_back_to_local_page_names() {
         let mut source = "[[include :scp-wiki:]]\n[[include ::page]]".to_owned();
-        expand_malformed_include_targets(&mut source);
+        expand_malformed_include_targets(&mut source, "en");
         assert!(source.contains("Included page \"scp-wiki\" does not exist"));
         assert!(source.contains("href=\"/scp-wiki/edit/true\""));
         assert!(source.contains("Included page \"page\" does not exist"));
@@ -445,14 +476,14 @@ mod tests {
     #[test]
     fn site_only_include_targets_canonicalize_host_form_sites() {
         let mut source = "[[include :scp-jp.wikidot.com:]]".to_owned();
-        expand_malformed_include_targets(&mut source);
+        expand_malformed_include_targets(&mut source, "en");
         assert!(
             source.contains("Included page \"scp-jp\" does not exist"),
             "{source}",
         );
         assert!(source.contains("href=\"/scp-jp/edit/true\""), "{source}");
         let mut dashed = "[[include :scp-jp-wikidot-com:]]".to_owned();
-        expand_malformed_include_targets(&mut dashed);
+        expand_malformed_include_targets(&mut dashed, "en");
         assert!(
             dashed.contains("Included page \"scp-jp-wikidot-com\" does not exist"),
             "{dashed}",
@@ -515,6 +546,7 @@ mod tests {
             &fetched_pages,
             &mut display_pages,
             &mut compat_text,
+            "en",
         );
         assert!(replacements[0].contains("Included page \"f\""));
         assert!(replacements[1].contains("Included page \"d\""));
@@ -536,6 +568,7 @@ mod tests {
             &[None],
             &mut display_pages,
             &mut compat_text,
+            "en",
         );
         let replacement = replacements.front().expect("replacement exists");
 
@@ -546,6 +579,63 @@ mod tests {
             compat_text
                 .restore(replacement)
                 .starts_with("[[div class=&quot;error-block&quot;]]\nIncluded page")
+        );
+    }
+
+    #[test]
+    fn missing_include_message_uses_japanese_for_japanese_language() {
+        // The exact shape served by the Japanese check wiki for a
+        // missing same-site include (theme:plant).
+        assert_eq!(
+            missing_include_source("theme:plant", None, "ja"),
+            "[[div class=\"error-block\"]]\nインクルードを行おうとしたページ、 theme:plantは存在しません([[a href=\"/theme:plant/edit/true\"]]ページを作成する[[/a]])\n[[/div]]",
+        );
+        // Foreign-site targets keep the absolute edit URL.
+        assert_eq!(
+            missing_include_message("component:sigma-plus", Some("scp-jp"), "ja"),
+            "インクルードを行おうとしたページ、 component:sigma-plusは存在しません([[a href=\"http://scp-jp.wikidot.com/component:sigma-plus/edit/true\"]]ページを作成する[[/a]])",
+        );
+        // Wikidot's ja-corrections site language reaches this code as
+        // "ja" via locale_for_ftml, but accept the raw shapes too.
+        assert!(
+            missing_include_message("page", None, "ja-JP")
+                .starts_with("インクルードを行おうとしたページ、")
+        );
+        assert!(
+            missing_include_message("page", None, "ja-corrections")
+                .starts_with("インクルードを行おうとしたページ、")
+        );
+    }
+
+    #[test]
+    fn missing_include_message_stays_english_for_other_languages() {
+        for language in ["en", "en-US", "default", "", "zh"] {
+            assert_eq!(
+                missing_include_message("theme:plant", None, language),
+                "Included page \"theme:plant\" does not exist ([[a href=\"/theme:plant/edit/true\"]]create it now[[/a]])",
+                "language {language} must keep the English message",
+            );
+        }
+    }
+
+    #[test]
+    fn missing_include_replacements_use_render_language() {
+        let source = "[[include theme:plant]]";
+        let mut display_pages = collect_include_display_pages(source);
+        let includes = vec![IncludeRef::page_only(PageRef::page_only("theme:plant"))];
+        let mut compat_text = CompatTextFragments::new(source);
+        let replacements = collect_missing_include_replacements(
+            &includes,
+            &[None::<String>],
+            &mut display_pages,
+            &mut compat_text,
+            "ja",
+        );
+        let replacement = replacements.front().expect("replacement exists");
+        assert!(
+            replacement
+                .contains("インクルードを行おうとしたページ、 theme:plantは存在しません"),
+            "{replacement}",
         );
     }
 }

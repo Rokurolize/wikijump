@@ -1927,6 +1927,7 @@ fn include_carried_styleframe_embeds_are_claimed_and_rendered() {
                 Some(interwiki_style_component("2", "https://example.com/b.css")),
             ],
             missing_replacements: Default::default(),
+            language: "en".to_owned(),
         },
         include_error,
     )
@@ -1943,6 +1944,7 @@ fn include_carried_styleframe_embeds_are_claimed_and_rendered() {
         PreparedIncluder {
             pages: vec![Some(theme_assembled)],
             missing_replacements: Default::default(),
+            language: "en".to_owned(),
         },
         include_error,
     )

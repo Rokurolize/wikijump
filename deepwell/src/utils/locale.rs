@@ -164,6 +164,25 @@ pub fn locale_for_ftml(locale_str: &str) -> &str {
     }
 }
 
+/// Whether the given locale or ftml language string denotes Japanese.
+///
+/// Accepts the same shapes as ftml's render-message catalog selection:
+/// a BCP 47 identifier (dashes or underscores) whose language subtag is
+/// `ja`, including Wikidot's `ja-corrections` site language, which
+/// `locale_for_ftml` maps to `ja`. Anything unparseable is not Japanese,
+/// mirroring the catalog's fall-back to English.
+pub fn locale_is_japanese(locale_str: &str) -> bool {
+    let normalized;
+    let locale_str = if locale_str.contains('_') {
+        normalized = locale_str.replace('_', "-");
+        normalized.as_str()
+    } else {
+        locale_str
+    };
+    parse_locale_identifier(locale_str)
+        .is_some_and(|locale| locale.language.as_str() == "ja")
+}
+
 fn parse_locale_identifier(locale_str: &str) -> Option<LanguageIdentifier> {
     LanguageIdentifier::from_bytes(locale_for_ftml(locale_str).as_bytes()).ok()
 }
@@ -232,6 +251,19 @@ fn validate_locale_maps_wikidot_japanese_corrections_to_japanese() {
 fn locale_for_ftml_preserves_standard_identifiers() {
     assert_eq!(locale_for_ftml("ja-corrections"), "ja");
     assert_eq!(locale_for_ftml("en-US"), "en-US");
+}
+
+#[test]
+fn locale_is_japanese_detects_japanese_shapes() {
+    for locale in ["ja", "ja-JP", "ja_JP", "JA-jp", "ja-corrections"] {
+        assert!(locale_is_japanese(locale), "{locale} should be Japanese");
+    }
+    for locale in ["en", "en-US", "zh", "default", "", "und", "not a locale"] {
+        assert!(
+            !locale_is_japanese(locale),
+            "{locale} should not be Japanese"
+        );
+    }
 }
 
 #[test]
