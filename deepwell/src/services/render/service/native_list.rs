@@ -8,6 +8,8 @@ use super::{
     sanitize_wikidot_compat_inline_tag,
 };
 use crate::services::render::wikidot_user_resources::WIKIDOT_USER_INFO_URL;
+use regex::Regex;
+use std::sync::LazyLock;
 
 #[cfg(test)]
 pub(in crate::services::render) fn find_balanced_ul_end(html: &str) -> Option<usize> {
@@ -222,7 +224,7 @@ fn push_list_pages_table_inline_segment(output: &mut String, value: &str) {
     let mut rest = value;
     while let Some(start) = rest.find('<') {
         let (before, after_start) = rest.split_at(start);
-        output.push_str(&escape_list_pages_html_text(before));
+        push_list_pages_table_inline_text(output, before);
         if let Some(end) = after_start.find('>') {
             let (tag, after_tag) = after_start.split_at(end + 1);
             if let Some(tag) = sanitize_wikidot_compat_inline_tag(tag) {
@@ -232,11 +234,129 @@ fn push_list_pages_table_inline_segment(output: &mut String, value: &str) {
             }
             rest = after_tag;
         } else {
-            output.push_str(&escape_list_pages_html_text(after_start));
+            push_list_pages_table_inline_text(output, after_start);
             return;
         }
     }
+    push_list_pages_table_inline_text(output, rest);
+}
+
+static LIST_PAGES_TABLE_USER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)\[\[(?P<star>\*)?user\s+(?P<name>[^\]]+)\]\]").unwrap()
+});
+
+/// The placeholder avatar ftml's fallback user info carries
+/// (`UserInfo::fallback`), so a user element rendered by this native
+/// table path is byte-identical to the same element rendered by the
+/// delayed ListPages seal, whose renderer has no user-info resolver.
+const LIST_PAGES_TABLE_USER_PLACEHOLDER_AVATAR: &str = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAADPElEQVRoBe1Yz0s6QRSf/frtIFpQGXqQik6GG9atg167iYdEunTv2FXoH+hueujsuUsQdAg7FFSHQDqI5ElQTPCgotRuTozg0PxYfa59v7vBDiy77zPz3nw++96M7igYY4x+cfvzi7kPqTsCrM6gkwEnAzO+ActK6PPzE62trSFFUYbXycmJOSnkd8Cqdnp6Sn6DhpfL5cL39/dTU0FTe/ygQ6vVwm63m4pQVRVrmjbVDJaVEKmXxcVFtL+/T0vn5eUFnZ2dURv0MJXcfzC4UCjQDJBy8vl8uNvtgmeytIQIy8FggIPBICOCrA1os7SESImQXSiVSjHVkslkENmlIA0kYLTVfb9DgkPHxONxZmi1WkWXl5cMZmhAUjXa6r7fIX7QMR8fH9jr9TJllEqlQO6gDBiq/6GOubk5tL29zUS7urpC7+/vDCYzbCGAEFNVleHX6XTQw8MDg8kM2wjY2toS+N3d3QkYD/zlAZn9P746w+GwMHWxWBQwHrBNBpaXl3luqFKpCBgPgDLAO42zyVYLaXxWFxYWBLd6vS5gPGCbDMgEdLtdnq9g20bA/Py8QE7TNAHjAdsIkJH1eDw8X8G2jYB+vy+Qky1sftCPL2J+cfITGtlvb29C1+rqqoDxgG0yUKvVeG5oc3NTwHgAlAHZ1mj2TfMERna5XB490vvOzg59NnqwTQZKpZLAMRqNChgP2EbA09MTw219fR1tbGwwmMwwJUBWUrLgUEzXdfT8/MwMTyQSjG1kmBIA2Z+NJpThj4+PqNfrMV0HBweMbWSABJAFS65AIDCMs7S0ZBTPFH5zc8P4kd1nd3eXwYwMkADiTP5YNRqNYZxIJGIUzxR+cXHB+B0fHzP2WAPy4UmOPg4PD+k3az6fh7iBxry+vtK45Jvb7/fjXq8H8iWDJp4LlctlHIvF6CR7e3tY13XwBJMGptNpGpsIyOVyk1yY/okCms0mPb9MJpO43W4zAWYx+v0+XllZoQJCodDUZ6MTBRCC2WwWX19fz8JV6nt+fk7JK4qCb29vpePGgSAB4wKY7SPrirzx0VnT0dGRqVAK8Rq7ym3eCd5G7arDEWB1ZpwMOBmY8Q38+hL6AuHLUi2wzjYWAAAAAElFTkSuQmCC";
+
+fn push_list_pages_table_inline_text(output: &mut String, text: &str) {
+    let mut rest = text;
+    while let Some(captures) = LIST_PAGES_TABLE_USER_REGEX.captures(rest) {
+        let matched = captures.get(0).expect("user element match");
+        let name = captures["name"].trim();
+        let Some(chip) =
+            render_list_pages_table_user(name, captures.name("star").is_some())
+        else {
+            // Not a convertible user element (empty name): pass the
+            // matched source through untouched and continue after it.
+            output.push_str(&escape_list_pages_html_text(&rest[..matched.end()]));
+            rest = &rest[matched.end()..];
+            continue;
+        };
+        output.push_str(&escape_list_pages_html_text(&rest[..matched.start()]));
+        output.push_str(&chip);
+        rest = &rest[matched.end()..];
+    }
     output.push_str(&escape_list_pages_html_text(rest));
+}
+
+/// Render an authored `[[*user <name>]]` / `[[user <name>]]` element the
+/// way ftml renders it when no user-info resolver knows the name, which
+/// is always the case inside ListPages bodies: the printuser chip built
+/// from ftml's fallback user info (user id 0, lower-cased name, slug
+/// profile URL, placeholder avatar). The delayed seal produces exactly
+/// this chip for the same element, so a row renders the same whichever
+/// ListPages path renders it.
+fn render_list_pages_table_user(name: &str, show_avatar: bool) -> Option<String> {
+    if name.is_empty() {
+        return None;
+    }
+    if name.eq_ignore_ascii_case("anonymous") {
+        return Some("Anonymous".to_owned());
+    }
+
+    let display_name = name.to_lowercase();
+    let profile_url = format!("/user:info/{}", list_pages_table_user_slug(name));
+    let onclick = "WIKIDOT.page.listeners.userInfo(0); return false;";
+    let name_text = escape_list_pages_html_text(&display_name);
+    if show_avatar {
+        let name_attr = escape_list_pages_html_attr(&display_name);
+        Some(format!(
+            concat!(
+                r#"<span class="printuser avatarhover">"#,
+                r#"<a href="{profile_url}" onclick="{onclick}">"#,
+                r#"<img class="small" src="{avatar}" alt="{name_attr}" "#,
+                r#"style="background-image:url(http://www.wikidot.com/userkarma.php?u=0)">"#,
+                r#"</a><a href="{profile_url}" onclick="{onclick}">{name_text}</a>"#,
+                r#"</span>"#,
+            ),
+            profile_url = escape_list_pages_html_attr(&profile_url),
+            onclick = onclick,
+            avatar = LIST_PAGES_TABLE_USER_PLACEHOLDER_AVATAR,
+            name_attr = name_attr,
+            name_text = name_text,
+        ))
+    } else {
+        Some(format!(
+            concat!(
+                r#"<span class="printuser">"#,
+                r#"<a href="{profile_url}" onclick="{onclick}">{name_text}</a>"#,
+                r#"</span>"#,
+            ),
+            profile_url = escape_list_pages_html_attr(&profile_url),
+            onclick = onclick,
+            name_text = name_text,
+        ))
+    }
+}
+
+/// Port of ftml's `wikidot_user_slug` (render/handle.rs), which builds
+/// the profile URL for fallback user info. ftml first applies NFKD;
+/// this port omits the decomposition step, which only changes slugs
+/// for names whose letters carry diacritics. Wikidot user names are
+/// ASCII in practice, where the two agree exactly.
+fn list_pages_table_user_slug(name: &str) -> String {
+    let mut slug = String::with_capacity(name.len());
+    let mut pending_separator = false;
+
+    for character in name.chars() {
+        if matches!(
+            character,
+            '\u{300}'..='\u{36f}'
+                | '\u{483}'..='\u{489}'
+                | '\u{1ab0}'..='\u{1aff}'
+                | '\u{1dc0}'..='\u{1dff}'
+                | '\u{20d0}'..='\u{20ff}'
+                | '\u{fe20}'..='\u{fe2f}'
+        ) {
+            continue;
+        }
+
+        if character.is_ascii_alphanumeric() {
+            if pending_separator && !slug.is_empty() {
+                slug.push('-');
+            }
+
+            pending_separator = false;
+            slug.push(character.to_ascii_lowercase());
+        } else {
+            pending_separator = true;
+        }
+    }
+
+    slug
 }
 
 pub(in crate::services::render) fn render_native_list_inline_html_with_titles(

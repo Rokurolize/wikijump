@@ -2598,6 +2598,48 @@ fn renders_wikidot_list_pages_table_rows_as_raw_html() {
 }
 
 #[test]
+fn list_pages_table_rows_render_authored_user_elements() {
+    let rendered = render_list_pages_table_rows(concat!(
+        "||~ Authors ||\n",
+        "||= [[*user Placeholder McD]], [[user stormbreath]], [[*user anonymous]] ||\n",
+    ))
+    .expect("table rows");
+
+    // The starred form renders the fallback avatar chip, identical to
+    // the delayed seal's rendering of the same element.
+    assert!(
+        rendered.contains(
+            "<span class=\"printuser avatarhover\"><a href=\"/user:info/placeholder-mcd\" onclick=\"WIKIDOT.page.listeners.userInfo(0); return false;\"><img class=\"small\" src=\"data:image/png;base64,"
+        ),
+        "{rendered}",
+    );
+    assert!(
+        rendered.contains(
+            "alt=\"placeholder mcd\" style=\"background-image:url(http://www.wikidot.com/userkarma.php?u=0)\"></a><a href=\"/user:info/placeholder-mcd\" onclick=\"WIKIDOT.page.listeners.userInfo(0); return false;\">placeholder mcd</a></span>"
+        ),
+        "{rendered}",
+    );
+    // The unstarred form renders the plain printuser chip.
+    assert!(
+        rendered.contains(
+            "<span class=\"printuser\"><a href=\"/user:info/stormbreath\" onclick=\"WIKIDOT.page.listeners.userInfo(0); return false;\">stormbreath</a></span>"
+        ),
+        "{rendered}",
+    );
+    // Anonymous renders as bare text, as in ftml.
+    assert!(rendered.contains(", Anonymous</td>"), "{rendered}");
+    assert!(!rendered.contains("[[*user"), "{rendered}");
+    assert!(!rendered.contains("[[user"), "{rendered}");
+}
+
+#[test]
+fn list_pages_table_rows_leave_nameless_user_syntax_literal() {
+    let rendered =
+        render_list_pages_table_rows("||= [[*user]] ||\n").expect("table rows");
+    assert!(rendered.contains("[[*user]]"), "{rendered}");
+}
+
+#[test]
 fn registered_list_pages_tables_remain_block_html_in_the_outer_page() {
     let generated = render_list_pages_table_rows(concat!(
         "||~ Today's date is: ||\n",
