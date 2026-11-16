@@ -54,7 +54,10 @@ use super::compat::color_and_inline_protection::{
     wikidot_compat_html_marker,
 };
 use super::compat::hosted_code::persist_hosted_code_blocks;
-use super::compat::link_targets::restore_compat_text_in_link_targets;
+use super::compat::link_targets::{
+    restore_compat_text_in_link_targets,
+    restore_html_fragments_as_text_in_table_of_contents,
+};
 #[cfg(test)]
 use super::compat::preparation::extract_css_modules;
 use super::compat::preparation::{
@@ -2455,6 +2458,12 @@ impl RenderService {
             restore_compat_text_in_link_targets(
                 &mut parsed.tree,
                 parsed.prepared.protection.compat_text(),
+            );
+            restore_html_fragments_as_text_in_table_of_contents(
+                &mut parsed.tree,
+                parsed.prepared.protection.color_spans(),
+                parsed.prepared.protection.compat_html(),
+                parsed.prepared.protection.inline_html(),
             );
             if let Err(parsed) = parse_tx.send(parsed) {
                 parsed.prepared.protection.defuse();

@@ -505,6 +505,42 @@ impl CompatHtmlFragments {
         })
     }
 
+    /// Restore markers in a context that holds text rather than markup,
+    /// such as a table-of-contents entry name: plain fragments restore to
+    /// their plain text, and markup fragments restore to the text their
+    /// markup wraps, so no markup can leak into the text context.
+    pub(in crate::services::render) fn restore_as_text(&self, text: &str) -> String {
+        if (self.fragments.is_empty() && self.exact_fragments.is_empty())
+            || !text.contains(COMPAT_HTML_MARKER_PREFIX)
+        {
+            return text.to_owned();
+        }
+        let mut restored = text.to_owned();
+        for (marker, html) in &self.exact_fragments {
+            if restored.contains(marker) {
+                restored = restored.replace(marker, &html_fragment_text(html));
+            }
+        }
+        if self.fragments.is_empty() || !restored.contains(&self.namespace) {
+            return restored;
+        }
+        let mut output = String::with_capacity(restored.len());
+        let mut cursor = 0;
+        while let Some(offset) = restored[cursor..].find(&self.namespace) {
+            let start = cursor + offset;
+            output.push_str(&restored[cursor..start]);
+            if let Some((index, len)) = self.marker_at(&restored[start..]) {
+                output.push_str(&fragment_text(&self.fragments[index]));
+                cursor = start + len;
+            } else {
+                output.push_str(&self.namespace);
+                cursor = start + self.namespace.len();
+            }
+        }
+        output.push_str(&restored[cursor..]);
+        output
+    }
+
     pub(in crate::services::render) fn restore_plain(&self, text: &str) -> String {
         self.restore_with(text, None, None, false, |fragment| match fragment {
             CompatFragment::Plain { plain, .. } => Some(plain.as_str()),
@@ -703,6 +739,75 @@ struct BlockParagraphRestoreOptions {
     known_container_close: bool,
     unwrap_residual_div_paragraph_prefix: bool,
     trim_preceding_space: bool,
+}
+
+fn fragment_text(fragment: &CompatFragment) -> String {
+    match fragment {
+        CompatFragment::Plain { plain, .. } => plain.clone(),
+        CompatFragment::Html(html) | CompatFragment::BlockHtml { html, .. } => {
+            html_fragment_text(html)
+        }
+    }
+}
+
+/// The text an HTML fragment contributes where markup cannot appear:
+/// tags drop out, entities resolve, and the authored text remains.
+pub(in crate::services::render) fn html_fragment_text(html: &str) -> String {
+    let mut output = String::with_capacity(html.len());
+    let mut rest = html;
+    while !rest.is_empty() {
+        if rest.starts_with('<') {
+            match rest.find('>') {
+                Some(end) => rest = &rest[end + 1..],
+                None => {
+                    output.push('<');
+                    rest = &rest[1..];
+                }
+            }
+        } else if rest.starts_with('&') {
+            match html_entity(&rest[1..]) {
+                Some((ch, len)) => {
+                    output.push(ch);
+                    rest = &rest[1 + len..];
+                }
+                None => {
+                    output.push('&');
+                    rest = &rest[1..];
+                }
+            }
+        } else {
+            let next = rest.find(['<', '&']).unwrap_or(rest.len());
+            output.push_str(&rest[..next]);
+            rest = &rest[next..];
+        }
+    }
+    output
+}
+
+fn html_entity(text: &str) -> Option<(char, usize)> {
+    let end = text.find(';')?;
+    let entity = &text[..end];
+    let ch = match entity {
+        "amp" => '&',
+        "lt" => '<',
+        "gt" => '>',
+        "quot" => '"',
+        "apos" => '\'',
+        "nbsp" => '\u{a0}',
+        _ => {
+            let code = if let Some(hex) = entity
+                .strip_prefix("#x")
+                .or_else(|| entity.strip_prefix("#X"))
+            {
+                u32::from_str_radix(hex, 16).ok()?
+            } else {
+                let decimal = entity.strip_prefix('#')?;
+                decimal.parse::<u32>().ok()?
+            };
+            char::from_u32(code)?
+        }
+    };
+    Some((ch, end + 1))
 }
 
 fn restore_rate_block_from_inline_paragraph(
