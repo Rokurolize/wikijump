@@ -5,6 +5,7 @@
   import { Layout } from "$lib/types"
   import { resolve } from "$app/paths"
   import { classifyEditLeaseSaveError } from "$lib/wikidot/wikidot-edit-lease.js"
+  import { defaultPageTitleFromSlug } from "$lib/wikidot/wikidot-page-title"
   import { superForm } from "sveltekit-superforms"
   import { onDestroy, onMount, untrack } from "svelte"
 
@@ -162,7 +163,17 @@
     }
   )
 
-  $form.title = untrack(() => data.page_revision?.title ?? "")
+  // For a new page there is no stored title yet: mirror live Wikidot's
+  // editor, which pre-fills the title field -- with the title carried in
+  // the URL when one was supplied (e.g. by a NewPage module), and with
+  // the title derived from the page name otherwise. An existing page
+  // always starts from its stored title, even when that title is empty.
+  $form.title = untrack(
+    () =>
+      data.page_revision?.title ??
+      data.options.title ??
+      defaultPageTitleFromSlug(params.slug)
+  )
   $form.altTitle = untrack(() => data.page_revision?.alt_title ?? "")
   $form.wikitext = untrack(() => data.wikitext)
   $form.tags = untrack(() => data.page_revision?.tags?.join(" ") ?? "")
