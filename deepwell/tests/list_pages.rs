@@ -8527,3 +8527,198 @@ async fn listpages_respects_corpus_literal_context_ownership() {
         );
     }
 }
+
+#[tokio::test]
+async fn listpages_line_oriented_body_pairing_matches_live_wikidot() {
+    // LP-UNCLOSED-MODULE (2026-11-17): live Wikidot pairs module
+    // tokens inside a ListPages body by lines, not by raw tokens.
+    // Sandbox probes muse-probe-lp-body-css-unclosed,
+    // muse-probe-lp-body-nestedlp, and muse-probe-lp-unc-e4/e8/e11.
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    for (slug, title) in [
+        ("lpuncprobe:ant", "Ant Page"),
+        ("lpuncprobe:bee", "Bee Page"),
+        ("lpuncprobe:cat", "Cat Page"),
+    ] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Slug(slug.into())),
+        });
+        run_endpoint!(
+            runner,
+            page_create,
+            json!({
+                "site_id": site_id,
+                "wikitext": format!("Content of {title}."),
+                "title": title,
+                "alt_title": null,
+                "slug": slug,
+                "layout": "wikidot",
+                "revision_comments": "lp-unclosed regression target",
+                "user_id": ADMIN_USER_ID,
+                "bypass_filter": true,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+    }
+    let render = |source: String| {
+        let runner = &runner;
+        async move {
+            RenderService::render_wikidot_page_preview(
+                runner.context(),
+                site_id,
+                "lp unclosed regression",
+                source,
+            )
+            .await
+            .expect("preview should render")
+            .html_output
+            .body
+        }
+    };
+    let outer = "[[module ListPages category=\"lpuncprobe\" order=\"title\"]]";
+
+    // nestedlp: the nested opener consumes the only closer line, so
+    // the outer module falls back to the default template and its
+    // would-be body is released at page level, where the nested
+    // module renders with the AFTER line as its template.
+    let body = render(format!(
+        "{outer}\nBEFORE %%fullname%%\n[[module ListPages category=\"lpuncprobe\"]]INNER %%title%%[[/module]]\nAFTER %%fullname%%\n[[/module]]"
+    ))
+    .await;
+    assert!(
+        body.contains("<p>BEFORE %%fullname%%</p>"),
+        "nestedlp:\n{body}"
+    );
+    assert!(body.contains("AFTER lpuncprobe:ant"), "nestedlp:\n{body}");
+    assert!(!body.contains("INNER"), "nestedlp:\n{body}");
+    assert!(!body.contains("BEFORE lpuncprobe"), "nestedlp:\n{body}");
+
+    // css-unclosed: the entire-line CSS opener consumes the closer,
+    // so the outer module uses the default template and BEFORE is
+    // released as a literal paragraph.
+    let body = render(format!(
+        "{outer}\nBEFORE %%fullname%%\n[[module CSS]]\n.lp-probe-x {{ color: rgb(1, 2, 3); }}\nAFTER %%fullname%%\n[[/module]]"
+    ))
+    .await;
+    assert!(
+        body.contains("<p>BEFORE %%fullname%%</p>"),
+        "css-unclosed:\n{body}"
+    );
+    assert!(!body.contains("BEFORE lpuncprobe"), "css-unclosed:\n{body}");
+
+    // rate: an inline module opener in the body is literal text and
+    // the body renders per item.
+    let body = render(format!(
+        "{outer}\nBEFORE %%fullname%% [[module Rate]] AFTER %%fullname%%\n[[/module]]"
+    ))
+    .await;
+    assert!(
+        body.contains("BEFORE lpuncprobe:ant [[module Rate]] AFTER lpuncprobe:ant"),
+        "rate:\n{body}"
+    );
+
+    // strayclose: an inline closer in the body is literal text and
+    // the body renders per item.
+    let body = render(format!(
+        "{outer}\nBEFORE %%fullname%% [[/module]] AFTER %%fullname%%\n[[/module]]"
+    ))
+    .await;
+    assert!(body.contains("AFTER lpuncprobe:ant"), "strayclose:\n{body}");
+    assert!(body.contains("[[/module]]"), "strayclose:\n{body}");
+
+    // e8 (a same-line CSS pair in the body) is pinned at scanner and
+    // plan level: the body is kept whole. Its per-item render still
+    // diverges in ftml, which treats the same-line pair as a real CSS
+    // module; recorded as a residual in LP-UNCLOSED-MODULE.md.
+
+    // e11: a closer at the end of a body text line does not close
+    // the module; it uses the default template and BEFORE is
+    // released unsubstituted.
+    let body = render(format!("{outer}\nBEFORE %%fullname%%[[/module]]")).await;
+    assert!(
+        body.contains("<p>BEFORE %%fullname%%[[/module]]</p>"),
+        "e11:\n{body}"
+    );
+    assert!(!body.contains("BEFORE lpuncprobe"), "e11:\n{body}");
+
+    // e21: an opener tail containing a closer is discarded wholesale
+    // when a later line starts the module's own closer; the body
+    // renders per item and the tail text appears nowhere.
+    let body = render(
+        "[[module ListPages category=\"lpuncprobe\" order=\"title\"]] TAIL [[/module]]\nITEM %%fullname%%\n[[/module]]"
+            .to_string(),
+    )
+    .await;
+    assert!(body.contains("ITEM lpuncprobe:ant"), "e21:\n{body}");
+    assert!(!body.contains("TAIL"), "e21:\n{body}");
+
+    // e17/e20 (text trailing the opener on its own line) remain
+    // divergent from live Wikidot and are recorded as residuals in
+    // LP-UNCLOSED-MODULE.md: a same-line body start is also the
+    // normal form of the fragments the delayed machinery re-scans,
+    // so the pairing layer cannot treat such an opener as tainted.
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn listpages_nested_list_pages_pair_empties_items() {
+    // LP-UNCLOSED-MODULE probe muse-probe-lp-unc-e1: a body carrying
+    // a complete nested ListPages pair (opener and closer each at the
+    // start of their own lines) renders every item empty on live
+    // Wikidot, exactly like the CSS/MailForm pairs of LISTPAGES-DEEP
+    // D8. The surrounding BEFORE/AFTER text is swallowed with it.
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    for (slug, title) in [
+        ("lpuncprobe:ant", "Ant Page"),
+        ("lpuncprobe:bee", "Bee Page"),
+        ("lpuncprobe:cat", "Cat Page"),
+    ] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Slug(slug.into())),
+        });
+        run_endpoint!(
+            runner,
+            page_create,
+            json!({
+                "site_id": site_id,
+                "wikitext": format!("Content of {title}."),
+                "title": title,
+                "alt_title": null,
+                "slug": slug,
+                "layout": "wikidot",
+                "revision_comments": "lp-unclosed regression target",
+                "user_id": ADMIN_USER_ID,
+                "bypass_filter": true,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+    }
+    let body = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "lp unclosed e1 regression",
+        "[[module ListPages category=\"lpuncprobe\" order=\"title\"]]\nBEFORE %%fullname%%\n[[module ListPages category=\"lpuncprobe\"]]\nINNER %%title%%\n[[/module]]\nAFTER %%fullname%%\n[[/module]]".to_owned(),
+    )
+    .await
+    .expect("preview should render")
+    .html_output
+    .body;
+    assert!(body.contains("list-pages-box"), "e1:\n{body}");
+    assert!(!body.contains("BEFORE"), "e1:\n{body}");
+    assert!(!body.contains("INNER"), "e1:\n{body}");
+    assert!(!body.contains("AFTER"), "e1:\n{body}");
+    runner.teardown().await;
+}
