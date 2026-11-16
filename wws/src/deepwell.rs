@@ -186,7 +186,7 @@ impl Deepwell {
         session_token: Option<&str>,
     ) -> Result<Option<TextBlockIndex>> {
         let (index, name) = match block_id {
-            TextBlockId::Index(index) => (Some(index.get()), None),
+            TextBlockId::Index(index) => (Some(index), None),
             TextBlockId::Name(name) => (None, Some(name)),
         };
         let params = rpc_object! {
@@ -463,7 +463,9 @@ pub enum TextBlockType {
 
 #[derive(Debug, Copy, Clone)]
 pub enum TextBlockId<'a> {
-    Index(NonZeroU16),
+    // Index 0 is forwarded as-is: DEEPWELL aliases it to the first block,
+    // matching Wikidot's code block serving behavior.
+    Index(u16),
     Name(&'a str),
 }
 
@@ -713,7 +715,7 @@ mod tests {
                 42,
                 123,
                 TextBlockType::Html,
-                TextBlockId::Index(NonZeroU16::new(2).unwrap()),
+                TextBlockId::Index(2),
                 Some("session-token"),
             )
             .await
