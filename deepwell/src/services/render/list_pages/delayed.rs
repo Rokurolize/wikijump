@@ -799,6 +799,119 @@ mod tests {
     }
 
     #[test]
+    fn table_row_user_inside_kept_iftags_renders_the_fallback_chip() {
+        // The placestyle authorbox shape: a simple-table ListPages body
+        // whose kept iftags segment holds an authored user element, with
+        // a local author for the listed page. Table-row bodies inline
+        // generated HTML, so the row is not delayed and renders through
+        // the native table renderer; the user element must still render
+        // as the same fallback chip the delayed seal produces.
+        let bodies = [
+            "||~ %%title%% ||\n||= **\u{4f5c}\u{6210}\u{8005}:** [[iftags +\u{30c6}\u{30fc}\u{30de}]][[*user YS_GPCR]], [[/iftags]]%%created_by_linked%% ||\n||~ \u{4f5c}\u{6210}\u{65e5}: %%created_at|%Y/%m/%d%% ||",
+            "||~ %%title%% ||\n||= **\u{4f5c}\u{6210}\u{8005}:** [[*user YS_GPCR]], %%created_by_linked%% ||\n||~ \u{4f5c}\u{6210}\u{65e5}: %%created_at|%Y/%m/%d%% ||",
+        ];
+        for source in bodies {
+            let template =
+                ListPagesTemplatePlan::compile(source).expect("supported template");
+            let page = FoundPageRow {
+                page_id: 1,
+                site_id: 1,
+                title: Some("Placestyle".to_owned()),
+                alt_title: None,
+                slug: Some("theme-placestyle".to_owned()),
+                page_category_id: None,
+                page_revision_id: None,
+                tags: Some(vec!["\u{30c6}\u{30fc}\u{30de}".to_owned()]),
+                created_at: Some(
+                    time::OffsetDateTime::from_unix_timestamp(1_778_581_468)
+                        .expect("fixture timestamp"),
+                ),
+                created_by: Some(20_001_208),
+                updated_at: None,
+                updated_by: None,
+                score: None,
+                revision_count: None,
+            };
+            let mut user_displays = BTreeMap::new();
+            user_displays.insert(
+                20_001_208,
+                super::super::WikidotUserDisplay {
+                    user_id: 20_001_208,
+                    name: "staff.operator".to_owned(),
+                    slug: Some("staff-operator".to_owned()),
+                    wikidot_profile: false,
+                    avatar_data: None,
+                },
+            );
+            let snapshot_displays = BTreeMap::new();
+            let runtime_displays = BTreeMap::new();
+            let data_form_values = BTreeMap::new();
+            let mut context = empty_substitution_context(
+                &user_displays,
+                &snapshot_displays,
+                &runtime_displays,
+                &data_form_values,
+            );
+            context.render_generated_html = true;
+            let tags = [Cow::Borrowed("\u{30c6}\u{30fc}\u{30de}")];
+            let mut compat_text = CompatTextFragments::new(source);
+            let prepared =
+                prepare_delayed_list_pages_row(PrepareDelayedListPagesRowParams {
+                    template: &template,
+                    body: template.body(),
+                    page: &page,
+                    index: 1,
+                    total: 1,
+                    context: &context,
+                    outer_page_tags: &tags,
+                    compat_text: &mut compat_text,
+                    uses_star_rating: false,
+                    numbered_link_titles: None,
+                    render_cost_budget: None,
+                });
+
+            assert!(
+                prepared.generated_slots.is_empty()
+                    && prepared.runtime_text_ranges.is_empty()
+                    && prepared.html_fragments.is_none(),
+                "the placestyle row must take the native table path: {:?}",
+                prepared.body,
+            );
+            assert!(
+                prepared
+                    .body
+                    .starts_with("<table class=\"wiki-content-table\""),
+                "{}",
+                prepared.body,
+            );
+            assert!(
+                !prepared.body.contains("[[*user"),
+                "authored user element leaked as literal text: {}",
+                prepared.body,
+            );
+            assert!(
+                prepared.body.contains(
+                    "<span class=\"printuser avatarhover\"><a href=\"/user:info/ys-gpcr\" onclick=\"WIKIDOT.page.listeners.userInfo(0); return false;\"><img class=\"small\" src=\"data:image/png;base64,"
+                ),
+                "{}",
+                prepared.body,
+            );
+            assert!(
+                prepared.body.contains(
+                    "alt=\"ys_gpcr\" style=\"background-image:url(http://www.wikidot.com/userkarma.php?u=0)\"></a><a href=\"/user:info/ys-gpcr\" onclick=\"WIKIDOT.page.listeners.userInfo(0); return false;\">ys_gpcr</a></span>"
+                ),
+                "{}",
+                prepared.body,
+            );
+            assert!(
+                prepared.body.contains(">staff.operator</a></span>"),
+                "{}",
+                prepared.body,
+            );
+        }
+    }
+
+    #[test]
     fn title_inside_html_block_is_escaped() {
         let source = "[[html]]\n<b>%%title%% tags: %%tags%%</b>\n[[/html]]";
         let template =
