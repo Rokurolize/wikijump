@@ -206,9 +206,14 @@ mod tests {
             .expect("URL fallback should parse");
         assert_eq!(
             zero_limit.limit,
-            Some(1),
-            "the later current-page range owns the effective one-row limit",
+            Some(0),
+            "live Wikidot honours the explicit zero limit over the later \
+             current-page range: shushuin's LP-C module with this head \
+             renders zero rows at the base URL, so the range's implicit \
+             one-row limit must not raise an explicit zero limit",
         );
+        assert_eq!(zero_limit.count_pages_explicit_limit, Some(0));
+        assert!(zero_limit.current_page_only);
         let source = format!(
             "[[module ListPages {zero_limit_head}]]\n%%unsupported%%\n\
              [[%%content{{0}}%%module css]]\n.unused {{}}\n\
@@ -1030,6 +1035,38 @@ mod tests {
                 None,
             ),
             (
+                r#"limit="0" range=".""#,
+                Some(0),
+                Some(0),
+                true,
+                false,
+                None,
+            ),
+            (
+                r#"limit="@URL|0" range=".""#,
+                Some(0),
+                Some(0),
+                true,
+                false,
+                None,
+            ),
+            (
+                r#"range="." limit="0""#,
+                Some(0),
+                Some(0),
+                true,
+                false,
+                None,
+            ),
+            (
+                r#"limit="0" range="." range="others""#,
+                Some(0),
+                Some(0),
+                false,
+                true,
+                None,
+            ),
+            (
                 r#"range="." limit="5""#,
                 Some(5),
                 Some(5),
@@ -1054,6 +1091,38 @@ mod tests {
             );
             assert_eq!(arguments.relative_range, expected_relative, "{head}");
         }
+    }
+
+    #[test]
+    fn explicit_zero_limit_from_url_fallback_survives_current_page_range() {
+        // Live shape: shushuin's LP-C module and nebulae's pager modules,
+        // `limit="@URL|0" range="." urlAttrPrefix="page2"`. At the base URL
+        // the prefixed limit parameter is absent, the fallback resolves to
+        // zero, and Wikidot renders zero rows; the body appears only on the
+        // parameterised URL (`.../offset/1/page2_limit/1`).
+        let head = r#"limit="@URL|0" range="." urlAttrPrefix="page2""#;
+        let base = parse_list_pages_arguments_with_url(
+            head,
+            crate::services::render::UrlArguments::default(),
+        )
+        .expect("pager module head should parse at the base URL");
+        assert_eq!(base.limit, Some(0));
+        assert_eq!(base.count_pages_explicit_limit, Some(0));
+        assert!(base.current_page_only);
+
+        let path_arguments = [crate::services::render::UrlArgumentPair {
+            name: "page2_limit".to_owned(),
+            value: Some("1".to_owned()),
+        }];
+        let url = crate::services::render::UrlArguments {
+            path_arguments: &path_arguments,
+            ..crate::services::render::UrlArguments::default()
+        };
+        let parameterised = parse_list_pages_arguments_with_url(head, url)
+            .expect("pager module head should parse at the parameterised URL");
+        assert_eq!(parameterised.limit, Some(1));
+        assert_eq!(parameterised.count_pages_explicit_limit, Some(1));
+        assert!(parameterised.current_page_only);
     }
 
     #[test]
