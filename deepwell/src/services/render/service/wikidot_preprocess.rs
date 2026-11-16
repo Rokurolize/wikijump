@@ -1,5 +1,7 @@
 use super::super::iftags::preserve_all_ordinary_wikidot_iftags;
-use super::super::include_attachment_owners::DirectiveEndScan;
+use super::super::include_attachment_owners::{
+    DirectiveEndScan, wikidot_include_directive_ranges,
+};
 use super::{
     AttachmentOwner, AttachmentProvenanceRegistry, BTreeMap, CompatTextFragments,
     INCLUDE_VARIABLE_REGEX, LiteralRegionIndex, PageInfo, PageRef, Range, RenderService,
@@ -14,8 +16,7 @@ use super::{
     resolve_outermost_wikidot_iftags_before_include_expansion_for_page_preview,
     resolve_unbound_include_variable_iftags,
     resolve_wikidot_parser_functions_outside_list_pages, semantic_attachment_value,
-    split_wikidot_image_block_argument_segments, wikidot_include_directive_ranges,
-    wikidot_include_segment_is_space,
+    split_wikidot_image_block_argument_segments, wikidot_include_segment_is_space,
 };
 
 impl RenderService {

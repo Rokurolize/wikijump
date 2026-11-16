@@ -100,14 +100,13 @@ use super::include_attachment_owners::{
     preserve_argument_quotes, protect_forwarded_attachment_variables,
     qualify_included_relative_image_attachments,
     qualify_relative_image_variable_attachments, relative, semantic_attachment_value,
-    split_wikidot_image_block_argument_segments, wikidot_include_directive_ranges,
-    wikidot_include_segment_is_space,
+    split_wikidot_image_block_argument_segments, wikidot_include_segment_is_space,
 };
 use super::include_comment_branches::{
     remove_nested_include_boundaries, remove_unresolved_include_comment_branches,
 };
 use super::include_resolution::{
-    PreparedIncluder, collect_include_display_pages,
+    PreparedIncluder, align_include_directive_ranges, collect_include_display_pages,
     collect_missing_include_replacements, expand_malformed_include_targets,
     wikidot_no_such_include_replacement,
 };
@@ -3200,7 +3199,7 @@ impl RenderService {
 
             let includes_enclosed = include_enclosure_flags(
                 &wikitext,
-                includes.len(),
+                &includes,
                 depth,
                 expansion_context.raw_zone,
             );
@@ -3963,18 +3962,18 @@ impl<'a> IncludeExpansionContext<'a> {
 
 fn include_enclosure_flags(
     wikitext: &str,
-    include_count: usize,
+    includes: &[IncludeRef<'_>],
     _depth: usize,
     raw_zone: bool,
 ) -> Vec<bool> {
     if raw_zone {
-        return vec![true; include_count];
+        return vec![true; includes.len()];
     }
     let enclosed_bodies = enclosed_iftags_ranges(wikitext);
-    let directive_ranges = wikidot_include_directive_ranges(wikitext);
-    if directive_ranges.len() != include_count {
-        return vec![false; include_count];
-    }
+    let Some(directive_ranges) = align_include_directive_ranges(wikitext, includes)
+    else {
+        return vec![false; includes.len()];
+    };
     directive_ranges
         .iter()
         .map(|range| {

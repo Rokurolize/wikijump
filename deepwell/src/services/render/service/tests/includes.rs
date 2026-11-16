@@ -2030,7 +2030,12 @@ fn include_enclosure_flags_mark_includes_directly_inside_active_enclosed_gates()
         0,
     );
 
-    let flags = super::super::include_enclosure_flags(&source, 2, 0, false);
+    let flags = super::super::include_enclosure_flags(
+        &source,
+        &enclosure_test_includes(&["component:feature-and-news", "component:other"]),
+        0,
+        false,
+    );
 
     assert_eq!(flags, vec![true, false]);
 }
@@ -2054,7 +2059,12 @@ fn include_enclosure_flags_stay_false_when_the_outer_gate_is_inactive() {
         0,
     );
 
-    let flags = super::super::include_enclosure_flags(&source, 1, 0, false);
+    let flags = super::super::include_enclosure_flags(
+        &source,
+        &enclosure_test_includes(&["component:other"]),
+        0,
+        false,
+    );
 
     assert_eq!(flags, vec![false]);
 }
@@ -2063,7 +2073,12 @@ fn include_enclosure_flags_stay_false_when_the_outer_gate_is_inactive() {
 fn include_enclosure_flags_fall_back_to_false_on_directive_count_mismatch() {
     let source = "[[include component:other]]\n".to_string();
 
-    let flags = super::super::include_enclosure_flags(&source, 2, 0, false);
+    let flags = super::super::include_enclosure_flags(
+        &source,
+        &enclosure_test_includes(&["component:other", "component:other"]),
+        0,
+        false,
+    );
 
     assert_eq!(flags, vec![false, false]);
 }
@@ -2072,7 +2087,12 @@ fn include_enclosure_flags_fall_back_to_false_on_directive_count_mismatch() {
 fn include_enclosure_flags_propagate_raw_zone_at_any_depth() {
     let source = "[[include component:other]]\n".to_string();
 
-    let flags = super::super::include_enclosure_flags(&source, 1, 3, true);
+    let flags = super::super::include_enclosure_flags(
+        &source,
+        &enclosure_test_includes(&["component:other"]),
+        3,
+        true,
+    );
 
     assert_eq!(flags, vec![true]);
 }
@@ -2188,6 +2208,18 @@ fn render_pre_expanded_wikidot_page_body(
     )
 }
 
+fn enclosure_test_includes(targets: &[&str]) -> Vec<IncludeRef<'static>> {
+    targets
+        .iter()
+        .map(|target| {
+            IncludeRef::new(
+                PageRef::parse_include(target).expect("test include target should parse"),
+                Default::default(),
+            )
+        })
+        .collect()
+}
+
 fn expand_test_enclosed_include(
     root: &str,
     component: &str,
@@ -2205,7 +2237,18 @@ fn expand_test_enclosed_include(
         &mut compat_text,
         0,
     );
-    let flags = super::super::include_enclosure_flags(&source, 1, 0, false);
+    let mut collected = Vec::new();
+    ftml::include(
+        &source,
+        &settings,
+        super::super::CollectingIncluder {
+            includes: &mut collected,
+            language: "en",
+        },
+        include_error,
+    )
+    .expect("test include collection should succeed");
+    let flags = super::super::include_enclosure_flags(&source, &collected, 0, false);
 
     let mut nested_source = component.to_string();
     if flags[0] {
@@ -2293,7 +2336,12 @@ fn include_enclosure_flags_mark_includes_inside_active_enclosed_gates_at_depth()
         1,
     );
 
-    let flags = super::super::include_enclosure_flags(&source, 2, 1, false);
+    let flags = super::super::include_enclosure_flags(
+        &source,
+        &enclosure_test_includes(&["component:feature-and-news", "component:other"]),
+        1,
+        false,
+    );
 
     assert_eq!(flags, vec![true, false]);
 }
@@ -2324,7 +2372,12 @@ fn include_gate_inside_an_included_pages_active_gate_prints_literally_after_expa
         &mut compat_text,
         1,
     );
-    let flags = super::super::include_enclosure_flags(&theme_source, 2, 1, false);
+    let flags = super::super::include_enclosure_flags(
+        &theme_source,
+        &enclosure_test_includes(&["component:sigma-plus", "component:sigma-plus"]),
+        1,
+        false,
+    );
     assert_eq!(flags, vec![false, true]);
 
     // The copy outside the gate is evaluated against the sample's tags and
@@ -2403,7 +2456,12 @@ fn include_gate_raw_zone_covers_bare_gate_and_following_gate_in_wrapped_page() {
         &mut compat_text,
         1,
     );
-    let flags = super::super::include_enclosure_flags(&theme_source, 1, 1, false);
+    let flags = super::super::include_enclosure_flags(
+        &theme_source,
+        &enclosure_test_includes(&["component:betterfootnotes"]),
+        1,
+        false,
+    );
     assert_eq!(flags, vec![true]);
 
     // The gated theme page inside the wrapper's bare gate is prepared in raw
@@ -2534,7 +2592,12 @@ fn include_gate_pair_inside_an_included_pages_active_gate_prints_literally() {
         &mut compat_text,
         1,
     );
-    let flags = super::super::include_enclosure_flags(&theme_source, 1, 1, false);
+    let flags = super::super::include_enclosure_flags(
+        &theme_source,
+        &enclosure_test_includes(&["component:anomaly-class-bar-source"]),
+        1,
+        false,
+    );
     assert_eq!(flags, vec![true]);
 
     let mut component_source = component.to_string();
@@ -2708,7 +2771,12 @@ fn suprematism_include_chain_matches_direct_view_outcome() {
         &mut compat_text,
         1,
     );
-    let flags = super::super::include_enclosure_flags(&theme_source, 1, 1, false);
+    let flags = super::super::include_enclosure_flags(
+        &theme_source,
+        &enclosure_test_includes(&["component:license-box-theme"]),
+        1,
+        false,
+    );
     assert_eq!(flags, vec![true]);
 
     let mut inside = component.to_string();
@@ -2739,5 +2807,81 @@ fn suprematism_include_chain_matches_direct_view_outcome() {
     assert_eq!(html.matches("license docs").count(), 1, "{html}");
     assert!(html.contains("[[iftags +コンポーネント]]"), "{html}");
     assert!(!html.contains("source code docs"), "{html}");
+    assert!(!html.contains("wikijump-enclosed-iftags"), "{html}");
+}
+
+#[test]
+fn include_enclosure_flags_align_past_prose_and_blockquote_include_mentions() {
+    // The flopstyle theme shape: the page text mentions includes in
+    // prose and shows one in a blockquote example. The textual directive
+    // scan counts those mentions, ftml does not collect them, and the
+    // enclosure flags must still align with the collected includes.
+    let mut page_info = fallback_test_page_info("theme:flopstyle-dark-jp", "Theme");
+    page_info.tags = vec![Cow::Borrowed("テーマ")];
+    let mut source = concat!(
+        "[[iftags +テーマ]]\n",
+        "[[include component:info-like]]\n",
+        "注: `[[include component:info-like]]` と `[[include component:other]]` を使用する。\n",
+        "> [[include component:quoted-example]]\n",
+        ">\n",
+        "> |image={{filename.png}}\n",
+        "[[/iftags]]\n",
+        "[[include component:other]]\n",
+    )
+    .to_string();
+    let mut preserved = CompatTextFragments::new(&source);
+    RenderService::prepare_wikidot_conditionals_before_include_expansion(
+        &mut source,
+        &page_info,
+        &mut preserved,
+        1,
+    );
+
+    let flags = super::super::include_enclosure_flags(
+        &source,
+        &enclosure_test_includes(&["component:info-like", "component:other"]),
+        1,
+        false,
+    );
+
+    assert_eq!(flags, vec![true, false]);
+}
+
+#[test]
+fn enclosed_include_attribute_gates_stay_unevaluated_despite_include_mentions() {
+    // End to end over the flopstyle/info:start shape: a component whose
+    // divs gate a style attribute behind iftags is included inside an
+    // active outer gate, on a page that also mentions includes in prose.
+    // Live Wikidot evaluates only the outermost gate level, so both
+    // gated styles are dropped (the attribute parser swallows the
+    // unevaluated gate together with its content); the heritage box must
+    // not keep display:none the way an evaluated -tag gate would leave it.
+    let component = concat!(
+        "[[div class=\"creditRate\"]]\n",
+        "[[div class=\"rateBox\" [[iftags +nosuchtagxyz]]style=\"display:none;\"[[/iftags]]]]\n",
+        "[[div class=\"rate-box-with-credit-button\"]]\n",
+        "INNER-A\n",
+        "[[/div]]\n",
+        "[[/div]]\n",
+        "[[div class=\"rateBox\" [[iftags -nosuchtagxyz]]style=\"display:none;\"[[/iftags]]]]\n",
+        "[[div class=\"heritage-rating-module\"]]\n",
+        "INNER-B\n",
+        "[[/div]]\n",
+        "[[/div]]\n",
+        "[[/div]]\n",
+    );
+    let root = concat!(
+        "[[iftags +テーマ]]\n",
+        "[[include component:ratebox-probe]]\n",
+        "注: `[[include component:ratebox-probe]]` を使用する。\n",
+        "[[/iftags]]\n",
+    );
+
+    let (expanded, compat_text) =
+        expand_test_enclosed_include(root, component, &["テーマ"]);
+    let html = render_pre_expanded_wikidot_page_body(expanded, compat_text, &["テーマ"]);
+
+    assert!(html.contains("INNER-B"), "{html}");
+    assert!(!html.contains("display:none"), "{html}");
     assert!(!html.contains("wikijump-enclosed-iftags"), "{html}");
 }

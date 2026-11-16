@@ -107,6 +107,63 @@ pub(super) fn collect_include_display_pages(
     pages
 }
 
+pub(super) fn align_include_directive_ranges(
+    wikitext: &str,
+    includes: &[IncludeRef<'_>],
+) -> Option<Vec<std::ops::Range<usize>>> {
+    let directive_ranges = wikidot_include_directive_ranges(wikitext);
+    if directive_ranges.len() == includes.len() {
+        return Some(directive_ranges);
+    }
+    if directive_ranges.len() < includes.len() {
+        return None;
+    }
+    // The textual directive scan also counts include-shaped text that
+    // ftml never collects (prose mentions of an include, blockquote
+    // examples), so a plain count comparison cannot align the two
+    // enumerations. Realign by page reference instead: keep the
+    // directives whose line-start targets parse to exactly the
+    // collected references, in order.
+    let literal_regions = LiteralRegionIndex::new_wikidot_syntax(wikitext);
+    let directive_starts = directive_ranges
+        .iter()
+        .map(|range| range.start)
+        .collect::<std::collections::HashSet<_>>();
+    let mut parsed = Vec::new();
+    for captures in INCLUDE_TARGET_REGEX.captures_iter(wikitext) {
+        let opening = captures
+            .name("opening")
+            .expect("include capture has an opening");
+        if !directive_starts.contains(&opening.start())
+            || literal_regions.contains(opening.start())
+        {
+            continue;
+        }
+        let Ok(page_ref) = PageRef::parse_include(&captures["target"]) else {
+            continue;
+        };
+        parsed.push((opening.start(), page_ref));
+    }
+    if parsed.len() != includes.len() {
+        return None;
+    }
+    if parsed
+        .iter()
+        .zip(includes.iter())
+        .any(|((_, parsed_ref), include)| parsed_ref != include.page_ref())
+    {
+        return None;
+    }
+    let by_start = directive_ranges
+        .iter()
+        .map(|range| (range.start, range.clone()))
+        .collect::<HashMap<_, _>>();
+    parsed
+        .iter()
+        .map(|(start, _)| by_start.get(start).cloned())
+        .collect()
+}
+
 pub(super) fn wikitext_has_executable_include(wikitext: &str) -> bool {
     !collect_include_display_pages(wikitext).is_empty()
 }

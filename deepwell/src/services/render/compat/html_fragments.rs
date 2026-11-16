@@ -843,6 +843,27 @@ fn restore_rate_block_from_inline_paragraph(
         return None;
     }
 
+    // Live Wikidot emits no separate paragraph for an inline scope whose
+    // only content before the rate module is the scope's own opening
+    // tags, but ftml renders that leading segment as its own paragraph
+    // (an empty echo of the wrappers). Drop the exact empty echo when it
+    // directly precedes the marker paragraph, so the restored output
+    // keeps live's shape: one leading empty wrapper, the filled wrapper,
+    // and one trailing empty wrapper.
+    let mut echo = String::from("<p>");
+    for (opening, _) in &wrappers {
+        echo.push_str(opening);
+    }
+    for (_, name) in wrappers.iter().rev() {
+        echo.push_str("</");
+        echo.push_str(name);
+        echo.push('>');
+    }
+    echo.push_str("</p>");
+    if output[..paragraph_start].ends_with(&echo) {
+        output.replace_range(paragraph_start - echo.len()..paragraph_start, "");
+    }
+
     for (_, name) in wrappers.iter().rev() {
         write!(output, "</{name}>").expect("writing to a String cannot fail");
     }
