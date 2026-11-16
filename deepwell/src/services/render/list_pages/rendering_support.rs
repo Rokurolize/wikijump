@@ -621,7 +621,10 @@ pub(in crate::services::render) async fn expand_list_pages_generated_includes(
             source_cache: include_source_cache,
             compat_text,
             expand_wikidot_image_blocks: true,
-            page_preview,
+            // ListPages generated-include expansion keeps the historical
+            // preview omission: row conditions resolve later against each
+            // selected row, not against the host page's tags.
+            omit_iftags_branches: page_preview,
             budget: *include_budget,
             render_cost_budget: render_cost_budget.clone(),
         },

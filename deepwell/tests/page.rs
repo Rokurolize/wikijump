@@ -6425,6 +6425,18 @@ async fn page_preview_omits_iftags_in_included_sources() {
         }),
     );
 
+    // The omission contract is the context-less one: live PagePreviewModule
+    // for a new, unsaved page (no page context) omits both iftags branches.
+    // A preview tied to an existing page resolves gates against that page's
+    // saved tags instead; see
+    // page_preview_resolves_iftags_against_the_pages_saved_tags below.
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site.site.site_id),
+        page_reference: None,
+    });
+
     let preview = run_endpoint!(
         runner,
         wikidot_page_preview,
@@ -6440,6 +6452,134 @@ async fn page_preview_omits_iftags_in_included_sources() {
     assert!(!preview.body.contains(ACTIVE_MARKER), "{}", preview.body);
     assert!(!preview.body.contains(NEGATIVE_MARKER), "{}", preview.body);
     assert!(!preview.body.contains("ROOT_NEGATIVE"), "{}", preview.body);
+    assert!(!preview.body.contains("ROOT"), "{}", preview.body);
+}
+
+#[tokio::test]
+async fn page_preview_resolves_iftags_against_the_pages_saved_tags() {
+    const COMPONENT_SLUG: &str = "component:fixture-iftags-preview-tags-source";
+    const TAGGED_SLUG: &str = "fixture-iftags-preview-tagged";
+    const UNTAGGED_SLUG: &str = "fixture-iftags-preview-untagged";
+    const INCLUDED_POSITIVE: &str = "Included positive branch";
+    const INCLUDED_NEGATIVE: &str = "Included negative branch";
+    const ROOT_POSITIVE: &str = "Root positive branch";
+    const ROOT_NEGATIVE: &str = "Root negative branch";
+    const CONSUMER_WIKITEXT: &str = concat!(
+        "X\n",
+        "[[include component:fixture-iftags-preview-tags-source]]\n",
+        "[[iftags +gated]]Root positive branch[[/iftags]]\n",
+        "[[iftags -gated]]Root negative branch[[/iftags]]\n",
+        "Y",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(COMPONENT_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": format!(
+                "[[iftags +gated]]{INCLUDED_POSITIVE}[[/iftags]]\n[[iftags -gated]]{INCLUDED_NEGATIVE}[[/iftags]]"
+            ),
+            "title": "PagePreview iftags tags source",
+            "alt_title": null,
+            "slug": COMPONENT_SLUG,
+            "layout": "wikidot",
+            "tags": [],
+            "revision_comments": "create PagePreview iftags tags fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    for (slug, tags) in [(TAGGED_SLUG, json!(["gated"])), (UNTAGGED_SLUG, json!([]))] {
+        set_mutation_request_context(
+            &mut runner,
+            ADMIN_USER_ID,
+            site_id,
+            Reference::Slug(Cow::Borrowed(slug)),
+        );
+        run_endpoint!(
+            runner,
+            page_create,
+            json!({
+                "site_id": site_id,
+                "wikitext": CONSUMER_WIKITEXT,
+                "title": "PagePreview iftags tags consumer",
+                "alt_title": null,
+                "slug": slug,
+                "layout": "wikidot",
+                "tags": tags,
+                "revision_comments": "create PagePreview iftags tags fixture",
+                "user_id": ADMIN_USER_ID,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+    }
+
+    // Previewing the tagged page (the request context names it) resolves
+    // both its own and its included gates against its saved tags, exactly
+    // like the saved render.
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(TAGGED_SLUG)),
+    );
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "PagePreview iftags tags consumer",
+            "wikitext": CONSUMER_WIKITEXT,
+        }),
+    );
+    assert!(preview.body.contains(INCLUDED_POSITIVE), "{}", preview.body);
+    assert!(preview.body.contains(ROOT_POSITIVE), "{}", preview.body);
+    assert!(
+        !preview.body.contains(INCLUDED_NEGATIVE),
+        "{}",
+        preview.body
+    );
+    assert!(!preview.body.contains(ROOT_NEGATIVE), "{}", preview.body);
+
+    // Previewing an existing page without the tag keeps the negative
+    // branches: its tag list is empty, but the page context exists, so the
+    // context-less omission must not apply.
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(UNTAGGED_SLUG)),
+    );
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "PagePreview iftags tags consumer",
+            "wikitext": CONSUMER_WIKITEXT,
+        }),
+    );
+    assert!(
+        !preview.body.contains(INCLUDED_POSITIVE),
+        "{}",
+        preview.body
+    );
+    assert!(!preview.body.contains(ROOT_POSITIVE), "{}", preview.body);
+    assert!(preview.body.contains(INCLUDED_NEGATIVE), "{}", preview.body);
+    assert!(preview.body.contains(ROOT_NEGATIVE), "{}", preview.body);
 }
 
 #[tokio::test]

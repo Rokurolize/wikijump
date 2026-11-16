@@ -1427,6 +1427,11 @@ impl RenderService {
         } = options;
         let backlinks_page_id = current_page_id;
         let next_previous_page_id = current_page_id;
+        // A page preview with no context page (a new, unsaved page) has no
+        // saved tags to resolve [[iftags]] against; live PagePreviewModule
+        // omits both gate branches in that case. Previews of existing pages
+        // resolve gates against the page's saved tags, like saved renders.
+        let preview_omit_iftags = page_preview && current_page_id.is_none();
         let current_page_id = (!page_preview).then_some(current_page_id).flatten();
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
@@ -1468,7 +1473,7 @@ impl RenderService {
                     source_cache: &mut include_source_cache,
                     compat_text: &mut wikidot_compat_text,
                     expand_wikidot_image_blocks: true,
-                    page_preview,
+                    omit_iftags_branches: preview_omit_iftags,
                     budget: include_budget,
                     render_cost_budget: render_cost_budget.clone(),
                 },
@@ -3039,7 +3044,7 @@ impl RenderService {
             source_cache,
             compat_text,
             expand_wikidot_image_blocks,
-            page_preview,
+            omit_iftags_branches,
             budget,
             render_cost_budget,
         } = options;
@@ -3078,7 +3083,7 @@ impl RenderService {
                 attachment_owner: source_attachment_owner,
                 page_info,
                 settings,
-                page_preview,
+                omit_iftags_branches,
                 expand_wikidot_image_blocks,
                 max_total_includes: budget.maximum,
                 render_cost_budget,
@@ -3117,7 +3122,7 @@ impl RenderService {
                     expansion_context.page_info.language.as_ref(),
                 );
             }
-            if expansion_context.page_preview {
+            if expansion_context.omit_iftags_branches {
                 Self::prepare_wikidot_conditionals_before_include_expansion_for_page_preview(
                     &mut wikitext,
                     compat_text,
@@ -3824,7 +3829,7 @@ pub(super) struct IncludeExpansionOptions<'a> {
     pub(super) source_cache: &'a mut IncludeSourceCache,
     pub(super) compat_text: &'a mut CompatTextFragments,
     pub(super) expand_wikidot_image_blocks: bool,
-    pub(super) page_preview: bool,
+    pub(super) omit_iftags_branches: bool,
     pub(super) budget: IncludeExpansionBudget,
     pub(super) render_cost_budget: super::render_budget::SharedRenderCostBudget,
 }
@@ -3858,7 +3863,7 @@ struct IncludeExpansionContext<'a> {
     attachment_owner: Option<AttachmentOwner>,
     page_info: &'a PageInfo<'a>,
     settings: &'a WikitextSettings,
-    page_preview: bool,
+    omit_iftags_branches: bool,
     expand_wikidot_image_blocks: bool,
     max_total_includes: usize,
     render_cost_budget: super::render_budget::SharedRenderCostBudget,
@@ -3881,7 +3886,7 @@ impl<'a> IncludeExpansionContext<'a> {
             }),
             page_info: self.page_info,
             settings: self.settings,
-            page_preview: self.page_preview,
+            omit_iftags_branches: self.omit_iftags_branches,
             expand_wikidot_image_blocks: self.expand_wikidot_image_blocks,
             max_total_includes: self.max_total_includes,
             render_cost_budget: self.render_cost_budget.clone(),
