@@ -49,9 +49,15 @@ pub async fn text_block_get_index(
     } = parse!(params);
 
     match (page_id, index, name, sha1) {
-        (Some(page_id), Some(index), None, None) if index > 0 => {
-            ensure_parent_page_view_permission(ctx, site_id, page_id, session_token.as_deref())
-                .await?;
+        (Some(page_id), Some(index), None, None) if index >= 0 => {
+            let index = normalize_block_index(index);
+            ensure_parent_page_view_permission(
+                ctx,
+                site_id,
+                page_id,
+                session_token.as_deref(),
+            )
+            .await?;
             TextBlockService::get_block_by_index(ctx, page_id, block_type, index)
                 .await
                 .or_raise(|| {
@@ -65,8 +71,13 @@ pub async fn text_block_get_index(
                 })
         }
         (Some(page_id), None, Some(name), None) => {
-            ensure_parent_page_view_permission(ctx, site_id, page_id, session_token.as_deref())
-                .await?;
+            ensure_parent_page_view_permission(
+                ctx,
+                site_id,
+                page_id,
+                session_token.as_deref(),
+            )
+            .await?;
             TextBlockService::get_block_index(ctx, page_id, block_type, &name)
                 .await
                 .or_raise(|| {
@@ -83,10 +94,7 @@ pub async fn text_block_get_index(
             let digest = parse_wikidot_sha1(&sha1)?;
             let user_id = session_user_id(ctx, session_token.as_deref()).await?;
             let candidate = TextBlockService::get_visible_block_by_wikidot_sha1(
-                ctx,
-                site_id,
-                &digest,
-                user_id,
+                ctx, site_id, &digest, user_id,
             )
             .await?;
 
@@ -96,7 +104,7 @@ pub async fn text_block_get_index(
             }))
         }
         _ => Err(Error::new(
-            "text block lookup must provide exactly one positive index, name, or HTML SHA-1",
+            "text block lookup must provide exactly one index, name, or HTML SHA-1",
             ErrorType::Request,
         )
         .into()),
@@ -187,5 +195,31 @@ async fn session_user_id(
             .await
             .or_raise(make_error)
             .map(|session| session.map(|session| session.user_id)),
+    }
+}
+
+/// Normalizes a text block index requested through the serving endpoint.
+///
+/// Wikidot aliases index 0 to the first block: verified live 2026-11-17,
+/// `GET /local--code/theme:chaos/0` and `/1` return byte-identical bodies,
+/// and the same holds on multi-block pages (scp-wiki-cn theme:nameless,
+/// whose blocks 2 and 3 differ from block 1). Every other index passes
+/// through unchanged; an index past the last block simply finds no block,
+/// which the serving layer answers the way Wikidot does.
+fn normalize_block_index(index: i16) -> i16 {
+    if index == 0 { 1 } else { index }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::normalize_block_index;
+
+    #[test]
+    fn block_index_zero_aliases_to_first_block() {
+        assert_eq!(normalize_block_index(0), 1);
+        assert_eq!(normalize_block_index(1), 1);
+        assert_eq!(normalize_block_index(2), 2);
+        assert_eq!(normalize_block_index(i16::MAX), i16::MAX);
+        assert_eq!(normalize_block_index(-1), -1);
     }
 }

@@ -224,6 +224,21 @@ async fn handle_text_block(
         {
             Ok(Some(TextBlockIndex { index, s3_filename })) => (index, s3_filename),
             Ok(None) => {
+                // Wikidot never errors for an unknown code block index:
+                // verified live 2026-11-17, an index past the last block
+                // (or any index on a page with no code blocks) answers 200
+                // with a plain-text placeholder body. Match that for
+                // by-index code lookups; other lookups keep the basic
+                // error page.
+                if matches!(block_type, TextBlockType::Code)
+                    && matches!(block_id, BlockId::Index(_))
+                {
+                    return Response::builder()
+                        .status(StatusCode::OK)
+                        .header(header::CONTENT_TYPE, "text/plain; charset=utf-8")
+                        .body(Body::from("No valid codeblock found."))
+                        .expect("Unable to build code block placeholder response");
+                }
                 error!(
                     page_id = page_id,
                     block_type = block_type.value(),
@@ -683,6 +698,7 @@ mod tests {
     const GONE_S3_KEY: &str = "text-blocks/gone-object";
     const REPLACED_INDEX: u64 = 9;
     const GONE_INDEX: u64 = 10;
+    const MISSING_INDEX: u64 = 11;
     const MISMATCH_SHA1: &str = "1234567890abcdef1234567890abcdef12345678";
     const MISSING_SHA1: &str = "abcdef0123456789abcdef0123456789abcdef01";
 
@@ -846,6 +862,15 @@ mod tests {
                         .to_string()
                         .into_response();
                     }
+                }
+                if request["params"]["index"].as_u64() == Some(MISSING_INDEX) {
+                    return json!({
+                        "jsonrpc": "2.0",
+                        "result": null,
+                        "id": id,
+                    })
+                    .to_string()
+                    .into_response();
                 }
                 Some(json!({
                     "index": 1,
@@ -1138,6 +1163,49 @@ mod tests {
             xml.headers().get(header::CONTENT_DISPOSITION).unwrap(),
             "attachment",
         );
+    }
+
+    #[tokio::test]
+    async fn code_block_index_zero_serves_first_block() {
+        let app = TextBlockTestApp::spawn().await;
+
+        let first = app.get("/-/code/old-page/1").await;
+        assert_eq!(first.status(), StatusCode::OK);
+        let first_content_type =
+            first.headers().get(header::CONTENT_TYPE).unwrap().clone();
+        let first_body = first.bytes().await.unwrap();
+
+        let zero = app.get("/-/code/old-page/0").await;
+        assert_eq!(zero.status(), StatusCode::OK);
+        assert_eq!(
+            zero.headers().get(header::CONTENT_TYPE).unwrap(),
+            first_content_type,
+        );
+        assert_eq!(zero.bytes().await.unwrap(), first_body);
+    }
+
+    #[tokio::test]
+    async fn code_block_missing_index_serves_wikidot_placeholder() {
+        let app = TextBlockTestApp::spawn().await;
+
+        let response = app.get(&format!("/-/code/old-page/{MISSING_INDEX}")).await;
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers().get(header::CONTENT_TYPE).unwrap(),
+            "text/plain; charset=utf-8",
+        );
+        assert_eq!(
+            response.bytes().await.unwrap(),
+            &b"No valid codeblock found."[..],
+        );
+    }
+
+    #[tokio::test]
+    async fn html_block_missing_index_still_errors() {
+        let app = TextBlockTestApp::spawn().await;
+
+        let response = app.get(&format!("/-/html/old-page/{MISSING_INDEX}")).await;
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
