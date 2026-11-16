@@ -51,8 +51,13 @@ pub async fn text_block_get_index(
     match (page_id, index, name, sha1) {
         (Some(page_id), Some(index), None, None) if index >= 0 => {
             let index = normalize_block_index(index);
-            ensure_parent_page_view_permission(ctx, site_id, page_id, session_token.as_deref())
-                .await?;
+            ensure_parent_page_view_permission(
+                ctx,
+                site_id,
+                page_id,
+                session_token.as_deref(),
+            )
+            .await?;
             TextBlockService::get_block_by_index(ctx, page_id, block_type, index)
                 .await
                 .or_raise(|| {
@@ -66,8 +71,13 @@ pub async fn text_block_get_index(
                 })
         }
         (Some(page_id), None, Some(name), None) => {
-            ensure_parent_page_view_permission(ctx, site_id, page_id, session_token.as_deref())
-                .await?;
+            ensure_parent_page_view_permission(
+                ctx,
+                site_id,
+                page_id,
+                session_token.as_deref(),
+            )
+            .await?;
             TextBlockService::get_block_index(ctx, page_id, block_type, &name)
                 .await
                 .or_raise(|| {
@@ -84,10 +94,7 @@ pub async fn text_block_get_index(
             let digest = parse_wikidot_sha1(&sha1)?;
             let user_id = session_user_id(ctx, session_token.as_deref()).await?;
             let candidate = TextBlockService::get_visible_block_by_wikidot_sha1(
-                ctx,
-                site_id,
-                &digest,
-                user_id,
+                ctx, site_id, &digest, user_id,
             )
             .await?;
 
