@@ -175,7 +175,7 @@ impl RenderService {
             wikitext,
             &page_info.tags,
             preserved,
-            include_depth == 0,
+            true,
         );
     }
 
