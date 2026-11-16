@@ -389,16 +389,18 @@ fn split_list_pages_sections(body: &str) -> Option<(ListPagesSections, String, b
 }
 
 /// Whether the body contains a complete nested module block: a
-/// `[[module ...]]` opener for a module other than ListPages itself,
-/// followed by a `[[/module]]` closer. Live Wikidot renders every item
-/// of such a ListPages block empty: the module framework consumes the
-/// whole block, and a body carrying a complete nested module renders
-/// nothing per item (measured with both `[[module CSS]]` and
-/// `[[module MailForm]]` bodies, at the start of the body and after
-/// leading text). An opener without a closer in the body, a stray
-/// closer, and nested ListPages blocks are all handled by other paths
-/// and do not count. Openers and closers inside literal regions (code
-/// exhibits, raw spans) are not module syntax and do not count either.
+/// `[[module ...]]` opener at the start of a line, followed by a
+/// `[[/module]]` closer at the start of a later line. Live Wikidot
+/// renders every item of such a ListPages block empty: the module
+/// framework consumes the whole block, and a body carrying a complete
+/// nested module renders nothing per item (measured with `[[module
+/// CSS]]`, `[[module MailForm]]`, and nested `[[module ListPages]]`
+/// bodies, at the start of the body and after leading text). An opener
+/// without a closer in the body, a stray closer, and an opener or
+/// closer that does not start its line (a same-line pair is literal
+/// body text on live) do not count. Openers and closers inside literal
+/// regions (code exhibits, raw spans) are not module syntax and do
+/// not count either.
 fn list_pages_body_has_nested_module_pair(body: &str) -> bool {
     let literal_regions = LiteralRegionIndex::new_wikidot_syntax(body);
     let bytes = body.as_bytes();
@@ -406,6 +408,9 @@ fn list_pages_body_has_nested_module_pair(body: &str) -> bool {
     while let Some(relative) = bytes[cursor..].windows(2).position(|pair| pair == b"[[") {
         let start = cursor + relative;
         cursor = start + 2;
+        if start != 0 && bytes[start - 1] != b'\n' {
+            continue;
+        }
         if literal_regions.containing_range(start).is_some() {
             continue;
         }
@@ -440,24 +445,23 @@ fn list_pages_body_has_nested_module_pair(body: &str) -> bool {
         {
             index += 1;
         }
-        let subname_start = index;
         while bytes.get(index).is_some_and(|byte| {
             byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_')
         }) {
             index += 1;
         }
-        if body[subname_start..index].eq_ignore_ascii_case("listpages") {
-            continue;
-        }
-        // A complete pair needs a plain module closer after the opener,
-        // outside literal regions.
+        // A complete pair needs a plain module closer at the start of
+        // a later line, outside literal regions.
         let mut close_cursor = index;
         while let Some(relative) = bytes[close_cursor..]
             .windows(b"[[/module]]".len())
             .position(|window| window.eq_ignore_ascii_case(b"[[/module]]"))
         {
             let close_start = close_cursor + relative;
-            if literal_regions.containing_range(close_start).is_none() {
+            if close_start != 0
+                && bytes[close_start - 1] == b'\n'
+                && literal_regions.containing_range(close_start).is_none()
+            {
                 return true;
             }
             close_cursor = close_start + 2;
@@ -903,6 +907,20 @@ mod tests {
         .expect("template should compile");
         assert_eq!(plan.body(), "");
         assert!(!plan.is_default_template());
+
+        // A complete nested ListPages pair empties the body too
+        // (sandbox probe muse-probe-lp-unc-e1: every item empty, the
+        // surrounding BEFORE/AFTER text swallowed with the body).
+        let plan = ListPagesTemplatePlan::compile(concat!(
+            "BEFORE %%fullname%%\n",
+            "[[module ListPages category=\"x\"]]\n",
+            "INNER %%title%%\n",
+            "[[/module]]\n",
+            "AFTER %%fullname%%",
+        ))
+        .expect("template should compile");
+        assert_eq!(plan.body(), "");
+        assert!(!plan.is_default_template());
     }
 
     #[test]
@@ -935,8 +953,11 @@ mod tests {
         assert!(plan.body().contains("Row %%title%%"), "{}", plan.body());
         assert!(plan.uses_title());
 
-        // Nested ListPages blocks are handled by the scanner's own
-        // pairing, not by this rule.
+        // A same-line ListPages pair is not a block pair: its closer
+        // does not start a line, so the body is kept as literal text.
+        // (A nested ListPages pair whose closer starts a later line
+        // does empty the body; see the pair test above and probe
+        // muse-probe-lp-unc-e1 on the sandbox.)
         let plan = ListPagesTemplatePlan::compile(concat!(
             "BEFORE %%fullname%%\n",
             "[[module ListPages category=\"x\"]]INNER %%title%%[[/module]]\n",

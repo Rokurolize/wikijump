@@ -299,27 +299,40 @@ fn ajax_listpages_source_accepts_only_balanced_nested_modules() {
     assert_eq!(matches[0].end, source.len());
     assert_eq!(matches[0].body.trim(), nested_body);
 
-    for malformed in [
-        "BEFORE [[/module]] AFTER",
-        "[[module ListPages name=\"inner-row\"]] UNCLOSED",
-    ] {
-        let source =
-            build_wikidot_list_pages_module_source(malformed.to_owned(), &parameters)
-                .expect("live Wikidot renders an unbalanced body marker literally");
-        let matches = find_list_pages_module_matches(&source);
-        assert_eq!(matches.len(), 1);
-        assert_eq!(matches[0].start, 0);
-        assert_eq!(matches[0].end, source.len());
-        assert!(
-            matches[0].body.contains(AJAX_MODULE_LITERAL_MARKER_PREFIX),
-            "the unbalanced marker should be replaced with an inert generated token",
-        );
-        assert!(
-            !matches[0].body.contains("[[module")
-                && !matches[0].body.contains("[[/module]]"),
-            "the unbalanced marker must not participate in outer module scanning",
-        );
-    }
+    // An inline closer inside the body is literal body text on live
+    // Wikidot (probe muse-probe-lp-body-strayclose): the scanner's
+    // line-oriented pairing inside a block body no longer counts it,
+    // so the source is safe as built and the marker renders verbatim.
+    let inline_close_source = build_wikidot_list_pages_module_source(
+        "BEFORE [[/module]] AFTER".to_owned(),
+        &parameters,
+    )
+    .expect("an inline body closer is literal text, not a pair token");
+    let matches = find_list_pages_module_matches(&inline_close_source);
+    assert_eq!(matches.len(), 1);
+    assert_eq!(matches[0].start, 0);
+    assert_eq!(matches[0].end, inline_close_source.len());
+    assert!(matches[0].body.contains("[[/module]]"));
+
+    // An unclosed nested opener still unbalances the built source
+    // (it consumes the wrapper's closer under the live pairing rule),
+    // so the builder literalizes it and the body renders literally.
+    let malformed = "[[module ListPages name=\"inner-row\"]] UNCLOSED";
+    let source =
+        build_wikidot_list_pages_module_source(malformed.to_owned(), &parameters)
+            .expect("live Wikidot renders an unbalanced body marker literally");
+    let matches = find_list_pages_module_matches(&source);
+    assert_eq!(matches.len(), 1);
+    assert_eq!(matches[0].start, 0);
+    assert_eq!(matches[0].end, source.len());
+    assert!(
+        matches[0].body.contains(AJAX_MODULE_LITERAL_MARKER_PREFIX),
+        "the unbalanced marker should be replaced with an inert generated token",
+    );
+    assert!(
+        !matches[0].body.contains("[[module") && !matches[0].body.contains("[[/module]]"),
+        "the unbalanced marker must not participate in outer module scanning",
+    );
 }
 
 #[test]

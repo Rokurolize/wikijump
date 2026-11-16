@@ -342,6 +342,7 @@ struct ActiveListPagesModule<'a> {
     depth: usize,
     runtime_safe: bool,
     default_template: bool,
+    block_body: bool,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -1398,6 +1399,109 @@ impl<'a> ModuleEventScanner<'a> {
     }
 }
 
+/// Whether a module token at `pos` begins at column 0 of its line.
+/// Live Wikidot's module pairing is line-oriented: a `[[/module]]` that
+/// does not start its line is body text, never a closer (measured with
+/// mid-line, end-of-line, and indented closers inside ListPages bodies).
+fn module_token_at_line_start(source: &str, pos: usize) -> bool {
+    pos == 0 || source.as_bytes()[pos - 1] == b'\n'
+}
+
+/// Whether the module opener spanning `start..body_start` names ListPages.
+fn module_open_is_list_pages(lowercase: &str, start: usize, body_start: usize) -> bool {
+    let bytes = lowercase.as_bytes();
+    let mut cursor = start + 2;
+    skip_horizontal_whitespace(bytes, &mut cursor);
+    if bytes.get(cursor..cursor + 9) == Some(&b"module654"[..]) {
+        cursor += 9;
+    } else if bytes.get(cursor..cursor + 6) == Some(&b"module"[..]) {
+        cursor += 6;
+    } else {
+        return false;
+    }
+    if skip_module_subname_delimiter(bytes, &mut cursor).is_none() {
+        return false;
+    }
+    let subname_start = cursor;
+    while cursor < body_start
+        && !is_wikidot_head_spacing(bytes[cursor])
+        && bytes[cursor] != b']'
+    {
+        cursor += 1;
+    }
+    lowercase[subname_start..cursor].eq_ignore_ascii_case("listpages")
+}
+
+/// Whether a nested module opener participates in pairing inside an
+/// active ListPages body. Live Wikidot counts an opener only at column 0,
+/// and a non-ListPages opener only when it occupies the rest of its line:
+/// an opener with a tail (a same-line pair, a CSS rule on the opener line)
+/// or an inline opener is literal body text there. A nested ListPages
+/// opener counts at column 0 even with a tail; the tail is discarded.
+fn nested_module_open_counts(
+    source: &str,
+    lowercase: &str,
+    start: usize,
+    body_start: usize,
+) -> bool {
+    if !module_token_at_line_start(source, start) {
+        return false;
+    }
+    if module_open_is_list_pages(lowercase, start, body_start) {
+        return true;
+    }
+    source.as_bytes()[body_start..]
+        .iter()
+        .take_while(|byte| **byte != b'\n')
+        .all(|byte| matches!(byte, b' ' | b'\t' | b'\r'))
+}
+
+/// Whether a ListPages opener's own line carries no body text after
+/// its `]]`, so the body starts on the following line. Only then does
+/// live Wikidot's line-oriented body pairing apply (probes
+/// `muse-probe-lp-body-*` and `muse-probe-lp-unc-e*` on the sandbox).
+/// A body that starts on the opener's own line keeps the scanner's
+/// token pairing, the shape the delayed machinery's generated
+/// fragments and one-line bodies use.
+fn module_opener_line_has_no_body_text(source: &str, body_start: usize) -> bool {
+    source.as_bytes()[body_start..]
+        .iter()
+        .take_while(|byte| **byte != b'\n')
+        .all(|byte| matches!(byte, b' ' | b'\t' | b'\r'))
+}
+
+/// Whether the original text at a close event is the plain
+/// `[[/module]]` spelling. Projected structural closers stand for
+/// variant spellings in the original (split or escaped delimiters)
+/// and keep the existing pairing; only a plainly spelled closer is
+/// subject to live Wikidot's line-start rule inside a block body.
+fn module_close_token_is_plain(source: &str, start: usize, end: usize) -> bool {
+    source[start..end].eq_ignore_ascii_case("[[/module]]")
+}
+
+/// Live Wikidot discards a ListPages opener's line tail wholesale when
+/// the tail contains a module closer and a later line starts the
+/// module's own closer (probes `muse-probe-lp-body-nestedlp` and
+/// `muse-probe-lp-unc-e21`): the body then starts on the following
+/// line. Without a later closer line the tail stays body text, the
+/// one-line shape the fragment corpus pins. Returns the body start
+/// after the discarded tail line.
+fn module_opener_discarded_tail_body_start(
+    lowercase: &str,
+    body_start: usize,
+) -> Option<usize> {
+    let line_end = lowercase.as_bytes()[body_start..]
+        .iter()
+        .position(|byte| *byte == b'\n')
+        .map(|offset| body_start + offset)?;
+    if !lowercase[body_start..line_end].contains("[[/module]]") {
+        return None;
+    }
+    lowercase[line_end..]
+        .contains("\n[[/module]]")
+        .then_some(line_end + 1)
+}
+
 pub(in crate::services::render) fn find_list_pages_module_matches(
     source: &str,
 ) -> Vec<ListPagesModuleMatch<'_>> {
@@ -1712,6 +1816,12 @@ fn find_list_pages_module_matches_with_cursor_work_context_lowercase<'a>(
                     if nested_module_opening_has_inert_at_marker_suffix(source, end) {
                         continue;
                     }
+                    if module.block_body
+                        && direct.is_some()
+                        && !nested_module_open_counts(source, lowercase, start, end)
+                    {
+                        continue;
+                    }
                     let Some(depth) = module.depth.checked_add(1) else {
                         break;
                     };
@@ -1734,6 +1844,16 @@ fn find_list_pages_module_matches_with_cursor_work_context_lowercase<'a>(
                     continue;
                 };
                 if source[subname_start..subname_end].eq_ignore_ascii_case("listpages") {
+                    let (body_start, block_body) =
+                        match module_opener_discarded_tail_body_start(
+                            lowercase, body_start,
+                        ) {
+                            Some(next_line) => (next_line, true),
+                            None => (
+                                body_start,
+                                module_opener_line_has_no_body_text(source, body_start),
+                            ),
+                        };
                     active = Some(ActiveListPagesModule {
                         start,
                         body_start,
@@ -1743,6 +1863,7 @@ fn find_list_pages_module_matches_with_cursor_work_context_lowercase<'a>(
                         depth: 1,
                         runtime_safe,
                         default_template,
+                        block_body,
                     });
                 }
             }
@@ -1750,6 +1871,12 @@ fn find_list_pages_module_matches_with_cursor_work_context_lowercase<'a>(
                 let Some(module) = active.as_mut() else {
                     continue;
                 };
+                if module.block_body
+                    && module_close_token_is_plain(source, start, end)
+                    && !module_token_at_line_start(source, start)
+                {
+                    continue;
+                }
                 module.depth -= 1;
                 if module.depth == 0 {
                     let module = active.take().unwrap();

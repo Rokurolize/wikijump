@@ -2582,3 +2582,147 @@ fn preserved_module654_suffix_charges_projected_merge_and_recursive_work() {
         );
     }
 }
+
+#[test]
+fn scanner_pairs_list_pages_bodies_with_line_oriented_module_tokens() {
+    // LP-UNCLOSED-MODULE, measured on live Wikidot (sandbox probes
+    // muse-probe-lp-body-* and muse-probe-lp-unc-*): inside a ListPages
+    // body, module pairing is line-oriented. A closer counts only at
+    // column 0; a nested opener counts only at column 0, and a
+    // non-ListPages opener only when it occupies the rest of its line.
+    let outer = "[[module ListPages category=\"probe-lp-target-y\" order=\"title\"]]";
+
+    // nestedlp: the nested ListPages opener at column 0 consumes the
+    // only closer line (its same-line closer is dead text), so the
+    // outer module is unclosed and releases its would-be body.
+    let source = format!(
+        "{outer}\nBEFORE %%fullname%%\n[[module ListPages category=\"probe-lp-target-x\"]]INNER %%title%%[[/module]]\nAFTER %%fullname%%\n[[/module]]"
+    );
+    let modules = find_list_pages_module_matches(&source);
+    assert_eq!(modules.len(), 1, "nestedlp");
+    assert_eq!(modules[0].body, "", "nestedlp");
+    assert_eq!(modules[0].end, modules[0].body_start, "nestedlp");
+
+    // rate: an inline [[module Rate]] opener in the body is literal
+    // text; the module closes normally at the closer line.
+    let source = format!(
+        "{outer}\nBEFORE %%fullname%% [[module Rate]] AFTER %%fullname%%\n[[/module]]"
+    );
+    let modules = find_list_pages_module_matches(&source);
+    assert_eq!(modules.len(), 1, "rate");
+    assert_eq!(modules[0].end, source.len(), "rate");
+    assert_eq!(
+        modules[0].body, "\nBEFORE %%fullname%% [[module Rate]] AFTER %%fullname%%\n",
+        "rate"
+    );
+
+    // strayclose: an inline [[/module]] in the body is literal text.
+    let source = format!(
+        "{outer}\nBEFORE %%fullname%% [[/module]] AFTER %%fullname%%\n[[/module]]"
+    );
+    let modules = find_list_pages_module_matches(&source);
+    assert_eq!(modules.len(), 1, "strayclose");
+    assert_eq!(modules[0].end, source.len(), "strayclose");
+    assert_eq!(
+        modules[0].body, "\nBEFORE %%fullname%% [[/module]] AFTER %%fullname%%\n",
+        "strayclose"
+    );
+
+    // e4: an inline nested ListPages opener is literal text, so the
+    // first closer line closes the outer module and the tail is
+    // released at page level.
+    let source = format!(
+        "{outer}\nBEFORE %%fullname%% [[module ListPages category=\"probe-lp-target-x\"]] INNER %%title%%\n[[/module]]\nAFTER %%fullname%%\n[[/module]]"
+    );
+    let modules = find_list_pages_module_matches(&source);
+    assert_eq!(modules.len(), 1, "e4");
+    assert!(
+        modules[0].end < source.len(),
+        "e4 should close at the first closer line"
+    );
+    assert_eq!(
+        modules[0].body,
+        "\nBEFORE %%fullname%% [[module ListPages category=\"probe-lp-target-x\"]] INNER %%title%%\n",
+        "e4"
+    );
+
+    // e11: a closer at the end of a body text line does not close the
+    // module; it falls back to the unclosed release shape.
+    let source = format!("{outer}\nBEFORE %%fullname%%[[/module]]");
+    let modules = find_list_pages_module_matches(&source);
+    assert_eq!(modules.len(), 1, "e11");
+    assert_eq!(modules[0].body, "", "e11");
+    assert_eq!(modules[0].end, modules[0].body_start, "e11");
+
+    // e14: an indented closer does not close the module either.
+    let source =
+        format!("{outer}\nBEFORE %%fullname%%\n  [[/module]]\nAFTER %%fullname%%");
+    let modules = find_list_pages_module_matches(&source);
+    assert_eq!(modules.len(), 1, "e14");
+    assert_eq!(modules[0].body, "", "e14");
+    assert_eq!(modules[0].end, modules[0].body_start, "e14");
+
+    // e12: a closer at column 0 counts even with trailing text; the
+    // trailing text stays outside the match.
+    let source = format!("{outer}\nBEFORE %%fullname%%\n[[/module]] AFTERTEXT");
+    let modules = find_list_pages_module_matches(&source);
+    assert_eq!(modules.len(), 1, "e12");
+    assert_eq!(modules[0].body, "\nBEFORE %%fullname%%\n", "e12");
+    assert!(modules[0].end < source.len(), "e12");
+
+    // e8 / e15: a non-ListPages opener with a tail on its line
+    // (a same-line pair) is literal body text; the body renders per
+    // item. (e16, a CSS opener whose rule sits on the opener line
+    // with no same-line closer, diverges one layer earlier: the
+    // projection's CSS-region handling consumes the opener and the
+    // outer closer before pairing. Recorded as a residual in
+    // LP-UNCLOSED-MODULE.md; it is unchanged by this fix.)
+    for (label, line) in [
+        (
+            "e8",
+            "[[module CSS]].seg-s { color: rgb(9, 9, 9); }[[/module]]",
+        ),
+        (
+            "e15",
+            "[[module MailForm]]to: nobody@example.com[[/module]]",
+        ),
+    ] {
+        let source = format!(
+            "{outer}\nBEFORE %%fullname%%\n{line}\nAFTER %%fullname%%\n[[/module]]"
+        );
+        let modules = find_list_pages_module_matches(&source);
+        assert_eq!(modules.len(), 1, "{label}");
+        assert_eq!(modules[0].end, source.len(), "{label}");
+        assert!(
+            modules[0].body.contains(line),
+            "{label}: body should keep the literal line: {:?}",
+            modules[0].body
+        );
+    }
+
+    // e9 (an indented nested CSS opener) diverges in the same
+    // CSS-region layer as e16 and is likewise recorded as a residual
+    // in LP-UNCLOSED-MODULE.md, unchanged by this fix.
+
+    // e1 (scanner level): a complete nested ListPages pair on its own
+    // lines closes the outer module with the full body; the template
+    // plan is what empties the items.
+    let source = format!(
+        "{outer}\nBEFORE %%fullname%%\n[[module ListPages category=\"probe-lp-target-x\"]]\nINNER %%title%%\n[[/module]]\nAFTER %%fullname%%\n[[/module]]"
+    );
+    let modules = find_list_pages_module_matches(&source);
+    assert_eq!(modules.len(), 1, "e1");
+    assert_eq!(modules[0].end, source.len(), "e1");
+    assert!(modules[0].body.contains("AFTER %%fullname%%"), "e1");
+
+    // e21: an opener tail that contains a module closer is discarded
+    // wholesale when a later line starts the module's own closer; the
+    // body starts on the following line. (The same discard is what
+    // makes the released nested module in nestedlp render with the
+    // AFTER segment as its body.)
+    let source = format!("{outer} TAIL [[/module]]\nITEM %%fullname%%\n[[/module]]");
+    let modules = find_list_pages_module_matches(&source);
+    assert_eq!(modules.len(), 1, "e21");
+    assert_eq!(modules[0].end, source.len(), "e21");
+    assert_eq!(modules[0].body, "ITEM %%fullname%%\n", "e21");
+}
