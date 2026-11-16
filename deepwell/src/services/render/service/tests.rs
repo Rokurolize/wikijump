@@ -1154,22 +1154,48 @@ fn forged_wikidot_date_html_is_not_restored_as_trusted_html() {
 #[test]
 fn optional_no_visible_wikidot_includes_do_not_render_missing_page_text() {
     assert_eq!(
-        wikidot_no_such_include_replacement(&PageRef::page_and_site("drizzles", "raven")),
+        wikidot_no_such_include_replacement(
+            &PageRef::page_and_site("drizzles", "raven"),
+            "en"
+        ),
         "",
     );
     assert_eq!(
-        wikidot_no_such_include_replacement(&PageRef::page_and_site("crom", "pixel")),
+        wikidot_no_such_include_replacement(
+            &PageRef::page_and_site("crom", "pixel"),
+            "en"
+        ),
         "",
     );
     assert_eq!(
-        wikidot_no_such_include_replacement(&PageRef::page_and_site("scp-jp", "missing")),
+        wikidot_no_such_include_replacement(
+            &PageRef::page_and_site("scp-jp", "missing"),
+            "en"
+        ),
         "[[div class=\"error-block\"]]\nIncluded page \"missing\" does not exist ([[a href=\"http://scp-jp.wikidot.com/missing/edit/true\"]]create it now[[/a]])\n[[/div]]",
     );
 
-    let replacement = wikidot_no_such_include_replacement(&PageRef::page_only("banana"));
+    let replacement =
+        wikidot_no_such_include_replacement(&PageRef::page_only("banana"), "en");
     assert_eq!(
         render_wikidot_page_body_after_compat_restore(&replacement),
         r#"<div class="error-block"><p>Included page &quot;banana&quot; does not exist (<a href="/banana/edit/true">create it now</a>)</p></div>"#,
+    );
+}
+
+#[test]
+fn missing_include_message_renders_in_japanese_for_japanese_pages() {
+    // Captured from the Japanese check wiki: a missing include on a
+    // Japanese-language site renders the error block in Japanese.
+    let replacement =
+        wikidot_no_such_include_replacement(&PageRef::page_only("banana"), "ja");
+    assert_eq!(
+        replacement,
+        "[[div class=\"error-block\"]]\nインクルードを行おうとしたページ、 bananaは存在しません([[a href=\"/banana/edit/true\"]]ページを作成する[[/a]])\n[[/div]]",
+    );
+    assert_eq!(
+        render_wikidot_page_body_after_compat_restore(&replacement),
+        r#"<div class="error-block"><p>インクルードを行おうとしたページ、 bananaは存在しません(<a href="/banana/edit/true">ページを作成する</a>)</p></div>"#,
     );
 }
 
@@ -1187,6 +1213,7 @@ fn missing_cross_site_include_uses_raw_page_for_display_and_canonical_ref_for_lo
         &[None],
         &mut display_pages,
         &mut compat_text,
+        "en",
     );
     let (expanded, included_pages) = ftml::include(
         source,
@@ -1194,6 +1221,7 @@ fn missing_cross_site_include_uses_raw_page_for_display_and_canonical_ref_for_lo
         PreparedIncluder {
             pages: vec![None],
             missing_replacements,
+            language: "en".to_owned(),
         },
         include_error,
     )
@@ -1227,6 +1255,7 @@ fn missing_include_with_spaced_empty_separator_matches_live_browser_dom() {
         &[None],
         &mut display_pages,
         &mut compat_text,
+        "en",
     );
     let (mut expanded, _) = ftml::include(
         source,
@@ -1234,6 +1263,7 @@ fn missing_include_with_spaced_empty_separator_matches_live_browser_dom() {
         PreparedIncluder {
             pages: vec![None],
             missing_replacements,
+            language: "en".to_owned(),
         },
         include_error,
     )
@@ -2822,6 +2852,7 @@ fn parser_functions_apply_first_closer_before_include_collection() {
         &settings,
         CollectingIncluder {
             includes: &mut includes,
+            language: "en",
         },
         include_error,
     )
@@ -2867,6 +2898,7 @@ fn include_argument_pipes_are_collected_before_parser_function_evaluation() {
         &settings,
         CollectingIncluder {
             includes: &mut includes,
+            language: "en",
         },
         include_error,
     )
@@ -3692,6 +3724,7 @@ fn include_expansion_cleanup_removes_includes_in_inactive_wikidot_iftags_blocks(
         &settings,
         CollectingIncluder {
             includes: &mut includes,
+            language: "en",
         },
         include_error,
     )

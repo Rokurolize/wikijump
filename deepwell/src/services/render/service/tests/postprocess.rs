@@ -886,6 +886,7 @@ fn render_wikidot_expanded_alignment_body(top: &str, fragment: &str) -> String {
         PreparedIncluder {
             pages: vec![Some(fragment.to_owned())],
             missing_replacements: Default::default(),
+            language: "en".to_owned(),
         },
         include_error,
     )

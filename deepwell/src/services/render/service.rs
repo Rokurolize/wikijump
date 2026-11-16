@@ -3046,7 +3046,10 @@ impl RenderService {
             let mut wikitext = wikitext;
             Self::normalize_wikidot_multiline_includes(&mut wikitext);
             if expansion_context.settings.layout.legacy() {
-                expand_malformed_include_targets(&mut wikitext);
+                expand_malformed_include_targets(
+                    &mut wikitext,
+                    expansion_context.page_info.language.as_ref(),
+                );
             }
             if expansion_context.page_preview {
                 Self::prepare_wikidot_conditionals_before_include_expansion_for_page_preview(
@@ -3098,6 +3101,7 @@ impl RenderService {
                 expansion_context.settings,
                 CollectingIncluder {
                     includes: &mut includes,
+                    language: expansion_context.page_info.language.as_ref(),
                 },
                 include_error,
             )?;
@@ -3268,6 +3272,7 @@ impl RenderService {
                 &fetched_pages,
                 &mut include_display_pages,
                 compat_text,
+                expansion_context.page_info.language.as_ref(),
             );
             let (mut expanded, direct_included_pages) = ftml::include(
                 &wikitext,
@@ -3275,6 +3280,7 @@ impl RenderService {
                 PreparedIncluder {
                     pages: fetched_pages,
                     missing_replacements,
+                    language: expansion_context.page_info.language.to_string(),
                 },
                 include_error,
             )?;
@@ -3812,6 +3818,7 @@ fn include_enclosure_flags(
 #[derive(Debug)]
 struct CollectingIncluder<'a> {
     includes: &'a mut Vec<IncludeRef<'static>>,
+    language: &'a str,
 }
 
 impl<'a, 't> Includer<'t> for CollectingIncluder<'a> {
@@ -3833,7 +3840,7 @@ impl<'a, 't> Includer<'t> for CollectingIncluder<'a> {
     }
 
     fn no_such_include(&mut self, page_ref: &PageRef) -> Result<Cow<'t, str>> {
-        Ok(wikidot_no_such_include_replacement(page_ref))
+        Ok(wikidot_no_such_include_replacement(page_ref, self.language))
     }
 }
 
