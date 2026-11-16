@@ -2885,3 +2885,141 @@ fn enclosed_include_attribute_gates_stay_unevaluated_despite_include_mentions() 
     assert!(!html.contains("display:none"), "{html}");
     assert!(!html.contains("wikijump-enclosed-iftags"), "{html}");
 }
+
+fn kings_palace_guard_block() -> String {
+    // The self-recursion guard from theme:king-s-palace-jp: a
+    // parameterized self-include inside a display:none div, wrapped
+    // in ifexpr-generated comment markers.
+    concat!(
+        "[[div style=\"display: none\"]]\n",
+        "[[#ifexpr {$custom} == 1 | default | [!-- ]]\n",
+        "\n",
+        "[[include theme:king-s-palace-jp\n",
+        "|custom=1\n",
+        "]]\n",
+        "\n",
+        "[[#ifexpr {$custom} == 1 | default | --] ]]\n",
+        "[[/div]]\n",
+    )
+    .to_owned()
+}
+
+fn collect_test_include_page_refs(wikitext: &str) -> Vec<PageRef> {
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut masked = wikitext.to_owned();
+    RenderService::mask_wikidot_literal_include_markers(&mut masked);
+    let mut includes = Vec::new();
+    ftml::include(
+        &masked,
+        &settings,
+        CollectingIncluder {
+            includes: &mut includes,
+            language: "en",
+        },
+        include_error,
+    )
+    .expect("include collection should succeed");
+    includes
+        .iter()
+        .map(|include| include.page_ref().clone())
+        .collect()
+}
+
+fn prepare_kings_palace_child(source: &str, custom: &str, depth: usize) -> String {
+    let page_info = fallback_test_page_info("theme:king-s-palace-jp", "Kings Palace");
+    let include = IncludeRef::new(
+        PageRef::page_only("theme:king-s-palace-jp"),
+        [(Cow::Borrowed("custom"), Cow::Borrowed(custom))]
+            .into_iter()
+            .collect(),
+    );
+    let mut prepared = source.to_owned();
+    let mut compat_text = CompatTextFragments::new(&prepared);
+    super::super::prepare_include_source_variables_and_comment_branches(
+        &mut prepared,
+        &include,
+        &page_info,
+        &mut compat_text,
+    )
+    .expect("include source preparation should succeed");
+    let mut preserved = CompatTextFragments::new(&prepared);
+    RenderService::prepare_wikidot_conditionals_before_include_expansion_with_mode(
+        &mut prepared,
+        &page_info,
+        &mut preserved,
+        depth,
+        false,
+    );
+    compat_text.restore(&preserved.restore(&prepared))
+}
+
+#[test]
+fn self_include_inside_ifexpr_comment_guard_collected_at_depth_zero_unbound() {
+    // On the theme's own page the guard variable is unbound: the
+    // ifexpr lines degrade to error text (no comment is emitted), so
+    // the first self-include is collected and the recursion starts.
+    // Live pin: muse-probe-kings-self1 renders the same error text.
+    let mut page_info = fallback_test_page_info("theme:king-s-palace-jp", "Kings Palace");
+    page_info.tags = vec![Cow::Borrowed("テーマ")];
+    let mut prepared = kings_palace_guard_block();
+    RenderService::normalize_wikidot_multiline_includes(&mut prepared);
+    let mut compat_text = CompatTextFragments::new(&prepared);
+    RenderService::prepare_wikidot_conditionals_before_include_expansion_with_mode(
+        &mut prepared,
+        &page_info,
+        &mut compat_text,
+        0,
+        false,
+    );
+    let prepared = compat_text.restore(&prepared);
+
+    assert!(prepared.contains("syntax error near"), "{prepared}");
+    assert!(!prepared.contains("[[#ifexpr"), "{prepared}");
+    assert_eq!(
+        collect_test_include_page_refs(&prepared),
+        vec![PageRef::page_only("theme:king-s-palace-jp")],
+    );
+}
+
+#[test]
+fn self_include_inside_ifexpr_comment_guard_collected_after_nested_prepare() {
+    // Inside an included copy the guard variable is bound (custom=1),
+    // so the guard resolves to its true branch. Parser functions must
+    // be resolved before include collection at every depth: when the
+    // resolution ran at depth 0 only, the unresolved guard's [!--
+    // marker made collection treat the self-include as comment-hidden
+    // and the recursion stopped after exactly one nested copy.
+    // Live pin: muse-probe-kings-self1 and muse-probe-kings-plain
+    // both render the viewed page plus ten nested copies.
+    let source = kings_palace_guard_block();
+    for depth in [1, 2] {
+        let prepared = prepare_kings_palace_child(&source, "1", depth);
+        assert!(prepared.contains("default"), "depth {depth}: {prepared}");
+        assert!(!prepared.contains("[[#ifexpr"), "depth {depth}: {prepared}");
+        assert_eq!(
+            collect_test_include_page_refs(&prepared),
+            vec![PageRef::page_only("theme:king-s-palace-jp")],
+            "depth {depth}: {prepared}",
+        );
+    }
+}
+
+#[test]
+fn self_include_inside_ifexpr_comment_guard_hidden_when_guard_is_false() {
+    // With custom=0 the guard takes its comment branch: the markers
+    // become a real comment around the self-include, collection skips
+    // it, and the recursion stops. Live pin: muse-probe-kings-self0
+    // renders the viewed page plus exactly one copy. (Live also leaks
+    // the copies' closing guard lines out of the comment in this
+    // shape; that rendering difference is recorded in the lane notes
+    // and is outside this collection-level pin.)
+    let source = kings_palace_guard_block();
+    let prepared = prepare_kings_palace_child(&source, "0", 1);
+    assert!(prepared.contains("[!--"), "{prepared}");
+    assert!(prepared.contains("--]"), "{prepared}");
+    assert_eq!(
+        collect_test_include_page_refs(&prepared),
+        Vec::<PageRef>::new(),
+        "{prepared}",
+    );
+}
