@@ -64,6 +64,69 @@ export const formatWikidotRelativeAge = (
   return `${days} day${days === 1 ? "" : "s"}${suffix}`
 }
 
+export const WIKIDOT_PAGE_INFO_DATE_FORMAT = "%e %b %Y, %H:%M (%O ago)"
+
+const WIKIDOT_DATE_FORMAT_UNRESERVED = /^[A-Za-z0-9._~-]$/
+
+export const encodeWikidotDateFormat = (format: string) => {
+  let encoded = ""
+
+  for (const byte of new TextEncoder().encode(format)) {
+    const character = String.fromCharCode(byte)
+    encoded += WIKIDOT_DATE_FORMAT_UNRESERVED.test(character)
+      ? character
+      : `%${byte.toString(16).toUpperCase().padStart(2, "0")}`
+  }
+
+  return encoded
+}
+
+export interface WikidotPageInfoDate {
+  prefix: string
+  text: string
+  epochSeconds: number
+  className: string
+}
+
+export interface WikidotPageInfoParts {
+  text: string
+  date: WikidotPageInfoDate
+}
+
+export const buildWikidotPageInfoParts = ({
+  revision,
+  updatedAt,
+  now = Date.now(),
+  locale = "en"
+}: {
+  revision: number
+  updatedAt: string
+  now?: number
+  locale?: string | null
+}): WikidotPageInfoParts | null => {
+  const updatedAtMs = Date.parse(updatedAt)
+
+  if (!Number.isFinite(updatedAtMs)) return null
+
+  const date = formatWikidotSourceDate(updatedAtMs)
+  const relative = formatWikidotRelativeAge(now - updatedAtMs, locale)
+  const dateText = `${date} (${relative})`
+  const prefix = isJapaneseWikidotLocale(locale)
+    ? `ページリビジョン: ${revision}, 最終更新: `
+    : `page revision: ${revision}, last edited: `
+  const epochSeconds = Math.floor(updatedAtMs / 1000)
+
+  return {
+    text: `${prefix}${dateText}`,
+    date: {
+      prefix,
+      text: dateText,
+      epochSeconds,
+      className: `odate time_${epochSeconds} format_${encodeWikidotDateFormat(WIKIDOT_PAGE_INFO_DATE_FORMAT)}`
+    }
+  }
+}
+
 export const buildWikidotPageInfoText = ({
   revision,
   updatedAt,
@@ -75,16 +138,7 @@ export const buildWikidotPageInfoText = ({
   now?: number
   locale?: string | null
 }) => {
-  const updatedAtMs = Date.parse(updatedAt)
+  const parts = buildWikidotPageInfoParts({ revision, updatedAt, now, locale })
 
-  if (!Number.isFinite(updatedAtMs)) return null
-
-  const date = formatWikidotSourceDate(updatedAtMs)
-  const relative = formatWikidotRelativeAge(now - updatedAtMs, locale)
-
-  if (isJapaneseWikidotLocale(locale)) {
-    return `ページリビジョン: ${revision}, 最終更新: ${date} (${relative})`
-  }
-
-  return `page revision: ${revision}, last edited: ${date} (${relative})`
+  return parts ? parts.text : null
 }

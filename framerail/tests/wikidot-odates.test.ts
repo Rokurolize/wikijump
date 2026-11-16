@@ -3,6 +3,7 @@ import test from "node:test"
 
 import {
   agoText,
+  dateAgoDuration,
   formatOdateTimestamp,
   parseOdateSpan,
   rewriteOdateSpan
@@ -71,7 +72,7 @@ test("format grammar covers names, padding, escapes and relative time", () => {
   assert.equal(formatOdateTimestamp(1454705501, "%e", 1454705501, 0), "5")
   assert.equal(formatOdateTimestamp(1454705501, "%_d", 1454705501, 0), " 5")
   assert.equal(formatOdateTimestamp(1454705501, "%-m", 1454705501, 0), "2")
-  assert.equal(formatOdateTimestamp(TIMESTAMP, "%O", TIMESTAMP + 90, 0), "1 minute ago")
+  assert.equal(formatOdateTimestamp(TIMESTAMP, "%O", TIMESTAMP + 90, 0), "1 minute")
   assert.equal(formatOdateTimestamp(TIMESTAMP, "%Z", TIMESTAMP, 540), null)
   assert.equal(formatOdateTimestamp(TIMESTAMP, "%z", TIMESTAMP, 330), null)
 })
@@ -116,4 +117,30 @@ test("span rewrite leaves unsupported spans untouched", () => {
   const classless = { className: "odate time_42", textContent: "server", title: "" }
   assert.equal(rewriteOdateSpan(classless as unknown as HTMLElement, 42), false)
   assert.equal(classless.textContent, "server")
+})
+
+test("relative duration follows the OZONE calculateDateAgo ladder", () => {
+  assert.equal(dateAgoDuration(0), "1 second")
+  assert.equal(dateAgoDuration(1), "1 second")
+  assert.equal(dateAgoDuration(59), "59 seconds")
+  assert.equal(dateAgoDuration(60), "1 minute")
+  assert.equal(dateAgoDuration(3599), "59 minutes")
+  assert.equal(dateAgoDuration(3600), "1 hour")
+  assert.equal(dateAgoDuration(86399), "23 hours")
+  assert.equal(dateAgoDuration(86400), "1 day")
+  assert.equal(dateAgoDuration(593 * 86400), "593 days")
+  assert.equal(dateAgoDuration(-90), "1 minute")
+})
+
+test("page-info date format renders the live odate text end to end", () => {
+  const timestamp = 1743596247
+  assert.equal(
+    formatOdateTimestamp(
+      timestamp,
+      "%e %b %Y, %H:%M (%O ago)",
+      timestamp + 593 * 86400,
+      540
+    ),
+    "2 Apr 2025, 21:17 (593 days ago)"
+  )
 })
