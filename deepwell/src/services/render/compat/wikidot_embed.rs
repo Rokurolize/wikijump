@@ -81,6 +81,19 @@ static WIKIDOT_STYLEFRAME_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     )
     .unwrap()
 });
+static WIKIDOT_STYLEFRAME_NAME_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r#"^<iframe src="(?P<src>//interwiki\.(?:scpwiki\.com|scp-jp\.org|scpwikicn\.com)/styleFrame\.html\?[^"]+)" name="[A-Za-z][A-Za-z0-9_:-]{0,127}"></iframe>$"#,
+    )
+    .unwrap()
+});
+static WIKIDOT_WDFILES_STYLEFRAME_NAME_IFRAME_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| {
+        Regex::new(
+            r#"^<iframe src="//[A-Za-z0-9-]+\.wdfiles\.com/[^"]*/styleFrame\.html\?[^"]+" name="[A-Za-z][A-Za-z0-9_:-]{0,127}"></iframe>$"#,
+        )
+        .unwrap()
+    });
 static WIKIDOT_INTERWIKI_FRAME_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r#"^<iframe src="(?P<src>//interwiki\.(?:scpwiki\.com|scp-jp\.org|scpwikicn\.com)/interwikiFrame\.html\?[^"]+)" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>$"#,
@@ -250,6 +263,19 @@ impl RenderService {
                 &captures["src"],
                 "styleFrame.html",
             ));
+        }
+
+        if let Some(captures) = WIKIDOT_STYLEFRAME_NAME_IFRAME_REGEX.captures(iframe)
+        {
+            return Some(Self::rewrite_wikidot_interwiki_iframe_src(
+                iframe,
+                &captures["src"],
+                "styleFrame.html",
+            ));
+        }
+
+        if WIKIDOT_WDFILES_STYLEFRAME_NAME_IFRAME_REGEX.is_match(iframe) {
+            return Some(iframe.to_owned());
         }
 
         if let Some(captures) = WIKIDOT_INTERWIKI_FRAME_IFRAME_REGEX.captures(iframe) {
@@ -703,5 +729,57 @@ mod tests {
             "embed restoration rescanned {scanned_bytes} bytes for {} source bytes",
             html.len(),
         );
+    }
+
+    #[test]
+    fn allows_interwiki_styleframe_embed_iframe_with_name() {
+        // The BHL style-frame embed carried by theme:dream-of-the-stars-jp
+        // and theme:dustframe-jp: an interwiki styleFrame src with a name
+        // attribute instead of style="display: none". Live Wikidot renders
+        // the iframe; the src is localized like the style form.
+        let iframe = r#"<iframe src="//interwiki.scp-jp.org/styleFrame.html?bhl" name="typeFrame"></iframe>"#;
+        assert_eq!(
+            RenderService::allowed_wikidot_embed_iframe(iframe),
+            Some(
+                r#"<iframe src="/-/wikidot-interwiki/styleFrame.html?bhl" name="typeFrame"></iframe>"#
+                    .to_owned(),
+            ),
+        );
+    }
+
+    #[test]
+    fn allows_wdfiles_styleframe_embed_iframe_with_name() {
+        // theme:black-rain: a styleFrame.html file served from the
+        // branch's own wdfiles host, with a name attribute. Live Wikidot
+        // renders the iframe verbatim.
+        let iframe = r#"<iframe src="//scp-wiki-cn.wdfiles.com/local--files/nav%3Aside/styleFrame.html?bhl" name="typeFrame"></iframe>"#;
+        assert_eq!(
+            RenderService::allowed_wikidot_embed_iframe(iframe),
+            Some(iframe.to_owned()),
+        );
+        let import_iframe = r#"<iframe src="//scp-wiki-cn.wdfiles.com/local--files/nav%3Aside/styleFrame.html?%40import%20url(%22https%3A%2F%2Fscp-wiki-cn.wdfiles.com%2Flocal--code%2Ftheme%253Ablack-rain%2F2%22)%3B" name="styleFrame"></iframe>"#;
+        assert_eq!(
+            RenderService::allowed_wikidot_embed_iframe(import_iframe),
+            Some(import_iframe.to_owned()),
+        );
+    }
+
+    #[test]
+    fn rejects_named_embed_iframes_outside_the_styleframe_shapes() {
+        for iframe in [
+            // name form but not a styleFrame src
+            r#"<iframe src="https://example.com/x" name="foo"></iframe>"#,
+            r#"<iframe src="//interwiki.scp-jp.org/other.html?bhl" name="typeFrame"></iframe>"#,
+            r#"<iframe src="//scp-wiki-cn.wdfiles.com/local--files/nav%3Aside/other.html?bhl" name="typeFrame"></iframe>"#,
+            // attributes beyond src + name
+            r#"<iframe src="//interwiki.scp-jp.org/styleFrame.html?bhl" name="typeFrame" onload="alert(1)"></iframe>"#,
+            r#"<iframe src="//interwiki.scp-jp.org/styleFrame.html?bhl" name="typeFrame" style="display: none"></iframe>"#,
+        ] {
+            assert_eq!(
+                RenderService::allowed_wikidot_embed_iframe(iframe),
+                None,
+                "{iframe}",
+            );
+        }
     }
 }

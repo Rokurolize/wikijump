@@ -1177,6 +1177,33 @@ fn protects_wikidot_jp_interwiki_embed_iframe_before_ftml() {
 }
 
 #[test]
+fn protects_wikidot_styleframe_name_embed_iframe_before_ftml() {
+    let mut wikitext = concat!(
+        "[[embed]]\n",
+        r#"<iframe src="//interwiki.scp-jp.org/styleFrame.html?bhl" name="typeFrame"></iframe>"#,
+        "\n[[/embed]]",
+    )
+    .to_owned();
+
+    let iframes = RenderService::protect_wikidot_embed_iframes(&mut wikitext);
+    assert_eq!(wikitext, "WIKIJUMPWIKIDOTEMBEDIFRAME0X");
+    assert_eq!(
+        iframes,
+        vec![
+            r#"<iframe src="/-/wikidot-interwiki/styleFrame.html?bhl" name="typeFrame"></iframe>"#
+                .to_owned()
+        ],
+    );
+    assert_eq!(
+        RenderService::restore_protected_wikidot_embed_iframes(
+            "<p>WIKIJUMPWIKIDOTEMBEDIFRAME0X</p>".to_owned(),
+            &iframes,
+        ),
+        r#"<p><iframe src="/-/wikidot-interwiki/styleFrame.html?bhl" name="typeFrame"></iframe></p>"#,
+    );
+}
+
+#[test]
 fn allows_only_inert_name_only_wikidot_embed_iframes() {
     let iframe = r#"<iframe name="isJPExist"></iframe>"#;
     assert_eq!(
