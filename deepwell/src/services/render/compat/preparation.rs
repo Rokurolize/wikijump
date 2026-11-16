@@ -215,6 +215,15 @@ pub(in crate::services::render) fn extract_css_modules_with_runtime_insertions(
             continue;
         }
         let projected = format!("[[module CSS]]\n{}\n[[/module]]", insertion.marker,);
+        if wikitext.contains(&projected) {
+            // The ListPages block preparation already projected this marker
+            // into a synthetic CSS module at the start of its block.
+            // Projecting it again would nest a second module inside the
+            // first, and the extraction below would pair the outer opener
+            // with the inner closer, leaving the outer [[/module]] behind
+            // as literal text.
+            continue;
+        }
         *wikitext = wikitext.replacen(&insertion.marker, &projected, 1);
     }
 
@@ -506,6 +515,44 @@ mod tests {
             ],
         );
         assert!(!source.contains("[[module CSS]]"));
+    }
+
+    #[test]
+    fn runtime_css_insertions_already_projected_by_listpages_are_not_reprojected() {
+        let page_info = PageInfo {
+            page: Cow::Borrowed("test"),
+            category: None,
+            site: Cow::Borrowed("test"),
+            title: Cow::Borrowed("Test"),
+            alt_title: None,
+            score: ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        // The shape the ListPages block preparation produces for a row whose
+        // only content is a CSS module (component:af2021theme-source): the
+        // insertion marker already wrapped in a synthetic CSS module at the
+        // start of the block, followed by the rendered block marker.
+        let marker = "WIKIJUMPWIKIDOTCOMPATTEXTdcd458543cd34e63970aa0fa1481b070I1X";
+        let mut source = format!("[[module CSS]]\n{marker}\n[[/module]]\nBODY\n");
+        let mut compat_html = CompatHtmlFragments::new(&source);
+
+        let styles = extract_css_modules_with_runtime_insertions(
+            &mut source,
+            &page_info,
+            &settings,
+            &mut compat_html,
+            vec![RuntimeCssInsertion {
+                marker: marker.to_owned(),
+                styles: vec!["#page-content {\n    opacity: 0;\n}".to_owned()],
+            }],
+        );
+
+        assert_eq!(styles, ["#page-content {\n    opacity: 0;\n}"]);
+        assert!(!source.contains("[[/module]]"), "source: {source}");
+        assert!(!source.contains("[[module"), "source: {source}");
+        assert!(source.contains("BODY"), "source: {source}");
     }
 
     #[test]
