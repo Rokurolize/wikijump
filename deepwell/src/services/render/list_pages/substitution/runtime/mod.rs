@@ -248,6 +248,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     name: runtime.commented_by_name.clone().unwrap_or_default(),
                     slug: runtime.commented_by_slug.clone(),
                     wikidot_profile: runtime.commented_by_wikidot_profile,
+                    avatar_data: None,
                 };
                 render_list_pages_wikidot_user(user_id, Some(&display))
             })

@@ -26,6 +26,7 @@ pub(in crate::services::render) struct WikidotUserDisplay {
     pub(in crate::services::render) name: String,
     pub(in crate::services::render) slug: Option<String>,
     pub(in crate::services::render) wikidot_profile: bool,
+    pub(in crate::services::render) avatar_data: Option<String>,
 }
 
 #[derive(Debug, Clone)]

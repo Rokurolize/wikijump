@@ -207,7 +207,10 @@ async fn apply_stored_avatars(
     }
 }
 
-async fn load_stored_avatar(ctx: &ServiceContext<'_>, hash: &[u8]) -> Option<String> {
+pub(in crate::services::render) async fn load_stored_avatar(
+    ctx: &ServiceContext<'_>,
+    hash: &[u8],
+) -> Option<String> {
     let metadata = BlobService::get_metadata(ctx, hash).await.ok()?;
     let data = BlobService::get(ctx, hash).await.ok()?;
     stored_avatar_data_uri(&metadata.mime, &data)
