@@ -111,8 +111,9 @@ use super::include_resolution::{
 use super::include_variable_iftags::resolve_unbound_include_variable_iftags;
 #[cfg(test)]
 use super::include_variables::{
-    apply_include_variables, apply_include_variables_before_resolving_iftags,
-    default_include_variable_value, trim_include_variable_value,
+    MAX_INCLUDE_VARIABLE_PASSES, apply_include_variables,
+    apply_include_variables_before_resolving_iftags, default_include_variable_value,
+    trim_include_variable_value,
 };
 use super::include_variables::{
     is_include_variable_name, prepare_include_source_variables_and_comment_branches,
@@ -441,7 +442,7 @@ struct OuterPreparedRenderWikitext {
     timings: CorpusReplayStageTimings,
 }
 
-pub(super) const MAX_INCLUDE_EXPANSION_DEPTH: usize = 8;
+pub(super) const MAX_INCLUDE_EXPANSION_DEPTH: usize = 10;
 pub(super) const DEFAULT_LISTPAGES_PER_PAGE: u64 = 20;
 pub(super) const MAX_LISTPAGES_RENDER_LIMIT: u64 = 250;
 pub(super) const MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER: usize =
@@ -3125,14 +3126,13 @@ impl RenderService {
             );
 
             if depth >= MAX_INCLUDE_EXPANSION_DEPTH {
-                return Err(Error::new(
-                    format!(
-                        "include expansion exceeded maximum depth {}",
-                        MAX_INCLUDE_EXPANSION_DEPTH,
-                    ),
-                    ErrorType::Render,
-                )
-                .into());
+                Self::unmask_wikidot_literal_include_markers(&mut wikitext);
+                protect_include_variables(&mut wikitext);
+                return Ok(IncludeExpansion {
+                    wikitext,
+                    included_pages: image_block_included_pages,
+                    expanded_include_count: 0,
+                });
             }
 
             let mut fetched_pages = Vec::with_capacity(includes.len());
