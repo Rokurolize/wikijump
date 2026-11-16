@@ -388,6 +388,85 @@ fn split_list_pages_sections(body: &str) -> Option<(ListPagesSections, String, b
     ))
 }
 
+/// Whether the body contains a complete nested module block: a
+/// `[[module ...]]` opener for a module other than ListPages itself,
+/// followed by a `[[/module]]` closer. Live Wikidot renders every item
+/// of such a ListPages block empty: the module framework consumes the
+/// whole block, and a body carrying a complete nested module renders
+/// nothing per item (measured with both `[[module CSS]]` and
+/// `[[module MailForm]]` bodies, at the start of the body and after
+/// leading text). An opener without a closer in the body, a stray
+/// closer, and nested ListPages blocks are all handled by other paths
+/// and do not count. Openers and closers inside literal regions (code
+/// exhibits, raw spans) are not module syntax and do not count either.
+fn list_pages_body_has_nested_module_pair(body: &str) -> bool {
+    let literal_regions = LiteralRegionIndex::new_wikidot_syntax(body);
+    let bytes = body.as_bytes();
+    let mut cursor = 0usize;
+    while let Some(relative) = bytes[cursor..].windows(2).position(|pair| pair == b"[[") {
+        let start = cursor + relative;
+        cursor = start + 2;
+        if literal_regions.containing_range(start).is_some() {
+            continue;
+        }
+        let mut index = start + 2;
+        while bytes
+            .get(index)
+            .is_some_and(|byte| matches!(byte, b' ' | b'\t'))
+        {
+            index += 1;
+        }
+        let name_start = index;
+        while bytes
+            .get(index)
+            .is_some_and(|byte| byte.is_ascii_alphanumeric())
+        {
+            index += 1;
+        }
+        let name = &body[name_start..index];
+        if !name.eq_ignore_ascii_case("module") && !name.eq_ignore_ascii_case("module654")
+        {
+            continue;
+        }
+        if !bytes
+            .get(index)
+            .is_some_and(|byte| matches!(byte, b' ' | b'\t'))
+        {
+            continue;
+        }
+        while bytes
+            .get(index)
+            .is_some_and(|byte| matches!(byte, b' ' | b'\t'))
+        {
+            index += 1;
+        }
+        let subname_start = index;
+        while bytes.get(index).is_some_and(|byte| {
+            byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_')
+        }) {
+            index += 1;
+        }
+        if body[subname_start..index].eq_ignore_ascii_case("listpages") {
+            continue;
+        }
+        // A complete pair needs a plain module closer after the opener,
+        // outside literal regions.
+        let mut close_cursor = index;
+        while let Some(relative) = bytes[close_cursor..]
+            .windows(b"[[/module]]".len())
+            .position(|window| window.eq_ignore_ascii_case(b"[[/module]]"))
+        {
+            let close_start = close_cursor + relative;
+            if literal_regions.containing_range(close_start).is_none() {
+                return true;
+            }
+            close_cursor = close_start + 2;
+        }
+        return false;
+    }
+    false
+}
+
 fn section_gap_closure_suffixes(
     source: &str,
     end: usize,
@@ -440,6 +519,12 @@ impl ListPagesTemplatePlan {
         if body.len() > MAX_LISTPAGES_TEMPLATE_BODY_BYTES {
             return None;
         }
+        // Live Wikidot renders every item empty when the body carries a
+        // complete nested module block (LISTPAGES-DEEP D8). The variable
+        // analysis below still runs on the authored body, so unknown
+        // variables remain observable to the render policy; only the
+        // rendered per-item body is emptied.
+        let nested_module_pair = list_pages_body_has_nested_module_pair(body);
         let (sections, body, explicit_body_section) = split_list_pages_sections(body)?;
         let default_template = body.trim().is_empty();
         let default_summary_first_paragraph = default_template && !explicit_body_section;
@@ -479,7 +564,11 @@ impl ListPagesTemplatePlan {
         }
 
         Some(Self {
-            body: body.to_owned(),
+            body: if nested_module_pair {
+                String::new()
+            } else {
+                body.to_owned()
+            },
             default_template,
             default_summary_first_paragraph,
             sections,
@@ -784,6 +873,80 @@ mod tests {
                 revision_count: true,
                 ..Default::default()
             }
+        );
+    }
+
+    #[test]
+    fn template_body_with_a_nested_module_pair_renders_empty() {
+        // LISTPAGES-DEEP D8, measured on live Wikidot: a body carrying a
+        // complete [[module CSS]] block renders every item empty, and
+        // variables in the dropped tail never become dependencies.
+        let plan = ListPagesTemplatePlan::compile(concat!(
+            "[[module CSS]]\n",
+            ".lp-css-marker { color: rgb(1, 2, 3);}\n",
+            "[[/module]]\n",
+            "LPITEM %%fullname%%;; MARK",
+        ))
+        .expect("template should compile");
+        assert_eq!(plan.body(), "");
+        assert!(!plan.is_default_template());
+        assert!(plan.fields().slug);
+
+        // The same holds with text before and after the module pair.
+        let plan = ListPagesTemplatePlan::compile(concat!(
+            "BEFORE %%fullname%%\n",
+            "[[module CSS]]\n",
+            ".lp-css-marker { color: rgb(1, 2, 3); }\n",
+            "[[/module]]\n",
+            "AFTER %%fullname%%",
+        ))
+        .expect("template should compile");
+        assert_eq!(plan.body(), "");
+        assert!(!plan.is_default_template());
+    }
+
+    #[test]
+    fn template_body_keeps_unpaired_module_syntax_and_exhibits() {
+        // An opener with no closer in the body renders as literal text.
+        let plan = ListPagesTemplatePlan::compile(
+            "BEFORE %%fullname%% [[module Rate]] AFTER %%fullname%%",
+        )
+        .expect("template should compile");
+        assert!(plan.body().contains("[[module Rate]]"));
+
+        // A stray closer with no opener renders as literal text.
+        let plan = ListPagesTemplatePlan::compile(
+            "BEFORE %%fullname%% [[/module]] AFTER %%fullname%%",
+        )
+        .expect("template should compile");
+        assert!(plan.body().contains("[[/module]]"));
+
+        // A module pair inside a code exhibit is documentation, not a
+        // nested module.
+        let plan = ListPagesTemplatePlan::compile(concat!(
+            "[[code]]\n",
+            "[[module CSS]]\n",
+            "x {}\n",
+            "[[/module]]\n",
+            "[[/code]]\n",
+            "Row %%title%%",
+        ))
+        .expect("template should compile");
+        assert!(plan.body().contains("Row %%title%%"), "{}", plan.body());
+        assert!(plan.uses_title());
+
+        // Nested ListPages blocks are handled by the scanner's own
+        // pairing, not by this rule.
+        let plan = ListPagesTemplatePlan::compile(concat!(
+            "BEFORE %%fullname%%\n",
+            "[[module ListPages category=\"x\"]]INNER %%title%%[[/module]]\n",
+            "AFTER %%fullname%%",
+        ))
+        .expect("template should compile");
+        assert!(
+            plan.body().contains("AFTER %%fullname%%"),
+            "{}",
+            plan.body()
         );
     }
 

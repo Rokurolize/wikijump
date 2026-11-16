@@ -105,6 +105,18 @@ pub(in crate::services::render) fn push_list_pages_pager(
         r#"<span class="pager-no">page {current_page} of {page_count}</span>"#
     ));
 
+    if current_page > 1 {
+        push_list_pages_pager_target(
+            output,
+            page_info,
+            route,
+            url,
+            url_attr_prefix,
+            current_page - 1,
+            "« previous",
+        );
+    }
+
     let mut previous = 0;
     for page in list_pages_pager_window(current_page, page_count) {
         if previous != 0 && page > previous + 1 {

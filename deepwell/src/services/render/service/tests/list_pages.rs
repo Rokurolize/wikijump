@@ -2042,6 +2042,96 @@ fn generated_list_pages_pager_still_renders_without_forgeable_marker() {
 }
 
 #[test]
+fn generated_list_pages_pager_links_to_the_previous_page() {
+    let page_info = fallback_test_page_info("scp-7243", "SCP-7243");
+
+    let mut page_two = String::new();
+    push_list_pages_pager(ListPagesPagerArgs {
+        output: &mut page_two,
+        page_info: &page_info,
+        route: ListPagesPagerRoute::SavedPage,
+        url: UrlArguments::default(),
+        url_attr_prefix: None,
+        offset: 2,
+        per_page: 2,
+        total_selected: 5,
+    });
+    // LISTPAGES-DEEP D4: on page 2 of 3, live Wikidot emits a
+    // « previous link to page 1 ahead of the page-number window.
+    assert!(
+        page_two.contains(
+            r##"<span class="target"><a href="/scp-7243/p/1">« previous</a></span>"##
+        ),
+        "{page_two}",
+    );
+    assert!(
+        page_two.contains(
+            r##"<span class="target"><a href="/scp-7243/p/3">next »</a></span>"##
+        ),
+        "{page_two}",
+    );
+
+    let mut page_one = String::new();
+    push_list_pages_pager(ListPagesPagerArgs {
+        output: &mut page_one,
+        page_info: &page_info,
+        route: ListPagesPagerRoute::SavedPage,
+        url: UrlArguments::default(),
+        url_attr_prefix: None,
+        offset: 0,
+        per_page: 2,
+        total_selected: 5,
+    });
+    assert!(!page_one.contains("\u{ab} previous"), "{page_one}");
+}
+
+#[test]
+fn list_pages_content_variable_substitutes_the_raw_wikitext() {
+    let page = FoundPageRow {
+        page_id: 1,
+        site_id: 1,
+        title: Some("Ant".to_owned()),
+        alt_title: None,
+        slug: Some("ant".to_owned()),
+        page_category_id: None,
+        page_revision_id: None,
+        tags: None,
+        created_at: None,
+        created_by: None,
+        updated_at: None,
+        updated_by: None,
+        score: None,
+        revision_count: None,
+    };
+    let template = "%%content%%";
+    let mut compat_html = CompatHtmlFragments::new(template);
+    let mut compat_text = CompatTextFragments::new(template);
+    let user_displays = BTreeMap::new();
+    let data_form_values = BTreeMap::new();
+    let mut context = list_pages_substitution_context(
+        20,
+        &user_displays,
+        Some("Content of Ant. [[module Rate]]"),
+        &data_form_values,
+    );
+    context.page_rendered_content = Some("<p>Content of Ant.</p>");
+    let substituted = substitute_list_pages_variables_with_fragments(
+        template,
+        &page,
+        1,
+        1,
+        &context,
+        &mut compat_html,
+        &mut compat_text,
+    );
+    // LISTPAGES-DEEP D7: %%content%% is the listed page's raw wikitext,
+    // with the module shown as literal text, even when a rendered form
+    // of the content is also available.
+    let restored = compat_text.restore(&substituted);
+    assert_eq!(restored, "Content of Ant. [[module Rate]]");
+}
+
+#[test]
 fn generated_list_pages_pager_keeps_untrusted_slug_inside_href() {
     let page_info = fallback_test_page_info(
         "日本語/already%2Fencoded] [[span class=\"owned\"]]OWNED[[/span]] [",
