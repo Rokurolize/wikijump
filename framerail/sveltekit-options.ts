@@ -59,6 +59,15 @@ const WIKIDOT_IMAGE_SOURCES: CspSources = [
   // the staff-lab Sigma-10 site's img-src omitted the host during the
   // 2026-11-17 check-wiki parity sweep.
   "https://fastly.jsdelivr.net",
+  // The Parallel theme family's logo images live on its author's GitHub
+  // Pages host: the theme stylesheets reference Parallel/images/
+  // parallel-theme-logo.svg, parallel-theme-logo-zh.svg and
+  // project-parallel.svg, plus the SCP logo pair (SCP/image/logo/main/
+  // white.svg and black.svg), as CSS image URLs and image content. Live
+  // Wikidot loads them; the staff-lab Sigma-10 site's img-src omitted the
+  // host during the 2026-11-17 check-wiki parity sweep. The same host's
+  // stylesheets are audited in audited-external-asset-origins.ts.
+  "https://hormress.github.io",
   "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com",
   "https://d2qhngyckgiutd.cloudfront.net",
   // Header logos and decorative images that theme stylesheets reference from

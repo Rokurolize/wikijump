@@ -153,6 +153,13 @@ export const AUDITED_EXTERNAL_ASSET_ORIGINS: readonly AuditedExternalAssetOrigin
       fonts: true,
       evidence:
         "Rokurolize GitHub Pages host. Serves the published trees of the theme-port forks the SCP-JP theme work is based on (Rokurolize/Basalt, Rokurolize/sigma). The Basalt fork's published tree pairs its bedrock stylesheet (`https://rokurolize.github.io/Basalt/basalt-bedrock-min.css`) with the WOFF2 files under its `fonts/` directory, which the stylesheet `@font-face`s through relative URLs, so the font files load from this origin as well."
+    },
+    {
+      origin: "https://hormress.github.io",
+      styles: true,
+      fonts: false,
+      evidence:
+        "Hormress GitHub Pages host for the Parallel theme family (theme:parallel and its JP port candidates). theme:parallel-jp and its derivatives theme:betwixt-jp, theme:normal-jp and theme:yore-jp @import the theme's stylesheets from this origin (Parallel/parallel-min.css, Parallel/normalize-min.css and the Parallel/branch/normal_projection/*.css widget and preset sheets); live Wikidot loads them, but framerail's page Content-Security-Policy blocked the stylesheet fetches on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep, leaving theme-decoration-sample-betwixt-jp and theme-decoration-sample-candela-jp (both Parallel-derived) on the default background. The same host's images are audited separately in WIKIDOT_IMAGE_SOURCES (sveltekit-options.ts). No font or script use from this origin was observed."
     }
   ])
 

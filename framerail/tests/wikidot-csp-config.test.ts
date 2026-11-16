@@ -116,6 +116,16 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
       `${directive} admits the audited jsDelivr Fastly edge host`
     )
   }
+  for (const directive of ["style-src", "img-src"] as const) {
+    assert(
+      directives[directive]?.some((source) => source === "https://hormress.github.io"),
+      `${directive} admits the audited Parallel theme host`
+    )
+  }
+  assert(
+    !directives["font-src"]?.some((source) => source === "https://hormress.github.io"),
+    "font-src does not admit the Parallel theme host (no font use observed)"
+  )
   const classifiedDecorationGrant = AUDITED_EXTERNAL_ASSET_ORIGINS.find(
     (entry) => entry.origin === "https://indestructibletype-fonthosting.github.io"
   )
