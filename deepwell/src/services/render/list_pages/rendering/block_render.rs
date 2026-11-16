@@ -315,6 +315,17 @@ impl RenderService {
         } else {
             categories
         };
+        // The current-page-only shortcut below bypasses the page query, so
+        // it must apply the category selector itself: with an explicit
+        // category that does not contain the current page's category,
+        // range="." yields no row even though the current page exists.
+        let current_page_matches_category_selector =
+            Self::current_page_matches_category_selector(
+                category_all,
+                &categories,
+                &excluded_categories,
+                page_info,
+            );
         let zero_page_size = count_pages_per_page == Some(0);
         let per_page = count_pages_per_page
             .unwrap_or(DEFAULT_LISTPAGES_PER_PAGE)
@@ -502,14 +513,15 @@ impl RenderService {
                 &query.fields,
             )
             .await?;
-            if data_form_fields.is_empty()
-                || Self::current_page_matches_data_form_fields(
-                    ctx,
-                    current_site_id,
-                    current_page_id,
-                    &data_form_fields,
-                )
-                .await?
+            if current_page_matches_category_selector
+                && (data_form_fields.is_empty()
+                    || Self::current_page_matches_data_form_fields(
+                        ctx,
+                        current_site_id,
+                        current_page_id,
+                        &data_form_fields,
+                    )
+                    .await?)
             {
                 pages
             } else {

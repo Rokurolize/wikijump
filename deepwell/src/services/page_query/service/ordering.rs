@@ -168,8 +168,14 @@ pub(super) fn apply_sql_ordering(
             let identity = SimpleExpr::Custom(
                 wikidot_page_ordering_identity_sql("page.page_id").into(),
             );
+            // Wikidot treats a never-edited page as last updated at its
+            // creation time. page.updated_at is NULL for such pages, and
+            // a bare DESC sort puts every NULL first (NULLS FIRST), so
+            // order by the effective update time instead.
+            let updated_at =
+                SimpleExpr::Custom("COALESCE(page.updated_at, page.created_at)".into());
             query = query
-                .order_by(page::Column::UpdatedAt, sql_order.clone())
+                .order_by(updated_at, sql_order.clone())
                 .order_by(identity, sql_order.clone())
                 .order_by(page::Column::PageId, sql_order);
         }

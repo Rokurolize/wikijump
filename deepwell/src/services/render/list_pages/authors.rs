@@ -551,6 +551,7 @@ impl RenderService {
         }
 
         user_ids.extend(Self::load_wikidot_author_ids(ctx, &snapshot_names).await?);
+        user_ids.extend(Self::load_local_author_ids(ctx, &snapshot_names).await?);
         if exclude_current_page_author {
             return Ok(ResolvedListPagesAuthors::NotAny {
                 user_ids: user_ids.into_iter().collect(),
@@ -595,13 +596,39 @@ impl RenderService {
         let author_ids = users
             .into_iter()
             .filter(|user| {
-                user.name.as_ref().is_some_and(|name| {
-                    wanted.contains(&normalize_wikidot_author_name(name))
-                }) || user.slug.as_ref().is_some_and(|slug| {
-                    wanted.contains(&normalize_wikidot_author_name(slug))
-                })
+                wikidot_author_matches(wanted, user.name.as_deref(), user.slug.as_deref())
             })
             .map(|user| i64::from(user.user_id))
+            .collect::<Vec<_>>();
+
+        Ok(author_ids)
+    }
+
+    pub(in crate::services::render) async fn load_local_author_ids(
+        ctx: &ServiceContext<'_>,
+        wanted: &BTreeSet<String>,
+    ) -> Result<Vec<i64>> {
+        if wanted.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let make_error = || {
+            Error::new(
+                "failed to load local author IDs for ListPages render",
+                ErrorType::Render,
+            )
+        };
+        let users = UserTable::find()
+            .all(ctx.transaction())
+            .await
+            .or_raise(make_error)?;
+
+        let author_ids = users
+            .into_iter()
+            .filter(|user| {
+                wikidot_author_matches(wanted, Some(&user.name), Some(&user.slug))
+            })
+            .map(|user| user.user_id)
             .collect::<Vec<_>>();
 
         Ok(author_ids)
@@ -632,5 +659,61 @@ impl RenderService {
             .one(txn)
             .await
             .or_raise(make_error)
+    }
+}
+
+/// Whether a stored author name or slug matches one of the wanted
+/// (already normalized) `created_by` names, under Wikidot's author-name
+/// normalization: case-insensitive, with spaces and underscores folded
+/// to dashes. A dot is not a separator, so the username form matches the
+/// stored name while the slug form matches the stored slug.
+fn wikidot_author_matches(
+    wanted: &BTreeSet<String>,
+    name: Option<&str>,
+    slug: Option<&str>,
+) -> bool {
+    name.is_some_and(|name| wanted.contains(&normalize_wikidot_author_name(name)))
+        || slug.is_some_and(|slug| wanted.contains(&normalize_wikidot_author_name(slug)))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn author_matching_uses_names_and_slugs_like_wikidot() {
+        // LISTPAGES-DEEP D3 probe shape: a local user named
+        // "staff.operator" with slug "staff-operator".
+        let by_name = BTreeSet::from(["staff.operator".to_owned()]);
+        assert!(wikidot_author_matches(
+            &by_name,
+            Some("staff.operator"),
+            Some("staff-operator"),
+        ));
+        // The username form does not match through the slug: '.' is not a
+        // name separator in Wikidot author normalization.
+        assert!(!wikidot_author_matches(
+            &by_name,
+            Some("Someone Else"),
+            Some("staff-operator"),
+        ));
+
+        let by_slug = BTreeSet::from(["staff-operator".to_owned()]);
+        assert!(wikidot_author_matches(
+            &by_slug,
+            Some("staff.operator"),
+            Some("staff-operator"),
+        ));
+        assert!(wikidot_author_matches(
+            &by_slug,
+            Some("Staff Operator"),
+            Some("unrelated"),
+        ));
+        assert!(!wikidot_author_matches(
+            &by_slug,
+            Some("staff.operator"),
+            Some("staff-operator-x"),
+        ));
+        assert!(!wikidot_author_matches(&by_slug, None, None));
     }
 }

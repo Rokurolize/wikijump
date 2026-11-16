@@ -733,6 +733,22 @@ impl RenderService {
         categories
     }
 
+    pub(in crate::services::render) fn current_page_matches_category_selector(
+        category_all: bool,
+        categories: &[Cow<'_, str>],
+        excluded_categories: &[Cow<'_, str>],
+        page_info: &PageInfo<'_>,
+    ) -> bool {
+        let current_category = Self::page_info_category_slug(page_info);
+        (category_all
+            || categories
+                .iter()
+                .any(|slug| slug.as_ref() == current_category.as_ref()))
+            && !excluded_categories
+                .iter()
+                .any(|slug| slug.as_ref() == current_category.as_ref())
+    }
+
     pub(in crate::services::render) fn page_info_category_slug<'a>(
         page_info: &'a PageInfo<'_>,
     ) -> Cow<'a, str> {
@@ -778,6 +794,59 @@ mod tests {
         let tokens = ftml::tokenize(source);
         let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
         HtmlRender.render(&tree, &page_info, &settings).body
+    }
+
+    #[test]
+    fn current_page_category_selector_applies_the_query_semantics() {
+        fn page_info(category: Option<&'static str>) -> PageInfo<'static> {
+            PageInfo {
+                page: Cow::Borrowed("probe-lp-range-cat"),
+                category: category.map(Cow::Borrowed),
+                site: Cow::Borrowed("test"),
+                title: Cow::Borrowed("Probe"),
+                alt_title: None,
+                score: ScoreValue::Float(0.0),
+                tags: Vec::new(),
+                language: Cow::Borrowed("en"),
+            }
+        }
+        let current = page_info(None);
+        // LISTPAGES-DEEP D2: range="." with an explicit foreign category
+        // yields no row for a current page in _default.
+        assert!(!RenderService::current_page_matches_category_selector(
+            false,
+            &[Cow::Borrowed("probe-lp-target-x")],
+            &[],
+            &current,
+        ));
+        // Plain range="." (the caller appended the current category).
+        assert!(RenderService::current_page_matches_category_selector(
+            false,
+            &[Cow::Borrowed("_default")],
+            &[],
+            &current,
+        ));
+        // category="*" matches unless the category is excluded.
+        assert!(RenderService::current_page_matches_category_selector(
+            true,
+            &[],
+            &[],
+            &current,
+        ));
+        assert!(!RenderService::current_page_matches_category_selector(
+            true,
+            &[],
+            &[Cow::Borrowed("_default")],
+            &current,
+        ));
+        // A page inside the named category matches it.
+        let in_category = page_info(Some("probe-lp-target-x"));
+        assert!(RenderService::current_page_matches_category_selector(
+            false,
+            &[Cow::Borrowed("probe-lp-target-x")],
+            &[],
+            &in_category,
+        ));
     }
 
     #[test]

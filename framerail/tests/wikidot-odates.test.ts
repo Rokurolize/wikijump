@@ -42,6 +42,15 @@ test("UTC viewer sees the live server wall clock", () => {
   )
 })
 
+test("ListPages created_at probe renders the live JST text", () => {
+  // LISTPAGES-DEEP D6: the sandbox span for epoch 1794843531 read
+  // "17 Nov 2026, 00:38" for a +09:00 viewer.
+  assert.equal(
+    formatOdateTimestamp(1794843531, FORMAT, 1794843531, 540),
+    "17 Nov 2026, 00:38"
+  )
+})
+
 test("JST viewer sees the next-day wall clock with the comma format", () => {
   assert.equal(
     formatOdateTimestamp(TIMESTAMP, FORMAT, TIMESTAMP, 540),
