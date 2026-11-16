@@ -167,6 +167,13 @@ export const AUDITED_EXTERNAL_ASSET_ORIGINS: readonly AuditedExternalAssetOrigin
       fonts: false,
       evidence:
         "Black Highlighter's CN distribution host (the SCP-CN branch's BHL mirror). theme:highlighter-bhl @imports its base stylesheets from this origin (css/min/normalize.min.css and css/min/black-highlighter.min.css); live Wikidot loads them, but framerail's page Content-Security-Policy blocked the stylesheet fetches on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep. The served black-highlighter.min.css references no external files (every url() is a data: URI) and declares no @font-face, so no font use from this origin exists. The same host's logo image is audited separately in WIKIDOT_IMAGE_SOURCES (sveltekit-options.ts)."
+    },
+    {
+      origin: "https://jonuarlreden.github.io",
+      styles: true,
+      fonts: false,
+      evidence:
+        "Jonuarlreden GitHub Pages host for the 'Polished Basalt' stylesheet set. theme:opinions-broadcaster-jp @imports its eight stylesheets from this origin (Polished-Basalt/p1-base.css, p2-styllization.css, p3-reverse-color.css, p4-new-feature.css, p5-anti-saving-page.css, p6-locallization.css, pc-hide-topbar.css and pd-buffed-hoverlinks.css); live Wikidot loads them, but framerail's page Content-Security-Policy blocked the stylesheet fetches on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep, so theme-decoration-sample-opinions-broadcaster-jp kept the unmodified Basalt shades. The served stylesheets declare no @font-face and reference no files on this origin (their url() targets are other admitted hosts), so no font or image use from this origin exists."
     }
   ])
 

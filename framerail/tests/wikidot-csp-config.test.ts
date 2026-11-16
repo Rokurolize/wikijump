@@ -18,8 +18,10 @@ test("local included components can load styles and fonts from the reviewed mirr
   for (const origin of [
     "https://scp-wiki.wjfiles.localhost",
     "https://scp-jp.wjfiles.localhost",
+    "https://scpko.wjfiles.localhost",
     "https://scp-wiki.wikijump.localhost",
-    "https://scp-jp.wikijump.localhost"
+    "https://scp-jp.wikijump.localhost",
+    "https://scpko.wikijump.localhost"
   ] as const) {
     for (const directive of ["style-src", "font-src"] as const) {
       assert(directives[directive]?.includes(origin), `${directive} needs ${origin}`)
@@ -88,7 +90,8 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
   assert(!directives["font-src"]?.includes("https://p.typekit.net"))
   for (const origin of [
     "https://scp-wiki.wjfiles.localhost",
-    "https://scp-jp.wjfiles.localhost"
+    "https://scp-jp.wjfiles.localhost",
+    "https://scpko.wjfiles.localhost"
   ]) {
     assert(directives["img-src"]?.some((source) => source === origin))
   }
@@ -126,6 +129,20 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
     !directives["font-src"]?.some((source) => source === "https://hormress.github.io"),
     "font-src does not admit the Parallel theme host (no font use observed)"
   )
+  assert(
+    directives["style-src"]?.some(
+      (source) => source === "https://jonuarlreden.github.io"
+    ),
+    "style-src admits the audited Polished Basalt theme host"
+  )
+  for (const directive of ["font-src", "img-src"] as const) {
+    assert(
+      !directives[directive]?.some(
+        (source) => source === "https://jonuarlreden.github.io"
+      ),
+      `${directive} does not admit the Polished Basalt theme host (styles only)`
+    )
+  }
   for (const origin of [
     "https://cdn.mer.run",
     "https://lemoncat233.github.io",
