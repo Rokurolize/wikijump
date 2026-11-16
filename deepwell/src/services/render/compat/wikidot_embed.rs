@@ -87,13 +87,14 @@ static WIKIDOT_STYLEFRAME_NAME_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| 
     )
     .unwrap()
 });
-static WIKIDOT_WDFILES_STYLEFRAME_NAME_IFRAME_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| {
+static WIKIDOT_WDFILES_STYLEFRAME_NAME_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(
+    || {
         Regex::new(
             r#"^<iframe src="//[A-Za-z0-9-]+\.wdfiles\.com/[^"]*/styleFrame\.html\?[^"]+" name="[A-Za-z][A-Za-z0-9_:-]{0,127}"></iframe>$"#,
         )
         .unwrap()
-    });
+    },
+);
 static WIKIDOT_INTERWIKI_FRAME_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r#"^<iframe src="(?P<src>//interwiki\.(?:scpwiki\.com|scp-jp\.org|scpwikicn\.com)/interwikiFrame\.html\?[^"]+)" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>$"#,
@@ -265,8 +266,7 @@ impl RenderService {
             ));
         }
 
-        if let Some(captures) = WIKIDOT_STYLEFRAME_NAME_IFRAME_REGEX.captures(iframe)
-        {
+        if let Some(captures) = WIKIDOT_STYLEFRAME_NAME_IFRAME_REGEX.captures(iframe) {
             return Some(Self::rewrite_wikidot_interwiki_iframe_src(
                 iframe,
                 &captures["src"],
