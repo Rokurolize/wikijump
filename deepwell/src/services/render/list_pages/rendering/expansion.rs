@@ -23,6 +23,7 @@ use super::{
     list_pages_body_starts_with_preparsed_block,
     list_pages_head_has_current_data_form_query_selector,
     list_pages_html_encoded_head_owns_script_tail, list_pages_module654_literal,
+    list_pages_module_in_block_position,
     list_pages_raw_footnote_prefix_end, list_pages_runtime_head_can_execute,
     list_pages_static_category_preflight, list_pages_static_parent_fullname_with_url,
     load_current_page_data_form_context, parse_list_pages_arguments_with_url,
@@ -613,6 +614,9 @@ impl RenderService {
                             },
                             pager_route,
                             module_offset: block.start,
+                            module_block_position: list_pages_module_in_block_position(
+                                &wikitext, block.start, block.end,
+                            ),
                             compat_html,
                             viewer_user_id,
                             page_info,
@@ -731,6 +735,9 @@ impl RenderService {
                             },
                             pager_route,
                             module_offset: block.start,
+                            module_block_position: list_pages_module_in_block_position(
+                                &wikitext, block.start, block.end,
+                            ),
                             compat_html,
                             viewer_user_id,
                             page_info,

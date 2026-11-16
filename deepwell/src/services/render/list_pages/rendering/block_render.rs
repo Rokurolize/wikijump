@@ -51,6 +51,7 @@ impl RenderService {
             page_context,
             pager_route,
             module_offset,
+            module_block_position,
             compat_html,
             viewer_user_id,
             page_info,
@@ -1478,7 +1479,8 @@ impl RenderService {
             || delayed_html_fragments
                 .iter()
                 .any(CompatHtmlFragments::has_exact_fragments);
-        let block_output = wrapper
+        let block_output = module_block_position
+            || wrapper
             || separate
             || render_generated_html
             || template.is_default_template()
