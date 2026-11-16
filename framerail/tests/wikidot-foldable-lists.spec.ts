@@ -226,3 +226,46 @@ test("PageView initializes replacement menus and unfolds ancestors of the curren
   await expect(other).toHaveClass("unfolded")
   await expect(other.locator(":scope > ul")).toBeVisible()
 })
+
+test("colmod blocks keep their authored structure and toggle by class only", async ({
+  page
+}) => {
+  const colmod = (cls: string, show: string, hide: string) =>
+    `<div class="colmod-block"><ul><li class="${
+      cls
+    }"> <ul><li style="list-style: none">_</li></ul> ` +
+    `<div class="colmod-link-top"><div class="foldable-list-container">` +
+    `<a href="javascript:;">${show}</a><a href="javascript:;">${hide}</a></div></div>` +
+    `<div class="colmod-content"><p>Column body</p></div>` +
+    `<div class="colmod-link-end"><div class="foldable-list-container">` +
+    `<a href="javascript:;">▲ ${hide}</a></div></div></li></ul></div>`
+  await page.setContent(
+    `<main>${colmod("folded", "+ show", "- hide")}${colmod("unfolded", "+ show", "- hide")}</main>`
+  )
+  await page.addScriptTag({
+    content: `window.foldableAction = (${wikidotFoldableLists.toString()})(document.querySelector("main"));`
+  })
+
+  const folded = page.locator(".colmod-block > ul > li").nth(0)
+  const unfolded = page.locator(".colmod-block > ul > li").nth(1)
+  await expect(folded).toHaveClass("folded")
+  await expect(unfolded).toHaveClass("unfolded")
+  for (const owner of [folded, unfolded]) {
+    // No toggle anchor is inserted into the list item: the dummy
+    // placeholder list stays the first child, as on Wikidot.
+    await expect(owner.locator(":scope > a")).toHaveCount(0)
+    await expect(owner.locator(":scope > ul")).toBeAttached()
+    // The placeholder list is hidden by theme CSS, never by inline style.
+    expect(
+      await owner.locator(":scope > ul").evaluate((list) => list.style.display)
+    ).toBe("")
+  }
+
+  // The authored show/hide links still toggle the item's class, which is
+  // what the colmod CSS keys on.
+  await folded.locator(".colmod-link-top a").first().click()
+  await expect(folded).toHaveClass("unfolded")
+  await folded.locator(".colmod-link-end a").first().click()
+  await expect(folded).toHaveClass("folded")
+  await expect(unfolded).toHaveClass("unfolded")
+})
