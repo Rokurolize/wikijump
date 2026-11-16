@@ -11,8 +11,8 @@ use super::{
     MAX_LISTPAGES_RENDER_LIMIT, MAX_NESTED_LISTPAGES_DEPTH,
     MAX_NESTED_LISTPAGES_MODULES_PER_PASS, OrderProperty, PageQueryScoreFilterCache,
     PendingDelayedListPagesOutput, Reference, RenderService, Result,
-    collect_list_pages_css_yield_openers, current_data_form_list_pages_head,
-    escape_html_text, exact_name_list_pages_batch_key,
+    SealPendingListPagesDelayedOutputsParams, collect_list_pages_css_yield_openers,
+    current_data_form_list_pages_head, escape_html_text, exact_name_list_pages_batch_key,
     expand_list_pages_generated_includes,
     find_list_pages_module_matches_with_delayed_links_budgeted,
     has_list_pages_module_opening_candidate, k12_hash,
@@ -910,12 +910,16 @@ impl RenderService {
             None
         };
         seal_pending_list_pages_delayed_outputs(
-            &mut expansion.wikitext,
-            pending_delayed_outputs,
-            page_info,
-            settings,
-            compat_html,
-            delayed_page_existence.as_ref(),
+            SealPendingListPagesDelayedOutputsParams {
+                wikitext: &mut expansion.wikitext,
+                pending_outputs: pending_delayed_outputs,
+                page_info,
+                settings,
+                compat_html,
+                compat_text,
+                runtime_css_insertions: &mut expansion.runtime_css_insertions,
+                page_existence: delayed_page_existence.as_ref(),
+            },
         )?;
         Ok(expansion)
     }

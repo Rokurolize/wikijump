@@ -320,13 +320,20 @@ impl RenderService {
                         runtime_css_insertions: _,
                     } = *block;
                     let replacement = if let Some(pending_delayed) = pending_delayed {
-                        seal_protected_list_pages_delayed_output(
-                            &replacement,
-                            pending_delayed,
-                            page_info,
-                            settings,
-                            compat_html,
-                        )?
+                        // This navigation fragment has no CSS insertion
+                        // channel (the block's runtime insertions are
+                        // likewise unused here), so styles extracted by the
+                        // seal are dropped, as they were when the seal
+                        // render consumed them silently.
+                        let (sealed, _extracted_styles) =
+                            seal_protected_list_pages_delayed_output(
+                                &replacement,
+                                pending_delayed,
+                                page_info,
+                                settings,
+                                compat_html,
+                            )?;
+                        sealed
                     } else {
                         replacement
                     };

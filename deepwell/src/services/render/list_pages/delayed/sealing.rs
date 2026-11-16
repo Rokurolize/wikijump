@@ -4,11 +4,13 @@ use super::{
     CompatHtmlFragments, DelayedInput, Error, ErrorType, GeneratedInput, GeneratedKind,
     GeneratedValue, InputSegment, ListPagesRuntimeTextRange, PageInfo,
     PendingDelayedListPagesOutput, PendingDelayedListPagesSlotValue, RenderService,
-    Result, SealListPagesDelayedOutputParams, SlotBindings, SlotId, TextOrigin,
-    WikitextMode, WikitextSettings, parse_delayed_list,
+    Result, SealListPagesDelayedOutputParams, SealPendingListPagesDelayedOutputsParams,
+    SlotBindings, SlotId, TextOrigin, WikitextMode, WikitextSettings, parse_delayed_list,
     register_generated_list_pages_html, strip_generated_list_pages_html_markers,
 };
-use crate::services::PageExistenceSnapshot;
+use crate::services::render::compat::preparation::{
+    CssModuleEdit, RuntimeCssInsertion, extract_css_modules,
+};
 
 #[cfg(test)]
 pub(in crate::services::render) fn seal_list_pages_delayed_output(
@@ -40,16 +42,16 @@ pub(in crate::services::render) fn seal_list_pages_delayed_output_with_mode(
 ) -> Result<String> {
     params.list_pages_inline = false;
     params.page_existence = None;
-    seal_list_pages_delayed_output_with_modes(params)
+    seal_list_pages_delayed_output_with_modes(params).map(|(html, _styles)| html)
 }
 
 pub(super) fn seal_list_pages_delayed_output_with_modes(
     params: SealListPagesDelayedOutputParams<'_>,
-) -> Result<String> {
+) -> Result<(String, Vec<String>)> {
     let SealListPagesDelayedOutputParams {
         mut output,
-        delayed_occurrences,
-        runtime_text_ranges,
+        mut delayed_occurrences,
+        mut runtime_text_ranges,
         delayed_html_fragments,
         page_info,
         settings,
@@ -63,14 +65,47 @@ pub(super) fn seal_list_pages_delayed_output_with_modes(
         && runtime_text_ranges.is_empty()
         && delayed_html_fragments.is_empty()
     {
-        return Ok(String::new());
+        return Ok((String::new(), Vec::new()));
     }
     if !block_output
         && delayed_occurrences.is_empty()
         && runtime_text_ranges.is_empty()
         && delayed_html_fragments.is_empty()
     {
-        return Ok(output);
+        return Ok((output, Vec::new()));
+    }
+    // The delayed render below is a separate ftml parse whose styles are
+    // not reachable from here (SealedFragment exposes no styles), so CSS
+    // modules in the output -- authored in the ListPages template or
+    // brought in by an expanded include -- would be dropped. Extract them
+    // with the same pass the top-level render uses and hand the styles to
+    // the caller, which re-emits them as runtime CSS insertions. Removing
+    // the blocks shifts the byte ranges the delayed segments are built
+    // from, so remap them through the extraction edits; if a generated
+    // range intersects a removed block, keep the block (and the old
+    // behavior for this output) rather than corrupt the seal.
+    let mut extracted_styles = Vec::new();
+    if settings.enable_page_syntax {
+        let backup = (
+            output.clone(),
+            delayed_occurrences.clone(),
+            runtime_text_ranges.clone(),
+        );
+        let (styles, edits) =
+            extract_css_modules(&mut output, page_info, settings, compat_html);
+        if !edits.is_empty() {
+            if remap_delayed_ranges_after_css_extraction(
+                &edits,
+                &mut delayed_occurrences,
+                &mut runtime_text_ranges,
+            ) {
+                extracted_styles = styles;
+            } else {
+                output = backup.0;
+                delayed_occurrences = backup.1;
+                runtime_text_ranges = backup.2;
+            }
+        }
     }
     if settings.enable_page_syntax
         && delayed_occurrences.is_empty()
@@ -215,11 +250,64 @@ pub(super) fn seal_list_pages_delayed_output_with_modes(
     if !block_output {
         sealed_body = strip_single_list_pages_paragraph(sealed_body);
     }
-    Ok(if block_output || delayed_block_output {
+    let sealed_html = if block_output || delayed_block_output {
         compat_html.push_block_html_allowing_span_parent(sealed_body)
     } else {
         compat_html.push_html(sealed_body)
-    })
+    };
+    Ok((sealed_html, extracted_styles))
+}
+
+/// Remaps delayed occurrence and runtime-text ranges in place after CSS
+/// module extraction removed (or replaced) blocks in the source text.
+/// Returns false when any range intersects an extracted block, in which
+/// case the ranges are left untouched and the extraction must be undone:
+/// a generated value inside a CSS block cannot be relocated safely.
+fn remap_delayed_ranges_after_css_extraction(
+    edits: &[CssModuleEdit],
+    delayed_occurrences: &mut Vec<(std::ops::Range<usize>, GeneratedValue<'static>)>,
+    runtime_text_ranges: &mut Vec<ListPagesRuntimeTextRange>,
+) -> bool {
+    fn remap_range(
+        edits: &[CssModuleEdit],
+        range: &std::ops::Range<usize>,
+    ) -> Option<std::ops::Range<usize>> {
+        let mut shift: isize = 0;
+        for edit in edits {
+            if edit.range.end <= range.start {
+                shift += edit.replacement_len as isize
+                    - (edit.range.end - edit.range.start) as isize;
+            } else if edit.range.start >= range.end {
+                break;
+            } else {
+                return None;
+            }
+        }
+        let start = usize::try_from(range.start as isize + shift).ok()?;
+        let end = usize::try_from(range.end as isize + shift).ok()?;
+        Some(start..end)
+    }
+
+    let mut occurrences = Vec::with_capacity(delayed_occurrences.len());
+    for (range, value) in delayed_occurrences.iter() {
+        let Some(remapped) = remap_range(edits, range) else {
+            return false;
+        };
+        occurrences.push((remapped, value.clone()));
+    }
+    let mut text_ranges = Vec::with_capacity(runtime_text_ranges.len());
+    for text_range in runtime_text_ranges.iter() {
+        let Some(source_range) = remap_range(edits, &text_range.source_range) else {
+            return false;
+        };
+        text_ranges.push(ListPagesRuntimeTextRange {
+            source_range,
+            origin: text_range.origin,
+        });
+    }
+    *delayed_occurrences = occurrences;
+    *runtime_text_ranges = text_ranges;
+    true
 }
 
 pub(super) fn strip_single_list_pages_paragraph(html: String) -> String {
@@ -242,7 +330,7 @@ pub(in crate::services::render) fn seal_protected_list_pages_delayed_output(
     page_info: &PageInfo<'_>,
     settings: &WikitextSettings,
     compat_html: &mut CompatHtmlFragments,
-) -> Result<String> {
+) -> Result<(String, Vec<String>)> {
     seal_protected_list_pages_delayed_output_with_mode(
         protected,
         pending,
@@ -260,7 +348,7 @@ fn seal_protected_list_pages_delayed_output_with_mode(
     settings: &WikitextSettings,
     compat_html: &mut CompatHtmlFragments,
     block_output: bool,
-) -> Result<String> {
+) -> Result<(String, Vec<String>)> {
     let PendingDelayedListPagesOutput {
         slots,
         html_fragments,
@@ -315,13 +403,18 @@ fn seal_protected_list_pages_delayed_output_with_mode(
 }
 
 pub(in crate::services::render) fn seal_pending_list_pages_delayed_outputs(
-    wikitext: &mut String,
-    pending_outputs: Vec<PendingDelayedListPagesOutput>,
-    page_info: &PageInfo<'_>,
-    settings: &WikitextSettings,
-    compat_html: &mut CompatHtmlFragments,
-    page_existence: Option<&PageExistenceSnapshot>,
+    params: SealPendingListPagesDelayedOutputsParams<'_>,
 ) -> Result<()> {
+    let SealPendingListPagesDelayedOutputsParams {
+        wikitext,
+        pending_outputs,
+        page_info,
+        settings,
+        compat_html,
+        compat_text,
+        runtime_css_insertions,
+        page_existence,
+    } = params;
     for mut pending in pending_outputs {
         if let Some(page_existence) = page_existence {
             pending.page_existence = Some(page_existence.clone());
@@ -350,14 +443,28 @@ pub(in crate::services::render) fn seal_pending_list_pages_delayed_outputs(
         };
         let body_end = body_start + relative_end;
         let block_output = pending.block_output;
-        let replacement = seal_protected_list_pages_delayed_output_with_mode(
-            &wikitext[body_start..body_end],
-            pending,
-            page_info,
-            settings,
-            compat_html,
-            block_output,
-        )?;
+        let (replacement, extracted_styles) =
+            seal_protected_list_pages_delayed_output_with_mode(
+                &wikitext[body_start..body_end],
+                pending,
+                page_info,
+                settings,
+                compat_html,
+                block_output,
+            )?;
+        let replacement = if extracted_styles.is_empty() {
+            replacement
+        } else {
+            // Re-emit the styles the seal extracted from this output as a
+            // runtime CSS insertion anchored just before the sealed
+            // fragment, so they join the page styles at this position.
+            let marker = compat_text.push("");
+            runtime_css_insertions.push(RuntimeCssInsertion {
+                marker: marker.clone(),
+                styles: extracted_styles,
+            });
+            format!("{marker}{replacement}")
+        };
         let replacement_end = body_end + end_marker.len();
         wikitext.replace_range(start..replacement_end, &replacement);
     }

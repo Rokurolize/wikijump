@@ -1488,7 +1488,7 @@ impl RenderService {
         } else {
             None
         };
-        let (output, pending_delayed) =
+        let (output, pending_delayed, sealed_styles) =
             finish_or_defer_list_pages_delayed_output_with_modes(
                 FinishOrDeferListPagesDelayedOutputParams {
                     output,
@@ -1505,6 +1505,21 @@ impl RenderService {
                     page_existence: list_pages_page_existence.as_ref(),
                 },
             )?;
+        let output = if sealed_styles.is_empty() {
+            output
+        } else {
+            // The immediate seal extracted this output's CSS modules;
+            // re-emit them as a runtime CSS insertion anchored at the
+            // start of the sealed fragment.
+            let marker = compat_text.push("");
+            runtime_css_insertions.push(
+                crate::services::render::compat::preparation::RuntimeCssInsertion {
+                    marker: marker.clone(),
+                    styles: sealed_styles,
+                },
+            );
+            format!("{marker}{output}")
+        };
         Ok(ListPagesBlockRenderResult::Expanded(Box::new(
             ListPagesRenderedBlock {
                 expansion: IncludeExpansion {

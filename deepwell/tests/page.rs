@@ -23452,10 +23452,10 @@ async fn listpages_plain_content_shares_the_outer_include_budget() {
 }
 
 #[tokio::test]
-async fn listpages_content_runtime_budget_preserves_later_modules() {
-    const INDEX_SLUG: &str = "fixture-listpages-content-row-budget-index";
-    const CHILD_SLUG: &str = "fixture-listpages-content-row-budget-child";
-    const CHILD_MARKER: &str = "LISTPAGES_CONTENT_ROW_BUDGET_CHILD";
+async fn listpages_content_modules_beyond_three_still_render() {
+    const INDEX_SLUG: &str = "fixture-listpages-content-modules-index";
+    const CHILD_SLUG: &str = "fixture-listpages-content-modules-child";
+    const CHILD_MARKER: &str = "LISTPAGES_CONTENT_MODULES_CHILD";
 
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -23466,7 +23466,7 @@ async fn listpages_content_runtime_budget_preserves_later_modules() {
         &mut runner,
         site_id,
         CHILD_SLUG,
-        "ListPages Content Row Budget Child",
+        "ListPages Content Modules Child",
         CHILD_MARKER,
     )
     .await;
@@ -23474,7 +23474,7 @@ async fn listpages_content_runtime_budget_preserves_later_modules() {
         &mut runner,
         site_id,
         INDEX_SLUG,
-        "ListPages Content Row Budget Index",
+        "ListPages Content Modules Index",
         "placeholder",
     )
     .await;
@@ -23499,7 +23499,7 @@ async fn listpages_content_runtime_budget_preserves_later_modules() {
         page: Cow::Borrowed(INDEX_SLUG),
         category: None,
         site: Cow::Borrowed("scp-wiki"),
-        title: Cow::Borrowed("ListPages Content Row Budget Index"),
+        title: Cow::Borrowed("ListPages Content Modules Index"),
         alt_title: None,
         score: ScoreValue::Integer(0),
         tags: Vec::new(),
@@ -23511,7 +23511,7 @@ async fn listpages_content_runtime_budget_preserves_later_modules() {
         page_id: page.page_id,
     };
     let wikitext = format!(
-        "[[module ListPages name=\"{CHILD_SLUG}\" limit=\"250\"]]BROAD PRESERVED %%content%%[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"5000\" perPage=\"1\" order=\"random\"]]RANDOM PRESERVED %%content%%[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]EXPANDED ONE %%content%%[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]EXPANDED TWO %%content%%[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]EXPANDED THREE %%content%%[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]PRESERVED %%content%%[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]METADATA %%title%%[[/module]]",
+        "[[module ListPages name=\"{CHILD_SLUG}\" limit=\"250\"]]BROAD %%content%%[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"5000\" perPage=\"1\" order=\"random\"]]RANDOM %%content%%[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]EXPANDED ONE %%content%%[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]EXPANDED TWO %%content%%[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]EXPANDED THREE %%content%%[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]EXPANDED FOUR %%content%%[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]METADATA %%title%%[[/module]]",
     );
 
     let output = RenderService::render_page(
@@ -23523,59 +23523,151 @@ async fn listpages_content_runtime_budget_preserves_later_modules() {
         UrlArguments::default(),
     )
     .await
-    .expect("content runtime overflow should preserve the complete module");
+    .expect("content modules should render");
 
+    // Live Wikidot renders every content-backed ListPages module on a page
+    // (theme:nebulae runs four variant modules). The per-render content-row
+    // budget is the operative work bound; a small module-count cap preserved
+    // the fourth module (EXPANDED FOUR) as literal source text.
     assert_eq!(
         output.html_output.body.matches(CHILD_MARKER).count(),
-        3,
-        "the first three nonempty content-backed modules should render",
+        6,
+        "all six nonempty content-backed modules should render",
     );
-    assert!(
-        output.html_output.body.contains("BROAD PRESERVED"),
-        "a broad deterministic request with a sparse result must expand its actual row: {}",
-        output.html_output.body,
-    );
-    assert!(
-        !output
-            .html_output
-            .body
-            .contains("BROAD PRESERVED %%content%%")
-    );
-    assert!(
-        output.html_output.body.contains("RANDOM PRESERVED"),
-        "a random query with an actual selected content row must consume one content-module slot: {}",
-        output.html_output.body,
-    );
-    assert!(
-        !output
-            .html_output
-            .body
-            .contains("RANDOM PRESERVED %%content%%"),
-    );
-    assert!(
-        output.html_output.body.contains("EXPANDED ONE")
-            && !output.html_output.body.contains("EXPANDED ONE %%content%%"),
-        "the third nonempty content-backed module must render: {}",
-        output.html_output.body,
-    );
-    assert!(
-        [
-            "EXPANDED TWO %%content%%",
-            "EXPANDED THREE %%content%%",
-            "PRESERVED %%content%%",
-        ]
-        .iter()
-        .all(|module| output.html_output.body.contains(module)),
-        "content-backed modules after the third nonempty module must remain literal: {}",
-        output.html_output.body,
-    );
+    for label in [
+        "BROAD",
+        "RANDOM",
+        "EXPANDED ONE",
+        "EXPANDED TWO",
+        "EXPANDED THREE",
+        "EXPANDED FOUR",
+    ] {
+        assert!(
+            output.html_output.body.contains(label)
+                && !output
+                    .html_output
+                    .body
+                    .contains(&format!("{label} %%content%%")),
+            "content-backed module {label} must render its row: {}",
+            output.html_output.body,
+        );
+    }
     assert!(
         output
             .html_output
             .body
-            .contains("METADATA ListPages Content Row Budget Child"),
+            .contains("METADATA ListPages Content Modules Child"),
         "a later metadata-only module should still render: {}",
         output.html_output.body,
+    );
+}
+
+#[tokio::test]
+async fn listpages_content_includes_substitute_variables_and_css() {
+    // Regression shape from existing:theme-nebulae: a ListPages module whose
+    // body holds two %%content{0}%%-prefixed includes of a metacomponent
+    // (the real component:theme-squares source and the real module body).
+    // Every include must render its own container with its provided
+    // {$variables} substituted, and the component's [[module CSS]] must
+    // reach the page styles -- the delayed ListPages seal used to consume
+    // those CSS modules into a render whose styles were discarded.
+    const INDEX_SLUG: &str = "fixture-listpages-nebulae-index";
+    const COMP_SLUG: &str = "component:theme-squares";
+    const COMP_SOURCE: &str = include_str!("fixtures/theme_squares_component.txt");
+    const MODULE_WIKITEXT: &str = include_str!("fixtures/nebulae_module1.txt");
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        COMP_SLUG,
+        "Theme Squares",
+        COMP_SOURCE,
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Nebulae Index Fixture",
+        "placeholder",
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": INDEX_SLUG,
+        }),
+    )
+    .expect("nebulae index should exist");
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(INDEX_SLUG))),
+    });
+
+    let page_info = PageInfo {
+        page: Cow::Borrowed(INDEX_SLUG),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Nebulae Index Fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let page_id = PageId {
+        site_id,
+        category_id: page.page_category_id,
+        page_id: page.page_id,
+    };
+
+    let output = RenderService::render_page(
+        runner.context(),
+        MODULE_WIKITEXT.to_owned(),
+        &page_info,
+        Layout::Wikidot,
+        page_id,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("nebulae-shaped ListPages module should render");
+
+    let body = &output.html_output.body;
+    assert_eq!(
+        body.matches("colors-container").count(),
+        2,
+        "both theme-squares includes must render a container: {body}",
+    );
+    for (variable, name) in [
+        ("--nebula-hue", "Lagoon"),
+        ("--outer-space", "Cosmic Black"),
+    ] {
+        assert!(
+            body.contains(&format!("data-variable=\"{variable}\"")),
+            "include variable {variable} must be substituted: {body}",
+        );
+        assert!(
+            body.contains(name),
+            "include value {name} must appear: {body}",
+        );
+    }
+    assert!(
+        output
+            .html_output
+            .styles
+            .iter()
+            .any(|style| style.contains(".colors-container")),
+        "the component CSS module must reach the page styles: {:?}",
+        output.html_output.styles,
     );
 }
 

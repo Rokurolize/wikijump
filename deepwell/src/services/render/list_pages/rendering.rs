@@ -63,6 +63,7 @@ use super::{
     ListPagesSubstitutionContext, MAX_NESTED_LISTPAGES_DEPTH,
     MAX_NESTED_LISTPAGES_MODULES_PER_PASS, PendingDelayedListPagesOutput,
     PrepareDelayedListPagesRowParams, ResolvedListPagesAuthors,
+    SealPendingListPagesDelayedOutputsParams,
     advance_literal_cursor_and_check_count_pages_capture_containment,
     append_list_pages_delayed_occurrences, append_list_pages_runtime_text_ranges,
     count_pages_exact_count_render_diagnostics,

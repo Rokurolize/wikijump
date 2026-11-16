@@ -239,7 +239,7 @@ fn protect_list_pages_delayed_output_with_modes(
 
 pub(in crate::services::render) fn finish_or_defer_list_pages_delayed_output_with_modes(
     params: FinishOrDeferListPagesDelayedOutputParams<'_>,
-) -> Result<(String, Option<PendingDelayedListPagesOutput>)> {
+) -> Result<(String, Option<PendingDelayedListPagesOutput>, Vec<String>)> {
     let FinishOrDeferListPagesDelayedOutputParams {
         output,
         delayed_occurrences,
@@ -270,25 +270,24 @@ pub(in crate::services::render) fn finish_or_defer_list_pages_delayed_output_wit
         Ok((
             register_generated_list_pages_html(protected, compat_html),
             pending,
+            Vec::new(),
         ))
     } else {
-        Ok((
-            seal_list_pages_delayed_output_with_modes(
-                SealListPagesDelayedOutputParams {
-                    output,
-                    delayed_occurrences,
-                    runtime_text_ranges,
-                    delayed_html_fragments,
-                    page_info,
-                    settings,
-                    compat_html,
-                    block_output,
-                    list_pages_inline,
-                    page_existence,
-                },
-            )?,
-            None,
-        ))
+        let (sealed, extracted_styles) = seal_list_pages_delayed_output_with_modes(
+            SealListPagesDelayedOutputParams {
+                output,
+                delayed_occurrences,
+                runtime_text_ranges,
+                delayed_html_fragments,
+                page_info,
+                settings,
+                compat_html,
+                block_output,
+                list_pages_inline,
+                page_existence,
+            },
+        )?;
+        Ok((sealed, None, extracted_styles))
     }
 }
 

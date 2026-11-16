@@ -1636,9 +1636,12 @@ fn list_pages_scan_envelope_covers_the_synchronized_live_inventory() {
 fn list_pages_content_budget_limits_modules_and_rows() {
     let mut budget = ListPagesExpansionBudget::new();
 
-    assert!(budget.try_start_content_module());
-    assert!(budget.try_start_content_module());
-    assert!(budget.try_start_content_module());
+    // Every content module up to the per-render cap may start; the cap
+    // mirrors the overall module budget so multi-variant pages (theme:nebulae
+    // runs four content modules) render in full like Wikidot.
+    for _ in 0..MAX_LISTPAGES_CONTENT_MODULES_PER_RENDER {
+        assert!(budget.try_start_content_module());
+    }
     assert!(!budget.try_start_content_module());
     assert!(budget.can_expand_content_rows(40));
     budget.consume_content_rows(40);

@@ -27,7 +27,9 @@ use crate::error::prelude::{Error, ErrorType, Result};
 use crate::services::PageExistenceSnapshot;
 use crate::services::page_query::FoundPageRow;
 use crate::services::render::compat::CompatHtmlFragments;
-use crate::services::render::compat::preparation::neutralize_authored_markers;
+use crate::services::render::compat::preparation::{
+    RuntimeCssInsertion, neutralize_authored_markers,
+};
 use crate::services::render::compat::text_fragments::CompatTextFragments;
 use crate::services::render::ftml_render::WikidotCompatLinkTitleMap;
 use crate::services::render::iftags::resolve_outermost_wikidot_iftags;
@@ -177,6 +179,18 @@ pub(in crate::services::render) struct SealListPagesDelayedOutputParams<'a> {
     pub(in crate::services::render) compat_html: &'a mut CompatHtmlFragments,
     pub(in crate::services::render) block_output: bool,
     pub(in crate::services::render) list_pages_inline: bool,
+    pub(in crate::services::render) page_existence: Option<&'a PageExistenceSnapshot>,
+}
+
+pub(in crate::services::render) struct SealPendingListPagesDelayedOutputsParams<'a> {
+    pub(in crate::services::render) wikitext: &'a mut String,
+    pub(in crate::services::render) pending_outputs: Vec<PendingDelayedListPagesOutput>,
+    pub(in crate::services::render) page_info: &'a PageInfo<'a>,
+    pub(in crate::services::render) settings: &'a WikitextSettings,
+    pub(in crate::services::render) compat_html: &'a mut CompatHtmlFragments,
+    pub(in crate::services::render) compat_text: &'a mut CompatTextFragments,
+    pub(in crate::services::render) runtime_css_insertions:
+        &'a mut Vec<RuntimeCssInsertion>,
     pub(in crate::services::render) page_existence: Option<&'a PageExistenceSnapshot>,
 }
 
