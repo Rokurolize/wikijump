@@ -669,7 +669,12 @@
   {#if data.options?.edit}
     <div id="page-options-container" class:hidden={dataFormEditing}>
       <div id="page-info">
-        {#if data.wikidot_page_info}
+        {#if data.wikidot_page_info_date}
+          {data.wikidot_page_info_date.prefix}<span
+            class={data.wikidot_page_info_date.className}
+            style="display: inline;">{data.wikidot_page_info_date.text}</span
+          >
+        {:else if data.wikidot_page_info}
           {data.wikidot_page_info}
         {:else}
           {data.internationalization?.["wiki-page-revision"]}, {data
@@ -687,7 +692,12 @@
   {:else}
     <div id="page-options-container">
       <div id="page-info">
-        {#if data.wikidot_page_info}
+        {#if data.wikidot_page_info_date}
+          {data.wikidot_page_info_date.prefix}<span
+            class={data.wikidot_page_info_date.className}
+            style="display: inline;">{data.wikidot_page_info_date.text}</span
+          >
+        {:else if data.wikidot_page_info}
           {data.wikidot_page_info}
         {:else}
           {data.internationalization?.["wiki-page-revision"]}, {data

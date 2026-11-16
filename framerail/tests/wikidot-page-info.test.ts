@@ -2,8 +2,11 @@ import { strict as assert } from "node:assert"
 import test from "node:test"
 
 import {
+  buildWikidotPageInfoParts,
   buildWikidotPageInfoText,
-  formatWikidotSourceDate
+  encodeWikidotDateFormat,
+  formatWikidotSourceDate,
+  WIKIDOT_PAGE_INFO_DATE_FORMAT
 } from "../src/lib/wikidot/wikidot-page-info.ts"
 
 test("formats imported Wikidot page revision metadata like the source shell", () => {
@@ -64,6 +67,41 @@ test("rejects invalid imported Wikidot page revision timestamps", () => {
       revision: 4,
       updatedAt: "not a timestamp"
     }),
+    null
+  )
+})
+
+test("builds the odate span parts Wikidot renders around the page-info date", () => {
+  const updatedAt = "2025-04-02T12:17:27Z"
+  const now = Date.parse(updatedAt) + 593 * 24 * 60 * 60 * 1000
+
+  const parts = buildWikidotPageInfoParts({ revision: 57, updatedAt, now })
+
+  assert.equal(
+    parts?.text,
+    "page revision: 57, last edited: 2 Apr 2025, 21:17 (593 days ago)"
+  )
+  assert.deepEqual(parts?.date, {
+    prefix: "page revision: 57, last edited: ",
+    text: "2 Apr 2025, 21:17 (593 days ago)",
+    epochSeconds: 1743596247,
+    className:
+      "odate time_1743596247 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%20%28%25O%20ago%29"
+  })
+})
+
+test("percent-encodes Wikidot date formats like ftml date elements", () => {
+  assert.equal(WIKIDOT_PAGE_INFO_DATE_FORMAT, "%e %b %Y, %H:%M (%O ago)")
+  assert.equal(
+    encodeWikidotDateFormat(WIKIDOT_PAGE_INFO_DATE_FORMAT),
+    "%25e%20%25b%20%25Y%2C%20%25H%3A%25M%20%28%25O%20ago%29"
+  )
+  assert.equal(encodeWikidotDateFormat("%d. %m. %Y"), "%25d.%20%25m.%20%25Y")
+})
+
+test("rejects invalid imported timestamps when building page-info parts", () => {
+  assert.equal(
+    buildWikidotPageInfoParts({ revision: 4, updatedAt: "not a timestamp" }),
     null
   )
 })

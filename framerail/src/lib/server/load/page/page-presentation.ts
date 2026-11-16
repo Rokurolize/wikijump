@@ -6,7 +6,7 @@ import {
   wikidotPageActionVisibility,
   wikidotPageDiscussHref
 } from "$lib/wikidot/wikidot-page-actions"
-import { buildWikidotPageInfoText } from "$lib/wikidot/wikidot-page-info"
+import { buildWikidotPageInfoParts } from "$lib/wikidot/wikidot-page-info"
 import { buildWikidotPageWatchLabel } from "$lib/wikidot/wikidot-page-watch"
 import { toIntlLocales } from "$lib/wikidot/wikidot-locale"
 
@@ -223,6 +223,7 @@ export const buildWikidotPagePresentation = (
   if (response.type !== "found") {
     return {
       wikidot_page_info: null,
+      wikidot_page_info_date: null,
       wikidot_page_actions: null,
       wikidot_page_watch: null
     }
@@ -236,19 +237,22 @@ export const buildWikidotPagePresentation = (
   const updatedAt = imported
     ? snapshot?.source_updated_at
     : (response.data.page.updated_at ?? response.data.page.created_at)
-  const wikidotPageInfo =
+  const wikidotPageInfoParts =
     revision !== undefined && updatedAt
-      ? buildWikidotPageInfoText({
+      ? buildWikidotPageInfoParts({
           revision,
           updatedAt,
           now,
           locale: siteLocale
         })
       : null
+  const wikidotPageInfo = wikidotPageInfoParts?.text ?? null
+  const wikidotPageInfoDate = wikidotPageInfoParts?.date ?? null
 
   if (!imported) {
     return {
       wikidot_page_info: wikidotPageInfo,
+      wikidot_page_info_date: wikidotPageInfoDate,
       wikidot_page_actions: null,
       wikidot_page_watch: null
     }
@@ -265,6 +269,7 @@ export const buildWikidotPagePresentation = (
 
   return {
     wikidot_page_info: wikidotPageInfo,
+    wikidot_page_info_date: wikidotPageInfoDate,
     wikidot_page_actions: {
       ...buildWikidotPageActionLabels({
         rating: selectWikidotPageRating({

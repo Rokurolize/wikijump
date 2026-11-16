@@ -95,7 +95,7 @@ test("Wikidot-layout SSR gives a locally authored found page Wikidot page-info g
 
   assert.match(
     body,
-    /<div id="page-info"[^>]*>[\s\S]*?page revision: 3, last edited: 13 Aug 2026, 13:05 \(2 hours ago\)[\s\S]*?<\/div>/u
+    /<div id="page-info"[^>]*>[\s\S]*?page revision: 3, last edited: <span class="odate time_1786593906 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%20%28%25O%20ago%29(?: svelte-[a-z0-9]+)?" style="display: inline;">13 Aug 2026, 13:05 \(2 hours ago\)<\/span>[\s\S]*?<\/div>/u
   )
 })
 
@@ -126,7 +126,7 @@ test("Wikidot-layout SSR uses local page creation time when it has no update tim
 
   assert.match(
     body,
-    /<div id="page-info"[^>]*>[\s\S]*?page revision: 3, last edited: 12 Aug 2026, 10:02 \(2 hours ago\)[\s\S]*?<\/div>/u
+    /<div id="page-info"[^>]*>[\s\S]*?page revision: 3, last edited: <span class="odate time_1786496523 format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%20%28%25O%20ago%29(?: svelte-[a-z0-9]+)?" style="display: inline;">12 Aug 2026, 10:02 \(2 hours ago\)<\/span>[\s\S]*?<\/div>/u
   )
 })
 

@@ -68,6 +68,18 @@ export function parseOdateSpan(element: { className: string }) {
   return { timestamp, format, agoHover }
 }
 
+export function dateAgoDuration(deltaSeconds: number) {
+  const delta = Math.abs(Math.floor(deltaSeconds))
+  const unit = (value: number, singular: string, plural: string) =>
+    `${value} ${value === 1 ? singular : plural}`
+  if (delta >= 60 * 60 * 24) {
+    return unit(Math.floor(delta / (60 * 60 * 24)), "day", "days")
+  }
+  if (delta >= 60 * 60) return unit(Math.floor(delta / (60 * 60)), "hour", "hours")
+  if (delta >= 60) return unit(Math.floor(delta / 60), "minute", "minutes")
+  return unit(Math.max(1, delta), "second", "seconds")
+}
+
 export function agoText(deltaSeconds: number) {
   const delta = Math.max(0, Math.floor(deltaSeconds))
   const unit = (value: number, singular: string, plural: string) =>
@@ -131,7 +143,7 @@ export function formatOdateTimestamp(
     } else if (directive === "R") {
       output += `${parts.H}:${parts.M}`
     } else if (directive === "O") {
-      output += agoText(nowSeconds - timestampSeconds)
+      output += dateAgoDuration(nowSeconds - timestampSeconds)
     } else if (directive in parts) {
       output += applyPad(modifier, parts[directive])
     } else {
