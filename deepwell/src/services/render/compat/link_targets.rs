@@ -1,7 +1,11 @@
+use super::color_and_inline_protection::{
+    ProtectedWikidotColorSpans, ProtectedWikidotInlineHtml,
+};
+use super::html_fragments::{CompatHtmlFragments, html_fragment_text};
 use super::text_fragments::CompatTextFragments;
 use ftml::data::PageRef;
 use ftml::tree::{
-    Container, DefinitionListItem, Element, LinkLabel, LinkLocation, ListItem,
+    Container, DefinitionListItem, Element, LinkLabel, LinkLocation, LinkType, ListItem,
     PartialElement, SyntaxTree,
 };
 use std::borrow::Cow;
@@ -20,6 +24,88 @@ pub(in crate::services::render) fn restore_compat_text_in_link_targets(
     restore_elements(&mut tree.table_of_contents, fragments, 0);
     for footnote in &mut tree.footnotes {
         restore_elements(footnote, fragments, 0);
+    }
+}
+
+/// Table-of-contents entry names are text: ftml builds them by rendering
+/// the heading's elements as text, so any protection marker left in a
+/// heading lands in the entry name as inert text. The post-render markup
+/// restores would then turn those markers back into live markup inside
+/// the entry link (a protected `##color|...##` span in a heading produced
+/// a `<span>` inside its table-of-contents anchor). Restore the markup
+/// fragment families in entry names as the text they wrap instead, so
+/// the post-render restores have nothing left to convert there. The
+/// heading itself keeps its markers and restores as markup as before.
+pub(in crate::services::render) fn restore_html_fragments_as_text_in_table_of_contents(
+    tree: &mut SyntaxTree<'_>,
+    color_spans: &ProtectedWikidotColorSpans,
+    compat_html: &CompatHtmlFragments,
+    inline_html: &[ProtectedWikidotInlineHtml],
+) {
+    if color_spans.fragments.is_empty()
+        && compat_html.is_empty()
+        && inline_html.is_empty()
+    {
+        return;
+    }
+    scrub_table_of_contents_labels(
+        &mut tree.table_of_contents,
+        color_spans,
+        compat_html,
+        inline_html,
+    );
+}
+
+fn scrub_table_of_contents_labels(
+    elements: &mut [Element<'_>],
+    color_spans: &ProtectedWikidotColorSpans,
+    compat_html: &CompatHtmlFragments,
+    inline_html: &[ProtectedWikidotInlineHtml],
+) {
+    for element in elements {
+        match element {
+            Element::Link {
+                ltype: LinkType::TableOfContents,
+                label: LinkLabel::Text(text),
+                ..
+            } => {
+                let mut restored = text.as_ref().to_owned();
+                for span in inline_html {
+                    if restored.contains(&span.marker) {
+                        restored = restored
+                            .replace(&span.marker, &html_fragment_text(&span.html));
+                    }
+                }
+                restored = color_spans.fragments.restore_as_text(&restored);
+                restored = compat_html.restore_as_text(&restored);
+                if restored != text.as_ref() {
+                    *text = Cow::Owned(restored);
+                }
+            }
+            Element::List { items, .. } => {
+                for item in items {
+                    match item {
+                        ListItem::Elements { elements, .. } => {
+                            scrub_table_of_contents_labels(
+                                elements,
+                                color_spans,
+                                compat_html,
+                                inline_html,
+                            );
+                        }
+                        ListItem::SubList { element } => {
+                            scrub_table_of_contents_labels(
+                                std::slice::from_mut(element.as_mut()),
+                                color_spans,
+                                compat_html,
+                                inline_html,
+                            );
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
     }
 }
 

@@ -1987,6 +1987,92 @@ fn protects_unbound_include_variables_in_all_rendered_positions() {
     assert_eq!(fragments.restore(&wikitext), original);
 }
 
+#[test]
+fn table_of_contents_entry_names_do_not_inherit_protected_heading_markup() {
+    // Regression (DOM-DEEP N10, theme-decoration-sample-foxtrot-jp):
+    // a ##color|...## span inside a heading is protected before parsing,
+    // so the heading's table-of-contents entry name -- built by rendering
+    // the heading as text -- carried the protection markers, and the
+    // post-render markup restore turned them into a live <span> inside
+    // the entry's anchor. Live Wikidot entry names are plain text.
+    let page_info = fallback_test_page_info("theme:foxtrot-jp", "Foxtrot");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut wikitext = concat!(
+        "[[toc]]\n",
+        "+ [[size 150%]]##crimson|1## @@ @@ テーマ設定[[/size]]\n",
+        "++ 1##crimson|.1## @@ @@ @@ @@ オンガード43\n",
+        "+ **##crimson|太字色##** 見出し\n",
+        "+++ [[[scp-002-j|リンク]]] と **太字** と ",
+        "[[span style=\"color:#0066cc\"]]色付きspan[[/span]] を含む見出し\n",
+    )
+    .to_owned();
+
+    let inline_spans =
+        RenderService::protect_wikidot_inline_html_spans(&mut wikitext, &settings);
+    let color_spans =
+        RenderService::protect_wikidot_color_spans(&mut wikitext, &settings);
+    let mut compat_text = CompatTextFragments::new(&wikitext);
+    wikitext = RenderService::protect_unrendered_wikidot_color_markers(
+        wikitext,
+        &settings,
+        &mut compat_text,
+    );
+    let compat_html = CompatHtmlFragments::new(&wikitext);
+
+    ftml::preprocess_for_layout(&mut wikitext, settings.layout);
+    let tokens = ftml::tokenize(&wikitext);
+    let (mut tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
+    super::super::compat::link_targets::restore_compat_text_in_link_targets(
+        &mut tree,
+        &compat_text,
+    );
+    super::super::compat::link_targets::restore_html_fragments_as_text_in_table_of_contents(
+        &mut tree,
+        &color_spans,
+        &compat_html,
+        &inline_spans,
+    );
+    let output = HtmlRender.render(&tree, &page_info, &settings);
+    let mut body =
+        RenderService::restore_protected_wikidot_color_spans(output.body, &color_spans);
+    body = RenderService::restore_protected_wikidot_inline_html(body, &inline_spans);
+    body = compat_text.restore(&body);
+
+    // Entry names are plain text, exactly as live renders them.
+    assert!(
+        body.contains(r##"<a href="#toc0">1 テーマ設定</a>"##),
+        "{body}"
+    );
+    assert!(
+        body.contains(r##"<a href="#toc1">1.1 オンガード43</a>"##),
+        "{body}"
+    );
+    assert!(
+        body.contains(r##"<a href="#toc2">太字色 見出し</a>"##),
+        "{body}"
+    );
+    assert!(
+        body.contains(
+            r##"<a href="#toc3">リンク と 太字 と 色付きspan を含む見出し</a>"##
+        ),
+        "{body}"
+    );
+    // The headings themselves keep their markup.
+    assert!(
+        body.contains(r#"<span style="color: crimson">1</span>"#),
+        "{body}"
+    );
+    assert!(
+        body.contains(r#"<strong><span style="color: crimson">太字色</span></strong>"#),
+        "{body}"
+    );
+    // No protection marker survives anywhere in the body.
+    assert!(
+        !body.to_ascii_uppercase().contains("WIKIJUMPWIKIDOTCOMPAT"),
+        "{body}"
+    );
+}
+
 fn render_protected_links(
     source: &str,
     restore_targets: bool,
