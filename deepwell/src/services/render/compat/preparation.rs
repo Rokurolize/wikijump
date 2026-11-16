@@ -119,14 +119,25 @@ pub(in crate::services::render) fn protect_css_modules_before_first_list_pages(
     protected_any.then_some(fragments)
 }
 
+/// One CSS module removed from the source by [`extract_css_modules`]: the
+/// byte range it occupied in the original text and the length of the text
+/// that replaced it (a compat HTML marker for `show` modules, empty
+/// otherwise). Callers that hold byte ranges into the original text use
+/// these edits to remap them onto the rewritten text.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(in crate::services::render) struct CssModuleEdit {
+    pub(in crate::services::render) range: std::ops::Range<usize>,
+    pub(in crate::services::render) replacement_len: usize,
+}
+
 pub(in crate::services::render) fn extract_css_modules(
     wikitext: &mut String,
     page_info: &PageInfo<'_>,
     settings: &WikitextSettings,
     compat_html: &mut CompatHtmlFragments,
-) -> Vec<String> {
+) -> (Vec<String>, Vec<CssModuleEdit>) {
     if !settings.enable_page_syntax {
-        return Vec::new();
+        return (Vec::new(), Vec::new());
     }
 
     let source = wikitext.as_str();
@@ -135,6 +146,7 @@ pub(in crate::services::render) fn extract_css_modules(
     let native_quote_lines = WikidotNativeQuoteIndex::new(source);
     let mut output = String::with_capacity(source.len());
     let mut styles = Vec::new();
+    let mut edits = Vec::new();
     let mut cursor = 0;
 
     while let Some(open) = CSS_MODULE_OPEN_REGEX.find_at(source, cursor) {
@@ -151,7 +163,7 @@ pub(in crate::services::render) fn extract_css_modules(
             let Some(candidate) = MODULE_CLOSE_REGEX.find_at(source, close_cursor) else {
                 output.push_str(&source[cursor..]);
                 *wikitext = output;
-                return styles;
+                return (styles, edits);
             };
             if !syntax_literal_regions.contains(candidate.start()) {
                 break candidate;
@@ -161,11 +173,16 @@ pub(in crate::services::render) fn extract_css_modules(
         let body = source[open.end()..close.start()].trim_matches('\n');
         let flags = css_module_flags(open.as_str());
         output.push_str(&source[cursor..open.start()]);
+        let replacement_start = output.len();
         if flags.show {
             output.push_str(&compat_html.push_block_html(render_css_module_code_block(
                 body, page_info, settings,
             )));
         }
+        edits.push(CssModuleEdit {
+            range: open.start()..close.end(),
+            replacement_len: output.len() - replacement_start,
+        });
         if !flags.disable {
             styles.push(escape_css_module_body(body));
         }
@@ -173,7 +190,7 @@ pub(in crate::services::render) fn extract_css_modules(
     }
     output.push_str(&source[cursor..]);
     *wikitext = output;
-    styles
+    (styles, edits)
 }
 
 #[derive(Debug)]
@@ -190,7 +207,7 @@ pub(in crate::services::render) fn extract_css_modules_with_runtime_insertions(
     insertions: Vec<RuntimeCssInsertion>,
 ) -> Vec<String> {
     if insertions.is_empty() {
-        return extract_css_modules(wikitext, page_info, settings, compat_html);
+        return extract_css_modules(wikitext, page_info, settings, compat_html).0;
     }
 
     for insertion in &insertions {
@@ -201,7 +218,7 @@ pub(in crate::services::render) fn extract_css_modules_with_runtime_insertions(
         *wikitext = wikitext.replacen(&insertion.marker, &projected, 1);
     }
 
-    let extracted = extract_css_modules(wikitext, page_info, settings, compat_html);
+    let extracted = extract_css_modules(wikitext, page_info, settings, compat_html).0;
     let mut styles = Vec::new();
     let mut matched = HashSet::<String>::new();
     for style in extracted {

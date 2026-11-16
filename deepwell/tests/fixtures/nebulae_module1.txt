@@ -1,0 +1,35 @@
+[[module ListPages offset="@URL|0" range="."]]
+
+= [[size 150%]]現在の星雲は[[span style="color:rgb(var(--nebula-hue)); font-weight:bold;"]]Lagoon Nebula[[/span]]です。[[/size]]
+> = @@[[include theme:nebulae]]@@
+= 星雲を切り替える:
+= | [[a href="/theme:nebulae/offset/1/ngc7000_limit/1" style="color:rgb(30,181,232); font-weight:bold;"]]North America[[/a]] | [[a href="/theme:nebulae/offset/1/ngc3372_limit/1" style="color:rgb(184,32,60); font-weight:bold;"]]Eta Carinae[[/a]] |
+= | [[a href="/theme:nebulae/offset/1/ngc0_limit/1" style="color:rgb(92, 222, 236); font-weight:bold;"]]星空を眺める[[/a]] |
+@@ @@
+
+[[%%content{0}%%include component:theme-squares -=-
+| color1-name=Lagoon
+| color1-variable=--nebula-hue
+| color1-info=(255, 248, 220)
+| color2-name=Neutron Star
+| color2-variable=--neutron-white
+| color2-info=(249, 255, 255)
+| subcolor1-name=Icy Blue
+| subcolor1-variable=--cold-space
+| subcolor1-info=(92, 222, 236)
+| subcolor2-name=Lonely Blue
+| subcolor2-variable=--satellite-tone
+| subcolor2-info=(44, 123, 149)
+| subcolor2-has-light-text=1
+| subcolor3-name=Empty Black
+| subcolor3-variable=--dark-void
+| subcolor3-info=(28, 28, 30)
+| subcolor3-has-light-text=1
+]]
+[[%%content{0}%%include component:theme-squares -=-
+| subcolor4-name=Cosmic Black
+| subcolor4-variable=--outer-space
+| subcolor4-info=(22, 23, 33)
+| subcolor4-has-light-text=1
+]]
+[[/module]]

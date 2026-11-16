@@ -73,8 +73,8 @@ pub(super) use self::delayed::substitute_list_pages_variables_with_fragments;
 pub(super) use self::delayed::{
     FinishOrDeferListPagesDelayedOutputParams, MAX_NESTED_LISTPAGES_DEPTH,
     MAX_NESTED_LISTPAGES_MODULES_PER_PASS, PendingDelayedListPagesOutput,
-    PrepareDelayedListPagesRowParams, append_list_pages_delayed_occurrences,
-    append_list_pages_runtime_text_ranges,
+    PrepareDelayedListPagesRowParams, SealPendingListPagesDelayedOutputsParams,
+    append_list_pages_delayed_occurrences, append_list_pages_runtime_text_ranges,
     find_list_pages_module_matches_with_delayed_links_budgeted,
     finish_or_defer_list_pages_delayed_output_with_modes, list_pages_row_markup_bytes,
     list_pages_runtime_container_close, list_pages_runtime_container_open,

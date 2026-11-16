@@ -446,7 +446,15 @@ pub(super) const DEFAULT_LISTPAGES_PER_PAGE: u64 = 20;
 pub(super) const MAX_LISTPAGES_RENDER_LIMIT: u64 = 250;
 pub(super) const MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER: usize =
     MAX_LISTPAGES_RENDER_LIMIT as usize;
-pub(super) const MAX_LISTPAGES_CONTENT_MODULES_PER_RENDER: usize = 3;
+// Content-backed ListPages modules each trigger a page query, permission
+// filtering, and revision loading for their selected rows. The total work is
+// bounded by MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER (250 rows across the whole
+// render), the generated-output byte budget, and the overall module budget,
+// so this count only mirrors that overall module budget: real Wikidot pages
+// run more than three content modules in one render (theme:nebulae runs
+// four variant modules), and preserving the excess as literal source text is
+// never Wikidot behavior.
+pub(super) const MAX_LISTPAGES_CONTENT_MODULES_PER_RENDER: usize = 512;
 pub(super) const MAX_LISTPAGES_RENDER_OFFSET: u32 = 1_000;
 pub(super) const MAX_LISTPAGES_RENDER_SCAN_ROWS: u32 = 50_000;
 pub(super) const MAX_WIKIDOT_AJAX_MODULE_BODY_BYTES: usize = 65_536;

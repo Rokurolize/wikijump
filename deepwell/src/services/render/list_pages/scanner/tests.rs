@@ -6,6 +6,9 @@ use crate::services::render::module_arguments::{
 #[path = "tests/stress.rs"]
 mod stress;
 
+#[path = "tests/nebulae_shape.rs"]
+mod nebulae_shape;
+
 #[test]
 fn runtime_head_recognizer_matches_the_execution_regex() {
     for (head, expected) in [

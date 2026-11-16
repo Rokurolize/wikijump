@@ -64,20 +64,21 @@ use super::{
     CompatTextFragments, CorpusReplayExpandedWikitext, CorpusReplayPreparationStage,
     CountPagesRequiredTagBatchResult, IncludeExpansionContext, IncludeSourceCache,
     LiteralRegionIndex, MAX_FTML_COMPAT_DENSE_PARSE_SCORE, MAX_FTML_COMPAT_PARSE_BYTES,
-    MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER, MAX_LISTPAGES_RENDER_OFFSET,
-    MAX_LISTPAGES_RENDER_SCAN_ROWS, MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS,
-    MIN_URL_OFFSET_LISTPAGES_CONTENT_BYTES, MIN_URL_OFFSET_LISTPAGES_RENDER_TIMEOUT_SECS,
-    PreparedIncluder, ProtectedWikidotColorSpans, RenderContext, RenderProtectionBundle,
-    RenderService, WIKIDOT_COLOR_SPAN_SENTINEL_PREFIX,
-    WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX, WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX,
-    WIKIDOT_INLINE_HTML_SENTINEL_PREFIX, WIKIDOT_WIKIPEDIA_LINK_SENTINEL_PREFIX,
-    WikidotCompatLinkTitleMap, extract_css_modules as extract_css_modules_with_registry,
-    find_balanced_ul_end, has_include_opening_candidate, include_error,
-    members_compat_html_fixture, native_list_page_link_default_label,
-    parse_wikidot_compat_color_descriptor, protect_forwarded_attachment_variables,
-    render_clone_module, render_list_pages_numbered_rows_with_titles,
-    render_list_pages_table_rows, render_native_list_inline_wikidot_spans,
-    render_native_list_page_link, wikidot_no_such_include_replacement,
+    MAX_LISTPAGES_CONTENT_MODULES_PER_RENDER, MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER,
+    MAX_LISTPAGES_RENDER_OFFSET, MAX_LISTPAGES_RENDER_SCAN_ROWS,
+    MIN_DENSE_FTML_COMPAT_RENDER_TIMEOUT_SECS, MIN_URL_OFFSET_LISTPAGES_CONTENT_BYTES,
+    MIN_URL_OFFSET_LISTPAGES_RENDER_TIMEOUT_SECS, PreparedIncluder,
+    ProtectedWikidotColorSpans, RenderContext, RenderProtectionBundle, RenderService,
+    WIKIDOT_COLOR_SPAN_SENTINEL_PREFIX, WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX,
+    WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX, WIKIDOT_INLINE_HTML_SENTINEL_PREFIX,
+    WIKIDOT_WIKIPEDIA_LINK_SENTINEL_PREFIX, WikidotCompatLinkTitleMap,
+    extract_css_modules as extract_css_modules_with_registry, find_balanced_ul_end,
+    has_include_opening_candidate, include_error, members_compat_html_fixture,
+    native_list_page_link_default_label, parse_wikidot_compat_color_descriptor,
+    protect_forwarded_attachment_variables, render_clone_module,
+    render_list_pages_numbered_rows_with_titles, render_list_pages_table_rows,
+    render_native_list_inline_wikidot_spans, render_native_list_page_link,
+    wikidot_no_such_include_replacement,
 };
 use crate::config::Config;
 use crate::constants::ADMIN_USER_ID;
@@ -503,7 +504,7 @@ fn extract_wikidot_css_modules(
 ) -> Vec<String> {
     let page_info = fallback_test_page_info("css", "CSS");
     let mut compat_html = CompatHtmlFragments::new(wikitext);
-    extract_css_modules_with_registry(wikitext, &page_info, settings, &mut compat_html)
+    extract_css_modules_with_registry(wikitext, &page_info, settings, &mut compat_html).0
 }
 
 #[test]
