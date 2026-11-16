@@ -1892,3 +1892,108 @@ fn bold_color_span_page_links_keep_newpage_class_through_full_render() {
         "{html}",
     );
 }
+
+#[test]
+fn functional_color_spans_survive_color_marker_protection() {
+    // theme:inkblot-jp shape (DOM-DEEP N1): the theme-source listing writes
+    // color spans with functional descriptors (##var(--c-*)|token##), many
+    // wrapped in bold. The regex color-span protection cannot claim them
+    // (its descriptor class excludes parentheses), so they reach
+    // protect_unrendered_wikidot_color_markers, which used to escape the
+    // opening ## as a literal-text fragment; ftml then never saw the span
+    // and the listing showed raw ##var(--c-keyword)|...## text (with the
+    // descriptor's -- rewritten to an em dash). Well-formed functional
+    // spans now keep both markers and ftml renders them.
+    let html = render_wikidot_page_body_with_compat_restore(
+        "**##var(--c-keyword)|[[include##**",
+    );
+    assert_eq!(
+        html.trim_end(),
+        r#"<p><strong><span style="color: var(--c-keyword)">[[include</span></strong></p>"#,
+    );
+
+    // The full first listing line of theme:inkblot-jp, verbatim.
+    let html = render_wikidot_page_body_with_compat_restore(
+        "**##var(--c-keyword)|[[include##** ##var(--c-symbol)|:scp-wiki:theme:inkblot## ##var(--c-builtin)|accent##**##var(--c-keyword)|=##**##var(--c-string)|transparent##**##var(--c-keyword)|]]##**",
+    );
+    assert_eq!(
+        html.trim_end(),
+        concat!(
+            r#"<p><strong><span style="color: var(--c-keyword)">[[include</span></strong> "#,
+            r#"<span style="color: var(--c-symbol)">:scp-wiki:theme:inkblot</span> "#,
+            r#"<span style="color: var(--c-builtin)">accent</span>"#,
+            r#"<strong><span style="color: var(--c-keyword)">=</span></strong>"#,
+            r#"<span style="color: var(--c-string)">transparent</span>"#,
+            r#"<strong><span style="color: var(--c-keyword)">]]</span></strong></p>"#,
+        ),
+    );
+
+    // Crossed bold close inside the span, and a raw exhibit as the body.
+    let html = render_wikidot_page_body_with_compat_restore(
+        "**##var(--c-keyword)|[[/module]]##**",
+    );
+    assert_eq!(
+        html.trim_end(),
+        r#"<p><strong><span style="color: var(--c-keyword)">[[/module]]</span></strong></p>"#,
+    );
+    let html = render_wikidot_page_body_with_compat_restore(
+        "**##var(--c-keyword)|@@[[/div]]@@##**",
+    );
+    assert_eq!(
+        html.trim_end(),
+        concat!(
+            r#"<p><strong><span style="color: var(--c-keyword)">"#,
+            r#"<span style="white-space: pre-wrap;">[[/div]]</span></span></strong></p>"#,
+        ),
+    );
+
+    // Plain (non-bold) functional spans, including rgb() and var()
+    // fallback descriptors.
+    let html = render_wikidot_page_body_with_compat_restore(
+        "##var(--c-keyword)|token## ##rgb(255, 0, 0)|x## ##var(--missing, red)|y##",
+    );
+    assert_eq!(
+        html.trim_end(),
+        concat!(
+            r#"<p><span style="color: var(--c-keyword)">token</span> "#,
+            r#"<span style="color: rgb(255, 0, 0)">x</span> "#,
+            r#"<span style="color: var(--missing, red)">y</span></p>"#,
+        ),
+    );
+}
+
+#[test]
+fn functional_color_span_marker_protection_boundaries() {
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+
+    // A well-formed functional span passes protect_unrendered untouched.
+    let mut compat_text = CompatTextFragments::new("");
+    let protected = RenderService::protect_unrendered_wikidot_color_markers(
+        "**##var(--c-keyword)|[[include##**".to_owned(),
+        &settings,
+        &mut compat_text,
+    );
+    assert_eq!(protected, "**##var(--c-keyword)|[[include##**");
+
+    // Forms Wikidot leaves literal keep the marker protection: a #### run
+    // (ftml would pair it into a bogus ##blue span), an hsl() descriptor
+    // (rejected by the Wikidot color rule's descriptor charset), and an
+    // empty body.
+    // The empty-body form stays literal, but its -- is rewritten by
+    // the dash rule, exactly as bare ftml renders it.
+    for (source, literal) in [
+        ("####blue|leftover##", "####blue|leftover##"),
+        ("##hsl(120, 50%, 25%)|x##", "##hsl(120, 50%, 25%)|x##"),
+        ("##var(--x)|##", "##var(—x)|##"),
+    ] {
+        let html = render_wikidot_page_body_with_compat_restore(source);
+        assert!(
+            html.contains(literal),
+            "expected literal {literal:?} for {source:?}, got {html}",
+        );
+        assert!(
+            !html.contains("color:"),
+            "unexpected span for {source:?}: {html}",
+        );
+    }
+}
