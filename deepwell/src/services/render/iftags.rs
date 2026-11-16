@@ -69,6 +69,13 @@ pub(super) fn resolve_outermost_wikidot_iftags_before_include_expansion(
     );
 }
 
+// Context-less previews (a new, unsaved page) have no page conditional
+// context: live PagePreviewModule omits both positive and negative iftags
+// branches there. Previews of existing pages resolve gates against the
+// page's saved tags through the normal resolver instead, so this mode is
+// selected only when the preview has no context page. Keep it limited to
+// the include prepass; ListPages row templates resolve their own
+// conditions later against the selected row.
 pub(super) fn resolve_outermost_wikidot_iftags_before_include_expansion_for_page_preview(
     wikitext: &mut String,
     preserved: &mut CompatTextFragments,

@@ -16,7 +16,7 @@ use super::render_options::{RenderContext, RenderInnerOptions};
 use super::service::{RenderInnerOutput, RenderService, public_include_expansion_limit};
 use super::{RenderOutput, UrlArguments};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
-use crate::services::{PageService, ServiceContext, SiteService};
+use crate::services::{PageRevisionService, PageService, ServiceContext, SiteService};
 use crate::types::Reference;
 use crate::utils::{locale_for_ftml, now};
 use ftml::prelude::{Layout, PageInfo, ScoreValue, WikitextMode, WikitextSettings};
@@ -57,15 +57,30 @@ impl RenderService {
         let site = SiteService::get(ctx, Reference::Id(site_id))
             .await
             .or_raise(make_error)?;
-        let current_page_id =
+        let current_page =
             if !syntax_only && let Ok(page_reference) = ctx.request().page_reference() {
                 PageService::get_optional(ctx, site_id, page_reference.clone())
                     .await
                     .or_raise(make_error)?
-                    .map(|page| page.page_id)
             } else {
                 None
             };
+        let current_page_id = current_page.as_ref().map(|page| page.page_id);
+        // Live PagePreviewModule carries no tags in its request; it resolves
+        // [[iftags]] against the previewed page's saved tags. Mirror that by
+        // loading the latest revision's tags for an existing page. A preview
+        // with no page context (a new, unsaved page) keeps the empty list,
+        // and its gate branches are omitted during include expansion.
+        let page_tags: Vec<Cow<'_, str>> = match &current_page {
+            Some(page) => PageRevisionService::get_latest(ctx, site_id, page.page_id)
+                .await
+                .or_raise(make_error)?
+                .tags
+                .into_iter()
+                .map(Cow::Owned)
+                .collect(),
+            None => Vec::new(),
+        };
         let page_info = PageInfo {
             page: Cow::Borrowed(""),
             category: None,
@@ -73,7 +88,7 @@ impl RenderService {
             title: Cow::Borrowed(title),
             alt_title: None,
             score: ScoreValue::Integer(0),
-            tags: Vec::new(),
+            tags: page_tags,
             language: Cow::Owned(locale_for_ftml(&site.locale).to_owned()),
         };
         let mut settings =
