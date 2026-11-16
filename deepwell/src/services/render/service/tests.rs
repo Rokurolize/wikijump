@@ -4053,3 +4053,56 @@ fn renders_alignment_wrapped_collapsible_with_escaped_div_sample() {
         "no div closer may print literally:\n{html}"
     );
 }
+
+#[test]
+fn localized_wikidot_local_file_url_uses_scpko_mirror() {
+    let mut config = Config::integration_testing();
+    config.files_domain = str!(".wjfiles.localhost");
+    config.files_domain_no_dot = str!("wjfiles.localhost");
+    let current_site = wikidot_site("scp-jp-sigma10", Some("scp-jp-sigma10.localhost"));
+
+    // The scpko mirror tenant is a reserved local asset mirror, so code
+    // URLs on either scpko host form localize to its files authority.
+    // (The KO theme pages on the mirror carry their CSS in code blocks
+    // addressed by absolute scpko.wikidot.com URLs; before this, the
+    // URLs survived unchanged and the page CSP blocked them.)
+    for host in ["scpko.wikidot.com", "scpko.wdfiles.com"] {
+        assert_eq!(
+            RenderService::localized_wikidot_local_file_url(
+                host,
+                "/local--code/theme%3Akcia10/1",
+                &current_site,
+                &config,
+            ),
+            Some(str!(
+                "https://scpko.wjfiles.localhost/local--code/theme%3Akcia10/1"
+            )),
+            "{host}",
+        );
+    }
+
+    // A Wikidot slug with no local mirror tenant keeps the original URL
+    // for code paths (the localizer returns None).
+    assert_eq!(
+        RenderService::localized_wikidot_local_file_url(
+            "pokm.wikidot.com",
+            "/local--code/theme%3Astarry-library/1",
+            &current_site,
+            &config,
+        ),
+        None,
+    );
+
+    // Outside the local lab (the files domain is not a .localhost
+    // domain), the reserved-mirror branch never fires.
+    let config = Config::integration_testing();
+    assert_eq!(
+        RenderService::localized_wikidot_local_file_url(
+            "scpko.wikidot.com",
+            "/local--code/theme%3Akcia10/1",
+            &current_site,
+            &config,
+        ),
+        None,
+    );
+}
