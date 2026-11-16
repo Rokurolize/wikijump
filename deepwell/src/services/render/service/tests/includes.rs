@@ -2364,6 +2364,216 @@ fn include_gate_inside_an_included_pages_active_gate_prints_literally_after_expa
     assert!(html.contains("[[iftags +component]]"), "{html}");
     assert!(!html.contains("wikijump-enclosed-iftags"), "{html}");
 }
+#[test]
+fn include_gate_raw_zone_covers_bare_gate_and_following_gate_in_wrapped_page() {
+    // Sample page (tags: テーマ) includes a theme page; the theme's kept
+    // +テーマ gate includes a wrapper component whose first construct is a
+    // BARE gate wrapping an include of a gated theme page, followed by the
+    // wrapper's own documentation gate. Live Wikidot renders the whole
+    // wrapper unit as a raw exhibit: every gate marker prints literally and
+    // every body renders (theme:highlighter-bhl-jp including
+    // component:betterfootnotes; probe
+    // muse-probe-exhibit-gates-top-beta-gatedwrap).
+    let mut page_info = fallback_test_page_info("sample", "Sample");
+    page_info.tags = vec![Cow::Borrowed("テーマ")];
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut compat_text = CompatTextFragments::new("");
+
+    let inner = "[[iftags +テーマ -nobhl]]\nbhl theme docs\n[[/iftags]]\n";
+    let wrapper = concat!(
+        "[[iftags]]\n",
+        "[[include theme:black-highlighter-theme]]\n",
+        "[[/iftags]]\n",
+        "[[iftags +コンポーネント]]\n",
+        "better footnotes docs\n",
+        "[[/iftags]]\n",
+    );
+    let theme = concat!(
+        "[[iftags +テーマ]]\n",
+        "[[include component:betterfootnotes]]\n",
+        "[[/iftags]]\n",
+    );
+
+    // The theme page is prepared at depth 1; its kept gate body carries the
+    // wrapper include, so the include is enclosed (raw zone).
+    let mut theme_source = theme.to_string();
+    RenderService::prepare_wikidot_conditionals_before_include_expansion(
+        &mut theme_source,
+        &page_info,
+        &mut compat_text,
+        1,
+    );
+    let flags = super::super::include_enclosure_flags(&theme_source, 1, 1, false);
+    assert_eq!(flags, vec![true]);
+
+    // The gated theme page inside the wrapper's bare gate is prepared in raw
+    // (preserve) mode, then spliced into the wrapper.
+    let mut inner_source = inner.to_string();
+    RenderService::prepare_wikidot_conditionals_for_include_expansion_with_mode(
+        &mut inner_source,
+        &page_info,
+        &mut compat_text,
+        true,
+    );
+    let wrapper_expanded = ftml::include(
+        wrapper,
+        &settings,
+        PreparedIncluder {
+            pages: vec![Some(inner_source)],
+            missing_replacements: Default::default(),
+            language: "en".to_owned(),
+        },
+        include_error,
+    )
+    .expect("wrapper include should expand")
+    .0;
+
+    // The joined wrapper unit is preserved as a whole: its own gate markers
+    // (the bare gate and the documentation gate) print literally too.
+    let mut wrapper_source = wrapper_expanded;
+    RenderService::prepare_wikidot_conditionals_for_include_expansion_with_mode(
+        &mut wrapper_source,
+        &page_info,
+        &mut compat_text,
+        true,
+    );
+
+    let expanded = ftml::include(
+        &theme_source,
+        &settings,
+        PreparedIncluder {
+            pages: vec![Some(wrapper_source)],
+            missing_replacements: Default::default(),
+            language: "en".to_owned(),
+        },
+        include_error,
+    )
+    .expect("theme include should expand")
+    .0;
+    let mut expanded = expanded;
+    super::super::super::iftags::remove_enclosed_iftags_markers(&mut expanded);
+    let html = render_pre_expanded_wikidot_page_body(expanded, compat_text, &["テーマ"]);
+
+    assert!(html.contains("[[iftags]]"), "{html}");
+    assert!(html.contains("[[iftags +テーマ -nobhl]]"), "{html}");
+    assert!(html.contains("[[iftags +コンポーネント]]"), "{html}");
+    assert_eq!(html.matches("[[/iftags]]").count(), 3, "{html}");
+    assert!(html.contains("bhl theme docs"), "{html}");
+    assert!(html.contains("better footnotes docs"), "{html}");
+    assert!(!html.contains("wikijump-enclosed-iftags"), "{html}");
+}
+
+#[test]
+fn include_inside_a_bare_gate_is_never_expanded_in_evaluated_context() {
+    // A bare [[iftags]] never matches on live Wikidot (probe
+    // muse-probe-exhibit-gates-top-beta-wrap): in evaluated context its body
+    // is dropped, so an include inside it never expands, while a sibling
+    // gate in the same included page still resolves against the top page's
+    // tags.
+    let mut page_info = fallback_test_page_info("sample", "Sample");
+    page_info.tags = vec![Cow::Borrowed("テーマ")];
+    let mut compat_text = CompatTextFragments::new("");
+
+    let wrapper = concat!(
+        "[[iftags]]\n",
+        "[[include component:inner]]\n",
+        "[[/iftags]]\n",
+        "[[iftags +テーマ]]\n",
+        "wrapper docs\n",
+        "[[/iftags]]\n",
+    );
+
+    let mut wrapper_source = wrapper.to_string();
+    RenderService::prepare_wikidot_conditionals_before_include_expansion(
+        &mut wrapper_source,
+        &page_info,
+        &mut compat_text,
+        1,
+    );
+
+    // The bare gate body is gone, taking the include directive with it.
+    assert!(!wrapper_source.contains("[[include"), "{wrapper_source}");
+
+    let html =
+        render_pre_expanded_wikidot_page_body(wrapper_source, compat_text, &["テーマ"]);
+    assert!(html.contains("wrapper docs"), "{html}");
+    assert!(!html.contains("[[iftags"), "{html}");
+}
+
+#[test]
+fn include_gate_pair_inside_an_included_pages_active_gate_prints_literally() {
+    // theme:yore-jp shape: the theme (depth 1) includes a component inside
+    // its kept +テーマ gate; the component carries two gates over the same
+    // tag, one negative and one positive. Live Wikidot prints both gates
+    // literally with both bodies rendered (the anomaly-class-bar pair on
+    // the yore sample); evaluating them against the sample's tags would
+    // drop the positive gate's body instead.
+    let mut page_info = fallback_test_page_info("sample", "Sample");
+    page_info.tags = vec![Cow::Borrowed("テーマ")];
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut compat_text = CompatTextFragments::new("");
+
+    let component = concat!(
+        "[[iftags -コンポーネント・バックエンド]]\n",
+        "acs backend body\n",
+        "[[/iftags]]\n",
+        "[[iftags +コンポーネント・バックエンド]]\n",
+        "acs source body\n",
+        "[[/iftags]]\n",
+    );
+    let theme = concat!(
+        "[[iftags +テーマ]]\n",
+        "[[include component:anomaly-class-bar-source]]\n",
+        "[[/iftags]]\n",
+    );
+
+    let mut theme_source = theme.to_string();
+    RenderService::prepare_wikidot_conditionals_before_include_expansion(
+        &mut theme_source,
+        &page_info,
+        &mut compat_text,
+        1,
+    );
+    let flags = super::super::include_enclosure_flags(&theme_source, 1, 1, false);
+    assert_eq!(flags, vec![true]);
+
+    let mut component_source = component.to_string();
+    RenderService::prepare_wikidot_conditionals_for_include_expansion_with_mode(
+        &mut component_source,
+        &page_info,
+        &mut compat_text,
+        true,
+    );
+
+    let expanded = ftml::include(
+        &theme_source,
+        &settings,
+        PreparedIncluder {
+            pages: vec![Some(component_source)],
+            missing_replacements: Default::default(),
+            language: "en".to_owned(),
+        },
+        include_error,
+    )
+    .expect("theme include should expand")
+    .0;
+    let mut expanded = expanded;
+    super::super::super::iftags::remove_enclosed_iftags_markers(&mut expanded);
+    let html = render_pre_expanded_wikidot_page_body(expanded, compat_text, &["テーマ"]);
+
+    assert!(
+        html.contains("[[iftags -コンポーネント・バックエンド]]"),
+        "{html}"
+    );
+    assert!(
+        html.contains("[[iftags +コンポーネント・バックエンド]]"),
+        "{html}"
+    );
+    assert_eq!(html.matches("[[/iftags]]").count(), 2, "{html}");
+    assert!(html.contains("acs backend body"), "{html}");
+    assert!(html.contains("acs source body"), "{html}");
+    assert!(!html.contains("wikijump-enclosed-iftags"), "{html}");
+}
 
 #[test]
 fn generated_spec_iftags_resolve_at_include_depth() {
