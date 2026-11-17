@@ -14,9 +14,16 @@ if [[ -z "${channel}" ]]; then
   exit 2
 fi
 
-export WIKIJUMP_OFFLINE_CARGO="$(rustup which --toolchain "${channel}" cargo)"
-export RUSTC="$(rustup which --toolchain "${channel}" rustc)"
-export RUSTDOC="$(rustup which --toolchain "${channel}" rustdoc)"
+WIKIJUMP_OFFLINE_CARGO="$(rustup which --toolchain "${channel}" cargo)"
+RUSTC="$(rustup which --toolchain "${channel}" rustc)"
+RUSTDOC="$(rustup which --toolchain "${channel}" rustdoc)"
+for tool in "${WIKIJUMP_OFFLINE_CARGO}" "${RUSTC}" "${RUSTDOC}"; do
+  if [[ ! -x "${tool}" ]]; then
+    echo "offline product compatibility requires executable Cargo, rustc, and rustdoc paths" >&2
+    exit 2
+  fi
+done
+export WIKIJUMP_OFFLINE_CARGO RUSTC RUSTDOC
 
 "${GUARD}" "${WIKIJUMP_OFFLINE_CARGO}" test \
   --offline \

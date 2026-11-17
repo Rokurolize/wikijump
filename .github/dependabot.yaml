@@ -19,3 +19,33 @@ updates:
     directory: "/wws"
     schedule:
       interval: weekly
+
+  # Locale validator
+  - package-ecosystem: cargo
+    directory: "/locales/validator"
+    schedule:
+      interval: weekly
+
+  # Locale typed generator
+  - package-ecosystem: npm
+    directory: "/locales/typed"
+    schedule:
+      interval: weekly
+
+  # Theme Lab
+  - package-ecosystem: npm
+    directory: "/install/local/theme-lab"
+    schedule:
+      interval: weekly
+
+  # Wikidot verification
+  - package-ecosystem: npm
+    directory: "/install/local/wikidot-verification"
+    schedule:
+      interval: weekly
+
+  # Module template
+  - package-ecosystem: npm
+    directory: "/docs/module-template"
+    schedule:
+      interval: weekly

@@ -16,10 +16,8 @@ name: ${STANDING_PROJECT_NAME:?STANDING_PROJECT_NAME is required}
 #   * The application services no longer expose host ports; inspect them from
 #     inside the namespace (for example `docker compose exec caddy ...`).
 #
-# `WIKIJUMP_STARTUP_READINESS` makes Caddy/Framerail/WWS serve an explicit
-# non-cacheable 503 until the real Deepwell RPC answers, then load the generated
-# routes. Deepwell itself keeps its `depends_on` on the base services so
-# migrations only run once the database is actually healthy.
+# `WIKIJUMP_STARTUP_READINESS` makes Caddy/Framerail serve an explicit non-cacheable 503 until the real Deepwell RPC answers, then load the generated routes; WWS gates unless it is started with `--disable-deepwell-check`.
+# Deepwell itself keeps its `depends_on` on the base services so migrations only run once the database is actually healthy.
 
 x-runtime-labels: &runtime-labels
   com.rokurolize.wikijump.owner: standing-runtime-promotion

@@ -112,10 +112,6 @@
     "category_template_lifecycle": {
       "path": "install/local/wikidot-verification/artifacts/issue1391-data-form-ui-era-live-20260905.json",
       "sha256": "2dafcce0043a0dcca9a354c275adfe9c20c5b3cd1bd30225a2cd6f7509ec7e42"
-    },
-    "canonical_live_observations": {
-      "path": "scripts/data/wikidot-live-observations.json",
-      "sha256": "736882475a3bf678f537019feb4bff9e0e58f17d57a59437d928a4f849c2b841"
     }
   },
   "redaction": {

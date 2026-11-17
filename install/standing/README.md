@@ -25,9 +25,7 @@ example `docker compose exec caddy ...`). Recreating Caddy restarts the services
 that share its namespace, so a Tier 1 refresh recreates only Deepwell,
 Framerail, and WWS and never stops Caddy.
 
-Caddy, Framerail, and WWS run with `WIKIJUMP_STARTUP_READINESS=true`: they serve
-an explicit `Cache-Control: no-store` 503 until a real authenticated Deepwell
-`ping` RPC succeeds, then Caddy atomically loads the Deepwell-generated routes.
+Caddy and Framerail run with `WIKIJUMP_STARTUP_READINESS=true`; WWS gates unconditionally unless `--disable-deepwell-check` is passed. They serve an explicit `Cache-Control: no-store` 503 until a real authenticated Deepwell `ping` RPC succeeds, then Caddy atomically loads the Deepwell-generated routes.
 Deepwell keeps its `depends_on` on the base services so migrations run exactly
 once against a healthy database, and it retries only transient Redis/Valkey
 startup unavailability (`BusyLoading`, connection refusal) in-process instead of

@@ -85,8 +85,6 @@ export default defineConfig(
 
       "@typescript-eslint/ban-ts-comment": "off",
 
-      // TODO: warn no-explicit-any and no-unused-vars
-      // should remove them later
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": "warn"
     }

@@ -1,51 +1,19 @@
 # Domain Docs
 
-How the engineering skills should consume this repo's domain documentation when exploring the codebase.
+Where this repository keeps domain knowledge and how to change it.
 
-## Before exploring, read these
+## Where domain knowledge lives
 
-- **`CONTEXT.md`** at the repo root, or
-- **`CONTEXT-MAP.md`** at the repo root if it exists — it points at one `CONTEXT.md` per context. Read each one relevant to the topic.
-- **`docs/adr/`** — read ADRs that touch the area you're about to work in. In multi-context repos, also check `src/<context>/docs/adr/` for context-scoped decisions.
+Wikidot behavior is specified in `docs/wikidot-specifications/`. `catalog.json` is the authoritative feature index, `CATALOG.md` is its human-readable form, and `specifications/` holds one specification per catalog item. `live-observations.json` records reproducible live Wikidot corrections that override conflicting or incomplete corpus claims. Read `docs/wikidot-specifications/README.md` for the interpretation rules before relying on a specification. Direct Wikidot observations and corpus evidence with recorded provenance take precedence over local Wikijump output.
 
-If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
+`docs/glossary.md` is the canonical vocabulary. Use its Wikijump API terms for domain concepts in code, tests, issues, and documentation, keeping the Wikidot names and aliases it lists where those are what the reader needs.
 
-## File structure
+The FTML/Wikijump responsibility boundary is frozen in `docs/ftml-boundary.md`, and per-construct deviations live in `docs/ftml-boundary-deviations/` (start with its `README.md`). Read them before changing code across that boundary or adding a syntax-level shim in Deepwell render code.
 
-Single-context repo (most repos):
+Compatibility behavior and its maintenance rules live under `docs/agents/compatibility/`. Start at `README.md` for the offline regression workflow, `evidence.md` before external acquisition or browser comparison, `runtime.md` before candidate and standing work, and `execution.md` for long-running tasks. Known behavior is recorded as focused regression tests maintained in this repository; a normal run needs no external dependencies.
 
-```
-/
-├── CONTEXT.md
-├── docs/adr/
-│   ├── 0001-event-sourced-orders.md
-│   └── 0002-postgres-for-write-model.md
-└── src/
-```
+## Changing domain knowledge
 
-Multi-context repo (presence of `CONTEXT-MAP.md` at the root):
+Update the specification, glossary entry, boundary document, deviation note, or regression fixture that owns the fact in the same change as the behavior it describes. These documents and Git history are the decision record.
 
-```
-/
-├── CONTEXT-MAP.md
-├── docs/adr/                          ← system-wide decisions
-└── src/
-    ├── ordering/
-    │   ├── CONTEXT.md
-    │   └── docs/adr/                  ← context-specific decisions
-    └── billing/
-        ├── CONTEXT.md
-        └── docs/adr/
-```
-
-## Use the glossary's vocabulary
-
-When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `CONTEXT.md`. Don't drift to synonyms the glossary explicitly avoids.
-
-If the concept you need isn't in the glossary yet, that's a signal — either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
-
-## Flag ADR conflicts
-
-If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
-
-> _Contradicts ADR-0007 (event-sourced orders) — but worth reopening because…_
+This repository does not use `CONTEXT.md`, `CONTEXT-MAP.md`, or a `docs/adr/` tree, and there is no separate domain-modeling workflow to invoke. Domain decisions belong in the locations above; do not reintroduce a parallel domain or ADR tree.

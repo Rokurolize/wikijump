@@ -190,7 +190,7 @@ group_theme_lab() {
 group_workflow() {
   if group_selected workflow; then
     run "actionlint" bash -c \
-      'command -v actionlint >/dev/null && actionlint || echo "actionlint not installed; skipped"'
+      'if command -v actionlint >/dev/null 2>&1; then actionlint; else echo "actionlint not installed; skipped"; fi'
     run_test "workflow policy" bash -c 'node --test .github/tests/*.test.mjs'
   fi
 }
@@ -203,17 +203,26 @@ check_standing_runtime_tests() {
   run_test "standing runtime tests" python3 -m unittest discover -s install/standing/tests -p 'test_*.py'
 }
 
+check_install_tests() {
+  run_test "komodo variable policy tests" python3 -m unittest discover -s install/dev/komodo/tests -p 'test_variables.py'
+  run_test "komodo alerter tests" node --test install/dev/komodo/tests/alerters.test.mjs
+  run_test "deepwell hot reload tests" python3 -m unittest discover -s install/local/tests -p 'test_deepwell_hot_reload.py'
+  run_test "production caddyfile test" node --test install/prod/caddy/tests/provisional-caddyfile.test.mjs
+}
+
 group_verification() {
   if group_selected verification && [[ "${MODE}" == "final" ]]; then
     if "${LIST}" || [[ "${JOBS}" == 1 ]]; then
       check_wikidot_verification_tests
       check_standing_runtime_tests
+      check_install_tests
     else
       # Independent suites with separate outputs; in series they summed to
       # the wave's critical path while the other groups waited.
       run_checks_concurrent \
         check_wikidot_verification_tests \
-        check_standing_runtime_tests
+        check_standing_runtime_tests \
+        check_install_tests
     fi
   fi
 }

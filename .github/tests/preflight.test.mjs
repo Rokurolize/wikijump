@@ -272,7 +272,11 @@ test("verification inputs run only the final verification barrier", async (t) =>
   const checkpointExpected = []
   const finalExpected = [
     "pnpm --dir install/local/wikidot-verification test",
-    "python3 -m unittest discover -s install/standing/tests -p test_*.py"
+    "python3 -m unittest discover -s install/standing/tests -p test_*.py",
+    "python3 -m unittest discover -s install/dev/komodo/tests -p test_variables.py",
+    "node --test install/dev/komodo/tests/alerters.test.mjs",
+    "python3 -m unittest discover -s install/local/tests -p test_deepwell_hot_reload.py",
+    "node --test install/prod/caddy/tests/provisional-caddyfile.test.mjs"
   ]
 
   for (const scope of ["verification"]) {

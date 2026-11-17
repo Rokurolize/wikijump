@@ -3,11 +3,6 @@ dist
 node_modules
 vendor
 
-# Legacy code
-/legacy
-/web
-*.php
-
 # Misc
 .gitignore
 

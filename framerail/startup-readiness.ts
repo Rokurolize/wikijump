@@ -51,7 +51,7 @@ export const probeStartupDeepwell = async (signal: AbortSignal): Promise<boolean
   const token = process.env.DEEPWELL_RPC_TOKEN ?? ""
   if (!/^[0-9a-f]{64}$/.test(token)) return false
   const response = await fetch(
-    `http://${process.env.DEEPWELL_HOST ?? "deepwell"}:2747/jsonrpc`,
+    `http://${process.env.DEEPWELL_HOST ?? "deepwell"}:${process.env.DEEPWELL_PORT ?? "2747"}/jsonrpc`,
     {
       method: "POST",
       redirect: "error",

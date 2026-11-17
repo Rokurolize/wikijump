@@ -6,7 +6,7 @@ Reason it lives in Wikijump: the mini forum modules need site forum data, page v
 
 Why FTML is not yet sufficient: pinned FTML revision `324ac373ed0a3ee8dc46dbad5aa1d91688be95d6` exposes an unknown module as `Module::Runtime` only when the source has a body and a later `[[/module]]`. The evidenced mini forum forms are closer-free, so FTML converts them to its generic unknown-module result before Deepwell can inspect the authored name and arguments.
 
-Evidence: `deepwell/tests/page.rs::forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries` is the public regression. The sealed cases and remaining actor and mutation boundaries are recorded under issue 778 in `docs/development/open43-q-forum-closure-audit.json`.
+Evidence: `deepwell/tests/page.rs::forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries` is the public regression. The remaining actor and mutation boundaries are tracked under issue 778.
 
 FTML backlog decision: keep this bounded scanner as Wikijump-side debt. It must not parse a body, claim inline or literal-owned source, widen an unsupported query, or return partial results when a candidate scan is saturated.
 
