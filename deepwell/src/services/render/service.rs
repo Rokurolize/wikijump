@@ -93,6 +93,7 @@ use super::iftags::{
     remove_enclosed_iftags_markers, resolve_outermost_wikidot_iftags,
     resolve_outermost_wikidot_iftags_before_include_expansion,
     resolve_outermost_wikidot_iftags_before_include_expansion_for_page_preview,
+    truncate_wikidot_heads_at_exhibited_gates,
 };
 use super::include_attachment_owners::{
     AttachmentOwner, AttachmentProvenanceRegistry, AttachmentVariableOwners,
@@ -1875,6 +1876,11 @@ impl RenderService {
             page_info,
         );
         timings.fallback_check_us = elapsed_micros(started);
+
+        truncate_wikidot_heads_at_exhibited_gates(
+            &mut expanded.wikitext,
+            &wikidot_compat_text,
+        );
 
         OuterPreparedRenderWikitext {
             wikitext: expanded.wikitext,

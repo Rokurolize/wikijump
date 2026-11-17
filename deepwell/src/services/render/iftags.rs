@@ -156,7 +156,7 @@ fn resolve_outermost_wikidot_iftags_with_mode(
             if unmatched_mode == UnmatchedBoundaryMode::Preserve && !seen_skipped_opener {
                 replacements.push(Replacement {
                     range: token.start()..token.end(),
-                    text: preserved.push_escaped_html_text(token.as_str()),
+                    text: preserved.push_gate_token_escaped_html_text(token.as_str()),
                 });
             }
             continue;
@@ -214,7 +214,7 @@ fn resolve_outermost_wikidot_iftags_with_mode(
         for unclosed in stack {
             replacements.push(Replacement {
                 range: unclosed.start..unclosed.end,
-                text: preserved.push_escaped_html_text(
+                text: preserved.push_gate_token_escaped_html_text(
                     &strip_generated_spec_marker_suffix(
                         &wikitext[unclosed.start..unclosed.end],
                     ),
@@ -309,7 +309,7 @@ fn preserve_nested_tokens(
     for token in tokens {
         debug_assert!(body.start <= token.start && token.end <= body.end);
         output.push_str(&source[cursor..token.start]);
-        output.push_str(&preserved.push_escaped_html_text(
+        output.push_str(&preserved.push_gate_token_escaped_html_text(
             &strip_generated_spec_marker_suffix(&source[token.clone()]),
         ));
         cursor = token.end;
@@ -335,9 +335,9 @@ pub(super) fn preserve_all_ordinary_wikidot_iftags(
         }
         replacements.push(Replacement {
             range: token.start()..token.end(),
-            text: preserved.push_escaped_html_text(&strip_generated_spec_marker_suffix(
-                token.as_str(),
-            )),
+            text: preserved.push_gate_token_escaped_html_text(
+                &strip_generated_spec_marker_suffix(token.as_str()),
+            ),
         });
     }
     if replacements.is_empty() {
@@ -356,6 +356,97 @@ pub(super) fn preserve_all_ordinary_wikidot_iftags(
     }
     output.push_str(&wikitext[cursor..]);
     *wikitext = output;
+}
+
+// Live's attribute-head scan ends a head at the FIRST `]]` in the head
+// text, quoted values do not protect it, and an exhibited [[iftags]]
+// token inside an attribute value carries that `]]` (G2-ENCLOSED,
+// probes muse-probe-g2enc-*). In the prepared wikitext the gate token
+// is an opaque registry marker with no `]]` in it, so the head would
+// parse whole and the restored gate text would land inside the
+// attribute value. This pass restores the live geometry textually
+// before parsing: a head whose first gate-token marker precedes any
+// literal `]]` is cut at the marker, the marker is consumed (live's
+// spill starts after the gate opener), and the rest of the head, up to
+// and including its own closing `]]`, stays in place as body text.
+// Div heads never truncate on live and are not rewritten here.
+pub(super) fn truncate_wikidot_heads_at_exhibited_gates(
+    wikitext: &mut String,
+    preserved: &CompatTextFragments,
+) {
+    const HEAD_OPENERS: [&str; 3] = ["[[image", "[[a", "[[span"];
+    let mut output: Option<String> = None;
+    let mut copied = 0usize;
+    let mut search = 0usize;
+    while search < wikitext.len() {
+        let mut candidate: Option<(usize, usize)> = None;
+        for opener in HEAD_OPENERS {
+            if let Some(offset) = find_ascii_case_insensitive(&wikitext[search..], opener)
+            {
+                let start = search + offset;
+                if candidate.is_none_or(|(best, _)| start < best) {
+                    candidate = Some((start, opener.len()));
+                }
+            }
+        }
+        let Some((head, opener_len)) = candidate else {
+            break;
+        };
+        let is_head = wikitext
+            .as_bytes()
+            .get(head + opener_len)
+            .is_some_and(|byte| byte.is_ascii_whitespace());
+        let cut = if is_head {
+            exhibited_gate_head_cut(wikitext, preserved, head)
+        } else {
+            None
+        };
+        match cut {
+            Some((marker_start, marker_end, extent_end)) => {
+                let output =
+                    output.get_or_insert_with(|| String::with_capacity(wikitext.len()));
+                output.push_str(&wikitext[copied..marker_start]);
+                output.push_str("]]");
+                output.push_str(&wikitext[marker_end..extent_end + 2]);
+                copied = extent_end + 2;
+                search = copied;
+            }
+            None => search = head + 2,
+        }
+    }
+    if let Some(mut output) = output {
+        output.push_str(&wikitext[copied..]);
+        *wikitext = output;
+    }
+}
+
+// The cut for one head starting at `head`: the gate marker's span and
+// the position of the head's own closing `]]`. Fires only when no
+// literal `]]` precedes the marker inside the head (a literal `]]`
+// already truncates the head during parsing, as on live).
+fn exhibited_gate_head_cut(
+    wikitext: &str,
+    preserved: &CompatTextFragments,
+    head: usize,
+) -> Option<(usize, usize, usize)> {
+    let (marker_start, marker_len) = preserved.first_gate_token_marker(wikitext, head)?;
+    if wikitext[head..marker_start].contains("]]") {
+        return None;
+    }
+    let marker_end = marker_start + marker_len;
+    let extent_offset = wikitext[marker_end..].find("]]")?;
+    Some((marker_start, marker_end, marker_end + extent_offset))
+}
+
+fn find_ascii_case_insensitive(haystack: &str, needle: &str) -> Option<usize> {
+    let haystack = haystack.as_bytes();
+    let needle = needle.as_bytes();
+    if needle.len() > haystack.len() {
+        return None;
+    }
+    haystack
+        .windows(needle.len())
+        .position(|window| window.eq_ignore_ascii_case(needle))
 }
 
 pub(super) fn remove_enclosed_iftags_markers(wikitext: &mut String) {
@@ -1286,5 +1377,54 @@ mod tests {
         let resolved = resolve(&source, &[], 1);
         assert!(started.elapsed() < Duration::from_secs(2));
         assert_eq!(resolved, "--]");
+    }
+
+    #[test]
+    fn exhibited_gate_truncates_attribute_heads_but_not_div() {
+        let mut preserved = CompatTextFragments::new("");
+        let opener = preserved.push_gate_token_escaped_html_text("[[iftags +en]]");
+        let closer = preserved.push_gate_token_escaped_html_text("[[/iftags]]");
+        let other = preserved.push_escaped_html_text("plain fragment");
+        let mut source = format!(
+            "[[image pic.png link=\"{opener}archived:heritage{closer}\" style=\"max-width: none;\"]]\n\
+             [[a href=\"{opener}archived:heritage{closer}\" class=\"lnk\"]]BODY[[/a]]\n\
+             [[span style=\"{opener}color: red;{closer}\" class=\"spn\"]]BODY[[/span]]\n\
+             [[div_ class=\"box {opener}heritage{closer}\"]]BODY[[/div]]\n\
+             [[image pic.png link=\"{other}whole\"]]\n"
+        );
+        truncate_wikidot_heads_at_exhibited_gates(&mut source, &preserved);
+        assert!(
+            source.contains(&format!(
+                "[[image pic.png link=\"]]archived:heritage{closer}\" style=\"max-width: none;\"]]"
+            )),
+            "{source}"
+        );
+        assert!(
+            source.contains(&format!(
+                "[[a href=\"]]archived:heritage{closer}\" class=\"lnk\"]]BODY[[/a]]"
+            )),
+            "{source}"
+        );
+        assert!(
+            source.contains(&format!(
+                "[[span style=\"]]color: red;{closer}\" class=\"spn\"]]BODY[[/span]]"
+            )),
+            "{source}"
+        );
+        // Div heads never truncate on live, and a non-gate fragment
+        // does not trigger the cut.
+        assert!(
+            source.contains(&format!(
+                "[[div_ class=\"box {opener}heritage{closer}\"]]BODY[[/div]]"
+            )),
+            "{source}"
+        );
+        assert!(
+            source.contains(&format!("[[image pic.png link=\"{other}whole\"]]")),
+            "{source}"
+        );
+        // The three truncating openers were consumed; only the div
+        // head still carries one.
+        assert_eq!(source.matches(&opener).count(), 1, "{source}");
     }
 }
