@@ -12,7 +12,10 @@
 
 use super::super::super::block_candidates::HeadContext;
 use super::super::super::left_block_start_in_run;
-use super::ranges::{WikidotCssListPagesBoundary, WikidotCssListPagesBoundaryIndex};
+use super::ranges::{
+    WikidotCssListPagesBoundary, WikidotCssListPagesBoundaryIndex,
+    css_range_swallows_list_pages_close,
+};
 use super::syntax::{PinnedModuleCloseIndex, pinned_css_module_scan_start};
 use std::ops::Range;
 
@@ -43,9 +46,16 @@ pub(in crate::services::render::literal_regions::list_pages_protection) fn colle
         .zip(close_ends)
         .filter_map(|(open, close_end)| {
             match wikidot_boundaries.boundary(source, &open) {
-                WikidotCssListPagesBoundary::Original => {
-                    close_end.map(|close_end| open.start..close_end)
-                }
+                WikidotCssListPagesBoundary::Original => close_end
+                    .filter(|close_end| {
+                        !css_range_swallows_list_pages_close(
+                            source,
+                            &wikidot_boundaries,
+                            &open,
+                            *close_end,
+                        )
+                    })
+                    .map(|close_end| open.start..close_end),
                 WikidotCssListPagesBoundary::Yield => None,
                 WikidotCssListPagesBoundary::Closed { end } => Some(open.start..end),
             }

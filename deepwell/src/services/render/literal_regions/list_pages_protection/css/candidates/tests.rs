@@ -107,3 +107,31 @@ fn dense_pinned_candidate_stream_reuses_one_next_close_index() {
         assert_eq!(candidate.end, source.len());
     }
 }
+
+#[test]
+fn non_counting_css_openers_in_list_pages_bodies_are_not_candidates() {
+    // LP-RESIDUALS-CSS: the candidate graph feeds the ListPages
+    // scanner's literal regions, so an indented (muse-probe-lp-unc-e9)
+    // or tailed (muse-probe-lp-unc-e16) CSS opener inside a ListPages
+    // body must not become a candidate range either; pairing it with
+    // the outer module's close would consume the body before the
+    // pairing layer runs.
+    let outer = "[[module ListPages category=\"probe-lp-target-y\" order=\"title\"]]";
+    let e9 = format!(
+        "{outer}\nBEFORE %%fullname%%\n  [[module CSS]]\n.seg-i {{ color: rgb(8, 8, 8); }}\nAFTER %%fullname%%\n[[/module]]"
+    );
+    assert!(collect_pinned_css_module_candidates(&e9).is_empty());
+    let e16 = format!(
+        "{outer}\nBEFORE %%fullname%%\n[[module CSS]].seg-u {{ color: rgb(5, 5, 5); }}\nAFTER %%fullname%%\n[[/module]]"
+    );
+    assert!(collect_pinned_css_module_candidates(&e16).is_empty());
+
+    // An own-line CSS opener inside the body still becomes a
+    // candidate consuming the outer close.
+    let unclosed = format!(
+        "{outer}\nBEFORE %%fullname%%\n[[module CSS]]\n.lp-probe-x {{ color: rgb(1, 2, 3); }}\nAFTER %%fullname%%\n[[/module]]"
+    );
+    let candidates = collect_pinned_css_module_candidates(&unclosed);
+    assert_eq!(candidates.len(), 1);
+    assert!(unclosed[candidates[0].clone()].ends_with("[[/module]]"));
+}

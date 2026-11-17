@@ -64,6 +64,36 @@ fn opens_its_line(source: &str, start: usize) -> bool {
         .all(|byte| byte == b' ' || byte == b'\t')
 }
 
+/// Whether a CSS module head forms a module at all under live
+/// Wikidot's line rule (probes muse-probe-lpres-sameline-css,
+/// muse-probe-lpres-tail-nextline, muse-probe-lpres-indented): the
+/// head must begin its line with nothing before it, and a head
+/// without arguments must have nothing but horizontal whitespace
+/// after it on that line. An indented head, or a plain head carrying
+/// body text on its own line (a same-line pair, a rule written after
+/// the head), is literal text on live, so it must not be extracted
+/// here either. Heads carrying arguments keep the existing
+/// treatment: the `show` form is rendered from the extracted body.
+fn css_module_head_forms(source: &str, open: &regex::Match<'_>) -> bool {
+    if open.start() != 0 && !matches!(source.as_bytes()[open.start() - 1], b'\n' | b'\r')
+    {
+        return false;
+    }
+    let Some(captures) = CSS_MODULE_OPEN_HEAD_REGEX.captures(open.as_str()) else {
+        return false;
+    };
+    let head_args = captures.name("head").map_or("", |head| head.as_str());
+    if !head_args.trim().is_empty() {
+        return true;
+    }
+    let line_end = source[open.end()..]
+        .find('\n')
+        .map_or(source.len(), |relative| open.end() + relative);
+    source[open.end()..line_end]
+        .bytes()
+        .all(|byte| matches!(byte, b' ' | b'\t' | b'\r'))
+}
+
 pub(in crate::services::render) fn protect_css_modules_before_first_list_pages(
     wikitext: &mut String,
     settings: &WikitextSettings,
@@ -90,6 +120,7 @@ pub(in crate::services::render) fn protect_css_modules_before_first_list_pages(
         if literal_regions.contains(open.start())
             || native_quote_lines.contains(open.start())
             || !opens_its_line(source, open.start())
+            || !css_module_head_forms(source, &open)
         {
             output.push_str(&source[cursor..open.end()]);
             cursor = open.end();
@@ -153,6 +184,7 @@ pub(in crate::services::render) fn extract_css_modules(
         if literal_regions.contains(open.start())
             || native_quote_lines.contains(open.start())
             || !opens_its_line(source, open.start())
+            || !css_module_head_forms(source, &open)
         {
             output.push_str(&source[cursor..open.end()]);
             cursor = open.end();
@@ -428,9 +460,9 @@ pub(in crate::services::render) fn protect_authored_runtime_marker_literals(
 #[cfg(test)]
 mod tests {
     use super::{
-        RuntimeCssInsertion, extract_css_modules_with_runtime_insertions,
-        neutralize_authored_markers, protect_authored_runtime_marker_literals,
-        render_css_module_code_block,
+        RuntimeCssInsertion, extract_css_modules,
+        extract_css_modules_with_runtime_insertions, neutralize_authored_markers,
+        protect_authored_runtime_marker_literals, render_css_module_code_block,
     };
     use crate::services::render::compat::CompatHtmlFragments;
     use crate::services::render::compat::text_fragments::CompatTextFragments;
@@ -589,5 +621,51 @@ mod tests {
                 "</pre></div></div>",
             ),
         );
+    }
+
+    #[test]
+    fn non_forming_css_heads_are_not_extracted() {
+        let page_info = PageInfo {
+            page: Cow::Borrowed("test"),
+            category: None,
+            site: Cow::Borrowed("test"),
+            title: Cow::Borrowed("Test"),
+            alt_title: None,
+            score: ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        // A same-line pair (muse-probe-lpres-sameline-css), a tailed
+        // opener whose close sits on the next line
+        // (muse-probe-lpres-tail-nextline), and an indented opener
+        // (muse-probe-lpres-indented) are all literal text on live
+        // Wikidot; none of them may be extracted as a CSS module.
+        for source in [
+            "BEFORE\n[[module CSS]].seg-s { color: rgb(9, 9, 9); }[[/module]]\nAFTER",
+            "BEFORE\n[[module CSS]].seg-u { color: rgb(5, 5, 5); }\n[[/module]]\nAFTER",
+            "BEFORE\n  [[module CSS]]\n.seg-i { color: rgb(8, 8, 8); }\n[[/module]]\nAFTER",
+        ] {
+            let mut wikitext = source.to_owned();
+            let mut compat_html = CompatHtmlFragments::new(&wikitext);
+            let (styles, edits) = extract_css_modules(
+                &mut wikitext,
+                &page_info,
+                &settings,
+                &mut compat_html,
+            );
+            assert!(styles.is_empty(), "source: {source}");
+            assert!(edits.is_empty(), "source: {source}");
+            assert_eq!(wikitext, source);
+        }
+
+        // Control: an own-line module still extracts.
+        let mut wikitext = "[[module CSS]]\n.x { color: red; }\n[[/module]]".to_owned();
+        let mut compat_html = CompatHtmlFragments::new(&wikitext);
+        let (styles, edits) =
+            extract_css_modules(&mut wikitext, &page_info, &settings, &mut compat_html);
+        assert_eq!(styles, [".x { color: red; }"]);
+        assert_eq!(edits.len(), 1);
+        assert_eq!(wikitext, "");
     }
 }

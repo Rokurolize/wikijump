@@ -271,6 +271,13 @@ impl WikidotCssListPagesBoundaryIndex {
         }
     }
 
+    /// The ListPages nesting depth in effect at `position` in this
+    /// index's event model (ListPages heads +1, module closes -1).
+    pub(super) fn list_pages_depth_at(&self, position: usize) -> i64 {
+        let count = self.events.partition_point(|event| event.start < position);
+        self.prefix_depth[count]
+    }
+
     pub(super) fn boundary(
         &self,
         source: &str,
@@ -458,6 +465,15 @@ fn collect_regex_css_module_ranges(
         else {
             break;
         };
+        if css_range_swallows_list_pages_close(
+            source,
+            wikidot_boundaries,
+            open,
+            close.end,
+        ) {
+            cursor = open.end;
+            continue;
+        }
         ranges.push(open.start..close.end);
         cursor = close.end;
     }
@@ -500,6 +516,14 @@ fn collect_pinned_css_module_ranges(
         let Some(close_end) = close_end else {
             continue;
         };
+        if css_range_swallows_list_pages_close(
+            source,
+            wikidot_boundaries,
+            open,
+            *close_end,
+        ) {
+            continue;
+        }
         ranges.push(open.start..*close_end);
         cursor = *close_end;
     }
@@ -575,6 +599,43 @@ fn is_exact_root_multiline_css_opener(source: &str, opener: &Range<usize>) -> bo
         && !continued_from_previous_line
         && source[opener.clone()].eq_ignore_ascii_case("[[module CSS]]")
         && matches!(bytes.get(opener.end), Some(b'\n' | b'\r'))
+}
+
+/// Whether a module head counts as a nested opener inside a ListPages
+/// body under the line-oriented pairing: the head starts its physical
+/// line and only horizontal whitespace follows it on that line.
+fn module_head_occupies_its_line(source: &str, head: &Range<usize>) -> bool {
+    let bytes = source.as_bytes();
+    let line_start =
+        head.start == 0 || matches!(bytes.get(head.start - 1), Some(b'\n' | b'\r'));
+    if !line_start {
+        return false;
+    }
+    let line_end = source[head.end..]
+        .find('\n')
+        .map_or(source.len(), |relative| head.end + relative);
+    source[head.end..line_end]
+        .bytes()
+        .all(|byte| matches!(byte, b' ' | b'\t' | b'\r'))
+}
+
+/// Whether claiming `open.start..close_end` as a CSS literal range
+/// would swallow the close of an enclosing ListPages module. Inside a
+/// ListPages body, live Wikidot counts a nested module opener only when
+/// it occupies its own line (the line-oriented pairing from #3802;
+/// probes muse-probe-lp-unc-e9/e16, muse-probe-lpres-*): an indented or
+/// tailed CSS opener is literal body text there, so it must not pair
+/// with a close on a later line. A range that ends on the opener's own
+/// line consumes nothing outside the line and stays.
+pub(super) fn css_range_swallows_list_pages_close(
+    source: &str,
+    boundaries: &WikidotCssListPagesBoundaryIndex,
+    open: &Range<usize>,
+    close_end: usize,
+) -> bool {
+    boundaries.list_pages_depth_at(open.start) > 0
+        && !module_head_occupies_its_line(source, open)
+        && source[open.start..close_end].contains('\n')
 }
 
 fn find_regex_module_close(

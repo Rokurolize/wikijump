@@ -348,11 +348,19 @@ fn css_module_openers_are_recognized_only_at_the_start_of_a_line() {
     assert!(source.contains("docs: {{[[module CSS]]}}"));
     assert!(source.contains(".kept { color: red; }"));
 
+    // An indented opener does not form a module on live Wikidot
+    // (probe muse-probe-lpres-indented; the same one-space shape is
+    // pinned literal in ftml's CSS scope matrix), so it is not
+    // extracted either. This corrects the earlier expectation here,
+    // which had the indented module extracting.
     let mut source =
         " [[module CSS]]\n.indented { color: blue; }\n[[/module]]\n".to_owned();
     let styles = extract_wikidot_css_modules(&mut source, &settings);
-    assert_eq!(styles.len(), 1);
-    assert!(styles[0].contains(".indented"));
+    assert_eq!(
+        source,
+        " [[module CSS]]\n.indented { color: blue; }\n[[/module]]\n"
+    );
+    assert!(styles.is_empty());
 }
 
 #[test]
