@@ -11,6 +11,8 @@ pub(in crate::services::render) struct CompatTextFragments {
     fragments: Vec<String>,
     #[serde(default)]
     cleanup_exempt_fragments: BTreeSet<usize>,
+    #[serde(default)]
+    gate_token_fragments: BTreeSet<usize>,
 }
 
 impl CompatTextFragments {
@@ -26,6 +28,7 @@ impl CompatTextFragments {
             namespace,
             fragments: Vec::new(),
             cleanup_exempt_fragments: BTreeSet::new(),
+            gate_token_fragments: BTreeSet::new(),
         }
     }
 
@@ -55,6 +58,47 @@ impl CompatTextFragments {
         let (marker, index) = self.push_owned(escape_html_text(text));
         self.cleanup_exempt_fragments.insert(index);
         marker
+    }
+
+    // Exhibited [[iftags]] tokens are recorded so the render-stage
+    // head-truncation pass can tell gate-token markers apart from the
+    // registry's other fragments without matching on content.
+    pub(in crate::services::render) fn push_gate_token_escaped_html_text(
+        &mut self,
+        text: &str,
+    ) -> String {
+        let (marker, index) = self.push_owned(escape_html_text(text));
+        self.cleanup_exempt_fragments.insert(index);
+        self.gate_token_fragments.insert(index);
+        marker
+    }
+
+    // If `text` starts with a marker standing for an exhibited gate
+    // token, returns that marker's byte length.
+    pub(in crate::services::render) fn gate_token_marker_len_at(
+        &self,
+        text: &str,
+    ) -> Option<usize> {
+        let (index, len) = self.marker_at(text)?;
+        self.gate_token_fragments.contains(&index).then_some(len)
+    }
+
+    // The first marker at or after `from` that stands for an exhibited
+    // gate token, as (start, byte length).
+    pub(in crate::services::render) fn first_gate_token_marker(
+        &self,
+        text: &str,
+        from: usize,
+    ) -> Option<(usize, usize)> {
+        let mut search = from;
+        while let Some(offset) = text[search..].find(&self.namespace) {
+            let start = search + offset;
+            if let Some(len) = self.gate_token_marker_len_at(&text[start..]) {
+                return Some((start, len));
+            }
+            search = start + self.namespace.len();
+        }
+        None
     }
 
     pub(in crate::services::render) fn push_tracked_escaped_html_text(

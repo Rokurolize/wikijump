@@ -3330,14 +3330,28 @@ fn credit_start_attribute_gates_evaluate_and_exhibit_like_live() {
         ),
         "{html}"
     );
-    // Known divergence, pinned so a fix flips it loudly: for G2 in
-    // the enclosed position, live's image-head scan truncates the
-    // link value at the first exhibited gate (href="/") and spills
-    // the rest of the head as body text, while the preserved-fragment
-    // exhibit keeps the value whole, so the restored gate text lands
-    // inside the href. See PATAPHYSICS-DEEPWELL.md Step 2.
+    // G2 in the enclosed position renders as live does: the
+    // image-head scan ends the head at the first exhibited gate, so
+    // the link value truncates to href="/", the style attribute is
+    // dropped with the rest of the head, and the head remainder
+    // spills as body text right after the image (prepare_outer's
+    // exhibited-gate head truncation; G2-RESTORE.md). One bounded
+    // sub-residual remains: live wikitext-parses the spill's bracket
+    // sequences ([[/iftags]][[iftags ...]]) into junk single-links,
+    // while the exhibit mechanism restores them as literal text.
+    assert!(html.contains("<a href=\"/\">"), "{html}");
     assert!(
-        html.contains("<a href=\"/[[iftags +殿堂入り +en]]"),
+        html.contains(
+            "<img src=\"https://scp-jp.wjfiles.localhost:28443/local--files/credit:start/scp-heritage-v3.png\" class=\"image\""
+        ),
         "{html}"
     );
+    assert!(html.contains("</a>archived:heritage-collection"), "{html}");
+    assert!(
+        html.contains(
+            "patrimoine-francais-de-la-fondation-scp[[/iftags]]&quot; style=&quot;max-width: none;&quot;]]"
+        ),
+        "{html}"
+    );
+    assert!(!html.contains("href=\"/[[iftags"), "{html}");
 }
