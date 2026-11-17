@@ -170,16 +170,38 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
       `font-src does not admit ${origin} (no font use observed)`
     )
   }
+  for (const origin of [
+    "https://hoah.backroomswiki.cn",
+    "https://cdn.jsdmirror.com",
+    "https://3nkv.github.io",
+    "https://chinese-fonts-cdn.deno.dev",
+    "https://crimone.github.io",
+    "https://fontsapi.zeoseven.com",
+    "https://github.backroomswiki.cn",
+    "https://lemoncat233.github.io",
+    "https://oxygennine.github.io",
+    "https://use.fontawesome.com",
+    "https://xcninety.github.io"
+  ]) {
+    assert(
+      directives["style-src"]?.some((source) => source === origin),
+      `style-src admits the audited theme stylesheet host ${origin}`
+    )
+    for (const directive of ["font-src", "script-src"] as const) {
+      assert(
+        !directives[directive]?.some((source) => source === origin),
+        `${directive} does not admit the styles-only host ${origin}`
+      )
+    }
+  }
   assert(
     directives["style-src"]?.some((source) => source === "https://bhl.scpwikicn.com"),
     "style-src admits the audited Black Highlighter CN host"
   )
-  for (const origin of ["https://cdn.mer.run", "https://lemoncat233.github.io"]) {
-    assert(
-      !directives["style-src"]?.some((source) => source === origin),
-      `style-src does not admit the image-only host ${origin}`
-    )
-  }
+  assert(
+    !directives["style-src"]?.some((source) => source === "https://cdn.mer.run"),
+    "style-src does not admit the image-only host https://cdn.mer.run"
+  )
   const classifiedDecorationGrant = AUDITED_EXTERNAL_ASSET_ORIGINS.find(
     (entry) => entry.origin === "https://indestructibletype-fonthosting.github.io"
   )
