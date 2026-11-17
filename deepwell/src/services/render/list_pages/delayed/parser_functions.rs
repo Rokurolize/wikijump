@@ -125,9 +125,20 @@ pub(super) fn resolve_list_pages_expr_parser_functions(
         protect_generated_parser_function_comment_gates(&mut protected);
     let mut resolved = RenderService::resolve_wikidot_parser_functions(&protected);
     if let Some((opening, closing, standalone_closing)) = generated_comment_gates {
+        // The standalone `[!-- --]` line is the closer half of the idiom
+        // `[[#ifexpr <cond> |  | [!-- ]] ... [!-- --]`, which the live Wikidot
+        // comment-gate pages (component:af2022/2024/2026theme) use. Pass it to
+        // the pruner so an emitted opening gate is matched to its standalone
+        // closer, not only to a `--] ]]` branch. Keep the other markers intact
+        // until after pruning; the standalone closer is restored to literal
+        // text below (including ones left over from gates that evaluated true).
+        resolved = prune_generated_parser_function_comment_gates(
+            resolved,
+            &opening,
+            &closing,
+            &standalone_closing,
+        );
         resolved = resolved.replace(&standalone_closing, "[!-- --]");
-        resolved =
-            prune_generated_parser_function_comment_gates(resolved, &opening, &closing);
     }
     let mut present_occurrences = Vec::new();
     for occurrence in protected_occurrences {
@@ -273,25 +284,58 @@ fn prune_generated_parser_function_comment_gates(
     source: String,
     opening: &str,
     closing: &str,
+    standalone_closing: &str,
 ) -> String {
-    let mut output = String::with_capacity(source.len());
+    // A generated ifexpr comment gate is `[!-- ... --]`: the opener is emitted
+    // by a false-evaluating gate's `[!-- ]]` branch and the closer is either a
+    // `--] ]]` branch (paired idiom) or a standalone `[!-- --]` line. Prune each
+    // opener together with its *nearest* closer so nested gates balance (LIFO).
+    // An opener with no closer at all keeps the legacy behavior of being
+    // restored to literal text rather than swallowing the rest of the row.
+    let mut stack: Vec<usize> = Vec::new();
+    let mut ranges: Vec<(usize, usize, usize)> = Vec::new(); // (open, close_start, close_len)
     let mut cursor = 0usize;
-    loop {
-        let next_opening = source[cursor..].find(opening).map(|at| cursor + at);
-        let next_closing = source[cursor..].find(closing).map(|at| cursor + at);
-        match (next_opening, next_closing) {
-            (None, None) => {
-                output.push_str(&source[cursor..]);
-                return output;
+    while cursor < source.len() {
+        let next_open = source[cursor..].find(opening).map(|at| cursor + at);
+        let next_paired = source[cursor..].find(closing).map(|at| cursor + at);
+        let next_standalone = source[cursor..]
+            .find(standalone_closing)
+            .map(|at| cursor + at);
+        let next = [next_open, next_paired, next_standalone]
+            .into_iter()
+            .flatten()
+            .min();
+        let Some(at) = next else { break };
+        if next_open == Some(at) {
+            stack.push(at);
+            cursor = at + opening.len();
+        } else if next_paired == Some(at) {
+            if let Some(open) = stack.pop() {
+                ranges.push((open, at, closing.len()));
             }
-            (Some(open), Some(close)) if open < close => {
-                output.push_str(&source[cursor..open]);
-                cursor = close + closing.len();
+            cursor = at + closing.len();
+        } else {
+            // standalone closer
+            if let Some(open) = stack.pop() {
+                ranges.push((open, at, standalone_closing.len()));
             }
-            _ => {
-                return source.replace(opening, "[!--").replace(closing, "--]");
-            }
+            cursor = at + standalone_closing.len();
         }
+    }
+    if stack.is_empty() {
+        // Every opener found a closer: emit source minus the gated spans.
+        let mut output = String::with_capacity(source.len());
+        let mut cursor = 0usize;
+        for (open, close, close_len) in ranges {
+            output.push_str(&source[cursor..open]);
+            cursor = close + close_len;
+        }
+        output.push_str(&source[cursor..]);
+        output
+    } else {
+        // Unbalanced openers: fall back to the legacy literal restoration so
+        // we never over-swallow content on a malformed shape.
+        source.replace(opening, "[!--").replace(closing, "--]")
     }
 }
 
@@ -514,4 +558,84 @@ pub(in crate::services::render) fn resolve_wikidot_parser_functions_outside_list
             .replace(&standalone_closing, "[!-- --]");
     }
     fragments.restore(&resolved)
+}
+
+#[cfg(test)]
+mod comment_gate_prune_tests {
+    use super::protect_generated_parser_function_comment_gates;
+
+    // The standalone closer must be recognized as generated even while the
+    // ifexpr heads are still visible (before row-variable protection hides
+    // them). This is the root cause of the comment_gates divergence: if the
+    // closer is left literal here, ftml's comment pass elides it before the
+    // ifexpr is resolved, and the gate leaks.
+    #[test]
+    fn standalone_closer_is_protected_while_ifexpr_heads_are_visible() {
+        let mut source = concat!(
+            "[[#ifexpr %%created_by_id%% < 1486450 |  | [!-- ]]\n",
+            "LOW\n",
+            "[!-- --]\n",
+        )
+        .to_owned();
+        let gates = protect_generated_parser_function_comment_gates(&mut source);
+        let (_, _, standalone) = gates.expect("generated gate detected");
+        assert!(
+            source.contains(&standalone),
+            "standalone closer protected: {source}"
+        );
+        assert!(
+            !source.contains("[!-- --]"),
+            "literal closer removed pre-preprocess: {source}"
+        );
+    }
+
+    use super::prune_generated_parser_function_comment_gates;
+
+    // The real composition idiom (component:af2022theme, af2024theme,
+    // af2026theme): a false-evaluating ifexpr emits an opener and a standalone
+    // `[!-- --]` line closes it. After row substitution and ifexpr resolution
+    // the text below is what reaches the pruner; markers stand in for the
+    // opaque CompatTextFragments tokens. LOW must survive, HIGH must be pruned.
+    #[test]
+    fn standalone_closing_line_prunes_the_gated_branch() {
+        // Distinct, non-overlapping fake markers (the real ones are opaque
+        // CompatTextFragments tokens). Both standalone closers share one marker.
+        let source = concat!("  \n", "LOW\n", "STAND\n", "OPEN \n", "HIGH\n", "STAND\n",);
+        let pruned = prune_generated_parser_function_comment_gates(
+            source.to_owned(),
+            "OPEN",  // opening marker (only the false gate emitted one)
+            "PAIR",  // paired `--] ]]` closer marker (absent here)
+            "STAND", // standalone `[!-- --]` line marker
+        );
+        // The opener (gate 2) and its standalone closer were pruned with HIGH
+        // between them; gate 1's leftover standalone closer stays intact.
+        assert!(pruned.contains("LOW"), "selected branch survives: {pruned}");
+        assert!(!pruned.contains("HIGH"), "false branch pruned: {pruned}");
+        assert!(!pruned.contains("OPEN"), "opener marker consumed: {pruned}");
+        assert!(
+            pruned.contains("STAND"),
+            "a leftover closer is preserved: {pruned}"
+        );
+        assert_eq!(
+            pruned.matches("STAND").count(),
+            1,
+            "one closer consumed: {pruned}"
+        );
+    }
+
+    // The paired `--] ]]` idiom must keep working (component:af2021 and the
+    // runtime_size_ifexpr_* tests use it): opener + paired closer prunes the
+    // gated span, with no standalone closer involved.
+    #[test]
+    fn paired_closing_branch_prunes_the_gated_branch() {
+        let source = concat!("VISIBLE\n", "OPEN\n", "HIDDEN\n", "PAIR\n");
+        let pruned = prune_generated_parser_function_comment_gates(
+            source.to_owned(),
+            "OPEN",
+            "PAIR",
+            "STAND",
+        );
+        assert!(pruned.contains("VISIBLE"), "{pruned}");
+        assert!(!pruned.contains("HIDDEN"), "{pruned}");
+    }
 }
