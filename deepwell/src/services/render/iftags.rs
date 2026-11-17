@@ -498,6 +498,111 @@ fn rewrite_spill_junk_links(preserved: &mut CompatTextFragments, spill: &str) ->
     output
 }
 
+// Live Wikidot exhibits a `[[div class="code"]]` opener whose body is a run
+// of exhibited include directives when the gate-wrapped hidden div before it
+// leaves the div pairing cross-closed in the full composition. Its closer is
+// still a real div close, so it ends the gate's hidden div before the
+// included theme's collapsibles. The signal is the code div with at least
+// two include exhibits inside a composition with multiple style/code blocks;
+// byte-identical divs outside that state are left alone.
+pub(super) fn exhibit_cross_closed_code_div_openers(
+    wikitext: &mut String,
+    preserved: &mut CompatTextFragments,
+) {
+    const CODE_OPENER: &str = "[[div class=\"code\"]]";
+    const DIV_CLOSER: &str = "[[/div]]";
+
+    fn is_div_opener(line: &str) -> bool {
+        line.eq_ignore_ascii_case("[[div]]")
+            || line.eq_ignore_ascii_case("[[div_]]")
+            || line.to_ascii_lowercase().starts_with("[[div ")
+            || line.to_ascii_lowercase().starts_with("[[div_ ")
+    }
+
+    let lower = wikitext.to_ascii_lowercase();
+    let composition_blocks =
+        lower.matches("[[module css").count() + lower.matches("[[code").count();
+    if composition_blocks < 2 || !lower.contains("@@[[include") {
+        return;
+    }
+
+    let mut lines = Vec::new();
+    let mut start = 0usize;
+    for (index, character) in wikitext.char_indices() {
+        if character == '\n' {
+            lines.push((start, index + 1));
+            start = index + 1;
+        }
+    }
+    if start < wikitext.len() {
+        lines.push((start, wikitext.len()));
+    }
+
+    let literal_regions = LiteralRegionIndex::new_wikidot_syntax(wikitext);
+    let mut replacements = Vec::new();
+    for (index, (line_start, line_end)) in lines.iter().copied().enumerate() {
+        let line = &wikitext[line_start..line_end];
+        let trimmed = line.trim();
+        let Some(offset) = find_ascii_case_insensitive(trimmed, CODE_OPENER) else {
+            continue;
+        };
+        if trimmed.len() != CODE_OPENER.len() {
+            continue;
+        }
+        let opener_start = line_start + offset;
+        if literal_regions.contains(opener_start) {
+            continue;
+        }
+
+        let mut depth = 1usize;
+        let mut closer_line = None;
+        for (next, (next_start, next_end)) in
+            lines.iter().copied().enumerate().skip(index + 1)
+        {
+            let next_trimmed = wikitext[next_start..next_end].trim();
+            if is_div_opener(next_trimmed) {
+                depth += 1;
+            } else if next_trimmed.eq_ignore_ascii_case(DIV_CLOSER) {
+                depth -= 1;
+                if depth == 0 {
+                    closer_line = Some(next);
+                    break;
+                }
+            }
+        }
+        let Some(closer_line) = closer_line else {
+            continue;
+        };
+
+        let body = wikitext[lines[index + 1].0..lines[closer_line].0].trim();
+        let mut exhibits = 0usize;
+        let mut only_exhibits = true;
+        for body_line in body.lines() {
+            let body_line = body_line.trim();
+            if body_line.is_empty() {
+                continue;
+            }
+            let lowered = body_line.to_ascii_lowercase();
+            if lowered.starts_with("@@[[include ") && lowered.ends_with("]]@@") {
+                exhibits += 1;
+            } else {
+                only_exhibits = false;
+                break;
+            }
+        }
+        if !only_exhibits || exhibits < 2 {
+            continue;
+        }
+
+        let marker = preserved.push_escaped_html_text(CODE_OPENER);
+        replacements.push((opener_start..opener_start + CODE_OPENER.len(), marker));
+    }
+
+    for (range, marker) in replacements.into_iter().rev() {
+        wikitext.replace_range(range, &marker);
+    }
+}
+
 fn find_ascii_case_insensitive(haystack: &str, needle: &str) -> Option<usize> {
     let haystack = haystack.as_bytes();
     let needle = needle.as_bytes();
@@ -1516,5 +1621,62 @@ mod tests {
         let rewritten = super::rewrite_spill_junk_links(&mut preserved, &spill);
         let restored = preserved.restore(&rewritten);
         assert_eq!(restored, "[[/iftags]]some body[[iftags +殿堂入り +jp]]");
+    }
+
+    #[test]
+    fn exhibits_cross_closed_theme_code_div_opener_and_keeps_its_closer() {
+        let mut preserved = CompatTextFragments::new("");
+        let mut source = concat!(
+            "[[div style=\"display: none\"]]\n",
+            "[[module css]]\n.x { color: red; }\n[[/module]]\n",
+            "[[code type=\"css\"]]\n.y { color: blue; }\n[[/code]]\n",
+            "[[div class=\"code\"]]\n",
+            "@@[[include theme:black-highlighter-theme]]@@\n",
+            "@@[[include theme:old-money-theme]]@@\n",
+            "[[/div]]\n",
+            "+ Examples\n",
+            "[[collapsible show=\"+ Titles\" hide=\"- Titles\"]]\n",
+            "[[/collapsible]]\n",
+            "[[/div]]\n",
+        )
+        .to_owned();
+        super::exhibit_cross_closed_code_div_openers(&mut source, &mut preserved);
+        let restored = preserved.restore(&source);
+        assert!(
+            restored.contains("[[div class=&quot;code&quot;]]"),
+            "{restored}"
+        );
+        assert!(
+            restored.contains("@@[[include theme:old-money-theme]]@@\n[[/div]]"),
+            "{restored}"
+        );
+        assert_eq!(restored.matches("[[div class=\"code\"]]").count(), 0);
+    }
+
+    #[test]
+    fn cross_closed_exhibition_leaves_byte_identical_divs_untouched() {
+        let mut preserved = CompatTextFragments::new("");
+        let head = concat!(
+            "[[div style=\"display: none\"]]\n",
+            "[[module css]]\n.x { color: red; }\n[[/module]]\n",
+            "[[code type=\"css\"]]\n.y { color: blue; }\n[[/code]]\n",
+        );
+        let mut source = format!(
+            "{head}\
+             [[div class=\"code\"]]\n\
+             ##blue|**[[include component:theme-squares -=-**##\n\
+             ##blue|**|**## ##green|color1-name####blue|**=**##My Favourite Colour\n\
+             [[/div]]\n\
+             [[div class=\"code\"]]\n\
+             @@[[include theme:old-money-theme]]@@\n\
+             [[/div]]\n"
+        );
+        super::exhibit_cross_closed_code_div_openers(&mut source, &mut preserved);
+        assert_eq!(
+            source.matches("[[div class=\"code\"]]").count(),
+            2,
+            "{source}"
+        );
+        assert!(preserved.is_empty());
     }
 }
