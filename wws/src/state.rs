@@ -47,7 +47,6 @@ pub struct ServerStateInner {
 }
 
 pub async fn build_server_state(
-    check_deepwell: bool,
     Secrets {
         deepwell_url,
         deepwell_rpc_token,
@@ -60,10 +59,6 @@ pub async fn build_server_state(
     }: Secrets,
 ) -> Result<ServerState> {
     let deepwell = Deepwell::connect(&deepwell_url, &deepwell_rpc_token)?;
-    if check_deepwell {
-        deepwell.check().await?;
-    }
-
     let cache = Cache::connect(&redis_url)?;
 
     let (s3_files_bucket, s3_tblocks_bucket) = {
@@ -414,8 +409,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn build_server_state_initializes_clients_and_buckets_without_check() {
-        let state = build_server_state(false, test_secrets(true)).await.unwrap();
+    async fn build_server_state_initializes_clients_and_buckets() {
+        let state = build_server_state(test_secrets(true)).await.unwrap();
 
         assert_eq!(state.s3_files_bucket.name, "files");
         assert_eq!(state.s3_tblocks_bucket.name, "text-blocks");
@@ -435,7 +430,7 @@ mod tests {
         let mut secrets = test_secrets(true);
         secrets.deepwell_url = deepwell_url;
         secrets.redis_url = str!("redis://127.0.0.1:1/");
-        let state = build_server_state(false, secrets).await.unwrap();
+        let state = build_server_state(secrets).await.unwrap();
 
         let file = state
             .get_file(42, 123, "secret.png", Some("actor-session"))
@@ -457,7 +452,7 @@ mod tests {
         let mut secrets = test_secrets(true);
         secrets.deepwell_url = deepwell_url;
         secrets.redis_url = str!("redis://127.0.0.1:1/");
-        let state = build_server_state(false, secrets).await.unwrap();
+        let state = build_server_state(secrets).await.unwrap();
 
         let response = state
             .get_file_or_response(
@@ -530,7 +525,7 @@ mod tests {
         let mut secrets = test_secrets(true);
         secrets.deepwell_url = deepwell_url;
         secrets.redis_url = str!("redis://127.0.0.1:1/");
-        let state = build_server_state(false, secrets).await.unwrap();
+        let state = build_server_state(secrets).await.unwrap();
 
         let mut headers = HeaderMap::new();
         headers.insert(

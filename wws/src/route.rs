@@ -194,7 +194,7 @@ mod tests {
 
     #[tokio::test]
     async fn build_router_accepts_initialized_state() {
-        let state = build_server_state(false, test_secrets()).await.unwrap();
+        let state = build_server_state(test_secrets()).await.unwrap();
         let _router = build_router(state);
     }
 
@@ -244,7 +244,7 @@ mod tests {
         });
         let mut secrets = test_secrets();
         secrets.deepwell_url = format!("http://{backend_addr}/jsonrpc");
-        let state = build_server_state(false, secrets).await.unwrap();
+        let state = build_server_state(secrets).await.unwrap();
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
@@ -325,7 +325,7 @@ mod tests {
         });
         let mut secrets = test_secrets();
         secrets.deepwell_url = format!("http://{backend_addr}/jsonrpc");
-        let state = build_server_state(false, secrets).await.unwrap();
+        let state = build_server_state(secrets).await.unwrap();
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
@@ -351,7 +351,7 @@ mod tests {
 
     #[tokio::test]
     async fn public_code_routes_default_to_first_block_without_changing_indexed_route() {
-        let state = build_server_state(false, test_secrets()).await.unwrap();
+        let state = build_server_state(test_secrets()).await.unwrap();
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
@@ -382,7 +382,7 @@ mod tests {
 
     #[tokio::test]
     async fn underscore_local_code_route_redirects_to_the_internal_code_route() {
-        let state = build_server_state(false, test_secrets()).await.unwrap();
+        let state = build_server_state(test_secrets()).await.unwrap();
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
@@ -416,7 +416,7 @@ mod tests {
 
     #[tokio::test]
     async fn local_code_routes_without_an_index_redirect_to_the_first_block() {
-        let state = build_server_state(false, test_secrets()).await.unwrap();
+        let state = build_server_state(test_secrets()).await.unwrap();
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
@@ -450,7 +450,7 @@ mod tests {
 
     #[tokio::test]
     async fn public_basic_error_route_rejects_external_get_head_and_post() {
-        let state = build_server_state(false, test_secrets()).await.unwrap();
+        let state = build_server_state(test_secrets()).await.unwrap();
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
@@ -478,7 +478,7 @@ mod tests {
 
     #[tokio::test]
     async fn unparseable_site_id_header_is_not_found_instead_of_panicking() {
-        let state = build_server_state(false, test_secrets()).await.unwrap();
+        let state = build_server_state(test_secrets()).await.unwrap();
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
@@ -511,7 +511,7 @@ mod tests {
 
     #[tokio::test]
     async fn requests_without_internal_headers_are_not_found_instead_of_panicking() {
-        let state = build_server_state(false, test_secrets()).await.unwrap();
+        let state = build_server_state(test_secrets()).await.unwrap();
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
@@ -539,7 +539,7 @@ mod tests {
 
     #[tokio::test]
     async fn non_numeric_avatar_user_id_is_not_found() {
-        let state = build_server_state(false, test_secrets()).await.unwrap();
+        let state = build_server_state(test_secrets()).await.unwrap();
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {

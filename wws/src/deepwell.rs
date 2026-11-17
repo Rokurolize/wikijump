@@ -104,10 +104,6 @@ impl Deepwell {
         Ok(self.client.request(method, params).await?)
     }
 
-    pub async fn check(&self) -> Result<()> {
-        self.ping().await
-    }
-
     pub async fn ping(&self) -> Result<()> {
         let response: String = self.request("ping", rpc_params![]).await?;
         assert!(!response.is_empty());

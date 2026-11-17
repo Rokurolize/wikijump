@@ -76,7 +76,7 @@ async fn main() -> Result<()> {
         writeln!(&mut file, "{}", process::id())?;
     }
 
-    let state = build_server_state(false, secrets).await?;
+    let state = build_server_state(secrets).await?;
     let ready = Arc::new(AtomicBool::new(!config.enable_deepwell_check));
     let gate = Arc::clone(&ready);
     let router = build_router(Arc::clone(&state)).layer(middleware::from_fn(
