@@ -6,6 +6,7 @@ use ftml::tree::VariableMap;
 use regex::Regex;
 use uuid::Uuid;
 
+use super::compat::text_fragments::COMPAT_TEXT_MARKER_PREFIX;
 use super::literal_regions::LiteralRegionIndex;
 use super::percent_encoding::percent_encode_path_segment;
 
@@ -779,6 +780,12 @@ fn terminal_quote_is_escaped(value: &str) -> bool {
         == 1
 }
 
+fn link_contains_gate_token(value: &str) -> bool {
+    value.contains("[[iftags")
+        || value.contains("[[/iftags]]")
+        || value.contains(COMPAT_TEXT_MARKER_PREFIX)
+}
+
 pub(super) fn qualify_included_relative_image_attachments(
     source: &mut String,
     site: &str,
@@ -808,6 +815,15 @@ pub(super) fn qualify_included_relative_image_attachments(
             qualify_literal(head.body.start, &target, &owner, &mut replacements, false);
         }
         for link in links {
+            // An [[image]] link value carrying an exhibited iftags gate is
+            // not an attachment path: live truncates the head at the gate
+            // opener and spills the rest as text. Qualifying it here would
+            // URL-encode the raw gate text before the gate can be made
+            // opaque, so the render-stage head truncation (#3835) can never
+            // reach it (OC-WAVE1-FIX-2). Leave such values untouched.
+            if link_contains_gate_token(link.semantic) {
+                continue;
+            }
             qualify_literal(head.body.start, &link, &owner, &mut replacements, true);
         }
     }

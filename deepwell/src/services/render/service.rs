@@ -91,7 +91,7 @@ use super::generator::COMPILED_GENERATOR;
 use super::iftags::{
     enclosed_iftags_ranges, exhibit_cross_closed_code_div_openers,
     mark_wikidot_generated_iftags_specs, remove_enclosed_iftags_markers,
-    resolve_outermost_wikidot_iftags,
+    resolve_gate_bearing_div_heads, resolve_outermost_wikidot_iftags,
     resolve_outermost_wikidot_iftags_before_include_expansion,
     resolve_outermost_wikidot_iftags_before_include_expansion_for_page_preview,
     truncate_wikidot_heads_at_exhibited_gates,
@@ -1832,6 +1832,14 @@ impl RenderService {
             );
             Self::normalize_wikidot_cross_closed_div_collapsibles(&mut expanded.wikitext);
             Self::normalize_wikidot_div_style_url_quotes(&mut expanded.wikitext);
+            // Live evaluates an iftags gate that opens a div head; do so
+            // before the head-truncation pass so ftml sees a clean div
+            // instead of gate brackets parsed as a junk link.
+            resolve_gate_bearing_div_heads(
+                &mut expanded.wikitext,
+                &wikidot_compat_text,
+                &page_info.tags,
+            );
             Self::protect_wikidot_unbound_include_variables(
                 &mut expanded.wikitext,
                 &mut wikidot_compat_text,
@@ -3373,6 +3381,15 @@ impl RenderService {
                         compat_text,
                     );
                 }
+                // Included pages can carry gate-bearing div heads too
+                // (component:toggle-sidebar-bhl L81). Resolve those before
+                // the include is spliced, so ftml does not parse them as
+                // junk links.
+                resolve_gate_bearing_div_heads(
+                    &mut nested_wikitext,
+                    compat_text,
+                    &expansion_context.page_info.tags,
+                );
                 remove_nested_include_boundaries(&mut nested_wikitext);
                 fetched_pages.push(Some(nested_wikitext));
                 nested_included_pages.push(expansion.included_pages);

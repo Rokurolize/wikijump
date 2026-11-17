@@ -432,6 +432,133 @@ pub(super) fn truncate_wikidot_heads_at_exhibited_gates(
     }
 }
 
+// Live evaluates an [[iftags]] gate that opens a [[div ...]] head (the gate
+// wraps the leading attribute region), even when the div sits inside a kept
+// gate body where deepwell otherwise preserves gates as opaque exhibits
+// (theme:highlighter-bhl-jp L274, component:toggle-sidebar-bhl L81). Resolve
+// such head-leading marker pairs against the page tags here so ftml sees a
+// clean div head instead of gate brackets it parses as a junk link. Gates
+// inside an attribute value (e.g. `class="modalbox [[iftags …]]…"`) are left
+// alone -- those are exhibits on live too.
+pub(super) fn resolve_gate_bearing_div_heads(
+    wikitext: &mut String,
+    preserved: &CompatTextFragments,
+    tags: &[Cow<'_, str>],
+) {
+    const CLOSER: &str = "[[/iftags]]";
+    const OPENER_PREFIX: &str = "[[iftags ";
+
+    let mut replacements = Vec::<Replacement>::new();
+    let mut line_start = 0usize;
+    while line_start < wikitext.len() {
+        let line_end = wikitext[line_start..]
+            .find('\n')
+            .map_or(wikitext.len(), |offset| line_start + offset);
+        let line = &wikitext[line_start..line_end];
+        let indent = line.len() - line.trim_start_matches([' ', '\t']).len();
+        let rest = &line[indent..];
+        let opener_len = if starts_with_ascii_case_insensitive(rest, "[[div ") {
+            "[[div ".len()
+        } else if starts_with_ascii_case_insensitive(rest, "[[div_ ") {
+            "[[div_ ".len()
+        } else {
+            line_start = line_end + 1;
+            continue;
+        };
+
+        let head_start = line_start + indent + opener_len;
+        let Some(rel_end) = wikitext[head_start..line_end].find("]]") else {
+            line_start = line_end + 1;
+            continue;
+        };
+        let head = &wikitext[head_start..head_start + rel_end];
+        let head_ws = head.len() - head.trim_start_matches([' ', '\t']).len();
+        let Some((open_start, open_len)) =
+            preserved.first_gate_token_marker(head, head_ws)
+        else {
+            line_start = line_end + 1;
+            continue;
+        };
+        // The gate must open the head's attribute region; a gate inside a
+        // quoted attribute value is left as an exhibit.
+        if open_start != head_ws {
+            line_start = line_end + 1;
+            continue;
+        }
+        let Some((_, opener_text)) =
+            preserved.gate_token_marker_info_at(&head[open_start..])
+        else {
+            line_start = line_end + 1;
+            continue;
+        };
+        let stripped = strip_generated_spec_marker_suffix(opener_text);
+        let spec = stripped
+            .strip_prefix(OPENER_PREFIX)
+            .and_then(|value| value.strip_suffix("]]"));
+        let Some(spec) = spec else {
+            line_start = line_end + 1;
+            continue;
+        };
+
+        let after_open = open_start + open_len;
+        let Some((close_start, close_len)) =
+            preserved.first_gate_token_marker(head, after_open)
+        else {
+            line_start = line_end + 1;
+            continue;
+        };
+        if !preserved
+            .gate_token_marker_info_at(&head[close_start..])
+            .is_some_and(|(_, text)| text == CLOSER)
+        {
+            line_start = line_end + 1;
+            continue;
+        }
+
+        let body = &head[after_open..close_start];
+        let active = wikidot_tag_conditions_match(spec, tags);
+        let text = if active {
+            body.to_owned()
+        } else {
+            String::new()
+        };
+        // When the gate body drops, also consume the whitespace that separates
+        // `[[div` from the gate so the result is a bare `[[div]]` head, not
+        // `[[div ]]` -- ftml parses the latter differently on the full page.
+        let start = if !active && open_start == 0 {
+            head_start - 1
+        } else {
+            head_start + open_start
+        };
+        replacements.push(Replacement {
+            range: start..(head_start + close_start + close_len),
+            text,
+        });
+        line_start = line_end + 1;
+    }
+
+    apply_replacements_in_place(wikitext, replacements);
+}
+
+fn apply_replacements_in_place(
+    wikitext: &mut String,
+    mut replacements: Vec<Replacement>,
+) {
+    replacements.sort_unstable_by_key(|replacement| replacement.range.start);
+    let mut output = String::with_capacity(wikitext.len());
+    let mut cursor = 0usize;
+    for replacement in replacements {
+        if replacement.range.start < cursor {
+            continue;
+        }
+        output.push_str(&wikitext[cursor..replacement.range.start]);
+        output.push_str(&replacement.text);
+        cursor = replacement.range.end;
+    }
+    output.push_str(&wikitext[cursor..]);
+    *wikitext = output;
+}
+
 // The cut for one head starting at `head`: the gate marker's span and
 // the position of the head's own closing `]]`. Fires only when no
 // literal `]]` precedes the marker inside the head (a literal `]]`
@@ -1678,5 +1805,49 @@ mod tests {
             "{source}"
         );
         assert!(preserved.is_empty());
+    }
+
+    #[test]
+    fn gate_bearing_div_head_resolves_against_tags() {
+        // Real producing shapes: theme:highlighter-bhl-jp L274 (-テーマ on a
+        // テーマ-tagged page) and component:toggle-sidebar-bhl L81
+        // (-コンポーネント on a コンポーネント-tagged page). Live evaluates
+        // the gate that opens the div head and drops the body, emitting a
+        // clean div instead of gate brackets ftml parses as a junk link.
+        let mut preserved = CompatTextFragments::new("");
+        let open_theme =
+            preserved.push_gate_token_escaped_html_text("[[iftags -テーマ]]");
+        let close = preserved.push_gate_token_escaped_html_text("[[/iftags]]");
+        let open_comp =
+            preserved.push_gate_token_escaped_html_text("[[iftags -コンポーネント]]");
+        let mut source = format!(
+            "[[div {open_theme}style=\"display: none\"{close}]]\n\
+             [[div_ {open_comp}style=\"display: none\"{close} class=\"x\"]]\n"
+        );
+        let tags = vec![Cow::Borrowed("テーマ"), Cow::Borrowed("コンポーネント")];
+        super::resolve_gate_bearing_div_heads(&mut source, &preserved, &tags);
+        assert_eq!(
+            source, "[[div]]\n[[div_ class=\"x\"]]\n",
+            "div-head gate should evaluate to a clean head: {source}"
+        );
+        assert!(!source.contains(&open_theme), "{source}");
+        assert!(!source.contains(&open_comp), "{source}");
+    }
+
+    #[test]
+    fn gate_bearing_div_head_keeps_exhibited_attribute_gates() {
+        // A gate inside a quoted attribute value is an exhibit on live
+        // (credit:start G3 modalbox class) and must stay opaque.
+        let mut preserved = CompatTextFragments::new("");
+        let open = preserved.push_gate_token_escaped_html_text("[[iftags 殿堂入り]]");
+        let close = preserved.push_gate_token_escaped_html_text("[[/iftags]]");
+        let mut source = format!("[[div_ class=\"modalbox {open}heritage{close}\"]]\n");
+        let tags = vec![Cow::Borrowed("テーマ")];
+        super::resolve_gate_bearing_div_heads(&mut source, &preserved, &tags);
+        assert_eq!(
+            source,
+            format!("[[div_ class=\"modalbox {open}heritage{close}\"]]\n"),
+            "attribute-value gate must be left as an exhibit: {source}"
+        );
     }
 }

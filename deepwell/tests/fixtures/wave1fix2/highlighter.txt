@@ -1,0 +1,685 @@
+[[include :scp-jp:theme:black-highlighter-theme]]
+
+[[module CSS]]
+@import url('https://sigma10-jp-test.wdfiles.com/local--code/theme%3Ahighlighter-bhl-jp/1');
+[[/module]]
+
+[[include :scp-jp:component:interwiki-style
+| priority=1
+| theme=https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css
+]]
+[[include :scp-jp:component:interwiki-style
+| priority=2
+| theme=https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css
+]]
+[[include :scp-jp:component:interwiki-style
+| priority=3
+| theme=https://sigma10-jp-test.wdfiles.com/local--code/theme%3Ahighlighter-bhl-jp/1
+]]
+[[iftags +テーマ]]
+
+[[include :scp-jp:credit:start-preview]]
+**タイトル:** マーカー・ブラック テーマ
+**翻訳責任者:** AI
+**翻訳年:** 2026
+**原題:** 标记笔 黑标主题版式
+**著作権者:** 原語版ページの作成者に同じ（scp-wiki-cn の theme:highlighter-bhl）
+**作成年:** 2023
+**初訳時参照リビジョン:** 16
+**元記事リンク:** [*https://scp-wiki-cn.wikidot.com/theme:highlighter-bhl 标记笔 黑标主题版式]
+[[include :scp-jp:credit:end-preview]]
+
+[[include :scp-jp:component:interwiki-style
+| type=sidebar
+| priority=2
+| override=1
+| theme=https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css
+]]
+
+[[image https://scp-wiki.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg]]
+
+**評価：**
+
+**評価モジュールとクレジットモジュール：**
+
+**クレジットモジュール：**
+
+[[include :scp-jp:component:theme-squares -=-
+| color1-name=蛍光レッド
+| color1-variable=--bright-accent
+| color1-info=(255, 88, 88)
+]]
+
+これは[[*user Liurd]]が制作した美観テーマです。特定のSCP、物語、設定、GoIには紐づいておらず、任意の記事で使用できます。
+
+このテーマをページで使用するには、記事の冒頭に次のコードを配置してください。
+
+[[div class="code"]]
+@@[[include :scp-jp:theme:black-highlighter-theme]]@@
+@@[[include :scp-jp:theme:highlighter-bhl]]@@
+[[/div]]
+
+++ カスタマイズ
+
+下のコードを追加すると、このテーマのアクセントカラー、ページ左上のロゴ、タイトルを変更できます。このコードは@@[[include]]@@モジュールの下に配置してください。
+
+[[div class="code"]]
+@@[[module CSS]]@@
+:root{
+    @@--@@bright-accent: red, green, blue; /* テーマのメインアクセントカラー。RGB形式で指定 */
+    @@--@@logo-image: url("カスタムロゴのリンク");
+}
+:root:lang(ja) {
+    @@--@@header-title: "ヘッダー大見出し";
+    @@--@@header-subtitle: "ヘッダー副見出し";
+}
+@@[[/module]]@@
+[[/div]]
+
++ テーマと一緒に読み込まれるもの
+
+次のコンポーネントは、ハイライターテーマと一緒に読み込まれます。
+
+* [[*user Woedenaz]]による[https://scp-jp.wikidot.com/component:toggle-sidebar-bhl 黒標切り替えサイドバー]。
+* [[*user Croquembouche]]による[https://scp-jp.wikidot.com/component:croqstyle Croq風CSS]。
+* [[*user EstrellaYoshte]]による[https://scp-jp.wikidot.com/component:betterfootnotes Better Footnotes]。
+
++ テーマの例
+[[include component:image-block
+    name=https://sigma10-jp-test.wdfiles.com/local--files/theme%3Ahighlighter-bhl-jp/foundation-logo.svg|
+    caption=--ロゴをミニマリストテーマから借りたなんて言いません--
+]]
+6つのハイフン「@@------@@」[[footnote]]これは怒るはずのない[[*user Placeholder McD]]を怒らせるためのものです。[[/footnote]]で水平分割線を作成できます。引用ブロックなどの他の要素内に置かれていなければ、左右に伸びてページを横断します。このようにファイルを複数の部分へ分ける線が分割線です。
+
+-----
+
+見出しは、行頭に1個から6個のプラス記号「+」を入力すると作成できます。
+
+[[collapsible show="+ 見出しの例" hide="- 見出しの例"]]
++ レベル1見出し
+
+++ レベル2見出し
+
++++ レベル3見出し
+
+++++ レベル4見出し
+
++++++ レベル5見出し
+
+++++++ レベル6見出し
+[[/collapsible]]
+
+@@ @@
+
+[[tabview]]
+[[tab タブ]]
+これはタブビューです。
+[[/tab]]
+[[tab タブ]]
+ほら、ここにはさらに文字があります。
+
+なんと精巧なことでしょう。
+[[/tab]]
+[[tab 長いタブ]]
+これは長いタブです。たくさんの文字を入れられます。
+
+これは長いタブです。たくさんの文字を入れられます。
+
+これは長いタブです。たくさんの文字を入れられます。
+
+これは長いタブです。たくさんの文字を入れられます。
+
+これは長いタブです。たくさんの文字を入れられます。
+
+これは長いタブです。たくさんの文字を入れられます。
+
+これは長いタブです。たくさんの文字を入れられます。
+
+これは長いタブです。たくさんの文字を入れられます。
+
+これは長いタブです。たくさんの文字を入れられます。
+
+これは長いタブです。たくさんの文字を入れられます。
+
+これは長いタブです。たくさんの文字を入れられます。
+
+これは長いタブです。たくさんの文字を入れられます。
+[[/tab]]
+[[tab なぜかこの空タブは妙に長いです。何が起きているのでしょう？]]
+[[/tab]]
+[[tab 空のタブ]]
+[[/tab]]
+[[tab 空のタブ]]
+[[/tab]]
+[[tab 空のタブ]]
+[[/tab]]
+[[tab 空のタブ]]
+[[/tab]]
+[[tab 空のタブ]]
+[[/tab]]
+[[/tabview]]
+
+> これは引用ブロックです。行頭に「> 」を付けると作成できます。
+> 
+> さらに文字
+> -----
+> 分割線
+> 
+>> ネストした引用ブロック[[footnote]]これは脚注です！[[/footnote]]
+
+||~ これは ||~ 表です ||
+|| もうとっくに || 作り方は ||
+|||| 分かっていますよね ||
+
+-----
+脚[[footnote]]注[[/footnote]]
+このテキストを
+__ここに置くと__
+//みなさんには//
+**異なる**
+--書式や--
+{{その他のもの}}
+どのように^^見える^^
+のか,,分かります,,。
+[[[存在しないページも含めて]]]
+[[[theme:black-highlighter-theme|存在するリンクも！]]]
+##red|特殊な警告も##
+##7F6A00|あるいは少し低リスクのものも##
+##green|安全なものも！##
+
+テキスト[[span class="fnnum"]].[[/span]][[span class="fncon"]]脚注[[/span]]
+さらにテキスト[[span class="fnnum"]].[[/span]][[span class="fncon"]]脚注[[/span]]
+
+[[div class="code"]]
+@@テキスト[[span class="fnnum"]].[[/span]][[span class="fncon"]]脚注[[/span]]@@
+[[/div]]
+-----
+[[div class="styled-quote"]]
+
+@@[[div class="styled-quote"]]@@
+
+@@[[/div]]@@
+
+[[/div]]
+
+[[div class="dark-styled-quote";]]
+----
+@@[[div class="dark-styled-quote"]]@@
+[[[theme:black-highlighter-theme|こちらはリンク]]]
+@@[[/div]]@@
+
+[[/div]]
+
+[[div class="lightblock"]]
+
+@@[[div class="lightblock"]]@@
+
+@@[[/div]]@@
+
+[[/div]]
+
+[[div class="darkblock"]]
+----
+@@[[div class="darkblock"]]@@
+[[[theme:black-highlighter-theme|こちらはリンク]]]
+@@[[/div]]@@
+
+[[/div]]
+
+[[div class="darkblock marked"]]
+
+@@[[div class="darkblock marked"]]@@
+divブロックにmarkedを追加すると、マーカーで引いたような効果を与えられます！
+@@[[/div]]@@
+
+[[/div]]
+
+[[div class="darkblock clipped"]]
+
+@@[[div class="darkblock clipped"]]@@
+divブロックにclippedを追加すると、切り抜かれたような効果を与えられます！
+@@[[/div]]@@
+
+[[/div]]
+
+[[div class="holeblock"]]
+
+@@[[div class="holeblock"]]@@
+ちょっと、どうして私のテーマを切り抜いたんですか
+@@[[/div]]@@
+
+[[/div]]
+
+[[div class="glassblock"]]
+
+@@[[div class="glassblock"]]@@
+
+@@[[/div]]@@
+
+[[/div]]
+
+[[note]]
+
+@@[[note]]@@
+
+@@[[/note]]@@
+
+[[/note]]
+
+-----
+
+[[include :scp-jp:component:croqstyle]]
+[[include :scp-jp:component:betterfootnotes]]
+[[include :scp-jp:component:toggle-sidebar-bhl]]
+[[div [[iftags -テーマ]]style="display: none"[[/iftags]]]]
+[[collapsible show="知りたいかもしれないこと..." hide="閉じる"]]
+[[/collapsible]]
+[[/div]]
+
++ ソースコード
+
+[[collapsible show="> コードを表示" hide="> コードを閉じる"]]
+[[code type="css"]]
+/*
+    标记笔 黑标 / Highlighter BHL Theme
+    Ported for SCP-JP (theme:highlighter-bhl rev 16 on scp-wiki-cn).
+    原語版の CSS はページ内のモジュール CSS にあり、BHL を CN 配信元から読んでいます。
+    JP版はモジュール CSS をコードファイル化し、BHL を scp-jp.github.io に置換しています。
+*/
+
+@import url("https://scp-jp.github.io/Black-Highlighter/css/min/normalize.min.css");
+@import url("https://scp-jp.github.io/Black-Highlighter/css/min/black-highlighter.min.css");
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap');
+
+
+/* 日本語フォント (JP localization) */
+/* page module css */
+
+
+
+/* page module css show="true" */
+:root {
+
+                  --theme-base: "黑色标记笔";
+                  --theme-id: "highlighter-bhl";
+                  --theme-name: "标记笔";
+
+                  --logo-image: url("https://sigma10-jp-test.wdfiles.com/local--files/theme%3Ahighlighter-bhl-jp/foundation-logo.svg");
+
+                  --white-monochrome: 252, 252, 252;
+                  --pale-gray-monochrome: var(--white-monochrome);
+                  --light-pale-gray-monochrome: var(--bright-accent);
+                  --very-light-gray-monochrome: var(--bright-accent);
+                  --light-gray-monochrome: var(--bright-accent);
+                  --gray-monochrome: var(--bright-accent);
+                  --dark-gray-monochrome: var(--white-monochrome);
+                  --black-monochrome: 12, 12, 12;
+                  --pale-accent: var(--bright-accent);
+                  --bright-accent: 255, 88, 88;
+                  --medium-accent: var(--bright-accent);
+                  --dark-accent: var(--bright-accent);
+                  --alt-accent: 242, 122, 8;
+
+                  --swatch-text-dark: var(--black-monochrome);
+                  --swatch-text-light: var(--black-monochrome);
+                  --swatch-important-text: var(--bright-accent);
+
+                  --swatch-headerh1-color: var(--black-monochrome);
+                  --swatch-headerh2-color: var(--black-monochrome);
+                  --swatch-topmenu-border-color: var(--bright-accent);
+                  --swatch-topmenu-bg-color: var(--white-monochrome);
+                  --swatch-menutxt-light-color: var(--black-monochrome);
+
+                  --rating-module-button-color: var(--black-monochrome);
+                  --rating-module-button-plus-color: var(--bright-accent);
+                  --rating-module-button-negative-color: var(--bright-accent);
+                  --rating-module-button-cancel-color: var(--bright-accent);
+                  --rating-module-button-credit-color: var(--bright-accent);
+                  --rating-module-text-color: var(--black-monochrome);
+                  --rating-module-text-hover-color: var(--black-monochrome);
+
+                  --toggle-roundness: 0.2rem;
+
+                  --gradient-header: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23bbbbbb' fill-opacity='0.4'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3Cpath d='M6 5V0H5v5H0v1h5v94h1V6h94V5H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"), linear-gradient(#fcfcfc,#fcfcfc);
+                  --gradient-topmenu-mobile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23bbbbbb' fill-opacity='0.4'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3Cpath d='M6 5V0H5v5H0v1h5v94h1V6h94V5H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"), linear-gradient(#fcfcfc,#fcfcfc);
+                  --diagonal-stripes: linear-gradient(transparent 0);
+
+    --fnColor: rgb(var(--bright-accent));
+}
+
+:root:lang(cn) {
+    --header-title: "SCP基金会";
+    --header-subtitle: "控制 收容 保护";
+}
+
+::selection {
+    background-color: rgb(var(--bright-accent));
+}
+
+::-moz-selection {
+    background-color: rgb(var(--bright-accent));
+}
+
+#page-title {
+  animation: fadeIn 2s;
+}
+
+#header {
+  background-position: 1rem 2rem;
+  background-size: 4.5rem auto;
+  animation: logo 2.5s;
+}
+
+#header h1 a:before,#top-bar {
+  animation: header 3s;
+}
+
+#header h2, #header h2 span, #header h2 span::before {
+  animation: header2 3.5s;
+  margin-top:2.6rem;
+}
+
+#header h1 a:before,#header h2 span::before {
+  background: rgba(var(--bright-accent),.6);
+}
+
+  @keyframes fadeIn {
+  0% {clip-path: polygon(0% 0%,0% 0%, -10% 100%,0% 100%);}
+  100% {clip-path: polygon(0% 0%,110% 0%, 100% 100%,0% 100%);}
+  }
+
+@keyframes logo {
+  0% {background-position: -6rem 2rem;}
+  75% {background-position: -6rem 2rem;}
+  100% {background-position: 1rem 2rem;}
+}
+
+@keyframes header {
+  0% {clip-path: polygon(0% 0%,0% 0%, -10% 100%,0% 100%);}
+  75% {clip-path: polygon(0% 0%,0% 0%, -10% 100%,0% 100%);}
+  100% {clip-path: polygon(0% 0%,110% 0%, 100% 100%,0% 100%);}
+}
+
+@keyframes header2 {
+  0% {clip-path: polygon(0% 0%,0% 0%, -10% 100%,0% 100%);}
+  75% {clip-path: polygon(0% 0%,0% 0%, -10% 100%,0% 100%);}
+  100% {clip-path: polygon(0% 0%,110% 0%, 100% 100%,0% 100%);}
+}
+
+div#extra-div-1 {
+       content: "";
+    position:absolute;
+    top:0;
+    width:100%;
+    height:100%;
+    background-color: #fcfcfc;
+background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23bbbbbb' fill-opacity='0.4'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3Cpath d='M6 5V0H5v5H0v1h5v94h1V6h94V5H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-repeat: repeat;
+    opacity: 1;
+    z-index: -1;
+}
+
+    #top-bar {
+    --dropdown-border-color: var(--bright-accent), 0.5;
+}
+
+    #side-bar,
+    #side-bar:hover {
+    background-color: #fcfcfc;
+background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23bbbbbb' fill-opacity='0.4'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3Cpath d='M6 5V0H5v5H0v1h5v94h1V6h94V5H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-repeat: repeat;
+    }
+
+ #page-content ul {
+        list-style-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIiA/Pgo8IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHZlcnNpb249IjEuMSIgd2lkdGg9IjFyZW0iIGhlaWdodD0iMXJlbSIgdmlld0JveD0iMCAwIDM1IDM1IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPGRlc2M+Q3JlYXRlZCB3aXRoIEZhYnJpYy5qcyA0LjYuMDwvZGVzYz4KPGRlZnM+CjwvZGVmcz4KPGcgdHJhbnNmb3JtPSJtYXRyaXgoMSAwIDAgMSAxNy41IDE3Ljc1KSIgaWQ9IlZ5YlMtT3lmWS1tWVRQX3ZwaTVWcSIgID4KPHBhdGggc3R5bGU9InN0cm9rZTogcmdiKDAsMCwwKTsgc3Ryb2tlLXdpZHRoOiAwOyBzdHJva2UtZGFzaGFycmF5OiBub25lOyBzdHJva2UtbGluZWNhcDogYnV0dDsgc3Ryb2tlLWRhc2hvZmZzZXQ6IDA7IHN0cm9rZS1saW5lam9pbjogbWl0ZXI7IHN0cm9rZS1taXRlcmxpbWl0OiA0OyBmaWxsOnJnYih2YXIoLS1icmlnaHQtYWNjZW50KSkgcmdiKDI1Miw4OCw4OCk7IGZpbGwtcnVsZTogbm9uemVybzsgb3BhY2l0eTogMC42OyIgdmVjdG9yLWVmZmVjdD0ibm9uLXNjYWxpbmctc3Ryb2tlIiAgdHJhbnNmb3JtPSIgdHJhbnNsYXRlKDAsIDApIiBkPSJNIC02LjQ3NDM1IC0xMS4wODcxNCBDIC0xMS4wOTkzNTAwMDAwMDAwMDEgLTkuNTAzODEgLTE4LjcyNDM1IDAuMjQ2MTkwMDAwMDAwMDAwMzUgLTE1LjE4MjY4MDAwMDAwMDAwMSA0Ljk1NDUzIEMgLTExLjY0MTAxMDAwMDAwMDAwMSA5LjY2Mjg2IC0wLjE4MjY4MDAwMDAwMDAwMTI5IDE2LjkxMjg2MDAwMDAwMDAwMiAyLjE5MjMxOTk5OTk5OTk5ODcgMTEuODI5NTMgQyA0LjU2NzMxOTk5OTk5OTk5OSA2Ljc0NjIgMjEuNDAwNjUgLTAuMDAzODAwMDAwMDAwMDAwMDI1NiAxNC40MDA2NDk5OTk5OTk5OTkgLTguNDYyMTQgQyA3LjQwMDY0OTk5OTk5OTk5OSAtMTYuOTIwNDcgLTEuODQ5MzUwMDAwMDAwMDAxMiAtMTIuNjcwNDcgLTYuNDc0MzUwMDAwMDAwMDAxIC0xMS4wODcxNCB6IiBzdHJva2UtbGluZWNhcD0icm91bmQiIC8+CjwvZz4KPC9zdmc+');
+    }
+
+ #page-content a:not([href*="javascript:;"]) {
+        color: rgba(var(--swatch-primary), 1);
+        -webkit-box-decoration-break: clone;
+        box-decoration-break: clone;
+        box-shadow: inset 0 0 0 0 rgba(var(--swatch-primary), 1);
+        transition:
+            box-shadow 0.3s cubic-bezier(0.4, 0.0, 0.2, 1),
+            color 300ms cubic-bezier(0.4, 0.0, 0.2, 1);
+        border-radius:10px 8px 12px 6px;
+    }
+
+    #page-content a:not([href*="javascript:;"]):hover {
+        box-shadow: inset 45rem 0 0 0 rgba(var(--swatch-primary), 1);
+        text-decoration: none;
+        color: rgb(var(--black-monochrome))
+    }
+
+ .collapsible-block a {
+        color: rgba(var(--swatch-primary), 1);
+        -webkit-box-decoration-break: clone;
+        box-decoration-break: clone;
+        box-shadow: inset 0 0 0 0 rgba(var(--swatch-primary), 1);
+        transition:
+            box-shadow 0.3s cubic-bezier(0.4, 0.0, 0.2, 1),
+            color 300ms cubic-bezier(0.4, 0.0, 0.2, 1);
+        border-radius:10px 8px 12px 6px;
+    }
+
+    .collapsible-block a:hover {
+        box-shadow: inset 45rem 0 0 0 rgba(var(--swatch-primary), 1);
+        text-decoration: none;
+        color: rgb(var(--black-monochrome))
+    }
+
+ #page-content a:visited {
+        color: rgba(120,120,120);
+        -webkit-box-decoration-break: clone;
+        box-decoration-break: clone;
+        box-shadow: inset 0 0 0 0 rgba(var(--black-monochrome));
+        transition:
+            box-shadow 0.3s cubic-bezier(0.4, 0.0, 0.2, 1),
+            color 300ms cubic-bezier(0.4, 0.0, 0.2, 1);
+        border-radius:10px 8px 12px 6px;
+    }
+
+    #page-content a:visited:hover {
+        box-shadow: inset 45rem 0 0 0 rgb(var(--black-monochrome));
+        text-decoration: none;
+        color: rgb(var(--black-monochrome));
+    }
+
+ #page-content a.newpage {
+        color: rgba(var(--alt-accent), 1);
+        -webkit-box-decoration-break: clone;
+        box-decoration-break: clone;
+        box-shadow: inset 0 0 0 0 rgb(var(--alt-accent));
+        transition:
+            box-shadow 0.3s cubic-bezier(0.4, 0.0, 0.2, 1),
+            color 300ms cubic-bezier(0.4, 0.0, 0.2, 1);
+        border-radius:10px 8px 12px 6px;
+    }
+
+    #page-content a.newpage:hover {
+        box-shadow: inset 45rem 0 0 0 rgb(var(--alt-accent));
+        text-decoration: none;
+        color: rgb(var(--black-monochrome));
+    }
+
+    .yui-navset .yui-nav a::before {
+        --clip-path:
+            polygon(0 0,
+                -0.25rem 0,
+                -1rem 100%,
+                0 100%);
+    }
+
+    .yui-navset .yui-nav li:hover a::before,
+    .yui-navset .yui-nav li:active a::before,
+    .yui-navset .yui-nav li:focus a::before {
+        --clip-path:
+            polygon(0 0,
+                calc(100% + 1rem) 0,
+                calc(100% + 0.75rem) 100%,
+                0 100%);
+    }
+
+.yui-navset .yui-nav .selected{
+    transform:translateY(0rem);
+    box-shadow:0 0 0 0rem rgb(var(--tabs-selected-outline));
+}
+
+tbody {
+    background-color: rgba(var(--white-monochrome),.05);
+}
+
+/* 从考拉那偷的表格代码，别打死我（逃） */
+
+table.wiki-content-table {
+    border-spacing: 0;
+    overflow: auto;
+    min-width: 100%
+}
+#main-content table.wiki-content-table th {
+    color: rgba(var(--black-monochrome));
+    background: rgba(var(--bright-accent),.6);
+}
+#main-content table.wiki-content-table td, table.wiki-content-table th {
+    padding: 6px 13px
+}
+table.wiki-content-table tr {
+    background-color: rgba(var(--white-monochrome),.05);
+}
+table.wiki-content-table tr:nth-child(odd) {
+    background-color: rgba(var(--bright-accent),.05);
+}
+
+#page-content table.wiki-content-table th, #page-content table.wiki-content-table td, #page-content div.b-tables table.wiki-content-table th, #page-content div.b-tables table.wiki-content-table td {
+    border: 0.15rem solid rgba(var(--tables-border),.6) !important;
+}
+
+hr{
+display:grid;
+margin:.5rem;
+height:15px;
+background:rgb(var(--bright-accent));
+opacity:0.6;
+border:none;
+transform:skew(-15deg);
+border-radius:3px 8px 10px 6px;
+}
+
+code,.code{
+    background:rgba(var(--pale-gray-monochrome),.6);
+}
+
+.styled-quote {
+    background-color: rgba(var(--gray-monochrome),.15);
+    border-left: 0.5rem solid rgba(var(--gray-monochrome));
+    padding: 0.1rem 1rem;
+    margin: 0.5rem 0 0.5rem 0.25rem;
+}
+
+.dark-styled-quote {
+    background-color: rgba(var(--gray-monochrome),.6);
+    border-left: 0.5rem solid rgba(var(--gray-monochrome));
+    padding: 0.1rem 1rem;
+    margin: 0.5rem 0 0.5rem 0.25rem;
+}
+
+.lightblock {
+    background-color: rgba(var(--gray-monochrome),.15);
+    padding: 0.01rem 1rem;
+    margin: 0.5rem 0 0.5rem 0.25rem;
+}
+
+.darkblock {
+    background-color: rgba(var(--gray-monochrome),.6);
+    padding: 0.01rem 1rem;
+    margin: 0.5rem 0 0.5rem 0.25rem;
+}
+
+.dark-styled-quote a, .darkblock a{
+    background-color: rgba(var(--white-monochrome),.6);
+    border-radius:10px 8px 12px 6px;
+    padding: 2px 0.6rem;
+}
+
+.dark-styled-quote hr, .darkblock hr{
+    background-color: rgba(var(--white-monochrome));
+}
+
+.marked{
+        border-radius:90px 20px 120px 40px;
+}
+
+.clipped {
+    padding-right:3.2rem;
+    clip-path: polygon(-100% -100%,100% 0%,95% 50%,100% 100%,0% 100%);
+}
+
+.holeblock {
+    background-color: #fcfcfc;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23bbbbbb' fill-opacity='0.4'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3Cpath d='M6 5V0H5v5H0v1h5v94h1V6h94V5H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-attachment: fixed;
+    padding: 0.01rem 1rem;
+    margin: 0.5rem 0 0.5rem 0.25rem;
+    box-shadow: 0rem 0rem 0.6rem 0 inset rgba(var(--black-monochrome),.6);
+}
+
+.glassblock {
+    background-color: rgba(var(--white-monochrome),.2);
+    padding: 0.01rem 1rem;
+    margin: 0.5rem 0 0.5rem 0.25rem;
+    box-shadow: 0.1rem 0.1rem 0.2rem 0 rgba(var(--black-monochrome),.6),inset 0rem 0rem 0.2rem 0 rgba(var(--black-monochrome),.6);
+    border: 0.15rem solid rgba(var(--black-monochrome));
+    border-radius: 0.3rem;
+    backdrop-filter: blur(1px);
+}
+
+div.wiki-note {
+    background-color: rgb(var(--bright-accent));
+}
+
+#toc #toc-list a:hover{
+        color: rgb(var(--black-monochrome));
+}
+
+#odialog-container div.owindow {
+    border: 0.2rem solid rgba(var(--swatch-alternate-color), 0.25);
+    box-shadow: none;
+}
+
+.footnotes-footer, .bibitems{
+    background-color: rgba(var(--white-monochrome),.2);
+}
+
+.footnotes-footer .title, .bibitems .title{
+    border-radius:10px 8px 12px 6px;
+}
+
+#license-area a:hover{
+    color: rgb(var(--black-monochrome));
+}
+
+#license-area a::before{
+    background-color: rgba(var(--bright-accent),.2);
+}
+
+.fncon {
+    background: rgba(var(--bright-accent),.15);
+    border:none;
+    border-left: 0.5rem solid rgb(var(--bright-accent));
+    padding-right: 2rem;
+    clip-path: polygon(-100% -100%,100% 0%,95% 50%,100% 100%,0% 100%);
+    backdrop-filter: blur(2px);
+}
+[[/code]]
+[[/collapsible]]
+
+[[include :scp-jp:component:license-box-backend
+|author=scp-wiki-cn theme:highlighter-bhl の作者]]
+
+> **画像・フォントの出典:** 原語版の theme:highlighter-bhl の記載に従います。sandbox 等の外部ホストの添付は候補ページに再ホストしています。原語版にライセンス表記が無い画像は、投稿前に著者へ確認してください。
+
+[[include :scp-jp:component:license-box-end]]
+
+[[/iftags]]

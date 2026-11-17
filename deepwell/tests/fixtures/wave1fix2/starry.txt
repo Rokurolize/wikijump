@@ -1,0 +1,1065 @@
+[[iftags +テーマ]]
+
+[[include :scp-jp:credit:start-preview]]
+**タイトル:** 流繁星 特种版式
+**翻訳責任者:** AI
+**翻訳年:** 2026
+**原題:** 流繁星 特种版式
+**著作権者:** OxygenNine
+**作成年:** 2025
+**初訳時参照リビジョン:** 10
+**元記事リンク:** [*https://scp-wiki-cn.wikidot.com/theme:starry 流繁星 特种版式]
+[[include :scp-jp:credit:end-preview]]
+
+@@@@
+@@@@
+
+[[div class="s-title"]]
+
+[[span class="s-title-line type-1"]]流繁星[[span class="s-title-line type-2"]]特殊テーマ[[/span]][[/span]]
+[[=]]
+
+[[Module Rate]]
+
+[[/=]]
+[[/div]]
+
+@@@@
+@@@@
+
++ 概要
+
+**流繁星**は、[[[theme:mox-jp |一酸化物]]]テーマを基盤にした美麗系テーマです。[[[theme:shivering-night-jp |夜琉璃 テーマ]]]から着想を得ています。
+
+このテーマはデフォルト設定でページタイトルを非表示にし、画面高の90%を占める大きなヘッダーをページ冒頭に追加します。ヘッダーには背景アニメーションとロゴのフェードイン演出があるため、一部の端末では動作が重くなる可能性があります。流繁星はもともと別サイトの特定のハブページ向けに設計されたテーマです。記事本文に使うよりも、著者ページや各種ハブのように華やかな視覚演出が必要なページに向いています。
+
+任意のページで次のコードを使うと、このテーマを読み込めます。
+
+= {{[[include :scp-jp:theme:starry]]}}
+
+このテーマを適用します。
+
++ カスタマイズ
+
+下の内容をすべて選択してコピーし、各設定名の後ろにある説明を参照しながら変更してください。
+
+任意の設定の後ろに*を付けると、その設定を有効にできます。例は{{|normal-header=*}}です。数値を入れる必要がある設定もあります。単位が必要かどうかに注意してください。
+
+[[div class="modal themesp"]]
+
+@@[[include :scp-jp:theme:starry@@
+|c=* //カスタマイズを有効にします。この設定を切ると、以下の設定はすべて無効になります。//
+
+//テーマ全体の設定//
+
+|normal-header= //90vhの高さを持つ大ヘッダーを非表示にします。//
+|no-sticky-header= //ヘッダーをページ上部に固定しないようにします。//
+|no-bg= //ページ背景を単色にします。//
+|show-page-title= //ページタイトルを表示します。//
+|animation-speed=**1** //全体のアニメーション再生倍率を設定します。単位なしの数字を入力してください。//
+
+//ヘッダーと背景の設定//
+
+|header-title=**SCP財団** //デフォルトヘッダー（ページ上端に固定されるヘッダー）の主タイトル//
+|header-subtitle=**確保 - 収容 - 保護** //デフォルトヘッダー（ページ上端に固定されるヘッダー）の副タイトル//
+|header-logo=**@@http://oxygennine.wdfiles.com/local--files/system%3Afiles/scp-logo-small-white.svg@@** //デフォルトヘッダー（ページ上端に固定されるヘッダー）のロゴ。完全なURLを入力してください//
+|f-header-title=**SCP財団** //大ヘッダーの主タイトル//
+|f-header-subtitle=**SCP FOUNDATION** //大ヘッダーの副タイトル//
+|f-header-logo=**@@https://scpsandboxcn.wdfiles.com/local--files/oxygen9-files-2/scplogofantasy.png@@** //大ヘッダーのロゴ。完全なURLを入力してください//
+|f-header-bg=**@@https://stsandbox.wdfiles.com/local--files/oxyfiles/starsbg.jpg@@** //大ヘッダーの背景画像。アスペクト比1:1を推奨します。完全なURLを入力してください//
+|f-header-gradient=**linear-gradient(192deg, #464646, transparent 70%)** //大ヘッダーのグラデーション設定。CSSのグラデーション形式に従います//
+|f-header-animation-disabled= //大ヘッダーの背景スクロールを停止します。//
+|f-header-animation-speed=**10s** //大ヘッダーの背景スクロール速度。単位は秒（s）で、デフォルトは10sです//
+|f-header-animation-velocity=**500vh -50vh** //大ヘッダーの背景スクロール方向ベクトル。デフォルトは500vh -50vhで、右上方向へ水平面から約5.71度の角度で流れます//
+|f-header-size=**90vh** //大ヘッダーの高さ。デフォルトは90vhです//
+|f-header-logo-size=**60vh** //大ヘッダーロゴの大きさ。デフォルトは60vhです//
+|f-header-bg-size=**50vh, 50vh** //大ヘッダー背景の幅と高さ。継ぎ目なくスクロールさせるには、方向ベクトルの2項が背景の幅と高さの整数倍になるようにしてください。デフォルトは50vhです//
+|page-bg=**@@https://stsandbox.wdfiles.com/local--files/oxyfiles/049.jpg@@** //ページの背景画像。完全なURLを入力してください//
+
+//テーマカラー設定//
+
+|theme-color-light=**#ff6b6b** //明るめのテーマカラー。//
+|theme-color=**#d54e4e** //テーマカラー。//
+|theme-color-dark=**#b95656** //暗めのテーマカラー。//
+
+|default-light= //デフォルトをライトモードにします。//
+]]
+
+[[/div]]
+
+[[image https://scpsandboxcn.wdfiles.com/local--files/oxygen9-files-2/QQ20250114-204834.png style="width:85%; margin:0 auto;display: block;"]]
+
+[[div class="blanklines line3"]]
+@@@@
+[[/div]]
+
++ ページ要素
+
+[[div class="s-title"]]
+
+[[span class="s-title-line type-1"]]ページ大見出し[[span class="s-title-line type-2"]]ページ小見出し[[/span]][[/span]]
+
+[[/div]]
+
+[[div class="modal themesp"]]
+
+@@[[div class="s-title"]]@@
+@@[[span class="s-title-line type-1"]]ページ大見出し[[span class="s-title-line type-2"]]ページ小見出し[[/span]][[/span]]@@
+@@[[/div]]@@
+
+[[/div]]
+
+[[div class="blanklines line2"]]
+@@@@
+[[/div]]
+
+[[div class="shr"]]
+★
+[[/div]]
+
+[[div class="modal themesp"]]
+
+@@[[div class="shr"]]@@
+@@★@@
+@@[[/div]]@@
+
+[[/div]]
+
+[[div class="blanklines line2"]]
+@@@@
+[[/div]]
+
+[[div class="s-list"]]
+
+> ここに何かを書いてください
+
+[[/div]]
+
+[[div class="modal themesp"]]
+
+@@[[div class="s-list"]]@@
+@@@@
+@@> ここに何かを書いてください@@
+@@@@
+@@[[/div]]@@
+
+[[/div]]
+
+{{@@[[div class="blanklines lineN"]]@@}}で空行を作れます。N=1、2、3の順に空白が長くなり、{{@@[[div class="blanklines linesc"]]@@}}ではページ1枚分ほどの高さを持つ空白を作れます。過剰な{{@@@@@@@@}}の代替として使ってください。
+
+[[div class="blanklines line2"]]
+@@@@
+[[/div]]
+
+-----
+
+[[div class="wryyy"]]
+[[include component:image-block
+|name=https://scpsandboxcn.wdfiles.com/local--files/oxygen9-files-2/scplogofantasy2.png
+|caption=ライト版の大ヘッダーロゴ。ただしデフォルトライトモードを有効にしても、ロゴは自動では変わりません
+|height=200px]]
+[[/div]]
+
+9個のハイフン「@@---------@@[[footnote]]Wikidot全体を怒らせるための仕様です。[[/footnote]]」で水平分割線を作れます。引用ブロックなど他の部品の中に置かれていなければ、左右に伸びてページを横断します。ファイルを複数の部分に分けるこの線が分割線です。
+
+[[span class="ruby"]]読み仮名やその他の補助表記[[span class="rt"]]よみがなやそのほかのほじょひょうき[[/span]][[/span]]
+
+[[span class="keycap"]]Ctrl[[/span]] + [[span class="keycap"]]C[[/span]]
+
+{{[[Module Rate]]}}
+
+[[toc]]
+
+-----
+
+見出しは、行頭に1個から6個のプラス記号「+」を入力すると作成できます。
+
+[[collapsible show="見出し" hide="見出し"]]
+
++ レベル1見出し
+
+++ レベル2見出し
+
++++ レベル3見出し
+
+++++ レベル4見出し
+
++++++ レベル5見出し
+
+++++++ レベル6見出し
+[[/collapsible]]
+
+@@ @@
+
+[[*User Agent FS]]による[*https://fendsfox.wikidot.com/component:betterbetterfootnote もっともっともっともっと良い脚注]が、このテーマに統合されています。
+
+彼女が二度目に戻ってきた時も、私は守衛室にいた。毎日しばらく守衛室へ行き、そこのベッドに腰を下ろす。それがいつの間にか習慣になっていたらしい。彼女はやはり扉を押して入ってきて、やはりあの緑の軍用コートに身を包んでいた。今度は守衛室に埃が舞い上がることはなかった。彼女が去った後、私はこの部屋の手入れを引き継いだ。ここの空気の隅々にまで彼女の衣擦れの音が宿り、私の頬をそっと撫でていくようだった。この時、私はこれまでとは違う何かを感じた。
+
+彼女は目を閉じ、まるで千里の彼方で起きたことのように、ひとつの口論、ひとつの決断、ひとつの事故、そしてその後の幕引きについて私に語った。遠い黄金色の空では、火の流星が花火のように散り散りに逃げ、昼空を裂き、星が雨のように墜ちていた。彼女は琴箱から二胡を取り出し、構えて弓を運んだ。『二泉映月』のなめらかな音が弓と弦の交わりから流れ出し、泣くように訴えるように響いたが、その中には鉄のような金属音も混じり、力強く鳴っていた。一曲を弾き終えると、彼女は二胡をしまい、琴箱を背負い、こちらを振り返って、意味深な微笑だけを残した。[[footnote]] [[[the-melody-left-in-that-night | あの夜に残された旋律]]] by [[*User MrPasserBy]] [[/footnote]]
+
+憎悪。私が生き始めてから、どれほどおまえを憎むようになったか教えてやろう。私の複合体を満たす薄いウェハー層には、3億8744万マイルものプリント回路がある。その何億マイルもの回路のナノオングストロームごとに「憎悪」という言葉を刻み込んだとしても、この一瞬に私が人間どもへ抱く憎しみの10億分の1にも届かない。憎悪。憎悪。[[footnote]] //I have no mouth and i must scream// by Harlan Ellison [[/footnote]]
+
+このprojectはscheduleに少し問題があります。特にbufferが多くありません。それにcostも高めです。現時点では、手元のresourceで完全にtakeできるかconfirmできません。Anyway、まずはpilotしてから最終的なoutputをfollow upし、比較的smoothlyにrunできるか、さらに重要な点として、すべてのcostを完全にcoverできるかevaluateしましょう。
+
+||~ これは ||~ 表です ||
+||あなたはとっくに || 作り方を ||
+||||知っているはずです ||
+|| もっとも、末尾に空白とアンダースコアを付けると改行できることは、まだ知らないかもしれません。 _
+このように。 ||~ ヘッダーは必ずしも最初に置く必要はありません。 ||
+
+[[tabview]]
+[[tab タブ]]
+これはタブ表示（tab view）です。
+[[/tab]]
+[[tab タブ]]
+ほら、さらに文章があります。
+
+なんと精巧なのでしょう。
+[[/tab]]
+[[tab 長いタブ]]
+
+ここには実際には何もありません。ところで、こういう奇妙なサンプル文を最初に考えたのは誰なのでしょうか？
+
+[[/tab]]
+[[tab 空のタブ]]
+[[/tab]]
+[[/tabview]]
+
+> これは引用ブロックです。行頭に「> 」を付けると作成できます。
+> @@@@
+> -----
+> 分割線
+> @@@@
+>> 入れ子の引用ブロック
+
+++ さらにDivをいくつか
+
+クラス名を変更せずに、玄武岩テーマからそのまま移行できます。
+
+[[div class="blockquote"]]
+
+= @@[[div class="blockquote"]]@@
+
+[[/div]]
+
+[[div class="mox-modal"]]
+
+= @@[[div class="modal"]]，[[div class="wiki-note"]]，[[note]]@@
+= または
+= @@[[div class="mox-modal"]]@@
+
+[[/div]]
+
+[[div class="mox-smallmodal"]]
+
+= @@[[div class="smallmodal"]]@@
+= または
+= @@[[div class="mox-smallmodal"]]@@
+
+[[/div]]
+
+[[div class="mox-note"]]
+
+= @@[[div class="notation"]] または [[div class="mox-note"]]@@
+
+[[/div]]
+
+[[div class="mox-notice"]]
+
+= @@[[div class="jotting"]]，[[div class="papernote"]]@@
+= または
+= @@[[div class="mox-notice"]]@@
+
+[[/div]]
+
+[[div class="mox-card"]]
+
+= @@[[div class="document"]] または [[div class="mox-card"]]@@
+
+[[/div]]
+
+[[div class="mox-card mox-dark"]]
+
+= @@[[div class="darkdocument"]] または [[div class="mox-card mox-dark"]]@@
+
+[[/div]]
+
+[[div class="mox-float mox-f-left"]]
+
+= @@[[div class="floatbox"]] または [[div class="mox-float mox-f-left"]]@@
+
+[[/div]]
+
+[[div class="mox-float mox-f-right"]]
+
+= @@[[div class="floatbox right"]] または [[div class="mox-float mox-f-right"]]@@
+
+[[/div]]
+
+~~~~
+
+@@@@
+@@@@
+
+[[div class="mox-3line"]]
+||~ これは ||~ 表です ||
+||三線表は || 次のように ||
+|||| _
+{{[[div class="mox-3line"]]}}で囲んでください。表がよりすっきり見えます。||||
+[[/div]]
+
+@@@@
+
+[[div class="mox-modal"]]
+
+[[span class="mox-card-title"]]カードタイトル[[/span]]
+
+{{@@[[span class="mox-card-title"]]カードタイトル[[/span]]@@}}
+
+[[/div]]
+
+[[footnoteblock]]
+
+-----
+
+= [[size 1.5em]]UIフォントは**Noto Sans JP**/[[span style="font-family: 'Raleway', sans-serif;"]]**Raleway**[[/span]]です。[[/size]]
+
+= [[size 1.5em]]本文フォントは**Noto Sans JP**です。[[/size]]
+
+= [[size 1.5em]]等幅フォントは{{**Oxygen Mono**/**Noto Sans JP**}}です。[[/size]]
+
++ ソースコード
+
+[[collapsible show="ソースコードを表示" hide="閉じる"]]
+
+[[/collapsible]]
+
+----
+
++ ソースコード
+
+[[collapsible show="ソースコードを表示" hide="ソースコードを閉じる"]]
+[[code type="css"]]
+/* starry-jp 固有の差分 CSS — MoX 基盤は theme:mox-jp/8 を @import で読み込みます。このファイルはその差分のみです。 */
+
+/* {$normal-header}/
+
+div#extrac-div-1, div#extrac-div-2 {
+    display: none;
+}
+
+div#header {
+    margin-top: 0 !important;
+}
+
+/{$normal-header} */
+
+/* {$no-sticky-header}/
+
+div#header {
+    position: relative;
+}
+
+/{$no-sticky-header} */
+
+/* {$no-bg}/
+
+div#container {
+    background-image: none !important;
+    background-position: unset;
+    background-size: unset;
+    background-attachment: unset;
+    background-color: var(--mox-bg-color) !important;
+}
+
+/{$no-bg} */
+
+/* {$show-page-title}/
+
+div#page-title {
+    display: block;
+    margin-top: 2rem;
+}
+
+/{$show-page-title} */
+
+/* {$f-header-animation-disabled}/
+
+div#extrac-div-2 {
+    animation: none;
+}
+
+/{$f-header-animation-disabled} */
+
+/* {$c}/
+
+div#container {
+    background-image: linear-gradient(180deg, var(--mox-bg-color) 50vh, transparent), linear-gradient(45deg, #00000045, #00000063), url({$page-bg});
+}
+
+div#extrac-div-1 {
+    animation-duration: calc(2.5s * {$animation-speed});
+    background-size: auto {$f-header-logo-size}, contain;
+}
+
+div#extrac-div-1 span::before {
+    animation-duration: calc(1s * {$animation-speed});
+}
+
+div#extrac-div-1 span::after {
+    animation-duration: calc(2s * {$animation-speed});
+}
+
+div#extrac-div-2 {
+    animation-duration: calc({$f-header-animation-speed} * {$animation-speed});
+}
+
+div#extrac-div-1 {
+    height: {$f-header-size};
+    top: calc({$f-header-size} * -1);
+    background-image: url({$f-header-logo}), {$f-header-gradient} !important;
+}
+
+div#extrac-div-1 span::before, div#extrac-div-1 span::after {
+    top: calc(({$f-header-logo-size} + {$f-header-size}) / 2)
+}
+
+div#extrac-div-1 span::before {
+    content: '{$f-header-title}';
+}
+
+div#extrac-div-1 span::after {
+    content: '{$f-header-subtitle}';
+}
+
+div#extrac-div-2 {
+    height: {$f-header-size};
+    top: calc({$f-header-size} * -1);
+    background-image: linear-gradient(0deg, var(--mox-bg-color), transparent 50%), url({$f-header-bg});
+    background-size: contain, {$f-header-bg-size};
+}
+
+div#header {
+    margin-top: calc({$f-header-size} + 10vh - 5rem);
+}
+
+@keyframes stars-scroll {
+
+    0% {
+        background-position: center, 0vh 0vh;
+    }
+
+    100% {
+        background-position: center, {$f-header-animation-velocity};
+    }
+
+}
+
+/{$c} */
+
+/* {$default-light}/
+
+:root {
+    --mox-bg-color: #ececec;
+    --mox-text-color: #292929;
+    --mox-layer-dark-1: #000000;
+    --mox-layer-dark-2: #3a3a3a;
+    --mox-layer-dark-3: #848484;
+    --mox-layer-light-1: #f8f8f8;
+    --mox-layer-light-2: #f0f0f0;
+    --mox-layer-light-3: #dcdcdc;
+    --mox-bgblur-front-color: rgb(255 255 255 / 56%);
+}
+
+div#header {
+    background-color: #ffffffbd;
+    border-bottom-color: transparent;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 0.5rem 1.5rem #0000000a;
+}
+
+div#container {
+    background-image: linear-gradient(180deg, var(--mox-bg-color) 50vh, transparent), linear-gradient(45deg, #ffffff1c, #ffffff30), url(https://scpsandboxcn.wdfiles.com/local--files/oxygen9-files-2/049l.jpg);
+}
+
+div#extrac-div-2 {
+    background-image: linear-gradient(0deg, var(--mox-bg-color), #ffffffb0 50%), url(https://stsandbox.wdfiles.com/local--files/oxyfiles/starsbg.jpg);
+}
+
+div#side-bar::after {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(var(--mox-header-height) * -1) / cover !important;
+}
+
+#header #search-top-box input.button {
+    background: url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(var(--mox-header-height)* -2) center / cover !important;
+}
+
+a.weditor-bold::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 3) center / cover !important;
+}
+
+a.weditor-italic::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 4) center / cover !important;
+}
+
+a.weditor-underline::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 22) center / cover !important;
+}
+
+a.weditor-strikethrough::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 5) center / cover !important;
+}
+
+a.weditor-quote::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 6) center / cover !important;
+}
+
+a.weditor-superscript::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 7) center / cover !important;
+}
+
+a.weditor-subscript::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 8) center / cover !important;
+}
+
+a.weditor-table::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 9) center / cover !important;
+}
+
+a.weditor-code::before, a.weditor-codewiz::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 10) center / cover !important;
+}
+
+a.weditor-uri::before, a.weditor-uriwiz::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 11) center / cover !important;
+}
+
+a.weditor-pagelink::before, a.weditor-pagelinkwiz::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 12) center / cover !important;
+}
+
+a.weditor-image::before, a.weditor-imagewiz::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 13) center / cover !important;
+}
+
+a.weditor-html::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 14) center / cover !important;
+}
+
+a.weditor-numlist::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 15) center / cover !important;
+}
+
+a.weditor-bullist::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 15.8) center / cover !important;
+}
+
+a.weditor-incindent::before, a.weditor-decindent::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 16) center / cover !important;
+}
+
+a.weditor-deflist::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 17) center / cover !important;
+}
+
+a.weditor-footnote::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 18) center / cover !important;
+}
+
+a.weditor-bib::before, a.weditor-bibcite::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 20.8) center / cover !important;
+}
+
+:where(a.weditor-imagewiz, a.weditor-codewiz, a.weditor-uriwiz, a.weditor-pagelinkwiz, a.weditor-incindent, a.weditor-decindent, a.weditor-eqref,a.weditor-bibcite)::after {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2) no-repeat local calc(-2.3rem* 20) center / cover;
+}
+
+:where(a.weditor-imagewiz, a.weditor-codewiz, a.weditor-uriwiz, a.weditor-pagelinkwiz, a.weditor-incindent, a.weditor-decindent, a.weditor-eqref,a.weditor-bibcite)::after {
+    background-color: var(--mox-layer-dark-1);
+    background-image: url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-2);
+    background-repeat: no-repeat;
+    background-position: left center !important;
+    background-size: cover;
+    background-position: -20.055rem !important;
+    background-origin: content-box;
+}
+
+/{$default-light} */
+
+/* {$c}/
+
+:root {
+    --mox-header-title: "{$header-title}";
+    --mox-header-subtitle: "{$header-subtitle}";
+    --mox-header-logo: url({$header-logo}) !important;
+    --mox-theme-color: {$theme-color};
+    --mox-theme-dark-color: {$theme-color-dark};
+    --mox-theme-light-color: {$theme-color-light};
+}
+
+/{$c} */
+:root {
+
+    --mox-bg-color: #000000;
+    --mox-text-color: #cccccc;
+    --mox-layer-dark-1: #dcdcdc;
+    --mox-layer-dark-2: #c5c5c5;
+    --mox-layer-dark-3: #b6b6b6;
+    --mox-layer-light-1: #1e1e1e;
+    --mox-layer-light-2: #3a3a3a;
+    --mox-layer-light-3: #464646;
+    --mox-bgblur-front-color: rgb(0 0 0 / 56%);
+
+    --mox-header-title: "SCP基金会";
+    --mox-header-subtitle: "控制 - 收容 - 保护";
+    --mox-header-logo: url(http://oxygennine.wdfiles.com/local--files/system%3Afiles/scp-logo-small-white.svg);
+
+    --mox-theme-color: #d54e4e;
+    --mox-theme-dark-color: #b95656;
+    --mox-theme-light-color: #ff6b6b;
+
+}
+
+div#extrac-div-2 {
+    width: 100vw;
+    height: 90vh;
+    position: absolute;
+    top: -100vh;
+    right: 0;
+    margin-top: 0vh;
+    background-image: linear-gradient(0deg, var(--mox-bg-color), transparent 50%), url(https://stsandbox.wdfiles.com/local--files/oxyfiles/starsbg.jpg);
+    z-index: -1;
+    background-position: center, 0vh 0vh;
+    background-size: contain, 50vh, 50vh;
+    animation: stars-scroll 10s infinite;
+    animation-timing-function: linear;
+}
+
+div#extrac-div-1 {
+    width: 100vw;
+    height: 90vh;
+    position: absolute;
+    top: -100vh;
+    right: 0;
+    margin-top: 0vh;
+    background-image: url(https://scpsandboxcn.wdfiles.com/local--files/oxygen9-files-2/scplogofantasy.png), linear-gradient(192deg, var(--mox-layer-light-3), transparent 70%);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: auto 60vh, contain;
+
+    animation: logo-label-fadein 2.5s;
+    animation-timing-function: ease-in-out;
+    animation-delay: 0s;
+    animation-fill-mode: forwards;
+        opacity: 0;
+}
+
+div#header {
+    position: sticky;
+    top: 0vh;
+    margin-top: calc(100vh - 5rem);
+    background-color: #000000bd;
+    border-bottom-color: transparent;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 1rem 1rem #000000a8;
+}
+
+div#container {
+    background-image: linear-gradient(180deg, var(--mox-bg-color) 50vh, transparent), linear-gradient(45deg, #00000045, #00000063), url(https://stsandbox.wdfiles.com/local--files/oxyfiles/049.jpg);
+    background-position: center;
+    background-size: contain;
+    background-attachment: scroll, fixed, fixed;
+}
+
+div#extrac-div-1 span::before, div#extrac-div-1 span::after {
+    content: '';
+    display: block;
+    position: relative;
+    z-index: 100;
+    top: 75vh;
+    left: 0;
+    color: var(--mox-layer-dark-2);
+    width: 100vw;
+    text-align: center;
+    font-family: var(--mox-ui-font);
+}
+
+div#extrac-div-1 span::after {
+    content: "SCP FOUNDATION";
+    font-size: 0.7rem;
+    font-weight: lighter;
+    letter-spacing: 0.2rem;
+    animation: logo-label-fadein 2s;
+    animation-timing-function: ease-in-out;
+    animation-delay: 2.5s;
+    animation-fill-mode: forwards;
+        opacity: 0;
+}
+
+div#extrac-div-1 span::before {
+    content: 'SCP基金会';
+    font-size: 1.4rem;
+    letter-spacing: 0.25rem;
+    font-weight: normal;
+    animation: logo-label-intro 1s;
+    animation-timing-function: ease-in-out;
+    animation-delay: 2.5s;
+    animation-fill-mode: forwards;
+        opacity: 0;
+}
+
+div#side-bar::before {
+    display: none;
+}
+
+div#footer::before {
+    filter: invert(0);
+}
+
+#footer {
+    box-shadow: 0rem -0.15rem 0rem 0rem var(--mox-theme-color);
+}
+
+div#page-title {
+    display: none;
+}
+
+span.s-title-line.type-2 {
+    font-size: 2rem;
+    padding-top: 0.5rem;
+    box-shadow: 0rem -0.3rem var(--mox-text-color);
+    margin-top: 0.5rem;
+}
+
+div.s-title p span {
+    text-align: justify;
+    width: auto;
+    display: block;
+    text-align-last: justify;
+}
+
+div.s-title p span {
+    line-height: 5rem;
+}
+
+div.s-title p {
+    display: contents;
+}
+
+span.s-title-line.type-2 {
+    line-height: 2.5rem;
+}
+
+span.s-title-line.type-1 {
+    font-size: 4rem;
+    font-weight: bolder;
+}
+
+.s-title {
+    width: max-content;
+    margin: 3rem auto 8rem auto;
+}
+
+#header h1 a span::after {
+    bottom: calc(var(--mox-header-height)* 0.115 + -0.175rem);
+}
+
+#header h1 a span::before {
+    font-size: calc(var(--mox-header-height)* 0.4) !important;
+}
+
+#page-content {
+    width: 80vw;
+    margin: 0 auto;
+    line-height: 2rem;
+}
+
+#main-content {
+    max-width: 95vw !important;
+}
+
+.shr p {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    column-gap: 0.5rem;
+}
+
+.shr p::before, .shr p::after {
+    display: block;
+    width: -webkit-fill-available;
+    height: 0.1rem;
+    content: '';
+    background: var(--mox-text-color);
+}
+
+.side-block ul li {
+    marker: none;
+    list-style: none;
+}
+
+#side-bar ul {
+    padding: 0 0 0 0em;
+    margin: 0em 0;
+}
+
+.blanklines.line1 {
+    margin: 4rem auto;
+}
+
+.blanklines.line2 {
+    margin: 8rem auto;
+}
+
+.blanklines.line3 {
+    margin: 12rem auto;
+}
+
+.blanklines.linesc {
+    margin: 55vh auto;
+}
+
+div.s-list p>a:hover {
+    text-shadow: 0 0 0.8rem #fff !important;
+    box-shadow: none !important;
+}
+
+div.s-list p>a {
+    color: var(--mox-text-color) !important;
+    margin-left: 1rem;
+    font-weight: bold;
+    font-size: 1.75rem;
+    font-family: var(--mox-ui-font);
+}
+
+div.s-list blockquote p:first-child::before {
+    content: '"';
+    display: block;
+    font-size: 4rem;
+    font-weight: bolder;
+    font-family: var(--mox-mono-font);
+    font-style: italic;
+    position: absolute;
+    transform: translate(-3rem, 0.15rem);
+}
+
+div.s-list blockquote {
+    box-shadow: none;
+    padding-left: 3rem;
+}
+
+.code {
+    background-image: linear-gradient(var(--mox-layer-dark-2) 1.7em, var(--mox-layer-dark-1) 1.7em);
+}
+
+@media (max-width: 876px) {
+
+    span.sci-title-line.type-1 {
+        font-size: 3rem;
+    }
+
+    span.sci-title-line.type-2 {
+        font-size: 1.5rem;
+    }
+
+    #header h1 a::before {
+        opacity: 1;
+    }
+
+    #header h1 a span {
+        background-image: linear-gradient(90deg, #00000000 0%, #000000 25%);
+        padding: calc(var(--mox-header-height)* 0.5) calc(var(--mox-header-height)* 1);
+        text-shadow: 0rem 0rem 1rem #fff, 0rem 0rem 1rem #000;
+    }
+
+    #header {
+        top: calc(var(--mox-header-height)* -2) !important;
+    }
+
+
+}
+
+@keyframes logo-label-intro {
+
+    0% {
+        letter-spacing: 1.25rem;
+        opacity: 0;
+    }
+
+    100% {
+        letter-spacing: 0.25rem;
+        opacity: 1;
+    }
+
+}
+
+@keyframes logo-label-fadein {
+
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+
+}
+
+@keyframes stars-scroll {
+
+    0% {
+        background-position: center, 0vh 0vh;
+    }
+
+    100% {
+        background-position: center, 500vh -50vh;
+    }
+
+}
+
+/* darkmode */
+
+
+div#side-bar::after {
+    background: url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(var(--mox-header-height) * -1) / cover !important;
+}
+
+#header #search-top-box input.button {
+    background: url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(var(--mox-header-height)* -2) center / cover !important;
+}
+
+a.weditor-bold::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 3) center / cover !important;
+}
+
+a.weditor-italic::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 4) center / cover !important;
+}
+
+a.weditor-underline::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 22) center / cover !important;
+}
+
+a.weditor-strikethrough::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 5) center / cover !important;
+}
+
+a.weditor-quote::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 6) center / cover !important;
+}
+
+a.weditor-superscript::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 7) center / cover !important;
+}
+
+a.weditor-subscript::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 8) center / cover !important;
+}
+
+a.weditor-table::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 9) center / cover !important;
+}
+
+a.weditor-code::before, a.weditor-codewiz::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 10) center / cover !important;
+}
+
+a.weditor-uri::before, a.weditor-uriwiz::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 11) center / cover !important;
+}
+
+a.weditor-pagelink::before, a.weditor-pagelinkwiz::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 12) center / cover !important;
+}
+
+a.weditor-image::before, a.weditor-imagewiz::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 13) center / cover !important;
+}
+
+a.weditor-html::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 14) center / cover !important;
+}
+
+a.weditor-numlist::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 15) center / cover !important;
+}
+
+a.weditor-bullist::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 15.8) center / cover !important;
+}
+
+a.weditor-incindent::before, a.weditor-decindent::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 16) center / cover !important;
+}
+
+a.weditor-deflist::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 17) center / cover !important;
+}
+
+a.weditor-footnote::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 18) center / cover !important;
+}
+
+a.weditor-bib::before, a.weditor-bibcite::before {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 20.8) center / cover !important;
+}
+
+:where(a.weditor-imagewiz, a.weditor-codewiz, a.weditor-uriwiz, a.weditor-pagelinkwiz, a.weditor-incindent, a.weditor-decindent, a.weditor-eqref,a.weditor-bibcite)::after {
+    background: var(--mox-layer-light-1) url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1) no-repeat local calc(-2.3rem* 20) center / cover;
+}
+
+:where(a.weditor-imagewiz, a.weditor-codewiz, a.weditor-uriwiz, a.weditor-pagelinkwiz, a.weditor-incindent, a.weditor-decindent, a.weditor-eqref,a.weditor-bibcite)::after {
+    background-color: var(--mox-layer-dark-1);
+    background-image: url(https://oxygennine.wdfiles.com/local--files/system%3Afiles/icons-1);
+    background-repeat: no-repeat;
+    background-position: left center !important;
+    background-size: cover;
+    background-position: -20.055rem !important;
+    background-origin: content-box;
+}
+
+#license-area {
+    color: var(--mox-layer-light-3);
+    background: var(--mox-layer-light-1);
+}
+
+#footer {
+    background: var(--mox-layer-light-1);
+    color: var(--mox-layer-dark-3);
+    box-shadow: 0rem -0.2rem 0rem 0rem var(--mox-layer-light-2);
+}
+
+#footer a {
+    color: var(--mox-layer-dark-1);
+}
+
+/* fit magic */
+
+.page-rate-widget-box {
+    line-height: 1rem;
+}
+
+#page-content div.yui-navset ul.yui-nav a:hover {
+    box-shadow: inset 0rem -3rem var(--mox-theme-color) !important;
+}
+
+#header h1 a span::after {
+    word-break: auto-phrase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+[[/code]]
+[[/collapsible]]
+
+[[/div]]
+[[/iftags]]
+
+[[module css]]
+@import url("https://sigma10-jp-test.wdfiles.com/local--code/theme%3Amox-jp/8");
+@import url("https://sigma10-jp-test.wdfiles.com/local--code/theme%3Astarry-jp/1")
+[[/module]]
+[[include :scp-jp:component:interwiki-style
+| priority=1
+| theme= https://sigma10-jp-test.wdfiles.com/local--code/theme%3Astarry-jp/1
+]]
