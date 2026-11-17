@@ -3335,10 +3335,12 @@ fn credit_start_attribute_gates_evaluate_and_exhibit_like_live() {
     // the link value truncates to href="/", the style attribute is
     // dropped with the rest of the head, and the head remainder
     // spills as body text right after the image (prepare_outer's
-    // exhibited-gate head truncation; G2-RESTORE.md). One bounded
-    // sub-residual remains: live wikitext-parses the spill's bracket
-    // sequences ([[/iftags]][[iftags ...]]) into junk single-links,
-    // while the exhibit mechanism restores them as literal text.
+    // exhibited-gate head truncation; G2-RESTORE.md). Live also
+    // wikitext-parses the spill's bracket runs into junk single-links;
+    // the exhibit mechanism leaves the gate tokens opaque to the
+    // tokenizer, so prepare_outer's spill rewrite emits the same
+    // anchors as raw-HTML fragments (G2-RESTORE's former
+    // "junk-link sub-residual" is now closed). G1 and G3 are unchanged.
     assert!(html.contains("<a href=\"/\">"), "{html}");
     assert!(
         html.contains(
@@ -3346,10 +3348,9 @@ fn credit_start_attribute_gates_evaluate_and_exhibit_like_live() {
         ),
         "{html}"
     );
-    assert!(html.contains("</a>archived:heritage-collection"), "{html}");
     assert!(
         html.contains(
-            "patrimoine-francais-de-la-fondation-scp[[/iftags]]&quot; style=&quot;max-width: none;&quot;]]"
+            "</a>archived:heritage-collection[<a href=\"/iftags]][[iftags\">+殿堂入り +jp</a>]heritage-collection-jp[<a href=\"/iftags]][[iftags\">+殿堂入り +fr</a>]patrimoine-francais-de-la-fondation-scp[[/iftags]]&quot; style=&quot;max-width: none;&quot;]]"
         ),
         "{html}"
     );

@@ -8874,7 +8874,7 @@ async fn listpages_sticky_note_div_inside_raw_spans_stays_literal() {
     // F9 / LP-FAILURES-ADJUDICATE: live Wikidot keeps a [[div]] written
     // inside @@ raw spans literal text (the "sticky note" documentation
     // idiom). WJ used to execute it as a block.
-    let mut runner = TestRunner::setup().await;
+    let runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
     let site_id = site.site.site_id;
