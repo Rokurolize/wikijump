@@ -75,12 +75,6 @@ static LISTPAGES_CONTENT_CONTEXT_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|
         .expect("ListPages selected-content module expression is valid")
 });
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) enum SelectedContentIncludeMode {
-    Execute,
-    Preserve,
-}
-
 #[derive(Debug)]
 pub(super) struct RenderedListPagesSource {
     pub(super) body: String,
@@ -564,7 +558,6 @@ pub(super) async fn render_list_pages_default_summary_source(
 
 pub(super) async fn render_list_pages_selected_content_source(
     args: ListPagesSelectedContentArgs<'_, '_, '_, '_>,
-    include_mode: SelectedContentIncludeMode,
 ) -> Result<RenderedListPagesSource> {
     let ListPagesSelectedContentArgs {
         ctx,
@@ -606,12 +599,8 @@ pub(super) async fn render_list_pages_selected_content_source(
     let wikitext =
         protect_selected_content_spans(&wikitext, &mut selected_content_fragments);
     let mut selected_content_text = CompatTextFragments::new(&wikitext);
-    let wikitext = match include_mode {
-        SelectedContentIncludeMode::Execute => wikitext,
-        SelectedContentIncludeMode::Preserve => {
-            protect_selected_content_includes(&wikitext, &mut selected_content_text)
-        }
-    };
+    let wikitext =
+        protect_selected_content_includes(&wikitext, &mut selected_content_text);
     let mut selected_content_settings = settings.clone();
     selected_content_settings.enable_page_syntax = true;
     selected_content_settings.use_true_ids = false;

@@ -14,12 +14,11 @@ use super::{
     PageParentSelector, PageQuery, PageQueryService, PageRevisionService, PageService,
     PaginationSelector, Permission, PermissionService, PrepareDelayedListPagesRowParams,
     QueryFilter, Reference, RenderRuntime, RenderService, ResolvedListPagesAuthors,
-    Resource, Result, ResultExt, ScoreSelector, ScoreValue, SelectedContentIncludeMode,
-    SiteService, TagCondition, append_list_pages_delayed_occurrences,
-    append_list_pages_runtime_text_ranges, escape_html_text,
-    finish_or_defer_list_pages_delayed_output_with_modes, has_include_opening_candidate,
-    has_list_pages_module_opening_candidate, is_list_pages_visible_tag,
-    list_pages_ajax_box_opening, list_pages_ajax_identity,
+    Resource, Result, ResultExt, ScoreSelector, ScoreValue, SiteService, TagCondition,
+    append_list_pages_delayed_occurrences, append_list_pages_runtime_text_ranges,
+    escape_html_text, finish_or_defer_list_pages_delayed_output_with_modes,
+    has_include_opening_candidate, has_list_pages_module_opening_candidate,
+    is_list_pages_visible_tag, list_pages_ajax_box_opening, list_pages_ajax_identity,
     list_pages_body_uses_first_image, list_pages_content_query_target,
     list_pages_created_by_slug, list_pages_feed_info_html,
     list_pages_feed_only_render_result, list_pages_first_paragraph,
@@ -348,7 +347,6 @@ impl RenderService {
             exclude_current_page,
         );
         let wants_content = template.uses_content();
-        let wants_rendered_content = template.content_sections().contains(&None);
         let wants_summary = template.uses_first_paragraph();
         let wants_first_paragraph = wants_summary;
         let wants_full_default_summary = template.is_default_template()
@@ -1031,11 +1029,10 @@ impl RenderService {
                 .into());
             }
             let (
-                rendered_page_content,
                 rendered_page_summary,
                 rendered_page_first_paragraph,
                 rendered_page_styles,
-            ) = if wants_rendered_content || wants_first_paragraph {
+            ) = if wants_first_paragraph {
                 match page_wikitext.as_deref() {
                     Some(wikitext) => {
                         let mut rendered_page_styles = Vec::new();
@@ -1073,35 +1070,16 @@ impl RenderService {
                             language: Cow::Owned(page_info.language.to_string()),
                         };
                         let max_include_expansions = include_budget.remaining;
-                        let rendered_content = if wants_rendered_content {
-                            let mut rendered = render_list_pages_selected_content_source(
-                                ListPagesSelectedContentArgs {
-                                    ctx,
-                                    wikitext,
-                                    page_info: &selected_page_info,
-                                    settings,
-                                    current_site_id,
-                                    current_category_id: page
-                                        .page_category_id
-                                        .unwrap_or(0),
-                                    current_page_id: page.page_id,
-                                    viewer_user_id,
-                                    max_include_expansions,
-                                    trusted_corpus_render: include_budget
-                                        .trusted_corpus_render,
-                                    render_cost_budget: render_cost_budget.clone(),
-                                    url,
-                                },
-                                SelectedContentIncludeMode::Execute,
-                            )
-                            .await?;
-                            include_budget.consume(rendered.expanded_include_count);
-                            included_pages.extend(rendered.included_pages);
-                            rendered_page_styles.append(&mut rendered.styles);
-                            Some(rendered.body)
-                        } else {
-                            None
-                        };
+                        // No full-content render runs for %%content%%:
+                        // live Wikidot substitutes the listed page's raw
+                        // wikitext (LISTPAGES-DEEP D7, #3774), so a render
+                        // of the content could only consume the caller's
+                        // include budget and register backlinks for
+                        // includes that never execute, and could fail the
+                        // whole render once that phantom consumption
+                        // exhausts the budget. The summary fallback reads
+                        // the raw section text instead, exactly as the
+                        // delayed substitution path already does.
                         let summary_source = wants_summary.then(|| {
                             let summary = wikidot_content_section(wikitext, Some(1));
                             if wants_full_default_summary {
@@ -1158,7 +1136,6 @@ impl RenderService {
                                         render_cost_budget: render_cost_budget.clone(),
                                         url,
                                     },
-                                    SelectedContentIncludeMode::Preserve,
                                 )
                                 .await?
                             };
@@ -1204,7 +1181,6 @@ impl RenderService {
                                                 .clone(),
                                             url,
                                         },
-                                        SelectedContentIncludeMode::Preserve,
                                     )
                                     .await?;
                                 include_budget.consume(rendered.expanded_include_count);
@@ -1216,16 +1192,15 @@ impl RenderService {
                             None
                         };
                         (
-                            rendered_content,
                             rendered_summary,
                             rendered_first_paragraph,
                             rendered_page_styles,
                         )
                     }
-                    None => (None, None, None, Vec::new()),
+                    None => (None, None, Vec::new()),
                 }
             } else {
-                (None, None, None, Vec::new())
+                (None, None, Vec::new())
             };
             let substitution_context = ListPagesSubstitutionContext {
                 authored_limit: limit,
@@ -1242,7 +1217,7 @@ impl RenderService {
                 snapshot_displays,
                 runtime_displays,
                 page_wikitext: page_wikitext.as_deref(),
-                page_rendered_content: rendered_page_content.as_deref(),
+                page_rendered_content: None,
                 page_rendered_summary: rendered_page_summary.as_deref(),
                 page_rendered_summary_is_block: wants_full_default_summary,
                 default_summary_first_paragraph:

@@ -23231,7 +23231,23 @@ async fn create_listpages_test_page(
 }
 
 #[tokio::test]
-async fn listpages_plain_content_shares_the_outer_include_budget() {
+async fn listpages_content_includes_stay_literal_and_consume_no_budget() {
+    // Live Wikidot substitutes the listed page's raw wikitext for
+    // %%content%%, with [[...]] constructs shown as literal text
+    // (LISTPAGES-DEEP D7; the include shape was re-measured by the
+    // LP-BUDGET-255 lane on sandbox-for-codex, probe pages
+    // muse-probe-lp255-list2 and muse-probe-lp255-listbudget2: a
+    // listed page whose content is a single [[include]] shows the
+    // include as literal text, and a page carrying 255 direct
+    // includes plus a ListPages over that child renders exactly 255
+    // expansions with no error). Selected content therefore
+    // executes no includes, consumes none of the caller's include
+    // budget, and creates no backlinks. This test previously pinned
+    // the pre-#3774 Execute-mode semantics (selected content
+    // executes within a shared 256 budget, fail-closed); #3774
+    // replaced the substitution with the raw form, and the leftover
+    // Execute render has been removed, so the scenarios below pin
+    // the raw semantics at the old boundary shapes.
     const COMPONENT_SLUG: &str = "component:listpages-include-budget-cell";
     const INDEX_SLUG: &str = "fixture-listpages-include-budget-index";
     const SAME_ROW_CHILD_SLUG: &str = "fixture-listpages-include-budget-same-row-child";
@@ -23477,11 +23493,11 @@ async fn listpages_plain_content_shares_the_outer_include_budget() {
         UrlArguments::default(),
     )
     .await
-    .expect("plain content may use the final include slot while a numbered section stays literal");
+    .expect("plain content substitutes the raw wikitext while a numbered section stays literal");
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        256,
-        "plain selected content must execute within the caller's final include slot",
+        255,
+        "only the direct outer includes may execute; the selected content include stays literal",
     );
     assert_eq!(
         output
@@ -23491,8 +23507,8 @@ async fn listpages_plain_content_shares_the_outer_include_budget() {
             .iter()
             .filter(|page| page.page() == COMPONENT_SLUG)
             .count(),
-        256,
-        "the selected child include must contribute its dependency backlink",
+        255,
+        "a literal selected content include must not contribute a dependency backlink",
     );
     assert_eq!(
         output
@@ -23500,8 +23516,8 @@ async fn listpages_plain_content_shares_the_outer_include_budget() {
             .body
             .matches(&format!("[[include {COMPONENT_SLUG}]]"))
             .count(),
-        1,
-        "only numbered section content may preserve the authored include token",
+        2,
+        "the plain and the numbered-section content forms both preserve the authored include token",
     );
 
     let direct_includes =
@@ -23522,44 +23538,22 @@ async fn listpages_plain_content_shares_the_outer_include_budget() {
         UrlArguments::default(),
     )
     .await
-    .expect("selected child includes within the shared public limit should render");
+    .expect(
+        "a selected child whose includes stay literal renders alongside direct includes",
+    );
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        256,
-        "direct and selected child includes must share the public include limit",
+        128,
+        "only the direct includes execute; the selected child's includes stay literal",
     );
-
-    let repeated_child = format!("{direct_includes}{}{}", list_pages(1), list_pages(1),);
-    let error = RenderService::render_page(
-        runner.context(),
-        repeated_child.clone(),
-        &page_info,
-        Layout::Wikidot,
-        page_id,
-        UrlArguments::default(),
-    )
-    .await
-    .expect_err(
-        "repeated selected child includes must fail closed when the shared limit is exhausted",
-    );
-    assert!(
-        format!("{error:?}")
-            .contains("include expansion exceeded maximum total includes"),
-        "the public failure must identify the include ceiling: {error:?}",
-    );
-    let output = RenderService::render_corpus_page(
-        runner.context(),
-        repeated_child,
-        &page_info,
-        Layout::Wikidot,
-        page_id,
-    )
-    .await
-    .expect("the trusted corpus include budget should cover both selected rows");
     assert_eq!(
-        output.html_output.body.matches(INCLUDE_MARKER).count(),
-        384,
-        "corpus rendering must execute direct and selected child includes",
+        output
+            .html_output
+            .body
+            .matches(&format!("[[include {COMPONENT_SLUG}]]"))
+            .count(),
+        128,
+        "the selected row preserves every authored include token",
     );
     assert_eq!(
         output
@@ -23569,12 +23563,83 @@ async fn listpages_plain_content_shares_the_outer_include_budget() {
             .iter()
             .filter(|page| page.page() == COMPONENT_SLUG)
             .count(),
-        384,
-        "every executed direct and selected include must create a backlink",
+        128,
+        "literal selected content includes create no backlinks",
+    );
+
+    let repeated_child = format!("{direct_includes}{}{}", list_pages(1), list_pages(1),);
+    let output = RenderService::render_page(
+        runner.context(),
+        repeated_child.clone(),
+        &page_info,
+        Layout::Wikidot,
+        page_id,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("repeated selected rows stay literal and cannot exhaust the include budget");
+    assert_eq!(
+        output.html_output.body.matches(INCLUDE_MARKER).count(),
+        128,
+        "only the direct includes execute, however often the child is listed",
+    );
+    assert_eq!(
+        output
+            .html_output
+            .body
+            .matches(&format!("[[include {COMPONENT_SLUG}]]"))
+            .count(),
+        256,
+        "each repeated row preserves the child's authored include tokens",
+    );
+    assert_eq!(
+        output
+            .html_output
+            .backlinks
+            .included_pages
+            .iter()
+            .filter(|page| page.page() == COMPONENT_SLUG)
+            .count(),
+        128,
+        "literal selected content includes create no backlinks",
+    );
+    let output = RenderService::render_corpus_page(
+        runner.context(),
+        repeated_child,
+        &page_info,
+        Layout::Wikidot,
+        page_id,
+    )
+    .await
+    .expect("corpus rendering shows the same literal selected content");
+    assert_eq!(
+        output.html_output.body.matches(INCLUDE_MARKER).count(),
+        128,
+        "corpus rendering executes the direct includes only",
+    );
+    assert_eq!(
+        output
+            .html_output
+            .body
+            .matches(&format!("[[include {COMPONENT_SLUG}]]"))
+            .count(),
+        256,
+        "corpus rendering preserves both rows' authored include tokens",
+    );
+    assert_eq!(
+        output
+            .html_output
+            .backlinks
+            .included_pages
+            .iter()
+            .filter(|page| page.page() == COMPONENT_SLUG)
+            .count(),
+        128,
+        "corpus rendering adds no backlinks for literal selected content",
     );
 
     let over_budget = format!("{direct_includes}{}", list_pages(2));
-    let error = RenderService::render_page(
+    let output = RenderService::render_page(
         runner.context(),
         over_budget.clone(),
         &page_info,
@@ -23583,13 +23648,31 @@ async fn listpages_plain_content_shares_the_outer_include_budget() {
         UrlArguments::default(),
     )
     .await
-    .expect_err(
-        "two selected include-heavy rows must fail closed when their partition exceeds the public budget",
+    .expect("two selected include-heavy rows stay literal; only direct includes count");
+    assert_eq!(
+        output.html_output.body.matches(INCLUDE_MARKER).count(),
+        128,
+        "only the direct includes execute when both children are listed",
     );
-    assert!(
-        format!("{error:?}")
-            .contains("include expansion exceeded maximum total includes"),
-        "the public failure must identify the include ceiling: {error:?}",
+    assert_eq!(
+        output
+            .html_output
+            .body
+            .matches(&format!("[[include {COMPONENT_SLUG}]]"))
+            .count(),
+        256,
+        "both rows preserve their authored include tokens",
+    );
+    assert_eq!(
+        output
+            .html_output
+            .backlinks
+            .included_pages
+            .iter()
+            .filter(|page| page.page() == COMPONENT_SLUG)
+            .count(),
+        128,
+        "literal selected content includes create no backlinks",
     );
 
     let output = RenderService::render_corpus_page(
@@ -23600,13 +23683,20 @@ async fn listpages_plain_content_shares_the_outer_include_budget() {
         page_id,
     )
     .await
-    .expect(
-        "trusted corpus rendering should execute both selected rows within its budget",
-    );
+    .expect("trusted corpus rendering shows the same literal selected content");
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        384,
-        "the corpus render must execute direct and selected child includes",
+        128,
+        "the corpus render executes the direct includes only",
+    );
+    assert_eq!(
+        output
+            .html_output
+            .body
+            .matches(&format!("[[include {COMPONENT_SLUG}]]"))
+            .count(),
+        256,
+        "the corpus render preserves both rows' authored include tokens",
     );
     assert_eq!(
         output
@@ -23616,8 +23706,8 @@ async fn listpages_plain_content_shares_the_outer_include_budget() {
             .iter()
             .filter(|page| page.page() == COMPONENT_SLUG)
             .count(),
-        384,
-        "selected child includes must contribute dependency backlinks",
+        128,
+        "the corpus render adds no backlinks for literal selected content",
     );
 }
 
