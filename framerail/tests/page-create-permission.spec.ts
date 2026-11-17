@@ -132,6 +132,31 @@ test("authorized direct /edit/true on a missing page opens the editor and create
   await expect.poll(async () => (await pageCreateWritesFor(request, slug)).length).toBe(1)
 })
 
+test("authorized new-page editor pre-fills the title derived from the slug", async ({
+  page,
+  request
+}) => {
+  // Regression for wikijump#3757: the derived-title pre-fill was only wired
+  // into EditorPane.svelte, but a missing page's "Create page" flow renders
+  // WikiPageError.svelte, whose input[name=title] binds to $editForm.title and
+  // was left empty. Exercise the real create flow (link -> missing view ->
+  // editor), not just the pure derivation helper.
+  // The fixture treats any slug with an `edit` extra as a missing page, so
+  // use a dedicated slug via the direct editor route — this renders the
+  // WikiPageError.svelte editor surface that the "Create page" link flow also
+  // uses. Its name derives to this title via defaultPageTitleFromSlug.
+  const slug = "title-prefill-derived-probe"
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  const missing = await page.goto(`/${slug}/edit/true`)
+  expect(missing?.status()).toBe(404)
+
+  await expect(page.locator("input[name='title']")).toBeVisible()
+  await expect(page.locator("input[name='title']")).toHaveValue(
+    "Title Prefill Derived Probe"
+  )
+})
+
 test("a missing page without a site template shows Wikidot's default state once", async ({
   page
 }) => {
