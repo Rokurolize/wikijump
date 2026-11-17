@@ -251,6 +251,20 @@ export const AUDITED_EXTERNAL_ASSET_ORIGINS: readonly AuditedExternalAssetOrigin
       fonts: false,
       evidence:
         "Xcninety GitHub Pages host for Korean web fonts. theme-decoration-sample-bulgunae @imports fonts/Cafe24Ohsquareair.css and fonts/IBMPlexSansKR-Regular.css from this origin (the live check-wiki page serves them as https); live Wikidot loads them, but framerail's style-src blocked the fetches on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep. The CSP-STYLESRC audit confirmed the live @import and the in-browser style-src violation. No font use from this origin was observed."
+    },
+    {
+      origin: "https://pokm.wikidot.com",
+      styles: true,
+      fonts: false,
+      evidence:
+        "External theme stylesheet host for the nameless palette chain. theme:nameless-jp/1 (and its samples theme-decoration-sample-nameless-jp and theme-decoration-sample-nameless) @import https://pokm.wikidot.com/local--code/theme:starry-library/1; OC-BASE-THEME-SHAPE traced the last nameless h1-color/body-bg residual to this chain: live Wikidot loads it and its nested dustjacket-sigma/1 import supplies the palette variables that win the cascade, but framerail's style-src blocked the starry-library fetch on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep, leaving the pages on the base component:theme/1 literals (#a00 h1, #fff body). A live browser probe on the current head confirmed the style-src violation for this URL on all three nameless pages. The starry-library/1 bytes are byte-identical on both sides; only the origin admission is missing. No font use from this origin was observed."
+    },
+    {
+      origin: "https://scp-wiki-cn.wikidot.com",
+      styles: true,
+      fonts: false,
+      evidence:
+        "Nested import host in the nameless palette chain. starry-library/1 (served from pokm.wikidot.com, which is not a reserved-mirror source and so keeps its live URL through deepwell localization) @imports https://scp-wiki-cn.wikidot.com/local--code/theme:dustjacket-sigma/1, whose variable rules set h1 color to white and body background to transparent on live Wikidot. Admitting pokm.wikidot.com alone lets the parent load but this nested style-src fetch would then block, so both origins are admitted together. OC-BASE-THEME-SHAPE fetched the 16,771-B dustjacket-sigma/1 CSS from this origin (md5 d2997d37ed7d40d13ab569a5eb97d296) and confirmed the rule is present on the live source but absent from the WJ cascade. No font use from this origin was observed."
     }
   ])
 

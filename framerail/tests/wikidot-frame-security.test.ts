@@ -127,7 +127,13 @@ test("interwiki frame admits localized themes from the current site's file origi
     )
   }
   assert.doesNotMatch(policy, /wikijump-current-site\.invalid/u)
-  assert.doesNotMatch(policy, /https:\/\/[^ ;]*wikidot\.com/u)
+  // The only wikidot.com origins allowed in the global style-src are the
+  // audited nameless-palette chain hosts (pokm / scp-wiki-cn); no other
+  // wikidot.com host may leak into the interwiki frame policy.
+  assert.doesNotMatch(
+    policy,
+    /https:\/\/(?!pokm\.wikidot\.com|scp-wiki-cn\.wikidot\.com)[^ ;]*wikidot\.com/u
+  )
 })
 
 test("keeps ordinary pages unframeable", () => {
