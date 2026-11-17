@@ -232,11 +232,18 @@ struct DelayedRowParserGates {
 }
 
 fn protect_delayed_row_parser_gates(prepared_body: &mut String) -> DelayedRowParserGates {
+    // Protect the generated ifexpr comment gates FIRST, while the `[[#ifexpr …]]`
+    // heads are still visible. `protect_generated_parser_function_comment_gates`
+    // only recognizes a standalone `[!-- --]` closer when it can also see a
+    // generated opener in the same text; hiding the ifexpr heads first (as the
+    // old order did) left the closer literal, so ftml's comment preprocessor
+    // elided it before the ifexpr could be resolved and the gate leaked.
+    let generated_comment_gates =
+        protect_generated_parser_function_comment_gates(prepared_body);
+    let row_parser_fragments = protect_row_variable_parser_functions(prepared_body);
     DelayedRowParserGates {
-        row_parser_fragments: protect_row_variable_parser_functions(prepared_body),
-        generated_comment_gates: protect_generated_parser_function_comment_gates(
-            prepared_body,
-        ),
+        row_parser_fragments,
+        generated_comment_gates,
     }
 }
 
