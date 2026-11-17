@@ -1,19 +1,5 @@
 ## DEEPWELL
 
-<p>
-  <a href="https://github.com/scpwiki/wikijump/actions?query=workflow%3A%22%5Bdeepwell%5D+Rust%22">
-    <img src="https://github.com/scpwiki/wikijump/workflows/%5Bdeepwell%5D%20Rust/badge.svg"
-         alt="Build status">
-  </a>
-
-  <!-- TODO publish to crates.io
-  <a href="https://docs.rs/deepwell">
-    <img src="https://docs.rs/deepwell/badge.svg"
-         alt="docs.rs link">
-  </a>
-  -->
-</p>
-
 DEEPWELL is an internal backend system that provides core wiki operations for Wikijump. It is deployed behind Framerail rather than exposed as a public API, but network placement is not its authorization boundary. Every HTTP JSON-RPC request also requires the shared 256-bit service token; this service credential does not replace end-user session or permission checks.
 
 ### Authorization boundary
@@ -33,7 +19,7 @@ Read endpoints still rely on their resource-specific visibility rules. Keeping D
 
 The lint `#![forbid(unsafe_code)]` is set, and therefore this crate has only safe code.
 
-Available under the terms of the GNU Affero General Public License. See [LICENSE.md](LICENSE.md).
+Available under the terms of the GNU Affero General Public License. See [LICENSE.md](../LICENSE.md).
 
 ### Development
 
@@ -186,7 +172,7 @@ Migrations are run using sqlx. To apply all current migrations to a fresh databa
 $ sqlx migrate run
 ```
 
-Basic database setup (creating the `wikijump` database and user) is done when building the container. See [`/install/files/postgres/init/`](https://github.com/scpwiki/wikijump/tree/develop/install/files/postgres/init).
+Basic database setup (creating the `wikijump` database and user) is done when building the container. See [`/install/files/postgres/init/`](https://github.com/Rokurolize/wikijump/tree/develop/install/files/postgres/init).
 
 #### Adding new migrations
 

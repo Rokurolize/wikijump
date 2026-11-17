@@ -1,7 +1,7 @@
 [package]
 name = "deepwell-relation-impl-derive"
 description = "Procedural macro to generate boilerplate for relation methods"
-repository = "https://github.com/scpwiki/wikijump/tree/develop/deepwell/relation-impl-derive"
+repository = "https://github.com/Rokurolize/wikijump/tree/develop/deepwell/relation-impl-derive"
 
 version = "1.1.0"
 authors = ["Rokurolize <1701388+Rokurolize@users.noreply.github.com>"]
