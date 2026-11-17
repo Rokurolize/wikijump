@@ -153,7 +153,7 @@ async fn wikidot_database_import_endpoints_require_platform_staff() {
         run_endpoint_err!(runner, import_wikidot_page_votes, json!({})),
     ];
     for error in anonymous_errors {
-        assert_contains_error!(error, ErrorType::PermissionDenied);
+        assert_contains_error!(error, ErrorType::NotAuthenticated);
     }
 
     runner.set_request_context(RequestContext {
@@ -181,4 +181,90 @@ async fn wikidot_database_import_endpoints_require_platform_staff() {
     });
     let admin_error = run_endpoint_err!(runner, import_wikidot_site, json!({}));
     assert_contains_error!(admin_error, ErrorType::DatabaseImport);
+}
+
+#[tokio::test]
+async fn unauthenticated_mutation_is_distinguishable_from_permission_denied() {
+    let mut runner = TestRunner::setup().await;
+
+    // No user in the request context: the shape of an absent, expired, or
+    // otherwise invalid session. Page creation (gated by the page actor
+    // check) must report the authentication failure class, never a
+    // permission denial.
+    let create_error = run_endpoint_err!(
+        runner,
+        page_create,
+        json!({
+            "site_id": 1,
+            "wikitext": "This must never be stored.",
+            "title": "Unauthenticated create",
+            "alt_title": null,
+            "slug": "unauthenticated-create",
+            "layout": "wikidot",
+            "revision_comments": "unauthenticated",
+            "user_id": SAMPLE_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(create_error, ErrorType::NotAuthenticated);
+    assert_no_error!(create_error, ErrorType::PermissionDenied);
+    let create_rpc = deepwell::error::exn_error_to_rpc_error(create_error);
+    assert_eq!(create_rpc.code(), ErrorType::NotAuthenticated.code());
+
+    // The page edit-lock path (gated by the shared mutation
+    // authorization helper) shows the same distinction. The context
+    // carries the site, as a real request would; only the user is gone.
+    runner.set_request_context(RequestContext {
+        site_id: Some(1),
+        ..Default::default()
+    });
+    let lock_error = run_endpoint_err!(
+        runner,
+        page_edit_lock_acquire,
+        json!({ "page": 1, "mode": "page" }),
+    );
+    assert_contains_error!(lock_error, ErrorType::NotAuthenticated);
+    assert_no_error!(lock_error, ErrorType::PermissionDenied);
+
+    // An authenticated user who lacks the permission still gets the
+    // existing permission-denied class, unchanged.
+    runner.set_request_context(RequestContext {
+        user_id: Some(SAMPLE_USER_ID),
+        ..Default::default()
+    });
+    let moderation_error = run_endpoint_err!(
+        runner,
+        vote_action,
+        json!({
+            "page_id": 1,
+            "user_id": SAMPLE_USER_ID,
+            "enable": false,
+            "acting_user_id": SAMPLE_USER_ID,
+        }),
+    );
+    assert_contains_error!(moderation_error, ErrorType::PermissionDenied);
+    assert_no_error!(moderation_error, ErrorType::NotAuthenticated);
+    let moderation_rpc = deepwell::error::exn_error_to_rpc_error(moderation_error);
+    assert_eq!(moderation_rpc.code(), ErrorType::PermissionDenied.code());
+
+    // A valid, permitted mutation still succeeds.
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        message_draft_create,
+        json!({
+            "user_id": ADMIN_USER_ID,
+            "recipients": [SAMPLE_USER_ID],
+            "carbon_copy": [],
+            "blind_carbon_copy": [],
+            "locale": "en",
+            "subject": "Authenticated draft",
+            "wikitext": "Created with a valid session.",
+            "reply_to": null,
+            "forwarded_from": null,
+        }),
+    );
 }

@@ -92,8 +92,8 @@ pub async fn category_update(
 
     let actor_user_id = ctx.request().user_id().or_raise(|| {
         Error::new(
-            "user does not have permission to edit this site's categories",
-            ErrorType::PermissionDenied,
+            "editing this site's categories requires an authenticated user",
+            ErrorType::NotAuthenticated,
         )
     })?;
     let site_id = match site {

@@ -139,6 +139,7 @@ pub enum ErrorType {
     },
     EmptyPassword,
     InvalidAuthorizationToken,
+    NotAuthenticated,
 
     Permission,
     Role,
@@ -409,6 +410,7 @@ impl ErrorType {
             ErrorType::SessionUserId { .. } => 3004,
             ErrorType::EmptyPassword => 3005,
             ErrorType::InvalidAuthorizationToken => 3006,
+            ErrorType::NotAuthenticated => 3007,
 
             ErrorType::AddRolePermission => 3100,
             ErrorType::GrantUserRole => 3102,
@@ -622,6 +624,9 @@ impl ErrorType {
             ErrorType::EmptyPassword => "A password was required, but not provided",
             ErrorType::InvalidAuthorizationToken => {
                 "Provided authorization token was invalid"
+            }
+            ErrorType::NotAuthenticated => {
+                "Not authenticated; the login session is missing or expired"
             }
 
             ErrorType::AddRolePermission => "Failed to add a permission to a role",
@@ -967,6 +972,7 @@ mod tests {
             ),
             (ErrorType::EmptyPassword, 3005),
             (ErrorType::InvalidAuthorizationToken, 3006),
+            (ErrorType::NotAuthenticated, 3007),
             (ErrorType::AddRolePermission, 3100),
             (ErrorType::GrantUserRole, 3102),
             (ErrorType::RevokeUserRole, 3103),

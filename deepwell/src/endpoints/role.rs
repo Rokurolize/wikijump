@@ -39,8 +39,8 @@ async fn require_role_permission(
 ) -> Result<i64> {
     let actor_user_id = ctx.request().user_id().or_raise(|| {
         Error::new(
-            "user does not have permission to manage roles",
-            ErrorType::PermissionDenied,
+            "managing roles requires an authenticated user",
+            ErrorType::NotAuthenticated,
         )
     })?;
 
