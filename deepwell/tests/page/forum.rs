@@ -2385,7 +2385,10 @@ async fn frontforum_feed_arguments_preserve_the_ordinary_public_render() {
         r#"feed="""#,
         r#"feed="../bad""#,
     ];
-    let literal_suffixes = ["feed='readonlyfeed'", "feedTitle='Read only feed'"];
+    // ftml #1037 / wikijump #3711: single-quoted module-head arguments are
+    // ignored by live Wikidot while the module still runs, so these render
+    // identically to the ordinary FrontForum invocation.
+    let ignored_suffixes = ["feed='readonlyfeed'", "feedTitle='Read only feed'"];
     let rejected_suffixes = [
         r#"Feed="readonlyfeed""#,
         r#"feedName="readonlyfeed""#,
@@ -2435,28 +2438,24 @@ async fn frontforum_feed_arguments_preserve_the_ordinary_public_render() {
             ));
         }
     }
-    for (index, suffix) in literal_suffixes.iter().enumerate() {
+    for (index, suffix) in ignored_suffixes.iter().enumerate() {
         let source = format!(
             r#"[[module FrontForum category="{}" limit="1" {suffix}]]"#,
             category.forum_category_id,
-        );
-        let expected = format!(
-            "<p>{}</p>",
-            source.replace('"', "&quot;").replace('\'', "&#39;")
         );
         let preview = run_endpoint!(
             runner,
             wikidot_page_preview,
             json!({
                 "site_id": site_id,
-                "title": format!("FrontForum literal feed argument preview {index}"),
+                "title": format!("FrontForum ignored feed argument preview {index}"),
                 "wikitext": source,
             }),
         )
         .body;
-        if preview != expected || preview.contains("front-forum-box") {
+        if preview != ordinary_preview {
             failures.push(format!(
-                "preview literal suffix {suffix:?} was not preserved exactly: {preview}"
+                "preview ignored suffix {suffix:?} did not preserve the ordinary body: {preview}"
             ));
         }
     }
@@ -2497,7 +2496,7 @@ async fn frontforum_feed_arguments_preserve_the_ordinary_public_render() {
         )
         .await;
     }
-    for (index, suffix) in literal_suffixes.iter().enumerate() {
+    for (index, suffix) in ignored_suffixes.iter().enumerate() {
         let source = format!(
             r#"[[module FrontForum category="{}" limit="1" {suffix}]]"#,
             category.forum_category_id,
@@ -2505,8 +2504,8 @@ async fn frontforum_feed_arguments_preserve_the_ordinary_public_render() {
         create_listpages_test_page(
             &mut runner,
             site_id,
-            &format!("fixture-frontforum-literal-feed-argument-{index}"),
-            &format!("FrontForum Literal Feed Argument {index}"),
+            &format!("fixture-frontforum-ignored-feed-argument-{index}"),
+            &format!("FrontForum Ignored Feed Argument {index}"),
             &source,
         )
         .await;
@@ -2541,24 +2540,16 @@ async fn frontforum_feed_arguments_preserve_the_ordinary_public_render() {
             ));
         }
     }
-    for (index, suffix) in literal_suffixes.iter().enumerate() {
-        let source = format!(
-            r#"[[module FrontForum category="{}" limit="1" {suffix}]]"#,
-            category.forum_category_id,
-        );
-        let expected = format!(
-            "<p>{}</p>",
-            source.replace('"', "&quot;").replace('\'', "&#39;")
-        );
+    for (index, suffix) in ignored_suffixes.iter().enumerate() {
         let saved = saved_body(
             &runner,
             site_id,
-            &format!("fixture-frontforum-literal-feed-argument-{index}"),
+            &format!("fixture-frontforum-ignored-feed-argument-{index}"),
         )
         .await;
-        if saved != expected || saved.contains("front-forum-box") {
+        if saved != ordinary_saved {
             failures.push(format!(
-                "page_view literal suffix {suffix:?} was not preserved exactly: {saved}"
+                "page_view ignored suffix {suffix:?} did not preserve the ordinary body: {saved}"
             ));
         }
     }
