@@ -154,6 +154,11 @@ pub(in crate::services::render) fn build_wikidot_list_pages_module_request(
     }
     source.push_str("]]\n");
     let body_start = source.len();
+    // A ListPages opener in the body that no balanced pair covers
+    // (an unclosed opener, at any position on its line) stays literal
+    // text on live; literalize just those openers and keep any
+    // balanced nested pairs executable.
+    let module_body = literalize_uncovered_ajax_list_pages_openers(&module_body);
     source.push_str(&module_body);
     source.push_str("\n[[/module]]");
     if wikidot_ajax_list_pages_source_is_safe(&source) {
@@ -302,14 +307,69 @@ fn literalize_ajax_module_markers(body: &str) -> String {
             continue;
         };
         let marker = &body[start..end];
-        output.push_str(AJAX_MODULE_LITERAL_MARKER_PREFIX);
-        output.push_str(&Uuid::new_v4().as_simple().to_string());
-        output.push('I');
-        output.push_str(&hex::encode(marker));
-        output.push('X');
+        push_ajax_module_literal_marker(&mut output, marker);
         cursor = end;
     }
 
+    output.push_str(&body[cursor..]);
+    output
+}
+
+fn push_ajax_module_literal_marker(output: &mut String, marker_text: &str) {
+    output.push_str(AJAX_MODULE_LITERAL_MARKER_PREFIX);
+    output.push_str(&Uuid::new_v4().as_simple().to_string());
+    output.push('I');
+    output.push_str(&hex::encode(marker_text));
+    output.push('X');
+}
+
+/// Replace every `[[module ListPages ...]]` opener in the body that is
+/// not part of a balanced module pair with an inert literal marker,
+/// leaving balanced nested pairs (and all other text) untouched. The
+/// scanner also reports a lone unclosed opener as a bodyless match;
+/// only a match whose original text carries a `[[/module]]` closer
+/// counts as a pair here.
+fn literalize_uncovered_ajax_list_pages_openers(body: &str) -> String {
+    let covered = find_list_pages_module_matches(body)
+        .into_iter()
+        .filter(|module| module.original.to_ascii_lowercase().contains("[[/module]]"))
+        .map(|module| module.start..module.end)
+        .collect::<Vec<_>>();
+    let lowercase = body.to_ascii_lowercase();
+    let mut output = String::with_capacity(body.len());
+    let mut cursor = 0;
+    while let Some(relative_start) = lowercase[cursor..].find("[[module") {
+        let start = cursor + relative_start;
+        let after_keyword = start + "[[module".len();
+        let mut name_start = after_keyword;
+        while lowercase
+            .as_bytes()
+            .get(name_start)
+            .is_some_and(u8::is_ascii_whitespace)
+        {
+            name_start += 1;
+        }
+        let name_end = lowercase[name_start..]
+            .find(|character: char| character.is_ascii_whitespace() || character == ']')
+            .map(|offset| name_start + offset);
+        let is_list_pages_opener = name_start > after_keyword
+            && name_end.is_some_and(|end| &lowercase[name_start..end] == "listpages");
+        let opener_end = is_list_pages_opener
+            .then(|| lowercase[start..].find("]]").map(|end| start + end + 2))
+            .flatten();
+        let Some(end) = opener_end else {
+            output.push_str(&body[cursor..after_keyword]);
+            cursor = after_keyword;
+            continue;
+        };
+        if covered.iter().any(|range| range.contains(&start)) {
+            output.push_str(&body[cursor..end]);
+        } else {
+            output.push_str(&body[cursor..start]);
+            push_ajax_module_literal_marker(&mut output, &body[start..end]);
+        }
+        cursor = end;
+    }
     output.push_str(&body[cursor..]);
     output
 }
