@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation"
+  import { deserialize } from "$app/forms"
   import { errorPopupState } from "$lib/layout/stores.svelte"
   import { getPageLayoutContext } from "$lib/layout/page-layout-context"
   import { Layout } from "$lib/types"
@@ -35,6 +36,7 @@
     superseded: false
   })
   let leaseDialog = $state<"page_changed" | "other_locks" | null>(null)
+  let previewPending = $state(false)
   let stopLeaseTimers: (() => void) | undefined
 
   const syncLease = () => {
@@ -178,6 +180,44 @@
   $form.wikitext = untrack(() => data.wikitext)
   $form.tags = untrack(() => data.page_revision?.tags?.join(" ") ?? "")
   $form.comments = untrack(() => data.page_revision?.comments ?? "")
+
+  const previewEdit = async () => {
+    if (previewPending) return
+    previewPending = true
+    try {
+      const text = await fetch("?/preview", {
+        method: "POST",
+        body: JSON.stringify({
+          siteId: data.site.site_id,
+          title: $form.title,
+          wikitext: $form.wikitext
+        })
+      }).then((res) => res.text())
+      const result = deserialize<
+        { res: { body: string; styles: string[] } },
+        { message: string }
+      >(text)
+      if (result.type !== "success" || typeof result.data?.res.body !== "string") {
+        throw new Error("Preview request failed.")
+      }
+      const container = document.querySelector<HTMLElement>("#page-content")
+      if (!container) return
+      container.innerHTML = result.data.res.body
+      if (result.data.res.styles?.length) {
+        const style = document.createElement("style")
+        style.textContent = result.data.res.styles.join("\n")
+        container.append(style)
+      }
+    } catch (error) {
+      errorPopupState.current = {
+        state: true,
+        message: error instanceof Error ? error.message : "Preview failed.",
+        data: null
+      }
+    } finally {
+      previewPending = false
+    }
+  }
 </script>
 
 {#if leaseRequired && leaseSnapshot.status === "acquiring"}
@@ -277,6 +317,15 @@
             value={data.internationalization?.cancel}
           />
           <input
+            id="edit-preview-button"
+            name="preview"
+            class="btn btn-default"
+            onclick={previewEdit}
+            type="button"
+            value={data.internationalization?.preview}
+            disabled={previewPending}
+          />
+          <input
             name="save"
             class="btn btn-primary"
             type="submit"
@@ -291,6 +340,15 @@
             type="button"
           >
             {data.internationalization?.cancel}
+          </button>
+          <button
+            id="edit-preview-button"
+            class="action-button editor-button button-preview clickable"
+            onclick={previewEdit}
+            type="button"
+            disabled={previewPending}
+          >
+            {data.internationalization?.preview}
           </button>
           <button class="action-button editor-button button-save clickable" type="submit">
             {data.internationalization?.save}

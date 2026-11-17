@@ -8,14 +8,16 @@ import {
   pageLayout,
   pageMove,
   pageMovePermission,
-  pageParentUpdate
+  pageParentUpdate,
+  wikidotPagePreview
 } from "$lib/server/deepwell/page"
 import { pageSave } from "$lib/server/deepwell/page-edit-lock"
 import type { PageEditLockMode } from "$lib/server/deepwell/page-edit-lock"
 import { pageView } from "$lib/server/deepwell/views"
 import {
   failForActionError,
-  pageMutationBaseSchema
+  pageMutationBaseSchema,
+  readActionJson
 } from "$lib/server/load/page/page-action-shared"
 import {
   requirePageMutationUserId,
@@ -250,6 +252,27 @@ export async function pageDeletePermissionAction(event: RequestEvent) {
     applyPreflightAuthoringMarker(context)
     const res = await pageDeletePermission(context.requestContext)
     return { res }
+  } catch (error) {
+    return failForActionError(error)
+  }
+}
+
+export async function pagePreviewAction(event: RequestEvent) {
+  const { request, params } = event
+  try {
+    const { siteId, title, wikitext } = await readActionJson(
+      request,
+      object({ siteId: number(), title: string(), wikitext: string() })
+    )
+    const context = await resolvePageActionRequestContext(event, {
+      submittedSiteId: siteId,
+      session: "optional"
+    })
+    const output = await wikidotPagePreview(siteId, title, wikitext, false, {
+      ...context.requestContext,
+      page: params.slug ?? ""
+    })
+    return { res: { body: output.body, styles: output.styles } }
   } catch (error) {
     return failForActionError(error)
   }

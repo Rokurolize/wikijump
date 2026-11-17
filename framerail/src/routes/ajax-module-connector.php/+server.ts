@@ -54,6 +54,7 @@ import {
   siteToolsOrphanedPages,
   siteToolsWantedPages,
   wikidotPageDiscussionCreate,
+  wikidotPagePreview,
   wikidotSiteChangesModule
 } from "$lib/server/deepwell/page"
 import {
@@ -172,6 +173,20 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
       }),
     createForumPost: (input) => forumPostCreate(input, requestContext),
     submitMailForm: (input) => mailFormSubmit(input, requestContext),
+    renderPagePreviewModule: ({
+      siteId: requestSiteId,
+      title,
+      wikitext,
+      syntaxOnly
+    }: {
+      siteId: number
+      title: string
+      wikitext: string
+      syntaxOnly: boolean
+    }) =>
+      wikidotPagePreview(requestSiteId, title, wikitext, syntaxOnly, {
+        ...requestContext
+      }),
     renderEditMetaModule: async ({
       siteId: requestSiteId,
       pageId

@@ -34,6 +34,7 @@ const basePageTranslateKeys = (
   ...defaults.translateKeys,
   "save": {},
   "cancel": {},
+  "preview": {},
   "title": {},
   "alt-title": {},
   "tags": {},

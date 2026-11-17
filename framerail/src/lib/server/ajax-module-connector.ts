@@ -137,6 +137,15 @@ const FORUM_POST_FIELDS = new Set([
   "guestEmail"
 ])
 const EDIT_META_MODULE = "edit/EditMetaModule"
+const PAGE_PREVIEW_MODULE = "edit/PagePreviewModule"
+const PAGE_PREVIEW_FIELDS = new Set([
+  "moduleName",
+  "mode",
+  "source",
+  "title",
+  "wikidot_token7",
+  "callbackIndex"
+])
 const EDIT_META_ACTION = "WikiPageAction"
 const EDIT_META_EVENTS = new Set(["saveMetaTag", "deleteMetaTag"])
 const PAGE_DELETE_EVENT = "deletePage"
@@ -277,6 +286,12 @@ export interface AjaxModuleConnectorOptions {
     siteId: number
     pageId: number
   }) => Promise<{ status: string; body: string; js_include?: string[] }>
+  renderPagePreviewModule?: (input: {
+    siteId: number
+    title: string
+    wikitext: string
+    syntaxOnly: boolean
+  }) => Promise<{ body: string; styles: string[] }>
   saveMetaTag?: (input: {
     siteId: number
     pageId: number
@@ -401,6 +416,7 @@ export const handleAjaxModuleConnectorRequest = async (
     createForumPost,
     submitMailForm,
     renderEditMetaModule,
+    renderPagePreviewModule,
     saveMetaTag,
     deleteMetaTag,
     deletePage,
@@ -1388,6 +1404,48 @@ export const handleAjaxModuleConnectorRequest = async (
         body: "",
         ...responseMetadata()
       })
+    }
+  }
+
+  if (moduleName === PAGE_PREVIEW_MODULE) {
+    if (!renderPagePreviewModule) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module: ${moduleName}`
+      })
+    }
+    if ([...fields.keys()].some((key) => !PAGE_PREVIEW_FIELDS.has(key))) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module shape: ${moduleName}`
+      })
+    }
+    const callbackIndex = fields.has("callbackIndex")
+      ? fieldValue(fields, "callbackIndex")
+      : null
+    const responseMetadata = () => ({
+      callbackIndex,
+      CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+      cssInclude: [] as string[],
+      jsInclude: [] as string[]
+    })
+    try {
+      const output = await renderPagePreviewModule({
+        siteId,
+        title: fieldValue(fields, "title"),
+        wikitext: fieldValue(fields, "source"),
+        syntaxOnly: fieldValue(fields, "mode") === "syntax"
+      })
+      return jsonResponse({
+        status: "ok",
+        title: fieldValue(fields, "title"),
+        body: output.body,
+        ...responseMetadata(),
+        cssInclude: output.styles
+      })
+    } catch (error) {
+      console.error("AJAX page preview rendering failed", error)
+      return jsonResponse({ status: "not_ok", body: "", ...responseMetadata() })
     }
   }
 

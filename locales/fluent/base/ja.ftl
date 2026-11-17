@@ -32,6 +32,7 @@ layout = レイアウト
 move = 移動
 options = オプション
 parents = 親ページ
+preview = プレビュー
 restore = 復元
 save = 保存
 tags = タグ
