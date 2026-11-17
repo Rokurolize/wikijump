@@ -5458,4 +5458,3 @@ async fn css_module_consumes_list_pages_with_a_whitespace_only_body() {
         }
     }
 }
-

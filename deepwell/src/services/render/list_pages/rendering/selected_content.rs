@@ -528,9 +528,7 @@ fn protect_list_pages_summary_divs(
                 .as_bytes()
                 .get(after)
                 .is_some_and(|byte| byte.is_ascii_whitespace() || *byte == b']');
-            if boundary
-                && let Some(relative_end) = source[after..].find("]]")
-            {
+            if boundary && let Some(relative_end) = source[after..].find("]]") {
                 let end = after + relative_end + 2;
                 tokens.push((start, end, true));
                 cursor = end;
