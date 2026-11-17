@@ -59,9 +59,9 @@ use super::{
     CountPagesBlockRenderResult, CountPagesExpansionOptions, CountPagesRequiredTagSource,
     CountPagesRequiredTagTotal, FinishOrDeferListPagesDelayedOutputParams,
     ListPagesArgumentError, ListPagesArguments, ListPagesBatchDisplayRequirements,
-    ListPagesBlockRenderResult, ListPagesContentCache, ListPagesExpansion,
-    ListPagesExpansionOptions, ListPagesPageContext, ListPagesRenderedBlock,
-    ListPagesSubstitutionContext, MAX_NESTED_LISTPAGES_DEPTH,
+    ListPagesBlockRenderResult, ListPagesContentCache, ListPagesContentGeometry,
+    ListPagesExpansion, ListPagesExpansionOptions, ListPagesPageContext,
+    ListPagesRenderedBlock, ListPagesSubstitutionContext, MAX_NESTED_LISTPAGES_DEPTH,
     MAX_NESTED_LISTPAGES_MODULES_PER_PASS, PendingDelayedListPagesOutput,
     PrepareDelayedListPagesRowParams, ResolvedListPagesAuthors,
     SealPendingListPagesDelayedOutputsParams,
@@ -78,6 +78,7 @@ use super::{
     list_pages_argument_error_with_parent_precedence,
     list_pages_body_is_no_visible_tracking_markup,
     list_pages_body_starts_with_preparsed_block, list_pages_body_uses_first_image,
+    list_pages_content_block_sections, list_pages_content_body_traits,
     list_pages_content_query_target, list_pages_created_by_slug,
     list_pages_feed_info_html, list_pages_feed_only_render_result,
     list_pages_first_paragraph, list_pages_fragment_supports_ajax_pagination,
@@ -151,8 +152,8 @@ mod selected_content;
 
 pub(in crate::services::render) use self::selected_content::render_wikidot_social_module;
 use self::selected_content::{
-    render_list_pages_default_summary_source, render_list_pages_selected_content_source,
-    select_list_pages_rows,
+    render_list_pages_block_content_source, render_list_pages_default_summary_source,
+    render_list_pages_selected_content_source, select_list_pages_rows,
 };
 
 fn list_pages_module654_literal(original: &str) -> String {

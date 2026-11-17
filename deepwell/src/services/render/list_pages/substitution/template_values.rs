@@ -19,6 +19,7 @@ use std::collections::BTreeSet;
 
 use super::super::template::{
     LISTPAGES_VARIABLE_REGEX, list_pages_variable_capture_has_unknown_name,
+    list_pages_variable_capture_is_valid,
 };
 
 pub(in crate::services::render) fn substitute_list_pages_rating_only(
@@ -77,6 +78,148 @@ pub(super) fn protect_list_pages_content_insertion(
     }
     protected.push_str(&content[cursor..]);
     protected
+}
+
+/// Selection and body context for the `%%content%%` geometry rules in
+/// [`list_pages_content_occurrence_is_block`].
+#[derive(Clone, Copy, Debug, Default)]
+pub(in crate::services::render) struct ListPagesContentGeometry {
+    /// An exact `fullname=` selector is present.
+    pub fullname_selection: bool,
+    /// An exact `name=` or `fullname=` selector is present.
+    pub exact_selection: bool,
+    /// A `category=` selector is present.
+    pub category_selector_present: bool,
+    /// The body contains a valid `%%content{n}%%` section occurrence.
+    pub body_has_section_variable: bool,
+    /// The body contains a valid variable outside the content family.
+    pub body_has_non_content_variable: bool,
+}
+
+/// The body traits of [`ListPagesContentGeometry`] that depend only on
+/// the body text: whether it contains a numbered content section
+/// occurrence, and whether it contains a variable outside the content
+/// family (`content` / `text` / `long` / `body`).
+pub(in crate::services::render) fn list_pages_content_body_traits(
+    body: &str,
+) -> (bool, bool) {
+    let mut has_section_variable = false;
+    let mut has_non_content_variable = false;
+    for captures in LISTPAGES_VARIABLE_REGEX.captures_iter(body) {
+        if !list_pages_variable_capture_is_valid(&captures) {
+            continue;
+        }
+        if matches!(
+            captures["name"].to_ascii_lowercase().as_str(),
+            "content" | "text" | "long" | "body"
+        ) {
+            if captures
+                .name("argument")
+                .and_then(|argument| argument.as_str().parse::<usize>().ok())
+                .is_some()
+            {
+                has_section_variable = true;
+            }
+        } else {
+            has_non_content_variable = true;
+        }
+    }
+    (has_section_variable, has_non_content_variable)
+}
+
+/// Whether a content-family occurrence at `start` in a ListPages body
+/// sits in the geometry where live Wikidot inserts the selected page's
+/// content as a rendered block instead of raw source text.
+///
+/// Measured on sandbox-for-codex across probe rounds 1-11 (pages
+/// `muse-probe-lpfail-*`, captures1-11 in the lane record). The alias
+/// variables `%%text%%` / `%%long%%` / `%%body%%` never render as a
+/// block. For `%%content%%`:
+///
+/// - At the start of its body line it renders as a block, except that
+///   section `%%content{1}%%` does so only under an exact `fullname=`
+///   selection (under `name=` it is left unsubstituted on live; the
+///   raw fallback here is the recorded residual).
+/// - On a dedicated line (other text before it, no other variable
+///   before it on the line) a numbered section stays raw, and the
+///   whole-content form renders as a block only for exact name/fullname
+///   selections when the body also references a numbered section or a
+///   non-content variable, or when the selection is `fullname=` with
+///   no `category=` selector and the line does not start with the
+///   literal prefix `content=`. In the remaining dedicated-line cases
+///   live leaves the variable unsubstituted when no sibling variable
+///   exists (recorded residual; raw substitution is used here).
+/// - With another variable before it on the line, or under a plain
+///   category selection on a dedicated line, the substitution is raw
+///   source text (LISTPAGES-DEEP D7, #3774/#3803).
+pub(in crate::services::render) fn list_pages_content_occurrence_is_block(
+    template: &str,
+    start: usize,
+    name: &str,
+    section: Option<usize>,
+    geometry: &ListPagesContentGeometry,
+) -> bool {
+    if name != "content" {
+        return false;
+    }
+    let line_prefix = template[..start].rsplit('\n').next().unwrap_or_default();
+    if line_prefix.trim().is_empty() {
+        return match section {
+            Some(1) => geometry.fullname_selection,
+            _ => true,
+        };
+    }
+    if line_prefix.contains("%%") || section.is_some() {
+        return false;
+    }
+    if !geometry.exact_selection {
+        return false;
+    }
+    if geometry.body_has_section_variable || geometry.body_has_non_content_variable {
+        return true;
+    }
+    line_prefix != "content="
+        && geometry.fullname_selection
+        && !geometry.category_selector_present
+}
+
+/// The content sections a ListPages body needs rendered as blocks for
+/// one row, under the geometry rules of
+/// [`list_pages_content_occurrence_is_block`]. `None` is the
+/// whole-content form; `Some(n)` is `%%content{n}%%`. The body's trait
+/// fields of `geometry` are recomputed from `body` so the scan and the
+/// substitution of the same body always agree.
+pub(in crate::services::render) fn list_pages_content_block_sections(
+    body: &str,
+    mut geometry: ListPagesContentGeometry,
+) -> BTreeSet<Option<usize>> {
+    let (has_section_variable, has_non_content_variable) =
+        list_pages_content_body_traits(body);
+    geometry.body_has_section_variable = has_section_variable;
+    geometry.body_has_non_content_variable = has_non_content_variable;
+    let mut sections = BTreeSet::new();
+    for captures in LISTPAGES_VARIABLE_REGEX.captures_iter(body) {
+        if !list_pages_variable_capture_is_valid(&captures) {
+            continue;
+        }
+        let name = captures["name"].to_ascii_lowercase();
+        let Some(matched) = captures.get(0) else {
+            continue;
+        };
+        let section = captures
+            .name("argument")
+            .and_then(|argument| argument.as_str().parse().ok());
+        if list_pages_content_occurrence_is_block(
+            body,
+            matched.start(),
+            &name,
+            section,
+            &geometry,
+        ) {
+            sections.insert(section);
+        }
+    }
+    sections
 }
 
 pub(super) fn list_pages_variable_starts_triple_link_target(

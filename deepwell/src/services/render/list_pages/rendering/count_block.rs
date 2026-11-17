@@ -72,6 +72,7 @@ impl RenderService {
             votes_equals_current_page: _,
             slug,
             name_pattern,
+            fullname_selector_present: _,
             prepend_line: _,
             append_line: _,
             data_form_fields,

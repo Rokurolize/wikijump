@@ -1,6 +1,7 @@
 use super::*;
 
 use crate::services::data_form::parse_wikidot_data_form_definition;
+use crate::services::render::list_pages::ListPagesContentGeometry;
 
 fn list_pages_substitution_context<'a>(
     rendered_limit: usize,
@@ -37,6 +38,8 @@ fn list_pages_substitution_context_with_mode<'a>(
         snapshot_displays,
         runtime_displays: empty_list_pages_runtime_displays(),
         page_wikitext,
+        content_geometry: ListPagesContentGeometry::default(),
+        page_block_content: None,
         page_rendered_content: None,
         page_rendered_summary: None,
         page_rendered_summary_is_block: false,

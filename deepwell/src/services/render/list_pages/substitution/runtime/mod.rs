@@ -17,13 +17,14 @@ use self::value_safety::{
 };
 use super::{
     BTreeMap, BTreeSet, CompatHtmlFragments, CompatTextFragments, Cow, FoundPageRow,
-    LISTPAGES_VARIABLE_REGEX, ListPagesDataFormDefinition, ListPagesGeneratedSlot,
-    ListPagesParentDisplay, ListPagesRuntimeDisplay, ListPagesRuntimeTextRange,
-    ListPagesSnapshotDisplay, RenderService, WikidotCompatLinkTitleMap,
-    WikidotUserDisplay, collect_list_pages_html_body_ranges,
+    LISTPAGES_VARIABLE_REGEX, ListPagesContentGeometry, ListPagesDataFormDefinition,
+    ListPagesGeneratedSlot, ListPagesParentDisplay, ListPagesRuntimeDisplay,
+    ListPagesRuntimeTextRange, ListPagesSnapshotDisplay, RenderService,
+    WikidotCompatLinkTitleMap, WikidotUserDisplay, collect_list_pages_html_body_ranges,
     collect_list_pages_html_escape_ranges, escape_html_text,
     format_list_pages_created_at, format_list_pages_rating, ftml,
-    is_list_pages_hidden_tag, is_list_pages_visible_tag, list_pages_created_by_slug,
+    is_list_pages_hidden_tag, is_list_pages_visible_tag,
+    list_pages_content_occurrence_is_block, list_pages_created_by_slug,
     list_pages_first_paragraph, list_pages_plain_text, list_pages_preview,
     list_pages_preview_length, list_pages_tag_target_prefix,
     list_pages_variable_capture_has_unknown_name, list_pages_variable_capture_is_valid,
@@ -57,6 +58,9 @@ pub(in crate::services::render) struct ListPagesSubstitutionContext<'a> {
     pub(in crate::services::render) runtime_displays:
         &'a BTreeMap<i64, ListPagesRuntimeDisplay>,
     pub(in crate::services::render) page_wikitext: Option<&'a str>,
+    pub(in crate::services::render) content_geometry: ListPagesContentGeometry,
+    pub(in crate::services::render) page_block_content:
+        Option<&'a BTreeMap<Option<usize>, String>>,
     pub(in crate::services::render) page_rendered_content: Option<&'a str>,
     pub(in crate::services::render) page_rendered_summary: Option<&'a str>,
     pub(in crate::services::render) page_rendered_summary_is_block: bool,
@@ -757,24 +761,47 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                     })
                     .unwrap_or_else(|| captures[0].to_owned()),
                 "content" | "text" | "long" | "body" => {
-                    // Wikidot substitutes the listed page's raw wikitext
-                    // source, with [[...]] constructs shown as literal
-                    // text; the section form below already did this, and
-                    // the whole-content form is the same substitution
-                    // without a section selector.
+                    // In the geometries measured on live Wikidot (see
+                    // list_pages_content_occurrence_is_block), the listed
+                    // page's content is inserted as a rendered block whose
+                    // constructs execute; the block render pre-renders
+                    // those sections per row. Everywhere else Wikidot
+                    // substitutes the listed page's raw wikitext source,
+                    // with [[...]] constructs shown as literal text
+                    // (LISTPAGES-DEEP D7, #3774/#3803).
                     let section = captures
                         .name("argument")
                         .and_then(|matched| matched.as_str().parse().ok());
-                    context
-                        .page_wikitext
-                        .map(|wikitext| {
-                            protect_list_pages_content_insertion(
-                                &wikidot_content_section(wikitext, section),
-                                compat_text,
-                                tracked_content_fragments.as_deref_mut(),
+                    let block_html = context
+                        .page_block_content
+                        .filter(|_| {
+                            list_pages_content_occurrence_is_block(
+                                template,
+                                matched.start(),
+                                &captures["name"].to_ascii_lowercase(),
+                                section,
+                                &context.content_geometry,
                             )
                         })
-                        .unwrap_or_default()
+                        .and_then(|blocks| blocks.get(&section));
+                    if let Some(html) = block_html {
+                        push_list_pages_rendered_fragment_with_mode(
+                            html,
+                            compat_html,
+                            true,
+                        )
+                    } else {
+                        context
+                            .page_wikitext
+                            .map(|wikitext| {
+                                protect_list_pages_content_insertion(
+                                    &wikidot_content_section(wikitext, section),
+                                    compat_text,
+                                    tracked_content_fragments.as_deref_mut(),
+                                )
+                            })
+                            .unwrap_or_default()
+                    }
                 }
                 "summary" | "description" | "short" => summary.to_owned(),
                 "first_paragraph" => first_paragraph.clone(),

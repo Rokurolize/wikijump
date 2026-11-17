@@ -651,6 +651,78 @@ pub(super) async fn render_list_pages_default_summary_source(
     })
 }
 
+/// Renders one selected page's content section for a `%%content%%`
+/// occurrence that sits in block geometry (see
+/// `list_pages_content_occurrence_is_block`). Live Wikidot inserts the
+/// content as a rendered block there: includes and images execute with
+/// the selected page as owner, a closed `[[div]]` forms an element, a
+/// nested ListPages module becomes the recursion error block, and
+/// `[[module Rate]]` stays literal. Unlike
+/// [`render_list_pages_selected_content_source`] (the summary form),
+/// includes and images are NOT protected into literal text, and unlike
+/// [`render_list_pages_default_summary_source`] no summary div
+/// transform applies.
+pub(super) async fn render_list_pages_block_content_source(
+    args: ListPagesSelectedContentArgs<'_, '_, '_, '_>,
+) -> Result<RenderedListPagesSource> {
+    let ListPagesSelectedContentArgs {
+        ctx,
+        wikitext,
+        page_info,
+        settings,
+        current_site_id,
+        current_category_id,
+        current_page_id,
+        viewer_user_id,
+        max_include_expansions,
+        trusted_corpus_render,
+        render_cost_budget,
+        url,
+    } = args;
+    render_cost_budget
+        .charge(1, "block-content render")
+        .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
+    let _nested_render_guard = render_cost_budget
+        .enter_nested_render(MAX_SELECTED_CONTENT_RENDER_DEPTH)
+        .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
+    let mut block_settings = settings.clone();
+    block_settings.enable_page_syntax = true;
+    block_settings.enable_html_blocks = true;
+    block_settings.use_true_ids = false;
+    let render_context = RenderContext::list_pages_default_summary(
+        current_site_id,
+        current_category_id,
+        current_page_id,
+        false,
+    );
+    let rendered = Box::pin(RenderService::render_inner(
+        ctx,
+        wikitext.to_owned(),
+        page_info,
+        &block_settings,
+        RenderInnerOptions {
+            observed_user_info: None,
+            render_context,
+            viewer_user_id,
+            current_page_data_form_values: None,
+            max_include_expansions,
+            trusted_corpus_render,
+            render_cost_budget,
+            trace: None,
+            persist_compiled_text: false,
+            url,
+        },
+    ))
+    .await?;
+    let mut html_output = rendered.html_output;
+    Ok(RenderedListPagesSource {
+        body: html_output.body,
+        styles: std::mem::take(&mut html_output.styles),
+        included_pages: std::mem::take(&mut html_output.backlinks.included_pages),
+        expanded_include_count: rendered.expanded_include_count,
+    })
+}
+
 pub(super) async fn render_list_pages_selected_content_source(
     args: ListPagesSelectedContentArgs<'_, '_, '_, '_>,
 ) -> Result<RenderedListPagesSource> {
