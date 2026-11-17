@@ -157,6 +157,28 @@ pub(in crate::services::render) fn build_wikidot_list_pages_module_request(
     source.push_str(&module_body);
     source.push_str("\n[[/module]]");
     if wikidot_ajax_list_pages_source_is_safe(&source) {
+        // A `[[module ...]]` opener that does not start its line is literal
+        // body text on live Wikidot (probe muse-probe-lp-body-strayclose /
+        // ajax #8 case 2). The line-oriented module scanner ignores such
+        // openers, so the source above looks safe and the raw marker would
+        // otherwise be executed by ftml. Turn only those mid-line openers
+        // into inert literal markers; balanced line-start nested pairs stay
+        // executable, so the revealed module still renders recursively.
+        let literalized_body = literalize_midline_module_openers(&module_body);
+        if literalized_body != module_body {
+            source.truncate(body_start);
+            source.push_str(&literalized_body);
+            source.push_str("\n[[/module]]");
+            if wikidot_ajax_list_pages_source_is_safe(&source) {
+                return Some(WikidotListPagesModuleRequest { source, page });
+            }
+            // If literalizing made the source unsafe for any reason, fall
+            // back to the originally accepted source rather than dropping
+            // the request.
+            source.truncate(body_start);
+            source.push_str(&module_body);
+            source.push_str("\n[[/module]]");
+        }
         return Some(WikidotListPagesModuleRequest { source, page });
     }
 
@@ -200,6 +222,47 @@ fn ajax_module_literal_marker_text_is_valid(text: &str) -> bool {
                 .get("[[module".len())
                 .is_some_and(u8::is_ascii_whitespace)
             && lowercase.ends_with("]]"))
+}
+
+/// Replace `[[module ...]]` openers that do not begin a line with inert
+/// literal markers, leaving line-start openers (and all closers) untouched.
+/// These mid-line openers are literal text on live Wikidot and must not be
+/// executed after row substitution in the AJAX module path.
+fn literalize_midline_module_openers(body: &str) -> String {
+    let lowercase = body.to_ascii_lowercase();
+    let bytes = body.as_bytes();
+    let mut output = String::with_capacity(body.len());
+    let mut cursor = 0usize;
+
+    while let Some(relative) = lowercase[cursor..].find("[[module") {
+        let start = cursor + relative;
+        // Must be followed by whitespace to be a module opener, and must
+        // not start a line (a line-start opener is a genuine nested module).
+        let after = start + "[[module".len();
+        let is_opener = bytes.get(after).is_some_and(u8::is_ascii_whitespace);
+        let at_line_start =
+            start == 0 || bytes.get(start.wrapping_sub(1)) == Some(&b'\n');
+        if !is_opener || at_line_start {
+            output.push_str(&body[cursor..after]);
+            cursor = after;
+            continue;
+        }
+        let Some(relative_end) = lowercase[after..].find("]]") else {
+            output.push_str(&body[cursor..]);
+            return output;
+        };
+        let end = after + relative_end + 2;
+        output.push_str(&body[cursor..start]);
+        let marker = &body[start..end];
+        output.push_str(AJAX_MODULE_LITERAL_MARKER_PREFIX);
+        output.push_str(&Uuid::new_v4().as_simple().to_string());
+        output.push('I');
+        output.push_str(&hex::encode(marker));
+        output.push('X');
+        cursor = end;
+    }
+    output.push_str(&body[cursor..]);
+    output
 }
 
 fn wikidot_ajax_list_pages_source_is_safe(source: &str) -> bool {

@@ -265,7 +265,17 @@ impl RenderService {
                     module.body
                 };
                 let compile_template = |source: &str| {
-                    let mut template = ListPagesTemplatePlan::compile(source)?;
+                    // The AJAX module connector reveals nested modules and
+                    // renders them recursively (live Wikidot oracle), unlike
+                    // an in-page ListPages block whose nested-module body is
+                    // empty (LISTPAGES-DEEP D8). Keep the body in the AJAX
+                    // path so the nested pass can execute.
+                    let preserve_nested_modules =
+                        page_info.page.as_ref() == "_ajax-module-connector";
+                    let mut template = ListPagesTemplatePlan::compile_with_options(
+                        source,
+                        preserve_nested_modules,
+                    )?;
                     if body_was_preparsed {
                         template.use_full_default_summary();
                     }
