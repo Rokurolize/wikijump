@@ -518,6 +518,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::services::render::list_pages::ListPagesContentGeometry;
     use crate::services::render::render_budget::RenderCostBudget;
     use std::collections::BTreeMap;
 

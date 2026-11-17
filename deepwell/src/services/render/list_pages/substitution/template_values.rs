@@ -162,10 +162,7 @@ pub(in crate::services::render) fn list_pages_content_occurrence_is_block(
     if name != "content" {
         return false;
     }
-    let line_prefix = template[..start]
-        .rsplit('\n')
-        .next()
-        .unwrap_or_default();
+    let line_prefix = template[..start].rsplit('\n').next().unwrap_or_default();
     if line_prefix.trim().is_empty() {
         return match section {
             Some(1) => geometry.fullname_selection,

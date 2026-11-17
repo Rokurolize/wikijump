@@ -1399,10 +1399,8 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
         }
     }
 
-    let fullname_selector_present = matches!(
-        alias_name_selector,
-        Some(ListPagesNameSelector::Exact(_))
-    );
+    let fullname_selector_present =
+        matches!(alias_name_selector, Some(ListPagesNameSelector::Exact(_)));
     let composed_name_selector =
         compose_list_pages_name_selectors(canonical_name_selector, alias_name_selector);
     current_page_only |= composed_name_selector.current_page_only;
