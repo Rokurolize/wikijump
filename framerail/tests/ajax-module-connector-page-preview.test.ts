@@ -82,7 +82,12 @@ test("PagePreviewModule rejects unsupported shapes and missing handlers", async 
   const inputs: PreviewInput[] = []
   const withHandler = options(inputs)
   const unknown = await handleAjaxModuleConnectorRequest(
-    request({ moduleName: "edit/PagePreviewModule", mode: "page", source: "x", extra: "y" }),
+    request({
+      moduleName: "edit/PagePreviewModule",
+      mode: "page",
+      source: "x",
+      extra: "y"
+    }),
     withHandler
   )
   assert.equal((await unknown.json()).status, "not_ok")

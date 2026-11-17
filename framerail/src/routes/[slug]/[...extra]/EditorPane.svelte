@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation"
+  import { deserialize } from "$app/forms"
   import { errorPopupState } from "$lib/layout/stores.svelte"
   import { getPageLayoutContext } from "$lib/layout/page-layout-context"
   import { Layout } from "$lib/types"
@@ -184,34 +185,27 @@
     if (previewPending) return
     previewPending = true
     try {
-      const fields = new URLSearchParams({
-        moduleName: "edit/PagePreviewModule",
-        mode: "page",
-        source: $form.wikitext,
-        title: $form.title,
-        callbackIndex: "2"
-      })
-      const token = document.cookie.match(/(?:^|;\s*)wikidot_token7=([^;]*)/)?.[1]
-      if (token) fields.set("wikidot_token7", decodeURIComponent(token))
-      const response = await fetch("/ajax-module-connector.php", {
+      const text = await fetch("?/preview", {
         method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded" },
-        body: fields.toString()
-      })
-      const result = (await response.json()) as {
-        status?: string
-        body?: string
-        cssInclude?: string[]
-      }
-      if (result.status !== "ok" || typeof result.body !== "string") {
+        body: JSON.stringify({
+          siteId: data.site.site_id,
+          title: $form.title,
+          wikitext: $form.wikitext
+        })
+      }).then((res) => res.text())
+      const result = deserialize<
+        { res: { body: string; styles: string[] } },
+        { message: string }
+      >(text)
+      if (result.type !== "success" || typeof result.data?.res.body !== "string") {
         throw new Error("Preview request failed.")
       }
       const container = document.querySelector<HTMLElement>("#page-content")
       if (!container) return
-      container.innerHTML = result.body
-      if (result.cssInclude?.length) {
+      container.innerHTML = result.data.res.body
+      if (result.data.res.styles?.length) {
         const style = document.createElement("style")
-        style.textContent = result.cssInclude.join("\n")
+        style.textContent = result.data.res.styles.join("\n")
         container.append(style)
       }
     } catch (error) {
