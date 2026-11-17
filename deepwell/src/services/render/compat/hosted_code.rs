@@ -77,23 +77,19 @@ where
             })
             .collect(),
         None => {
-            // Wikidot serves local--code from the raw page source,
-            // independent of [[iftags]] display gating: preprocessing can
-            // drop every code block before ftml (e.g. all of them inside a
-            // bare [[iftags]] region, whose body must stay hidden), leaving
-            // the render with none. The source scan still found them, so
-            // register them in source order.
-            if code_blocks.is_empty()
-                && let Some(raw) = hosted_code_source.filter(|raw| !raw.is_empty())
-            {
-                return raw
-                    .iter()
-                    .map(|block| OwnedHostedCodeBlock {
-                        text: wikidot_hosted_code(&localize(&block.contents)),
-                        language: block.language.clone(),
-                        name: block.name.clone(),
-                    })
-                    .collect();
+            // Wikidot indexes local--code/<page>/<n> against the page's OWN
+            // [[code]] blocks in source order, independent of [[include]].
+            // When the own-source scan is available, enumerate from it and
+            // anchor each source block to its rendered counterpart by content
+            // key. A code block contributed by an included page therefore
+            // never shifts the indices of the page's own blocks.
+            // The scan is also independent of [[iftags]] display gating:
+            // preprocessing can drop every code block before ftml (e.g. all
+            // of them inside a bare [[iftags]] region, whose body must stay
+            // hidden), leaving the render with none — the scan still found
+            // them, so they register in source order.
+            if let Some(raw) = hosted_code_source.filter(|raw| !raw.is_empty()) {
+                return own_source_hosted_code_blocks(code_blocks, raw, localize);
             }
             let rendered = code_blocks
                 .iter()
@@ -113,6 +109,64 @@ where
                 .collect()
         }
     }
+}
+
+fn own_source_hosted_code_blocks<F>(
+    code_blocks: &[CodeBlock<'_>],
+    raw: &[CompatCodeBlock],
+    localize: F,
+) -> Vec<OwnedHostedCodeBlock>
+where
+    F: Fn(&str) -> String,
+{
+    let rendered_keys = code_blocks
+        .iter()
+        .map(|block| rendered_code_key(&block.contents))
+        .collect::<Vec<_>>();
+
+    let mut anchor = vec![None; raw.len()];
+    let mut claimed = vec![false; code_blocks.len()];
+    let mut cursor = 0;
+    for (index, block) in raw.iter().enumerate() {
+        let key = rendered_code_key(&localize(&block.contents));
+        if let Some(found) =
+            (cursor..code_blocks.len()).find(|&j| !claimed[j] && rendered_keys[j] == key)
+        {
+            anchor[index] = Some(found);
+            claimed[found] = true;
+            cursor = found + 1;
+        }
+    }
+
+    let mut blocks = Vec::with_capacity(raw.len());
+    for (index, block) in raw.iter().enumerate() {
+        let (text, language, name) = match anchor[index] {
+            Some(found) => {
+                let rendered = &code_blocks[found];
+                let hosted = hosted_code_texts(
+                    &[rendered.contents.as_ref()],
+                    Some(std::slice::from_ref(block)),
+                    &localize,
+                );
+                (
+                    hosted.into_iter().next().expect("one rendered block"),
+                    rendered.language.as_deref().map(str::to_owned),
+                    rendered.name.as_deref().map(str::to_owned),
+                )
+            }
+            None => (
+                wikidot_hosted_code(&localize(&block.contents)),
+                block.language.clone(),
+                block.name.clone(),
+            ),
+        };
+        blocks.push(OwnedHostedCodeBlock {
+            text,
+            language,
+            name,
+        });
+    }
+    blocks
 }
 
 struct OwnedHostedCodeBlock {
@@ -600,6 +654,29 @@ mod tests {
     fn source_scan_registers_nothing_without_blocks_or_a_scan() {
         assert!(select_hosted_code_blocks(&[], None, true, identity).is_empty());
         assert!(select_hosted_code_blocks(&[], Some(&[]), true, identity).is_empty());
+    }
+
+    #[test]
+    fn own_source_blocks_index_before_an_included_code_block() {
+        let source = [raw("/* garak theme */\n.theme { color: red; }")];
+        let rendered = [
+            tree("/* included u-navstyle */\n#side { color: blue; }"),
+            tree("/* garak theme */\n.theme { color: red; }"),
+        ];
+        let owned = select_hosted_code_blocks(&rendered, Some(&source), false, identity);
+        assert_eq!(owned.len(), 1);
+        assert_eq!(owned[0].text, "/* garak theme */\n.theme { color: red; }\n");
+        assert_eq!(owned[0].language.as_deref(), Some("css"));
+    }
+
+    #[test]
+    fn own_source_multiple_blocks_keep_source_order_past_an_included_block() {
+        let source = [raw("own-a"), raw("own-b")];
+        let rendered = [tree("foreign"), tree("own-a"), tree("own-b")];
+        let owned = select_hosted_code_blocks(&rendered, Some(&source), false, identity);
+        assert_eq!(owned.len(), 2);
+        assert_eq!(owned[0].text, "own-a\n");
+        assert_eq!(owned[1].text, "own-b\n");
     }
 
     #[test]
