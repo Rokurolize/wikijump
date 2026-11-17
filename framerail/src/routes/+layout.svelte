@@ -338,11 +338,7 @@
     <link href="/wikidot/styles/wikidot-base-165bc434fd1d.css" rel="stylesheet" />
     <link href="/wikidot/styles/pagerate-db0bffe086ed.css" rel="stylesheet" />
     {#if moduleThemePreviewUrl}
-      <link
-        data-wikidot-site-theme
-        href={moduleThemePreviewUrl}
-        rel="stylesheet"
-      />
+      <link data-wikidot-site-theme href={moduleThemePreviewUrl} rel="stylesheet" />
     {:else if !viewData?.theme_previewer_blank}
       {#if effectiveTheme.type === "built_in"}
         <link href="/wikidot/styles/sigma-076b14dcd8d4.css" rel="stylesheet" />

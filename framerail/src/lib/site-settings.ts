@@ -171,8 +171,8 @@ export const resolveThemePreviewUrl = (
 /**
  * The stylesheet URL an executing ThemePreviewer module substitutes for
  * the page's theme import on Wikidot. Unlike a site theme setting this
- * value comes from page wikitext, so it is not held to the external
- * theme allowlist; only the scheme is checked before it is emitted.
+ * value comes from page wikitext, so it is not held to the external theme
+ * allowlist; only the scheme is checked before it is emitted.
  */
 export const normalizeModuleThemePreviewUrl = (value: unknown): string | null => {
   if (typeof value !== "string") return null
