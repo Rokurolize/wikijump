@@ -73,7 +73,8 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
     "https://scp-wiki.wikidot.com",
     "https://www.wikidot.com",
     "https://scp-jp-storage.wikidot.com",
-    "https://scpsandboxcn.wikidot.com"
+    "https://scpsandboxcn.wikidot.com",
+    "https://scpko.wikidot.com"
   ]) {
     assert(directives["img-src"]?.some((source) => source === origin))
   }
