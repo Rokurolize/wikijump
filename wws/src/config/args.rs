@@ -66,7 +66,7 @@ impl Arguments {
                 Arg::new("disable-deepwell-check")
                     .long("disable-deepwell-check")
                     .action(ArgAction::SetTrue)
-                    .help("Disable checking DEEPWELL on start."),
+                    .help("Skip the WWS startup readiness gate and Deepwell ping before serving."),
             )
             .arg(
                 Arg::new("pid-file")

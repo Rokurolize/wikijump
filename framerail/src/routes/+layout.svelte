@@ -1,4 +1,10 @@
 <script lang="ts">
+  import uiSprite from "$assets/ui.svg?raw"
+
+  // Inline SVG in HTML needs no xmlns declaration, and served Wikijump
+  // documents must not carry one (tests/wikidot-document-context).
+  const uiSpriteMarkup = uiSprite.replace(' xmlns="http://www.w3.org/2000/svg"', "")
+
   import SigmaEsque from "$lib/sigma-esque/sigma-esque.svelte"
   import Wikidot from "$lib/sigma-esque/wikidot.svelte"
   import ErrorPopup from "$lib/popup/error.svelte"
@@ -361,6 +367,8 @@
     {@html buildGeneratedPageStylesHead(viewData?.compiled_body_styles ?? [])}
   {/if}
 </svelte:head>
+
+<div hidden aria-hidden="true">{@html uiSpriteMarkup}</div>
 
 {#if isPrinterFriendlyView}
   {@render children?.()}

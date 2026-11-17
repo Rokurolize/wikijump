@@ -304,30 +304,26 @@ mod tests {
     }
 
     async fn test_state(endpoint: &str) -> ServerState {
-        let mut state = build_server_state(
-            false,
-            Secrets {
-                deepwell_url: str!("http://127.0.0.1:2747"),
-                deepwell_rpc_token: crate::config::RpcToken::parse("0".repeat(64))
-                    .unwrap(),
-                redis_url: str!("redis://127.0.0.1/"),
-                s3_files_bucket: str!("files"),
-                s3_tblocks_bucket: str!("text-blocks"),
-                s3_region: Region::Custom {
-                    region: str!("test"),
-                    endpoint: endpoint.to_string(),
-                },
-                s3_credentials: Credentials::new(
-                    Some("access-key"),
-                    Some("secret-key"),
-                    None,
-                    None,
-                    None,
-                )
-                .unwrap(),
-                s3_path_style: true,
+        let mut state = build_server_state(Secrets {
+            deepwell_url: str!("http://127.0.0.1:2747"),
+            deepwell_rpc_token: crate::config::RpcToken::parse("0".repeat(64)).unwrap(),
+            redis_url: str!("redis://127.0.0.1/"),
+            s3_files_bucket: str!("files"),
+            s3_tblocks_bucket: str!("text-blocks"),
+            s3_region: Region::Custom {
+                region: str!("test"),
+                endpoint: endpoint.to_string(),
             },
-        )
+            s3_credentials: Credentials::new(
+                Some("access-key"),
+                Some("secret-key"),
+                None,
+                None,
+                None,
+            )
+            .unwrap(),
+            s3_path_style: true,
+        })
         .await
         .unwrap();
         disable_s3_proxies(&mut state);

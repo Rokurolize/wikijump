@@ -520,29 +520,26 @@ mod tests {
             });
 
             let endpoint = format!("http://{services_address}");
-            let state = build_server_state(
-                false,
-                Secrets {
-                    deepwell_url: endpoint.clone(),
-                    deepwell_rpc_token: RpcToken::parse("0".repeat(64)).unwrap(),
-                    redis_url: str!("redis://127.0.0.1:1/"),
-                    s3_files_bucket: str!("files"),
-                    s3_tblocks_bucket: str!("text-blocks"),
-                    s3_region: Region::Custom {
-                        region: str!("test"),
-                        endpoint,
-                    },
-                    s3_credentials: Credentials::new(
-                        Some("access-key"),
-                        Some("secret-key"),
-                        None,
-                        None,
-                        None,
-                    )
-                    .unwrap(),
-                    s3_path_style: true,
+            let state = build_server_state(Secrets {
+                deepwell_url: endpoint.clone(),
+                deepwell_rpc_token: RpcToken::parse("0".repeat(64)).unwrap(),
+                redis_url: str!("redis://127.0.0.1:1/"),
+                s3_files_bucket: str!("files"),
+                s3_tblocks_bucket: str!("text-blocks"),
+                s3_region: Region::Custom {
+                    region: str!("test"),
+                    endpoint,
                 },
-            )
+                s3_credentials: Credentials::new(
+                    Some("access-key"),
+                    Some("secret-key"),
+                    None,
+                    None,
+                    None,
+                )
+                .unwrap(),
+                s3_path_style: true,
+            })
             .await
             .unwrap();
             let wws_listener = TcpListener::bind("127.0.0.1:0").await.unwrap();

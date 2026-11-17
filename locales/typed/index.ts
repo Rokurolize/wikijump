@@ -23,6 +23,7 @@ fs.readdirSync(input).forEach((folder) => {
     const files = fs.readFileSync(`${input}/${folder}/${file}`, "utf8");
 
     return new FluentResource(files).body.flatMap((entry) => {
+      if (entry.id.startsWith("-")) return [];
       return [
         entry.id,
         ...Object.keys(entry.attributes).map(key=>`${entry.id}.${key}`),
