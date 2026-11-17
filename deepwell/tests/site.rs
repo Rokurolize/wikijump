@@ -612,7 +612,7 @@ async fn site_create_site_user_relation_and_audit_roll_back_together() {
 }
 
 #[tokio::test]
-#[ignore]
+#[ignore = "site_update fails with a settings revision conflict after bootstrap; the test needs a current settings revision before updating"]
 async fn newsite_bootstrap_binds_creator_admin_with_site_edit() {
     let mut runner = TestRunner::setup().await;
     let n = next_n();
@@ -693,7 +693,6 @@ async fn newsite_bootstrap_binds_creator_admin_with_site_edit() {
 }
 
 #[tokio::test]
-#[ignore]
 async fn newsite_bootstrap_roles_roll_back_with_creation() {
     use deepwell::models::role::{Column as RoleColumn, Entity as RoleTable};
 
@@ -756,7 +755,6 @@ async fn newsite_bootstrap_roles_roll_back_with_creation() {
 }
 
 #[tokio::test]
-#[ignore]
 async fn newsite_bootstrap_creates_template_pages_and_default_start() {
     use deepwell::services::relation::{
         GetPageAttributions, PageAttributionKind, RelationService,
@@ -829,7 +827,6 @@ async fn newsite_bootstrap_creates_template_pages_and_default_start() {
 }
 
 #[tokio::test]
-#[ignore]
 async fn newsite_template_pages_match_seeder_template_set() {
     let seed: serde_json::Value =
         serde_json::from_str(include_str!("../seeder/pages.json"))
