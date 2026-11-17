@@ -1,0 +1,411 @@
+[[iftags +theme]]
+
+[[module css]]
+
+.scp-image-block.block-right {
+    margin: 1em 0 1em 2em;
+}
+
+.scp-image-block img {
+    min-width: 100%;
+    border: 0.1rem solid rgba(var(--pale-gray-monochrome));
+    box-sizing: border-box;
+}
+[[/module]]
+
+[[include :scp-wiki:component:interwiki-style
+| priority=1
+| theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/normalize.min.css
+]]
+
+[[include :scp-wiki:component:interwiki-style
+| priority=2
+| theme=https://nu-scptheme.github.io/Black-Highlighter/css/min/black-highlighter.min.css
+]]
+
+
+[[>]]
+[[module Rate]]
+[[/>]]
+
+[[=]]
++ Theme Colors
+[[/=]]
+
+[[include :scp-wiki:component:theme-squares -=-
+| color1-name=Mexican Pink
+| color1-variable=--gray-monochrome
+| color1-info=(228, 0, 124)
+| color1-has-light-text=1
+| color2-name=Cempasuchil Fields
+| color2-variable=--bright-accent
+| color2-info=( 255, 128, 0)
+| subcolor1-name=Deep Purple
+| subcolor1-variable=--dark-accent
+| subcolor1-info=(113, 23, 145)
+| subcolor1-has-light-text=1
+| subcolor2-name=Yellow Submarine
+| subcolor2-variable=--alt-accent
+| subcolor2-info=(255, 247, 0)
+| subcolor3-name=Pink Flamingo
+| subcolor3-variable=--medium-accent
+| subcolor3-info=(184, 0, 101)
+| subcolor3-has-light-text=1
+| subcolor4-name=Paly Lady
+| subcolor4-variable=--white-monochrome
+| subcolor4-info=(243, 241, 238)
+| subcolor5-name=Charro Negro
+| subcolor5-variable=--black-monochrome
+| subcolor5-info=(12,12,12)
+| subcolor5-has-light-text=1
+]]
+
+[[div class="scp-image-block block-right" style="max-width:300px;"]]
+[[image https://scp-wiki.wikidot.com/local--files/theme:dia-de-muertos/muertoswhite.png width="300px" link="https://scp-wiki.wikidot.com/local--files/theme:dia-de-muertos/muertoswhite.png"]]
+[[div class="scp-image-caption" style="max-width:300px;"]]
+Día de Muertos SCP Logo White
+[[/div]]
+[[/div]]
+
+
+[[div]]
+[[div class="scp-image-block block-left" style="width:300px; background-color:#f2f2f2; brightness(110%);display:flex;"]]
+[[image https://scp-wiki.wikidot.com/local--files/theme:dia-de-muertos/muertosblack.png width="300px" style="width:300px;" link="https://scp-wiki.wikidot.com/local--files/theme:dia-de-muertos/muertosblack.png"]]
+[[div class="scp-image-caption" style="color:black; width:width:300px;"]]
+Día de Muertos SCP Logo Black
+[[/div]]
+[[/div]]
+
+@@ @@
+
++ What is this?
+[[div class="blockquote"]]
+This theme was developed by [[*user Kilerpoyo]] to be used in "Día de Muertos" themed pages.
+
+This theme is a modified extension of the Old Money theme by [[*user djkaktus]] & [[*user woedenaz]].
+[[/div]]
+----
+
+@@ @@
+
++ Usage
+
+[[div_ style="filter: invert(1) brightness(110%);display:flex;"]]
+[[image https://scp-wiki.wdfiles.com/local--files/theme%3Ablack-highlighter-theme/black-highlighter-logo.svg]]
+[[/div]]
+
+++ Note: This is a Black Highlighter based theme. You will need to import the Black Highlighter theme as well in order to use this theme. [[[theme:black-highlighter-theme|To learn more go here]]].
+
+@@ @@
+
+On any wiki:
+
+[[div class="code"]]
+@@[[include :scp-wiki:theme:black-highlighter-theme]]@@
+@@[[include :scp-wiki:theme:old-money-theme]]@@
+@@[[include :scp-wiki:theme:dia-de-muertos]]@@
+[[/div]]
+
+@@ @@
+
++ Examples
+
+A horizontal rule can be created with 5 hyphens "@@-----@@" and extends across the whole page if it's not placed inside anything (eg a blockquote). The lines separating sections of this document are horizontal rules.
+
+-----
+
+Titles can be created by putting between one and six plus "+" at the start of the line
+
+[[collapsible show="+ Titles" hide="- Titles"]]
++ First Title
+
+++ Second Title
+
++++ Third Title
+
+++++ Fourth Title
+
++++++ Fifth Title
+
+++++++ Sixth Title
+[[/collapsible]]
+
+@@ @@
+
+[[tabview]]
+[[tab Tabulator]]
+This is a tab view.
+
+@@ @@
+@@ @@
+@@ @@
+@@ @@
+
+They say that Death fell in love with México. It was certainly because of the Mezcal and Tequila.
+
+
+[[/tab]]
+[[tab Tabulation]]
+Japan has the shinigamis, for the Greeks it was Thanatos and Hades... but here in Mexico is La Catrina, and of all the Lords of Death she is the Fanciest.
+
+How quaint.
+[[/tab]]
+[[tab Long Tab]]
+This is a long tab. It contains a lot of text.
+
+“Si ojos tienen que no me vean; si manos tienen que no me agarren; no permitas que me sorprendan por la espalda; no permitas que mi muerte sea violenta; no permitas que mi sangre se derrame; Tú que todo lo conoces, sabes de mis pecados, pero también sabes de mi fe, no me desampares, Amén.”
+
+This is a long tab. It contains a lot of text.
+
+This is a long tab. It contains a lot of text.
+
+This is a long tab. It contains a lot of text.
+
+This is a long tab. It contains a lot of text.
+
+This is a long tab. It contains a lot of text.
+
+This is a long tab. It contains a lot of text.
+
+This is a long tab. It contains a lot of text.
+
+This is a long tab. It contains a lot of text.
+
+This is a long tab. It contains a lot of text.
+
+This is a long tab. It contains a lot of text.
+
+This is a long tab. It contains a lot of text.
+[[/tab]]
+[[tab Empty Tab]]
+The Pale Lady won't take kindly to a broken promise.
+[[/tab]]
+[[tab Empty Tab]]
+Sobre el muerto las coronas
+[[/tab]]
+[[tab Empty Tab]]
+De muertos y tragones están llenos los panteones
+[[/tab]]
+[[tab Empty Tab]]
+The men with no name are coming.
+[[/tab]]
+[[tab Empty Tab]]
+Al fin que para morir nacimos
+[[/tab]]
+[[tab Empty Tab]]
+Poderosa Santísima, escucha mis ruegos
+para que venga a mi tu ayuda, solicito tu protección
+en esta situación tan difícil por la que atravieso,
+conoces el dolor por el que estoy padeciendo,
+tengo un problema muy difícil,
+sé que usted lo va a solucionar.
+[[/tab]]
+[[/tabview]]
+
+> This is a blockquote, created by putting "> " at the start of each line.
+>
+> More text
+> -----
+> That's a horizontal rule
+>
+>> Nested blockquotes
+
+||~ This is a ||~ table ||
+||You should know || how to make these ||
+||||already ||
+
+[[=]]
+The body font is Verdana.
+[[span style="font-family: var(--header-font);"]]The headers and Title font is Colus.[[/span]]
+[[span style="font-family: var(--mono-font);"]]The monospace font used is Monaco.[[/span]]
+[[span style="font-family: var(--decorative-font); font-size:300%"]]The Header and Decorative font used is Papel Picado.[[/span]]
+
+[[span style="font-family: var(--decorative-font); font-size:700%"]]$ / #
+@ & : ?[[/span]]
+
+[[span style="font-family: var(--decorative-font2); font-size:300%"]]The alternative Decorative font is Dobuled Crossed.[[/span]]
+
+**Note:** Please keep in mind the text legibility when using the Decorative Fonts.
+
+[[/=]]
+
+-----
+
+[[collapsible show="+ Show theme code" hide="- Hide theme code"]]
+[[code type="css"]]
+
+/*
+   Día de Muertos Theme
+   [2022 Wikidot Theme]
+   by Kilerpoyo
+          an extension of Old Money Theme by djkaktus & Woedenaz.
+*/
+
+@import url('https://scp-wiki.wdfiles.com/local--files/theme%3Adia-de-muertos/papelpicadostyle.css');
+@import url('https://scp-wiki.wdfiles.com/local--files/theme%3Adia-de-muertos/doubled-crossed.css');
+@import url('https://scp-wiki.wdfiles.com/local--files/theme%3Adia-de-muertos/colus.css');
+
+:root {
+
+    --theme-id: "dia-de-muertos";
+    --theme-name: "Dia de Muertos Theme";
+
+    --logo-image: url("https://scp-wiki.wikidot.com/local--files/theme:dia-de-muertos/muertoswhite.png");
+    --header-title: ":SCP&";
+    --header-subtitle: "Nadie sale vivo de esta vida.";
+
+    /* Typefaces */
+    --body-font: Verdana, serif;
+    --header-font: 'Colus', Verdana, serif;
+    --title-font: 'Colus', Verdana, serif;
+    --UI-font: --UI-font: Roboto, sans-serif;
+    --mono-font: monaco, monospace;
+    --decorative-font: 'papel_picadoregular', 'Colus', Verdana;
+    --decorative-font2: 'double_crossedregular', 'Colus', Verdana;
+
+    /* Día de Muertos theme palette */
+    --mexican-pink: 228, 0, 124;
+    --pink-flamingo: 184, 0, 101;
+    --yellow-submarine: 255, 247, 0;
+    --deep-purple: 113, 23, 145;
+    --cempasuchil-fields: 255, 128, 0;
+    --pale-lady: 243, 241, 238;
+    --charro-negro: 12, 12, 12;
+
+
+    /* THEME ASSIGNMENTS */
+    --white-monochrome: var(--pale-lady);
+    --gray-monochrome: var(--mexican-pink);
+    --dark-gray-monochrome: var(--pink-flamingo);
+    --black-monochrome: var(--charro-negro);
+    --pale-accent: var(--cempasuchil-fields);
+    --bright-accent: var(--cempasuchil-fields);
+    --medium-accent: var(--pink-flamingo);
+    --dark-accent: var(--deep-purple);
+    --alt-accent: var(--yellow-submarine);
+
+    /* MISCH TWEAKS */
+    --swatch-tertiary-color: var(--pink-flamingo);
+    --link-color: var(--yellow-submarine);
+    --visited-link-color: var(--cempasuchil-fields);
+
+}
+
+/* Webkit Scrollbar */
+::-webkit-scrollbar-thumb,
+::-webkit-scrollbar-thumb {
+    background: rgba(var(--mexican-pink), 1);
+}
+
+/* YUI NAV BAR */
+.yui-navset .yui-nav a:hover,
+.yui-navset .yui-nav a:active,
+.yui-navset .yui-nav a:focus {
+    color: rgb(var(--pale-lady));
+}
+
+/* TOP BAR */
+#top-bar {
+    --topmenu-hover-border-color: var(--bright-accent);
+}
+
+
+/* HEADER H1 */
+#header h1 a::before {
+    font-size: 2em;
+    --wght: 100;
+    background-blend-mode: normal;
+    font-family: var(--decorative-font);
+}
+
+#header h1 a::before {
+    background-image: linear-gradient(left, rgb(var(--mexican-pink)) 0em, rgb(var(--mexican-pink)) 1.1em, rgb(var(--cempasuchil-fields)) 1.1em, rgb(var(--cempasuchil-fields)) 2.75em, rgb(var(--pale-lady)) 2.75em, rgb(var(--pale-lady)) 20em);
+    background-image: -webkit-linear-gradient(left, rgb(var(--mexican-pink)) 0em, rgb(var(--mexican-pink)) 1.1em, rgb(var(--cempasuchil-fields)) 1.1em, rgb(var(--cempasuchil-fields)) 2.75em, rgb(var(--pale-lady)) 2.75em, rgb(var(--pale-lady)) 20em);
+    background-size: 20em;
+    background-clip: text;
+    -webkit-background-clip: text;
+    text-fill-color: transparent;
+    -webkit-text-fill-color: transparent;
+}
+
+/* HEADER H2 */
+#header h2 span {
+    margin-top: calc(((var(--header-height-on-desktop) / 2) + (var(--header-h1-font-size) / 2) - var(--header-h2-font-size) + 2em));
+    font-size: 1em;
+}
+
+/* PAGE TITLES */
+#page-title,
+.meta-title,
+#page-content h1,
+#page-content h2,
+#page-content h3,
+#page-content h4,
+#page-content h5,
+#page-content h6 {
+    -webkit-background-clip: none;
+    background-clip: none;
+    background-color: rgb(var(--yellow-submarine));
+    background-image: none;
+    background-blend-mode: normal;
+    -webkit-text-fill-color: rgb(var(--yellow-submarine));
+}
+
+/* SIDE BAR HEADING */
+#side-bar .heading p,
+#interwiki .heading p {
+    background-image: none;
+    -webkit-background-clip: none;
+    background-clip: none;
+    color: rgb(var(--swatch-menutxt-dark-color));
+    color: rgb(var(--bright-accent));
+    -webkit-text-fill-color: rgb(var(--bright-accent));
+    overflow-wrap: normal;
+}
+
+/* TABLE WIKI */
+table.wiki-content-table th {
+    background-color: rgb(var(--swatch-primary-darker));
+    background-image: none;
+}
+
+
+/* MOBILE SUPPORT */
+@media only screen and (max-width: 56.25rem) {
+
+    /* HEADER H1 */
+    #header h1 a {
+    	margin-top: calc(((var(--header-height-on-mobile) / 2)) - 0.75em);
+    	margin-left: calc(var(--header-height-on-mobile) - 3.5rem);
+    	font-size: clamp(1.1em, 7vw, 3em);
+    	line-height: 0.5;
+    }
+
+    #header h1 a::before {
+    	font-size: 3.5rem;
+    }
+
+    /* HEADER H2 */
+    #header h2 span {
+    	margin-top: calc(((var(--header-height-on-mobile) / 2) + 1.5em));
+    	margin-left: calc(var(--header-height-on-mobile) - 3.5rem);
+    	font-size: 0.75em;
+    	line-height: 1;
+    	text-align: left;
+    }
+}
+[[/code]]
+[[/collapsible]]
+[[/iftags]]
+[[iftags +theme]][[div style="display: none"]][[/iftags]]
+[[include :scp-wiki:theme:old-money-theme]]
+[[iftags +theme]][[/div]][[/iftags]]
+
+[[module CSS]]
+@import url('https://scp-wiki.wdfiles.com/local--code/theme%3Adia-de-muertos/1');
+[[/module]]
+
+[[include :scp-wiki:component:interwiki-style
+| priority=4
+| theme=https://scp-wiki.wdfiles.com/local--code/theme%3Adia-de-muertos/1
+]]
