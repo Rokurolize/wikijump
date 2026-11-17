@@ -57,8 +57,8 @@ impl Arguments {
             .arg(
                 Arg::new("disable-trace")
                     .short('q')
-                    .long("quiet")
                     .long("disable-trace")
+                    .visible_alias("quiet")
                     .action(ArgAction::SetTrue)
                     .help("Disable trace output."),
             )
@@ -71,8 +71,8 @@ impl Arguments {
             .arg(
                 Arg::new("pid-file")
                     .short('P')
-                    .long("pid")
                     .long("pid-file")
+                    .visible_alias("pid")
                     .value_name("PATH")
                     .value_parser(value_parser!(PathBuf))
                     .help("The PID file to write to on boot."),
@@ -80,8 +80,8 @@ impl Arguments {
             .arg(
                 Arg::new("host")
                     .short('H')
-                    .long("host")
                     .long("hostname")
+                    .visible_alias("host")
                     .value_name("HOST")
                     .value_parser(value_parser!(IpAddr))
                     .action(ArgAction::Set)
@@ -166,5 +166,21 @@ mod tests {
         assert_eq!(args.pid_file, Some(PathBuf::from("/tmp/wws.pid")));
         assert_eq!(args.address.ip(), IpAddr::V4(Ipv4Addr::LOCALHOST));
         assert_eq!(args.address.port(), 8080);
+    }
+
+    #[test]
+    fn command_line_flag_aliases_are_accepted() {
+        let args = Arguments::parse_from([
+            "wws",
+            "--quiet",
+            "--pid",
+            "/tmp/wws.pid",
+            "--host",
+            "127.0.0.1",
+        ]);
+
+        assert!(!args.enable_trace);
+        assert_eq!(args.pid_file, Some(PathBuf::from("/tmp/wws.pid")));
+        assert_eq!(args.address.ip(), IpAddr::V4(Ipv4Addr::LOCALHOST));
     }
 }
