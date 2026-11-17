@@ -627,6 +627,64 @@ mod tests {
     }
 
     #[test]
+    fn lone_css_module_output_seals_to_empty_body_with_extracted_styles() {
+        // The component:af2024theme shape (stafflab roll render-ahead
+        // failure, 2026-11-17): a block-placed ListPages module with
+        // wrapper="no" separate="no" whose body is one escaped CSS
+        // module (`[[%%content{0}%%module css]]` ...), listing a page
+        // whose first content section is empty. The block's pending
+        // output is then the lone CSS module below (captured verbatim
+        // from the failing seal): no delayed occurrences, no runtime
+        // ranges, no HTML fragments. Sealing extracts the module for
+        // its styles and the layout preprocessing trims the whitespace
+        // around it, leaving nothing to parse; the seal must return
+        // the styles with an empty body instead of handing the delayed
+        // parser an empty segment list (InvalidSegments), which failed
+        // the whole page render.
+        let source = "\n\n[[module css]]\n@import url('https://scp-jp.wdfiles.com/local--code/component%3Aaf2024theme/4');\n\n[[/module]]\n\n";
+        let page_info = PageInfo {
+            page: Cow::Borrowed("component:af2024theme"),
+            category: Some(Cow::Borrowed("component")),
+            site: Cow::Borrowed("scp-jp"),
+            title: Cow::Borrowed("AF2024 Theme"),
+            alt_title: None,
+            score: ftml::data::ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("ja"),
+        };
+        let settings = WikitextSettings::from_mode(
+            WikitextMode::Page,
+            ftml::layout::Layout::Wikidot,
+        );
+        let mut compat_html = CompatHtmlFragments::new(source);
+        let (sealed, styles) =
+            seal_list_pages_delayed_output_with_modes(SealListPagesDelayedOutputParams {
+                output: source.to_owned(),
+                delayed_occurrences: Vec::new(),
+                runtime_text_ranges: Vec::new(),
+                delayed_html_fragments: Vec::new(),
+                page_info: &page_info,
+                settings: &settings,
+                compat_html: &mut compat_html,
+                block_output: true,
+                list_pages_inline: false,
+                page_existence: None,
+            })
+            .expect("a lone CSS module output should seal, not fail the render");
+        assert!(
+            styles.iter().any(|style| style.contains(
+                "@import url('https://scp-jp.wdfiles.com/local--code/component%3Aaf2024theme/4');"
+            )),
+            "the module's CSS should be extracted as styles: {styles:?}",
+        );
+        let rendered = compat_html.restore(&sealed);
+        assert!(
+            rendered.trim().is_empty(),
+            "the sealed body should be empty once the module is extracted: {rendered:?}",
+        );
+    }
+
+    #[test]
     fn combined_runtime_text_defers_one_paragraph_to_the_outer_page() {
         let source = "BEGIN|%%unknown%%|END";
         let page_info = PageInfo {
