@@ -116,6 +116,22 @@ pub(super) fn seal_list_pages_delayed_output_with_modes(
     if delayed_occurrences.is_empty() && runtime_text_ranges.is_empty() {
         output = register_generated_list_pages_html(output, compat_html);
     }
+    // The steps above can leave nothing to parse: a block whose rows are
+    // a lone CSS module (the component:af2024theme escaped-content
+    // shape) carries no delayed occurrences or runtime ranges, so the
+    // CSS extraction above removes the module whole and the layout
+    // preprocessing then trims the whitespace around it, leaving an
+    // empty output. Return the extracted styles with an empty body,
+    // exactly as the fully-empty case at the top of this function does,
+    // rather than handing the delayed parser an empty segment list,
+    // which it rejects and so fails the whole page render.
+    if output.is_empty()
+        && delayed_occurrences.is_empty()
+        && runtime_text_ranges.is_empty()
+        && delayed_html_fragments.is_empty()
+    {
+        return Ok((String::new(), extracted_styles));
+    }
     let generated_capacity = delayed_occurrences.len();
     let mut occurrences = delayed_occurrences
         .into_iter()
