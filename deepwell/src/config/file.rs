@@ -222,9 +222,6 @@ struct UserSection {
 #[serde(rename_all = "kebab-case")]
 struct Email {
     mock_mailcheck: bool,
-    automation_address: String,
-    notification_address: String,
-    newsletter_address: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -466,9 +463,6 @@ impl ConfigFile {
             email:
                 Email {
                     mock_mailcheck,
-                    automation_address: automation_email,
-                    notification_address: notification_email,
-                    newsletter_address: newsletter_email,
                 },
             file:
                 FileSection {
@@ -638,9 +632,6 @@ impl ConfigFile {
             minimum_name_chars,
             allow_registration,
             mock_mailcheck,
-            automation_email,
-            notification_email,
-            newsletter_email,
             presigned_path_length,
             presigned_expiry_secs: presigned_expiration_minutes * 60,
             maximum_blob_size: maximum_blob_size_kb * 1024,
@@ -804,9 +795,6 @@ mod tests {
             },
             email: Email {
                 mock_mailcheck: true,
-                automation_address: str!("noreply@example.com"),
-                notification_address: str!("notifications@example.com"),
-                newsletter_address: str!("newsletter@example.com"),
             },
             file: FileSection {
                 presigned_path_length: 16,
@@ -931,9 +919,6 @@ mod tests {
         assert_eq!(config.minimum_name_chars, 2);
         assert!(config.allow_registration);
         assert!(config.mock_mailcheck);
-        assert_eq!(config.automation_email, "noreply@example.com");
-        assert_eq!(config.notification_email, "notifications@example.com");
-        assert_eq!(config.newsletter_email, "newsletter@example.com");
         assert_eq!(config.presigned_path_length, 16);
         assert_eq!(config.presigned_expiry_secs, 180);
         assert_eq!(config.maximum_blob_size, 512 * 1024);

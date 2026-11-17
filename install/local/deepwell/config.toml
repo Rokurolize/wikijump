@@ -76,7 +76,6 @@ messages = "wikijump"
 default-page = "wikidot"
 
 [blueprint]
-page-prefix = "_"
 template = "_template"
 missing = "_404"
 private = "_public"
@@ -92,9 +91,6 @@ refill-name-change-days = 90
 
 [email]
 mock-mailcheck = true
-automation-address = "noreply@wikijump.dev.localhost"
-notification-address = "notifications@wikijump.dev.localhost"
-newsletter-address = "newsletter@wikijump.dev.localhost"
 
 [file]
 presigned-path-length = 32

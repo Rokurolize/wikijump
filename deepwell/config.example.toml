@@ -325,14 +325,6 @@ default-page = "wikidot"
 # List of blueprint pages, by slug.
 # These are used as templates in certain cases.
 
-# Any pages whose slug begin with this prefix are
-# handled in a special way.
-#
-# This means that regular users cannot create these pages,
-# and that normal template processing does not apply
-# (to avoid infinite regress and other issues).
-page-prefix = "_"
-
 # This is included in all pages within this category,
 # or for _default, all pages in all categories without
 # a more specific _template page.
@@ -395,22 +387,6 @@ refill-name-change-days = 90
 # This returns responses based on the domain of the email,
 # for instance "john@spam.xxx" is detected as a spam email.
 mock-mailcheck = false
-
-# Email addresses to use for sending.
-# See the domain section for the values used for each tier.
-
-# Automation
-# e.g. verifying email, password resets, etc.
-automation-address = "noreply@wikijump.com"
-
-# Notifications
-# For automated notifications, e.g. configured emails on forum thread comment.
-notification-address = "notifications@wikijump.com"
-
-# Newsletter
-# For bulk emails sent to many users, e.g. site mailing list.
-# Expected to be seldom used.
-newsletter-address = "newsletter@wikijump.com"
 
 [file]
 

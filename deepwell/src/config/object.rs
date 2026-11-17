@@ -150,12 +150,6 @@ pub struct Config {
 
     pub mock_mailcheck: bool,
 
-    pub automation_email: String,
-
-    pub notification_email: String,
-
-    pub newsletter_email: String,
-
     pub presigned_path_length: usize,
 
     pub presigned_expiry_secs: u32,
@@ -300,9 +294,6 @@ impl Config {
             minimum_name_chars: 2,
             allow_registration: true,
             mock_mailcheck: true,
-            automation_email: str!("noreply@wikijump.com"),
-            notification_email: str!("notifications@wikijump.com"),
-            newsletter_email: str!("newsletter@wikijump.com"),
             presigned_path_length: 4,
             presigned_expiry_secs: 60,
             maximum_blob_size: 512 * 1024,
