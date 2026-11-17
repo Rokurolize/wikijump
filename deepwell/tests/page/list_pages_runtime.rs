@@ -3554,7 +3554,8 @@ async fn listpages_unclosed_empty_body_uses_the_live_default_template() {
         "<h1>",
         r#"href="/fixture-listpages-default-template-target""#,
         "Fixture ListPages Default Template Target",
-        "by Administrator",
+        r#"class="printuser avatarhover""#,
+        ">Administrator</a>",
         "Default template summary.",
         r#"<span class="odate "#,
     ] {
@@ -3564,8 +3565,8 @@ async fn listpages_unclosed_empty_body_uses_the_live_default_template() {
         );
     }
     assert!(
-        html.contains("Second paragraph."),
-        "the default template summary spans the complete first content section:\n{html}"
+        !html.contains("Second paragraph."),
+        "the default template summary is the first paragraph only, as on live Wikidot:\n{html}"
     );
     assert!(!html.contains("[[module ListPages"), "{html}");
 }
@@ -3608,8 +3609,8 @@ async fn listpages_default_summary_unwraps_residual_div_before_recursive_error()
 
     let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
     let expected = concat!(
-        "[[div class=&quot;licensebox&quot;]]<br>\n",
-        "Default summary prefix.",
+        "<p>&#91;&#91;div class=&quot;licensebox&quot;&#93;&#93;<br>\n",
+        "Default summary prefix.</p>",
         r#"<div class="error-block">The ListPages module does not work recursively.</div>"#,
     );
     assert!(
@@ -3617,12 +3618,12 @@ async fn listpages_default_summary_unwraps_residual_div_before_recursive_error()
         "the runtime-owned default summary boundary must match live Wikidot:\n{html}",
     );
     assert!(
-        !html.contains(&format!("<p>{expected}")),
-        "the residual generated div prefix must not remain paragraph-wrapped:\n{html}",
+        !html.contains(r#"<div class="licensebox">"#),
+        "the unclosed summary div opener must stay literal text, not an element:\n{html}",
     );
     assert!(
-        html.contains("</p>\n[[div class=&quot;licensebox&quot;]]"),
-        "the residual generated div prefix must retain its root flow break:\n{html}",
+        !html.contains("Outside the default summary section."),
+        "content past the first paragraph must not enter the default summary:\n{html}",
     );
 }
 

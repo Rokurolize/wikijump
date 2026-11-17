@@ -1083,7 +1083,13 @@ impl RenderService {
                         let summary_source = wants_summary.then(|| {
                             let summary = wikidot_content_section(wikitext, Some(1));
                             if wants_full_default_summary {
-                                summary
+                                // Live Wikidot's default template
+                                // summarizes a row by its first
+                                // paragraph only, not the complete
+                                // first content section (sandbox probes
+                                // `muse-probe-lpfail-dt-index` and
+                                // `muse-probe-lpfail-dt2-index`).
+                                list_pages_first_paragraph(&summary).to_owned()
                             } else {
                                 Self::suppress_rate_modules_in_list_pages_content(
                                     summary, settings,
