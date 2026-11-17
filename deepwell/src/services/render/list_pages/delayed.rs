@@ -564,6 +564,8 @@ mod tests {
             snapshot_displays,
             runtime_displays,
             page_wikitext: None,
+            content_geometry: ListPagesContentGeometry::default(),
+            page_block_content: None,
             page_rendered_content: None,
             page_rendered_summary: None,
             page_rendered_summary_is_block: false,

@@ -8,6 +8,7 @@ use super::{
     DateSelector, DateTimeResolution, EntityTrait, Error, ErrorType,
     FinishOrDeferListPagesDelayedOutputParams, FoundPageFields, FoundPages,
     IncludeExpansion, IncludedCategories, ListPagesArguments, ListPagesBlockRenderResult,
+    ListPagesContentGeometry,
     ListPagesOutputShape, ListPagesPageContext, ListPagesRenderDiagnosticsInput,
     ListPagesRenderedBlock, ListPagesSubstitutionContext, MAX_LISTPAGES_RENDER_LIMIT,
     MAX_LISTPAGES_RENDER_SCAN_ROWS, OrderProperty, PageCategory, PageInfo,
@@ -19,21 +20,23 @@ use super::{
     escape_html_text, finish_or_defer_list_pages_delayed_output_with_modes,
     has_include_opening_candidate, has_list_pages_module_opening_candidate,
     is_list_pages_visible_tag, list_pages_ajax_box_opening, list_pages_ajax_identity,
-    list_pages_body_uses_first_image, list_pages_content_query_target,
-    list_pages_created_by_slug, list_pages_feed_info_html,
-    list_pages_feed_only_render_result, list_pages_first_paragraph,
-    list_pages_fragment_supports_ajax_pagination, list_pages_parent_fullname,
-    list_pages_render_diagnostics, list_pages_row_markup_bytes,
-    list_pages_row_scan_target, list_pages_runtime_container_open,
-    list_pages_runtime_row_container_close, list_pages_runtime_row_container_open,
-    list_pages_template_has_block_section, list_pages_template_starts_with_inline_anchor,
-    list_pages_unknown_link_target_slugs, load_list_pages_child_counts,
-    load_list_pages_data_form_definitions, load_list_pages_first_images,
-    load_list_pages_parent_displays, native_numbered_list_content,
-    neutralize_authored_markers, page_category, page_query_cap_requires_original_module,
-    parse_static_wikidot_data_form_values, prepare_delayed_list_pages_row_with_budget,
-    push_list_pages_generated_output, push_list_pages_generated_output_with_cost,
-    push_list_pages_pager, push_list_pages_trailing_runtime_blocks,
+    list_pages_body_uses_first_image, list_pages_content_block_sections,
+    list_pages_content_body_traits, list_pages_content_query_target,
+    list_pages_created_by_slug,
+    list_pages_feed_info_html, list_pages_feed_only_render_result,
+    list_pages_first_paragraph, list_pages_fragment_supports_ajax_pagination,
+    list_pages_parent_fullname, list_pages_render_diagnostics,
+    list_pages_row_markup_bytes, list_pages_row_scan_target,
+    list_pages_runtime_container_open, list_pages_runtime_row_container_close,
+    list_pages_runtime_row_container_open, list_pages_template_has_block_section,
+    list_pages_template_starts_with_inline_anchor, list_pages_unknown_link_target_slugs,
+    load_list_pages_child_counts, load_list_pages_data_form_definitions,
+    load_list_pages_first_images, load_list_pages_parent_displays,
+    native_numbered_list_content, neutralize_authored_markers, page_category,
+    page_query_cap_requires_original_module, parse_static_wikidot_data_form_values,
+    prepare_delayed_list_pages_row_with_budget, push_list_pages_generated_output,
+    push_list_pages_generated_output_with_cost, push_list_pages_pager,
+    push_list_pages_trailing_runtime_blocks, render_list_pages_block_content_source,
     render_list_pages_default_summary_source, render_list_pages_selected_content_source,
     render_page_query_uses_single_scan, resolve_list_pages_first_image,
     seal_zero_row_list_pages_wrapper, seed_random_list_pages_order,
@@ -136,6 +139,7 @@ impl RenderService {
             votes_equals_current_page,
             slug,
             name_pattern,
+            fullname_selector_present,
             data_form_fields,
             prepend_line,
             append_line,
@@ -351,6 +355,21 @@ impl RenderService {
         let wants_first_paragraph = wants_summary;
         let wants_full_default_summary = template.is_default_template()
             && !(template.default_summary_first_paragraph() && page_info.page.is_empty());
+        // The selection and body context for the %%content%% geometry
+        // rules (live probe rounds 1-11): which occurrences render as
+        // blocks is decided per occurrence by the geometry helper, and
+        // the block sections are rendered once per row below.
+        let (body_has_section_variable, body_has_non_content_variable) =
+            list_pages_content_body_traits(template.body());
+        let content_geometry = ListPagesContentGeometry {
+            fullname_selection: fullname_selector_present,
+            exact_selection: slug.is_some(),
+            category_selector_present,
+            body_has_section_variable,
+            body_has_non_content_variable,
+        };
+        let content_block_sections =
+            list_pages_content_block_sections(template.body(), content_geometry);
         let wants_preview = template.uses_preview();
         let wants_size = template.uses_size();
         let wants_first_image = list_pages_body_uses_first_image(template.body());
@@ -1028,47 +1047,25 @@ impl RenderService {
                 )
                 .into());
             }
+            let selected_page_info = page_wikitext.as_deref().map(|_| {
+                list_pages_selected_page_info(
+                    page,
+                    &category_slugs,
+                    page_info,
+                    wants_full_default_summary && page_preview,
+                )
+            });
             let (
                 rendered_page_summary,
                 rendered_page_first_paragraph,
-                rendered_page_styles,
+                mut rendered_page_styles,
             ) = if wants_first_paragraph {
                 match page_wikitext.as_deref() {
                     Some(wikitext) => {
                         let mut rendered_page_styles = Vec::new();
-                        let category = page
-                            .page_category_id
-                            .and_then(|category_id| category_slugs.get(&category_id));
-                        let full_slug = page.slug.as_deref().unwrap_or_default();
-                        let page_name = full_slug
-                            .rsplit_once(':')
-                            .map_or(full_slug, |(_, name)| name);
-                        let selected_page_info = PageInfo {
-                            page: Cow::Owned(page_name.to_owned()),
-                            category: category
-                                .map(|category| Cow::Owned(category.to_owned())),
-                            site: Cow::Owned(page_info.site.to_string()),
-                            title: Cow::Owned(
-                                page.title.as_deref().unwrap_or(full_slug).to_owned(),
-                            ),
-                            alt_title: page
-                                .alt_title
-                                .as_deref()
-                                .map(|title| Cow::Owned(title.to_owned())),
-                            score: if wants_full_default_summary && page_preview {
-                                ScoreValue::Integer(0)
-                            } else {
-                                ScoreValue::Float(page.score.unwrap_or(0.0).into())
-                            },
-                            tags: page
-                                .tags
-                                .as_deref()
-                                .unwrap_or_default()
-                                .iter()
-                                .map(|tag| Cow::Owned(tag.to_owned()))
-                                .collect(),
-                            language: Cow::Owned(page_info.language.to_string()),
-                        };
+                        let selected_page_info = selected_page_info
+                            .as_ref()
+                            .expect("selected page info is built for loaded wikitext");
                         let max_include_expansions = include_budget.remaining;
                         // No full-content render runs for %%content%%:
                         // live Wikidot substitutes the listed page's raw
@@ -1111,7 +1108,7 @@ impl RenderService {
                                         page_info: if page_preview {
                                             page_info
                                         } else {
-                                            &selected_page_info
+                                            selected_page_info
                                         },
                                         settings,
                                         current_site_id,
@@ -1132,7 +1129,7 @@ impl RenderService {
                                     ListPagesSelectedContentArgs {
                                         ctx,
                                         wikitext: summary,
-                                        page_info: &selected_page_info,
+                                        page_info: selected_page_info,
                                         settings,
                                         current_site_id,
                                         current_category_id: page
@@ -1176,7 +1173,7 @@ impl RenderService {
                                         ListPagesSelectedContentArgs {
                                             ctx,
                                             wikitext: first_paragraph,
-                                            page_info: &selected_page_info,
+                                            page_info: selected_page_info,
                                             settings,
                                             current_site_id,
                                             current_category_id: page
@@ -1212,6 +1209,36 @@ impl RenderService {
             } else {
                 (None, None, Vec::new())
             };
+            let mut page_block_content = BTreeMap::new();
+            if !content_block_sections.is_empty()
+                && let (Some(wikitext), Some(selected_page_info)) =
+                    (page_wikitext.as_deref(), selected_page_info.as_ref())
+            {
+                for section in &content_block_sections {
+                    let section_source = wikidot_content_section(wikitext, *section);
+                    let mut rendered = render_list_pages_block_content_source(
+                        ListPagesSelectedContentArgs {
+                            ctx,
+                            wikitext: &section_source,
+                            page_info: selected_page_info,
+                            settings,
+                            current_site_id,
+                            current_category_id: page.page_category_id.unwrap_or(0),
+                            current_page_id: page.page_id,
+                            viewer_user_id,
+                            max_include_expansions: include_budget.remaining,
+                            trusted_corpus_render: include_budget.trusted_corpus_render,
+                            render_cost_budget: render_cost_budget.clone(),
+                            url,
+                        },
+                    )
+                    .await?;
+                    include_budget.consume(rendered.expanded_include_count);
+                    included_pages.extend(rendered.included_pages);
+                    rendered_page_styles.append(&mut rendered.styles);
+                    page_block_content.insert(*section, rendered.body);
+                }
+            }
             let substitution_context = ListPagesSubstitutionContext {
                 authored_limit: limit,
                 page_preview,
@@ -1227,6 +1254,8 @@ impl RenderService {
                 snapshot_displays,
                 runtime_displays,
                 page_wikitext: page_wikitext.as_deref(),
+                content_geometry,
+                page_block_content: Some(&page_block_content),
                 page_rendered_content: None,
                 page_rendered_summary: rendered_page_summary.as_deref(),
                 page_rendered_summary_is_block: wants_full_default_summary,
@@ -1531,5 +1560,43 @@ impl RenderService {
                 runtime_css_insertions,
             },
         )))
+    }
+}
+
+fn list_pages_selected_page_info(
+    page: &crate::services::page_query::FoundPageRow,
+    category_slugs: &BTreeMap<i64, String>,
+    page_info: &PageInfo<'_>,
+    zero_score: bool,
+) -> PageInfo<'static> {
+    let category = page
+        .page_category_id
+        .and_then(|category_id| category_slugs.get(&category_id));
+    let full_slug = page.slug.as_deref().unwrap_or_default();
+    let page_name = full_slug
+        .rsplit_once(':')
+        .map_or(full_slug, |(_, name)| name);
+    PageInfo {
+        page: Cow::Owned(page_name.to_owned()),
+        category: category.map(|category| Cow::Owned(category.to_owned())),
+        site: Cow::Owned(page_info.site.to_string()),
+        title: Cow::Owned(page.title.as_deref().unwrap_or(full_slug).to_owned()),
+        alt_title: page
+            .alt_title
+            .as_deref()
+            .map(|title| Cow::Owned(title.to_owned())),
+        score: if zero_score {
+            ScoreValue::Integer(0)
+        } else {
+            ScoreValue::Float(page.score.unwrap_or(0.0).into())
+        },
+        tags: page
+            .tags
+            .as_deref()
+            .unwrap_or_default()
+            .iter()
+            .map(|tag| Cow::Owned(tag.to_owned()))
+            .collect(),
+        language: Cow::Owned(page_info.language.to_string()),
     }
 }

@@ -23248,6 +23248,16 @@ async fn listpages_content_includes_stay_literal_and_consume_no_budget() {
     // replaced the substitution with the raw form, and the leftover
     // Execute render has been removed, so the scenarios below pin
     // the raw semantics at the old boundary shapes.
+    //
+    // Probe rounds 11-12 of the LP-FAILURES-ADJUDICATE lane narrowed
+    // that blanket statement by body geometry (sandbox pages
+    // muse-probe-lpfail-budget-index and muse-probe-lpfail-b12a/b):
+    // a %%content{N}%% section at the START of its body line, and a
+    // %%content%% at the start of its body line, are inserted as
+    // rendered blocks on live, so their includes execute and consume
+    // the shared include budget like any other render. The scenarios
+    // below pin each shape at its measured geometry: literal in the
+    // raw geometries, executing in the block geometries.
     const COMPONENT_SLUG: &str = "component:listpages-include-budget-cell";
     const INDEX_SLUG: &str = "fixture-listpages-include-budget-index";
     const SAME_ROW_CHILD_SLUG: &str = "fixture-listpages-include-budget-same-row-child";
@@ -23395,15 +23405,17 @@ async fn listpages_content_includes_stay_literal_and_consume_no_budget() {
     .expect("a structurally isolated content section should remain non-recursive");
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        1,
-        "only the direct outer include may execute",
+        2,
+        "the direct outer include and the section include both execute: \
+         %%content{{2}}%% at the start of its body line renders as a block \
+         (LP-FAILURES probe round 11, muse-probe-lpfail-budget-index)",
     );
     assert!(
-        output
+        !output
             .html_output
             .body
             .contains(&format!("[[include {COMPONENT_SLUG}]]")),
-        "the selected child include must remain authored text",
+        "no authored include token remains: both includes executed",
     );
 
     let generated_separator = format!(
@@ -23493,11 +23505,14 @@ async fn listpages_content_includes_stay_literal_and_consume_no_budget() {
         UrlArguments::default(),
     )
     .await
-    .expect("plain content substitutes the raw wikitext while a numbered section stays literal");
+    .expect("the whole-content form renders as a block at the start of its line while the numbered section after it on the same line stays literal");
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        255,
-        "only the direct outer includes may execute; the selected content include stays literal",
+        256,
+        "the 255 direct outer includes and the block-rendered whole \
+         content's include execute; only the numbered-section form on \
+         the same line stays literal (LP-FAILURES probe round 12, \
+         muse-probe-lpfail-b12a)",
     );
     assert_eq!(
         output
@@ -23507,8 +23522,8 @@ async fn listpages_content_includes_stay_literal_and_consume_no_budget() {
             .iter()
             .filter(|page| page.page() == COMPONENT_SLUG)
             .count(),
-        255,
-        "a literal selected content include must not contribute a dependency backlink",
+        256,
+        "the block-rendered content include contributes a dependency backlink; the literal numbered-section form does not",
     );
     assert_eq!(
         output
@@ -23516,8 +23531,8 @@ async fn listpages_content_includes_stay_literal_and_consume_no_budget() {
             .body
             .matches(&format!("[[include {COMPONENT_SLUG}]]"))
             .count(),
-        2,
-        "the plain and the numbered-section content forms both preserve the authored include token",
+        1,
+        "only the numbered-section content form preserves the authored include token",
     );
 
     let direct_includes =
@@ -23539,12 +23554,14 @@ async fn listpages_content_includes_stay_literal_and_consume_no_budget() {
     )
     .await
     .expect(
-        "a selected child whose includes stay literal renders alongside direct includes",
+        "a selected child renders alongside direct includes at the line-start geometry",
     );
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        128,
-        "only the direct includes execute; the selected child's includes stay literal",
+        256,
+        "%%content%% at the start of its body line renders as a block, so \
+         the listed row's 128 includes execute alongside the 128 direct \
+         ones (LP-FAILURES probe round 12, muse-probe-lpfail-b12b)",
     );
     assert_eq!(
         output
@@ -23552,8 +23569,8 @@ async fn listpages_content_includes_stay_literal_and_consume_no_budget() {
             .body
             .matches(&format!("[[include {COMPONENT_SLUG}]]"))
             .count(),
-        128,
-        "the selected row preserves every authored include token",
+        0,
+        "the selected row renders as a block: no authored include token remains",
     );
     assert_eq!(
         output
@@ -23563,8 +23580,8 @@ async fn listpages_content_includes_stay_literal_and_consume_no_budget() {
             .iter()
             .filter(|page| page.page() == COMPONENT_SLUG)
             .count(),
-        128,
-        "literal selected content includes create no backlinks",
+        256,
+        "the block-rendered row's includes create backlinks like direct includes",
     );
 
     let repeated_child = format!("{direct_includes}{}{}", list_pages(1), list_pages(1),);
@@ -23576,32 +23593,15 @@ async fn listpages_content_includes_stay_literal_and_consume_no_budget() {
         page_id,
         UrlArguments::default(),
     )
-    .await
-    .expect("repeated selected rows stay literal and cannot exhaust the include budget");
-    assert_eq!(
-        output.html_output.body.matches(INCLUDE_MARKER).count(),
-        128,
-        "only the direct includes execute, however often the child is listed",
+    .await;
+    let error = output.expect_err(
+        "repeated block-rendered rows exhaust the shared include budget \
+         and the render fails closed, exactly like direct includes do",
     );
-    assert_eq!(
-        output
-            .html_output
-            .body
-            .matches(&format!("[[include {COMPONENT_SLUG}]]"))
-            .count(),
-        256,
-        "each repeated row preserves the child's authored include tokens",
-    );
-    assert_eq!(
-        output
-            .html_output
-            .backlinks
-            .included_pages
-            .iter()
-            .filter(|page| page.page() == COMPONENT_SLUG)
-            .count(),
-        128,
-        "literal selected content includes create no backlinks",
+    assert!(
+        format!("{error:?}")
+            .contains("include expansion exceeded maximum total includes"),
+        "the failure is the include-budget error: {error:?}",
     );
     let output = RenderService::render_corpus_page(
         runner.context(),
@@ -23611,11 +23611,12 @@ async fn listpages_content_includes_stay_literal_and_consume_no_budget() {
         page_id,
     )
     .await
-    .expect("corpus rendering shows the same literal selected content");
+    .expect("corpus rendering shows the same block-rendered selected content");
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        128,
-        "corpus rendering executes the direct includes only",
+        384,
+        "the trusted corpus budget admits the direct includes and both \
+         rows' block-rendered includes (128 + 128 + 128)",
     );
     assert_eq!(
         output
@@ -23623,8 +23624,8 @@ async fn listpages_content_includes_stay_literal_and_consume_no_budget() {
             .body
             .matches(&format!("[[include {COMPONENT_SLUG}]]"))
             .count(),
-        256,
-        "corpus rendering preserves both rows' authored include tokens",
+        0,
+        "corpus rendering renders both rows as blocks: no authored token remains",
     );
     assert_eq!(
         output
@@ -23634,8 +23635,8 @@ async fn listpages_content_includes_stay_literal_and_consume_no_budget() {
             .iter()
             .filter(|page| page.page() == COMPONENT_SLUG)
             .count(),
-        128,
-        "corpus rendering adds no backlinks for literal selected content",
+        384,
+        "corpus rendering records backlinks for every executed include",
     );
 
     let over_budget = format!("{direct_includes}{}", list_pages(2));
@@ -23647,32 +23648,15 @@ async fn listpages_content_includes_stay_literal_and_consume_no_budget() {
         page_id,
         UrlArguments::default(),
     )
-    .await
-    .expect("two selected include-heavy rows stay literal; only direct includes count");
-    assert_eq!(
-        output.html_output.body.matches(INCLUDE_MARKER).count(),
-        128,
-        "only the direct includes execute when both children are listed",
+    .await;
+    let error = output.expect_err(
+        "two block-rendered include-heavy rows exhaust the shared budget \
+         (128 direct + 128 first-row includes) and the render fails closed",
     );
-    assert_eq!(
-        output
-            .html_output
-            .body
-            .matches(&format!("[[include {COMPONENT_SLUG}]]"))
-            .count(),
-        256,
-        "both rows preserve their authored include tokens",
-    );
-    assert_eq!(
-        output
-            .html_output
-            .backlinks
-            .included_pages
-            .iter()
-            .filter(|page| page.page() == COMPONENT_SLUG)
-            .count(),
-        128,
-        "literal selected content includes create no backlinks",
+    assert!(
+        format!("{error:?}")
+            .contains("include expansion exceeded maximum total includes"),
+        "the failure is the include-budget error: {error:?}",
     );
 
     let output = RenderService::render_corpus_page(
@@ -23683,11 +23667,12 @@ async fn listpages_content_includes_stay_literal_and_consume_no_budget() {
         page_id,
     )
     .await
-    .expect("trusted corpus rendering shows the same literal selected content");
+    .expect("trusted corpus rendering shows the same block-rendered selected content");
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        128,
-        "the corpus render executes the direct includes only",
+        384,
+        "the trusted corpus budget admits the direct includes and both \
+         rows' block-rendered includes (128 + 128 + 128)",
     );
     assert_eq!(
         output
@@ -23695,8 +23680,8 @@ async fn listpages_content_includes_stay_literal_and_consume_no_budget() {
             .body
             .matches(&format!("[[include {COMPONENT_SLUG}]]"))
             .count(),
-        256,
-        "the corpus render preserves both rows' authored include tokens",
+        0,
+        "the corpus render renders both rows as blocks: no authored token remains",
     );
     assert_eq!(
         output
@@ -23706,8 +23691,8 @@ async fn listpages_content_includes_stay_literal_and_consume_no_budget() {
             .iter()
             .filter(|page| page.page() == COMPONENT_SLUG)
             .count(),
-        128,
-        "the corpus render adds no backlinks for literal selected content",
+        384,
+        "the corpus render records backlinks for every executed include",
     );
 }
 

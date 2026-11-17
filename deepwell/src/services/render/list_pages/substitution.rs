@@ -83,6 +83,8 @@ pub(in crate::services::render) use self::selectors::{
     substitute_list_pages_current_data_form_variables,
 };
 pub(in crate::services::render) use self::template_values::{
+    ListPagesContentGeometry, list_pages_content_block_sections,
+    list_pages_content_body_traits, list_pages_content_occurrence_is_block,
     list_pages_first_paragraph, list_pages_unknown_link_target_slugs,
     substitute_list_pages_rating_only,
 };
@@ -188,6 +190,7 @@ pub(in crate::services::render) struct ListPagesArguments {
     pub(in crate::services::render) votes_equals_current_page: bool,
     pub(in crate::services::render) slug: Option<Cow<'static, str>>,
     pub(in crate::services::render) name_pattern: Option<Cow<'static, str>>,
+    pub(in crate::services::render) fullname_selector_present: bool,
     pub(in crate::services::render) data_form_fields: Vec<DataFormSelector<'static>>,
     pub(in crate::services::render) prepend_line: Option<String>,
     pub(in crate::services::render) append_line: Option<String>,
@@ -1396,6 +1399,10 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
         }
     }
 
+    let fullname_selector_present = matches!(
+        alias_name_selector,
+        Some(ListPagesNameSelector::Exact(_))
+    );
     let composed_name_selector =
         compose_list_pages_name_selectors(canonical_name_selector, alias_name_selector);
     current_page_only |= composed_name_selector.current_page_only;
@@ -1464,6 +1471,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
         votes_equals_current_page,
         slug,
         name_pattern,
+        fullname_selector_present,
         data_form_fields,
         prepend_line,
         append_line,
