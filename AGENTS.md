@@ -76,4 +76,4 @@ Development happens on this fork, `Rokurolize/wikijump`. Open pull requests agai
 - **Build performance:** Read `docs/development/build-performance.md` before changing Cargo profiles, dependency features, linker settings, or the build scripts.
 - **Issues and PRs:** Read `docs/agents/issue-tracker.md` for GitHub issue and dependency management.
 - **Triage:** Read `docs/agents/triage-labels.md` before changing issue triage or workflow labels.
-- **Domain documentation:** Read `docs/agents/domain.md` before creating or reorganizing domain documentation or ADRs.
+- **Domain documentation:** Read `docs/agents/domain.md` before creating or reorganizing domain documentation.
