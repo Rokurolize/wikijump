@@ -35,6 +35,7 @@
     superseded: false
   })
   let leaseDialog = $state<"page_changed" | "other_locks" | null>(null)
+  let previewPending = $state(false)
   let stopLeaseTimers: (() => void) | undefined
 
   const syncLease = () => {
@@ -178,6 +179,51 @@
   $form.wikitext = untrack(() => data.wikitext)
   $form.tags = untrack(() => data.page_revision?.tags?.join(" ") ?? "")
   $form.comments = untrack(() => data.page_revision?.comments ?? "")
+
+  const previewEdit = async () => {
+    if (previewPending) return
+    previewPending = true
+    try {
+      const fields = new URLSearchParams({
+        moduleName: "edit/PagePreviewModule",
+        mode: "page",
+        source: $form.wikitext,
+        title: $form.title,
+        callbackIndex: "2"
+      })
+      const token = document.cookie.match(/(?:^|;\s*)wikidot_token7=([^;]*)/)?.[1]
+      if (token) fields.set("wikidot_token7", decodeURIComponent(token))
+      const response = await fetch("/ajax-module-connector.php", {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: fields.toString()
+      })
+      const result = (await response.json()) as {
+        status?: string
+        body?: string
+        cssInclude?: string[]
+      }
+      if (result.status !== "ok" || typeof result.body !== "string") {
+        throw new Error("Preview request failed.")
+      }
+      const container = document.querySelector<HTMLElement>("#page-content")
+      if (!container) return
+      container.innerHTML = result.body
+      if (result.cssInclude?.length) {
+        const style = document.createElement("style")
+        style.textContent = result.cssInclude.join("\n")
+        container.append(style)
+      }
+    } catch (error) {
+      errorPopupState.current = {
+        state: true,
+        message: error instanceof Error ? error.message : "Preview failed.",
+        data: null
+      }
+    } finally {
+      previewPending = false
+    }
+  }
 </script>
 
 {#if leaseRequired && leaseSnapshot.status === "acquiring"}
@@ -277,6 +323,15 @@
             value={data.internationalization?.cancel}
           />
           <input
+            id="edit-preview-button"
+            name="preview"
+            class="btn btn-default"
+            onclick={previewEdit}
+            type="button"
+            value={data.internationalization?.preview}
+            disabled={previewPending}
+          />
+          <input
             name="save"
             class="btn btn-primary"
             type="submit"
@@ -291,6 +346,15 @@
             type="button"
           >
             {data.internationalization?.cancel}
+          </button>
+          <button
+            id="edit-preview-button"
+            class="action-button editor-button button-preview clickable"
+            onclick={previewEdit}
+            type="button"
+            disabled={previewPending}
+          >
+            {data.internationalization?.preview}
           </button>
           <button class="action-button editor-button button-save clickable" type="submit">
             {data.internationalization?.save}

@@ -505,6 +505,27 @@ export async function wikidotLegacySetTags(
   )
 }
 
+export interface WikidotPagePreviewOutput {
+  body: string
+  styles: string[]
+  legacy_actions: unknown[]
+  membership_actions: unknown[]
+}
+
+export async function wikidotPagePreview(
+  siteId: number,
+  title: string,
+  wikitext: string,
+  syntaxOnly: boolean,
+  requestContext: RequestContext = {}
+): Promise<WikidotPagePreviewOutput> {
+  return client.request(
+    "wikidot_page_preview",
+    { site_id: siteId, title, wikitext, syntax_only: syntaxOnly },
+    requestContext
+  )
+}
+
 export interface WikidotPageDiscussionOutput {
   thread_id: number
   thread_unix_title: string
