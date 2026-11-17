@@ -9,6 +9,7 @@ import {
   googleAnalyticsQueueScript,
   googleAnalyticsHeadHtml,
   normalizeGoogleAnalyticsSettings,
+  normalizeModuleThemePreviewUrl,
   normalizeThemePreviewUrl,
   normalizeThemeSetting,
   resolveExternalThemeHref,
@@ -197,6 +198,32 @@ describe("Wikidot site settings foundation", () => {
       "https://cdn.scpwiki.com:8443/theme.css"
     ]) {
       assert.equal(normalizeThemePreviewUrl(value), null, String(value))
+    }
+  })
+
+  it("accepts any web URL for a ThemePreviewer module theme_url", () => {
+    // The module's theme_url is page-author content that Wikidot emits
+    // as the theme import verbatim; it is not held to the site theme
+    // allowlist that normalizeThemePreviewUrl enforces.
+    for (const value of [
+      "http://d3g0gp89917ko0.cloudfront.net/v--3e3a6f7dbcc9/common--theme/base/css/style.css",
+      "https://oxygennine.github.io/Peroxide/peroxide.css",
+      "https://cdn.scpwiki.com/theme/en/black-highlighter/css/min/normalize.min.css"
+    ]) {
+      assert.equal(normalizeModuleThemePreviewUrl(value), value)
+    }
+    for (const value of [
+      null,
+      undefined,
+      "",
+      " ",
+      "data:text/css,body{}",
+      // eslint-disable-next-line no-script-url -- this negative fixture must exercise script URL rejection
+      "javascript:alert(1)",
+      "ftp://example.test/theme.css",
+      "/local--theme/test/style.css"
+    ]) {
+      assert.equal(normalizeModuleThemePreviewUrl(value), null, String(value))
     }
   })
 

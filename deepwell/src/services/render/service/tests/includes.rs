@@ -1967,6 +1967,7 @@ fn included_interwiki_style_embed_survives_production_preparation() {
     let outer = RenderService::prepare_outer_render_wikitext(
         super::super::ExpandedRenderWikitext {
             theme_previewer_blank: false,
+            theme_previewer_url: None,
             wikidot_compat_html: CompatHtmlFragments::new(&expanded),
             wikidot_compat_text: CompatTextFragments::new(&expanded),
             wikitext: expanded,
@@ -2181,6 +2182,7 @@ fn render_pre_expanded_wikidot_page_body(
     let outer = RenderService::prepare_outer_render_wikitext(
         super::super::ExpandedRenderWikitext {
             theme_previewer_blank: false,
+            theme_previewer_url: None,
             wikidot_compat_html: CompatHtmlFragments::new(&wikitext),
             wikidot_compat_text,
             wikitext,

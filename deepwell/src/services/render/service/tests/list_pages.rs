@@ -2761,6 +2761,7 @@ fn render_list_pages_title_variables_through_outer_pipeline(
     let outer = RenderService::prepare_outer_render_wikitext(
         super::super::ExpandedRenderWikitext {
             theme_previewer_blank: false,
+            theme_previewer_url: None,
             wikitext: substituted,
             included_pages: Vec::new(),
             expanded_include_count: 0,

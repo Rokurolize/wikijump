@@ -7,7 +7,9 @@ mod rated_pages;
 mod tag_cloud;
 mod theme_previewer;
 pub(crate) use theme_previewer::has_theme_previewer_no_ui;
-pub(super) use theme_previewer::{has_theme_previewer_blank, theme_previewer_blank_head};
+pub(super) use theme_previewer::{
+    has_theme_previewer_blank, theme_previewer_directive_head, theme_previewer_url,
+};
 mod user_lists;
 mod watchers;
 mod www;
@@ -1193,7 +1195,7 @@ impl RenderService {
                 .as_str();
             let head = captures.name("head").map_or("", |head| head.as_str());
             if name.eq_ignore_ascii_case("ThemePreviewer")
-                && theme_previewer_blank_head(head)
+                && theme_previewer_directive_head(head).is_some()
             {
                 output.push_str(&wikitext[cursor..matched.start()]);
                 cursor = matched.end();
@@ -1790,7 +1792,7 @@ mod runtime_module_residual_tests {
     }
 
     #[test]
-    fn native_blank_theme_previewer_has_no_visible_body_and_preserves_literal_regions() {
+    fn native_no_ui_theme_previewer_has_no_visible_body_and_preserves_literal_regions() {
         assert!(super::has_theme_previewer_blank(
             r#"[[module themepreviewer noUi="true"theme_url=" "]]"#
         ));
@@ -1834,10 +1836,66 @@ mod runtime_module_residual_tests {
         }
         for source in [
             "[[module ThemePreviewer noUi=\"true\" theme_url=\"https://example.test/style.css\"]]",
+            "[[module themepreviewer noUi=\"true\"theme_url=\"https://example.test/style.css\"]]",
+        ] {
+            assert_eq!(
+                expand(&format!("before\n{source}\nafter")),
+                "before\n\nafter",
+                "a noUi ThemePreviewer with a real theme_url renders no body                  output on live Wikidot (its theme_url replaces the theme                  stylesheet import instead): {source}",
+            );
+            for literal in [
+                format!("[[code]]{source}[[/code]]"),
+                format!("[!-- {source} --]"),
+            ] {
+                assert_eq!(expand(&literal), literal);
+            }
+        }
+        for source in [
             "[[module ThemePreviewer noUi=\"true\" theme_url=\" \" foo=\"bar\"]]",
             "[[module ThemePreviewer noUi=\"false\" theme_url=\" \"]]",
         ] {
             assert_eq!(expand(source), source);
+        }
+    }
+
+    #[test]
+    fn theme_previewer_directive_classifies_blank_and_url_heads() {
+        use super::theme_previewer::ThemePreviewerDirective;
+
+        assert_eq!(
+            super::theme_previewer::theme_previewer_directive(
+                r#"[[module themepreviewer noUi="true"theme_url=" "]]"#,
+            ),
+            Some(ThemePreviewerDirective::Blank),
+        );
+        assert_eq!(
+            super::theme_previewer::theme_previewer_directive(
+                r#"[[module ThemePreviewer noUi="true" theme_url="https://example.test/theme.css"]]"#,
+            ),
+            Some(ThemePreviewerDirective::Url(
+                "https://example.test/theme.css".to_owned(),
+            )),
+        );
+        assert_eq!(
+            super::theme_previewer::theme_previewer_directive(
+                r#"[[module ThemePreviewer theme_url="https://example.test/theme.css" noUi="true"]]"#,
+            ),
+            Some(ThemePreviewerDirective::Url(
+                "https://example.test/theme.css".to_owned(),
+            )),
+        );
+        for inactive in [
+            r#"[[module ThemePreviewer noUi="true"]]"#,
+            r#"[[module ThemePreviewer theme_url="https://example.test/theme.css"]]"#,
+            r#"[[module ThemePreviewer noUi="true" theme_url="https://example.test/theme.css" foo="bar"]]"#,
+            r#"[[module ThemePreviewer noUi="false" theme_url="https://example.test/theme.css"]]"#,
+            r#"[[code]][[module ThemePreviewer noUi="true" theme_url="https://example.test/theme.css"]][[/code]]"#,
+        ] {
+            assert_eq!(
+                super::theme_previewer::theme_previewer_directive(inactive),
+                None,
+                "{inactive}"
+            );
         }
     }
 

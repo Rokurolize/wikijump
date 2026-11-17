@@ -895,6 +895,7 @@ fn render_wikidot_expanded_alignment_body(top: &str, fragment: &str) -> String {
     let outer = RenderService::prepare_outer_render_wikitext(
         super::super::ExpandedRenderWikitext {
             theme_previewer_blank: false,
+            theme_previewer_url: None,
             wikidot_compat_html: CompatHtmlFragments::new(&expanded),
             wikidot_compat_text: preserved,
             wikitext: expanded,

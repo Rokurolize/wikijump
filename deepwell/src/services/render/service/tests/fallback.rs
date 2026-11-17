@@ -1887,6 +1887,7 @@ fn render_embed_claims_after_preparation(
     let outer = RenderService::prepare_outer_render_wikitext(
         super::super::ExpandedRenderWikitext {
             theme_previewer_blank: false,
+            theme_previewer_url: None,
             wikidot_compat_html: CompatHtmlFragments::new(wikitext),
             wikidot_compat_text: CompatTextFragments::new(wikitext),
             wikitext: wikitext.to_owned(),

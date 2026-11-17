@@ -236,6 +236,7 @@ fn protects_css_before_list_pages_and_rejoins_the_outer_pipeline() {
     let outer = RenderService::prepare_outer_render_wikitext(
         super::super::ExpandedRenderWikitext {
             theme_previewer_blank: false,
+            theme_previewer_url: None,
             wikidot_compat_html: CompatHtmlFragments::new(&source),
             wikidot_compat_text: CompatTextFragments::new(&source),
             wikitext: source,
@@ -1626,6 +1627,7 @@ fn render_wikidot_inline_markup_after_protection(wikitext: &str) -> String {
     let outer = RenderService::prepare_outer_render_wikitext(
         super::super::ExpandedRenderWikitext {
             theme_previewer_blank: false,
+            theme_previewer_url: None,
             wikidot_compat_html: CompatHtmlFragments::new(wikitext),
             wikidot_compat_text: CompatTextFragments::new(wikitext),
             wikitext: wikitext.to_owned(),

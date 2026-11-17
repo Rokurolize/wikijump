@@ -73,6 +73,7 @@
     normalizeGoogleAnalyticsSettings,
     normalizeThemeSetting,
     resolveExternalThemeHref,
+    normalizeModuleThemePreviewUrl,
     resolveThemePreviewUrl,
     siteFilePresenceKey
   } from "$lib/site-settings.js"
@@ -182,6 +183,9 @@
       viewData?.theme_previewer_no_ui,
       page.url.searchParams.get("theme_url")
     )
+  )
+  const moduleThemePreviewUrl = $derived(
+    normalizeModuleThemePreviewUrl(viewData?.theme_previewer_url)
   )
   const siteFilePresence = $derived(
     new Set(
@@ -333,7 +337,9 @@
   {#if !isPrinterFriendlyView && currentLayout === Layout.WIKIDOT}
     <link href="/wikidot/styles/wikidot-base-165bc434fd1d.css" rel="stylesheet" />
     <link href="/wikidot/styles/pagerate-db0bffe086ed.css" rel="stylesheet" />
-    {#if !viewData?.theme_previewer_blank}
+    {#if moduleThemePreviewUrl}
+      <link data-wikidot-site-theme href={moduleThemePreviewUrl} rel="stylesheet" />
+    {:else if !viewData?.theme_previewer_blank}
       {#if effectiveTheme.type === "built_in"}
         <link href="/wikidot/styles/sigma-076b14dcd8d4.css" rel="stylesheet" />
       {/if}
