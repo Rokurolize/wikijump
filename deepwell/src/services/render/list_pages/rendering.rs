@@ -151,8 +151,8 @@ mod selected_content;
 
 pub(in crate::services::render) use self::selected_content::render_wikidot_social_module;
 use self::selected_content::{
-    SelectedContentIncludeMode, render_list_pages_default_summary_source,
-    render_list_pages_selected_content_source, select_list_pages_rows,
+    render_list_pages_default_summary_source, render_list_pages_selected_content_source,
+    select_list_pages_rows,
 };
 
 fn list_pages_module654_literal(original: &str) -> String {

@@ -218,7 +218,6 @@ pub(in crate::services::render) struct ListPagesTemplatePlan {
     sections: ListPagesSections,
     variables: ListPagesVariables,
     fields: FoundPageFields,
-    content_sections: BTreeSet<Option<usize>>,
     output_shape: ListPagesOutputShape,
     rating_only: bool,
     has_unknown_variables: bool,
@@ -510,7 +509,6 @@ impl ListPagesTemplatePlan {
             sections: ListPagesSections::default(),
             variables,
             fields: found_page_fields(variables),
-            content_sections: BTreeSet::new(),
             output_shape: ListPagesOutputShape::Plain,
             rating_only: false,
             has_unknown_variables: false,
@@ -537,7 +535,6 @@ impl ListPagesTemplatePlan {
             body => body,
         };
         let mut variables = ListPagesVariables::default();
-        let mut content_sections = BTreeSet::new();
         let mut variable_count = 0;
         let mut rating_only = true;
         let mut has_unknown_variables = false;
@@ -558,13 +555,6 @@ impl ListPagesTemplatePlan {
             variable_count += 1;
             rating_only &= variable == ListPagesVariable::Rating;
             variables.insert(variable);
-            if variable == ListPagesVariable::Content {
-                content_sections.insert(
-                    captures
-                        .name("argument")
-                        .and_then(|matched| matched.as_str().parse().ok()),
-                );
-            }
         }
 
         Some(Self {
@@ -578,7 +568,6 @@ impl ListPagesTemplatePlan {
             sections,
             variables,
             fields: found_page_fields(variables),
-            content_sections,
             output_shape: output_shape(body),
             rating_only: variable_count > 0 && rating_only,
             has_unknown_variables,
@@ -742,12 +731,6 @@ impl ListPagesTemplatePlan {
         self.variables.contains(ListPagesVariable::Children)
     }
 
-    pub(in crate::services::render) fn content_sections(
-        &self,
-    ) -> &BTreeSet<Option<usize>> {
-        &self.content_sections
-    }
-
     pub(in crate::services::render) fn uses_data_form(&self) -> bool {
         self.variables.contains(ListPagesVariable::FormData)
     }
@@ -859,7 +842,6 @@ mod tests {
         assert!(plan.uses_parent_metadata());
         assert!(plan.uses_revisions());
         assert!(plan.uses_children());
-        assert_eq!(plan.content_sections(), &BTreeSet::from([None]));
         assert!(plan.uses_data_form());
         assert_eq!(plan.variable_traversals(), 1);
         assert_eq!(
@@ -1050,19 +1032,6 @@ mod tests {
         assert_eq!(empty.variable_traversals(), 0);
         assert_ne!(default.body(), empty.body());
         assert!(default.is_default_template());
-    }
-
-    #[test]
-    fn records_distinct_content_sections_during_compilation() {
-        let plan = ListPagesTemplatePlan::compile(
-            "%%content{2}%% %%content{4}%% %%content{2}%% %%content%%",
-        )
-        .expect("content sections should compile");
-
-        assert_eq!(
-            plan.content_sections(),
-            &BTreeSet::from([None, Some(2), Some(4)]),
-        );
     }
 
     #[test]
