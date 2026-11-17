@@ -190,7 +190,7 @@ group_theme_lab() {
 group_workflow() {
   if group_selected workflow; then
     run "actionlint" bash -c \
-      'command -v actionlint >/dev/null && actionlint || echo "actionlint not installed; skipped"'
+      'if command -v actionlint >/dev/null 2>&1; then actionlint; else echo "actionlint not installed; skipped"; fi'
     run_test "workflow policy" bash -c 'node --test .github/tests/*.test.mjs'
   fi
 }

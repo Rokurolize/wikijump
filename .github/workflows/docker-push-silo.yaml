@@ -43,7 +43,7 @@ jobs:
           tags: |
             type=raw,value=${{ env.TAG }},enable=${{ github.ref == format('refs/heads/{0}', 'develop') }}
           labels: |
-            org.opencontainers.image.title=${{ env.NAME }}
+            org.opencontainers.image.title=${{ env.IMAGE_NAME }}
             org.opencontainers.image.description=${{ env.DESCRIPTION }}
 
       - name: Build and push image

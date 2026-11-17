@@ -188,7 +188,7 @@ jobs:
           # project's own Valkey image there.
           docker build -t wikijump-local-development-cache install/local/valkey
           docker run -d --name ci-wws-cache -p 127.0.0.1:6379:6379 wikijump-local-development-cache
-          for attempt in $(seq 1 30); do
+          for _ in $(seq 1 30); do
             if docker exec ci-wws-cache valkey-cli ping 2>/dev/null | grep -q PONG; then exit 0; fi
             sleep 1
           done
