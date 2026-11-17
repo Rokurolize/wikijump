@@ -460,10 +460,7 @@ impl ConfigFile {
                     minimum_name_chars,
                     allow_registration,
                 },
-            email:
-                Email {
-                    mock_mailcheck,
-                },
+            email: Email { mock_mailcheck },
             file:
                 FileSection {
                     presigned_path_length,
