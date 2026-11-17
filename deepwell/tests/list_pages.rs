@@ -8632,10 +8632,13 @@ async fn listpages_line_oriented_body_pairing_matches_live_wikidot() {
     assert!(body.contains("AFTER lpuncprobe:ant"), "strayclose:\n{body}");
     assert!(body.contains("[[/module]]"), "strayclose:\n{body}");
 
-    // e8 (a same-line CSS pair in the body) is pinned at scanner and
-    // plan level: the body is kept whole. Its per-item render still
-    // diverges in ftml, which treats the same-line pair as a real CSS
-    // module; recorded as a residual in LP-UNCLOSED-MODULE.md.
+    // e8/e9/e16 (CSS openers in the body that do not occupy their
+    // own line) are pinned end to end by
+    // listpages_non_counting_css_openers_in_body_stay_literal below.
+    // The consuming stages were deepwell's CSS range collection and
+    // its compat CSS extraction, both gated on the live line rule by
+    // LP-RESIDUALS-CSS; bare ftml renders these shapes literally,
+    // exactly as live Wikidot does.
 
     // e11: a closer at the end of a body text line does not close
     // the module; it uses the default template and BEFORE is
@@ -8663,6 +8666,135 @@ async fn listpages_line_oriented_body_pairing_matches_live_wikidot() {
     // LP-UNCLOSED-MODULE.md: a same-line body start is also the
     // normal form of the fragments the delayed machinery re-scans,
     // so the pairing layer cannot treat such an opener as tainted.
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn listpages_non_counting_css_openers_in_body_stay_literal() {
+    // LP-RESIDUALS-CSS (2026-11-17): a CSS opener inside a ListPages
+    // body that does not occupy its own line is literal body text on
+    // live Wikidot (probes muse-probe-lp-unc-e8/e9/e16): the body
+    // renders per item with the module text visible and no style is
+    // extracted. e15 (a same-line MailForm pair) already rendered
+    // literally and stays as a control, as does css-unclosed (an
+    // own-line opener, which consumes the outer close on live too).
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    for (slug, title) in [
+        ("lpuncprobe:ant", "Ant Page"),
+        ("lpuncprobe:bee", "Bee Page"),
+        ("lpuncprobe:cat", "Cat Page"),
+    ] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Slug(slug.into())),
+        });
+        run_endpoint!(
+            runner,
+            page_create,
+            json!({
+                "site_id": site_id,
+                "wikitext": format!("Content of {title}."),
+                "title": title,
+                "alt_title": null,
+                "slug": slug,
+                "layout": "wikidot",
+                "revision_comments": "lp residuals css regression target",
+                "user_id": ADMIN_USER_ID,
+                "bypass_filter": true,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+    }
+    let render = |source: String| {
+        let runner = &runner;
+        async move {
+            let output = RenderService::render_wikidot_page_preview(
+                runner.context(),
+                site_id,
+                "lp residuals css regression",
+                source,
+            )
+            .await
+            .expect("preview should render");
+            (output.html_output.body, output.html_output.styles)
+        }
+    };
+    let outer = "[[module ListPages category=\"lpuncprobe\" order=\"title\"]]";
+
+    // e8: a same-line CSS pair in the body stays literal per item.
+    let (body, styles) = render(format!(
+        "{outer}\nBEFORE %%fullname%%\n[[module CSS]].seg-s {{ color: rgb(9, 9, 9); }}[[/module]]\nAFTER %%fullname%%\n[[/module]]"
+    ))
+    .await;
+    assert!(body.contains("BEFORE lpuncprobe:ant"), "e8:\n{body}");
+    assert!(
+        body.contains("[[module CSS]].seg-s { color: rgb(9, 9, 9); }[[/module]]"),
+        "e8:\n{body}"
+    );
+    assert!(
+        styles.iter().all(|style| !style.contains(".seg-s")),
+        "e8 styles: {styles:?}"
+    );
+
+    // e15: a same-line MailForm pair in the body stays literal.
+    let (body, _) = render(format!(
+        "{outer}\nBEFORE %%fullname%%\n[[module MailForm]]to: nobody@example.com[[/module]]\nAFTER %%fullname%%\n[[/module]]"
+    ))
+    .await;
+    assert!(body.contains("[[module MailForm]]"), "e15:\n{body}");
+    assert!(body.contains("AFTER lpuncprobe:ant"), "e15:\n{body}");
+
+    // e9: an indented CSS opener stays literal; the outer module
+    // closes normally and the body renders per item.
+    let (body, styles) = render(format!(
+        "{outer}\nBEFORE %%fullname%%\n  [[module CSS]]\n.seg-i {{ color: rgb(8, 8, 8); }}\nAFTER %%fullname%%\n[[/module]]"
+    ))
+    .await;
+    assert!(body.contains("BEFORE lpuncprobe:ant"), "e9:\n{body}");
+    assert!(body.contains("[[module CSS]]"), "e9:\n{body}");
+    assert!(
+        body.contains(".seg-i { color: rgb(8, 8, 8); }"),
+        "e9:\n{body}"
+    );
+    assert!(body.contains("AFTER lpuncprobe:ant"), "e9:\n{body}");
+    assert!(
+        styles.iter().all(|style| !style.contains(".seg-i")),
+        "e9 styles: {styles:?}"
+    );
+
+    // e16: a CSS opener with the rule on its own line stays literal.
+    let (body, styles) = render(format!(
+        "{outer}\nBEFORE %%fullname%%\n[[module CSS]].seg-u {{ color: rgb(5, 5, 5); }}\nAFTER %%fullname%%\n[[/module]]"
+    ))
+    .await;
+    assert!(body.contains("BEFORE lpuncprobe:ant"), "e16:\n{body}");
+    assert!(
+        body.contains("[[module CSS]].seg-u { color: rgb(5, 5, 5); }"),
+        "e16:\n{body}"
+    );
+    assert!(body.contains("AFTER lpuncprobe:ant"), "e16:\n{body}");
+    assert!(
+        styles.iter().all(|style| !style.contains(".seg-u")),
+        "e16 styles: {styles:?}"
+    );
+
+    // css-unclosed: an own-line CSS opener still consumes the outer
+    // close, so the module falls back to the default template and
+    // BEFORE is released unsubstituted.
+    let (body, _) = render(format!(
+        "{outer}\nBEFORE %%fullname%%\n[[module CSS]]\n.lp-probe-x {{ color: rgb(1, 2, 3); }}\nAFTER %%fullname%%\n[[/module]]"
+    ))
+    .await;
+    assert!(
+        body.contains("<p>BEFORE %%fullname%%</p>"),
+        "css-unclosed:\n{body}"
+    );
 
     runner.teardown().await;
 }

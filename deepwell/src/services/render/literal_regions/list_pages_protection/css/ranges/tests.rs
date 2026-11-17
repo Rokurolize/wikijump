@@ -718,3 +718,46 @@ fn raw_markers_on_their_own_lines_do_not_change_css_module_recognition() {
         collect_downstream_css_module_ranges(without_raw).is_empty(),
     );
 }
+#[test]
+fn non_counting_css_openers_in_list_pages_bodies_claim_no_range() {
+    // LP-RESIDUALS-CSS: inside a ListPages body, a CSS opener that is
+    // indented (probe muse-probe-lp-unc-e9) or carries text after its
+    // head (muse-probe-lp-unc-e16) is literal body text on live
+    // Wikidot; it must not pair with the outer module's close, or the
+    // body is consumed before the pairing layer runs and the outer
+    // module stays unclosed.
+    let outer = "[[module ListPages category=\"probe-lp-target-y\" order=\"title\"]]";
+    let e9 = format!(
+        "{outer}\nBEFORE %%fullname%%\n  [[module CSS]]\n.seg-i {{ color: rgb(8, 8, 8); }}\nAFTER %%fullname%%\n[[/module]]"
+    );
+    assert!(collect_downstream_css_module_ranges(&e9).is_empty());
+    assert!(super::collect_projected_css_module_ranges(&e9, &[]).is_empty());
+    let e16 = format!(
+        "{outer}\nBEFORE %%fullname%%\n[[module CSS]].seg-u {{ color: rgb(5, 5, 5); }}\nAFTER %%fullname%%\n[[/module]]"
+    );
+    assert!(collect_downstream_css_module_ranges(&e16).is_empty());
+    assert!(super::collect_projected_css_module_ranges(&e16, &[]).is_empty());
+
+    // A same-line pair inside the body (muse-probe-lp-unc-e8) ends on
+    // its own line; its range consumes nothing outside the line and
+    // stays.
+    let e8 = format!(
+        "{outer}\nBEFORE %%fullname%%\n[[module CSS]].seg-s {{ color: rgb(9, 9, 9); }}[[/module]]\nAFTER %%fullname%%\n[[/module]]"
+    );
+    let ranges = collect_downstream_css_module_ranges(&e8);
+    assert_eq!(ranges.len(), 1);
+    assert_eq!(
+        &e8[ranges[0].clone()],
+        "[[module CSS]].seg-s { color: rgb(9, 9, 9); }[[/module]]",
+    );
+
+    // An own-line CSS opener inside the body (muse-probe-lp-body-css-unclosed)
+    // still consumes the outer close: the outer module is unclosed on
+    // live too.
+    let unclosed = format!(
+        "{outer}\nBEFORE %%fullname%%\n[[module CSS]]\n.lp-probe-x {{ color: rgb(1, 2, 3); }}\nAFTER %%fullname%%\n[[/module]]"
+    );
+    let ranges = collect_downstream_css_module_ranges(&unclosed);
+    assert_eq!(ranges.len(), 1);
+    assert!(unclosed[ranges[0].clone()].ends_with("[[/module]]"));
+}
