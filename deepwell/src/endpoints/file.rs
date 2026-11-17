@@ -377,7 +377,7 @@ fn require_authenticated_file_mutation_actor(
     let request_user_id = ctx.request().user_id().or_raise(|| {
         Error::new(
             "file mutation requires an authenticated request context",
-            ErrorType::PermissionDenied,
+            ErrorType::NotAuthenticated,
         )
     })?;
 

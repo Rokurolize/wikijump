@@ -100,8 +100,8 @@ pub async fn site_update(
 
     let actor_user_id = ctx.request().user_id().or_raise(|| {
         Error::new(
-            "user does not have permission to edit this site",
-            ErrorType::PermissionDenied,
+            "editing this site requires an authenticated user",
+            ErrorType::NotAuthenticated,
         )
     })?;
 

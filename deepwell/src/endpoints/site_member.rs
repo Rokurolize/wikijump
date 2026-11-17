@@ -102,8 +102,8 @@ async fn require_role_assign_permission(
 ) -> Result<i64> {
     let actor_user_id = ctx.request().user_id().or_raise(|| {
         Error::new(
-            "user does not have permission to manage site membership",
-            ErrorType::PermissionDenied,
+            "managing site membership requires an authenticated user",
+            ErrorType::NotAuthenticated,
         )
     })?;
 

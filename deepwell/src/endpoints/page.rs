@@ -1782,7 +1782,7 @@ pub(super) fn require_authenticated_mutation_actor(
     let actor = ctx.request().user_id().map_err(|_| {
         Error::new(
             "page mutation requires an authenticated request context",
-            ErrorType::PermissionDenied,
+            ErrorType::NotAuthenticated,
         )
     })?;
     require_matching_mutation_actor(Some(actor), attribution_user_id)
@@ -1795,7 +1795,7 @@ fn require_matching_mutation_actor(
     let request_user_id = request_user_id.ok_or_raise(|| {
         Error::new(
             "page mutation requires an authenticated request context",
-            ErrorType::PermissionDenied,
+            ErrorType::NotAuthenticated,
         )
     })?;
 
@@ -1816,6 +1816,7 @@ mod tests {
         DirectPageGate, SiteChangesBrowserPerpage, direct_page_gate,
         require_matching_mutation_actor, site_changes_browser_perpage,
     };
+    use crate::error::ErrorType;
     use crate::services::render::wikidot_site_changes_empty_response;
 
     #[test]
@@ -1825,6 +1826,26 @@ mod tests {
         assert_eq!(require_matching_mutation_actor(Some(42), 42).unwrap(), 42);
         assert!(require_matching_mutation_actor(Some(-1), 42).is_err());
         assert!(require_matching_mutation_actor(Some(42), -1).is_err());
+    }
+
+    #[test]
+    fn page_mutation_actor_failures_distinguish_missing_actor_from_mismatch() {
+        // No authenticated actor at all (an absent, expired, or otherwise
+        // invalid session) surfaces as NotAuthenticated, so clients can
+        // tell "log in again" apart from a genuine permission denial.
+        let missing = require_matching_mutation_actor(None, 42).unwrap_err();
+        assert_eq!(
+            crate::error::exn_error_to_rpc_error(missing).code(),
+            ErrorType::NotAuthenticated.code(),
+        );
+
+        // An authenticated actor attributing the mutation to a different
+        // user remains a permission denial.
+        let mismatched = require_matching_mutation_actor(Some(42), -1).unwrap_err();
+        assert_eq!(
+            crate::error::exn_error_to_rpc_error(mismatched).code(),
+            ErrorType::PermissionDenied.code(),
+        );
     }
 
     #[test]

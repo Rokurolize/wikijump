@@ -37,7 +37,7 @@ impl MutationAuthorization {
         ctx.request().user_id().or_raise(|| {
             Error::new(
                 format!("{action} requires an authenticated user"),
-                ErrorType::PermissionDenied,
+                ErrorType::NotAuthenticated,
             )
         })
     }

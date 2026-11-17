@@ -92,7 +92,7 @@ impl AuthorizationTokenService {
         let user_id = ctx.request().user_id().or_raise(|| {
             Error::new(
                 "issuing authorization tokens requires an admin request context",
-                ErrorType::PermissionDenied,
+                ErrorType::NotAuthenticated,
             )
         })?;
 

@@ -743,7 +743,7 @@ impl BlobService {
         let user_id = ctx.request().user_id().or_raise(|| {
             Error::new(
                 format!("{action} requires an admin request context"),
-                ErrorType::PermissionDenied,
+                ErrorType::NotAuthenticated,
             )
         })?;
 
