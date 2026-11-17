@@ -4071,11 +4071,11 @@ async fn listpages_combined_wrapper_keeps_inline_rows_outside_paragraph() {
         site_id,
         "combined inline ListPages row source",
         concat!(
-            "[[module ListPages name=\"listpages-inline-row-target-20260802\" separate=\"no\"]]",
+            "[[module ListPages name=\"listpages-inline-row-target-20260802\" separate=\"no\"]]\n",
             "[[a_ href=\"/%%fullname%%\" class=\"book\"]]",
             "[[span]]%%name%%[[/span]]",
             "[[/a]]",
-            "[[/module]]",
+            "\n[[/module]]",
         )
         .to_owned(),
     )
@@ -8277,8 +8277,9 @@ async fn listpages_module_heads_accept_live_legacy_boundaries() {
                 "tags=\"group-of-interest-form, beyond +_entropy-, -scp, -story,\" ",
                 "order=\"title\"\n\n",
                 "[[/module]]\nAFTER_MALFORMED\n",
-                "[[module ListPages name=\"{}\"]]",
-                "SECOND|%%fullname%%[[/module]]",
+                "[[module ListPages name=\"{}\"]]\n",
+                "SECOND|%%fullname%%",
+                "\n[[/module]]",
             ),
             TARGET_SLUG,
         ),
