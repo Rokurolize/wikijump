@@ -174,6 +174,83 @@ export const AUDITED_EXTERNAL_ASSET_ORIGINS: readonly AuditedExternalAssetOrigin
       fonts: false,
       evidence:
         "Jonuarlreden GitHub Pages host for the 'Polished Basalt' stylesheet set. theme:opinions-broadcaster-jp @imports its eight stylesheets from this origin (Polished-Basalt/p1-base.css, p2-styllization.css, p3-reverse-color.css, p4-new-feature.css, p5-anti-saving-page.css, p6-locallization.css, pc-hide-topbar.css and pd-buffed-hoverlinks.css); live Wikidot loads them, but framerail's page Content-Security-Policy blocked the stylesheet fetches on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep, so theme-decoration-sample-opinions-broadcaster-jp kept the unmodified Basalt shades. The served stylesheets declare no @font-face and reference no files on this origin (their url() targets are other admitted hosts), so no font or image use from this origin exists."
+    },
+    {
+      origin: "https://hoah.backroomswiki.cn",
+      styles: true,
+      fonts: false,
+      evidence:
+        "Backrooms Wiki CN stylesheet host. theme:share-future-community and its sample @import the theme's main.css (SCP/theme-share-future-community/main.css) from this origin; live Wikidot loads it and the palette applies, but framerail's style-src blocked the fetch on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep, leaving both pages at the default palette. The CSP-STYLESRC audit confirmed the live @import and the in-browser style-src violation. No font use from this origin was observed."
+    },
+    {
+      origin: "https://cdn.jsdmirror.com",
+      styles: true,
+      fonts: false,
+      evidence:
+        "jsDelivr mirror used by the supply-n-demand theme family. theme-decoration-sample-supply-n-demand @imports mcd-snd-mirror.css (WikidotTheme@v1.0.8/mcd-snd-mirror.css) from this origin; live Wikidot loads it and the h1 palette colour applies, but framerail's style-src blocked the fetch on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep. The CSP-STYLESRC audit confirmed the live @import and the in-browser style-src violation. No font use from this origin was observed."
+    },
+    {
+      origin: "https://3nkv.github.io",
+      styles: true,
+      fonts: false,
+      evidence:
+        "3nkv GitHub Pages host for the Sodium theme. theme-decoration-sample-sodium @imports Sodium/sodium.min.css from this origin; live Wikidot loads it, but framerail's style-src blocked the fetch on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep. The CSP-STYLESRC audit confirmed the live @import and the in-browser style-src violation. No font use from this origin was observed."
+    },
+    {
+      origin: "https://chinese-fonts-cdn.deno.dev",
+      styles: true,
+      fonts: false,
+      evidence:
+        "Deno Deploy Chinese-font stylesheet host. The dustframe, paradigm-inapplicable-sigma and suprematism decoration samples @import ZhuqueFangsong-Regular/result.css from this origin; live Wikidot references it, but framerail's style-src blocked the fetch on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep. The CSP-STYLESRC audit confirmed the live @import in all three themes and the in-browser style-src violation. No font use from this origin was observed."
+    },
+    {
+      origin: "https://crimone.github.io",
+      styles: true,
+      fonts: false,
+      evidence:
+        "Crimone GitHub Pages host for the whz WenQuanYi typeface stylesheet set. The dustframe and paradigm-inapplicable-sigma decoration samples @import typefaces/whz/whz.css (which @imports its whz.1.css/whz.2.css subsets) from this origin; live Wikidot loads it, but framerail's style-src blocked the fetch on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep. The CSP-STYLESRC audit confirmed the live @import and the in-browser style-src violation. No font use from this origin was observed."
+    },
+    {
+      origin: "https://fontsapi.zeoseven.com",
+      styles: true,
+      fonts: false,
+      evidence:
+        "Zeoseven font stylesheet API. theme:betwixt and its decoration sample @import 223/main/result.css from this origin; live Wikidot loads it, but framerail's style-src blocked the fetch on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep. The CSP-STYLESRC audit confirmed the live @import and the in-browser style-src violation. No font use from this origin was observed."
+    },
+    {
+      origin: "https://github.backroomswiki.cn",
+      styles: true,
+      fonts: false,
+      evidence:
+        "Backrooms Wiki CN GitHub Pages host for the Super_Liminal stylesheets. theme-decoration-sample-decay @imports Super_Liminal/css/basic-styles.css from this origin; live Wikidot loads it and the palette applies, but framerail's style-src blocked the fetch on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep. The CSP-STYLESRC audit confirmed the live @import and the in-browser style-src violation (OC-G2-TRIPLET item B). No font use from this origin was observed."
+    },
+    {
+      origin: "https://lemoncat233.github.io",
+      styles: true,
+      fonts: false,
+      evidence:
+        "Lemoncat GitHub Pages host, already audited for the Suprematism images in WIKIDOT_IMAGE_SOURCES. theme-decoration-sample-suprematism @imports the Suprematism stylesheet (supreroomartists/Suprematism/suprematism.css) from this origin; live Wikidot loads it, but framerail's style-src blocked the fetch on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep. The CSP-STYLESRC audit confirmed the live @import and the in-browser style-src violation; this entry grants styles only (the images remain in img-src). No font use from this origin was observed."
+    },
+    {
+      origin: "https://oxygennine.github.io",
+      styles: true,
+      fonts: false,
+      evidence:
+        "Oxygennine GitHub Pages host for the Peroxide theme family. The peroxide and rima decoration samples @import Peroxide/peroxide.css (and its CSS/Interwiki sheets) from this origin; live Wikidot loads it and the palette applies, but framerail's style-src blocked the fetch on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep. The CSP-STYLESRC audit confirmed the live @import in both themes and the in-browser style-src violation (OC-G2-TRIPLET items B/C). No font use from this origin was observed."
+    },
+    {
+      origin: "https://use.fontawesome.com",
+      styles: true,
+      fonts: false,
+      evidence:
+        "Font Awesome CDN used by theme stylesheets. existing:component-af2019theme @imports releases/v5.5.0/css/all.css from this origin; live Wikidot loads it, but framerail's style-src blocked the fetch on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep. The CSP-STYLESRC audit confirmed the live @import and the in-browser style-src violation. (A use.fontawesome.com reference in existing:theme-wanderers is only a [[code]] exhibit.) No font use from this origin was observed."
+    },
+    {
+      origin: "https://xcninety.github.io",
+      styles: true,
+      fonts: false,
+      evidence:
+        "Xcninety GitHub Pages host for Korean web fonts. theme-decoration-sample-bulgunae @imports fonts/Cafe24Ohsquareair.css and fonts/IBMPlexSansKR-Regular.css from this origin (the live check-wiki page serves them as https); live Wikidot loads them, but framerail's style-src blocked the fetches on the staff-lab Sigma-10 site during the 2026-11-17 check-wiki parity sweep. The CSP-STYLESRC audit confirmed the live @import and the in-browser style-src violation. No font use from this origin was observed."
     }
   ])
 
