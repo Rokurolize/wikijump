@@ -1192,7 +1192,7 @@ async fn role_assignment_and_membership_require_role_assign() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    assert_contains_error!(err, ErrorType::PermissionDenied);
+    assert_contains_error!(err, ErrorType::NotAuthenticated);
 
     let err = run_endpoint_err!(
         runner,
@@ -1206,7 +1206,7 @@ async fn role_assignment_and_membership_require_role_assign() {
             "reason": "test membership removal",
         }),
     );
-    assert_contains_error!(err, ErrorType::PermissionDenied);
+    assert_contains_error!(err, ErrorType::NotAuthenticated);
 
     runner.set_request_context(RequestContext {
         user_id: Some(unauthorized_user_id),
