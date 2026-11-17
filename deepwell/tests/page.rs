@@ -23771,7 +23771,7 @@ async fn listpages_content_modules_beyond_three_still_render() {
         page_id: page.page_id,
     };
     let wikitext = format!(
-        "[[module ListPages name=\"{CHILD_SLUG}\" limit=\"250\"]]BROAD %%content%%[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"5000\" perPage=\"1\" order=\"random\"]]RANDOM %%content%%[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]EXPANDED ONE %%content%%[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]EXPANDED TWO %%content%%[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]EXPANDED THREE %%content%%[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]EXPANDED FOUR %%content%%[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]METADATA %%title%%[[/module]]",
+        "[[module ListPages name=\"{CHILD_SLUG}\" limit=\"250\"]]\nBROAD %%content%%\n[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"5000\" perPage=\"1\" order=\"random\"]]\nRANDOM %%content%%\n[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]\nEXPANDED ONE %%content%%\n[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]\nEXPANDED TWO %%content%%\n[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]\nEXPANDED THREE %%content%%\n[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]\nEXPANDED FOUR %%content%%\n[[/module]]\n[[module ListPages name=\"{CHILD_SLUG}\" limit=\"1\"]]\nMETADATA %%title%%\n[[/module]]",
     );
 
     let output = RenderService::render_page(
@@ -24064,7 +24064,7 @@ async fn listpages_current_page_content_modules_beyond_three_still_render() {
     };
     let module = |label: &str| {
         format!(
-            "[[module ListPages range=\".\" limit=\"1\" separate=\"no\" wrapper=\"no\"]]{label} %%content%%[[/module]]\n",
+            "[[module ListPages range=\".\" limit=\"1\" separate=\"no\" wrapper=\"no\"]]\n{label} %%content%%\n[[/module]]\n",
         )
     };
     let source = ["ONE", "TWO", "THREE", "FOUR"]
@@ -24126,7 +24126,7 @@ async fn listpages_template_body_over_the_render_budget_remains_literal() {
     };
     let module_source = |body: &str| {
         format!(
-            "[[module ListPages range=\".\" limit=\"1\" separate=\"no\" wrapper=\"no\"]]{body}[[/module]]",
+            "[[module ListPages range=\".\" limit=\"1\" separate=\"no\" wrapper=\"no\"]]\n{body}\n[[/module]]",
         )
     };
 
@@ -24137,7 +24137,7 @@ async fn listpages_template_body_over_the_render_budget_remains_literal() {
         "ListPages Template Body Budget At Limit",
         &module_source(&template_body(
             "AT_LIMIT_TEMPLATE_SENTINEL",
-            TEMPLATE_BODY_BUDGET,
+            TEMPLATE_BODY_BUDGET - 2,
         )),
     )
     .await;
@@ -24148,7 +24148,7 @@ async fn listpages_template_body_over_the_render_budget_remains_literal() {
         "ListPages Template Body Budget Over Limit",
         &module_source(&template_body(
             "OVER_LIMIT_TEMPLATE_SENTINEL",
-            TEMPLATE_BODY_BUDGET + 1,
+            TEMPLATE_BODY_BUDGET - 1,
         )),
     )
     .await;
@@ -24214,7 +24214,7 @@ async fn listpages_aggregate_generated_output_budget_preserves_overflowing_modul
         "%%title%%".repeat(TITLE_VARIABLE_REPETITIONS),
     );
     let source = format!(
-        "[[module ListPages name=\"{TARGET_PREFIX}-*\" order=\"name\" limit=\"{ROW_COUNT}\" perPage=\"{ROW_COUNT}\" separate=\"no\" wrapper=\"no\"]]{body}[[/module]]",
+        "[[module ListPages name=\"{TARGET_PREFIX}-*\" order=\"name\" limit=\"{ROW_COUNT}\" perPage=\"{ROW_COUNT}\" separate=\"no\" wrapper=\"no\"]]\n{body}\n[[/module]]",
     );
     const {
         assert!(
@@ -24307,7 +24307,7 @@ async fn listpages_content_fragment_restoration_counts_toward_generated_output_b
         );
     }
     let source = format!(
-        "[[module ListPages name=\"{TARGET_SLUG}\" limit=\"1\" separate=\"no\" wrapper=\"no\"]]{body}[[/module]]",
+        "[[module ListPages name=\"{TARGET_SLUG}\" limit=\"1\" separate=\"no\" wrapper=\"no\"]]\n{body}\n[[/module]]",
     );
     let page_info = PageInfo {
         page: Cow::Borrowed(INDEX_SLUG),
@@ -24439,7 +24439,7 @@ async fn listpages_following_paragraph_boundary_counts_toward_generated_output_b
     )
     .expect("ListPages paragraph-byte budget index should exist");
     let module = format!(
-        "[[module ListPages name=\"{TARGET_PREFIX}-*\" order=\"name\" limit=\"{ROW_COUNT}\" perPage=\"{ROW_COUNT}\" separate=\"no\" wrapper=\"yes\"]]{body}[[/module]]",
+        "[[module ListPages name=\"{TARGET_PREFIX}-*\" order=\"name\" limit=\"{ROW_COUNT}\" perPage=\"{ROW_COUNT}\" separate=\"no\" wrapper=\"yes\"]]\n{body}\n[[/module]]",
     );
     let at_limit_source = format!("{module}\n\nAFTER_MODULE");
     let over_limit_source = format!("{module}\nAFTER_MODULE");
@@ -24527,7 +24527,7 @@ async fn listpages_module_count_over_the_render_budget_remains_literal() {
     .expect("ListPages module-count budget index should exist");
     let module = concat!(
         "[[module ListPages range=\".\" limit=\"1\" separate=\"no\" wrapper=\"no\"]]",
-        "MODULE_COUNT_BUDGET_SENTINEL%%title%%",
+        "\nMODULE_COUNT_BUDGET_SENTINEL%%title%%\n",
         "[[/module]]\n",
     );
     let at_limit_source = module.repeat(MODULE_COUNT_BUDGET);
