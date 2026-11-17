@@ -3191,7 +3191,24 @@ fn render_preparation_resolves_generated_simple_if_with_link_branch() {
     assert!(!inner.wikitext.contains("[[#if"));
     let tokens = ftml::tokenize(&inner.wikitext);
     let (_, errors) = ftml::parse(&tokens, &page_info, &settings).into();
-    assert!(errors.is_empty(), "{errors:#?}");
+    // The generated single-line [[div]] stays literal on live Wikidot
+    // (its opener does not end its line), so the parse reports that
+    // head's block-div failure plus fallback errors for the literal
+    // tokens, and nothing else.
+    assert_eq!(
+        errors
+            .iter()
+            .filter(|error| error.rule() == "block-div")
+            .count(),
+        1,
+        "{errors:#?}",
+    );
+    assert!(
+        errors
+            .iter()
+            .all(|error| matches!(error.rule(), "block-div" | "fallback")),
+        "{errors:#?}",
+    );
     inner.protection.restore(|_| ());
 }
 
