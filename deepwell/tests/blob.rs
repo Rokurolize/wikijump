@@ -140,14 +140,14 @@ async fn blob_hard_delete_requires_admin_request_context() {
         blob_hard_delete_preview,
         json!({ "s3_hash": TEST_BLOB_HASH }),
     );
-    assert_contains_error!(preview_error, ErrorType::PermissionDenied);
+    assert_contains_error!(preview_error, ErrorType::NotAuthenticated);
 
     let confirm_error = run_endpoint_err!(
         runner,
         blob_hard_delete_confirm,
         json!({ "s3_hash": TEST_BLOB_HASH, "user_id": ADMIN_USER_ID }),
     );
-    assert_contains_error!(confirm_error, ErrorType::PermissionDenied);
+    assert_contains_error!(confirm_error, ErrorType::NotAuthenticated);
 }
 
 #[tokio::test]
@@ -192,14 +192,14 @@ async fn blob_blacklist_mutations_require_admin_request_context() {
         blob_blacklist_add,
         json!({ "s3_hash": TEST_BLOB_HASH, "user_id": ADMIN_USER_ID }),
     );
-    assert_contains_error!(add_error, ErrorType::PermissionDenied);
+    assert_contains_error!(add_error, ErrorType::NotAuthenticated);
 
     let remove_error = run_endpoint_err!(
         runner,
         blob_blacklist_remove,
         json!({ "s3_hash": TEST_BLOB_HASH }),
     );
-    assert_contains_error!(remove_error, ErrorType::PermissionDenied);
+    assert_contains_error!(remove_error, ErrorType::NotAuthenticated);
 
     runner.set_request_context(RequestContext {
         user_id: Some(12345),

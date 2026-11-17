@@ -249,19 +249,19 @@ async fn message_draft_mutations_do_not_reveal_foreign_drafts() {
         message_draft_edit,
         edit_params(editable.external_id.as_str()),
         edit_params(ABSENT_DRAFT_ID),
-        deepwell::error::ErrorType::PermissionDenied,
+        deepwell::error::ErrorType::NotAuthenticated,
     );
     assert_indistinguishable!(
         message_draft_delete,
         json!({"message_draft_id": deletable.external_id}),
         json!({"message_draft_id": ABSENT_DRAFT_ID}),
-        deepwell::error::ErrorType::PermissionDenied,
+        deepwell::error::ErrorType::NotAuthenticated,
     );
     assert_indistinguishable!(
         message_draft_send,
         json!({"message_draft_id": sendable.external_id}),
         json!({"message_draft_id": ABSENT_DRAFT_ID}),
-        deepwell::error::ErrorType::PermissionDenied,
+        deepwell::error::ErrorType::NotAuthenticated,
     );
 
     runner.set_request_context(RequestContext {

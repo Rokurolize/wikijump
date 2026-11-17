@@ -870,7 +870,7 @@ async fn site_update_without_request_actor_does_not_reveal_site_existence() {
         }),
     );
 
-    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_contains_error!(error, ErrorType::NotAuthenticated);
 }
 
 #[tokio::test]

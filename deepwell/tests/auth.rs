@@ -708,7 +708,7 @@ async fn authorization_token_issue_requires_admin_request_context() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    assert_contains_error!(anonymous_error, ErrorType::PermissionDenied);
+    assert_contains_error!(anonymous_error, ErrorType::NotAuthenticated);
 
     let n = next_n();
     let (_, user_id) = create_auth_test_user(&runner, n, false).await;
