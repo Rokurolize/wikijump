@@ -1204,16 +1204,16 @@ async fn listpages_metadata_selectors_honor_target_view_permissions() {
         format!(
             concat!(
                 "[[module ListPages category=\"*\" fullname=\"{PUBLIC_CHILD}\" separate=\"no\" wrapper=\"no\"]]",
-                "PARENT=%%parent_fullname%%",
+                "\nPARENT=%%parent_fullname%%\n",
                 "[[/module]]\n",
                 "[[module ListPages category=\"*\" fullname=\"{PUBLIC_PARENT}\" separate=\"no\" wrapper=\"no\"]]",
-                "CHILDREN=%%children%%",
+                "\nCHILDREN=%%children%%\n",
                 "[[/module]]\n",
                 "[[module ListPages category=\"*\" link_to=\"{PUBLIC_LINK_TARGET}\" separate=\"no\" wrapper=\"no\"]]",
-                "PUBLIC_LINK=%%slug%%",
+                "\nPUBLIC_LINK=%%slug%%\n",
                 "[[/module]]\n",
                 "[[module ListPages category=\"*\" link_to=\"{PRIVATE_LINK_TARGET}\" separate=\"no\" wrapper=\"no\"]]",
-                "PRIVATE_LINK=%%slug%%",
+                "\nPRIVATE_LINK=%%slug%%\n",
                 "[[/module]]\n",
                 "[[[{PUBLIC_LINK_TARGET}|Public link]]]\n",
                 "[[[{PRIVATE_LINK_TARGET}|Private link]]]",
@@ -1310,7 +1310,7 @@ async fn listpages_total_does_not_expose_raw_private_candidate_threshold() {
         runner.context(),
         site_id,
         "Anonymous ListPages total threshold preview",
-        "[[module ListPages category=\"*\" name=\"fixture-listpages-total-threshold-*\" separate=\"no\" wrapper=\"no\"]]TOTAL=%%total%%[[/module]]".to_owned(),
+        "[[module ListPages category=\"*\" name=\"fixture-listpages-total-threshold-*\" separate=\"no\" wrapper=\"no\"]]\nTOTAL=%%total%%\n[[/module]]".to_owned(),
     )
     .await
     .expect("anonymous ListPages total threshold preview should render");
@@ -5061,12 +5061,12 @@ async fn exact_name_listpages_batch_preserves_order_and_permissions() {
         "Exact Batch Index",
         &format!(
             concat!(
-                "[[module ListPages fullname=\"fixture-exact-batch-c\"]]C=%%slug%%|%%created_by%%[[/module]]\n",
-                "[[module ListPages fullname=\"fixture-exact-batch-a\"]]A1=%%slug%%@%%created_at|%Y %b %d %H:%M%%[[/module]]\n",
-                "[[module ListPages fullname=\"fixture-exact-batch-b\"]]B=%%slug%%[[/module]]\n",
-                "[[module ListPages name=\"fixture-exact-batch-a\"]]A2=%%slug%%|%%rating_votes%%[[/module]]\n",
-                "[[module ListPages fullname=\"fixture-exact-batch-missing\"]]MISSING=%%slug%%[[/module]]\n",
-                "[[module ListPages category=\"{}\" fullname=\"{}\"]]PRIVATE=%%slug%%[[/module]]",
+                "[[module ListPages fullname=\"fixture-exact-batch-c\"]]\nC=%%slug%%|%%created_by%%\n[[/module]]\n",
+                "[[module ListPages fullname=\"fixture-exact-batch-a\"]]\nA1=%%slug%%@%%created_at|%Y %b %d %H:%M%%\n[[/module]]\n",
+                "[[module ListPages fullname=\"fixture-exact-batch-b\"]]\nB=%%slug%%\n[[/module]]\n",
+                "[[module ListPages name=\"fixture-exact-batch-a\"]]\nA2=%%slug%%|%%rating_votes%%\n[[/module]]\n",
+                "[[module ListPages fullname=\"fixture-exact-batch-missing\"]]\nMISSING=%%slug%%\n[[/module]]\n",
+                "[[module ListPages category=\"{}\" fullname=\"{}\"]]\nPRIVATE=%%slug%%\n[[/module]]",
             ),
             private_category, private_slug,
         ),

@@ -246,7 +246,20 @@ impl RenderService {
                     })
                     .flatten()
                     .map(|end| module.body_start + end);
-                let body = if body_was_preparsed || html_encoded_head_owns_script_tail {
+                // Live Wikidot never pairs a ListPages module with a
+                // body written on the opener's own line: the module
+                // renders bodyless with the default template and the
+                // tail is discarded (sandbox probes
+                // `muse-probe-lpfail-attach-index` and
+                // `muse-probe-lpfail-n19`). A single-line body in a
+                // match is exactly that shape; bodies that begin on
+                // the following line start with a newline here.
+                let body_on_opener_line =
+                    !module.body.is_empty() && !module.body.contains('\n');
+                let body = if body_was_preparsed
+                    || html_encoded_head_owns_script_tail
+                    || body_on_opener_line
+                {
                     ""
                 } else {
                     module.body
