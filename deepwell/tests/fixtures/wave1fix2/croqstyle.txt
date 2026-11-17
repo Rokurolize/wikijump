@@ -1,0 +1,759 @@
+[[module CSS]]
+@import url(https://scp-jp.wdfiles.com/local--code/component%3Acroqstyle/1);
+[[/module]]
+
+[!-- Begin metacomponent context detection --]
+[!-- How this works:
+- The iftags doesn't render its contents when included on most pages (any page not tagged 'component'), so this half of the context detector starts a comment block, and the one at the bottom of the page ends it. The metacomponent's documentation gets commented out and doesn't render.
+- When included on a component page, the metacomponent should be included inside //its// iftags. Iftags inside iftags don't work, they just render as plaintext, so the documentation is still commented out.
+- When on a component page and not inside nested iftags (i.e. only on the actual source page), the iftags renders its contents and closes the comment block early. The documentation is not commented out, and renders normally. (This also happens when included on a component page but not inside iftags - so don't do that)
+- The only real consequence of this is that the main body of this page can't include comments, other than this one, which doesn't affect anyone other than me.
+- "Why not just use a div with display:none?" Because that still injects this pages's entire markup into consuming pages, but hidden, which is a mess
+--]
+[!-- -[[iftags +コンポーネント]]-][[/iftags]]
+
+[[div class="croqstyle__documentation"]]
+
+[[include :scp-jp:credit:start-preview]]
+**タイトル:** Croqstyle CSS
+**翻訳責任者:** [[*user ukwhatn]]
+**翻訳年:** 2026
+**原題:** Croqstyle CSS
+**著作権者:** [[*user Croquembouche]]
+**作成年:** 2021
+**初訳時参照リビジョン:** 47
+**元記事リンク:** [*https://scp-wiki.wikidot.com/component:croqstyle Croqstyle CSS]
+[[include :scp-jp:credit:end-preview]]
+
+[[module css]]
+.croqstyle__documentation :is(h1, h2) {
+  font-family: Inter, sans-serif;
+  font-weight: bold;
+}
+.croqstyle__documentation h1 ~ h1 { margin-top: 6rem }
+.croqstyle__documentation h1 ~ h2 { margin-top: 3rem }
+
+.croqstyle__documentation #toc,
+.croqstyle__description {
+  border: thin solid #ddd;
+  padding: 1em;
+  background-color: transparent;
+}
+[[/module]]
+
+[[div class="croqstyle__description"]]
+
++ Croqstyleについて
+
+Croqstyleは、私[[*user Croquembouche]]がよく使っていて、みなさんにも共有したいCSSの細かな調整とユーティリティの寄せ集めです。
+
+このコンポーネントには次の働きがあります。
+
+* 閲覧や執筆をしやすくする、目立たない変更をいくつか加えます（例: エディタの文字を等幅にする）
+* コンポーネントやテーマの説明を書くためのユーティリティをいくつか追加します（例: コードブロックの独自のスタイル）
+* 通常のページで任意に使える機能をいくつか追加します（例: 特別な画像ブロック）
+
+私の知る限り、Croqstyleは基本的にどのテーマとも一緒に使えます。
+
+++ 使い方
+
+どのサイトからでも、次の構文で読み込めます。
+
+[[div class="code terminal"]]
+**##var(--c-keyword)|[[##**##var(--c-operator)|include## ##var(--c-value)|:scp-jp:component:croqstyle##**##var(--c-keyword)|]]##**
+[[/div]]
+
+通常のページの場合: ほかのコンポーネントやテーマがCroqstyleを上書きできるように、Croqstyleはそれらより前にincludeしてください。
+
+コンポーネント・テーマの場合: Croqstyleはほかのコンポーネントの説明部分に使えます。コンポーネントの利用者にまでCroqstyleを読み込ませないように、コンポーネントの{{@@[[iftags]]@@}}ブロックの中でincludeしてください。
+
+必ずしもこの方法でincludeする必要はありません。私のCSSを読んで新しいものを作る足がかりにしても、気に入った部分だけ持っていっても構いません。
+[[/div]]
+
+[[toc]]
+
++ ソースコード
+
+CroqstyleのソースCSSです。
+
+[[collapsible show="+ ソースCSSを表示" hide="- ソースCSSを隠す"]]
+[[code type="css"]]
+/* CROQSTYLE CSS */
+/* Source: https://scp-wiki.wikidot.com/component:croqstyle */
+
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700');
+
+
+/* Little improvements */
+
+/* 1. Reasonably-sized footnotes */
+.hovertip { max-width: 400px; }
+
+/* 2. No more big avatar hover thingies */
+.avatar-hover { display: none !important; }
+
+/* 3. Monospace editor + code blocks */
+:root { --mono-font: "Fira Code", Cousine, monospace; }
+#edit-page-textarea, .code pre, .code p, .code, tt, .page-source {
+  font-family: var(--mono-font);
+}
+.code pre * { white-space: pre; }
+.code *, .pre * { font-feature-settings: unset; }
+.change-textarea-size { padding-right: 3em; }
+
+/* 4. Better image block positioning */
+@media (max-width: 550px), (min-width: 768px) and (max-width: 850px) {
+  .scp-image-block:is(.block-right, .block-left) {
+    float: none;
+    margin-inline: auto;
+  }
+}
+
+
+/* Documentation helpers */
+
+/* 1. Teletype backgrounds */
+tt {
+  background-color: var(--swatch-something-bhl-idk-will-fix-later, #f4f4f4);
+  font-size: 85%;
+  padding: 0.2em 0.4em;
+  margin: 0;
+  border-radius: 6px;
+}
+
+/* 2. Code colours */
+:root {
+  --croqstyle-terminal-light-bg: #ffffff;
+  --croqstyle-terminal-light-syntax: #000000;
+  --croqstyle-terminal-light-comment: #008000;
+  --croqstyle-terminal-light-error: #e51602;
+  --croqstyle-terminal-light-value: #267f99;
+  --croqstyle-terminal-light-symbol: #795e26;
+  --croqstyle-terminal-light-string: #a31515;
+  --croqstyle-terminal-light-operator: #0000ff;
+  --croqstyle-terminal-light-builtin: #14238a;
+  --croqstyle-terminal-light-keyword: #af00db;
+  --croqstyle-terminal-light-border: 0.1rem solid #444444;
+
+  --croqstyle-terminal-dark-bg: #1f1f1f;
+  --croqstyle-terminal-dark-syntax: #d4d4d4;
+  --croqstyle-terminal-dark-comment: #6a9955;
+  --croqstyle-terminal-dark-error: #cd4343;
+  --croqstyle-terminal-dark-value: #4dc8af;
+  --croqstyle-terminal-dark-symbol: #d9d9a7;
+  --croqstyle-terminal-dark-string: #ce9178;
+  --croqstyle-terminal-dark-operator: #5294ca;
+  --croqstyle-terminal-dark-builtin: #9adafb;
+  --croqstyle-terminal-dark-keyword: #c384be;
+  --croqstyle-terminal-dark-border: 0.3rem solid #bbbbbb;
+}
+.code.terminal, .terminal > .code {
+  color: var(--c-syntax);
+  background-color: var(--c-bg);
+  border: var(--croqstyle-terminal-border);
+  border-radius: 0.3rem;
+  margin-inline: 1em;
+}
+:root, .terminal--light {
+  --c-bg: var(--croqstyle-terminal-light-bg);
+  --c-syntax: var(--croqstyle-terminal-light-syntax);
+  --c-comment: var(--croqstyle-terminal-light-comment);
+  --c-error: var(--croqstyle-terminal-light-error);
+  --c-value: var(--croqstyle-terminal-light-value);
+  --c-symbol: var(--croqstyle-terminal-light-symbol);
+  --c-string: var(--croqstyle-terminal-light-string);
+  --c-operator: var(--croqstyle-terminal-light-operator);
+  --c-builtin: var(--croqstyle-terminal-light-builtin);
+  --c-keyword: var(--croqstyle-terminal-light-keyword);
+  --croqstyle-terminal-border: var(--croqstyle-terminal-light-border);
+}
+.terminal--dark {
+  --c-bg: var(--croqstyle-terminal-dark-bg);
+  --c-syntax: var(--croqstyle-terminal-dark-syntax);
+  --c-comment: var(--croqstyle-terminal-dark-comment);
+  --c-error: var(--croqstyle-terminal-dark-error);
+  --c-value: var(--croqstyle-terminal-dark-value);
+  --c-symbol: var(--croqstyle-terminal-dark-symbol);
+  --c-string: var(--croqstyle-terminal-dark-string);
+  --c-operator: var(--croqstyle-terminal-dark-operator);
+  --c-builtin: var(--croqstyle-terminal-dark-builtin);
+  --c-keyword: var(--croqstyle-terminal-dark-keyword);
+  --croqstyle-terminal-border: var(--croqstyle-terminal-dark-border);
+}
+
+/* 3. Debug mode */
+.debug-mode, .debug-mode *, .debug-mode *::before, .debug-mode *::after {
+  outline: thin solid var(--debug-colour, red);
+  position: relative;
+}
+.debug-info {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Fira Code', monospace;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+.debug-info.over { top: -2.5rem; }
+.debug-info.under { bottom: -2.5rem; }
+.debug-info p { margin: 0; }
+
+
+/* Opt-in features */
+
+/* 1. Improved image block */
+/* Custom image block with alt text, hover zoom, high res swap and WEBP support
+ * Define low res (~300px wide) image via --image-url CSS var
+ * Define high res (~1000px wide) image via --image-large-url CSS var (optional)
+ * Define aspect ratio (as 'H / W') via --aspect-ratio CSS var
+ */
+.croqstyle-image-block .scp-image-alt {
+  position: relative;
+  font-size: 0;
+  aspect-ratio: var(--aspect-ratio);
+}
+.croqstyle-image-block .scp-image-alt::before {
+  content: ""; position: absolute; inset: 0;
+  pointer-events: none;
+  background-image: var(--image-url);
+  background-size: cover, 0.6rem, cover;
+  background-position: center, left 0.3rem bottom 0.3rem, center;
+  background-repeat: no-repeat;
+  transition: transform 0.3s ease-in-out;
+}
+@media (prefers-reduced-motion) {
+  .croqstyle-image-block .scp-image-alt::before {
+    transition-duration: 0s;
+  }
+}
+@media (min-width: 670px) and (max-width: 767px), (min-width: 940px) {
+  .croqstyle-image-block:not(.croqstyle-image-block--no-hover) .scp-image-alt:hover::before,
+  .croqstyle-image-block--no-hover .scp-image-alt::before {
+    background-image: var(--image-large-url, var(--image-url)), url(https://scp-jp-storage.wdfiles.com/local--files/file%3A3396310-76-r865/loading.gif), var(--image-url);
+  }
+  .croqstyle-image-block:not(.croqstyle-image-block--no-hover) .scp-image-alt:hover::before {
+    transform: scale3d(1.6, 1.6, 1);
+    z-index: 1;
+  }
+}
+.croqstyle-image-block.block-right .scp-image-alt::before { transform-origin: 90% center }
+.croqstyle-image-block.block-left .scp-image-alt::before { transform-origin: 10% center }
+.croqstyle-image-block .scp-image-alt img {
+  width: 100%;
+  height: 100%;
+  object-fit: center;
+}
+
+/* 2. Image footnotes */
+/* Custom footnote that uses the same vars as the image block above */
+.croqstyle-img-footnote {
+  position: relative;
+  --croqstyle-img-footnote-link-color: rgb(var(--link-color, 187,0,17));
+  text-decoration: var(--croqstyle-img-footnote-link-color) dashed underline;
+  cursor: help;
+}
+.croqstyle-img-footnote::after {
+  content: "";
+  display: inline-block;
+  /* https://icon-sets.iconify.design/material-symbols/image-outline/ */
+  --croqstyle-img-footnote-icon-url: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1em' height='1em' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v14q0 .825-.587 1.413T19 21zm0-2h14V5H5zm1-2h12l-3.75-5l-3 4L9 13zm-1 2V5z'/%3E%3C/svg%3E");
+  -webkit-mask-image: var(--croqstyle-img-footnote-icon-url);
+          mask-image: var(--croqstyle-img-footnote-icon-url);
+  -webkit-mask-size: cover;
+          mask-size: cover;
+  -webkit-mask-position: center;
+          mask-position: center;
+  background-color: var(--croqstyle-img-footnote-link-color);
+  width: 1em; height: 1em;
+  vertical-align: super;
+  font-size: smaller;
+  line-height: normal;
+}
+.croqstyle-img-footnote::before {
+  content: "";
+  display: block;
+  position: absolute;
+  aspect-ratio: var(--aspect-ratio);
+  height: 16rem;
+  border: thin solid grey;
+  background-color: white;
+  background-image: var(--image-url);
+  background-size: 92.5%;
+  background-position: center;
+  background-repeat: no-repeat;
+  bottom: 0; left: 50%;
+  --croqstyle-img-footnote-icon-offset: 0px;
+  transform: translate(-50%, calc(100% + var(--croqstyle-img-footnote-icon-offset)));
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.croqstyle-img-footnote:hover { --croqstyle-img-footnote-link-color: purple; }
+.croqstyle-img-footnote:hover::before {
+  opacity: 1;
+  pointer-events: initial;
+  --croqstyle-img-footnote-icon-offset: 0.5em;
+}
+@media (max-width: 1200px) {
+  .croqstyle-img-footnote { position: static; }
+  .croqstyle-img-footnote::before {
+    bottom: auto;
+    left: 50%;
+    transform: translate(-50%, calc(0px + var(--croqstyle-img-footnote-icon-offset)));
+  }
+}
+
+/* 3. Simple responsive div */
+.croqstyle-responsive-div {
+  container-type: inline-size;
+}
+.croqstyle-responsive-div__desktop {
+  display: none;
+}
+.croqstyle-responsive-div__mobile table {
+  margin-left: 0; /* Left align for consistent header row placement */
+}
+@container (min-width: 550px) {
+  .croqstyle-responsive-div__desktop { display: revert !important }
+  .croqstyle-responsive-div__mobile { display: none }
+}
+
+/* 4. Reset tabview */
+/* Undoes base Wikidot tab styling. These reset styles are derived from Wikidot's base theme. They override and undo all the tab styles in the base theme, matching the selectors exactly to cancel them out.
+* It might look like these selectors can be simplified, merged, reduced in complexity - they can't, because otherwise they wouldn't cancel out the base theme styling.
+*/
+/* Entire tabview */
+:where(.croqstyle-reset-tabs) .yui-navset { padding: initial; position: initial }
+/* List of tabs */
+:where(.croqstyle-reset-tabs) .yui-nav { margin: initial; padding: initial; list-style: initial }
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav { width: initial; position: initial; border: initial }
+/* Internal wrapper for each tab */
+:where(.croqstyle-reset-tabs) .yui-nav li { margin: initial; padding: initial; list-style: initial }
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav li { display: initial; vertical-align: initial; cursor: initial; margin: initial; padding: initial }
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav .selected { margin: initial }
+/* Each tab */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav li a { background: initial; border: initial; color: initial; position: initial; text-decoration: initial; display: initial; vertical-align: initial }
+/* Selected tab */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav .selected a { border-color: initial }
+/* Hovered tab */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav a:is(:hover, :focus) { background: initial; outline: initial }
+/* Selected + hovered tab */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav .selected :is(a, a:focus, a:hover) { background: initial; color: initial }
+/* Text in each tab */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav li a em { font-style: initial; display: initial; border: initial; cursor: initial; padding: initial; left: initial; top: initial; position: initial }
+/* Text in the selected tab */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-nav .selected a em { padding: initial; border-color: initial }
+/* Content panel */
+:where(.croqstyle-reset-tabs) .yui-navset .yui-content { background: initial; border: initial; padding: initial }
+[[/code]]
+[[/collapsible]]
+
+[[# improvements]]
++ ちょっとした改善
+
+どれもincludeするだけで有効になる変更で、閲覧か編集の使い心地を「改善™」します。
+
+[[# reasonably-sized-footnotes]]
+++ ほどよい幅の脚注
+
+脚注がとんでもなく横に広がらないようにして、ちゃんと読めるようにします。[[footnote]]中の文章がとてもとてもとてもとてもとてもとてもとてもとてもとてもとてもとてもとても長くても、今はこの幅に収まります。[[/footnote]]
+
+
+[[# remove-avatar-hover]]
+++ アバターのホバー表示をなくす
+
+ユーザーのアバター画像にマウスを乗せたときに、大きな画像が出ないようにします。あれは馬鹿げていて本当にうっとうしいですし、大きいのを見たければクリックすれば済むからです。
+
+マウスを乗せても何も起きないのを見てください: [[*user Croquembouche]]
+
+
+[[# monospace]]
+++ 等幅のエディタとコードブロック
+
+編集欄の文字を等幅にし、等幅の文字をすべて、言うまでもなく最高の等幅フォントであるFira Codeにします。
+
+
+[[# image-block-position]]
+++ 画像ブロックの配置の改善
+
+スマートフォンくらいの画面で、画像ブロックがページの幅からはみ出さなくなります。
+
+それより少し大きい画面で、画像ブロックがページの8割ほどを占め、本文が1行に1単語しか入らない細い隙間に押し込まれることがなくなります。この幅では画像を中央に置き、横に本文を回り込ませません。
+
+BHLには対応していません。
+
+[[collapsible show="+ 変更前後のスクリーンショットを表示" hide="- 変更前後のスクリーンショットを隠す"]]
+
+変更前:
+
+|| [[image https://scp-jp-storage.wdfiles.com/local--files/file%3A3396310-70-2pxw/old-image-block-at-800px.half.png style="border: medium solid black; border-radius: 0.25rem"]] || [[image https://scp-jp-storage.wdfiles.com/local--files/file%3A3396310-71-5f3f/old-image-block-at-510px.half.png style="border: medium solid black; border-radius: 0.25rem"]] || [[image https://scp-jp-storage.wdfiles.com/local--files/file%3A3396310-72-oxlv/old-image-block-at-330px.half.png style="border: medium solid black; border-radius: 0.25rem"]]  ||
+|| タブレット _
+ _
+（本文が押しつぶされる） || 大きめのスマートフォン _
+ _
+（本文が押しつぶされる） || 小さめのスマートフォン _
+ _
+（画像の左側が切れる） ||
+
+変更後:
+
+|| [[image https://scp-jp-storage.wdfiles.com/local--files/file%3A3396310-73-478c/new-image-block-at-800px.half.png style="border: medium solid black; border-radius: 0.25rem"]] || [[image https://scp-jp-storage.wdfiles.com/local--files/file%3A3396310-74-r3bf/new-image-block-at-510px.half.png style="border: medium solid black; border-radius: 0.25rem"]] || [[image https://scp-jp-storage.wdfiles.com/local--files/file%3A3396310-75-zlnp/new-image-block-at-330px.half.png style="border: medium solid black; border-radius: 0.25rem"]]  ||
+|| タブレット || 大きめのスマートフォン || 小さめのスマートフォン ||
+
+[[/collapsible]]
+
+
+[[# offsite-image-enforcement]]
+++ 外部画像の規制
+
+原語版では、外部サイトの画像がサイト内で使われないよう、いくつか対策をしています。当てている規則は次のとおりです。
+
+* Imgurに置かれた画像を、英国のユーザーに表示されるのと同じ代わりの画像に置き換えます。Imgurは英国にサービスを提供していないためです。英国以外の著者にもこの問題が見えるようにして、記事を早く直してもらうのが目的です。（英語以外の翻訳版では、この規則を外してもよいでしょう。）
+
+**訳注:** SCP-JP版では、この規則を外しています。置き換えに使う画像がImgurの表示を写したもので、SCP-JPのサイトに置けないためです。外部サイトの画像の扱いは[[[image-use-policy|]]]に従ってください。
+
+
++ 説明を書くための補助機能
+
+テーマやコンポーネントの説明を書きやすくするためのユーティリティです。
+
+[[# tt-bg]]
+++ テレタイプ文字の背景
+
+<tt>要素（{{@@{{text}}@@}}）に薄い灰色の背景を付け、短いコードを目立たせます。
+
+
+[[# code-syntax]]
+++ コードの色
+
+構文を色分けするための色をCSS変数として追加します。色はVSCodeの既定のライトテーマとダークテーマから取っています。
+
+{{@@[[div class="code terminal"]]@@}}のように、コードブロック風のdivに{{.terminal}}クラスを付けると、ターミナル風の見た目になります。{{@@[[code]]@@}}には使えません。Wikidotが独自の色付けを大量に差し込み、それを変えるには大量のCSSが要るためです。{{@@[[code]]@@}}を使わないコードの断片にだけ使ってください。{{.terminal@@--@@dark}}でダークモードになります。
+
+[[div style="display: flex; flex-wrap: wrap; align-items: start"]]
+[[div class="code terminal" style="flex: 250px; word-break: break-all"]]
+**##var(--c-keyword)|[[####var(--c-builtin)|div## ##var(--c-symbol)|class##=##var(--c-string)|"code terminal"####var(--c-keyword)|]]##**
+
+@@**@@##var(--c-keyword)|@@##@@####var(--c-builtin)|var##(##var(--c-symbol)|@@--c-keyword@@##)##var(--c-keyword)|@@|@@##[[##var(--c-keyword)|@@##@@####var(--c-keyword)|@@##@@####var(--c-builtin)|var##(##var(--c-symbol)|@@--c-builtin@@##)##var(--c-keyword)|@@|@@##div##var(--c-keyword)|@@##@@## ##var(--c-keyword)|@@##@@####var(--c-builtin)|var##(##var(--c-symbol)|@@--c-symbol@@##)##var(--c-keyword)|@@|@@##class##var(--c-keyword)|@@##@@##=##var(--c-keyword)|@@##@@####var(--c-builtin)|var##(##var(--c-symbol)|@@--c-string@@##)##var(--c-keyword)|@@|@@##"code terminal"##var(--c-keyword)|@@##@@####var(--c-keyword)|@@##@@####var(--c-builtin)|var##(##var(--c-symbol)|@@--c-keyword@@##)##var(--c-keyword)|@@|@@##]]##var(--c-keyword)|@@##@@##@@**@@
+@@**@@##var(--c-keyword)|@@##@@####var(--c-builtin)|var##(##var(--c-symbol)|@@--c-keyword@@##)##var(--c-keyword)|@@|@@##[[/##var(--c-keyword)|@@##@@####var(--c-keyword)|@@##@@####var(--c-builtin)|var##(##var(--c-symbol)|@@--c-builtin@@##)##var(--c-keyword)|@@|@@##div##var(--c-keyword)|@@##@@####var(--c-keyword)|@@##@@####var(--c-builtin)|var##(##var(--c-symbol)|@@--c-keyword@@##)##var(--c-keyword)|@@|@@##]]##var(--c-keyword)|@@##@@##@@**@@
+
+**##var(--c-keyword)|[[/####var(--c-builtin)|div####var(--c-keyword)|]]##**
+[[/div]]
+
+[[div class="code terminal terminal--dark" style="flex: 250px; word-break: break-all"]]
+**##var(--c-keyword)|[[####var(--c-builtin)|div## ##var(--c-symbol)|class##=##var(--c-string)|"code terminal terminal@@--@@dark"####var(--c-keyword)|]]##**
+
+@@**@@##var(--c-keyword)|@@##@@####var(--c-builtin)|var##(##var(--c-symbol)|@@--c-keyword@@##)##var(--c-keyword)|@@|@@##[[##var(--c-keyword)|@@##@@####var(--c-keyword)|@@##@@####var(--c-builtin)|var##(##var(--c-symbol)|@@--c-builtin@@##)##var(--c-keyword)|@@|@@##div##var(--c-keyword)|@@##@@## ##var(--c-keyword)|@@##@@####var(--c-builtin)|var##(##var(--c-symbol)|@@--c-symbol@@##)##var(--c-keyword)|@@|@@##class##var(--c-keyword)|@@##@@##=##var(--c-keyword)|@@##@@####var(--c-builtin)|var##(##var(--c-symbol)|@@--c-string@@##)##var(--c-keyword)|@@|@@##"code terminal terminal@@--@@dark"##var(--c-keyword)|@@##@@####var(--c-keyword)|@@##@@####var(--c-builtin)|var##(##var(--c-symbol)|@@--c-keyword@@##)##var(--c-keyword)|@@|@@##]]##var(--c-keyword)|@@##@@##@@**@@
+@@**@@##var(--c-keyword)|@@##@@####var(--c-builtin)|var##(##var(--c-symbol)|@@--c-keyword@@##)##var(--c-keyword)|@@|@@##[[/##var(--c-keyword)|@@##@@####var(--c-keyword)|@@##@@####var(--c-builtin)|var##(##var(--c-symbol)|@@--c-builtin@@##)##var(--c-keyword)|@@|@@##div##var(--c-keyword)|@@##@@####var(--c-keyword)|@@##@@####var(--c-builtin)|var##(##var(--c-symbol)|@@--c-keyword@@##)##var(--c-keyword)|@@|@@##]]##var(--c-keyword)|@@##@@##@@**@@
+
+**##var(--c-keyword)|[[/####var(--c-builtin)|div####var(--c-keyword)|]]##**
+[[/div]]
+[[/div]]
+
+//自動で色付けするツール: [https://rossjrw.com/series-replace/?f=%3D%28%20%2A%29%28%5B0-9%5D%2B%28%3F%3Apx%7Cem%7Crem%29%3F%7Ctrue%7Cfalse%7Cyes%7Cno%29%5Cn%28%5C%7C%7C%5D%5D%29&f=%3D%28%20%2A%29%28%5Ba-z0-9-%5D%2B%29%5Cn%28%5C%7C%7C%5D%5D%29&f=%5C%7C%20%2A%28%5BA-z-%5D%2B%29%28%20%2A%3D%20%2A%29%3C%3C%3C%28value%7Csymbol%29%23%23%23%28.%2A%29%3E%3E%3E&f=%5C%7C%20%2A%28%5BA-z-%5D%2B%29%28%20%2A%3D%20%2A%29%28%28%3F%3A%28%3F%21%5C%7C%7C%5D%5D%29.%29%2A%29&f=%28%3F%3A%40%40%29%3F%5C%5B%5C%5Binclude%20%28.%2A%29%28%3F%3A%40%40%29%3F%28%5Cn%7C%20%29&f=%5D%5D&i=%5B%5Binclude%20%3Ascp-jp%3Acomponent%3Acroqstyle%0A%7C%20number-arg%20%3D%20100px%0A%7C%20string-arg%20%3D%20Input%20value%0A%5D%5D&r=%3D%241%3C%3C%3Cvalue%23%23%23%242%3E%3E%3E%5Cn%243&r=%3D%241%3C%3C%3Csymbol%23%23%23%242%3E%3E%3E%5Cn%243&r=%23%23var%28--c-keyword%29%7C%7C%23%23%20%23%23var%28--c-builtin%29%7C%241%23%23%23%23var%28--c-keyword%29%7C%242%23%23%23%23var%28--c-%243%29%7C%244%23%23&r=%23%23var%28--c-keyword%29%7C%7C%23%23%20%23%23var%28--c-builtin%29%7C%241%23%23%23%23var%28--c-keyword%29%7C%242%23%23%23%23var%28--c-string%29%7C%243%23%23&r=%23%23var%28--c-keyword%29%7C%5B%5B%23%23%23%23var%28--c-builtin%29%7Cinclude%23%23%20%23%23var%28--c-symbol%29%7C%241%23%23%242&r=%23%23var%28--c-keyword%29%7C%5D%5D%23%23 コンポーネントのinclude] · [https://rossjrw.com/series-replace/?f=%5C%5B%21--%20.%2A%3F%20--%5D&f=%28%3F%3C%3D%5C%5B%5C%5B%28%3F%3Adiv%7Cspan%29.%2A%29%28%5Ba-z-%5D%2B%29%3D%28%22%5B%5E%22%5D%2A%22%29&f=%28%3F%3C%3D%5C%5B%5C%5B%2F%3F%28%3F%3Adiv%7Cspan%29.%2A%29%5C%5D%5C%5D&f=%28%5C%5B%5C%5B%2F%3F%29%28div%7Cspan%29&i=%5B%5Bdiv%20class%3D%22class-1%20class-2%22%20data-example%3D%22test%22%5D%5D%20%5B%21--%20comment%20--%5D%0ANormal%20text%0A%5B%5Bspan%20class%3D%22eggs%22%5D%5DText%20in%20span%5B%5B%2Fspan%5D%5D%0A%5B%5B%2Fdiv%5D%5D&r=%23%23var%28--c-comment%29%7C%40%40%24%26%40%40%23%23&r=%23%23var%28--c-symbol%29%7C%241%23%23%3D%23%23var%28--c-string%29%7C%40%40%242%40%40%23%23&r=%23%23var%28--c-keyword%29%7C%5D%5D%23%23&r=%23%23var%28--c-keyword%29%7C%241%23%23%23%23var%28--c-builtin%29%7C%242%23%23 divとspan] · [https://rossjrw.com/series-replace/?f=%40%40&f=%5C%5B%5C%5Bmodule%20CSS%5C%5D%5C%5D&f=%5C%5B%5C%5B%2Fmodule%5C%5D%5C%5D&f=%2F%5C%2A%5B%5Cs%5CS%5D%2A%3F%5C%2A%2F&f=%28%3F%3C%3D%23%23var%5C%28--c-comment%5C%29%5C%7C%28%3F%3A%28%3F%21%5C%2A%2F%23%23%29%5B%5Cs%5CS%5D%29%2A%29%5Cn&f=%23%23var%5C%28--c-comment%5C%29%5C%7C%23%23&f=%28%3F%21%28%3F%3A%28%3F%21%23%23%29.%29%2A%23%23%28%3F%21v%29%29%28%22%28%3F%3A%5B%5E%22%5C%5C%5Cn%5D%7C%5C%5C.%29%2A%22%7C%27%28%3F%3A%5B%5E%27%5C%5C%5Cn%5D%7C%5C%5C.%29%2A%27%29&f=%28%3F%3C%3D%5Cburl%5C%28%29%28%3F%21%28%3F%3A%28%3F%21%23%23%29.%29%2A%23%23%28%3F%21v%29%29%28%3F%21%23%23%29%5B%5E%29%22%27%5Cs%5D%2B&f=%28%3F%21%28%3F%3A%28%3F%21%23%23%29.%29%2A%23%23%28%3F%21v%29%29%40%5Ba-zA-Z-%5D%2B&f=%28%3F%3C%3D%40%5B%5E%3B%7B%7D%5D%2A%5C%28%29%28%3F%21%28%3F%3A%28%3F%21%23%23%29.%29%2A%23%23%28%3F%21v%29%29%5Ba-zA-Z-%5D%2B%28%3F%3D%5Cs%2A%3A%29&f=%28%3F%3D%5B%5E%3B%7B%7D%5D%2A%5C%7B%29%28%3F%21%28%3F%3A%28%3F%21%23%23%29.%29%2A%23%23%28%3F%21v%29%29%28%3F%3A%5B.%23%5D%28%3F%21%5Cd%29%28%3F%3A%5C%5C.%7C%5B%5Cw-%5D%29%2B%29%2B&f=%28%3F%3D%5B%5E%3B%7B%7D%5D%2A%5C%7B%29%28%3F%21%28%3F%3A%28%3F%21%23%23%29.%29%2A%23%23%28%3F%21v%29%29%28%3F%3C%21%40%5B%5E%3B%7B%7D%5D%2A%29%3A%3A%3F%5Ba-zA-Z-%5D%2B&f=%28%3F%3D%5B%5E%3B%7B%7D%5D%2A%5C%7B%29%28%3F%21%28%3F%3A%28%3F%21%23%23%29.%29%2A%23%23%28%3F%21v%29%29%5C%5B%28%5B%5Cw-%5D%2B%29&f=%28%3F%21%5B%5E%3B%7B%7D%5D%2A%5C%7B%29%28%3F%21%28%3F%3A%28%3F%21%23%23%29.%29%2A%23%23%28%3F%21v%29%29%28%3F%3C%3D%28%3F%3A%5E%7C%5B%7B%3B%5D%7C%5C%2A%2F%23%23%29%5B%20%5Ct%5D%2A%29%28--%5B%5Cw-%5D%2B%7C-%3F%5Ba-zA-Z%5D%5B%5Cw-%5D%2A%29%28%3F%3D%5B%20%5Ct%5D%2A%3A%29&f=%28%3F%21%28%3F%3A%28%3F%21%23%23%29.%29%2A%23%23%28%3F%21v%29%29%28%3F%3C%21%5B%5Cw-%5D%29--%5B%5Cw-%5D%2B&f=%28%3F%21%5B%5E%3B%7B%7D%5D%2A%5C%7B%29%28%3F%21%28%3F%3A%28%3F%21%23%23%29.%29%2A%23%23%28%3F%21v%29%29%23%28%3F%3A%5B0-9a-fA-F%5D%7B3%2C4%7D%7C%5B0-9a-fA-F%5D%7B6%7D%7C%5B0-9a-fA-F%5D%7B8%7D%29%28%3F%21%5B%5Cw-%5D%29&f=%28%3F%21%28%3F%3A%28%3F%21%23%23%29.%29%2A%23%23%28%3F%21v%29%29%28%3F%3C%21%5B%5Cw-%5D%29%28-%3F%5Ba-zA-Z%5D%5B%5Cw-%5D%2A%29%28%3F%3D%5C%28%29&f=%28%3F%21%28%3F%3A%28%3F%21%23%23%29.%29%2A%23%23%28%3F%21v%29%29%28%3F%3C%21%5B%5Cw.-%5D%29-%3F%28%3F%3A%5Cd%2B%5C.%3F%5Cd%2A%7C%5C.%5Cd%2B%29%28%3F%3A%5Ba-zA-Z%5D%2B%7C%25%29%3F%28%3F%21%5B%5Cw.-%5D%29&f=%28%3F%21%28%3F%3A%28%3F%21%23%23%29.%29%2A%23%23%28%3F%21v%29%29%21%20%2Aimportant&f=%28%3F%21%28%3F%3A%28%3F%21%23%23%29.%29%2A%23%23%28%3F%21v%29%29%28%3F%3C%21%5B%5Cw-%5D%29-%3F%5Ba-zA-Z%5D%5B%5Cw-%5D%2A&f=%28-%7B2%2C%7D%28%3F%21c-%5Ba-z%5D%2B%5C%29%5C%7C%29%7C_%7B2%2C%7D%7C%2F%7B2%2C%7D%7C%5C%2A%7B2%2C%7D%7C%5C%5E%7B2%2C%7D%7C%2C%7B2%2C%7D%7C%5C%5B%5C%5B%7C%5C%5D%5C%5D%7C%5C%7B%5C%7B%7C%5C%7D%5C%7D%29&f=%5E%28%5B%2A%3E%2B%5D%29&f=%5E%28%5B%20%5Ct%5D%2B%29%28%3F%3D%5CS%29&r=&r=%23%23var%28--c-keyword%29%7C%5B%5B%23%23%23%23var%28--c-builtin%29%7Cmodule%23%23%20%23%23var%28--c-symbol%29%7CCSS%23%23%23%23var%28--c-keyword%29%7C%5D%5D%23%23&r=%23%23var%28--c-keyword%29%7C%5B%5B%2F%23%23%23%23var%28--c-builtin%29%7Cmodule%23%23%23%23var%28--c-keyword%29%7C%5D%5D%23%23&r=%23%23var%28--c-comment%29%7C%24%26%23%23&r=%23%23%5Cn%23%23var%28--c-comment%29%7C&r=&r=%23%23var%28--c-string%29%7C%241%23%23&r=%23%23var%28--c-string%29%7C%24%26%23%23&r=%23%23var%28--c-keyword%29%7C%24%26%23%23&r=%23%23var%28--c-builtin%29%7C%24%26%23%23&r=%23%23var%28--c-value%29%7C%24%26%23%23&r=%23%23var%28--c-symbol%29%7C%24%26%23%23&r=%5B%23%23var%28--c-builtin%29%7C%241%23%23&r=%23%23var%28--c-builtin%29%7C%241%23%23&r=%23%23var%28--c-builtin%29%7C%24%26%23%23&r=%23%23var%28--c-value%29%7C%24%26%23%23&r=%23%23var%28--c-symbol%29%7C%241%23%23&r=%23%23var%28--c-value%29%7C%24%26%23%23&r=%23%23var%28--c-keyword%29%7C%24%26%23%23&r=%23%23var%28--c-operator%29%7C%24%26%23%23&r=%40%40%241%40%40&r=%40%40%241%40%40&r=%40%40%241%40%40 CSS]//
+
+
+[[# debug-mode]]
+++ デバッグモード
+
+[[div class="debug-mode" style="margin-bottom: 4rem;"]]
+
+{{.debug-mode}}の中にあるすべての要素の周りに線を引きます。線の色は赤ですが、CSS変数{{@@--@@debug-colour}}があればその色を使います。
+
+要素の中に{{div.debug-info.over}}や{{div.debug-info.under}}を置くと、デバッグ用の枠に注釈を付けられます。ただし、注釈が上下の要素と重ならないよう、縦の余白を十分に空けておく必要があります。
+
+[[div class="debug-info under"]]
+……こんなふうに！
+[[/div]]
+[[/div]]
+
+
+[[# features]]
++ 任意で使える機能
+
+好みでページに追加できる、新しい機能とウィジェットです。これらの機能のCSSクラスはすべて'croqstyle'で始まるので、使わない限りページ上のほかの要素に影響することはありません。
+
+[[# improved-image-block]]
+++ 改良版の画像ブロック
+
+[[div class="croqstyle-image-block scp-image-block block-right" style="--aspect-ratio: 1 / 1; --image-url: url(https://scp-jp-storage.wdfiles.com/local--files/file%3A3396310-68-hv2u/lowres.png); --image-large-url: url(https://scp-jp-storage.wdfiles.com/local--files/file%3A3396310-69-l19j/highres.webp);"]]
+[[div class="scp-image-alt"]]
+ノイズの背景に「Low-res image」の文字と画像の解像度（300x300）が書かれている。マウスを乗せると「High-res image」の文字と新しい解像度（1200x1200）に変わる。
+[[/div]]
+[[div class="scp-image-caption"]]
+画像のキャプション
+[[/div]]
+[[/div]]
+
+機能を増やした画像ブロックです。主な機能は次のとおりです。
+
+* ホバーでの拡大を内蔵しています。[[*user Woedenaz]]氏の[[[component:image-features|]]]コンポーネントにある'Hover Enlarge'スタイルに近いものです
+* 代替テキストを内蔵しています
+* マウスを乗せたときに、より高解像度の画像を表示できます（同じ画像を大きくするだけの//Image Features//とは違います）。大きい画像を読み込んでいる間は、読み込み中のアイコンも出します
+
+マウスを乗せたときの画像を乗せる前と違うものにして、読者を驚かせるのはダサいのでやめましょう。これはアクセシビリティのための道具です。
+
+使うには、次の構文を書きます（[[[component:image-block | 標準画像ブロック]]]のソースとよく似ています）。
+
+[[div class="code terminal"]]
+##var(--c-keyword)|[[####var(--c-builtin)|div## ##var(--c-symbol)|class##=##var(--c-string)|"**croqstyle-image-block** scp-image-block block-right"## ##var(--c-symbol)|style##=##var(--c-string)|@@"--aspect-ratio: 1 / 1; --image-url: url(lowres.png); --image-large-url: url(highres.webp);"@@####var(--c-keyword)|]]##
+##var(--c-keyword)|[[####var(--c-builtin)|div## ##var(--c-symbol)|class##=##var(--c-string)|@@"scp-image-alt"@@####var(--c-keyword)|]]##
+ここに代替テキストを書きます。目の見えないユーザーなどのために、画像の内容を説明する文です。たとえば、画像に情報が含まれていればそれを文章で書き、画像が特定の感情を呼び起こすものなら、その感情を書きます。
+##var(--c-keyword)|[[/####var(--c-builtin)|div####var(--c-keyword)|]]##
+##var(--c-keyword)|[[####var(--c-builtin)|div## ##var(--c-symbol)|class##=##var(--c-string)|@@"scp-image-caption"@@####var(--c-keyword)|]]##
+画像のキャプション
+##var(--c-keyword)|[[/####var(--c-builtin)|div####var(--c-keyword)|]]##
+##var(--c-keyword)|[[/####var(--c-builtin)|div####var(--c-keyword)|]]##
+[[/div]]
+
+左寄せ・中央寄せにするには、{{block-right}}をそれぞれ{{block-left}}・{{block-center}}に置き換えます。必要なら、標準の{{@@[[image]]@@}}構文で{{.scp-image-alt}}の中に代わりの画像を置くこともできます。
+
+拡大用に別の画像を用意しないなら、CSS変数{{@@--@@image-large-url}}は省けます。その場合、拡大前も拡大後も{{@@--@@image-url}}の画像を使います。
+
+{{croqstyle-image-block@@--@@no-hover}}クラスを付けると、ホバーでの拡大をやめて高解像度の画像を常に表示します。ただし、これは//ごく//限られた用途向けです。たいていは標準画像ブロックを使えば足ります。
+
+[[collapsible show="+ 上級者向けのTIPSを表示" hide="- 上級者向けのTIPSを隠す"]]
+**CSSに詳しい方へ:**
+
+縦横比と画像のURLはCSS変数で指定します。この例ではstyle属性で指定していますが、好きな方法で指定できます（例: CSSモジュールで定義したクラス）。
+
+**画像編集に詳しい方へ:**
+
+大きい画像をWEBPにするときは、透過を有効にしてください。有効になっていないと、読み込みが始まったときに小さい画像のまだ読み込まれていない部分が消え、読み込みが終わるまで空白になります。
+
+透過を有効にするには、WEBPに変換する前に、少しでも透明なピクセルを画像に1つ以上作っておきます。
+
+画像編集ソフトでもできますし、次のImageMagickのコマンドでもできます。
+
+[[div class="code terminal"]]
+convert -alpha on -channel A -fx 'j==h-1 && i==w-1 ? A*0.99 : A' image_original.png image_original_with_transparency.png
+
+cwebp -q 80 image_original_with_transparency.png -o image.webp
+[[/div]]
+[[/collapsible]]
+
+
+[[# image-footnotes]]
+++ 画像の脚注
+
+文章に[[span class="croqstyle-img-footnote" style="--aspect-ratio: 1 /1; --image-url: url(https://scp-jp-storage.wdfiles.com/local--files/file%3A3396310-68-hv2u/lowres.png);"]]画像の脚注[[/span]]を付けるクラスです。通常の脚注の画像版です。
+
+[[div class="code terminal"]]
+##var(--c-keyword)|[[####var(--c-builtin)|span## ##var(--c-symbol)|class##=##var(--c-string)|@@"croqstyle-img-footnote"@@## ##var(--c-symbol)|style##=##var(--c-string)|@@"--aspect-ratio: 1 /1; --image-url: url(lowres.png);"@@####var(--c-keyword)|]]##例##var(--c-keyword)|[[/####var(--c-builtin)|span####var(--c-keyword)|]]##
+[[/div]]
+
+上の「改良版の画像ブロック」と同じCSS変数を使うので、画像ごとにCSSクラスを1つ定義しておけば、両方の機能で使い回せて便利です。
+
+実は、Wikidotの標準の構文でも脚注に画像を入れられます。
+
+[[div class="code terminal"]]
+##var(--c-keyword)|[[####var(--c-builtin)|footnote####var(--c-keyword)|]][[####var(--c-builtin)|image## ##var(--c-string)|imagegoeshere.png####var(--c-keyword)|]][[/####var(--c-builtin)|footnote####var(--c-keyword)|]]##
+[[/div]]
+
+表示はこうなります。[[footnote]][[image https://scp-jp-storage.wdfiles.com/local--files/file%3A3396310-68-hv2u/lowres.png]][[/footnote]]
+
+Croqstyleの{{croqstyle-img-footnote}}クラスは、通常の脚注と次の点が違います。
+
+* 番号だけでなく、文脈となる語句を強調します
+* 脚注の一覧に追加されないので、ページの下部を埋めることなく、同じ画像の脚注を何度でも付けられます
+
+たとえばSCPの見た目を、元の画像まで戻らずに読者が思い出せるようにする「おさらい用の脚注」に向いています。
+
+
+[[# simple-responsive-div]]
+++ シンプルなレスポンシブdiv
+
+デスクトップのユーザーとモバイルのユーザーに別の内容を見せる、シンプルなレスポンシブdivのクラスです。
+
+マークアップは次のとおりです。
+
+[[div class="code terminal"]]
+##var(--c-keyword)|[[####var(--c-builtin)|div## ##var(--c-symbol)|class##=##var(--c-string)|@@"croqstyle-responsive-div"@@####var(--c-keyword)|]]##
+##var(--c-keyword)|[[####var(--c-builtin)|div## ##var(--c-symbol)|class##=##var(--c-string)|@@"croqstyle-responsive-div__desktop"@@## ##var(--c-symbol)|style##=##var(--c-string)|@@"display: none"@@####var(--c-keyword)|]]##
+ここにデスクトップ向けの内容を書きます
+##var(--c-keyword)|[[/####var(--c-builtin)|div####var(--c-keyword)|]]##
+##var(--c-keyword)|[[####var(--c-builtin)|div## ##var(--c-symbol)|class##=##var(--c-string)|@@"croqstyle-responsive-div__mobile"@@####var(--c-keyword)|]]##
+ここにモバイル向けの内容を書きます
+##var(--c-keyword)|[[/####var(--c-builtin)|div####var(--c-keyword)|]]##
+##var(--c-keyword)|[[/####var(--c-builtin)|div####var(--c-keyword)|]]##
+[[/div]]
+
+（{{display: none}}のスタイルを付けているのは、Croqstyleの無いページにコピーされたり、ページからCroqstyleが外されたりしても、何も壊さずにモバイル版の表示に戻るようにするためです）
+
+ページ本文の領域の幅が550ピクセル未満のときは、いつでも「モバイル」の表示になります。画面の幅だけでなく、テーマや[[[component:toggle-sidebar | サイドバーがあるかどうか]]]も反映されるので（幅800px前後でデスクトップ用のサイドバーが現れ、本文の領域が少ししか残らない、あの切り替わりの幅のことです）、どんな状況でもかなり安定して動くはずです。
+
+なお、{{.croqstyle-responsive-div}}は、レスポンシブにしたい内容を包む、ページと同じ幅のdivでなければなりません。ページ全体をこれで包むこともできるでしょう。一方、{{@@__@@desktop}}と{{@@__@@mobile}}は、必要ならspanなどにしても構いません。また、いくつでも置けます。
+
+[[collapsible show="+ 使用例を表示: シンプルなレスポンシブ表" hide="- 使用例を隠す: シンプルなレスポンシブ表"]]
+{{.croqstyle-responsive-div}}を使ってレスポンシブな表を作る方法です。
+
+幅の広い表（列が多い表や、列は少なくても文章が多い表）を考えます。表が一般的なモバイル端末より幅広いので、小さい画面ではきちんと表示できません。
+
+この場合、デスクトップではその表の形を保ちつつ、モバイルでは元の表の1行ごとに小さな表を1つずつ作って見せるほうがよいでしょう。
+
+（補足: //理屈の上では//、[[*user Woedenaz]]氏の[*https://scp-wiki.wikidot.com/component:responsive-tables component:responsive-tables]コンポーネントがこれを実現するはずですが、落とし穴が山ほどあり、私はそのディスカッションに長文を書きました。）
+
+[[div style="display: flex; gap: 1em"]]
+[[div style="flex: 1"]]
+次のJavaScriptのコードは、見出しが一番上にあるシンプルなWikidotの表、たとえば ->
+[[/div]]
+
+||~ A ||~ B ||~ C ||
+|| a1 || b1 || c1 ||
+|| a2 || b2 || c2 ||
+[[/div]]
+
+[[div style="display: flex; gap: 1em"]]
+[[div style="flex: 1"]]
+を、元の表の1行ごとに1つずつの小さな表に変換します。たとえば ->
+[[/div]]
+
+||~ A || a1 ||
+||~ B || b1 ||
+||~ C || c1 ||
+
+||~ A || a2 ||
+||~ B || b2 ||
+||~ C || c2 ||
+[[/div]]
+
+そのJavaScriptのコードです。デスクトップ用の表をモバイル用の表に変換するには、これをコピーして{{PASTE TABLE HERE}}を表のソースに置き換え（バッククォートは残します）、JSコンソールに貼り付けて実行します。出力がクリップボードにコピーされるので、それを元の表と置き換えてページに貼り付けます。
+
+[[code type="javascript"]]
+(() => {
+  const desktopTable = `PASTE TABLE HERE`
+  
+  const rowToCells = row => row.split(/\s*\|\|~?\s*/).slice(1, -1)
+
+  const [header, ...rows] = desktopTable
+    .replace(/ _\n/g, "\\n")
+    .split(/[\r\n]+/)
+    .map(rowToCells)
+    .map(row => row.map(cell => cell.replace(/\\n/g, " _\n")))
+  
+  const mobileTables = rows.map(row => {
+    return row.reduce((table, cell, cellIndex) => {
+      return `${table}\n||~ ${header[cellIndex]} || ${cell} ||`
+    }, "")
+  })
+  
+  const output = [
+    '[[div class="croqstyle-responsive-div"]]',
+    '[[div class="croqstyle-responsive-div__desktop" style="display: none"]]',
+    desktopTable,
+    '[[/div]]',
+    '[[div class="croqstyle-responsive-div__mobile"]]',
+    ...mobileTables,
+    '[[/div]]',
+    '[[/div]]',
+  ].join("\n")
+  
+  console.log(output)
+  copy(output)
+})()
+[[/code]]
+
+[[/collapsible]]
+
+[[collapsible show="+ 使用例を表示: 1語だけ変える" hide="- 使用例を隠す: 1語だけ変える"]]
+デスクトップとモバイルで、1つの単語や語句だけを切り替えるには次のようにします。
+
+[[div class="code terminal"]]
+##var(--c-keyword)|[[####var(--c-builtin)|div## ##var(--c-symbol)|class##=##var(--c-string)|@@"croqstyle-responsive-div"@@####var(--c-keyword)|]]##
+あなたは今たぶん##var(--c-keyword)|[[####var(--c-builtin)|span## ##var(--c-symbol)|class##=##var(--c-string)|@@"croqstyle-responsive-div__desktop"@@## ##var(--c-symbol)|style##=##var(--c-string)|@@"display: none"@@####var(--c-keyword)|]]##デスクトップ##var(--c-keyword)|[[/####var(--c-builtin)|span####var(--c-keyword)|]]####var(--c-keyword)|[[####var(--c-builtin)|span## ##var(--c-symbol)|class##=##var(--c-string)|@@"croqstyle-responsive-div__mobile"@@####var(--c-keyword)|]]##モバイル##var(--c-keyword)|[[/####var(--c-builtin)|span####var(--c-keyword)|]]##で閲覧しています！
+##var(--c-keyword)|[[/####var(--c-builtin)|div####var(--c-keyword)|]]##
+[[/div]]
+
+[[div class="croqstyle-responsive-div"]]
+あなたは今たぶん[[span class="croqstyle-responsive-div__desktop" style="display: none"]]デスクトップ[[/span]][[span class="croqstyle-responsive-div__mobile"]]モバイル[[/span]]で閲覧しています！
+[[/div]]
+
+
+[[/collapsible]]
+
+
+[[# reset-tabview]]
+++ タブビューのリセット
+
+タブビューのCSSをリセットする、つまりスタイルをすべて取り除くユーティリティです。タブにスタイルを当てたくなるたびに、Wikidotがタブにどうスタイルを当てているかを掘り返して一部を打ち消すのは、いつも面倒です。これを使えば、その作業はもう済んでいます。
+
+タブビューをリセットするには、{{.croqstyle-reset-tabs}}で包みます。
+
+[[div class="code terminal"]]
+##var(--c-keyword)|[[####var(--c-builtin)|div## ##var(--c-symbol)|class##=##var(--c-string)|@@"croqstyle-reset-tabs"@@####var(--c-keyword)|]]##
+##var(--c-keyword)|[[####var(--c-builtin)|tabview####var(--c-keyword)|]]##
+##var(--c-keyword)|[[####var(--c-builtin)|tab## ##var(--c-string)|1つ目のタブ####var(--c-keyword)|]]##
+内容1
+##var(--c-keyword)|[[/####var(--c-builtin)|tab####var(--c-keyword)|]]##
+##var(--c-keyword)|[[####var(--c-builtin)|tab## ##var(--c-string)|2つ目のタブ####var(--c-keyword)|]]##
+内容2
+##var(--c-keyword)|[[/####var(--c-builtin)|tab####var(--c-keyword)|]]##
+##var(--c-keyword)|[[/####var(--c-builtin)|tabview####var(--c-keyword)|]]##
+##var(--c-keyword)|[[/####var(--c-builtin)|div####var(--c-keyword)|]]##
+[[/div]]
+
+各タブの内容を隠したり表示したりするCSSは打ち消しません。独自のアニメーションに置き換えたいなら、次のように自分でリセットできます。
+
+[[div class="code terminal"]]
+[id^=wiki-tab] { display: initial !important }
+[[/div]]
+
+[[collapsible show="+ タブビューの各部分のセレクタの一覧を表示" hide="- タブビューの各部分のセレクタの一覧を隠す"]]
+タブビューの各部分を指す最小限のセレクタです。
+
+||~ 部分 ||~ セレクタ ||
+|| タブビュー全体 || .yui-navset ||
+|| タブの一覧 || .yui-navset .yui-nav ||
+|| タブ || .yui-navset .yui-nav li a ||
+|| タブ（選択中） || .yui-navset .yui-nav .selected a ||
+|| タブ（ホバー中） || .yui-navset .yui-nav a:is(:hover, :focus) ||
+|| タブ（選択中かつホバー中） || .yui-navset .yui-nav .selected :is(a, a:focus, a:hover) ||
+|| 各タブの文字 || .yui-navset .yui-nav li a em ||
+|| 選択中のタブの文字 || .yui-navset .yui-nav .selected a em ||
+|| タブの内容の表示領域 || .yui-navset .yui-content ||
+|| 選択中のタブの内容 || [id^=wiki-tab][style*=block] ||
+|| 選択していないタブの内容 || [id^=wiki-tab][style*=none] ||
+
+リセットしたタブビューにだけスタイルを当てるには、各セレクタの前に{{:where(.croqstyle-reset-tabs)}}を付けます。例: {{:where(.croqstyle-reset-tabs) .yui-navset}}
+
+特定のタブビューにだけスタイルを当てるときや、テーマで任意に使える独自のタブビューを用意するときは、同じことを別のクラスで行います。例: {{:where(.special-fancy-tabs) .yui-navset}}
+[[/collapsible]]
+
+[[collapsible show="+ リセットしたタブの例を表示" hide="- リセットしたタブの例を隠す"]]
+
+タブの例です。
+
+[[tabs]]
+[[tab 1つ目のタブ]]
+1つ目のタブの内容
+[[/tab]]
+[[tab 2つ目のタブ]]
+2つ目のタブの内容
+[[/tab]]
+[[/tabs]]
+
+同じタブにリセットのクラスを当てたものです。
+
+[[div class="croqstyle-reset-tabs"]]
+[[tabs]]
+[[tab 1つ目のタブ]]
+1つ目のタブの内容
+[[/tab]]
+[[tab 2つ目のタブ]]
+2つ目のタブの内容
+[[/tab]]
+[[/tabs]]
+[[/div]]
+
+[[/collapsible]]
+
+
+[[/div]]
+
+[[div style="display: none"]]
+[[footnoteblock]]
+[[/div]]
+
+[[iftags +コンポーネント]][!-[[/iftags]]- --]
+[!-- End metacomponent context detection --]

@@ -1,4 +1,6 @@
-use super::super::iftags::preserve_all_ordinary_wikidot_iftags;
+use super::super::iftags::{
+    preserve_all_ordinary_wikidot_iftags, resolve_gate_bearing_div_heads,
+};
 use super::super::include_attachment_owners::{
     DirectiveEndScan, wikidot_include_directive_ranges,
 };
@@ -178,6 +180,11 @@ impl RenderService {
             preserved,
             true,
         );
+        // A gate that opens a div head is evaluated on live even inside a
+        // kept gate body. Resolve it before include expansion so ftml sees
+        // a clean head and cannot swallow the preceding include's expansion
+        // (theme:highlighter-bhl-jp L271-277).
+        resolve_gate_bearing_div_heads(wikitext, preserved, &page_info.tags);
     }
 
     pub(super) fn prepare_wikidot_conditionals_before_include_expansion_for_page_preview(
