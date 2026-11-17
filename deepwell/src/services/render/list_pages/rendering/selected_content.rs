@@ -495,6 +495,101 @@ fn protect_selected_content_includes(
     protected
 }
 
+/// Live Wikidot's default-template summary does not form div
+/// elements from the summarized fragment: a `[[div]]` opener paired
+/// inside the fragment is unwrapped (its content stays as text and
+/// the closer renders literally), and an unpaired opener stays
+/// literal text (sandbox probes `muse-probe-lpfail-sum-index` and
+/// `muse-probe-lpfail-dt2-index`). Remove paired openers from the
+/// summary source and protect unpaired openers as escaped text so
+/// the render reproduces both shapes.
+fn protect_list_pages_summary_divs(
+    source: &str,
+    compat_text: &mut CompatTextFragments,
+) -> String {
+    let literal_regions = LiteralRegionIndex::new_wikidot_syntax(source);
+    let lowercase = source.to_ascii_lowercase();
+    let mut tokens: Vec<(usize, usize, bool)> = Vec::new();
+    let mut cursor = 0usize;
+    while let Some(relative_start) = lowercase[cursor..].find("[[") {
+        let start = cursor + relative_start;
+        if literal_regions.contains(start) {
+            cursor = start + 2;
+            continue;
+        }
+        if lowercase[start..].starts_with("[[/div]]") {
+            tokens.push((start, start + "[[/div]]".len(), false));
+            cursor = start + "[[/div]]".len();
+            continue;
+        }
+        if lowercase[start..].starts_with("[[div") {
+            let after = start + "[[div".len();
+            let boundary = lowercase
+                .as_bytes()
+                .get(after)
+                .is_some_and(|byte| byte.is_ascii_whitespace() || *byte == b']');
+            if boundary
+                && let Some(relative_end) = source[after..].find("]]")
+            {
+                let end = after + relative_end + 2;
+                tokens.push((start, end, true));
+                cursor = end;
+                continue;
+            }
+        }
+        cursor = start + 2;
+    }
+    if tokens.is_empty() {
+        return source.to_owned();
+    }
+    let mut open_stack: Vec<usize> = Vec::new();
+    let mut removed: Vec<(usize, usize)> = Vec::new();
+    for (index, &(start, end, is_opener)) in tokens.iter().enumerate() {
+        if is_opener {
+            open_stack.push(index);
+        } else if let Some(opener_index) = open_stack.pop() {
+            removed.push((tokens[opener_index].0, tokens[opener_index].1));
+            let _ = (start, end);
+        }
+    }
+    if removed.is_empty() && open_stack.is_empty() {
+        return source.to_owned();
+    }
+    let unpaired: Vec<(usize, usize)> = open_stack
+        .iter()
+        .map(|&index| (tokens[index].0, tokens[index].1))
+        .collect();
+    let mut output = String::with_capacity(source.len());
+    let mut cursor = 0usize;
+    let mut ranges: Vec<(usize, usize, bool)> = removed
+        .iter()
+        .map(|&(start, end)| (start, end, true))
+        .chain(unpaired.iter().map(|&(start, end)| (start, end, false)))
+        .collect();
+    ranges.sort_unstable_by_key(|&(start, _, _)| start);
+    for (start, end, is_removal) in ranges {
+        if start < cursor {
+            continue;
+        }
+        output.push_str(&source[cursor..start]);
+        if !is_removal {
+            // The restored literal must not spell `[[div` in the
+            // HTML: the post-render residual-div pass reconstructs
+            // any such text into an element. Entity-escaped brackets
+            // render as the same visible text and are the codebase's
+            // established literal form (compare the `&#91;&#91;module
+            // ListPages` pins in the render service tests).
+            let literal = escape_html_text(&source[start..end])
+                .replace('[', "&#91;")
+                .replace(']', "&#93;");
+            output.push_str(&compat_text.push_authored_runtime_marker_literal(&literal));
+        }
+        cursor = end;
+    }
+    output.push_str(&source[cursor..]);
+    output
+}
+
 pub(super) async fn render_list_pages_default_summary_source(
     args: ListPagesSelectedContentArgs<'_, '_, '_, '_>,
     page_preview: bool,
@@ -519,6 +614,8 @@ pub(super) async fn render_list_pages_default_summary_source(
     let _nested_render_guard = render_cost_budget
         .enter_nested_render(MAX_SELECTED_CONTENT_RENDER_DEPTH)
         .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
+    let mut summary_text = CompatTextFragments::new(wikitext);
+    let wikitext = &protect_list_pages_summary_divs(wikitext, &mut summary_text);
     let mut summary_settings = settings.clone();
     summary_settings.enable_html_blocks = true;
     summary_settings.use_true_ids = false;
@@ -549,7 +646,7 @@ pub(super) async fn render_list_pages_default_summary_source(
     .await?;
     let mut html_output = rendered.html_output;
     Ok(RenderedListPagesSource {
-        body: html_output.body,
+        body: summary_text.restore(&html_output.body),
         styles: std::mem::take(&mut html_output.styles),
         included_pages: std::mem::take(&mut html_output.backlinks.included_pages),
         expanded_include_count: rendered.expanded_include_count,
