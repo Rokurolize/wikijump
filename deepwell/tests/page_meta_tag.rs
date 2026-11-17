@@ -377,7 +377,7 @@ async fn page_editor_cannot_mutate_site_wide_meta_tags() {
             "all_pages": false,
         }),
     );
-    assert_contains_error!(page_write, ErrorType::PermissionDenied);
+    assert_contains_error!(page_write, ErrorType::NotAuthenticated);
 
     let site_write = run_endpoint_err!(
         runner,
@@ -390,7 +390,7 @@ async fn page_editor_cannot_mutate_site_wide_meta_tags() {
             "all_pages": true,
         }),
     );
-    assert_contains_error!(site_write, ErrorType::PermissionDenied);
+    assert_contains_error!(site_write, ErrorType::NotAuthenticated);
 
     runner.set_request_context(RequestContext {
         user_id: Some(ADMIN_USER_ID),

@@ -446,7 +446,7 @@ async fn reconcile_files_endpoint_requires_platform_staff() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_contains_error!(error, ErrorType::NotAuthenticated);
 
     set_admin_context(&mut runner, site_id, page_id);
     let output = run_endpoint!(

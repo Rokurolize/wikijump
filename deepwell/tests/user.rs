@@ -784,7 +784,7 @@ async fn user_import_requires_admin_request_context() {
         }),
     );
 
-    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_contains_error!(error, ErrorType::NotAuthenticated);
 }
 
 #[tokio::test]
@@ -1389,7 +1389,7 @@ async fn user_mutations_enforce_request_actor_and_staff_only_fields() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_contains_error!(error, ErrorType::NotAuthenticated);
 
     runner.set_request_context(RequestContext {
         user_id: Some(other.user_id),
@@ -1716,7 +1716,7 @@ async fn public_user_creation_rejects_privileged_fields() {
             );
 
         let error = run_endpoint_err!(runner, user_create, input);
-        assert_contains_error!(error, ErrorType::PermissionDenied);
+        assert_contains_error!(error, ErrorType::NotAuthenticated);
     }
 }
 
@@ -1917,7 +1917,7 @@ async fn avatar_removal_is_owner_only_and_clears_only_the_association() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_contains_error!(error, ErrorType::NotAuthenticated);
 
     runner.set_request_context(RequestContext {
         user_id: Some(other.user_id),

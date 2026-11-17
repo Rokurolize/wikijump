@@ -782,7 +782,7 @@ async fn run_anonymous_rate_control_exposure(queue_namespace: &str) {
             "action_fingerprint": actions[0]["fingerprint"],
         }),
     );
-    assert_contains_error!(rejected, ErrorType::PermissionDenied);
+    assert_contains_error!(rejected, ErrorType::NotAuthenticated);
 }
 
 async fn execute_sql(runner: &TestRunner, sql: &str) {

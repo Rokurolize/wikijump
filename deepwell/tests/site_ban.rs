@@ -146,6 +146,7 @@ async fn assert_site_ban_set_denied(
     target_user_id: i64,
     created_by: i64,
 ) {
+    let had_user = request.user_id.is_some();
     runner.set_request_context(request);
     let error = run_endpoint_err!(
         runner,
@@ -161,7 +162,13 @@ async fn assert_site_ban_set_denied(
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    assert_contains_error!(error, ErrorType::PermissionDenied);
+    // PR #3808: missing session user -> NotAuthenticated (3007); an
+    // authenticated but unauthorized actor keeps PermissionDenied (3106).
+    if had_user {
+        assert_contains_error!(error, ErrorType::PermissionDenied);
+    } else {
+        assert_contains_error!(error, ErrorType::NotAuthenticated);
+    }
 }
 
 async fn assert_site_ban_remove_denied(
@@ -171,6 +178,7 @@ async fn assert_site_ban_remove_denied(
     target_user_id: i64,
     removed_by: i64,
 ) {
+    let had_user = request.user_id.is_some();
     runner.set_request_context(request);
     let error = run_endpoint_err!(
         runner,
@@ -183,7 +191,13 @@ async fn assert_site_ban_remove_denied(
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    assert_contains_error!(error, ErrorType::PermissionDenied);
+    // PR #3808: missing session user -> NotAuthenticated (3007); an
+    // authenticated but unauthorized actor keeps PermissionDenied (3106).
+    if had_user {
+        assert_contains_error!(error, ErrorType::PermissionDenied);
+    } else {
+        assert_contains_error!(error, ErrorType::NotAuthenticated);
+    }
 }
 
 #[tokio::test]
