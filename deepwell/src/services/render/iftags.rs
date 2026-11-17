@@ -372,7 +372,7 @@ pub(super) fn preserve_all_ordinary_wikidot_iftags(
 // Div heads never truncate on live and are not rewritten here.
 pub(super) fn truncate_wikidot_heads_at_exhibited_gates(
     wikitext: &mut String,
-    preserved: &CompatTextFragments,
+    preserved: &mut CompatTextFragments,
 ) {
     const HEAD_OPENERS: [&str; 3] = ["[[image", "[[a", "[[span"];
     let mut output: Option<String> = None;
@@ -407,7 +407,19 @@ pub(super) fn truncate_wikidot_heads_at_exhibited_gates(
                     output.get_or_insert_with(|| String::with_capacity(wikitext.len()));
                 output.push_str(&wikitext[copied..marker_start]);
                 output.push_str("]]");
-                output.push_str(&wikitext[marker_end..extent_end + 2]);
+                // Live wikitext-parses the spill's adjacent
+                // `[[/iftags]][[iftags ...]]` bracket runs into junk
+                // single-links. Our gate tokens are opaque markers here,
+                // so ftml never sees the raw run. Emit the same anchor
+                // as a raw-HTML fragment at restore time instead of
+                // exposing brackets to the tokenizer (which would give
+                // ftml's native evaluated iftags semantics, G2-RESTORE
+                // Step 2 X2). Scoped to the truncating head's spill;
+                // every other gate keeps its exhibit behavior.
+                output.push_str(&rewrite_spill_junk_links(
+                    preserved,
+                    &wikitext[marker_end..extent_end + 2],
+                ));
                 copied = extent_end + 2;
                 search = copied;
             }
@@ -436,6 +448,54 @@ fn exhibited_gate_head_cut(
     let marker_end = marker_start + marker_len;
     let extent_offset = wikitext[marker_end..].find("]]")?;
     Some((marker_start, marker_end, marker_end + extent_offset))
+}
+
+// Rewrite the adjacent `[[/iftags]]` + `[[iftags <spec>]]` gate-token
+// marker pairs inside a truncating head's spill into raw-HTML fragments
+// that restore to live's junk single-links:
+//   [[/iftags]][[iftags +殿堂入り +jp]]
+//     -> [<a href="/iftags]][[iftags">+殿堂入り +jp</a>]
+// The pair is recognised by registry metadata (gate-token fragments),
+// not by content matching against the surrounding wikitext, and only
+// when the two markers are byte-adjacent. Everything else in the spill
+// (gate bodies, head tail) is copied through untouched.
+fn rewrite_spill_junk_links(preserved: &mut CompatTextFragments, spill: &str) -> String {
+    const CLOSER: &str = "[[/iftags]]";
+    const OPENER_PREFIX: &str = "[[iftags ";
+    const OPENER_SUFFIX: &str = "]]";
+
+    let mut output = String::with_capacity(spill.len());
+    let mut cursor = 0usize;
+    while let Some((start, len)) = preserved.first_gate_token_marker(spill, cursor) {
+        let after = start + len;
+        let (_, first_text) = preserved
+            .gate_token_marker_info_at(&spill[start..])
+            .expect("first_gate_token_marker returned a registered gate token");
+        let paired = if first_text == CLOSER {
+            preserved
+                .gate_token_marker_info_at(&spill[after..])
+                .and_then(|(len2, second_text)| {
+                    let spec = second_text
+                        .strip_prefix(OPENER_PREFIX)?
+                        .strip_suffix(OPENER_SUFFIX)?;
+                    Some((len2, spec))
+                })
+        } else {
+            None
+        };
+        if let Some((len2, spec)) = paired {
+            let junk_link = format!("[<a href=\"/iftags]][[iftags\">{spec}</a>]");
+            let marker = preserved.push_raw_html_fragment(&junk_link);
+            output.push_str(&spill[cursor..start]);
+            output.push_str(&marker);
+            cursor = after + len2;
+        } else {
+            output.push_str(&spill[cursor..after]);
+            cursor = after;
+        }
+    }
+    output.push_str(&spill[cursor..]);
+    output
 }
 
 fn find_ascii_case_insensitive(haystack: &str, needle: &str) -> Option<usize> {
@@ -1392,7 +1452,7 @@ mod tests {
              [[div_ class=\"box {opener}heritage{closer}\"]]BODY[[/div]]\n\
              [[image pic.png link=\"{other}whole\"]]\n"
         );
-        truncate_wikidot_heads_at_exhibited_gates(&mut source, &preserved);
+        truncate_wikidot_heads_at_exhibited_gates(&mut source, &mut preserved);
         assert!(
             source.contains(&format!(
                 "[[image pic.png link=\"]]archived:heritage{closer}\" style=\"max-width: none;\"]]"
@@ -1426,5 +1486,38 @@ mod tests {
         // The three truncating openers were consumed; only the div
         // head still carries one.
         assert_eq!(source.matches(&opener).count(), 1, "{source}");
+    }
+
+    #[test]
+    fn spill_rewrite_emits_live_junk_links_for_adjacent_gate_pairs() {
+        let mut preserved = CompatTextFragments::new("");
+        let closer = preserved.push_gate_token_escaped_html_text("[[/iftags]]");
+        let jp = preserved.push_gate_token_escaped_html_text("[[iftags +殿堂入り +jp]]");
+        let fr = preserved.push_gate_token_escaped_html_text("[[iftags +殿堂入り +fr]]");
+        let spill = format!(
+            "archived:heritage-collection{closer}{jp}heritage-collection-jp{closer}{fr}patrimoine-francais-de-la-fondation-scp{closer}"
+        );
+        let rewritten = super::rewrite_spill_junk_links(&mut preserved, &spill);
+        let restored = preserved.restore(&rewritten);
+        assert_eq!(
+            restored,
+            "archived:heritage-collection[<a href=\"/iftags]][[iftags\">+殿堂入り +jp</a>]heritage-collection-jp[<a href=\"/iftags]][[iftags\">+殿堂入り +fr</a>]patrimoine-francais-de-la-fondation-scp[[/iftags]]"
+        );
+    }
+
+    #[test]
+    fn spill_rewrite_leaves_non_adjacent_gate_tokens_literal() {
+        let mut preserved = CompatTextFragments::new("");
+        let closer = preserved.push_gate_token_escaped_html_text("[[/iftags]]");
+        let jp = preserved.push_gate_token_escaped_html_text("[[iftags +殿堂入り +jp]]");
+        // A body between the closer and opener is not live's junk-link
+        // geometry; it must stay literal rather than be rewritten.
+        let spill = format!("{closer}some body{jp}");
+        let rewritten = super::rewrite_spill_junk_links(&mut preserved, &spill);
+        let restored = preserved.restore(&rewritten);
+        assert_eq!(
+            restored,
+            format!("[[/iftags]]some body[[iftags +殿堂入り +jp]]")
+        );
     }
 }

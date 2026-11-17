@@ -83,6 +83,33 @@ impl CompatTextFragments {
         self.gate_token_fragments.contains(&index).then_some(len)
     }
 
+    // If `text` starts with a marker standing for an exhibited gate
+    // token, returns (marker byte length, the token's escaped text).
+    // Used by the spill junk-link rewrite to recognise an adjacent
+    // `[[/iftags]]` + `[[iftags ...]]` pair without content matching
+    // against the surrounding wikitext.
+    pub(in crate::services::render) fn gate_token_marker_info_at(
+        &self,
+        text: &str,
+    ) -> Option<(usize, &str)> {
+        let (index, len) = self.marker_at(text)?;
+        self.gate_token_fragments
+            .contains(&index)
+            .then(|| (len, self.fragments[index].as_str()))
+    }
+
+    // Register a fragment whose text is already final HTML and must be
+    // inserted verbatim by `restore` (escaping would break the markup).
+    // Cleanup-exempt so a cleanup pass cannot strip the emitted anchors.
+    pub(in crate::services::render) fn push_raw_html_fragment(
+        &mut self,
+        html: &str,
+    ) -> String {
+        let (marker, index) = self.push_owned(html.to_owned());
+        self.cleanup_exempt_fragments.insert(index);
+        marker
+    }
+
     // The first marker at or after `from` that stands for an exhibited
     // gate token, as (start, byte length).
     pub(in crate::services::render) fn first_gate_token_marker(

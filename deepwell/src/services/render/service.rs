@@ -1879,7 +1879,7 @@ impl RenderService {
 
         truncate_wikidot_heads_at_exhibited_gates(
             &mut expanded.wikitext,
-            &wikidot_compat_text,
+            &mut wikidot_compat_text,
         );
 
         OuterPreparedRenderWikitext {
