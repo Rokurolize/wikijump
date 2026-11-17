@@ -146,6 +146,9 @@ pub struct Site {
 
     #[serde(default)]
     pub preferred_domain: Option<String>,
+
+    #[serde(default)]
+    pub from_wikidot: bool,
     pub name: String,
     pub tagline: String,
     pub description: String,

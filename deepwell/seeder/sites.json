@@ -46,6 +46,7 @@
     },
     {
         "slug": "scp-jp",
+        "from-wikidot": true,
         "name": "SCP-JP (Mirror)",
         "domains": ["scp-jp.localhost"],
         "tagline": "SCP-JP mirror placeholder",
@@ -65,6 +66,7 @@
     },
     {
         "slug": "scp-wiki",
+        "from-wikidot": true,
         "name": "SCP Foundation",
         "tagline": "Secure, Contain, Protect",
         "description": "Local mirror of the SCP Wiki (EN)",

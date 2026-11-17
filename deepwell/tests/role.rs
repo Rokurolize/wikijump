@@ -57,7 +57,7 @@ use std::borrow::Cow;
 static FIXTURE_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 #[tokio::test]
-async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
+async fn ordinary_user_joins_an_open_local_site_then_creates_a_page() {
     let mut runner = TestRunner::setup().await;
     let n = next_n();
     let join_slug = format!("system:join-{n}");
@@ -399,7 +399,7 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
     assert_eq!(
         MembershipService::policy(&editable),
         MembershipPolicy::Open,
-        "the editable local-authoring site is the only open membership policy",
+        "a locally created site with no gated membership route is open to self-join",
     );
     assert_eq!(
         MembershipService::policy(&mirror),
