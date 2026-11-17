@@ -797,6 +797,7 @@ impl ViewService {
                 wikidot_breadcrumbs: Vec<WikidotPageBreadcrumbView>,
                 attributions: Vec<PageAttribution>,
                 theme_previewer_blank: bool,
+                theme_previewer_url: Option<String>,
             },
             Missing,
             Private,
@@ -970,6 +971,8 @@ impl ViewService {
 
                     let theme_previewer_blank =
                         compiled_body_styles.theme_previewer_blank;
+                    let theme_previewer_url =
+                        compiled_body_styles.theme_previewer_url.clone();
                     let compiled_body_styles = compiled_body_styles.styles;
                     let attributions = RelationService::get_page_attributions(
                         ctx,
@@ -1093,6 +1096,7 @@ impl ViewService {
                             wikidot_breadcrumbs,
                             attributions,
                             theme_previewer_blank,
+                            theme_previewer_url,
                         },
                         wikitext,
                         new_page_wikitext: None,
@@ -1504,6 +1508,7 @@ impl ViewService {
                 wikidot_breadcrumbs,
                 attributions,
                 theme_previewer_blank,
+                theme_previewer_url,
             } => {
                 let theme_previewer_no_ui = has_theme_previewer_no_ui(&wikitext);
                 let legacy_actions = LegacyActionRegistry::from_wikidot_source_bounded(
@@ -1574,6 +1579,7 @@ impl ViewService {
                     membership_actions,
                     theme_previewer_no_ui,
                     theme_previewer_blank,
+                    theme_previewer_url,
                     manage_site_takeover,
                     redirect_page,
                     redirect_kind,

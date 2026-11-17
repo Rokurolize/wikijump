@@ -125,6 +125,7 @@ fn dropping_prepared_wikitext_without_restoration_is_rejected() {
     let prepared = RenderService::prepare_outer_render_wikitext(
         super::ExpandedRenderWikitext {
             theme_previewer_blank: false,
+            theme_previewer_url: None,
             wikitext: source.to_owned(),
             included_pages: Vec::new(),
             expanded_include_count: 0,
@@ -322,6 +323,7 @@ fn render_wikidot_conditionals_with_tags(wikitext: &str, tags: &[&str]) -> Strin
     let outer = RenderService::prepare_outer_render_wikitext(
         super::ExpandedRenderWikitext {
             theme_previewer_blank: false,
+            theme_previewer_url: None,
             wikidot_compat_html: CompatHtmlFragments::new(wikitext),
             wikidot_compat_text: CompatTextFragments::new(wikitext),
             wikitext: wikitext.to_owned(),
@@ -370,6 +372,7 @@ fn render_wikidot_page_body_with_compat_restore(wikitext: &str) -> String {
     let outer = RenderService::prepare_outer_render_wikitext(
         super::ExpandedRenderWikitext {
             theme_previewer_blank: false,
+            theme_previewer_url: None,
             wikidot_compat_html: CompatHtmlFragments::new(&source),
             wikidot_compat_text: CompatTextFragments::new(&source),
             wikitext: source,
@@ -408,6 +411,7 @@ fn render_wikidot_page_body_with_link_titles(
     let outer = RenderService::prepare_outer_render_wikitext_with_link_titles(
         super::ExpandedRenderWikitext {
             theme_previewer_blank: false,
+            theme_previewer_url: None,
             wikidot_compat_html: CompatHtmlFragments::new(&source),
             wikidot_compat_text: CompatTextFragments::new(&source),
             wikitext: source,
@@ -456,6 +460,7 @@ fn render_wikidot_trimmed_page_body(wikitext: &str) -> String {
     let outer = RenderService::prepare_outer_render_wikitext(
         super::ExpandedRenderWikitext {
             theme_previewer_blank: false,
+            theme_previewer_url: None,
             wikidot_compat_html: CompatHtmlFragments::new(&source),
             wikidot_compat_text: CompatTextFragments::new(&source),
             wikitext: source,
@@ -2644,6 +2649,7 @@ fn render_native_list_page_for_regression(
     let outer = RenderService::prepare_outer_render_wikitext(
         super::ExpandedRenderWikitext {
             theme_previewer_blank: false,
+            theme_previewer_url: None,
             wikidot_compat_html: CompatHtmlFragments::new(source),
             wikidot_compat_text: CompatTextFragments::new(source),
             wikitext: source.to_owned(),
@@ -3161,6 +3167,7 @@ fn render_preparation_resolves_generated_simple_if_with_link_branch() {
     let outer = RenderService::prepare_outer_render_wikitext(
         super::ExpandedRenderWikitext {
             theme_previewer_blank: false,
+            theme_previewer_url: None,
             wikitext: concat!(
                 "[[div class=\"colmod-block\"]]\n",
                 "[[div]]link[[#if 0 | | [# fallback] ]][[/div]]\n",
@@ -3798,6 +3805,7 @@ fn prepares_wikidot_unicode_iftags_component_with_cross_closed_collapsible() {
     let outer = RenderService::prepare_outer_render_wikitext(
         super::ExpandedRenderWikitext {
             theme_previewer_blank: false,
+            theme_previewer_url: None,
             wikidot_compat_html: CompatHtmlFragments::new(&source),
             wikidot_compat_text: CompatTextFragments::new(&source),
             wikitext: source,
@@ -3999,6 +4007,7 @@ fn repeated_render_preparation_preserves_nested_iftags_for_ftml() {
     let outer = RenderService::prepare_outer_render_wikitext(
         super::ExpandedRenderWikitext {
             theme_previewer_blank: false,
+            theme_previewer_url: None,
             wikitext,
             included_pages: Vec::new(),
             expanded_include_count: 0,
@@ -4053,6 +4062,7 @@ fn malformed_iftags_remain_literal_after_ftml_recovery() {
     let outer = RenderService::prepare_outer_render_wikitext(
         super::ExpandedRenderWikitext {
             theme_previewer_blank: false,
+            theme_previewer_url: None,
             wikitext,
             included_pages: Vec::new(),
             expanded_include_count: 0,

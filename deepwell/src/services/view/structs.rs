@@ -126,6 +126,8 @@ pub enum GetPageViewOutput {
         #[serde(default)]
         theme_previewer_blank: bool,
         #[serde(default)]
+        theme_previewer_url: Option<String>,
+        #[serde(default)]
         manage_site_takeover: bool,
         redirect_page: Option<String>,
         #[serde(default)]

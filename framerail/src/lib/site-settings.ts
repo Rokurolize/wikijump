@@ -168,6 +168,22 @@ export const resolveThemePreviewUrl = (
   value: unknown
 ): string | null => (themePreviewerNoUi === true ? normalizeThemePreviewUrl(value) : null)
 
+/**
+ * The stylesheet URL an executing ThemePreviewer module substitutes for
+ * the page's theme import on Wikidot. Unlike a site theme setting this
+ * value comes from page wikitext, so it is not held to the external
+ * theme allowlist; only the scheme is checked before it is emitted.
+ */
+export const normalizeModuleThemePreviewUrl = (value: unknown): string | null => {
+  if (typeof value !== "string") return null
+  try {
+    const url = new URL(value)
+    return url.protocol === "http:" || url.protocol === "https:" ? url.href : null
+  } catch {
+    return null
+  }
+}
+
 type LocalFileCheck = (page: string, name: string) => unknown
 
 export const customThemeHeadHtml = (

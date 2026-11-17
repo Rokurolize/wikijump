@@ -283,6 +283,7 @@ pub(super) struct ProtectedWikidotCompatLink {
 struct ExpandedRenderWikitext {
     wikitext: String,
     theme_previewer_blank: bool,
+    theme_previewer_url: Option<String>,
     included_pages: Vec<PageRef>,
     expanded_include_count: usize,
     url_offset_list_pages_content_bytes: usize,
@@ -1145,6 +1146,7 @@ impl RenderService {
             errors,
             compiled_hash: compiled_body_html_hash,
             theme_previewer_blank,
+            theme_previewer_url,
             ..
         } = Self::render_inner(
             ctx,
@@ -1256,9 +1258,12 @@ impl RenderService {
         html_output.styles = top_bar_styles;
         html_output.styles.extend(side_bar_styles);
         html_output.styles.extend(body_styles);
-        let styles_json =
-            super::compiled_styles::encode(&html_output.styles, theme_previewer_blank)
-                .or_raise(make_error)?;
+        let styles_json = super::compiled_styles::encode(
+            &html_output.styles,
+            theme_previewer_blank,
+            theme_previewer_url.as_deref(),
+        )
+        .or_raise(make_error)?;
         let compiled_body_styles_hash = Self::persist_or_hash_compiled_text(
             ctx,
             None,
@@ -1337,6 +1342,7 @@ impl RenderService {
         } = input;
         let expanded = ExpandedRenderWikitext {
             theme_previewer_blank: false,
+            theme_previewer_url: None,
             wikitext,
             included_pages,
             expanded_include_count: 0,
@@ -1565,6 +1571,11 @@ impl RenderService {
         include_budget.consume(list_pages_expanded_include_count);
         let theme_previewer_blank =
             !page_preview && super::runtime_modules::has_theme_previewer_blank(&wikitext);
+        let theme_previewer_url = if page_preview {
+            None
+        } else {
+            super::runtime_modules::theme_previewer_url(&wikitext)
+        };
         wikitext = Box::pin(Self::expand_secondary_runtime_modules(
             ctx,
             wikitext,
@@ -1747,6 +1758,7 @@ impl RenderService {
 
         Ok(ExpandedRenderWikitext {
             theme_previewer_blank,
+            theme_previewer_url,
             wikitext,
             included_pages,
             expanded_include_count: initial_include_expansions
@@ -2046,6 +2058,7 @@ impl RenderService {
             ctx,
             expanded: ExpandedRenderWikitext {
                 theme_previewer_blank: false,
+                theme_previewer_url: None,
                 wikidot_compat_html: CompatHtmlFragments::new(&wikitext),
                 wikidot_compat_text: CompatTextFragments::new(&wikitext),
                 wikitext,
@@ -2104,6 +2117,11 @@ impl RenderService {
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
         let theme_previewer_blank = expanded.theme_previewer_blank && !page_preview;
+        let theme_previewer_url = if page_preview {
+            None
+        } else {
+            expanded.theme_previewer_url.clone()
+        };
         let expanded_include_count = expanded.expanded_include_count;
         let mut expanded = expanded;
         if !allow_wikidot_styleframe {
@@ -2419,6 +2437,7 @@ impl RenderService {
 
             return Ok(RenderInnerOutput {
                 theme_previewer_blank,
+                theme_previewer_url,
                 html_output,
                 errors: Vec::new(),
                 compiled_hash,
@@ -2875,6 +2894,7 @@ impl RenderService {
 
         Ok(RenderInnerOutput {
             theme_previewer_blank,
+            theme_previewer_url,
             html_output,
             errors,
             compiled_hash,
@@ -3874,6 +3894,7 @@ fn corpus_replay_syntax_features(wikitext: &str) -> CorpusReplaySyntaxFeatures {
 #[derive(Debug)]
 pub(super) struct RenderInnerOutput {
     pub(super) theme_previewer_blank: bool,
+    pub(super) theme_previewer_url: Option<String>,
     pub(super) html_output: HtmlOutput,
     pub(super) errors: Vec<ParseError>,
     pub(super) compiled_hash: TextHash,
