@@ -1880,12 +1880,18 @@ fn find_list_pages_module_matches_with_cursor_work_context_lowercase<'a>(
                 module.depth -= 1;
                 if module.depth == 0 {
                     let module = active.take().unwrap();
-                    let body_start = if module.default_template {
+                    // An unclosed legacy head can resume its scan past a
+                    // raw `[[/module]]` closer (it finds a later `]]` in the
+                    // next module's opener). The closer still ends this
+                    // module: its body is empty and its tail is consumed.
+                    let inverted_body_start = module.body_start > start;
+                    let body_start = if module.default_template || inverted_body_start {
                         start
                     } else {
                         module.body_start
                     };
                     let consume_empty_tail = module.default_template
+                        || inverted_body_start
                         || (module.body_start == start
                             && !module.head.is_empty()
                             && unclosed_list_pages_has_immediate_raw_closer(
