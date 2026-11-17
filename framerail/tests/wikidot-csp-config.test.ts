@@ -181,7 +181,9 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
     "https://lemoncat233.github.io",
     "https://oxygennine.github.io",
     "https://use.fontawesome.com",
-    "https://xcninety.github.io"
+    "https://xcninety.github.io",
+    "https://pokm.wikidot.com",
+    "https://scp-wiki-cn.wikidot.com"
   ]) {
     assert(
       directives["style-src"]?.some((source) => source === origin),
