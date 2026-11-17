@@ -88,10 +88,15 @@ pub(super) fn parse_arguments(head: &str) -> Option<FrontForumArgumentsParse> {
     let mut feed_title_seen = false;
     let mut fix_relative_links_seen = false;
     for argument in arguments {
+        // Live Wikidot's module-head grammar (ftml #1037) only accepts
+        // double-quoted `key="value"` pairs; bare and single-quoted segments
+        // are ignored while the module still runs. Skip them here instead of
+        // rejecting the whole head. Malformed double-quoted pairs (unknown
+        // keys, duplicates, bad values) still fail closed in the match below.
         if argument.op != "="
             || argument.value_kind != WikidotModuleArgumentValueKind::DoubleQuoted
         {
-            return None;
+            continue;
         }
         match argument.key {
             "category" if category_ids.is_none() => {
