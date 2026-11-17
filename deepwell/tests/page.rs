@@ -3909,35 +3909,47 @@ async fn public_page_view_top_bar(
 #[tokio::test]
 async fn page_create_refreshes_only_executable_dynamic_navigation_after_recording_latest_revision()
  {
-    for (case, nav_source, rerender_expected) in [
+    // `rerender_expected` is the page's first-revision followup state;
+    // `nav_executes` is whether the navigation's module actually renders.
+    // ftml #1037 / wikijump #3711 makes a module head with inline body text
+    // stay literal, so the mixed-whitespace navigation no longer executes;
+    // deepwell's ListPages dependency scanner still records its head and
+    // schedules the first-revision rerender, so those two differ for that case.
+    for (case, nav_source, rerender_expected, nav_executes) in [
         (
             "mixed-whitespace",
             "[[module\tListPages \t tags=\"+fresh\"\t separate=\"no\" wrapper=\"no\"]]NAV=%%fullname%%[[/module]]",
             true,
+            false,
         ),
         (
             "whitespace-include",
             "[[ \t include nav:create-freshness-component-whitespace-include]]",
             true,
+            false,
         ),
         (
             "cr-include",
             "[[\rinclude nav:create-freshness-component-whitespace-include]]",
+            false,
             false,
         ),
         (
             "comment-include",
             "[[[!-- parser-space --]include nav:create-freshness-component-whitespace-include]]",
             false,
+            false,
         ),
         (
             "code-literal",
             "[[code]]\n[[module ListPages tags=\"+fresh\"]]NAV=%%fullname%%[[/module]]\n[[/code]]",
             false,
+            false,
         ),
         (
             "invalid-name",
             "[[module ListPagesExtra tags=\"+fresh\"]]NAV=%%fullname%%[[/module]]",
+            false,
             false,
         ),
     ] {
@@ -4037,7 +4049,7 @@ async fn page_create_refreshes_only_executable_dynamic_navigation_after_recordin
         for (position, navigation) in [("top", top_bar), ("side", side_bar)] {
             assert_eq!(
                 navigation.contains(&format!("NAV={page_slug}")),
-                rerender_expected,
+                nav_executes,
                 "{case} {position} navigation must reflect whether its module executes",
             );
         }
