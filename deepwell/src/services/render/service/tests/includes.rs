@@ -3229,3 +3229,115 @@ fn self_include_inside_ifexpr_comment_guard_hidden_when_guard_is_false() {
         "{prepared}",
     );
 }
+
+#[test]
+fn credit_start_attribute_gates_evaluate_and_exhibit_like_live() {
+    // The attribute-embedded iftags geometries of credit:start, the
+    // SCP-JP credit module component (mirror site scp-jp, included by
+    // theme:pataphysics and most SCP-JP themes):
+    //   G1: a gate between attributes in a [[div_]] head whose body is
+    //       a whole style attribute (bare and negated specs);
+    //   G2: three signed gates inside an [[image]] link="..." value;
+    //   G3: a gate inside a [[div_]] class="..." value.
+    // Live Wikidot evaluates these gates against the TOP page's tags
+    // when the include sits in evaluated context, and exhibits them
+    // (raw zone) when the include sits inside a kept gate body.
+    // Probes: muse-probe-pataphysics-* (sandbox, KEPT); record:
+    // PATAPHYSICS-DEEPWELL.md.
+    let component = concat!(
+        "[[div_ class=\"rateBox\" [[iftags 殿堂入り]]style=\"display:none;\"[[/iftags]]]]\n",
+        "RATEBOX-A\n",
+        "[[/div]]\n",
+        "[[div_ class=\"rateBox heritage-wrap\" [[iftags -殿堂入り]]style=\"display:none;\"[[/iftags]]]]\n",
+        "RATEBOX-B\n",
+        "[[/div]]\n",
+        "[[image https://scp-jp.wjfiles.localhost:28443/local--files/credit:start/scp-heritage-v3.png link=\"[[iftags +殿堂入り +en]]archived:heritage-collection[[/iftags]][[iftags +殿堂入り +jp]]heritage-collection-jp[[/iftags]][[iftags +殿堂入り +fr]]patrimoine-francais-de-la-fondation-scp[[/iftags]]\" style=\"max-width: none;\"]]\n",
+        "[[div_ class=\"modalbox [[iftags 殿堂入り]]heritage[[/iftags]]\"]]\n",
+        "MODAL\n",
+        "[[/div]]\n",
+        "[[div_ class=\"modalbox-title [[iftags 殿堂入り]]heritage[[/iftags]]\"]]\n",
+        "TITLE\n",
+        "[[/div]]\n",
+    );
+    let root = "[[include credit:start]]\n";
+
+    // Evaluated context, top page untagged for 殿堂入り: the bare
+    // gate drops its style, the negated gate keeps it, every G2 gate
+    // fails (empty link), and the G3 class loses the gated name.
+    let (expanded, compat_text) =
+        expand_test_enclosed_include(root, component, &["テーマ"]);
+    let html = render_pre_expanded_wikidot_page_body(expanded, compat_text, &["テーマ"]);
+    assert!(html.contains("<div class=\"rateBox\">"), "{html}");
+    assert!(
+        html.contains("<div class=\"rateBox heritage-wrap\" style=\"display:none;\">"),
+        "{html}"
+    );
+    assert!(html.contains("<a href=\"/\">"), "{html}");
+    assert!(html.contains("<div class=\"modalbox\">"), "{html}");
+    assert!(html.contains("<div class=\"modalbox-title\">"), "{html}");
+    assert!(!html.contains("iftags"), "{html}");
+
+    // Evaluated context, top page tagged 殿堂入り + jp: the bare
+    // gate keeps its style, the negated gate drops it, G2 selects
+    // the +jp branch, and the G3 class gains the gated name.
+    let (expanded, compat_text) =
+        expand_test_enclosed_include(root, component, &["テーマ", "殿堂入り", "jp"]);
+    let html = render_pre_expanded_wikidot_page_body(
+        expanded,
+        compat_text,
+        &["テーマ", "殿堂入り", "jp"],
+    );
+    assert!(
+        html.contains("<div class=\"rateBox\" style=\"display:none;\">"),
+        "{html}"
+    );
+    assert!(
+        html.contains("<div class=\"rateBox heritage-wrap\">"),
+        "{html}"
+    );
+    assert!(
+        html.contains("<a href=\"/heritage-collection-jp\">"),
+        "{html}"
+    );
+    assert!(html.contains("<div class=\"modalbox heritage\">"), "{html}");
+    assert!(
+        html.contains("<div class=\"modalbox-title heritage\">"),
+        "{html}"
+    );
+    assert!(!html.contains("iftags"), "{html}");
+
+    // Enclosed context (the include inside the top page's kept
+    // +テーマ gate, the real theme:pataphysics geometry): the gates
+    // are exhibits, as on live. Both G1 styles are swallowed with
+    // their gates, and the G3 divs form with the gate text literal
+    // in the class value, exactly as live renders them.
+    let enclosed_root = "[[iftags +テーマ]]\n[[include credit:start]]\n[[/iftags]]\n";
+    let (expanded, compat_text) =
+        expand_test_enclosed_include(enclosed_root, component, &["テーマ"]);
+    let html = render_pre_expanded_wikidot_page_body(expanded, compat_text, &["テーマ"]);
+    assert!(html.contains("<div class=\"rateBox\">"), "{html}");
+    assert!(
+        html.contains("<div class=\"rateBox heritage-wrap\">"),
+        "{html}"
+    );
+    assert!(
+        html.contains("<div class=\"modalbox [[iftags 殿堂入り]]heritage[[/iftags]]\">"),
+        "{html}"
+    );
+    assert!(
+        html.contains(
+            "<div class=\"modalbox-title [[iftags 殿堂入り]]heritage[[/iftags]]\">"
+        ),
+        "{html}"
+    );
+    // Known divergence, pinned so a fix flips it loudly: for G2 in
+    // the enclosed position, live's image-head scan truncates the
+    // link value at the first exhibited gate (href="/") and spills
+    // the rest of the head as body text, while the preserved-fragment
+    // exhibit keeps the value whole, so the restored gate text lands
+    // inside the href. See PATAPHYSICS-DEEPWELL.md Step 2.
+    assert!(
+        html.contains("<a href=\"/[[iftags +殿堂入り +en]]"),
+        "{html}"
+    );
+}
