@@ -237,6 +237,20 @@ pub async fn seed(state: &ServerState) -> Result<()> {
         .await
         .or_raise(make_error)?;
 
+        if site.from_wikidot {
+            // SiteService::create records a locally created site. The
+            // mirror fixtures are imported Wikidot sites, so record that
+            // provenance directly; it is what keeps their membership
+            // closed to self-join.
+            txn.execute_raw(Statement::from_sql_and_values(
+                DatabaseBackend::Postgres,
+                "UPDATE site SET from_wikidot = true WHERE site_id = $1",
+                [site_id.into()],
+            ))
+            .await
+            .or_raise(make_error)?;
+        }
+
         for site_alias in site.aliases {
             info!("Creating site alias '{site_alias}'");
 

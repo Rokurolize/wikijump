@@ -42,7 +42,6 @@ use sea_orm::{
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
-const EDITABLE_LOCAL_SITE_SLUG: &str = "scpaiueouiuiuiui";
 const EMAIL_INVITATION_TOKEN_HEX_LENGTH: usize = 20;
 
 #[derive(Debug, FromQueryResult)]
@@ -396,8 +395,19 @@ WHERE invitation_id = $1 AND accepted = FALSE
         Ok((site, actor_user_id))
     }
 
+    /// Resolve whether a site allows direct self-join.
+    ///
+    /// A locally created site is open to self-join unless its settings
+    /// enable a gated route instead: membership by application or by
+    /// password. Sites imported from Wikidot stay closed, because their
+    /// membership belongs to the source wiki, and deleted sites are
+    /// always closed.
     pub fn policy(site: &SiteModel) -> MembershipPolicy {
-        if site.deleted_at.is_none() && site.slug == EDITABLE_LOCAL_SITE_SLUG {
+        if site.deleted_at.is_none()
+            && !site.from_wikidot
+            && !site.membership_by_application
+            && !site.membership_by_password
+        {
             MembershipPolicy::Open
         } else {
             MembershipPolicy::Closed
@@ -836,6 +846,83 @@ mod tests {
             (JoinActorState::Admin, JoinModuleState::Hidden),
         ] {
             assert_eq!(MembershipService::join_module_state(actor), expected);
+        }
+    }
+
+    fn site_for_policy(
+        from_wikidot: bool,
+        by_application: bool,
+        by_password: bool,
+        deleted: bool,
+    ) -> SiteModel {
+        SiteModel {
+            site_id: 1,
+            created_at: time::OffsetDateTime::UNIX_EPOCH,
+            updated_at: None,
+            deleted_at: deleted.then_some(time::OffsetDateTime::UNIX_EPOCH),
+            from_wikidot,
+            slug: "policy-test".to_owned(),
+            name: "policy-test".to_owned(),
+            tagline: String::new(),
+            description: String::new(),
+            locale: "en".to_owned(),
+            default_page: "main".to_owned(),
+            top_bar_page: "nav:top".to_owned(),
+            side_bar_page: "nav:side".to_owned(),
+            preferred_domain: None,
+            layout: None,
+            license: crate::types::License::CcBySa30,
+            forum_max_nest_level: 10,
+            favicon_source: None,
+            ios_icon_source: None,
+            windows_tile_source: None,
+            settings_revision: 0,
+            welcome_page: "system:welcome".to_owned(),
+            google_analytics_enabled: false,
+            google_analytics_profile: None,
+            show_top_toolbar: false,
+            show_bottom_toolbar: false,
+            master_admin_user_id: None,
+            educational: false,
+            educational_organization: None,
+            educational_purpose: None,
+            membership_by_application: by_application,
+            membership_by_password: by_password,
+            membership_password_hash: None,
+            promote_on_other_sites: false,
+        }
+    }
+
+    #[test]
+    fn membership_policy_follows_site_settings() {
+        for (case, site, expected) in [
+            (
+                "locally created site with no gated route is open",
+                site_for_policy(false, false, false, false),
+                MembershipPolicy::Open,
+            ),
+            (
+                "imported Wikidot mirror stays closed",
+                site_for_policy(true, false, false, false),
+                MembershipPolicy::Closed,
+            ),
+            (
+                "application-gated site is closed to direct join",
+                site_for_policy(false, true, false, false),
+                MembershipPolicy::Closed,
+            ),
+            (
+                "password-gated site is closed to direct join",
+                site_for_policy(false, false, true, false),
+                MembershipPolicy::Closed,
+            ),
+            (
+                "deleted site is closed",
+                site_for_policy(false, false, false, true),
+                MembershipPolicy::Closed,
+            ),
+        ] {
+            assert_eq!(MembershipService::policy(&site), expected, "{case}");
         }
     }
 
