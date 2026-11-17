@@ -218,6 +218,7 @@ describe("Wikidot site settings foundation", () => {
       "",
       " ",
       "data:text/css,body{}",
+      // eslint-disable-next-line no-script-url -- this negative fixture must exercise script URL rejection
       "javascript:alert(1)",
       "ftp://example.test/theme.css",
       "/local--theme/test/style.css"
