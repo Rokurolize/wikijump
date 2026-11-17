@@ -17,6 +17,8 @@
     "preview": "vite preview",
     "test": "../scripts/run-browser-test-no-external-network.sh node tests/playwright-runner.ts",
     "test:browser-support": "../scripts/run-browser-test-no-external-network.sh node tests/playwright-runner.ts --config playwright.browser-support.config.ts",
+    "test:wikidot-typography-https": "../scripts/run-browser-test-no-external-network.sh node tests/playwright-runner.ts --config playwright.wikidot-typography-https.config.ts",
+    "test:wikidot-typography-parity": "../scripts/run-browser-test-no-external-network.sh node tests/playwright-runner.ts --config playwright.wikidot-typography-parity.config.ts",
     "test:unit": "../scripts/run-framerail-unit-tests.sh",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
