@@ -8,7 +8,6 @@ export interface Locales {
   "site-info.locale": string
   "site-info.layout": string
   "admin-unauthorized": string
-  "-service-name": string
   "message-loading": string
   "goto-home": string
   "goto-service": string
