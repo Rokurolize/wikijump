@@ -1515,9 +1515,6 @@ mod tests {
         let spill = format!("{closer}some body{jp}");
         let rewritten = super::rewrite_spill_junk_links(&mut preserved, &spill);
         let restored = preserved.restore(&rewritten);
-        assert_eq!(
-            restored,
-            format!("[[/iftags]]some body[[iftags +殿堂入り +jp]]")
-        );
+        assert_eq!(restored, "[[/iftags]]some body[[iftags +殿堂入り +jp]]");
     }
 }
