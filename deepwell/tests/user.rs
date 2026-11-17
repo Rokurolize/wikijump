@@ -1716,7 +1716,7 @@ async fn public_user_creation_rejects_privileged_fields() {
             );
 
         let error = run_endpoint_err!(runner, user_create, input);
-        assert_contains_error!(error, ErrorType::PermissionDenied);
+        assert_contains_error!(error, ErrorType::NotAuthenticated);
     }
 }
 

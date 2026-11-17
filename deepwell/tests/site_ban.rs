@@ -178,6 +178,13 @@ async fn assert_site_ban_remove_denied(
     target_user_id: i64,
     removed_by: i64,
 ) {
+    // PR #3808: missing session user -> NotAuthenticated (3007); an
+    // authenticated but unauthorized actor keeps PermissionDenied (3106).
+    let expected = if request.user_id.is_some() {
+        ErrorType::PermissionDenied
+    } else {
+        ErrorType::NotAuthenticated
+    };
     runner.set_request_context(request);
     let error = run_endpoint_err!(
         runner,
@@ -190,7 +197,7 @@ async fn assert_site_ban_remove_denied(
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_contains_error!(error, expected);
 }
 
 #[tokio::test]

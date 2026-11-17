@@ -205,5 +205,5 @@ async fn vote_mutations_require_route_target_view_permission() {
             "action_fingerprint": "00000000000000000000000000000000",
         }),
     );
-    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_contains_error!(error, ErrorType::NotAuthenticated);
 }
