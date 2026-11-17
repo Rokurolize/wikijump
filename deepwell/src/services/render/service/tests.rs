@@ -3196,12 +3196,17 @@ fn render_preparation_resolves_generated_simple_if_with_link_branch() {
     // head's block-div failure plus fallback errors for the literal
     // tokens, and nothing else.
     assert_eq!(
-        errors.iter().filter(|error| error.rule() == "block-div").count(),
+        errors
+            .iter()
+            .filter(|error| error.rule() == "block-div")
+            .count(),
         1,
         "{errors:#?}",
     );
     assert!(
-        errors.iter().all(|error| matches!(error.rule(), "block-div" | "fallback")),
+        errors
+            .iter()
+            .all(|error| matches!(error.rule(), "block-div" | "fallback")),
         "{errors:#?}",
     );
     inner.protection.restore(|_| ());
