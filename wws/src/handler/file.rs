@@ -60,9 +60,6 @@ fn local_lab_wikidot_file_fallback(headers: &HeaderMap, uri: &Uri) -> Option<Str
         .to_str()
         .ok()?
         .to_ascii_lowercase();
-    if !matches!(site_slug.as_str(), "scp-wiki" | "scp-jp") {
-        return None;
-    }
 
     let request_host = headers
         .get(header::HOST)?
@@ -1652,6 +1649,42 @@ mod tests {
             response.headers().get(LOCATION).unwrap(),
             "https://scp-wiki.wdfiles.com/local--files/theme%3Abasalt/missing.txt",
         );
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn local_lab_provisioned_mirrors_redirect_missing_files_to_wdfiles() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        for site_slug in ["scpko", "scp-wiki-cn", "backrooms-wiki-cn", "scp-sandbox-3"] {
+            let response = router_request_with_headers(
+                Arc::clone(&state),
+                Method::GET,
+                "/local--files/theme%3Aexample/missing.txt",
+                &[
+                    (crate::handler::HEADER_SITE_SLUG, site_slug),
+                    (
+                        header::HOST,
+                        &format!("{site_slug}.wjfiles.localhost:18443"),
+                    ),
+                ],
+            )
+            .await;
+
+            assert_eq!(response.status(), StatusCode::FOUND);
+            assert_eq!(
+                response.headers().get(LOCATION).unwrap(),
+                &format!(
+                    "https://{site_slug}.wdfiles.com/local--files/theme%3Aexample/missing.txt"
+                ),
+            );
+        }
+
+        assert!(s3_server.requests().is_empty());
         s3_server.join();
         deepwell_server.abort();
     }
