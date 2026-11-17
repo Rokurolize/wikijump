@@ -8,6 +8,7 @@
   import { getPageLayoutContext } from "$lib/layout/page-layout-context"
   import { pageMutationDestinationSlug } from "$lib/page-mutation-destination"
   import { createPageDeniedMessage } from "$lib/wikidot/wikidot-locale"
+  import { defaultPageTitleFromSlug } from "$lib/wikidot/wikidot-page-title"
   import { superForm } from "sveltekit-superforms"
   import { untrack } from "svelte"
   import type { PageErrorData } from "$lib/page-error-data"
@@ -108,14 +109,18 @@
   const missingPageSlug = $derived(
     page.params.slug ?? page.error?.site.default_page ?? ""
   )
-  const missingPageName = $derived(
-    missingPageSlug.includes(":")
-      ? missingPageSlug.slice(missingPageSlug.indexOf(":") + 1)
-      : missingPageSlug
-  )
+  // Mirror live Wikidot's new-page editor: the title field is pre-filled from
+  // the URL-carried title when one was supplied (e.g. by a NewPage module),
+  // otherwise from the page name using the same derivation #3757 uses in
+  // EditorPane.svelte. This is the surface the "Create page" link flow reaches
+  // for a missing page, so the pre-fill must be applied to its form field too.
   const missingPageTitle = $derived(
-    missingPageName.charAt(0).toUpperCase() + missingPageName.slice(1)
+    errorData.options?.title ?? defaultPageTitleFromSlug(missingPageSlug)
   )
+  // The plain editor field binds to $editForm.title; pre-fill it once at
+  // creation. An explicitly emptied title still stores "" on save (matching
+  // live), because this only sets the initial value.
+  $editForm.title = untrack(() => missingPageTitle)
   const canRestore = $derived(errorData.restore_available === true)
   const defaultMissingMessage = $derived(
     errorData.compiled_body_html.replace(/^\s*<p>/, '<p id="404-message">')
