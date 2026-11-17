@@ -213,6 +213,9 @@ impl ListPagesVariables {
 #[derive(Debug)]
 pub(in crate::services::render) struct ListPagesTemplatePlan {
     body: String,
+    /// Effective authored body after section extraction, before the
+    /// in-page nested-module-pair rule empties `body`.
+    effective_body: String,
     default_template: bool,
     default_summary_first_paragraph: bool,
     sections: ListPagesSections,
@@ -504,6 +507,7 @@ impl ListPagesTemplatePlan {
         let variables = ListPagesVariables::default();
         Self {
             body: String::new(),
+            effective_body: String::new(),
             default_template: false,
             default_summary_first_paragraph: false,
             sections: ListPagesSections::default(),
@@ -579,6 +583,7 @@ impl ListPagesTemplatePlan {
             } else {
                 body.to_owned()
             },
+            effective_body: body.to_owned(),
             default_template,
             default_summary_first_paragraph,
             sections,
@@ -594,6 +599,10 @@ impl ListPagesTemplatePlan {
 
     pub(in crate::services::render) fn body(&self) -> &str {
         &self.body
+    }
+
+    pub(in crate::services::render) fn effective_body(&self) -> &str {
+        &self.effective_body
     }
 
     pub(in crate::services::render) fn is_default_template(&self) -> bool {

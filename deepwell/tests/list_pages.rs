@@ -4282,7 +4282,8 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
     assert!(
         bare_own_line_preview.contains(r#"<div class="list-pages-box">"#)
             && bare_own_line_preview.contains("ListPages Preview Context Target")
-            && bare_own_line_preview.contains("by Administrator")
+            && bare_own_line_preview.contains(r#"class="printuser avatarhover""#)
+            && bare_own_line_preview.contains(">Administrator</a>")
             && target_row.contains(r#"<div style="text-align: right;">"#)
             && target_row.ends_with("</div></div>")
             && !bare_own_line_preview.contains("[[module ListPages]]"),
@@ -4306,7 +4307,8 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
     .body;
     assert!(
         html_encoded_script_preview.contains("ListPages Preview Context Target")
-            && html_encoded_script_preview.contains("by Administrator")
+            && html_encoded_script_preview.contains(r#"class="printuser avatarhover""#)
+            && html_encoded_script_preview.contains(">Administrator</a>")
             && !html_encoded_script_preview.contains("ENCODED-BODY=")
             && !html_encoded_script_preview.contains("[[/module]]"),
         "Wikidot drops the HTML-encoded script tail and executes the default \
@@ -4335,8 +4337,12 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
     assert!(
         inline_raw_documentation_preview.contains("[[module ListPages]]")
             && inline_raw_documentation_preview.contains("DOC PROSE")
-            && inline_raw_documentation_preview
-                .contains("LATER=ListPages Preview Context Target")
+            && inline_raw_documentation_preview.contains(concat!(
+                r#"<div class="list-pages-item"><h1><span><a href="/"#,
+                "listpages-preview-context-target",
+                r#"">"#,
+            ))
+            && !inline_raw_documentation_preview.contains("LATER=")
             && !inline_raw_documentation_preview.contains("TODO: module ListPages"),
         "Wikidot keeps the fake opener literal and executes the later module:\n\
          {inline_raw_documentation_preview}",
@@ -4523,8 +4529,9 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
                 "separate=\"yes\" limit=\"250\"]]@@\n",
                 "PRESERVED-DOCUMENTATION\n",
                 "@@\n",
-                "[[module ListPages name=\"{TARGET_SLUG}\"]]",
-                "LATER=%%fullname%%[[/module]]",
+                "[[module ListPages name=\"{TARGET_SLUG}\"]]\n",
+                "LATER=%%fullname%%",
+                "\n[[/module]]",
             ),
             TARGET_SLUG = TARGET_SLUG,
         ),
@@ -4817,7 +4824,13 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
             site_id,
             "Unsaved preview",
             format!(
-                "[[module ListPages name=\"{TARGET_SLUG}\" separate=\"no\" wrapper=\"no\"]]{template}[[/module]]",
+                concat!(
+                    "[[module ListPages name=\"{TARGET_SLUG}\" separate=\"no\" wrapper=\"no\"]]\n",
+                    "{template}",
+                    "\n[[/module]]",
+                ),
+                TARGET_SLUG = TARGET_SLUG,
+                template = template,
             ),
         )
         .await
@@ -5139,7 +5152,7 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
     assert!(
         zero_row_continued_prepend.contains(concat!(
             r#"<div class="list-pages-box"><strong>Seiten mit Wertung:</strong><br>"#,
-            "\n<br>",
+            "<br>",
         )) && !zero_row_continued_prepend.contains("WIKIJUMPWIKIDOTCOMPATHTML"),
         "the wrapper close must remain a block boundary after a continued prepend line:\n\
          {zero_row_continued_prepend}",
@@ -8853,5 +8866,37 @@ async fn listpages_nested_list_pages_pair_empties_items() {
     assert!(!body.contains("BEFORE"), "e1:\n{body}");
     assert!(!body.contains("INNER"), "e1:\n{body}");
     assert!(!body.contains("AFTER"), "e1:\n{body}");
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn listpages_sticky_note_div_inside_raw_spans_stays_literal() {
+    // F9 / LP-FAILURES-ADJUDICATE: live Wikidot keeps a [[div]] written
+    // inside @@ raw spans literal text (the "sticky note" documentation
+    // idiom). WJ used to execute it as a block.
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "sticky note documentation preview",
+        concat!(
+            "[[module ListPages]]@@\n",
+            "@@[[div class=\"seed\"]]DOC@@[[/div]]@@\n",
+            "@@[[/module]]",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("the sticky-note documentation opener should remain literal")
+    .html_output
+    .body;
+    assert!(
+        preview.contains("[[module ListPages]] [[div class=&quot;seed&quot;]]"),
+        "Wikidot retains one collapsed raw-marker space after the documented \
+         opener:\n{preview}",
+    );
     runner.teardown().await;
 }

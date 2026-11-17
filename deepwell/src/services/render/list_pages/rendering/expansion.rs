@@ -128,8 +128,14 @@ impl RenderService {
             }
         };
         let unsafe_unknown_tracking_template = |template: &ListPagesTemplatePlan| {
+            // Use the effective authored body (after section extraction,
+            // before the in-page nested-module-pair rule empties `body`):
+            // fail-closed tracking detection must see the markup the author
+            // actually wrote, including a sectioned [[body]] image.
             template.has_unknown_variables()
-                && list_pages_body_is_no_visible_tracking_markup(template.body())
+                && list_pages_body_is_no_visible_tracking_markup(
+                    template.effective_body(),
+                )
         };
         let fail_closed_unknown_tracking_plan =
             |compat_html: &mut CompatHtmlFragments| {
@@ -722,6 +728,7 @@ impl RenderService {
                 &css_yield_openers,
                 &mut css_yield_opener_index,
             );
+            let mut f9_skip_tail = 0usize;
             match block.plan {
                 ListPagesBlockPlan::Static(replacement) => {
                     expanded.push_str(&replacement);
@@ -739,6 +746,19 @@ impl RenderService {
                         && wikitext[block.end..].starts_with("@@\n@@[[div")
                     {
                         expanded.push(' ');
+                        // The `@@\n@@` documentation opener collapses live;
+                        // the documented [[div ...]] that follows stays
+                        // literal. Escape the opener into compat text so
+                        // ftml cannot execute it as a block, and advance the
+                        // cursor past it so the main loop does not re-emit it.
+                        let tail = &wikitext[block.end..];
+                        let doc = &tail["@@\n@@".len()..];
+                        if let Some(close) = doc.find("]]") {
+                            expanded.push_str(
+                                &compat_text.push_escaped_html_text(&doc[..close + 2]),
+                            );
+                            f9_skip_tail = "@@\n@@".len() + close + 2;
+                        }
                     }
                 }
                 ListPagesBlockPlan::Render(plan) => {
@@ -835,7 +855,7 @@ impl RenderService {
                     }
                 }
             }
-            cursor = block.end;
+            cursor = block.end + f9_skip_tail;
         }
 
         push_source_without_css_yield_openers(

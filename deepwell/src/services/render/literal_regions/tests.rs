@@ -481,3 +481,25 @@ fn module_recognition_keeps_content_after_html_like_text_in_table_cells() {
         assert!(!index.contains(offset), "{needle}");
     }
 }
+
+#[test]
+fn sticky_note_div_inside_raw_spans_is_literal() {
+    // F9 / LP-FAILURES-ADJUDICATE: live Wikidot keeps a [[div]] written
+    // inside @@ raw spans literal. The `@@\n@@` at the line break is a
+    // single collapsed raw opener, so the documented markup must be owned
+    // by a literal region in every literal-region view.
+    let source = concat!(
+        "[[module ListPages]]@@\n",
+        "@@[[div class=\"seed\"]]DOC@@[[/div]]@@\n",
+        "@@[[/module]]",
+    );
+    let div = source.find("[[div class=\"seed\"]]").unwrap();
+    assert!(
+        LiteralRegionIndex::new_list_pages_syntax(source).contains(div),
+        "list-pages literal index must own the documented [[div]]",
+    );
+    assert!(
+        LiteralRegionIndex::new_wikidot_protection(source).contains(div),
+        "wikidot protection index must own the documented [[div]]",
+    );
+}
