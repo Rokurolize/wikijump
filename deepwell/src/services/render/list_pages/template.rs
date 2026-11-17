@@ -518,6 +518,20 @@ impl ListPagesTemplatePlan {
     }
 
     pub(in crate::services::render) fn compile(body: &str) -> Option<Self> {
+        Self::compile_with_options(body, false)
+    }
+
+    /// Compile a template for rendering.
+    ///
+    /// `preserve_nested_modules` keeps a complete nested module block in the
+    /// per-item body instead of emptying it. The in-page D8 rule (live
+    /// Wikidot renders such items empty) still applies by default; the AJAX
+    /// module connector (`_ajax-module-connector`) is the exception — there
+    /// the revealed module executes recursively, so its body must be kept.
+    pub(in crate::services::render) fn compile_with_options(
+        body: &str,
+        preserve_nested_modules: bool,
+    ) -> Option<Self> {
         if body.len() > MAX_LISTPAGES_TEMPLATE_BODY_BYTES {
             return None;
         }
@@ -525,8 +539,10 @@ impl ListPagesTemplatePlan {
         // complete nested module block (LISTPAGES-DEEP D8). The variable
         // analysis below still runs on the authored body, so unknown
         // variables remain observable to the render policy; only the
-        // rendered per-item body is emptied.
-        let nested_module_pair = list_pages_body_has_nested_module_pair(body);
+        // rendered per-item body is emptied. The AJAX module connector is
+        // exempt: its revealed modules execute recursively.
+        let nested_module_pair =
+            list_pages_body_has_nested_module_pair(body) && !preserve_nested_modules;
         let (sections, body, explicit_body_section) = split_list_pages_sections(body)?;
         let default_template = body.trim().is_empty();
         let default_summary_first_paragraph = default_template && !explicit_body_section;
@@ -860,6 +876,32 @@ mod tests {
                 ..Default::default()
             }
         );
+    }
+
+    #[test]
+    fn ajax_module_template_keeps_a_balanced_nested_module_body() {
+        // The AJAX module connector reveals nested modules and renders them
+        // recursively (live oracle listpages-nested-live-oracle.json); the
+        // in-page D8 empty-body rule does not govern that endpoint. With the
+        // AJAX option the complete nested pair and its surrounding text must
+        // survive compilation, while the default mode still empties it.
+        let body = concat!(
+            "OUTER_BEFORE %%fullname%%\n",
+            "[[module ListPages name=\"inner-row\" limit=\"1\"]]\n",
+            "INNER_ROW %%fullname%%\n",
+            "[[/module]]\n",
+            "OUTER_AFTER %%fullname%%",
+        );
+        let ajax = ListPagesTemplatePlan::compile_with_options(body, true)
+            .expect("AJAX template should compile");
+        assert!(ajax.body().contains("[[module ListPages"));
+        assert!(ajax.body().contains("OUTER_BEFORE"));
+        assert!(ajax.body().contains("OUTER_AFTER"));
+        assert!(ajax.fields().slug);
+
+        let in_page = ListPagesTemplatePlan::compile(body)
+            .expect("in-page template should compile");
+        assert_eq!(in_page.body(), "");
     }
 
     #[test]
