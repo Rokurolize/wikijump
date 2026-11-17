@@ -409,7 +409,7 @@ async fn anonymous_site_create_emits_no_event() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_contains_error!(error, ErrorType::NotAuthenticated);
 
     let after = AuditLogTable::find()
         .filter(AuditLogColumn::EventType.eq("site.create"))

@@ -987,7 +987,7 @@ async fn delete_cross_user_and_anonymous_links_fail_closed() {
             "ip_address": common::IP_ADDRESS,
         }))
     );
-    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_contains_error!(error, ErrorType::NotAuthenticated);
 
     as_actor(&mut runner, created.user_id);
     let token = issue_for(

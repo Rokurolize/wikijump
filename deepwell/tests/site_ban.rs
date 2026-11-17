@@ -146,6 +146,13 @@ async fn assert_site_ban_set_denied(
     target_user_id: i64,
     created_by: i64,
 ) {
+    // PR #3808: a request with no session user fails as NotAuthenticated;
+    // an authenticated but unauthorized actor still fails as PermissionDenied.
+    let expected = if request.user_id.is_some() {
+        ErrorType::PermissionDenied
+    } else {
+        ErrorType::NotAuthenticated
+    };
     runner.set_request_context(request);
     let error = run_endpoint_err!(
         runner,
@@ -161,7 +168,7 @@ async fn assert_site_ban_set_denied(
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_contains_error!(error, expected);
 }
 
 async fn assert_site_ban_remove_denied(
