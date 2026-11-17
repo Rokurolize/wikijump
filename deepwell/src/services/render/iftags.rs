@@ -214,8 +214,11 @@ fn resolve_outermost_wikidot_iftags_with_mode(
         for unclosed in stack {
             replacements.push(Replacement {
                 range: unclosed.start..unclosed.end,
-                text: preserved
-                    .push_escaped_html_text(&wikitext[unclosed.start..unclosed.end]),
+                text: preserved.push_escaped_html_text(
+                    &strip_generated_spec_marker_suffix(
+                        &wikitext[unclosed.start..unclosed.end],
+                    ),
+                ),
             });
         }
     }
@@ -306,7 +309,9 @@ fn preserve_nested_tokens(
     for token in tokens {
         debug_assert!(body.start <= token.start && token.end <= body.end);
         output.push_str(&source[cursor..token.start]);
-        output.push_str(&preserved.push_escaped_html_text(&source[token.clone()]));
+        output.push_str(&preserved.push_escaped_html_text(
+            &strip_generated_spec_marker_suffix(&source[token.clone()]),
+        ));
         cursor = token.end;
     }
     output.push_str(&source[cursor..body.end]);
@@ -330,7 +335,9 @@ pub(super) fn preserve_all_ordinary_wikidot_iftags(
         }
         replacements.push(Replacement {
             range: token.start()..token.end(),
-            text: preserved.push_escaped_html_text(token.as_str()),
+            text: preserved.push_escaped_html_text(&strip_generated_spec_marker_suffix(
+                token.as_str(),
+            )),
         });
     }
     if replacements.is_empty() {
@@ -449,21 +456,30 @@ fn wikidot_iftags_head_len(source: &str) -> Option<usize> {
     None
 }
 
+// The generated-spec marker is an evaluation aid: it may only appear
+// on a head that can still be evaluated. Once a head is preserved as
+// literal text (an exhibit inside a kept gate body, raw-zone include
+// content, or an unclosed head), evaluation of that head is finished
+// and the exhibited text must be the author's own head, as on live
+// Wikidot, so the marker comes off at the preservation point.
+fn strip_generated_spec_marker_suffix(text: &str) -> Cow<'_, str> {
+    let suffix = format!(" {WIKIDOT_GENERATED_SPEC_MARKER}]]");
+    match text.strip_suffix(&suffix) {
+        Some(head) => Cow::Owned(format!("{head}]]")),
+        None => Cow::Borrowed(text),
+    }
+}
+
 fn strip_wikidot_generated_spec_markers(wikitext: &mut String) {
     if !wikitext.contains(WIKIDOT_GENERATED_SPEC_MARKER) {
         return;
     }
-    let suffix = format!(" {WIKIDOT_GENERATED_SPEC_MARKER}]]");
     let stripped =
         IFTAGS_TOKEN_REGEX.replace_all(wikitext, |captures: &regex::Captures<'_>| {
             let Some(open) = captures.name("open") else {
                 return captures[0].to_owned();
             };
-            let open = open.as_str();
-            match open.strip_suffix(&suffix) {
-                Some(head) => format!("{head}]]"),
-                None => open.to_owned(),
-            }
+            strip_generated_spec_marker_suffix(open.as_str()).into_owned()
         });
     if let std::borrow::Cow::Owned(stripped) = stripped {
         *wikitext = stripped;

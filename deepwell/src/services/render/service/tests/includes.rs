@@ -2743,6 +2743,66 @@ fn generated_spec_gate_in_raw_zone_at_depth_is_prepared_once() {
 }
 
 #[test]
+fn generated_spec_heads_inside_a_kept_gate_exhibit_without_the_marker() {
+    // theme:trauma-jp shape: inside the theme's kept +テーマ gate sit
+    // mutually nested generated-spec gates whose variant variables are
+    // unbound, so each head's parser function resolves to an ifexpr
+    // error text. Live Wikidot exhibits the heads and closers literally
+    // with the bodies rendered, and the exhibited heads are the
+    // author's own: the generated-spec marker is an evaluation aid and
+    // must not survive into the exhibited text.
+    let mut page_info = fallback_test_page_info("theme:trauma-jp", "Trauma");
+    page_info.tags = vec![Cow::Borrowed("テーマ")];
+    let source = concat!(
+        "[[iftags +テーマ]]\n",
+        "[[iftags [[#ifexpr {$rainy} == (true) | - ]]]]\n",
+        "[[iftags [[#ifexpr {$yellow} == (true) | - ]]]]\n",
+        "[[/iftags]]\n",
+        "[[/iftags]]\n",
+        "[[/iftags]]\n",
+    );
+
+    for depth in [0, 1] {
+        let mut prepared = source.to_owned();
+        let mut preserved = CompatTextFragments::new(&prepared);
+        RenderService::prepare_wikidot_conditionals_before_include_expansion(
+            &mut prepared,
+            &page_info,
+            &mut preserved,
+            depth,
+        );
+        let restored = preserved.restore(&prepared);
+        assert!(
+            restored.contains("[[iftags syntax error near `{$rainy} =`]]"),
+            "depth {depth}: {restored}"
+        );
+        assert!(
+            restored.contains("[[iftags syntax error near `{$yellow} `]]"),
+            "depth {depth}: {restored}"
+        );
+        assert!(
+            !restored.contains("generated-spec"),
+            "depth {depth}: {restored}"
+        );
+        assert_eq!(
+            restored.matches("[[/iftags]]").count(),
+            2,
+            "depth {depth}: {restored}"
+        );
+
+        if depth == 0 {
+            let html =
+                render_pre_expanded_wikidot_page_body(prepared, preserved, &["テーマ"]);
+            assert!(
+                html.contains("[[iftags syntax error near `{$rainy} =`]]"),
+                "{html}"
+            );
+            assert!(!html.contains("generated-spec"), "{html}");
+        }
+    }
+}
+
+#[test]
 fn suprematism_include_chain_matches_direct_view_outcome() {
     // theme:suprematism-jp shape: a sample (tags: テーマ) includes a theme;
     // inside the theme's kept +テーマ gate sits a license component whose own
