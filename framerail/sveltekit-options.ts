@@ -49,6 +49,15 @@ const WIKIDOT_IMAGE_SOURCES: CspSources = [
   "https://www.wikidot.com",
   "https://scp-jp-storage.wikidot.com",
   "https://scpsandboxcn.wikidot.com",
+  // The KO branch main domain: theme:cyber-specter-jp references its
+  // header and background images as absolute local--files URLs on
+  // scpko.wikidot.com (43 such references across the Sigma-10
+  // composition), and live Wikidot serves the page with those URLs
+  // unrewritten and loads them; the staff-lab Sigma-10 site's img-src
+  // omitted the host during the 2026-11-17 check-wiki parity sweep,
+  // CSP-blocking both images on theme:cyber-specter-jp. The sibling
+  // branch main domains above are admitted the same way.
+  "https://scpko.wikidot.com",
   "https://*.wdfiles.com",
   "https://cdn.scpwiki.com",
   // jsDelivr's Fastly edge host also serves theme logo and icon images that
