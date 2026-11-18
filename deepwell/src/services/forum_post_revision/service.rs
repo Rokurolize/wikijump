@@ -18,12 +18,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#![allow(dead_code)] // TEMP
-
 use super::structs::{
     CreateFirstForumPostRevision, CreateFirstForumPostRevisionOutput,
     CreateForumPostRevision, CreateForumPostRevisionBody, CreateForumPostRevisionOutput,
-    GetForumPostRevision, GetForumPostRevisionRange, UpdateForumPostRevision,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::forum_post::Model as ForumPostModel;
@@ -34,18 +31,11 @@ use crate::services::ServiceContext;
 use crate::services::render::RenderOutput;
 use crate::services::score::ScoreValue;
 use crate::services::{RenderService, SiteService, TextService};
-use crate::types::FetchDirection;
 use crate::types::{Maybe, Reference};
 use crate::utils::locale_for_ftml;
-use crate::utils::now;
 use ftml::data::PageInfo;
 use ftml::settings::{WikitextMode, WikitextSettings};
-use paste::paste;
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, PaginatorTrait, QueryFilter,
-    QueryOrder, QuerySelect, Set,
-};
-use sea_query::Order;
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set};
 use std::borrow::Cow;
 use time::OffsetDateTime;
 
@@ -252,43 +242,6 @@ impl ForumPostRevisionService {
         }))
     }
 
-    pub async fn update(
-        ctx: &ServiceContext<'_>,
-        UpdateForumPostRevision {
-            forum_post_revision_id,
-            user_id,
-            comments,
-        }: UpdateForumPostRevision,
-    ) -> Result<ForumPostRevisionModel> {
-        let txn = ctx.transaction();
-        let make_error = || {
-            Error::new(
-                format!(
-                    "failed to update forum post revision ID {} by user ID {}",
-                    forum_post_revision_id, user_id,
-                ),
-                ErrorType::ForumPostRevision,
-            )
-        };
-
-        Self::assert_exists_direct(ctx, forum_post_revision_id)
-            .await
-            .or_raise(make_error)?;
-
-        let mut model = forum_post_revision::ActiveModel {
-            forum_post_revision_id: Set(forum_post_revision_id),
-            updated_at: Set(Some(now())),
-            ..Default::default()
-        };
-
-        if let Maybe::Set(comments) = comments {
-            model.comments = Set(comments);
-        }
-
-        let revision = model.update(txn).await.or_raise(make_error)?;
-        Ok(revision)
-    }
-
     pub async fn get_latest(
         ctx: &ServiceContext<'_>,
         forum_post_id: i64,
@@ -319,162 +272,6 @@ impl ForumPostRevisionService {
                 ErrorType::ForumPostRevisionNotFound,
             )),
         }
-    }
-
-    pub async fn get_optional(
-        ctx: &ServiceContext<'_>,
-        GetForumPostRevision {
-            forum_post_id,
-            revision_number,
-        }: GetForumPostRevision,
-    ) -> Result<Option<ForumPostRevisionModel>> {
-        let txn = ctx.transaction();
-        let revision = ForumPostRevision::find()
-            .filter(
-                Condition::all()
-                    .add(forum_post_revision::Column::ForumPostId.eq(forum_post_id))
-                    .add(forum_post_revision::Column::RevisionNumber.eq(revision_number)),
-            )
-            .one(txn)
-            .await
-            .or_raise(|| {
-                Error::new(
-                    format!(
-                        "failed to get forum post revision number {} for post ID {}",
-                        revision_number, forum_post_id,
-                    ),
-                    ErrorType::ForumPostRevision,
-                )
-            })?;
-
-        Ok(revision)
-    }
-
-    pub async fn get(
-        ctx: &ServiceContext<'_>,
-        key: GetForumPostRevision,
-    ) -> Result<ForumPostRevisionModel> {
-        find_or_error!(
-            Self::get_optional(ctx, key),
-            "forum post revision",
-            ForumPostRevision,
-        )
-    }
-
-    pub async fn get_direct(
-        ctx: &ServiceContext<'_>,
-        forum_post_revision_id: i64,
-    ) -> Result<ForumPostRevisionModel> {
-        let txn = ctx.transaction();
-        let revision = ForumPostRevision::find_by_id(forum_post_revision_id)
-            .one(txn)
-            .await
-            .or_raise(|| {
-                Error::new(
-                    format!(
-                        "failed to get forum post revision ID {} directly",
-                        forum_post_revision_id,
-                    ),
-                    ErrorType::ForumPostRevision,
-                )
-            })?;
-
-        Ok(revision.ok_or_else(|| {
-            Error::new(
-                format!(
-                    "forum post revision ID {} does not exist",
-                    forum_post_revision_id,
-                ),
-                ErrorType::ForumPostRevisionNotFound,
-            )
-        })?)
-    }
-
-    #[inline]
-    pub async fn assert_exists_direct(
-        ctx: &ServiceContext<'_>,
-        forum_post_revision_id: i64,
-    ) -> Result<()> {
-        let _ = Self::get_direct(ctx, forum_post_revision_id).await?;
-        Ok(())
-    }
-
-    pub async fn count(ctx: &ServiceContext<'_>, forum_post_id: i64) -> Result<u64> {
-        let txn = ctx.transaction();
-        let count = ForumPostRevision::find()
-            .filter(forum_post_revision::Column::ForumPostId.eq(forum_post_id))
-            .count(txn)
-            .await
-            .or_raise(|| {
-                Error::new(
-                    format!(
-                        "failed to count revisions for forum post ID {}",
-                        forum_post_id,
-                    ),
-                    ErrorType::ForumPostRevision,
-                )
-            })?;
-
-        Ok(count)
-    }
-
-    pub async fn get_range(
-        ctx: &ServiceContext<'_>,
-        GetForumPostRevisionRange {
-            forum_post_id,
-            revision_number,
-            revision_direction,
-            limit,
-        }: GetForumPostRevisionRange,
-    ) -> Result<Vec<ForumPostRevisionModel>> {
-        let txn = ctx.transaction();
-        let make_error = || {
-            Error::new(
-                format!(
-                    "failed to get forum post revisions from revision {} ({}) for post ID {} (limit {})",
-                    revision_number,
-                    revision_direction.name(),
-                    forum_post_id,
-                    limit,
-                ),
-                ErrorType::ForumPostRevision,
-            )
-        };
-
-        let revision_condition = {
-            use forum_post_revision::Column::RevisionNumber;
-
-            let revision_number = if revision_number >= 0 {
-                revision_number
-            } else {
-                Self::get_latest(ctx, forum_post_id)
-                    .await
-                    .or_raise(make_error)?
-                    .revision_number
-            };
-
-            match revision_direction {
-                FetchDirection::Before => RevisionNumber.lte(revision_number),
-                FetchDirection::After => RevisionNumber.gte(revision_number),
-            }
-        };
-
-        let mut query = ForumPostRevision::find().filter(
-            Condition::all()
-                .add(forum_post_revision::Column::ForumPostId.eq(forum_post_id))
-                .add(revision_condition),
-        );
-
-        query =
-            match revision_direction {
-                FetchDirection::Before => query
-                    .order_by(forum_post_revision::Column::RevisionNumber, Order::Desc),
-                FetchDirection::After => query
-                    .order_by(forum_post_revision::Column::RevisionNumber, Order::Asc),
-            };
-
-        let revisions = query.limit(limit).all(txn).await.or_raise(make_error)?;
-        Ok(revisions)
     }
 
     pub(crate) async fn render(

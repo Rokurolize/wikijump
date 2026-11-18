@@ -18,10 +18,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#![allow(dead_code)] // TEMP
-
-use crate::models::forum_post::Model as ForumPostModel;
-use crate::models::forum_post_revision::Model as ForumPostRevisionModel;
 use crate::types::Maybe;
 use ftml::parsing::ParseError;
 
@@ -77,45 +73,7 @@ pub struct GetForumPost {
 }
 
 #[derive(Deserialize, Debug, Copy, Clone)]
-pub struct GetForumPosts {
-    pub forum_thread_id: i64,
-    pub parent_post_id: Option<i64>,
-    pub start_post_id: Option<i64>,
-    #[serde(default)]
-    pub include_deleted: bool,
-    #[serde(default = "default_limit")]
-    pub limit: u64,
-}
-
-#[derive(Deserialize, Debug, Copy, Clone)]
-pub struct GetStructuredForumPosts {
-    pub forum_thread_id: i64,
-    pub start_post_id: Option<i64>,
-    #[serde(default = "default_limit")]
-    pub limit: u64,
-    pub max_depth: Option<u16>,
-}
-
-#[derive(Deserialize, Debug, Copy, Clone)]
 pub struct DeleteForumPost {
     pub forum_post_id: i64,
     pub user_id: i64,
-}
-
-#[derive(Deserialize, Debug, Copy, Clone)]
-pub struct RestoreForumPost {
-    pub forum_post_id: i64,
-    pub user_id: i64,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct ForumPostNode {
-    pub post: ForumPostModel,
-    pub latest_revision: Option<ForumPostRevisionModel>,
-    pub replies: Vec<ForumPostNode>,
-}
-
-#[inline]
-fn default_limit() -> u64 {
-    20
 }
