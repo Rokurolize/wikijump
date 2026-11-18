@@ -107,6 +107,23 @@ impl TextBlockErrorReason {
     }
 }
 
+fn html_arg(value: &str) -> String {
+    let mut escaped = String::with_capacity(value.len());
+
+    for character in value.chars() {
+        match character {
+            '&' => escaped.push_str("&amp;"),
+            '<' => escaped.push_str("&lt;"),
+            '>' => escaped.push_str("&gt;"),
+            '"' => escaped.push_str("&quot;"),
+            '\'' => escaped.push_str("&#39;"),
+            _ => escaped.push(character),
+        }
+    }
+
+    escaped
+}
+
 pub async fn build_basic_error_response(
     // NOTE: We need to accept the inner struct specifically here, since there are
     //       some places in state.rs itself where we need to call this function.
@@ -154,33 +171,33 @@ pub async fn build_basic_error_response(
         status,
     } = match basic_error {
         BasicError::SiteSlug { site_slug } => {
-            deepwell_fetch!(missing_site_slug, site_slug => NOT_FOUND)
+            deepwell_fetch!(missing_site_slug, &html_arg(site_slug) => NOT_FOUND)
         }
         BasicError::SiteCustom { host } => {
-            deepwell_fetch!(missing_custom_domain, host => NOT_FOUND)
+            deepwell_fetch!(missing_custom_domain, &html_arg(host) => NOT_FOUND)
         }
         BasicError::PageSlug { site_id, page_slug } => {
-            deepwell_fetch!(missing_page_slug, site_id, page_slug => NOT_FOUND)
+            deepwell_fetch!(missing_page_slug, site_id, &html_arg(page_slug) => NOT_FOUND)
         }
         BasicError::PageFetch { site_id, page_slug } => {
-            deepwell_fetch!(page_fetch, site_id, page_slug => INTERNAL_SERVER_ERROR)
+            deepwell_fetch!(page_fetch, site_id, &html_arg(page_slug) => INTERNAL_SERVER_ERROR)
         }
         BasicError::FileName {
             site_id,
             page_slug,
             filename,
         } => {
-            deepwell_fetch!(missing_file_name, site_id, page_slug, filename => NOT_FOUND)
+            deepwell_fetch!(missing_file_name, site_id, &html_arg(page_slug), &html_arg(filename) => NOT_FOUND)
         }
         BasicError::FileFetch {
             site_id,
             page_slug,
             filename,
         } => {
-            deepwell_fetch!(file_fetch, site_id, page_slug, filename => INTERNAL_SERVER_ERROR)
+            deepwell_fetch!(file_fetch, site_id, &html_arg(page_slug), &html_arg(filename) => INTERNAL_SERVER_ERROR)
         }
         BasicError::BlobFetch { s3_hash } => {
-            deepwell_fetch!(blob_fetch, s3_hash => NOT_FOUND)
+            deepwell_fetch!(blob_fetch, &html_arg(s3_hash) => NOT_FOUND)
         }
         BasicError::UserFetch { user_id } => {
             deepwell_fetch!(user_fetch, user_id => NOT_FOUND)
@@ -200,7 +217,7 @@ pub async fn build_basic_error_response(
                 TextBlockErrorReason::Fetch => StatusCode::INTERNAL_SERVER_ERROR,
             };
 
-            deepwell_fetch!(text_block, site_id, index, block_type, reason; status_code)
+            deepwell_fetch!(text_block, site_id, &html_arg(index), block_type, reason; status_code)
         }
         BasicError::FileRoot => {
             deepwell_fetch!(file_root => BAD_REQUEST)
