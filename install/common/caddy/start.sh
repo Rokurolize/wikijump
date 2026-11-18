@@ -33,5 +33,8 @@ fi
 echo 'Starting cron...'
 crond
 
+echo 'Starting Caddyfile watcher...'
+su -s /bin/sh daemon -c /usr/local/bin/wikijump-watch-caddyfile &
+
 echo 'Starting caddy...'
 exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile

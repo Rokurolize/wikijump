@@ -208,6 +208,7 @@ services:
       - "127.0.0.1:18443:18443/udp"
     environment:
       - "DEEPWELL_RPC_TOKEN=${DEEPWELL_RPC_TOKEN:?set DEEPWELL_RPC_TOKEN to 64 lowercase hex characters}"
+      - "WIKIJUMP_CADDY_WATCH_INTERVAL=${WIKIJUMP_CADDY_WATCH_INTERVAL:-1}"
     init: true
     restart: unless-stopped
     healthcheck:

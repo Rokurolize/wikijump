@@ -247,6 +247,7 @@ services:
     environment:
       DEEPWELL_RPC_TOKEN: ${DEEPWELL_RPC_TOKEN:?DEEPWELL_RPC_TOKEN is required}
       WIKIJUMP_STARTUP_READINESS: "true"
+      WIKIJUMP_CADDY_WATCH_INTERVAL: ${WIKIJUMP_CADDY_WATCH_INTERVAL:-1}
       # Soft Go heap target. The 2026-11-05 standing measurement was 58 MiB of
       # anonymous cgroup memory (64 MiB resident). Caddy is the
       # network-namespace anchor for every other service, so this stays

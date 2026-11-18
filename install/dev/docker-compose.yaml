@@ -111,6 +111,7 @@ services:
     environment:
       - "DIGITALOCEAN_API_TOKEN=${DIGITALOCEAN_API_TOKEN}"
       - "DEEPWELL_RPC_TOKEN=${DEEPWELL_RPC_TOKEN:?set DEEPWELL_RPC_TOKEN to 64 lowercase hex characters}"
+      - "WIKIJUMP_CADDY_WATCH_INTERVAL=${WIKIJUMP_CADDY_WATCH_INTERVAL:-1}"
     init: true
     restart: unless-stopped
     healthcheck:

@@ -56,3 +56,15 @@ pub async fn generate_caddyfile(
         )
     })
 }
+
+pub async fn caddyfile_version(
+    ctx: &ServiceContext<'_>,
+    _params: Params<'static>,
+) -> Result<String> {
+    CaddyService::version(ctx).await.or_raise(|| {
+        Error::new(
+            "unable to compute Caddyfile routing version",
+            ErrorType::Caddyfile,
+        )
+    })
+}

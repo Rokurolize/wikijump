@@ -31,6 +31,7 @@ use crate::types::AliasType;
 use askama::Template;
 use sea_orm::{ColumnTrait, QueryFilter, QueryOrder};
 use sea_orm::{EntityTrait, QuerySelect};
+use sha2::{Digest, Sha256};
 use std::borrow::Cow;
 use std::collections::HashMap;
 
@@ -69,11 +70,27 @@ impl CaddyService {
         options: &CaddyfileOptions<'_>,
     ) -> Result<String> {
         let config = ctx.config();
+        let site_data = Self::load_site_data(ctx).await?;
+
+        Self::generate_with_data(config, options, &site_data).or_raise(|| {
+            Error::new(
+                format!("failed to generate Caddyfile with options {:#?}", options),
+                ErrorType::Caddyfile,
+            )
+        })
+    }
+
+    pub async fn version(ctx: &ServiceContext<'_>) -> Result<String> {
+        let site_data = Self::load_site_data(ctx).await?;
+        Ok(Self::hash_site_data(&site_data))
+    }
+
+    async fn load_site_data(ctx: &ServiceContext<'_>) -> Result<SiteData> {
         let txn = ctx.transaction();
 
         let make_error = || {
             Error::new(
-                format!("failed to generate Caddyfile with options {:#?}", options),
+                "failed to load site data for Caddyfile routing",
                 ErrorType::Caddyfile,
             )
         };
@@ -123,11 +140,53 @@ impl CaddyService {
             domains
         };
 
-        let caddyfile =
-            Self::generate_with_data(config, options, &SiteData { sites, domains })
-                .or_raise(make_error)?;
+        Ok(SiteData { sites, domains })
+    }
 
-        Ok(caddyfile)
+    pub(crate) fn hash_site_data(SiteData { sites, domains }: &SiteData) -> String {
+        let mut sites: Vec<_> = sites.iter().collect();
+        sites.sort_by_key(|site| site.0);
+
+        let mut hasher = Sha256::new();
+        write_hash_field(&mut hasher, &(sites.len() as u64).to_be_bytes());
+
+        for (site_id, slug, preferred_domain) in sites {
+            write_hash_field(&mut hasher, &site_id.to_be_bytes());
+            write_hash_field(&mut hasher, slug.as_bytes());
+
+            match preferred_domain {
+                Some(domain) => {
+                    write_hash_field(&mut hasher, &[1]);
+                    write_hash_field(&mut hasher, domain.as_bytes());
+                }
+                None => write_hash_field(&mut hasher, &[0]),
+            }
+
+            let site_domains = domains.get(site_id);
+
+            let mut aliases: Vec<&str> = site_domains
+                .map(|data| data.aliases.iter().map(String::as_str).collect())
+                .unwrap_or_default();
+            aliases.sort_unstable();
+            write_hash_field(&mut hasher, &(aliases.len() as u64).to_be_bytes());
+
+            for alias in aliases {
+                write_hash_field(&mut hasher, alias.as_bytes());
+            }
+
+            let mut custom_domains: Vec<&CustomDomainData> = site_domains
+                .map(|data| data.custom_domains.iter().collect())
+                .unwrap_or_default();
+            custom_domains.sort_by(|a, b| a.domain.cmp(&b.domain));
+            write_hash_field(&mut hasher, &(custom_domains.len() as u64).to_be_bytes());
+
+            for custom in custom_domains {
+                write_hash_field(&mut hasher, custom.domain.as_bytes());
+                write_hash_field(&mut hasher, &[u8::from(custom.www_redirect)]);
+            }
+        }
+
+        hex::encode(hasher.finalize())
     }
 
     pub fn generate_with_data(
@@ -174,6 +233,11 @@ impl CaddyService {
 
         Ok(caddyfile)
     }
+}
+
+fn write_hash_field(hasher: &mut Sha256, bytes: &[u8]) {
+    hasher.update((bytes.len() as u64).to_be_bytes());
+    hasher.update(bytes);
 }
 
 fn public_port_suffix(https_port: u16) -> String {
