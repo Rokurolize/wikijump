@@ -109,6 +109,11 @@ echo "preflight: mode: ${MODE}"
 echo "preflight: ${#CHANGED_PATHS[@]} changed path(s)"
 echo "preflight: groups: $(tr '\n' ' ' <<<"${SELECTED}")"
 
+if [[ "${LIST}" != true ]] && ! grep -q '=true' <<<"${SELECTED}"; then
+  echo "preflight: no validation groups selected for these changed paths; nothing to check"
+  exit 0
+fi
+
 if [[ -z "${JOBS}" ]]; then
   if [[ "${MODE}" == "final" ]]; then JOBS=0; else JOBS=1; fi
 fi

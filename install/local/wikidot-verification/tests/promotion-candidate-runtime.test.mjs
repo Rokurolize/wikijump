@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {fileURLToPath} from "node:url";
 
-import {candidateCompose, candidateDeepwellConfig} from "../scripts/start-promotion-candidate.mjs";
+import {captureCandidateLogs, candidateCompose, candidateDeepwellConfig} from "../scripts/start-promotion-candidate.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
@@ -32,6 +33,7 @@ test("promotion candidate topology uses isolated volumes and only loopback non-4
   assert.equal(JSON.stringify(compose).includes('"443:443"'), false);
   for (const [role, service] of Object.entries(compose.services)) {
     assert.equal(service.image, images[role]);
+    assert.equal(service.init, true);
     assert.equal(service.labels["com.rokurolize.wikijump.role"], role);
     assert.equal(service.healthcheck.test.length > 0, true);
   }
@@ -62,6 +64,32 @@ test("candidate database credentials follow the live instance password", () => {
     compose.services.deepwell.environment.DATABASE_URL,
     "postgres://wikijump:${STANDING_DB_PASSWORD:-wikijump}@database/wikijump"
   );
+});
+
+test("a failed rehearsal start keeps every container log in the evidence directory", async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "rehearsal-evidence-"));
+  try {
+    const run = async (command, args) => {
+      if (args[0] === "ps") return {stdout: "id-deepwell\nid-database\n", stderr: ""};
+      if (args[0] === "inspect") {
+        const service = args[1] === "id-deepwell" ? "deepwell" : "database";
+        return {stdout: JSON.stringify([{Id: args[1], Config: {Labels: {"com.docker.compose.service": service}}}]), stderr: ""};
+      }
+      if (args[0] === "logs") {
+        return {stdout: args[2] === "id-deepwell" ? "FATAL: password authentication failed\n" : "database ready\n", stderr: ""};
+      }
+      throw new Error(`unexpected docker call ${args[0]}`);
+    };
+    await captureCandidateLogs("rehearsal", directory, {run});
+    const deepwell = path.join(directory, "rehearsal-start", "deepwell.log");
+    const database = path.join(directory, "rehearsal-start", "database.log");
+    assert.match(await fs.readFile(deepwell, "utf8"), /password authentication failed/u);
+    assert.match(await fs.readFile(database, "utf8"), /database ready/u);
+    await captureCandidateLogs("rehearsal", directory, {run});
+    assert.equal((await fs.readFile(deepwell, "utf8")).split("password authentication failed").length - 1, 2);
+  } finally {
+    await fs.rm(directory, {recursive: true, force: true});
+  }
 });
 
 test("candidate Deepwell production image contains the immutable seeder payload", async () => {
