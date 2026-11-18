@@ -22,6 +22,7 @@ declare global {
       status: number
       message?: string
       view?: string
+      html?: string
       internationalization?: Partial<Locales>
       compiled_body_html?: string
     }

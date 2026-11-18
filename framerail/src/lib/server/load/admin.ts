@@ -112,6 +112,18 @@ export async function loadAdminPage(
 
   const internationalization = await translate(locales, translateKeys)
 
+  if (errorStatus !== null) {
+    // The error body is serialized verbatim into this route's
+    // __data.json response, so it carries only what the admin error
+    // page renders. The admin forms below are built from site settings
+    // and must never be part of an unauthorized response.
+    error(errorStatus, {
+      view: response.type,
+      html: response.type === "admin_permissions" ? response.data.html : undefined,
+      internationalization
+    } as App.Error)
+  }
+
   const adminForm = await superValidate(
     {
       name: parentData.site.name,
@@ -181,13 +193,7 @@ export async function loadAdminPage(
     pageTemplates: response.type === "site_found" ? response.data.page_templates : []
   }
 
-  const pageData = { ...parentData, ...viewData }
-
-  if (errorStatus !== null) {
-    error(errorStatus, pageData)
-  }
-
-  return pageData
+  return { ...parentData, ...viewData }
 }
 
 export async function siteIconsAction({

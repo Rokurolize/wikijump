@@ -185,6 +185,36 @@ test("admin permission errors carry the localized denial copy", async () => {
 
   assert.equal(thrown.status, 401)
   assert.equal(thrown.body.view, "admin_permissions")
+  // The error body is serialized verbatim into the route's __data.json
+  // response, so it must not carry the admin panel's forms or data.
+  for (const leaked of [
+    "adminForm",
+    "navigationForm",
+    "licenseForm",
+    "templateForm",
+    "ratingForm",
+    "siteIconsForm",
+    "forumNestingForm",
+    "discussionForm",
+    "analyticsForm",
+    "toolbarForm",
+    "membershipForm",
+    "membershipReviewForm",
+    "membershipApplications",
+    "themeForm",
+    "autonumberForm",
+    "layoutForm",
+    "categories",
+    "pageTemplates",
+    "site",
+    "site_settings"
+  ]) {
+    assert.equal(
+      Object.hasOwn(thrown.body, leaked),
+      false,
+      `denied admin error body must not contain ${leaked}`
+    )
+  }
   assert.equal(
     Object.hasOwn(thrown.body.internationalization ?? {}, "admin-unauthorized"),
     true
