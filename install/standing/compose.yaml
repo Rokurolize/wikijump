@@ -46,7 +46,7 @@ services:
     environment:
       POSTGRES_DB: wikijump
       POSTGRES_USER: wikijump
-      POSTGRES_PASSWORD: wikijump
+      POSTGRES_PASSWORD: ${STANDING_DB_PASSWORD:-wikijump}
       POSTGRES_HOST_AUTH_METHOD: md5
       POSTGRES_INITDB_ARGS: --locale en_US.UTF-8
     volumes:
@@ -121,7 +121,7 @@ services:
     restart: unless-stopped
     network_mode: "service:caddy"
     environment:
-      DATABASE_URL: postgres://wikijump:wikijump@127.0.0.1:5432/wikijump
+      DATABASE_URL: postgres://wikijump:${STANDING_DB_PASSWORD:-wikijump}@127.0.0.1:5432/wikijump
       REDIS_URL: redis://127.0.0.1:6379
       S3_FILES_BUCKET: deepwell-files
       S3_TEXT_BLOCKS_BUCKET: deepwell-text-blocks
