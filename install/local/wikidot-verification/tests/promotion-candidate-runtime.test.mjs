@@ -37,6 +37,33 @@ test("promotion candidate topology uses isolated volumes and only loopback non-4
   }
 });
 
+test("candidate database credentials follow the live instance password", () => {
+  const compose = candidateCompose({
+    project: "wikijump-candidate-fixture",
+    source,
+    images,
+    expiry: "2026-08-19T00:00:00.000Z",
+    publicPort: 20443,
+    rpcPort: 22747,
+    objectStorePort: 29000,
+    deepwellConfigPath: "/tmp/deepwell.toml",
+    caddyRequestPath: "/tmp/request.json",
+    caddyGeneratorPath: "/tmp/generate.sh",
+  });
+  // The rehearsal runs against a physical clone of the live database,
+  // whose role password is whatever the live instance uses; the compose
+  // values must substitute STANDING_DB_PASSWORD (promote.py exports the
+  // live value) instead of assuming the bootstrap default.
+  assert.equal(
+    compose.services.database.environment.POSTGRES_PASSWORD,
+    "${STANDING_DB_PASSWORD:-wikijump}"
+  );
+  assert.equal(
+    compose.services.deepwell.environment.DATABASE_URL,
+    "postgres://wikijump:${STANDING_DB_PASSWORD:-wikijump}@database/wikijump"
+  );
+});
+
 test("candidate Deepwell production image contains the immutable seeder payload", async () => {
   const dockerfile = await fs.readFile(path.join(repositoryRoot, "install/prod/deepwell/Dockerfile"), "utf8");
   assert.match(dockerfile, /COPY \.\/deepwell\/seeder \/opt\/deepwell\/seeder/u);

@@ -105,7 +105,7 @@ export function candidateCompose({
     database: {
       ...common("database"),
       environment: {
-        POSTGRES_DB: "wikijump", POSTGRES_USER: "wikijump", POSTGRES_PASSWORD: "wikijump",
+        POSTGRES_DB: "wikijump", POSTGRES_USER: "wikijump", POSTGRES_PASSWORD: "${STANDING_DB_PASSWORD:-wikijump}",
         POSTGRES_HOST_AUTH_METHOD: "md5", POSTGRES_INITDB_ARGS: "--locale en_US.UTF-8",
       },
       volumes: ["database-data:/var/lib/postgresql/data"],
@@ -129,7 +129,7 @@ export function candidateCompose({
     deepwell: {
       ...common("deepwell"),
       environment: {
-        DATABASE_URL: "postgres://wikijump:wikijump@database/wikijump", REDIS_URL: "redis://cache",
+        DATABASE_URL: "postgres://wikijump:${STANDING_DB_PASSWORD:-wikijump}@database/wikijump", REDIS_URL: "redis://cache",
         S3_FILES_BUCKET: "deepwell-files", S3_TEXT_BLOCKS_BUCKET: "deepwell-text-blocks", S3_REGION_NAME: "local",
         S3_PATH_STYLE: "true", S3_CUSTOM_ENDPOINT: "http://files:9000", S3_ACCESS_KEY_ID: "minio",
         S3_SECRET_ACCESS_KEY: "defaultpassword", DEEPWELL_RPC_TOKEN: "${DEEPWELL_RPC_TOKEN:?DEEPWELL_RPC_TOKEN is required}",

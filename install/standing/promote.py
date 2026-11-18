@@ -308,6 +308,12 @@ def free_port() -> int:
         return probe.getsockname()[1]
 
 
+def standing_database_password() -> str:
+    """The live database password, read from the database container's own
+    environment (the runtime home is the record of it)."""
+    return run("docker", "exec", STANDING_DATABASE, "printenv", "POSTGRES_PASSWORD")
+
+
 def clone_standing_database(volume: str) -> None:
     """Copy the standing database with pg_basebackup into a new volume.
 
@@ -319,9 +325,7 @@ def clone_standing_database(volume: str) -> None:
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as env_file:
         os.chmod(env_file.name, 0o600)
         env_file.write(
-            "PGPASSWORD="
-            + run("docker", "exec", STANDING_DATABASE, "printenv", "POSTGRES_PASSWORD")
-            + "\n"
+            "PGPASSWORD=" + standing_database_password() + "\n"
         )
     try:
         run(
@@ -1304,6 +1308,10 @@ def rehearse(
                 ],
                 evidence / "rehearsal-start.log",
                 source_root,
+                env={
+                    **os.environ,
+                    "STANDING_DB_PASSWORD": standing_database_password(),
+                },
             )
             return last_json_line(stdout)
 
