@@ -21,7 +21,7 @@
     "wikijump-identifier-leaks": "node scripts/check-wikijump-identifier-leaks.mjs"
   },
   "dependencies": {
-    "devalue": "5.9.3",
+    "devalue": "6.0.3",
     "parse5": "^8.1.1",
     "pg": "^8.23.1"
   },
