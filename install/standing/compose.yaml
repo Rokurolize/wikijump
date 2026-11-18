@@ -30,6 +30,7 @@ services:
   database:
     image: ${STANDING_DATABASE_IMAGE:?STANDING_DATABASE_IMAGE is required}
     pull_policy: never
+    init: true
     restart: unless-stopped
     network_mode: "service:caddy"
     # Sized from the Deepwell pool, not from PostgreSQL's default: 32 serving
@@ -65,6 +66,7 @@ services:
   files:
     image: ${STANDING_FILES_IMAGE:?STANDING_FILES_IMAGE is required}
     pull_policy: never
+    init: true
     restart: unless-stopped
     network_mode: "service:caddy"
     environment:
@@ -100,6 +102,7 @@ services:
   cache:
     image: ${STANDING_CACHE_IMAGE:?STANDING_CACHE_IMAGE is required}
     pull_policy: never
+    init: true
     restart: unless-stopped
     network_mode: "service:caddy"
     volumes:
@@ -118,6 +121,7 @@ services:
   deepwell:
     image: ${STANDING_DEEPWELL_IMAGE:?STANDING_DEEPWELL_IMAGE is required}
     pull_policy: never
+    init: true
     restart: unless-stopped
     network_mode: "service:caddy"
     environment:
@@ -165,6 +169,7 @@ services:
   framerail:
     image: ${STANDING_FRAMERAIL_IMAGE:?STANDING_FRAMERAIL_IMAGE is required}
     pull_policy: never
+    init: true
     restart: unless-stopped
     network_mode: "service:caddy"
     environment:
@@ -201,6 +206,7 @@ services:
   wws:
     image: ${STANDING_WWS_IMAGE:?STANDING_WWS_IMAGE is required}
     pull_policy: never
+    init: true
     restart: unless-stopped
     network_mode: "service:caddy"
     environment:
@@ -232,6 +238,7 @@ services:
   caddy:
     image: ${STANDING_CADDY_IMAGE:?STANDING_CADDY_IMAGE is required}
     pull_policy: never
+    init: true
     restart: unless-stopped
     extra_hosts:
       - "deepwell=127.0.0.1"

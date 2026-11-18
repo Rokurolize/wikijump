@@ -5,6 +5,7 @@ services:
     # Pin to a specific version. Updates can be breaking.
     # https://github.com/FerretDB/documentdb/pkgs/container/postgres-documentdb
     image: ghcr.io/ferretdb/postgres-documentdb:17
+    init: true
     restart: unless-stopped
     labels:
       # Prevent Komodo from stopping with StopAllContainers
@@ -20,6 +21,7 @@ services:
     # Likewise here, pin a version.
     # https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb
     image: ghcr.io/ferretdb/ferretdb:2.5
+    init: true
     restart: unless-stopped
     labels:
       komodo.skip:
@@ -34,6 +36,7 @@ services:
 
   core:
     image: ghcr.io/moghtech/komodo-core:latest
+    init: true
     restart: unless-stopped
     labels:
       komodo.skip:
@@ -64,6 +67,7 @@ services:
         RUN apt-get update && \
           apt-get install -y amazon-ecr-credential-helper && \
           apt-get install -y docker-buildx-plugin docker-ce-cli docker-compose-plugin
+    init: true
     restart: unless-stopped
     labels:
       komodo.skip:
