@@ -91,6 +91,11 @@ impl<'a, 'ctx> ForumPageVisibility<'a, 'ctx> {
         if !self.site_is_viewable(site_id).await? {
             return Ok(false);
         }
+        // DIVERGENCE (forum post #3869): this render path has no _admin branch and
+        // treats a site-viewable thread with page_id = None as visible, while
+        // compat_query::can_view_forum_post returns false for that thread; the canonical
+        // permission helper maps _admin to Site/Edit. Pin only: any behavior change
+        // here waits on live Wikidot evidence.
         let (Some(page_id), Some(page_category_id)) = (page_id, page_category_id) else {
             return Ok(page_id.is_none());
         };
@@ -150,6 +155,9 @@ impl<'a, 'ctx> ForumPageVisibility<'a, 'ctx> {
         })
     }
 
+    // DIVERGENCE (forum post #3869): the render path loads all candidate threads
+    // in one query, while compat_query checks each post's thread and page in a loop.
+    // Pin only: unifying waits on live Wikidot evidence.
     pub(super) async fn visible_thread_ids(
         &mut self,
         site_id: i64,
