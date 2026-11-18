@@ -349,12 +349,14 @@ async fn deleted_user_cannot_authenticate() {
 
     let deleted = run_endpoint!(runner, user_get, json!({ "user": created.user_id }))
         .expect("Deleted user not found by id");
-    assert!(deleted
-        .user
-        .unwrap_wikijump()
-        .expect("Returned user was not of type Wikijump")
-        .deleted_at
-        .is_some());
+    assert!(
+        deleted
+            .user
+            .unwrap_wikijump()
+            .expect("Returned user was not of type Wikijump")
+            .deleted_at
+            .is_some()
+    );
     assert!(run_endpoint!(runner, user_get, json!({ "user": USER_SLUG })).is_none());
 
     for name_or_email in [USER_NAME, USER_SLUG, USER_EMAIL] {
