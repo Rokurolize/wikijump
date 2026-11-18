@@ -18191,6 +18191,175 @@ async fn forum_post_reads_require_parent_page_view_permission() {
 }
 
 #[tokio::test]
+async fn forum_post_reads_on_admin_page_pin_page_view_permission_path() {
+    use deepwell::services::user::CreateUser;
+    use deepwell::types::UserType;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let site_id = site.site_id;
+
+    let admin_page = PageService::get_optional(
+        runner.context(),
+        site_id,
+        Reference::Slug("_admin".into()),
+    )
+    .await
+    .expect("admin page lookup should run")
+    .expect("seeded admin page should exist");
+
+    let n = cuid();
+    let moderator_id = UserService::create(
+        runner.context(),
+        CreateUser {
+            user_type: UserType::Regular,
+            name: format!("Forum Admin Slug Moderator {n}"),
+            email: format!("forum-admin-slug-moderator-{n}@email.com"),
+            locales: vec!["en".to_owned()],
+            password: "password-fixture".to_owned(),
+            bypass_filter: true,
+            bypass_email_verification: true,
+            override_user_id: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("moderator fixture user should be created")
+    .user_id;
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id,
+            user_id: moderator_id,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::SelfJoined,
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("moderator fixture user should join the site");
+    let moderator_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug("moderator".into()),
+    )
+    .await
+    .expect("seeded moderator role should exist");
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            site_id,
+            user_id: moderator_id,
+            role_id: moderator_role.role_id,
+            assigning_user_id: SYSTEM_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("moderator role should be granted");
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Admin Slug Forum Group".to_owned(),
+            description: String::new(),
+            visible: true,
+            sort_index: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("forum group fixture should be created");
+    let category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Admin Slug Forum Category".to_owned(),
+            description: String::new(),
+            sort_index: None,
+            max_nest_level: Some(3),
+            per_page_discussion: Some(true),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("forum category fixture should be created");
+    let thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: Some(admin_page.page_id),
+            title: "Admin slug forum thread".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("forum thread fixture should be created");
+    let post = ForumPostService::create(
+        runner.context(),
+        CreateForumPost {
+            forum_thread_id: thread.forum_thread_id,
+            parent_post_id: None,
+            user_id: ADMIN_USER_ID,
+            title: "Admin slug forum post".to_owned(),
+            wikitext: "admin slug forum post body".to_owned(),
+            comments: "create admin slug post fixture".to_owned(),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("forum post fixture should be created");
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(moderator_id),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let selection = run_endpoint!(
+        runner,
+        forum_post_select,
+        json!({"site_id": site_id, "page": "_admin"})
+    );
+    assert_eq!(selection, vec![post.forum_post_id]);
+
+    let posts = run_endpoint!(
+        runner,
+        forum_post_get,
+        json!({"site_id": site_id, "posts": [post.forum_post_id]})
+    );
+    assert_eq!(posts.len(), 1);
+    let post_value =
+        serde_json::to_value(&posts[0]).expect("forum post should serialize");
+    assert_eq!(post_value["id"], json!(post.forum_post_id));
+    assert_eq!(post_value["content"], json!("admin slug forum post body"));
+
+    let summary = run_endpoint!(
+        runner,
+        forum_post_page_summary,
+        json!({"site_id": site_id, "page": "_admin"})
+    );
+    let summary_value = serde_json::to_value(summary).expect("summary should serialize");
+    assert_eq!(summary_value["comments"], json!(1));
+}
+
+#[tokio::test]
 async fn anonymous_forum_post_create_persists_private_derived_guest_identity_and_renders_gravatar()
  {
     let mut runner = TestRunner::setup().await;
