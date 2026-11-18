@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "devalue": "5.9.3",
-    "parse5": "^8.0.1",
+    "parse5": "^8.1.1",
     "pg": "^8.23.1"
   },
   "devDependencies": {
