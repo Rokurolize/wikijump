@@ -1,0 +1,4949 @@
+[[module CSS]]
+
+@import url("https://sigma10-jp-test.wdfiles.com/local--code/theme%3Amox-jp/8");
+
+[[/module]]
+
+
+
+[!-- テーマ表示 --]
+
+[[iftags +テーマ]]
+
+[[=image https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/mox-logo-new.svg style="max-width:75%"]]
+
+
+[[>]]
+[[include :scp-jp:credit:start-preview]]
+[[=]]
++ MOXテーマ
+[[/=]]
+**タイトル:** MOXテーマ
+**翻訳責任者:** AI
+**翻訳年:** 2026
+**原題:** MOX 版式
+**著作権者:** [[*User OxygenNine]]
+**作成年:** 2024
+**初訳時参照リビジョン:** 53
+**元記事リンク:** [*https://scp-wiki-cn.wikidot.com/theme:mox ソース]
+[[include :scp-jp:credit:end-preview]]
+[[/>]]
+
+-----
+
++ 概要
+
+**Monoxide**は、既存テーマを前提としない美観重視のテーマです。視覚デザインは[*https://scp-wiki-cn.wikidot.com/theme:bedrock Bedrockテーマ]から着想を得ており、[*https://scp-wiki-cn.wikidot.com/theme:monotypical Monotypicalテーマ]からもいくつかのデザイン要素を取り入れています。
+
+このテーマは将来的にサポートが終了する予定です。代替として[*https://scp-wiki-cn.wikidot.com/theme:peroxide Peroxide 基本テーマ]（原語版）を選択できます。大半のCSS変数はPeroxideテーマへそのまま移植できます。
+
+任意のWikiページ冒頭に次の構文を追加すると、このテーマを適用できます。
+
+@@@@
+@@@@
+
+= {{**[[size 120%]]@@[[include@@ theme:mox-jp]][[/size]]**}}
+
+@@@@
+@@@@
+
+-----
+
++ カスタマイズ
+
+テーマ変数を変更してカスタマイズできます。
+
+[[div class="modal" style="font-family: var(--mox-mono-font);"]]
+
+これはMOXテーマを読み込むための標準テンプレートです。そのままコピーできます。灰色の文字は選択できません。
+
+@@[[@@include theme:mox-jp
+
+|d=
+[[span style="user-select: none; color:#767676"]]　- 編集欄やトップバーを含む暗色アイコンを有効にします。ページ下部が眩しくなるのも防ぎます。**暗色系の配色を使う場合は必ずこの変数を有効にしてください**。[[/span]]
+
+|customTitle=*
+|title=SCP財団
+[[span style="user-select: none; color:#767676"]]　- テーマタイトル。[[/span]]
+
+|customSubtitle=*
+|subtitle=確保、収容、保護
+[[span style="user-select: none; color:#767676"]]　- テーマサブタイトル。[[/span]]
+
+|customLogo=*
+|logo=https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/scp-logo-small-black.svg
+[[span style="user-select: none; color:#767676"]]　- ロゴのURLアドレス。[[/span]]
+
+|logoInvert=
+[[span style="user-select: none; color:#767676"]]　- テーマロゴの色を反転します（ロゴ差し替えを省きたい暗色モード向けです。この変数を有効にすると、ロゴを白から黒へ、または黒から白へ直接切り替えられます）。[[/span]]
+
+|customThemeColor=
+|moxThemeColor=#992b2b
+[[span style="user-select: none; color:#767676"]]　- テーマカラー。ここでは赤を例にしています。[[/span]]
+|moxThemeDarkColor=#8f2d2d
+[[span style="user-select: none; color:#767676"]]　- 暗めのテーマカラー。[[/span]]
+|moxThemeLightColor=#e43b3b
+[[span style="user-select: none; color:#767676"]]　- 明るめのテーマカラー。[[/span]]
+
+|widemode=
+[[span style="user-select: none; color:#767676"]]　- 超ワイド画面モード。[[footnote]] これは[[*User DouglasLiu]]をなだめるためです。 [[/footnote]][[/span]]
+
+|roundUser=
+[[span style="user-select: none; color:#767676"]]　- ヘッダーで円形のユーザーアバターを使います。[[footnote]] これは[[*User Kcorena]]をなだめるためです。 [[/footnote]][[/span]]
+
+|disableFooterInvert=
+[[span style="user-select: none; color:#767676"]]　- ロゴがカラーの場合、このオプションを有効にするとページ下部のロゴ色反転を防げます。[[footnote]] これで緑の雀が紫の雀にならずに済みます。 [[/footnote]][[/span]]
+
+|sigma=
+[[span style="user-select: none; color:#767676"]]　- Sigma-9風のページレイアウトを有効にします。[[/span]]
+
+|sticky-sidebar=
+[[span style="user-select: none; color:#767676"]]　- **sigmaモードも同時に有効にする必要があります。**このオプションを有効にすると、Black Highlighter風の固定サイドバーが有効になります。ページをスクロールしても、サイドバーは常に画面左側に残ります。[[/span]]
+
+]]
+
+[[/div]]
+
+テーマ設定を有効にするには、*を加えてください。例：{{|widemode=*}}、{{|customTitle=* |title=SPC殴鮫会}}。
+
+{{|customThemeColor}}に続く3つの変数は同時に有効にする必要があります。[*http://www.hepou.com/peise/ 配色ツール]を使い、明度の異なる3色を生成することを推奨します。
+
+-----
+
++ 色プリセット
+
+[[tabview]]
+
+[[tab 既定の暗色]]
+
+[[=image https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/mox7 style="width:90%;"]]
+
+= {{[[include theme:mox-jp |defdark=* |d=*]]}}
+
+[[/tab]]
+
+[[tab 風化]]
+
+[[=image https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/mox1 style="width:90%;"]]
+
+= {{[[include theme:mox-jp |weathering=*]]}}
+
+[[code type="CSS"]]
+
+:root {
+    --mox-theme-color: #b75d5d;
+    --mox-theme-dark-color: #8d4646;
+    --mox-theme-light-color: #d95c5c;
+    --mox-bg-color: #e8e6dc;
+    --mox-text-color: #141414;
+    --mox-layer-dark-1: #262626;
+    --mox-layer-dark-2: #404040;
+    --mox-layer-dark-3: #595959;
+    --mox-layer-light-1: #d2cdb6;
+    --mox-layer-light-2: #ada994;
+    --mox-layer-light-3: #8e8a78;
+    --mox-bgblur-front-color: rgb(217 200 174 / 56%);
+}
+
+[[/code]]
+
+[[/tab]]
+
+[[tab 青銅]]
+
+[[=image https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/mox2 style="width:90%;"]]
+
+= {{[[include theme:mox-jp |bronze=*]]}}
+
+[[code type="CSS"]]
+
+:root {
+    --mox-theme-color: #51ba8b;
+    --mox-theme-dark-color: #3c986f;
+    --mox-theme-light-color: #47c590;
+    --mox-bg-color: #e6f1e6;
+    --mox-text-color: #484848;
+    --mox-layer-dark-1: #262626;
+    --mox-layer-dark-2: #3d433c;
+    --mox-layer-dark-3: #4e5752;
+    --mox-layer-light-1: #d2e5da;
+    --mox-layer-light-2: #8bab9f;
+    --mox-layer-light-3: #728f7b;
+    --mox-bgblur-front-color: rgb(59 84 94 / 85%);
+}
+
+[[/code]]
+
+[[/tab]]
+
+[[tab 警告]]
+
+[[=image https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/mox3 style="width:90%;"]]
+
+= {{[[include theme:mox-jp |admo=* |d=*]]}}
+
+[[code type="CSS"]]
+
+:root {
+    --mox-theme-color: #cf4040;
+    --mox-theme-dark-color: #983c3c;
+    --mox-theme-light-color: #c54747;
+    --mox-bg-color: #000000;
+    --mox-text-color: #b6b6b6;
+    --mox-layer-dark-1: #cfcfcf;
+    --mox-layer-dark-2: #969696;
+    --mox-layer-dark-3: #717171;
+    --mox-layer-light-1: #000000;
+    --mox-layer-light-2: #1f1f1f;
+    --mox-layer-light-3: #4d4d4d;
+    --mox-bgblur-front-color: rgb(82 45 45 / 78%);
+}
+
+[[/code]]
+
+[[/tab]]
+
+[[tab グレースケール]]
+
+[[=image https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/mox4 style="width:90%;"]]
+
+= {{[[include theme:mox-jp |gray=*]]}}
+
+[[code type="CSS"]]
+
+:root {
+    --mox-theme-color: #464040;
+    --mox-theme-dark-color: #4b3c3c;
+    --mox-theme-light-color: #302727;
+    --mox-bg-color: #e0e0e0;
+    --mox-text-color: #161616;
+    --mox-layer-dark-1: #000000;
+    --mox-layer-dark-2: #2f2f2f;
+    --mox-layer-dark-3: #6f6f6f;
+    --mox-layer-light-1: #c9c9c9;
+    --mox-layer-light-2: #a5a5a5;
+    --mox-layer-light-3: #3d3d3d;
+    --mox-bgblur-front-color: rgb(188 188 188 / 78%);
+}
+
+[[/code]]
+
+[[/tab]]
+
+[[tab 北方]]
+
+[[=image https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/mox5 style="width:90%;"]]
+
+= {{[[include theme:mox-jp |northern=*]]}}
+
+[[code type="CSS"]]
+
+:root {
+    --mox-theme-color: #4d65c1;
+    --mox-theme-dark-color: #3f4a71;
+    --mox-theme-light-color: #6e8af4;
+    --mox-bg-color: #D5DAE5;
+    --mox-text-color: #555862;
+    --mox-layer-dark-1: #1F1F21;
+    --mox-layer-dark-2: #3B3D45;
+    --mox-layer-dark-3: #646A80;
+    --mox-layer-light-1: #D5DAE5;
+    --mox-layer-light-2: #C5CCDC;
+    --mox-layer-light-3: #AFB9CF;
+    --mox-bgblur-front-color: rgb(193 199 210 / 85%);
+}
+
+[[/code]]
+
+[[/tab]]
+
+[[tab ファントム]]
+
+[[=image https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/mox6 style="width:90%;"]]
+
+= {{[[include theme:mox-jp |phantom=* |d=*]]}}
+
+[[code type="CSS"]]
+
+:root {
+    --mox-theme-color: #ce5471;
+    --mox-theme-dark-color: #9e5b74;
+    --mox-theme-light-color: #e27aa1;
+    --mox-bg-color: #252130;
+    --mox-text-color: #e7f4f3;
+    --mox-layer-dark-1: #ffdcf9;
+    --mox-layer-dark-2: #c0aabd;
+    --mox-layer-dark-3: #bd9db7;
+    --mox-layer-light-1: #332d44;
+    --mox-layer-light-2: #47344c;
+    --mox-layer-light-3: #67476f;
+    --mox-bgblur-front-color: rgb(78 45 82 / 78%);
+}
+
+[[/code]]
+
+[[/tab]]
+
+[[/tabview]]
+
+-----
+
++ CSS変数
+
+以下はMonoxideのCSS変数です。
+
+[[code type="CSS"]]
+
+
+:root {
+    --mox-theme-color: #3d5cab; /* テーマカラー */
+    --mox-theme-dark-color: #354f96; /* テーマカラー（暗） */
+    --mox-theme-light-color: #3b69e4; /* テーマカラー（明） */
+    --mox-bg-color: #FAFAFA; /* ページ背景色 */
+    --mox-text-color: #141414; /* 本文色 */
+    --mox-layer-dark-1: #262626; /* 濃いグレー */
+    --mox-layer-dark-2: #404040; /* 暗いグレー */
+    --mox-layer-dark-3: #595959; /* 明るいグレー */
+    --mox-layer-light-1: #F2F2F2; /* 明るい白 */
+    --mox-layer-light-2: #D9D9D9; /* 淡い白 */
+    --mox-layer-light-3: #BFBFBF; /* 灰白 */
+    --mox-bgblur-front-color: rgba(255, 255, 255, 0.85); /* ページマスク */
+    --mox-warn-color: #bd3636; /* 危険 */
+    --mox-accept-color: #37b55d; /* 安全 */
+    --mox-alter-color: #df880a; /* 警告 */
+    --mox-header-title: "SCP財団"; /* メインタイトル */
+    --mox-header-subtitle: "確保 - 収容 - 保護"; /* サブタイトル */
+    --mox-header-logo: url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/scp-logo-small-black.svg); /* LOGO */
+    --mox-page-width: 75vw; /* ページ幅 */
+    --mox-anim-duration: 0.2s; /* 全体アニメーション速度 */
+    --mox-header-height: 3rem; /* ヘッダー高さ。2.5remから3.5remの間を推奨 */
+    --mox-ui-font: 'Raleway', 'Noto Sans', Segoe UI, Arial, sans-serif; /* UIフォント */
+    --mox-text-font: 'Noto Sans', Segoe UI, Arial, sans-serif; /* 本文フォント */
+    --mox-mono-font: 'Oxygen Mono', 'Noto Sans', Consolas; /* 等幅フォント */
+}
+
+[[/code]]
+
+-----
+
++ 例
+
+++ 基本Wiki構文
+
+[[[oooooooox|Newpage]]]
+
+[[include component:image-block
+|name=https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/scp-logo-small-black.svg
+|caption=見覚えのあるシンボルです。どこで見たのでしょう？
+|height=200px]]
+
+9個のハイフン「@@---------@@[[footnote]]これはWikidot全体を怒らせるためです。[[/footnote]]」で水平線を作成できます。引用ブロックなど他の要素の中に置かれていない場合、左右へ伸びてページを横断します。このようにファイルを複数の部分へ分ける線が区切り線です。
+
+[[span class="ruby"]]読み仮名または他の文字注記[[span class="rt"]]よみがなまたはほかのもじちゅうき[[/span]][[/span]]
+
+[[span class="keycap"]]Ctrl[[/span]] + [[span class="keycap"]]C[[/span]]
+
+{{[[Module Rate]]}}
+
+[[toc]]
+
+-----
+
+見出しは、行頭に1個から6個のプラス記号「+」を入力すると作成できます。
+
+[[collapsible show="見出し" hide="見出し"]]
+
++* 1級見出し
+
+++* 2級見出し
+
++++* 3級見出し
+
+++++* 4級見出し
+
++++++* 5級見出し
+
+++++++* 6級見出し
+[[/collapsible]]
+
+@@@@
+
+[[*User Agent FS]]の[*https://fendsfox.wikidot.com/component:betterbetterfootnote より良い、さらに良い、もっと良い脚注]がこのテーマに組み込まれています。
+
+彼女が二度目に戻ってきたとき、私はまだ守衛室にいた。毎日少しだけ守衛室に寄り、そのベッドに腰掛けることが、いつしか習慣になっていたようだった。彼女は以前と同じように扉を押し開け、あの緑の軍用コートに身を包んでいた。今度は守衛室に埃が舞い上がらなかった。彼女が去ってから、私はこの部屋の手入れを引き受けていたからだ。ここの空気の一寸一寸には、彼女の衣擦れの音が宿り、私の頬をそっと撫でていくようだった。このとき、私はこれまでとは違うものを感じた。
+
+彼女は目を閉じ、まるで千里の彼方で起きたかのような口論、決断、事故、そしてその後に訪れた幕切れを私に語った。遠く金色の空では、火の流星が花火のように四方へ散り、昼の空を裂き、星の雨となって落ちていった。彼女は琴ケースから二胡を取り出し、構え、弓を運んだ。『二泉映月』の滑らかな音符が弓と弦の交錯から流れ出し、泣くように訴えかけながら、その中には鉄のような金属音が混じり、力強く響いていた。一曲を終えると、彼女は二胡をしまい、琴ケースを背負い、振り返って私を見た。そして意味深い微笑だけを残した。[[footnote]] [[[the-melody-left-in-that-night | あの夜に残された旋律]]] by [[*User MrPasserBy]] [[/footnote]]
+
+Hate. Let me tell you how much I've come to hate you since I began to live. There are 387.44 million miles of printed circuits in wafer thin layers that fill my complex. If the word 'hate' was engraved on each nanoangstrom of those hundreds of miles it would not equal one one-billionth of the hate I feel for humans at this micro-instant for you. Hate. Hate. [[footnote]] //I have no mouth and i must scream// by Harlan Ellison [[/footnote]]
+
+このプロジェクトのスケジュールには少し問題があり、特にバッファがあまりありません。さらにコストもやや高めです。現時点では、手元のリソースで完全に対応できるか確認できていません。ひとまずパイロットを実施し、最終的なアウトプットをフォローアップして、比較的スムーズに進むか、さらに重要な点として、すべてのコストを十分にカバーできるかを評価しましょう。
+
+||~ これは ||~ 表です ||
+||あなたはとっくに || やり方を ||
+||||知っているはずです ||
+|| もっとも、末尾に空白とアンダースコアを加えると改行できることは、まだ知らないかもしれません。 _
+このように。 ||~ 見出しは必ずしも最初に置く必要はありません。 ||
+
+
+[[tabview]]
+[[tab タブ]]
+これはタブビューです。
+[[/tab]]
+[[tab タブ]]
+ほら、ここにはもっと文字があります。
+
+なんと精巧なのでしょう。
+[[/tab]]
+[[tab 長いタブ]]
+
+ここには実のところ何もありません。それにしても、こういう奇妙な例文を最初に考えたのは誰なのでしょう？
+
+[[/tab]]
+[[tab 空のタブ]]
+[[/tab]]
+[[/tabview]]
+
+> これは引用ブロックです。行頭に「> 」を加えると作成できます。
+> @@@@
+> -----
+> 区切り線
+> @@@@
+>> 入れ子の引用ブロック
+
+++ さらに多くのDiv
+
+クラス名を変更せずに、Basaltテーマから直接こちらへ切り替えられます。
+
+[[div class="blockquote"]]
+
+= @@[[div class="blockquote"]]@@
+
+[[/div]]
+
+[[div class="mox-modal"]]
+
+= @@[[div class="modal"]]，[[div class="wiki-note"]]，[[note]]@@
+= または
+= @@[[div class="mox-modal"]]@@
+
+[[/div]]
+
+[[div class="mox-smallmodal"]]
+
+= @@[[div class="smallmodal"]]@@
+= または
+= @@[[div class="mox-smallmodal"]]@@
+
+[[/div]]
+
+[[div class="mox-note"]]
+
+= @@[[div class="notation"]] または [[div class="mox-note"]]@@
+
+[[/div]]
+
+[[div class="mox-notice"]]
+
+= @@[[div class="jotting"]]，[[div class="papernote"]]@@
+= または
+= @@[[div class="mox-notice"]]@@
+
+[[/div]]
+
+[[div class="mox-card"]]
+
+= @@[[div class="document"]] または [[div class="mox-card"]]@@
+
+[[/div]]
+
+[[div class="mox-card mox-dark"]]
+
+= @@[[div class="darkdocument"]] または [[div class="mox-card mox-dark"]]@@
+
+[[/div]]
+
+[[div class="mox-float mox-f-left"]]
+
+= @@[[div class="floatbox"]] または [[div class="mox-float mox-f-left"]]@@
+
+[[/div]]
+
+[[div class="mox-float mox-f-right"]]
+
+= @@[[div class="floatbox right"]] または [[div class="mox-float mox-f-right"]]@@
+
+[[/div]]
+
+~~~~
+
+@@@@
+
+多少の自覚があるテーマが皆そうするように、MonoxideはACSの配色を変更しています。
+
+[[include :scp-jp:component:anomaly-class-bar-source
+|item-number= JP-XXXX
+|clearance= 4
+|container-class= safe
+|secondary-class= none
+|disruption-class= vlam
+|risk-class= danger
+]]
+
+@@@@
+@@@@
+
+[[div class="mox-3line"]]
+||~ これは ||~ 表です ||
+||三線表 || は ||
+||||次の要素で囲む必要があります。 _
+{{[[div class="mox-3line"]]}}で囲んでください。表がよりすっきり見えます。||||
+[[/div]]
+
+@@@@
+
+[[div class="mox-modal"]]
+
+[[span class="mox-card-title"]]カード見出し[[/span]]
+
+{{@@[[span class="mox-card-title"]]カード見出し[[/span]]@@}}
+
+[[/div]]
+
+
+[[footnoteblock]]
+
+-----
+
+= [[size 1.5em]]UIフォントは**Noto Sans CJK**/[[span style="font-family: 'Raleway', sans-serif;"]]**Raleway**[[/span]]。[[/size]]
+
+= [[size 1.5em]]本文フォントは**Noto Sans CJK**です。[[/size]]
+
+= [[size 1.5em]]等幅フォントは{{**Oxygen Mono**/**Noto Sans CJK**}}です。[[/size]]
+
+-----
+[[collapsible show="謝辞" hide="順不同"]]
+
+* [[*User DouglasLiu]]
+* [[*User Dr_Hormress]]
+* [[*User Liurd]]
+* [[*User Romuta]]
+* [[*User Kcorena]]
+* [[*User Mrpasserby]]
+
+テーマへの助言。
+
+[[/collapsible]]
+
++ ソースコード
+
+[[collapsible show="展開" hide="閉じる"]]
+
+[[code type="CSS"]]
+
+
+
+/*
+
+  M. O. X.  Theme
+  [2024 Wikidot Theme]
+  Created by OxygenNine
+
+*/
+
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&family=Oxygen+Mono&family=Raleway:wght@500;700&display=swap');
+
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/fontawesome.min.css');
+
+
+
+/* ROOT */
+
+:root {
+
+    --mox-theme-color: #3d5cab;
+    --mox-theme-dark-color: #354f96;
+    --mox-theme-light-color: #3b69e4;
+    --mox-bg-color: #FAFAFA;
+    --mox-text-color: #141414;
+
+    --mox-layer-dark-1: #262626;
+    --mox-layer-dark-2: #404040;
+    --mox-layer-dark-3: #595959;
+
+    --mox-layer-light-1: #F2F2F2;
+    --mox-layer-light-2: #D9D9D9;
+    --mox-layer-light-3: #BFBFBF;
+    --mox-bgblur-front-color: rgba(255,255,255,0.85);
+
+    --mox-warn-color: #bd3636;
+    --mox-accept-color: #37b55d;
+    --mox-alter-color: #df880a;
+
+    --mox-header-title: "SCP財団";
+    --mox-header-subtitle: "確保、収容、保護";
+    --mox-header-logo: url('https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/scp-logo-small-black.svg');
+
+    --mox-page-width: 75vw;
+    --mox-header-height: 3rem;
+    --mox-anim-duration: 0.2s;
+
+    --mox-ui-font: 'Raleway', 'Noto Sans', Segoe UI, Arial, sans-serif;
+    --mox-text-font: 'Noto Sans', Segoe UI, Arial, sans-serif;
+    --mox-mono-font: 'Oxygen Mono', 'Noto Sans', Consolas;
+}
+
+/* Basic */
+
+body {
+    font-family: var(--mox-text-font);
+    font-size: 0.95em;
+    background-color: var(--mox-bg-color);
+    color: var(--mox-text-color);
+    overflow-x: hidden;
+}
+
+::selection {
+    background: var(--mox-layer-dark-3);
+    color: var(--mox-bg-color);
+}
+
+.page-source, tt {
+    font-family: var(--mox-mono-font);
+}
+
+.page-source {
+    border: none;
+    padding: 1rem 1rem;
+}
+
+div#skrollr-body {
+    width: 100vw;
+    max-width: 100vw;
+    overflow-x: clip;
+}
+
+/* Header */
+
+#header {
+    position: fixed;
+    z-index: 10;
+    height: var(--mox-header-height);
+    display: grid
+;
+    box-sizing: content-box;
+    grid-template-rows: 1fr;
+    direction: ltr;
+    grid-template-columns: var(--mox-header-height) var(--mox-header-height) auto 1fr var(--mox-header-height) var(--mox-header-height);
+    justify-items: start;
+    background-color: var(--mox-layer-light-1);
+    border-bottom: solid 0.15rem var(--mox-layer-light-2);
+    left: 0px;
+    top: 0px;
+    width: 100%;
+    grid-gap: 0px 0px;
+    padding: 0;
+    align-items: start;
+    justify-content: space-evenly;
+    column-gap: 0;
+    align-content: space-between;
+}
+
+#header h1 {
+    margin: 0;
+    grid-area: none;
+    display: contents;
+    height: var(--mox-header-height);
+    width: fit-content;
+    left: calc(var(--mox-header-height)* 0.05);
+    position: relative;
+}
+
+#header h1 a {
+    display: block;
+    position: relative;
+    width: fit-content;
+    height: var(--mox-header-height);
+    display: contents;
+}
+
+#header h1 a span {
+    font-size: 0;
+    grid-area: title;
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: center;
+    height: var(--mox-header-height);
+}
+
+#header h2 {
+    margin: 0;
+    padding: 0;
+    grid-area: title;
+    display: block;
+    transform: translateY(1rem);
+    width: calc(100% - 3rem);
+    text-align: left;
+}
+
+#header h2 span {
+    font-size: 0;
+}
+
+#search-top-box {
+    position: relative;
+    right: 0;
+    top: 0em;
+    z-index: 10;
+    grid-area: search;
+    width: calc(var(--mox-header-height));
+    height: calc(var(--mox-header-height));
+    display: block;
+}
+
+#login-status {
+    position: relative;
+    right: 0px;
+    top: 0px;
+    overflow: visible;
+    z-index: 25;
+    grid-area: user;
+    font-size: 0px;
+    margin-right: calc(var(--mox-header-height)* 0);
+    width: var(--mox-header-height);
+    height: var(--mox-header-height);
+    /* right: calc(var(--mox-header-height)* 0); */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#login-status > * {
+    font-size: 0.65rem !important
+}
+
+#login-status:has(a.login-status-create-account.btn) {
+    word-break: keep-all;
+    display: flex
+;
+    flex-direction: row;
+    align-items: center;
+    text-align: center;
+    transform: translateX(-2.5rem);
+}
+
+#search-top-box input.empty {
+    color: #AAA;
+    display: none;
+}
+
+#header #login-status .printuser {
+    font-size: 0 !important;
+    grid-area: none;
+    z-index: 25;
+    position: relative;
+}
+
+#header .printuser a {
+    position: relative;
+    z-index: 22;
+    display: block;
+}
+
+#login-status a#my-account {
+    display: none;
+}
+
+#login-status>a[href="https://www.wikidot.com/account/messages"] {
+    position: absolute;
+    background-color: var(--mox-warn-color);
+    color: transparent;
+    display: block;
+    width: calc(var(--mox-header-height)* 0.2);
+    height: calc(var(--mox-header-height)* 0.2);
+    border-radius: 50%;
+    transform: translateX(calc(var(--mox-header-height)* 0.3)) translateY(calc(var(--mox-header-height)* 0.3));
+    box-shadow: 0px 0px 0px 0.1rem var(--mox-layer-light-1);
+    z-index: 100;
+}
+
+#login-status img.small {
+    width: calc(var(--mox-header-height)* 0.55);
+    height: calc(var(--mox-header-height)* 0.55);
+    background-image: none !important;
+    border-radius: 0%;
+    position: relative;
+    vertical-align: 0em;
+    padding: 0;
+}
+
+a#account-topbutton:hover {
+    box-shadow: 0px 0px 0px calc(var(--mox-header-height)* 0.23) var(--mox-layer-dark-2);
+    border-radius: 0%;
+}
+
+.printuser a {
+    margin-right: 0px;
+}
+
+#account-topbutton {
+    font-weight: bold;
+    padding: 0;
+    border: none;
+    left: calc(var(--mox-header-height)* -0.56);
+    text-decoration: none;
+    background-color: transparent;
+    width: calc(var(--mox-header-height)* 0.55) !important;
+    display: none;
+    text-align: center;
+    color: transparent !important;
+    direction: ltr;
+    top: calc(var(--mox-header-height)* 0);
+    position: relative;
+    height: calc(var(--mox-header-height)* 0.55);
+    transition: all var(--mox-anim-duration);
+    z-index: 26;
+}
+
+#account-options {
+    position: absolute;
+    box-sizing: border-box;
+    width: fit-content;
+    padding: 0;
+    z-index: 20;
+    background-color: var(--mox-layer-dark-1);
+    border: none;
+    direction: ltr;
+    right: calc(var(--mox-header-height)* -0.85);
+    color: var(--mox-bg-color);
+    top: calc(var(--mox-header-height)* 1);
+    box-shadow: none;
+    display: block !important;
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0s, opacity var(--mox-anim-duration);
+}
+
+div#account-options::before {
+    visibility: visible !important;
+    content: '';
+    display: block;
+    width: calc(var(--mox-header-height)* 1);
+    height: calc(var(--mox-header-height)* 1);
+    background: transparent;
+    z-index: 10;
+    position: relative;
+    top: calc(var(--mox-header-height)* -1);
+    right: calc(var(--mox-header-height)* -3.9);
+    opacity: 1 !important;
+    pointer-events: visiblefill;
+    opacity: 1;
+    box-shadow: none;
+    transition: box-shadow var(--mox-anim-duration);
+}
+
+#account-options li a {
+    display: block;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    z-index: 0;
+    color: var(--mox-layer-light-1) !important;
+    text-decoration: none;
+    font-size: 0.9rem;
+    padding: 0.8rem 1rem;
+    position: relative;
+    text-align: center;
+    transition: all var(--mox-anim-duration);
+}
+
+#account-options li a:hover {
+    color: var(--mox-layer-dark-1) !important;
+    font-weight: bold;
+    background-color: var(--mox-layer-dark-2);
+    box-shadow: inset 10rem 0rem var(--mox-layer-light-1);
+}
+
+#account-options ul {
+    display: grid;
+    margin: calc(var(--mox-header-height)* -1) 0rem 0rem 0rem;
+    padding: 0;
+    list-style: none;
+    grid: auto-flow / 1fr 1fr;
+    box-shadow: 0.4rem 0rem 0rem var(--mox-layer-dark-3);
+    width: calc(var(--mox-header-height)* 5.75);
+}
+
+div#login-status:hover div#account-options {
+    opacity: 1;
+    visibility: visible;
+}
+
+div#login-status:hover div#account-options::before {
+    box-shadow: inset 0rem calc(var(--mox-header-height)* -1) var(--mox-layer-dark-2);
+}
+
+form#search-top-box-form {
+    width: calc(var(--mox-header-height));
+    right: 0;
+    height: calc(var(--mox-header-height));
+}
+
+#header #search-top-box input#search-top-box-input {
+    display: none;
+}
+
+#header #search-top-box input.button {
+    margin-left: calc(var(--mox-header-height));
+    padding: 0;
+    text-decoration: none;
+    background-color: #ffffff00;
+    border: none;
+    color: #000;
+    font-size: 0;
+    display: block;
+    width: calc(var(--mox-header-height));
+    height: calc(var(--mox-header-height));
+    margin-right: 0;
+    transition: filter var(--mox-anim-duration);
+    z-index: 25;
+    position: absolute;
+    right: 0rem;
+    margin-left: 0;
+    background-size: 55%;
+    background-color: var(--mox-layer-light-1);
+}
+
+#header #search-top-box input.button:hover {
+    cursor: pointer;
+    backdrop-filter: brightness(1);
+    box-shadow: none;
+    filter: invert(0.85);
+}
+
+
+form#search-top-box-form::after {
+    content: '';
+    /* font-family: 'FontAwesome' !important; */
+    position: absolute;
+    right: calc(var(--mox-header-height)* 0);
+    top: calc(var(--mox-header-height)* 0);
+    font-size: calc(var(--mox-header-height)* 0.45);
+    color: var(--mox-layer-dark-2);
+    z-index: 26;
+    padding: calc(var(--mox-header-height)* 0.3);
+    display: inline-block;
+    pointer-events: none;
+}
+
+form#search-top-box-form:has(input.button:hover)::after {
+    color: var(--mox-layer-light-1);
+}
+
+#header h1 a::before {
+    display: inline;
+    padding: 0;
+    content: '';
+    border: none;
+    position: relative;
+    background-image: var(--mox-header-logo);
+    background-repeat: no-repeat !important;
+    background-size: contain;
+    background-position: center;
+    background-origin: border-box;
+    font-size: calc(var(--mox-header-height)* 0.45) !important;
+    height: var(--mox-header-height);
+    width: calc(var(--mox-header-height)* 0.75);
+    display: inline-block;
+    grid-area: logo;
+    margin-left: calc(var(--mox-header-height)* 0.05);
+}
+
+div#header h1 a:hover {
+    background: transparent;
+}
+
+#header h1 a span::before {
+    content: var(--mox-header-title);
+    font-size: calc(var(--mox-header-height)* 0.45) !important;
+    color: var(--mox-layer-dark-1);
+    position: relative;
+    font-weight: bold;
+    display: block;
+    left: calc(var(--mox-header-height)* 0);
+    top: calc(var(--mox-header-height)* 0.05);
+    /* grid-area: title; */
+    width: max-content;
+    word-break: keep-all;
+}
+
+div#header a:hover {
+    text-decoration:none;
+}
+
+#header-extra-div-1 {
+    grid-area: menu;
+    display: block;
+    width: var(--mox-header-height);
+    height: var(--mox-header-height);
+    position: relative;
+    background: transparent;
+}
+
+
+
+
+/* Top Bar */
+
+#top-bar {
+    font-family: var(--mox-ui-font);
+}
+
+#top-bar {
+    position: relative;
+    right: -1rem;
+    bottom: 0rem;
+    z-index: 0;
+    display: contents;
+}
+
+#top-bar a:hover {
+    background-color: unset;
+}
+
+#top-bar ul li a:hover, #top-bar ul li.sfhover>a {
+    text-decoration: none;
+    box-shadow: inset 0 calc(var(--mox-header-height) * 1) var(--mox-layer-dark-2), inset 0 calc(var(--mox-header-height) * 2) var(--mox-layer-light-3);
+    color: var(--mox-layer-light-1);
+}
+
+#top-bar ul li ul li a:hover {
+    text-decoration: none;
+    box-shadow: inset 0 calc(var(--mox-header-height)* -1) var(--mox-layer-dark-2), inset 0 calc(var(--mox-header-height)* -1.5) var(--mox-layer-light-3) !important;
+    color: var(--mox-layer-light-1);
+}
+
+.top-bar {
+    display: grid
+;
+    grid-area: topbar;
+    left: 0;
+    position: relative;
+    justify-content: start;
+    margin-left: calc(var(--mox-header-height)* 0.2);
+}
+
+#top-bar .mobile-top-bar ul:first-child>li>ul {
+    top: 3rem;
+    transform: translateX(0.4rem);
+}
+
+.mobile-top-bar {
+    display: none;
+}
+
+#top-bar li {
+    list-style: none;
+    float: left;
+    margin: 0rem 0rem;
+    padding: 0rem 0rem;
+    height: var(--mox-header-height);
+    line-height: var(--mox-header-height);
+}
+
+#top-bar li a {
+    text-align: center;
+    display: block;
+    margin: 0;
+    padding: 1px 0.4rem;
+    text-decoration: none;
+    color: var(--mox-layer-dark-3);
+    font-weight: 500;
+    word-break: keep-all;
+    width: max-content;
+    transition: box-shadow calc(var(--mox-anim-duration) * 2), color var(--mox-anim-duration);
+}
+
+#top-bar {
+    position: relative;
+    right: -1rem;
+    bottom: 0rem;
+    z-index: 0;
+}
+
+.top-bar {
+    display: grid;
+    /* grid-area: topbar; */
+}
+
+.top-bar>br {
+    display: none; /* For JP Sandbox */
+}
+
+#top-bar ul {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    grid-area: menu;
+    justify-content: space-evenly;
+    flex-wrap: nowrap;
+    align-items: center;
+    align-content: center;
+    flex-direction: row;
+    height: var(--mox-header-height);
+}
+
+#top-bar li:hover ul, #top-bar li.sfhover ul {
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+#top-bar li ul {
+    padding: 0;
+    margin: 0;
+    width: auto;
+    border: unset;
+    display: flex;
+    top: var(--mox-header-height);
+    position: absolute;
+    transform: translateX(calc(var(--mox-header-height)* 0.1));
+    transition: opacity calc(var(--mox-anim-duration) * 1.25);
+    opacity: 0;
+    flex-direction: column;
+    flex-wrap: wrap;
+    height: calc(90vh - var(--mox-header-height));
+    align-items: flex-start;
+    justify-content: flex-start;
+    column-gap: calc(var(--mox-header-height)* 0.1);
+}
+
+#top-bar li ul li {
+    display: inline-block;
+    float: none;
+    height: fit-content;
+    line-height: calc(var(--mox-header-height)* 0.5);
+    width: max-content;
+    box-shadow: calc(var(--mox-header-height)* -0.1) 0 var(--mox-layer-dark-2);
+}
+
+#top-bar li ul li a {
+    width: 10em;
+    text-align: left;
+    background-color: var(--mox-bgblur-front-color);
+    border: none;
+    color: var(--mox-layer-dark-2);
+    padding-top: 0.3rem;
+    padding-bottom: 0.3rem;
+    backdrop-filter: blur(5px);
+}
+
+#top-bar ul li a:hover, #top-bar ul li.sfhover>a {
+    text-decoration: none;
+    box-shadow: inset 0 calc(var(--mox-header-height) * 1) var(--mox-layer-dark-2), inset 0 calc(var(--mox-header-height) * 2) var(--mox-layer-light-3);
+    color: var(--mox-layer-light-1);
+}
+
+
+
+/* Main Content */
+
+#main-content {
+    max-width: var(--mox-page-width) !important;
+    padding: 0px 0em;
+    margin-top: 5.6em;
+    margin: 5rem auto;
+}
+
+div.pages-tag-cloud-box a.tag:hover {
+    box-shadow: none !important;
+    font-weight: bolder;
+    scale: 1.25;
+}
+
+div.pages-tag-cloud-box {
+    border: none !important;
+    padding: 0 1px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: repeat(12, auto);
+    justify-content: space-between;
+    align-items: baseline;
+    justify-items: center;
+}
+
+div.pages-tag-cloud-box a.tag {
+    color: var(--mox-theme-color) !important;
+    display: inline-block;
+    word-break: keep-all;
+}
+
+.pager span.target a:hover {
+    box-shadow: inset 0rem -2rem var(--mox-theme-color) !important;
+    border-color: var(--mox-theme-color);
+    color: var(--mox-layer-light-1) !important;
+}
+
+.pager span.current, .pager span.target a {
+    padding: 0.1rem 0.4rem;
+    margin: 0 0.1rem;
+}
+.pager span.target a {
+    background: var(--mox-layer-light-1);
+    border: solid 0.1rem var(--mox-layer-light-2);
+}
+
+.pager span.current {
+    background: var(--mox-layer-dark-2);
+    border: solid 0.15rem var(--mox-layer-dark-2);
+}
+
+div.pager {
+    text-transform: uppercase;
+    font-family: var(--mox-ui-font);
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Side Bar */
+
+.open-menu {
+    display: none;
+}
+
+#side-bar {
+    float: none;
+    width: 20rem;
+    padding: 0.7rem;
+    margin: 0 0 0em 0;
+    clear: left;
+    position: fixed;
+    max-height: calc(100% - var(--mox-header-height));
+    overflow-y: scroll;
+    top: var(--mox-header-height);
+    background: var(--mox-bg-color);
+    font-size: 90%;
+    left: -22rem;
+    transition: left calc(var(--mox-anim-duration) * 2);
+    z-index: 10;
+    direction: rtl;
+    font-family: var(--mox-ui-font);
+    box-shadow: 0.3rem 0px 0px 0rem var(--mox-layer-light-1);
+}
+
+#side-bar h2, #side-block h1, .heading {
+    background: var(--mox-layer-light-2);
+    color: var(--mox-layer-dark-1);
+    width: calc(100% + 1rem);
+    display: inline-block;
+    transform: translateX(-1rem);
+    padding: 0.3rem 0rem 0.3rem 1rem;
+    font-weight: bold;
+}
+
+#side-bar a.collapsible-block-link {
+    display: block;
+    margin: 0 auto;
+    direction: ltr;
+    text-align: center;
+    background: var(--mox-layer-light-1);
+    width: 75%;
+    padding: 0.5rem 0.5rem;
+    font-size: 1rem;
+    color: var(--mox-text-color);
+}
+
+.menu-item {
+    font-size: 0;
+}
+
+div.menu-item p {
+    width: 100%;
+    display: flex;
+}
+
+#side-bar .side-block .menu-item a {
+    display: inline-block;
+    flex-grow: 1;
+    width: max-content;
+}
+
+#side-bar .side-block .menu-item {
+    display: flex
+;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+}
+
+#side-bar .side-block .menu-item a {
+    display: inline-block;
+    flex-grow: 1;
+    box-shadow: none;
+}
+
+div#side-bar::before {
+    display: table-cell;
+    width: 20rem;
+    height: 10rem;
+    background: var(--mox-layer-light-1);
+    content: '';
+    font-weight: 600;
+    padding-bottom: 0.5rem;
+    direction: ltr;
+    mask: var(--mox-header-logo);
+    mask-repeat: no-repeat;
+    mask-position: center center;
+    mask-size: 9rem;
+}
+
+.side-block {
+    padding: 0.5rem 1rem;
+    margin: 0.4rem 0;
+    background-color: var(--mox-layer-light-1) !important;
+    box-shadow: none;
+    direction: ltr;
+}
+
+div#side-bar p {
+    margin: 0;
+}
+
+#side-bar .side-block a:hover {
+    box-shadow: inset 20rem 0rem var(--mox-theme-color) !important;
+    color: var(--mox-layer-light-1) !important;
+}
+
+#side-bar .side-block a {
+    display: block;
+    border-left: solid 0.2rem var(--mox-layer-light-2);
+    font-size: 0.8rem;
+    padding: 0.5rem 0.5rem;
+    color: var(--mox-layer-dark-2) !important;
+}
+
+div#side-bar::after {
+    position: fixed;
+    content: '';
+    display: block;
+    top: 0rem;
+    left: 0rem;
+    z-index: 100;
+    font-family: 'FontAwesome' !important;
+    font-size: calc(var(--mox-header-height)* 0.5);
+    width: var(--mox-header-height);
+    height: var(--mox-header-height);
+    text-align: center;
+    line-height: var(--mox-header-height);
+    transition: all var(--mox-anim-duration);
+    background-size: 50%;
+}
+
+div#side-bar:hover {
+    left: 0rem;
+    box-shadow: 0.3rem 0px 0px 0rem var(--mox-layer-light-1);
+}
+
+div#side-bar:hover::after {
+    color: var(--mox-layer-light-1);
+    transform: unset;
+    /* font-family: 'FontAwesome' !important; */
+    cursor: pointer;
+    /* box-shadow: inset 0rem 0rem 0 2rem var(--mox-layer-dark-2); */
+    filter: invert(0.85);
+    background-color: var(--mox-layer-light-1);
+}
+
+/* Page Content */
+
+.colmod-block > ul,
+.colmod-block > ul > li {
+    display:block;
+    line-height:normal;
+    list-style:none;
+    margin:0;
+    padding:0;
+}
+.colmod-block > ul > li > ul,
+li.folded > .colmod-link-top a + a,
+li.folded > .colmod-content,
+li.folded > .colmod-link-end a,
+li.unfolded > .colmod-link-top a:first-child {
+    display:none;
+}
+.colmod-content {
+    -webkit-animation:colmod-fade-in 0.2s ease-in-out;
+    -moz-animation:colmod-fade-in 0.2s ease-in-out;
+    animation:colmod-fade-in 0.2s ease-in-out;
+    -webkit-animation-timing-function:cubic-bezier(0.3649610494,0,0.6350389506,1);
+    -moz-animation-timing-function:cubic-bezier(0.3649610494,0,0.6350389506,1);
+    animation-timing-function:cubic-bezier(0.3649610494,0,0.6350389506,1);
+}
+li.folded > .colmod-content {
+    -webkit-animation-name:none;
+    -moz-animation-name:none;
+    animation-name:none;
+}
+@-webkit-keyframes colmod-fade-in { from { opacity:0; } to { opacity:1; } }
+@-moz-keyframes colmod-fade-in { from { opacity:0; } to { opacity:1; } }
+@keyframes colmod-fade-in { from { opacity:0; } to { opacity:1; } }
+[class|="colmod-link"] div.foldable-list-container {
+    display:inline;
+}
+.colmod-collapsiblealt > [class|="colmod-link"],
+.collapsiblealt > .colmod-block > ul > li > [class|="colmod-link"] {
+    margin:0.5em 0;
+    text-align:center;
+}
+.colmod-collapsiblealt > [class|="colmod-link"] a,
+.collapsiblealt > .colmod-block > ul > li > [class|="colmod-link"] a {
+    padding:0.1em 0.5em;
+    text-decoration:none;
+    background-color:#F4F4F4;
+    border:1px solid #AAA;
+    color:#000;
+}
+.colmod-collapsiblealt > [class|="colmod-link"] a:hover,
+.colmod-collapsiblealt > [class|="colmod-link"] a:active,
+.collapsiblealt > .colmod-block > ul > li > [class|="colmod-link"] a:hover,
+.collapsiblealt > .colmod-block > ul > li > [class|="colmod-link"] a:active {
+    background:#DDD;
+    text-decoration:none;
+}
+
+h1,h2,h3,h4,h5,h6 {
+    font-family: var(--mox-ui-font);
+    font-weight: 600;
+}
+
+#main-content h1 {
+    margin: 0.5rem 0;
+}
+
+#page-content h1::before {
+    content: '#';
+    color: var(--mox-layer-light-2);
+    font-size: 80%;
+    margin-right: 0.5rem;
+}
+
+#page-content tt {
+    background-color: var(--mox-layer-light-1);
+    border-radius: 0.3rem;
+}
+
+hr {
+    margin: 1em 2em;
+    padding: 0;
+    height: 2px;
+    border: none;
+    color: transparent;
+    background-color: var(--mox-layer-light-2);
+}
+
+#main-content h2,#main-content h3,#main-content h4,#main-content h5,#main-content h6 {
+    font-weight: bold;
+    margin: 0.3rem 0rem;
+}
+
+#main-content h1 {
+    font-size: 2rem;
+}
+
+#main-content h2 {
+    font-size: 1.8rem;
+}
+
+#main-content h3 {
+    font-size: 1.5rem;
+}
+
+#main-content h4 {
+    font-size: 1.25rem;
+}
+
+#main-content h5 {
+    font-size: 1rem;
+}
+
+#main-content h6 {
+    font-size: 0.9rem;
+}
+
+#main-content a:not(.btn), #side-bar a, .owindow a, .hovertip a {
+    color: var(--mox-theme-color);
+    text-decoration: none;
+    transition: all var(--mox-anim-duration);
+    /* box-shadow: 0rem 0.125rem 0 -0.05rem var(--mox-layer-light-3) */;
+}
+
+#main-content a:not(.btn).newpage, #side-bar a.newpage, .owindow a.newpage, .hovertip a.newpage {
+    color: var(--mox-alter-color);
+}
+
+#main-content a:not(.btn).newpage:hover, #side-bar a.newpage:hover, .owindow a.newpage:hover, .hovertip a.newpage:hover {
+    box-shadow: 0rem 0.125rem 0 0rem var(--mox-alter-color), 0rem 0.125rem 0 -0.05rem var(--mox-alter-color);
+}
+
+#main-content a:not(.btn):hover, #side-bar a:hover, .owindow a:hover .hovertip a:hover {
+    background-color: transparent;
+    text-decoration: none;
+    box-shadow: 0rem 0.125rem 0 0rem var(--mox-theme-color), 0rem 0.125rem 0 -0.05rem var(--mox-layer-light-3);
+}
+
+#main-content a:not(.btn):visited:hover {
+    box-shadow: 0rem 0.125rem 0 0rem var(--mox-theme-dark-color), 0rem 0.125rem 0 -0.05rem var(--mox-layer-light-3);
+}
+
+#main-content a:not(.btn):visited,#side-bar a:visited,  .hovertip a:visited {
+    color: var(--mox-theme-dark-color);
+    text-decoration: none;
+}
+
+#main-content a.newlink,#side-bar a.newlink,  .hovertip a.newlink {
+    color: var(--mox-warn-color);
+}
+
+#main-content a.newlink:hover,#side-bar a.newlink:hover,  .hovertip a.newlink:hover {
+    box-shadow: 0rem 0.125rem 0 0rem var(--mox-warn-color), 0rem 0.125rem 0 -0.05rem var(--mox-layer-light-3);
+}
+
+div.blockquote, blockquote {
+    border: none;
+    padding: 0.5rem 1rem;
+    background-color: var(--mox-layer-light-1);
+    box-shadow: -0.2rem 0px 0px var(--mox-layer-dark-2);
+}
+
+.footnotes-footer .title {
+    margin: 0.5em 0;
+    font-size: 110%;
+    font-weight: bold;
+    background: var(--mox-layer-dark-2);
+    color: var(--mox-layer-light-1);
+    padding: 0.2rem 1.5rem;
+    transform: translateX(-1.1rem);
+    width: fit-content;
+}
+
+.footnotes-footer {
+    margin: 2rem auto;
+    padding: 0rem 1rem 0.5rem 1rem;
+    border-top: none;
+    height: auto;
+    background: var(--mox-layer-light-1);
+    box-shadow: -0.4rem 0 0 var(--mox-layer-dark-2);
+}
+
+.page-tags span {
+    padding-top: 0.6rem;
+    border-top: solid 0.2rem var(--mox-layer-light-2);
+    font-size: 80%;
+}
+
+#main-content .page-tags a {
+    margin: 0.2rem 0.4rem;
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    box-shadow: none;
+}
+
+.page-tags a::before {
+    content: "#";
+    font-family: var(--mox-ui-font);
+    color: var(--mox-layer-light-3);
+    font-weight: 900;
+}
+
+#main-content .page-tags a:hover {
+    box-shadow: inset 0rem -2rem 0rem var(--mox-theme-color) !important;
+    color: var(--mox-bg-color)  !important;
+    padding: 0.3rem 0.6rem;
+    border-radius: 0rem 0rem;
+}
+
+/* ひとまずこれで対応 */
+
+#main-content .page-tags a[href^='/system:page-tags/tag/_'] {
+    display: none !important;
+}
+
+#toc {
+    margin: 1em auto 1em 0;
+    padding: 0.5rem 1rem;
+    border: dashed 2px var(--mox-layer-light-3);
+    background-color: var(--mox-bg-color);
+    display: table;
+}
+
+/* Ratebox */
+
+a.fa.fa-info {
+    box-shadow: none !important;
+}
+
+iframe.close-credits {
+    display: none;
+}
+
+
+
+.page-rate-widget-box {
+    margin: unset;
+    border-radius: 0;
+    border: none;
+    box-shadow: 3px 0px 0px 0px var(--mox-theme-color);
+    background-color: var(--mox-layer-light-1);
+    margin-top: 14px;
+    margin-bottom: 4px;
+    margin-right: 0px;
+    display: inline-block;
+    padding: 0.4rem 0.2rem;
+}
+
+.creditRate .page-rate-widget-box {
+    margin: 0;
+    padding: 0.4rem 0.2rem !important
+}
+
+.page-rate-widget-box .rate-points {
+    background-color: transparent !important;
+    border: none;
+    color: var(--mox-layer-dark-2) !important;
+    font-family: var(--mox-ui-font);
+    font-weight: 500 !important;
+}
+
+#page-content .creditRate {
+    margin-right: 0;
+}
+
+span.rateup.btn.btn-default {
+    font-size: 0;
+}
+
+.fa-info:before {
+    content: "i" !important;
+    font-family: var(--mox-mono-font), var(--mox-ui-font);
+    font-size: 0.85rem;
+    font-weight: bolder;
+}
+
+div.page-rate-widget-box span.rateup a:hover::before {
+    color: var(--mox-accept-color) !important;
+    box-shadow: 0rem 0.1rem 0 -0.01rem var(--mox-accept-color);
+}
+
+span.rateup.btn.btn-default a:hover::before {
+    color: var(--mox-theme-color);
+}
+
+span.ratedown.btn.btn-default {
+    font-size: 0;
+}
+
+span.ratedown.btn.btn-default a:hover::before {
+    color: var(--mox-theme-color);
+}
+
+div.page-rate-widget-box span.ratedown a:hover::before {
+    color: var(--mox-warn-color) !important;
+    box-shadow: 0rem 0.1rem 0 -0.01rem var(--mox-warn-color);
+}
+
+span.cancel.btn.btn-default a {
+    color: var(--mox-layer-light-1) !important;
+    background: var(--mox-layer-dark-2);
+    font-size: 0;
+}
+
+div.page-rate-widget-box span.cancel a:hover::before {
+    color: var(--mox-layer-dark-1);
+    box-shadow: 0rem 0.1rem 0 -0.01rem var(--mox-layer-light-1);
+}
+
+div.page-rate-widget-box span.ratedown a::before, span.cancel.btn.btn-default a::before, div.page-rate-widget-box span.rateup a::before {
+    content: '';
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    font-family: 'Segoe UI' !important;
+    color: var(--mox-layer-dark-3);
+    font-size: 1rem;
+    transition: all var(--mox-anim-duration);
+    font-weight: bolder;
+    line-height: 1rem;
+    text-align: center;
+    margin: 0rem -0.1rem;
+}
+
+div.page-rate-widget-box span.rateup a::before {
+    content: "+";
+}
+
+div.page-rate-widget-box span.ratedown a::before {
+    content: '-';
+}
+
+span.cancel.btn.btn-default a::before {
+    content: "×";
+}
+
+.rateBox .rate-box-with-credit-button {
+    background-color: var(--mox-layer-light-1);
+    border: none;
+    border-radius: 0;
+    box-shadow: 0.2rem 0 0 var(--mox-theme-color);
+}
+
+.rate-box-with-credit-button .page-rate-widget-box {
+    box-shadow: none;
+    padding: 0.4rem 0.2rem;
+}
+
+.rate-box-with-credit-button .creditButton {
+    display: inline-block;
+    width: 1rem;
+    text-align: center;
+}
+
+.rateBox .rate-box-with-credit-button .creditButton p a {
+    width: 27px;
+    text-decoration: none;
+    border: none;
+}
+
+a.fa.fa-info:hover {
+    box-shadow: none !important;
+    color: var(--mox-theme-light-color);
+}
+
+a.back {
+    color: var(--mox-theme-color) !important;
+}
+
+#page-content div.modalbox {
+    background: var(--mox-bg-color);
+    border: solid 2px var(--mox-layer-light-2);
+    border-radius: 0;
+    box-shadow: none;
+    padding: 4px;
+    max-height: 50vh;
+    pointer-events: auto !important;
+}
+
+/* Custom Divs */
+
+.mox-modal, .modal, .wiki-note {
+    position: relative;
+    background: var(--mox-bg-color);
+    border: solid 2px var(--mox-layer-light-2);
+    width: 90%;
+    margin: 1rem auto;
+    padding: 0.5rem 0.7rem;
+}
+
+.mox-smallmodal, .smallmodal {
+    position: relative;
+    background: var(--mox-bg-color);
+    border: solid 2px var(--mox-layer-light-2);
+    width: 65%;
+    margin: 1rem auto;
+    padding: 0.5rem 0.7rem;
+}
+
+.mox-note, .notation {
+    position: relative;
+    background: var(--mox-layer-light-1);
+    width: 90%;
+    margin: 1rem auto;
+    padding: 0.5rem 0.7rem;
+    border-left: solid 5px var(--mox-layer-light-3);
+    border-right: solid 5px var(--mox-layer-light-3);
+}
+
+.mox-notice, .jotting, .papernote {
+    position: relative;
+    background: var(--mox-layer-light-1);
+    width: 80%;
+    margin: 1rem auto;
+    padding: 0.5rem 0.7rem;
+    border: dashed 0.1rem var(--mox-layer-light-2);
+}
+
+.mox-card, .document {
+    position: relative;
+    background: var(--mox-bg-color);
+    border: none;
+    width: 90%;
+    margin: 1rem auto;
+    padding: 1.5rem 0.7rem 0.7rem 0.7rem;
+    box-shadow: inset 0rem 0.5rem 0 var(--mox-layer-dark-3), inset 0rem 1.3rem 0 var(--mox-layer-light-1), 0.6rem 0.6rem 0 var(--mox-layer-light-2);
+}
+
+.mox-dark {
+    box-shadow: inset 0rem 0.5rem 0 var(--mox-layer-dark-3), inset 0rem 1.3rem 0 var(--mox-layer-dark-2), 0.6rem 0.6rem 0 var(--mox-layer-light-2), 0rem 0rem 0.7rem 0rem var(--mox-layer-light-2);
+    background: var(--mox-layer-dark-1);
+    color: var(--mox-layer-light-1);
+}
+
+.mox-float {
+    max-width: 45%;
+    background: var(--mox-bg-color);
+    padding: 0.5rem 0.7rem;
+    margin: 0.5rem 0.5rem 1.5rem 0.5rem;
+    border: solid 2px var(--mox-layer-light-2);
+    box-shadow: 1rem 0.6rem 0rem var(--mox-layer-light-2);
+}
+
+.mox-f-left {
+    float: left;
+    margin-right: 0;
+}
+
+.mox-f-right {
+    float: right;
+    margin-left: 0;
+}
+
+p:has(span.mox-card-title) {
+    display: inline-block;
+    position: relative;
+    top: -1.5rem;
+    margin: 0rem 0rem -2.2rem -1.7rem;
+    padding: 0.4rem 1rem;
+    background-color: var(--mox-layer-dark-2);
+    font-size: 85%;
+    box-shadow: -0.3rem 0rem var(--mox-layer-dark-3);
+    letter-spacing: 0.05rem;
+    font-family: var(--mox-mono-font);
+    color: var(--mox-layer-light-1);
+}
+
+/* Tables */
+
+tr {
+    background-color: var(--mox-bg-color);
+}
+
+table.wiki-content-table td {
+    border: solid 2px var(--mox-layer-light-2);
+    padding: 0.3em 0.7em;
+}
+
+table.wiki-content-table th {
+    border: solid 0.2rem var(--mox-layer-dark-2);
+    padding: 0.4rem 0.7rem;
+    background-color: var(--mox-layer-dark-2);
+    color: var(--mox-layer-light-1);
+}
+
+.mox-3line table.wiki-content-table th {
+    background-color: var(--mox-bg-color);
+    border-top: solid 0.2rem var(--mox-layer-dark-2);
+    border-left: none;
+    border-right: none;
+    border-bottom: solid 0.15rem var(--mox-layer-dark-2);
+    color: var(--mox-layer-dark-2);
+}
+
+.mox-3line tbody {
+    border-bottom: solid 0.2rem var(--mox-layer-dark-2);
+}
+
+.mox-3line table.wiki-content-table td {
+    border: none;
+}
+
+/* Tabs */
+
+.yui-navset .yui-nav { border-color: var(--mox-layer-light-3); }
+
+.yui-navset.yui-navset-top .yui-nav li {
+    flex-grow: 1;
+}
+
+#main-content .yui-navset.yui-navset-top .yui-nav li:not(.selected) a {
+    border-width: 0;
+    transition: all var(--mox-anim-duration) !important;
+    box-shadow: inset 0rem 0rem var(--mox-layer-light-1);
+    border: none;
+}
+
+.yui-navset .yui-content {
+    padding: 0.5rem 0.7rem;
+    border: solid 0.2rem var(--mox-layer-light-1);
+    background-color: var(--mox-bg-color);
+    box-shadow: none;
+    border-top: none;
+}
+
+.yui-navset {
+    position: relative;
+    zoom: 1;
+    box-shadow: none;
+    margin: 1rem auto;
+}
+
+.yui-navset .yui-nav li a em, .yui-navset-top .yui-nav li a em, .yui-navset-bottom .yui-nav li a em {
+    display: block;
+    border-top: none;
+}
+
+.yui-navset .yui-nav {
+    border-color: var(--mox-layer-dark-2);
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.yui-navset.yui-navset-top .yui-nav li {
+    flex-grow: 1;
+    border: none;
+    box-shadow: none;
+}
+
+.yui-navset .yui-nav .selected, .yui-navset .yui-navset-top .yui-nav .selected {
+    margin: 0 0 -3px 0;
+}
+
+.yui-navset .yui-nav .selected a em {
+    padding: 0.24rem 0.75rem;
+}
+
+ul.yui-nav li:after {
+    content: '▼';
+    display: block;
+    position: relative;
+    top: 0rem;
+    left: 0rem;
+    margin: 0 auto;
+    width: 100%;
+    text-align: center;
+    margin-top: -1rem;
+    line-height: 1rem;
+    font-size: 1.5rem;
+    color: var(--mox-layer-dark-2);
+    transform: translateY(0rem) scaleY(0.5);
+    z-index: 1;
+    transition: transform var(--mox-anim-duration) ease;
+}
+
+ul.yui-nav li a {
+    position: relative;
+    z-index: 2;
+}
+
+ul.yui-nav li.selected:after {
+    transform: translateY(0.9rem) scaleY(0.5);
+}
+
+.yui-navset .yui-nav li, .yui-navset .yui-navset-top .yui-nav li {
+    margin: 0 0 0 0;
+    padding: 1px 0 0;
+    zoom: 1;
+}
+
+div.yui-navset ul.yui-nav .selected a, div.yui-navset ul.yui-nav .selected a:focus, div.yui-navset ul.yui-nav .selected a:hover {
+    background: var(--mox-layer-dark-2) !important;
+    color: var(--mox-layer-light-2) !important;
+    text-align: center;
+    font-weight: 600;
+    border: none;
+    box-shadow: none !important;
+}
+
+div.yui-navset ul.yui-nav a, div.yui-navset div.yui-navset-top ul.yui-nav a {
+    background: var(--mox-layer-light-1);
+    color: var(--mox-layer-dark-1) !important;
+    width: 100%;
+    text-align: center;
+    font-weight: 400;
+    transition: all 0.35s;
+    border: none;
+}
+
+div.yui-navset ul.yui-nav a:hover {
+    background: var(--mox-layer-light-1) !important;
+    color: var(--mox-layer-light-1) !important;
+    box-shadow: inset 0rem -2rem var(--mox-theme-color) !important;
+}
+
+#main-content .yui-navset.yui-navset-top .yui-nav li:not(.selected) a:focus {
+    background-image: none;
+    background-color: var(--mox-layer-light-1);
+}
+
+#page-title {
+    margin: 0 0 0.5em 0;
+    padding-top: 0.5rem;
+    font-size: 210%;
+    border-bottom: solid 2px var(--mox-layer-light-2);
+    padding-bottom: 0.5rem;
+    font-weight: 600;
+    font-family: var(--mox-ui-font);
+    color: var(--mox-layer-dark-2);
+}
+
+.code {
+    border: solid 2px var(--mox-layer-light-1);
+    background-color: #000000;
+    font-family: var(--mox-mono-font);
+    padding: 0 1em;
+    margin: 0.4em 0;
+    overflow: auto;
+    border-radius: 1em 1em 1em 1em;
+    color: var(--lightGray);
+    background-image: linear-gradient(var(--mox-layer-dark-1) 1.7em,var(--mox-bg-color) 1.7em);
+    box-shadow: none;
+}
+
+.code,pre,.code * {    font-family: var(--mox-mono-font);}
+
+.code::before {
+    content: '● ● ●';
+    background-image: linear-gradient(90deg, #cf3737 0%, #cf3737 33%, #46cc75 33%, #46cc75 33%, #46cc75 68%, #e5d65a 68%);
+    color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    transform: scale(0.85);
+    display: inline-block;
+    z-index: 0;
+    position: relative;
+    font-family: var(--mox-text-font);
+    letter-spacing: 0.2rem;
+}
+
+/*
+
+#page-content .collapsible-block-folded, #page-content .collapsible-block-unfolded-link {
+    background: var(--mox-layer-dark-2);
+    transition: background var(--mox-anim-duration) linear;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    width: min-content;
+    white-space: nowrap;
+    overflow: hidden;
+    margin: auto;
+}
+
+a.collapsible-block-link:hover {
+    box-shadow: none !important;
+}
+
+#page-content .collapsible-block-link {
+    text-decoration: none;
+    color: var(--mox-layer-light-1);
+    font-weight: bold;
+}
+
+#page-content .collapsible-block-folded:hover, #page-content .collapsible-block-unfolded-link:hover {
+    background: var(--mox-theme-color);
+    box-shadow: none;
+}
+
+#page-content .collapsible-block-unfolded-link {
+    box-shadow: none;
+}
+
+#page-content .collapsible-block-folded, #page-content .collapsible-block-unfolded-link {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+*/
+
+/* Others */
+
+div#page-options-bottom-2 {
+    margin-top: -0.5rem;
+}
+
+a.btn.btn-default#delete-button {
+    color: var(--mox-warn-color) !important;
+}
+
+a.btn.btn-default#delete-button:hover {
+    box-shadow: inset 0px 0rem 0px 0px var(--mox-warn-color), inset 0px -2.5rem 0px 0px var(--mox-warn-color) !important;
+}
+
+.preview-message {
+    position: fixed;
+    right: 2rem;
+    top: 4rem;
+    border: none;
+    box-shadow: 0.4rem 0 var(--mox-warn-color);
+    background: var(--mox-bgblur-front-color);
+    padding: 1rem 2rem;
+    width: max-content;
+    opacity: 1;
+    z-index: 100;
+}
+
+.owindow .content {
+    padding: 0.5em 1em;
+    display: flex;
+    justify-items: start;
+    justify-content: start;
+    flex-direction: column;
+}
+
+div.owindow.owait {
+    top: calc(100% - 57.5vh) !important;
+}
+
+.owindow.owait .content {
+    margin: 1rem;
+    padding: 0;
+    background-repeat: no-repeat;
+    background-position: bottom center;
+    background-image: none;
+    text-align: center;
+    display: grid;
+    justify-content: space-evenly;
+    grid-template: '.';
+}
+
+div.owindow.owait {
+    top: calc(100% - 57.5vh) !important;
+    width: 45vw !important;
+    margin: 0 auto;
+    display: block;
+    left: calc(100% - 73.5vw) !important;
+}
+
+.page-options-bottom {
+    margin: 0.3rem 0;
+    text-align: center;
+    height: 1%;
+    line-height: 2rem;
+    display: grid;
+    grid-template-columns: repeat(4,1fr);
+    background: var(--mox-bg-color);
+    padding: 0.5rem 0.1rem;
+}
+
+a#more-options-button, a#site-tools-button {
+    grid-column: span 4 / auto;
+}
+
+a#print-button, a#rename-move-button, a#delete-button {
+    grid-column: span 2 / auto;
+}
+
+.page-tags span::before {
+    content: var(--mox-page-tags-text);
+    color: var(--mox-layer-dark-3);
+}
+
+.site-tools-box .page-options-bottom {
+    display: flex
+;
+    justify-content: space-around;
+    background: transparent;
+}
+
+.site-tools-box .page-options-bottom ul {
+    display: contents;
+    list-style-type: none;
+}
+
+#main-content .site-tools-box .page-options-bottom ul li {
+    display: contents;
+}
+
+#main-content .site-tools-box .page-options-bottom ul li a {
+    display: block;
+    width: 100%;
+    height: 2rem;
+    text-align: center;
+    line-height: 2rem;
+}
+
+#main-content .page-options-bottom a {
+    margin: 0px 0px;
+    font-size: 100%;
+    padding: 0;
+    background: var(--mox-layer-light-1);
+    color: var(--mox-layer-dark-3) !important;
+    box-shadow: inset 0px 0rem 0px 0px var(--mox-theme-color) !important;
+    padding: 0.1rem 0rem !important;
+    margin: 0rem 0rem !important;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    border-bottom: solid 0.1rem var(--mox-layer-light-2);
+    transition: all var(--mox-anim-duration) !important;
+}
+
+#main-content .page-options-bottom a:hover {
+    text-decoration: none;
+    box-shadow: inset 0px -2.5rem 0px 0px var(--mox-theme-color) !important;
+    color: var(--mox-bg-color) !important;
+    font-weight: bold;
+}
+
+#footer a {
+    color: var(--mox-layer-light-1);
+    text-decoration: none;
+    transition: all var(--mox-anim-duration);
+}
+
+#footer {
+    margin-top: 5px;
+    padding: 1rem;
+    clear: both;
+    overflow: hidden;
+    background: var(--mox-layer-dark-1);
+    color: var(--mox-layer-light-3);
+}
+
+#footer a:hover {
+    color: var(--mox-theme-light-color);
+    text-decoration: none;
+    background: none;
+}
+
+div#footer::before {
+    content: var(--mox-header-title);
+    display: block;
+    position: relative;
+    margin: 1rem auto;
+    width: 80%;
+    height: 4rem;
+    background-image: var(--mox-header-logo);
+    filter: invert(1);
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+    background-origin: content-box;
+    text-align: center;
+    line-height: 10rem;
+    font-size: 1rem;
+    font-weight: bolder;
+    padding-bottom: 1rem;
+    color: var(--mox-layer-dark-3);
+    font-family: var(--mox-ui-font);
+}
+
+#license-area {
+    color: var(--mox-layer-light-3);
+    text-align: center;
+    background: var(--mox-layer-dark-1);
+}
+
+#license-area a {
+    color: var(--mox-layer-light-3);
+    text-decoration: none;
+    transition: all var(--mox-anim-duration);
+}
+
+#license-area a:hover {
+    background: transparent;
+    color: var(--mox-layer-light-1);
+}
+
+
+
+
+
+/* Action Area */
+
+#action-area {
+    width: -webkit-fill-available;
+    background: var(--mox-layer-light-1);
+    border: solid 3px var(--mox-layer-light-2);
+    padding: 1rem;
+    margin: 1rem auto;
+    color: var(--mox-text-color);
+    position: relative;
+    right: 0;
+}
+
+#action-area h1::before {
+    content: '#';
+    color: var(--mox-layer-light-3);
+    font-size: 1.7rem;
+}
+
+#action-area h1 {
+    color: var(--mox-layer-dark-1);
+    font-size: 2rem;
+}
+
+a.action-area-close:hover {
+    background-color: unset;
+}
+
+a.action-area-close.btn.btn-danger::before {
+    font-size: 1rem;
+    color: var(--mox-layer-dark-2);
+    font-weight: bold;
+}
+
+a.action-area-close.btn.btn-danger {
+    font-size: 0;
+}
+
+form#edit-page-form {
+    display: grid;
+    grid-template:
+        'edittitle '
+        'editpanel'
+        'textarea'
+        'changesize'
+        'edithelp'
+        'bottomtable'
+        'uselessbtn'
+        'captcha'
+        'ui';
+}
+
+div#action-area>div+form[onkeypress*="disableEnterKey"]#edit-page-form :nth-child(4) {
+    width: 100%;
+    margin: 0 auto !important;
+    padding: 0;
+    grid-area: edittitle;
+}
+
+table.form tbody tr td:nth-child(1) {
+    background: transparent !important;
+}
+
+table.form.grid td, table.form.grid th {
+    border: 0.2rem solid var(--mox-layer-light-3);
+    padding: 0.5em 1em;
+}
+
+div#st-action-area :is(th,td) {
+    display: table-cell;
+    border-top: unset;
+    border-bottom: unset;
+}
+
+div#st-action-area tr:nth-child(odd) {
+    background: var(--mox-layer-light-2);
+}
+
+
+
+input.text {
+    border: solid 2px var(--mox-layer-light-3);
+    margin: 0 0px;
+    padding: 0.2rem;
+    background-color: var(--mox-layer-light-1);
+    color: var(--mox-layer-dark-1);
+    text-align: left;
+    width: 100%;
+    transition: border var(--mox-anim-duration);
+}
+
+table.form {
+    margin: 0.5rem auto !important;
+    padding: 0;
+    width: 96%;
+}
+
+table.form td, table.form th {
+    vertical-align: top;
+    padding: 0;
+    font-size: 1rem;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+#main-content table.form :is(td, th) {
+    display: table-cell;
+    padding: 0.1rem 1rem;
+}
+
+input.checkbox {
+    background-color: var(--mox-layer-light-1);
+    color: var(--mox-layer-dark-2);
+    width: 1rem;
+    height: auto;
+    display: inline-block;
+}
+
+.wd-editor-toolbar-panel {
+    align-items: center;
+    background: var(--mox-layer-light-1);
+    border: solid 2px var(--mox-layer-light-3);
+    margin: 0;
+    position: relative;
+    width: -webkit-fill-available !important;
+    margin: 0em 0em !important;
+    display: flex;
+    height: auto;
+    justify-content: center;
+    flex-direction: column;
+    grid-area: editpanel;
+    flex-wrap: nowrap;
+    height: max-content;
+}
+
+.wd-editor-toolbar-panel ul {
+    padding: 0;
+    margin: 0 auto;
+    float: left;
+    list-style: none;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.wd-editor-toolbar-panel ul li a {
+    height: 2.3rem;
+    width: 2.3rem;
+    padding: 0px;
+    margin: 0em 0em 0em 0em;
+    display: block;
+    transition: box-shadow var(--mox-anim-duration) , filter var(--mox-anim-duration) !important;
+    box-shadow: none;
+}
+
+.wd-editor-toolbar-panel ul li a::before {
+    content: '';
+    font-size: 1.2rem;
+    display: inline-block;
+    background-color: var(--mox-layer-light-1);
+    color: var(--mox-layer-dark-1);
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    line-height: 2.3rem;
+    font-family: 'FontAwesome';
+    transition: filter var(--mox-anim-duration);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 50%;
+}
+
+.wd-editor-toolbar-panel div {
+    height: 3rem;
+}
+
+.wd-editor-toolbar-panel ul li ul {
+    position: absolute;
+    width: auto !important;
+    left: -999em;
+    background-color: var(--mox-layer-light-1);
+    z-index: 30;
+}
+
+/* icons */
+
+:where(a.weditor-h1,a.weditor-h2,a.weditor-h3,a.weditor-h4,a.weditor-h5,a.weditor-h6,a.weditor-raw,a.weditor-hr,a.weditor-div,a.weditor-clearfloat,a.weditor-clearfloatleft,a.weditor-clearfloatright,a.weditor-toc)::before {
+    font-family: var(--mox-ui-font) !important;
+}
+
+:where(a.weditor-imagewiz, a.weditor-codewiz, a.weditor-uriwiz, a.weditor-pagelinkwiz, a.weditor-incindent, a.weditor-decindent, a.weditor-eqref,a.weditor-bibcite)::after {
+    content: '';
+    /* font-family: 'FontAwesome' !important; */
+    display: inline-block;
+    transform: translateX(1.2rem) translateY(-1.1rem);
+    color: var(--mox-layer-light-1);
+    background: var(--mox-layer-dark-1);
+    width: 1rem;
+    height: 1rem;
+    line-height: 1rem;
+    text-align: center;
+    border-radius: 0.25rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M15 38 L50 62 L85 38' fill='none' stroke='%23f1f1f1' stroke-width='14' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 80%;
+}
+
+:where(a.weditor-imagewiz, a.weditor-codewiz, a.weditor-uriwiz, a.weditor-pagelinkwiz, a.weditor-incindent, a.weditor-decindent, a.weditor-eqref,a.weditor-bibcite):hover::after {
+    color: var(--mox-layer-light-1);
+    filter: invert(1);
+}
+
+a.weditor-incindent::after {
+    content: '+' !important;
+    background-image: none;
+    font-weight: 900;
+    font-family: var(--mox-ui-font);
+}
+
+a.weditor-decindent::after {
+    content: '-' !important;
+    background-image: none;
+    font-weight: 900;
+    font-family: var(--mox-ui-font);
+}
+
+a.weditor-bibcite::after {
+    content: '+';
+    background-image: none;
+    font-family: var(--mox-ui-font);
+    font-weight: 900;
+}
+
+a.weditor-h1::before {content:'H1' !important;}
+a.weditor-h2::before {content:'H2' !important;}
+a.weditor-h3::before {content:'H3' !important;}
+a.weditor-h4::before {content:'H4' !important;}
+a.weditor-h5::before {content:'H5' !important;}
+a.weditor-h6::before {content:'H6' !important;}
+
+a.weditor-bold::before {
+    content: "" !important;
+    filter: invert(0);
+}
+
+a.weditor-italic::before {
+    content: '';
+}
+
+a.weditor-strikethrough::before {
+    content: '';
+}
+
+a.weditor-teletype::before {
+    content: "tt" !important;
+    font-family: 'Oxygen Mono' !important;
+}
+
+a.weditor-quote::before {
+    content: '';
+}
+
+a.weditor-superscript::before {
+    content: '';
+}
+
+a.weditor-subscript::before {
+    content: '';
+}
+
+a.weditor-raw::before {content:'@' !important;}
+
+a.weditor-hr::before {
+    content: '---' !important;
+    letter-spacing: 0.1rem;
+}
+
+a.weditor-div::before {content:'div' !important;}
+
+a.weditor-clearfloat::before {
+    content: 'float' !important;
+    font-size: 100% !important;
+}
+
+a.weditor-clearfloatleft::before {content:'◀f' !important;    font-size: 100% !important;}
+a.weditor-clearfloatright::before {content:'f▶' !important;    font-size: 100% !important;}
+
+a.weditor-table::before {
+    content: '';
+}
+
+a.weditor-toc::before {content:'toc' !important;}
+
+a.weditor-code::before, a.weditor-codewiz::before {
+    content: '';
+}
+
+a.weditor-uri::before, a.weditor-uriwiz::before {
+    content: '';
+}
+
+a.weditor-pagelink::before, a.weditor-pagelinkwiz::before {
+    content: '';
+}
+
+a.weditor-image::before, a.weditor-imagewiz::before {
+    content: '';
+}
+
+a.weditor-html::before {
+    content: '';
+}
+
+a.weditor-numlist::before {
+    content: '';
+}
+
+a.weditor-bullist::before {
+    content: '';
+
+}
+
+a.weditor-incindent::before, a.weditor-decindent::before {
+    content: '';
+}
+
+a.weditor-deflist::before {
+    content: '';
+}
+
+a.weditor-footnote::before {
+    content: '';
+}
+
+a.weditor-math::before {
+    content: 'LaTeX' !important;
+    font-size: 65% !important;
+    font-family: math !important;
+}
+
+a.weditor-mathinline::before {
+    content: 'Σ' !important;
+    font-family: math !important;
+}
+
+a.weditor-eqref::before {content:'Eq' !important;}
+
+a.weditor-bib::before, a.weditor-bibcite::before {
+    content: '';
+}
+
+div.wd-editor-toolbar-panel div:nth-child(1):hover, div.wd-editor-toolbar-panel div:nth-child(2):hover, div.wd-editor-toolbar-panel div:nth-child(3):hover {
+    z-index: 100;
+    position: relative;
+}
+
+
+/* icons end */
+
+
+.wd-editor-toolbar-panel li.hseparator {
+    width: 2px;
+    height: 33px;
+    margin: 0 5px;
+    background-color: #efefef;
+}
+
+
+#edit-page-comments {
+    width: 100%;
+    height: 4rem;
+}
+
+.wd-editor-toolbar-panel a {
+    background-image: none;
+}
+
+.wd-editor-toolbar-panel a:hover {
+    background-image: none;
+    filter: none;
+    box-shadow: none !important;
+}
+
+.wd-editor-toolbar-panel a:hover::before {
+    filter: invert(0.85);
+}
+
+.wd-editor-toolbar-panel ul {
+    padding: 0;
+    margin: 0 auto;
+    float: left;
+    list-style: none;
+}
+
+form#edit-page-form :nth-child(6) {
+    grid-area: textarea;
+}
+
+textarea {
+    padding: 0.5rem;
+    font-size: 105%;
+    border: solid 2px var(--mox-layer-light-3);
+    background-color: var(--mox-layer-light-2);
+    color: var(--mox-layer-dark-2);
+    width: -webkit-fill-available !important;
+    position: relative;
+    margin: 0 auto;
+    display: block;
+    font-family: var(--mox-mono-font);
+    transition: border var(--mox-anim-duration);
+}
+
+textarea:focus-visible, input:focus-visible {
+    outline: none;
+    border: solid 2px var(--mox-theme-color);
+}
+
+#new-post-div textarea#np-text {width:93%}
+
+div#new-post-form-container {
+    background-color: var(--mox-layer-light-1);
+    border: solid 5px var(--mox-layer-light-2);
+    padding: 1em;
+}
+
+.change-textarea-size {
+    display: grid;
+    grid-template: 'incrsize decrsize';
+    grid-area: changesize;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+div.change-textarea-size :nth-child(1) {
+    grid-area: incrsize;
+}
+
+div.change-textarea-size :nth-child(2) {
+    grid-area: decrsize;
+}
+
+.change-textarea-size a {
+    width: auto;
+    text-align: center;
+    display: block;
+    height: 2rem;
+    line-height: 2rem;
+    font-size: 1.5rem;
+    color: var(--mox-layer-dark-1) !important;
+    background-color: var(--mox-layer-light-2) !important;
+    border: none;
+    position: relative;
+    border: none !important;
+}
+
+#main-content #action-area .change-textarea-size a:hover, .change-textarea-size a:hover {
+    background: var(--mox-layer-light-1) !important;
+    box-shadow: inset 0 -3rem var(--mox-layer-dark-2) !important;
+    color: var(--mox-layer-light-2) !important;
+}
+
+.edit-help-34 {
+    margin-top: 0px;
+    grid-area: edithelp;
+    padding: 1rem;
+}
+
+table.edit-page-bottomtable {
+    grid-area: bottomtable;
+}
+
+table.edit-page-bottomtable tbody {
+    width: 100%;
+    display: block;
+    margin: 0 auto;
+    position: relative;
+}
+
+table.edit-page-bottomtable tbody tr {
+    display: grid;
+    grid-template: 'lockinfo editinfo';
+    grid-gap: 0rem;
+}
+
+table.edit-page-bottomtable tbody tr td:nth-child(1) {
+    grid-area: lockinfo;
+    transform: translateY(-1rem);
+}
+
+table.form td div.sub, form div.sub {
+    font-size: 90%;
+    color: var(--mox-layer-dark-3);
+}
+
+table.edit-page-bottomtable tbody tr td:nth-child(2) {
+    grid-area: editinfo;
+}
+
+#edit-page-comments {
+    width: 100%;
+    height: 4rem;
+    width: 90% !important;
+}
+
+#lock-info {
+    background-color: var(--mox-layer-light-1);
+    border-color: #ededed;
+    border: solid 2px var(--mox-theme-color);
+    display: block;
+    position: relative;
+    left: 0rem;
+    margin: 0.1rem 0;
+    padding: 0.4rem 0.8rem;
+    margin-left: 0rem;
+    height: auto;
+    top: 1.4rem;
+}
+
+.checkbox.do-not-notify {
+    grid-area: uselessbtn;
+    text-align: center;
+}
+
+div.wd-editor-toolbar-panel table {
+    empty-cells: show;
+    display: inline-grid;
+}
+
+div#edit-page-captcha {
+    grid-area: captcha;
+}
+
+.buttons.alignleft {
+    grid-area: ui;
+}
+
+table.edit-page-bottomtable tbody {
+    width: 100%;
+    display: block;
+    margin: 0 auto;
+    position: relative;
+}
+
+table.edit-page-bottomtable tbody tr {
+    display: grid;
+    grid-template: 'editinfo lockinfo';
+    grid-gap: 1rem;
+    background: transparent;
+}
+
+table.edit-page-bottomtable tbody tr td:nth-child(1) {
+    grid-area: lockinfo;
+}
+
+table.edit-page-bottomtable tbody tr td:nth-child(2) {
+    grid-area: editinfo;
+}
+
+.form tbody tr {
+    background: transparent;
+    height: 2.5rem;
+    line-height: 2.5rem;
+}
+
+div#lock-info > strong {
+    font-size: 0.82rem;
+    color: var(--mox-theme-color);
+    font-family: var(--mox-mono-font);
+}
+
+#edit-save-button {
+    color: var(--mox-accept-color);
+    border: solid 0.2rem var(--mox-accept-color);
+    transition: all var(--mox-anim-duration);
+}
+
+#edit-save-button:hover {
+    color: var(--mox-layer-dark-1);
+    box-shadow: inset 0 -3rem var(--mox-accept-color);
+}
+
+#edit-cancel-button {
+    color: var(--mox-warn-color);
+    border: solid 0.2rem var(--mox-warn-color);
+    transition: all var(--mox-anim-duration);
+}
+
+#edit-cancel-button:hover {
+    color: var(--mox-layer-dark-1);
+    box-shadow: inset 0 -3rem var(--mox-warn-color);
+}
+
+.buttons .btn {
+    width: 7em;
+    display: inline;
+}
+
+div.buttons.alignleft {
+    text-align: center;
+}
+
+div.buttons input:hover, input.button:hover, button:hover, a.button:hover {
+    background-color: var(--mox-layer-light-1);
+    color: var(--mox-layer-dark-1);
+    box-shadow: inset 0 -3rem var(--mox-layer-light-2);
+}
+
+div.buttons input, input.button, button, file, a.button {
+    margin: 0 0.2rem;
+    padding: 0.4rem 0.2rem;
+    text-decoration: none;
+    background-color: var(--mox-layer-light-1);
+    border: solid 0.2rem var(--mox-layer-light-2);
+    color: var(--mox-layer-dark-1);
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 100%;
+    transition: all var(--mox-anim-duration);
+}
+
+/* Action Area Other Elements */
+
+.owindow {
+    background-color: var(--mox-bg-color);
+    width: 50em;
+    border: solid 5px var(--mox-layer-light-2);
+    text-align: left;
+    position: fixed;
+    width: 75vw !important;
+    left: calc(100% - 87vw) !important;
+    top: 15vh !important;
+}
+
+.owindow .title {
+    cursor: default;
+    font-size: 140%;
+    font-weight: bold;
+    padding: 0.2rem 1rem;
+    background-color: var(--mox-layer-light-2);
+    height: 1%;
+    color: var(--mox-text-color);
+}
+
+.odialog-shader {
+    background-color: var(--mox-bg-color);
+    opacity: 0.8;
+    position: fixed;
+    z-index: 10;
+    height: 100%;
+    width: 100%;
+}
+
+.owindow .content {
+    padding: 0.5em 1em;
+    display: grid;
+    justify-items: start;
+    justify-content: start;
+    align-items: start;
+}
+
+.owindow .button-bar a:hover {
+    background-color: var(--mox-layer-light-1);
+}
+
+div.content.modal-body>img {
+    height: 5rem;
+    float: none !important;
+    border-radius: 0rem;
+    position: relative;
+    background: transparent !important;
+}
+
+div.content.modal-body h1 {
+    display: block;
+    width: calc(100% -5rem);
+    height: 5rem;
+    font-size: 2rem;
+    line-height: 6rem;
+    position: relative;
+    left: 0rem;
+    margin-top: 0rem;
+}
+
+div.content.modal-body:has(img) h1 {
+    left: 7rem;
+    margin-top: -5rem;
+}
+
+div.content.modal-body table.table {
+    width: 72vw;
+}
+
+div.content.modal-body table.table tbody tr {
+    width: 100%;
+    display: table-row;
+    margin-top: 0.3rem;
+    background: transparent;
+    box-shadow: 0 0.2rem var(--mox-layer-light-1);
+}
+
+a.btn.btn-danger {
+    color: var(--mox-warn-color) !important;
+}
+
+a.btn.btn-danger[onclick*="dialog.cleanAll()"] {
+    display: block;
+    z-index: -1;
+    position: fixed;
+    background: transparent;
+    top: 0;
+    left: 0;
+    padding: 0;
+    margin: 0;
+    width: 100vw;
+    height: 100vw;
+    font-size: 0;
+}
+
+a.btn.btn-danger[onclick*="dialog.cleanAll()"]:hover {
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+a#show-upload-button {
+    font-size: 0.9rem;
+    scale: 1.2;
+}
+
+div#owindow.error div.content p:nth-child(2) {
+    grid-area: para1;
+}
+div#owindow.error div.content p:nth-child(1) {
+    grid-area: para2;
+}
+
+div#owindow.error div.content {
+    display: grid;
+    justify-items: start;
+    grid-template:
+        'username username'
+        'para1 para1'
+        'para2 para2'
+        'ui ui';
+}
+
+table.page-history {
+    width: 100%;
+}
+
+#who-rated-page-area div br {
+    display: none;
+}
+#who-rated-page-area div {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    align-items: center;
+}
+
+#who-rated-page-area div span.printuser.avatarhover {
+    display: flex;
+}
+
+#who-rated-page-area div span.printuser a {
+    word-break: keep-all;
+    display: inline-block;
+}
+
+.autocomplete-list {
+    position: relative;
+    z-index: 100;
+    top: 0rem;
+}
+
+.autocomplete-list .yui-ac-bd {
+    max-height: 20rem;
+    overflow-y: scroll;
+}
+
+.autocomplete-list ul li div {
+    padding: 0;
+    line-height: 1.5rem;
+}
+
+
+
+
+/* Hovertip & Footnotes */
+
+.hovertip {
+    width: max-content;
+    max-width: 25rem;
+    background: var(--mox-bg-color) !important;
+    border: solid 4px var(--mox-layer-light-2) !important;
+    outline: none;
+}
+
+.footnote .f-heading, .equation .e-heading, .reference .r-heading {
+    font-weight: bold;
+    font-family: var(--mox-ui-font);
+    background: var(--mox-layer-dark-2);
+    color: var(--mox-layer-light-1);
+    padding: 0.3rem 0.5rem;
+    display: inline-block;
+    font-size: 1.1rem;
+    position: relative;
+}
+
+.footnote .f-heading, .equation .e-heading, .reference .r-heading {
+    font-weight: bold;
+    font-family: var(--mox-ui-font);
+    background: var(--mox-layer-dark-2);
+    color: var(--mox-layer-light-1);
+    padding: 0.3rem 0.5rem;
+    display: inline-block;
+    font-size: 1.1rem;
+    position: relative;
+}
+
+.f-footer {
+    font-size: 0.5rem !important;
+    color: var(--mox-layer-light-3);
+    font-family: var(--mox-ui-font);
+}
+
+/* Even Better Footnotes by AgentFS */
+
+div.hovertip {
+    border-radius: 0;
+    box-sizing: border-box;
+    background-color: var(--mox-layer-light-1)!important;
+    border: none!important;
+    color: var(--mox-text-color);
+    padding: 1em;
+    width: min(25em, 30em)!important;
+    top: initial!important;
+    left: initial!important;
+    position: fixed!important;
+    display: block!important;
+    bottom: 2em;
+    right: -26em;
+    transition: right .45s cubic-bezier(.6,.18,.27,.88);
+    transition-delay: var(--mox-anim-duration);
+    z-index: 29;
+}
+div.hovertip:not(:has(div[class*="-heading"])) {
+    border-bottom: var(--mox-layer-dark-1) 0.25em solid !important;
+}
+div.hovertip::before {
+    content: "";
+    display: block;
+    background-color: var(--mox-layer-dark-1);
+    height: 0.25em;
+    width: 100%;
+    position: absolute;
+    left: 0;
+    top: -0.125em;
+}
+div.hovertip:not(:has(div[class*="-heading"]))::before {
+    display: none;
+}
+div.hovertip:is(:hover, [style*="display: block"]) {
+    z-index: 30;
+    right: 1em;
+    transition-delay: 0s;
+}
+div.hovertip div.content {
+    padding: 0;
+}
+div.hovertip div.content div[class] div[class*="-heading"] {
+    background-color: var(--mox-layer-dark-1);
+    color: var(--mox-layer-light-1);
+    font-family: var(--font1);
+    font-size: 1em;
+    line-height: 1.5em;
+    height: 1.5em;
+    inset-block-start: -1.5em;
+    inset-inline-start: 0;
+    margin-block-end: -1em;
+    padding: 0 0.5em;
+    position: absolute;
+    width: max-content;
+    z-index: 30;
+}
+div.hovertip div.content div[class] div[class*="-content"] {
+    margin: 0;
+    padding: 0;
+}
+div.hovertip div[class*="-footer"] {
+    display: none;
+}
+
+table.page-history td.optionstd a {
+    background: var(--mox-layer-light-1);
+    border: none;
+}
+
+td.optionstd {
+    width: max-content !important;
+}
+
+a[onclick*="showVersion"]::before {
+    font-size: 0.8rem;
+}
+
+a[onclick*="showSource"]::before {
+    font-size: 0.8rem;
+}
+
+a[onclick*="PageHistoryModule.listeners.revert"]::before {
+    font-size: 0.8rem;
+}
+
+table.page-history td.optionstd a {
+    background: var(--mox-layer-light-1);
+    border: none;
+    display: inline-block;
+    outline: solid 0.1rem var(--mox-layer-light-2);
+    margin: 0.2rem 0.1rem;
+}
+
+a[onclick*="showVersion"], a[onclick*="showSource"], a[onclick*="PageHistoryModule.listeners.revert"] {
+    font-size: 0;
+}
+
+
+.page-history td:nth-child(odd) {
+    background-color: var(--mox-layer-light-2);
+}
+
+.page-history td {
+    padding: 0rem 0rem;
+    word-break: keep-all;
+}
+
+.page-history tbody tr {
+    background: var(--mox-layer-light-1);
+    border: none;
+    outline: none;
+    display: table-row;
+}
+
+.yui-ac-content {
+    border: none;
+    background: var(--mox-bgblur-front-color);
+    border-left: solid 0.2rem var(--mox-layer-light-3);
+}
+
+input.btn.btn-primary[onclick="WIKIDOT.modules.RenamePageModule.listeners.deletePage(event)"] {
+    color: var(--mox-warn-color);
+    border-color: var(--mox-warn-color);
+}
+
+@media (max-width: 30em) {
+    div.hovertip {
+        width: min(20em, 25em)!important;
+    }
+}
+
+
+/* Scrollbar */
+
+::-webkit-scrollbar {
+    width: 0.4rem !important;
+    background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--mox-layer-dark-1) !important;
+}
+
+.hl-main::-webkit-scrollbar, pre::-webkit-scrollbar, .code::-webkit-scrollbar {
+    height: 0.4rem !important;
+}
+
+/* SCP Sigma-9 Things */
+
+.scp-image-block {
+    outline: solid 2px var(--mox-layer-light-2);
+    box-shadow: none;
+    width: 300px;
+    position: relative;
+    z-index: -1;
+}
+.scp-image-block.block-right {
+    float: right;
+    clear: right;
+    margin: 1rem;
+}
+.scp-image-block.block-left {
+    float: left;
+    clear: left;
+    margin: 1rem;
+}
+
+.scp-image-block.block-center {
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.scp-image-block {
+    outline: none;
+    box-shadow: none;
+    width: 300px;
+    position: relative;
+}
+
+.scp-image-block .scp-image-caption {
+    background-color: none;
+    border-bottom: solid 0.15rem var(--mox-layer-dark-3);
+    padding: 0.3rem 0;
+    font-size: 90%;
+    font-weight: bold;
+    text-align: center;
+    width: 300px;
+    color: var(--mox-layer-dark-2);
+    outline: none;
+    z-index: 1;
+    position: relative;
+    margin-top: 2px;
+    width: 100%;
+}
+
+.scp-image-block.block-right img.image {
+    width: 100%;
+}
+
+.scp-image-block > p {
+    margin: 0;
+}
+.scp-image-block .scp-image-caption > p {
+    margin: 0;
+    padding: 0 10px;
+}
+
+.ruby, ruby {
+    display: inline-table;
+    text-align: center;
+    white-space: nowrap;
+    line-height: 1;
+    height: 1em;
+    vertical-align: text-bottom;
+}
+.rt, rt {
+    display: table-header-group;
+    font-size: 0.6em;
+    line-height: 1.1;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.keycap {
+    border: 1px solid;
+    border-color: var(--mox-layer-light-3);
+    border-bottom-width: 3px;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+    background-color: var(--mox-layer-light-1);
+    padding: 1px 3px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    font-family: var(--mox-mono-font);
+}
+
+.menu-item img[src*="help"], .menu-item img[src*="default"], .menu-item img[src*="series"], .menu-item img[src*="main"], .menu-item img[src*="home"], .menu-item img[src*="forum"] {
+    display: none;
+}
+
+.forum-group table tr.head td {
+    text-align: center;
+    font-size: 95%;
+    background-color: var(--mox-layer-light-2);
+    border: none;
+    padding: 0.4rem 1rem;
+}
+
+.forum-group div.head {
+    background-color: var(--mox-layer-dark-1);
+    color: var(--mox-layer-light-2);
+    padding: 0.5rem 1rem;
+    margin: 0;
+    border: none;
+    font-family: var(--mox-ui-font);
+}
+
+.forum-group table td {
+    border: none;
+    padding: 0.5rem 1rem;
+}
+
+/* NO BIG AVATARS */
+
+a.avatar-hover, a.avatar-hover:hover {
+    display: none !important;
+}
+
+/* Posts */
+
+.wait-block {
+    width: fit-content;
+    height: fit-content;
+    margin: 0 auto;
+    background-image: none;
+    background-color: var(--mox-layer-light-1);
+    text-align: center;
+    padding: 0.5rem 4rem;
+    box-shadow: -0.25rem 0 0 0 var(--mox-alter-color);
+}
+
+.wait-block::before {
+    content: '読み込み中……';
+}
+
+.wait-block p {
+    font-size: 0;
+}
+
+div.info .odate {
+    font-size: 0.85rem;
+    font-family: 'Oxygen Mono';
+}
+.thread-container .post .head {
+    padding: 0.3rem 0.8rem 0.5rem 0.9rem;
+    background-color: var(--mox-layer-light-1);
+    border: solid 2px var(--mox-layer-light-2);
+}
+
+.thread-container .post .long .content {
+    padding: 0.2rem 0.9rem;
+}
+
+.thread-container .post .signature {
+    display: none;
+}
+
+.thread-container .post .long .head .title {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.thread-container .post.folded .short {
+    display: block;
+    background: var(--mox-layer-light-1);
+    border: solid 2px var(--mox-layer-light-2);
+}
+
+a.btn, a.btn.btn-primary, a.btn.btn-small, a.btn.btn-sm {
+    display: inline-block;
+    background-color: var(--mox-layer-light-1);
+    padding: 0.2rem 0.4rem !important;
+    border: solid 0.125rem var(--mox-layer-light-2);
+    text-decoration: none;
+    color: var(--mox-layer-dark-2) !important;
+    margin: 0.2rem 0.1rem !important;
+    transition: color var(--mox-anim-duration), box-shadow var(--mox-anim-duration) !important;
+}
+
+a.btn:hover, a.btn.btn-primary:hover, a.btn.btn-small:hover, a.btn.btn-sm:hover {
+    box-shadow: inset 0 -2rem var(--mox-layer-light-2);
+}
+
+a.btn[onclick*="togglePostFold"]:hover {
+    box-shadow: none;
+    color: var(--mox-theme-color) !important;
+}
+a.btn[onclick*="togglePostFold"] {
+    padding: 0;
+    background: transparent;
+    border: none;
+    margin: -0.15rem 0 0rem 0 !important;
+    display: inline-block;
+}
+
+
+
+
+#header {
+        grid-template-areas: 'menu logo title topbar user search';
+    }
+
+#header h2 {
+        width: auto;
+        text-align: left;
+        word-break: keep-all;
+        direction: ltr;
+        left: calc(var(--mox-header-height)* 2.35);
+        display: contents;
+        position: relative;
+        top: calc(var(--mox-header-height)* 0.35);
+        grid-area: menu;
+    }
+
+#header h1 a span::after {
+        content: var(--mox-header-subtitle);
+        font-size: calc(var(--mox-header-height)* 0.25) !important;
+        font-weight: normal;
+        width: auto;
+        text-align: center;
+        bottom: calc(var(--mox-header-height)* 0.115 - 0.125rem);
+        position: relative;
+        left: calc(var(--mox-header-height)* 0);
+        /* grid-area: subtitle; */
+        display: block;
+        color: var(--mox-layer-dark-1);
+}
+
+
+
+/* Mobile */
+
+@media (max-width: 876px) {
+
+    .scp-image-block {
+        float: none !important;
+        margin: 1rem auto !important;
+    }
+
+    #main-content {
+        margin-top: 1rem;
+        margin: 1rem auto;
+    }
+
+    .mox-float {
+        float: none !important;
+        width: 85%;
+        position: relative;
+        max-width: 85%;
+        margin: 0.5rem auto 1.5rem auto;
+    }
+
+    #top-bar {
+        position: relative;
+        left: var(--mox-header-height);
+        top: calc(var(--mox-header-height)* 2.4);
+        z-index: 20;
+        width: calc(100% - var(--mox-header-height));
+    }
+
+    .top-bar {display:none;}
+
+    .mobile-top-bar {
+        display: flex;
+        position: relative;
+        grid-area: topbar;
+        width: calc(100% - calc(var(--mox-header-height)* 0.5));
+        justify-content: flex-start;
+    }
+
+    #top-bar .mobile-top-bar ul li ul {
+        top: var(--mox-header-height);
+        pointer-events: all;
+        width: max-content;
+        min-width: calc(100% - var(--mox-header-height)* -1);
+        display: grid;
+        contain: layout;
+        position: absolute;
+        left: calc(var(--mox-header-height)* -1);
+        grid-template-columns: repeat(2, 1fr);
+        backdrop-filter: blur(5px);
+        background: var(--mox-bgblur-front-color);
+        z-index: 11;
+        align-items: start;
+        height: min-content;
+        max-height: 60vh;
+        overflow-y: scroll;
+        padding-top: calc(var(--mox-header-height)* 0.5);
+        box-shadow: calc(var(--mox-header-height)* -0.1) 0 var(--mox-layer-dark-2);
+        align-content: center;
+        justify-items: start;
+        justify-content: start;
+    }
+
+    #top-bar li ul li {
+        display: block;
+        float: none;
+        height: fit-content;
+        line-height: calc(var(--mox-header-height)* 0.5);
+        width: calc(100% - var(--mox-header-height)* 0.5);
+    }
+
+    #top-bar li ul li a {
+        width: auto;
+        text-align: left;
+        background-color: transparent;
+        border: none;
+        color: var(--mox-layer-dark-2);
+        padding-top: 0.3rem;
+        padding-bottom: 0.3rem;
+        backdrop-filter: none;
+        z-index: 50;
+        position: relative;
+    }
+
+    #side-bar {
+        top: 2.8rem;
+        width: 65vw;
+        left: -75vw;
+    }
+    div#side-bar::before {
+        width:75vw;
+    }
+
+    #main-content {
+        max-width: 97vw !important;
+    }
+
+    #page-content {
+    padding: 1rem;
+    }
+
+    #header {
+        position: sticky;
+        display: grid;
+        height: calc(var(--mox-header-height)* 3);
+        direction: ltr !important;
+        top: calc(var(--mox-header-height)* -2);
+        grid-template-areas:
+        'menu logo title title search'
+        'menu logo title title user'
+        'menu topbar topbar topbar topbar';
+        grid-template-columns: var(--mox-header-height) 0fr 1fr 0fr;
+        grid-template-rows: auto auto var(--mox-header-height);
+        align-content: space-between;
+        align-items: center;
+        justify-items: start;
+    }
+
+    #header h1 a::before {
+        height: 75%;
+        width: calc(var(--mox-header-height)* 1.75);
+        display: inline-block;
+        grid-area: logo;
+        margin-left: calc(var(--mox-header-height)* 0.05);
+        opacity: 0.25;
+    }
+
+    #header h1 a span {
+        justify-content: center;
+        height: var(--mox-header-height);
+        transform: translateX(calc(var(--mox-header-height)* -1.25));
+        background-image: linear-gradient(90deg, #6f6f6f00 0%, var(--mox-layer-light-1) 15%);
+        padding: calc(var(--mox-header-height)* 0.5) calc(var(--mox-header-height)* 0.4);
+    }
+
+    #header h1 a span::before {
+        font-size: calc(var(--mox-header-height)* 0.65) !important;
+    }
+
+    #header h1 a span::after {
+        font-size: calc(var(--mox-header-height)* 0.3) !important;
+        bottom: calc(var(--mox-header-height)* 0.115 + 0.125rem);
+    }
+
+    div#side-bar::after {
+        top: 0;
+        left: 0;
+        font-size: calc(var(--mox-header-height)* 0.5);
+        width: calc(var(--mox-header-height)* 1);
+        height: calc(var(--mox-header-height)* 1);
+        text-align: center;
+        line-height: calc(var(--mox-header-height)* 1);
+        background-color: var(--mox-layer-light-1);
+    }
+
+    div#side-bar:hover::after {
+        height: calc(var(--mox-header-height));
+        line-height: calc(var(--mox-header-height));
+    }
+
+    #top-bar ul {
+        grid-area: topbar;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        width: max-content;
+        justify-content: flex-end;
+        font-size: 85%;
+    }
+
+    #top-bar li {
+        list-style: none;
+        float: left;
+        margin: 0 0;
+        padding: 0 calc(var(--mox-header-height)* 0.1);
+        height: calc(var(--mox-header-height)* 1);
+        line-height: calc(var(--mox-header-height)* 1);
+    }
+
+    #top-bar li a {
+        padding: 1px 0.4em;
+        text-decoration: none;
+    }
+
+    #action-area {
+        width: -webkit-fill-available;
+        right: 0vw !important;
+        margin: 1rem auto;
+    }
+
+    .wd-editor-toolbar-panel {
+        position: relative;
+        width: 90vw !important;
+        height: max-content;
+        padding-bottom: 0rem !important;
+        display: inline;
+        margin: 0 auto !important;
+    }
+
+    .wd-editor-toolbar-panel div {
+        height: 2.6rem !important;
+        scale: 0.9 !important;
+    }
+
+    textarea {
+        width: calc(100% - 2rem) !important;
+    }
+
+    .wd-editor-toolbar-panel li.hseparator {
+        width: 2px;
+        height: 23px;
+        margin: 5px 3px;
+        background-color: #efefef;
+    }
+    .wd-editor-toolbar-panel ul li {
+        padding: 0;
+        margin: 0px;
+        float: left;
+    }
+    .wd-editor-toolbar-panel ul {
+        padding: 0;
+        margin: 0 auto;
+        float: left;
+        list-style: none;
+        display: inline;
+        border-bottom: solid 2px var(--mox-layer-light-2);
+    }
+    .wd-editor-toolbar-panel div {
+        display: block !important;
+    }
+    .owindow {
+        background-color: var(--mox-bg-color);
+        width: 75vw !important;
+        border: solid 2px var(--mox-layer-light-3);
+        text-align: left;
+        margin: 0 auto;
+        position: fixed;
+    }
+    #lock-info {
+        top: 0.4rem !important;
+    }
+
+    #footer {
+        text-align: center;
+    }
+
+    #footer .options {
+        float: none;
+    }
+
+    #who-rated-page-area div {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        align-items: center;
+    }
+
+
+}
+
+@media (max-width: 675px) {
+
+    table.form tbody tr td:nth-child(1) {
+        background: transparent !important;
+        font-size: 1rem;
+    }
+
+}
+
+/* Wikidot Components */
+
+:root {
+    --title-font: var(--mox-ui-font)  !important;
+    --five-color: 176, 44, 44  !important;
+    --four-color: 245, 179, 150  !important;
+    --three-color: 235, 221, 150  !important;
+    --two-color: 133, 200, 220  !important;
+    --one-color: 180, 226, 179  !important;
+    --linkColour: var(--mox-layer-light-1)  !important;
+    --barColour: var(--mox-theme-color)  !important;
+    --main-size: calc(100vw* 5 / 24 - 2em)  !important;
+}
+
+.scp-image-block {
+    z-index: 1;
+}
+
+img.image {
+    z-index: 2;
+    position: relative;
+}
+
+div.danger-diamond a:hover {
+    box-shadow: none !important;
+}
+div.danger-diamond a {
+    font-size: 0;
+}
+
+div.class-text {
+    grid-area: unset;
+}
+
+.acs-hybrid-text-bar a {
+    font-size: 0;
+}
+
+.acs-hybrid-text-bar {
+    font-family: var(--mox-ui-font);
+}
+
+.w-container {
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    margin-top: 1rem;
+    border: none;
+    box-shadow: none;
+    box-sizing: border-box;
+}
+
+.s-cell {
+    font-size: 1.25rem;
+    margin-top: -1.6rem;
+    margin-bottom: -0.8rem;
+    font-family: var(--mox-ui-font);
+}
+
+.w-cell {
+    font-size: 0.96rem;
+    border-top: none;
+    border-left: solid 0.1rem var(--mox-layer-light-2);
+    margin-top: 0px;
+    margin-left: 0px;
+    padding: 0px;
+    box-sizing: border-box;
+}
+
+.w-cell > hr {
+    margin: 0px;
+    margin-top: -0.5rem;
+    background-color: var(--mox-layer-light-2);
+}
+
+div.sideright > div.colorbars-container > div.colorbars {
+    background: var(--mox-theme-dark-color);
+
+}
+
+.earthworm {
+    --earthworm-segment-border-color: var(--mox-layer-light-2);
+}
+
+div.info-container a.collapsible-block-link:hover {
+    background-color: var(--mox-layer-light-2) !important;
+}
+
+span.logical-link-custom.logical-link-link-true a:hover {
+    color: var(--barColour) !important;
+}
+
+span.logical-link-custom.logical-link-link-true a {
+    color: var(--linkColour) !important;
+}
+
+.panel-container-container > .panel-container {
+    position: relative;
+    top: 0%;
+    left: 0%;
+    min-width: 100%;
+    height: var(--main-size);
+    margin-top: 0;
+    margin-left: 0;
+}
+
+.panel-container-container {
+    position: relative;
+    height: var(--main-size);
+}
+
+/* Translation */
+
+/* MOXは複雑なセレクタを使い、未翻訳のWikidotシステム文言の一部を擬似要素で翻訳します。一部のテキスト（例：「Please Note」）は正確に選択できないため、ここには列挙していません。 */
+
+:root {
+    --mox-page-tags-text: 'Tags';
+    --mox-rename-option-delete-text: 'Warning: This will permanently remove this page from the website, and it will be impossible to recover the data. Are you sure you want to do this?';
+    --mox-action-area-close-text: 'Cancel';
+    --mox-show-version-text: 'Show version';
+    --mox-show-source-text: 'Show source';
+    --mox-revert-version-text: 'Revert';
+    --mox-who-watches-page-p-text: 'These people will be notified when this page is changed or commented on.';
+    --mox-who-watches-page-h1-text: 'Who watches this page';
+    --mox-button-close-message-text: 'Close';
+    --mox-orphaned-pages-h1-text: 'Orphaned pages';
+    --mox-orphaned-pages-p-text: 'Below is a list of pages that don\'t have any incoming links from other pages—at least no internal links generated by the [[[pagename]]] syntax. If a page is listed here, it doesn\'t necessarily mean there\'s a problem, as there may be special pages that don\'t have (and like some forum pages shouldn\'t have) incoming links. Still, it\'s recommended to check this list from time to time.';
+    --mox-draft-pages-h1-text: 'Draft pages';
+    --mox-draft-pages-p-text: 'Below is a list of pages that have saved drafts.';
+    --mox-wanted-pages-btn-text: 'Wanted pages list';
+    --mox-orphaned-pages-btn-text: 'Orphaned pages list';
+    --mox-draft-pages-btn-text: 'Draft pages list';
+}
+
+:root:lang(cn) {
+    --mox-page-tags-text: '标签';
+    --mox-rename-option-delete-text: '警告：这将会从网站上彻底移除此页面，并且不可能恢复数据。你确定要这么做吗？';
+    --mox-action-area-close-text: '取消';
+    --mox-show-version-text: '查看版本';
+    --mox-show-source-text: '查看源码';
+    --mox-revert-version-text: '回档';
+    --mox-who-watches-page-p-text: '当此页面有更改或被评论时，这些人将收到通知。';
+    --mox-who-watches-page-h1-text: '谁在关注此页面';
+    --mox-button-close-message-text: '关闭';
+    --mox-orphaned-pages-h1-text: '孤立页面';
+    --mox-orphaned-pages-p-text: '以下是没有来自其他页面的任何传入链接的页面列表——至少没有由 [[[pagename]]] 语法生成的内部链接。如果一个页面列在这里，并不一定意味着有什么问题，因为可能存在一些特殊页面，它们没有（并且像某些论坛页面那样也不应该有）传入链接。但仍然建议时不时查看此列表。';
+    --mox-draft-pages-h1-text: '草稿页面';
+    --mox-draft-pages-p-text: '以下是已经保存了草稿的页面列表。';
+    --mox-wanted-pages-btn-text: '待建页面列表';
+    --mox-orphaned-pages-btn-text: '孤立页面列表';
+    --mox-draft-pages-btn-text: '草稿页面列表';
+}
+
+:root:lang(zh-Hant) {
+    --mox-page-tags-text: '標籤';
+    --mox-rename-option-delete-text: '警告：這將會從網站上徹底移除此頁面，並且不可能恢復數據。你確定要這麼做嗎？';
+    --mox-action-area-close-text: '取消';
+    --mox-show-version-text: '查看版本';
+    --mox-show-source-text: '查看源碼';
+    --mox-revert-version-text: '回檔';
+    --mox-who-watches-page-p-text: '當此頁面有更改或被評論時，這些人將收到通知。';
+    --mox-who-watches-page-h1-text: '誰在關注此頁面';
+    --mox-button-close-message-text: '關閉';
+    --mox-orphaned-pages-h1-text: '孤立頁面';
+    --mox-orphaned-pages-p-text: '以下是沒有來自其他頁面的任何傳入鏈接的頁面列表——至少沒有由 [[[pagename]]] 語法生成的內部鏈接。如果一個頁面列在這裡，並不一定意味着有什麼問題，因為可能存在一些特殊頁面，它們沒有（並且像某些論壇頁面那樣也不應該有）傳入鏈接。但仍然建議時不時查看此列表。';
+    --mox-draft-pages-h1-text: '草稿頁面';
+    --mox-draft-pages-p-text: '以下是已經保存了草稿的頁面列表。';
+    --mox-wanted-pages-btn-text: '待建頁面列表';
+    --mox-orphaned-pages-btn-text: '孤立頁面列表';
+    --mox-draft-pages-btn-text: '草稿頁面列表';
+}
+
+:root:lang(ja) {
+    --mox-page-tags-text: 'タグ';
+    --mox-rename-option-delete-text: '警告：この操作により、このページは完全に削除され、データを復元することはできません。本当に実行しますか？';
+    --mox-action-area-close-text: 'キャンセル';
+    --mox-show-version-text: 'バージョンを表示';
+    --mox-show-source-text: 'ソースを表示';
+    --mox-revert-version-text: 'ロールバック';
+    --mox-who-watches-page-p-text: 'このページが変更またはコメントされたときに通知を受け取る人。';
+    --mox-who-watches-page-h1-text: 'このページをウォッチしている人';
+    --mox-button-close-message-text: '閉じる';
+    --mox-orphaned-pages-h1-text: '孤立したページ';
+    --mox-orphaned-pages-p-text: '以下は、他のページからのリンクがないページのリストです（少なくとも[[[pagename]]]構文で生成された内部リンクはありません）。ここにリストされているからといって、必ずしも問題があるわけではありません。特別なページで、リンクを持たない（フォーラムページのように持つべきでない）場合もあります。ただし、時々このリストを確認することをお勧めします。';
+    --mox-draft-pages-h1-text: '下書きページ';
+    --mox-draft-pages-p-text: '以下は下書きとして保存されているページのリストです。';
+    --mox-wanted-pages-btn-text: '作成待ちページリスト';
+    --mox-orphaned-pages-btn-text: '孤立ページリスト';
+    --mox-draft-pages-btn-text: '下書きページリスト';
+}
+
+div#rename-option-delete p::before {
+    font-size: 1rem;
+    content: var(--mox-rename-option-delete-text);
+    color: var(--mox-warn-color);
+}
+
+div#rename-option-delete p {
+    font-size: 0;
+}
+
+a.action-area-close.btn.btn-danger::before {
+    content: var(--mox-action-area-close-text);
+}
+
+a[onclick*="showVersion"]::before {
+    content: var(--mox-show-version-text);
+}
+
+a[onclick*="showSource"]::before {
+    content: var(--mox-show-source-text);
+}
+
+a[onclick*="PageHistoryModule.listeners.revert"]::before {
+    content: var(--mox-revert-version-text);
+}
+
+div#action-area:has(ul[style*="list-style: none"]) p {
+    font-size: 0;
+}
+
+div#action-area:has(ul[style*="list-style: none"]) p::before {
+    font-size: 1rem;
+    content: var(--mox-who-watches-page-p-text);
+}
+
+div#action-area:has(ul[style*="list-style: none"]) h1 {
+    font-size: 0;
+}
+
+div#action-area:has(ul[style*="list-style: none"]) h1::after {
+    font-size: 1rem;
+    content: var(--mox-who-watches-page-h1-text);
+}
+
+a.btn.btn-default.button.button-close-message {
+    font-size: 0;
+}
+
+a.btn.btn-default.button.button-close-message::before {
+    font-size: 1rem;
+    content: var(--mox-button-close-message-text);
+}
+
+#main-content :is(a#st-wanted-pages-button, a#st-orphaned-pages-button, a#st-draft-pages-button) {
+    font-size: 0;
+}
+
+#main-content a#st-wanted-pages-button::before {
+    font-size: 1rem;
+    content: var(--mox-wanted-pages-btn-text);
+}
+
+#main-content a#st-orphaned-pages-button::before {
+    font-size: 1rem;
+    content: var(--mox-orphaned-pages-btn-text);
+}
+
+#main-content a#st-draft-pages-button::before {
+    font-size: 1rem;
+    content: var(--mox-draft-pages-btn-text);
+}
+
+div#st-action-area:has(:is(p,tt,u)) h1 {
+    font-size: 0;
+}
+
+div#st-action-area:has(:is(p,tt,u)) h1::after {
+    font-size: 2rem;
+    content: var(--mox-orphaned-pages-h1-text) !important;
+}
+
+div#st-action-area:has(:is(p,tt,u)) p:has(tt) {
+    font-size: 0;
+}
+
+div#st-action-area:has(:is(p,tt,u)) p:has(tt)::before {
+    font-size: 1rem;
+    content: var(--mox-orphaned-pages-p-text);
+}
+
+div#st-action-area:not(:has(tt)) p:not(:has(tt)) {
+    font-size: 0;
+}
+
+div#st-action-area:not(:has(tt)) p:not(:has(tt))::before {
+    font-size: 1rem;
+    content: var(--mox-draft-pages-p-text);
+}
+
+div#st-action-area:not(:has(tt)) h1 {
+    font-size: 0;
+}
+
+div#st-action-area:not(:has(tt)) h1::after {
+    font-size: 2rem;
+    content: var(--mox-draft-pages-h1-text) !important;
+}
+
+div#st-action-area:has(div.wanted-pages-module) h1 {
+    font-size: 2rem !important;
+}
+
+div#st-action-area:has(div.wanted-pages-module) p {
+    font-size: 1rem !important;
+}
+
+div#st-action-area:has(div.wanted-pages-module) p::before {
+    display: none !important;
+}
+
+div#st-action-area:has(div.wanted-pages-module) h1::after {
+    display: none !important;
+}
+
+/* Saving Page... */
+
+:root:lang(cn) {
+    --mox-saving-page-tips: '\a您的网络环境，或者Wikidot的服务器出现问题。\a\a加载遮罩已自动移除，请您把编辑框的内容复制到安全的地方，然后刷新页面，重新开始编辑。';
+}
+
+:root:lang(en) {
+    --mox-saving-page-tips: '\aYour network environment, or Wikidot\'s server is having problems.\a\aThe loading mask has been automatically removed. Please copy the content of the edit box to a safe place, then refresh the page to start editing again.';
+}
+
+:root:lang(jp) {
+    --mox-saving-page-tips: '\aあなたのネットワーク環境、またはWikidotのサーバーが問題を抱えています。\a\aローディングマスクは自動的に除去されました。編集ボックスの内容を安全な場所にコピーし、ページをリフレッシュして編集を再開してください。';
+}
+
+iframe#odialog-shader-iframe {
+    user-select: none;
+    pointer-events: none;
+}
+
+body:has(div.owindow.owait) div#odialog-shader {
+    pointer-events: none;
+    user-select: none;
+}
+
+body:has(div.owindow.owait) div#odialog-shader {
+    pointer-events: none;
+    user-select: none;
+    animation: savingpages-fadeout 0.25s forwards 3.5s;
+}
+
+@keyframes savingpages-fadeout {
+    0% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes savingpages-fontsize0 {
+    0% {
+        font-size: 1rem;
+    }
+
+    100% {
+        font-size: 0rem;
+    }
+}
+
+
+@keyframes savingpages-fontsize1 {
+    0% {
+        font-size: 0rem;
+    }
+
+    100% {
+        font-size: 2rem;
+    }
+}
+
+@keyframes savingpages-fontsize2 {
+    0% {
+        font-size: 0rem;
+    }
+
+    100% {
+        font-size: 1rem;
+    }
+}
+
+@keyframes savingpages-windowmove {
+    0% {
+        transform: translateY(0vh);
+    }
+
+    100% {
+        transform: translateY(30vh);
+    }
+}
+
+div.owindow.owait>.content.modal-body {
+    font-size: 1rem;
+    animation: savingpages-fontsize0 0s forwards 3.5s;
+}
+
+div.owindow.owait>.content.modal-body::before {
+    content: ':(';
+    font-size: 0rem;
+    animation: savingpages-fontsize1 0s forwards 3.5s;
+}
+
+div.owindow.owait>.content.modal-body::after {
+    content: var(--mox-saving-page-tips);
+    white-space: break-spaces;
+    font-size: 0rem;
+    text-align: left;
+    animation: savingpages-fontsize2 0s forwards 3.5s;
+}
+
+div.owindow.owait {
+    animation: savingpages-windowmove 0s forwards 3.5s
+}
+
+
+[[/code]]
+
+[[code type="CSS"]]
+
+:root {
+
+    --mox-theme-color: #3d5cab;
+    --mox-theme-dark-color: #354f96;
+    --mox-theme-light-color: #3b69e4;
+    --mox-bg-color: #FAFAFA;
+    --mox-text-color: #141414;
+
+    --mox-layer-dark-1: #262626;
+    --mox-layer-dark-2: #404040;
+    --mox-layer-dark-3: #595959;
+
+    --mox-layer-light-1: #F2F2F2;
+    --mox-layer-light-2: #D9D9D9;
+    --mox-layer-light-3: #BFBFBF;
+    --mox-bgblur-front-color: rgba(255,255,255,0.85);
+
+    --mox-warn-color: #bd3636;
+    --mox-accept-color: #37b55d;
+    --mox-alter-color: #df880a;
+
+    --mox-header-title: "SCP財団";
+    --mox-header-subtitle: "確保、収容、保護";
+    --mox-header-logo: url('https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/scp-logo-small-black.svg');
+
+    --mox-page-width: 75vw;
+    --mox-header-height: 3rem;
+    --mox-anim-duration: 0.2s;
+
+    --mox-ui-font: 'Raleway', 'Noto Sans', Segoe UI, Arial, sans-serif;
+    --mox-text-font: 'Noto Sans', Segoe UI, Arial, sans-serif;
+    --mox-mono-font: 'Oxygen Mono', 'Noto Sans', Consolas;
+}
+
+/* {$customThemeColor}/
+:root {
+    --mox-theme-color: {$moxThemeColor};
+    --mox-theme-dark-color: {$moxThemeDarkColor};
+    --mox-theme-light-color: {$moxThemeLightColor};
+}
+/{$customThemeColor} */
+
+body {
+    background: transparent;
+    margin: 0px 0px 0;
+    padding: 0;
+    font-family: var(--mox-ui-font)
+    font-size: 1rem;
+}
+
+.side-block {
+    padding: 0.5rem 1rem;
+    margin: 0.4rem 0;
+    background-color: var(--mox-layer-light-1) !important;
+    box-shadow: none;
+    direction: ltr;
+    border-radius: 0;
+    border: none;
+}
+
+#side-bar h2, #side-block h1, .side-block .heading {
+    background: var(--mox-layer-light-2);
+    color: var(--mox-layer-dark-1);
+    width: calc(100% + 1rem);
+    display: inline-block;
+    transform: translateX(-1rem);
+    padding: 0.3rem 0rem 0.3rem 1rem;
+    font-weight: bold;
+    border-radius: 0;
+    border-bottom: none;
+    font-size: 1rem;
+    margin-bottom: 0;
+}
+
+div#side-bar p {
+    margin: 0;
+}
+
+.side-block div.menu-item a:hover {
+    box-shadow: inset 20rem 0rem var(--mox-theme-color);
+    color: var(--mox-layer-light-1);
+    text-decoration: none;
+}
+
+.side-block div.menu-item a {
+    display: block;
+    border-left: solid 0.2rem var(--mox-layer-light-2);
+    font-size: 0.8rem;
+    padding: 0.5rem 0.5rem;
+    color: var(--mox-layer-dark-2);
+    text-decoration: none;
+    font-weight: 500;
+    transition: box-shadow var(--mox-anim-duration);
+    font-family: var(--mox-ui-font)
+}
+
+.side-block div.menu-item img {
+    display: none;
+}
+
+[[/code]]
+
+[[code type="CSS"]]
+
+:root {
+    --mox-theme-color: #4e72d5;
+    --mox-theme-dark-color: #5670b9;
+    --mox-theme-light-color: #6b93ff;
+    --mox-bg-color: #1d1d1d;
+    --mox-text-color: #cccccc;
+    --mox-layer-dark-1: #dcdcdc;
+    --mox-layer-dark-2: #c5c5c5;
+    --mox-layer-dark-3: #b6b6b6;
+    --mox-layer-light-1: #1e1e1e;
+    --mox-layer-light-2: #3a3a3a;
+    --mox-layer-light-3: #464646;
+    --mox-bgblur-front-color: rgb(0 0 0 / 56%);
+}
+
+[[/code]]
+
+[[code type="CSS"]]
+
+:root {
+    --mox-theme-color: #b75d5d;
+    --mox-theme-dark-color: #8d4646;
+    --mox-theme-light-color: #d95c5c;
+    --mox-bg-color: #e8e6dc;
+    --mox-text-color: #141414;
+    --mox-layer-dark-1: #262626;
+    --mox-layer-dark-2: #404040;
+    --mox-layer-dark-3: #595959;
+    --mox-layer-light-1: #d2cdb6;
+    --mox-layer-light-2: #ada994;
+    --mox-layer-light-3: #8e8a78;
+    --mox-bgblur-front-color: rgb(217 200 174 / 56%);
+}
+
+[[/code]]
+
+[[code type="CSS"]]
+
+:root {
+    --mox-theme-color: #51ba8b;
+    --mox-theme-dark-color: #3c986f;
+    --mox-theme-light-color: #47c590;
+    --mox-bg-color: #e6f1e6;
+    --mox-text-color: #484848;
+    --mox-layer-dark-1: #262626;
+    --mox-layer-dark-2: #3d433c;
+    --mox-layer-dark-3: #4e5752;
+    --mox-layer-light-1: #d2e5da;
+    --mox-layer-light-2: #8bab9f;
+    --mox-layer-light-3: #728f7b;
+    --mox-bgblur-front-color: rgb(59 84 94 / 85%);
+}
+
+[[/code]]
+
+[[code type="CSS"]]
+
+:root {
+    --mox-theme-color: #cf4040;
+    --mox-theme-dark-color: #983c3c;
+    --mox-theme-light-color: #c54747;
+    --mox-bg-color: #000000;
+    --mox-text-color: #b6b6b6;
+    --mox-layer-dark-1: #cfcfcf;
+    --mox-layer-dark-2: #969696;
+    --mox-layer-dark-3: #717171;
+    --mox-layer-light-1: #000000;
+    --mox-layer-light-2: #1f1f1f;
+    --mox-layer-light-3: #4d4d4d;
+    --mox-bgblur-front-color: rgb(82 45 45 / 78%);
+}
+
+[[/code]]
+
+[[code type="CSS"]]
+
+:root {
+    --mox-theme-color: #464040;
+    --mox-theme-dark-color: #4b3c3c;
+    --mox-theme-light-color: #302727;
+    --mox-bg-color: #e0e0e0;
+    --mox-text-color: #161616;
+    --mox-layer-dark-1: #000000;
+    --mox-layer-dark-2: #2f2f2f;
+    --mox-layer-dark-3: #6f6f6f;
+    --mox-layer-light-1: #c9c9c9;
+    --mox-layer-light-2: #a5a5a5;
+    --mox-layer-light-3: #3d3d3d;
+    --mox-bgblur-front-color: rgb(188 188 188 / 78%);
+}
+
+[[/code]]
+
+[[code type="CSS"]]
+
+:root {
+    --mox-theme-color: #51ba8b;
+    --mox-theme-dark-color: #3c986f;
+    --mox-theme-light-color: #47c590;
+    --mox-bg-color: #e6f1e6;
+    --mox-text-color: #484848;
+    --mox-layer-dark-1: #262626;
+    --mox-layer-dark-2: #3d433c;
+    --mox-layer-dark-3: #4e5752;
+    --mox-layer-light-1: #d2e5da;
+    --mox-layer-light-2: #8bab9f;
+    --mox-layer-light-3: #728f7b;
+    --mox-bgblur-front-color: rgb(59 84 94 / 85%);
+}
+
+[[/code]]
+
+[[code type="CSS"]]
+
+:root {
+    --mox-theme-color: #ce5471;
+    --mox-theme-dark-color: #9e5b74;
+    --mox-theme-light-color: #e27aa1;
+    --mox-bg-color: #252130;
+    --mox-text-color: #e7f4f3;
+    --mox-layer-dark-1: #ffdcf9;
+    --mox-layer-dark-2: #c0aabd;
+    --mox-layer-dark-3: #bd9db7;
+    --mox-layer-light-1: #332d44;
+    --mox-layer-light-2: #47344c;
+    --mox-layer-light-3: #67476f;
+    --mox-bgblur-front-color: rgb(78 45 82 / 78%);
+}
+
+[[/code]]
+
+
+
+[[/collapsible]]
+
+[[/iftags]]
+
+[!-- include --]
+
+[[include component:interwiki-style
+| priority=1
+| theme=https://sigma10-jp-test.wdfiles.com/local--code/theme%3Amox-jp/9
+]]
+
+[[module CSS]]
+
+
+
+div#side-bar::after {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(var(--mox-header-height) * -1) / cover !important;
+}
+
+#header #search-top-box input.button {
+    background: url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(var(--mox-header-height)* -2) center / cover !important;
+}
+
+a.weditor-bold::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 3) center / cover !important;
+}
+
+a.weditor-italic::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 4) center / cover !important;
+}
+
+a.weditor-underline::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 22) center / cover !important;
+}
+
+a.weditor-strikethrough::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 5) center / cover !important;
+}
+
+a.weditor-quote::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 6) center / cover !important;
+}
+
+a.weditor-superscript::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 7) center / cover !important;
+}
+
+a.weditor-subscript::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 8) center / cover !important;
+}
+
+a.weditor-table::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 9) center / cover !important;
+}
+
+a.weditor-code::before, a.weditor-codewiz::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 10) center / cover !important;
+}
+
+a.weditor-uri::before, a.weditor-uriwiz::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 11) center / cover !important;
+}
+
+a.weditor-pagelink::before, a.weditor-pagelinkwiz::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 12) center / cover !important;
+}
+
+a.weditor-image::before, a.weditor-imagewiz::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 13) center / cover !important;
+}
+
+a.weditor-html::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 14) center / cover !important;
+}
+
+a.weditor-numlist::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 15) center / cover !important;
+}
+
+a.weditor-bullist::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 15.8) center / cover !important;
+}
+
+a.weditor-incindent::before, a.weditor-decindent::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 16) center / cover !important;
+}
+
+a.weditor-deflist::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 17) center / cover !important;
+}
+
+a.weditor-footnote::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 18) center / cover !important;
+}
+
+a.weditor-bib::before, a.weditor-bibcite::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 20.8) center / cover !important;
+}
+
+:where(a.weditor-imagewiz, a.weditor-codewiz, a.weditor-uriwiz, a.weditor-pagelinkwiz, a.weditor-incindent, a.weditor-decindent, a.weditor-eqref,a.weditor-bibcite)::after {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2) no-repeat local calc(-2.3rem* 20) center / cover;
+}
+
+:where(a.weditor-imagewiz, a.weditor-codewiz, a.weditor-uriwiz, a.weditor-pagelinkwiz, a.weditor-incindent, a.weditor-decindent, a.weditor-eqref,a.weditor-bibcite)::after {
+    background-color: var(--mox-layer-dark-1);
+    background-image: url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-2);
+    background-repeat: no-repeat;
+    background-position: left center !important;
+    background-size: cover;
+    background-position: -20.055rem !important;
+    background-origin: content-box;
+}
+
+
+/* {$d}/
+
+div#side-bar::after {
+    background: url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(var(--mox-header-height) * -1) / cover !important;
+}
+
+#header #search-top-box input.button {
+    background: url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(var(--mox-header-height)* -2) center / cover !important;
+}
+
+a.weditor-bold::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 3) center / cover !important;
+}
+
+a.weditor-italic::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 4) center / cover !important;
+}
+
+a.weditor-underline::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 22) center / cover !important;
+}
+
+a.weditor-strikethrough::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 5) center / cover !important;
+}
+
+a.weditor-quote::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 6) center / cover !important;
+}
+
+a.weditor-superscript::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 7) center / cover !important;
+}
+
+a.weditor-subscript::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 8) center / cover !important;
+}
+
+a.weditor-table::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 9) center / cover !important;
+}
+
+a.weditor-code::before, a.weditor-codewiz::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 10) center / cover !important;
+}
+
+a.weditor-uri::before, a.weditor-uriwiz::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 11) center / cover !important;
+}
+
+a.weditor-pagelink::before, a.weditor-pagelinkwiz::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 12) center / cover !important;
+}
+
+a.weditor-image::before, a.weditor-imagewiz::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 13) center / cover !important;
+}
+
+a.weditor-html::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 14) center / cover !important;
+}
+
+a.weditor-numlist::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 15) center / cover !important;
+}
+
+a.weditor-bullist::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 15.8) center / cover !important;
+}
+
+a.weditor-incindent::before, a.weditor-decindent::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 16) center / cover !important;
+}
+
+a.weditor-deflist::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 17) center / cover !important;
+}
+
+a.weditor-footnote::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 18) center / cover !important;
+}
+
+a.weditor-bib::before, a.weditor-bibcite::before {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 20.8) center / cover !important;
+}
+
+:where(a.weditor-imagewiz, a.weditor-codewiz, a.weditor-uriwiz, a.weditor-pagelinkwiz, a.weditor-incindent, a.weditor-decindent, a.weditor-eqref,a.weditor-bibcite)::after {
+    background: var(--mox-layer-light-1) url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1) no-repeat local calc(-2.3rem* 20) center / cover;
+}
+
+:where(a.weditor-imagewiz, a.weditor-codewiz, a.weditor-uriwiz, a.weditor-pagelinkwiz, a.weditor-incindent, a.weditor-decindent, a.weditor-eqref,a.weditor-bibcite)::after {
+    background-color: var(--mox-layer-dark-1);
+    background-image: url(https://sigma10-jp-test.wdfiles.com/local--files/theme%3Amox-jp/icons-1);
+    background-repeat: no-repeat;
+    background-position: left center !important;
+    background-size: cover;
+    background-position: -20.055rem !important;
+    background-origin: content-box;
+}
+
+#license-area {
+    color: var(--mox-layer-light-3);
+    background: var(--mox-layer-light-1);
+}
+
+#footer {
+    background: var(--mox-layer-light-1);
+    color: var(--mox-layer-dark-3);
+    box-shadow: 0rem -0.2rem 0rem 0rem var(--mox-layer-light-2);
+}
+
+#footer a {
+    color: var(--mox-layer-dark-1);
+}
+
+/{$d} */
+
+/* {$customTitle}/
+:root {--mox-header-title: "{$title}";}
+/{$customTitle} */
+
+/* {$customSubtitle}/
+:root {--mox-header-subtitle: "{$subtitle}";}
+/{$customSubtitle} */
+
+/* {$customLogo}/
+:root {--mox-header-logo: url({$logo});}
+/{$customLogo} */
+
+/* {$customThemeColor}/
+:root {
+    --mox-theme-color: {$moxThemeColor};
+    --mox-theme-dark-color: {$moxThemeDarkColor};
+    --mox-theme-light-color: {$moxThemeLightColor};
+}
+/{$customThemeColor} */
+
+/* {$widemode}/
+:root {--mox-page-width: 95vw;}
+#action-area {right:0vw;}
+/{$widemode} */
+
+/* {$roundUser}/
+
+#login-status img.small {
+    border-radius: 50%;
+}
+
+a#account-topbutton:hover {
+    border-radius: 50%;
+}
+
+a#account-topbutton {
+    border-radius: 50%;
+}
+
+/{$roundUser} */
+
+/* {$defdark}/
+:root {
+    --mox-theme-color: #4e72d5;
+    --mox-theme-dark-color: #5670b9;
+    --mox-theme-light-color: #6b93ff;
+    --mox-bg-color: #1d1d1d;
+    --mox-text-color: #cccccc;
+    --mox-layer-dark-1: #dcdcdc;
+    --mox-layer-dark-2: #c5c5c5;
+    --mox-layer-dark-3: #b6b6b6;
+    --mox-layer-light-1: #1e1e1e;
+    --mox-layer-light-2: #3a3a3a;
+    --mox-layer-light-3: #464646;
+    --mox-bgblur-front-color: rgb(0 0 0 / 56%);
+}
+/{$defdark} */
+
+/* {$weathering}/
+:root {
+    --mox-theme-color: #b75d5d;
+    --mox-theme-dark-color: #8d4646;
+    --mox-theme-light-color: #d95c5c;
+    --mox-bg-color: #e8e6dc;
+    --mox-text-color: #141414;
+    --mox-layer-dark-1: #262626;
+    --mox-layer-dark-2: #404040;
+    --mox-layer-dark-3: #595959;
+    --mox-layer-light-1: #d2cdb6;
+    --mox-layer-light-2: #ada994;
+    --mox-layer-light-3: #8e8a78;
+    --mox-bgblur-front-color: rgb(217 200 174 / 56%);
+}
+/{$weathering} */
+
+/* {$bronze}/
+:root {
+    --mox-theme-color: #51ba8b;
+    --mox-theme-dark-color: #3c986f;
+    --mox-theme-light-color: #47c590;
+    --mox-bg-color: #e6f1e6;
+    --mox-text-color: #484848;
+    --mox-layer-dark-1: #262626;
+    --mox-layer-dark-2: #3d433c;
+    --mox-layer-dark-3: #4e5752;
+    --mox-layer-light-1: #d2e5da;
+    --mox-layer-light-2: #8bab9f;
+    --mox-layer-light-3: #728f7b;
+    --mox-bgblur-front-color: rgb(59 84 94 / 85%);
+}
+/{$bronze} */
+
+/* {$admo}/
+:root {
+    --mox-theme-color: #cf4040;
+    --mox-theme-dark-color: #983c3c;
+    --mox-theme-light-color: #c54747;
+    --mox-bg-color: #000000;
+    --mox-text-color: #b6b6b6;
+    --mox-layer-dark-1: #cfcfcf;
+    --mox-layer-dark-2: #969696;
+    --mox-layer-dark-3: #717171;
+    --mox-layer-light-1: #000000;
+    --mox-layer-light-2: #1f1f1f;
+    --mox-layer-light-3: #4d4d4d;
+    --mox-bgblur-front-color: rgb(82 45 45 / 78%);
+}
+/{$admo} */
+
+/* {$gray}/
+:root {
+    --mox-theme-color: #464040;
+    --mox-theme-dark-color: #4b3c3c;
+    --mox-theme-light-color: #302727;
+    --mox-bg-color: #e0e0e0;
+    --mox-text-color: #161616;
+    --mox-layer-dark-1: #000000;
+    --mox-layer-dark-2: #2f2f2f;
+    --mox-layer-dark-3: #6f6f6f;
+    --mox-layer-light-1: #c9c9c9;
+    --mox-layer-light-2: #a5a5a5;
+    --mox-layer-light-3: #3d3d3d;
+    --mox-bgblur-front-color: rgb(188 188 188 / 78%);
+}
+/{$gray} */
+
+/* {$northern}/
+:root {
+    --mox-theme-color: #4d65c1;
+    --mox-theme-dark-color: #3f4a71;
+    --mox-theme-light-color: #6e8af4;
+    --mox-bg-color: #D5DAE5;
+    --mox-text-color: #555862;
+    --mox-layer-dark-1: #1F1F21;
+    --mox-layer-dark-2: #3B3D45;
+    --mox-layer-dark-3: #646A80;
+    --mox-layer-light-1: #D5DAE5;
+    --mox-layer-light-2: #C5CCDC;
+    --mox-layer-light-3: #AFB9CF;
+    --mox-bgblur-front-color: rgb(193 199 210 / 85%);
+}
+/{$northern} */
+
+/* {$phantom}/
+:root {
+    --mox-theme-color: #ce5471;
+    --mox-theme-dark-color: #9e5b74;
+    --mox-theme-light-color: #e27aa1;
+    --mox-bg-color: #252130;
+    --mox-text-color: #e7f4f3;
+    --mox-layer-dark-1: #ffdcf9;
+    --mox-layer-dark-2: #c0aabd;
+    --mox-layer-dark-3: #bd9db7;
+    --mox-layer-light-1: #332d44;
+    --mox-layer-light-2: #47344c;
+    --mox-layer-light-3: #67476f;
+    --mox-bgblur-front-color: rgb(78 45 82 / 78%);
+}
+
+:root {
+    --mox-text-color: #ccc2c9;
+}
+/{$phantom} */
+
+/* {$logoInvert}/
+#header h1 a::before, div#side-bar::before {filter: invert(1);}
+/{$logoInvert} */
+
+/* {$disableFooterInvert}/
+
+div#footer::before {
+    filter: invert(0);
+}
+
+/{$disableFooterInvert} */
+
+/* {$sigma}/
+
+:root {
+    --moxi-header-height: calc(var(--mox-header-height)* 3);
+}
+
+
+
+@media (min-width: 876px) {
+
+        #header {
+        position: relative;
+        margin-top: unset;
+        grid-template-areas:
+        'logo title user .'
+        'topbar . search .';
+        height: calc(var(--mox-header-height) + var(--moxi-header-height));
+        top: calc(var(--moxi-header-height) * 0);
+        display: grid
+;
+        align-content: stretch;
+        grid-template-rows: 1fr var(--mox-header-height);
+        grid-template-columns: 1fr var(--mox-header-height) var(--mox-header-height) var(--mox-header-height);
+        justify-content: space-between;
+        justify-items: stretch;
+        align-items: center;
+    }
+
+    div#header-extra-div-1, div#side-bar::after, div#side-bar::before {
+        display: none;
+    }
+
+    #header h1 a::before {
+        grid-area: logo;
+        position: relative;
+        top: calc(var(--mox-header-height) * 0);
+        left: calc(((100vw - var(--mox-page-width)) / 2) + 1rem);
+        width: calc(var(--mox-header-height) * 2);
+        height: calc(var(--mox-header-height) * 2);
+    }
+
+    #header h1 a span {
+        font-size: 0;
+        grid-area: logo;
+        display: flex
+;
+        align-items: flex-start;
+        flex-direction: column;
+        justify-content: center;
+        height: var(--mox-header-height);
+        top: calc(var(--mox-header-height) * 0);
+        left: calc(((100vw - var(--mox-page-width)) / 2) + (var(--mox-header-height) * 2.5));
+        position: relative;
+    }
+
+    #header h1 a span::before {
+        font-size: calc(var(--mox-header-height) * 0.85) !important;
+        position: relative;
+        left: calc(var(--mox-header-height) * 0);
+        top: calc(var(--mox-header-height) * 0.05);
+    }
+
+    #header h1 a span::after {
+        font-size: calc(var(--mox-header-height) * 0.45) !important;
+        bottom: calc(var(--mox-header-height) * 0.115 - 0.125rem);
+        position: relative;
+        left: calc(var(--mox-header-height) * 0);
+        display: block;
+    }
+
+    .top-bar {
+        display: grid
+    ;
+
+        justify-content: end;
+    }
+
+}
+
+
+
+@media (min-width: 876px) {
+
+    div#side-bar {
+        position: relative;
+        left: 0;
+        top: 0;
+        transition: none;
+        box-shadow: unset;
+        width: min(16rem, 30vw);
+        min-width: 16rem;
+    }
+
+    div#side-bar:hover {
+        left: unset;
+        box-shadow: unset;
+    }
+
+    div#content-wrap {
+        display: flex
+;
+        column-gap: 1rem;
+        width: var(--mox-page-width);
+        margin: 0 auto;
+    }
+
+    div#main-content {
+        width: calc(var(--mox-page-width) - min(16rem, 30vw) - 3rem);
+        max-width: unset !important;
+        margin: 2rem 2rem 0rem 0rem;
+    }
+
+}
+
+
+
+@media (max-width: 876px) {
+
+    div#side-bar::after {
+        display: block;
+    }
+
+    div#side-bar {
+        min-height: 100vh;
+    }
+
+}
+
+
+/{$sigma} */
+
+/* {$sticky-sidebar}/
+
+@media (min-width: 876px) {
+    div#side-bar {
+        position: sticky;
+        top: 0rem;
+        height: fit-content;
+        max-height: calc(100vh - 1rem);
+        overflow-y: scroll;
+    }
+}
+
+
+/{$sticky-sidebar} */
+
+
+
+[[/module]]

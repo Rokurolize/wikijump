@@ -730,6 +730,88 @@ pub(super) fn exhibit_cross_closed_code_div_openers(
     }
 }
 
+/// Emulate live Wikidot's DUPCOLL-MOX cross-closed div desync (OC-WAVE1-FIX-5).
+///
+/// In-situ bisection on stafflab (scratch:w5-*) and the byte-identical sandbox
+/// oracle established the victim-selection rule: when an earlier include
+/// (`theme:mox-jp`) supplies a `[[div class="mox-3line"]]` block whose body is a
+/// wikitable plus a `{{[[div class="mox-3line"]]}}` inline-code exhibit, and a
+/// later include (`credit:start`) supplies a crossing `[[/div]]`-class scope,
+/// live Wikidot consumes the first `[[collapsible]]` opener at/after that
+/// block's `[[/div]]` closer (mox's `謝辞` collapsible), leaving its body as a
+/// bare list. Wikijump's ftml resolves the scopes as balanced and keeps the
+/// collapsible. This pass removes that collapsible's opener and closer so the
+/// served page matches live's count and structure.
+///
+/// The gate is intentionally narrow (the exact exhibiting block + the
+/// `credit:start` trailing `[[div class="credit first"]]` after it) so the
+/// standalone mox page, the swapped-order case, the bare-`[[/div]]` g1 shape
+/// (which the cross-close normalization already handles), and every unrelated
+/// theme are untouched. Body kind, label and ordinal are irrelevant, matching
+/// the pinned rule.
+pub(super) fn drop_cross_closed_mox_collapsible(wikitext: &mut String) {
+    const M3_OPEN: &str = "[[div class=\"mox-3line\"]]";
+    const M3_EXHIBIT: &str = "{{[[div class=\"mox-3line\"]]}}";
+    const DIV_CLOSE: &str = "[[/div]]";
+    const CREDIT_FIRST: &str = "[[div class=\"credit first\"]]";
+    const COLL_OPEN: &str = "[[collapsible";
+    const COLL_CLOSE: &str = "[[/collapsible]]";
+
+    // Locate the exhibiting mox-3line block: its body must carry both the
+    // inline-code div exhibit and a Wikidot table row (`||`).
+    let mut search = 0usize;
+    let block_close = loop {
+        let Some(relative) = wikitext[search..].find(M3_OPEN) else {
+            return;
+        };
+        let open = search + relative;
+        let after_open = open + M3_OPEN.len();
+        let Some(close_relative) = wikitext[after_open..].find(DIV_CLOSE) else {
+            return;
+        };
+        let close = after_open + close_relative;
+        let body = &wikitext[after_open..close];
+        if body.contains(M3_EXHIBIT) && body.contains("||") {
+            break close;
+        }
+        search = after_open;
+    };
+
+    // The later include must supply credit:start's trailing unclosed div AFTER
+    // the exhibiting block. This excludes swapped order and the bare-`[[/div]]`
+    // g1 shape, and makes standalone mox a no-op.
+    let Some(credit_relative) = wikitext[block_close..].find(CREDIT_FIRST) else {
+        return;
+    };
+    let credit_first = block_close + credit_relative;
+
+    // The victim is the first collapsible opener at/after the block's closer,
+    // provided it belongs to the earlier include (before credit:start).
+    let Some(opener_relative) = wikitext[block_close..].find(COLL_OPEN) else {
+        return;
+    };
+    let opener_start = block_close + opener_relative;
+    if opener_start > credit_first {
+        return;
+    }
+    let Some(opener_end_relative) = wikitext[opener_start..].find("]]") else {
+        return;
+    };
+    let opener_end = opener_start + opener_end_relative + 2;
+    let Some(closer_relative) = wikitext[opener_end..].find(COLL_CLOSE) else {
+        return;
+    };
+    let closer_start = opener_end + closer_relative;
+    let closer_end = closer_start + COLL_CLOSE.len();
+
+    // Remove the closer first so the earlier opener's offsets stay valid, then
+    // the opener. The body remains and renders as live's bare list.
+    let mut output = wikitext.clone();
+    output.replace_range(closer_start..closer_end, "");
+    output.replace_range(opener_start..opener_end, "");
+    *wikitext = output;
+}
+
 fn find_ascii_case_insensitive(haystack: &str, needle: &str) -> Option<usize> {
     let haystack = haystack.as_bytes();
     let needle = needle.as_bytes();
@@ -1849,5 +1931,86 @@ mod tests {
             format!("[[div_ class=\"modalbox {open}heritage{close}\"]]\n"),
             "attribute-value gate must be left as an exhibit: {source}"
         );
+    }
+
+    // ---- OC-WAVE1-FIX-5: DUPCOLL-MOX victim emulation ----
+
+    fn mox_shape() -> String {
+        concat!(
+            "[[collapsible show=\"見出し\" hide=\"見出し\"]]\nhead\n[[/collapsible]]\n",
+            "[[div class=\"mox-3line\"]]\n",
+            "||~ a ||~ b ||\n",
+            "{{[[div class=\"mox-3line\"]]}}exhibit||||\n",
+            "[[/div]]\n",
+            "[[collapsible show=\"謝辞\" hide=\"順不同\"]]\n",
+            "* [[*User Somebody]]\n",
+            "[[/collapsible]]\n",
+            "[[collapsible show=\"展開\" hide=\"閉じる\"]]\n",
+            "[[code type=\"CSS\"]]\n.x{}\n[[/code]]\n",
+            "[[/collapsible]]\n",
+        )
+        .to_owned()
+    }
+
+    #[test]
+    fn dupcoll_mox_emulation_drops_first_collapsible_after_exhibiting_block() {
+        let mut source = mox_shape();
+        source.push_str(
+            "[[include :scp-jp:credit:start]]\n[[div class=\"credit first\"]]\n",
+        );
+        super::drop_cross_closed_mox_collapsible(&mut source);
+        assert!(
+            !source.contains("謝辞"),
+            "victim opener must be removed: {source}"
+        );
+        assert_eq!(source.matches("[[collapsible").count(), 2, "{source}");
+        assert_eq!(source.matches("[[/collapsible]]").count(), 2, "{source}");
+        // body survives as a bare list
+        assert!(source.contains("* [[*User Somebody]]"), "{source}");
+    }
+
+    #[test]
+    fn dupcoll_mox_emulation_leaves_standalone_mox_untouched() {
+        let mut source = mox_shape(); // no credit:start crossing scope
+        let before = source.clone();
+        super::drop_cross_closed_mox_collapsible(&mut source);
+        assert_eq!(source, before);
+    }
+
+    #[test]
+    fn dupcoll_mox_emulation_leaves_swapped_order_untouched() {
+        let mut source = String::from("[[div class=\"credit first\"]]\n");
+        source.push_str(&mox_shape());
+        let before = source.clone();
+        super::drop_cross_closed_mox_collapsible(&mut source);
+        assert_eq!(
+            source, before,
+            "credit scope before the block must not fire"
+        );
+    }
+
+    #[test]
+    fn dupcoll_mox_emulation_leaves_g1_bare_divclose_untouched() {
+        let mut source = mox_shape();
+        source.push_str("[[/div]]\n"); // bare g1 closer, no credit:start
+        let before = source.clone();
+        super::drop_cross_closed_mox_collapsible(&mut source);
+        assert_eq!(
+            source, before,
+            "g1 shape must stay under the existing normalization"
+        );
+    }
+
+    #[test]
+    fn dupcoll_mox_emulation_ignores_non_exhibiting_divs() {
+        // Same block but no inline-code div exhibit / no table -> not the mox shape.
+        let mut source = String::from(
+            "[[div class=\"mox-3line\"]]\nplain body\n[[/div]]\n\
+             [[collapsible show=\"A\" hide=\"B\"]]\nx\n[[/collapsible]]\n\
+             [[div class=\"credit first\"]]\n",
+        );
+        let before = source.clone();
+        super::drop_cross_closed_mox_collapsible(&mut source);
+        assert_eq!(source, before);
     }
 }
