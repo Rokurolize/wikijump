@@ -454,6 +454,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     // Web routing
     register!("domains", platform_domains);
     register!("caddyfile", generate_caddyfile);
+    register!("caddyfile_version", caddyfile_version);
 
     // Web server
     register!("preload_view", preload_view);

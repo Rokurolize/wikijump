@@ -24,6 +24,7 @@ COPY ./install/prod/caddy/startup.Caddyfile /etc/caddy/startup.Caddyfile
 COPY ./install/prod/caddy/health-check.sh /usr/local/bin/wikijump-health-check
 COPY ./install/prod/caddy/generate-caddyfile.sh /usr/local/bin/wikijump-generate-caddyfile
 COPY ./install/prod/caddy/update-caddyfile.sh /usr/local/bin/wikijump-update-caddyfile
+COPY ./install/prod/caddy/watch-caddyfile.sh /usr/local/bin/wikijump-watch-caddyfile
 COPY ./install/prod/caddy/request.json /etc/caddy-request.json
 
 # Set up provisional Caddyfile

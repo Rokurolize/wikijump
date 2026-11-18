@@ -595,3 +595,86 @@ fn caddyfile_options_debug_redacts_wildcard_cert() {
     assert!(debug.contains("wildcard_cert"));
     assert!(debug.contains("[redacted]"));
 }
+
+#[test]
+fn caddyfile_version_is_deterministic() {
+    let (basic, full) = build_site_data();
+
+    assert_eq!(
+        CaddyService::hash_site_data(&basic),
+        CaddyService::hash_site_data(&basic),
+    );
+    assert_ne!(
+        CaddyService::hash_site_data(&basic),
+        CaddyService::hash_site_data(&full),
+    );
+
+    let mut reordered = basic.clone();
+    reordered.sites.reverse();
+    assert_eq!(
+        CaddyService::hash_site_data(&basic),
+        CaddyService::hash_site_data(&reordered),
+    );
+}
+
+#[test]
+fn caddyfile_version_tracks_routing_inputs() {
+    let (mut data, _) = build_site_data();
+    let mut previous = CaddyService::hash_site_data(&data);
+
+    macro_rules! assert_changed {
+        () => {{
+            let current = CaddyService::hash_site_data(&data);
+            assert_ne!(previous, current, "routing version did not change");
+            previous = current;
+        }};
+    }
+
+    data.sites.push((3, str!("baz"), None));
+    data.domains.insert(3, SiteDomainData::default());
+    assert_changed!();
+
+    data.sites[0].1 = str!("foo-renamed");
+    assert_changed!();
+
+    data.sites[1].2 = Some(str!("other.example.com"));
+    assert_changed!();
+
+    data.domains
+        .get_mut(&1)
+        .unwrap()
+        .aliases
+        .push(str!("foo-alias"));
+    assert_changed!();
+
+    data.domains.get_mut(&1).unwrap().aliases.clear();
+    assert_changed!();
+
+    data.domains
+        .get_mut(&1)
+        .unwrap()
+        .custom_domains
+        .push(CustomDomainData {
+            domain: str!("foo.example.com"),
+            www_redirect: true,
+        });
+    assert_changed!();
+
+    data.domains.get_mut(&1).unwrap().custom_domains.clear();
+    assert_changed!();
+
+    data.domains
+        .get_mut(&2)
+        .unwrap()
+        .custom_domains
+        .push(CustomDomainData {
+            domain: str!("other.example.com"),
+            www_redirect: true,
+        });
+    data.domains.get_mut(&2).unwrap().custom_domains[0].www_redirect = false;
+    assert_ne!(
+        previous,
+        CaddyService::hash_site_data(&data),
+        "www_redirect change did not change the routing version",
+    );
+}

@@ -37,6 +37,7 @@ trap cleanup TERM INT EXIT
             rm -f /run/wikijump/startup-response.json
             echo 'Startup routes loaded; starting periodic configuration refresh'
             crond
+            su -s /bin/sh daemon -c /usr/local/bin/wikijump-watch-caddyfile &
             exit 0
         fi
         # Bounded connection retry; failure retains the explicit 503 config.
