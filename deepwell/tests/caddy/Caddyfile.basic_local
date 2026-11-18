@@ -16,7 +16,8 @@
 
 (reverse_proxy_framerail) {
 	reverse_proxy * {
-		# TODO: support multiple upstreams
+		# Single upstream: framerail_host is one host. Multiple upstreams need a
+		# host-list config contract and a reverse_proxy block rewrite.
 		to framerail:3393
 
 	}
@@ -24,7 +25,8 @@
 
 (reverse_proxy_wws) {
 	reverse_proxy {args[0]} {
-		# TODO: support multiple upstreams
+		# Single upstream: wws_host is one host. Multiple upstreams need a
+		# host-list config contract and a reverse_proxy block rewrite.
 		to wws:3466
 
 	}
