@@ -67,7 +67,7 @@ for (const localeCase of [
     test("expose localized accessible names", async ({ page, request }, testInfo) => {
       test.skip(
         testInfo.project.name === "webkit",
-        "WebKit runs this acceptance case against the HTTPS fixture"
+        "the local http WebKit project has no HTTPS fixture; the HTTPS WebKit project covers this case"
       )
       await page.setViewportSize({ width: 320, height: 640 })
       await request.get(

@@ -62,7 +62,7 @@ for (const typographyCase of TYPOGRAPHY_PARITY_CASES) {
   }, testInfo) => {
     test.skip(
       !process.env.PLAYWRIGHT_HTTPS_APP_PORT,
-      "requires the hermetic HTTPS Vite fixture"
+      "requires PLAYWRIGHT_HTTPS_APP_PORT from the hermetic HTTPS Vite fixture; local http has no TLS boundary"
     )
     const mobile = testInfo.project.name.startsWith("mobile-")
     const host = `https://localhost:${process.env.PLAYWRIGHT_HTTPS_APP_PORT}`

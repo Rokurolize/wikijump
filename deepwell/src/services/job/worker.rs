@@ -515,7 +515,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore = "requires an isolated Redis instance in REDIS_URL"]
     async fn real_redis_adapter_round_trip() {
         let redis_url =
             std::env::var("REDIS_URL").expect("REDIS_URL is required for this test");

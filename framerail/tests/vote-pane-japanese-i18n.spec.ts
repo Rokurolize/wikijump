@@ -40,7 +40,7 @@ for (const [locale, expected] of Object.entries(locales) as [
     }, testInfo) => {
       test.skip(
         testInfo.project.name === "webkit",
-        "WebKit runs this acceptance case against the HTTPS fixture"
+        "the local http WebKit project has no HTTPS fixture; the HTTPS WebKit project covers this case"
       )
 
       await page.setViewportSize({ width: 320, height: 640 })
@@ -94,7 +94,7 @@ for (const [locale, expected] of Object.entries(locales) as [
     test("localize the native vote-list entry", async ({ page }, testInfo) => {
       test.skip(
         testInfo.project.name === "webkit",
-        "WebKit runs this acceptance case against the HTTPS fixture"
+        "the local http WebKit project has no HTTPS fixture; the HTTPS WebKit project covers this case"
       )
 
       await page.setExtraHTTPHeaders(SITE_HEADERS)
