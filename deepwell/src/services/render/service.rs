@@ -89,9 +89,10 @@ use super::ftml_render::{
 use super::ftml_user_info::UserInfoSnapshot;
 use super::generator::COMPILED_GENERATOR;
 use super::iftags::{
-    enclosed_iftags_ranges, exhibit_cross_closed_code_div_openers,
-    mark_wikidot_generated_iftags_specs, remove_enclosed_iftags_markers,
-    resolve_gate_bearing_div_heads, resolve_outermost_wikidot_iftags,
+    drop_cross_closed_mox_collapsible, enclosed_iftags_ranges,
+    exhibit_cross_closed_code_div_openers, mark_wikidot_generated_iftags_specs,
+    remove_enclosed_iftags_markers, resolve_gate_bearing_div_heads,
+    resolve_outermost_wikidot_iftags,
     resolve_outermost_wikidot_iftags_before_include_expansion,
     resolve_outermost_wikidot_iftags_before_include_expansion_for_page_preview,
     truncate_wikidot_heads_at_exhibited_gates,
@@ -1895,6 +1896,12 @@ impl RenderService {
             &mut expanded.wikitext,
             &mut wikidot_compat_text,
         );
+
+        // OC-WAVE1-FIX-5: emulate live Wikidot's DUPCOLL-MOX cross-closed div
+        // desync. Gated on the exact exhibiting mox-3line block + a later
+        // credit:start scope; standalone mox, swapped order, g1's bare closer,
+        // and unrelated themes are untouched.
+        drop_cross_closed_mox_collapsible(&mut expanded.wikitext);
 
         OuterPreparedRenderWikitext {
             wikitext: expanded.wikitext,
