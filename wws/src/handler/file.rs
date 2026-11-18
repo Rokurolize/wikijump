@@ -560,7 +560,7 @@ mod tests {
     use s3::creds::Credentials;
     use s3::region::Region;
     use serde_json::{Value, json};
-    use std::io::{Read, Write};
+    use std::io::{BufRead, BufReader, Read, Write};
     use std::net::TcpListener;
     use std::sync::{Arc, Mutex};
     use std::thread::{self, JoinHandle};
@@ -1024,6 +1024,61 @@ mod tests {
         test_state_with_endpoint("http://127.0.0.1:9000").await
     }
 
+    fn spawn_redis_stub() -> String {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let endpoint = format!("redis://{}", listener.local_addr().unwrap());
+        thread::spawn(move || {
+            for stream in listener.incoming() {
+                let Ok(stream) = stream else { continue };
+                thread::spawn(move || {
+                    let mut writer = stream;
+                    let Ok(reader) = writer.try_clone() else {
+                        return;
+                    };
+                    let mut reader = BufReader::new(reader);
+                    let mut line = String::new();
+                    loop {
+                        line.clear();
+                        if reader.read_line(&mut line).unwrap_or(0) == 0 {
+                            return;
+                        }
+                        if !line.starts_with('*') {
+                            continue;
+                        }
+                        let Ok(argc) = line[1..].trim().parse::<usize>() else {
+                            return;
+                        };
+                        let mut command = String::new();
+                        for _ in 0..argc {
+                            line.clear();
+                            if reader.read_line(&mut line).unwrap_or(0) == 0 {
+                                return;
+                            }
+                            if !line.starts_with('$') {
+                                continue;
+                            }
+                            line.clear();
+                            if reader.read_line(&mut line).unwrap_or(0) == 0 {
+                                return;
+                            }
+                            if command.is_empty() {
+                                command = line.trim().to_ascii_lowercase();
+                            }
+                        }
+                        if command == "get" {
+                            if writer.write_all(b"$-1\r\n").is_err() {
+                                return;
+                            }
+                        } else if writer.write_all(b"+OK\r\n").is_err() {
+                            return;
+                        }
+                    }
+                });
+            }
+        });
+        endpoint
+    }
+
     async fn test_state_with_endpoint(endpoint: &str) -> ServerState {
         test_state_with_endpoints("http://127.0.0.1:2747", endpoint).await
     }
@@ -1035,7 +1090,7 @@ mod tests {
         let mut state = build_server_state(Secrets {
             deepwell_url: deepwell_endpoint.to_owned(),
             deepwell_rpc_token: crate::config::RpcToken::parse("0".repeat(64)).unwrap(),
-            redis_url: str!("redis://127.0.0.1/"),
+            redis_url: spawn_redis_stub(),
             s3_files_bucket: str!("files"),
             s3_tblocks_bucket: str!("text-blocks"),
             s3_region: Region::Custom {
