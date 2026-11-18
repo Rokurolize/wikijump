@@ -146,9 +146,19 @@ pub(in crate::services::render) fn matching_source_scope_close(
                         }
                     }
                     Some(SourceScopeTag::Close(name)) => {
-                        if let Some(open) = open_scopes.take_matching_close(&name)
-                            && open.start == scope_start
-                        {
+                        // A close only terminates `scope_start` when that scope
+                        // is the innermost open one. A `[[module Rate]]` nested
+                        // under still-open div scopes must not bind to a
+                        // distant `[[/module]]` that belongs to another module
+                        // (its opener was skipped as literal): live leaves the
+                        // rate module self-closing there, and swallowing to
+                        // that close drops the collapsibles in between.
+                        let target_is_innermost =
+                            open_scopes.scopes.last().is_some_and(|open| {
+                                open.start == scope_start && open.accepts_close(&name)
+                            });
+                        let _ = open_scopes.take_matching_close(&name);
+                        if target_is_innermost {
                             return Some(cursor..end);
                         }
                     }
