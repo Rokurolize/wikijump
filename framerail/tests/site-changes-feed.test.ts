@@ -143,7 +143,7 @@ test("site changes RSS escapes markup in user-controlled description fields", ()
 
   // Simulate a feed consumer: one pass of XML decoding of the description,
   // after which the fragment is treated as HTML.
-  const rawDescription = xml.match(/<description>([\s\S]*?)<\/description>/u)?.[1]
+  const rawDescription = /<description>([\s\S]*?)<\/description>/u.exec(xml)?.[1]
   assert.ok(rawDescription)
   const entities: Record<string, string> = {
     "&lt;": "<",
