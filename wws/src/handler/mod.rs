@@ -56,56 +56,29 @@ pub enum TargetServer {
 }
 
 /// Helper function to extract a string value from a header.
-/// This function asserts that the header does exist.
-fn get_header<'a>(
-    headers: &'a HeaderMap,
-    header: HeaderName,
-    missing_header_message: &'static str,
-    not_utf8_header_message: &'static str,
-) -> &'a str {
-    headers
-        .get(header)
-        .expect(missing_header_message)
-        .to_str()
-        .expect(not_utf8_header_message)
+fn get_header(headers: &HeaderMap, header: HeaderName) -> Option<&str> {
+    headers.get(header)?.to_str().ok()
 }
 
 /// Helper function to get the site ID from headers.
-fn get_site_id(headers: &HeaderMap) -> i64 {
-    get_header(
-        headers,
-        HEADER_SITE_ID,
-        "No site ID header in request",
-        "Site ID header is not UTF-8",
-    )
-    .parse()
-    .expect("Site ID is not a valid integer")
+fn get_site_id(headers: &HeaderMap) -> Option<i64> {
+    get_header(headers, HEADER_SITE_ID)?.parse().ok()
 }
 
 /// Helper function to get the site slug from headers.
-fn get_site_slug(headers: &HeaderMap) -> &str {
-    get_header(
-        headers,
-        HEADER_SITE_SLUG,
-        "No site slug header in request",
-        "Site slug header is not UTF-8",
-    )
+fn get_site_slug(headers: &HeaderMap) -> Option<&str> {
+    get_header(headers, HEADER_SITE_SLUG)
 }
 
 /// Helper function to get which target server Caddy has told us we are.
 ///
 /// This is either `main` or `files`, and refers to whether routes like
 /// `robots.txt` are `foo.wikijump.com` or `foo.wjfiles.com`.
-fn get_target_server(headers: &HeaderMap) -> TargetServer {
-    let value = headers
-        .get(HEADER_TARGET_SERVER)
-        .expect("No target server header in request")
-        .as_bytes();
-
-    match value {
-        b"main" => TargetServer::Main,
-        b"files" => TargetServer::Files,
-        _ => panic!("Invalid header value: {value:?}"),
+fn get_target_server(headers: &HeaderMap) -> Option<TargetServer> {
+    match get_header(headers, HEADER_TARGET_SERVER)? {
+        "main" => Some(TargetServer::Main),
+        "files" => Some(TargetServer::Files),
+        _ => None,
     }
 }
 

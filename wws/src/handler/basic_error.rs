@@ -30,42 +30,20 @@ use axum::response::{IntoResponse, Response};
 use axum_extra::TypedHeader;
 use headers::Host;
 
-fn get_page_slug(headers: &HeaderMap) -> &str {
-    get_header(
-        headers,
-        HEADER_PAGE_SLUG,
-        "No page slug header in request",
-        "Page slug header is not UTF-8",
-    )
+fn get_page_slug(headers: &HeaderMap) -> Option<&str> {
+    get_header(headers, HEADER_PAGE_SLUG)
 }
 
-fn get_filename(headers: &HeaderMap) -> &str {
-    get_header(
-        headers,
-        HEADER_FILENAME,
-        "No filename header in request",
-        "Filename header is not UTF-8",
-    )
+fn get_filename(headers: &HeaderMap) -> Option<&str> {
+    get_header(headers, HEADER_FILENAME)
 }
 
-fn get_blob_hash(headers: &HeaderMap) -> &str {
-    get_header(
-        headers,
-        HEADER_BLOB_HASH,
-        "No blob s3 hash header in request",
-        "Blob s3 hash header is not UTF-8",
-    )
+fn get_blob_hash(headers: &HeaderMap) -> Option<&str> {
+    get_header(headers, HEADER_BLOB_HASH)
 }
 
-fn get_user_id(headers: &HeaderMap) -> i64 {
-    get_header(
-        headers,
-        HEADER_USER_ID,
-        "No user ID header in request",
-        "User ID header is not UTF-8",
-    )
-    .parse()
-    .expect("User ID is not a valid integer")
+fn get_user_id(headers: &HeaderMap) -> Option<i64> {
+    get_header(headers, HEADER_USER_ID)?.parse().ok()
 }
 
 pub async fn handle_basic_error(
@@ -88,7 +66,9 @@ pub async fn handle_basic_error(
         // Required headers:
         // - x-wikijump-site-slug
         "site-slug" => {
-            let site_slug = get_site_slug(&headers);
+            let Some(site_slug) = get_site_slug(&headers) else {
+                return FallbackError::BasicErrorDirect.into_response();
+            };
             BasicError::SiteSlug { site_slug }
         }
         // No required headers
@@ -98,24 +78,38 @@ pub async fn handle_basic_error(
         // Required headers:
         // - x-wikijump-page-slug
         "page-slug" => {
-            let site_id = get_site_id(&headers);
-            let page_slug = get_page_slug(&headers);
+            let Some(site_id) = get_site_id(&headers) else {
+                return FallbackError::BasicErrorDirect.into_response();
+            };
+            let Some(page_slug) = get_page_slug(&headers) else {
+                return FallbackError::BasicErrorDirect.into_response();
+            };
             BasicError::PageSlug { site_id, page_slug }
         }
         // Required headers:
         // - x-wikijump-page-slug
         "page-fetch" => {
-            let site_id = get_site_id(&headers);
-            let page_slug = get_page_slug(&headers);
+            let Some(site_id) = get_site_id(&headers) else {
+                return FallbackError::BasicErrorDirect.into_response();
+            };
+            let Some(page_slug) = get_page_slug(&headers) else {
+                return FallbackError::BasicErrorDirect.into_response();
+            };
             BasicError::PageFetch { site_id, page_slug }
         }
         // Required headers:
         // - x-wikijump-page-slug
         // - x-wikijump-filename
         "file-name" => {
-            let site_id = get_site_id(&headers);
-            let page_slug = get_page_slug(&headers);
-            let filename = get_filename(&headers);
+            let Some(site_id) = get_site_id(&headers) else {
+                return FallbackError::BasicErrorDirect.into_response();
+            };
+            let Some(page_slug) = get_page_slug(&headers) else {
+                return FallbackError::BasicErrorDirect.into_response();
+            };
+            let Some(filename) = get_filename(&headers) else {
+                return FallbackError::BasicErrorDirect.into_response();
+            };
             BasicError::FileName {
                 site_id,
                 page_slug,
@@ -126,9 +120,15 @@ pub async fn handle_basic_error(
         // - x-wikijump-page-slug
         // - x-wikijump-filename
         "file-fetch" => {
-            let site_id = get_site_id(&headers);
-            let page_slug = get_page_slug(&headers);
-            let filename = get_filename(&headers);
+            let Some(site_id) = get_site_id(&headers) else {
+                return FallbackError::BasicErrorDirect.into_response();
+            };
+            let Some(page_slug) = get_page_slug(&headers) else {
+                return FallbackError::BasicErrorDirect.into_response();
+            };
+            let Some(filename) = get_filename(&headers) else {
+                return FallbackError::BasicErrorDirect.into_response();
+            };
             BasicError::FileFetch {
                 site_id,
                 page_slug,
@@ -139,19 +139,28 @@ pub async fn handle_basic_error(
         "file-root" => BasicError::FileRoot,
         // Required headers:
         // - x-wikijump-s3-hash
-        "blob-fetch" => BasicError::BlobFetch {
-            s3_hash: get_blob_hash(&headers),
-        },
+        "blob-fetch" => {
+            let Some(s3_hash) = get_blob_hash(&headers) else {
+                return FallbackError::BasicErrorDirect.into_response();
+            };
+            BasicError::BlobFetch { s3_hash }
+        }
         // Required headers:
         // - x-wikijump-user-id
-        "user-fetch" => BasicError::UserFetch {
-            user_id: get_user_id(&headers),
-        },
+        "user-fetch" => {
+            let Some(user_id) = get_user_id(&headers) else {
+                return FallbackError::BasicErrorDirect.into_response();
+            };
+            BasicError::UserFetch { user_id }
+        }
         // Required headers:
         // - x-wikijump-user-id
-        "user-avatar" => BasicError::UserAvatar {
-            user_id: get_user_id(&headers),
-        },
+        "user-avatar" => {
+            let Some(user_id) = get_user_id(&headers) else {
+                return FallbackError::BasicErrorDirect.into_response();
+            };
+            BasicError::UserAvatar { user_id }
+        }
         // Invalid
         _ => {
             // XF-1000
