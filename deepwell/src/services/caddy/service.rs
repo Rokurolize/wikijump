@@ -145,7 +145,7 @@ impl CaddyService {
 
     pub(crate) fn hash_site_data(SiteData { sites, domains }: &SiteData) -> String {
         let mut sites: Vec<_> = sites.iter().collect();
-        sites.sort_by(|a, b| a.0.cmp(&b.0));
+        sites.sort_by_key(|site| site.0);
 
         let mut hasher = Sha256::new();
         write_hash_field(&mut hasher, &(sites.len() as u64).to_be_bytes());
