@@ -75,7 +75,10 @@ def run(*args: str, cwd: Path | None = None, env: dict[str, str] | None = None) 
     return result.stdout.strip()
 
 
-def run_logged(args: list[str], log: Path, cwd: Path, env: dict[str, str] | None = None) -> str:
+def run_logged(
+    args: list[str], log: Path, cwd: Path, env: dict[str, str] | None = None,
+    label: str | None = None,
+) -> str:
     """Run a step, keep its output in the evidence directory, and return
     stdout; a failure names the log."""
     with log.open("w", encoding="utf-8") as output:
@@ -84,7 +87,8 @@ def run_logged(args: list[str], log: Path, cwd: Path, env: dict[str, str] | None
         )
         output.write(result.stdout)
     if result.returncode != 0:
-        raise RuntimeError(f"{Path(args[1]).name if len(args) > 1 else args[0]} failed; see {log}")
+        name = label or (Path(args[1]).name if len(args) > 1 else args[0])
+        raise RuntimeError(f"{name} failed; see {log}")
     return result.stdout
 
 
@@ -314,7 +318,7 @@ def standing_database_password() -> str:
     return run("docker", "exec", STANDING_DATABASE, "printenv", "POSTGRES_PASSWORD")
 
 
-def clone_standing_database(volume: str) -> None:
+def clone_standing_database(volume: str, log: Path, cwd: Path) -> None:
     """Copy the standing database with pg_basebackup into a new volume.
 
     The copy is physical and consistent at one point in time; standing keeps
@@ -328,16 +332,21 @@ def clone_standing_database(volume: str) -> None:
             "PGPASSWORD=" + standing_database_password() + "\n"
         )
     try:
-        run(
-            "docker", "run", "--rm", "--user", "postgres",
-            "--network", f"container:{STANDING_NAMESPACE}",
-            "--env-file", env_file.name,
-            "--volume", f"{volume}:/var/lib/postgresql/data",
-            "--entrypoint", "pg_basebackup",
-            image,
-            "--host", "127.0.0.1", "--username", "wikijump",
-            "--pgdata", "/var/lib/postgresql/data",
-            "--format", "plain", "--wal-method", "stream", "--checkpoint", "fast",
+        run_logged(
+            [
+                "docker", "run", "--rm", "--user", "postgres",
+                "--network", f"container:{STANDING_NAMESPACE}",
+                "--env-file", env_file.name,
+                "--volume", f"{volume}:/var/lib/postgresql/data",
+                "--entrypoint", "pg_basebackup",
+                image,
+                "--host", "127.0.0.1", "--username", "wikijump",
+                "--pgdata", "/var/lib/postgresql/data",
+                "--format", "plain", "--wal-method", "stream", "--checkpoint", "fast",
+            ],
+            log,
+            cwd,
+            label="pg_basebackup",
         )
     finally:
         os.unlink(env_file.name)
@@ -1160,7 +1169,9 @@ def promote(args, source_root, runtime_home, override_file, identity, evidence, 
 
     def clone_stage():
         with deepwell_paused_for_clone():
-            clone_standing_database(rehearsal_volumes["database"])
+            clone_standing_database(
+                rehearsal_volumes["database"], evidence / "rehearsal-clone.log", source_root
+            )
             overlay_standing_files(rehearsal_volumes["files"], rehearsal_volumes["files_upper"])
         return dict(rehearsal_volumes)
 
@@ -1281,6 +1292,18 @@ def finish(
     return 0
 
 
+def append_rehearsal_log_tail(evidence: Path, limit: int = 200) -> None:
+    driver = evidence / "rehearsal-start.log"
+    captured = evidence / "rehearsal-start" / "deepwell.log"
+    try:
+        lines = captured.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError as error:
+        lines = [f"no rehearsal deepwell log was captured at {captured}: {error}"]
+    with driver.open("a", encoding="utf-8") as output:
+        output.write("\n=== rehearsal deepwell log tail ===\n")
+        output.write("".join(f"{line}\n" for line in lines[-limit:]))
+
+
 def rehearse(
     source_root, evidence, stages, plan, reference, volumes, target, deepwell_image,
     rehearsal_state,
@@ -1298,6 +1321,7 @@ def rehearse(
                     "--build-evidence", str(evidence / "build"),
                     "--candidate-root", str(candidate_root),
                     "--staging-home", str(evidence / "rehearsal-staging"),
+                    "--evidence-dir", str(evidence),
                     "--public-port", str(ports["public"]),
                     "--rpc-port", str(ports["rpc"]),
                     "--object-store-port", str(ports["object_store"]),
@@ -1315,7 +1339,11 @@ def rehearse(
             )
             return last_json_line(stdout)
 
-        stages.run("rehearsal-start", start_stage)
+        try:
+            stages.run("rehearsal-start", start_stage)
+        except BaseException:
+            append_rehearsal_log_tail(evidence)
+            raise
         slugs = browser_canary_slugs(source_root)
         stages.run(
             "rehearsal-render",
