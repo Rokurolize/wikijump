@@ -23,12 +23,15 @@ use crate::models::file::Model as FileModel;
 use crate::models::file_revision::Model as FileRevisionModel;
 use crate::services::file::{
     CreateFile, CreateFileOutput, DeleteFile, DeleteFileOutput, EditFile, EditFileOutput,
-    GetFileDetails, GetFileOutput, MoveFile, MoveFileOutput, RestoreFile,
+    GetFile, GetFileDetails, GetFileOutput, MoveFile, MoveFileOutput, RestoreFile,
     RestoreFileOutput, RollbackFile, is_fully_imported_page,
 };
+use crate::services::file_revision::GetFileRevisionRange;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::{BlobService, FileRevisionService};
-use crate::types::{Action, Bytes, FileDetails, Permission, Reference, Resource};
+use crate::types::{
+    Action, Bytes, FetchDirection, FileDetails, Permission, Reference, Resource,
+};
 
 pub async fn file_get(
     ctx: &ServiceContext<'_>,
@@ -136,6 +139,15 @@ pub async fn file_edit(
     .await
     .or_raise(|| Error::new("failed to check file edit permission", ErrorType::File))?;
 
+    ensure_file_mutation_ownership_by_id(
+        ctx,
+        input.file_id,
+        actor_user_id,
+        "edit this file",
+    )
+    .await
+    .or_raise(|| Error::new("failed to check file edit ownership", ErrorType::File))?;
+
     ensure_page_not_fully_imported(ctx, input.site_id, input.page_id, "edit a file")
         .await?;
 
@@ -169,6 +181,29 @@ pub async fn file_delete(
     )
     .await
     .or_raise(|| Error::new("failed to check file delete permission", ErrorType::File))?;
+
+    let existing_file = FileService::get_optional(
+        ctx,
+        GetFile {
+            site_id: input.site_id,
+            page_id: input.page_id,
+            file: input.file.clone(),
+        },
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to load file for delete ownership check",
+            ErrorType::File,
+        )
+    })?;
+    if let Some(file) = existing_file {
+        ensure_file_mutation_ownership(ctx, &file, actor_user_id, "delete this file")
+            .await
+            .or_raise(|| {
+                Error::new("failed to check file delete ownership", ErrorType::File)
+            })?;
+    }
 
     ensure_page_not_fully_imported(ctx, input.site_id, input.page_id, "delete a file")
         .await?;
@@ -248,6 +283,15 @@ pub async fn file_move(
     )
     .await?;
 
+    ensure_file_mutation_ownership_by_id(
+        ctx,
+        input.file_id,
+        actor_user_id,
+        "move this file",
+    )
+    .await
+    .or_raise(|| Error::new("failed to check file move ownership", ErrorType::File))?;
+
     FileService::r#move(ctx, input)
         .await
         .or_raise(|| Error::new("failed to move file", ErrorType::File))
@@ -326,6 +370,15 @@ pub async fn file_restore(
         .await?;
     }
 
+    ensure_file_mutation_ownership_by_id(
+        ctx,
+        input.file_id,
+        actor_user_id,
+        "restore this file",
+    )
+    .await
+    .or_raise(|| Error::new("failed to check file restore ownership", ErrorType::File))?;
+
     FileService::restore(ctx, input)
         .await
         .or_raise(|| Error::new("failed to restore file", ErrorType::File))
@@ -362,6 +415,29 @@ pub async fn file_rollback(
         Error::new("failed to check file rollback permission", ErrorType::File)
     })?;
 
+    let existing_file = FileService::get_optional(
+        ctx,
+        GetFile {
+            site_id: input.site_id,
+            page_id: input.page_id,
+            file: input.file.clone(),
+        },
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to load file for rollback ownership check",
+            ErrorType::File,
+        )
+    })?;
+    if let Some(file) = existing_file {
+        ensure_file_mutation_ownership(ctx, &file, actor_user_id, "roll back this file")
+            .await
+            .or_raise(|| {
+                Error::new("failed to check file rollback ownership", ErrorType::File)
+            })?;
+    }
+
     ensure_page_not_fully_imported(ctx, input.site_id, input.page_id, "roll back a file")
         .await?;
 
@@ -389,6 +465,98 @@ fn require_authenticated_file_mutation_actor(
             ErrorType::PermissionDenied,
         )
         .into())
+    }
+}
+
+/// Ownership gate for mutations of an existing file.
+///
+/// Page edit permission alone is not enough to modify another user's
+/// file: on an open site every member can edit every page, which let any
+/// member silently replace or delete files uploaded by someone else
+/// (ARTEX round 4, finding #641). The actor must be the file's original
+/// uploader (the user on its create revision) or hold site-level edit
+/// permission (site staff). Creating a new file is unaffected.
+async fn ensure_file_mutation_ownership(
+    ctx: &ServiceContext<'_>,
+    file: &FileModel,
+    actor_user_id: i64,
+    action_name: &str,
+) -> Result<()> {
+    let make_error =
+        || Error::new("failed to check file mutation ownership", ErrorType::File);
+
+    let first_revisions = FileRevisionService::get_range(
+        ctx,
+        GetFileRevisionRange {
+            site_id: file.site_id,
+            page_id: file.page_id,
+            file_id: file.file_id,
+            revision_number: 0,
+            revision_direction: FetchDirection::After,
+            limit: 1,
+        },
+    )
+    .await
+    .or_raise(make_error)?;
+
+    let uploader_id = first_revisions.first().map(|revision| revision.user_id);
+    if uploader_id == Some(actor_user_id) {
+        return Ok(());
+    }
+
+    let can_edit_site = PermissionService::check_user_can(
+        ctx,
+        &CheckPermissionContext {
+            user_id: Some(actor_user_id),
+            site_id: file.site_id,
+            page_reference: None,
+        },
+        Permission {
+            resource_type: Resource::Site,
+            resource_category: None,
+            action: Action::Edit,
+        },
+    )
+    .await
+    .or_raise(make_error)?;
+
+    if can_edit_site {
+        Ok(())
+    } else {
+        Err(Error::new(
+            format!(
+                "user does not have permission to {action_name}: \
+                 only the file's uploader or site staff may modify an existing file"
+            ),
+            ErrorType::PermissionDenied,
+        )
+        .into())
+    }
+}
+
+/// Resolves a file by ID (including deleted files, for restore) and
+/// applies the ownership gate. A missing file is left to the mutation
+/// itself so its usual not-found error is preserved.
+async fn ensure_file_mutation_ownership_by_id(
+    ctx: &ServiceContext<'_>,
+    file_id: i64,
+    actor_user_id: i64,
+    action_name: &str,
+) -> Result<()> {
+    let file = FileService::get_direct_optional(ctx, file_id, true)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to load file for mutation ownership check",
+                ErrorType::File,
+            )
+        })?;
+
+    match file {
+        Some(file) => {
+            ensure_file_mutation_ownership(ctx, &file, actor_user_id, action_name).await
+        }
+        None => Ok(()),
     }
 }
 
