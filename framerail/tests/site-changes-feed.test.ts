@@ -158,7 +158,10 @@ test("site changes RSS escapes markup in user-controlled description fields", ()
   )
 
   // The intended anchor markup survives as markup...
-  assert.match(decoded, /Page: <a href="https:\/\/pentest\.wikijump\.localhost\/artex-i608-xss">/)
+  assert.match(
+    decoded,
+    /Page: <a href="https:\/\/pentest\.wikijump\.localhost\/artex-i608-xss">/
+  )
   // ...while the attacker-controlled title and user name are inert text.
   assert.ok(!decoded.includes("<img"), decoded)
   assert.ok(!decoded.includes("<script"), decoded)
