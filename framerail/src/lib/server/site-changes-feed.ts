@@ -34,6 +34,15 @@ function escapeXml(value: string): string {
     .replaceAll("'", "&#039;")
 }
 
+// The description is an HTML fragment carried inside XML. User-controlled
+// plain-text fields (page title, user name, change type) must be escaped for
+// the HTML layer before composition; the composed fragment is then escaped
+// once more for XML by escapeXml at serialization. Without the inner escape,
+// a page title containing markup becomes live HTML in feed consumers.
+function escapeHtmlText(value: string): string {
+  return escapeXml(value)
+}
+
 function cdata(value: string): string {
   return value.replaceAll("]]>", "]]]]><![CDATA[>")
 }
@@ -49,11 +58,11 @@ function itemXml(origin: string, item: WikidotSiteChangesFeedItem): string {
   const guid = `${guidOrigin.origin}/${item.slug}#revision-${item.revision_id}`
   const revisionLabel = item.is_new_page ? "new" : `rev. ${item.revision_number}`
   const description = [
-    `Page: <a href="${pageUrl}">${item.title}</a>`,
+    `Page: <a href="${escapeHtmlText(pageUrl)}">${escapeHtmlText(item.title)}</a>`,
     `Current revision number: ${revisionLabel}`,
     `Date changed: ${formatWikidotSiteChangesFeedDate(new Date(item.created_at))}`,
-    `Change type: ${item.change_type}`,
-    `By: ${item.user_name}`,
+    `Change type: ${escapeHtmlText(item.change_type)}`,
+    `By: ${escapeHtmlText(item.user_name)}`,
     `Page content preview: ${item.body_html}`
   ].join("<br/>")
   const title = `"${item.title}" - ${item.change_type} change`

@@ -68,12 +68,12 @@ test("site changes RSS reports the frozen channel and newest-first bounded rows"
   )
   assert.match(
     xml,
-    /<description>Page: &lt;a href=&quot;https:\/\/scp-wiki\.wikijump\.localhost\/forum:page-discussion&quot;&gt;A &quot;page&quot; &amp; &lt;title&gt;&lt;\/a&gt;/
+    /<description>Page: &lt;a href=&quot;https:\/\/scp-wiki\.wikijump\.localhost\/forum:page-discussion&quot;&gt;A &amp;quot;page&amp;quot; &amp;amp; &amp;lt;title&amp;gt;&lt;\/a&gt;/
   )
   assert.match(xml, /Current revision number: rev\. 7/)
   assert.match(xml, /Date changed: Wed, 07 Oct 2026 16:53:08 \+0000/)
   assert.match(xml, /Change type: source/)
-  assert.match(xml, /By: Author &amp; User/)
+  assert.match(xml, /By: Author &amp;amp; User/)
   assert.match(xml, /Page content preview: &lt;p&gt;One \]\]&gt; two&lt;\/p&gt;/)
   assert.match(xml, /<pubDate>Wed, 07 Oct 2026 16:53:08 \+0000<\/pubDate>/)
   assert.match(
@@ -95,7 +95,7 @@ test("site changes RSS item titles use the per-row change type", () => {
     xml,
     /<guid>http:\/\/scp-wiki\.wikijump\.localhost\/new-page#revision-3000000124<\/guid>/
   )
-  assert.match(xml, /By: Another &lt;author&gt;/)
+  assert.match(xml, /By: Another &amp;lt;author&amp;gt;/)
 })
 
 test("an empty site still produces the frozen channel shape", () => {
@@ -114,4 +114,55 @@ test("an empty site still produces the frozen channel shape", () => {
     formatWikidotFeedDate(new Date("2026-10-07T16:53:08Z")),
     "Wed, 07 Oct 2026 16:53:08 +0000"
   )
+})
+
+test("site changes RSS escapes markup in user-controlled description fields", () => {
+  const xml = buildWikidotSiteChangesFeedXml(
+    "https://pentest.wikijump.localhost/feed/site-changes.xml",
+    {
+      site_name: "Pentest",
+      items: [
+        {
+          revision_id: 3_000_000_200,
+          revision_number: 1,
+          is_new_page: true,
+          is_file: false,
+          created_at: "2026-11-18T11:41:44Z",
+          slug: "artex-i608-xss",
+          title:
+            "ARTEX608XSS <img src=x onerror=window.__ARTEX608=1> </title><script>window.__ARTEX608_SCRIPT=1</script>",
+          change_type: "new page",
+          user_id: 20001954,
+          user_name: "<b onmouseover=alert(3)>eve</b>",
+          body_html: "<p>Body</p>"
+        }
+      ]
+    },
+    new Date("2026-11-18T11:42:00Z")
+  )
+
+  // Simulate a feed consumer: one pass of XML decoding of the description,
+  // after which the fragment is treated as HTML.
+  const rawDescription = xml.match(/<description>([\s\S]*?)<\/description>/u)?.[1]
+  assert.ok(rawDescription)
+  const entities: Record<string, string> = {
+    "&lt;": "<",
+    "&gt;": ">",
+    "&quot;": '"',
+    "&#039;": "'",
+    "&amp;": "&"
+  }
+  const decoded = rawDescription.replace(
+    /&(?:lt|gt|quot|#039|amp);/gu,
+    (entity) => entities[entity] ?? entity
+  )
+
+  // The intended anchor markup survives as markup...
+  assert.match(decoded, /Page: <a href="https:\/\/pentest\.wikijump\.localhost\/artex-i608-xss">/)
+  // ...while the attacker-controlled title and user name are inert text.
+  assert.ok(!decoded.includes("<img"), decoded)
+  assert.ok(!decoded.includes("<script"), decoded)
+  assert.ok(!decoded.includes("<b onmouseover"), decoded)
+  assert.ok(decoded.includes("&lt;img src=x onerror=window.__ARTEX608=1&gt;"))
+  assert.ok(decoded.includes("&lt;b onmouseover=alert(3)&gt;eve&lt;/b&gt;"))
 })
