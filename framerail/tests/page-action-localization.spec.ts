@@ -79,7 +79,7 @@ for (const [locale, expected] of Object.entries(labels) as [
     }, testInfo) => {
       test.skip(
         testInfo.project.name === "webkit",
-        "WebKit runs this acceptance case against the HTTPS fixture"
+        "the local http WebKit project has no HTTPS fixture; the HTTPS WebKit project covers this case"
       )
 
       await page.setViewportSize({ width: 320, height: 640 })

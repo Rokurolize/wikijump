@@ -8,7 +8,10 @@ const SITE_HEADERS = {
 test("imported pages have the Wikidot browser tab title in SSR and after hydration", async ({
   page
 }) => {
-  test.skip(!process.env.PLAYWRIGHT_HTTPS_APP_PORT, "requires hermetic HTTPS fixture")
+  test.skip(
+    !process.env.PLAYWRIGHT_HTTPS_APP_PORT,
+    "requires PLAYWRIGHT_HTTPS_APP_PORT from the hermetic HTTPS fixture; local http has no TLS boundary"
+  )
   const host = `https://localhost:${process.env.PLAYWRIGHT_HTTPS_APP_PORT}`
   await page.setExtraHTTPHeaders(SITE_HEADERS)
   const response = await page.goto(`${host}/wikidot-login-probe`, {
@@ -23,7 +26,10 @@ test("imported pages have the Wikidot browser tab title in SSR and after hydrati
 test("local-native pages retain their non-imported title convention", async ({
   page
 }) => {
-  test.skip(!process.env.PLAYWRIGHT_HTTPS_APP_PORT, "requires hermetic HTTPS fixture")
+  test.skip(
+    !process.env.PLAYWRIGHT_HTTPS_APP_PORT,
+    "requires PLAYWRIGHT_HTTPS_APP_PORT from the hermetic HTTPS fixture; local http has no TLS boundary"
+  )
   const host = `https://localhost:${process.env.PLAYWRIGHT_HTTPS_APP_PORT}`
   await page.setExtraHTTPHeaders(SITE_HEADERS)
   const response = await page.goto(`${host}/theme:yossistyle`, {
@@ -37,7 +43,10 @@ test("local-native pages retain their non-imported title convention", async ({
 test("client-side route changes keep the imported/local title boundary", async ({
   page
 }) => {
-  test.skip(!process.env.PLAYWRIGHT_HTTPS_APP_PORT, "requires hermetic HTTPS fixture")
+  test.skip(
+    !process.env.PLAYWRIGHT_HTTPS_APP_PORT,
+    "requires PLAYWRIGHT_HTTPS_APP_PORT from the hermetic HTTPS fixture; local http has no TLS boundary"
+  )
   const host = `https://localhost:${process.env.PLAYWRIGHT_HTTPS_APP_PORT}`
   await page.setExtraHTTPHeaders(SITE_HEADERS)
   await page.goto(`${host}/theme:yossistyle`, { waitUntil: "domcontentloaded" })

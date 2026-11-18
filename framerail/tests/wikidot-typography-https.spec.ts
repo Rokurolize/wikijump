@@ -10,7 +10,7 @@ test("imported Wikidot typography CSS survives HTTPS across browser engines", as
 }, testInfo) => {
   test.skip(
     !process.env.PLAYWRIGHT_HTTPS_APP_PORT,
-    "requires the hermetic HTTPS Vite fixture"
+    "requires PLAYWRIGHT_HTTPS_APP_PORT from the hermetic HTTPS Vite fixture; local http has no TLS boundary"
   )
   const port = process.env.PLAYWRIGHT_HTTPS_APP_PORT
   const host = `https://localhost:${port}`

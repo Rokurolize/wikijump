@@ -149,7 +149,9 @@ class RealPostgresTest(unittest.TestCase):
         try:
             docker("image", "inspect", PG_IMAGE)
         except subprocess.CalledProcessError:
-            raise unittest.SkipTest(f"{PG_IMAGE} not present locally")
+            raise unittest.SkipTest(
+                f"{PG_IMAGE} is not present locally; build or pull it to run the real Postgres catch-up cases"
+            )
         subprocess.run(["docker", "rm", "--force", cls.container], capture_output=True)
         try:
             docker(

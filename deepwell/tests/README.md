@@ -32,6 +32,16 @@ you. Use the serial command above rather than an unconstrained `cargo test`.
 More specifically, the suite needs the local database, cache, and files
 services plus completed migrations and seeding.
 
+### Known contention timeouts
+
+Three tests pass in isolation but have hit the committed 15-second per-test nextest cap while many task-owned stacks run side by side. They are not known functional failures and must not be marked `#[ignore]` merely for being slow under shard contention; rerun a timed-out test unloaded before treating its result as a verdict.
+
+- `listpages_perpage_renders_wikidot_pager_controls` (`tests/page.rs`): isolated passes 6.93 s and 5.77 s; timed out in shard 2 of 12-way runs.
+- `foreign_source::namespaced_foreign_snapshots_resolve_the_fogwalker_chain` (`tests/page/foreign_source.rs`): isolated pass 4.21 s; timed out in shard 10 of a 12-way run.
+- `text_block_rerender_race::older_rerender_does_not_overwrite_newer_blocks` (`tests/text_block_rerender_race.rs`): isolated pass 7.10 s and a post-merge unloaded recheck pass of 9.47 s; timed out in shard 8 of a 12-way run and shard 2 of a 6-way run.
+
+The campaign record `/home/roku/.local/state/wikijump/muse-bhl/wj-parity-20261116/OC-SUITE-FIX.md` carries the full evidence, including `LANE/nofailfast3.log` and `LANE/final-rerun.log` (12-way reruns with zero `FAIL` lines and only contention `TIMEOUT`s), `LANE/final-6shards.log` (6 shards, 3038 tests passed, zero `FAIL` and zero `TIMEOUT`), `LANE/final-rebased-6shards.log` and `LANE/timeout-recheck.log` (the unloaded 9.47 s pass).
+
 GitHub Actions intentionally does not execute this integration suite. The
 maintained WSL preflight is the validation authority and runs the same
 network-guarded serial command before merge.
