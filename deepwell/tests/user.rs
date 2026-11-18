@@ -25,6 +25,7 @@ use self::common::TestRunner;
 use deepwell::constants::ADMIN_USER_ID;
 use deepwell::error::prelude::*;
 use deepwell::models::wikidot_user::{Entity as WikidotUser, Model as WikidotUserModel};
+use deepwell::services::authentication::{AuthenticateUser, AuthenticationService};
 use deepwell::services::import::ImportUserOutput;
 use sea_orm::EntityTrait;
 use serde_json::json;
@@ -319,6 +320,55 @@ async fn wikidot_user() {
         .expect("No wikidot_user row found");
 
     check_wikidot_user(&user);
+}
+
+#[tokio::test]
+async fn deleted_user_cannot_authenticate() {
+    let runner = TestRunner::setup().await;
+
+    const USER_NAME: &str = "Deleted User";
+    const USER_SLUG: &str = "deleted-user";
+    const USER_EMAIL: &str = "deleted@private.me";
+    const PASSWORD: &str = "hunter2";
+
+    let created = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": USER_NAME,
+            "email": USER_EMAIL,
+            "locales": ["en_GB"],
+            "password": PASSWORD,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(created.slug, USER_SLUG);
+
+    run_endpoint!(runner, user_delete, json!({ "user": USER_SLUG }));
+
+    let deleted = run_endpoint!(runner, user_get, json!({ "user": created.user_id }))
+        .expect("Deleted user not found by id");
+    assert!(deleted
+        .user
+        .unwrap_wikijump()
+        .expect("Returned user was not of type Wikijump")
+        .deleted_at
+        .is_some());
+    assert!(run_endpoint!(runner, user_get, json!({ "user": USER_SLUG })).is_none());
+
+    for name_or_email in [USER_NAME, USER_SLUG, USER_EMAIL] {
+        let error = AuthenticationService::auth_password(
+            runner.context(),
+            AuthenticateUser {
+                name_or_email: name_or_email.to_owned(),
+                password: PASSWORD.to_owned(),
+            },
+        )
+        .await
+        .expect_err("Deleted user authenticated");
+        assert_contains_error!(error, ErrorType::InvalidAuthentication);
+    }
 }
 
 // TODO test renames / rename tokens
