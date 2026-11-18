@@ -703,6 +703,79 @@ class LiveMigrationTest(unittest.TestCase):
 
 
 
+class RehearsalEvidenceTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.directory = tempfile.TemporaryDirectory()
+        self.evidence = Path(self.directory.name) / "evidence"
+        self.evidence.mkdir()
+
+    def tearDown(self) -> None:
+        self.directory.cleanup()
+
+    def test_rehearsal_start_exports_the_live_database_password(self) -> None:
+        captured = {}
+
+        def fail_start(args, log, cwd, env=None, label=None):
+            captured["args"] = args
+            captured["env"] = env
+            raise RuntimeError("start failed")
+
+        with mock.patch.object(promote, "standing_database_password", return_value="live-password"), \
+                mock.patch.object(promote, "run_logged", side_effect=fail_start), \
+                mock.patch.object(promote, "free_port", side_effect=[20001, 20002, 20003]):
+            with self.assertRaisesRegex(RuntimeError, "start failed"):
+                promote.rehearse(
+                    Path("source"), self.evidence, promote.Stages(),
+                    {"render_ahead": False}, {"candidate_port": 20443},
+                    {"database": "db-volume", "files": "files-volume"},
+                    "a" * 12, "image", {"preserve_resources": False},
+                )
+        args = captured["args"]
+        self.assertEqual(args[args.index("--evidence-dir") + 1], str(self.evidence))
+        self.assertEqual(captured["env"]["STANDING_DB_PASSWORD"], "live-password")
+
+    def test_a_failed_start_puts_the_deepwell_tail_in_the_driver_log(self) -> None:
+        captured = self.evidence / "rehearsal-start"
+        captured.mkdir()
+        (captured / "deepwell.log").write_text(
+            "\n".join(f"line {index}" for index in range(250)) + "\n", encoding="utf-8"
+        )
+        promote.append_rehearsal_log_tail(self.evidence)
+        text = (self.evidence / "rehearsal-start.log").read_text(encoding="utf-8")
+        self.assertIn("=== rehearsal deepwell log tail ===", text)
+        self.assertIn("line 249", text)
+        self.assertNotIn("line 0\n", text)
+
+    def test_a_start_with_no_captured_log_names_the_gap(self) -> None:
+        promote.append_rehearsal_log_tail(self.evidence, limit=2)
+        text = (self.evidence / "rehearsal-start.log").read_text(encoding="utf-8")
+        self.assertIn("no rehearsal deepwell log was captured", text)
+
+    def test_pg_basebackup_stderr_is_kept_in_the_evidence_file(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            log = root / "rehearsal-clone.log"
+
+            def fail_with_stderr(args, **kwargs):
+                kwargs["stderr"].write(
+                    "pg_basebackup: error: connection to database failed: FATAL: password authentication failed\n"
+                )
+                return subprocess.CompletedProcess(args, 1, stdout="")
+
+            with mock.patch.object(promote, "run", return_value="image"), \
+                    mock.patch.object(promote, "standing_database_password", return_value="p"), \
+                    mock.patch.object(promote.subprocess, "run", side_effect=fail_with_stderr) as run:
+                with self.assertRaisesRegex(RuntimeError, "pg_basebackup failed; see .*rehearsal-clone.log"):
+                    promote.clone_standing_database("volume", log, root)
+            self.assertIn("password authentication failed", log.read_text(encoding="utf-8"))
+            args = run.call_args.args[0]
+            self.assertEqual(args[args.index("--entrypoint") + 1], "pg_basebackup")
+
+    def test_the_clone_stage_writes_its_log_into_the_evidence_directory(self) -> None:
+        source = inspect.getsource(promote.promote)
+        self.assertIn('evidence / "rehearsal-clone.log"', source)
+
+
 if __name__ == "__main__":
     unittest.main()
 

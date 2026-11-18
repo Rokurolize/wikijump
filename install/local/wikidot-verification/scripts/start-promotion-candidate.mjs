@@ -198,18 +198,47 @@ async function dockerCompose(composePath, project, token, args) {
   });
 }
 
-async function candidateContainerInspections(project) {
-  const {stdout} = await execFile(DOCKER, ["ps", "--all", "--quiet", "--filter", `label=com.docker.compose.project=${project}`], {encoding: "utf8"});
+async function candidateContainerInspections(project, {expectedCount = 7, run = execFile} = {}) {
+  const {stdout} = await run(DOCKER, ["ps", "--all", "--quiet", "--filter", `label=com.docker.compose.project=${project}`], {encoding: "utf8"});
   const ids = stdout.split("\n").map((value) => value.trim()).filter(Boolean);
-  if (ids.length !== 7) fail(`candidate project must contain exactly seven containers, found ${ids.length}`);
+  if (expectedCount !== null && ids.length !== expectedCount) fail(`candidate project must contain exactly seven containers, found ${ids.length}`);
   const inspections = [];
   for (const id of ids) {
-    const {stdout: raw} = await execFile(DOCKER, ["inspect", id], {encoding: "utf8", maxBuffer: 16 * 1024 * 1024});
+    const {stdout: raw} = await run(DOCKER, ["inspect", id], {encoding: "utf8", maxBuffer: 16 * 1024 * 1024});
     const values = JSON.parse(raw);
     if (!Array.isArray(values) || values.length !== 1) fail("candidate container inspection is malformed");
     inspections.push(values[0]);
   }
   return inspections;
+}
+
+export async function captureCandidateLogs(project, evidenceDir, {run = execFile} = {}) {
+  const directory = path.join(evidenceDir, "rehearsal-start");
+  await fs.mkdir(directory, {recursive: true, mode: 0o700});
+  const stamp = new Date().toISOString();
+  let inspections;
+  try {
+    inspections = await candidateContainerInspections(project, {expectedCount: null, run});
+  } catch (error) {
+    await fs.appendFile(path.join(directory, "containers.log"), `${stamp} ${String(error)}\n`, {mode: 0o600});
+    return;
+  }
+  if (inspections.length === 0) {
+    await fs.appendFile(path.join(directory, "containers.log"), `${stamp} no containers in project ${project}\n`, {mode: 0o600});
+    return;
+  }
+  for (const inspection of inspections) {
+    const service = inspection.Config?.Labels?.["com.docker.compose.service"] ?? inspection.Name?.replace(/^\//u, "") ?? inspection.Id;
+    const logPath = path.join(directory, `${service}.log`);
+    let output;
+    try {
+      const captured = await run(DOCKER, ["logs", "--timestamps", inspection.Id], {encoding: "utf8", maxBuffer: 16 * 1024 * 1024});
+      output = `${captured.stdout}${captured.stderr}`;
+    } catch (error) {
+      output = `${stamp} ${String(error)}\n`;
+    }
+    await fs.appendFile(logPath, `${stamp} ${service} ${inspection.Id}\n${output || "(no log output)\n"}`, {mode: 0o600});
+  }
 }
 
 async function waitForCandidateHealth(project, timeoutMs = 20 * 60 * 1000) {
@@ -262,7 +291,7 @@ export async function prepareCandidateFiles({sourceRoot, candidateRoot, publicPo
   return {deepwellConfigPath, caddyRequestPath, caddyGeneratorPath};
 }
 
-export async function startPromotionCandidate({sourceRoot, buildEvidencePath, candidateRoot, stagingHome, publicPort, rpcPort, objectStorePort, project, expiry, dataVolumes = {}}) {
+export async function startPromotionCandidate({sourceRoot, buildEvidencePath, candidateRoot, stagingHome, evidenceDir, publicPort, rpcPort, objectStorePort, project, expiry, dataVolumes = {}}) {
   const source = await promotionSourceIdentity(sourceRoot);
   const images = await builtImages(buildEvidencePath);
   const token = randomBytes(32).toString("hex");
@@ -279,6 +308,9 @@ export async function startPromotionCandidate({sourceRoot, buildEvidencePath, ca
     await waitForCandidateHealth(project);
     return {project, candidateRoot, stagingHome};
   } catch (error) {
+    await captureCandidateLogs(project, evidenceDir).catch((captureError) => {
+      console.error(`could not capture rehearsal container logs: ${captureError}`);
+    });
     await dockerCompose(composePath, project, token, ["down", "--volumes", "--remove-orphans"]).catch(() => {});
     throw error;
   }
@@ -291,7 +323,7 @@ function parseInteger(value, name) {
 }
 
 function parseArgs(argv) {
-  const required = ["source-root", "build-evidence", "candidate-root", "staging-home", "public-port", "rpc-port", "object-store-port", "project", "expires-at"];
+  const required = ["source-root", "build-evidence", "candidate-root", "staging-home", "evidence-dir", "public-port", "rpc-port", "object-store-port", "project", "expires-at"];
   const allowed = new Set([...required, "database-volume", "files-volume"]);
   const args = {};
   for (let index = 0; index < argv.length; index += 2) {
@@ -314,6 +346,7 @@ export async function main(argv, {stdout = console.log} = {}) {
     buildEvidencePath: path.resolve(args["build-evidence"]),
     candidateRoot: path.resolve(args["candidate-root"]),
     stagingHome: path.resolve(args["staging-home"]),
+    evidenceDir: path.resolve(args["evidence-dir"]),
     publicPort: parseInteger(args["public-port"], "--public-port"),
     rpcPort: parseInteger(args["rpc-port"], "--rpc-port"),
     objectStorePort: parseInteger(args["object-store-port"], "--object-store-port"),
