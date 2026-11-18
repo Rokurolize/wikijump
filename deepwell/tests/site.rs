@@ -612,7 +612,6 @@ async fn site_create_site_user_relation_and_audit_roll_back_together() {
 }
 
 #[tokio::test]
-#[ignore = "site_update fails with a settings revision conflict after bootstrap; the test needs a current settings revision before updating"]
 async fn newsite_bootstrap_binds_creator_admin_with_site_edit() {
     let mut runner = TestRunner::setup().await;
     let n = next_n();
@@ -677,13 +676,15 @@ async fn newsite_bootstrap_binds_creator_admin_with_site_edit() {
             .collect::<Vec<_>>(),
     );
 
+    let current = run_endpoint!(runner, site_get, json!({"site": created.site_id}))
+        .expect("bootstrapped site should be fetchable");
     let updated = run_endpoint!(
         runner,
         site_update,
         json!({
             "site": created.site_id,
             "user_id": SYSTEM_USER_ID,
-            "expected_settings_revision": 0,
+            "expected_settings_revision": current.settings.revision,
             "name": format!("Bootstrap rename {n}"),
             "ip_address": common::IP_ADDRESS,
         }),
