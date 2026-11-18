@@ -96,6 +96,7 @@ export function candidateCompose({
 }) {
   const common = (role) => ({
     image: images[role],
+    init: true,
     pull_policy: "never",
     restart: "unless-stopped",
     hostname: `${project}-${role}`,

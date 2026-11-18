@@ -33,6 +33,7 @@ test("promotion candidate topology uses isolated volumes and only loopback non-4
   assert.equal(JSON.stringify(compose).includes('"443:443"'), false);
   for (const [role, service] of Object.entries(compose.services)) {
     assert.equal(service.image, images[role]);
+    assert.equal(service.init, true);
     assert.equal(service.labels["com.rokurolize.wikijump.role"], role);
     assert.equal(service.healthcheck.test.length > 0, true);
   }
