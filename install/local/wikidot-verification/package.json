@@ -23,7 +23,7 @@
   "dependencies": {
     "devalue": "5.9.3",
     "parse5": "^8.0.1",
-    "pg": "^8.22.0"
+    "pg": "^8.23.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
