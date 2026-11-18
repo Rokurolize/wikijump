@@ -213,10 +213,9 @@ impl ForumPostService {
         .await
         .or_raise(make_error)?;
 
-        // TODO(WJ-1340): notify people watching this thread about the new post.
-        if parent_post_id.is_some() {
-            // TODO(WJ-1340): notify people watching this forum post about a new child post.
-        }
+        // WJ-1340 (unresolved): no watcher notifications are sent for a new post,
+        // including a reply to a watched post. Resolving it needs a delivery pipeline
+        // fed by forum watch relations and live Wikidot evidence of its delivery rules.
 
         Ok(CreateForumPostOutput {
             forum_post_id: post.forum_post_id,
@@ -299,10 +298,9 @@ impl ForumPostService {
         .await
         .or_raise(make_error)?;
 
-        // TODO(WJ-1340): notify people watching this thread about an edited post.
-        if post.parent_post_id.is_some() {
-            // TODO(WJ-1340): notify people watching this forum post's parent about an edited child post.
-        }
+        // WJ-1340 (unresolved): editing a post notifies neither thread watchers nor
+        // the parent post's watchers. Resolving it needs the same watcher-delivery
+        // pipeline as post creation, including edit semantics verified on live Wikidot.
 
         Ok(Some(UpdateForumPostOutput {
             forum_post_revision_id: revision.forum_post_revision_id,

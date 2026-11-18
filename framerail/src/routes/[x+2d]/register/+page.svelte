@@ -141,8 +141,8 @@
       {data.internationalization?.["dashboard-account.language"]}
     </label>
     <div class="input-container">
-      <!-- TODO: Implement a multi select component -->
-      <!-- I know it's ugly, but we can implement a better looking component later on -->
+      <!-- Native multiple select remains until a component matches its form binding,
+           localized labels and keyboard semantics; replacing it is a UI change. -->
       <select id="locale" name="locale" multiple required bind:value={$form.locale}>
         {#each data.userInterfaceLocales as locale (locale.value)}
           <option value={locale.value}>{locale.label}</option>
