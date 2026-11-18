@@ -298,6 +298,19 @@ test("verification inputs run only the final verification barrier", async (t) =>
   }
 })
 
+test("a docs-only change is a clean pass that says nothing was selected", (t) => {
+  const harness = createHarness(t)
+  const result = harness.runPreflight(["--base", remoteOid, "--final"], {
+    PREFLIGHT_REMOTE_SCOPE: "docs"
+  })
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stdout, /preflight: 1 changed path\(s\)/)
+  assert.match(result.stdout, /preflight: groups: .*verification=false/mu)
+  assert.match(result.stdout, /no validation groups selected for these changed paths; nothing to check/)
+  assert.doesNotMatch(result.stdout, /all selected checks passed/)
+  assert.deepEqual(harness.commands(), [])
+})
+
 test("explicit groups run without a change-set and unknown groups are refused", (t) => {
   const listed = createHarness(t)
   const result = listed.runPreflight(["--base", remoteOid, "--final", "--groups", "theme_lab", "--list"], {
