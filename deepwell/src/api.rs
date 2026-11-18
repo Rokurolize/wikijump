@@ -38,6 +38,7 @@ use crate::services::{RequestContext, ServiceContext, SessionService};
 use crate::utils::debug_pointer;
 use crate::{database, info, redis as redis_db};
 use jsonrpsee::server::{RpcModule, Server, ServerHandle};
+use jsonrpsee::types::params::Params;
 use redis::aio::MultiplexedConnection as RedisMultiplexedConnection;
 use reqwest::Client as ReqwestClient;
 use rsmq_async::Rsmq;
@@ -230,6 +231,24 @@ pub async fn build_server(app_state: ServerState) -> Result<ServerHandle> {
     Ok(handle)
 }
 
+fn params_contain_nul(params: &Params) -> bool {
+    match params.parse::<serde_json::Value>() {
+        Ok(value) => json_value_contains_nul(&value),
+        Err(_) => false,
+    }
+}
+
+fn json_value_contains_nul(value: &serde_json::Value) -> bool {
+    match value {
+        serde_json::Value::String(text) => text.contains('\0'),
+        serde_json::Value::Array(items) => items.iter().any(json_value_contains_nul),
+        serde_json::Value::Object(entries) => entries
+            .iter()
+            .any(|(key, item)| key.contains('\0') || json_value_contains_nul(item)),
+        _ => false,
+    }
+}
+
 async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> {
     use crate::error::{exn_error_to_rpc_error, unwrap_transaction_error};
 
@@ -242,6 +261,16 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
             // Contains a wrapper around each to set up state, convert error types,
             // and produce a transaction used in ServiceContext, passed in.
             module.register_async_method($name, |params, state, extensions| async move {
+                if params_contain_nul(&params) {
+                    return Err(exn_error_to_rpc_error(
+                        Error::new(
+                            "request parameters must not contain NUL characters",
+                            ErrorType::BadRequest,
+                        )
+                        .into(),
+                    ));
+                }
+
                 // NOTE: We have our own Arc because we need to share it in some places
                 //       before setting up, but RpcModule insists on adding its own.
                 //       So we need to "unwrap it" before each method invocation.
@@ -550,7 +579,11 @@ mod tests {
         build_module(state).await.expect("RPC module should build")
     }
 
-    async fn rpc_request(module: &RpcModule<ServerState>, method: &str, params: Value) -> Value {
+    async fn rpc_request(
+        module: &RpcModule<ServerState>,
+        method: &str,
+        params: Value,
+    ) -> Value {
         let request = json!({
             "jsonrpc": "2.0",
             "id": 1,
