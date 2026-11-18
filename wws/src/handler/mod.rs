@@ -108,3 +108,28 @@ fn get_target_server(headers: &HeaderMap) -> TargetServer {
         _ => panic!("Invalid header value: {value:?}"),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::http::HeaderValue;
+
+    #[test]
+    fn missing_internal_header_is_absent() {
+        let headers = HeaderMap::new();
+        assert_eq!(get_header(&headers, HEADER_SITE_ID), None);
+        assert_eq!(get_site_id(&headers), None);
+        assert_eq!(get_site_slug(&headers), None);
+        assert_eq!(get_target_server(&headers), None);
+    }
+
+    #[test]
+    fn malformed_internal_header_is_absent() {
+        let mut headers = HeaderMap::new();
+        headers.insert(HEADER_SITE_ID, HeaderValue::from_static("not-a-number"));
+        headers.insert(HEADER_TARGET_SERVER, HeaderValue::from_static("other"));
+
+        assert_eq!(get_site_id(&headers), None);
+        assert_eq!(get_target_server(&headers), None);
+    }
+}
