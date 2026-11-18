@@ -231,6 +231,7 @@ async function renderPromotionBase({sourceRoot, outputDir, source, images, token
     "--wikijump-sha", source.wikijump_commit,
     "--ftml-sha", source.ftml_sha,
     "--project-name", "wikijump-standing",
+    "--generate-credentials",
     "--database-image", images.database,
     "--files-image", images.files,
     "--cache-image", images.cache,

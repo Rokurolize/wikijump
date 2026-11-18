@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import re
+import secrets
 import shutil
 import subprocess
 import tempfile
@@ -31,6 +32,11 @@ PRODUCTION_DOMAIN_BLOCK = '[domain]\nmain = "wikijump.com"\nhttps-port = 443\nfi
 # Standing is the stack on 127.0.0.1:443; the local development stack has its
 # own `wikijump.dev.localhost` hosts on 18443 (install/local/deepwell/config.toml).
 STANDING_DOMAIN_BLOCK = '[domain]\nmain = "wikijump.localhost"\nhttps-port = 443\nfiles = "wjfiles.localhost"'
+CREDENTIAL_KEYS = (
+    "STANDING_DB_PASSWORD",
+    "STANDING_MINIO_ROOT_USER",
+    "STANDING_MINIO_ROOT_PASSWORD",
+)
 
 
 def command(*args: str, cwd: Path) -> str:
@@ -73,8 +79,52 @@ def source_state(source_root: Path, wikijump_sha: str, ftml_sha: str) -> dict[st
 
 def write_environment(path: Path, values: dict[str, str]) -> None:
     lines = [f"{key}={required_text(value, key)}" for key, value in sorted(values.items())]
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as output:
+        output.write("\n".join(lines) + "\n")
     os.chmod(path, 0o600)
+
+
+def read_environment(path: Path) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line or line.startswith("#"):
+            continue
+        key, separator, value = line.partition("=")
+        if not separator or not key or key in values:
+            raise ValueError(f"invalid or duplicate environment entry in {path}: {line}")
+        values[key] = value
+    return values
+
+
+def generate_credentials() -> dict[str, str]:
+    return {
+        "STANDING_DB_PASSWORD": secrets.token_hex(24),
+        "STANDING_MINIO_ROOT_USER": secrets.token_hex(8),
+        "STANDING_MINIO_ROOT_PASSWORD": secrets.token_hex(20),
+    }
+
+
+def credential_values(args: argparse.Namespace, output_dir: Path) -> dict[str, str]:
+    source = args.credentials_from or output_dir
+    environment_file = source / ".env"
+    existing = read_environment(environment_file) if environment_file.exists() else {}
+    if args.generate_credentials:
+        if existing or any(os.environ.get(key) for key in CREDENTIAL_KEYS):
+            raise ValueError(
+                "--generate-credentials is only for a new runtime home with no "
+                "credential values; supply the existing values instead"
+            )
+        return generate_credentials()
+    values = {key: existing.get(key) or os.environ.get(key, "") for key in CREDENTIAL_KEYS}
+    return {
+        key: required_text(
+            value,
+            f"{key} (use --generate-credentials for a new runtime home, "
+            "--credentials-from for an existing one, or set it in the environment)",
+        )
+        for key, value in values.items()
+    }
 
 
 def standing_deepwell_config(source: Path) -> tuple[str, str]:
@@ -105,6 +155,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--project-name", default="wikijump-standing")
     parser.add_argument("--network-name")
     parser.add_argument("--replace", action="store_true")
+    parser.add_argument("--generate-credentials", action="store_true")
+    parser.add_argument("--credentials-from", type=Path)
     for image_name in IMAGE_ARGUMENTS:
         parser.add_argument(f"--{image_name.replace('_', '-')}", required=True)
     return parser.parse_args()
@@ -119,6 +171,7 @@ def main() -> int:
     network_name = required_text(args.network_name or f"{project_name}_default", "network_name")
     images = {argument: required_text(getattr(args, argument), argument) for argument in IMAGE_ARGUMENTS}
     rpc_token = required_rpc_token()
+    credentials = credential_values(args, output_dir)
     template = Path(__file__).with_name("compose.yaml")
     output_dir.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=f".{output_dir.name}.render-", dir=output_dir.parent) as temporary_dir:
@@ -139,6 +192,7 @@ def main() -> int:
             "STANDING_FTML_SHA": identity["ftml_sha"],
             "DEEPWELL_RPC_TOKEN": rpc_token,
             **{f"STANDING_{argument.upper()}": value for argument, value in images.items()},
+            **credentials,
         }
         write_environment(staging / ".env", environment)
         template_sha256 = hashlib.sha256(template.read_bytes()).hexdigest()

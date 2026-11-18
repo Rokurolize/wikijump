@@ -5,6 +5,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import stat
 import subprocess
 import sys
 import tempfile
@@ -21,7 +22,13 @@ SPEC.loader.exec_module(RENDER)
 
 
 class RenderStandingConfigTest(unittest.TestCase):
-    ENV = {**os.environ, "DEEPWELL_RPC_TOKEN": "0" * 64}
+    ENV = {
+        **os.environ,
+        "DEEPWELL_RPC_TOKEN": "0" * 64,
+        "STANDING_DB_PASSWORD": "fixture-db-password",
+        "STANDING_MINIO_ROOT_USER": "fixture-minio-user",
+        "STANDING_MINIO_ROOT_PASSWORD": "fixture-minio-password",
+    }
 
     @staticmethod
     def rendered_files(root: Path) -> dict[str, bytes]:
@@ -52,7 +59,7 @@ class RenderStandingConfigTest(unittest.TestCase):
         sha = subprocess.check_output(("git", "rev-parse", "HEAD"), cwd=source, text=True).strip()
         return source, sha
 
-    def command(self, source: Path, output: Path, sha: str) -> list[str]:
+    def command(self, source: Path, output: Path, sha: str, extra: tuple[str, ...] = ()) -> list[str]:
         return [
             sys.executable,
             str(SCRIPT),
@@ -67,7 +74,14 @@ class RenderStandingConfigTest(unittest.TestCase):
             "--framerail-image", "example/framerail@sha256:" + "e" * 64,
             "--wws-image", "example/wws@sha256:" + "1" * 64,
             "--caddy-image", "example/caddy@sha256:" + "2" * 64,
+            *extra,
         ]
+
+    def without_credentials(self) -> dict[str, str]:
+        return {
+            key: value for key, value in self.ENV.items()
+            if key not in RENDER.CREDENTIAL_KEYS
+        }
 
     def test_required_text_rejects_empty_and_multiline_values(self) -> None:
         self.assertEqual(RENDER.required_text("value", "fixture"), "value")
@@ -199,3 +213,77 @@ class RenderStandingConfigTest(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("must contain exactly one expected domain block", result.stderr)
             self.assertFalse(output.exists())
+
+    def test_the_template_has_no_shared_service_credentials(self) -> None:
+        compose = (SCRIPT.parent / "compose.yaml").read_text(encoding="utf-8")
+        for key in RENDER.CREDENTIAL_KEYS:
+            self.assertIn(f"${{{key}:?{key} is required}}", compose)
+        self.assertNotIn("defaultpassword", compose)
+        self.assertNotIn("POSTGRES_PASSWORD: wikijump", compose)
+        self.assertNotIn("S3_ACCESS_KEY_ID: minio", compose)
+
+    def test_a_fresh_render_without_credentials_fails_with_a_named_error(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            source, sha = self.make_source(Path(temporary_dir))
+            output = Path(temporary_dir) / "host/standing"
+            result = subprocess.run(
+                self.command(source, output, sha), text=True,
+                capture_output=True, env=self.without_credentials(),
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("STANDING_DB_PASSWORD", result.stderr)
+            self.assertFalse(output.exists())
+
+    def test_generated_credentials_are_unique_and_stored_mode_600(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            source, sha = self.make_source(Path(temporary_dir))
+            generated = []
+            for name in ("first", "second"):
+                output = Path(temporary_dir) / f"host/{name}"
+                subprocess.run(
+                    self.command(source, output, sha, ("--generate-credentials",)),
+                    check=True, text=True, capture_output=True,
+                    env=self.without_credentials(),
+                )
+                environment_file = output / ".env"
+                self.assertEqual(stat.S_IMODE(environment_file.stat().st_mode), 0o600)
+                environment = RENDER.read_environment(environment_file)
+                for key in RENDER.CREDENTIAL_KEYS:
+                    self.assertTrue(environment[key])
+                generated.append(environment)
+            for key in RENDER.CREDENTIAL_KEYS:
+                self.assertNotEqual(generated[0][key], generated[1][key])
+
+    def test_generation_refuses_to_rotate_an_existing_home(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            source, sha = self.make_source(Path(temporary_dir))
+            output = Path(temporary_dir) / "host/standing"
+            subprocess.run(
+                self.command(source, output, sha), check=True, text=True,
+                capture_output=True, env=self.ENV,
+            )
+            previous = RENDER.read_environment(output / ".env")
+            result = subprocess.run(
+                self.command(source, output, sha, ("--generate-credentials",)),
+                text=True, capture_output=True, env=self.without_credentials(),
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("only for a new runtime home", result.stderr)
+            self.assertEqual(RENDER.read_environment(output / ".env"), previous)
+
+    def test_an_existing_home_keeps_its_credentials_across_renders(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            source, sha = self.make_source(Path(temporary_dir))
+            output = Path(temporary_dir) / "host/standing"
+            subprocess.run(
+                self.command(source, output, sha), check=True, text=True,
+                capture_output=True, env=self.ENV,
+            )
+            previous = RENDER.read_environment(output / ".env")
+            compose = (output / "compose.yaml").read_bytes()
+            subprocess.run(
+                self.command(source, output, sha, ("--replace", "--credentials-from", str(output))),
+                check=True, text=True, capture_output=True, env=self.without_credentials(),
+            )
+            self.assertEqual(RENDER.read_environment(output / ".env"), previous)
+            self.assertEqual((output / "compose.yaml").read_bytes(), compose)
