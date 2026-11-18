@@ -29,7 +29,6 @@ pub use self::compat_query::{
 };
 pub use self::service::ForumPostService;
 pub use self::structs::{
-    CreateForumPost, CreateForumPostOutput, DeleteForumPost, ForumPostNode, GetForumPost,
-    GetForumPosts, GetStructuredForumPosts, RestoreForumPost, UpdateForumPost,
-    UpdateForumPostBody, UpdateForumPostOutput,
+    CreateForumPost, CreateForumPostOutput, DeleteForumPost, GetForumPost,
+    UpdateForumPost, UpdateForumPostBody, UpdateForumPostOutput,
 };

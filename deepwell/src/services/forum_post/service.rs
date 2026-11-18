@@ -18,18 +18,12 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#![allow(dead_code)] // TEMP
-
 use super::structs::{
-    CreateForumPost, CreateForumPostOutput, DeleteForumPost, ForumPostNode, GetForumPost,
-    GetForumPosts, GetStructuredForumPosts, RestoreForumPost, UpdateForumPost,
-    UpdateForumPostBody, UpdateForumPostOutput,
+    CreateForumPost, CreateForumPostOutput, DeleteForumPost, GetForumPost,
+    UpdateForumPost, UpdateForumPostBody, UpdateForumPostOutput,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::forum_post::{self, Entity as ForumPost, Model as ForumPostModel};
-use crate::models::forum_post_revision::{
-    self, Entity as ForumPostRevision, Model as ForumPostRevisionModel,
-};
 use crate::services::ServiceContext;
 use crate::services::SettingsService;
 use crate::services::forum_post_revision::{
@@ -41,12 +35,8 @@ use crate::services::forum_thread::{
 };
 use crate::utils::now;
 use paste::paste;
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder,
-    QuerySelect, Set,
-};
+use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
 use sea_query::Expr;
-use std::collections::BTreeMap;
 
 #[derive(Debug)]
 pub struct ForumPostService;
@@ -377,67 +367,6 @@ impl ForumPostService {
         Ok(post)
     }
 
-    pub async fn restore(
-        ctx: &ServiceContext<'_>,
-        RestoreForumPost {
-            forum_post_id,
-            user_id,
-        }: RestoreForumPost,
-    ) -> Result<ForumPostModel> {
-        let txn = ctx.transaction();
-        let make_error = || {
-            Error::new(
-                format!(
-                    "failed to restore forum post ID {} by user ID {}",
-                    forum_post_id, user_id,
-                ),
-                ErrorType::ForumPost,
-            )
-        };
-
-        let post = Self::get(
-            ctx,
-            GetForumPost {
-                forum_post_id,
-                include_deleted: true,
-            },
-        )
-        .await
-        .or_raise(make_error)?;
-
-        if post.deleted_at.is_none() {
-            bail!(Error::new(
-                format!(
-                    "cannot restore forum post ID {} that isn't deleted",
-                    forum_post_id
-                ),
-                ErrorType::ForumPostNotDeleted,
-            ));
-        }
-
-        let model = forum_post::ActiveModel {
-            forum_post_id: Set(post.forum_post_id),
-            deleted_by: Set(None),
-            deleted_at: Set(None),
-            updated_at: Set(Some(now())),
-            ..Default::default()
-        };
-
-        let post = model.update(txn).await.or_raise(make_error)?;
-
-        ForumThreadService::touch_activity(
-            ctx,
-            TouchForumThread {
-                forum_thread_id: post.forum_thread_id,
-                user_id: Some(user_id),
-            },
-        )
-        .await
-        .or_raise(make_error)?;
-
-        Ok(post)
-    }
-
     pub async fn get_optional(
         ctx: &ServiceContext<'_>,
         GetForumPost {
@@ -474,129 +403,6 @@ impl ForumPostService {
         find_or_error!(Self::get_optional(ctx, key), "forum post", ForumPost)
     }
 
-    pub async fn list(
-        ctx: &ServiceContext<'_>,
-        GetForumPosts {
-            forum_thread_id,
-            parent_post_id,
-            start_post_id,
-            include_deleted,
-            limit,
-        }: GetForumPosts,
-    ) -> Result<Vec<ForumPostModel>> {
-        let txn = ctx.transaction();
-        let posts = ForumPost::find()
-            .filter(
-                Condition::all()
-                    .add(forum_post::Column::ForumThreadId.eq(forum_thread_id))
-                    .add_option(
-                        parent_post_id.map(|id| forum_post::Column::ParentPostId.eq(id)),
-                    )
-                    .add_option(
-                        start_post_id.map(|id| forum_post::Column::ForumPostId.gt(id)),
-                    )
-                    .add_option(Self::deleted_condition(
-                        include_deleted,
-                        forum_post::Column::DeletedAt,
-                    )),
-            )
-            .order_by_asc(forum_post::Column::CreatedAt)
-            .order_by_asc(forum_post::Column::ForumPostId)
-            .limit(limit)
-            .all(txn)
-            .await
-            .or_raise(|| {
-                Error::new(
-                    format!(
-                        "failed to list forum posts in thread ID {}",
-                        forum_thread_id,
-                    ),
-                    ErrorType::ForumPost,
-                )
-            })?;
-
-        Ok(posts)
-    }
-
-    pub async fn list_structured(
-        ctx: &ServiceContext<'_>,
-        GetStructuredForumPosts {
-            forum_thread_id,
-            start_post_id,
-            limit,
-            max_depth,
-        }: GetStructuredForumPosts,
-    ) -> Result<Vec<ForumPostNode>> {
-        let txn = ctx.transaction();
-        let make_error = || {
-            Error::new(
-                format!(
-                    "failed to get structured forum posts for thread ID {}",
-                    forum_thread_id,
-                ),
-                ErrorType::ForumPost,
-            )
-        };
-
-        // Always include deleted posts so that the tree structure is
-        // preserved. If a middle post is deleted, its children must
-        // still appear under it. The caller checks `deleted_at` to
-        // decide how to render the placeholder.
-        let posts = Self::list(
-            ctx,
-            GetForumPosts {
-                forum_thread_id,
-                parent_post_id: None,
-                start_post_id,
-                include_deleted: true,
-                limit,
-            },
-        )
-        .await
-        .or_raise(make_error)?;
-
-        let revision_ids: Vec<i64> = posts
-            .iter()
-            .filter_map(|post| post.latest_revision_id)
-            .collect();
-
-        let revisions = if revision_ids.is_empty() {
-            Vec::new()
-        } else {
-            ForumPostRevision::find()
-                .filter(
-                    forum_post_revision::Column::ForumPostRevisionId.is_in(revision_ids),
-                )
-                .all(txn)
-                .await
-                .or_raise(make_error)?
-        };
-
-        let mut revisions_by_id: BTreeMap<i64, ForumPostRevisionModel> = BTreeMap::new();
-        for revision in revisions {
-            revisions_by_id.insert(revision.forum_post_revision_id, revision);
-        }
-
-        let mut posts_by_parent: BTreeMap<Option<i64>, Vec<ForumPostModel>> =
-            BTreeMap::new();
-        for post in posts {
-            posts_by_parent
-                .entry(post.parent_post_id)
-                .or_default()
-                .push(post);
-        }
-
-        let nodes = Self::build_post_nodes(
-            None,
-            0,
-            max_depth.unwrap_or(u16::MAX),
-            &mut posts_by_parent,
-            &revisions_by_id,
-        );
-
-        Ok(nodes)
-    }
-
     async fn get_depth(ctx: &ServiceContext<'_>, post: &ForumPostModel) -> Result<i16> {
         let mut depth = 0i16;
         let mut parent_post_id = post.parent_post_id;
@@ -626,47 +432,6 @@ impl ForumPostService {
         }
 
         Ok(depth)
-    }
-
-    fn build_post_nodes(
-        parent_post_id: Option<i64>,
-        depth: u16,
-        max_depth: u16,
-        posts_by_parent: &mut BTreeMap<Option<i64>, Vec<ForumPostModel>>,
-        revisions_by_id: &BTreeMap<i64, ForumPostRevisionModel>,
-    ) -> Vec<ForumPostNode> {
-        let posts = posts_by_parent.remove(&parent_post_id).unwrap_or_default();
-        let mut nodes = Vec::new();
-
-        for post in posts {
-            // Don't expose revision content for deleted posts.
-            let latest_revision = if post.deleted_at.is_none() {
-                post.latest_revision_id
-                    .and_then(|id| revisions_by_id.get(&id).cloned())
-            } else {
-                None
-            };
-
-            let replies = if depth < max_depth {
-                Self::build_post_nodes(
-                    Some(post.forum_post_id),
-                    depth + 1,
-                    max_depth,
-                    posts_by_parent,
-                    revisions_by_id,
-                )
-            } else {
-                Vec::new()
-            };
-
-            nodes.push(ForumPostNode {
-                post,
-                latest_revision,
-                replies,
-            });
-        }
-
-        nodes
     }
 
     fn deleted_condition(

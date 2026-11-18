@@ -18,9 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#![allow(dead_code)] // TEMP
-
-use crate::types::{FetchDirection, Maybe};
+use crate::types::Maybe;
 use ftml::parsing::ParseError;
 
 #[derive(Deserialize, Debug, Clone)]
@@ -59,25 +57,4 @@ pub struct CreateForumPostRevisionOutput {
     pub forum_post_revision_id: i64,
     pub revision_number: i32,
     pub parser_errors: Option<Vec<ParseError>>,
-}
-
-#[derive(Deserialize, Debug, Copy, Clone)]
-pub struct GetForumPostRevision {
-    pub forum_post_id: i64,
-    pub revision_number: i32,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct UpdateForumPostRevision {
-    pub forum_post_revision_id: i64,
-    pub user_id: i64,
-    pub comments: Maybe<String>,
-}
-
-#[derive(Deserialize, Debug, Copy, Clone)]
-pub struct GetForumPostRevisionRange {
-    pub forum_post_id: i64,
-    pub revision_number: i32,
-    pub revision_direction: FetchDirection,
-    pub limit: u64,
 }
