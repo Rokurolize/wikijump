@@ -504,7 +504,9 @@ impl ForumThreadService {
             )
         })?;
 
-        // TODO(WJ-1340): notify people watching this category about the new thread.
+        // WJ-1340 (unresolved): creating a thread does not notify category watchers.
+        // Resolving it needs a forum-category watcher-delivery pipeline and live Wikidot
+        // evidence of which thread creations produce notifications.
 
         Ok(thread)
     }
