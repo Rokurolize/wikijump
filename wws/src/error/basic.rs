@@ -222,3 +222,21 @@ pub async fn build_basic_error_response(
         .body(Body::from(html))
         .expect("Unable to convert response data")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn basic_error_arg_escapes_reflected_markup() {
+        assert_eq!(
+            html_arg("9999<img\tsrc=x\tonerror=alert(1)>"),
+            "9999&lt;img\tsrc=x\tonerror=alert(1)&gt;",
+        );
+    }
+
+    #[test]
+    fn basic_error_arg_escapes_ampersand_and_quotes() {
+        assert_eq!(html_arg("a&b\"c'd"), "a&amp;b&quot;c&#39;d",);
+    }
+}
