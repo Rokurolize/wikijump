@@ -148,6 +148,9 @@ pub async fn forum_post_select(
         .await
         .or_raise(|| Error::new("failed to select forum posts", ErrorType::ForumPost))?;
 
+    // DIVERGENCE (forum post #3869): compat re-checks each post's thread and page
+    // here and in forum_post_get, while the render path batches its visibility
+    // candidates in one query. Pin only: unifying waits on live Wikidot evidence.
     let mut output = Vec::with_capacity(posts.len());
     for post in posts {
         if can_view_forum_post(ctx, &post).await? {
@@ -419,6 +422,9 @@ async fn can_view_forum_post(
     else {
         return Ok(false);
     };
+    // DIVERGENCE (forum post #3869): compat hides posts whose thread has no page,
+    // while the render path's ForumPageVisibility::page_is_viewable returns true
+    // for page_id = None. Pin only: any behavior change waits on live Wikidot evidence.
     let Some(page_id) = thread.page_id else {
         return Ok(false);
     };
@@ -438,6 +444,11 @@ async fn can_view_forum_post(
     can_view_page(ctx, post.site_id, &page).await
 }
 
+// DIVERGENCE (forum post #3869): this local check always asks Page/View, while
+// PermissionService::check_user_can_view_page maps _admin pages to Site/Edit;
+// the render path has no _admin branch either. Temporarily switching this helper
+// to the canonical one hid the post from a Page/View moderator in #3869's pin.
+// Pin only: any behavior change waits on live Wikidot evidence.
 async fn can_view_page(
     ctx: &ServiceContext<'_>,
     site_id: i64,

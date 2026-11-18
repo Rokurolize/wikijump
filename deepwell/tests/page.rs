@@ -18360,6 +18360,281 @@ async fn forum_post_reads_on_admin_page_pin_page_view_permission_path() {
 }
 
 #[tokio::test]
+async fn forum_visibility_divergence_null_page_thread_is_rendered_but_not_returned_by_compat()
+ {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let site_id = site.site_id;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Null Page Forum Group".to_owned(),
+            description: String::new(),
+            visible: true,
+            sort_index: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("forum group fixture should be created");
+    let category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Null Page Forum Category".to_owned(),
+            description: String::new(),
+            sort_index: None,
+            max_nest_level: Some(3),
+            per_page_discussion: Some(true),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("forum category fixture should be created");
+    let thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: None,
+            title: "Null page forum thread".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("null page forum thread fixture should be created");
+    let post = ForumPostService::create(
+        runner.context(),
+        CreateForumPost {
+            forum_thread_id: thread.forum_thread_id,
+            parent_post_id: None,
+            user_id: ADMIN_USER_ID,
+            title: "Null page forum post".to_owned(),
+            wikitext: "null page forum post body".to_owned(),
+            comments: "create null page post fixture".to_owned(),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("null page forum post fixture should be created");
+
+    runner.set_request_context(RequestContext {
+        user_id: None,
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let rendered = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewThreadPostsModule",
+            "parameters": {"t": thread.forum_thread_id.to_string(), "pageNo": "1"},
+        }),
+    );
+    assert_eq!(rendered.status, "ok");
+    assert!(
+        rendered
+            .body
+            .contains(&format!(r#"id="fpc-{}""#, post.forum_post_id)),
+        "render path treats a site-viewable null-page thread as visible"
+    );
+
+    let compat_posts = run_endpoint!(
+        runner,
+        forum_post_get,
+        json!({"site_id": site_id, "posts": [post.forum_post_id]})
+    );
+    assert!(
+        compat_posts.is_empty(),
+        "compat path hides a post whose thread has no page"
+    );
+}
+
+#[tokio::test]
+async fn forum_visibility_divergence_admin_page_pins_render_and_compat_paths() {
+    use deepwell::services::user::CreateUser;
+    use deepwell::types::UserType;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let site_id = site.site_id;
+    let admin_page = PageService::get_optional(
+        runner.context(),
+        site_id,
+        Reference::Slug("_admin".into()),
+    )
+    .await
+    .expect("admin page lookup should run")
+    .expect("seeded admin page should exist");
+
+    let n = cuid();
+    let moderator_id = UserService::create(
+        runner.context(),
+        CreateUser {
+            user_type: UserType::Regular,
+            name: format!("Forum Divergence Moderator {n}"),
+            email: format!("forum-divergence-moderator-{n}@email.com"),
+            locales: vec!["en".to_owned()],
+            password: "password-fixture".to_owned(),
+            bypass_filter: true,
+            bypass_email_verification: true,
+            override_user_id: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("moderator fixture user should be created")
+    .user_id;
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id,
+            user_id: moderator_id,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::SelfJoined,
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("moderator fixture user should join the site");
+    let moderator_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug("moderator".into()),
+    )
+    .await
+    .expect("seeded moderator role should exist");
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            site_id,
+            user_id: moderator_id,
+            role_id: moderator_role.role_id,
+            assigning_user_id: SYSTEM_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("moderator role should be granted");
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Admin Page Divergence Group".to_owned(),
+            description: String::new(),
+            visible: true,
+            sort_index: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("forum group fixture should be created");
+    let category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Admin Page Divergence Category".to_owned(),
+            description: String::new(),
+            sort_index: None,
+            max_nest_level: Some(3),
+            per_page_discussion: Some(true),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("forum category fixture should be created");
+    let thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: Some(admin_page.page_id),
+            title: "Admin page forum thread".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("admin page forum thread fixture should be created");
+    let post = ForumPostService::create(
+        runner.context(),
+        CreateForumPost {
+            forum_thread_id: thread.forum_thread_id,
+            parent_post_id: None,
+            user_id: ADMIN_USER_ID,
+            title: "Admin page forum post".to_owned(),
+            wikitext: "admin page forum post body".to_owned(),
+            comments: "create admin page post fixture".to_owned(),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("admin page forum post fixture should be created");
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(moderator_id),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let compat_posts = run_endpoint!(
+        runner,
+        forum_post_get,
+        json!({"site_id": site_id, "posts": [post.forum_post_id]})
+    );
+    assert_eq!(compat_posts.len(), 1);
+    let compat_value =
+        serde_json::to_value(&compat_posts[0]).expect("forum post should serialize");
+    assert_eq!(compat_value["id"], json!(post.forum_post_id));
+
+    let rendered = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewThreadPostsModule",
+            "parameters": {"t": thread.forum_thread_id.to_string(), "pageNo": "1"},
+        }),
+    );
+    assert_eq!(rendered.status, "ok");
+    assert!(
+        rendered
+            .body
+            .contains(&format!(r#"id="fpc-{}""#, post.forum_post_id)),
+        "both paths currently grant a Page/View moderator access to an _admin thread"
+    );
+}
+
+#[tokio::test]
 async fn anonymous_forum_post_create_persists_private_derived_guest_identity_and_renders_gravatar()
  {
     let mut runner = TestRunner::setup().await;
