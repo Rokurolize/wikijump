@@ -13,7 +13,7 @@
   "dependencies": {
     "@fluent/bundle": "^0.18.0",
     "tsx": "^4.23.15",
-    "typescript": "^5.5.4"
+    "typescript": "^7.0.2"
   },
   "devDependencies": {
     "@types/node": "^22.3.0"
