@@ -537,3 +537,64 @@ async fn build_request(
         page_reference: headers.page_ref.clone(),
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::{Value, json};
+
+    async fn rpc_module() -> RpcModule<ServerState> {
+        let state = build_server_state(Config::integration_testing(), Secrets::load())
+            .await
+            .expect("server state should build");
+        build_module(state).await.expect("RPC module should build")
+    }
+
+    async fn rpc_request(module: &RpcModule<ServerState>, method: &str, params: Value) -> Value {
+        let request = json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": method,
+            "params": params,
+        })
+        .to_string();
+        let (response, _) = module
+            .raw_json_request(&request, 1)
+            .await
+            .expect("RPC request should be accepted");
+        serde_json::from_str(response.get()).expect("RPC response should be JSON")
+    }
+
+    #[tokio::test]
+    async fn rpc_boundary_rejects_nul_in_string_params() {
+        let module = rpc_module().await;
+
+        for (method, params) in [
+            ("user_get", json!({"user": "x\0y"})),
+            ("site_get", json!({"site": "scp-wiki\0"})),
+            ("page_get", json!({"site_id": 1, "page": "scp-001\0"})),
+            ("session_get", json!(["a\0b"])),
+        ] {
+            let response = rpc_request(&module, method, params).await;
+            assert!(
+                response.get("result").is_none(),
+                "{method} returned a result for NUL params: {response}",
+            );
+            assert_eq!(
+                response["error"]["code"],
+                ErrorType::BadRequest.code(),
+                "{method} did not reject NUL params: {response}",
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn rpc_boundary_accepts_literal_escape_text() {
+        let module = rpc_module().await;
+        let params = json!(["x\\u0000y"]);
+        let response = rpc_request(&module, "echo", params.clone()).await;
+
+        assert_eq!(response["result"], params);
+        assert!(response.get("error").is_none());
+    }
+}
