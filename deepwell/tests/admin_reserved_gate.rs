@@ -41,6 +41,7 @@ use deepwell::models::file_revision;
 use deepwell::services::PageService;
 use deepwell::services::RequestContext;
 use deepwell::services::blob::{EMPTY_BLOB_HASH, EMPTY_BLOB_MIME};
+use deepwell::services::file_revision::FileRevisionService;
 use deepwell::services::page::CreatePage;
 use deepwell::services::relation::{
     CreateSiteMember, RelationService, SiteMemberAccepted, SiteMemberData,
@@ -1027,5 +1028,327 @@ async fn member_cannot_vote_on_admin_page() {
             "page_id": admin_page_id,
             "user_id": ADMIN_USER_ID,
         }),
+    );
+}
+
+#[tokio::test]
+async fn member_cannot_edit_rollback_or_restore_files_on_admin_page() {
+    let mut runner = TestRunner::setup().await;
+    let site_id = site_id(&runner).await;
+    let admin_page_id = get_or_create_admin_page(&mut runner, site_id).await;
+    let member = create_member(&runner, site_id, "file-history").await;
+    let normal_page_id = create_page(
+        &mut runner,
+        site_id,
+        "gate-history-normal",
+        "Gate History Normal",
+    )
+    .await;
+
+    // The member owns this file on `_admin` (finding #1686's shape:
+    // ownership passes the #641 gate, so only the reserved-page gate
+    // can stop the mutations below).
+    let (file_id, create_revision_id) =
+        insert_file(&runner, site_id, admin_page_id, member, "history.txt").await;
+
+    // Give the file a second revision as the site admin (who may
+    // mutate files on `_admin`), so rollback has somewhere to go.
+    set_request_context(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        site_id,
+        Some(Reference::Id(admin_page_id)),
+    );
+    let edited = run_endpoint!(
+        runner,
+        file_edit,
+        json!({
+            "site_id": site_id,
+            "page_id": admin_page_id,
+            "file_id": file_id,
+            "user_id": ADMIN_USER_ID,
+            "last_revision_id": create_revision_id,
+            "revision_comments": "admin second revision",
+            "name": "history-v2.txt",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(edited.is_some(), "site admin should edit files on _admin");
+    let second_revision_id =
+        latest_file_revision_id(&runner, site_id, admin_page_id, file_id).await;
+
+    // (#1686) The member may not edit the file on `_admin`.
+    set_request_context(
+        &mut runner,
+        Some(member),
+        site_id,
+        Some(Reference::Id(admin_page_id)),
+    );
+    let error = run_endpoint_err!(
+        runner,
+        file_edit,
+        json!({
+            "site_id": site_id,
+            "page_id": admin_page_id,
+            "file_id": file_id,
+            "user_id": member,
+            "last_revision_id": second_revision_id,
+            "revision_comments": "member edit attempt",
+            "name": "history-pwned.txt",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    // (#1686) Nor roll it back.
+    let error = run_endpoint_err!(
+        runner,
+        file_rollback,
+        json!({
+            "site_id": site_id,
+            "page_id": admin_page_id,
+            "file": file_id,
+            "user_id": member,
+            "last_revision_id": second_revision_id,
+            "revision_number": 0,
+            "revision_comments": "member rollback attempt",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    // The site admin can roll it back.
+    set_request_context(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        site_id,
+        Some(Reference::Id(admin_page_id)),
+    );
+    let rolled_back = run_endpoint!(
+        runner,
+        file_rollback,
+        json!({
+            "site_id": site_id,
+            "page_id": admin_page_id,
+            "file": file_id,
+            "user_id": ADMIN_USER_ID,
+            "last_revision_id": second_revision_id,
+            "revision_number": 0,
+            "revision_comments": "admin rollback",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(
+        rolled_back.is_some(),
+        "site admin should roll back files on _admin"
+    );
+    let rollback_revision_id =
+        latest_file_revision_id(&runner, site_id, admin_page_id, file_id).await;
+
+    // Delete the file as the site admin to set up the restore checks.
+    set_request_context(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        site_id,
+        Some(Reference::Id(admin_page_id)),
+    );
+    run_endpoint!(
+        runner,
+        file_delete,
+        json!({
+            "site_id": site_id,
+            "page_id": admin_page_id,
+            "file": file_id,
+            "last_revision_id": rollback_revision_id,
+            "revision_comments": "admin delete for restore checks",
+            "user_id": ADMIN_USER_ID,
+        }),
+    );
+
+    // (#1686) The member may not restore the deleted file on `_admin`.
+    set_request_context(
+        &mut runner,
+        Some(member),
+        site_id,
+        Some(Reference::Id(admin_page_id)),
+    );
+    let error = run_endpoint_err!(
+        runner,
+        file_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": admin_page_id,
+            "file_id": file_id,
+            "user_id": member,
+            "revision_comments": "member restore attempt",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    // The site admin can restore it.
+    set_request_context(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        site_id,
+        Some(Reference::Id(admin_page_id)),
+    );
+    let restored = run_endpoint!(
+        runner,
+        file_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": admin_page_id,
+            "file_id": file_id,
+            "user_id": ADMIN_USER_ID,
+            "revision_comments": "admin restore",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(restored.file_id, file_id);
+
+    // Controls on a normal page: the member's own file can be edited,
+    // rolled back, deleted, and restored exactly as before.
+    let (normal_file_id, normal_create_revision_id) = insert_file(
+        &runner,
+        site_id,
+        normal_page_id,
+        member,
+        "normal-history.txt",
+    )
+    .await;
+    set_request_context(
+        &mut runner,
+        Some(member),
+        site_id,
+        Some(Reference::Id(normal_page_id)),
+    );
+    let edited = run_endpoint!(
+        runner,
+        file_edit,
+        json!({
+            "site_id": site_id,
+            "page_id": normal_page_id,
+            "file_id": normal_file_id,
+            "user_id": member,
+            "last_revision_id": normal_create_revision_id,
+            "revision_comments": "member second revision",
+            "name": "normal-history-v2.txt",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(edited.is_some());
+    let normal_second_revision_id =
+        latest_file_revision_id(&runner, site_id, normal_page_id, normal_file_id).await;
+
+    set_request_context(
+        &mut runner,
+        Some(member),
+        site_id,
+        Some(Reference::Id(normal_page_id)),
+    );
+    let rolled_back = run_endpoint!(
+        runner,
+        file_rollback,
+        json!({
+            "site_id": site_id,
+            "page_id": normal_page_id,
+            "file": normal_file_id,
+            "user_id": member,
+            "last_revision_id": normal_second_revision_id,
+            "revision_number": 0,
+            "revision_comments": "member rollback on normal page",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(rolled_back.is_some());
+    let normal_rollback_revision_id =
+        latest_file_revision_id(&runner, site_id, normal_page_id, normal_file_id).await;
+
+    set_request_context(
+        &mut runner,
+        Some(member),
+        site_id,
+        Some(Reference::Id(normal_page_id)),
+    );
+    run_endpoint!(
+        runner,
+        file_delete,
+        json!({
+            "site_id": site_id,
+            "page_id": normal_page_id,
+            "file": normal_file_id,
+            "last_revision_id": normal_rollback_revision_id,
+            "revision_comments": "member delete on normal page",
+            "user_id": member,
+        }),
+    );
+
+    set_request_context(
+        &mut runner,
+        Some(member),
+        site_id,
+        Some(Reference::Id(normal_page_id)),
+    );
+    let restored = run_endpoint!(
+        runner,
+        file_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": normal_page_id,
+            "file_id": normal_file_id,
+            "user_id": member,
+            "revision_comments": "member restore on normal page",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(restored.file_id, normal_file_id);
+}
+
+async fn latest_file_revision_id(
+    runner: &TestRunner,
+    site_id: i64,
+    page_id: i64,
+    file_id: i64,
+) -> i64 {
+    FileRevisionService::get_latest(runner.context(), site_id, page_id, file_id)
+        .await
+        .expect("latest file revision lookup should succeed")
+        .revision_id
+}
+
+#[tokio::test]
+async fn site_changes_feed_hides_admin_revisions_from_non_admins() {
+    let mut runner = TestRunner::setup().await;
+    let site_id = site_id(&runner).await;
+    // Creating `_admin` produces page revisions, which are exactly
+    // what the site-changes feed publishes (finding #1692).
+    let _admin_page_id = get_or_create_admin_page(&mut runner, site_id).await;
+    let member = create_member(&runner, site_id, "changes-feed").await;
+
+    for (viewer, label) in [(None, "anonymous"), (Some(member), "member")] {
+        set_request_context(&mut runner, viewer, site_id, None);
+        let feed = run_endpoint!(
+            runner,
+            wikidot_site_changes_feed,
+            json!({ "site_id": site_id }),
+        )
+        .expect("site changes feed should render");
+        assert!(
+            feed.items.iter().all(|item| item.slug != "_admin"),
+            "{label} site-changes feed must not contain _admin revisions",
+        );
+    }
+
+    set_request_context(&mut runner, Some(ADMIN_USER_ID), site_id, None);
+    let feed = run_endpoint!(
+        runner,
+        wikidot_site_changes_feed,
+        json!({ "site_id": site_id }),
+    )
+    .expect("site changes feed should render for the admin");
+    assert!(
+        feed.items.iter().any(|item| item.slug == "_admin"),
+        "site admin's site-changes feed should include _admin revisions",
     );
 }
