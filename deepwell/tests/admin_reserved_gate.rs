@@ -351,8 +351,7 @@ async fn member_cannot_parent_meta_lock_or_draft_admin_page() {
     let member = create_member(&runner, site_id, "surfaces").await;
     let parent_page_id =
         create_page(&runner, site_id, "gate-parent", "Gate Parent").await;
-    let child_page_id =
-        create_page(&runner, site_id, "gate-child", "Gate Child").await;
+    let child_page_id = create_page(&runner, site_id, "gate-child", "Gate Child").await;
 
     // (#930) The member may not set parents on `_admin`.
     set_request_context(
@@ -1394,13 +1393,8 @@ async fn member_cannot_create_files_on_admin_page() {
     let site_id = site_id(&runner).await;
     let admin_page_id = get_or_create_admin_page(&runner, site_id).await;
     let member = create_member(&runner, site_id, "file-create").await;
-    let normal_page_id = create_page(
-        &runner,
-        site_id,
-        "gate-create-normal",
-        "Gate Create Normal",
-    )
-    .await;
+    let normal_page_id =
+        create_page(&runner, site_id, "gate-create-normal", "Gate Create Normal").await;
 
     // (#1771) Direct upload routed at the `_admin` page itself: the
     // member is denied even though file creation on a normal page
