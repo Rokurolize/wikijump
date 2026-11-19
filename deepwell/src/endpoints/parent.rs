@@ -29,8 +29,8 @@ use crate::services::parent::{
     GetParentRelationships, ParentDescription, RemoveParentOutput, TraceParents,
     TraceParentsOutput, UpdateParents, UpdateParentsOutput,
 };
-use crate::services::permission::{CheckPermissionContext, PermissionService};
-use crate::types::{Action, Permission, Reference, Resource};
+use crate::services::permission::PermissionService;
+use crate::types::{Action, Reference};
 use futures::future::try_join_all;
 
 const MAX_PARENT_UPDATES_PER_REQUEST: usize = 64;
@@ -629,21 +629,10 @@ async fn ensure_child_page_edit_permission<'a>(
         .await
         .or_raise(make_error)?;
 
-    let can_edit = PermissionService::check_user_can(
-        ctx,
-        &CheckPermissionContext {
-            user_id,
-            site_id,
-            page_reference: Some(Reference::Id(page.page_id)),
-        },
-        Permission {
-            resource_type: Resource::Page,
-            resource_category: Some(Reference::Id(page.page_category_id)),
-            action: Action::Edit,
-        },
-    )
-    .await
-    .or_raise(make_error)?;
+    let can_edit =
+        PermissionService::check_user_can_act_on_page(ctx, user_id, &page, Action::Edit)
+            .await
+            .or_raise(make_error)?;
 
     if can_edit {
         Ok(())

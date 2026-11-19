@@ -109,20 +109,8 @@ pub async fn forum_post_create(
             })?;
         let can_view = match page {
             Some(page) => {
-                PermissionService::check_user_can(
-                    ctx,
-                    &CheckPermissionContext {
-                        user_id: request_user_id,
-                        site_id: input.site_id,
-                        page_reference: Some(Reference::Id(page.page_id)),
-                    },
-                    Permission {
-                        resource_type: Resource::Page,
-                        resource_category: Some(Reference::Id(page.page_category_id)),
-                        action: Action::View,
-                    },
-                )
-                .await?
+                PermissionService::check_user_can_view_page(ctx, request_user_id, &page)
+                    .await?
             }
             None => false,
         };

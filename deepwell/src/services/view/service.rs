@@ -2006,6 +2006,7 @@ ORDER BY breadcrumb_chain.depth ASC
                 page_id: page.page_id,
                 site_id: page.site_id,
                 page_category_id: Some(page.page_category_id),
+                slug: Some(page.slug.clone()),
             })
             .collect::<Vec<_>>();
         let viewable = view_decisions_for_scanned_pages(

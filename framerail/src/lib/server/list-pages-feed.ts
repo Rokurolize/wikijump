@@ -9,7 +9,11 @@ const FEED_SELECTOR_KEYS = [
   "parent",
   "created_by",
   "rating",
-  "range"
+  "range",
+  "limit",
+  "rssLimit",
+  "offset",
+  "order"
 ] as const
 
 export interface WikidotListPagesFeedSelectors {
@@ -20,6 +24,10 @@ export interface WikidotListPagesFeedSelectors {
   created_by?: string
   rating?: string
   range?: string
+  limit?: string
+  rssLimit?: string
+  offset?: string
+  order?: string
 }
 
 export interface ParsedWikidotListPagesFeedPath {
@@ -110,6 +118,24 @@ export function wikidotListPagesFeedSelectorError(
   }
   if (selectors.range !== undefined && selectors.range !== ".") {
     return "Invalid range argument."
+  }
+  if (
+    selectors.limit !== undefined &&
+    !/^\d+$/.test(selectors.limit.trim())
+  ) {
+    return "Invalid limit argument."
+  }
+  if (
+    selectors.rssLimit !== undefined &&
+    !/^\d+$/.test(selectors.rssLimit.trim())
+  ) {
+    return "Invalid limit argument."
+  }
+  if (
+    selectors.offset !== undefined &&
+    !/^\d+$/.test(selectors.offset.trim())
+  ) {
+    return "Invalid offset argument."
   }
   return null
 }

@@ -153,8 +153,12 @@ impl RenderService {
             .map(i64::to_string)
             .collect::<Vec<_>>()
             .join(",");
+        // The sitemap is rendered for an anonymous viewer, who can never
+        // hold Site/Edit, so the reserved `_admin` page (stored slug
+        // exactly `_admin`) is excluded like on every other anonymous
+        // listing surface.
         let where_sql = format!(
-            "site_id = $1 AND deleted_at IS NULL AND page_category_id IN ({allowed_sql}) AND {}",
+            "site_id = $1 AND deleted_at IS NULL AND page_category_id IN ({allowed_sql}) AND LOWER(slug) <> '_admin' AND {}",
             foreign_snapshot_exclusion_sql("page.page_id", site_id),
         );
 

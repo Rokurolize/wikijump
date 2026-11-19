@@ -157,7 +157,12 @@ async fn resolve_page_discussion_thread(
         return Ok(PageDiscussionLookup::NoPage);
     };
     if !visibility
-        .page_is_viewable(site_id, Some(page.page_id), Some(page.page_category_id))
+        .page_is_viewable(
+            site_id,
+            Some(page.page_id),
+            Some(page.page_category_id),
+            Some(&page.slug),
+        )
         .await?
     {
         return Ok(PageDiscussionLookup::NoPage);

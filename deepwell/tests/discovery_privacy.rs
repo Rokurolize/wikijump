@@ -268,6 +268,10 @@ async fn list_pages_feed_excludes_private_category_pages_for_anonymous() {
             created_by: None,
             rating: None,
             range: None,
+            limit: None,
+            rss_limit: None,
+            offset: None,
+            order: None,
         },
     )
     .await

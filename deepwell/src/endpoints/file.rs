@@ -609,21 +609,10 @@ async fn ensure_parent_page_permission(
         .await
         .or_raise(make_error)?;
 
-    let can_access = PermissionService::check_user_can(
-        ctx,
-        &CheckPermissionContext {
-            user_id,
-            site_id,
-            page_reference: Some(Reference::Id(page.page_id)),
-        },
-        Permission {
-            resource_type: Resource::Page,
-            resource_category: Some(Reference::Id(page.page_category_id)),
-            action,
-        },
-    )
-    .await
-    .or_raise(make_error)?;
+    let can_access =
+        PermissionService::check_user_can_act_on_page(ctx, user_id, &page, action)
+            .await
+            .or_raise(make_error)?;
 
     if can_access {
         Ok(())

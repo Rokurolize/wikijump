@@ -183,6 +183,7 @@ async fn create_scaling_site(
             page_id,
             site_id,
             page_category_id: category_id,
+            slug: None,
         });
     }
 

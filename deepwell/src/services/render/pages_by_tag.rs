@@ -341,21 +341,30 @@ pub(super) async fn load_pages_by_tag_pages(
 
     let mut viewable = Vec::with_capacity(rows.len());
     for row in rows {
-        let anonymously_viewable = PermissionService::check_user_can(
-            ctx,
-            &CheckPermissionContext {
-                user_id: None,
-                site_id: current_site_id,
-                page_reference: Some(Reference::Id(row.page_id)),
-            },
-            Permission {
-                resource_type: Resource::Page,
-                resource_category: Some(Reference::Id(row.page_category_id)),
-                action: Action::View,
-            },
-        )
-        .await
-        .or_raise(make_error)?;
+        // The reserved `_admin` page is gated on Site/Edit, not on the
+        // page view grant its category carries.
+        let anonymously_viewable =
+            if PermissionService::slug_targets_reserved_admin_page(&row.slug) {
+                PermissionService::check_user_can_access_admin(ctx, None, current_site_id)
+                    .await
+                    .or_raise(make_error)?
+            } else {
+                PermissionService::check_user_can(
+                    ctx,
+                    &CheckPermissionContext {
+                        user_id: None,
+                        site_id: current_site_id,
+                        page_reference: Some(Reference::Id(row.page_id)),
+                    },
+                    Permission {
+                        resource_type: Resource::Page,
+                        resource_category: Some(Reference::Id(row.page_category_id)),
+                        action: Action::View,
+                    },
+                )
+                .await
+                .or_raise(make_error)?
+            };
 
         if anonymously_viewable {
             viewable.push(row);

@@ -19,9 +19,9 @@ use crate::services::category::CategoryService;
 use crate::services::page::PageService;
 use crate::services::page_revision::PageRevisionService;
 use crate::services::parent::ParentService;
-use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::services::permission::PermissionService;
 use crate::services::render::{ViewablePageRef, view_decisions_for_scanned_pages};
-use crate::types::{Action, PageOrder, Permission, Reference, Resource};
+use crate::types::{PageOrder, Reference};
 use crate::utils::split_category;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -79,20 +79,7 @@ async fn wikidot_data_form_page_is_viewable(
     viewer_user_id: Option<i64>,
     page: &PageModel,
 ) -> Result<bool> {
-    PermissionService::check_user_can(
-        ctx,
-        &CheckPermissionContext {
-            user_id: viewer_user_id,
-            site_id: page.site_id,
-            page_reference: Some(Reference::Id(page.page_id)),
-        },
-        Permission {
-            resource_type: Resource::Page,
-            resource_category: Some(Reference::Id(page.page_category_id)),
-            action: Action::View,
-        },
-    )
-    .await
+    PermissionService::check_user_can_view_page(ctx, viewer_user_id, page).await
 }
 
 pub async fn resolve_wikidot_data_form_pagepath_display_values(
@@ -183,6 +170,7 @@ pub async fn load_wikidot_data_form_pagepaths(
                 page_id: page.page_id,
                 site_id: page.site_id,
                 page_category_id: Some(page.page_category_id),
+                slug: Some(page.slug.clone()),
             })
             .collect::<Vec<_>>();
         let viewable = view_decisions_for_scanned_pages(

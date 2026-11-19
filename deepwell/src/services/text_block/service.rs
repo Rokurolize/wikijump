@@ -526,12 +526,13 @@ impl TextBlockService {
             )
         };
 
-        let rows: Vec<(i64, i16, String, i64)> = TextBlockTable::find()
+        let rows: Vec<(i64, i16, String, i64, String)> = TextBlockTable::find()
             .select_only()
             .column(text_block::Column::PageId)
             .column(text_block::Column::BlockIndex)
             .column(text_block::Column::S3Filename)
             .column(page::Column::PageCategoryId)
+            .column(page::Column::Slug)
             .join(JoinType::InnerJoin, text_block::Relation::Page.def())
             .filter(
                 Condition::all()
@@ -549,25 +550,35 @@ impl TextBlockService {
 
         let mut viewable_pages: HashMap<i64, bool> = HashMap::new();
         let mut visible_candidate = None;
-        for (page_id, index, s3_filename, page_category_id) in rows {
+        for (page_id, index, s3_filename, page_category_id, page_slug) in rows {
             let can_view = match viewable_pages.get(&page_id) {
                 Some(can_view) => *can_view,
                 None => {
-                    let can_view = PermissionService::check_user_can(
-                        ctx,
-                        &CheckPermissionContext {
-                            user_id,
-                            site_id,
-                            page_reference: Some(Reference::Id(page_id)),
-                        },
-                        Permission {
-                            resource_type: Resource::Page,
-                            resource_category: Some(Reference::Id(page_category_id)),
-                            action: Action::View,
-                        },
-                    )
-                    .await
-                    .or_raise(make_error)?;
+                    let can_view = if PermissionService::slug_targets_reserved_admin_page(
+                        &page_slug,
+                    ) {
+                        PermissionService::check_user_can_access_admin(
+                            ctx, user_id, site_id,
+                        )
+                        .await
+                        .or_raise(make_error)?
+                    } else {
+                        PermissionService::check_user_can(
+                            ctx,
+                            &CheckPermissionContext {
+                                user_id,
+                                site_id,
+                                page_reference: Some(Reference::Id(page_id)),
+                            },
+                            Permission {
+                                resource_type: Resource::Page,
+                                resource_category: Some(Reference::Id(page_category_id)),
+                                action: Action::View,
+                            },
+                        )
+                        .await
+                        .or_raise(make_error)?
+                    };
                     viewable_pages.insert(page_id, can_view);
                     can_view
                 }

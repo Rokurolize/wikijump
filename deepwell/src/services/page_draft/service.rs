@@ -37,6 +37,7 @@ pub struct PageDraftService;
 struct PageDraftCandidate {
     slug: String,
     title: String,
+    draft_user_id: i64,
     draft_page_id: Option<i64>,
     active_page_id: Option<i64>,
     page_category_id: Option<i64>,
@@ -64,6 +65,26 @@ impl PageDraftService {
             .into());
         }
 
+        // The reserved `_admin` page is gated on Site/Edit: a draft
+        // targeting it requires site admin standing, like every other
+        // mutation on that page.
+        if PermissionService::slug_targets_reserved_admin_page(&input.slug) {
+            let can_access_admin = PermissionService::check_user_can_access_admin(
+                ctx,
+                Some(input.user_id),
+                input.site_id,
+            )
+            .await
+            .or_raise(make_error)?;
+            if !can_access_admin {
+                return Err(Error::new(
+                    "user does not have permission to save a page draft",
+                    ErrorType::PermissionDenied,
+                )
+                .into());
+            }
+        }
+
         if let Some(page_id) = input.page_id {
             let page = PageService::get_direct_optional(ctx, page_id, false)
                 .await
@@ -81,15 +102,21 @@ impl PageDraftService {
                 )
                 .into());
             }
-            Self::ensure_page_permission(
+            let can_edit = PermissionService::check_user_can_act_on_page(
                 ctx,
-                input.site_id,
-                Some(page.page_id),
-                Some(page.page_category_id),
-                input.user_id,
+                Some(input.user_id),
+                &page,
                 Action::Edit,
             )
-            .await?;
+            .await
+            .or_raise(make_error)?;
+            if !can_edit {
+                return Err(Error::new(
+                    "user does not have permission to save a page draft",
+                    ErrorType::PermissionDenied,
+                )
+                .into());
+            }
         } else {
             let target = PageService::get_optional(
                 ctx,
@@ -227,6 +254,7 @@ impl PageDraftService {
                 txn.get_database_backend(),
                 format!(
                     r#"SELECT d.slug, d.title,
+                              d.user_id AS draft_user_id,
                               d.page_id AS draft_page_id,
                               p.page_id AS active_page_id,
                               p.page_category_id,
@@ -259,8 +287,31 @@ impl PageDraftService {
             .into());
         }
 
+        // Drafts are private working state: a viewer sees only their own
+        // drafts. Site admins keep the moderation view over all drafts.
+        let viewer_is_admin = match viewer_user_id {
+            Some(user_id) => PermissionService::check_user_can_access_admin(
+                ctx,
+                Some(user_id),
+                site_id,
+            )
+            .await
+            .or_raise(make_error)?,
+            None => false,
+        };
+
         let mut drafts = Vec::new();
         for candidate in candidates {
+            if !viewer_is_admin {
+                if Some(candidate.draft_user_id) != viewer_user_id {
+                    continue;
+                }
+                // The reserved `_admin` page is gated on Site/Edit, so
+                // its drafts are visible to site admins only.
+                if PermissionService::slug_targets_reserved_admin_page(&candidate.slug) {
+                    continue;
+                }
+            }
             let Some(active_page_id) = candidate.active_page_id else {
                 if candidate.draft_page_id.is_some() {
                     continue;

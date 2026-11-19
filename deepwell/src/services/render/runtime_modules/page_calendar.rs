@@ -66,6 +66,7 @@ struct PageCalendarCategoryRow {
 struct PageCalendarPageRow {
     page_id: i64,
     page_category_id: i64,
+    slug: String,
     created_at: time::OffsetDateTime,
     tags: Vec<String>,
 }
@@ -494,7 +495,7 @@ impl RenderService {
         let statement = Statement::from_sql_and_values(
             txn.get_database_backend(),
             format!(
-                "SELECT p.page_id, p.page_category_id, p.created_at, pr.tags \
+                "SELECT p.page_id, p.page_category_id, p.slug, p.created_at, pr.tags \
                  FROM page p \
                  JOIN page_revision pr ON pr.revision_id = p.latest_revision_id \
                  WHERE p.site_id = $1 \
@@ -510,29 +511,40 @@ impl RenderService {
         let mut counts = BTreeMap::<i32, BTreeMap<u8, usize>>::new();
         let mut category_permissions = HashMap::new();
         for page in pages {
-            let can_view = if let Some(can_view) =
-                category_permissions.get(&page.page_category_id)
-            {
-                *can_view
-            } else {
-                let can_view = PermissionService::check_user_can(
-                    ctx,
-                    &CheckPermissionContext {
-                        user_id: None,
-                        site_id: current_site_id,
-                        page_reference: Some(Reference::Id(page.page_id)),
-                    },
-                    Permission {
-                        resource_type: Resource::Page,
-                        resource_category: Some(Reference::Id(page.page_category_id)),
-                        action: Action::View,
-                    },
-                )
-                .await
-                .or_raise(make_error)?;
-                category_permissions.insert(page.page_category_id, can_view);
-                can_view
-            };
+            // The reserved `_admin` page is gated on Site/Edit; it must
+            // not ride on its category's cached view decision.
+            let can_view =
+                if PermissionService::slug_targets_reserved_admin_page(&page.slug) {
+                    PermissionService::check_user_can_access_admin(
+                        ctx,
+                        None,
+                        current_site_id,
+                    )
+                    .await
+                    .or_raise(make_error)?
+                } else if let Some(can_view) =
+                    category_permissions.get(&page.page_category_id)
+                {
+                    *can_view
+                } else {
+                    let can_view = PermissionService::check_user_can(
+                        ctx,
+                        &CheckPermissionContext {
+                            user_id: None,
+                            site_id: current_site_id,
+                            page_reference: Some(Reference::Id(page.page_id)),
+                        },
+                        Permission {
+                            resource_type: Resource::Page,
+                            resource_category: Some(Reference::Id(page.page_category_id)),
+                            action: Action::View,
+                        },
+                    )
+                    .await
+                    .or_raise(make_error)?;
+                    category_permissions.insert(page.page_category_id, can_view);
+                    can_view
+                };
             if !can_view {
                 continue;
             }

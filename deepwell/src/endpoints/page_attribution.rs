@@ -20,6 +20,7 @@
 
 use super::prelude::*;
 use crate::services::MutationAuthorization;
+use crate::services::permission::PermissionService;
 use crate::services::relation::{
     ClearPageAttributions, GetPageAttributions, PageAttribution, RelationService,
     SetPageAttributions,
@@ -39,15 +40,31 @@ async fn require_page_attribution_permission(
     // action. Writing them requires the Delete + Rename standing they grant,
     // scoped to the page's category. The check carries no page reference, so
     // the page-author role cannot authorize its own membership.
-    let category_id = PageService::get(ctx, site_id, page)
-        .await
-        .or_raise(|| {
-            Error::new(
-                format!("failed to load page to {action}"),
-                ErrorType::PageAttribution,
-            )
-        })?
-        .page_category_id;
+    let page_model = PageService::get(ctx, site_id, page).await.or_raise(|| {
+        Error::new(
+            format!("failed to load page to {action}"),
+            ErrorType::PageAttribution,
+        )
+    })?;
+
+    // The reserved `_admin` page follows the canonical gate: writing its
+    // attributions requires Site/Edit, not category standing.
+    if PermissionService::slug_targets_reserved_admin_page(&page_model.slug) {
+        MutationAuthorization::require_permission(
+            ctx,
+            site_id,
+            None,
+            Permission {
+                resource_type: Resource::Site,
+                resource_category: None,
+                action: Action::Edit,
+            },
+            action,
+        )
+        .await?;
+        return Ok(());
+    }
+    let category_id = page_model.page_category_id;
 
     for required in [Action::Delete, Action::Rename] {
         MutationAuthorization::require_permission(

@@ -302,28 +302,33 @@ async fn load_pages_module_pages(
     let mut category_permissions = HashMap::new();
     let mut viewable = Vec::with_capacity(rows.len());
     for row in rows {
-        let can_view =
-            if let Some(can_view) = category_permissions.get(&row.page_category_id) {
-                *can_view
-            } else {
-                let can_view = PermissionService::check_user_can(
-                    ctx,
-                    &CheckPermissionContext {
-                        user_id: None,
-                        site_id: current_site_id,
-                        page_reference: Some(Reference::Id(row.page_id)),
-                    },
-                    Permission {
-                        resource_type: Resource::Page,
-                        resource_category: Some(Reference::Id(row.page_category_id)),
-                        action: Action::View,
-                    },
-                )
+        // The reserved `_admin` page is gated on Site/Edit; it must not
+        // ride on its category's cached view decision.
+        let can_view = if PermissionService::slug_targets_reserved_admin_page(&row.slug) {
+            PermissionService::check_user_can_access_admin(ctx, None, current_site_id)
                 .await
-                .or_raise(make_error)?;
-                category_permissions.insert(row.page_category_id, can_view);
-                can_view
-            };
+                .or_raise(make_error)?
+        } else if let Some(can_view) = category_permissions.get(&row.page_category_id) {
+            *can_view
+        } else {
+            let can_view = PermissionService::check_user_can(
+                ctx,
+                &CheckPermissionContext {
+                    user_id: None,
+                    site_id: current_site_id,
+                    page_reference: Some(Reference::Id(row.page_id)),
+                },
+                Permission {
+                    resource_type: Resource::Page,
+                    resource_category: Some(Reference::Id(row.page_category_id)),
+                    action: Action::View,
+                },
+            )
+            .await
+            .or_raise(make_error)?;
+            category_permissions.insert(row.page_category_id, can_view);
+            can_view
+        };
         if can_view {
             viewable.push(row);
         }

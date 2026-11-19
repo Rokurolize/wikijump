@@ -58,6 +58,11 @@ pub struct WikidotListPagesFeedInput {
     pub created_by: Option<String>,
     pub rating: Option<String>,
     pub range: Option<String>,
+    pub limit: Option<String>,
+    #[serde(alias = "rssLimit")]
+    pub rss_limit: Option<String>,
+    pub offset: Option<String>,
+    pub order: Option<String>,
 }
 
 #[derive(Clone, Serialize, Debug)]

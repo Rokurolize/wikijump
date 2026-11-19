@@ -27,9 +27,9 @@ use super::service::site_matches_wikidot_slug;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::site::Model as SiteModel;
 use crate::services::page_query::{PageQuery, PageQueryScoreFilterCache};
-use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::services::permission::PermissionService;
 use crate::services::{PageRevisionService, PageService, ServiceContext, SiteService};
-use crate::types::{Action, Permission, Reference, Resource};
+use crate::types::Reference;
 use crate::utils::trim_default;
 use ftml::data::PageRef;
 use ftml::{self};
@@ -309,20 +309,8 @@ impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
             return Ok(None);
         };
 
-        let can_view = PermissionService::check_user_can(
-            self.ctx,
-            &CheckPermissionContext {
-                user_id: None,
-                site_id: current_site_id,
-                page_reference: Some(Reference::Id(page_id)),
-            },
-            Permission {
-                resource_type: Resource::Page,
-                resource_category: Some(Reference::Id(page.page_category_id)),
-                action: Action::View,
-            },
-        )
-        .await?;
+        let can_view =
+            PermissionService::check_user_can_view_page(self.ctx, None, &page).await?;
         if !can_view {
             cache.imported_cross_site_sources.insert(cache_key, None);
             return Ok(None);
@@ -367,20 +355,9 @@ impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
                     return Ok(None);
                 };
 
-                let can_view = PermissionService::check_user_can(
-                    self.ctx,
-                    &CheckPermissionContext {
-                        user_id: None,
-                        site_id,
-                        page_reference: Some(page_ref),
-                    },
-                    Permission {
-                        resource_type: Resource::Page,
-                        resource_category: Some(Reference::Id(page.page_category_id)),
-                        action: Action::View,
-                    },
-                )
-                .await?;
+                let can_view =
+                    PermissionService::check_user_can_view_page(self.ctx, None, &page)
+                        .await?;
                 if !can_view {
                     return Ok(None);
                 }

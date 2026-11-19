@@ -109,6 +109,7 @@ async fn batched_view_decisions(
             page_id: page.page_id,
             site_id,
             page_category_id: page.category_id,
+            slug: None,
         })
         .collect::<Vec<_>>();
 

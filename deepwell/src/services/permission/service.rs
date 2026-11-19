@@ -44,29 +44,56 @@ use std::collections::{BTreeMap, HashSet};
 pub struct PermissionService;
 
 impl PermissionService {
+    /// Whether a slug (in any spelling a caller might supply) targets the
+    /// reserved `_admin` page: the bare slug, or the same page addressed
+    /// through the default category. Pages named `_admin` inside other
+    /// categories are ordinary pages and do not match.
+    pub fn slug_targets_reserved_admin_page(slug: &str) -> bool {
+        let mut normalized = slug.to_owned();
+        wikidot_normalize::normalize(&mut normalized);
+        crate::utils::trim_default(normalized.trim_matches('/'))
+            .eq_ignore_ascii_case("_admin")
+    }
+
     pub async fn check_user_can_view_page(
         ctx: &ServiceContext<'_>,
         user_id: Option<i64>,
         page: &crate::models::page::Model,
     ) -> Result<bool> {
-        let (resource_type, resource_category, action) =
-            if page.slug.eq_ignore_ascii_case("_admin") {
-                (Resource::Site, None, Action::Edit)
-            } else {
-                (
-                    Resource::Page,
-                    Some(Reference::Id(page.page_category_id)),
-                    Action::View,
-                )
-            };
+        Self::check_user_can_act_on_page(ctx, user_id, page, Action::View).await
+    }
+
+    /// The canonical per-page permission gate, for any action.
+    ///
+    /// The reserved `_admin` page is gated on Site/Edit for every action:
+    /// a page-scoped grant on it is never sufficient, mirroring the direct
+    /// page endpoints. Every auxiliary path that authorizes against a
+    /// loaded page must go through this helper (or
+    /// `check_user_can_view_page` for reads) so the reserved-page switch
+    /// cannot be skipped by accident.
+    pub async fn check_user_can_act_on_page(
+        ctx: &ServiceContext<'_>,
+        user_id: Option<i64>,
+        page: &crate::models::page::Model,
+        action: Action,
+    ) -> Result<bool> {
+        let reserved = page.slug.eq_ignore_ascii_case("_admin");
+        let (resource_type, resource_category, action) = if reserved {
+            (Resource::Site, None, Action::Edit)
+        } else {
+            (
+                Resource::Page,
+                Some(Reference::Id(page.page_category_id)),
+                action,
+            )
+        };
 
         Self::check_user_can(
             ctx,
             &CheckPermissionContext {
                 user_id,
                 site_id: page.site_id,
-                page_reference: (!page.slug.eq_ignore_ascii_case("_admin"))
-                    .then_some(Reference::Id(page.page_id)),
+                page_reference: (!reserved).then_some(Reference::Id(page.page_id)),
             },
             Permission {
                 resource_type,

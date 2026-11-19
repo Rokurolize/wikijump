@@ -50,6 +50,7 @@ pub struct SiteToolsWantedPageView {
 struct SiteToolsPageCandidate {
     page_id: i64,
     page_category_id: i64,
+    slug: String,
 }
 
 #[derive(Debug, FromQueryResult)]
@@ -57,6 +58,7 @@ struct SiteToolsWantedLink {
     to_page_slug: String,
     from_page_id: i64,
     page_category_id: i64,
+    from_page_slug: String,
 }
 
 #[derive(Debug, FromQueryResult)]
@@ -93,21 +95,36 @@ impl ViewService {
         };
         let mut pages = HashMap::new();
         for candidate in candidates {
-            let can_view = PermissionService::check_user_can(
-                ctx,
-                &CheckPermissionContext {
-                    user_id: ctx.request().user_id,
-                    site_id,
-                    page_reference: Some(Reference::Id(candidate.page_id)),
-                },
-                Permission {
-                    resource_type: Resource::Page,
-                    resource_category: Some(Reference::Id(candidate.page_category_id)),
-                    action: Action::View,
-                },
-            )
-            .await
-            .or_raise(make_error)?;
+            // The reserved `_admin` page is gated on Site/Edit, not on
+            // the page view grant its category carries.
+            let can_view =
+                if PermissionService::slug_targets_reserved_admin_page(&candidate.slug) {
+                    PermissionService::check_user_can_access_admin(
+                        ctx,
+                        ctx.request().user_id,
+                        site_id,
+                    )
+                    .await
+                    .or_raise(make_error)?
+                } else {
+                    PermissionService::check_user_can(
+                        ctx,
+                        &CheckPermissionContext {
+                            user_id: ctx.request().user_id,
+                            site_id,
+                            page_reference: Some(Reference::Id(candidate.page_id)),
+                        },
+                        Permission {
+                            resource_type: Resource::Page,
+                            resource_category: Some(Reference::Id(
+                                candidate.page_category_id,
+                            )),
+                            action: Action::View,
+                        },
+                    )
+                    .await
+                    .or_raise(make_error)?
+                };
             if !can_view {
                 continue;
             }
@@ -149,7 +166,7 @@ impl ViewService {
             SiteToolsPageCandidate::find_by_statement(Statement::from_string(
                 txn.get_database_backend(),
                 format!(
-                    "SELECT p.page_id, p.page_category_id FROM page p \
+                    "SELECT p.page_id, p.page_category_id, p.slug FROM page p \
                  WHERE p.site_id = {} AND p.deleted_at IS NULL \
                  ORDER BY p.page_id LIMIT {SITE_TOOLS_PAGE_SCAN_LIMIT}",
                     input.site_id,
@@ -217,7 +234,8 @@ impl ViewService {
         let rows = SiteToolsWantedLink::find_by_statement(Statement::from_string(
             txn.get_database_backend(),
             format!(
-                "SELECT pcm.to_page_slug, pcm.from_page_id, p.page_category_id \
+                "SELECT pcm.to_page_slug, pcm.from_page_id, p.page_category_id, \
+                        p.slug AS from_page_slug \
                  FROM page_connection_missing pcm \
                  JOIN page p ON p.page_id = pcm.from_page_id \
                  WHERE pcm.to_site_id = {} \
@@ -249,7 +267,7 @@ impl ViewService {
             SiteToolsPageCandidate::find_by_statement(Statement::from_sql_and_values(
                 txn.get_database_backend(),
                 format!(
-                    "SELECT page_id, page_category_id FROM page \
+                    "SELECT page_id, page_category_id, slug FROM page \
                      WHERE site_id = $1 AND deleted_at IS NULL \
                        AND slug = ANY($2::TEXT[]) LIMIT {SITE_TOOLS_PAGE_SCAN_LIMIT}",
                 ),
@@ -277,13 +295,21 @@ impl ViewService {
 
         let candidates = rows
             .iter()
-            .map(|row| (row.from_page_id, row.page_category_id))
+            .map(|row| {
+                (
+                    row.from_page_id,
+                    (row.page_category_id, row.from_page_slug.clone()),
+                )
+            })
             .collect::<BTreeMap<_, _>>()
             .into_iter()
-            .map(|(page_id, page_category_id)| SiteToolsPageCandidate {
-                page_id,
-                page_category_id,
-            });
+            .map(
+                |(page_id, (page_category_id, slug))| SiteToolsPageCandidate {
+                    page_id,
+                    page_category_id,
+                    slug,
+                },
+            );
         let viewable =
             Self::site_tools_viewable_pages(ctx, input.site_id, candidates).await?;
 
