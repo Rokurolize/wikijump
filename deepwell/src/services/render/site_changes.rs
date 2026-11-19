@@ -571,7 +571,21 @@ fn push_site_changes_pager(output: &mut String, list: &SiteChangesList) {
     if list.page > 1 {
         push_site_changes_pager_target(output, list.page - 1, "&laquo; previous");
     }
-    for page in 1..=list.last_link_page {
+    let upper = list.last_link_page.max(list.page);
+    let window_start = list.page.saturating_sub(2).max(1);
+    let window_end = list.page.saturating_add(2).min(upper);
+    let mut pages = Vec::with_capacity(7);
+    pages.push(1);
+    pages.extend(window_start..=window_end);
+    pages.push(upper);
+    pages.sort_unstable();
+    pages.dedup();
+
+    let mut previous = 0;
+    for page in pages {
+        if previous > 0 && page > previous + 1 {
+            output.push_str(r#"<span class="dots">...</span>"#);
+        }
         if page == list.page {
             output.push_str(r#"<span class="current">"#);
             output.push_str(&page.to_string());
@@ -579,6 +593,7 @@ fn push_site_changes_pager(output: &mut String, list: &SiteChangesList) {
         } else {
             push_site_changes_pager_target(output, page, &page.to_string());
         }
+        previous = page;
     }
     if list.has_dots {
         output.push_str(r#"<span class="dots">...</span>"#);
@@ -701,8 +716,8 @@ fn push_site_changes_user(output: &mut String, revision: &SiteChangesRevisionRow
 #[cfg(test)]
 mod tests {
     use super::{
-        SITE_CHANGES_MODULE_REGEX, SiteChangesRevisionRow, WikidotSiteChangesFilter,
-        push_site_changes_flags,
+        SITE_CHANGES_MODULE_REGEX, SiteChangesList, SiteChangesRevisionRow,
+        WikidotSiteChangesFilter, push_site_changes_flags, push_site_changes_pager,
     };
     use time::OffsetDateTime;
 
@@ -772,6 +787,66 @@ mod tests {
         assert_eq!(
             output,
             r#"<span class="spantip" title="file/attachment action">F</span>"#
+        );
+    }
+
+    #[test]
+    fn site_changes_deep_pager_bounds_anchors_and_keeps_all_navigation() {
+        let list = SiteChangesList {
+            page: 300,
+            last_link_page: 302,
+            has_next: true,
+            has_dots: true,
+            revisions: Vec::new(),
+        };
+        let mut output = String::new();
+        push_site_changes_pager(&mut output, &list);
+
+        assert_eq!(output.matches(r#"<span class="target">"#).count(), 7);
+        assert_eq!(output.matches(r#"<span class="dots">"#).count(), 2);
+        assert!(
+            output.starts_with(r#"<div class="pager"><span class="pager-no">page 300</span>"#)
+        );
+        assert!(output.contains(
+            r#"onclick="WIKIDOT.modules.SiteChangesModule.listeners.updateList(299)">&laquo; previous</a>"#
+        ));
+        assert!(output.contains(
+            r#"onclick="WIKIDOT.modules.SiteChangesModule.listeners.updateList(1)">1</a>"#
+        ));
+        assert!(output.contains(r#"<span class="current">300</span>"#));
+        assert!(output.contains(
+            r#"onclick="WIKIDOT.modules.SiteChangesModule.listeners.updateList(302)">302</a>"#
+        ));
+        assert!(output.contains(
+            r#"onclick="WIKIDOT.modules.SiteChangesModule.listeners.updateList(301)">next &raquo;</a>"#
+        ));
+        assert!(!output.contains("updateList(150)"));
+        assert!(!output.contains("updateList(100)"));
+    }
+
+    #[test]
+    fn site_changes_shallow_pager_still_lists_every_known_page() {
+        let list = SiteChangesList {
+            page: 1,
+            last_link_page: 3,
+            has_next: true,
+            has_dots: true,
+            revisions: Vec::new(),
+        };
+        let mut output = String::new();
+        push_site_changes_pager(&mut output, &list);
+
+        assert_eq!(
+            output,
+            concat!(
+                r#"<div class="pager"><span class="pager-no">page 1</span>"#,
+                r#"<span class="current">1</span>"#,
+                r#"<span class="target"><a href="javascript:;" onclick="WIKIDOT.modules.SiteChangesModule.listeners.updateList(2)">2</a></span>"#,
+                r#"<span class="target"><a href="javascript:;" onclick="WIKIDOT.modules.SiteChangesModule.listeners.updateList(3)">3</a></span>"#,
+                r#"<span class="dots">...</span>"#,
+                r#"<span class="target"><a href="javascript:;" onclick="WIKIDOT.modules.SiteChangesModule.listeners.updateList(2)">next &raquo;</a></span>"#,
+                "</div>",
+            )
         );
     }
 
