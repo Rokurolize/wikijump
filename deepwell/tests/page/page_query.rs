@@ -2530,3 +2530,114 @@ async fn score_selectors_at_limit_render_countpages_normally() {
         "CountPages selectors at the limit must still execute normally:\n{count_html}",
     );
 }
+
+#[tokio::test]
+async fn page_query_parent_negative_antijoin_matches_exact_set() {
+    const ROOT: &str = "fixture-parent-antijoin-root";
+    const CHILD: &str = "fixture-parent-antijoin-child";
+    const SECOND_CHILD: &str = "fixture-parent-antijoin-second-child";
+    const UNPARENTED: &str = "fixture-parent-antijoin-unparented";
+    const TAG: &str = "verification-parent-antijoin";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for slug in [ROOT, CHILD, SECOND_CHILD, UNPARENTED] {
+        let revision = create_listpages_test_page(
+            &mut runner,
+            site_id,
+            slug,
+            slug,
+            "parent anti-join fixture",
+        )
+        .await;
+        set_listpages_test_tags(&mut runner, site_id, slug, revision, &[TAG]).await;
+    }
+    for (child, parent) in [(CHILD, ROOT), (SECOND_CHILD, ROOT)] {
+        set_listpages_test_parent(&mut runner, site_id, child, parent).await;
+    }
+
+    let all_tags = [Cow::Borrowed(TAG)];
+    let parents = [Reference::Slug(Cow::Borrowed(ROOT))];
+    macro_rules! page_query {
+        ($page_parent:expr) => {
+            PageQuery {
+                current_page_id: 0,
+                current_site_id: site_id,
+                queried_site_id: Some(site_id),
+                page_type: PageTypeSelector::All,
+                categories: CategoriesSelector {
+                    included_categories: IncludedCategories::All,
+                    excluded_categories: &[],
+                },
+                tags: TagCondition {
+                    any_present: &[],
+                    all_present: &all_tags,
+                    none_present: &[],
+                    untagged: false,
+                },
+                page_parent: $page_parent,
+                contains_outgoing_links: &[],
+                creation_date: DateSelector::FromPresent {
+                    start: OffsetDateTime::UNIX_EPOCH,
+                },
+                update_date: DateSelector::FromPresent {
+                    start: OffsetDateTime::UNIX_EPOCH,
+                },
+                author: AuthorSelector::All,
+                score: &[],
+                votes: &[],
+                offset: 0,
+                name: None,
+                slug: None,
+                slugs: &[],
+                data_form_fields: &[],
+                order: None,
+                candidate_limit: None,
+                pagination: PaginationSelector::default(),
+                fields: FoundPageFields {
+                    slug: true,
+                    ..Default::default()
+                },
+            }
+        };
+    }
+
+    macro_rules! matched_slugs {
+        ($selector:expr) => {{
+            let pages = PageQueryService::find(runner.context(), page_query!($selector))
+                .await
+                .expect("parent selector query should succeed");
+            let mut slugs = pages
+                .pages
+                .into_iter()
+                .map(|row| row.slug.expect("slug field should be requested"))
+                .collect::<Vec<_>>();
+            slugs.sort();
+            slugs
+        }};
+    }
+
+    assert_eq!(
+        matched_slugs!(PageParentSelector::NoParent),
+        [ROOT.to_owned(), UNPARENTED.to_owned()],
+        "parent=\"-\" must match exactly the pages with no live parent",
+    );
+    assert_eq!(
+        matched_slugs!(PageParentSelector::HasParents(&parents)),
+        [CHILD.to_owned(), SECOND_CHILD.to_owned()],
+        "positive parent selector must match exactly the parented pages",
+    );
+    assert_eq!(
+        matched_slugs!(PageParentSelector::All),
+        [
+            CHILD.to_owned(),
+            ROOT.to_owned(),
+            SECOND_CHILD.to_owned(),
+            UNPARENTED.to_owned(),
+        ],
+        "no-selector control must match every fixture page",
+    );
+}
