@@ -15,6 +15,15 @@ if [ "$error" != null ]; then
 	exit 1
 fi
 
-# Call was a success, extract the Caddyfile
-jq -r .result /tmp/deepwell.json > /tmp/Caddyfile
+# Call was a success, extract the Caddyfile.
+# Write to a temporary file and rename it into place, so a failure
+# partway through can never leave a truncated Caddyfile behind for
+# the next stage to pick up.
+jq -r .result /tmp/deepwell.json > /tmp/Caddyfile.tmp
+if [ ! -s /tmp/Caddyfile.tmp ]; then
+	echo 'Generated Caddyfile is empty, refusing to install it' >&2
+	rm -f /tmp/Caddyfile.tmp
+	exit 1
+fi
+mv /tmp/Caddyfile.tmp /tmp/Caddyfile
 rm /tmp/deepwell.json

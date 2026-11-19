@@ -163,6 +163,60 @@ fn is_safe_site_slug(slug: &str) -> bool {
         })
 }
 
+/// Maximum length of a site slug, in bytes.
+///
+/// A site slug becomes the leftmost label of the site's hostname
+/// (for instance `<slug>.wikijump.com`), so it must fit within the
+/// 63-byte limit for a single DNS label.
+pub(crate) const SITE_SLUG_MAX_BYTES: usize = 63;
+
+/// Checks whether a slug is safe to use as a site slug.
+///
+/// Site slugs are used verbatim as DNS labels in site hostnames, so
+/// they must be non-empty, at most `SITE_SLUG_MAX_BYTES` bytes, and
+/// consist solely of lowercase ASCII letters, digits, and hyphens,
+/// with no leading or trailing hyphen. Anything else (colons,
+/// underscores, whitespace, uppercase, non-ASCII text) cannot form a
+/// valid hostname.
+pub(crate) fn is_valid_site_slug(slug: &str) -> bool {
+    if slug.is_empty() || slug.len() > SITE_SLUG_MAX_BYTES {
+        return false;
+    }
+
+    let bytes = slug.as_bytes();
+    let is_edge = |byte: u8| byte.is_ascii_lowercase() || byte.is_ascii_digit();
+
+    is_edge(bytes[0])
+        && is_edge(bytes[bytes.len() - 1])
+        && bytes.iter().all(|&byte| is_edge(byte) || byte == b'-')
+}
+
+/// Validates a site slug, returning an error if it is not DNS-safe.
+///
+/// See `is_valid_site_slug` for the exact rules.
+pub(crate) fn validate_site_slug(slug: &str) -> Result<()> {
+    if slug.is_empty() {
+        error!("Cannot use a site with an empty slug");
+        bail!(Error::new(
+            "empty site slugs are not allowed",
+            ErrorType::SiteSlugEmpty
+        ));
+    }
+
+    if !is_valid_site_slug(slug) {
+        error!("Cannot use site slug '{slug}', it is not DNS-safe");
+        bail!(Error::new(
+            format!(
+                "site slug '{}' is invalid: only lowercase letters, digits, and hyphens are allowed, with no leading or trailing hyphen, up to {} bytes",
+                slug, SITE_SLUG_MAX_BYTES,
+            ),
+            ErrorType::BadRequest
+        ));
+    }
+
+    Ok(())
+}
+
 fn path_has_content(path: &str, prefix: &str) -> bool {
     path.starts_with(prefix) && path.len() > prefix.len()
 }
@@ -253,6 +307,14 @@ const DEFAULT_FORUM_PER_PAGE_DISCUSSION: bool = false;
 impl SiteService {
     pub(crate) fn is_reserved_platform_hostname_slug(slug: &str) -> bool {
         is_reserved_platform_hostname_slug(slug)
+    }
+
+    pub(crate) fn is_valid_site_slug(slug: &str) -> bool {
+        is_valid_site_slug(slug)
+    }
+
+    pub(crate) fn validate_site_slug(slug: &str) -> Result<()> {
+        validate_site_slug(slug)
     }
 
     pub async fn create(
@@ -833,6 +895,8 @@ impl SiteService {
         info!("Updating slug for site {}, adding alias", site.site_id);
         let old_slug = &site.slug;
 
+        validate_site_slug(new_slug)?;
+
         if is_reserved_platform_hostname_slug(new_slug) {
             error!(
                 "Cannot update site with reserved platform hostname slug '{new_slug}'"
@@ -1130,13 +1194,7 @@ impl SiteService {
             )
         };
 
-        if slug.is_empty() {
-            error!("Cannot create site with empty slug");
-            bail!(Error::new(
-                "empty site slugs are not allowed",
-                ErrorType::SiteSlugEmpty
-            ));
-        }
+        validate_site_slug(slug)?;
 
         if is_reserved_platform_hostname_slug(slug) {
             error!("Cannot {action} site with reserved platform hostname slug '{slug}'");
@@ -1217,8 +1275,9 @@ pub(crate) fn is_reserved_platform_hostname_slug(slug: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{
-        SiteIconSourceKind, is_reserved_platform_hostname_slug,
-        is_reserved_platform_site_slug, is_site_owned_icon_source,
+        SITE_SLUG_MAX_BYTES, SiteIconSourceKind, is_reserved_platform_hostname_slug,
+        is_reserved_platform_site_slug, is_site_owned_icon_source, is_valid_site_slug,
+        validate_site_slug,
     };
     use wikidot_normalize::normalize;
 
@@ -1314,5 +1373,63 @@ mod tests {
             "https://scp-jp.wikidot.com/local--wp8icon/wp8icon.png",
             SiteIconSourceKind::Windows,
         ));
+    }
+
+    #[test]
+    fn valid_site_slugs_are_dns_safe() {
+        for slug in [
+            "a",
+            "0",
+            "www",
+            "scp-wiki",
+            "my-site-2",
+            "a1-b2",
+            "wanderers-library",
+        ] {
+            assert!(
+                is_valid_site_slug(slug),
+                "{slug} should be a valid site slug"
+            );
+            validate_site_slug(slug).expect("valid site slug should validate");
+        }
+
+        let max_slug = "a".repeat(SITE_SLUG_MAX_BYTES);
+        assert!(
+            is_valid_site_slug(&max_slug),
+            "63-byte slug should be valid"
+        );
+    }
+
+    #[test]
+    fn invalid_site_slugs_are_not_dns_safe() {
+        for slug in [
+            "",
+            "pentest:x",
+            "Pentest",
+            "PENTEST-X",
+            "white space",
+            "-leading-hyphen",
+            "trailing-hyphen-",
+            "under_score",
+            "_leading-underscore",
+            "dot.name",
+            "slash/name",
+            "site--name?",
+            "サイト",
+            "ｻｲﾄ",
+            "emoji-🎉",
+        ] {
+            assert!(
+                !is_valid_site_slug(slug),
+                "{slug} should not be a valid site slug",
+            );
+            validate_site_slug(slug).expect_err("invalid site slug should not validate");
+        }
+
+        let too_long = "a".repeat(SITE_SLUG_MAX_BYTES + 1);
+        assert!(
+            !is_valid_site_slug(&too_long),
+            "64-byte slug should be invalid"
+        );
     }
 }
