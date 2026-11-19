@@ -18,6 +18,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use time::Month;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Field {
     Any,
@@ -30,12 +32,33 @@ pub(crate) struct TextPattern {
     pub(crate) pattern: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum Filter {
+    Categories(Vec<String>),
+    Since(String),
+    Till(String),
+    Users(Vec<String>),
+    Sites(Vec<String>),
+    Tags(Vec<String>),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FilterKind {
+    Categories,
+    Since,
+    Till,
+    Users,
+    Sites,
+    Tags,
+}
+
 #[derive(Debug)]
 pub(crate) struct SearchGrammar {
     pub(crate) tsquery: String,
     pub(crate) has_tsquery: bool,
     pub(crate) no_results: bool,
     pub(crate) patterns: Vec<TextPattern>,
+    pub(crate) filters: Vec<Filter>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -72,11 +95,31 @@ pub(crate) fn parse(query: &str) -> SearchGrammar {
 
     let characters = query.chars().collect::<Vec<_>>();
     let mut terms = Vec::new();
+    let mut filters = Vec::new();
     let mut index = 0;
 
     while index < characters.len() {
         if characters[index].is_whitespace() {
             index += 1;
+            continue;
+        }
+
+        if let Some((kind, prefix_len)) = filter_prefix(&characters, index) {
+            index += prefix_len;
+            let start = index;
+            while index < characters.len() && !characters[index].is_whitespace() {
+                index += 1;
+            }
+            let raw = characters[start..index].iter().collect::<String>();
+            let Some(filter) = parse_filter(kind, &raw) else {
+                return empty();
+            };
+            if filters.iter().any(|existing| {
+                std::mem::discriminant(existing) == std::mem::discriminant(&filter)
+            }) {
+                return empty();
+            }
+            filters.push(filter);
             continue;
         }
 
@@ -151,7 +194,95 @@ pub(crate) fn parse(query: &str) -> SearchGrammar {
         }
     }
 
-    build(terms)
+    build(terms, filters)
+}
+
+fn filter_prefix(characters: &[char], index: usize) -> Option<(FilterKind, usize)> {
+    for (prefix, kind) in [
+        ("category:", FilterKind::Categories),
+        ("since:", FilterKind::Since),
+        ("till:", FilterKind::Till),
+        ("user:", FilterKind::Users),
+        ("site:", FilterKind::Sites),
+        ("tags:", FilterKind::Tags),
+    ] {
+        if starts_with(characters, index, prefix) {
+            return Some((kind, prefix.chars().count()));
+        }
+    }
+    None
+}
+
+fn parse_filter(kind: FilterKind, raw: &str) -> Option<Filter> {
+    match kind {
+        FilterKind::Since | FilterKind::Till => {
+            let date = parse_date(raw)?;
+            Some(match kind {
+                FilterKind::Since => Filter::Since(date),
+                _ => Filter::Till(date),
+            })
+        }
+        _ => {
+            let values = parse_filter_values(raw, kind)?;
+            Some(match kind {
+                FilterKind::Categories => Filter::Categories(values),
+                FilterKind::Users => Filter::Users(values),
+                FilterKind::Sites => Filter::Sites(values),
+                _ => Filter::Tags(values),
+            })
+        }
+    }
+}
+
+fn parse_date(raw: &str) -> Option<String> {
+    let bytes = raw.as_bytes();
+    if bytes.len() != 10
+        || bytes[4] != b'-'
+        || bytes[7] != b'-'
+        || !bytes[..4]
+            .iter()
+            .chain(&bytes[5..7])
+            .chain(&bytes[8..])
+            .all(u8::is_ascii_digit)
+    {
+        return None;
+    }
+
+    let year = raw[..4].parse::<i32>().ok()?;
+    let month = raw[5..7].parse::<u8>().ok()?;
+    let day = raw[8..].parse::<u8>().ok()?;
+    time::Date::from_calendar_date(year, Month::try_from(month).ok()?, day).ok()?;
+    Some(raw.to_owned())
+}
+
+fn parse_filter_values(raw: &str, kind: FilterKind) -> Option<Vec<String>> {
+    let mut values = Vec::new();
+    for value in raw.split(',') {
+        let value = value.trim();
+        if value.is_empty() || value.chars().count() > 128 {
+            return None;
+        }
+        match kind {
+            FilterKind::Categories | FilterKind::Users | FilterKind::Sites => {
+                if !value.chars().all(|character| {
+                    character.is_alphanumeric() || matches!(character, '_' | '-' | '.')
+                }) {
+                    return None;
+                }
+                values.push(value.to_lowercase());
+            }
+            _ => {
+                if value
+                    .chars()
+                    .any(|character| character.is_control() || character.is_whitespace())
+                {
+                    return None;
+                }
+                values.push(value.to_ascii_lowercase());
+            }
+        }
+    }
+    Some(values)
 }
 
 fn starts_with(characters: &[char], index: usize, prefix: &str) -> bool {
@@ -244,7 +375,7 @@ fn regex_body(value: &str) -> String {
         .collect()
 }
 
-fn build(terms: Vec<Term>) -> SearchGrammar {
+fn build(terms: Vec<Term>, filters: Vec<Filter>) -> SearchGrammar {
     let mut required = Vec::new();
     let mut optional = Vec::new();
     let mut excluded = Vec::new();
@@ -298,7 +429,7 @@ fn build(terms: Vec<Term>) -> SearchGrammar {
         }
     }
 
-    if expression.is_empty() && patterns.is_empty() {
+    if expression.is_empty() && patterns.is_empty() && filters.is_empty() {
         return empty();
     }
 
@@ -308,6 +439,7 @@ fn build(terms: Vec<Term>) -> SearchGrammar {
         has_tsquery,
         no_results: false,
         patterns,
+        filters,
     }
 }
 
@@ -317,12 +449,13 @@ fn empty() -> SearchGrammar {
         has_tsquery: false,
         no_results: true,
         patterns: Vec::new(),
+        filters: Vec::new(),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Field, parse};
+    use super::{Field, Filter, parse};
 
     #[test]
     fn plain_terms_are_optional_and_ranked() {
@@ -385,5 +518,69 @@ mod tests {
     fn quoted_lexemes_are_escaped_for_tsquery_input() {
         let grammar = parse("\"o'brien\"");
         assert_eq!(grammar.tsquery, "('o''brien')");
+    }
+
+    #[test]
+    fn category_filter_accepts_a_documented_comma_list() {
+        let grammar = parse("category:ABC,def");
+        assert!(!grammar.no_results);
+        assert!(!grammar.has_tsquery);
+        assert_eq!(
+            grammar.filters,
+            [Filter::Categories(vec!["abc".to_owned(), "def".to_owned()])]
+        );
+    }
+
+    #[test]
+    fn date_filters_accept_valid_calendar_dates() {
+        let grammar = parse("since:2024-02-29 till:2025-12-31");
+        assert_eq!(
+            grammar.filters,
+            [
+                Filter::Since("2024-02-29".to_owned()),
+                Filter::Till("2025-12-31".to_owned()),
+            ]
+        );
+    }
+
+    #[test]
+    fn user_site_and_tags_filters_are_parsed_alongside_terms() {
+        let grammar = parse("+elephant user:Jane_Doe site:Elephants tags:big,noisy");
+        assert_eq!(grammar.tsquery, "('elephant')");
+        assert_eq!(
+            grammar.filters,
+            [
+                Filter::Users(vec!["jane_doe".to_owned()]),
+                Filter::Sites(vec!["elephants".to_owned()]),
+                Filter::Tags(vec!["big".to_owned(), "noisy".to_owned()]),
+            ]
+        );
+    }
+
+    #[test]
+    fn malformed_and_duplicate_filters_fail_closed() {
+        for query in [
+            "category:",
+            "category:abc,",
+            "since:2024-02-30",
+            "since:24-02-01",
+            "till:not-a-date",
+            "user:",
+            "site:bad!slug",
+            "tags:",
+            "tags:big, noisy",
+            "category:abc category:def",
+            "since:2024-01-01 since:2025-01-01",
+        ] {
+            assert!(parse(query).no_results, "{query} should fail closed");
+        }
+    }
+
+    #[test]
+    fn filter_only_queries_are_searchable() {
+        let grammar = parse("category:abc");
+        assert!(!grammar.no_results);
+        assert!(grammar.tsquery.is_empty());
+        assert_eq!(grammar.filters.len(), 1);
     }
 }

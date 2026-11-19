@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::grammar::{Field, parse};
+use super::grammar::{Field, Filter, parse};
 use super::structs::{SNIPPET_END_SQL, SNIPPET_START_SQL, SearchResult};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::render::{ViewablePageRef, view_decisions_for_scanned_pages};
@@ -38,6 +38,62 @@ struct SearchRow {
     title: String,
     snippet: String,
     rank: f32,
+}
+
+fn push_value(values: &mut Vec<Value>, value: Value) -> String {
+    values.push(value);
+    format!("${}", values.len())
+}
+
+fn filter_conditions(filters: &[Filter], values: &mut Vec<Value>) -> Vec<String> {
+    let mut conditions = Vec::new();
+
+    for filter in filters {
+        match filter {
+            Filter::Categories(categories) => {
+                let parameter = push_value(values, Value::from(categories.clone()));
+                conditions.push(format!(
+                    "EXISTS (SELECT 1 FROM page_category filter_category \
+                     WHERE filter_category.category_id = p.page_category_id \
+                     AND lower(filter_category.slug) = ANY({parameter}::TEXT[]))"
+                ));
+            }
+            Filter::Since(date) => {
+                let parameter = push_value(values, Value::from(date.clone()));
+                conditions.push(format!("p.created_at >= {parameter}::date"));
+            }
+            Filter::Till(date) => {
+                let parameter = push_value(values, Value::from(date.clone()));
+                conditions.push(format!(
+                    "p.created_at < ({parameter}::date + INTERVAL '1 day')"
+                ));
+            }
+            Filter::Users(users) => {
+                let parameter = push_value(values, Value::from(users.clone()));
+                conditions.push(format!(
+                    "EXISTS (SELECT 1 FROM page_revision creator \
+                     LEFT JOIN \"user\" creator_user ON creator_user.user_id = creator.user_id \
+                     LEFT JOIN wikidot_user creator_wikidot ON creator_wikidot.user_id = creator.user_id \
+                     WHERE creator.page_id = p.page_id AND creator.revision_number = 0 \
+                     AND lower(coalesce(creator_user.slug, creator_wikidot.slug)) = ANY({parameter}::TEXT[]))"
+                ));
+            }
+            Filter::Sites(sites) => {
+                let parameter = push_value(values, Value::from(sites.clone()));
+                conditions.push(format!(
+                    "EXISTS (SELECT 1 FROM site filter_site \
+                     WHERE filter_site.site_id = p.site_id \
+                     AND lower(filter_site.slug) = ANY({parameter}::TEXT[]))"
+                ));
+            }
+            Filter::Tags(tags) => {
+                let parameter = push_value(values, Value::from(tags.clone()));
+                conditions.push(format!("pr.tags @> {parameter}::TEXT[]"));
+            }
+        }
+    }
+
+    conditions
 }
 
 impl SearchService {
@@ -77,20 +133,14 @@ impl SearchService {
             .min(Self::MAX_SCAN_LIMIT);
         let txn = ctx.transaction();
 
-        let match_condition = if grammar.has_tsquery {
-            "AND p.search_vector @@ search_query.tsq"
-        } else {
-            ""
-        };
+        let mut conditions = Vec::new();
+        if grammar.has_tsquery {
+            conditions.push(String::from("p.search_vector @@ search_query.tsq"));
+        }
 
-        let mut pattern_conditions = String::new();
-        let mut values = vec![
-            Value::from(site_id),
-            Value::from(grammar.tsquery),
-            Value::from(scan_limit),
-        ];
-        for (index, pattern) in grammar.patterns.iter().enumerate() {
-            let parameter = format!("${}", 4 + index);
+        let mut values = vec![Value::from(site_id), Value::from(grammar.tsquery)];
+        for pattern in &grammar.patterns {
+            let parameter = push_value(&mut values, Value::from(pattern.pattern.clone()));
             let columns = if pattern.field == Field::Title {
                 format!(
                     "(coalesce(pr.title, '') ~* {parameter} OR p.slug ~* {parameter})"
@@ -100,9 +150,15 @@ impl SearchService {
                     "(coalesce(t.contents, '') ~* {parameter} OR coalesce(pr.title, '') ~* {parameter} OR p.slug ~* {parameter})"
                 )
             };
-            pattern_conditions.push_str(&format!("AND {columns}\n"));
-            values.push(Value::from(pattern.pattern.clone()));
+            conditions.push(columns);
         }
+        conditions.extend(filter_conditions(&grammar.filters, &mut values));
+        let limit_parameter = push_value(&mut values, Value::from(scan_limit));
+        let condition_sql = if conditions.is_empty() {
+            String::new()
+        } else {
+            format!("AND {}", conditions.join("\nAND "))
+        };
 
         let statement = Statement::from_sql_and_values(
             txn.get_database_backend(),
@@ -126,10 +182,9 @@ impl SearchService {
                    CROSS JOIN search_query
                   WHERE p.site_id = $1
                     AND p.deleted_at IS NULL
-                    {match_condition}
-                    {pattern_conditions}
+                    {condition_sql}
                   ORDER BY rank DESC, p.page_id DESC
-                  LIMIT $3",
+                  LIMIT {limit_parameter}",
                 start = SNIPPET_START_SQL,
                 stop = SNIPPET_END_SQL,
             ),
@@ -173,5 +228,105 @@ impl SearchService {
                 rank: row.rank,
             })
             .collect())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Filter, filter_conditions};
+    use sea_orm::Value;
+
+    #[test]
+    fn category_filter_joins_the_category_table_with_a_bound_array() {
+        let mut values = Vec::new();
+        let conditions = filter_conditions(
+            &[Filter::Categories(vec![String::from("abc")])],
+            &mut values,
+        );
+        assert_eq!(conditions.len(), 1);
+        assert!(
+            conditions[0].contains("filter_category.category_id = p.page_category_id")
+        );
+        assert!(conditions[0].contains("= ANY($1::TEXT[])"));
+        assert!(!conditions[0].contains("abc"));
+        assert_eq!(values.len(), 1);
+    }
+
+    #[test]
+    fn date_filters_bound_inclusive_day_ranges() {
+        let mut values = Vec::new();
+        let conditions = filter_conditions(
+            &[
+                Filter::Since(String::from("2024-01-01")),
+                Filter::Till(String::from("2024-12-31")),
+            ],
+            &mut values,
+        );
+        assert_eq!(conditions[0], "p.created_at >= $1::date");
+        assert_eq!(
+            conditions[1],
+            "p.created_at < ($2::date + INTERVAL '1 day')"
+        );
+        assert_eq!(values.len(), 2);
+    }
+
+    #[test]
+    fn user_filter_uses_the_creation_revision_author() {
+        let mut values = Vec::new();
+        let conditions = filter_conditions(
+            &[Filter::Users(vec![String::from("jane_doe")])],
+            &mut values,
+        );
+        assert!(conditions[0].contains("creator.revision_number = 0"));
+        assert!(conditions[0].contains("creator_user.slug"));
+        assert!(conditions[0].contains("creator_wikidot.slug"));
+        assert_eq!(values.len(), 1);
+    }
+
+    #[test]
+    fn site_filter_cannot_expand_beyond_the_requested_site() {
+        let mut values = Vec::new();
+        let conditions = filter_conditions(
+            &[Filter::Sites(vec![String::from("elephants")])],
+            &mut values,
+        );
+        assert!(conditions[0].contains("filter_site.site_id = p.site_id"));
+        assert!(conditions[0].contains("= ANY($1::TEXT[])"));
+        assert_eq!(values.len(), 1);
+    }
+
+    #[test]
+    fn tag_filter_requires_all_values_on_the_latest_revision() {
+        let mut values = Vec::new();
+        let conditions = filter_conditions(
+            &[Filter::Tags(vec![
+                String::from("big"),
+                String::from("noisy"),
+            ])],
+            &mut values,
+        );
+        assert_eq!(conditions[0], "pr.tags @> $1::TEXT[]");
+        assert_eq!(values.len(), 1);
+    }
+
+    #[test]
+    fn filters_assign_distinct_parameters_in_order() {
+        let mut values = Vec::new();
+        let conditions = filter_conditions(
+            &[
+                Filter::Categories(vec![String::from("abc")]),
+                Filter::Since(String::from("2024-01-01")),
+                Filter::Tags(vec![String::from("big")]),
+            ],
+            &mut values,
+        );
+        assert!(conditions[0].contains("ANY($1::TEXT[])"));
+        assert!(conditions[1].contains("$2::date"));
+        assert!(conditions[2].contains("$3::TEXT[]"));
+        assert!(
+            values
+                .iter()
+                .all(|value| matches!(value, Value::Array(..) | Value::String(..)))
+        );
     }
 }

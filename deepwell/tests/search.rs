@@ -23,16 +23,20 @@ mod common;
 
 use self::common::{IP_ADDRESS, TestRunner};
 use cuid2::cuid;
-use deepwell::constants::ADMIN_USER_ID;
+use deepwell::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
 use deepwell::services::PageService;
 use deepwell::services::RequestContext;
 use deepwell::services::page::CreatePage;
+use deepwell::services::relation::{
+    CreateSiteMember, RelationService, SiteMemberAccepted, SiteMemberData,
+};
 use deepwell::services::user::{CreateUser, UserService};
 use deepwell::services::view::GetPageViewOutput;
 use deepwell::types::{Reference, UserType};
 use ftml::layout::Layout;
 use serde_json::json;
 use std::borrow::Cow;
+use time::{Duration, OffsetDateTime};
 
 fn set_mutation_context(runner: &mut TestRunner, site_id: i64, slug: &str) {
     runner.set_request_context(RequestContext {
@@ -237,7 +241,15 @@ fn set_search_context(runner: &mut TestRunner, user_id: Option<i64>) {
 }
 
 async fn create_search_user(runner: &TestRunner, token: &str, label: &str) -> i64 {
-    UserService::create(
+    create_search_user_with_slug(runner, token, label).await.0
+}
+
+async fn create_search_user_with_slug(
+    runner: &TestRunner,
+    token: &str,
+    label: &str,
+) -> (i64, String) {
+    let output = UserService::create(
         runner.context(),
         CreateUser {
             user_type: UserType::Regular,
@@ -252,8 +264,8 @@ async fn create_search_user(runner: &TestRunner, token: &str, label: &str) -> i6
         },
     )
     .await
-    .expect("test user should be created")
-    .user_id
+    .expect("test user should be created");
+    (output.user_id, output.slug)
 }
 
 async fn create_page_as(
@@ -264,6 +276,18 @@ async fn create_page_as(
     title: &str,
     wikitext: &str,
 ) {
+    create_page_with_tags(runner, site_id, user_id, slug, title, wikitext, &[]).await;
+}
+
+async fn create_page_with_tags(
+    runner: &TestRunner,
+    site_id: i64,
+    user_id: i64,
+    slug: &str,
+    title: &str,
+    wikitext: &str,
+    tags: &[&str],
+) {
     PageService::create(
         runner.context(),
         CreatePage {
@@ -271,7 +295,7 @@ async fn create_page_as(
             wikitext: wikitext.to_owned(),
             title: title.to_owned(),
             alt_title: None,
-            tags: vec![],
+            tags: tags.iter().map(|tag| (*tag).to_owned()).collect(),
             slug: slug.to_owned(),
             layout: Some(Layout::Wikidot),
             revision_comments: String::from("create search permission fixture"),
@@ -282,6 +306,53 @@ async fn create_page_as(
     )
     .await
     .expect("fixture page should be created");
+}
+
+async fn create_open_site(runner: &mut TestRunner, token: &str, owner: i64) -> i64 {
+    set_search_context(runner, Some(owner));
+    run_endpoint!(
+        runner,
+        site_create,
+        json!({
+            "slug": format!("search-open-{token}"),
+            "name": format!("Search open {token}"),
+            "tagline": "",
+            "description": "",
+            "default_page": null,
+            "layout": null,
+            "license": "cc0",
+            "locale": "en",
+            "ip_address": IP_ADDRESS,
+            "access_policy": "open",
+        }),
+    )
+    .site_id
+}
+
+async fn join_site(runner: &TestRunner, site_id: i64, user_id: i64) {
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id,
+            user_id,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::SelfJoined,
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+        IP_ADDRESS,
+    )
+    .await
+    .expect("test member should join the site");
+}
+
+fn date_string(date: time::Date) -> String {
+    format!(
+        "{:04}-{:02}-{:02}",
+        date.year(),
+        date.month() as u8,
+        date.day()
+    )
 }
 
 async fn create_private_site(runner: &mut TestRunner, token: &str, owner: i64) -> i64 {
@@ -476,5 +547,304 @@ async fn search_supports_documented_wildcards() {
         infix.results.iter().any(|result| result.slug == slug),
         "an infix wildcard should find the page: {:?}",
         infix.results,
+    );
+}
+
+#[tokio::test]
+async fn search_category_filter_restricts_results_to_named_categories() {
+    let mut runner = TestRunner::setup().await;
+    let site = site_id(&mut runner, "scp-wiki").await;
+    let token = format!("catfilter{}", cuid());
+    let category = format!("muse{}", cuid());
+    let in_category = format!("{category}:{}", cuid());
+    let outside = format!("search-cat-out-{}", cuid());
+    create_page(
+        &mut runner,
+        site,
+        &in_category,
+        "Category Fixture",
+        &format!("{token} inside the named category"),
+    )
+    .await;
+    create_page(
+        &mut runner,
+        site,
+        &outside,
+        "Outside Fixture",
+        &format!("{token} outside the named category"),
+    )
+    .await;
+
+    let output =
+        search(&mut runner, site, &format!("+{token} category:{category}")).await;
+    let slugs = output
+        .results
+        .iter()
+        .map(|result| result.slug.as_str())
+        .collect::<Vec<_>>();
+    assert!(slugs.contains(&in_category.as_str()), "{slugs:?}");
+    assert!(!slugs.contains(&outside.as_str()), "{slugs:?}");
+}
+
+#[tokio::test]
+async fn search_date_filters_bound_results_by_page_creation_date() {
+    let mut runner = TestRunner::setup().await;
+    let site = site_id(&mut runner, "scp-wiki").await;
+    let token = format!("datefilter{}", cuid());
+    let slug = format!("search-date-{}", cuid());
+    create_page(
+        &mut runner,
+        site,
+        &slug,
+        "Date Fixture",
+        &format!("{token} created today"),
+    )
+    .await;
+
+    let today = OffsetDateTime::now_utc().date();
+    let yesterday = date_string(today - Duration::days(1));
+    let tomorrow = date_string(today + Duration::days(1));
+    let long_ago = date_string(today - Duration::days(365));
+
+    let since = search(&mut runner, site, &format!("+{token} since:{yesterday}")).await;
+    assert!(
+        since.results.iter().any(|result| result.slug == slug),
+        "since should keep a page created after the bound: {:?}",
+        since.results,
+    );
+
+    let till = search(&mut runner, site, &format!("+{token} till:{tomorrow}")).await;
+    assert!(
+        till.results.iter().any(|result| result.slug == slug),
+        "till should keep a page created before the bound: {:?}",
+        till.results,
+    );
+
+    let too_old = search(&mut runner, site, &format!("+{token} since:{tomorrow}")).await;
+    assert!(
+        too_old.results.is_empty(),
+        "a future since bound must exclude today's page: {:?}",
+        too_old.results,
+    );
+
+    let too_new = search(&mut runner, site, &format!("+{token} till:{long_ago}")).await;
+    assert!(
+        too_new.results.is_empty(),
+        "a past till bound must exclude today's page: {:?}",
+        too_new.results,
+    );
+}
+
+#[tokio::test]
+async fn search_user_filter_matches_the_page_creator() {
+    let mut runner = TestRunner::setup().await;
+    let site = site_id(&mut runner, "scp-wiki").await;
+    let token = format!("userfilter{}", cuid());
+    let (author_id, author_slug) =
+        create_search_user_with_slug(&runner, &token, "author").await;
+    let (other_id, other_slug) =
+        create_search_user_with_slug(&runner, &token, "other").await;
+    let author_page = format!("search-author-{}", cuid());
+    let other_page = format!("search-other-author-{}", cuid());
+    create_page_with_tags(
+        &runner,
+        site,
+        author_id,
+        &author_page,
+        "Author Fixture",
+        &format!("{token} authored by the named user"),
+        &[],
+    )
+    .await;
+    create_page_with_tags(
+        &runner,
+        site,
+        other_id,
+        &other_page,
+        "Other Author Fixture",
+        &format!("{token} authored by another user"),
+        &[],
+    )
+    .await;
+
+    let output = search(&mut runner, site, &format!("+{token} user:{author_slug}")).await;
+    let slugs = output
+        .results
+        .iter()
+        .map(|result| result.slug.as_str())
+        .collect::<Vec<_>>();
+    assert!(slugs.contains(&author_page.as_str()), "{slugs:?}");
+    assert!(!slugs.contains(&other_page.as_str()), "{slugs:?}");
+
+    let other = search(&mut runner, site, &format!("+{token} user:{other_slug}")).await;
+    assert!(
+        other.results.iter().any(|result| result.slug == other_page),
+        "the other creator's filter should find their page: {:?}",
+        other.results,
+    );
+}
+
+#[tokio::test]
+async fn search_site_filter_stays_within_the_requested_site() {
+    let mut runner = TestRunner::setup().await;
+    let primary = site_id(&mut runner, "scp-wiki").await;
+    let token = format!("sitefilter{}", cuid());
+    let slug = format!("search-site-{}", cuid());
+    create_page(
+        &mut runner,
+        primary,
+        &slug,
+        "Site Fixture",
+        &format!("{token} on the primary site"),
+    )
+    .await;
+
+    let matching = search(&mut runner, primary, &format!("+{token} site:scp-wiki")).await;
+    assert!(
+        matching.results.iter().any(|result| result.slug == slug),
+        "site:scp-wiki should keep a scp-wiki page: {:?}",
+        matching.results,
+    );
+
+    let not_matching =
+        search(&mut runner, primary, &format!("+{token} site:scp-jp")).await;
+    assert!(
+        not_matching.results.is_empty(),
+        "site:scp-jp must not expand a site-scoped search to another site: {:?}",
+        not_matching.results,
+    );
+}
+
+#[tokio::test]
+async fn search_tags_filter_requires_every_named_tag() {
+    let mut runner = TestRunner::setup().await;
+    let site = site_id(&mut runner, "scp-wiki").await;
+    let token = format!("tagfilter{}", cuid());
+    let both_slug = format!("search-tags-both-{}", cuid());
+    let one_slug = format!("search-tags-one-{}", cuid());
+    create_page_with_tags(
+        &runner,
+        site,
+        ADMIN_USER_ID,
+        &both_slug,
+        "Both Tags",
+        &format!("{token} has both tags"),
+        &["big", "noisy"],
+    )
+    .await;
+    create_page_with_tags(
+        &runner,
+        site,
+        ADMIN_USER_ID,
+        &one_slug,
+        "One Tag",
+        &format!("{token} has one tag"),
+        &["big"],
+    )
+    .await;
+
+    let both = search(&mut runner, site, &format!("+{token} tags:big,noisy")).await;
+    let both_slugs = both
+        .results
+        .iter()
+        .map(|result| result.slug.as_str())
+        .collect::<Vec<_>>();
+    assert!(both_slugs.contains(&both_slug.as_str()), "{both_slugs:?}");
+    assert!(!both_slugs.contains(&one_slug.as_str()), "{both_slugs:?}");
+
+    let one = search(&mut runner, site, &format!("+{token} tags:big")).await;
+    let one_slugs = one
+        .results
+        .iter()
+        .map(|result| result.slug.as_str())
+        .collect::<Vec<_>>();
+    assert!(one_slugs.contains(&both_slug.as_str()), "{one_slugs:?}");
+    assert!(one_slugs.contains(&one_slug.as_str()), "{one_slugs:?}");
+}
+
+#[tokio::test]
+async fn search_hides_reserved_admin_page_from_actor_without_site_edit() {
+    let mut runner = TestRunner::setup().await;
+    let token = format!("adminsearch{}", cuid());
+    let owner = create_search_user(&runner, &token, "owner").await;
+    let site = create_open_site(&mut runner, &token, owner).await;
+    let admin_page = PageService::get(
+        runner.context(),
+        site,
+        Reference::Slug(Cow::Borrowed("_admin")),
+    )
+    .await
+    .expect("site creation should seed the reserved _admin page");
+    let admin_revision = deepwell::services::PageRevisionService::get_latest(
+        runner.context(),
+        site,
+        admin_page.page_id,
+    )
+    .await
+    .expect("the seeded _admin page should have a revision");
+    PageService::edit(
+        runner.context(),
+        deepwell::services::page::EditPage {
+            site_id: site,
+            page: Reference::Id(admin_page.page_id),
+            last_revision_id: admin_revision.revision_id,
+            revision_comments: String::from("search permission fixture"),
+            user_id: owner,
+            body: deepwell::services::page::EditPageBody {
+                wikitext: deepwell::types::Maybe::Set(format!(
+                    "{token} reserved admin body"
+                )),
+                ..Default::default()
+            },
+            ip_address: IP_ADDRESS,
+            lease: None,
+            system_writer: true,
+        },
+    )
+    .await
+    .expect("the seeded _admin page should accept the fixture body");
+    let normal_slug = format!("search-admin-normal-{token}");
+    create_page_as(
+        &runner,
+        site,
+        owner,
+        &normal_slug,
+        "Ordinary Fixture",
+        &format!("{token} ordinary body"),
+    )
+    .await;
+    let member = create_search_user(&runner, &token, "member").await;
+    join_site(&runner, site, member).await;
+
+    set_search_context(&mut runner, Some(member));
+    let member_output = search(&mut runner, site, &token).await;
+    let member_slugs = member_output
+        .results
+        .iter()
+        .map(|result| result.slug.as_str())
+        .collect::<Vec<_>>();
+    assert!(
+        member_slugs.contains(&normal_slug.as_str()),
+        "the ordinary page should still be visible to a member: {member_slugs:?}"
+    );
+    assert!(
+        !member_slugs.contains(&"_admin"),
+        "a site member without Site/Edit must not find _admin: {member_slugs:?}"
+    );
+    assert!(
+        !member_output.body.contains("href=\"/_admin\""),
+        "the rendered search body must not link _admin:\n{}",
+        member_output.body,
+    );
+
+    set_search_context(&mut runner, Some(owner));
+    let owner_output = search(&mut runner, site, &token).await;
+    assert!(
+        owner_output
+            .results
+            .iter()
+            .any(|result| result.slug == "_admin"),
+        "the site owner with Site/Edit should find _admin: {:?}",
+        owner_output.results,
     );
 }
