@@ -744,7 +744,7 @@ mod tests {
         ] {
             assert_eq!(
                 cascade_key(111, page_parent.clone()),
-                cascade_key(222, page_parent),
+                cascade_key(222, page_parent.clone()),
                 "queries with parent selector {page_parent:?} must share rows across host pages",
             );
         }
@@ -759,7 +759,7 @@ mod tests {
         ] {
             assert_ne!(
                 cascade_key(111, page_parent.clone()),
-                cascade_key(222, page_parent),
+                cascade_key(222, page_parent.clone()),
                 "queries with parent selector {page_parent:?} resolve against the host page and must not share rows",
             );
         }
@@ -812,10 +812,7 @@ mod tests {
         assert!(cache.get("missing").is_none());
 
         let rows = ViewableCountPagesRows {
-            sample: CountPagesSample::Bounded(FoundPages {
-                pages: Vec::new(),
-                reached_candidate_cap: false,
-            }),
+            sample: CountPagesSample::Capped(FoundPages { pages: Vec::new() }),
             metadata: Default::default(),
             view_permission_filtering_applied: true,
         };
