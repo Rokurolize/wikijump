@@ -679,6 +679,11 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("text_create", text_create);
     register!("text_get", text_get);
 
+    // Forum creation
+    register!("forum_group_create", forum_group_create);
+    register!("forum_category_create", forum_category_create);
+    register!("forum_thread_create", forum_thread_create);
+
     // Forum posts
     register!("forum_post_create", forum_post_create);
     register!("forum_post_select", forum_post_select);

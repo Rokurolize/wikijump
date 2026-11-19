@@ -45,6 +45,7 @@ pub mod all {
     pub use super::email::*;
     pub use super::file::*;
     pub use super::file_revision::*;
+    pub use super::forum::*;
     pub use super::forum_post::*;
     pub use super::health::*;
     pub use super::import::*;
@@ -84,6 +85,7 @@ pub mod domain;
 pub mod email;
 pub mod file;
 pub mod file_revision;
+pub mod forum;
 pub mod forum_post;
 pub mod health;
 pub mod import;
