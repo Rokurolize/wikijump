@@ -233,7 +233,13 @@ fn parse_block_opener(
         }
         BlockFamily::Html => match heads.map_head_end[name_end] {
             NO_OFFSET => (name_end, false),
-            end => (expanded_offset(end), true),
+            end => {
+                let end = expanded_offset(end);
+                let head_is_whitespace =
+                    expanded_offset(heads.whitespace_end[name_end]) >= end - 2;
+                let exact = head_is_whitespace || heads.map_has_argument(name_end);
+                (end, exact)
+            }
         },
         BlockFamily::Raw => match bytes.get(name_end) {
             Some(_) if expanded_offset(heads.whitespace_end[name_end]) > name_end => {
@@ -602,12 +608,21 @@ mod tests {
             assert!(pinned_tree(source).code_blocks.is_empty(), "{source:?}");
         }
 
+        for html in ["[[html]]x[[/html]]", "[[html class=\"a\"]]x[[/html]]"] {
+            assert_eq!(
+                candidates(html)[0].provenance,
+                BaseCandidateProvenance::ClosedOwner,
+                "{html:?}",
+            );
+            assert!(!pinned_tree(html).html_blocks.is_empty(), "{html:?}");
+        }
+
         let html = "[[html garbage]]x[[/html]]";
         assert_eq!(
             candidates(html)[0].provenance,
-            BaseCandidateProvenance::ClosedOwner,
+            BaseCandidateProvenance::FailClosedProtection,
         );
-        assert!(!pinned_tree(html).html_blocks.is_empty());
+        assert!(pinned_tree(html).html_blocks.is_empty());
     }
 
     #[test]
