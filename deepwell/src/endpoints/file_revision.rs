@@ -18,12 +18,14 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use super::page_view_guard::require_page_view_permission;
 use super::prelude::*;
 use crate::models::file_revision::Model as FileRevisionModel;
 use crate::services::file::GetFile;
 use crate::services::file_revision::{
     FileRevisionCountOutput, GetFileRevision, GetFileRevisionRange, UpdateFileRevision,
 };
+use crate::types::Reference;
 
 pub async fn file_revision_count(
     ctx: &ServiceContext<'_>,
@@ -80,6 +82,9 @@ pub async fn file_revision_range(
     params: Params<'static>,
 ) -> Result<Vec<FileRevisionModel>> {
     let input: GetFileRevisionRange = parse!(params, FileRevision);
+
+    require_page_view_permission(ctx, input.site_id, Reference::Id(input.page_id))
+        .await?;
 
     FileRevisionService::get_range(ctx, input)
         .await

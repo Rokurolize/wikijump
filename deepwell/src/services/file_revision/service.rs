@@ -677,6 +677,8 @@ impl FileRevisionService {
     pub async fn get_range(
         ctx: &ServiceContext<'_>,
         GetFileRevisionRange {
+            site_id,
+            page_id,
             file_id,
             revision_number,
             revision_direction,
@@ -718,6 +720,8 @@ impl FileRevisionService {
         let revisions = FileRevision::find()
             .filter(
                 Condition::all()
+                    .add(file_revision::Column::SiteId.eq(site_id))
+                    .add(file_revision::Column::PageId.eq(page_id))
                     .add(file_revision::Column::FileId.eq(file_id))
                     .add(revision_condition),
             )
