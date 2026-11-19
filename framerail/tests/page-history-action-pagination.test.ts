@@ -188,3 +188,23 @@ test("history action keeps the bounded create-type control empty", async () => {
     [0, 1, 10, 1]
   )
 })
+
+test("history action returns identical rows for create type when includeFileRevisions is true", async () => {
+  const withoutFiles = await callHistoryAction({
+    siteId: 6000402,
+    pageId: 3000133336,
+    includeFileRevisions: false,
+    types: ["create"],
+    page: 1,
+    perPage: 10
+  })
+  const withFiles = await callHistoryAction({
+    siteId: 6000402,
+    pageId: 3000133336,
+    includeFileRevisions: true,
+    types: ["create"],
+    page: 1,
+    perPage: 10
+  })
+  assert.deepEqual(withFiles.result, withoutFiles.result)
+})

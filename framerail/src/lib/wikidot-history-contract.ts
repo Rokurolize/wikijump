@@ -207,6 +207,13 @@ export const historyEntryMatchesTypes = (
   )
 }
 
+export const historyTypesMayIncludeFiles = (
+  activeTypes: Iterable<string> | null | undefined
+): boolean => {
+  const active = new Set(activeTypes ?? [])
+  return active.size === 0 || active.has("all") || active.has("files")
+}
+
 export const filterHistoryByTypes = <T>(
   entries: readonly T[] | null | undefined,
   activeTypes: Iterable<string> | null | undefined
