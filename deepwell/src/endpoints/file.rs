@@ -36,10 +36,15 @@ async fn require_page_edit_permission(
 ) -> Result<()> {
     let can_edit = PageService::check_user_permission(ctx, site_id, page, Action::Edit)
         .await
-        .or_raise(|| Error::new("failed to check file edit permission", ErrorType::File))?;
+        .or_raise(|| {
+            Error::new("failed to check file edit permission", ErrorType::File)
+        })?;
 
     if !can_edit {
-        bail!(Error::new("Permission denied.", ErrorType::PermissionDenied));
+        bail!(Error::new(
+            "Permission denied.",
+            ErrorType::PermissionDenied
+        ));
     }
 
     Ok(())
@@ -95,7 +100,8 @@ pub async fn file_create(
         input.page_id, input.site_id,
     );
 
-    require_page_edit_permission(ctx, input.site_id, Reference::Id(input.page_id)).await?;
+    require_page_edit_permission(ctx, input.site_id, Reference::Id(input.page_id))
+        .await?;
 
     FileService::create(ctx, input)
         .await
@@ -129,7 +135,8 @@ pub async fn file_delete(
         input.file, input.page_id, input.site_id,
     );
 
-    require_page_edit_permission(ctx, input.site_id, Reference::Id(input.page_id)).await?;
+    require_page_edit_permission(ctx, input.site_id, Reference::Id(input.page_id))
+        .await?;
 
     FileService::delete(ctx, input)
         .await
@@ -147,8 +154,14 @@ pub async fn file_move(
         input.file_id, input.current_page_id, input.destination_page, input.site_id,
     );
 
-    require_page_edit_permission(ctx, input.site_id, Reference::Id(input.current_page_id)).await?;
-    require_page_edit_permission(ctx, input.site_id, input.destination_page.clone()).await?;
+    require_page_edit_permission(
+        ctx,
+        input.site_id,
+        Reference::Id(input.current_page_id),
+    )
+    .await?;
+    require_page_edit_permission(ctx, input.site_id, input.destination_page.clone())
+        .await?;
 
     FileService::r#move(ctx, input)
         .await
@@ -166,7 +179,8 @@ pub async fn file_restore(
         input.file_id, input.page_id, input.site_id,
     );
 
-    require_page_edit_permission(ctx, input.site_id, Reference::Id(input.page_id)).await?;
+    require_page_edit_permission(ctx, input.site_id, Reference::Id(input.page_id))
+        .await?;
     if let Some(new_page) = &input.new_page {
         require_page_edit_permission(ctx, input.site_id, new_page.clone()).await?;
     }

@@ -24,14 +24,14 @@ mod common;
 use self::common::TestRunner;
 use deepwell::error::ErrorType;
 use deepwell::license::License;
+use deepwell::services::RequestContext;
 use deepwell::services::page::{CreatePage, PageService};
 use deepwell::services::site::{CreateSite, SiteService};
 use deepwell::services::user::{CreateUser, UserService};
-use deepwell::services::RequestContext;
 use deepwell::types::UserType;
 use serde_json::json;
-use str_macro::str;
 use std::sync::atomic::{AtomicU64, Ordering};
+use str_macro::str;
 
 static FIXTURE_COUNTER: AtomicU64 = AtomicU64::new(0);
 
