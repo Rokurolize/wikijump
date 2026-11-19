@@ -48,6 +48,7 @@ pub(super) async fn page_parent_condition(
                 page::Column::PageId.not_in_subquery(
                     Query::select()
                         .column(page_parent::Column::ChildPageId)
+                        .distinct()
                         .from(PageParent)
                         .and_where(
                             page_parent::Column::ParentPageId
