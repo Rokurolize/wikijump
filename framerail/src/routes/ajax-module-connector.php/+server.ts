@@ -635,6 +635,10 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
           { siteId }
         )
       ) as Promise<WikidotListPagesModuleOutput>,
+    renderSearchModule: ({ siteId, query }: { siteId: number; query: string }) =>
+      Promise.resolve(
+        client.request("wikidot_search_site", { site_id: siteId, query }, { siteId })
+      ) as Promise<{ body: string }>,
     renderForumModule: ({
       siteId,
       moduleName,

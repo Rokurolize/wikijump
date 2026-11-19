@@ -193,6 +193,12 @@ export interface ListPagesRenderInput {
   parameters: Record<string, string>
 }
 
+export interface SearchModuleRenderInput {
+  siteId: number
+  query: string
+  parameters: Record<string, string>
+}
+
 export interface ForumModuleRenderInput {
   siteId: number
   moduleName: string
@@ -216,6 +222,7 @@ export interface MembersListRenderInput {
 export interface AjaxModuleConnectorOptions {
   siteId: number
   renderListPages: (input: ListPagesRenderInput) => Promise<{ body: string }>
+  renderSearchModule?: (input: SearchModuleRenderInput) => Promise<{ body: string }>
   renderForumModule?: (input: ForumModuleRenderInput) => Promise<{
     status: string
     body: string
@@ -400,6 +407,7 @@ export const handleAjaxModuleConnectorRequest = async (
   {
     siteId,
     renderListPages,
+    renderSearchModule,
     renderForumModule,
     renderSiteChangesModule,
     renderMembersList,
@@ -1446,6 +1454,31 @@ export const handleAjaxModuleConnectorRequest = async (
     } catch (error) {
       console.error("AJAX page preview rendering failed", error)
       return jsonResponse({ status: "not_ok", body: "", ...responseMetadata() })
+    }
+  }
+
+  if (moduleName === "search/SearchModule") {
+    if (!renderSearchModule) {
+      return jsonResponse({
+        status: "not_ok",
+        message: "Search module rendering is unavailable"
+      })
+    }
+    const query = fields.get("query") ?? fields.get("q") ?? ""
+    const parameters: Record<string, string> = {}
+    for (const [key, value] of fields) {
+      if (CONTROL_FIELDS.has(key) || key === "query" || key === "q") continue
+      if (key.startsWith("_")) continue
+      parameters[key] = value
+    }
+    try {
+      const output = await renderSearchModule({ siteId, query, parameters })
+      return jsonResponse({ status: "ok", body: output.body })
+    } catch {
+      return jsonResponse({
+        status: "not_ok",
+        message: "Unable to render Search module"
+      })
     }
   }
 

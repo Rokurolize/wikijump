@@ -14365,38 +14365,38 @@ async fn static_account_modules_match_live_preview_and_page_view_basics() {
 }
 
 #[tokio::test]
-async fn search_and_feed_modules_match_live_preview_and_page_view_boundaries() {
+async fn search_and_feed_modules_render_real_form_and_live_feed_boundaries() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
     let site_id = site.site.site_id;
 
-    let search_error = r#"<div class="error-block">Search is temporarily unavailable, we are working to bring it online!</div>"#;
+    let search_form = r#"<form action="dummy" id="search-form">"#;
     let feed_missing = r#"<div class="error-block">No feed source specified ("src" element missing).</div>"#;
     let feed_unavailable = r#"<div class="error-block">Error processing the feed "https://example.com/feed.xml". The feed can not be accessed or contains errors. </div>"#;
     let cases = [
-        ("search-bare", "[[module Search]]", search_error),
+        ("search-bare", "[[module Search]]", search_form),
         (
             "search-mini-true",
             "[[module Search mini=\"true\"]]",
-            search_error,
+            search_form,
         ),
         (
             "search-area-pages",
             "[[module Search a=\"p\"]]",
-            search_error,
+            search_form,
         ),
         (
             "search-unknown-argument",
             "[[module Search unknown=\"x\"]]",
-            search_error,
+            search_form,
         ),
         (
             "search-single-quoted-mini",
             "[[module Search mini='true']]",
-            search_error,
+            search_form,
         ),
-        ("search-uppercase-name", "[[module SEARCH]]", search_error),
+        ("search-uppercase-name", "[[module SEARCH]]", search_form),
         ("feed-bare", "[[module Feed]]", feed_missing),
         ("feed-empty-src", "[[module Feed src=\"\"]]", feed_missing),
         (
@@ -14479,7 +14479,7 @@ async fn search_and_feed_modules_match_live_preview_and_page_view_boundaries() {
     };
     assert!(
         body.contains("SEARCH_START")
-            && body.contains(search_error)
+            && body.contains(search_form)
             && body.contains("SEARCH_END")
             && body.contains("FEED_START")
             && body.contains(r#"<div class="wikidot-hybrid-module" id="wikidot-hybrid-module-"#)
@@ -14489,7 +14489,7 @@ async fn search_and_feed_modules_match_live_preview_and_page_view_boundaries() {
             && body.contains("FEED_END")
             && !body.contains(feed_missing)
             && !body.contains("[[module"),
-        "saved page view should render the live Search error and Feed hybrid-module placeholder:\n{body}",
+        "saved page view should render the site Search form and Feed hybrid-module placeholder:\n{body}",
     );
 }
 

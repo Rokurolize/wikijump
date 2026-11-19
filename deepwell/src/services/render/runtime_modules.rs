@@ -60,7 +60,7 @@ use super::rate_module::{
     render_read_only_rate_module, render_read_only_star_rate_module,
 };
 use super::runtime_page_queries::find_viewable_list_pages_rows_with_batch_floor;
-use super::search_feed::expand_search_feed_modules;
+use super::search_feed::{expand_search_feed_modules, site_search_query};
 use super::service::{
     MAX_LISTPAGES_RENDER_SCAN_ROWS, PAGECALENDAR_MODULE_REGEX, RATE_MODULE_REGEX,
     RATEDPAGES_MODULE_REGEX, REGISTRY_MODULE_REGEX, RenderService, TAGCLOUD_MODULE_REGEX,
@@ -83,6 +83,7 @@ use crate::services::page_query::{
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::relation::GetSiteMember;
 use crate::services::score::ScoreValue;
+use crate::services::search::{SearchService, render_search_results_html};
 use crate::services::settings::PageRatingType;
 use crate::services::user::User;
 use crate::services::view::redirect::escape_wikidot_html_text as escape_redirect_notice_text;
@@ -1412,12 +1413,28 @@ impl RenderService {
             "wiki-page-module-search-all-query",
             "Search all Wikis",
         );
+        let search_html = match (options.current_site_id, site_search_query(options.url))
+        {
+            (Some(site_id), Some(query)) => Some(render_search_results_html(
+                query,
+                &SearchService::search_pages(
+                    ctx,
+                    site_id,
+                    query,
+                    SearchService::DEFAULT_LIMIT,
+                )
+                .await
+                .or_raise(make_error)?,
+            )),
+            _ => None,
+        };
         wikitext = expand_search_feed_modules(
             wikitext,
             settings,
             options.url,
             &search_all_accessible_name,
             options.page_preview,
+            search_html,
             compat_html,
         );
         wikitext = Self::expand_simpletodo_modules(wikitext, settings, compat_html);
@@ -2038,6 +2055,7 @@ mod localized_module_accessible_name_tests {
             UrlArguments::default(),
             &search_all_name,
             false,
+            None,
             &mut compat_html,
         );
         let search_all_html = compat_html.restore(&expanded);

@@ -72,6 +72,7 @@ pub mod relation;
 pub mod render;
 pub mod role;
 pub mod score;
+pub mod search;
 pub mod session;
 pub mod settings;
 pub mod site;
