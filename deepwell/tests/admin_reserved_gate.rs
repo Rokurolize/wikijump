@@ -714,7 +714,7 @@ async fn feed(
 }
 
 #[tokio::test]
-async fn list_pages_feed_gates_pages_and_honors_windowing() {
+async fn list_pages_feed_gates_only_the_reserved_page_and_honors_windowing() {
     let mut runner = TestRunner::setup().await;
     let site_id = site_id(&runner).await;
     let _admin_page_id = get_or_create_admin_page(&mut runner, site_id).await;
@@ -731,8 +731,11 @@ async fn list_pages_feed_gates_pages_and_honors_windowing() {
     }
 
     // (#1455) Anonymous and plain-member feed requests must not
-    // contain the gated pages: neither the `admin:` category page nor
-    // the reserved `_admin` page.
+    // contain the reserved `_admin` page. The `admin` category is NOT
+    // reserved, though: it is an ordinary user-generated category, so
+    // its pages are fed exactly like any other category's pages. This
+    // assertion is the regression pin against a category-name rule
+    // creeping back into the selection.
     for viewer in [None, Some(member)] {
         let output = feed(
             &mut runner,
@@ -745,8 +748,12 @@ async fn list_pages_feed_gates_pages_and_honors_windowing() {
         )
         .await;
         assert!(
-            output.items.is_empty(),
-            "admin-category feed leaked to viewer {viewer:?}: {:?}",
+            output
+                .items
+                .iter()
+                .any(|item| item.slug == "admin:gate-manage"),
+            "admin-category feed must serve its pages to viewer {viewer:?} \
+             like any other category: {:?}",
             output
                 .items
                 .iter()
@@ -771,7 +778,8 @@ async fn list_pages_feed_gates_pages_and_honors_windowing() {
         );
     }
 
-    // The site admin's feed still contains both gated pages.
+    // The site admin's feed contains the admin-category page and
+    // the reserved `_admin` page alike.
     let output = feed(
         &mut runner,
         site_id,

@@ -654,23 +654,6 @@ mod tests {
                 "result": {"page_id": 555},
                 "id": id
             }),
-            "page_get" if request["params"]["page"] == "_admin" => {
-                // DEEPWELL refuses the reserved page unless the
-                // session's user has Site/Edit standing.
-                if request["params"]["session_token"] == "admin-session" {
-                    json!({
-                        "jsonrpc": "2.0",
-                        "result": {"page_id": 999},
-                        "id": id
-                    })
-                } else {
-                    json!({
-                        "jsonrpc": "2.0",
-                        "error": {"code": 3106, "message": "permission denied"},
-                        "id": id
-                    })
-                }
-            }
             "page_get"
                 if matches!(
                     request["params"]["page"].as_str(),
@@ -1503,16 +1486,18 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn admin_category_files_require_site_admin_standing() {
+    async fn admin_category_files_are_served_like_any_other_category() {
         let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
-        let s3_server = spawn_s3_server(vec![(200, b"abcdef")]);
+        let s3_server =
+            spawn_s3_server(vec![(200, b"abcdef"), (200, b"abcdef"), (200, b"abcdef")]);
         let state =
             test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
 
-        // Anonymous visitors and ordinary members may not pull files
-        // off a page in the `admin` category: DEEPWELL gates that
-        // category's content on Site/Edit standing, and file serving
-        // mirrors the gate. The denial looks like a missing file.
+        // The `admin` category is not reserved: it is an ordinary
+        // user-generated category, so files on its pages are served to
+        // anonymous visitors and ordinary members exactly like files
+        // on any other category's pages. This is the regression pin
+        // against a category-name rule creeping back into serving.
         for cookie in [None, Some("wikijump_token=member-session")] {
             let headers: Vec<_> = cookie
                 .into_iter()
@@ -1526,10 +1511,14 @@ mod tests {
             )
             .await;
             assert_eq!(response.status(), StatusCode::OK);
-            assert_eq!(response.bytes().await.unwrap(), WIKIDOT_MISSING_FILE_HTML,);
+            assert_eq!(
+                response.headers().get(CONTENT_TYPE).unwrap(),
+                "application/x-test",
+            );
+            assert_eq!(response.bytes().await.unwrap(), &b"abcdef"[..]);
         }
 
-        // A viewer with admin standing is served as usual.
+        // A viewer with admin standing is served the same way.
         let response = router_request_with_headers(
             state,
             Method::GET,

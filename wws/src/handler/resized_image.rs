@@ -462,7 +462,6 @@ mod tests {
     #[derive(Debug)]
     struct MockState {
         page_exists: AtomicBool,
-        admin_allowed: AtomicBool,
         file_reply: Mutex<FileReply>,
         blobs: Mutex<HashMap<String, Vec<u8>>>,
         rpc_requests: Mutex<Vec<Value>>,
@@ -474,10 +473,6 @@ mod tests {
     impl MockState {
         fn set_page_exists(&self, exists: bool) {
             self.page_exists.store(exists, Ordering::SeqCst);
-        }
-
-        fn set_admin_allowed(&self, allowed: bool) {
-            self.admin_allowed.store(allowed, Ordering::SeqCst);
         }
 
         fn set_file_reply(&self, reply: FileReply) {
@@ -501,7 +496,6 @@ mod tests {
         async fn spawn(source: Vec<u8>) -> Self {
             let mock = Arc::new(MockState {
                 page_exists: AtomicBool::new(true),
-                admin_allowed: AtomicBool::new(false),
                 file_reply: Mutex::new(FileReply::Found {
                     revision_id: 11,
                     mime: "image/png",
@@ -608,23 +602,6 @@ mod tests {
         let method = request["method"].as_str().unwrap();
         state.rpc_requests.lock().unwrap().push(request.clone());
         let response = match method {
-            "page_get" if request["params"]["page"] == "_admin" => {
-                // DEEPWELL refuses the reserved page unless the
-                // session's user has Site/Edit standing.
-                if state.admin_allowed.load(Ordering::SeqCst) {
-                    json!({
-                        "jsonrpc": "2.0",
-                        "result": {"page_id": 999},
-                        "id": id,
-                    })
-                } else {
-                    json!({
-                        "jsonrpc": "2.0",
-                        "error": {"code": 3106, "message": "permission denied"},
-                        "id": id,
-                    })
-                }
-            }
             "page_get" => json!({
                 "jsonrpc": "2.0",
                 "result": state.page_exists.load(Ordering::SeqCst).then_some(json!({"page_id": PAGE_ID})),
@@ -1151,35 +1128,26 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn resized_route_admin_category_requires_admin_standing() {
+    async fn resized_route_admin_category_is_served_like_any_other_category() {
         let app = TestApp::spawn(png(800, 400, 17)).await;
         let url = format!(
             "{}/local--resized-images/admin%3Amanage/{FILE_NAME}/thumbnail.jpg",
             app.base_url,
         );
 
-        // Without Site/Edit standing the file on the admin-category
-        // page is refused (as a missing file) and never read from S3.
-        let denied = app
+        // The `admin` category is not reserved: it is an ordinary
+        // user-generated category, so a thumbnail on its pages is
+        // served to an anonymous viewer exactly like any other
+        // category's. This is the regression pin against a
+        // category-name rule creeping back into serving.
+        let response = app
             .client
             .get(&url)
             .header(HEADER_SITE_ID.as_str(), SITE_ID.to_string())
             .send()
             .await
             .unwrap();
-        assert_eq!(denied.status(), StatusCode::NOT_FOUND);
-        assert_eq!(app.mock.s3_requests.load(Ordering::SeqCst), 0);
-
-        // With admin standing the thumbnail is served.
-        app.mock.set_admin_allowed(true);
-        let allowed = app
-            .client
-            .get(&url)
-            .header(HEADER_SITE_ID.as_str(), SITE_ID.to_string())
-            .send()
-            .await
-            .unwrap();
-        assert_eq!(allowed.status(), StatusCode::OK);
-        assert_eq!(allowed.headers()[CONTENT_TYPE], "image/jpeg");
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.headers()[CONTENT_TYPE], "image/jpeg");
     }
 }
