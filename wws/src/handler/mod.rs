@@ -108,3 +108,16 @@ fn get_target_server(headers: &HeaderMap) -> TargetServer {
         _ => panic!("Invalid header value: {value:?}"),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn detects_nul_in_path_component() {
+        assert!(has_nul("foo\0bar"));
+        assert!(has_nul("\0"));
+        assert!(!has_nul("foo"));
+        assert!(!has_nul("foo\\0bar"));
+    }
+}
