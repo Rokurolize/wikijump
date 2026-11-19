@@ -256,3 +256,17 @@ fn get_headers(headers: HashMap<String, String>) -> Headers {
         etag: etag.expect("No ETag header in S3 response"),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn missing_text_block_object_is_not_an_assertion() {
+        assert!(check_s3_status(StatusCode::OK.as_u16()).is_none());
+        assert!(matches!(
+            check_s3_status(StatusCode::NOT_FOUND.as_u16()),
+            Some(FallbackError::TextBlockS3Fetch)
+        ));
+    }
+}
