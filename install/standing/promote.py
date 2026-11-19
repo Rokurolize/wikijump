@@ -1168,6 +1168,10 @@ def promote(args, source_root, runtime_home, override_file, identity, evidence, 
     }
 
     def clone_stage():
+        # A previous run at this head may have preserved its rehearsal
+        # volumes (forensics on a failed candidate); pg_basebackup needs an
+        # empty target, so always clone into fresh volumes.
+        remove_volumes(*rehearsal_volumes.values())
         with deepwell_paused_for_clone():
             clone_standing_database(
                 rehearsal_volumes["database"], evidence / "rehearsal-clone.log", source_root
