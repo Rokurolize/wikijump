@@ -18,6 +18,7 @@ import { valibot } from "sveltekit-superforms/adapters"
 import { array, boolean, number, object, optional, string } from "valibot"
 import {
   filterHistoryByTypes,
+  historyTypesMayIncludeFiles,
   paginateHistoryEntries
 } from "$lib/wikidot-history-contract"
 import type { RequestEvent } from "@sveltejs/kit"
@@ -40,7 +41,7 @@ export async function pageHistoryAction(event: RequestEvent) {
       revisionNumber,
       HISTORY_WINDOW_LIMIT,
       context.requestContext,
-      includeFileRevisions ?? false
+      (includeFileRevisions ?? false) && historyTypesMayIncludeFiles(types)
     )
     const normalized = window.map((rawRevision) => ({
       ...rawRevision,
