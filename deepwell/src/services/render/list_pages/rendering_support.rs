@@ -777,7 +777,10 @@ impl ListPagesListingCache {
         self.entries.entry(key).or_default().categories = Some(categories);
     }
 
-    pub(in crate::services::render) fn displays(&self, key: &str) -> Option<ListPagesBatchDisplays> {
+    pub(in crate::services::render) fn displays(
+        &self,
+        key: &str,
+    ) -> Option<ListPagesBatchDisplays> {
         self.entries
             .get(key)
             .and_then(|entry| entry.displays.clone())

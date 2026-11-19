@@ -5,8 +5,8 @@ use super::super::rendering_support::{
 };
 use super::{
     BTreeMap, BTreeSet, CachedListPagesRows, CategoriesSelector, ColumnTrait,
-    ComparisonOperation, CompatHtmlFragments, Cow, DEFAULT_LISTPAGES_PER_PAGE, DateSelector,
-    DateTimeResolution, EntityTrait, Error, ErrorType,
+    ComparisonOperation, CompatHtmlFragments, Cow, DEFAULT_LISTPAGES_PER_PAGE,
+    DateSelector, DateTimeResolution, EntityTrait, Error, ErrorType,
     FinishOrDeferListPagesDelayedOutputParams, FoundPageFields, FoundPages,
     IncludeExpansion, IncludedCategories, ListPagesArguments, ListPagesBlockRenderResult,
     ListPagesContentGeometry, ListPagesOutputShape, ListPagesPageContext,
@@ -565,8 +565,10 @@ impl RenderService {
         } else if let Some(pages) = prefetched_pages.take() {
             pages
         } else if let Some(cached) = listing_cache.rows(&listing_cache_key) {
-            list_pages_metadata =
-                Some((cached.metadata.clone(), cached.view_permission_filtering_applied));
+            list_pages_metadata = Some((
+                cached.metadata.clone(),
+                cached.view_permission_filtering_applied,
+            ));
             cached.pages
         } else {
             let found = RenderRuntime::for_viewer(ctx, viewer_user_id)
@@ -591,7 +593,8 @@ impl RenderService {
                 CachedListPagesRows {
                     pages: found.pages.clone(),
                     metadata: found.metadata.clone(),
-                    view_permission_filtering_applied: found.view_permission_filtering_applied,
+                    view_permission_filtering_applied: found
+                        .view_permission_filtering_applied,
                 },
             );
             found.pages
@@ -761,25 +764,25 @@ impl RenderService {
             .filter_map(|page| page.page_category_id)
             .collect::<BTreeSet<_>>();
         let category_cache_key = format!("{listing_cache_key}|{category_ids:?}");
-        let categories = if let Some(categories) = listing_cache.categories(&category_cache_key)
-        {
-            categories
-        } else if category_ids.is_empty() {
-            Vec::new()
-        } else {
-            let categories = PageCategory::find()
-                .filter(page_category::Column::CategoryId.is_in(category_ids))
-                .all(ctx.transaction())
-                .await
-                .or_raise(|| {
-                    Error::new(
-                        "failed to load ListPages page categories",
-                        ErrorType::Render,
-                    )
-                })?;
-            listing_cache.cache_categories(category_cache_key, categories.clone());
-            categories
-        };
+        let categories =
+            if let Some(categories) = listing_cache.categories(&category_cache_key) {
+                categories
+            } else if category_ids.is_empty() {
+                Vec::new()
+            } else {
+                let categories = PageCategory::find()
+                    .filter(page_category::Column::CategoryId.is_in(category_ids))
+                    .all(ctx.transaction())
+                    .await
+                    .or_raise(|| {
+                        Error::new(
+                            "failed to load ListPages page categories",
+                            ErrorType::Render,
+                        )
+                    })?;
+                listing_cache.cache_categories(category_cache_key, categories.clone());
+                categories
+            };
         let category_slugs = categories
             .iter()
             .map(|category| (category.category_id, category.slug.clone()))
@@ -791,7 +794,9 @@ impl RenderService {
         };
         let use_listing_display_cache = prefetched_displays.is_none();
         let mut cached_batch = if use_listing_display_cache {
-            listing_cache.displays(&listing_cache_key).unwrap_or_default()
+            listing_cache
+                .displays(&listing_cache_key)
+                .unwrap_or_default()
         } else {
             ListPagesBatchDisplays::default()
         };
@@ -1050,7 +1055,10 @@ impl RenderService {
             None
         };
         if lp_prof {
-            eprintln!("WJ_LP_PROF pre_rows_us={}", lp_prof_total.elapsed().as_micros());
+            eprintln!(
+                "WJ_LP_PROF pre_rows_us={}",
+                lp_prof_total.elapsed().as_micros()
+            );
         }
         for (index, page) in pages.iter().enumerate() {
             let cache_key = (page.site_id, page.page_id);
@@ -1451,7 +1459,10 @@ impl RenderService {
             }
         }
         if lp_prof {
-            eprintln!("WJ_LP_PROF post_rows_us={}", lp_prof_total.elapsed().as_micros());
+            eprintln!(
+                "WJ_LP_PROF post_rows_us={}",
+                lp_prof_total.elapsed().as_micros()
+            );
         }
         if !separate
             && let Some(foot) = template.foot_section()

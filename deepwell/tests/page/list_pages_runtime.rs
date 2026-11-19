@@ -5500,7 +5500,10 @@ async fn stacked_identical_listpages_modules_return_identical_rows() {
         }),
     )
     .body;
-    let stacked_source = (0..4).map(|_| module.clone()).collect::<Vec<_>>().join("\n");
+    let stacked_source = (0..4)
+        .map(|_| module.clone())
+        .collect::<Vec<_>>()
+        .join("\n");
     let stacked = run_endpoint!(
         runner,
         wikidot_page_preview,
@@ -5517,6 +5520,10 @@ async fn stacked_identical_listpages_modules_return_identical_rows() {
     let stacked_rows = rows(&stacked);
     assert_eq!(stacked_rows.len(), 16, "stacked module rows:\n{stacked}");
     for chunk in stacked_rows.chunks(4) {
-        assert_eq!(chunk, single_rows.as_slice(), "each stacked module must return the same rows as a standalone module:\n{stacked}");
+        assert_eq!(
+            chunk,
+            single_rows.as_slice(),
+            "each stacked module must return the same rows as a standalone module:\n{stacked}"
+        );
     }
 }
