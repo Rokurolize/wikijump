@@ -33,9 +33,10 @@ use super::list_pages::template::ListPagesTemplatePlan;
 use super::list_pages::{
     ListPagesAuthorCacheKey, ListPagesBatchDisplayRequirements, ListPagesBlockRenderArgs,
     ListPagesBlockRenderResult, ListPagesContentCache, ListPagesExpansionBudget,
-    ListPagesPageContext, ListPagesPagerRoute, ListPagesRenderedBlock,
-    ResolvedListPagesAuthors, is_list_pages_visible_tag, parse_list_pages_arguments,
-    register_generated_list_pages_html, seal_protected_list_pages_delayed_output,
+    ListPagesListingCache, ListPagesPageContext, ListPagesPagerRoute,
+    ListPagesRenderedBlock, ResolvedListPagesAuthors, is_list_pages_visible_tag,
+    parse_list_pages_arguments, register_generated_list_pages_html,
+    seal_protected_list_pages_delayed_output,
 };
 use super::literal_regions::LiteralRegionIndex;
 use super::render_budget::SharedRenderCostBudget;
@@ -207,6 +208,7 @@ impl RenderService {
         let mut cursor = 0;
         let mut permission_cache = BTreeMap::new();
         let mut content_cache = ListPagesContentCache::default();
+        let mut listing_cache = ListPagesListingCache::default();
         let mut expansion_budget = ListPagesExpansionBudget::new();
         let mut score_filter_cache = PageQueryScoreFilterCache::default();
         let mut author_resolution_cache =
@@ -300,6 +302,7 @@ impl RenderService {
                     prefetched_pages: Some(pages),
                     prefetched_displays: prefetched_displays.as_ref(),
                     content_cache: &mut content_cache,
+                    listing_cache: &mut listing_cache,
                     expansion_budget: &mut expansion_budget,
                     permission_cache: &mut permission_cache,
                     score_filter_cache: &mut score_filter_cache,

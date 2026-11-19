@@ -1,11 +1,12 @@
+use super::super::ListPagesBatchDisplays;
 use super::super::pagination::{ListPagesPagerArgs, ListPagesPagerRoute};
 use super::super::rendering_support::{
     ListPagesBlockRenderArgs, ListPagesSelectedContentArgs,
 };
 use super::{
-    BTreeMap, BTreeSet, CategoriesSelector, ColumnTrait, ComparisonOperation,
-    CompatHtmlFragments, Cow, DEFAULT_LISTPAGES_PER_PAGE, DateSelector,
-    DateTimeResolution, EntityTrait, Error, ErrorType,
+    BTreeMap, BTreeSet, CachedListPagesRows, CategoriesSelector, ColumnTrait,
+    ComparisonOperation, CompatHtmlFragments, Cow, DEFAULT_LISTPAGES_PER_PAGE,
+    DateSelector, DateTimeResolution, EntityTrait, Error, ErrorType,
     FinishOrDeferListPagesDelayedOutputParams, FoundPageFields, FoundPages,
     IncludeExpansion, IncludedCategories, ListPagesArguments, ListPagesBlockRenderResult,
     ListPagesContentGeometry, ListPagesOutputShape, ListPagesPageContext,
@@ -65,6 +66,7 @@ impl RenderService {
             mut prefetched_pages,
             prefetched_displays,
             content_cache,
+            listing_cache,
             expansion_budget,
             permission_cache,
             score_filter_cache,
@@ -78,6 +80,8 @@ impl RenderService {
         } = page_context;
         let current_page_id = current_page_identity.unwrap_or(0);
         let initial_remaining_include_expansions = include_budget.remaining;
+        let lp_prof = std::env::var_os("WJ_LP_PROFILE").is_some();
+        let lp_prof_total = std::time::Instant::now();
         let mut arguments = arguments;
         let feed_info = list_pages_feed_info_html(page_info, &arguments);
         if arguments.rss_only
@@ -443,6 +447,26 @@ impl RenderService {
             },
             fields: query_fields,
         };
+        let query_target =
+            if wants_content && !render_page_query_uses_single_scan(order.clone()) {
+                list_pages_content_query_target(
+                    query_limit,
+                    per_page,
+                    expansion_budget.remaining_content_rows(),
+                    offset,
+                    exclude_current_page,
+                    true,
+                )
+            } else {
+                query_limit
+            };
+        let listing_cache_key = format!("{viewer_user_id:?}|{query_target}|{query:?}");
+        if lp_prof {
+            eprintln!(
+                "WJ_LP_PROF pre_query_us={}",
+                lp_prof_total.elapsed().as_micros()
+            );
+        }
         let mut list_pages_metadata = None;
         let missing_current_page_for_selector = current_page_identity.is_none()
             && (current_page_only
@@ -540,20 +564,13 @@ impl RenderService {
             FoundPages { pages: Vec::new() }
         } else if let Some(pages) = prefetched_pages.take() {
             pages
+        } else if let Some(cached) = listing_cache.rows(&listing_cache_key) {
+            list_pages_metadata = Some((
+                cached.metadata.clone(),
+                cached.view_permission_filtering_applied,
+            ));
+            cached.pages
         } else {
-            let query_target =
-                if wants_content && !render_page_query_uses_single_scan(order.clone()) {
-                    list_pages_content_query_target(
-                        query_limit,
-                        per_page,
-                        expansion_budget.remaining_content_rows(),
-                        offset,
-                        exclude_current_page,
-                        true,
-                    )
-                } else {
-                    query_limit
-                };
             let found = RenderRuntime::for_viewer(ctx, viewer_user_id)
                 .find_viewable_list_pages_rows(
                     query,
@@ -571,8 +588,23 @@ impl RenderService {
                 found.metadata.clone(),
                 found.view_permission_filtering_applied,
             ));
+            listing_cache.cache_rows(
+                listing_cache_key.clone(),
+                CachedListPagesRows {
+                    pages: found.pages.clone(),
+                    metadata: found.metadata.clone(),
+                    view_permission_filtering_applied: found
+                        .view_permission_filtering_applied,
+                },
+            );
             found.pages
         };
+        if lp_prof {
+            eprintln!(
+                "WJ_LP_PROF through_query_us={}",
+                lp_prof_total.elapsed().as_micros()
+            );
+        }
         if let Some((metadata, view_permission_filtering_applied)) = list_pages_metadata {
             let diagnostics =
                 list_pages_render_diagnostics(ListPagesRenderDiagnosticsInput {
@@ -731,20 +763,26 @@ impl RenderService {
             .iter()
             .filter_map(|page| page.page_category_id)
             .collect::<BTreeSet<_>>();
-        let categories = if category_ids.is_empty() {
-            Vec::new()
-        } else {
-            PageCategory::find()
-                .filter(page_category::Column::CategoryId.is_in(category_ids))
-                .all(ctx.transaction())
-                .await
-                .or_raise(|| {
-                    Error::new(
-                        "failed to load ListPages page categories",
-                        ErrorType::Render,
-                    )
-                })?
-        };
+        let category_cache_key = format!("{listing_cache_key}|{category_ids:?}");
+        let categories =
+            if let Some(categories) = listing_cache.categories(&category_cache_key) {
+                categories
+            } else if category_ids.is_empty() {
+                Vec::new()
+            } else {
+                let categories = PageCategory::find()
+                    .filter(page_category::Column::CategoryId.is_in(category_ids))
+                    .all(ctx.transaction())
+                    .await
+                    .or_raise(|| {
+                        Error::new(
+                            "failed to load ListPages page categories",
+                            ErrorType::Render,
+                        )
+                    })?;
+                listing_cache.cache_categories(category_cache_key, categories.clone());
+                categories
+            };
         let category_slugs = categories
             .iter()
             .map(|category| (category.category_id, category.slug.clone()))
@@ -754,17 +792,24 @@ impl RenderService {
         } else {
             BTreeMap::new()
         };
-        let loaded_user_displays =
-            if (wants_created_by || wants_updated_by) && prefetched_displays.is_none() {
-                Some(Self::load_wikidot_user_displays(ctx, &pages).await?)
-            } else {
-                None
-            };
-        let empty_user_displays = BTreeMap::new();
+        let use_listing_display_cache = prefetched_displays.is_none();
+        let mut cached_batch = if use_listing_display_cache {
+            listing_cache
+                .displays(&listing_cache_key)
+                .unwrap_or_default()
+        } else {
+            ListPagesBatchDisplays::default()
+        };
+        if use_listing_display_cache
+            && (wants_created_by || wants_updated_by)
+            && cached_batch.user_displays.is_empty()
+        {
+            cached_batch.user_displays =
+                Self::load_wikidot_user_displays(ctx, &pages).await?;
+        }
         let user_displays = prefetched_displays
-            .map(|displays| &displays.user_displays)
-            .or(loaded_user_displays.as_ref())
-            .unwrap_or(&empty_user_displays);
+            .map(|displays| displays.user_displays.clone())
+            .unwrap_or_else(|| cached_batch.user_displays.clone());
         if let ResolvedListPagesAuthors::NotAny {
             user_ids,
             wikidot_snapshot_names,
@@ -795,17 +840,16 @@ impl RenderService {
             || wants_commented_at
             || wants_rating_votes
             || wants_parent_metadata;
-        let loaded_snapshot_displays =
-            if wants_snapshot_displays && prefetched_displays.is_none() {
-                Some(Self::load_list_pages_snapshot_displays(ctx, &pages).await?)
-            } else {
-                None
-            };
-        let empty_snapshot_displays = BTreeMap::new();
+        if use_listing_display_cache
+            && wants_snapshot_displays
+            && cached_batch.snapshot_displays.is_empty()
+        {
+            cached_batch.snapshot_displays =
+                Self::load_list_pages_snapshot_displays(ctx, &pages).await?;
+        }
         let snapshot_displays = prefetched_displays
-            .map(|displays| &displays.snapshot_displays)
-            .or(loaded_snapshot_displays.as_ref())
-            .unwrap_or(&empty_snapshot_displays);
+            .map(|displays| displays.snapshot_displays.clone())
+            .unwrap_or_else(|| cached_batch.snapshot_displays.clone());
         let wants_rating = template.uses_rating();
         let wants_rating_percent = template.uses_rating_percent();
         let wants_runtime_displays = wants_comments
@@ -814,20 +858,22 @@ impl RenderService {
             || wants_rating
             || wants_rating_percent
             || wants_rating_votes;
-        let loaded_runtime_displays =
-            if wants_runtime_displays && prefetched_displays.is_none() {
-                Some(Self::load_list_pages_runtime_displays(ctx, &pages).await?)
-            } else {
-                None
-            };
-        let empty_runtime_displays = BTreeMap::new();
+        if use_listing_display_cache
+            && wants_runtime_displays
+            && cached_batch.runtime_displays.is_empty()
+        {
+            cached_batch.runtime_displays =
+                Self::load_list_pages_runtime_displays(ctx, &pages).await?;
+        }
+        if use_listing_display_cache {
+            listing_cache.cache_displays(listing_cache_key.clone(), cached_batch.clone());
+        }
         let runtime_displays = prefetched_displays
-            .map(|displays| &displays.runtime_displays)
-            .or(loaded_runtime_displays.as_ref())
-            .unwrap_or(&empty_runtime_displays);
+            .map(|displays| displays.runtime_displays.clone())
+            .unwrap_or_else(|| cached_batch.runtime_displays.clone());
         if wants_created_by_unix
             && pages.iter().any(|page| {
-                list_pages_created_by_slug(page, user_displays, snapshot_displays)
+                list_pages_created_by_slug(page, &user_displays, &snapshot_displays)
                     .is_none()
             })
         {
@@ -1008,6 +1054,12 @@ impl RenderService {
         } else {
             None
         };
+        if lp_prof {
+            eprintln!(
+                "WJ_LP_PROF pre_rows_us={}",
+                lp_prof_total.elapsed().as_micros()
+            );
+        }
         for (index, page) in pages.iter().enumerate() {
             let cache_key = (page.site_id, page.page_id);
             let page_wikitext = if wants_content || wants_data_form_values {
@@ -1241,9 +1293,9 @@ impl RenderService {
                     .map(String::as_str)
                     .unwrap_or_default(),
                 tag_target: tag_target.as_deref(),
-                user_displays,
-                snapshot_displays,
-                runtime_displays,
+                user_displays: &user_displays,
+                snapshot_displays: &snapshot_displays,
+                runtime_displays: &runtime_displays,
                 page_wikitext: page_wikitext.as_deref(),
                 content_geometry,
                 page_block_content: Some(&page_block_content),
@@ -1274,7 +1326,7 @@ impl RenderService {
                 }),
                 page_parent_fullname: list_pages_parent_fullname(
                     page,
-                    snapshot_displays,
+                    &snapshot_displays,
                     &relational_parent_displays,
                 ),
                 page_parent_display: relational_parent_displays.get(&page.page_id),
@@ -1405,6 +1457,12 @@ impl RenderService {
             } else {
                 output.push('\n');
             }
+        }
+        if lp_prof {
+            eprintln!(
+                "WJ_LP_PROF post_rows_us={}",
+                lp_prof_total.elapsed().as_micros()
+            );
         }
         if !separate
             && let Some(foot) = template.foot_section()
@@ -1539,6 +1597,12 @@ impl RenderService {
             );
             format!("{marker}{output}")
         };
+        if lp_prof {
+            eprintln!(
+                "WJ_LP_PROF block_total_us={}",
+                lp_prof_total.elapsed().as_micros()
+            );
+        }
         Ok(ListPagesBlockRenderResult::Expanded(Box::new(
             ListPagesRenderedBlock {
                 expansion: IncludeExpansion {

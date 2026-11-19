@@ -141,7 +141,7 @@ pub(in crate::services::render) struct ExactNameListPagesBatchKey {
     pub(in crate::services::render) excluded_categories: Vec<String>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub(in crate::services::render) struct ListPagesBatchDisplays {
     pub(in crate::services::render) user_displays: BTreeMap<i64, WikidotUserDisplay>,
     pub(in crate::services::render) snapshot_displays:

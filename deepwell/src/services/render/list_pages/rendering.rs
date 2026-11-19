@@ -44,9 +44,9 @@ use super::current_data_form::{
 };
 use super::parents::{load_list_pages_child_counts, load_list_pages_parent_displays};
 use super::rendering_support::{
-    ListPagesBlock, ListPagesBlockPlan, list_pages_module_in_block_position,
-    list_pages_raw_footnote_prefix_end, list_pages_template_has_block_section,
-    list_pages_template_starts_with_inline_anchor,
+    CachedListPagesRows, ListPagesBlock, ListPagesBlockPlan,
+    list_pages_module_in_block_position, list_pages_raw_footnote_prefix_end,
+    list_pages_template_has_block_section, list_pages_template_starts_with_inline_anchor,
 };
 use super::scanner::{
     CountPagesCloseReachabilityIndex, has_count_pages_module_opening_candidate,
@@ -60,11 +60,11 @@ use super::{
     CountPagesRequiredTagTotal, FinishOrDeferListPagesDelayedOutputParams,
     ListPagesArgumentError, ListPagesArguments, ListPagesBatchDisplayRequirements,
     ListPagesBlockRenderResult, ListPagesContentCache, ListPagesContentGeometry,
-    ListPagesExpansion, ListPagesExpansionOptions, ListPagesPageContext,
-    ListPagesRenderedBlock, ListPagesSubstitutionContext, MAX_NESTED_LISTPAGES_DEPTH,
-    MAX_NESTED_LISTPAGES_MODULES_PER_PASS, PendingDelayedListPagesOutput,
-    PrepareDelayedListPagesRowParams, ResolvedListPagesAuthors,
-    SealPendingListPagesDelayedOutputsParams,
+    ListPagesExpansion, ListPagesExpansionOptions, ListPagesListingCache,
+    ListPagesPageContext, ListPagesRenderedBlock, ListPagesSubstitutionContext,
+    MAX_NESTED_LISTPAGES_DEPTH, MAX_NESTED_LISTPAGES_MODULES_PER_PASS,
+    PendingDelayedListPagesOutput, PrepareDelayedListPagesRowParams,
+    ResolvedListPagesAuthors, SealPendingListPagesDelayedOutputsParams,
     advance_literal_cursor_and_check_count_pages_capture_containment,
     append_list_pages_delayed_occurrences, append_list_pages_runtime_text_ranges,
     count_pages_exact_count_render_diagnostics,

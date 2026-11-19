@@ -7,8 +7,8 @@ use super::{
     Cow, FoundPageFields, FoundPages, IncludeExpansion, ListPagesArgumentError,
     ListPagesBatchDisplayRequirements, ListPagesBlock, ListPagesBlockPlan,
     ListPagesBlockRenderResult, ListPagesContentCache, ListPagesExpansion,
-    ListPagesExpansionOptions, ListPagesPageContext, ListPagesTemplatePlan,
-    MAX_LISTPAGES_RENDER_LIMIT, MAX_NESTED_LISTPAGES_DEPTH,
+    ListPagesExpansionOptions, ListPagesListingCache, ListPagesPageContext,
+    ListPagesTemplatePlan, MAX_LISTPAGES_RENDER_LIMIT, MAX_NESTED_LISTPAGES_DEPTH,
     MAX_NESTED_LISTPAGES_MODULES_PER_PASS, OrderProperty, PageQueryScoreFilterCache,
     PendingDelayedListPagesOutput, Reference, RenderService, Result,
     SealPendingListPagesDelayedOutputsParams, collect_list_pages_css_yield_openers,
@@ -536,6 +536,7 @@ impl RenderService {
         let mut pending_delayed_outputs = Vec::<PendingDelayedListPagesOutput>::new();
         let mut url_offset_content_bytes = 0usize;
         let mut content_cache = ListPagesContentCache::default();
+        let mut listing_cache = ListPagesListingCache::default();
         let mut permission_cache = BTreeMap::new();
         let mut score_filter_cache = PageQueryScoreFilterCache::default();
         let mut author_resolution_cache = BTreeMap::new();
@@ -660,6 +661,7 @@ impl RenderService {
                             prefetched_pages,
                             prefetched_displays: prefetched_displays.as_ref(),
                             content_cache: &mut content_cache,
+                            listing_cache: &mut listing_cache,
                             expansion_budget,
                             permission_cache: &mut permission_cache,
                             score_filter_cache: &mut score_filter_cache,
@@ -797,6 +799,7 @@ impl RenderService {
                             prefetched_pages: None,
                             prefetched_displays: None,
                             content_cache: &mut content_cache,
+                            listing_cache: &mut listing_cache,
                             expansion_budget,
                             permission_cache: &mut permission_cache,
                             score_filter_cache: &mut score_filter_cache,
