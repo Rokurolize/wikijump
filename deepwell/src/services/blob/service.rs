@@ -332,6 +332,7 @@ impl BlobService {
 
         debug!("Download uploaded blob from S3 uploads to get metadata");
         let response = bucket.get_object(s3_path).await.or_raise(make_error)?;
+        let declared_mime = response_content_type(&response);
 
         let data: Vec<u8> = match response.status_code() {
             200 => response.into(),
@@ -388,7 +389,9 @@ impl BlobService {
         //
         // In either case, we delete the blob at the temporary upload location.
 
-        let result = Self::direct_upload(ctx, data).await.or_raise(make_error)?;
+        let result = Self::direct_upload(ctx, data, declared_mime)
+            .await
+            .or_raise(make_error)?;
 
         bucket.delete_object(&s3_path).await.or_raise(make_error)?;
 
@@ -436,6 +439,7 @@ impl BlobService {
     pub(crate) async fn direct_upload(
         ctx: &ServiceContext<'_>,
         data: Vec<u8>,
+        declared_mime: Option<String>,
     ) -> Result<FinalizeBlobUploadOutput> {
         let bucket = ctx.s3_files_bucket();
 
@@ -449,6 +453,12 @@ impl BlobService {
         // Convert size to correct integer type
         let size = data.len().try_into_i64().or_raise(make_error)?;
 
+        let analyzed_mime = ctx
+            .mime()
+            .get_mime_type(data.clone())
+            .await
+            .or_raise(make_error)?;
+
         match Self::head(ctx, &hex_hash).await.or_raise(make_error)? {
             Some(result) => {
                 debug!("Blob with hash {hex_hash} already exists");
@@ -456,13 +466,7 @@ impl BlobService {
                 // TODO: Should we ever update the mime type?
                 //       In case of changing file formats, etc.
 
-                // Content-Type header should be returned
-                let mime = result.content_type.ok_or_raise(|| {
-                    Error::new(
-                        format!("blob with hash {} already exists in S3", hex_hash),
-                        ErrorType::BlobBackend,
-                    )
-                })?;
+                let mime = select_mime(declared_mime, result.content_type, analyzed_mime);
 
                 Ok(FinalizeBlobUploadOutput {
                     s3_hash,
@@ -474,12 +478,7 @@ impl BlobService {
             None => {
                 debug!("Blob with hash {hex_hash} to be created");
 
-                // Determine MIME type for the new blob
-                let mime = ctx
-                    .mime()
-                    .get_mime_type(data.clone())
-                    .await
-                    .or_raise(make_error)?;
+                let mime = select_mime(declared_mime, None, analyzed_mime);
 
                 // Upload S3 object
                 let response = bucket
@@ -1192,6 +1191,26 @@ impl BlobService {
             _ => bail!(s3_error(&response, "hard-deleting S3 blob")),
         }
     }
+}
+
+fn response_content_type(response: &ResponseData) -> Option<String> {
+    response
+        .headers()
+        .into_iter()
+        .find(|(name, _)| name.eq_ignore_ascii_case("content-type"))
+        .map(|(_, value)| value.trim().to_owned())
+        .filter(|value| !value.is_empty())
+}
+
+fn select_mime(
+    declared: Option<String>,
+    stored: Option<String>,
+    analyzed: String,
+) -> String {
+    declared
+        .filter(|mime| !mime.trim().is_empty())
+        .or_else(|| stored.filter(|mime| !mime.trim().is_empty()))
+        .unwrap_or(analyzed)
 }
 
 /// Helper method to parse out an S3 error response and print the message (if any).

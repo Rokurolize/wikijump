@@ -112,7 +112,7 @@ impl FileService {
                 // for instance in the seeder
                 //
                 // This should always be None when called from API users
-                BlobService::direct_upload(ctx, data)
+                BlobService::direct_upload(ctx, data, None)
                     .await
                     .or_raise(make_error)?
             }
@@ -235,7 +235,7 @@ impl FileService {
                     Maybe::Set(data) => {
                         // Special path, used only internally to directly upload a blob
                         // See FileService::create()
-                        BlobService::direct_upload(ctx, data)
+                        BlobService::direct_upload(ctx, data, None)
                             .await
                             .or_raise(make_error)?
                     }
