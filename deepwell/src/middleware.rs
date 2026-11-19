@@ -52,6 +52,30 @@ pub struct RequestContextService<S> {
     service: S,
 }
 
+fn decode_page_header(value: &str) -> Option<String> {
+    let bytes = value.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+
+    while index < bytes.len() {
+        match bytes[index] {
+            b'%' => {
+                let digits = bytes.get(index + 1..index + 3)?;
+                let high = (digits[0] as char).to_digit(16)?;
+                let low = (digits[1] as char).to_digit(16)?;
+                decoded.push((high * 16 + low) as u8);
+                index += 3;
+            }
+            byte => {
+                decoded.push(byte);
+                index += 1;
+            }
+        }
+    }
+
+    String::from_utf8(decoded).ok()
+}
+
 impl<S, Body> Service<Request<Body>> for RequestContextService<S>
 where
     S: Service<Request<Body>>,
@@ -79,11 +103,12 @@ where
             .headers()
             .get("X-Deepwell-Page")
             .and_then(|v| v.to_str().ok())
+            .and_then(decode_page_header)
             .map(|s| {
                 // TODO: Figure out if this can cause a bug: if the slug is a number, it will be parsed as an ID instead of a slug.
                 s.parse::<i64>()
                     .map(Reference::Id)
-                    .unwrap_or_else(|_| Reference::Slug(Cow::Owned(s.to_owned())))
+                    .unwrap_or_else(|_| Reference::Slug(Cow::Owned(s)))
             });
 
         let context = RequestContextHeaders {
@@ -110,20 +135,14 @@ mod tests {
             decode_page_header("%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82").as_deref(),
             Some("привет")
         );
-        assert_eq!(
-            decode_page_header("%F0%9F%98%80").as_deref(),
-            Some("😀")
-        );
+        assert_eq!(decode_page_header("%F0%9F%98%80").as_deref(), Some("😀"));
     }
 
     #[test]
     fn page_header_keeps_plain_references() {
         assert_eq!(decode_page_header("home").as_deref(), Some("home"));
         assert_eq!(decode_page_header("123").as_deref(), Some("123"));
-        assert_eq!(
-            decode_page_header("r5a1-%C3%BC").as_deref(),
-            Some("r5a1-ü")
-        );
+        assert_eq!(decode_page_header("r5a1-%C3%BC").as_deref(), Some("r5a1-ü"));
     }
 
     #[test]
