@@ -95,3 +95,40 @@ where
         self.service.call(request)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn page_header_decodes_non_latin_1_slugs() {
+        assert_eq!(
+            decode_page_header("r5a1-%E3%83%86%E3%82%B9%E3%83%88").as_deref(),
+            Some("r5a1-テスト")
+        );
+        assert_eq!(
+            decode_page_header("%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82").as_deref(),
+            Some("привет")
+        );
+        assert_eq!(
+            decode_page_header("%F0%9F%98%80").as_deref(),
+            Some("😀")
+        );
+    }
+
+    #[test]
+    fn page_header_keeps_plain_references() {
+        assert_eq!(decode_page_header("home").as_deref(), Some("home"));
+        assert_eq!(decode_page_header("123").as_deref(), Some("123"));
+        assert_eq!(
+            decode_page_header("r5a1-%C3%BC").as_deref(),
+            Some("r5a1-ü")
+        );
+    }
+
+    #[test]
+    fn page_header_rejects_malformed_escapes() {
+        assert!(decode_page_header("%GG").is_none());
+        assert!(decode_page_header("abc%").is_none());
+    }
+}
