@@ -2562,45 +2562,47 @@ async fn page_query_parent_negative_antijoin_matches_exact_set() {
     let all_tags = [Cow::Borrowed(TAG)];
     let parents = [Reference::Slug(Cow::Borrowed(ROOT))];
     macro_rules! page_query {
-        ($page_parent:expr) => { PageQuery {
-        current_page_id: 0,
-        current_site_id: site_id,
-        queried_site_id: Some(site_id),
-        page_type: PageTypeSelector::All,
-        categories: CategoriesSelector {
-            included_categories: IncludedCategories::All,
-            excluded_categories: &[],
-        },
-        tags: TagCondition {
-            any_present: &[],
-            all_present: &all_tags,
-            none_present: &[],
-            untagged: false,
-        },
-        page_parent: $page_parent,
-        contains_outgoing_links: &[],
-        creation_date: DateSelector::FromPresent {
-            start: OffsetDateTime::UNIX_EPOCH,
-        },
-        update_date: DateSelector::FromPresent {
-            start: OffsetDateTime::UNIX_EPOCH,
-        },
-        author: AuthorSelector::All,
-        score: &[],
-        votes: &[],
-        offset: 0,
-        name: None,
-        slug: None,
-        slugs: &[],
-        data_form_fields: &[],
-        order: None,
-        candidate_limit: None,
-        pagination: PaginationSelector::default(),
-        fields: FoundPageFields {
-            slug: true,
-            ..Default::default()
-            },
-        } }
+        ($page_parent:expr) => {
+            PageQuery {
+                current_page_id: 0,
+                current_site_id: site_id,
+                queried_site_id: Some(site_id),
+                page_type: PageTypeSelector::All,
+                categories: CategoriesSelector {
+                    included_categories: IncludedCategories::All,
+                    excluded_categories: &[],
+                },
+                tags: TagCondition {
+                    any_present: &[],
+                    all_present: &all_tags,
+                    none_present: &[],
+                    untagged: false,
+                },
+                page_parent: $page_parent,
+                contains_outgoing_links: &[],
+                creation_date: DateSelector::FromPresent {
+                    start: OffsetDateTime::UNIX_EPOCH,
+                },
+                update_date: DateSelector::FromPresent {
+                    start: OffsetDateTime::UNIX_EPOCH,
+                },
+                author: AuthorSelector::All,
+                score: &[],
+                votes: &[],
+                offset: 0,
+                name: None,
+                slug: None,
+                slugs: &[],
+                data_form_fields: &[],
+                order: None,
+                candidate_limit: None,
+                pagination: PaginationSelector::default(),
+                fields: FoundPageFields {
+                    slug: true,
+                    ..Default::default()
+                },
+            }
+        };
     }
 
     macro_rules! matched_slugs {
