@@ -153,6 +153,35 @@ impl DomainService {
         }
     }
 
+    pub async fn remove_all_custom(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+    ) -> Result<u64> {
+        info!("Removing all custom domains for site ID {site_id}");
+
+        let make_error = || {
+            Error::new(
+                format!("failed to remove custom domains for site ID {site_id}"),
+                ErrorType::CustomDomain,
+            )
+        };
+
+        let txn = ctx.transaction();
+        let DeleteResult { rows_affected, .. } = SiteDomain::delete_many()
+            .filter(site_domain::Column::SiteId.eq(site_id))
+            .exec(txn)
+            .await
+            .or_raise(make_error)?;
+
+        if rows_affected > 0 {
+            Self::invalidate_site_domain_cache(ctx, site_id)
+                .await
+                .or_raise(make_error)?;
+        }
+
+        Ok(rows_affected)
+    }
+
     pub async fn site_from_custom_domain_optional(
         ctx: &ServiceContext<'_>,
         domain: &str,

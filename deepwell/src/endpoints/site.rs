@@ -24,7 +24,7 @@ use crate::services::MutationAuthorization;
 use crate::services::SettingsService;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::site::{
-    BootstrapNewSite, CreateSite, CreateSiteOutput, GetSite, GetSiteIcon,
+    BootstrapNewSite, CreateSite, CreateSiteOutput, DeleteSite, GetSite, GetSiteIcon,
     GetSiteIconOutput, GetSiteOutput, SetSiteIcon, SetSiteIconOutput, UpdateSite,
 };
 use crate::types::{Action, AliasType, Permission, Reference, Resource};
@@ -152,6 +152,42 @@ pub async fn site_update(
     )
     .await
     .or_raise(|| Error::new("failed to update site data", ErrorType::Site))
+}
+
+pub async fn site_delete(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<SiteModel> {
+    let DeleteSite { site, ip_address } = parse!(params, Site);
+    let site_id = match site {
+        Reference::Id(site_id) => site_id,
+        Reference::Slug(_) => {
+            return Err(Error::new(
+                "site_delete requires a numeric site ID",
+                ErrorType::BadRequest,
+            )
+            .into());
+        }
+    };
+
+    let actor_user_id = MutationAuthorization::require_permission(
+        ctx,
+        site_id,
+        None,
+        Permission {
+            resource_type: Resource::Site,
+            resource_category: None,
+            action: Action::Edit,
+        },
+        "delete a site",
+    )
+    .await?;
+
+    info!("Deleting site ID {site_id} as user ID {actor_user_id}");
+
+    SiteService::delete(ctx, Reference::Id(site_id), actor_user_id, ip_address)
+        .await
+        .or_raise(|| Error::new("failed to delete site data", ErrorType::Site))
 }
 
 pub async fn site_icon_set(

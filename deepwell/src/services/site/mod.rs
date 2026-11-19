@@ -26,7 +26,7 @@ mod structs;
 pub use self::bootstrap::{BootstrapNewSite, STANDARD_TEMPLATE_PAGES};
 pub use self::service::SiteService;
 pub use self::structs::{
-    CreateSite, CreateSiteOutput, EducationalUpgrade, GetSite, GetSiteIcon,
+    CreateSite, CreateSiteOutput, DeleteSite, EducationalUpgrade, GetSite, GetSiteIcon,
     GetSiteIconOutput, GetSiteOutput, SetSiteIcon, SetSiteIconOutput, UpdateSite,
     UpdateSiteBody,
 };
