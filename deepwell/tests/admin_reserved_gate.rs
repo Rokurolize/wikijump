@@ -207,12 +207,12 @@ async fn insert_file(
 async fn member_cannot_move_or_read_files_on_admin_page() {
     let mut runner = TestRunner::setup().await;
     let site_id = site_id(&runner).await;
-    let admin_page_id = get_or_create_admin_page(&mut runner, site_id).await;
+    let admin_page_id = get_or_create_admin_page(&runner, site_id).await;
     let member = create_member(&runner, site_id, "files").await;
     let normal_page_id =
-        create_page(&mut runner, site_id, "gate-file-normal", "Gate File Normal").await;
+        create_page(&runner, site_id, "gate-file-normal", "Gate File Normal").await;
     let second_page_id =
-        create_page(&mut runner, site_id, "gate-file-second", "Gate File Second").await;
+        create_page(&runner, site_id, "gate-file-second", "Gate File Second").await;
 
     // The member owns this file on a normal page.
     let (file_id, revision_id) =
@@ -347,12 +347,12 @@ async fn member_cannot_move_or_read_files_on_admin_page() {
 async fn member_cannot_parent_meta_lock_or_draft_admin_page() {
     let mut runner = TestRunner::setup().await;
     let site_id = site_id(&runner).await;
-    let admin_page_id = get_or_create_admin_page(&mut runner, site_id).await;
+    let admin_page_id = get_or_create_admin_page(&runner, site_id).await;
     let member = create_member(&runner, site_id, "surfaces").await;
     let parent_page_id =
-        create_page(&mut runner, site_id, "gate-parent", "Gate Parent").await;
+        create_page(&runner, site_id, "gate-parent", "Gate Parent").await;
     let child_page_id =
-        create_page(&mut runner, site_id, "gate-child", "Gate Child").await;
+        create_page(&runner, site_id, "gate-child", "Gate Child").await;
 
     // (#930) The member may not set parents on `_admin`.
     set_request_context(
@@ -573,11 +573,11 @@ async fn draft_list_and_site_changes_hide_admin_and_foreign_rows() {
     let mut runner = TestRunner::setup().await;
     let site_id = site_id(&runner).await;
     // Creating `_admin` also records its creation in the site changes.
-    let admin_page_id = get_or_create_admin_page(&mut runner, site_id).await;
+    let admin_page_id = get_or_create_admin_page(&runner, site_id).await;
     let member_a = create_member(&runner, site_id, "list-a").await;
     let member_b = create_member(&runner, site_id, "list-b").await;
     let normal_page_id =
-        create_page(&mut runner, site_id, "gate-list-normal", "Gate List Normal").await;
+        create_page(&runner, site_id, "gate-list-normal", "Gate List Normal").await;
 
     // Drafts: one by the admin on `_admin`, one by each member on the
     // normal page.
@@ -717,9 +717,9 @@ async fn feed(
 async fn list_pages_feed_gates_pages_and_honors_windowing() {
     let mut runner = TestRunner::setup().await;
     let site_id = site_id(&runner).await;
-    let _admin_page_id = get_or_create_admin_page(&mut runner, site_id).await;
+    let _admin_page_id = get_or_create_admin_page(&runner, site_id).await;
     let member = create_member(&runner, site_id, "feed").await;
-    create_page(&mut runner, site_id, "admin:gate-manage", "Gate Manage").await;
+    create_page(&runner, site_id, "admin:gate-manage", "Gate Manage").await;
     for (slug, title) in [
         ("feedwin:alpha", "FeedWin Alpha"),
         ("feedwin:bravo", "FeedWin Bravo"),
@@ -727,7 +727,7 @@ async fn list_pages_feed_gates_pages_and_honors_windowing() {
         ("feedwin:delta", "FeedWin Delta"),
         ("feedwin:echo", "FeedWin Echo"),
     ] {
-        create_page(&mut runner, site_id, slug, title).await;
+        create_page(&runner, site_id, slug, title).await;
     }
 
     // (#1455) Anonymous and plain-member feed requests must not
@@ -912,10 +912,10 @@ async fn list_pages_feed_gates_pages_and_honors_windowing() {
 async fn member_cannot_vote_on_admin_page() {
     let mut runner = TestRunner::setup().await;
     let site_id = site_id(&runner).await;
-    let admin_page_id = get_or_create_admin_page(&mut runner, site_id).await;
+    let admin_page_id = get_or_create_admin_page(&runner, site_id).await;
     let member = create_member(&runner, site_id, "vote").await;
     let normal_page_id =
-        create_page(&mut runner, site_id, "gate-vote-normal", "Gate Vote Normal").await;
+        create_page(&runner, site_id, "gate-vote-normal", "Gate Vote Normal").await;
 
     // Enable registered-user rating on the `_default` category, which
     // holds both the normal page and `_admin`.
@@ -1039,10 +1039,10 @@ async fn member_cannot_vote_on_admin_page() {
 async fn member_cannot_edit_rollback_or_restore_files_on_admin_page() {
     let mut runner = TestRunner::setup().await;
     let site_id = site_id(&runner).await;
-    let admin_page_id = get_or_create_admin_page(&mut runner, site_id).await;
+    let admin_page_id = get_or_create_admin_page(&runner, site_id).await;
     let member = create_member(&runner, site_id, "file-history").await;
     let normal_page_id = create_page(
-        &mut runner,
+        &runner,
         site_id,
         "gate-history-normal",
         "Gate History Normal",
@@ -1327,7 +1327,7 @@ async fn site_changes_feed_hides_admin_revisions_from_non_admins() {
     let site_id = site_id(&runner).await;
     // Creating `_admin` produces page revisions, which are exactly
     // what the site-changes feed publishes (finding #1692).
-    let _admin_page_id = get_or_create_admin_page(&mut runner, site_id).await;
+    let _admin_page_id = get_or_create_admin_page(&runner, site_id).await;
     let member = create_member(&runner, site_id, "changes-feed").await;
 
     for (viewer, label) in [(None, "anonymous"), (Some(member), "member")] {
@@ -1392,10 +1392,10 @@ async fn prefinalized_empty_blob(
 async fn member_cannot_create_files_on_admin_page() {
     let mut runner = TestRunner::setup().await;
     let site_id = site_id(&runner).await;
-    let admin_page_id = get_or_create_admin_page(&mut runner, site_id).await;
+    let admin_page_id = get_or_create_admin_page(&runner, site_id).await;
     let member = create_member(&runner, site_id, "file-create").await;
     let normal_page_id = create_page(
-        &mut runner,
+        &runner,
         site_id,
         "gate-create-normal",
         "Gate Create Normal",

@@ -118,10 +118,10 @@ impl<'a, 'ctx> ForumPageVisibility<'a, 'ctx> {
         // matching direct page view. Verified live (finding #1241): anonymous
         // callers could get-or-create a discussion thread on `_admin` and read
         // its metadata through this path while direct view returned 401.
-        if let Some(page_slug) = page_slug {
-            if PermissionService::slug_targets_reserved_admin_page(page_slug) {
-                return self.admin_is_accessible(site_id).await;
-            }
+        if let Some(page_slug) = page_slug
+            && PermissionService::slug_targets_reserved_admin_page(page_slug)
+        {
+            return self.admin_is_accessible(site_id).await;
         }
         // DIVERGENCE (forum post #3869): apart from the `_admin` branch above,
         // this render path treats a site-viewable thread with page_id = None as
