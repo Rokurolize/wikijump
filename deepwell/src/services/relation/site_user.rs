@@ -223,3 +223,33 @@ async fn get_relation(
         )),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::relation;
+    use sea_orm::{ColumnTrait, DatabaseBackend, EntityTrait, QueryFilter, QueryTrait};
+
+    fn site_user_condition(condition: Condition) -> Condition {
+        Condition::all()
+            .add(relation::Column::RelationType.eq(RelationType::SiteUser))
+            .add(condition)
+            .add(relation::Column::OverwrittenAt.is_null())
+            .add(relation::Column::DeletedAt.is_null())
+    }
+
+    #[test]
+    fn site_user_lookup_matches_legacy_and_namespaced_database_values() {
+        let statement = relation::Entity::find()
+            .filter(site_user_condition(
+                Condition::all().add(relation::Column::DestId.eq(42)),
+            ))
+            .build(DatabaseBackend::Postgres);
+
+        let sql = statement.to_string();
+        assert!(
+            sql.contains(r#""relation"."relation_type" IN ('user', 'site-user')"#),
+            "{sql}"
+        );
+    }
+}
