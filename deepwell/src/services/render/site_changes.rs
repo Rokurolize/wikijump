@@ -26,6 +26,7 @@ use super::service::{
     format_wikidot_list_pages_date,
 };
 use super::wikidot_user_resources::WIKIDOT_USER_INFO_URL;
+use super::{ViewablePageRef, view_decisions_for_scanned_pages};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::{CategoryService, ServiceContext};
@@ -219,6 +220,12 @@ async fn load_site_changes_snapshot(
     }))
 }
 
+fn site_changes_batch_size(remaining_rows: usize, raw_offset: usize) -> usize {
+    SITE_CHANGES_QUERY_BATCH
+        .min(remaining_rows)
+        .min(SITE_CHANGES_MAX_RAW_SCAN.saturating_sub(raw_offset))
+}
+
 async fn load_site_changes_list(
     ctx: &ServiceContext<'_>,
     site_id: i64,
@@ -254,12 +261,12 @@ async fn load_site_changes_list(
     let txn = ctx.transaction();
     let mut raw_offset = 0usize;
     let mut revisions = Vec::with_capacity(visible_row_target);
-    let mut permission_cache = BTreeMap::<i64, bool>::new();
+    let mut category_permissions = BTreeMap::<(i64, Option<i64>), bool>::new();
     let mut naturally_exhausted = false;
 
     while revisions.len() < visible_row_target && raw_offset < SITE_CHANGES_MAX_RAW_SCAN {
-        let batch_size = SITE_CHANGES_QUERY_BATCH
-            .min(SITE_CHANGES_MAX_RAW_SCAN.saturating_sub(raw_offset));
+        let batch_size =
+            site_changes_batch_size(visible_row_target - revisions.len(), raw_offset);
         let rows =
             SiteChangesRevisionRow::find_by_statement(Statement::from_sql_and_values(
                 txn.get_database_backend(),
@@ -332,48 +339,33 @@ async fn load_site_changes_list(
         let row_count = rows.len();
         raw_offset = raw_offset.saturating_add(row_count);
 
-        for row in rows {
-            if row.hidden.iter().any(|field| {
-                ["comments", "title", "alt_title", "slug"].contains(&field.as_str())
-            }) {
-                continue;
-            }
-            let can_view = if let Some(can_view) = permission_cache.get(&row.page_id) {
-                *can_view
-            } else {
-                // The reserved `_admin` page is gated on Site/Edit, not
-                // on the page view grant its category carries.
-                let can_view =
-                    if PermissionService::slug_targets_reserved_admin_page(&row.slug) {
-                        PermissionService::check_user_can_access_admin(
-                            ctx,
-                            viewer_user_id,
-                            site_id,
-                        )
-                        .await
-                        .or_raise(make_error)?
-                    } else {
-                        PermissionService::check_user_can(
-                            ctx,
-                            &CheckPermissionContext {
-                                user_id: viewer_user_id,
-                                site_id,
-                                page_reference: Some(Reference::Id(row.page_id)),
-                            },
-                            Permission {
-                                resource_type: Resource::Page,
-                                resource_category: Some(Reference::Id(
-                                    row.page_category_id,
-                                )),
-                                action: Action::View,
-                            },
-                        )
-                        .await
-                        .or_raise(make_error)?
-                    };
-                permission_cache.insert(row.page_id, can_view);
-                can_view
-            };
+        let candidates = rows
+            .into_iter()
+            .filter(|row| {
+                !row.hidden.iter().any(|field| {
+                    ["comments", "title", "alt_title", "slug"].contains(&field.as_str())
+                })
+            })
+            .collect::<Vec<_>>();
+        let page_refs = candidates
+            .iter()
+            .map(|row| ViewablePageRef {
+                page_id: row.page_id,
+                site_id,
+                page_category_id: Some(row.page_category_id),
+                slug: Some(row.slug.clone()),
+            })
+            .collect::<Vec<_>>();
+        let viewable = view_decisions_for_scanned_pages(
+            ctx,
+            viewer_user_id,
+            &page_refs,
+            &mut category_permissions,
+        )
+        .await
+        .or_raise(make_error)?;
+
+        for (row, can_view) in candidates.into_iter().zip(viewable) {
             if can_view {
                 revisions.push(row);
                 if revisions.len() == visible_row_target {
@@ -718,6 +710,7 @@ mod tests {
     use super::{
         SITE_CHANGES_MODULE_REGEX, SiteChangesList, SiteChangesRevisionRow,
         WikidotSiteChangesFilter, push_site_changes_flags, push_site_changes_pager,
+        site_changes_batch_size,
     };
     use time::OffsetDateTime;
 
@@ -850,6 +843,16 @@ mod tests {
                 "</div>",
             )
         );
+    }
+
+    #[test]
+    fn site_changes_fetch_batch_is_bounded_by_the_remaining_window() {
+        assert_eq!(site_changes_batch_size(4, 0), 4);
+        assert_eq!(site_changes_batch_size(61, 0), 61);
+        assert_eq!(site_changes_batch_size(601, 0), 250);
+        assert_eq!(site_changes_batch_size(351, 250), 250);
+        assert_eq!(site_changes_batch_size(101, 500), 101);
+        assert_eq!(site_changes_batch_size(100, 5_000), 0);
     }
 
     #[test]
