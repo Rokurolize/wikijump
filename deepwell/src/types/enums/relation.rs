@@ -57,6 +57,27 @@ pub enum RelationType {
     UserBotOwner,
 }
 
+impl RelationType {
+    pub fn database_values(self) -> &'static [&'static str] {
+        match self {
+            RelationType::SiteUser => &["user", "site-user"],
+            RelationType::SiteBan => &["ban", "site-ban"],
+            RelationType::SiteApplication => &["application", "site-application"],
+            RelationType::SiteMember => &["member", "site-member"],
+            RelationType::PageStar => &["star", "page-star"],
+            RelationType::PageWatch => &["watch", "page-watch"],
+            RelationType::PageAttribution => &["page-attribution"],
+            RelationType::UserFollow => &["follow", "user-follow"],
+            RelationType::UserContact => &["contact", "user-contact"],
+            RelationType::UserContactRequest => {
+                &["contact-request", "user-contact-request"]
+            }
+            RelationType::UserBlock => &["block", "user-block"],
+            RelationType::UserBotOwner => &["bot-owner", "user-bot-owner"],
+        }
+    }
+}
+
 #[derive(
     EnumIter,
     Serialize,

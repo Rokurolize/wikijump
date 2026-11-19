@@ -203,13 +203,7 @@ async fn get_relation(
 
     let txn = ctx.transaction();
     let model = Relation::find()
-        .filter(
-            Condition::all()
-                .add(relation::Column::RelationType.eq(RelationType::SiteUser))
-                .add(condition)
-                .add(relation::Column::OverwrittenAt.is_null())
-                .add(relation::Column::DeletedAt.is_null()),
-        )
+        .filter(site_user_relation_condition(condition))
         .order_by_asc(relation::Column::CreatedAt)
         .one(txn)
         .await
@@ -224,24 +218,24 @@ async fn get_relation(
     }
 }
 
+fn site_user_relation_condition(condition: Condition) -> Condition {
+    Condition::all()
+        .add(relation_type_condition(RelationType::SiteUser))
+        .add(condition)
+        .add(relation::Column::OverwrittenAt.is_null())
+        .add(relation::Column::DeletedAt.is_null())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::models::relation;
     use sea_orm::{ColumnTrait, DatabaseBackend, EntityTrait, QueryFilter, QueryTrait};
 
-    fn site_user_condition(condition: Condition) -> Condition {
-        Condition::all()
-            .add(relation::Column::RelationType.eq(RelationType::SiteUser))
-            .add(condition)
-            .add(relation::Column::OverwrittenAt.is_null())
-            .add(relation::Column::DeletedAt.is_null())
-    }
-
     #[test]
     fn site_user_lookup_matches_legacy_and_namespaced_database_values() {
         let statement = relation::Entity::find()
-            .filter(site_user_condition(
+            .filter(site_user_relation_condition(
                 Condition::all().add(relation::Column::DestId.eq(42)),
             ))
             .build(DatabaseBackend::Postgres);
