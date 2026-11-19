@@ -42,8 +42,11 @@ use super::{
 };
 use crate::error::prelude::Result;
 use crate::hash::TextHash;
+use crate::models::page_category;
 use crate::services::ServiceContext;
-use crate::services::page_query::{FoundPages, PageQueryScoreFilterCache};
+use crate::services::page_query::{
+    FoundPages, PageQueryResultMetadata, PageQueryScoreFilterCache,
+};
 use crate::services::render::UrlArguments;
 use crate::services::render::service::IncludeExpansionOptions;
 use ftml::data::PageInfo;
@@ -564,6 +567,7 @@ pub(in crate::services::render) struct ListPagesBlockRenderArgs<'a, 'ctx, 'info,
     pub(in crate::services::render) prefetched_displays:
         Option<&'a ListPagesBatchDisplays>,
     pub(in crate::services::render) content_cache: &'a mut ListPagesContentCache,
+    pub(in crate::services::render) listing_cache: &'a mut ListPagesListingCache,
     pub(in crate::services::render) expansion_budget: &'a mut ListPagesExpansionBudget,
     pub(in crate::services::render) permission_cache:
         &'a mut BTreeMap<(i64, Option<i64>), bool>,
@@ -719,6 +723,73 @@ pub(in crate::services::render) struct ListPagesContentCache {
         BTreeMap<(i64, i64), Option<String>>,
     pub(in crate::services::render) wikitext_scalar_count:
         BTreeMap<(i64, i64), Option<usize>>,
+}
+
+#[derive(Debug, Clone)]
+pub(in crate::services::render) struct CachedListPagesRows {
+    pub(in crate::services::render) pages: FoundPages,
+    pub(in crate::services::render) metadata: PageQueryResultMetadata,
+    pub(in crate::services::render) view_permission_filtering_applied: bool,
+}
+
+#[derive(Debug, Default)]
+struct CachedListPagesListing {
+    rows: Option<CachedListPagesRows>,
+    categories: Option<Vec<page_category::Model>>,
+    displays: Option<ListPagesBatchDisplays>,
+}
+
+#[derive(Debug, Default)]
+pub(in crate::services::render) struct ListPagesListingCache {
+    entries: BTreeMap<String, CachedListPagesListing>,
+}
+
+impl ListPagesListingCache {
+    pub(in crate::services::render) fn rows(
+        &self,
+        key: &str,
+    ) -> Option<CachedListPagesRows> {
+        self.entries.get(key).and_then(|entry| entry.rows.clone())
+    }
+
+    pub(in crate::services::render) fn cache_rows(
+        &mut self,
+        key: String,
+        rows: CachedListPagesRows,
+    ) {
+        self.entries.entry(key).or_default().rows = Some(rows);
+    }
+
+    pub(in crate::services::render) fn categories(
+        &self,
+        key: &str,
+    ) -> Option<Vec<page_category::Model>> {
+        self.entries
+            .get(key)
+            .and_then(|entry| entry.categories.clone())
+    }
+
+    pub(in crate::services::render) fn cache_categories(
+        &mut self,
+        key: String,
+        categories: Vec<page_category::Model>,
+    ) {
+        self.entries.entry(key).or_default().categories = Some(categories);
+    }
+
+    pub(in crate::services::render) fn displays(&self, key: &str) -> Option<ListPagesBatchDisplays> {
+        self.entries
+            .get(key)
+            .and_then(|entry| entry.displays.clone())
+    }
+
+    pub(in crate::services::render) fn cache_displays(
+        &mut self,
+        key: String,
+        displays: ListPagesBatchDisplays,
+    ) {
+        self.entries.entry(key).or_default().displays = Some(displays);
+    }
 }
 
 #[derive(Clone, Debug)]

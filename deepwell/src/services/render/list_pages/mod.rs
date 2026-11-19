@@ -128,7 +128,7 @@ pub(super) use self::rendering_support::{
     CountPagesBlockRenderResult, CountPagesExpansionOptions, CountPagesRequiredTagSource,
     CountPagesRequiredTagTotal, ListPagesBlockRenderArgs, ListPagesBlockRenderResult,
     ListPagesContentCache, ListPagesExpansion, ListPagesExpansionArgs,
-    ListPagesExpansionOptions, ListPagesPageContext, ListPagesRenderedBlock,
+    ListPagesExpansionOptions, ListPagesListingCache, ListPagesPageContext, ListPagesRenderedBlock,
     expand_list_pages_generated_includes, list_pages_body_starts_with_preparsed_block,
     list_pages_feed_only_render_result, list_pages_html_encoded_head_owns_script_tail,
     prepare_list_pages_rendered_block, preserve_list_pages_module_matches,

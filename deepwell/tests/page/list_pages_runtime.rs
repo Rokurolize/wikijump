@@ -5458,3 +5458,65 @@ async fn css_module_consumes_list_pages_with_a_whitespace_only_body() {
         }
     }
 }
+
+#[tokio::test]
+async fn stacked_identical_listpages_modules_return_identical_rows() {
+    const PREFIX: &str = "fixture-listpages-stacked-target";
+    const TAG: &str = "verification-listpages-stacked";
+
+    fn rows(html: &str) -> Vec<String> {
+        html.match_indices("LPROW")
+            .map(|(index, _)| {
+                let rest = &html[index + "LPROW".len()..];
+                let end = rest.find('<').unwrap_or(rest.len());
+                rest[..end].trim().to_owned()
+            })
+            .collect()
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for index in 1..=4 {
+        let slug = format!("{PREFIX}-{index}");
+        let title = format!("Stacked target {index}");
+        let revision =
+            create_listpages_test_page(&mut runner, site_id, &slug, &title, "row").await;
+        set_listpages_test_tags(&mut runner, site_id, &slug, revision, &[TAG]).await;
+    }
+
+    let module = format!(
+        "[[module ListPages tags=\"+{TAG}\" limit=\"5\" order=\"name\"]]LPROW %%title%%|%%slug%%[[/module]]"
+    );
+    let single = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "stacked-listpages-single",
+            "wikitext": module.clone(),
+        }),
+    )
+    .body;
+    let stacked_source = (0..4).map(|_| module.clone()).collect::<Vec<_>>().join("\n");
+    let stacked = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "stacked-listpages-stacked",
+            "wikitext": stacked_source,
+        }),
+    )
+    .body;
+
+    let single_rows = rows(&single);
+    assert_eq!(single_rows.len(), 4, "single module rows:\n{single}");
+    let stacked_rows = rows(&stacked);
+    assert_eq!(stacked_rows.len(), 16, "stacked module rows:\n{stacked}");
+    for chunk in stacked_rows.chunks(4) {
+        assert_eq!(chunk, single_rows.as_slice(), "each stacked module must return the same rows as a standalone module:\n{stacked}");
+    }
+}
