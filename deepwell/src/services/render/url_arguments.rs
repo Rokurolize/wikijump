@@ -93,6 +93,12 @@ static SEARCH_ALL_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?im)^[\t ]*\[\[module\s+searchall\b(?:[^\]"]+|"[^"]*")*\]\][\t ]*$"#)
         .unwrap()
 });
+static SEARCH_SITE_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r#"(?im)^[\t ]*\[\[module\s+search\b(?:[^\]\r\n"]+|"[^"\r\n]*")*\]\][\t ]*$"#,
+    )
+    .unwrap()
+});
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UrlArgumentPair {
@@ -205,6 +211,7 @@ pub fn wikitext_reads_url_arguments(wikitext: &str) -> bool {
         || NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX.is_match(wikitext)
         || LIST_PAGES_MODULE_REGEX.is_match(wikitext)
         || SEARCH_ALL_MODULE_REGEX.is_match(wikitext)
+        || SEARCH_SITE_MODULE_REGEX.is_match(wikitext)
         || FORUM_RECENT_POSTS_MODULE_REGEX.is_match(wikitext)
         || MEMBERSHIP_EMAIL_INVITATION_MODULE_REGEX.is_match(wikitext)
 }
@@ -236,6 +243,7 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
         || FORUM_MINI_MODULE_REGEX.is_match(wikitext)
         || FORUM_MODULE_REGEX.is_match(wikitext)
         || SEARCH_ALL_MODULE_REGEX.is_match(wikitext)
+        || SEARCH_SITE_MODULE_REGEX.is_match(wikitext)
         || wikitext_requires_site_utility_runtime_render(wikitext)
         || ORPHANED_PAGES_MODULE_REGEX.is_match(wikitext)
         || WANTED_PAGES_MODULE_REGEX.is_match(wikitext)

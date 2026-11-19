@@ -10,7 +10,18 @@ use super::module_arguments::{WikidotModuleArgumentValueKind, wikidot_module_arg
 use super::service::escape_list_pages_html_text;
 use super::url_arguments::UrlArguments;
 
-const SEARCH_UNAVAILABLE_HTML: &str = r#"<div class="error-block">Search is temporarily unavailable, we are working to bring it online!</div>"#;
+const SEARCH_SITE_FORM_HTML: &str = r#"<div class="search-box">
+<div class="query-area">
+<form action="dummy" id="search-form">
+<div>
+<input class="text" type="text" size="30" name="query" id="search-form-input" value="" aria-label="WIKIJUMP_SEARCH_SITE_QUERY_LABEL"/>
+<input class="button" type="submit" value="Search"/>
+</div>
+</form>
+</div>
+<div class="search-results">
+</div>
+</div>"#;
 const FEED_MISSING_SOURCE_HTML: &str =
     r#"<div class="error-block">No feed source specified ("src" element missing).</div>"#;
 const SEARCH_ALL_UNAVAILABLE_HTML: &str =
@@ -151,11 +162,15 @@ fn escape_feed_json_html_text(value: &str) -> String {
 }
 
 fn search_all_has_query(url: UrlArguments<'_>) -> bool {
+    site_search_query(url).is_some()
+}
+
+pub(super) fn site_search_query(url: UrlArguments<'_>) -> Option<&str> {
     url.path_arguments
         .iter()
         .rfind(|argument| argument.name == "q")
         .and_then(|argument| argument.value.as_deref())
-        .is_some_and(|query| !query.is_empty())
+        .filter(|query| !query.is_empty())
 }
 
 fn expand_search_all_modules(
@@ -201,6 +216,7 @@ pub(super) fn expand_search_feed_modules(
     url: UrlArguments<'_>,
     accessible_query_name: &str,
     page_preview: bool,
+    search_html: Option<String>,
     compat_html: &mut CompatHtmlFragments,
 ) -> String {
     wikitext = expand_search_all_modules(
@@ -230,7 +246,10 @@ pub(super) fn expand_search_feed_modules(
             .as_str();
         let head = captures.name("head").map_or("", |head| head.as_str());
         let rendered = if name.eq_ignore_ascii_case("Search") {
-            SEARCH_UNAVAILABLE_HTML.to_owned()
+            search_html.clone().unwrap_or_else(|| {
+                SEARCH_SITE_FORM_HTML
+                    .replace("WIKIJUMP_SEARCH_SITE_QUERY_LABEL", accessible_query_name)
+            })
         } else {
             render_feed_module(head, page_preview)
         };
@@ -262,6 +281,7 @@ mod tests {
             UrlArguments::default(),
             "Search all Wikis",
             page_preview,
+            None,
             &mut compat_html,
         );
         compat_html.restore(&expanded)
@@ -271,9 +291,37 @@ mod tests {
         expand_with_mode(source, true)
     }
 
+    fn expand_with_results(source: &str, results_html: &str) -> String {
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let mut compat_html = CompatHtmlFragments::new(source);
+        let expanded = expand_search_feed_modules(
+            source.to_owned(),
+            &settings,
+            UrlArguments::default(),
+            "Search all Wikis",
+            true,
+            Some(results_html.to_owned()),
+            &mut compat_html,
+        );
+        compat_html.restore(&expanded)
+    }
+
     #[test]
-    fn renders_the_live_search_unavailable_contract() {
-        let expected = r#"<div class="error-block">Search is temporarily unavailable, we are working to bring it online!</div>"#;
+    fn renders_the_site_search_form_without_a_query() {
+        let expected = concat!(
+            "<div class=\"search-box\">\n",
+            "<div class=\"query-area\">\n",
+            "<form action=\"dummy\" id=\"search-form\">\n",
+            "<div>\n",
+            "<input class=\"text\" type=\"text\" size=\"30\" name=\"query\" id=\"search-form-input\" value=\"\" aria-label=\"Search all Wikis\"/>\n",
+            "<input class=\"button\" type=\"submit\" value=\"Search\"/>\n",
+            "</div>\n",
+            "</form>\n",
+            "</div>\n",
+            "<div class=\"search-results\">\n",
+            "</div>\n",
+            "</div>",
+        );
         for source in [
             "[[module Search]]",
             "[[module Search mini=\"true\"]]",
@@ -284,6 +332,15 @@ mod tests {
         ] {
             assert_eq!(expand(source), expected, "{source}");
         }
+    }
+
+    #[test]
+    fn renders_real_search_results_when_a_query_is_present() {
+        let results =
+            r#"<div class="search-results"><div class="search-result">found</div></div>"#;
+        let rendered = expand_with_results("[[module Search]]", results);
+        assert_eq!(rendered, results);
+        assert!(!rendered.contains("error-block"), "{rendered}");
     }
 
     #[test]
