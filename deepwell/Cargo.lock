@@ -1351,7 +1351,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1521,8 +1521,8 @@ dependencies = [
 
 [[package]]
 name = "ftml"
-version = "1.42.1+roku.20261117.19"
-source = "git+https://github.com/Rokurolize/ftml?rev=056a38858d5fabd714c47a810b2a732bbecc05c6#056a38858d5fabd714c47a810b2a732bbecc05c6"
+version = "1.42.1+roku.20261119.20"
+source = "git+https://github.com/Rokurolize/ftml?rev=61dcd7edcc99053a823eb6c5ab0a7613ed6e6790#61dcd7edcc99053a823eb6c5ab0a7613ed6e6790"
 dependencies = [
  "built",
  "cfg-if",
@@ -3575,7 +3575,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -5629,7 +5629,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
