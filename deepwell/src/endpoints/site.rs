@@ -23,11 +23,12 @@ use crate::models::site::Model as SiteModel;
 use crate::services::MutationAuthorization;
 use crate::services::SettingsService;
 use crate::services::SiteBackupService;
+use crate::services::SiteCloneService;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::site::{
-    BootstrapNewSite, CreateSite, CreateSiteOutput, DeleteSite, GetSite, GetSiteBackup,
-    GetSiteIcon, GetSiteIconOutput, GetSiteOutput, SetSiteIcon, SetSiteIconOutput,
-    UpdateSite,
+    BootstrapNewSite, CloneSite, CloneSiteOutput, CreateSite, CreateSiteOutput,
+    DeleteSite, GetSite, GetSiteBackup, GetSiteIcon, GetSiteIconOutput, GetSiteOutput,
+    SetSiteIcon, SetSiteIconOutput, UpdateSite,
 };
 use crate::types::{Action, AliasType, Bytes, Permission, Reference, Resource};
 
@@ -56,6 +57,38 @@ pub async fn site_create(
     .or_raise(|| Error::new("failed to bootstrap site", ErrorType::Site))?;
 
     Ok(output)
+}
+
+pub async fn site_clone(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<CloneSiteOutput> {
+    let input: CloneSite = parse!(params, Site);
+    let source = SiteService::get(ctx, input.source.clone())
+        .await
+        .or_raise(|| Error::new("failed to get source site", ErrorType::Site))?;
+
+    let actor_user_id = MutationAuthorization::require_permission(
+        ctx,
+        source.site_id,
+        None,
+        Permission {
+            resource_type: Resource::Site,
+            resource_category: None,
+            action: Action::Edit,
+        },
+        "clone a site",
+    )
+    .await?;
+
+    info!(
+        "Cloning site ID {} as user ID {actor_user_id}",
+        source.site_id
+    );
+
+    SiteCloneService::clone(ctx, input, source.site_id, actor_user_id)
+        .await
+        .or_raise(|| Error::new("failed to clone site", ErrorType::Site))
 }
 
 pub async fn site_get(
