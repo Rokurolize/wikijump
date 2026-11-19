@@ -107,6 +107,17 @@ impl AliasService {
             ));
         }
 
+        // Site aliases become hostnames in the generated Caddyfile, so
+        // they must be DNS-safe just like site slugs. This is only
+        // enforced for direct creation: the deferred path exists so a
+        // site can be renamed away from a legacy slug, preserving that
+        // slug as an alias, and must not be blocked by its old value.
+        if alias_type == AliasType::Site
+            && conflict_verification == AliasConflictVerification::Immediate
+        {
+            SiteService::validate_site_slug(&slug).or_raise(make_error)?;
+        }
+
         if !bypass_filter {
             Self::run_filter(ctx, alias_type, &slug, target_id, ip_address)
                 .await

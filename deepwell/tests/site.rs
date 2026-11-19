@@ -2840,3 +2840,113 @@ async fn site_update_rename_to_reserved_platform_slugs_are_rejected() {
         .expect("renamed site should exist");
     assert_eq!(renamed.site.slug, renamed_slug);
 }
+
+#[tokio::test]
+async fn site_slugs_must_be_dns_safe() {
+    let runner = TestRunner::setup().await;
+    let n = next_n();
+
+    // Slugs that survive wikidot normalization with a non-DNS-safe
+    // shape must be rejected at creation. The colon case is the exact
+    // shape that once poisoned the generated Caddyfile: a colon is a
+    // page category separator, but in a hostname Caddy parses it as a
+    // port separator.
+    for slug in [
+        String::from("pentest:x"),
+        String::from("_hidden"),
+        String::from("サイト"),
+        "a".repeat(64),
+    ] {
+        let error = SiteService::create(
+            runner.context(),
+            CreateSite {
+                slug: slug.clone(),
+                name: format!("Invalid slug {slug}"),
+                tagline: String::new(),
+                description: String::new(),
+                default_page: None,
+                layout: None,
+                license: License::CcBySa40,
+                locale: String::from("en"),
+                ip_address: common::IP_ADDRESS,
+                access_policy: Default::default(),
+            },
+            None,
+        )
+        .await
+        .expect_err("non-DNS-safe slug must not be creatable");
+        assert_contains_error!(error, ErrorType::BadRequest);
+    }
+
+    // A slug that normalizes to nothing keeps its dedicated error.
+    let error = SiteService::create(
+        runner.context(),
+        CreateSite {
+            slug: String::from("!!!"),
+            name: String::from("Empty slug"),
+            tagline: String::new(),
+            description: String::new(),
+            default_page: None,
+            layout: None,
+            license: License::CcBySa40,
+            locale: String::from("en"),
+            ip_address: common::IP_ADDRESS,
+            access_policy: Default::default(),
+        },
+        None,
+    )
+    .await
+    .expect_err("empty slug must not be creatable");
+    assert_contains_error!(error, ErrorType::SiteSlugEmpty);
+
+    // Renaming an existing site onto a non-DNS-safe slug is rejected.
+    let site_id = create_site(&runner, n).await;
+    let error = SiteService::update(
+        runner.context(),
+        Reference::Id(site_id),
+        UpdateSiteBody {
+            slug: Maybe::Set(String::from("pentest:x")),
+            ..Default::default()
+        },
+        None,
+        SYSTEM_USER_ID,
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect_err("site rename must enforce DNS-safe slugs");
+    assert_contains_error!(error, ErrorType::BadRequest);
+
+    // Site aliases feed the same routing, so they are held to the
+    // same rule on direct creation.
+    let error = AliasService::create(
+        runner.context(),
+        CreateAlias {
+            slug: String::from("サイト"),
+            alias_type: AliasType::Site,
+            target_id: site_id,
+            created_by: SYSTEM_USER_ID,
+            bypass_filter: false,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect_err("site alias must enforce DNS-safe slugs");
+    assert_contains_error!(error, ErrorType::BadRequest);
+
+    // A DNS-safe alias is still accepted.
+    let alias_slug = format!("valid-alias-{n}");
+    let created = AliasService::create(
+        runner.context(),
+        CreateAlias {
+            slug: alias_slug.clone(),
+            alias_type: AliasType::Site,
+            target_id: site_id,
+            created_by: SYSTEM_USER_ID,
+            bypass_filter: false,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("DNS-safe site alias should be creatable");
+    assert_eq!(created.slug, alias_slug);
+}

@@ -26,14 +26,14 @@ use crate::models::site::{self, Entity as Site};
 use crate::models::site_domain::{self, Entity as SiteDomain};
 use crate::services::ServiceContext;
 use crate::services::domain::DEFAULT_SITE_SLUG;
-use crate::services::{AliasService, DomainService};
+use crate::services::{AliasService, DomainService, SiteService};
 use crate::types::AliasType;
 use askama::Template;
 use sea_orm::{ColumnTrait, QueryFilter, QueryOrder};
 use sea_orm::{EntityTrait, QuerySelect};
 use sha2::{Digest, Sha256};
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Template, Debug)]
 #[template(path = "caddyfile.j2", escape = "none")]
@@ -201,8 +201,14 @@ impl CaddyService {
             framerail_host,
             wws_host,
         }: &CaddyfileOptions<'_>,
-        SiteData { sites, domains }: &SiteData,
+        site_data: &SiteData,
     ) -> Result<String> {
+        // Drop any entries that cannot be safely emitted (invalid
+        // slugs or domains, duplicate addresses) so that a single bad
+        // row cannot invalidate the entire generated Caddyfile.
+        let site_data = sanitize_site_data(config, deploy_host.is_some(), site_data);
+        let SiteData { sites, domains } = &site_data;
+
         info!("Generating Caddyfile for {} sites", sites.len());
 
         let template = CaddyTemplate {
@@ -232,6 +238,184 @@ impl CaddyService {
         })?;
 
         Ok(caddyfile)
+    }
+}
+
+/// Checks whether a value can be emitted as a hostname in a
+/// Caddyfile site address.
+///
+/// This mirrors the shape of a DNS hostname: ASCII labels of letters,
+/// digits, and hyphens (no leading or trailing hyphen per label),
+/// separated by dots, at most 253 bytes in total. Anything else
+/// (ports, whitespace, wildcards, underscores, non-ASCII text) would
+/// make Caddy reject or misparse the generated configuration.
+fn is_valid_caddy_hostname(domain: &str) -> bool {
+    if domain.is_empty() || domain.len() > 253 || !domain.is_ascii() {
+        return false;
+    }
+
+    domain.split('.').all(|label| {
+        !label.is_empty()
+            && label.len() <= 63
+            && !label.starts_with('-')
+            && !label.ends_with('-')
+            && label
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
+    })
+}
+
+/// Filters site data down to the entries that can be safely emitted
+/// into a Caddyfile, logging an error for each entry that is dropped.
+///
+/// The site, alias, and custom domain tables are user-influenced, and
+/// a single malformed row (an empty or non-DNS-safe slug, an invalid
+/// custom domain, an alias duplicating another site's address) would
+/// otherwise produce an invalid Caddyfile and prevent Caddy from
+/// starting at all. Dropping only the offending entries keeps every
+/// healthy site reachable. For well-formed data this is the identity:
+/// the generated Caddyfile is unchanged.
+fn sanitize_site_data(
+    config: &Config,
+    deploy_host: bool,
+    SiteData { sites, domains }: &SiteData,
+) -> SiteData {
+    // Every site-block address claimed so far, lowercased. Both the
+    // bare address and its `www.` variant are tracked whenever a
+    // block would emit them, since Caddy rejects a configuration
+    // where the same address appears in two blocks
+    // ("ambiguous site definition").
+    let mut seen: HashSet<String> = HashSet::new();
+
+    if deploy_host {
+        seen.insert(format!("deploy{}", config.main_domain));
+        seen.insert(format!("deploy{}", config.files_domain));
+    }
+
+    // First pass: validate site slugs and claim canonical domains.
+    // Canonical domains outrank custom domains and aliases, so they
+    // are all claimed before anything else is considered.
+    let mut kept: Vec<(i64, String, Option<String>)> = Vec::with_capacity(sites.len());
+
+    for (site_id, slug, preferred_domain) in sites {
+        if !SiteService::is_valid_site_slug(slug) {
+            error!(
+                "Skipping site ID {site_id} in Caddyfile: slug '{slug}' is not DNS-safe",
+            );
+            continue;
+        }
+
+        let canonical_domain = get_canonical_domain(config, slug);
+        if !seen.insert(canonical_domain.to_ascii_lowercase()) {
+            error!(
+                "Skipping site ID {site_id} in Caddyfile: canonical domain '{canonical_domain}' is already claimed by another entry",
+            );
+            continue;
+        }
+        seen.insert(format!("www.{canonical_domain}").to_ascii_lowercase());
+
+        kept.push((*site_id, slug.clone(), preferred_domain.clone()));
+    }
+
+    // Remaining passes, in the same order the template emits entries
+    // for each site: custom domains first, then aliases.
+    let mut kept_domains: HashMap<i64, SiteDomainData> =
+        HashMap::with_capacity(kept.len());
+
+    for (site_id, _slug, preferred_domain) in &mut kept {
+        let data = domains.get(site_id);
+        let custom_domain_rows: &[CustomDomainData] =
+            data.map_or(&[], |data| &data.custom_domains);
+        let alias_rows: &[String] = data.map_or(&[], |data| &data.aliases);
+
+        let mut custom_domains: Vec<CustomDomainData> =
+            Vec::with_capacity(custom_domain_rows.len());
+
+        for custom in custom_domain_rows {
+            let domain = &custom.domain;
+
+            if !is_valid_caddy_hostname(domain) {
+                error!(
+                    "Skipping custom domain '{domain}' for site ID {site_id} in Caddyfile: not a valid hostname",
+                );
+                continue;
+            }
+
+            if seen.contains(&domain.to_ascii_lowercase()) {
+                error!(
+                    "Skipping custom domain '{domain}' for site ID {site_id} in Caddyfile: address is already claimed by another entry",
+                );
+                continue;
+            }
+
+            if custom.www_redirect
+                && seen.contains(&format!("www.{domain}").to_ascii_lowercase())
+            {
+                error!(
+                    "Skipping custom domain '{domain}' for site ID {site_id} in Caddyfile: its www address is already claimed by another entry",
+                );
+                continue;
+            }
+
+            seen.insert(domain.to_ascii_lowercase());
+            if custom.www_redirect {
+                seen.insert(format!("www.{domain}").to_ascii_lowercase());
+            }
+            custom_domains.push(custom.clone());
+        }
+
+        // The preferred domain must point at a surviving custom
+        // domain; if it does not (the entry was dropped above, or the
+        // stored value is stale), fall back to the canonical domain
+        // rather than failing generation.
+        if let Some(preferred) = preferred_domain
+            && !custom_domains
+                .iter()
+                .any(|custom| &custom.domain == preferred)
+        {
+            error!(
+                "Site ID {site_id} in Caddyfile: preferred domain '{preferred}' has no surviving custom domain entry, falling back to the canonical domain",
+            );
+            *preferred_domain = None;
+        }
+
+        let mut aliases: Vec<String> = Vec::with_capacity(alias_rows.len());
+
+        for alias_slug in alias_rows {
+            if !SiteService::is_valid_site_slug(alias_slug) {
+                error!(
+                    "Skipping alias '{alias_slug}' for site ID {site_id} in Caddyfile: slug is not DNS-safe",
+                );
+                continue;
+            }
+
+            let domain = DomainService::get_canonical(config, alias_slug);
+            if seen.contains(&domain.to_ascii_lowercase())
+                || seen.contains(&format!("www.{domain}").to_ascii_lowercase())
+            {
+                error!(
+                    "Skipping alias '{alias_slug}' for site ID {site_id} in Caddyfile: address '{domain}' is already claimed by another entry",
+                );
+                continue;
+            }
+
+            seen.insert(domain.to_ascii_lowercase());
+            seen.insert(format!("www.{domain}").to_ascii_lowercase());
+            aliases.push(alias_slug.clone());
+        }
+
+        kept_domains.insert(
+            *site_id,
+            SiteDomainData {
+                aliases,
+                custom_domains,
+            },
+        );
+    }
+
+    SiteData {
+        sites: kept,
+        domains: kept_domains,
     }
 }
 

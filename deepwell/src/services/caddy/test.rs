@@ -678,3 +678,194 @@ fn caddyfile_version_tracks_routing_inputs() {
         "www_redirect change did not change the routing version",
     );
 }
+
+fn test_options() -> CaddyfileOptions<'static> {
+    CaddyfileOptions {
+        debug: false,
+        local: false,
+        http_port: None,
+        https_port: None,
+        wildcard_cert: None,
+        deploy_host: None,
+        framerail_host: cow!("framerail:3393"),
+        wws_host: cow!("wws:3466"),
+    }
+}
+
+fn generate(config: &Config, options: &CaddyfileOptions, data: &SiteData) -> String {
+    CaddyService::generate_with_data(config, options, data)
+        .expect("failed to generate Caddyfile")
+}
+
+#[test]
+fn poisoned_sites_are_skipped() {
+    let config = build_config("wikijump.test", "wjfiles.test");
+    let (basic, _) = build_site_data();
+
+    // The shapes that once broke Caddyfile generation in production:
+    // a slug with a colon (parsed as host:port), an empty slug, and a
+    // non-ASCII slug. None of them may alter the output for the
+    // healthy sites.
+    let mut poisoned = basic.clone();
+    for (site_id, slug) in [(3, "pentest:x"), (4, ""), (5, "サイト")] {
+        poisoned.sites.push((site_id, str!(slug), None));
+        poisoned.domains.insert(site_id, SiteDomainData::default());
+    }
+
+    let local_options = CaddyfileOptions {
+        local: true,
+        ..test_options()
+    };
+
+    for options in [test_options(), local_options] {
+        assert_eq!(
+            generate(&config, &options, &basic),
+            generate(&config, &options, &poisoned),
+            "poisoned sites must not alter the generated Caddyfile",
+        );
+    }
+}
+
+#[test]
+fn duplicate_aliases_are_skipped() {
+    let config = build_config("wikijump.test", "wjfiles.test");
+
+    let clean = SiteData {
+        sites: vec![(1, str!("tenant"), None), (2, str!("other"), None)],
+        domains: hashmap! {
+            1 => SiteDomainData::default(),
+            2 => SiteDomainData::default(),
+        },
+    };
+
+    // An alias equal to its own site's slug duplicates the canonical
+    // address ("ambiguous site definition"); another site claiming
+    // the same alias duplicates it as well. Both must be dropped.
+    let poisoned = SiteData {
+        sites: vec![(1, str!("tenant"), None), (2, str!("other"), None)],
+        domains: hashmap! {
+            1 => SiteDomainData {
+                aliases: vec![str!("tenant")],
+                custom_domains: vec![],
+            },
+            2 => SiteDomainData {
+                aliases: vec![str!("tenant"), str!("other")],
+                custom_domains: vec![],
+            },
+        },
+    };
+
+    assert_eq!(
+        generate(&config, &test_options(), &clean),
+        generate(&config, &test_options(), &poisoned),
+        "duplicate aliases must not alter the generated Caddyfile",
+    );
+}
+
+#[test]
+fn invalid_alias_slugs_are_skipped() {
+    let config = build_config("wikijump.test", "wjfiles.test");
+
+    let clean = SiteData {
+        sites: vec![(1, str!("tenant"), None)],
+        domains: hashmap! {
+            1 => SiteDomainData::default(),
+        },
+    };
+
+    let poisoned = SiteData {
+        sites: vec![(1, str!("tenant"), None)],
+        domains: hashmap! {
+            1 => SiteDomainData {
+                aliases: vec![str!("bad:slug"), str!("サイト")],
+                custom_domains: vec![],
+            },
+        },
+    };
+
+    assert_eq!(
+        generate(&config, &test_options(), &clean),
+        generate(&config, &test_options(), &poisoned),
+        "invalid aliases must not alter the generated Caddyfile",
+    );
+}
+
+#[test]
+fn invalid_and_duplicate_custom_domains_are_skipped() {
+    let config = build_config("wikijump.test", "wjfiles.test");
+
+    macro_rules! custom {
+        ($domain:expr) => {
+            CustomDomainData {
+                domain: str!($domain),
+                www_redirect: true,
+            }
+        };
+    }
+
+    // Site 1 keeps "dup.example.com" (first claim wins); site 2's
+    // copy of it, and both sites' invalid domains, are dropped.
+    let clean = SiteData {
+        sites: vec![(1, str!("first"), None), (2, str!("second"), None)],
+        domains: hashmap! {
+            1 => SiteDomainData {
+                aliases: vec![],
+                custom_domains: vec![custom!("dup.example.com")],
+            },
+            2 => SiteDomainData::default(),
+        },
+    };
+
+    let poisoned = SiteData {
+        sites: vec![(1, str!("first"), None), (2, str!("second"), None)],
+        domains: hashmap! {
+            1 => SiteDomainData {
+                aliases: vec![],
+                custom_domains: vec![
+                    custom!("bad!.example.com"),
+                    custom!("dup.example.com"),
+                ],
+            },
+            2 => SiteDomainData {
+                aliases: vec![],
+                custom_domains: vec![
+                    custom!("dup.example.com"),
+                    custom!("bad:port.example.com"),
+                ],
+            },
+        },
+    };
+
+    assert_eq!(
+        generate(&config, &test_options(), &clean),
+        generate(&config, &test_options(), &poisoned),
+        "invalid or duplicate custom domains must not alter the generated Caddyfile",
+    );
+}
+
+#[test]
+fn missing_preferred_domain_falls_back_to_canonical() {
+    let config = build_config("wikijump.test", "wjfiles.test");
+
+    // A preferred domain with no matching custom domain used to panic
+    // during generation. It must now fall back to the canonical
+    // domain, producing exactly the output for no preferred domain.
+    let with_missing = SiteData {
+        sites: vec![(1, str!("foo"), Some(str!("missing.example.com")))],
+        domains: hashmap! {
+            1 => SiteDomainData::default(),
+        },
+    };
+    let without = SiteData {
+        sites: vec![(1, str!("foo"), None)],
+        domains: hashmap! {
+            1 => SiteDomainData::default(),
+        },
+    };
+
+    assert_eq!(
+        generate(&config, &test_options(), &with_missing),
+        generate(&config, &test_options(), &without),
+        "missing preferred domain must fall back to the canonical domain",
+    );
+}
