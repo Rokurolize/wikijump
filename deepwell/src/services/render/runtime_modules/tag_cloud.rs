@@ -73,6 +73,29 @@ struct TagCloudTag {
     count: usize,
 }
 
+type TagCloudAggregateKey = (i64, Option<String>, Option<String>);
+
+#[derive(Debug, Default)]
+struct TagCloudAggregateCache {
+    entries: BTreeMap<TagCloudAggregateKey, Vec<(String, usize)>>,
+}
+
+impl TagCloudAggregateCache {
+    fn contains(&self, key: &TagCloudAggregateKey) -> bool {
+        self.entries.contains_key(key)
+    }
+
+    fn get(&self, key: &TagCloudAggregateKey) -> &[(String, usize)] {
+        self.entries
+            .get(key)
+            .expect("a tag cloud aggregate is cached before it is read")
+    }
+
+    fn insert(&mut self, key: TagCloudAggregateKey, counts: Vec<(String, usize)>) {
+        self.entries.insert(key, counts);
+    }
+}
+
 fn default_tag_cloud_arguments() -> TagCloudArguments {
     TagCloudArguments {
         mode_3d: false,
@@ -436,6 +459,7 @@ impl RenderService {
             .map(Cow::as_ref);
         let mut expanded = String::with_capacity(wikitext.len());
         let mut cursor = 0;
+        let mut aggregate_cache = TagCloudAggregateCache::default();
 
         for captures in TAGCLOUD_MODULE_REGEX.captures_iter(&wikitext) {
             let matched = captures
@@ -455,15 +479,24 @@ impl RenderService {
                 cursor = matched.end();
                 continue;
             }
-            let tags = Self::load_tag_cloud_counts(
-                ctx,
+            let aggregate_key = (
                 current_site_id,
-                current_branch_tag,
-                arguments.category.as_deref(),
-            )
-            .await?;
+                current_branch_tag.map(str::to_owned),
+                arguments.category.as_deref().map(str::to_owned),
+            );
+            if !aggregate_cache.contains(&aggregate_key) {
+                let counts = Self::load_tag_cloud_counts(
+                    ctx,
+                    current_site_id,
+                    current_branch_tag,
+                    arguments.category.as_deref(),
+                )
+                .await?;
+                aggregate_cache.insert(aggregate_key.clone(), counts);
+            }
+            let tags = aggregate_cache.get(&aggregate_key);
             expanded.push_str(
-                &compat_html.push_block_html(render_tag_cloud_module(&arguments, &tags)),
+                &compat_html.push_block_html(render_tag_cloud_module(&arguments, tags)),
             );
             cursor = matched.end();
         }
@@ -576,8 +609,34 @@ impl RenderService {
 #[cfg(test)]
 mod tests {
     use super::{
-        default_tag_cloud_arguments, displayed_tag_cloud_tags, parse_tag_cloud_arguments,
+        TagCloudAggregateCache, default_tag_cloud_arguments, displayed_tag_cloud_tags,
+        parse_tag_cloud_arguments,
     };
+
+    #[test]
+    fn tag_cloud_aggregate_cache_is_keyed_by_site_branch_and_category() {
+        let mut cache = TagCloudAggregateCache::default();
+        let key = (
+            1,
+            Some("branch-main".to_owned()),
+            Some("_default".to_owned()),
+        );
+        assert!(!cache.contains(&key));
+        cache.insert(key.clone(), vec![("tag".to_owned(), 2)]);
+        assert!(cache.contains(&key));
+        assert_eq!(cache.get(&key), &[("tag".to_owned(), 2)][..]);
+        assert!(!cache.contains(&(
+            1,
+            Some("branch-other".to_owned()),
+            Some("_default".to_owned())
+        )));
+        assert!(!cache.contains(&(1, Some("branch-main".to_owned()), None)));
+        assert!(!cache.contains(&(
+            2,
+            Some("branch-main".to_owned()),
+            Some("_default".to_owned())
+        )));
+    }
 
     #[test]
     fn tag_cloud_unparseable_font_size_uses_the_format_error() {

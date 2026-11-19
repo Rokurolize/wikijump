@@ -29307,6 +29307,87 @@ async fn tagcloud_module_renders_live_sitewide_skip_3d_and_color_error() {
 }
 
 #[tokio::test]
+async fn stacked_tagcloud_modules_render_boxes_identical_to_a_standalone_module() {
+    const CATEGORY: &str = "fixture-tagcloud-stacked";
+    const TAG: &str = "fixture-tagcloud-stacked-tag";
+
+    fn boxes(html: &str) -> Vec<&str> {
+        const OPEN: &str = r#"<div class="pages-tag-cloud-box">"#;
+        html.match_indices(OPEN)
+            .map(|(index, _)| {
+                let rest = &html[index..];
+                let end = rest
+                    .find("</div>")
+                    .expect("a rendered tag cloud box closes")
+                    + "</div>".len();
+                &rest[..end]
+            })
+            .collect()
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    CategoryService::get_or_create(runner.context(), site_id, CATEGORY)
+        .await
+        .expect("TagCloud stacked fixture category should be created");
+
+    for index in 0..3 {
+        let slug = format!("{CATEGORY}:target-{index}");
+        let title = format!("Stacked TagCloud target {index}");
+        let revision =
+            create_listpages_test_page(&mut runner, site_id, &slug, &title, "body").await;
+        set_listpages_test_tags(&mut runner, site_id, &slug, revision, &[TAG]).await;
+    }
+
+    let module = format!(r#"[[module TagCloud category="{CATEGORY}"]]"#);
+    let single = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "stacked tagcloud single",
+            "wikitext": module.clone(),
+        }),
+    )
+    .body;
+    let stacked_source = (0..4)
+        .map(|_| module.clone())
+        .collect::<Vec<_>>()
+        .join("\n");
+    let stacked = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "stacked tagcloud stacked",
+            "wikitext": stacked_source,
+        }),
+    )
+    .body;
+
+    let single_boxes = boxes(&single);
+    assert_eq!(
+        single_boxes.len(),
+        1,
+        "a standalone module should render one box:\n{single}"
+    );
+    let stacked_boxes = boxes(&stacked);
+    assert_eq!(
+        stacked_boxes.len(),
+        4,
+        "four stacked modules should render four boxes:\n{stacked}"
+    );
+    for box_html in stacked_boxes {
+        assert_eq!(
+            box_html, single_boxes[0],
+            "every stacked module must render the same bytes as a standalone module:\n{stacked}"
+        );
+    }
+}
+
+#[tokio::test]
 async fn tagcloud_module_filters_anonymous_hidden_category_pages_before_loading_tags() {
     const PRIVATE_CATEGORY: &str = "fixture-tagcloud-security-private";
     const PRIVATE_SLUG: &str = "fixture-tagcloud-security-private:source";
