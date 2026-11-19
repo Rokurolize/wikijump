@@ -167,11 +167,15 @@ async fn handle_text_block(
     // us to download the whole thing to memory instead of streaming it.
     let s3_response = match state.s3_tblocks_bucket.get_object(&s3_filename).await {
         Ok(response) => {
-            assert_eq!(
-                response.status_code(),
-                StatusCode::OK,
-                "get_object() succeeded but did not reply 200",
-            );
+            if let Some(fallback) = check_s3_status(response.status_code()) {
+                error!(
+                    page_id = page_id,
+                    s3_filename = s3_filename,
+                    status = %response.status_code(),
+                    "Text block object reply has unexpected status",
+                );
+                return fallback.into_response();
+            }
 
             response
         }
@@ -236,6 +240,10 @@ struct Headers {
 fn format_filename(block_type: TextBlockType, page_id: i64, index: NonZeroU16) -> String {
     let block_type = block_type.value();
     format!("{page_id}_{block_type}_{index}")
+}
+
+fn check_s3_status(status: u16) -> Option<FallbackError> {
+    (status != StatusCode::OK.as_u16()).then_some(FallbackError::TextBlockS3Fetch)
 }
 
 // Since this thing isn't returning a case-insensitive map...
