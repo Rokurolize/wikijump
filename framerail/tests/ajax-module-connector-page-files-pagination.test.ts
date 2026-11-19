@@ -56,12 +56,13 @@ test("slices PageFiles rows by page and perPage in Deepwell row order", () => {
 })
 
 test("accepts only the canonical PageFiles pagination shape", () => {
-  for (const parameters of [
+  const accepted: Record<string, string>[] = [
     { page_id: PAGE_ID },
     { page_id: PAGE_ID, page: "1", perPage: "10" },
     { page_id: PAGE_ID, perPage: "100" },
     { page_id: PAGE_ID, page: "10000", perPage: "1" }
-  ]) {
+  ]
+  for (const parameters of accepted) {
     assert.equal(
       isSupportedPageReadShape(MODULE, parameters),
       true,
@@ -69,7 +70,7 @@ test("accepts only the canonical PageFiles pagination shape", () => {
     )
   }
 
-  for (const parameters of [
+  const rejected: Record<string, string>[] = [
     { page_id: "0" },
     { page_id: PAGE_ID, page: "0" },
     { page_id: PAGE_ID, page: "10001" },
@@ -79,7 +80,8 @@ test("accepts only the canonical PageFiles pagination shape", () => {
     { page_id: PAGE_ID, perPage: "101" },
     { page_id: PAGE_ID, perPage: "-10" },
     { page_id: PAGE_ID, perPage: "01" }
-  ]) {
+  ]
+  for (const parameters of rejected) {
     assert.equal(
       isSupportedPageReadShape(MODULE, parameters),
       false,
