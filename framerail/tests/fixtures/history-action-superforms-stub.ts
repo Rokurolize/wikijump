@@ -1,3 +1,3 @@
-export const fail = (status, data) => ({ status, data })
+export const fail = (status: number, data: unknown) => ({ status, data })
 export const superValidate = async () => ({ valid: false })
 export const valibot = () => ({})
