@@ -268,6 +268,7 @@ async fn random_listpages_rechecks_actor_visibility_and_deleted_candidates() {
             license: License::CcBySa40,
             locale: String::from("en"),
             ip_address: common::IP_ADDRESS,
+            access_policy: Default::default(),
         },
         None,
     )

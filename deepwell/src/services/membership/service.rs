@@ -861,6 +861,7 @@ mod tests {
             updated_at: None,
             deleted_at: deleted.then_some(time::OffsetDateTime::UNIX_EPOCH),
             from_wikidot,
+            access_policy: crate::types::AccessPolicy::Open,
             slug: "policy-test".to_owned(),
             name: "policy-test".to_owned(),
             tagline: String::new(),

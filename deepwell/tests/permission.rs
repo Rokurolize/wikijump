@@ -110,6 +110,7 @@ impl PermissionFixture {
                 license: License::CcBySa40,
                 locale: String::from("en"),
                 ip_address: common::IP_ADDRESS,
+                access_policy: Default::default(),
             },
             None,
         )
@@ -2306,6 +2307,7 @@ async fn get_permissions_for_role_rejects_cross_site_numeric_role_id() {
             license: License::CcBySa40,
             locale: String::from("en"),
             ip_address: common::IP_ADDRESS,
+            access_policy: Default::default(),
         },
         None,
     )

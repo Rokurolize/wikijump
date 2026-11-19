@@ -21,6 +21,7 @@
 #[macro_use]
 mod macros;
 
+mod access_policy;
 mod alias_type;
 mod connection_type;
 mod file_revision;
@@ -34,6 +35,7 @@ mod relation;
 mod text_block_type;
 mod user_type;
 
+pub use self::access_policy::AccessPolicy;
 pub use self::alias_type::AliasType;
 pub use self::connection_type::ConnectionType;
 pub use self::file_revision::FileRevisionType;

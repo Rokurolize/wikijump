@@ -9,6 +9,7 @@ export interface NewSiteCreateInput {
   name: string
   tagline: string
   locale: string
+  access_policy: string
 }
 
 export interface NewSiteCreateOutcome {
@@ -41,7 +42,8 @@ export async function siteCreate(
       layout: null,
       license: NEW_SITE_DEFAULT_LICENSE,
       locale: input.locale,
-      ip_address: ipAddress
+      ip_address: ipAddress,
+      access_policy: input.access_policy
     },
     context
   )

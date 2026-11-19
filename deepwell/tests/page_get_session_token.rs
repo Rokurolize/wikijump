@@ -106,6 +106,7 @@ async fn setup_fixture(runner: &TestRunner) -> Fixture {
             license: License::CcBySa40,
             locale: String::from("en"),
             ip_address: common::IP_ADDRESS,
+            access_policy: Default::default(),
         },
         None,
     )

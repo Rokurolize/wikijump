@@ -45,6 +45,7 @@ impl SettingsService {
     pub fn site_settings(site: &SiteModel) -> SiteSettings {
         SiteSettings {
             revision: site.settings_revision,
+            access_policy: site.access_policy,
             welcome_page: site.welcome_page.clone(),
             google_analytics: GoogleAnalyticsSettings {
                 enabled: site.google_analytics_enabled,

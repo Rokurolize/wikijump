@@ -19,6 +19,7 @@
  */
 
 use crate::error::prelude::{Error, ErrorType, Result};
+use crate::types::AccessPolicy;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
 pub struct GoogleAnalyticsSettings {
@@ -99,6 +100,7 @@ pub struct UpdateMembershipSettings {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct SiteSettings {
     pub revision: i64,
+    pub access_policy: AccessPolicy,
     pub welcome_page: String,
     pub google_analytics: GoogleAnalyticsSettings,
     pub toolbars: ToolbarSettings,
@@ -109,6 +111,7 @@ impl Default for SiteSettings {
     fn default() -> Self {
         Self {
             revision: 0,
+            access_policy: AccessPolicy::Open,
             welcome_page: String::from("system:welcome"),
             google_analytics: GoogleAnalyticsSettings::default(),
             toolbars: ToolbarSettings::default(),
@@ -395,6 +398,7 @@ mod tests {
             SiteSettings::default(),
             SiteSettings {
                 revision: 0,
+                access_policy: AccessPolicy::Open,
                 welcome_page: String::from("system:welcome"),
                 google_analytics: GoogleAnalyticsSettings::default(),
                 toolbars: ToolbarSettings::default(),

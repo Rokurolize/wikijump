@@ -1,4 +1,4 @@
-use crate::types::License;
+use crate::types::{AccessPolicy, License};
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -14,6 +14,8 @@ pub struct Model {
     #[serde(with = "time::serde::rfc3339::option")]
     pub deleted_at: Option<TimeDateTimeWithTimeZone>,
     pub from_wikidot: bool,
+    #[sea_orm(column_type = "Text")]
+    pub access_policy: AccessPolicy,
     #[sea_orm(column_type = "Text")]
     pub slug: String,
     #[sea_orm(column_type = "Text")]

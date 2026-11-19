@@ -149,6 +149,7 @@ impl VoteContentionFixture {
                     license: License::CcBySa40,
                     locale: String::from("en"),
                     ip_address: TEST_IP,
+                    access_policy: Default::default(),
                 },
                 None,
             )

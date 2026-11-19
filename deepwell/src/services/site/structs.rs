@@ -26,7 +26,7 @@ use crate::services::settings::{
     SiteSettings, ToolbarSettings, UpdateGoogleAnalyticsSettings,
     UpdateMembershipSettings,
 };
-use crate::types::{Maybe, Reference};
+use crate::types::{AccessPolicy, Maybe, Reference};
 use ftml::layout::Layout;
 use std::net::IpAddr;
 
@@ -41,6 +41,8 @@ pub struct CreateSite {
     pub license: License,
     pub locale: String,
     pub ip_address: IpAddr,
+    #[serde(default)]
+    pub access_policy: AccessPolicy,
 }
 
 #[derive(Serialize, Debug, Clone)]

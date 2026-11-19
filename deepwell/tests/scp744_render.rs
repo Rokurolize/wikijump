@@ -197,6 +197,7 @@ async fn scp744_full_closure_render_keeps_article_body() {
             license: License::CcBySa30,
             locale: "en".to_owned(),
             ip_address: common::IP_ADDRESS,
+            access_policy: Default::default(),
         },
         Some(ADMIN_USER_ID),
     )

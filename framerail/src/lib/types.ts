@@ -67,6 +67,7 @@ export interface PageCategoryModel {
 
 export interface SiteSettings {
   revision: number
+  access_policy?: "open" | "closed" | "private"
   welcome_page: string
   google_analytics: {
     enabled: boolean
