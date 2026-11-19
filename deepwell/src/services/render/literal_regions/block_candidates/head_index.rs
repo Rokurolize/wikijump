@@ -32,7 +32,6 @@ pub(in crate::services::render::literal_regions) struct HeadContext {
     pub(super) next_generic_right_block: Vec<u32>,
     pub(super) next_wikidot_right_block: Vec<u32>,
     pub(super) map_head_end: Vec<u32>,
-    pub(super) map_head_has_argument: Vec<bool>,
     pub(super) whitespace_end: Vec<u32>,
 }
 
@@ -103,7 +102,7 @@ impl HeadContext {
         }
         let next_argument_quote =
             next_marked_on_physical_line(bytes, &quote_flags, ARGUMENT_CLOSE_QUOTE);
-        let (map_head_end, map_head_has_argument) = map_head_ends(MapHeadEndsArgs {
+        let map_head_end = map_head_ends(MapHeadEndsArgs {
             bytes,
             whitespace_end: &map_spacing_end,
             inline_space_end: &inline_space_end,
@@ -131,19 +130,8 @@ impl HeadContext {
             next_generic_right_block,
             next_wikidot_right_block,
             map_head_end,
-            map_head_has_argument,
             whitespace_end,
         }
-    }
-
-    pub(in crate::services::render::literal_regions) fn map_has_argument(
-        &self,
-        start: usize,
-    ) -> bool {
-        self.map_head_has_argument
-            .get(start)
-            .copied()
-            .unwrap_or(false)
     }
 
     pub(in crate::services::render::literal_regions) fn map_end(
@@ -167,8 +155,7 @@ impl HeadContext {
         ]
         .into_iter()
         .map(|offsets| offsets.capacity() * std::mem::size_of::<u32>())
-        .sum::<usize>()
-            + self.map_head_has_argument.capacity() * std::mem::size_of::<bool>()
+        .sum()
     }
 }
 
@@ -315,7 +302,7 @@ struct MapHeadEndsArgs<'a> {
     text_owned: &'a [bool],
 }
 
-fn map_head_ends(args: MapHeadEndsArgs<'_>) -> (Vec<u32>, Vec<bool>) {
+fn map_head_ends(args: MapHeadEndsArgs<'_>) -> Vec<u32> {
     let MapHeadEndsArgs {
         bytes,
         whitespace_end,
@@ -327,7 +314,6 @@ fn map_head_ends(args: MapHeadEndsArgs<'_>) -> (Vec<u32>, Vec<bool>) {
         text_owned,
     } = args;
     let mut ends = vec![NO_OFFSET; bytes.len() + 1];
-    let mut has_argument = vec![false; bytes.len() + 1];
     for start in (0..bytes.len()).rev() {
         let cursor = expanded_offset(whitespace_end[start]);
         if has_flag(right_flags, cursor, WIKIDOT_RIGHT_BLOCK) {
@@ -353,12 +339,10 @@ fn map_head_ends(args: MapHeadEndsArgs<'_>) -> (Vec<u32>, Vec<bool>) {
         }
         let close = next_argument_quote[quote + 1];
         if close != NO_OFFSET {
-            let continuation = expanded_offset(close) + 1;
-            ends[start] = ends[continuation];
-            has_argument[start] = ends[continuation] != NO_OFFSET;
+            ends[start] = ends[expanded_offset(close) + 1];
         }
     }
-    (ends, has_argument)
+    ends
 }
 
 fn next_marked_offset(marked: &[u8], flag: u8) -> Vec<u32> {

@@ -235,9 +235,10 @@ fn parse_block_opener(
             NO_OFFSET => (name_end, false),
             end => {
                 let end = expanded_offset(end);
+                let head = &bytes[name_end..end - 2];
                 let head_is_whitespace =
                     expanded_offset(heads.whitespace_end[name_end]) >= end - 2;
-                let exact = head_is_whitespace || heads.map_has_argument(name_end);
+                let exact = head_is_whitespace || head_has_argument(head);
                 (end, exact)
             }
         },
@@ -447,6 +448,23 @@ fn skip_horizontal_whitespace(bytes: &[u8], mut cursor: usize) -> usize {
         cursor += 1;
     }
     cursor
+}
+
+fn head_has_argument(head: &[u8]) -> bool {
+    let mut index = 0;
+    while index < head.len() {
+        if head[index] == b'=' {
+            let value = skip_horizontal_whitespace(head, index + 1);
+            if matches!(head.get(value), Some(b'"' | b'\'')) {
+                let quote = head[value];
+                if head[value + 1..].contains(&quote) {
+                    return true;
+                }
+            }
+        }
+        index += 1;
+    }
+    false
 }
 
 fn utf8_character_len(source: &str, cursor: usize) -> usize {
