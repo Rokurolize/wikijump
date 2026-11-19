@@ -55,6 +55,10 @@ pub enum TargetServer {
     Files,
 }
 
+pub(crate) fn has_nul(value: &str) -> bool {
+    value.contains('\0')
+}
+
 /// Helper function to extract a string value from a header.
 /// This function asserts that the header does exist.
 fn get_header<'a>(

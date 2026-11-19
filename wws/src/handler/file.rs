@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::get_site_id;
+use super::{get_site_id, has_nul};
 use crate::attachment::content_disposition_attachment;
 use crate::deepwell::FileData;
 use crate::fetch::{
@@ -268,6 +268,10 @@ pub async fn handle_file_fetch(
         "Returning file data",
     );
 
+    if has_nul(&page_slug) || has_nul(&filename) {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+
     let site_id = get_site_id(&headers);
     let file_info =
         match fetch_file_info(&state, &headers, site_id, &mut page_slug, &filename).await
@@ -293,6 +297,10 @@ pub async fn handle_file_download(
         filename = filename,
         "Returning file download",
     );
+
+    if has_nul(&page_slug) || has_nul(&filename) {
+        return StatusCode::NOT_FOUND.into_response();
+    }
 
     let site_id = get_site_id(&headers);
     let file_info =
