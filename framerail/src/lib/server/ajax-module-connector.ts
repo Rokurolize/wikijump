@@ -7,6 +7,7 @@ import {
 } from "./ajax-module-connector/new-page.ts"
 import {
   CONTROL_FIELDS,
+  PAGE_FILES_PARAMETERS,
   fieldValue,
   forumNumericParametersAreCanonical,
   isPositiveSafeDecimal,
@@ -65,7 +66,7 @@ const SITE_TOOLS_READ_MODULES = new Map([
 const PAGE_READ_MODULE_PARAMETERS = new Map([
   ["pagerate/WhoRatedPageModule", new Set(["pageId"])],
   ["viewsource/ViewSourceModule", new Set(["page_id"])],
-  ["files/PageFilesModule", new Set(["page_id"])],
+  ["files/PageFilesModule", PAGE_FILES_PARAMETERS],
   ["history/PageRevisionListModule", new Set(["page_id", "options", "perpage"])],
   ["history/PageSourceModule", new Set(["revision_id"])],
   ["history/PageVersionModule", new Set(["revision_id"])]
@@ -1263,11 +1264,11 @@ export const handleAjaxModuleConnectorRequest = async (
         CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000)
       })
     }
-    if (
-      Object.keys(parameters).length !== pageReadParameters.size ||
-      ![...pageReadParameters].every((name) => Object.hasOwn(parameters, name)) ||
-      !isSupportedPageReadShape(moduleName, parameters)
-    ) {
+    const hasCompleteParameters =
+      moduleName === "files/PageFilesModule" ||
+      (Object.keys(parameters).length === pageReadParameters.size &&
+        [...pageReadParameters].every((name) => Object.hasOwn(parameters, name)))
+    if (!hasCompleteParameters || !isSupportedPageReadShape(moduleName, parameters)) {
       return jsonResponse(
         {
           status: "not_ok",
