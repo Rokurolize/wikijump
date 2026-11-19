@@ -72,7 +72,10 @@ async fn seed(
 }
 
 fn fixture(name: &str) -> String {
-    let p = format!("{}/tests/fixtures/wave1fix5/{name}.txt", env!("CARGO_MANIFEST_DIR"));
+    let p = format!(
+        "{}/tests/fixtures/wave1fix5/{name}.txt",
+        env!("CARGO_MANIFEST_DIR")
+    );
     std::fs::read_to_string(&p).unwrap_or_else(|_| panic!("read fixture {p}"))
 }
 
