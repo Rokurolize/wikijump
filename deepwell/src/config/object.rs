@@ -148,7 +148,17 @@ pub struct Config {
     /// platform staff is unaffected.
     pub allow_registration: bool,
 
-    pub mock_mailcheck: bool,
+    /// Whether the local email provider is permitted.
+    pub allow_local_email: bool,
+
+    /// The email address to use when sending typical automation emails.
+    pub automation_email: String,
+
+    /// The email address to use when sending notification emails.
+    pub notification_email: String,
+
+    /// The email address to use when sending newsletter emails.
+    pub newsletter_email: String,
 
     pub presigned_path_length: usize,
 
@@ -294,6 +304,10 @@ impl Config {
             minimum_name_chars: 2,
             allow_registration: true,
             mock_mailcheck: true,
+            allow_local_email: true,
+            automation_email: str!("noreply@wikijump.com"),
+            notification_email: str!("notifications@wikijump.com"),
+            newsletter_email: str!("newsletter@wikijump.com"),
             presigned_path_length: 4,
             presigned_expiry_secs: 60,
             maximum_blob_size: 512 * 1024,

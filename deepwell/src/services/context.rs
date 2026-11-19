@@ -31,6 +31,7 @@ use crate::services::public_cache::PublicContentCache;
 use crate::services::text_block::cleanup_uploaded_text_blocks;
 use crate::types::{PageId, Permission, Reference, RerenderDepth};
 use exn::ErrorExt;
+use crate::services::email::EmailMailer;
 use redis::aio::MultiplexedConnection as RedisMultiplexedConnection;
 use rsmq_async::Rsmq;
 use s3::bucket::Bucket;
@@ -277,6 +278,11 @@ impl<'txn> ServiceContext<'txn> {
     #[inline]
     pub fn s3_tblocks_bucket(&self) -> &Bucket {
         &self.state.s3_tblocks_bucket
+    }
+
+    #[inline]
+    pub fn email_mailer(&self) -> &EmailMailer {
+        &self.state.email_mailer
     }
 
     #[inline]

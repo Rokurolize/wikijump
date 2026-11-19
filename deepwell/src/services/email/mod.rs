@@ -19,6 +19,13 @@
  */
 
 mod email_token;
+#[allow(unused_imports)]
+mod prelude {
+    pub use super::super::prelude::*;
+    pub use super::structs::*;
+}
+
+mod mailer;
 mod service;
 mod structs;
 
@@ -27,6 +34,10 @@ pub use email_token::{
     IssueEmailTokenOutcome, IssuedEmailToken, LinkTokenPurpose, RedeemedEmailToken,
     RedeemedGrantToken, RedeemedLinkToken,
 };
+pub use mailer::EmailMailer;
 pub use service::EmailService;
 pub(crate) use service::is_well_formed_email;
-pub use structs::{EmailClassification, EmailValidationOutput, MailFormMessage};
+pub use structs::{
+    EmailClassification, EmailSender, EmailValidationOutput, MailFormMessage, SendEmail,
+    SendEmailOutput,
+};

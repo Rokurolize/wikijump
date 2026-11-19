@@ -4,6 +4,7 @@ use crate::config::Config;
 use crate::locales::Localizations;
 use crate::middleware::RpcTokenDigest;
 use crate::services::blob::MimeAnalyzer;
+use crate::services::email::EmailMailer;
 use crate::utils::debug_pointer;
 use redis::aio::MultiplexedConnection as RedisMultiplexedConnection;
 use reqwest::Client as ReqwestClient;
@@ -27,6 +28,7 @@ pub struct ServerStateInner {
     pub s3_files_bucket: Box<Bucket>,
     pub s3_tblocks_bucket: Box<Bucket>,
     pub mailcheck_api_client: ReqwestClient,
+    pub email_mailer: EmailMailer,
     /// Bounds the number of blocking renders in flight.
     ///
     /// A render takes a permit before it starts and moves it into the blocking
@@ -49,6 +51,7 @@ impl Debug for ServerStateInner {
             .field("s3_files_bucket", &self.s3_files_bucket)
             .field("s3_tblocks_bucket", &self.s3_tblocks_bucket)
             .field("mailcheck_api_client", &self.mailcheck_api_client)
+            .field("email_mailer", &self.email_mailer)
             .field("render_permits", &self.render_permits.available_permits())
             .finish()
     }
