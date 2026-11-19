@@ -7,6 +7,29 @@ export const CONTROL_FIELDS = new Set([
   "eventSource"
 ])
 const FORUM_POSITIVE_DECIMAL_FIELDS = new Set(["pageId", "c", "p", "t", "pageNo", "page"])
+export const PAGE_FILES_PARAMETERS = new Set(["page_id", "page", "perPage"])
+export const PAGE_FILES_DEFAULT_PER_PAGE = 100
+const PAGE_FILES_MAX_PER_PAGE = 100
+const PAGE_FILES_MAX_PAGE = 10000
+
+const pageFilesNumber = (value: string | undefined, fallback: number) => {
+  if (value === undefined) return fallback
+  if (!isCanonicalPositiveDecimal(value)) return null
+  const parsed = Number.parseInt(value, 10)
+  return Number.isSafeInteger(parsed) ? parsed : null
+}
+
+export const slicePageFiles = <T>(
+  files: readonly T[],
+  parameters: Record<string, string>
+): T[] => {
+  const page = pageFilesNumber(parameters.page, 1) ?? 1
+  const perPage =
+    pageFilesNumber(parameters.perPage, PAGE_FILES_DEFAULT_PER_PAGE) ??
+    PAGE_FILES_DEFAULT_PER_PAGE
+  const start = (page - 1) * perPage
+  return files.slice(start, start + perPage)
+}
 
 export const isSupportedPageReadShape = (
   moduleName: string,
@@ -15,11 +38,20 @@ export const isSupportedPageReadShape = (
   if (moduleName === "pagerate/WhoRatedPageModule") {
     return isPositiveSafeDecimal(parameters.pageId)
   }
-  if (
-    moduleName === "viewsource/ViewSourceModule" ||
-    moduleName === "files/PageFilesModule"
-  ) {
+  if (moduleName === "viewsource/ViewSourceModule") {
     return isPositiveSafeDecimal(parameters.page_id)
+  }
+  if (moduleName === "files/PageFilesModule") {
+    const page = pageFilesNumber(parameters.page, 1)
+    const perPage = pageFilesNumber(parameters.perPage, PAGE_FILES_DEFAULT_PER_PAGE)
+    return (
+      isPositiveSafeDecimal(parameters.page_id) &&
+      page !== null &&
+      page <= PAGE_FILES_MAX_PAGE &&
+      perPage !== null &&
+      perPage >= 1 &&
+      perPage <= PAGE_FILES_MAX_PER_PAGE
+    )
   }
   if (moduleName === "history/PageRevisionListModule") {
     return (

@@ -1550,6 +1550,73 @@ test("dispatches wikidot.py page reads without rewriting their request fields", 
   ])
 })
 
+test("dispatches the allowlisted PageFiles pagination shape without renaming fields", async () => {
+  let received
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "files/PageFilesModule",
+      page_id: "3000132367",
+      page: "2",
+      perPage: "10",
+      callbackIndex: "client-pagefiles"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderPageReadModule: async (input) => {
+        received = input
+        return { status: "ok", body: "sliced files" }
+      }
+    }
+  )
+
+  assert.equal(response.status, 200)
+  const body = await response.json()
+  assert.equal(body.status, "ok")
+  assert.equal(body.body, "sliced files")
+  assert.equal(body.callbackIndex, "client-pagefiles")
+  assert.deepEqual(received, {
+    siteId: 6000006,
+    moduleName: "files/PageFilesModule",
+    parameters: { page_id: "3000132367", page: "2", perPage: "10" }
+  })
+})
+
+test("rejects still-unsupported PageFiles parameters and out-of-range pagination", async () => {
+  let renders = 0
+  for (const extra of [
+    { limit: "10" },
+    { offset: "10" },
+    { order: "name" },
+    { siteId: "6000006" },
+    { deleted: "true" },
+    { perpage: "10" },
+    { perPagePlus: "10" },
+    { perPage: "0" },
+    { perPage: "101" },
+    { page: "0" },
+    { page: "10001" },
+    { page: "+2" }
+  ]) {
+    const response = await handleAjaxModuleConnectorRequest(
+      request({ moduleName: "files/PageFilesModule", page_id: "3000132367", ...extra }),
+      {
+        siteId: 6000006,
+        renderListPages: async () => assert.fail("must not render ListPages"),
+        renderPageReadModule: async () => {
+          renders += 1
+          return { status: "ok", body: "must not render" }
+        }
+      }
+    )
+    assert.deepEqual(await response.json(), {
+      status: "not_ok",
+      message: "Unsupported AJAX module shape: files/PageFilesModule"
+    })
+  }
+  assert.equal(renders, 0)
+})
+
 test("returns the observed no_page envelope for a missing ViewSource page", async () => {
   const response = await handleAjaxModuleConnectorRequest(
     request({

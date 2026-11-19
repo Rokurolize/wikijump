@@ -1,4 +1,5 @@
 import { handleAjaxModuleConnectorRequest } from "$lib/server/ajax-module-connector"
+import { slicePageFiles } from "$lib/server/ajax-module-connector/request"
 import {
   renderWikidotEditMeta,
   renderWikidotPageFiles,
@@ -880,7 +881,7 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
       if (!page) throw new Error("PageFiles target page is missing")
       return {
         status: "ok",
-        body: renderWikidotPageFiles(page.slug, files)
+        body: renderWikidotPageFiles(page.slug, slicePageFiles(files, parameters))
       }
     }
   })
