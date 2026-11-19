@@ -119,22 +119,13 @@ export function wikidotListPagesFeedSelectorError(
   if (selectors.range !== undefined && selectors.range !== ".") {
     return "Invalid range argument."
   }
-  if (
-    selectors.limit !== undefined &&
-    !/^\d+$/.test(selectors.limit.trim())
-  ) {
+  if (selectors.limit !== undefined && !/^\d+$/.test(selectors.limit.trim())) {
     return "Invalid limit argument."
   }
-  if (
-    selectors.rssLimit !== undefined &&
-    !/^\d+$/.test(selectors.rssLimit.trim())
-  ) {
+  if (selectors.rssLimit !== undefined && !/^\d+$/.test(selectors.rssLimit.trim())) {
     return "Invalid limit argument."
   }
-  if (
-    selectors.offset !== undefined &&
-    !/^\d+$/.test(selectors.offset.trim())
-  ) {
+  if (selectors.offset !== undefined && !/^\d+$/.test(selectors.offset.trim())) {
     return "Invalid offset argument."
   }
   return null
