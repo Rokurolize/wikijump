@@ -26,16 +26,56 @@ import { boolean, file, number, object, optional, string } from "valibot"
 
 import type { RequestEvent } from "@sveltejs/kit"
 
+const FILE_LIST_PER_PAGE = 10
+
+export function paginateFileList<T>(
+  files: readonly T[] | null | undefined,
+  page: number | null | undefined,
+  perPage: number | null | undefined
+): {
+  files: T[]
+  total: number
+  page: number
+  perPage: number
+  totalPages: number
+} {
+  const list = files ?? []
+  const size = Math.max(
+    Math.floor(perPage ?? FILE_LIST_PER_PAGE) || FILE_LIST_PER_PAGE,
+    1
+  )
+  const totalPages = Math.max(1, Math.ceil(list.length / size))
+  const current = Math.min(Math.max(Math.floor(page ?? 1) || 1, 1), totalPages)
+  const start = (current - 1) * size
+  return {
+    files: list.slice(start, start + size),
+    total: list.length,
+    page: current,
+    perPage: size,
+    totalPages
+  }
+}
+
 export async function pageFileListAction(event: RequestEvent) {
   const { request } = event
   try {
     const requestData = await readActionJson(request, pageFileListSchema)
-    const { siteId, pageId, deleted } = requestData
+    const { siteId, pageId, deleted, page, perPage } = requestData
     const context = await resolvePageActionRequestContext(event, {
       submittedSiteId: siteId
     })
-    const res = await pageFileList(siteId, pageId, deleted, context.requestContext)
-    return { res }
+    const files = await pageFileList(siteId, pageId, deleted, context.requestContext)
+    if (page === undefined && perPage === undefined) {
+      return { res: files }
+    }
+    const paged = paginateFileList(files, page, perPage)
+    return {
+      res: paged.files,
+      total: paged.total,
+      page: paged.page,
+      perPage: paged.perPage,
+      totalPages: paged.totalPages
+    }
   } catch (error) {
     return failForActionError(error)
   }
@@ -43,7 +83,9 @@ export async function pageFileListAction(event: RequestEvent) {
 
 const pageFileListSchema = object({
   ...pageActionBaseSchema,
-  deleted: optional(boolean())
+  deleted: optional(boolean()),
+  page: optional(number()),
+  perPage: optional(number())
 })
 
 export async function pageFileUploadAction(event: RequestEvent) {
