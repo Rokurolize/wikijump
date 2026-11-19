@@ -3,6 +3,7 @@ export const NEW_SITE_PAGE_SLUG = "new-site"
 
 export const NEW_SITE_DEFAULT_TEMPLATE = "default"
 export const NEW_SITE_DEFAULT_PRIVACY = "open"
+export const NEW_SITE_ACCESS_POLICIES = ["open", "closed", "private"] as const
 
 export const NEW_SITE_DEFAULT_LICENSE = "cc0"
 
@@ -29,7 +30,13 @@ const fieldText = (fields: Record<string, unknown>, key: string): string => {
 
 export const parseNewSiteSubmission = (
   fields: Record<string, unknown> | undefined | null
-): { slug: string; name: string; tagline: string; locale: string } => {
+): {
+  slug: string
+  name: string
+  tagline: string
+  locale: string
+  access_policy: string
+} => {
   const source = fields ?? {}
 
   const tos = fieldText(source, "tos").toLowerCase()
@@ -57,9 +64,13 @@ export const parseNewSiteSubmission = (
   }
 
   const privacy = fieldText(source, "privacy") || NEW_SITE_DEFAULT_PRIVACY
-  if (privacy !== NEW_SITE_DEFAULT_PRIVACY) {
+  if (
+    !NEW_SITE_ACCESS_POLICIES.includes(
+      privacy as (typeof NEW_SITE_ACCESS_POLICIES)[number]
+    )
+  ) {
     throw new NewSiteSubmissionError(
-      `Unsupported access policy '${privacy}': only Open sites can be created yet.`
+      `Unsupported access policy '${privacy}': expected open, closed, or private.`
     )
   }
 
@@ -67,6 +78,7 @@ export const parseNewSiteSubmission = (
     slug,
     name,
     tagline: fieldText(source, "subtitle"),
-    locale: fieldText(source, "language")
+    locale: fieldText(source, "language"),
+    access_policy: privacy
   }
 }

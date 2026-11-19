@@ -114,7 +114,8 @@ test("an authenticated submission creates the site and redirects to its origin",
       layout: null,
       license: "cc0",
       locale: "en",
-      ip_address: "127.0.0.1"
+      ip_address: "127.0.0.1",
+      access_policy: "open"
     }
   ])
 })

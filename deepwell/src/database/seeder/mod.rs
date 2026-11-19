@@ -231,6 +231,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                 license: site.license,
                 locale: site.locale,
                 ip_address: SEED_IP_ADDRESS,
+                access_policy: Default::default(),
             },
             None,
         )

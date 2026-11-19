@@ -32,7 +32,7 @@ use crate::services::user::{CreateUser, UpdateUserBody};
 use crate::services::{
     AliasService, OutdateService, PasswordService, RelationService, UserService,
 };
-use crate::types::{AliasType, UserType};
+use crate::types::{AccessPolicy, AliasType, UserType};
 use crate::types::{Maybe, Reference, RerenderDepth};
 use crate::utils::now;
 use crate::utils::{validate_locale, validate_wikidot_site_language};
@@ -267,6 +267,7 @@ impl SiteService {
             license,
             locale,
             ip_address,
+            access_policy,
         }: CreateSite,
         actor_user_id: Option<i64>,
     ) -> Result<CreateSiteOutput> {
@@ -301,6 +302,8 @@ impl SiteService {
             layout: Set(layout.map(|l| str!(l.value()))),
             license: Set(license),
             locale: Set(locale.clone()),
+            access_policy: Set(access_policy),
+            membership_by_application: Set(access_policy != AccessPolicy::Open),
             master_admin_user_id: Set(actor_user_id),
             ..Default::default()
         };

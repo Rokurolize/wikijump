@@ -26,8 +26,18 @@ test("a valid default submission maps to the site-create dimensions", () => {
     slug: "my-wiki",
     name: "My Wiki",
     tagline: "A test wiki",
-    locale: "en"
+    locale: "en",
+    access_policy: "open"
   })
+})
+
+test("closed and private access policies are carried to site_create", () => {
+  for (const policy of ["closed", "private"] as const) {
+    assert.equal(
+      parseNewSiteSubmission({ ...validFields(), privacy: policy }).access_policy,
+      policy
+    )
+  }
 })
 
 test("ToS acceptance is required and cannot be smuggled in other fields", () => {
@@ -49,15 +59,18 @@ test("missing title or web address is rejected before any service call", () => {
   )
 })
 
-test("non-default template or access policy is rejected fail-closed", () => {
+test("non-default template and unknown access policy are rejected fail-closed", () => {
   assert.throws(
     () => parseNewSiteSubmission({ ...validFields(), template: "blog" }),
     /template/u
   )
-  assert.throws(
-    () => parseNewSiteSubmission({ ...validFields(), privacy: "private" }),
-    /access/u
-  )
+  for (const privacy of ["secret", "PUBLIC", "open,private", "restricted"]) {
+    assert.throws(
+      () => parseNewSiteSubmission({ ...validFields(), privacy }),
+      /access policy/u,
+      `rejected: ${privacy}`
+    )
+  }
 })
 
 test("client-supplied actor identity never crosses the boundary", () => {
@@ -68,7 +81,13 @@ test("client-supplied actor identity never crosses the boundary", () => {
     master_admin_user_id: 1,
     is_admin: "true"
   })
-  assert.deepEqual(Object.keys(parsed).sort(), ["locale", "name", "slug", "tagline"])
+  assert.deepEqual(Object.keys(parsed).sort(), [
+    "access_policy",
+    "locale",
+    "name",
+    "slug",
+    "tagline"
+  ])
 })
 
 test("the special-page contract constants match the www runtime", () => {
@@ -174,4 +193,5 @@ test("the site adapter reuses site_create and adds no actor fields", async () =>
   const params = /client\.request\(\s*"site_create",\s*\{([^}]*)\}/u.exec(source)
   assert.ok(params, "site_create request payload found")
   assert.doesNotMatch(params[1], /user_id|owner|privilege|admin/u)
+  assert.match(params[1], /access_policy:\s*input\.access_policy/u)
 })

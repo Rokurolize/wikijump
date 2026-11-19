@@ -124,6 +124,7 @@ async fn create_component_notice_fixture_site(
             license: License::CcBySa40,
             locale: String::from("en"),
             ip_address: common::IP_ADDRESS,
+            access_policy: Default::default(),
         },
         None,
     )

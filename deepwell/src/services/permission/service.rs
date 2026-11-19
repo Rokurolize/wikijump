@@ -30,11 +30,12 @@ use crate::services::permission::{
     CheckPermissionContext, PermissionCache, PermissionTarget, SetUserPermissionInput,
     resolve_category_reference,
 };
-use crate::services::relation::{GetSiteBan, RelationService};
+use crate::services::relation::{GetSiteBan, GetSiteMember, RelationService};
 use crate::services::role::{
     GetRolePermissionsInput, GetUserRolesInput, RoleService, UpdateRolePermissionsInput,
 };
-use crate::types::{Action, Permission, Reference, Resource};
+use crate::services::site::SiteService;
+use crate::types::{AccessPolicy, Action, Permission, Reference, Resource};
 use futures::future::try_join_all;
 use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder, Set};
 use std::collections::{BTreeMap, HashSet};
@@ -95,6 +96,34 @@ impl PermissionService {
             },
         )
         .await
+    }
+
+    pub async fn site_allows_view(
+        ctx: &ServiceContext<'_>,
+        user_id: Option<i64>,
+        site_id: i64,
+    ) -> Result<bool> {
+        let site = SiteService::get(ctx, Reference::Id(site_id))
+            .await
+            .or_raise(|| Error::new("failed to get site", ErrorType::Site))?;
+
+        match site.access_policy {
+            AccessPolicy::Open | AccessPolicy::Closed => Ok(true),
+            AccessPolicy::Private => {
+                let Some(user_id) = user_id else {
+                    return Ok(false);
+                };
+                let membership = RelationService::get_optional_site_member(
+                    ctx,
+                    GetSiteMember { site_id, user_id },
+                )
+                .await
+                .or_raise(|| {
+                    Error::new("failed to check site membership", ErrorType::Permission)
+                })?;
+                Ok(membership.is_some())
+            }
+        }
     }
 
     pub async fn update_permissions_for_role(
@@ -540,6 +569,14 @@ impl PermissionService {
     ) -> Result<bool> {
         let make_error =
             || Error::new("failed to check permission", ErrorType::Permission);
+
+        if action == Action::View
+            && !Self::site_allows_view(ctx, user_id, site_id)
+                .await
+                .or_raise(make_error)?
+        {
+            return Ok(false);
+        }
 
         info!(
             "Checking permission for user ID {:?} on site ID {} for resource {} of category {:?} with action {}",

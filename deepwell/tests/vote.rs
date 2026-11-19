@@ -77,6 +77,7 @@ async fn create_registered_rate_page(
             license: License::CcBySa40,
             locale: "en".to_owned(),
             ip_address: common::IP_ADDRESS,
+            access_policy: Default::default(),
         },
         Some(ADMIN_USER_ID),
     )

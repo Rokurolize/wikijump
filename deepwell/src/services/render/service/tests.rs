@@ -97,7 +97,7 @@ use crate::services::render::runtime::AuthorizedIncludeSource;
 use crate::services::render::runtime_modules::RateModuleContext;
 use crate::services::render::{UrlArgumentPair, UrlArguments};
 use crate::services::settings::PageRatingType;
-use crate::types::{License, PageId};
+use crate::types::{AccessPolicy, License, PageId};
 use crate::utils::{locale_for_ftml, now};
 use ftml::data::PageRef;
 use ftml::includes::IncludeRef;
@@ -4115,6 +4115,7 @@ fn wikidot_site(slug: &str, preferred_domain: Option<&str>) -> SiteModel {
         updated_at: None,
         deleted_at: None,
         from_wikidot: true,
+        access_policy: AccessPolicy::Open,
         slug: slug.to_owned(),
         name: slug.to_owned(),
         tagline: String::new(),

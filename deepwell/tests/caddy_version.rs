@@ -48,6 +48,7 @@ async fn caddyfile_version_endpoint() {
             license: License::CcBySa40,
             locale: String::from("en"),
             ip_address: common::IP_ADDRESS,
+            access_policy: Default::default(),
         },
         None,
     )

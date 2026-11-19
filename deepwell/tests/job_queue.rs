@@ -262,6 +262,7 @@ async fn create_editable_site_fixture(state: &ServerState, site_slug: &str) -> i
                 license: License::CcBySa40,
                 locale: String::from("en"),
                 ip_address: IpAddr::V4(Ipv4Addr::new(192, 0, 2, 61)),
+                access_policy: Default::default(),
             },
             None,
         )
@@ -564,6 +565,7 @@ impl SiteNavigationRpcFixture {
                 license: License::CcBySa40,
                 locale: String::from("en"),
                 ip_address: SITE_NAVIGATION_TEST_IP,
+                access_policy: Default::default(),
             },
             None,
         )

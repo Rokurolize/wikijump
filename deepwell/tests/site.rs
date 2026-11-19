@@ -34,11 +34,15 @@ use deepwell::models::user::{Column as UserColumn, Entity as UserTable};
 use deepwell::services::PageService;
 use deepwell::services::RequestContext;
 use deepwell::services::ServiceContext;
+use deepwell::services::SettingsService;
 use deepwell::services::alias::{AliasService, CreateAlias};
 use deepwell::services::category::CategoryService;
 use deepwell::services::domain::{CreateCustomDomain, DomainService};
+use deepwell::services::membership::{MembershipPolicy, MembershipService};
 use deepwell::services::page::CreatePage;
-use deepwell::services::permission::{PermissionCache, PermissionService};
+use deepwell::services::permission::{
+    PermissionCache, PermissionService, PermissionTarget,
+};
 use deepwell::services::role::{
     GetUserRolesInput, GrantUserRoleInput, InternalCreateRoleInput, RoleService,
     UpdateRolePermissionsInput,
@@ -47,8 +51,9 @@ use deepwell::services::session::{CreateSession, SessionService};
 use deepwell::services::site::{CreateSite, SetSiteIcon, SiteService, UpdateSiteBody};
 use deepwell::services::user::{CreateUser, UserService};
 use deepwell::types::{
-    Action, AliasType, Maybe, Permission, Reference, Resource, UserType,
+    AccessPolicy, Action, AliasType, Maybe, Permission, Reference, Resource, UserType,
 };
+use ftml::layout::Layout;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, PaginatorTrait,
     QueryFilter, QueryOrder, Set, TransactionTrait,
@@ -202,6 +207,7 @@ async fn create_site(runner: &TestRunner, n: u64) -> i64 {
             license: License::CcBySa40,
             locale: String::from("en"),
             ip_address: common::IP_ADDRESS,
+            access_policy: Default::default(),
         },
         None,
     )
@@ -245,6 +251,216 @@ async fn public_site_create_audits_authenticated_actor_and_supplied_ip_once() {
     assert_eq!(events.len(), 1, "successful public creation audits once");
     assert_eq!(events[0].user_id, Some(actor_user_id));
     assert_eq!(events[0].ip_address.ip(), common::IP_ADDRESS);
+}
+
+#[tokio::test]
+async fn site_create_persists_access_policy_and_sets_membership_gate() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let actor_user_id = create_user(&runner, n, "policy-creator").await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(actor_user_id),
+        ..Default::default()
+    });
+
+    for (policy, gated) in [
+        (None, false),
+        (Some("open"), false),
+        (Some("closed"), true),
+        (Some("private"), true),
+    ] {
+        let label = policy.unwrap_or("default");
+        let mut params = json!({
+            "slug": format!("access-policy-{label}-{n}"),
+            "name": format!("Access policy {label} {n}"),
+            "tagline": "",
+            "description": "",
+            "default_page": null,
+            "layout": null,
+            "license": "cc0",
+            "locale": "en",
+            "ip_address": common::IP_ADDRESS,
+        });
+        if let Some(policy) = policy {
+            params["access_policy"] = json!(policy);
+        }
+
+        let created = run_endpoint!(runner, site_create, params);
+        let site = SiteService::get(runner.context(), Reference::Id(created.site_id))
+            .await
+            .expect("created site should be readable");
+        let expected = match policy {
+            Some("closed") => AccessPolicy::Closed,
+            Some("private") => AccessPolicy::Private,
+            _ => AccessPolicy::Open,
+        };
+        assert_eq!(site.access_policy, expected, "stored policy for {label}");
+        assert_eq!(
+            SettingsService::site_settings(&site).access_policy,
+            expected,
+            "exposed policy for {label}"
+        );
+        assert_eq!(
+            site.membership_by_application, gated,
+            "membership gate for {label}"
+        );
+        assert_eq!(
+            MembershipService::policy(&site),
+            if gated {
+                MembershipPolicy::Closed
+            } else {
+                MembershipPolicy::Open
+            },
+            "membership policy for {label}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn invalid_access_policy_is_rejected_at_creation() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let actor_user_id = create_user(&runner, n, "bad-policy-creator").await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(actor_user_id),
+        ..Default::default()
+    });
+
+    let result = run_endpoint_err!(
+        runner,
+        site_create,
+        json!({
+            "slug": format!("bad-access-policy-{n}"),
+            "name": format!("Bad access policy {n}"),
+            "tagline": "",
+            "description": "",
+            "default_page": null,
+            "layout": null,
+            "license": "cc0",
+            "locale": "en",
+            "ip_address": common::IP_ADDRESS,
+            "access_policy": "secret",
+        }),
+    );
+    assert!(
+        format!("{result:?}").contains("unknown variant"),
+        "invalid access policy should be rejected while parsing endpoint input:\n{result:?}"
+    );
+}
+
+async fn create_policy_site_and_page(
+    runner: &mut TestRunner,
+    n: u64,
+    policy: &str,
+) -> (i64, i64, i64) {
+    let actor_user_id = create_user(runner, n, &format!("{policy}-owner")).await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(actor_user_id),
+        ..Default::default()
+    });
+    let created = run_endpoint!(
+        runner,
+        site_create,
+        json!({
+            "slug": format!("access-view-{policy}-{n}"),
+            "name": format!("Access view {policy} {n}"),
+            "tagline": "",
+            "description": "",
+            "default_page": null,
+            "layout": null,
+            "license": "cc0",
+            "locale": "en",
+            "ip_address": common::IP_ADDRESS,
+            "access_policy": policy,
+        }),
+    );
+    let page = PageService::create(
+        runner.context(),
+        CreatePage {
+            site_id: created.site_id,
+            wikitext: str!("private access fixture body"),
+            title: str!("Access fixture"),
+            alt_title: None,
+            tags: vec![],
+            slug: str!("access-view-fixture"),
+            layout: Some(Layout::Wikidot),
+            revision_comments: str!("access fixture"),
+            user_id: actor_user_id,
+            bypass_filter: true,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("fixture page should be created");
+    (created.site_id, page.page_id, actor_user_id)
+}
+
+#[tokio::test]
+async fn private_site_denies_non_member_page_access() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let (site_id, page_id, owner_user_id) =
+        create_policy_site_and_page(&mut runner, n, "private").await;
+    let outsider_user_id = create_user(&runner, n, "private-outsider").await;
+
+    let page = PageService::get(runner.context(), site_id, Reference::Id(page_id))
+        .await
+        .expect("fixture page should load");
+
+    assert!(
+        PermissionService::check_user_can_view_page(
+            runner.context(),
+            Some(owner_user_id),
+            &page,
+        )
+        .await
+        .expect("member view check should resolve"),
+        "the site creator is a member and must be able to read private-site content"
+    );
+    for (label, viewer) in [
+        ("anonymous", None),
+        ("registered non-member", Some(outsider_user_id)),
+    ] {
+        assert!(
+            !PermissionService::check_user_can_view_page(runner.context(), viewer, &page)
+                .await
+                .expect("non-member view check should resolve"),
+            "{label} must not receive private-site content"
+        );
+        assert!(
+            !PermissionService::can_user_as(
+                runner.context(),
+                viewer,
+                Some(site_id),
+                Action::View,
+                PermissionTarget::Page {
+                    page_id,
+                    category_id: page.page_category_id,
+                },
+            )
+            .await
+            .expect("central view check should resolve"),
+            "{label} must be denied by the central view check"
+        );
+    }
+}
+
+#[tokio::test]
+async fn closed_site_keeps_public_read_access() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let (site_id, page_id, _) =
+        create_policy_site_and_page(&mut runner, n, "closed").await;
+    let page = PageService::get(runner.context(), site_id, Reference::Id(page_id))
+        .await
+        .expect("fixture page should load");
+
+    assert!(
+        PermissionService::check_user_can_view_page(runner.context(), None, &page)
+            .await
+            .expect("anonymous view check should resolve"),
+        "a closed site remains publicly readable; only membership is gated"
+    );
 }
 
 #[tokio::test]
@@ -1705,6 +1921,7 @@ async fn platform_hostname_policy_covers_site_and_alias_lifecycle_paths() {
                 license: License::CcBySa40,
                 locale: String::from("en"),
                 ip_address: common::IP_ADDRESS,
+                access_policy: Default::default(),
             },
             None,
         )
@@ -1797,6 +2014,7 @@ async fn platform_hostname_policy_covers_site_and_alias_lifecycle_paths() {
             license: License::CcBySa40,
             locale: String::from("en"),
             ip_address: common::IP_ADDRESS,
+            access_policy: Default::default(),
         },
         None,
     )
@@ -2375,6 +2593,7 @@ async fn create_site_as(
             license: License::CcBySa40,
             locale: String::from("en"),
             ip_address: common::IP_ADDRESS,
+            access_policy: Default::default(),
         },
         Some(actor_user_id),
     )
@@ -2474,6 +2693,7 @@ async fn site_creation_quota_limits_burst_and_recovers_after_window() {
             license: License::CcBySa40,
             locale: String::from("en"),
             ip_address: common::IP_ADDRESS,
+            access_policy: Default::default(),
         },
         Some(actor_user_id),
     )
@@ -2540,6 +2760,7 @@ async fn site_creation_quota_limits_burst_and_recovers_after_window() {
             license: License::CcBySa40,
             locale: String::from("en"),
             ip_address: common::IP_ADDRESS,
+            access_policy: Default::default(),
         },
         Some(actor_user_id),
     )
