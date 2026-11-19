@@ -42,7 +42,9 @@ use deepwell::services::render::{
 use deepwell::services::role::{GrantUserRoleInput, RoleService};
 use deepwell::services::site::{BootstrapNewSite, CreateSite, SiteService};
 use deepwell::services::user::{CreateUser, UserService};
-use deepwell::types::{Action, PageId, Permission, Reference, Resource, UserType};
+use deepwell::types::{
+    AccessPolicy, Action, PageId, Permission, Reference, Resource, UserType,
+};
 use ftml::data::{PageInfo, ScoreValue};
 use ftml::layout::Layout;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
@@ -77,7 +79,12 @@ async fn create_user(ctx: &ServiceContext<'_>, fixture_n: u64, label: &str) -> i
     .user_id
 }
 
-async fn create_site(ctx: &ServiceContext<'_>, fixture_n: u64, label: &str) -> i64 {
+async fn create_site(
+    ctx: &ServiceContext<'_>,
+    fixture_n: u64,
+    label: &str,
+    access_policy: AccessPolicy,
+) -> i64 {
     let site_id = SiteService::create(
         ctx,
         CreateSite {
@@ -90,7 +97,7 @@ async fn create_site(ctx: &ServiceContext<'_>, fixture_n: u64, label: &str) -> i
             license: License::CcBySa40,
             locale: String::from("en"),
             ip_address: common::IP_ADDRESS,
-            access_policy: Default::default(),
+            access_policy,
         },
         None,
     )
@@ -186,7 +193,7 @@ async fn list_pages_feed_excludes_private_category_pages_for_anonymous() {
     let ctx = runner.context();
     let n = next_n();
 
-    let site_id = create_site(ctx, n, "feed").await;
+    let site_id = create_site(ctx, n, "feed", AccessPolicy::Open).await;
     let category_id = CategoryService::get_or_create(ctx, site_id, "c3f2inner")
         .await
         .expect("private category should be created")
@@ -297,7 +304,7 @@ async fn baked_members_module_withholds_roster_from_non_viewers() {
     let mut runner = TestRunner::setup().await;
     let n = next_n();
 
-    let site_id = create_site(runner.context(), n, "members").await;
+    let site_id = create_site(runner.context(), n, "members", AccessPolicy::Open).await;
     for role_slug in ["anonymous", "guest", "everyone", "registered", "member"] {
         let role = RoleService::get(
             runner.context(),
@@ -444,5 +451,121 @@ async fn baked_members_module_withholds_roster_from_non_viewers() {
     assert!(
         allowed.body.contains(&member_name),
         "authorized ajax must still contain the roster",
+    );
+}
+
+#[tokio::test]
+async fn list_pages_feed_withholds_private_site_pages_from_non_members() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+
+    let site_id =
+        create_site(runner.context(), n, "privfeed", AccessPolicy::Private).await;
+    let page_slug = format!("c3f2-privfeed-{n}");
+    let page_body = format!("C3F2PRIVFEEDBODY{n}");
+    create_page(
+        runner.context(),
+        site_id,
+        &page_slug,
+        "Cycle3 F2 private site page",
+        &page_body,
+    )
+    .await;
+
+    let member_user_id = create_user(runner.context(), n, "privmember").await;
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id,
+            user_id: member_user_id,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::Accepted(SYSTEM_USER_ID),
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("site membership should be created");
+    let outsider_user_id = create_user(runner.context(), n, "privoutsider").await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("membership change must be visible");
+
+    assert!(
+        !site_can_view(runner.context(), None, site_id).await,
+        "a private site must not be viewable to anonymous visitors",
+    );
+    assert!(
+        !site_can_view(runner.context(), Some(outsider_user_id), site_id).await,
+        "a private site must not be viewable to non-members",
+    );
+    assert!(
+        site_can_view(runner.context(), Some(member_user_id), site_id).await,
+        "a private site must stay viewable to its members",
+    );
+
+    let feed_input = || WikidotListPagesFeedInput {
+        site_id,
+        pagetype: None,
+        category: None,
+        tags: None,
+        parent: None,
+        created_by: None,
+        rating: None,
+        range: None,
+        limit: None,
+        rss_limit: None,
+        offset: None,
+        order: None,
+    };
+    let feed_has_page =
+        |feed: &deepwell::services::render::WikidotListPagesFeedOutput| {
+            feed.items.iter().any(|item| item.slug == page_slug)
+                || feed
+                    .items
+                    .iter()
+                    .any(|item| item.body_html.contains(&page_body))
+        };
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let anonymous_feed =
+        RenderService::render_wikidot_list_pages_feed(runner.context(), feed_input())
+            .await
+            .expect("anonymous feed should render");
+    assert!(
+        !feed_has_page(&anonymous_feed),
+        "the feed must not disclose a private site's pages to anonymous callers",
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(outsider_user_id),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let outsider_feed =
+        RenderService::render_wikidot_list_pages_feed(runner.context(), feed_input())
+            .await
+            .expect("non-member feed should render");
+    assert!(
+        !feed_has_page(&outsider_feed),
+        "the feed must not disclose a private site's pages to non-members",
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(member_user_id),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let member_feed =
+        RenderService::render_wikidot_list_pages_feed(runner.context(), feed_input())
+            .await
+            .expect("member feed should render");
+    assert!(
+        feed_has_page(&member_feed),
+        "the feed must still serve a private site's pages to its members",
     );
 }
