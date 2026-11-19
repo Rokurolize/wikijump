@@ -1483,7 +1483,7 @@ mod tests {
             assert_eq!(response.status(), StatusCode::OK, "{path}");
             assert_eq!(
                 response.bytes().await.unwrap(),
-                &WIKIDOT_MISSING_FILE_HTML[..],
+                WIKIDOT_MISSING_FILE_HTML,
                 "{path}",
             );
         }
@@ -1526,10 +1526,7 @@ mod tests {
             )
             .await;
             assert_eq!(response.status(), StatusCode::OK);
-            assert_eq!(
-                response.bytes().await.unwrap(),
-                &WIKIDOT_MISSING_FILE_HTML[..],
-            );
+            assert_eq!(response.bytes().await.unwrap(), WIKIDOT_MISSING_FILE_HTML,);
         }
 
         // A viewer with admin standing is served as usual.
