@@ -1323,6 +1323,25 @@ async fn production_rpc_stack_rejects_nul_in_params() {
 }
 
 #[tokio::test]
+async fn role_management_methods_are_registered_on_the_production_stack() {
+    for method in [
+        "list_site_roles",
+        "role_create",
+        "role_delete",
+        "role_update_info",
+        "role_update_permissions",
+        "get_decorated_role_permissions",
+    ] {
+        let response = rpc_request(method, json!({})).await;
+        assert_ne!(
+            response["error"]["code"],
+            json!(-32601),
+            "{method}: {response}"
+        );
+    }
+}
+
+#[tokio::test]
 async fn production_rpc_stack_allows_params_without_nul() {
     let response = rpc_request("echo", json!({"value": "literal \\u0000 text"})).await;
     assert_eq!(response["result"], json!({"value": "literal \\u0000 text"}));

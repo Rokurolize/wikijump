@@ -7,6 +7,29 @@ import { isGoogleAnalyticsProfile } from "$lib/site-settings.js"
 
 import { authGetSession } from "$lib/server/auth/get-session"
 import {
+  siteBanGet,
+  siteBanRemove,
+  siteBanSet,
+  userDisplayName
+} from "$lib/server/deepwell/blocks"
+import {
+  customDomainCreate,
+  customDomainList,
+  customDomainRemove,
+  siteDomain
+} from "$lib/server/deepwell/domain"
+import {
+  getDecoratedRolePermissions,
+  listSiteRoles,
+  roleCreate,
+  roleDelete,
+  roleUpdateInfo,
+  roleUpdatePermissions,
+  type DecoratedRolePermission,
+  type RoleModel,
+  type RolePermission
+} from "$lib/server/deepwell/role"
+import {
   categoryLicenseUpdate,
   categoryNavigationUpdate,
   siteAccessPolicyUpdate,
@@ -52,6 +75,7 @@ import {
   pipe,
   string,
   maxLength,
+  regex,
   enum as vEnum
 } from "valibot"
 
@@ -178,6 +202,35 @@ export async function loadAdminPage(
       ? await membershipApplicationList(siteId, { sessionToken, siteId })
       : []
 
+  const adminContext = sessionToken ? { sessionToken, siteId } : null
+  const [siteAuthority, customDomains, roles] = adminContext
+    ? await Promise.all([
+        siteDomain(siteId, adminContext),
+        customDomainList(siteId, adminContext),
+        listSiteRoles(siteId, adminContext)
+      ])
+    : ["", [], []]
+  const rolePermissions: DecoratedRolePermission[][] = adminContext
+    ? await Promise.all(
+        roles.map((role) =>
+          getDecoratedRolePermissions(siteId, role.role_id, adminContext)
+        )
+      )
+    : []
+
+  const domainForm = await superValidate(
+    { siteId, domain: "", wwwRedirect: false },
+    valibot(domainSchema)
+  )
+  const roleForm = await superValidate(
+    { siteId, name: "", description: "", parentRoleId: roles[0]?.role_id ?? 0 },
+    valibot(roleSchema)
+  )
+  const blockLookupForm = await superValidate(
+    { siteId, userId: 0 },
+    valibot(blockLookupSchema)
+  )
+
   const viewData = {
     view: response.type,
     html: response.type === "admin_permissions" ? response.data.html : undefined,
@@ -199,6 +252,13 @@ export async function loadAdminPage(
     themeForm,
     autonumberForm,
     layoutForm,
+    domainForm,
+    roleForm,
+    blockLookupForm,
+    siteAuthority,
+    customDomains,
+    roles,
+    rolePermissions,
     categories: response.type === "site_found" ? response.data.categories : [],
     pageTemplates: response.type === "site_found" ? response.data.page_templates : []
   }
@@ -237,6 +297,413 @@ export async function accessPolicyAction({
   } catch (error) {
     return failForActionError(error, { form })
   }
+}
+
+export async function domainCreateAction({ request, cookies }: RequestEvent) {
+  const form = await superValidate(request, valibot(domainSchema))
+  if (!form.valid) return fail(400, { form })
+
+  if (form.data.domain.trim().length === 0) {
+    return fail(400, { form, message: "A domain name is required." })
+  }
+
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, {
+      form,
+      message: "user does not have permission to edit custom domains"
+    })
+  }
+
+  try {
+    const siteId = loadTrustedAdminSiteId(request, form.data.siteId)
+    requireActionSession(await authGetSession(sessionToken))
+    await customDomainCreate(
+      siteId,
+      form.data.domain.trim().toLowerCase(),
+      form.data.wwwRedirect,
+      { sessionToken, siteId }
+    )
+    return { form, res: true }
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+}
+
+export async function domainRemoveAction({ request, cookies }: RequestEvent) {
+  const data = await request.formData()
+  const form = {
+    siteId: submittedInteger(data, "siteId"),
+    domain: submittedText(data, "domain")
+  }
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, {
+      ...form,
+      message: "user does not have permission to edit custom domains"
+    })
+  }
+
+  try {
+    const siteId = loadTrustedAdminSiteId(request, form.siteId)
+    const context = { sessionToken, siteId }
+    const domains = await customDomainList(siteId, context)
+    if (!domains.some((entry) => entry.domain === form.domain)) {
+      throw new PageActionContextMismatchError("Permission denied.")
+    }
+    await customDomainRemove(form.domain, context)
+    return { ...form, res: true }
+  } catch (error) {
+    return failForActionError(error, form)
+  }
+}
+
+export async function roleCreateAction({
+  request,
+  getClientAddress,
+  cookies
+}: RequestEvent) {
+  const form = await superValidate(request, valibot(roleSchema))
+  if (!form.valid) return fail(400, { form })
+  if (form.data.name.trim().length === 0 || form.data.parentRoleId <= 0) {
+    return fail(400, { form, message: "A name and parent role are required." })
+  }
+
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, {
+      form,
+      message: "user does not have permission to manage roles"
+    })
+  }
+
+  try {
+    const siteId = loadTrustedAdminSiteId(request, form.data.siteId)
+    const session = requireActionSession(await authGetSession(sessionToken))
+    const context = { sessionToken, siteId }
+    await requireSiteRole(siteId, form.data.parentRoleId, context)
+    const res = await roleCreate(
+      {
+        siteId,
+        name: form.data.name.trim(),
+        description: form.data.description.trim(),
+        parentRoleId: form.data.parentRoleId,
+        creatingUserId: session.user_id,
+        ipAddress: getClientAddress()
+      },
+      context
+    )
+    return { form, res }
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+}
+
+export async function roleDeleteAction({
+  request,
+  getClientAddress,
+  cookies
+}: RequestEvent) {
+  const data = await request.formData()
+  const form = {
+    siteId: submittedInteger(data, "siteId"),
+    roleId: submittedInteger(data, "roleId"),
+    reparentChildren: data.get("reparentChildren") === "true"
+  }
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, {
+      ...form,
+      message: "user does not have permission to manage roles"
+    })
+  }
+
+  try {
+    const siteId = loadTrustedAdminSiteId(request, form.siteId)
+    const session = requireActionSession(await authGetSession(sessionToken))
+    const context = { sessionToken, siteId }
+    const role = await requireSiteRole(siteId, form.roleId, context)
+    if (role.is_virtual) {
+      throw new PageActionContextMismatchError("Permission denied.")
+    }
+    const res = await roleDelete(
+      {
+        siteId,
+        roleId: form.roleId,
+        deletingUserId: session.user_id,
+        reparentChildren: form.reparentChildren,
+        ipAddress: getClientAddress()
+      },
+      context
+    )
+    return { ...form, res }
+  } catch (error) {
+    return failForActionError(error, form)
+  }
+}
+
+export async function roleUpdateInfoAction({
+  request,
+  getClientAddress,
+  cookies
+}: RequestEvent) {
+  const data = await request.formData()
+  const form = {
+    siteId: submittedInteger(data, "siteId"),
+    roleId: submittedInteger(data, "roleId"),
+    name: submittedText(data, "name"),
+    description: submittedText(data, "description")
+  }
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, {
+      ...form,
+      message: "user does not have permission to manage roles"
+    })
+  }
+
+  try {
+    const siteId = loadTrustedAdminSiteId(request, form.siteId)
+    const session = requireActionSession(await authGetSession(sessionToken))
+    const context = { sessionToken, siteId }
+    const role = await requireSiteRole(siteId, form.roleId, context)
+    if (role.is_virtual) {
+      throw new PageActionContextMismatchError("Permission denied.")
+    }
+    if (
+      form.name.length === 0 ||
+      form.name.length > 100 ||
+      form.description.length > 500
+    ) {
+      return fail(400, { ...form, message: "Invalid role details." })
+    }
+    const res = await roleUpdateInfo(
+      {
+        siteId,
+        roleId: form.roleId,
+        name: form.name,
+        description: form.description,
+        updatingUserId: session.user_id,
+        ipAddress: getClientAddress()
+      },
+      context
+    )
+    return { ...form, res }
+  } catch (error) {
+    return failForActionError(error, form)
+  }
+}
+
+export async function rolePermissionsUpdateAction({
+  request,
+  getClientAddress,
+  cookies
+}: RequestEvent) {
+  const data = await request.formData()
+  const form = {
+    siteId: submittedInteger(data, "siteId"),
+    roleId: submittedInteger(data, "roleId"),
+    permissions: data.get("permissions")
+  }
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, { message: "user does not have permission to manage roles" })
+  }
+
+  try {
+    const siteId = loadTrustedAdminSiteId(request, form.siteId)
+    const session = requireActionSession(await authGetSession(sessionToken))
+    const context = { sessionToken, siteId }
+    await requireSiteRole(siteId, form.roleId, context)
+    let permissions: RolePermission[]
+    try {
+      permissions = parseRolePermissions(form.permissions)
+    } catch {
+      return fail(400, { siteId, roleId: form.roleId, message: "Invalid permissions." })
+    }
+    await roleUpdatePermissions(
+      {
+        siteId,
+        roleId: form.roleId,
+        permissions,
+        cascadeRemovals: true,
+        updatingUserId: session.user_id,
+        ipAddress: getClientAddress()
+      },
+      context
+    )
+    return { siteId, roleId: form.roleId, res: true }
+  } catch (error) {
+    return failForActionError(error, { siteId: form.siteId, roleId: form.roleId })
+  }
+}
+
+export async function blockLookupAction({ request, cookies }: RequestEvent) {
+  const form = await superValidate(request, valibot(blockLookupSchema))
+  if (!form.valid) return fail(400, { form })
+  if (form.data.userId <= 0) {
+    return fail(400, { form, message: "A user ID is required." })
+  }
+
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, {
+      form,
+      message: "user does not have permission to view site blocks"
+    })
+  }
+
+  try {
+    const siteId = loadTrustedAdminSiteId(request, form.data.siteId)
+    const context = { sessionToken, siteId }
+    const [user, ban] = await Promise.all([
+      userDisplayName(form.data.userId, context),
+      siteBanGet(siteId, form.data.userId, context)
+    ])
+    return { form, user, ban }
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+}
+
+export async function blockSetAction({
+  request,
+  getClientAddress,
+  cookies
+}: RequestEvent) {
+  const data = await request.formData()
+  const form = {
+    siteId: submittedInteger(data, "siteId"),
+    userId: submittedInteger(data, "userId"),
+    reason: submittedText(data, "reason"),
+    bannedUntil: submittedText(data, "bannedUntil")
+  }
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, {
+      ...form,
+      message: "user does not have permission to manage blocks"
+    })
+  }
+
+  try {
+    const siteId = loadTrustedAdminSiteId(request, form.siteId)
+    const session = requireActionSession(await authGetSession(sessionToken))
+    if (form.userId <= 0 || form.reason.length === 0 || form.reason.length > 200) {
+      return fail(400, { ...form, message: "Invalid block details." })
+    }
+    if (form.bannedUntil !== "" && !/^\d{4}-\d{2}-\d{2}$/.test(form.bannedUntil)) {
+      return fail(400, { ...form, message: "Invalid expiration date." })
+    }
+    await siteBanSet(
+      {
+        siteId,
+        userId: form.userId,
+        reason: form.reason,
+        bannedUntil: form.bannedUntil === "" ? null : form.bannedUntil,
+        createdBy: session.user_id,
+        ipAddress: getClientAddress()
+      },
+      { sessionToken, siteId }
+    )
+    return { ...form, res: true }
+  } catch (error) {
+    return failForActionError(error, form)
+  }
+}
+
+export async function blockRemoveAction({
+  request,
+  getClientAddress,
+  cookies
+}: RequestEvent) {
+  const data = await request.formData()
+  const form = {
+    siteId: submittedInteger(data, "siteId"),
+    userId: submittedInteger(data, "userId"),
+    reason: submittedText(data, "reason")
+  }
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, {
+      ...form,
+      message: "user does not have permission to manage blocks"
+    })
+  }
+
+  try {
+    const siteId = loadTrustedAdminSiteId(request, form.siteId)
+    const session = requireActionSession(await authGetSession(sessionToken))
+    if (form.userId <= 0 || form.reason.length === 0 || form.reason.length > 200) {
+      return fail(400, { ...form, message: "Invalid block details." })
+    }
+    const res = await siteBanRemove(
+      {
+        siteId,
+        userId: form.userId,
+        reason: form.reason,
+        removedBy: session.user_id,
+        ipAddress: getClientAddress()
+      },
+      { sessionToken, siteId }
+    )
+    return { ...form, res }
+  } catch (error) {
+    return failForActionError(error, form)
+  }
+}
+
+function submittedText(data: FormData, name: string): string {
+  const value = data.get(name)
+  return typeof value === "string" ? value.trim() : ""
+}
+
+function submittedInteger(data: FormData, name: string): number {
+  const value = Number(data.get(name))
+  return Number.isSafeInteger(value) ? value : -1
+}
+
+async function requireSiteRole(
+  siteId: number,
+  roleId: number,
+  context: { sessionToken: string; siteId: number }
+): Promise<RoleModel> {
+  const roles = await listSiteRoles(siteId, context)
+  const role = roles.find((entry) => entry.role_id === roleId)
+  if (!role) {
+    throw new PageActionContextMismatchError("Permission denied.")
+  }
+  return role
+}
+
+function parseRolePermissions(value: FormDataEntryValue | null): RolePermission[] {
+  if (typeof value !== "string") {
+    throw new Error("Invalid permissions.")
+  }
+  const parsed: unknown = JSON.parse(value)
+  if (!Array.isArray(parsed)) {
+    throw new Error("Invalid permissions.")
+  }
+  return parsed.map((entry) => {
+    if (!entry || typeof entry !== "object") {
+      throw new Error("Invalid permissions.")
+    }
+    const permission = entry as Record<string, unknown>
+    if (
+      typeof permission.resource_type !== "string" ||
+      typeof permission.action !== "string" ||
+      (permission.resource_category !== null &&
+        typeof permission.resource_category !== "string" &&
+        typeof permission.resource_category !== "number")
+    ) {
+      throw new Error("Invalid permissions.")
+    }
+    return {
+      resource_type: permission.resource_type,
+      resource_category: permission.resource_category as string | number | null,
+      action: permission.action
+    }
+  })
 }
 
 export async function siteIconsAction({
@@ -982,4 +1449,22 @@ const discussionSchema = object({
   siteId: number(),
   categoryId: number(),
   state: vEnum({ DEFAULT: "default", ENABLE: "enable", DISABLE: "disable" })
+})
+
+const domainSchema = object({
+  siteId: number(),
+  domain: pipe(string(), maxLength(253), regex(/^[A-Za-z0-9.-]*$/)),
+  wwwRedirect: boolean()
+})
+
+const roleSchema = object({
+  siteId: number(),
+  name: pipe(string(), maxLength(100)),
+  description: pipe(string(), maxLength(500)),
+  parentRoleId: number()
+})
+
+const blockLookupSchema = object({
+  siteId: number(),
+  userId: number()
 })

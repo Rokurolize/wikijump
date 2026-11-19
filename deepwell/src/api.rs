@@ -519,6 +519,17 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("site_icon_get", site_icon_get);
     register!("site_domain", site_get_domain);
 
+    // Roles and permissions
+    register!("list_site_roles", list_site_roles);
+    register!("role_create", role_create);
+    register!("role_delete", role_delete);
+    register!("role_update_info", role_update_info);
+    register!("role_update_permissions", role_update_permissions);
+    register!(
+        "get_decorated_role_permissions",
+        get_decorated_role_permissions
+    );
+
     // Site bans
     register!("site_ban_set", site_ban_set);
     register!("site_ban_get", site_ban_get);
