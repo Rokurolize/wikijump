@@ -35,6 +35,17 @@ const SECURITY_HEADERS = {
   "x-frame-options": "DENY"
 }
 
+const EMAIL_TOKEN_PATH_PREFIXES = ["/-/reset/", "/-/verify-email/", "/-/delete-account/"]
+const EMAIL_TOKEN_REQUEST_PATHS = new Set([
+  "/-/forgot",
+  "/-/verify-email",
+  "/-/delete-account"
+])
+
+const isEmailTokenPath = (pathname: string) =>
+  EMAIL_TOKEN_REQUEST_PATHS.has(pathname) ||
+  EMAIL_TOKEN_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+
 const HSTS_HEADER = "max-age=31536000; includeSubDomains"
 const CURRENT_SITE_FILE_ORIGIN = "https://wikijump-current-site.invalid"
 const CURRENT_SITE_MAIN_ORIGIN = "https://wikijump-current-site-main.invalid"
@@ -184,6 +195,11 @@ export const applyStaticSecurityHeaders = (
     response.headers.set(header, value)
   }
 
+  if (isEmailTokenPath(pathname)) {
+    response.headers.set("cache-control", "no-store")
+    response.headers.set("referrer-policy", "no-referrer")
+  }
+
   const framePolicy = wikidotInterwikiFramePolicy(pathname, deploymentEnvironment)
   if (framePolicy) {
     response.headers.set("content-security-policy", framePolicy)
@@ -202,6 +218,11 @@ export const applyStaticSecurityHeadersToNodeResponse = (
 ) => {
   for (const [header, value] of staticSecurityHeaderEntries(deploymentEnvironment)) {
     response.setHeader(header, value)
+  }
+
+  if (isEmailTokenPath(pathname)) {
+    response.setHeader("cache-control", "no-store")
+    response.setHeader("referrer-policy", "no-referrer")
   }
 
   const framePolicy = wikidotInterwikiFramePolicy(pathname, deploymentEnvironment)

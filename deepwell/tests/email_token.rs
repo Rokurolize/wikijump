@@ -368,6 +368,68 @@ async fn reset_round_trip_sets_password_and_revokes_sessions() {
 }
 
 #[tokio::test]
+async fn password_reset_revokes_all_outstanding_email_tokens() {
+    let runner = TestRunner::setup().await;
+    let n = next_n();
+    let email = format!("email-token-revoke-{n}@example.invalid");
+    let created = UserService::create(
+        runner.context(),
+        token_user(n, UserType::Regular, email.clone()),
+    )
+    .await
+    .expect("regular user should be created");
+
+    let verify_token = issue_for(
+        &runner,
+        created.user_id,
+        &email,
+        EmailTokenPurpose::VerifyEmail,
+    )
+    .await;
+    let reset_token = issue_for(
+        &runner,
+        created.user_id,
+        &email,
+        EmailTokenPurpose::ResetPassword,
+    )
+    .await;
+    let grant_output = run_endpoint!(
+        runner => password_reset_redeem,
+        common::make_params(json!({
+            "token": reset_token,
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    let grant: String = grant_output.grant;
+
+    let complete = run_endpoint!(
+        runner => password_reset_complete,
+        common::make_params(json!({
+            "grant": grant,
+            "new_password": "email-token-revoke-password",
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    assert_eq!(complete.sessions_revoked, 0);
+    assert_eq!(live_token_count(&runner, created.user_id).await, 0);
+
+    let error = run_endpoint_err!(
+        runner => email_verify_redeem,
+        common::make_params(json!({
+            "token": verify_token,
+            "ip_address": common::IP_ADDRESS,
+        }))
+    );
+    assert_contains_error!(error, ErrorType::InvalidEmailToken);
+
+    let user = UserService::get_real(runner.context(), Reference::Id(created.user_id))
+        .await
+        .expect("user should load after recovery");
+    assert!(user.email_verified_at.is_none());
+    runner.teardown().await;
+}
+
+#[tokio::test]
 async fn cross_purpose_expired_and_mismatched_tokens_are_rejected() {
     let runner = TestRunner::setup().await;
     let n = next_n();
