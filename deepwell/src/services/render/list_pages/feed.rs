@@ -407,7 +407,7 @@ fn parse_feed_count(
         None | Some("") => Ok(default),
         Some(value) => value
             .parse::<u64>()
-            .map_err(|_| wikidot_feed_argument_error(error_message).into()),
+            .map_err(|_| wikidot_feed_argument_error(error_message)),
     }
 }
 

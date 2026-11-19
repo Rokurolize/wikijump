@@ -149,6 +149,7 @@ impl SearchService {
                 page_id: row.page_id,
                 site_id: row.site_id,
                 page_category_id: Some(row.page_category_id),
+                slug: Some(row.slug.clone()),
             })
             .collect::<Vec<_>>();
         let decisions = view_decisions_for_scanned_pages(
