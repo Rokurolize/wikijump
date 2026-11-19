@@ -249,7 +249,9 @@ impl RenderService {
                     .map_or(AuthorSelector::All, |authors| authors.as_selector()),
                 score: &score,
                 votes: &[],
-                offset: item_offset,
+                // The runtime scan always starts at offset 0, so the
+                // feed offset is applied to the viewable rows below.
+                offset: 0,
                 name: None,
                 slug: None,
                 slugs: &[],
@@ -268,16 +270,19 @@ impl RenderService {
             // Evaluate the feed for the actual caller, not anonymously, so
             // the view gate matches direct page view for members and site
             // admins as well as anonymous callers (finding #1455).
-            RenderRuntime::for_viewer(ctx, ctx.request().user_id)
+            let rows = RenderRuntime::for_viewer(ctx, ctx.request().user_id)
                 .find_viewable_list_pages_rows(
                     query,
-                    item_limit as usize,
+                    (item_offset as usize).saturating_add(item_limit as usize),
                     &mut permission_cache,
                     Some(&mut score_filter_cache),
                 )
                 .await?
                 .pages
-                .pages
+                .pages;
+            rows.into_iter()
+                .skip(item_offset as usize)
+                .collect::<Vec<_>>()
         };
 
         let user_displays = Self::load_wikidot_user_displays(ctx, &pages).await?;

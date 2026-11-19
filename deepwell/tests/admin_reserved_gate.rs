@@ -759,6 +759,7 @@ async fn list_pages_feed_gates_pages_and_honors_windowing() {
             json!({
                 "site_id": site_id,
                 "category": "_default",
+                "pagetype": "*",
             }),
         )
         .await;
@@ -798,6 +799,7 @@ async fn list_pages_feed_gates_pages_and_honors_windowing() {
         json!({
             "site_id": site_id,
             "category": "_default",
+            "pagetype": "*",
         }),
     )
     .await;
