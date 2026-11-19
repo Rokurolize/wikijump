@@ -723,6 +723,38 @@ pub(in crate::services::render) struct ListPagesContentCache {
         BTreeMap<(i64, i64), Option<String>>,
     pub(in crate::services::render) wikitext_scalar_count:
         BTreeMap<(i64, i64), Option<usize>>,
+    pub(in crate::services::render) summary_derivations:
+        BTreeMap<ListPagesSummaryDerivationKey, ListPagesSummaryDerivation>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub(in crate::services::render) struct ListPagesSummaryDerivationKey {
+    pub(in crate::services::render) site_id: i64,
+    pub(in crate::services::render) page_id: i64,
+    pub(in crate::services::render) slug: String,
+    pub(in crate::services::render) title: Option<String>,
+    pub(in crate::services::render) alt_title: Option<String>,
+    pub(in crate::services::render) category_slug: Option<String>,
+    pub(in crate::services::render) score_bits: u32,
+    pub(in crate::services::render) tags: Vec<String>,
+    pub(in crate::services::render) full_default_summary: bool,
+    pub(in crate::services::render) default_summary_first_paragraph: bool,
+    pub(in crate::services::render) default_template: bool,
+    pub(in crate::services::render) summary_value: bool,
+    pub(in crate::services::render) first_paragraph_value: bool,
+    pub(in crate::services::render) page_preview: bool,
+    pub(in crate::services::render) remaining_include_expansions: usize,
+    pub(in crate::services::render) trusted_corpus_render: bool,
+}
+
+#[derive(Debug, Clone)]
+pub(in crate::services::render) struct ListPagesSummaryDerivation {
+    pub(in crate::services::render) summary: Option<String>,
+    pub(in crate::services::render) first_paragraph: Option<String>,
+    pub(in crate::services::render) styles: Vec<String>,
+    pub(in crate::services::render) included_pages: Vec<ftml::data::PageRef>,
+    pub(in crate::services::render) expanded_include_count: usize,
+    pub(in crate::services::render) cost_charges: Vec<&'static str>,
 }
 
 #[derive(Debug, Clone)]

@@ -129,12 +129,12 @@ pub(super) use self::rendering_support::{
     CountPagesRequiredTagTotal, ListPagesBlockRenderArgs, ListPagesBlockRenderResult,
     ListPagesContentCache, ListPagesExpansion, ListPagesExpansionArgs,
     ListPagesExpansionOptions, ListPagesListingCache, ListPagesPageContext,
-    ListPagesRenderedBlock, expand_list_pages_generated_includes,
-    list_pages_body_starts_with_preparsed_block, list_pages_feed_only_render_result,
-    list_pages_html_encoded_head_owns_script_tail, prepare_list_pages_rendered_block,
-    preserve_list_pages_module_matches, push_list_pages_generated_output,
-    push_list_pages_generated_output_with_cost, push_list_pages_trailing_runtime_blocks,
-    suppress_generated_list_pages_heading_toc,
+    ListPagesRenderedBlock, ListPagesSummaryDerivation, ListPagesSummaryDerivationKey,
+    expand_list_pages_generated_includes, list_pages_body_starts_with_preparsed_block,
+    list_pages_feed_only_render_result, list_pages_html_encoded_head_owns_script_tail,
+    prepare_list_pages_rendered_block, preserve_list_pages_module_matches,
+    push_list_pages_generated_output, push_list_pages_generated_output_with_cost,
+    push_list_pages_trailing_runtime_blocks, suppress_generated_list_pages_heading_toc,
 };
 pub(super) use self::substitution::{
     CurrentPageAuthorSource, ExactNameListPagesBatchKey, ListPagesArguments,
@@ -151,10 +151,10 @@ pub(super) use self::substitution::{
     list_pages_first_paragraph, list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector,
     list_pages_recognized_static_url_fallback_ranges,
-    list_pages_static_category_preflight, list_pages_static_parent_fullname_with_url,
-    list_pages_unknown_link_target_slugs, parse_list_pages_arguments,
-    parse_list_pages_arguments_with_url, union_found_page_fields,
-    unsupported_list_pages_replacement,
+    list_pages_source_has_module_opening, list_pages_static_category_preflight,
+    list_pages_static_parent_fullname_with_url, list_pages_unknown_link_target_slugs,
+    parse_list_pages_arguments, parse_list_pages_arguments_with_url,
+    union_found_page_fields, unsupported_list_pages_replacement,
 };
 #[cfg(test)]
 pub(super) use self::substitution::{

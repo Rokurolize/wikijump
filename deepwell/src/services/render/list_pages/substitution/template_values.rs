@@ -48,6 +48,39 @@ pub(in crate::services::render) fn list_pages_first_paragraph(wikitext: &str) ->
         .trim()
 }
 
+pub(in crate::services::render) fn list_pages_source_has_module_opening(
+    source: &str,
+) -> bool {
+    let bytes = source.as_bytes();
+    let mut search = 0usize;
+    while search + 1 < bytes.len() {
+        let Some(relative) = bytes[search..].windows(2).position(|pair| pair == b"[[")
+        else {
+            return false;
+        };
+        let start = search + relative;
+        let mut cursor = start + 2;
+        while bytes
+            .get(cursor)
+            .is_some_and(|byte| matches!(byte, b' ' | b'\t' | b'\r' | b'\n'))
+        {
+            cursor += 1;
+        }
+        for name in [b"module".as_slice(), b"social".as_slice()] {
+            if bytes.len() - cursor >= name.len()
+                && bytes[cursor..cursor + name.len()].eq_ignore_ascii_case(name)
+                && bytes.get(cursor + name.len()).is_none_or(|byte| {
+                    byte.is_ascii_whitespace() || *byte == b']' || *byte == b'_'
+                })
+            {
+                return true;
+            }
+        }
+        search = start + 2;
+    }
+    false
+}
+
 pub(super) fn protect_list_pages_content_insertion(
     content: &str,
     compat_text: &mut CompatTextFragments,
@@ -309,6 +342,37 @@ mod tests {
             fragments.restore(&protected),
             "before [[&lt;unsafe&gt;&amp;]] after",
         );
+    }
+
+    #[test]
+    fn module_openings_are_detected_conservatively() {
+        for source in [
+            "plain text without markup",
+            "a [[[some-page]]] link",
+            "[[div]]not a module[[/div]]",
+            "[[modulex]] is not the module tag",
+            "[[ modules ]] has a plural name",
+            "[[module-list]] is a different tag",
+        ] {
+            assert!(
+                !list_pages_source_has_module_opening(source),
+                "unexpected module opening in {source:?}",
+            );
+        }
+        for source in [
+            "[[module CSS]]",
+            "[[ module ListPages category=\"x\"]]",
+            "[[MODULE Rate]]",
+            "[[\nmodule CSS]]",
+            "before [[module]] after",
+            "[[social]]",
+            "text [[module",
+        ] {
+            assert!(
+                list_pages_source_has_module_opening(source),
+                "missed module opening in {source:?}",
+            );
+        }
     }
 
     #[test]

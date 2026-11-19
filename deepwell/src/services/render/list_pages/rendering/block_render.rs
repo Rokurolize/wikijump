@@ -11,7 +11,8 @@ use super::{
     IncludeExpansion, IncludedCategories, ListPagesArguments, ListPagesBlockRenderResult,
     ListPagesContentGeometry, ListPagesOutputShape, ListPagesPageContext,
     ListPagesRenderDiagnosticsInput, ListPagesRenderedBlock,
-    ListPagesSubstitutionContext, MAX_LISTPAGES_RENDER_LIMIT,
+    ListPagesSubstitutionContext, ListPagesSummaryDerivation,
+    ListPagesSummaryDerivationKey, MAX_LISTPAGES_RENDER_LIMIT,
     MAX_LISTPAGES_RENDER_SCAN_ROWS, OrderProperty, PageCategory, PageInfo,
     PageParentSelector, PageQuery, PageQueryService, PageRevisionService, PageService,
     PaginationSelector, PermissionService, PrepareDelayedListPagesRowParams, QueryFilter,
@@ -29,19 +30,20 @@ use super::{
     list_pages_render_diagnostics, list_pages_row_markup_bytes,
     list_pages_row_scan_target, list_pages_runtime_container_open,
     list_pages_runtime_row_container_close, list_pages_runtime_row_container_open,
-    list_pages_template_has_block_section, list_pages_template_starts_with_inline_anchor,
-    list_pages_unknown_link_target_slugs, load_list_pages_child_counts,
-    load_list_pages_data_form_definitions, load_list_pages_first_images,
-    load_list_pages_parent_displays, native_numbered_list_content,
-    neutralize_authored_markers, page_category, page_query_cap_requires_original_module,
-    parse_static_wikidot_data_form_values, prepare_delayed_list_pages_row_with_budget,
-    push_list_pages_generated_output, push_list_pages_generated_output_with_cost,
-    push_list_pages_pager, push_list_pages_trailing_runtime_blocks,
-    render_list_pages_block_content_source, render_list_pages_default_summary_source,
-    render_list_pages_selected_content_source, render_page_query_uses_single_scan,
-    resolve_list_pages_first_image, seal_zero_row_list_pages_wrapper,
-    seed_random_list_pages_order, select_list_pages_rows,
-    should_render_current_page_list_pages_row, wikidot_content_section,
+    list_pages_source_has_module_opening, list_pages_template_has_block_section,
+    list_pages_template_starts_with_inline_anchor, list_pages_unknown_link_target_slugs,
+    load_list_pages_child_counts, load_list_pages_data_form_definitions,
+    load_list_pages_first_images, load_list_pages_parent_displays,
+    native_numbered_list_content, neutralize_authored_markers, page_category,
+    page_query_cap_requires_original_module, parse_static_wikidot_data_form_values,
+    prepare_delayed_list_pages_row_with_budget, push_list_pages_generated_output,
+    push_list_pages_generated_output_with_cost, push_list_pages_pager,
+    push_list_pages_trailing_runtime_blocks, render_list_pages_block_content_source,
+    render_list_pages_default_summary_source, render_list_pages_selected_content_source,
+    render_page_query_uses_single_scan, resolve_list_pages_first_image,
+    seal_zero_row_list_pages_wrapper, seed_random_list_pages_order,
+    select_list_pages_rows, should_render_current_page_list_pages_row,
+    wikidot_content_section,
 };
 
 impl RenderService {
@@ -1161,98 +1163,86 @@ impl RenderService {
             ) = if wants_first_paragraph {
                 match page_wikitext.as_deref() {
                     Some(wikitext) => {
-                        let mut rendered_page_styles = Vec::new();
                         let selected_page_info = selected_page_info
                             .as_ref()
                             .expect("selected page info is built for loaded wikitext");
                         let max_include_expansions = include_budget.remaining;
-                        // No full-content render runs for %%content%%:
-                        // live Wikidot substitutes the listed page's raw
-                        // wikitext (LISTPAGES-DEEP D7, #3774), so a render
-                        // of the content could only consume the caller's
-                        // include budget and register backlinks for
-                        // includes that never execute, and could fail the
-                        // whole render once that phantom consumption
-                        // exhausts the budget. The summary fallback reads
-                        // the raw section text instead, exactly as the
-                        // delayed substitution path already does.
-                        let summary_source = wants_summary.then(|| {
-                            let summary = wikidot_content_section(wikitext, Some(1));
-                            if wants_full_default_summary
-                                && template.default_summary_first_paragraph()
-                            {
-                                // Live Wikidot's default template
-                                // summarizes a row by its first
-                                // paragraph only, not the complete
-                                // first content section (sandbox probes
-                                // `muse-probe-lpfail-dt-index` and
-                                // `muse-probe-lpfail-dt2-index`). An
-                                // explicit empty [[body]] section keeps
-                                // the complete first content section.
-                                list_pages_first_paragraph(&summary).to_owned()
-                            } else {
-                                Self::suppress_rate_modules_in_list_pages_content(
-                                    summary, settings,
-                                )
-                            }
-                        });
-                        let rendered_summary = if let Some(summary) =
-                            summary_source.as_deref()
-                        {
-                            let mut rendered = if wants_full_default_summary {
-                                render_list_pages_default_summary_source(
-                                    ListPagesSelectedContentArgs {
-                                        ctx,
-                                        wikitext: summary,
-                                        page_info: if page_preview {
-                                            page_info
-                                        } else {
-                                            selected_page_info
-                                        },
-                                        settings,
-                                        current_site_id,
-                                        current_category_id: 0,
-                                        current_page_id: page.page_id,
-                                        viewer_user_id,
-                                        max_include_expansions: include_budget.remaining,
-                                        trusted_corpus_render: include_budget
-                                            .trusted_corpus_render,
-                                        render_cost_budget: render_cost_budget.clone(),
-                                        url,
-                                    },
-                                    page_preview,
-                                )
-                                .await?
-                            } else {
-                                render_list_pages_selected_content_source(
-                                    ListPagesSelectedContentArgs {
-                                        ctx,
-                                        wikitext: summary,
-                                        page_info: selected_page_info,
-                                        settings,
-                                        current_site_id,
-                                        current_category_id: page
-                                            .page_category_id
-                                            .unwrap_or(0),
-                                        current_page_id: page.page_id,
-                                        viewer_user_id,
-                                        max_include_expansions,
-                                        trusted_corpus_render: include_budget
-                                            .trusted_corpus_render,
-                                        render_cost_budget: render_cost_budget.clone(),
-                                        url,
-                                    },
-                                )
-                                .await?
-                            };
-                            include_budget.consume(rendered.expanded_include_count);
-                            included_pages.extend(rendered.included_pages);
-                            rendered_page_styles.append(&mut rendered.styles);
-                            Some(rendered.body)
-                        } else {
-                            None
+                        let derivation_key = ListPagesSummaryDerivationKey {
+                            site_id: page.site_id,
+                            page_id: page.page_id,
+                            slug: page.slug.clone().unwrap_or_default(),
+                            title: page.title.clone(),
+                            alt_title: page.alt_title.clone(),
+                            category_slug: page
+                                .page_category_id
+                                .and_then(|category_id| category_slugs.get(&category_id))
+                                .cloned(),
+                            score_bits: page.score.unwrap_or(0.0).to_bits(),
+                            tags: page.tags.clone().unwrap_or_default(),
+                            full_default_summary: wants_full_default_summary,
+                            default_summary_first_paragraph: template
+                                .default_summary_first_paragraph(),
+                            default_template: template.is_default_template(),
+                            summary_value: template.uses_summary_value(),
+                            first_paragraph_value: template.uses_first_paragraph_value(),
+                            page_preview,
+                            remaining_include_expansions: max_include_expansions,
+                            trusted_corpus_render: include_budget.trusted_corpus_render,
                         };
-                        let rendered_first_paragraph = if wants_first_paragraph {
+                        if let Some(derivation) =
+                            content_cache.summary_derivations.get(&derivation_key)
+                        {
+                            let derivation = derivation.clone();
+                            for operation in &derivation.cost_charges {
+                                render_cost_budget.charge(1, operation).map_err(
+                                    |error| {
+                                        Error::new(error.to_string(), ErrorType::Render)
+                                    },
+                                )?;
+                            }
+                            include_budget.consume(derivation.expanded_include_count);
+                            included_pages
+                                .extend(derivation.included_pages.iter().cloned());
+                            (
+                                derivation.summary,
+                                derivation.first_paragraph,
+                                derivation.styles,
+                            )
+                        } else {
+                            let mut rendered_page_styles = Vec::new();
+                            let mut cost_charges: Vec<&'static str> = Vec::new();
+                            let mut expanded_include_count = 0usize;
+                            let mut derivation_included_pages = Vec::new();
+                            // No full-content render runs for %%content%%:
+                            // live Wikidot substitutes the listed page's raw
+                            // wikitext (LISTPAGES-DEEP D7, #3774), so a render
+                            // of the content could only consume the caller's
+                            // include budget and register backlinks for
+                            // includes that never execute, and could fail the
+                            // whole render once that phantom consumption
+                            // exhausts the budget. The summary fallback reads
+                            // the raw section text instead, exactly as the
+                            // delayed substitution path already does.
+                            let summary_source = wants_summary.then(|| {
+                                let summary = wikidot_content_section(wikitext, Some(1));
+                                if wants_full_default_summary
+                                    && template.default_summary_first_paragraph()
+                                {
+                                    // Live Wikidot's default template
+                                    // summarizes a row by its first
+                                    // paragraph only, not the complete
+                                    // first content section (sandbox probes
+                                    // `muse-probe-lpfail-dt-index` and
+                                    // `muse-probe-lpfail-dt2-index`). An
+                                    // explicit empty [[body]] section keeps
+                                    // the complete first content section.
+                                    list_pages_first_paragraph(&summary).to_owned()
+                                } else {
+                                    Self::suppress_rate_modules_in_list_pages_content(
+                                        summary, settings,
+                                    )
+                                }
+                            });
                             let first_paragraph = summary_source
                                 .as_deref()
                                 .map(|summary| {
@@ -1261,9 +1251,102 @@ impl RenderService {
                                     )
                                 })
                                 .unwrap_or_default();
-                            if summary_source
-                                .as_deref()
-                                .is_some_and(|summary| summary == first_paragraph)
+                            let derivation_gates_apply = !template.is_default_template();
+                            let skip_summary_render = derivation_gates_apply
+                                && !template.uses_summary_value()
+                                && summary_source.as_deref().is_some_and(|summary| {
+                                    !list_pages_source_has_module_opening(summary)
+                                });
+                            let skip_first_paragraph_render = derivation_gates_apply
+                                && !template.uses_first_paragraph_value()
+                                && !list_pages_source_has_module_opening(first_paragraph)
+                                && summary_source.as_deref() != Some(first_paragraph);
+                            let rendered_summary = if skip_summary_render {
+                                render_cost_budget
+                                    .charge(1, "selected-content render")
+                                    .map_err(|error| {
+                                    Error::new(error.to_string(), ErrorType::Render)
+                                })?;
+                                cost_charges.push("selected-content render");
+                                None
+                            } else if let Some(summary) = summary_source.as_deref() {
+                                let mut rendered = if wants_full_default_summary {
+                                    render_list_pages_default_summary_source(
+                                        ListPagesSelectedContentArgs {
+                                            ctx,
+                                            wikitext: summary,
+                                            page_info: if page_preview {
+                                                page_info
+                                            } else {
+                                                selected_page_info
+                                            },
+                                            settings,
+                                            current_site_id,
+                                            current_category_id: 0,
+                                            current_page_id: page.page_id,
+                                            viewer_user_id,
+                                            max_include_expansions: include_budget
+                                                .remaining,
+                                            trusted_corpus_render: include_budget
+                                                .trusted_corpus_render,
+                                            render_cost_budget: render_cost_budget
+                                                .clone(),
+                                            url,
+                                        },
+                                        page_preview,
+                                    )
+                                    .await?
+                                } else {
+                                    render_list_pages_selected_content_source(
+                                        ListPagesSelectedContentArgs {
+                                            ctx,
+                                            wikitext: summary,
+                                            page_info: selected_page_info,
+                                            settings,
+                                            current_site_id,
+                                            current_category_id: page
+                                                .page_category_id
+                                                .unwrap_or(0),
+                                            current_page_id: page.page_id,
+                                            viewer_user_id,
+                                            max_include_expansions,
+                                            trusted_corpus_render: include_budget
+                                                .trusted_corpus_render,
+                                            render_cost_budget: render_cost_budget
+                                                .clone(),
+                                            url,
+                                        },
+                                    )
+                                    .await?
+                                };
+                                cost_charges.push(if wants_full_default_summary {
+                                    "default-summary render"
+                                } else {
+                                    "selected-content render"
+                                });
+                                expanded_include_count += rendered.expanded_include_count;
+                                include_budget.consume(rendered.expanded_include_count);
+                                derivation_included_pages
+                                    .extend(rendered.included_pages.iter().cloned());
+                                included_pages.extend(rendered.included_pages);
+                                rendered_page_styles.append(&mut rendered.styles);
+                                Some(rendered.body)
+                            } else {
+                                None
+                            };
+                            let rendered_first_paragraph = if skip_first_paragraph_render
+                            {
+                                render_cost_budget
+                                    .charge(1, "selected-content render")
+                                    .map_err(|error| {
+                                    Error::new(error.to_string(), ErrorType::Render)
+                                })?;
+                                cost_charges.push("selected-content render");
+                                None
+                            } else if !skip_summary_render
+                                && summary_source
+                                    .as_deref()
+                                    .is_some_and(|summary| summary == first_paragraph)
                             {
                                 rendered_summary.clone()
                             } else {
@@ -1289,19 +1372,32 @@ impl RenderService {
                                         },
                                     )
                                     .await?;
+                                cost_charges.push("selected-content render");
+                                expanded_include_count += rendered.expanded_include_count;
                                 include_budget.consume(rendered.expanded_include_count);
+                                derivation_included_pages
+                                    .extend(rendered.included_pages.iter().cloned());
                                 included_pages.extend(rendered.included_pages);
                                 rendered_page_styles.append(&mut rendered.styles);
                                 Some(rendered.body)
-                            }
-                        } else {
-                            None
-                        };
-                        (
-                            rendered_summary,
-                            rendered_first_paragraph,
-                            rendered_page_styles,
-                        )
+                            };
+                            content_cache.summary_derivations.insert(
+                                derivation_key,
+                                ListPagesSummaryDerivation {
+                                    summary: rendered_summary.clone(),
+                                    first_paragraph: rendered_first_paragraph.clone(),
+                                    styles: rendered_page_styles.clone(),
+                                    included_pages: derivation_included_pages,
+                                    expanded_include_count,
+                                    cost_charges,
+                                },
+                            );
+                            (
+                                rendered_summary,
+                                rendered_first_paragraph,
+                                rendered_page_styles,
+                            )
+                        }
                     }
                     None => (None, None, Vec::new()),
                 }

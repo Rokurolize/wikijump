@@ -220,6 +220,8 @@ pub(in crate::services::render) struct ListPagesTemplatePlan {
     default_summary_first_paragraph: bool,
     sections: ListPagesSections,
     variables: ListPagesVariables,
+    summary_value: bool,
+    first_paragraph_value: bool,
     fields: FoundPageFields,
     output_shape: ListPagesOutputShape,
     rating_only: bool,
@@ -512,6 +514,8 @@ impl ListPagesTemplatePlan {
             default_summary_first_paragraph: false,
             sections: ListPagesSections::default(),
             variables,
+            summary_value: false,
+            first_paragraph_value: false,
             fields: found_page_fields(variables),
             output_shape: ListPagesOutputShape::Plain,
             rating_only: false,
@@ -558,6 +562,8 @@ impl ListPagesTemplatePlan {
         let mut variable_count = 0;
         let mut rating_only = true;
         let mut has_unknown_variables = false;
+        let mut summary_value = false;
+        let mut first_paragraph_value = false;
 
         for captures in LISTPAGES_VARIABLE_REGEX.captures_iter(body) {
             let Some(variable) = ListPagesVariable::parse(&captures["name"]) else {
@@ -575,6 +581,13 @@ impl ListPagesTemplatePlan {
             variable_count += 1;
             rating_only &= variable == ListPagesVariable::Rating;
             variables.insert(variable);
+            if variable == ListPagesVariable::Summary {
+                match captures["name"].to_ascii_lowercase().as_str() {
+                    "first_paragraph" => first_paragraph_value = true,
+                    "summary" | "description" | "short" => summary_value = true,
+                    _ => {}
+                }
+            }
         }
 
         Some(Self {
@@ -588,6 +601,8 @@ impl ListPagesTemplatePlan {
             default_summary_first_paragraph,
             sections,
             variables,
+            summary_value,
+            first_paragraph_value,
             fields: found_page_fields(variables),
             output_shape: output_shape(body),
             rating_only: variable_count > 0 && rating_only,
@@ -716,6 +731,14 @@ impl ListPagesTemplatePlan {
 
     pub(in crate::services::render) fn uses_first_paragraph(&self) -> bool {
         self.variables.contains(ListPagesVariable::Summary)
+    }
+
+    pub(in crate::services::render) fn uses_summary_value(&self) -> bool {
+        self.summary_value
+    }
+
+    pub(in crate::services::render) fn uses_first_paragraph_value(&self) -> bool {
+        self.first_paragraph_value
     }
 
     pub(in crate::services::render) fn uses_preview(&self) -> bool {
@@ -885,6 +908,39 @@ mod tests {
                 ..Default::default()
             }
         );
+    }
+
+    #[test]
+    fn summary_family_captures_split_into_summary_and_first_paragraph_values() {
+        let plan = ListPagesTemplatePlan::compile("%%summary%%").expect("summary body");
+        assert!(plan.uses_first_paragraph());
+        assert!(plan.uses_summary_value());
+        assert!(!plan.uses_first_paragraph_value());
+
+        let plan =
+            ListPagesTemplatePlan::compile("%%first_paragraph%%").expect("fp body");
+        assert!(plan.uses_first_paragraph());
+        assert!(!plan.uses_summary_value());
+        assert!(plan.uses_first_paragraph_value());
+
+        let plan = ListPagesTemplatePlan::compile("%%description%% %%short%%")
+            .expect("alias body");
+        assert!(plan.uses_summary_value());
+        assert!(!plan.uses_first_paragraph_value());
+
+        let plan = ListPagesTemplatePlan::compile("%%summary%% %%first_paragraph%%")
+            .expect("both body");
+        assert!(plan.uses_summary_value());
+        assert!(plan.uses_first_paragraph_value());
+
+        let plan = ListPagesTemplatePlan::compile("%%SUMMARY%%").expect("upper body");
+        assert!(plan.uses_summary_value());
+
+        let plan =
+            ListPagesTemplatePlan::compile("%%summary{1}%%").expect("suffixed body");
+        assert!(!plan.uses_first_paragraph());
+        assert!(!plan.uses_summary_value());
+        assert!(!plan.uses_first_paragraph_value());
     }
 
     #[test]

@@ -1903,6 +1903,171 @@ async fn listpages_summary_aliases_cover_the_first_section_but_first_paragraph_d
 }
 
 #[tokio::test]
+async fn listpages_derivation_long_first_paragraph_and_large_source() {
+    const TARGET_SLUG: &str = "fixture-listpages-derivation-long-target";
+    const INDEX_SLUG: &str = "fixture-listpages-derivation-long-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let long_paragraph = "LONGPARAGRAPHSEGMENT-".repeat(150);
+    let tail = "TAILSEGMENT ".repeat(2000);
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Derivation Long Target",
+        &format!("{long_paragraph}\n\nSECOND-PARA-MARKER\n====\n{tail}"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Derivation Long Index",
+        concat!(
+            "[[module ListPages fullname=\"fixture-listpages-derivation-long-target\" separate=\"no\" wrapper=\"no\"]]\n",
+            "FP-BEGIN %%first_paragraph%% FP-END\n",
+            "[[/module]]\n",
+            "[[module ListPages fullname=\"fixture-listpages-derivation-long-target\" separate=\"no\" wrapper=\"no\"]]\n",
+            "SUM-BEGIN %%summary%% SUM-END\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    let first = html
+        .split_once("FP-BEGIN")
+        .and_then(|(_, suffix)| suffix.split_once("FP-END"))
+        .map(|(value, _)| value)
+        .expect("first-paragraph sentinels should survive rendering");
+    assert!(
+        first.contains(&long_paragraph),
+        "first_paragraph must carry the complete long first paragraph:\n{html}",
+    );
+    assert!(
+        !first.contains("SECOND-PARA-MARKER"),
+        "first_paragraph must stop at the paragraph boundary:\n{html}",
+    );
+    let summary = html
+        .split_once("SUM-BEGIN")
+        .and_then(|(_, suffix)| suffix.split_once("SUM-END"))
+        .map(|(value, _)| value)
+        .expect("summary sentinels should survive rendering");
+    assert!(
+        summary.contains(&long_paragraph) && summary.contains("SECOND-PARA-MARKER"),
+        "summary must cover the complete first content section:\n{html}",
+    );
+    assert!(
+        !html.contains("TAILSEGMENT"),
+        "no summary-family variable may cross the first content-section separator:\n{html}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_derivation_page_without_paragraph_break() {
+    const TARGET_SLUG: &str = "fixture-listpages-derivation-single-target";
+    const INDEX_SLUG: &str = "fixture-listpages-derivation-single-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Derivation Single Target",
+        "SINGLE-BLOCK first line\nsecond line\nthird line",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Derivation Single Index",
+        concat!(
+            "[[module ListPages fullname=\"fixture-listpages-derivation-single-target\" separate=\"no\" wrapper=\"no\"]]\n",
+            "ONLY-BEGIN %%first_paragraph%% ONLY-END\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    let only = html
+        .split_once("ONLY-BEGIN")
+        .and_then(|(_, suffix)| suffix.split_once("ONLY-END"))
+        .map(|(value, _)| value)
+        .expect("first-paragraph sentinels should survive rendering");
+    assert!(
+        only.contains("SINGLE-BLOCK first line")
+            && only.contains("second line")
+            && only.contains("third line"),
+        "first_paragraph of a page without a paragraph break is the whole source:\n{html}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_derivation_stacked_modules_listing_the_same_page() {
+    const TARGET_SLUG: &str = "fixture-listpages-derivation-stacked-target";
+    const INDEX_SLUG: &str = "fixture-listpages-derivation-stacked-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Derivation Stacked Target",
+        "STACKED-FIRST\n\nSTACKED-SECOND",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Derivation Stacked Index",
+        concat!(
+            "[[module ListPages fullname=\"fixture-listpages-derivation-stacked-target\" separate=\"no\" wrapper=\"no\"]]\n",
+            "ONE-BEGIN %%summary%% ONE-END\n",
+            "[[/module]]\n",
+            "[[module ListPages fullname=\"fixture-listpages-derivation-stacked-target\" separate=\"no\" wrapper=\"no\"]]\n",
+            "TWO-BEGIN %%summary%% TWO-END\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    let one = html
+        .split_once("ONE-BEGIN")
+        .and_then(|(_, suffix)| suffix.split_once("ONE-END"))
+        .map(|(value, _)| value)
+        .expect("first module sentinels should survive rendering");
+    let two = html
+        .split_once("TWO-BEGIN")
+        .and_then(|(_, suffix)| suffix.split_once("TWO-END"))
+        .map(|(value, _)| value)
+        .expect("second module sentinels should survive rendering");
+    assert!(
+        one.contains("STACKED-FIRST") && one.contains("STACKED-SECOND"),
+        "summary must cover the complete first content section:\n{html}",
+    );
+    assert_eq!(
+        one, two,
+        "stacked modules listing the same page must derive identical summaries:\n{html}",
+    );
+}
+
+#[tokio::test]
 async fn listpages_plain_content_executes_selected_page_includes_only() {
     const COMPONENT_SLUG: &str = "component:listpages-plain-content-include";
     const TARGET_SLUG: &str = "fixture-listpages-plain-content-target";
