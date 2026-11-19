@@ -270,7 +270,16 @@ async function renderPromotionBase({sourceRoot, outputDir, source, images, token
     "--wws-image", images.wws,
     "--caddy-image", images.caddy,
   ];
-  await execFile(PYTHON, args, {env: {...process.env, DEEPWELL_RPC_TOKEN: token}, maxBuffer: 16 * 1024 * 1024});
+  // The staging render generates fresh credentials for a new runtime
+  // home, and render.py rejects --generate-credentials when credential
+  // values are already present in the environment. The live standing
+  // credentials ride in this process's environment for the rehearsal
+  // compose interpolation below, so keep them out of the render's env.
+  const renderEnv = {...process.env, DEEPWELL_RPC_TOKEN: token};
+  for (const key of ["STANDING_DB_PASSWORD", "STANDING_MINIO_ROOT_USER", "STANDING_MINIO_ROOT_PASSWORD"]) {
+    delete renderEnv[key];
+  }
+  await execFile(PYTHON, args, {env: renderEnv, maxBuffer: 16 * 1024 * 1024});
 }
 
 async function builtImages(buildEvidencePath) {
