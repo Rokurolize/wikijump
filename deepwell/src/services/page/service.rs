@@ -57,6 +57,7 @@ impl PageService {
             layout,
             revision_comments: comments,
             user_id,
+            tags,
             bypass_filter,
             ip_address,
         }: CreatePage,
@@ -120,6 +121,7 @@ impl PageService {
             alt_title,
             slug: slug.clone(),
             layout,
+            tags,
         };
 
         let CreateFirstPageRevisionOutput {
