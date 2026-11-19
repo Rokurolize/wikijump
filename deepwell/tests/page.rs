@@ -366,3 +366,69 @@ async fn basic_move() {
 //      create page, get with details (each permutation), check values are correct
 //      create page, add revisions, then go back and hide revision data, then request that data (should be omitted)
 //      etc.
+
+#[tokio::test]
+async fn page_restore_without_explicit_user_id_uses_request_actor() {
+    let mut runner = TestRunner::setup().await;
+
+    const SITE_SLUG: &str = "test";
+    const PAGE_SLUG: &str = "restore-without-user-id";
+
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("Seeded site not found");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(PAGE_SLUG.into())),
+    });
+
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "restore actor probe",
+            "title": "Restore actor probe",
+            "slug": PAGE_SLUG,
+            "revision_comments": "setup",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        })
+    );
+    let page_id = created.page_id;
+
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": page_id,
+            "last_revision_id": created.revision_id,
+            "revision_comments": "setup delete",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        })
+    );
+
+    let restored = run_endpoint!(
+        runner,
+        page_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": page_id,
+            "revision_comments": "restore without explicit user_id",
+            "ip_address": common::IP_ADDRESS,
+        })
+    );
+    let _ = restored;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": PAGE_SLUG})
+    )
+    .expect("restored page not found");
+    assert_eq!(page.page_id, page_id);
+}
