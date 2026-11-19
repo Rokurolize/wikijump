@@ -356,7 +356,7 @@ pub async fn handle_local_file(
 async fn handle_local_file_fetch(
     State(state): State<ServerState>,
     method: Method,
-    Path((mut page_slug, filename)): Path<(String, String)>,
+    Path((page_slug, filename)): Path<(String, String)>,
     headers: HeaderMap,
     source_fallback: Option<&str>,
 ) -> Response {
@@ -368,8 +368,7 @@ async fn handle_local_file_fetch(
 
     let site_id = require_internal_header!(get_site_id(&headers));
     let file_info =
-        match fetch_file_info(&state, &headers, site_id, &mut page_slug, &filename).await
-        {
+        match fetch_file_info(&state, &headers, site_id, &page_slug, &filename).await {
             Ok(info) => info,
             Err(response)
                 if (method == Method::GET || method == Method::HEAD)
@@ -396,7 +395,7 @@ async fn handle_local_file_fetch(
 pub async fn handle_file_fetch(
     State(state): State<ServerState>,
     method: Method,
-    Path((mut page_slug, filename)): Path<(String, String)>,
+    Path((page_slug, filename)): Path<(String, String)>,
     headers: HeaderMap,
 ) -> Response {
     info!(
@@ -407,8 +406,7 @@ pub async fn handle_file_fetch(
 
     let site_id = require_internal_header!(get_site_id(&headers));
     let file_info =
-        match fetch_file_info(&state, &headers, site_id, &mut page_slug, &filename).await
-        {
+        match fetch_file_info(&state, &headers, site_id, &page_slug, &filename).await {
             Ok(info) => info,
             Err(response)
                 if method == Method::GET
@@ -428,7 +426,7 @@ pub async fn handle_file_fetch(
 pub async fn handle_file_download(
     State(state): State<ServerState>,
     method: Method,
-    Path((mut page_slug, filename)): Path<(String, String)>,
+    Path((page_slug, filename)): Path<(String, String)>,
     headers: HeaderMap,
 ) -> Response {
     info!(
@@ -439,8 +437,7 @@ pub async fn handle_file_download(
 
     let site_id = require_internal_header!(get_site_id(&headers));
     let file_info =
-        match fetch_file_info(&state, &headers, site_id, &mut page_slug, &filename).await
-        {
+        match fetch_file_info(&state, &headers, site_id, &page_slug, &filename).await {
             Ok(info) => info,
             Err(response) => return response,
         };
@@ -650,6 +647,38 @@ mod tests {
                 })
             }
             "page_get" if request["params"]["page"] == "art-scp-8200:the-phantom-sea" => {
+                json!({"jsonrpc": "2.0", "result": null, "id": id})
+            }
+            "page_get" if request["params"]["page"] == "admin:manage" => json!({
+                "jsonrpc": "2.0",
+                "result": {"page_id": 555},
+                "id": id
+            }),
+            "page_get" if request["params"]["page"] == "_admin" => {
+                // DEEPWELL refuses the reserved page unless the
+                // session's user has Site/Edit standing.
+                if request["params"]["session_token"] == "admin-session" {
+                    json!({
+                        "jsonrpc": "2.0",
+                        "result": {"page_id": 999},
+                        "id": id
+                    })
+                } else {
+                    json!({
+                        "jsonrpc": "2.0",
+                        "error": {"code": 3106, "message": "permission denied"},
+                        "id": id
+                    })
+                }
+            }
+            "page_get"
+                if matches!(
+                    request["params"]["page"].as_str(),
+                    Some("..existing-page" | "../existing-page" | "existing\u{2215}page")
+                ) =>
+            {
+                // DEEPWELL resolves pages by exact slug: operands that
+                // merely fold onto a real slug do not resolve.
                 json!({"jsonrpc": "2.0", "result": null, "id": id})
             }
             "page_get" => json!({
@@ -1425,6 +1454,95 @@ mod tests {
             assert!(!response.headers().contains_key(LOCATION));
             assert_eq!(response.bytes().await.unwrap(), &b"abcdef"[..]);
         }
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn file_routes_do_not_serve_through_traversal_or_folded_page_operands() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        // None of these operands is the stored slug of the page that
+        // holds present.txt ("existing-page"), but each of them folds
+        // onto it under wikidot normalization. They used to be served
+        // through the normalization retry; now they must miss like any
+        // other nonexistent page, without touching S3.
+        for path in [
+            "/local--files/..%2Fexisting-page/present.txt",
+            "/-/file/..%2Fexisting-page/present.txt",
+            "/-/file/%2e%2e%2Fexisting-page/present.txt",
+            "/-/file/..existing-page/present.txt",
+            "/-/file/existing%E2%88%95page/present.txt",
+        ] {
+            let response =
+                router_request(Arc::clone(&state), Method::GET, path, None).await;
+            assert_eq!(response.status(), StatusCode::OK, "{path}");
+            assert_eq!(
+                response.bytes().await.unwrap(),
+                WIKIDOT_MISSING_FILE_HTML,
+                "{path}",
+            );
+        }
+
+        let response = router_request(
+            state,
+            Method::GET,
+            "/-/download/..%2Fexisting-page/present.txt",
+            None,
+        )
+        .await;
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
+        assert!(s3_server.requests().is_empty());
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn admin_category_files_require_site_admin_standing() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![(200, b"abcdef")]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        // Anonymous visitors and ordinary members may not pull files
+        // off a page in the `admin` category: DEEPWELL gates that
+        // category's content on Site/Edit standing, and file serving
+        // mirrors the gate. The denial looks like a missing file.
+        for cookie in [None, Some("wikijump_token=member-session")] {
+            let headers: Vec<_> = cookie
+                .into_iter()
+                .map(|value| (header::COOKIE, value))
+                .collect();
+            let response = router_request_with_headers(
+                Arc::clone(&state),
+                Method::GET,
+                "/-/file/admin%3Amanage/present.txt",
+                &headers,
+            )
+            .await;
+            assert_eq!(response.status(), StatusCode::OK);
+            assert_eq!(response.bytes().await.unwrap(), WIKIDOT_MISSING_FILE_HTML,);
+        }
+
+        // A viewer with admin standing is served as usual.
+        let response = router_request_with_headers(
+            state,
+            Method::GET,
+            "/-/file/admin%3Amanage/present.txt",
+            &[(header::COOKIE, "wikijump_token=admin-session")],
+        )
+        .await;
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers().get(CONTENT_TYPE).unwrap(),
+            "application/x-test",
+        );
+        assert_eq!(response.bytes().await.unwrap(), &b"abcdef"[..]);
 
         s3_server.join();
         deepwell_server.abort();

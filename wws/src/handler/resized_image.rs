@@ -99,7 +99,7 @@ impl From<std::io::Error> for ResizeError {
 pub async fn handle_resized_image(
     State(state): State<ServerState>,
     method: Method,
-    Path((mut page_slug, filename, variant_filename)): Path<(String, String, String)>,
+    Path((page_slug, filename, variant_filename)): Path<(String, String, String)>,
     headers: HeaderMap,
 ) -> Response {
     let site_id = require_internal_header!(get_site_id(&headers));
@@ -107,8 +107,7 @@ pub async fn handle_resized_image(
         return resized_not_found(&state, &headers, site_id, &page_slug, &filename).await;
     };
     let file_info =
-        match fetch_file_info(&state, &headers, site_id, &mut page_slug, &filename).await
-        {
+        match fetch_file_info(&state, &headers, site_id, &page_slug, &filename).await {
             Ok(file_info) => file_info,
             Err(response) => return response,
         };
@@ -463,6 +462,7 @@ mod tests {
     #[derive(Debug)]
     struct MockState {
         page_exists: AtomicBool,
+        admin_allowed: AtomicBool,
         file_reply: Mutex<FileReply>,
         blobs: Mutex<HashMap<String, Vec<u8>>>,
         rpc_requests: Mutex<Vec<Value>>,
@@ -474,6 +474,10 @@ mod tests {
     impl MockState {
         fn set_page_exists(&self, exists: bool) {
             self.page_exists.store(exists, Ordering::SeqCst);
+        }
+
+        fn set_admin_allowed(&self, allowed: bool) {
+            self.admin_allowed.store(allowed, Ordering::SeqCst);
         }
 
         fn set_file_reply(&self, reply: FileReply) {
@@ -497,6 +501,7 @@ mod tests {
         async fn spawn(source: Vec<u8>) -> Self {
             let mock = Arc::new(MockState {
                 page_exists: AtomicBool::new(true),
+                admin_allowed: AtomicBool::new(false),
                 file_reply: Mutex::new(FileReply::Found {
                     revision_id: 11,
                     mime: "image/png",
@@ -603,6 +608,23 @@ mod tests {
         let method = request["method"].as_str().unwrap();
         state.rpc_requests.lock().unwrap().push(request.clone());
         let response = match method {
+            "page_get" if request["params"]["page"] == "_admin" => {
+                // DEEPWELL refuses the reserved page unless the
+                // session's user has Site/Edit standing.
+                if state.admin_allowed.load(Ordering::SeqCst) {
+                    json!({
+                        "jsonrpc": "2.0",
+                        "result": {"page_id": 999},
+                        "id": id,
+                    })
+                } else {
+                    json!({
+                        "jsonrpc": "2.0",
+                        "error": {"code": 3106, "message": "permission denied"},
+                        "id": id,
+                    })
+                }
+            }
             "page_get" => json!({
                 "jsonrpc": "2.0",
                 "result": state.page_exists.load(Ordering::SeqCst).then_some(json!({"page_id": PAGE_ID})),
@@ -1096,5 +1118,68 @@ mod tests {
         app.mock.s3_gate.add_permits(2);
         assert_eq!(first.await.unwrap().status(), StatusCode::OK);
         assert_eq!(second.await.unwrap().status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn resized_route_rejects_traversal_page_operand() {
+        let app = TestApp::spawn(png(800, 400, 17)).await;
+
+        // The operand decodes to "../gallery-page": not a stored slug,
+        // and it must not be folded onto the real page.
+        let response = app
+            .client
+            .get(format!(
+                "{}/local--resized-images/..%2F{PAGE_SLUG}/{FILE_NAME}/thumbnail.jpg",
+                app.base_url,
+            ))
+            .header(HEADER_SITE_ID.as_str(), SITE_ID.to_string())
+            .send()
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        assert_eq!(app.mock.s3_requests.load(Ordering::SeqCst), 0);
+        let page_get_count = app
+            .mock
+            .rpc_requests
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|request| request["method"] == "page_get")
+            .count();
+        assert_eq!(page_get_count, 0);
+    }
+
+    #[tokio::test]
+    async fn resized_route_admin_category_requires_admin_standing() {
+        let app = TestApp::spawn(png(800, 400, 17)).await;
+        let url = format!(
+            "{}/local--resized-images/admin%3Amanage/{FILE_NAME}/thumbnail.jpg",
+            app.base_url,
+        );
+
+        // Without Site/Edit standing the file on the admin-category
+        // page is refused (as a missing file) and never read from S3.
+        let denied = app
+            .client
+            .get(&url)
+            .header(HEADER_SITE_ID.as_str(), SITE_ID.to_string())
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(denied.status(), StatusCode::NOT_FOUND);
+        assert_eq!(app.mock.s3_requests.load(Ordering::SeqCst), 0);
+
+        // With admin standing the thumbnail is served.
+        app.mock.set_admin_allowed(true);
+        let allowed = app
+            .client
+            .get(&url)
+            .header(HEADER_SITE_ID.as_str(), SITE_ID.to_string())
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(allowed.status(), StatusCode::OK);
+        assert_eq!(allowed.headers()[CONTENT_TYPE], "image/jpeg");
     }
 }
