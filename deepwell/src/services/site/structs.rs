@@ -58,6 +58,12 @@ pub struct GetSite<'a> {
 }
 
 #[derive(Deserialize, Debug, Clone)]
+pub struct DeleteSite<'a> {
+    pub site: Reference<'a>,
+    pub ip_address: IpAddr,
+}
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct GetSiteIcon<'a> {
     pub site: Reference<'a>,
     pub kind: String,

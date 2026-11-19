@@ -22,6 +22,7 @@ use super::structs::{CreateSite, CreateSiteOutput, SiteForumSettings, UpdateSite
 use crate::constants::SYSTEM_USER_ID;
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
 use crate::models::site::{self, Entity as Site, Model as SiteModel};
+use crate::models::{file, page};
 use crate::services::PageService;
 use crate::services::ServiceContext;
 use crate::services::alias::CreateAlias;
@@ -39,6 +40,7 @@ use crate::utils::{validate_locale, validate_wikidot_site_language};
 use ftml::layout::Layout;
 use paste::paste;
 use sea_orm::NotSet;
+use sea_orm::sea_query::Expr;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, EntityTrait, PaginatorTrait, QueryFilter,
     QuerySelect, Set,
@@ -427,6 +429,124 @@ impl SiteService {
             site_user_id: user.user_id,
             slug,
         })
+    }
+
+    pub async fn delete(
+        ctx: &ServiceContext<'_>,
+        reference: Reference<'_>,
+        deleting_user_id: i64,
+        ip_address: IpAddr,
+    ) -> Result<SiteModel> {
+        let txn = ctx.transaction();
+        let site = Self::get_for_update(ctx, reference)
+            .await
+            .or_raise(|| Error::new("failed to delete site", ErrorType::Site))?;
+        let site_id = site.site_id;
+
+        let make_error = || {
+            Error::new(
+                format!("failed to delete site '{}' (ID {})", site.slug, site_id,),
+                ErrorType::Site,
+            )
+        };
+
+        if site.deleted_at.is_some() {
+            bail!(Error::new(
+                format!("site ID {site_id} is already deleted"),
+                ErrorType::Site,
+            ));
+        }
+
+        if site.slug == DEFAULT_SITE_SLUG {
+            bail!(Error::new(
+                "cannot delete the default site",
+                ErrorType::BadRequest,
+            ));
+        }
+
+        let deleted_at = now();
+
+        page::Entity::update_many()
+            .col_expr(page::Column::DeletedAt, Expr::value(Some(deleted_at)))
+            .filter(
+                Condition::all()
+                    .add(page::Column::SiteId.eq(site_id))
+                    .add(page::Column::DeletedAt.is_null()),
+            )
+            .exec(txn)
+            .await
+            .or_raise(make_error)?;
+
+        file::Entity::update_many()
+            .col_expr(file::Column::DeletedAt, Expr::value(Some(deleted_at)))
+            .filter(
+                Condition::all()
+                    .add(file::Column::SiteId.eq(site_id))
+                    .add(file::Column::DeletedAt.is_null()),
+            )
+            .exec(txn)
+            .await
+            .or_raise(make_error)?;
+
+        AliasService::remove_all(ctx, AliasType::Site, site_id)
+            .await
+            .or_raise(make_error)?;
+
+        let site_user_id = RelationService::get_site_user_id_for_site(ctx, site_id)
+            .await
+            .or_raise(make_error)?;
+        UserService::delete(
+            ctx,
+            Reference::Id(site_user_id),
+            deleting_user_id,
+            ip_address,
+        )
+        .await
+        .or_raise(make_error)?;
+
+        DomainService::remove_all_custom(ctx, site_id)
+            .await
+            .or_raise(make_error)?;
+
+        let deletion = Site::update_many()
+            .col_expr(site::Column::DeletedAt, Expr::value(Some(deleted_at)))
+            .filter(
+                Condition::all()
+                    .add(site::Column::SiteId.eq(site_id))
+                    .add(site::Column::DeletedAt.is_null()),
+            )
+            .exec(txn)
+            .await
+            .or_raise(make_error)?;
+
+        if deletion.rows_affected != 1 {
+            return Err(Error::new(
+                format!(
+                    "site deletion updated {} rows for site ID {site_id}",
+                    deletion.rows_affected,
+                ),
+                ErrorType::Site,
+            )
+            .into());
+        }
+
+        ctx.defer_public_content_cache_invalidate_site(site_id)
+            .or_raise(make_error)?;
+
+        AuditService::log(
+            ctx,
+            ip_address,
+            AuditEvent::SiteDelete {
+                site_id,
+                deleting_user_id,
+            },
+        )
+        .await
+        .or_raise(make_error)?;
+
+        Self::get(ctx, Reference::Id(site_id))
+            .await
+            .or_raise(make_error)
     }
 
     pub async fn update(

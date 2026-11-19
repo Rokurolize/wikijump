@@ -55,6 +55,10 @@ pub enum AuditEvent<'a> {
         site_id: i64,
         user_id: Option<i64>,
     },
+    SiteDelete {
+        site_id: i64,
+        deleting_user_id: i64,
+    },
     SiteUpdate {
         site_id: i64,
         user_id: i64,
@@ -365,6 +369,21 @@ impl<'a> AuditEvent<'a> {
                 event_type: "site.create",
                 ip_address,
                 user_id,
+                site_id: Some(site_id),
+                page_id: None,
+                extra_id_1: None,
+                extra_id_2: None,
+                extra_string_1: None,
+                extra_string_2: None,
+                extra_number: None,
+            },
+            AuditEvent::SiteDelete {
+                site_id,
+                deleting_user_id,
+            } => RawAuditEvent {
+                event_type: "site.delete",
+                ip_address,
+                user_id: Some(deleting_user_id),
                 site_id: Some(site_id),
                 page_id: None,
                 extra_id_1: None,
@@ -1309,6 +1328,14 @@ mod tests {
         assert_event_type(&raw, "site.create");
         assert_eq!(raw.site_id, Some(22));
         assert_eq!(raw.user_id, None);
+
+        let raw = extract(AuditEvent::SiteDelete {
+            site_id: 23,
+            deleting_user_id: 24,
+        });
+        assert_event_type(&raw, "site.delete");
+        assert_eq!(raw.site_id, Some(23));
+        assert_eq!(raw.user_id, Some(24));
 
         let previous_fields = SiteFields {
             name: Maybe::Set("Old Site"),
