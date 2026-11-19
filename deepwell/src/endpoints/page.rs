@@ -18,6 +18,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use super::page_action_guard::{
+    require_page_create_permission, require_page_edit_permission,
+};
 use super::prelude::*;
 use crate::models::file::Model as FileModel;
 use crate::models::page::Model as PageModel;
@@ -42,6 +45,7 @@ pub async fn page_create(
 ) -> Result<CreatePageOutput> {
     let input: CreatePage = parse!(params, Page);
     info!("Creating new page in site ID {}", input.site_id);
+    require_page_create_permission(ctx, input.site_id, &input.slug).await?;
     PageService::create(ctx, input)
         .await
         .or_raise(|| Error::new("failed to create page", ErrorType::Page))
@@ -276,6 +280,7 @@ pub async fn page_move(
         "Moving page {:?} in site ID {} to {}",
         input.page, input.site_id, input.new_slug,
     );
+    require_page_edit_permission(ctx, input.site_id, input.page.clone()).await?;
     PageService::r#move(ctx, input)
         .await
         .or_raise(|| Error::new("failed to move page", ErrorType::Page))
@@ -349,6 +354,8 @@ pub async fn page_set_layout(
         input.user_id,
     );
 
+    require_page_edit_permission(ctx, input.site_id, Reference::Id(input.page_id))
+        .await?;
     PageService::set_layout(ctx, input)
         .await
         .or_raise(|| Error::new("failed to set layout for page", ErrorType::Page))

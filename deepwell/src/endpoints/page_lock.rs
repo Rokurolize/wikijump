@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use super::page_action_guard::require_page_edit_permission;
 use super::prelude::*;
 use crate::models::page_lock::Model as PageLockModel;
 use crate::services::PageLockService;
@@ -39,6 +40,8 @@ pub async fn page_lock_create(
         .user_id()
         .or_raise(|| Error::new("no user ID found", ErrorType::PageLock))?;
     let page_ref = input.page.clone();
+
+    require_page_edit_permission(ctx, site_id, page_ref.borrow()).await?;
 
     info!(
         "Creating page lock of type {:?} for page {:?} in site {}",
@@ -66,6 +69,8 @@ pub async fn page_lock_remove(
         .user_id()
         .or_raise(|| Error::new("no user ID found", ErrorType::PageLock))?;
     let page_ref = input.page.clone();
+
+    require_page_edit_permission(ctx, site_id, page_ref.borrow()).await?;
 
     info!(
         "Removing active page lock for page {:?} in site {}",
