@@ -18,15 +18,17 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+mod backup;
 mod bootstrap;
 mod icons;
 mod service;
 mod structs;
 
+pub use self::backup::SiteBackupService;
 pub use self::bootstrap::{BootstrapNewSite, STANDARD_TEMPLATE_PAGES};
 pub use self::service::SiteService;
 pub use self::structs::{
-    CreateSite, CreateSiteOutput, DeleteSite, EducationalUpgrade, GetSite, GetSiteIcon,
-    GetSiteIconOutput, GetSiteOutput, SetSiteIcon, SetSiteIconOutput, UpdateSite,
-    UpdateSiteBody,
+    CreateSite, CreateSiteOutput, DeleteSite, EducationalUpgrade, GetSite, GetSiteBackup,
+    GetSiteIcon, GetSiteIconOutput, GetSiteOutput, SetSiteIcon, SetSiteIconOutput,
+    UpdateSite, UpdateSiteBody,
 };

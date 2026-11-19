@@ -22,12 +22,13 @@ use super::prelude::*;
 use crate::models::site::Model as SiteModel;
 use crate::services::MutationAuthorization;
 use crate::services::SettingsService;
+use crate::services::SiteBackupService;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::site::{
-    BootstrapNewSite, CreateSite, CreateSiteOutput, DeleteSite, GetSite, GetSiteIcon,
+    BootstrapNewSite, CreateSite, CreateSiteOutput, DeleteSite, GetSite, GetSiteBackup, GetSiteIcon,
     GetSiteIconOutput, GetSiteOutput, SetSiteIcon, SetSiteIconOutput, UpdateSite,
 };
-use crate::types::{Action, AliasType, Permission, Reference, Resource};
+use crate::types::{Action, AliasType, Bytes, Permission, Reference, Resource};
 
 pub async fn site_create(
     ctx: &ServiceContext<'_>,
@@ -205,6 +206,52 @@ pub async fn site_icon_set(
     SiteService::set_site_icon(ctx, input, actor_user_id)
         .await
         .or_raise(|| Error::new("failed to set site icon", ErrorType::Site))
+}
+
+pub async fn site_backup_export(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Bytes<'static>> {
+    let GetSiteBackup { site } = parse!(params, Site);
+    let site_id = match site {
+        Reference::Id(site_id) => site_id,
+        Reference::Slug(_) => {
+            return Err(Error::new(
+                "site_backup_export requires a numeric site ID",
+                ErrorType::BadRequest,
+            )
+            .into());
+        }
+    };
+
+    let actor_user_id = MutationAuthorization::require_permission(
+        ctx,
+        site_id,
+        None,
+        Permission {
+            resource_type: Resource::Site,
+            resource_category: None,
+            action: Action::Edit,
+        },
+        "export a site backup",
+    )
+    .await?;
+
+    let site = SiteService::get(ctx, Reference::Id(site_id))
+        .await
+        .or_raise(|| Error::new("failed to get site for backup", ErrorType::Site))?;
+
+    if site.deleted_at.is_some() {
+        return Err(Error::new("cannot export a deleted site", ErrorType::Site).into());
+    }
+
+    info!("Exporting backup of site ID {site_id} as user ID {actor_user_id}");
+
+    let archive = SiteBackupService::export(ctx, site_id)
+        .await
+        .or_raise(|| Error::new("failed to build site backup", ErrorType::Site))?;
+
+    Ok(Bytes::from(archive))
 }
 
 pub async fn site_icon_get(

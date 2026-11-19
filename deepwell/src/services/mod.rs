@@ -137,7 +137,7 @@ pub use self::role::RoleService;
 pub use self::score::ScoreService;
 pub use self::session::SessionService;
 pub use self::settings::{SettingsService, ThemeSetting};
-pub use self::site::SiteService;
+pub use self::site::{SiteBackupService, SiteService};
 pub use self::text::TextService;
 pub use self::text_block::TextBlockService;
 pub use self::user::UserService;

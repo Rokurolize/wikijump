@@ -64,6 +64,11 @@ pub struct DeleteSite<'a> {
 }
 
 #[derive(Deserialize, Debug, Clone)]
+pub struct GetSiteBackup<'a> {
+    pub site: Reference<'a>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct GetSiteIcon<'a> {
     pub site: Reference<'a>,
     pub kind: String,
