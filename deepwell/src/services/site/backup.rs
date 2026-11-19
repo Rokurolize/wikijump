@@ -255,7 +255,7 @@ impl SiteBackupService {
         let manifest_json = serde_json::to_vec_pretty(&manifest).or_raise(make_error)?;
         archive.add_file("manifest.json", &manifest_json)?;
 
-        Ok(archive.finish()?)
+        archive.finish()
     }
 }
 
