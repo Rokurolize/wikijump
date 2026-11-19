@@ -164,7 +164,7 @@ fn parse_tar(bytes: &[u8]) -> BTreeMap<String, Vec<u8>> {
         );
         offset += 512;
         let contents = bytes[offset..offset + size].to_vec();
-        offset += (size + 511) / 512 * 512;
+        offset += size.div_ceil(512) * 512;
         entries.insert(name, contents);
     }
     entries

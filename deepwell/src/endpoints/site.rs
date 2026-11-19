@@ -25,8 +25,9 @@ use crate::services::SettingsService;
 use crate::services::SiteBackupService;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::site::{
-    BootstrapNewSite, CreateSite, CreateSiteOutput, DeleteSite, GetSite, GetSiteBackup, GetSiteIcon,
-    GetSiteIconOutput, GetSiteOutput, SetSiteIcon, SetSiteIconOutput, UpdateSite,
+    BootstrapNewSite, CreateSite, CreateSiteOutput, DeleteSite, GetSite, GetSiteBackup,
+    GetSiteIcon, GetSiteIconOutput, GetSiteOutput, SetSiteIcon, SetSiteIconOutput,
+    UpdateSite,
 };
 use crate::types::{Action, AliasType, Bytes, Permission, Reference, Resource};
 
