@@ -36,6 +36,7 @@ use self::common::TestRunner;
 use cuid2::cuid;
 use deepwell::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
 use deepwell::error::ErrorType;
+use deepwell::models::blob_pending;
 use deepwell::models::file;
 use deepwell::models::file_revision;
 use deepwell::services::PageService;
@@ -52,6 +53,7 @@ use deepwell::types::{FileRevisionType, Reference, UserType};
 use sea_orm::{ActiveModelTrait, Set};
 use serde_json::json;
 use str_macro::str;
+use time::{Duration, OffsetDateTime};
 
 const SITE_SLUG: &str = "test";
 
@@ -1352,5 +1354,129 @@ async fn site_changes_feed_hides_admin_revisions_from_non_admins() {
     assert!(
         feed.items.iter().any(|item| item.slug == "_admin"),
         "site admin's site-changes feed should include _admin revisions",
+    );
+}
+
+/// A pre-finalized empty pending blob owned by `user_id`, so
+/// `file_create` can consume it without an S3 round trip (the same
+/// fixture shape as tests/page.rs).
+async fn prefinalized_empty_blob(
+    runner: &TestRunner,
+    user_id: i64,
+    site_id: i64,
+    page_id: i64,
+) -> String {
+    let pending_blob_id = cuid();
+    let created_at = OffsetDateTime::now_utc();
+    blob_pending::ActiveModel {
+        external_id: Set(pending_blob_id.clone()),
+        created_by: Set(user_id),
+        created_at: Set(created_at),
+        expires_at: Set(created_at + Duration::minutes(5)),
+        expected_length: Set(0),
+        s3_path: Set(format!("uploads/{pending_blob_id}")),
+        s3_hash: Set(Some(EMPTY_BLOB_HASH.to_vec())),
+        presign_url: Set("https://uploads.example.test/admin-gate".to_owned()),
+        site_id: Set(Some(site_id)),
+        page_id: Set(Some(page_id)),
+        content_type_label: Set(Some("empty".to_owned())),
+        content_type_description: Set(Some("empty".to_owned())),
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("pre-finalized pending blob fixture should be inserted");
+    pending_blob_id
+}
+
+#[tokio::test]
+async fn member_cannot_create_files_on_admin_page() {
+    let mut runner = TestRunner::setup().await;
+    let site_id = site_id(&runner).await;
+    let admin_page_id = get_or_create_admin_page(&mut runner, site_id).await;
+    let member = create_member(&runner, site_id, "file-create").await;
+    let normal_page_id = create_page(
+        &mut runner,
+        site_id,
+        "gate-create-normal",
+        "Gate Create Normal",
+    )
+    .await;
+
+    // (#1771) Direct upload routed at the `_admin` page itself: the
+    // member is denied even though file creation on a normal page
+    // works for them (below).
+    let blob_id = prefinalized_empty_blob(&runner, member, site_id, admin_page_id).await;
+    set_request_context(
+        &mut runner,
+        Some(member),
+        site_id,
+        Some(Reference::Id(admin_page_id)),
+    );
+    let error = run_endpoint_err!(
+        runner,
+        file_create,
+        json!({
+            "site_id": site_id,
+            "page_id": admin_page_id,
+            "name": "planted.txt",
+            "uploaded_blob_id": blob_id,
+            "revision_comments": "member upload attempt on _admin",
+            "user_id": member,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    // The site admin can upload to `_admin`.
+    let blob_id =
+        prefinalized_empty_blob(&runner, ADMIN_USER_ID, site_id, admin_page_id).await;
+    set_request_context(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        site_id,
+        Some(Reference::Id(admin_page_id)),
+    );
+    let created = run_endpoint!(
+        runner,
+        file_create,
+        json!({
+            "site_id": site_id,
+            "page_id": admin_page_id,
+            "name": "admin-upload.txt",
+            "uploaded_blob_id": blob_id,
+            "revision_comments": "admin upload on _admin",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(
+        created.file_id > 0,
+        "admin upload on _admin should create a file"
+    );
+
+    // The member can upload to a normal page.
+    let blob_id = prefinalized_empty_blob(&runner, member, site_id, normal_page_id).await;
+    set_request_context(
+        &mut runner,
+        Some(member),
+        site_id,
+        Some(Reference::Id(normal_page_id)),
+    );
+    let created = run_endpoint!(
+        runner,
+        file_create,
+        json!({
+            "site_id": site_id,
+            "page_id": normal_page_id,
+            "name": "member-upload.txt",
+            "uploaded_blob_id": blob_id,
+            "revision_comments": "member upload on a normal page",
+            "user_id": member,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(
+        created.file_id > 0,
+        "member upload on a normal page should create a file"
     );
 }
