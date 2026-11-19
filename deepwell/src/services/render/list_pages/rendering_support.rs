@@ -737,6 +737,7 @@ struct CachedListPagesListing {
     rows: Option<CachedListPagesRows>,
     categories: Option<Vec<page_category::Model>>,
     displays: Option<ListPagesBatchDisplays>,
+    exact_totals: BTreeMap<String, usize>,
 }
 
 #[derive(Debug, Default)]
@@ -792,6 +793,29 @@ impl ListPagesListingCache {
         displays: ListPagesBatchDisplays,
     ) {
         self.entries.entry(key).or_default().displays = Some(displays);
+    }
+
+    pub(in crate::services::render) fn exact_total(
+        &self,
+        listing_key: &str,
+        total_key: &str,
+    ) -> Option<usize> {
+        self.entries
+            .get(listing_key)
+            .and_then(|entry| entry.exact_totals.get(total_key).copied())
+    }
+
+    pub(in crate::services::render) fn cache_exact_total(
+        &mut self,
+        listing_key: String,
+        total_key: String,
+        total: usize,
+    ) {
+        self.entries
+            .entry(listing_key)
+            .or_default()
+            .exact_totals
+            .insert(total_key, total);
     }
 }
 

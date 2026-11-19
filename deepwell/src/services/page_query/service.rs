@@ -95,6 +95,13 @@ use self::score_filter::{apply_score_filters, score_comparison_operator};
 #[derive(Debug)]
 pub struct PageQueryService;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum PageQueryBuildMode {
+    Find,
+    Count,
+    FindUnordered,
+}
+
 struct BuiltPageQuery<'a> {
     query: sea_orm::Select<page::Entity>,
     fields: FoundPageFields,
@@ -171,9 +178,28 @@ impl PageQueryService {
             score_filter_cache,
             score_filter_session,
             hard_candidate_limit,
+            PageQueryBuildMode::Find,
         )
         .await?;
-        Self::fetch_built_page_query(ctx, built).await
+        Self::fetch_built_page_query(ctx, built, true).await
+    }
+
+    pub(crate) async fn find_with_metadata_unordered_cached(
+        ctx: &ServiceContext<'_>,
+        query: PageQuery<'_>,
+        score_filter_cache: Option<&mut PageQueryScoreFilterCache>,
+        score_filter_session: Option<&mut PageQueryScoreFilterSession>,
+    ) -> Result<PageQueryResultEnvelope> {
+        let built = Self::build_page_query(
+            ctx,
+            query,
+            score_filter_cache,
+            score_filter_session,
+            None,
+            PageQueryBuildMode::FindUnordered,
+        )
+        .await?;
+        Self::fetch_built_page_query(ctx, built, false).await
     }
 
     pub async fn count_with_metadata(
@@ -182,7 +208,15 @@ impl PageQueryService {
     ) -> Result<PageQueryResultEnvelope> {
         let make_error =
             || Error::new("failed to create ListPages query", ErrorType::PageQuery);
-        let built = Self::build_page_query(ctx, query, None, None, None).await?;
+        let built = Self::build_page_query(
+            ctx,
+            query,
+            None,
+            None,
+            None,
+            PageQueryBuildMode::Count,
+        )
+        .await?;
         let txn = ctx.transaction();
         if built.tag_custom_plan {
             txn.execute_unprepared("SET LOCAL plan_cache_mode = force_custom_plan")
@@ -196,25 +230,15 @@ impl PageQueryService {
                 .or_raise(make_error)?;
         }
         let candidate_count = usize::try_from(total).ok();
-        let defer_offset_limit = built.ordering_deferred_to_rust
-            || built.filtering_deferred_to_rust
-            || built.hard_candidate_limit.is_some();
-        let cap_exceeded = defer_offset_limit
-            && built
-                .candidate_limit
-                .and_then(|limit| usize::try_from(limit).ok())
-                .is_some_and(|limit| candidate_count.is_some_and(|count| count >= limit));
         Ok(PageQueryResultEnvelope {
             pages: FoundPages { pages: Vec::new() },
             metadata: PageQueryResultMetadata {
                 candidate_count,
-                cap_exceeded,
+                cap_exceeded: false,
                 sql_limit_offset_applied: false,
                 filtering_deferred_to_rust: built.filtering_deferred_to_rust,
-                ordering_deferred_to_rust: built.ordering_deferred_to_rust,
+                ordering_deferred_to_rust: false,
                 exact_count_safe: !built.filtering_deferred_to_rust
-                    && !built.ordering_deferred_to_rust
-                    && !cap_exceeded
                     && candidate_count.is_some(),
                 unsupported_reason: None,
             },
@@ -227,6 +251,7 @@ impl PageQueryService {
         score_filter_cache: Option<&mut PageQueryScoreFilterCache>,
         score_filter_session: Option<&mut PageQueryScoreFilterSession>,
         hard_candidate_limit: Option<u64>,
+        mode: PageQueryBuildMode,
     ) -> Result<BuiltPageQuery<'a>> {
         let queried_site_id = query.queried_site_id.unwrap_or(query.current_site_id);
         let PageQuery {
@@ -275,9 +300,14 @@ impl PageQueryService {
             PageParentSelector::ChildOf => ("children", 0),
             PageParentSelector::HasParents(parents) => ("list", parents.len()),
         };
-        let order = order.unwrap_or_default();
+        let requested_order = order.unwrap_or_default();
+        let order = if matches!(mode, PageQueryBuildMode::Count | PageQueryBuildMode::FindUnordered) {
+            OrderBySelector::default()
+        } else {
+            requested_order.clone()
+        };
         debug!(
-            "Building ListPages query: site_id={queried_site_id}, page_type={page_type:?}, category_mode={category_mode}, included_category_count={included_category_count}, excluded_category_count={}, parent_mode={parent_mode}, parent_count={parent_count}, outgoing_link_count={}, exact_slug_count={}, name_pattern={}, any_tag_count={}, all_tag_count={}, excluded_tag_count={}, untagged={untagged}, score_filter_count={}, data_form_filter_count={}, order={:?}, ascending={}, offset={offset}, limit={:?}, candidate_limit={candidate_limit:?}",
+            "Building ListPages query: site_id={queried_site_id}, page_type={page_type:?}, category_mode={category_mode}, included_category_count={included_category_count}, excluded_category_count={}, parent_mode={parent_mode}, parent_count={parent_count}, outgoing_link_count={}, exact_slug_count={}, name_pattern={}, any_tag_count={}, all_tag_count={}, excluded_tag_count={}, untagged={untagged}, score_filter_count={}, data_form_filter_count={}, order={:?}, ascending={}, offset={offset}, limit={:?}, candidate_limit={candidate_limit:?}, mode={mode:?}",
             excluded_categories.len(),
             contains_outgoing_links.len(),
             slugs.len() + usize::from(slug.is_some()),
@@ -287,8 +317,8 @@ impl PageQueryService {
             no_tags.len(),
             score.len(),
             data_form_fields.len(),
-            order.property,
-            order.ascending,
+            requested_order.property,
+            requested_order.ascending,
             pagination.limit,
         );
 
@@ -543,11 +573,13 @@ impl PageQueryService {
         )
         .await?;
 
-        let projects_effective_revision_count =
-            needs_effective_revision_projection(&fields, &order);
+        let projects_effective_revision_count = mode == PageQueryBuildMode::Find
+            && needs_effective_revision_projection(&fields, &order);
         let score_order = matches!(&order.property, OrderProperty::Score);
         let data_form_order =
             matches!(&order.property, OrderProperty::DataFormFieldName { .. });
+        let ordering_deferred_to_rust =
+            mode == PageQueryBuildMode::Find && (score_order || data_form_order);
 
         Ok(BuiltPageQuery {
             query,
@@ -561,7 +593,7 @@ impl PageQueryService {
             needs_tag_filter,
             projects_effective_revision_count,
             filtering_deferred_to_rust: !data_form_fields.is_empty(),
-            ordering_deferred_to_rust: score_order || data_form_order,
+            ordering_deferred_to_rust,
             tag_custom_plan: needs_tag_filter && score_and_votes_empty,
         })
     }
@@ -569,6 +601,7 @@ impl PageQueryService {
     async fn fetch_built_page_query(
         ctx: &ServiceContext<'_>,
         built: BuiltPageQuery<'_>,
+        apply_order: bool,
     ) -> Result<PageQueryResultEnvelope> {
         let make_error =
             || Error::new("failed to create ListPages query", ErrorType::PageQuery);
@@ -595,7 +628,9 @@ impl PageQueryService {
             );
         }
 
-        query = apply_sql_ordering(query, &order, needs_tag_filter);
+        if apply_order {
+            query = apply_sql_ordering(query, &order, needs_tag_filter);
+        }
 
         let defer_offset_limit = ordering_deferred_to_rust
             || filtering_deferred_to_rust

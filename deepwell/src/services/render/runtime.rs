@@ -21,7 +21,7 @@
 use super::include_attachment_owners::AttachmentProvenanceRegistry;
 use super::runtime_page_queries::{
     ViewableCountPagesRows, ViewableListPagesRows, find_viewable_count_pages_rows,
-    find_viewable_list_pages_rows,
+    find_viewable_count_pages_rows_with_options, find_viewable_list_pages_rows,
 };
 use super::service::site_matches_wikidot_slug;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
@@ -91,6 +91,23 @@ impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
             query,
             target_count,
             permission_cache,
+        )
+        .await
+    }
+
+    pub(super) async fn find_viewable_count_pages_rows_unordered(
+        &self,
+        query: PageQuery<'_>,
+        target_count: usize,
+        permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
+    ) -> Result<ViewableCountPagesRows> {
+        find_viewable_count_pages_rows_with_options(
+            self.ctx,
+            self.viewer_user_id,
+            query,
+            target_count,
+            permission_cache,
+            true,
         )
         .await
     }
