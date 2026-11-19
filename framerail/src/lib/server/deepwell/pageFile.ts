@@ -123,7 +123,8 @@ export async function pageFileEdit(
   file: Optional<File>,
   lastRevisionId: number,
   revisionComments: Optional<string>,
-  bypassFilter = false
+  bypassFilter = false,
+  userIpAddr: string
 ): Promise<PageFileCreate> {
   let presignId
   if (file && file instanceof File) {
@@ -141,7 +142,8 @@ export async function pageFileEdit(
     name,
     uploaded_blob_id: presignId,
     revision_comments: revisionComments,
-    bypass_filter: bypassFilter
+    bypass_filter: bypassFilter,
+    ip_address: userIpAddr
   })
 }
 

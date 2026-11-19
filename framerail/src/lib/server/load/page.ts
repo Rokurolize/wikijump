@@ -597,7 +597,11 @@ export async function pageFileDeleteAction({ request, cookies }: RequestEvent) {
 }
 
 /* ----- Page File Edit ----- */
-export async function pageFileEditAction({ request, cookies }: RequestEvent) {
+export async function pageFileEditAction({
+  request,
+  cookies,
+  getClientAddress
+}: RequestEvent) {
   const form = await superValidate(request, valibot(pageFileEditSchema))
   if (!form.valid) {
     return fail(400, { form })
@@ -605,6 +609,7 @@ export async function pageFileEditAction({ request, cookies }: RequestEvent) {
 
   const sessionToken = cookies.get("wikijump_token")
   const session = await authGetSession(sessionToken)
+  const ipAddress = getClientAddress()
 
   try {
     const { siteId, pageId, lastRevisionId, fileId, file, name, comments } = form.data
@@ -616,7 +621,9 @@ export async function pageFileEditAction({ request, cookies }: RequestEvent) {
       name === "" ? undefined : name,
       file,
       lastRevisionId,
-      comments
+      comments,
+      false,
+      ipAddress
     )
 
     return withFiles({ form, res })
