@@ -27,7 +27,23 @@ use crate::services::file::{
     RestoreFileOutput, RollbackFile,
 };
 use crate::services::{BlobService, FileRevisionService};
-use crate::types::{Bytes, FileDetails};
+use crate::types::{Action, Bytes, FileDetails, Reference};
+
+async fn require_page_edit_permission(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    page: Reference<'_>,
+) -> Result<()> {
+    let can_edit = PageService::check_user_permission(ctx, site_id, page, Action::Edit)
+        .await
+        .or_raise(|| Error::new("failed to check file edit permission", ErrorType::File))?;
+
+    if !can_edit {
+        bail!(Error::new("Permission denied.", ErrorType::PermissionDenied));
+    }
+
+    Ok(())
+}
 
 pub async fn file_get(
     ctx: &ServiceContext<'_>,
@@ -79,6 +95,8 @@ pub async fn file_create(
         input.page_id, input.site_id,
     );
 
+    require_page_edit_permission(ctx, input.site_id, Reference::Id(input.page_id)).await?;
+
     FileService::create(ctx, input)
         .await
         .or_raise(|| Error::new("failed to create file", ErrorType::File))
@@ -111,6 +129,8 @@ pub async fn file_delete(
         input.file, input.page_id, input.site_id,
     );
 
+    require_page_edit_permission(ctx, input.site_id, Reference::Id(input.page_id)).await?;
+
     FileService::delete(ctx, input)
         .await
         .or_raise(|| Error::new("failed to delete file", ErrorType::File))
@@ -127,6 +147,9 @@ pub async fn file_move(
         input.file_id, input.current_page_id, input.destination_page, input.site_id,
     );
 
+    require_page_edit_permission(ctx, input.site_id, Reference::Id(input.current_page_id)).await?;
+    require_page_edit_permission(ctx, input.site_id, input.destination_page.clone()).await?;
+
     FileService::r#move(ctx, input)
         .await
         .or_raise(|| Error::new("failed to move file", ErrorType::File))
@@ -142,6 +165,11 @@ pub async fn file_restore(
         "Restoring deleted file ID {} in page ID {} in site ID {}",
         input.file_id, input.page_id, input.site_id,
     );
+
+    require_page_edit_permission(ctx, input.site_id, Reference::Id(input.page_id)).await?;
+    if let Some(new_page) = &input.new_page {
+        require_page_edit_permission(ctx, input.site_id, new_page.clone()).await?;
+    }
 
     FileService::restore(ctx, input)
         .await

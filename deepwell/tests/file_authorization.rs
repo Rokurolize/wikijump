@@ -147,13 +147,7 @@ async fn site_update_denies_user_without_site_edit_permission() {
         json!({
             "site": f.site_id,
             "user_id": f.outsider_id,
-            "name": None::<String>,
-            "slug": None::<String>,
             "tagline": "unauthorized tagline",
-            "description": None::<String>,
-            "default_page": None::<String>,
-            "locale": None::<String>,
-            "layout": None::<String>,
             "ip_address": common::IP_ADDRESS,
         })
     );

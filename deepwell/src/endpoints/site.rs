@@ -20,10 +20,11 @@
 
 use super::prelude::*;
 use crate::models::site::Model as SiteModel;
+use crate::services::permission::{PermissionService, PermissionTarget};
 use crate::services::site::{
     CreateSite, CreateSiteOutput, GetSite, GetSiteOutput, UpdateSite,
 };
-use crate::types::AliasType;
+use crate::types::{Action, AliasType, Reference};
 
 pub async fn site_create(
     ctx: &ServiceContext<'_>,
@@ -80,7 +81,33 @@ pub async fn site_update(
 
     info!("Updating site {site:?}");
 
-    SiteService::update(ctx, site, body, user_id, ip_address)
+    let site_id = match site {
+        Reference::Id(site_id) => site_id,
+        Reference::Slug(_) => {
+            bail!(Error::new(
+                "site_update requires a numeric site ID",
+                ErrorType::BadRequest,
+            ));
+        }
+    };
+
+    let can_edit = PermissionService::can_user(
+        ctx,
+        Some(site_id),
+        Action::Edit,
+        PermissionTarget::Site,
+    )
+    .await
+    .or_raise(|| Error::new("failed to check site edit permission", ErrorType::Site))?;
+
+    if !can_edit {
+        bail!(Error::new(
+            "Permission denied.",
+            ErrorType::PermissionDenied,
+        ));
+    }
+
+    SiteService::update(ctx, Reference::Id(site_id), body, user_id, ip_address)
         .await
         .or_raise(|| Error::new("failed to update site data", ErrorType::Site))
 }
