@@ -71,9 +71,7 @@ async fn seed(
 }
 
 fn fixture(name: &str) -> String {
-    let p = format!(
-        "/home/roku/.local/state/wikijump/wt-wave1fix3/deepwell/tests/fixtures/wave1fix2/{name}.txt"
-    );
+    let p = format!("{}/tests/fixtures/wave1fix2/{name}.txt", env!("CARGO_MANIFEST_DIR"));
     std::fs::read_to_string(&p).unwrap_or_else(|_| panic!("read fixture {p}"))
 }
 
