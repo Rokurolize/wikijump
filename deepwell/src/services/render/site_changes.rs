@@ -805,7 +805,9 @@ mod tests {
         assert_eq!(output.matches(r#"<span class="target">"#).count(), 7);
         assert_eq!(output.matches(r#"<span class="dots">"#).count(), 2);
         assert!(
-            output.starts_with(r#"<div class="pager"><span class="pager-no">page 300</span>"#)
+            output.starts_with(
+                r#"<div class="pager"><span class="pager-no">page 300</span>"#
+            )
         );
         assert!(output.contains(
             r#"onclick="WIKIDOT.modules.SiteChangesModule.listeners.updateList(299)">&laquo; previous</a>"#
