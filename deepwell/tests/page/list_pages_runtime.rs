@@ -5488,7 +5488,7 @@ async fn stacked_identical_listpages_modules_return_identical_rows() {
     }
 
     let module = format!(
-        "[[module ListPages tags=\"+{TAG}\" limit=\"5\" order=\"name\"]]LPROW %%title%%|%%slug%%[[/module]]"
+        "[[module ListPages tags=\"+{TAG}\" limit=\"5\" order=\"name\"]]\nLPROW %%title%%|%%slug%%\n[[/module]]"
     );
     let single = run_endpoint!(
         runner,
