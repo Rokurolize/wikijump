@@ -656,10 +656,9 @@ mod tests {
         cascade_page_query_cache_key, render_page_query_batch_limit_with_floor,
     };
     use crate::services::page_query::{
-        AuthorSelector, CategoriesSelector, DateSelector, FoundPageFields,
-        FoundPages, IncludedCategories, OrderBySelector, OrderProperty,
-        PageParentSelector, PageQuery, PageTypeSelector, PaginationSelector,
-        TagCondition,
+        AuthorSelector, CategoriesSelector, DateSelector, FoundPageFields, FoundPages,
+        IncludedCategories, OrderBySelector, OrderProperty, PageParentSelector,
+        PageQuery, PageTypeSelector, PaginationSelector, TagCondition,
     };
     use crate::types::Reference;
     use std::borrow::Cow;

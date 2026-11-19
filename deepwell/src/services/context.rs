@@ -252,7 +252,9 @@ impl<'txn> ServiceContext<'txn> {
     }
 
     #[inline]
-    pub(crate) fn cascade_page_query_cache(&self) -> Option<&Arc<Mutex<CascadePageQueryCache>>> {
+    pub(crate) fn cascade_page_query_cache(
+        &self,
+    ) -> Option<&Arc<Mutex<CascadePageQueryCache>>> {
         self.cascade_page_query_cache.as_ref()
     }
 
