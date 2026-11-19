@@ -58,7 +58,7 @@ export async function pageHistoryAction(event: RequestEvent) {
     const paged = paginateHistoryEntries(filtered, page ?? 1, perPage ?? 20)
     return {
       res: {
-        entries: filtered,
+        entries: paged.entries,
         total: paged.total,
         page: paged.page,
         perPage: paged.perPage,
