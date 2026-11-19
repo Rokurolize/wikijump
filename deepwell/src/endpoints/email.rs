@@ -269,6 +269,15 @@ pub async fn password_reset_complete(
             )
         })?;
 
+    EmailTokenService::revoke_all_for_user(ctx, redeemed.user_id)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to revoke outstanding email tokens after recovery",
+                ErrorType::Email,
+            )
+        })?;
+
     Ok(ResetCompleteOutput { sessions_revoked })
 }
 
