@@ -1284,18 +1284,11 @@ pub async fn page_get_direct(
                         .into());
                     };
 
-                    let can_delete = PermissionService::check_user_can(
+                    let can_delete = PermissionService::check_user_can_act_on_page(
                         ctx,
-                        &CheckPermissionContext {
-                            user_id: Some(user_id),
-                            site_id,
-                            page_reference: Some(Reference::Id(page.page_id)),
-                        },
-                        Permission {
-                            resource_type: Resource::Page,
-                            resource_category: Some(Reference::Id(page.page_category_id)),
-                            action: Action::Delete,
-                        },
+                        Some(user_id),
+                        &page,
+                        Action::Delete,
                     )
                     .await
                     .or_raise(make_error)?;
@@ -1379,18 +1372,11 @@ pub async fn page_get_deleted(
 
     let mut result = Vec::new();
     for page in deleted_pages {
-        let can_delete = PermissionService::check_user_can(
+        let can_delete = PermissionService::check_user_can_act_on_page(
             ctx,
-            &CheckPermissionContext {
-                user_id: Some(user_id),
-                site_id,
-                page_reference: Some(Reference::Id(page.page_id)),
-            },
-            Permission {
-                resource_type: Resource::Page,
-                resource_category: Some(Reference::Id(page.page_category_id)),
-                action: Action::Delete,
-            },
+            Some(user_id),
+            &page,
+            Action::Delete,
         )
         .await
         .or_raise(make_error)?;

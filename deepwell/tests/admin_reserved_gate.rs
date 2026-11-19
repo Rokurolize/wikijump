@@ -902,3 +902,130 @@ async fn list_pages_feed_gates_pages_and_honors_windowing() {
     .await;
     assert_eq!(output.items.len(), 1, "rssLimit overrides limit");
 }
+
+#[tokio::test]
+async fn member_cannot_vote_on_admin_page() {
+    let mut runner = TestRunner::setup().await;
+    let site_id = site_id(&runner).await;
+    let admin_page_id = get_or_create_admin_page(&mut runner, site_id).await;
+    let member = create_member(&runner, site_id, "vote").await;
+    let normal_page_id =
+        create_page(&mut runner, site_id, "gate-vote-normal", "Gate Vote Normal").await;
+
+    // Enable registered-user rating on the `_default` category, which
+    // holds both the normal page and `_admin`.
+    set_request_context(&mut runner, Some(ADMIN_USER_ID), site_id, None);
+    let category = run_endpoint!(
+        runner,
+        category_get,
+        json!({ "site": site_id, "category": "_default" }),
+    )
+    .expect("default category should exist");
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "rating_enabled": true,
+            "rating_permission": "registered",
+            "rating_type": "plus",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    // Control: the member can vote on a normal page.
+    set_request_context(
+        &mut runner,
+        Some(member),
+        site_id,
+        Some(Reference::Id(normal_page_id)),
+    );
+    let vote = run_endpoint!(
+        runner,
+        vote_set,
+        json!({
+            "page_id": normal_page_id,
+            "user_id": member,
+            "value": 1,
+        }),
+    );
+    assert!(vote.is_some(), "member vote on a normal page should work");
+
+    // (#1578) The member may not cast a vote on `_admin`.
+    set_request_context(
+        &mut runner,
+        Some(member),
+        site_id,
+        Some(Reference::Id(admin_page_id)),
+    );
+    let error = run_endpoint_err!(
+        runner,
+        vote_set,
+        json!({
+            "page_id": admin_page_id,
+            "user_id": member,
+            "value": 1,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    // Nor remove one.
+    let error = run_endpoint_err!(
+        runner,
+        vote_remove,
+        json!({
+            "page_id": admin_page_id,
+            "user_id": member,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    // (#1552) The legacy connector rate path shares the same gate, so
+    // its safety no longer rests on the downstream registry control.
+    let error = run_endpoint_err!(
+        runner,
+        wikidot_legacy_rate,
+        json!({
+            "page_id": admin_page_id,
+            "last_revision_id": 0,
+            "action_index": 0,
+            "action_fingerprint": "00000000000000000000000000000000",
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    // The site admin can still vote on `_admin`, and remove the vote.
+    set_request_context(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        site_id,
+        Some(Reference::Id(admin_page_id)),
+    );
+    let vote = run_endpoint!(
+        runner,
+        vote_set,
+        json!({
+            "page_id": admin_page_id,
+            "user_id": ADMIN_USER_ID,
+            "value": 1,
+        }),
+    );
+    assert!(vote.is_some(), "site admin vote on _admin should work");
+
+    set_request_context(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        site_id,
+        Some(Reference::Id(admin_page_id)),
+    );
+    run_endpoint!(
+        runner,
+        vote_remove,
+        json!({
+            "page_id": admin_page_id,
+            "user_id": ADMIN_USER_ID,
+        }),
+    );
+}
