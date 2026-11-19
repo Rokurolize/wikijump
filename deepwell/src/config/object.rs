@@ -148,6 +148,8 @@ pub struct Config {
     /// platform staff is unaffected.
     pub allow_registration: bool,
 
+    pub mock_mailcheck: bool,
+
     /// Whether the local email provider is permitted.
     pub allow_local_email: bool,
 

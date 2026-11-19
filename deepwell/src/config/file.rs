@@ -807,6 +807,10 @@ mod tests {
             },
             email: Email {
                 mock_mailcheck: true,
+                allow_local: true,
+                automation_address: str!("noreply@wikijump.com"),
+                notification_address: str!("notifications@wikijump.com"),
+                newsletter_address: str!("newsletter@wikijump.com"),
             },
             file: FileSection {
                 presigned_path_length: 16,

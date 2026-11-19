@@ -23,10 +23,10 @@ use super::structs::{
     MailCheckFailureResponse, MailCheckResponse, MailCheckSuccessResponse,
     MailFormMessage,
 };
+use super::{EmailSender, SendEmail, SendEmailOutput};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::runtime::ServerState;
 use crate::services::ServiceContext;
-use super::{EmailSender, SendEmail, SendEmailOutput};
 use missive::{Address, DeliveryResult, Email};
 
 #[derive(Debug)]
@@ -279,54 +279,6 @@ impl EmailService {
             message.recipients, message.title, message.body,
         );
     }
-}
-
-pub(crate) fn is_well_formed_email(email: &str) -> bool {
-    if email.chars().any(|c| c.is_whitespace() || c.is_control()) {
-        return false;
-    }
-    let Some((local, domain)) = email.split_once('@') else {
-        return false;
-    };
-    !local.is_empty()
-        && !domain.contains('@')
-        && domain.split('.').all(|label| !label.is_empty())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn failure(status: u16) -> MailCheckResponse {
-        MailCheckResponse::Failure(MailCheckFailureResponse {
-            status,
-            error: str!("error"),
-        })
-    }
-
-    #[test]
-    fn an_unanswered_mailcheck_leaves_the_email_unvalidated() {
-        for status in [429, 500, 503] {
-            assert!(
-                EmailService::mailcheck_verdict(failure(status))
-                    .unwrap()
-                    .is_none(),
-                "status {status}",
-            );
-        }
-
-        let MailCheckResponse::Success(mut answer) =
-            EmailService::mock_mailcheck("someone@gmail.com")
-        else {
-            unreachable!("the mock always answers");
-        };
-        answer.status = 503;
-        assert!(
-            EmailService::mailcheck_verdict(MailCheckResponse::Success(answer))
-                .unwrap()
-                .is_none()
-        );
-    }
 
     /// Sends an email using the configured email provider.
     ///
@@ -408,6 +360,54 @@ mod tests {
 
         debug!("Sent email to '{recipient}', message ID {message_id}");
         Ok(SendEmailOutput { message_id })
+    }
+}
+
+pub(crate) fn is_well_formed_email(email: &str) -> bool {
+    if email.chars().any(|c| c.is_whitespace() || c.is_control()) {
+        return false;
+    }
+    let Some((local, domain)) = email.split_once('@') else {
+        return false;
+    };
+    !local.is_empty()
+        && !domain.contains('@')
+        && domain.split('.').all(|label| !label.is_empty())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn failure(status: u16) -> MailCheckResponse {
+        MailCheckResponse::Failure(MailCheckFailureResponse {
+            status,
+            error: str!("error"),
+        })
+    }
+
+    #[test]
+    fn an_unanswered_mailcheck_leaves_the_email_unvalidated() {
+        for status in [429, 500, 503] {
+            assert!(
+                EmailService::mailcheck_verdict(failure(status))
+                    .unwrap()
+                    .is_none(),
+                "status {status}",
+            );
+        }
+
+        let MailCheckResponse::Success(mut answer) =
+            EmailService::mock_mailcheck("someone@gmail.com")
+        else {
+            unreachable!("the mock always answers");
+        };
+        answer.status = 503;
+        assert!(
+            EmailService::mailcheck_verdict(MailCheckResponse::Success(answer))
+                .unwrap()
+                .is_none()
+        );
     }
 
     #[test]

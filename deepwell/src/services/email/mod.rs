@@ -19,12 +19,6 @@
  */
 
 mod email_token;
-#[allow(unused_imports)]
-mod prelude {
-    pub use super::super::prelude::*;
-    pub use super::structs::*;
-}
-
 mod mailer;
 mod service;
 mod structs;
