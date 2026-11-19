@@ -112,6 +112,7 @@ pub(in crate::services::render) async fn find_viewable_list_pages_rows(
         score_filter_cache,
         batch_floor: MAX_LISTPAGES_RENDER_LIMIT,
         retain_score_filter_session: true,
+        ignore_order: false,
     })
     .await?;
     Ok(ViewableListPagesRows {
@@ -139,6 +140,7 @@ pub(in crate::services::render) async fn find_viewable_list_pages_rows_with_batc
         score_filter_cache,
         batch_floor,
         retain_score_filter_session: true,
+        ignore_order: false,
     })
     .await?;
     Ok(ViewableListPagesRows {
@@ -155,6 +157,25 @@ pub(in crate::services::render) async fn find_viewable_count_pages_rows(
     target_count: usize,
     permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
 ) -> Result<ViewableCountPagesRows> {
+    find_viewable_count_pages_rows_with_options(
+        ctx,
+        viewer_user_id,
+        query,
+        target_count,
+        permission_cache,
+        false,
+    )
+    .await
+}
+
+pub(in crate::services::render) async fn find_viewable_count_pages_rows_with_options(
+    ctx: &ServiceContext<'_>,
+    viewer_user_id: Option<i64>,
+    query: PageQuery<'_>,
+    target_count: usize,
+    permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
+    ignore_order: bool,
+) -> Result<ViewableCountPagesRows> {
     find_viewable_render_page_rows(FindViewableRenderPageRowsArgs {
         ctx,
         viewer_user_id,
@@ -164,6 +185,7 @@ pub(in crate::services::render) async fn find_viewable_count_pages_rows(
         score_filter_cache: None,
         batch_floor: MAX_LISTPAGES_RENDER_LIMIT,
         retain_score_filter_session: false,
+        ignore_order,
     })
     .await
 }
@@ -177,6 +199,7 @@ struct FindViewableRenderPageRowsArgs<'a, 'b, 'c> {
     score_filter_cache: Option<&'a mut PageQueryScoreFilterCache>,
     batch_floor: u64,
     retain_score_filter_session: bool,
+    ignore_order: bool,
 }
 
 async fn find_viewable_render_page_rows(
@@ -191,9 +214,13 @@ async fn find_viewable_render_page_rows(
         mut score_filter_cache,
         batch_floor,
         retain_score_filter_session,
+        ignore_order,
     } = args;
     let mut score_filter_session = PageQueryScoreFilterSession::default();
-    if target_count > 0 && render_page_query_uses_single_scan(query.order.clone()) {
+    if target_count > 0
+        && !ignore_order
+        && render_page_query_uses_single_scan(query.order.clone())
+    {
         let mut query = query;
         query.offset = 0;
         query.pagination.limit = Some(random_page_query_scan_limit(target_count));
@@ -245,13 +272,23 @@ async fn find_viewable_render_page_rows(
         };
         query.pagination.limit = Some(batch_limit);
 
-        let found = Box::pin(PageQueryService::find_with_metadata_cached(
-            ctx,
-            query,
-            score_filter_cache.as_deref_mut(),
-            retain_score_filter_session.then_some(&mut score_filter_session),
-        ))
-        .await?;
+        let found = if ignore_order {
+            Box::pin(PageQueryService::find_with_metadata_unordered_cached(
+                ctx,
+                query,
+                score_filter_cache.as_deref_mut(),
+                retain_score_filter_session.then_some(&mut score_filter_session),
+            ))
+            .await?
+        } else {
+            Box::pin(PageQueryService::find_with_metadata_cached(
+                ctx,
+                query,
+                score_filter_cache.as_deref_mut(),
+                retain_score_filter_session.then_some(&mut score_filter_session),
+            ))
+            .await?
+        };
         let cap_exceeded = found.metadata.cap_exceeded;
         merge_render_page_query_metadata(&mut metadata, found.metadata);
         if cap_exceeded {

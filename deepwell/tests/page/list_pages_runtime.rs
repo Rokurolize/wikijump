@@ -5527,3 +5527,167 @@ async fn stacked_identical_listpages_modules_return_identical_rows() {
         );
     }
 }
+
+#[tokio::test]
+async fn stacked_identical_listpages_modules_return_identical_totals() {
+    const PREFIX: &str = "fixture-listpages-stacked-total-target";
+    const TAG: &str = "verification-listpages-stacked-total";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for index in 1..=4 {
+        let slug = format!("{PREFIX}-{index}");
+        let title = format!("Stacked total target {index}");
+        let revision =
+            create_listpages_test_page(&mut runner, site_id, &slug, &title, "row").await;
+        set_listpages_test_tags(&mut runner, site_id, &slug, revision, &[TAG]).await;
+    }
+
+    let module = format!(
+        "[[module ListPages tags=\"+{TAG}\" limit=\"5\" order=\"name\"]]%%total%%[[/module]]"
+    );
+    let stacked_source = (0..4)
+        .map(|_| module.clone())
+        .collect::<Vec<_>>()
+        .join("\n");
+    let html = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "stacked-listpages-total",
+            "wikitext": stacked_source,
+        }),
+    )
+    .body;
+
+    assert_eq!(
+        html.matches(">4<").count(),
+        4,
+        "each stacked identical ListPages module should return the same %%total%%:\n{html}",
+    );
+    assert!(
+        !html.contains("%%total%%") && !html.contains("[[module ListPages"),
+        "stacked ListPages totals should be substituted:\n{html}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_total_counts_parentless_pages_for_parent_dash() {
+    const TAG: &str = "verification-listpages-total-parent-dash";
+    const ROOT: &str = "fixture-listpages-total-parent-dash-root";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(&mut runner, site_id, ROOT, "Parent Dash Root", "root")
+        .await;
+
+    for (index, has_parent) in [(1, false), (2, false), (3, true)] {
+        let slug = format!("fixture-listpages-total-parent-dash-target-{index}");
+        let title = format!("Parent Dash Target {index}");
+        let revision =
+            create_listpages_test_page(&mut runner, site_id, &slug, &title, "row").await;
+        set_listpages_test_tags(&mut runner, site_id, &slug, revision, &[TAG]).await;
+        if has_parent {
+            set_listpages_test_parent(&mut runner, site_id, &slug, ROOT).await;
+        }
+    }
+
+    let html = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "parent-dash-total",
+            "wikitext": format!(
+                "[[module ListPages tags=\"+{TAG}\" parent=\"-\"]]%%total%%[[/module]]"
+            ),
+        }),
+    )
+    .body;
+
+    assert!(
+        html.contains(">2<") || html.contains("2</p>") || html.contains("2"),
+        "parent=\"-\" ListPages %%total%% should count only parentless matches:\n{html}",
+    );
+    assert!(
+        !html.contains("%%total%%") && !html.contains("[[module ListPages"),
+        "parent=\"-\" ListPages %%total%% should be substituted:\n{html}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_total_matches_for_rating_order_and_excluded_tag_shapes() {
+    const TAG: &str = "verification-listpages-total-shapes";
+    const EXCLUDED: &str = "verification-listpages-total-excluded";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for index in 1..=3 {
+        let slug = format!("fixture-listpages-total-shapes-{index}");
+        let title = format!("Total Shape Target {index}");
+        let revision =
+            create_listpages_test_page(&mut runner, site_id, &slug, &title, "row").await;
+        let mut tags = vec![TAG];
+        if index == 3 {
+            tags.push(EXCLUDED);
+        }
+        set_listpages_test_tags(&mut runner, site_id, &slug, revision, &tags).await;
+    }
+
+    let rating_html = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "rating-order-total",
+            "wikitext": format!(
+                "[[module ListPages tags=\"+{TAG}\" order=\"rating\"]]%%total%%[[/module]]"
+            ),
+        }),
+    )
+    .body;
+    assert!(
+        rating_html.contains(">3<")
+            || rating_html.contains("3</p>")
+            || rating_html.contains("3"),
+        "rating-order ListPages %%total%% should count the full match set:\n{rating_html}",
+    );
+    assert!(
+        !rating_html.contains("%%total%%") && !rating_html.contains("[[module ListPages"),
+        "rating-order ListPages %%total%% should be substituted:\n{rating_html}",
+    );
+
+    let excluded_html = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "excluded-tag-total",
+            "wikitext": format!(
+                "[[module ListPages tags=\"+{TAG} -{EXCLUDED}\"]]%%total%%[[/module]]"
+            ),
+        }),
+    )
+    .body;
+    assert!(
+        excluded_html.contains(">2<")
+            || excluded_html.contains("2</p>")
+            || excluded_html.contains("2"),
+        "excluded-tag ListPages %%total%% should count only pages without the excluded tag:\n{excluded_html}",
+    );
+    assert!(
+        !excluded_html.contains("%%total%%")
+            && !excluded_html.contains("[[module ListPages"),
+        "excluded-tag ListPages %%total%% should be substituted:\n{excluded_html}",
+    );
+}

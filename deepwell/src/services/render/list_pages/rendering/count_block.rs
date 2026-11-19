@@ -233,7 +233,11 @@ impl RenderService {
         } else {
             let target_count = count_pages_query_limit.min(usize::MAX as u64) as usize;
             let found = RenderRuntime::new(ctx)
-                .find_viewable_count_pages_rows(query, target_count, permission_cache)
+                .find_viewable_count_pages_rows_unordered(
+                    query,
+                    target_count,
+                    permission_cache,
+                )
                 .await?;
             count_pages_metadata = Some((
                 found.metadata.clone(),
