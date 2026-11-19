@@ -23,7 +23,7 @@ use crate::license::License;
 use crate::services::authorization_token::AuthorizedObject;
 use crate::services::filter::FilterSummary;
 use crate::types::Maybe;
-use crate::types::{PageLockType, Permission};
+use crate::types::{AccessPolicy, PageLockType, Permission};
 use ftml::layout::Layout;
 use sea_orm::prelude::TimeDateTimeWithTimeZone;
 use std::borrow::Cow;
@@ -1145,6 +1145,8 @@ pub struct SiteFields<'a> {
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub locale: Maybe<&'a str>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub access_policy: Maybe<AccessPolicy>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub default_page: Maybe<&'a str>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub welcome_page: Maybe<&'a str>,
@@ -1340,11 +1342,13 @@ mod tests {
         let previous_fields = SiteFields {
             name: Maybe::Set("Old Site"),
             license: Maybe::Set(License::CcBySa40),
+            access_policy: Maybe::Set(AccessPolicy::Open),
             ..Default::default()
         };
         let changed_fields = SiteFields {
             slug: Maybe::Set("new-site"),
             layout: Maybe::Set(Some(Layout::Wikidot)),
+            access_policy: Maybe::Set(AccessPolicy::Closed),
             ..Default::default()
         };
         let raw = extract(AuditEvent::SiteUpdate {
@@ -1363,6 +1367,7 @@ mod tests {
         assert_eq!(previous["name"], "Old Site");
         assert_eq!(changed["slug"], "new-site");
         assert_eq!(changed["layout"], "wikidot");
+        assert_eq!(changed["access_policy"], "closed");
 
         let raw = extract(AuditEvent::PageCategoryUpdate {
             site_id: 21,

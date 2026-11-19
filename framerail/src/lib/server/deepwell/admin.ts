@@ -2,6 +2,7 @@ import { client } from "$lib/server/deepwell"
 import { Layout } from "$lib/types"
 
 import type {
+  AccessPolicy,
   Nullable,
   Optional,
   PageCategoryModel,
@@ -255,6 +256,27 @@ export async function siteUpdate(
         layout !== undefined
           ? (Layout[layout?.toUpperCase() as keyof typeof Layout] ?? null)
           : undefined,
+      ip_address: userIpAddr
+    },
+    requestContext
+  )
+}
+
+export async function siteAccessPolicyUpdate(
+  siteId: number,
+  expectedSettingsRevision: number,
+  userId: number,
+  userIpAddr: string,
+  accessPolicy: AccessPolicy,
+  requestContext: SiteUpdateRequestContext
+): Promise<SiteModel> {
+  return client.request(
+    "site_update",
+    {
+      site: siteId,
+      expected_settings_revision: expectedSettingsRevision,
+      user_id: userId,
+      access_policy: accessPolicy,
       ip_address: userIpAddr
     },
     requestContext

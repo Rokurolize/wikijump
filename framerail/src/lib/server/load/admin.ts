@@ -9,6 +9,7 @@ import { authGetSession } from "$lib/server/auth/get-session"
 import {
   categoryLicenseUpdate,
   categoryNavigationUpdate,
+  siteAccessPolicyUpdate,
   categoryDiscussionUpdate,
   categoryAutonumberUpdate,
   categoryRatingUpdate,
@@ -138,6 +139,14 @@ export async function loadAdminPage(
     },
     valibot(adminSchema)
   )
+  const accessPolicyForm = await superValidate(
+    {
+      siteId,
+      expectedSettingsRevision: parentData.site.settings_revision,
+      accessPolicy: parentData.site_settings.access_policy ?? "open"
+    },
+    valibot(accessPolicySchema)
+  )
   const navigationForm = await superValidate(request, valibot(navigationSchema))
   const licenseForm = await superValidate(request, valibot(licenseSchema))
   const templateForm = await superValidate(request, valibot(templateSchema))
@@ -174,6 +183,7 @@ export async function loadAdminPage(
     html: response.type === "admin_permissions" ? response.data.html : undefined,
     internationalization,
     adminForm,
+    accessPolicyForm,
     navigationForm,
     licenseForm,
     templateForm,
@@ -194,6 +204,39 @@ export async function loadAdminPage(
   }
 
   return { ...parentData, ...viewData }
+}
+
+export async function accessPolicyAction({
+  request,
+  getClientAddress,
+  cookies
+}: RequestEvent) {
+  const form = await superValidate(request, valibot(accessPolicySchema))
+  if (!form.valid) return fail(400, { form })
+
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, {
+      form,
+      message: "user does not have permission to edit access policy"
+    })
+  }
+
+  try {
+    const siteId = loadTrustedAdminSiteId(request, form.data.siteId)
+    const session = requireActionSession(await authGetSession(sessionToken))
+    const res = await siteAccessPolicyUpdate(
+      siteId,
+      form.data.expectedSettingsRevision,
+      session.user_id,
+      getClientAddress(),
+      form.data.accessPolicy,
+      { sessionToken, siteId }
+    )
+    return { form, res }
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
 }
 
 export async function siteIconsAction({
@@ -813,6 +856,16 @@ const adminSchema = object({
   expectedSettingsRevision: pipe(number(), integer(), minValue(0)),
   siteId: number(),
   action: optional(nullable(literal("edit")))
+})
+
+const accessPolicySchema = object({
+  siteId: number(),
+  expectedSettingsRevision: pipe(number(), integer(), minValue(0)),
+  accessPolicy: vEnum({
+    OPEN: "open",
+    CLOSED: "closed",
+    PRIVATE: "private"
+  })
 })
 
 const layoutSchema = object({

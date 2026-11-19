@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AccessPolicySettings from "./AccessPolicySettings.svelte"
   import AnalyticsSettings from "./AnalyticsSettings.svelte"
   import AutonumberSettings from "./AutonumberSettings.svelte"
   import ForumSettings from "./ForumSettings.svelte"
@@ -19,6 +20,7 @@
 </script>
 
 <SiteSettings {data} />
+<AccessPolicySettings {data} />
 <LayoutSettings {data} />
 <AnalyticsSettings {data} />
 <ThemeSettings {data} />
