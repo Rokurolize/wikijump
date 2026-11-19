@@ -7828,3 +7828,122 @@ async fn wikidot_listpages_feed_uses_imported_creator_identity_provenance() {
         "live ListPages RSS author markup has no browser-only onclick or Wikijump marker:\n{created_by_html}",
     );
 }
+
+/// The unfiltered Pages module applies the requested limit inside the query.
+/// When the lowest-sorting pages of a site all belong to one category, the
+/// unfiltered and category-scoped modules must return the same rows in the
+/// same order at limits 1/5/20, and the render wrapper must expand all six.
+#[tokio::test]
+async fn pages_module_bounded_limit_keeps_unfiltered_rows_and_order() {
+    fn section<'a>(html: &'a str, start: &str, end: &str) -> &'a str {
+        html.split_once(start)
+            .unwrap_or_else(|| panic!("missing section start {start:?}"))
+            .1
+            .split_once(end)
+            .unwrap_or_else(|| panic!("missing section end {end:?}"))
+            .0
+    }
+
+    fn row_slugs(section: &str) -> Vec<String> {
+        section
+            .split("<div class=\"list-pages-item\">")
+            .skip(1)
+            .filter_map(|chunk| {
+                chunk
+                    .split_once("<a href=\"/")
+                    .map(|(_, rest)| rest.split_once('"').unwrap().0.to_owned())
+            })
+            .collect()
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let category = "fixture-pages-bounded";
+    CategoryService::get_or_create(runner.context(), site_id, category)
+        .await
+        .expect("bounded Pages category should be created");
+
+    let expected = (0..20)
+        .map(|index| {
+            (
+                format!("{category}:{index:02}"),
+                format!("!! Bounded {index:02}"),
+            )
+        })
+        .collect::<Vec<_>>();
+    for (slug, title) in &expected {
+        create_listpages_test_page(
+            &mut runner,
+            site_id,
+            slug,
+            title,
+            "Bounded Pages fixture.",
+        )
+        .await;
+    }
+
+    let holder_slug = "fixture-pages-bounded-holder";
+    let mut source = String::new();
+    for limit in [1, 5, 20] {
+        source.push_str(&format!(
+            "U{limit}_START\n\n[[module Pages limit=\"{limit}\"]]\n\nU{limit}_END\n\n"
+        ));
+        source.push_str(&format!(
+            "C{limit}_START\n\n[[module Pages category=\"{category}\" limit=\"{limit}\"]]\n\nC{limit}_END\n\n",
+        ));
+    }
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        holder_slug,
+        "Fixture Pages Bounded Holder",
+        &source,
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": holder_slug,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("bounded Pages holder should exist");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+
+    assert!(
+        !html.contains("[[module Pages"),
+        "every Pages module should be expanded by the wrapper: {html}",
+    );
+
+    for limit in [1, 5, 20] {
+        let unfiltered = row_slugs(section(
+            &html,
+            &format!("U{limit}_START"),
+            &format!("U{limit}_END"),
+        ));
+        let scoped = row_slugs(section(
+            &html,
+            &format!("C{limit}_START"),
+            &format!("C{limit}_END"),
+        ));
+        let expected_slugs = expected[..limit]
+            .iter()
+            .map(|(slug, _)| slug.clone())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            unfiltered, expected_slugs,
+            "unfiltered Pages rows and order at limit {limit}",
+        );
+        assert_eq!(
+            scoped, unfiltered,
+            "category-scoped and unfiltered rows and order must match at limit {limit}",
+        );
+    }
+}

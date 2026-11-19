@@ -111,27 +111,42 @@ impl PagesModulePagesCache {
         F: FnOnce() -> Fut,
         Fut: Future<Output = Result<Option<Arc<Vec<PagesModulePage>>>>>,
     {
-        let limit = arguments.limit;
-        let mut cache_key = arguments;
-        cache_key.limit = None;
-        if let Some(pages) = self.pages.get(&cache_key) {
-            return Ok(pages.as_ref().map(|pages| limit_pages(pages, limit)));
+        if let Some(pages) = self.pages.get(&arguments) {
+            return Ok(pages.as_ref().map(Arc::clone));
         }
 
         let pages = load().await?;
-        self.pages.insert(cache_key, pages.as_ref().map(Arc::clone));
-        Ok(pages.map(|pages| limit_pages(&pages, limit)))
+        self.pages.insert(arguments, pages.as_ref().map(Arc::clone));
+        Ok(pages)
     }
 }
 
-fn limit_pages(
-    pages: &Arc<Vec<PagesModulePage>>,
-    limit: Option<usize>,
-) -> Arc<Vec<PagesModulePage>> {
-    limit.map_or_else(
-        || Arc::clone(pages),
-        |limit| Arc::new(pages.iter().take(limit).cloned().collect()),
-    )
+const TITLE_ASC_SQL: &str = "translate(pr.title, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz') \
+     COLLATE \"C\", pr.title COLLATE \"C\", p.slug COLLATE \"C\"";
+const TITLE_DESC_SQL: &str = "translate(pr.title, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz') \
+     COLLATE \"C\" DESC, pr.title COLLATE \"C\" DESC, p.slug COLLATE \"C\" DESC";
+
+fn pages_module_order_sql(order: PagesModuleOrder) -> String {
+    match order {
+        PagesModuleOrder::DateCreatedAsc => {
+            format!("p.created_at ASC, p.page_id ASC, {TITLE_ASC_SQL}")
+        }
+        PagesModuleOrder::DateCreatedDesc => {
+            format!("p.created_at DESC, p.page_id DESC, {TITLE_ASC_SQL}")
+        }
+        PagesModuleOrder::DateEditedAsc => format!(
+            "COALESCE(p.updated_at, pr.created_at) ASC, p.page_id ASC, {TITLE_ASC_SQL}"
+        ),
+        PagesModuleOrder::DateEditedDesc => format!(
+            "COALESCE(p.updated_at, pr.created_at) DESC, p.page_id DESC, {TITLE_ASC_SQL}"
+        ),
+        PagesModuleOrder::TitleAsc => TITLE_ASC_SQL.to_owned(),
+        PagesModuleOrder::TitleDesc => TITLE_DESC_SQL.to_owned(),
+    }
+}
+
+fn pages_module_query_limit(arguments: &PagesModuleArguments) -> usize {
+    arguments.limit.unwrap_or(PAGES_MODULE_QUERY_LIMIT)
 }
 
 fn pages_module_scan_exceeded(row_count: usize) -> bool {
@@ -226,8 +241,7 @@ pub(super) async fn expand_pages_modules(
             continue;
         }
 
-        let mut load_arguments = arguments.clone();
-        load_arguments.limit = None;
+        let load_arguments = arguments.clone();
         let pages = pages_cache
             .get_or_init(arguments.clone(), move || async move {
                 load_pages_module_pages(ctx, current_site_id, &load_arguments)
@@ -271,6 +285,11 @@ async fn load_pages_module_pages(
     } else {
         ""
     };
+    let order_clause = arguments
+        .limit
+        .map(|_| format!(" ORDER BY {}", pages_module_order_sql(arguments.order)))
+        .unwrap_or_default();
+    let query_limit = pages_module_query_limit(arguments);
     let statement = Statement::from_sql_and_values(
         txn.get_database_backend(),
         format!(
@@ -286,8 +305,9 @@ async fn load_pages_module_pages(
          LEFT JOIN \"user\" local_user ON local_user.user_id = pr.user_id \
          WHERE p.site_id = $1 \
            AND p.deleted_at IS NULL \
-           {category_filter} \
-         LIMIT {PAGES_MODULE_QUERY_LIMIT}",
+           {category_filter}\
+         {order_clause} \
+         LIMIT {query_limit}",
         ),
         values,
     );
@@ -784,33 +804,136 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn pages_module_limits_share_one_full_result_cache() {
+    async fn pages_module_limits_have_independent_bounded_cache_entries() {
         let mut cache = PagesModulePagesCache::default();
-        let limited = PagesModuleArguments {
-            limit: Some(1),
-            ..PagesModuleArguments::default()
-        };
         let mut loads = 0;
 
-        let first = cache
-            .get_or_init(limited, || async {
-                loads += 1;
-                Ok(Some(Arc::new(vec![page(1), page(2)])))
-            })
-            .await
-            .expect("the limited result should render")
-            .expect("the pages should be present");
-        let second = cache
-            .get_or_init(PagesModuleArguments::default(), || async {
-                panic!("a different limit must reuse the full cached result")
-            })
-            .await
-            .expect("the full result should render")
-            .expect("the pages should be present");
+        for limit in [1, 5, 20] {
+            let arguments = PagesModuleArguments {
+                limit: Some(limit),
+                ..PagesModuleArguments::default()
+            };
+            let pages = cache
+                .get_or_init(arguments, || async {
+                    loads += 1;
+                    Ok(Some(Arc::new(vec![page(limit)])))
+                })
+                .await
+                .expect("the bounded Pages module load should succeed")
+                .expect("the pages should be present");
+            assert_eq!(pages[0].page_id, limit as i64);
+        }
 
-        assert_eq!(loads, 1);
-        assert_eq!(first.len(), 1);
-        assert_eq!(second.len(), 2);
+        assert_eq!(loads, 3);
+        let cached = cache
+            .get_or_init(
+                PagesModuleArguments {
+                    limit: Some(1),
+                    ..PagesModuleArguments::default()
+                },
+                || async { panic!("a cached bounded result must not query again") },
+            )
+            .await
+            .expect("the cached bounded result should render")
+            .expect("the pages should be present");
+        assert_eq!(cached[0].page_id, 1);
+        assert_eq!(loads, 3);
+    }
+
+    #[test]
+    fn bounded_query_applies_the_requested_limit_to_both_shapes() {
+        for limit in [1, 5, 20] {
+            let unfiltered = PagesModuleArguments {
+                limit: Some(limit),
+                ..PagesModuleArguments::default()
+            };
+            let scoped = PagesModuleArguments {
+                category: Some("_default".to_owned()),
+                limit: Some(limit),
+                ..PagesModuleArguments::default()
+            };
+
+            assert_eq!(pages_module_query_limit(&unfiltered), limit);
+            assert_eq!(pages_module_query_limit(&scoped), limit);
+            assert!(
+                pages_module_query_limit(&PagesModuleArguments::default())
+                    > MAX_PAGES_MODULE_SCAN_ROWS
+            );
+        }
+    }
+
+    #[test]
+    fn bounded_query_order_mirrors_the_in_memory_title_comparator() {
+        let order_sql = pages_module_order_sql(PagesModuleOrder::TitleAsc);
+        assert!(order_sql.contains("translate(pr.title"));
+        assert!(order_sql.contains("COLLATE \"C\""));
+        assert!(order_sql.contains("pr.title COLLATE \"C\""));
+        assert!(order_sql.contains("p.slug COLLATE \"C\""));
+
+        let reverse = pages_module_order_sql(PagesModuleOrder::TitleDesc);
+        assert_eq!(reverse.matches(" DESC").count(), 3);
+
+        let mut pages = (1..=25)
+            .map(|number| {
+                let mut page = page(number);
+                if number % 3 == 0 {
+                    page.title = format!("Alpha {number:02}");
+                }
+                page
+            })
+            .collect::<Vec<_>>();
+        sort_pages_module_pages(&mut pages, PagesModuleOrder::TitleAsc);
+        let titles = pages
+            .iter()
+            .map(|page| page.title.clone())
+            .collect::<Vec<_>>();
+        let mut sorted_titles = titles.clone();
+        sorted_titles.sort_by(|left, right| {
+            left.to_ascii_lowercase()
+                .cmp(&right.to_ascii_lowercase())
+                .then_with(|| left.cmp(right))
+        });
+        assert_eq!(titles, sorted_titles);
+
+        for limit in [1, 5, 20] {
+            let bounded = pages
+                .iter()
+                .take(limit)
+                .map(|page| page.page_id)
+                .collect::<Vec<_>>();
+            let full = pages.iter().map(|page| page.page_id).collect::<Vec<_>>();
+            assert_eq!(bounded, full[..limit]);
+        }
+    }
+
+    #[test]
+    fn unfiltered_and_category_scoped_bounded_prefixes_have_identical_rows() {
+        let category_pages = (1..=20).map(page).collect::<Vec<_>>();
+        let mut unfiltered = category_pages.clone();
+        let mut outside = page(21);
+        outside.page_category_id = 2;
+        outside.title = "Zzz outside category".to_owned();
+        unfiltered.push(outside);
+        sort_pages_module_pages(&mut unfiltered, PagesModuleOrder::TitleAsc);
+        let mut scoped = category_pages;
+        sort_pages_module_pages(&mut scoped, PagesModuleOrder::TitleAsc);
+
+        for limit in [1, 5, 20] {
+            let left = unfiltered
+                .iter()
+                .take(limit)
+                .map(|page| (page.slug.clone(), page.title.clone()))
+                .collect::<Vec<_>>();
+            let right = scoped
+                .iter()
+                .take(limit)
+                .map(|page| (page.slug.clone(), page.title.clone()))
+                .collect::<Vec<_>>();
+            assert_eq!(
+                left, right,
+                "row identity and order must match at limit {limit}"
+            );
+        }
     }
 
     #[tokio::test]
