@@ -26,7 +26,7 @@ use crate::services::page_query::{
 };
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::relation::RelationService;
-use crate::services::{CategoryService, PageQueryService, ServiceContext};
+use crate::services::{PageQueryService, ServiceContext};
 use crate::types::{Action, Permission, Reference, Resource};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -448,63 +448,11 @@ async fn filter_viewable_rows(
     .await
     .or_raise(make_error)?;
 
-    // Pages in the `admin` category hold the site-management surface
-    // (its seeded page, `admin:manage`, renders only a denial scaffold
-    // to non-admins on direct view, with the real content gated on
-    // Site/Edit). Listings must not expose their metadata or wikitext
-    // to viewers who lack that standing.
-    let mut admin_category_sites: BTreeMap<i64, bool> = BTreeMap::new();
-    let mut admin_categories: BTreeMap<(i64, i64), bool> = BTreeMap::new();
-    let mut filtered = Vec::with_capacity(pages.len());
-    for (page, can_view) in pages.into_iter().zip(viewable) {
-        if !can_view {
-            continue;
-        }
-        let in_admin_category = match page.page_category_id {
-            Some(category_id) => {
-                let key = (page.site_id, category_id);
-                match admin_categories.get(&key) {
-                    Some(is_admin) => *is_admin,
-                    None => {
-                        let category = CategoryService::get_optional(
-                            ctx,
-                            page.site_id,
-                            Reference::Id(category_id),
-                        )
-                        .await
-                        .or_raise(make_error)?;
-                        let is_admin = category
-                            .as_ref()
-                            .is_some_and(|category| category.slug == "admin");
-                        admin_categories.insert(key, is_admin);
-                        is_admin
-                    }
-                }
-            }
-            None => false,
-        };
-        if in_admin_category {
-            let can_access_admin = match admin_category_sites.get(&page.site_id) {
-                Some(decision) => *decision,
-                None => {
-                    let decision = PermissionService::check_user_can_access_admin(
-                        ctx,
-                        viewer_user_id,
-                        page.site_id,
-                    )
-                    .await
-                    .or_raise(make_error)?;
-                    admin_category_sites.insert(page.site_id, decision);
-                    decision
-                }
-            };
-            if !can_access_admin {
-                continue;
-            }
-        }
-        filtered.push(page);
-    }
-    Ok(filtered)
+    Ok(pages
+        .into_iter()
+        .zip(viewable)
+        .filter_map(|(page, can_view)| if can_view { Some(page) } else { None })
+        .collect())
 }
 
 pub(in crate::services::render) fn count_pages_sample_from_raw_scan(

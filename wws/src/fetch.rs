@@ -39,38 +39,6 @@ async fn resolve_file_info(
         .get_page_fresh_or_response(headers, site_id, page_slug)
         .await?;
 
-    // Pages in the `admin` category hold the site-management surface.
-    // DEEPWELL gates their content on Site/Edit standing (see
-    // `PermissionService::check_user_can_access_admin`, and the listing
-    // filter in `runtime_page_queries` built on it), but the page view
-    // check performed by `page_get` does not enforce it, so the gate is
-    // mirrored here: a viewer without admin standing must not receive
-    // the page's files either. The denial is shaped like a missing
-    // file so the page's contents are not disclosed.
-    if page_in_admin_category(page_slug)
-        && !viewer_can_access_admin(state, headers, site_id).await
-    {
-        error!(
-            site_id = site_id,
-            page_slug = page_slug,
-            filename = filename,
-            "Viewer lacks site admin standing, refusing file on admin-category page",
-        );
-
-        let response = state
-            .build_basic_error_response(
-                headers,
-                BasicError::FileName {
-                    site_id,
-                    page_slug,
-                    filename,
-                },
-            )
-            .await;
-
-        return Err(response);
-    }
-
     state
         .get_file_or_response(
             headers,
@@ -81,48 +49,6 @@ async fn resolve_file_info(
             get_session_token(headers),
         )
         .await
-}
-
-/// Whether a page slug names a page in the `admin` category.
-///
-/// Uses the same split as DEEPWELL's `split_category`: the category is
-/// everything before the last `:`. A bare slug is in the default
-/// category and never matches.
-fn page_in_admin_category(page_slug: &str) -> bool {
-    match page_slug.rsplit_once(':') {
-        Some((category, _)) => category == "admin",
-        None => false,
-    }
-}
-
-/// Whether the requesting viewer has site-management standing
-/// (Site/Edit) on the given site, as evaluated by DEEPWELL.
-///
-/// There is no dedicated RPC for this check, so it probes the reserved
-/// `_admin` page with the viewer's session token: DEEPWELL's
-/// `page_get` refuses that page with a permission error unless the
-/// viewer can access the admin surface, and returns the page when
-/// they can. Any failure is treated as no standing (fail closed).
-async fn viewer_can_access_admin(
-    state: &ServerState,
-    headers: &HeaderMap,
-    site_id: i64,
-) -> bool {
-    match state
-        .deepwell
-        .get_page(site_id, "_admin", get_session_token(headers))
-        .await
-    {
-        Ok(Some(_)) => true,
-        Ok(None) => false,
-        Err(error) => {
-            error!(
-                site_id = site_id,
-                "Cannot probe viewer admin standing: {error}",
-            );
-            false
-        }
-    }
 }
 
 pub async fn fetch_file_info(
@@ -377,19 +303,6 @@ mod tests {
             requests,
             handle,
         }
-    }
-
-    #[test]
-    fn admin_category_matches_deepwell_category_split() {
-        // The category is everything before the last ':', as in
-        // DEEPWELL's `split_category`.
-        assert!(page_in_admin_category("admin:manage"));
-        assert!(page_in_admin_category("admin:_template"));
-        assert!(!page_in_admin_category("admin"));
-        assert!(!page_in_admin_category("manage"));
-        assert!(!page_in_admin_category("_admin"));
-        assert!(!page_in_admin_category("x:admin:manage"));
-        assert!(!page_in_admin_category("administrator:manage"));
     }
 
     fn file_data() -> FileData {
