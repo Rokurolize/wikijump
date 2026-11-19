@@ -67,7 +67,7 @@ export interface PageCategoryModel {
 
 export interface SiteSettings {
   revision: number
-  access_policy?: "open" | "closed" | "private"
+  access_policy?: AccessPolicy
   welcome_page: string
   google_analytics: {
     enabled: boolean
@@ -91,6 +91,7 @@ export type ThemeSetting =
   | { type: "external"; url: string }
   | { type: "custom"; css: string }
 
+export type AccessPolicy = "open" | "closed" | "private"
 export type PageRatingPermission = "registered" | "members"
 export type PageRatingVisibility = "visible" | "anonymous"
 export type PageRatingType = "plus" | "plus_minus" | "stars"

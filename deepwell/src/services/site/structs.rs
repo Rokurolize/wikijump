@@ -137,6 +137,7 @@ pub struct UpdateSiteBody {
     pub tagline: Maybe<String>,
     pub description: Maybe<String>,
     pub locale: Maybe<String>,
+    pub access_policy: Maybe<AccessPolicy>,
     pub default_page: Maybe<String>,
     pub welcome_page: Maybe<String>,
     pub top_bar_page: Maybe<String>,

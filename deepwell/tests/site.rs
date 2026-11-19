@@ -1171,6 +1171,102 @@ async fn site_update_allows_users_with_site_edit_permission() {
 }
 
 #[tokio::test]
+async fn site_update_persists_access_policy_for_site_editors() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let site_id = create_site(&runner, n).await;
+    let user_id = create_user(&runner, n, "access-policy-editor").await;
+    grant_site_edit(&runner, site_id, user_id, n).await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        ..Default::default()
+    });
+
+    let updated = run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 0,
+            "access_policy": "closed",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(updated.access_policy, AccessPolicy::Closed);
+    assert_eq!(updated.settings_revision, 1);
+
+    let fetched = run_endpoint!(runner, site_get, json!({ "site": site_id }))
+        .expect("updated site should exist");
+    assert_eq!(fetched.site.access_policy, AccessPolicy::Closed);
+    assert_eq!(fetched.settings.access_policy, AccessPolicy::Closed);
+    assert_eq!(fetched.settings.revision, 1);
+
+    let invalid = run_endpoint_err!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 1,
+            "access_policy": "restricted",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(
+        format!("{invalid:?}").contains("InvalidParams"),
+        "unsupported access policy should be rejected during deserialization:\n{invalid:?}"
+    );
+
+    let stale = run_endpoint_err!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 0,
+            "access_policy": "private",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(stale, ErrorType::BadRequest);
+
+    let unchanged = run_endpoint!(runner, site_get, json!({ "site": site_id }))
+        .expect("site should still exist");
+    assert_eq!(unchanged.settings.access_policy, AccessPolicy::Closed);
+    assert_eq!(unchanged.settings.revision, 1);
+}
+
+#[tokio::test]
+async fn site_update_rejects_access_policy_changes_without_site_edit_permission() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let site_id = create_site(&runner, n).await;
+    let user_id = create_user(&runner, n, "access-policy-unauthorized").await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        ..Default::default()
+    });
+
+    let error = run_endpoint_err!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 0,
+            "access_policy": "private",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    let site = run_endpoint!(runner, site_get, json!({ "site": site_id }))
+        .expect("test site should still exist");
+    assert_eq!(site.settings.access_policy, AccessPolicy::Open);
+}
+
+#[tokio::test]
 async fn public_site_update_audits_icon_set_clear_and_unset_states() {
     let mut runner = TestRunner::setup().await;
     let n = next_n();

@@ -1,4 +1,5 @@
 import {
+  accessPolicyAction,
   adminAction,
   analyticsAction,
   autonumberAction,
@@ -22,6 +23,7 @@ export async function load({ request, cookies, parent }) {
 }
 
 export const actions = {
+  accessPolicy: accessPolicyAction,
   site: adminAction,
   analytics: analyticsAction,
   autonumber: autonumberAction,

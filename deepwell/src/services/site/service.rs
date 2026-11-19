@@ -547,6 +547,7 @@ impl SiteService {
             add_changed_field!(description);
             add_changed_field!(move license);
             add_changed_field!(locale);
+            add_changed_field!(move access_policy);
             add_changed_field!(default_page);
             add_changed_field!(welcome_page);
             add_changed_field!(top_bar_page);
@@ -658,6 +659,10 @@ impl SiteService {
             validate_wikidot_site_language(&locale)?;
             model.locale = Set(locale.clone());
             site_user_body.locales = Maybe::Set(vec![locale]);
+        }
+
+        if let Maybe::Set(access_policy) = input.access_policy {
+            model.access_policy = Set(access_policy);
         }
 
         if let Maybe::Set(default_page) = input.default_page {
