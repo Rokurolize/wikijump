@@ -46,6 +46,7 @@ pub async fn wikidot_search_site(
 
     let results = SearchService::search_pages(
         ctx,
+        ctx.request().user_id,
         site_id,
         &query,
         limit.unwrap_or(SearchService::DEFAULT_LIMIT),

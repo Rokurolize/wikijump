@@ -1419,6 +1419,7 @@ impl RenderService {
                 query,
                 &SearchService::search_pages(
                     ctx,
+                    options.viewer_user_id,
                     site_id,
                     query,
                     SearchService::DEFAULT_LIMIT,

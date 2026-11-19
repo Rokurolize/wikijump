@@ -24,9 +24,13 @@ mod common;
 use self::common::{IP_ADDRESS, TestRunner};
 use cuid2::cuid;
 use deepwell::constants::ADMIN_USER_ID;
+use deepwell::services::PageService;
 use deepwell::services::RequestContext;
+use deepwell::services::page::CreatePage;
+use deepwell::services::user::{CreateUser, UserService};
 use deepwell::services::view::GetPageViewOutput;
-use deepwell::types::Reference;
+use deepwell::types::{Reference, UserType};
+use ftml::layout::Layout;
 use serde_json::json;
 use std::borrow::Cow;
 
@@ -220,5 +224,257 @@ async fn search_module_page_view_renders_real_results_for_a_query() {
             && body.contains(&format!("/{target_slug}"))
             && !body.contains(r#"class="error-block">Search is temporarily unavailable"#),
         "search module page view should render real results:\n{body}",
+    );
+}
+
+fn set_search_context(runner: &mut TestRunner, user_id: Option<i64>) {
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id,
+        site_id: None,
+        page_reference: None,
+    });
+}
+
+async fn create_search_user(runner: &TestRunner, token: &str, label: &str) -> i64 {
+    UserService::create(
+        runner.context(),
+        CreateUser {
+            user_type: UserType::Regular,
+            name: format!("Search {token} {label}"),
+            email: format!("search-{token}-{label}@email.com"),
+            locales: vec![String::from("en")],
+            password: String::from("password-fixture"),
+            bypass_filter: true,
+            bypass_email_verification: true,
+            override_user_id: None,
+            ip_address: IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("test user should be created")
+    .user_id
+}
+
+async fn create_page_as(
+    runner: &TestRunner,
+    site_id: i64,
+    user_id: i64,
+    slug: &str,
+    title: &str,
+    wikitext: &str,
+) {
+    PageService::create(
+        runner.context(),
+        CreatePage {
+            site_id,
+            wikitext: wikitext.to_owned(),
+            title: title.to_owned(),
+            alt_title: None,
+            tags: vec![],
+            slug: slug.to_owned(),
+            layout: Some(Layout::Wikidot),
+            revision_comments: String::from("create search permission fixture"),
+            user_id,
+            bypass_filter: true,
+            ip_address: IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("fixture page should be created");
+}
+
+async fn create_private_site(runner: &mut TestRunner, token: &str, owner: i64) -> i64 {
+    set_search_context(runner, Some(owner));
+    run_endpoint!(
+        runner,
+        site_create,
+        json!({
+            "slug": format!("search-private-{token}"),
+            "name": format!("Search private {token}"),
+            "tagline": "",
+            "description": "",
+            "default_page": null,
+            "layout": null,
+            "license": "cc0",
+            "locale": "en",
+            "ip_address": IP_ADDRESS,
+            "access_policy": "private",
+        }),
+    )
+    .site_id
+}
+
+#[tokio::test]
+async fn search_does_not_leak_private_site_pages() {
+    let mut runner = TestRunner::setup().await;
+    let token = format!("leak{}", cuid());
+    let owner = create_search_user(&runner, &token, "owner").await;
+    let private_site = create_private_site(&mut runner, &token, owner).await;
+    let private_slug = format!("search-private-page-{token}");
+    create_page_as(
+        &runner,
+        private_site,
+        owner,
+        &private_slug,
+        "Private Fixture",
+        &format!("This private page mentions {token}."),
+    )
+    .await;
+    let public_site = site_id(&mut runner, "scp-wiki").await;
+    let outsider = create_search_user(&runner, &token, "outsider").await;
+
+    set_search_context(&mut runner, None);
+    let anonymous = search(&mut runner, private_site, &token).await;
+    assert!(
+        anonymous.results.is_empty(),
+        "anonymous search must not expose private-site pages: {:?}",
+        anonymous.results,
+    );
+
+    set_search_context(&mut runner, Some(outsider));
+    let outsider_results = search(&mut runner, private_site, &token).await;
+    assert!(
+        outsider_results.results.is_empty(),
+        "a registered non-member must not expose private-site pages: {:?}",
+        outsider_results.results,
+    );
+
+    let other_site_results = search(&mut runner, public_site, &token).await;
+    assert!(
+        other_site_results.results.is_empty(),
+        "a private-site page must not appear in another site's search: {:?}",
+        other_site_results.results,
+    );
+
+    set_search_context(&mut runner, Some(owner));
+    let member_results = search(&mut runner, private_site, &token).await;
+    assert!(
+        member_results
+            .results
+            .iter()
+            .any(|result| result.slug == private_slug),
+        "an authorized member should find the private-site page: {:?}",
+        member_results.results,
+    );
+}
+
+#[tokio::test]
+async fn search_title_prefix_only_matches_titles() {
+    let mut runner = TestRunner::setup().await;
+    let site = site_id(&mut runner, "scp-wiki").await;
+    let token = format!("Titleprobe{}", cuid());
+    let title_slug = format!("search-title-field-{}", cuid());
+    let body_slug = format!("search-body-field-{}", cuid());
+    create_page(
+        &mut runner,
+        site,
+        &title_slug,
+        &token,
+        "This body does not mention the probe.",
+    )
+    .await;
+    create_page(
+        &mut runner,
+        site,
+        &body_slug,
+        "Unrelated Title",
+        &format!("This body mentions {token}."),
+    )
+    .await;
+
+    let output = search(&mut runner, site, &format!("title:{token}")).await;
+    let slugs = output
+        .results
+        .iter()
+        .map(|result| result.slug.as_str())
+        .collect::<Vec<_>>();
+    assert!(slugs.contains(&title_slug.as_str()), "{slugs:?}");
+    assert!(!slugs.contains(&body_slug.as_str()), "{slugs:?}");
+}
+
+#[tokio::test]
+async fn search_required_and_excluded_terms_filter_results() {
+    let mut runner = TestRunner::setup().await;
+    let site = site_id(&mut runner, "scp-wiki").await;
+    let token = format!("grammar{}", cuid());
+    let both_slug = format!("search-grammar-both-{}", cuid());
+    let alpha_slug = format!("search-grammar-alpha-{}", cuid());
+    create_page(
+        &mut runner,
+        site,
+        &both_slug,
+        "Grammar Both",
+        &format!("{token} alpha beta are present here."),
+    )
+    .await;
+    create_page(
+        &mut runner,
+        site,
+        &alpha_slug,
+        "Grammar Alpha",
+        &format!("{token} alpha only is present here."),
+    )
+    .await;
+
+    let required = search(&mut runner, site, &format!("+{token} +beta")).await;
+    let required_slugs = required
+        .results
+        .iter()
+        .map(|result| result.slug.as_str())
+        .collect::<Vec<_>>();
+    assert!(
+        required_slugs.contains(&both_slug.as_str()),
+        "{required_slugs:?}"
+    );
+    assert!(
+        !required_slugs.contains(&alpha_slug.as_str()),
+        "{required_slugs:?}"
+    );
+
+    let excluded = search(&mut runner, site, &format!("+{token} -beta")).await;
+    let excluded_slugs = excluded
+        .results
+        .iter()
+        .map(|result| result.slug.as_str())
+        .collect::<Vec<_>>();
+    assert!(
+        excluded_slugs.contains(&alpha_slug.as_str()),
+        "{excluded_slugs:?}"
+    );
+    assert!(
+        !excluded_slugs.contains(&both_slug.as_str()),
+        "{excluded_slugs:?}"
+    );
+}
+
+#[tokio::test]
+async fn search_supports_documented_wildcards() {
+    let mut runner = TestRunner::setup().await;
+    let site = site_id(&mut runner, "scp-wiki").await;
+    let token = format!("wild{}", cuid());
+    let target = format!("muse{token}finder");
+    let slug = format!("search-wildcard-{}", cuid());
+    create_page(
+        &mut runner,
+        site,
+        &slug,
+        "Wildcard Fixture",
+        &format!("The word {target} is in this body."),
+    )
+    .await;
+
+    let prefix = search(&mut runner, site, &format!("muse{token}*")).await;
+    assert!(
+        prefix.results.iter().any(|result| result.slug == slug),
+        "a trailing wildcard should find the page: {:?}",
+        prefix.results,
+    );
+
+    let infix = search(&mut runner, site, &format!("muse*{token}finder")).await;
+    assert!(
+        infix.results.iter().any(|result| result.slug == slug),
+        "an infix wildcard should find the page: {:?}",
+        infix.results,
     );
 }
