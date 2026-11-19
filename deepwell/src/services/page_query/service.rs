@@ -477,39 +477,60 @@ impl PageQueryService {
             query = query.join(JoinType::LeftJoin, page::Relation::PageRevision.def());
         }
 
-        for tag in all_tags {
-            query = query.filter(
-                Expr::col(page_revision::Column::Tags)
-                    .binary(PgBinOper::Contains, Expr::val(vec![tag.to_string()])),
-            );
-        }
+        // A tag that is both required and excluded can never match
+        // (required_excluded_contradiction in the lean-sql-opt proof
+        // project), so the whole tag conjunction folds to a constant
+        // false and the remaining tag predicates are skipped.
+        let tag_contradiction = all_tags.iter().any(|tag| no_tags.contains(tag));
+        if tag_contradiction {
+            query = query.filter(SimpleExpr::Custom("FALSE".into()));
+        } else {
+            if !all_tags.is_empty() {
+                // One containment against the full required array replaces
+                // one predicate per tag (all_singleton_contains_iff in the
+                // lean-sql-opt proof project); duplicates in the required
+                // list are dropped first (pgContains_dedup), which the same
+                // proofs show cannot change the result.
+                let mut seen = std::collections::HashSet::new();
+                let mut required: Vec<String> = Vec::new();
+                for tag in all_tags {
+                    if seen.insert(&**tag) {
+                        required.push(tag.to_string());
+                    }
+                }
+                query = query.filter(
+                    Expr::col(page_revision::Column::Tags)
+                        .binary(PgBinOper::Contains, Expr::val(required)),
+                );
+            }
 
-        if !any_tags.is_empty() {
-            query = query.filter(
-                Expr::col(page_revision::Column::Tags).binary(
-                    PgBinOper::Overlap,
-                    Expr::val(
-                        any_tags
-                            .iter()
-                            .map(|tag| tag.to_string())
-                            .collect::<Vec<_>>(),
+            if !any_tags.is_empty() {
+                query = query.filter(
+                    Expr::col(page_revision::Column::Tags).binary(
+                        PgBinOper::Overlap,
+                        Expr::val(
+                            any_tags
+                                .iter()
+                                .map(|tag| tag.to_string())
+                                .collect::<Vec<_>>(),
+                        ),
                     ),
-                ),
-            );
-        }
+                );
+            }
 
-        for tag in no_tags {
-            query = query.filter(
-                Expr::col(page_revision::Column::Tags)
-                    .binary(PgBinOper::Contains, Expr::val(vec![tag.to_string()]))
-                    .not(),
-            );
-        }
+            for tag in no_tags {
+                query = query.filter(
+                    Expr::col(page_revision::Column::Tags)
+                        .binary(PgBinOper::Contains, Expr::val(vec![tag.to_string()]))
+                        .not(),
+                );
+            }
 
-        if untagged {
-            query = query.filter(SimpleExpr::Custom(
-                "cardinality(page_revision.tags) = 0".into(),
-            ));
+            if untagged {
+                query = query.filter(SimpleExpr::Custom(
+                    "cardinality(page_revision.tags) = 0".into(),
+                ));
+            }
         }
 
         query = apply_score_filters(
