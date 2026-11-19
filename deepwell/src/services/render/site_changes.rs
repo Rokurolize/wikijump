@@ -18,7 +18,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::{ViewablePageRef, view_decisions_for_scanned_pages};
 use super::categories::wikidot_category_sort_key;
 use super::compat::CompatHtmlFragments;
 use super::literal_regions::LiteralRegionIndex;
@@ -27,6 +26,7 @@ use super::service::{
     format_wikidot_list_pages_date,
 };
 use super::wikidot_user_resources::WIKIDOT_USER_INFO_URL;
+use super::{ViewablePageRef, view_decisions_for_scanned_pages};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::{CategoryService, ServiceContext};
