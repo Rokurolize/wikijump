@@ -26,6 +26,7 @@ struct ForumThreadVisibilityCandidate {
     forum_thread_id: i64,
     page_id: Option<i64>,
     page_category_id: Option<i64>,
+    page_slug: Option<String>,
 }
 
 pub(super) struct VisibleForumThreadIds {
@@ -37,6 +38,7 @@ pub(super) struct ForumPageVisibility<'a, 'ctx> {
     ctx: &'a ServiceContext<'ctx>,
     viewer_user_id: Option<i64>,
     site_decisions: HashMap<i64, bool>,
+    admin_decisions: HashMap<i64, bool>,
     category_decisions: HashMap<(i64, i64), bool>,
     page_decisions: HashMap<(i64, i64, i64), bool>,
 }
@@ -50,6 +52,7 @@ impl<'a, 'ctx> ForumPageVisibility<'a, 'ctx> {
             ctx,
             viewer_user_id,
             site_decisions: HashMap::new(),
+            admin_decisions: HashMap::new(),
             category_decisions: HashMap::new(),
             page_decisions: HashMap::new(),
         }
@@ -82,20 +85,49 @@ impl<'a, 'ctx> ForumPageVisibility<'a, 'ctx> {
         }
     }
 
+    async fn admin_is_accessible(&mut self, site_id: i64) -> Result<bool> {
+        match self.admin_decisions.get(&site_id) {
+            Some(decision) => Ok(*decision),
+            None => {
+                let decision = PermissionService::check_user_can_access_admin(
+                    self.ctx,
+                    self.viewer_user_id,
+                    site_id,
+                )
+                .await
+                .or_raise(|| {
+                    Error::new("failed to check forum admin page", ErrorType::Render)
+                })?;
+                self.admin_decisions.insert(site_id, decision);
+                Ok(decision)
+            }
+        }
+    }
+
     pub(super) async fn page_is_viewable(
         &mut self,
         site_id: i64,
         page_id: Option<i64>,
         page_category_id: Option<i64>,
+        page_slug: Option<&str>,
     ) -> Result<bool> {
         if !self.site_is_viewable(site_id).await? {
             return Ok(false);
         }
-        // DIVERGENCE (forum post #3869): this render path has no _admin branch and
-        // treats a site-viewable thread with page_id = None as visible, while
-        // compat_query::can_view_forum_post returns false for that thread; the canonical
-        // permission helper maps _admin to Site/Edit. Pin only: any behavior change
-        // here waits on live Wikidot evidence.
+        // The reserved `_admin` page follows the canonical gate (Site/Edit),
+        // matching direct page view. Verified live (finding #1241): anonymous
+        // callers could get-or-create a discussion thread on `_admin` and read
+        // its metadata through this path while direct view returned 401.
+        if let Some(page_slug) = page_slug {
+            if PermissionService::slug_targets_reserved_admin_page(page_slug) {
+                return self.admin_is_accessible(site_id).await;
+            }
+        }
+        // DIVERGENCE (forum post #3869): apart from the `_admin` branch above,
+        // this render path treats a site-viewable thread with page_id = None as
+        // visible, while compat_query::can_view_forum_post returns false for
+        // that thread. Pin only: any further behavior change here waits on
+        // live Wikidot evidence.
         let (Some(page_id), Some(page_category_id)) = (page_id, page_category_id) else {
             return Ok(page_id.is_none());
         };
@@ -178,7 +210,7 @@ impl<'a, 'ctx> ForumPageVisibility<'a, 'ctx> {
             Statement::from_sql_and_values(
                 self.ctx.transaction().get_database_backend(),
                 format!(concat!(
-                    "SELECT t.forum_thread_id, t.page_id, p.page_category_id ",
+                    "SELECT t.forum_thread_id, t.page_id, p.page_category_id, p.slug AS page_slug ",
                     "FROM forum_thread t ",
                     "JOIN forum_category c ON c.forum_category_id = t.forum_category_id ",
                     " AND c.site_id = t.site_id AND c.deleted_at IS NULL ",
@@ -208,7 +240,12 @@ impl<'a, 'ctx> ForumPageVisibility<'a, 'ctx> {
         let mut visible = Vec::with_capacity(candidate_count);
         for candidate in candidates {
             if self
-                .page_is_viewable(site_id, candidate.page_id, candidate.page_category_id)
+                .page_is_viewable(
+                    site_id,
+                    candidate.page_id,
+                    candidate.page_category_id,
+                    candidate.page_slug.as_deref(),
+                )
                 .await?
             {
                 visible.push(candidate.forum_thread_id);

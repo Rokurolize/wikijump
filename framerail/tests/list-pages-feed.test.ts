@@ -27,6 +27,42 @@ test("parses Wikidot feed path pairs with form-style spaces and last-value wins"
   )
 })
 
+test("parses the feed windowing parameters from the path", () => {
+  assert.deepEqual(
+    parseWikidotListPagesFeedPath(
+      "https://sandbox.example/feed/pages/category/news/limit/5/rssLimit/2/offset/3/order/titleDesc/t/News"
+    ),
+    {
+      title: "News",
+      description: "",
+      home: null,
+      selectors: {
+        category: "news",
+        limit: "5",
+        rssLimit: "2",
+        offset: "3",
+        order: "titleDesc"
+      }
+    }
+  )
+})
+
+test("rejects non-numeric feed windowing parameters", () => {
+  assert.equal(
+    wikidotListPagesFeedSelectorError({ limit: "five" }),
+    "Invalid limit argument."
+  )
+  assert.equal(
+    wikidotListPagesFeedSelectorError({ rssLimit: "-1" }),
+    "Invalid limit argument."
+  )
+  assert.equal(
+    wikidotListPagesFeedSelectorError({ offset: "1.5" }),
+    "Invalid offset argument."
+  )
+  assert.equal(wikidotListPagesFeedSelectorError({ limit: "10", offset: "0" }), null)
+})
+
 test("pairs arguments sequentially and treats an orphan key as empty", () => {
   assert.deepEqual(
     parseWikidotListPagesFeedPath("https://sandbox.example/feed/pages/t/d/foo"),

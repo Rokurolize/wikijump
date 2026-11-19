@@ -916,12 +916,13 @@ async fn load_forum_feed_thread(
         thread_title: String,
         page_id: Option<i64>,
         page_category_id: Option<i64>,
+        page_slug: Option<String>,
     }
 
     let row = ForumFeedThreadRow::find_by_statement(Statement::from_sql_and_values(
         ctx.transaction().get_database_backend(),
         "SELECT g.name AS group_name, c.name AS category_name, t.title AS thread_title, \
-                t.page_id, p.page_category_id \
+                t.page_id, p.page_category_id, p.slug AS page_slug \
          FROM forum_thread t \
          JOIN forum_category c ON c.forum_category_id = t.forum_category_id \
                               AND c.site_id = t.site_id AND c.deleted_at IS NULL \
@@ -947,7 +948,12 @@ async fn load_forum_feed_thread(
         return Ok(None);
     };
     if !visibility
-        .page_is_viewable(site_id, row.page_id, row.page_category_id)
+        .page_is_viewable(
+            site_id,
+            row.page_id,
+            row.page_category_id,
+            row.page_slug.as_deref(),
+        )
         .await?
     {
         return Ok(None);
@@ -1047,6 +1053,7 @@ impl RenderService {
                         site_id,
                         candidate.page_id,
                         candidate.page_category_id,
+                        candidate.page_slug.as_deref(),
                     )
                     .await?
                 {

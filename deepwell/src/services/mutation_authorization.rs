@@ -20,9 +20,9 @@
 
 use crate::constants::ADMIN_USER_ID;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
-use crate::services::ServiceContext;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
-use crate::types::{Permission, Reference};
+use crate::services::{PageService, ServiceContext};
+use crate::types::{Permission, Reference, Resource};
 
 /// Common actor checks for mutation boundaries.
 ///
@@ -94,22 +94,49 @@ impl MutationAuthorization {
         action: &str,
     ) -> Result<i64> {
         let actor_user_id = Self::require_authenticated(ctx, action)?;
-        let permitted = PermissionService::check_user_can(
-            ctx,
-            &CheckPermissionContext {
-                user_id: Some(actor_user_id),
-                site_id,
-                page_reference,
-            },
-            permission,
-        )
-        .await
-        .or_raise(|| {
+        let make_error = || {
             Error::new(
                 format!("failed to check permission to {action}"),
                 ErrorType::Permission,
             )
-        })?;
+        };
+
+        // The reserved `_admin` page is gated on Site/Edit for every
+        // action. When a page-scoped check targets it, evaluate through
+        // the canonical page gate instead, so a page-scoped grant can
+        // never authorize a mutation on it.
+        let reserved_page = match (&page_reference, permission.resource_type) {
+            (Some(reference), Resource::Page) => {
+                PageService::get_optional(ctx, site_id, reference.clone())
+                    .await
+                    .or_raise(make_error)?
+                    .filter(|page| {
+                        PermissionService::slug_targets_reserved_admin_page(&page.slug)
+                    })
+            }
+            _ => None,
+        };
+        let permitted = match reserved_page {
+            Some(page) => PermissionService::check_user_can_act_on_page(
+                ctx,
+                Some(actor_user_id),
+                &page,
+                permission.action,
+            )
+            .await
+            .or_raise(make_error)?,
+            None => PermissionService::check_user_can(
+                ctx,
+                &CheckPermissionContext {
+                    user_id: Some(actor_user_id),
+                    site_id,
+                    page_reference,
+                },
+                permission,
+            )
+            .await
+            .or_raise(make_error)?,
+        };
 
         if !permitted {
             return Err(Error::new(

@@ -236,8 +236,20 @@ impl RenderService {
         let mut category_permissions = HashMap::new();
         let mut viewable = Vec::with_capacity(rows.len());
         for row in rows {
+            // The reserved `_admin` page is gated on Site/Edit; it must
+            // not ride on its category's cached view decision.
             let can_view =
-                if let Some(can_view) = category_permissions.get(&row.page_category_id) {
+                if PermissionService::slug_targets_reserved_admin_page(&row.slug) {
+                    PermissionService::check_user_can_access_admin(
+                        ctx,
+                        None,
+                        current_site_id,
+                    )
+                    .await
+                    .or_raise(make_error)?
+                } else if let Some(can_view) =
+                    category_permissions.get(&row.page_category_id)
+                {
                     *can_view
                 } else {
                     let can_view = PermissionService::check_user_can(

@@ -19,9 +19,9 @@
  */
 
 use super::prelude::*;
-use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::services::permission::PermissionService;
 use crate::services::text_block::TextBlockIndex;
-use crate::types::{Action, Permission, Reference, Resource, TextBlockType};
+use crate::types::{Reference, TextBlockType};
 
 #[derive(Deserialize, Debug, Clone)]
 struct GetIndexInput {
@@ -151,21 +151,9 @@ async fn ensure_parent_page_view_permission(
         .await
         .or_raise(make_error)?;
 
-    let can_view = PermissionService::check_user_can(
-        ctx,
-        &CheckPermissionContext {
-            user_id,
-            site_id,
-            page_reference: Some(Reference::Id(page.page_id)),
-        },
-        Permission {
-            resource_type: Resource::Page,
-            resource_category: Some(Reference::Id(page.page_category_id)),
-            action: Action::View,
-        },
-    )
-    .await
-    .or_raise(make_error)?;
+    let can_view = PermissionService::check_user_can_view_page(ctx, user_id, &page)
+        .await
+        .or_raise(make_error)?;
 
     if can_view {
         Ok(())

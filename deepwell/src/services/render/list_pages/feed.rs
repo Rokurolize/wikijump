@@ -19,7 +19,8 @@ use super::presentation::{
     render_list_pages_snapshot_user, render_list_pages_wikidot_feed_user,
 };
 use super::substitution::{
-    WikidotUserDisplay, parse_list_pages_score_selector, split_list_pages_values,
+    WikidotUserDisplay, parse_list_pages_order, parse_list_pages_score_selector,
+    split_list_pages_values,
 };
 use crate::error::prelude::{Error, ErrorType, ExnError, Result, ResultExt};
 use crate::services::page_query::{
@@ -34,6 +35,7 @@ use std::collections::BTreeMap;
 use time::OffsetDateTime;
 
 const WIKIDOT_RSS_ITEM_LIMIT: u64 = 20;
+const MAX_WIKIDOT_RSS_ITEM_LIMIT: u64 = 1_000;
 const MAX_WIKIDOT_RSS_SELECTOR_BYTES: usize = 8 * 1024;
 const MAX_WIKIDOT_RSS_SELECTOR_VALUES: usize = 100;
 
@@ -51,6 +53,10 @@ impl RenderService {
             created_by,
             rating,
             range,
+            limit,
+            rss_limit,
+            offset,
+            order,
         } = input;
         for selector in [
             pagetype.as_deref(),
@@ -72,6 +78,28 @@ impl RenderService {
                 .into());
             }
         }
+
+        // The feed honors the ListPages windowing parameters serialized into
+        // its path: `rssLimit` overrides `limit`, and `offset` / `order`
+        // carry the listing's windowing and ordering into the feed
+        // (finding #1459).
+        let item_limit = parse_feed_count(
+            rss_limit.as_deref().or(limit.as_deref()),
+            WIKIDOT_RSS_ITEM_LIMIT,
+            "Invalid limit argument.",
+        )?
+        .min(MAX_WIKIDOT_RSS_ITEM_LIMIT);
+        let item_offset = u32::try_from(parse_feed_count(
+            offset.as_deref(),
+            0,
+            "Invalid offset argument.",
+        )?)
+        .map_err(|_| wikidot_feed_argument_error("Invalid offset argument."))?;
+        let item_order = match order.as_deref().map(str::trim) {
+            None | Some("") => OrderBySelector::default(),
+            Some(value) => parse_list_pages_order(value)
+                .ok_or_else(|| wikidot_feed_argument_error("Invalid order argument."))?,
+        };
 
         SiteService::get(ctx, Reference::Id(site_id))
             .await
@@ -221,28 +249,29 @@ impl RenderService {
                     .map_or(AuthorSelector::All, |authors| authors.as_selector()),
                 score: &score,
                 votes: &[],
-                offset: 0,
+                offset: item_offset,
                 name: None,
                 slug: None,
                 slugs: &[],
                 data_form_fields: &[],
-                // The live feed endpoint ignores its serialized `order` path
-                // and always uses ListPages' default newest-first order.
-                order: Some(OrderBySelector::default()),
+                order: Some(item_order),
                 candidate_limit: None,
                 pagination: PaginationSelector {
-                    limit: Some(WIKIDOT_RSS_ITEM_LIMIT),
-                    per_page: WIKIDOT_RSS_ITEM_LIMIT as u8,
+                    limit: Some(item_limit),
+                    per_page: item_limit.clamp(1, u8::MAX as u64) as u8,
                     reversed: false,
                 },
                 fields: feed_found_page_fields(),
             };
             let mut permission_cache = BTreeMap::new();
             let mut score_filter_cache = PageQueryScoreFilterCache::default();
-            RenderRuntime::new(ctx)
+            // Evaluate the feed for the actual caller, not anonymously, so
+            // the view gate matches direct page view for members and site
+            // admins as well as anonymous callers (finding #1455).
+            RenderRuntime::for_viewer(ctx, ctx.request().user_id)
                 .find_viewable_list_pages_rows(
                     query,
-                    WIKIDOT_RSS_ITEM_LIMIT as usize,
+                    item_limit as usize,
                     &mut permission_cache,
                     Some(&mut score_filter_cache),
                 )
@@ -361,6 +390,19 @@ fn feed_found_page_fields() -> FoundPageFields {
         created_at: true,
         created_by: true,
         ..FoundPageFields::default()
+    }
+}
+
+fn parse_feed_count(
+    value: Option<&str>,
+    default: u64,
+    error_message: &'static str,
+) -> Result<u64> {
+    match value.map(str::trim) {
+        None | Some("") => Ok(default),
+        Some(value) => value
+            .parse::<u64>()
+            .map_err(|_| wikidot_feed_argument_error(error_message).into()),
     }
 }
 

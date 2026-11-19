@@ -3,9 +3,9 @@ use super::super::rendering_support::{
     ListPagesBlockRenderArgs, ListPagesSelectedContentArgs,
 };
 use super::{
-    Action, BTreeMap, BTreeSet, CategoriesSelector, CheckPermissionContext, ColumnTrait,
-    ComparisonOperation, CompatHtmlFragments, Cow, DEFAULT_LISTPAGES_PER_PAGE,
-    DateSelector, DateTimeResolution, EntityTrait, Error, ErrorType,
+    BTreeMap, BTreeSet, CategoriesSelector, ColumnTrait, ComparisonOperation,
+    CompatHtmlFragments, Cow, DEFAULT_LISTPAGES_PER_PAGE, DateSelector,
+    DateTimeResolution, EntityTrait, Error, ErrorType,
     FinishOrDeferListPagesDelayedOutputParams, FoundPageFields, FoundPages,
     IncludeExpansion, IncludedCategories, ListPagesArguments, ListPagesBlockRenderResult,
     ListPagesContentGeometry, ListPagesOutputShape, ListPagesPageContext,
@@ -13,9 +13,9 @@ use super::{
     ListPagesSubstitutionContext, MAX_LISTPAGES_RENDER_LIMIT,
     MAX_LISTPAGES_RENDER_SCAN_ROWS, OrderProperty, PageCategory, PageInfo,
     PageParentSelector, PageQuery, PageQueryService, PageRevisionService, PageService,
-    PaginationSelector, Permission, PermissionService, PrepareDelayedListPagesRowParams,
-    QueryFilter, Reference, RenderRuntime, RenderService, ResolvedListPagesAuthors,
-    Resource, Result, ResultExt, ScoreSelector, ScoreValue, SiteService, TagCondition,
+    PaginationSelector, PermissionService, PrepareDelayedListPagesRowParams, QueryFilter,
+    Reference, RenderRuntime, RenderService, ResolvedListPagesAuthors, Result, ResultExt,
+    ScoreSelector, ScoreValue, SiteService, TagCondition,
     append_list_pages_delayed_occurrences, append_list_pages_runtime_text_ranges,
     escape_html_text, finish_or_defer_list_pages_delayed_output_with_modes,
     has_include_opening_candidate, has_list_pages_module_opening_candidate,
@@ -270,18 +270,10 @@ impl RenderService {
             }
             let mut viewable_target_ids = Vec::new();
             for target in target_pages {
-                let can_view = PermissionService::check_user_can(
+                let can_view = PermissionService::check_user_can_view_page(
                     ctx,
-                    &CheckPermissionContext {
-                        user_id: viewer_user_id,
-                        site_id: target.site_id,
-                        page_reference: Some(Reference::Id(target.page_id)),
-                    },
-                    Permission {
-                        resource_type: Resource::Page,
-                        resource_category: Some(Reference::Id(target.page_category_id)),
-                        action: Action::View,
-                    },
+                    viewer_user_id,
+                    &target,
                 )
                 .await?;
                 if can_view {

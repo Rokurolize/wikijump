@@ -4,9 +4,9 @@ use crate::error::Result;
 use crate::models::page::Model as PageModel;
 use crate::services::ServiceContext;
 use crate::services::page::PageService;
-use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::services::permission::PermissionService;
 use crate::services::render::{ViewablePageRef, view_decisions_for_scanned_pages};
-use crate::types::{Action, Permission, Reference, Resource};
+use crate::types::Reference;
 
 pub(crate) struct AuthorizedPageSelector<'a, 'ctx> {
     ctx: &'a ServiceContext<'ctx>,
@@ -43,6 +43,7 @@ impl<'a, 'ctx> AuthorizedPageSelector<'a, 'ctx> {
                 page_id: page.page_id,
                 site_id: page.site_id,
                 page_category_id: Some(page.page_category_id),
+                slug: Some(page.slug.clone()),
             })
             .collect::<Vec<_>>();
         let decisions = view_decisions_for_scanned_pages(
@@ -83,18 +84,10 @@ impl<'a, 'ctx> AuthorizedPageSelector<'a, 'ctx> {
             return Ok(*decision);
         }
 
-        let decision = PermissionService::check_user_can(
+        let decision = PermissionService::check_user_can_view_page(
             self.ctx,
-            &CheckPermissionContext {
-                user_id: self.viewer_user_id,
-                site_id: page.site_id,
-                page_reference: Some(Reference::Id(page.page_id)),
-            },
-            Permission {
-                resource_type: Resource::Page,
-                resource_category: Some(Reference::Id(page.page_category_id)),
-                action: Action::View,
-            },
+            self.viewer_user_id,
+            page,
         )
         .await?;
         self.decisions.insert(key, decision);

@@ -47,6 +47,7 @@ pub(in crate::services::render) async fn load_list_pages_child_counts(
         child_page_id: Option<i64>,
         child_site_id: Option<i64>,
         child_category_id: Option<i64>,
+        child_slug: Option<String>,
     }
 
     let page_ids = pages
@@ -75,7 +76,8 @@ pub(in crate::services::render) async fn load_list_pages_child_counts(
             "WITH input(page_id) AS (VALUES {values}) \
              SELECT input.page_id AS parent_page_id, child.page_id AS child_page_id, \
                     child.site_id AS child_site_id, \
-                    child.page_category_id AS child_category_id \
+                    child.page_category_id AS child_category_id, \
+                    child.slug AS child_slug \
              FROM input \
              LEFT JOIN page_parent ON page_parent.parent_page_id = input.page_id \
              LEFT JOIN page child ON child.page_id = page_parent.child_page_id \
@@ -109,20 +111,35 @@ pub(in crate::services::render) async fn load_list_pages_child_counts(
         {
             *can_view
         } else {
-            let can_view = PermissionService::check_user_can(
-                ctx,
-                &CheckPermissionContext {
-                    user_id: viewer_user_id,
-                    site_id: child_site_id,
-                    page_reference: Some(Reference::Id(child_page_id)),
-                },
-                Permission {
-                    resource_type: Resource::Page,
-                    resource_category: Some(Reference::Id(child_category_id)),
-                    action: Action::View,
-                },
-            )
-            .await?;
+            // The reserved `_admin` page is gated on Site/Edit, not on
+            // the page view grant its category carries.
+            let can_view = if row
+                .child_slug
+                .as_deref()
+                .is_some_and(PermissionService::slug_targets_reserved_admin_page)
+            {
+                PermissionService::check_user_can_access_admin(
+                    ctx,
+                    viewer_user_id,
+                    child_site_id,
+                )
+                .await?
+            } else {
+                PermissionService::check_user_can(
+                    ctx,
+                    &CheckPermissionContext {
+                        user_id: viewer_user_id,
+                        site_id: child_site_id,
+                        page_reference: Some(Reference::Id(child_page_id)),
+                    },
+                    Permission {
+                        resource_type: Resource::Page,
+                        resource_category: Some(Reference::Id(child_category_id)),
+                        action: Action::View,
+                    },
+                )
+                .await?
+            };
             permission_cache.insert((child_site_id, child_page_id), can_view);
             can_view
         };
@@ -202,20 +219,33 @@ pub(in crate::services::render) async fn load_list_pages_parent_displays(
         {
             *can_view
         } else {
-            let can_view = PermissionService::check_user_can(
-                ctx,
-                &CheckPermissionContext {
-                    user_id: viewer_user_id,
-                    site_id: row.parent_site_id,
-                    page_reference: Some(Reference::Id(row.parent_page_id)),
-                },
-                Permission {
-                    resource_type: Resource::Page,
-                    resource_category: Some(Reference::Id(row.parent_category_id)),
-                    action: Action::View,
-                },
-            )
-            .await?;
+            // The reserved `_admin` page is gated on Site/Edit, not on
+            // the page view grant its category carries.
+            let can_view = if PermissionService::slug_targets_reserved_admin_page(
+                &row.parent_slug,
+            ) {
+                PermissionService::check_user_can_access_admin(
+                    ctx,
+                    viewer_user_id,
+                    row.parent_site_id,
+                )
+                .await?
+            } else {
+                PermissionService::check_user_can(
+                    ctx,
+                    &CheckPermissionContext {
+                        user_id: viewer_user_id,
+                        site_id: row.parent_site_id,
+                        page_reference: Some(Reference::Id(row.parent_page_id)),
+                    },
+                    Permission {
+                        resource_type: Resource::Page,
+                        resource_category: Some(Reference::Id(row.parent_category_id)),
+                        action: Action::View,
+                    },
+                )
+                .await?
+            };
             permission_cache.insert((row.parent_site_id, row.parent_page_id), can_view);
             can_view
         };

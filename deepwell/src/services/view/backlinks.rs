@@ -15,10 +15,10 @@ use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::page::{self, Entity as Page};
 use crate::models::page_connection::{self, Entity as PageConnection};
 use crate::services::page::foreign_snapshot_exclusion_sql;
-use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::services::permission::PermissionService;
 use crate::services::render::{ViewablePageRef, view_decisions_for_scanned_pages};
 use crate::services::{PageRevisionService, PageService, ServiceContext};
-use crate::types::{Action, ConnectionType, Permission, Reference, Resource};
+use crate::types::{ConnectionType, Reference};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
 use sea_query::Expr;
 use std::collections::{BTreeMap, HashMap};
@@ -57,18 +57,10 @@ impl ViewService {
                 Error::new("page is not viewable", ErrorType::PermissionDenied).into(),
             );
         };
-        let target_is_viewable = PermissionService::check_user_can(
+        let target_is_viewable = PermissionService::check_user_can_view_page(
             ctx,
-            &CheckPermissionContext {
-                user_id: ctx.request().user_id,
-                site_id: input.site_id,
-                page_reference: Some(Reference::Id(target.page_id)),
-            },
-            Permission {
-                resource_type: Resource::Page,
-                resource_category: Some(Reference::Id(target.page_category_id)),
-                action: Action::View,
-            },
+            ctx.request().user_id,
+            &target,
         )
         .await
         .or_raise(make_error)?;
@@ -131,6 +123,7 @@ impl ViewService {
                         page_id: page.page_id,
                         site_id: page.site_id,
                         page_category_id: Some(page.page_category_id),
+                        slug: Some(page.slug.clone()),
                     })
                     .collect::<Vec<_>>(),
                 &mut category_permissions,

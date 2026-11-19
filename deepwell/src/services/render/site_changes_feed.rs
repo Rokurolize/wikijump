@@ -233,21 +233,37 @@ impl RenderService {
                 {
                     *can_view
                 } else {
-                    let can_view = PermissionService::check_user_can(
-                        ctx,
-                        &CheckPermissionContext {
-                            user_id: viewer_user_id,
-                            site_id,
-                            page_reference: Some(Reference::Id(row.page_id)),
-                        },
-                        Permission {
-                            resource_type: Resource::Page,
-                            resource_category: Some(Reference::Id(row.page_category_id)),
-                            action: Action::View,
-                        },
-                    )
-                    .await
-                    .or_raise(make_error)?;
+                    // The reserved `_admin` page is gated on Site/Edit,
+                    // not on the page view grant its category carries.
+                    let can_view =
+                        if PermissionService::slug_targets_reserved_admin_page(&row.slug)
+                        {
+                            PermissionService::check_user_can_access_admin(
+                                ctx,
+                                viewer_user_id,
+                                site_id,
+                            )
+                            .await
+                            .or_raise(make_error)?
+                        } else {
+                            PermissionService::check_user_can(
+                                ctx,
+                                &CheckPermissionContext {
+                                    user_id: viewer_user_id,
+                                    site_id,
+                                    page_reference: Some(Reference::Id(row.page_id)),
+                                },
+                                Permission {
+                                    resource_type: Resource::Page,
+                                    resource_category: Some(Reference::Id(
+                                        row.page_category_id,
+                                    )),
+                                    action: Action::View,
+                                },
+                            )
+                            .await
+                            .or_raise(make_error)?
+                        };
                     permission_cache.insert(row.page_id, can_view);
                     can_view
                 };

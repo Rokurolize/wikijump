@@ -185,6 +185,7 @@ pub(super) async fn resolve_random_helper_redirect(
             page_id: page.page_id,
             site_id: page.site_id,
             page_category_id: page.page_category_id,
+            slug: page.slug.clone(),
         })
         .collect::<Vec<_>>();
     let mut permission_cache = BTreeMap::new();

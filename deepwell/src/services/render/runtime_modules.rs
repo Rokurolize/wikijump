@@ -627,20 +627,8 @@ async fn resolve_new_page_templates(
                 "Template \"{name}\" can not be found.",
             )));
         };
-        let can_view = PermissionService::check_user_can(
-            ctx,
-            &CheckPermissionContext {
-                user_id: None,
-                site_id,
-                page_reference: Some(Reference::Id(page.page_id)),
-            },
-            Permission {
-                resource_type: Resource::Page,
-                resource_category: Some(Reference::Id(page.page_category_id)),
-                action: Action::View,
-            },
-        )
-        .await?;
+        let can_view =
+            PermissionService::check_user_can_view_page(ctx, None, &page).await?;
         if !can_view {
             return Ok(NewPageTemplateRendering::Error(format!(
                 "Template \"{name}\" can not be found.",

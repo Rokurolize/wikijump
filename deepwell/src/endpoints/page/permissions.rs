@@ -1,11 +1,7 @@
 use super::*;
-use crate::utils::trim_default;
-use wikidot_normalize::normalize as normalize_slug;
 
 fn slug_targets_reserved_admin_page(slug: &str) -> bool {
-    let mut normalized = slug.to_owned();
-    normalize_slug(&mut normalized);
-    trim_default(normalized.trim_matches('/')).eq_ignore_ascii_case("_admin")
+    PermissionService::slug_targets_reserved_admin_page(slug)
 }
 
 async fn ensure_admin_for_reserved_page(

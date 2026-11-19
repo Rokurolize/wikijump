@@ -139,21 +139,10 @@ impl PageQueryService {
         let pages = page_query.all(txn).await.or_raise(make_error)?;
         let mut visible_revision_ids = Vec::with_capacity(pages.len());
         for page in pages {
-            let can_view = PermissionService::check_user_can(
-                ctx,
-                &CheckPermissionContext {
-                    user_id: Some(user_id),
-                    site_id,
-                    page_reference: Some(Reference::Id(page.page_id)),
-                },
-                Permission {
-                    resource_type: Resource::Page,
-                    resource_category: Some(Reference::Id(page.page_category_id)),
-                    action: Action::View,
-                },
-            )
-            .await
-            .or_raise(make_error)?;
+            let can_view =
+                PermissionService::check_user_can_view_page(ctx, Some(user_id), &page)
+                    .await
+                    .or_raise(make_error)?;
 
             if can_view && let Some(revision_id) = page.latest_revision_id {
                 visible_revision_ids.push(revision_id);
@@ -326,21 +315,37 @@ impl PageQueryService {
         let mut visible_pages = Vec::with_capacity(found.pages.len());
         for page in found.pages {
             let page_category_id = page.page_category_id.ok_or_raise(make_error)?;
-            let can_view = PermissionService::check_user_can(
-                ctx,
-                &CheckPermissionContext {
-                    user_id: Some(user_id),
+            // The reserved `_admin` page is gated on Site/Edit, not on
+            // the page view grant its category carries.
+            let can_view = if page
+                .slug
+                .as_deref()
+                .is_some_and(PermissionService::slug_targets_reserved_admin_page)
+            {
+                PermissionService::check_user_can_access_admin(
+                    ctx,
+                    Some(user_id),
                     site_id,
-                    page_reference: Some(Reference::Id(page.page_id)),
-                },
-                Permission {
-                    resource_type: Resource::Page,
-                    resource_category: Some(Reference::Id(page_category_id)),
-                    action: Action::View,
-                },
-            )
-            .await
-            .or_raise(make_error)?;
+                )
+                .await
+                .or_raise(make_error)?
+            } else {
+                PermissionService::check_user_can(
+                    ctx,
+                    &CheckPermissionContext {
+                        user_id: Some(user_id),
+                        site_id,
+                        page_reference: Some(Reference::Id(page.page_id)),
+                    },
+                    Permission {
+                        resource_type: Resource::Page,
+                        resource_category: Some(Reference::Id(page_category_id)),
+                        action: Action::View,
+                    },
+                )
+                .await
+                .or_raise(make_error)?
+            };
 
             if can_view {
                 visible_pages.push((page.slug, page.score));
