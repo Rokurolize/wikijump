@@ -33,6 +33,7 @@ use crate::locales::Localizations;
 use crate::middleware::{RequestContextHeaders, RequestContextLayer, RpcAuthLayer};
 use crate::runtime::ServerStateInner;
 use crate::services::blob::MimeAnalyzer;
+use crate::services::email::ConfiguredMailer;
 use crate::services::job::JobWorker;
 use crate::services::render::{
     CorpusRenderFinalizerService, RenderAheadPromotion, RenderAheadService,
@@ -147,6 +148,8 @@ async fn build_server_state_inner(
         s3_path_style,
         s3_credentials,
         mailcheck_api_key,
+        smtp_username,
+        smtp_password,
     }: Secrets,
     start_workers: bool,
     job_queue_namespace: Option<&str>,
@@ -226,6 +229,13 @@ async fn build_server_state_inner(
             .or_raise(make_error)?
     };
 
+    let token_mailer = ConfiguredMailer::build(
+        config.email_delivery.as_ref(),
+        smtp_username.as_deref(),
+        smtp_password.as_deref(),
+    )
+    .or_raise(make_error)?;
+
     // Build server state
     let render_permits = Arc::new(tokio::sync::Semaphore::new(config.render_concurrency));
     let state = Arc::new(ServerStateInner {
@@ -239,6 +249,7 @@ async fn build_server_state_inner(
         s3_files_bucket,
         s3_tblocks_bucket,
         mailcheck_api_client,
+        token_mailer,
         render_permits,
     });
 

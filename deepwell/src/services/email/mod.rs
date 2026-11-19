@@ -18,10 +18,12 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+mod delivery;
 mod email_token;
 mod service;
 mod structs;
 
+pub use delivery::{ConfiguredMailer, TokenMailer};
 pub use email_token::{
     EmailTokenPurpose, EmailTokenService, GrantTokenPurpose, IssueEmailToken,
     IssueEmailTokenOutcome, IssuedEmailToken, LinkTokenPurpose, RedeemedEmailToken,

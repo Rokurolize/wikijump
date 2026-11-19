@@ -45,6 +45,10 @@ pub struct Secrets {
     pub s3_credentials: Credentials,
 
     pub mailcheck_api_key: Option<String>,
+
+    pub smtp_username: Option<String>,
+
+    pub smtp_password: Option<String>,
 }
 
 impl Secrets {
@@ -144,6 +148,26 @@ impl Secrets {
             }
         };
 
+        let smtp_username = match env::var("SMTP_USERNAME") {
+            Ok(value) if value.is_empty() => None,
+            Ok(value) => Some(value),
+            Err(VarError::NotPresent) => None,
+            Err(error) => {
+                eprintln!("Unable to read environment variable SMTP_USERNAME: {error}");
+                process::exit(1);
+            }
+        };
+
+        let smtp_password = match env::var("SMTP_PASSWORD") {
+            Ok(value) if value.is_empty() => None,
+            Ok(value) => Some(value),
+            Err(VarError::NotPresent) => None,
+            Err(error) => {
+                eprintln!("Unable to read environment variable SMTP_PASSWORD: {error}");
+                process::exit(1);
+            }
+        };
+
         Secrets {
             rpc_token_digest,
             database_url,
@@ -154,6 +178,8 @@ impl Secrets {
             s3_path_style,
             s3_credentials,
             mailcheck_api_key,
+            smtp_username,
+            smtp_password,
         }
     }
 }

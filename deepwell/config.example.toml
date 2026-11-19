@@ -388,6 +388,21 @@ refill-name-change-days = 90
 # for instance "john@spam.xxx" is detected as a spam email.
 mock-mailcheck = false
 
+# Delivery of account token email (address verification, password reset,
+# account deletion confirmation).
+#
+# If this section is absent, no transport is configured and token mail is
+# logged locally instead of being delivered. This is the development default.
+#
+# SMTP credentials are read from the SMTP_USERNAME and SMTP_PASSWORD
+# environment variables; set both or neither.
+[email.delivery]
+smtp-host = "smtp.wikijump.example"
+smtp-port = 587
+from-address = "noreply@wikijump.example"
+# "starttls" (the default), "implicit" (SMTPS), or "none" (local relay only).
+tls = "starttls"
+
 [file]
 
 # The length of paths used for S3 presigned URLs.

@@ -88,7 +88,14 @@ async fn issue_token_quietly(
         .or_raise(|| Error::new("failed to issue email token", ErrorType::Email))?
         {
             IssueEmailTokenOutcome::Issued(issued) => {
-                EmailService::send_token_email(&email, purpose, issued.expires_at).await;
+                EmailService::send_token_email(
+                    ctx,
+                    &email,
+                    purpose,
+                    issued.expires_at,
+                    &issued.token,
+                )
+                .await;
             }
             IssueEmailTokenOutcome::Suppressed => {}
         }
@@ -315,9 +322,11 @@ pub async fn account_delete_issue(
     {
         IssueEmailTokenOutcome::Issued(issued) => {
             EmailService::send_token_email(
+                ctx,
                 &user.email,
                 EmailTokenPurpose::DeleteConfirm,
                 issued.expires_at,
+                &issued.token,
             )
             .await;
         }

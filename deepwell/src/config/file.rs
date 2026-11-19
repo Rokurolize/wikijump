@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::Config;
+use super::{Config, EmailDeliveryConfig, SmtpTls};
 use crate::error::prelude::*;
 use femme::LevelFilter;
 use ftml::layout::Layout;
@@ -222,6 +222,23 @@ struct UserSection {
 #[serde(rename_all = "kebab-case")]
 struct Email {
     mock_mailcheck: bool,
+    #[serde(default)]
+    delivery: Option<EmailDelivery>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "kebab-case")]
+struct EmailDelivery {
+    smtp_host: String,
+    #[serde(default = "default_smtp_port")]
+    smtp_port: u16,
+    from_address: String,
+    #[serde(default)]
+    tls: SmtpTls,
+}
+
+fn default_smtp_port() -> u16 {
+    587
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -460,7 +477,11 @@ impl ConfigFile {
                     minimum_name_chars,
                     allow_registration,
                 },
-            email: Email { mock_mailcheck },
+            email:
+                Email {
+                    mock_mailcheck,
+                    delivery,
+                },
             file:
                 FileSection {
                     presigned_path_length,
@@ -492,6 +513,18 @@ impl ConfigFile {
         } = self;
 
         const RSMQ_DELAY_LIMIT: u64 = 9999999;
+
+        if let Some(ref delivery) = delivery {
+            assert!(
+                !delivery.smtp_host.is_empty(),
+                "SMTP host must not be empty"
+            );
+            assert!(delivery.smtp_port != 0, "SMTP port must not be zero");
+            assert!(
+                !delivery.from_address.is_empty(),
+                "SMTP from address must not be empty",
+            );
+        }
 
         assert!(https_port != 0, "Public HTTPS port must not be zero");
         assert!(
@@ -629,6 +662,12 @@ impl ConfigFile {
             minimum_name_chars,
             allow_registration,
             mock_mailcheck,
+            email_delivery: delivery.map(|delivery| EmailDeliveryConfig {
+                smtp_host: delivery.smtp_host,
+                smtp_port: delivery.smtp_port,
+                from_address: delivery.from_address,
+                tls: delivery.tls,
+            }),
             presigned_path_length,
             presigned_expiry_secs: presigned_expiration_minutes * 60,
             maximum_blob_size: maximum_blob_size_kb * 1024,
@@ -792,6 +831,7 @@ mod tests {
             },
             email: Email {
                 mock_mailcheck: true,
+                delivery: None,
             },
             file: FileSection {
                 presigned_path_length: 16,
@@ -1079,6 +1119,30 @@ mod tests {
             config.database_max_lifetime,
             Some(StdDuration::from_secs(1800)),
         );
+    }
+
+    #[test]
+    fn email_delivery_defaults_to_disabled_and_parses_when_configured() {
+        let toml = toml::to_string(&sample_config_file()).unwrap();
+        let parsed_config: ConfigFile = toml::from_str(&toml).unwrap();
+        assert_eq!(
+            parsed_config.into_config(extra_config()).email_delivery,
+            None
+        );
+
+        let configured_toml = format!(
+            "{toml}\n[email.delivery]\nsmtp-host = \"smtp.wikijump.example\"\n\
+             from-address = \"noreply@wikijump.example\"\n",
+        );
+        let parsed_config: ConfigFile = toml::from_str(&configured_toml).unwrap();
+        let delivery = parsed_config
+            .into_config(extra_config())
+            .email_delivery
+            .expect("delivery section should be parsed");
+        assert_eq!(delivery.smtp_host, "smtp.wikijump.example");
+        assert_eq!(delivery.smtp_port, 587);
+        assert_eq!(delivery.from_address, "noreply@wikijump.example");
+        assert_eq!(delivery.tls, SmtpTls::Starttls);
     }
 
     #[test]

@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use super::delivery::{TokenEmail, TokenMailer, build_token_email};
 use super::structs::{
     EmailClassification, EmailProviderClassification, EmailValidationOutput,
     MailCheckFailureResponse, MailCheckResponse, MailCheckSuccessResponse,
@@ -258,16 +259,25 @@ impl EmailService {
     }
 
     pub async fn send_token_email(
+        ctx: &ServiceContext<'_>,
         to_email: &str,
         purpose: super::EmailTokenPurpose,
         expires_at: time::OffsetDateTime,
+        token: &str,
     ) {
-        info!(
-            "Email token issued for '{}' (purpose: {}, expires: {})",
-            to_email,
-            purpose.as_str(),
-            expires_at,
-        );
+        let message =
+            build_token_email(ctx.config(), to_email, purpose, expires_at, token);
+        Self::deliver_token_email(ctx, message).await;
+    }
+
+    async fn deliver_token_email(ctx: &ServiceContext<'_>, message: TokenEmail) {
+        if let Err(error) = ctx.state().token_mailer.send(&message).await {
+            warn!(
+                "Failed to deliver {} account email: {}",
+                message.purpose.as_str(),
+                error,
+            );
+        }
     }
 
     pub async fn send_mail_form_message(message: &MailFormMessage) {

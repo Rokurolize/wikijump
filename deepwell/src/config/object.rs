@@ -22,6 +22,7 @@ use super::file::ConfigFile;
 use crate::error::prelude::*;
 use femme::LevelFilter;
 use ftml::layout::Layout;
+use serde::{Deserialize, Serialize};
 use std::env;
 use std::net::SocketAddr;
 use std::num::NonZeroU16;
@@ -150,6 +151,8 @@ pub struct Config {
 
     pub mock_mailcheck: bool,
 
+    pub email_delivery: Option<EmailDeliveryConfig>,
+
     pub presigned_path_length: usize,
 
     pub presigned_expiry_secs: u32,
@@ -181,6 +184,23 @@ pub struct Config {
     pub public_max_gallery_requirements: usize,
 
     pub corpus_max_gallery_requirements: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EmailDeliveryConfig {
+    pub smtp_host: String,
+    pub smtp_port: u16,
+    pub from_address: String,
+    pub tls: SmtpTls,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum SmtpTls {
+    #[default]
+    Starttls,
+    Implicit,
+    None,
 }
 
 impl Config {
@@ -294,6 +314,7 @@ impl Config {
             minimum_name_chars: 2,
             allow_registration: true,
             mock_mailcheck: true,
+            email_delivery: None,
             presigned_path_length: 4,
             presigned_expiry_secs: 60,
             maximum_blob_size: 512 * 1024,

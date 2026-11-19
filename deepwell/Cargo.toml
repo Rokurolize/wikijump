@@ -41,6 +41,7 @@ intl-memoizer = "0.5"
 http = "1.4"
 jsonrpsee = { version = "0.26", features = ["macros", "server"] }
 tower = "0.5"
+lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "tokio1-rustls-tls"] }
 log = "0.4"
 notify = { version = "8", optional = true }
 paste = "1"
