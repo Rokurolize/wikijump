@@ -22,6 +22,7 @@
   let revisionMap = new SvelteMap<number, PageRevisionModelFiltered>()
   let revision = $state<Optional<PageRevisionModelFiltered>>(undefined)
   let showRevisionSource = $state<boolean>(false)
+  let revisionRequestId = 0
 
   async function fetchHistory() {
     const res = await fetch("?/history", {
@@ -55,16 +56,19 @@
     revisionNumber: number,
     compiledHtml: boolean,
     wikitext: boolean
-  ) {
+  ): Promise<boolean> {
+    const requestId = ++revisionRequestId
     // Get cached revision if we have it
     const rev = revisionMap.get(revisionNumber)
     // Try to see if the cached revision already has the wanted data
     if (compiledHtml && rev?.compiled_body_html) {
       setRevision(rev)
       revision = rev
+      return true
     } else if (wikitext && rev?.wikitext) {
       setRevision(rev)
       revision = rev
+      return true
     } else {
       // Request from server
       const res = await fetch("?/revision", {
@@ -82,6 +86,8 @@
         { res: Optional<PageRevisionModelFiltered> },
         { message: string; code: string; data: Record<string, unknown> }
       >(res)
+
+      if (requestId !== revisionRequestId) return false
 
       if (result.type === "failure" && result.data?.message) {
         errorPopupState.current = {
@@ -105,6 +111,7 @@
         }
       }
     }
+    return true
   }
 
   async function rollbackRevision(revisionNumber: number, comments?: string) {
@@ -183,10 +190,13 @@
                   href="javascript:;"
                   onclick={(event) => {
                     event.stopPropagation()
-                    getRevision(revisionItem.revision_number, true, false).then(() => {
-                      setShowRevision(true)
-                      showRevisionSource = false
-                    })
+                    getRevision(revisionItem.revision_number, true, false).then(
+                      (published) => {
+                        if (!published) return
+                        setShowRevision(true)
+                        showRevisionSource = false
+                      }
+                    )
                   }}
                   type="button"
                 >
@@ -198,10 +208,13 @@
                   href="javascript:;"
                   onclick={(event) => {
                     event.stopPropagation()
-                    getRevision(revisionItem.revision_number, false, true).then(() => {
-                      setShowRevision(false)
-                      showRevisionSource = true
-                    })
+                    getRevision(revisionItem.revision_number, false, true).then(
+                      (published) => {
+                        if (!published) return
+                        setShowRevision(false)
+                        showRevisionSource = true
+                      }
+                    )
                   }}
                   type="button"
                 >
@@ -278,10 +291,13 @@
               class="action-button view-revision clickable"
               onclick={(event) => {
                 event.stopPropagation()
-                getRevision(revisionItem.revision_number, true, false).then(() => {
-                  setShowRevision(true)
-                  showRevisionSource = false
-                })
+                getRevision(revisionItem.revision_number, true, false).then(
+                  (published) => {
+                    if (!published) return
+                    setShowRevision(true)
+                    showRevisionSource = false
+                  }
+                )
               }}
               type="button"
             >
@@ -291,10 +307,13 @@
               class="action-button view-revision-source clickable"
               onclick={(event) => {
                 event.stopPropagation()
-                getRevision(revisionItem.revision_number, false, true).then(() => {
-                  setShowRevision(false)
-                  showRevisionSource = true
-                })
+                getRevision(revisionItem.revision_number, false, true).then(
+                  (published) => {
+                    if (!published) return
+                    setShowRevision(false)
+                    showRevisionSource = true
+                  }
+                )
               }}
               type="button"
             >
