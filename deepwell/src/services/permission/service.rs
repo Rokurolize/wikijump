@@ -762,6 +762,17 @@ impl PermissionService {
             return Ok(Vec::new());
         }
 
+        // The batch path must apply the same site privacy gate as the
+        // single-check path (see permission_in_set_helper): on a private
+        // site, only members may view any page, whatever their role
+        // permission set says (finding #3694).
+        if !Self::site_allows_view(ctx, user_id, site_id)
+            .await
+            .or_raise(make_error)?
+        {
+            return Ok(vec![false; page_category_ids.len()]);
+        }
+
         let user_permissions =
             Self::get_permissions_for_user(ctx, user_id, site_id, None)
                 .await
