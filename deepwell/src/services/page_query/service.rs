@@ -301,7 +301,10 @@ impl PageQueryService {
             PageParentSelector::HasParents(parents) => ("list", parents.len()),
         };
         let requested_order = order.unwrap_or_default();
-        let order = if matches!(mode, PageQueryBuildMode::Count | PageQueryBuildMode::FindUnordered) {
+        let order = if matches!(
+            mode,
+            PageQueryBuildMode::Count | PageQueryBuildMode::FindUnordered
+        ) {
             OrderBySelector::default()
         } else {
             requested_order.clone()

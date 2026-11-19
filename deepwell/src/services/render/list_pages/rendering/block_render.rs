@@ -485,94 +485,102 @@ impl RenderService {
             || current_page_only
             || prefetched_pages.is_some()
             || link_to_has_no_viewable_targets;
-        let exact_total_from_scan =
-            if template.uses_total() && !rows_are_complete_without_query {
-                let total_cache_key = format!(
-                    "evt={exact_visible_tags}|cvt={current_visible_tags:?}|rr={relative_range:?}|cp={current_page_id}|exc={exclude_current_page}|off={offset}"
-                );
-                if let Some(total) = listing_cache.exact_total(&listing_cache_key, &total_cache_key) {
-                    Some(total)
-                } else {
-                    let fast_total = None;
-                    if !exact_visible_tags && relative_range.is_none() {
-                        let mut count_query = query.clone();
-                        count_query.order = None;
-                        count_query.offset = 0;
-                        count_query.pagination = PaginationSelector::default();
-                        count_query.candidate_limit = None;
-                        let count_envelope = PageQueryService::count_with_metadata(ctx, count_query).await?;
-                        if count_envelope.metadata.exact_count_safe
-                            && !count_envelope.metadata.filtering_deferred_to_rust
-                            && let Some(candidate_count) = count_envelope.metadata.candidate_count
-                        {
-                            if !exclude_current_page && offset == 0 && !count_envelope.metadata.cap_exceeded {
-                                // For anonymous/public cases without row-level view filtering
-                                // this matches the full match-set count. If view permission
-                                // filtering could remove rows, fall through to scan.
-                                // We conservatively only use this when viewer has no
-                                // per-row attribution concerns by falling back below
-                                // unless we can be sure; handled by scan fallback.
-                            }
-                            let _ = candidate_count;
-                        }
-                    }
-                    let total = if let Some(total) = fast_total {
-                        total
-                    } else {
-                        let mut total_query = query.clone();
-                        total_query.pagination.limit =
-                            Some(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS));
-                        total_query.fields = FoundPageFields {
-                            page_category_id: true,
-                            tags: exact_visible_tags,
-                            ..FoundPageFields::default()
-                        };
-                        let target_count = MAX_LISTPAGES_RENDER_SCAN_ROWS as usize;
-                        let found = if relative_range.is_none() {
-                            RenderRuntime::for_viewer(ctx, viewer_user_id)
-                                .find_viewable_count_pages_rows_unordered(
-                                    total_query,
-                                    target_count,
-                                    permission_cache,
-                                )
-                                .await?
-                        } else {
-                            RenderRuntime::for_viewer(ctx, viewer_user_id)
-                                .find_viewable_count_pages_rows(
-                                    total_query,
-                                    target_count,
-                                    permission_cache,
-                                )
-                                .await?
-                        };
-                        if page_query_cap_requires_original_module(&found.metadata)
-                            || !found.sample.is_complete()
-                        {
-                            return Ok(ListPagesBlockRenderResult::PreserveOriginal(
-                                "exact total scan incomplete",
-                            ));
-                        }
-                        select_list_pages_rows(
-                            found.sample.into_pages().pages,
-                            exact_visible_tags,
-                            &current_visible_tags,
-                            relative_range,
-                            current_page_id,
-                            exclude_current_page,
-                            offset,
-                        )
-                        .len()
-                    };
-                    listing_cache.cache_exact_total(
-                        listing_cache_key.clone(),
-                        total_cache_key,
-                        total,
-                    );
-                    Some(total)
-                }
+        let exact_total_from_scan = if template.uses_total()
+            && !rows_are_complete_without_query
+        {
+            let total_cache_key = format!(
+                "evt={exact_visible_tags}|cvt={current_visible_tags:?}|rr={relative_range:?}|cp={current_page_id}|exc={exclude_current_page}|off={offset}"
+            );
+            if let Some(total) =
+                listing_cache.exact_total(&listing_cache_key, &total_cache_key)
+            {
+                Some(total)
             } else {
-                None
-            };
+                let fast_total = None;
+                if !exact_visible_tags && relative_range.is_none() {
+                    let mut count_query = query.clone();
+                    count_query.order = None;
+                    count_query.offset = 0;
+                    count_query.pagination = PaginationSelector::default();
+                    count_query.candidate_limit = None;
+                    let count_envelope =
+                        PageQueryService::count_with_metadata(ctx, count_query).await?;
+                    if count_envelope.metadata.exact_count_safe
+                        && !count_envelope.metadata.filtering_deferred_to_rust
+                        && let Some(candidate_count) =
+                            count_envelope.metadata.candidate_count
+                    {
+                        if !exclude_current_page
+                            && offset == 0
+                            && !count_envelope.metadata.cap_exceeded
+                        {
+                            // For anonymous/public cases without row-level view filtering
+                            // this matches the full match-set count. If view permission
+                            // filtering could remove rows, fall through to scan.
+                            // We conservatively only use this when viewer has no
+                            // per-row attribution concerns by falling back below
+                            // unless we can be sure; handled by scan fallback.
+                        }
+                        let _ = candidate_count;
+                    }
+                }
+                let total = if let Some(total) = fast_total {
+                    total
+                } else {
+                    let mut total_query = query.clone();
+                    total_query.pagination.limit =
+                        Some(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS));
+                    total_query.fields = FoundPageFields {
+                        page_category_id: true,
+                        tags: exact_visible_tags,
+                        ..FoundPageFields::default()
+                    };
+                    let target_count = MAX_LISTPAGES_RENDER_SCAN_ROWS as usize;
+                    let found = if relative_range.is_none() {
+                        RenderRuntime::for_viewer(ctx, viewer_user_id)
+                            .find_viewable_count_pages_rows_unordered(
+                                total_query,
+                                target_count,
+                                permission_cache,
+                            )
+                            .await?
+                    } else {
+                        RenderRuntime::for_viewer(ctx, viewer_user_id)
+                            .find_viewable_count_pages_rows(
+                                total_query,
+                                target_count,
+                                permission_cache,
+                            )
+                            .await?
+                    };
+                    if page_query_cap_requires_original_module(&found.metadata)
+                        || !found.sample.is_complete()
+                    {
+                        return Ok(ListPagesBlockRenderResult::PreserveOriginal(
+                            "exact total scan incomplete",
+                        ));
+                    }
+                    select_list_pages_rows(
+                        found.sample.into_pages().pages,
+                        exact_visible_tags,
+                        &current_visible_tags,
+                        relative_range,
+                        current_page_id,
+                        exclude_current_page,
+                        offset,
+                    )
+                    .len()
+                };
+                listing_cache.cache_exact_total(
+                    listing_cache_key.clone(),
+                    total_cache_key,
+                    total,
+                );
+                Some(total)
+            }
+        } else {
+            None
+        };
         let pages = if zero_page_size
             || oversized_offset_initial_page
             || current_page_date_missing

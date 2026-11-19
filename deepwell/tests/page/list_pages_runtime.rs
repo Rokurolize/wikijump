@@ -5585,14 +5585,8 @@ async fn listpages_total_counts_parentless_pages_for_parent_dash() {
         .expect("seeded SCP Wiki site should exist");
     let site_id = site.site.site_id;
 
-    create_listpages_test_page(
-        &mut runner,
-        site_id,
-        ROOT,
-        "Parent Dash Root",
-        "root",
-    )
-    .await;
+    create_listpages_test_page(&mut runner, site_id, ROOT, "Parent Dash Root", "root")
+        .await;
 
     for (index, has_parent) in [(1, false), (2, false), (3, true)] {
         let slug = format!("fixture-listpages-total-parent-dash-target-{index}");
@@ -5663,7 +5657,9 @@ async fn listpages_total_matches_for_rating_order_and_excluded_tag_shapes() {
     )
     .body;
     assert!(
-        rating_html.contains(">3<") || rating_html.contains("3</p>") || rating_html.contains("3"),
+        rating_html.contains(">3<")
+            || rating_html.contains("3</p>")
+            || rating_html.contains("3"),
         "rating-order ListPages %%total%% should count the full match set:\n{rating_html}",
     );
     assert!(
@@ -5684,11 +5680,14 @@ async fn listpages_total_matches_for_rating_order_and_excluded_tag_shapes() {
     )
     .body;
     assert!(
-        excluded_html.contains(">2<") || excluded_html.contains("2</p>") || excluded_html.contains("2"),
+        excluded_html.contains(">2<")
+            || excluded_html.contains("2</p>")
+            || excluded_html.contains("2"),
         "excluded-tag ListPages %%total%% should count only pages without the excluded tag:\n{excluded_html}",
     );
     assert!(
-        !excluded_html.contains("%%total%%") && !excluded_html.contains("[[module ListPages"),
+        !excluded_html.contains("%%total%%")
+            && !excluded_html.contains("[[module ListPages"),
         "excluded-tag ListPages %%total%% should be substituted:\n{excluded_html}",
     );
 }
