@@ -413,8 +413,14 @@ mod tests {
                     endpoint: String::from("http://127.0.0.1:1"),
                 },
                 s3_path_style: true,
-                s3_credentials: Credentials::new(Some("key"), Some("secret"), None, None, None)
-                    .expect("test credentials"),
+                s3_credentials: Credentials::new(
+                    Some("key"),
+                    Some("secret"),
+                    None,
+                    None,
+                    None,
+                )
+                .expect("test credentials"),
             },
         )
         .await
