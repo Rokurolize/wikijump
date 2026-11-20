@@ -85,8 +85,8 @@ pub(in crate::services::render) use self::selectors::{
 pub(in crate::services::render) use self::template_values::{
     ListPagesContentGeometry, list_pages_content_block_sections,
     list_pages_content_body_traits, list_pages_content_occurrence_is_block,
-    list_pages_first_paragraph, list_pages_unknown_link_target_slugs,
-    substitute_list_pages_rating_only,
+    list_pages_first_paragraph, list_pages_source_has_module_opening,
+    list_pages_unknown_link_target_slugs, substitute_list_pages_rating_only,
 };
 use self::template_values::{
     list_pages_variable_inside_quoted_attribute,
