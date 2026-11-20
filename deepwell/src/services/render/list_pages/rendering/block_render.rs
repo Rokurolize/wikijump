@@ -1,7 +1,8 @@
 use super::super::ListPagesBatchDisplays;
 use super::super::pagination::{ListPagesPagerArgs, ListPagesPagerRoute};
 use super::super::rendering_support::{
-    ListPagesBlockRenderArgs, ListPagesSelectedContentArgs,
+    ListPagesBlockRenderArgs, ListPagesContentSectionEntry, ListPagesContentSectionKey,
+    ListPagesSelectedContentArgs,
 };
 use super::{
     BTreeMap, BTreeSet, CachedListPagesRows, CategoriesSelector, ColumnTrait,
@@ -45,6 +46,7 @@ use super::{
     select_list_pages_rows, should_render_current_page_list_pages_row,
     wikidot_content_section,
 };
+use crate::hash::k12_hash;
 
 impl RenderService {
     pub(in crate::services::render) async fn render_list_pages_block(
@@ -1411,27 +1413,85 @@ impl RenderService {
             {
                 for section in &content_block_sections {
                     let section_source = wikidot_content_section(wikitext, *section);
-                    let mut rendered = render_list_pages_block_content_source(
-                        ListPagesSelectedContentArgs {
-                            ctx,
-                            wikitext: &section_source,
-                            page_info: selected_page_info,
-                            settings,
-                            current_site_id,
-                            current_category_id: page.page_category_id.unwrap_or(0),
-                            current_page_id: page.page_id,
-                            viewer_user_id,
-                            max_include_expansions: include_budget.remaining,
-                            trusted_corpus_render: include_budget.trusted_corpus_render,
-                            render_cost_budget: render_cost_budget.clone(),
-                            url,
-                        },
-                    )
-                    .await?;
-                    include_budget.consume(rendered.expanded_include_count);
-                    included_pages.extend(rendered.included_pages);
-                    rendered_page_styles.append(&mut rendered.styles);
-                    page_block_content.insert(*section, rendered.body);
+                    let current_category_id = page.page_category_id.unwrap_or(0);
+                    let max_include_expansions = include_budget.remaining;
+                    let section_key = ListPagesContentSectionKey {
+                        page_id: page.page_id,
+                        page_revision_id: page.page_revision_id,
+                        section: *section,
+                        section_source_hash: k12_hash(section_source.as_bytes()),
+                        selected_page_hash: k12_hash(
+                            format!("{selected_page_info:?}").as_bytes(),
+                        ),
+                        render_inputs_hash: k12_hash(
+                            format!(
+                                "{current_site_id}|{current_category_id}|{viewer_user_id:?}|{:?}|{settings:?}|{url:?}",
+                                include_budget.trusted_corpus_render,
+                            )
+                            .as_bytes(),
+                        ),
+                        max_include_expansions,
+                    };
+                    let (
+                        body,
+                        mut styles,
+                        section_included_pages,
+                        expanded_include_count,
+                    ) = if let Some(entry) =
+                        content_cache.content_sections.get(&section_key)
+                    {
+                        let entry = entry.clone();
+                        for operation in &entry.cost_charges {
+                            render_cost_budget.charge(1, operation).map_err(|error| {
+                                Error::new(error.to_string(), ErrorType::Render)
+                            })?;
+                        }
+                        (
+                            entry.body,
+                            entry.styles,
+                            entry.included_pages,
+                            entry.expanded_include_count,
+                        )
+                    } else {
+                        let rendered = render_list_pages_block_content_source(
+                            ListPagesSelectedContentArgs {
+                                ctx,
+                                wikitext: &section_source,
+                                page_info: selected_page_info,
+                                settings,
+                                current_site_id,
+                                current_category_id,
+                                current_page_id: page.page_id,
+                                viewer_user_id,
+                                max_include_expansions,
+                                trusted_corpus_render: include_budget
+                                    .trusted_corpus_render,
+                                render_cost_budget: render_cost_budget.clone(),
+                                url,
+                            },
+                        )
+                        .await?;
+                        content_cache.content_sections.insert(
+                            section_key,
+                            ListPagesContentSectionEntry {
+                                body: rendered.body.clone(),
+                                styles: rendered.styles.clone(),
+                                included_pages: rendered.included_pages.clone(),
+                                expanded_include_count: rendered.expanded_include_count,
+                                cost_charges: vec!["block-content render"],
+                            },
+                        );
+                        (
+                            rendered.body,
+                            rendered.styles,
+                            rendered.included_pages,
+                            rendered.expanded_include_count,
+                        )
+                    };
+                    include_budget.consume(expanded_include_count);
+                    included_pages.extend(section_included_pages);
+                    rendered_page_styles.append(&mut styles);
+                    page_block_content.insert(*section, body);
                 }
             }
             let substitution_context = ListPagesSubstitutionContext {

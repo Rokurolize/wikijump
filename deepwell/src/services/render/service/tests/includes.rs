@@ -3356,3 +3356,103 @@ fn credit_start_attribute_gates_evaluate_and_exhibit_like_live() {
     );
     assert!(!html.contains("href=\"/[[iftags"), "{html}");
 }
+
+#[test]
+fn include_expansion_key_tracks_target_arguments_revision_and_zone() {
+    let page_info = fallback_test_page_info("consumer", "Consumer");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let source = AuthorizedIncludeSource::for_test(
+        "scp-wiki".to_owned(),
+        "component:target".to_owned(),
+        "SOURCE-BODY".to_owned(),
+        None,
+    );
+    let context = IncludeExpansionContext {
+        current_site_id: 1,
+        current_site_slug: "scp-wiki".to_owned(),
+        imported_source_site: None,
+        attachment_owner: None,
+        page_info: &page_info,
+        settings: &settings,
+        omit_iftags_branches: false,
+        expand_wikidot_image_blocks: false,
+        max_total_includes: 32,
+        render_cost_budget: RenderCostBudget::new_default(),
+        raw_zone: false,
+    };
+    let target = PageRef::page_only("component:target");
+    let empty = VariableMap::new();
+    let no_owners = AttachmentVariableOwners::new();
+    let base = RenderService::include_expansion_key(
+        &target, &empty, &no_owners, &source, &context, false, 0,
+    );
+    assert_eq!(
+        base,
+        RenderService::include_expansion_key(
+            &target, &empty, &no_owners, &source, &context, false, 0
+        ),
+    );
+
+    let first: VariableMap<'static> = [
+        (Cow::Borrowed("alpha"), Cow::Borrowed("1")),
+        (Cow::Borrowed("beta"), Cow::Borrowed("2")),
+    ]
+    .into_iter()
+    .collect();
+    let reordered: VariableMap<'static> = [
+        (Cow::Borrowed("beta"), Cow::Borrowed("2")),
+        (Cow::Borrowed("alpha"), Cow::Borrowed("1")),
+    ]
+    .into_iter()
+    .collect();
+    assert_eq!(
+        RenderService::include_expansion_key(
+            &target, &first, &no_owners, &source, &context, false, 0
+        ),
+        RenderService::include_expansion_key(
+            &target, &reordered, &no_owners, &source, &context, false, 0,
+        ),
+    );
+
+    let changed: VariableMap<'static> = [
+        (Cow::Borrowed("alpha"), Cow::Borrowed("1")),
+        (Cow::Borrowed("beta"), Cow::Borrowed("3")),
+    ]
+    .into_iter()
+    .collect();
+    assert_ne!(
+        RenderService::include_expansion_key(
+            &target, &first, &no_owners, &source, &context, false, 0
+        ),
+        RenderService::include_expansion_key(
+            &target, &changed, &no_owners, &source, &context, false, 0
+        ),
+    );
+
+    let revised = AuthorizedIncludeSource::for_test(
+        "scp-wiki".to_owned(),
+        "component:target".to_owned(),
+        "SOURCE-BODY-CHANGED".to_owned(),
+        None,
+    );
+    assert_ne!(
+        base,
+        RenderService::include_expansion_key(
+            &target, &empty, &no_owners, &revised, &context, false, 0
+        ),
+    );
+
+    let section = PageRef::page_only("component:target#2");
+    assert_ne!(
+        base,
+        RenderService::include_expansion_key(
+            &section, &empty, &no_owners, &source, &context, false, 0
+        ),
+    );
+    assert_ne!(
+        base,
+        RenderService::include_expansion_key(
+            &target, &empty, &no_owners, &source, &context, true, 0
+        ),
+    );
+}

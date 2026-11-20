@@ -5856,3 +5856,184 @@ async fn listpages_total_matches_for_rating_order_and_excluded_tag_shapes() {
         "excluded-tag ListPages %%total%% should be substituted:\n{excluded_html}",
     );
 }
+
+#[tokio::test]
+async fn listpages_shared_row_renders_keep_content_and_include_bytes() {
+    const TAG: &str = "verification-listpages-rowrender-cache";
+    const COMPONENT_SLUG: &str = "component:listpages-rowrender-cache-include";
+    const TARGET_A: &str = "fixture-listpages-rowrender-cache-a";
+    const TARGET_B: &str = "fixture-listpages-rowrender-cache-b";
+    const INDEX_SLUG: &str = "fixture-listpages-rowrender-cache-index";
+    const CONTROL_SLUG: &str = "fixture-listpages-rowrender-cache-control";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        COMPONENT_SLUG,
+        "Fixture ListPages Rowrender Include",
+        "INCLUDED-BODY|{$label}",
+    )
+    .await;
+
+    for (slug, title, body) in [
+        (
+            TARGET_A,
+            "Fixture ListPages Rowrender A",
+            "A-SECTION-ONE\n====\nA-SECTION-TWO",
+        ),
+        (
+            TARGET_B,
+            "Fixture ListPages Rowrender B",
+            "B-SECTION-ONE\n====\nB-SECTION-TWO",
+        ),
+    ] {
+        let revision =
+            create_listpages_test_page(&mut runner, site_id, slug, title, body).await;
+        set_listpages_test_tags(&mut runner, site_id, slug, revision, &[TAG]).await;
+    }
+
+    let fullname_body = concat!(
+        "ROW-BEGIN\n",
+        "%%content{1}\n",
+        "C1-END\n",
+        "%%content{2}\n",
+        "C2-END\n",
+        "I1-BEGIN\n",
+        "[[include component:listpages-rowrender-cache-include | label=same]]\n",
+        "I1-END\n",
+        "I2-BEGIN\n",
+        "[[include component:listpages-rowrender-cache-include | label=other]]\n",
+        "I2-END\n",
+        "I3-BEGIN\n",
+        "[[include component:listpages-rowrender-cache-include | label=same]]\n",
+        "I3-END\n",
+    );
+    let fullname_module = format!(
+        "[[module ListPages fullname=\"{TARGET_A}\" separate=\"no\" wrapper=\"no\"]]\n{fullname_body}[[/module]]\n",
+    );
+    let tag_module = format!(
+        concat!(
+            "[[module ListPages tags=\"+{TAG}\" order=\"name asc\" separate=\"no\" wrapper=\"no\"]]\n",
+            "TAGROW-%%index%%-BEGIN\n",
+            "[[include component:listpages-rowrender-cache-include | label=same]]\n",
+            "TAGROW-END\n",
+            "[[/module]]\n",
+        ),
+        TAG = TAG,
+    );
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Rowrender Index",
+        &format!("{fullname_module}{fullname_module}{tag_module}"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        CONTROL_SLUG,
+        "Fixture ListPages Rowrender Control",
+        &fullname_module,
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    let control = load_listpages_test_compiled_html(&runner, site_id, CONTROL_SLUG).await;
+    let between = |source: &str, begin: &str, end: &str| -> Vec<String> {
+        let mut found = Vec::new();
+        let mut rest = source;
+        while let Some(start) = rest.find(begin) {
+            let after = &rest[start + begin.len()..];
+            let Some(stop) = after.find(end) else { break };
+            found.push(after[..stop].to_owned());
+            rest = &after[stop + end.len()..];
+        }
+        found
+    };
+
+    let first_sections = between(&html, "ROW-BEGIN\n", "C1-END");
+    let second_sections = between(&html, "C1-END\n", "C2-END");
+    let same_includes = between(&html, "I1-BEGIN\n", "I1-END");
+    let other_includes = between(&html, "I2-BEGIN\n", "I2-END");
+    let repeated_includes = between(&html, "I3-BEGIN\n", "I3-END");
+    let control_sections = between(&control, "ROW-BEGIN\n", "C1-END");
+    let control_second_sections = between(&control, "C1-END\n", "C2-END");
+    let control_includes = between(&control, "I1-BEGIN\n", "I1-END");
+
+    assert_eq!(first_sections.len(), 2, "{html}");
+    assert_eq!(second_sections.len(), 2, "{html}");
+    assert_eq!(same_includes.len(), 2, "{html}");
+    assert_eq!(other_includes.len(), 2, "{html}");
+    assert_eq!(repeated_includes.len(), 2, "{html}");
+    assert_eq!(control_sections.len(), 1, "{control}");
+
+    for section in &first_sections {
+        assert!(section.contains("A-SECTION-ONE"), "{section}");
+        assert!(!section.contains("A-SECTION-TWO"), "{section}");
+    }
+    for section in &second_sections {
+        assert!(section.contains("A-SECTION-TWO"), "{section}");
+        assert!(!section.contains("A-SECTION-ONE"), "{section}");
+    }
+    assert_eq!(
+        first_sections[0], first_sections[1],
+        "stacked modules listing the same revision must render identical content sections",
+    );
+    assert_eq!(
+        second_sections[0], second_sections[1],
+        "stacked modules listing the same revision must render identical numbered sections",
+    );
+    assert_eq!(
+        control_sections[0], first_sections[0],
+        "a cached content render must be byte-identical to the uncached control",
+    );
+    assert_eq!(
+        control_second_sections[0], second_sections[0],
+        "a cached numbered-section render must be byte-identical to the uncached control",
+    );
+
+    for include in same_includes.iter().chain(repeated_includes.iter()) {
+        assert!(include.contains("INCLUDED-BODY|same"), "{include}");
+        assert!(!include.contains("INCLUDED-BODY|other"), "{include}");
+    }
+    for include in &other_includes {
+        assert!(include.contains("INCLUDED-BODY|other"), "{include}");
+        assert!(!include.contains("INCLUDED-BODY|same"), "{include}");
+    }
+    assert_eq!(
+        same_includes[0], same_includes[1],
+        "repeated identical include targets must render byte-identical output",
+    );
+    assert_eq!(
+        same_includes[0], repeated_includes[0],
+        "an include replayed from the cache must match its first expansion byte for byte",
+    );
+    assert_eq!(
+        control_includes[0], same_includes[0],
+        "a cached include expansion must be byte-identical to the uncached control",
+    );
+    assert_ne!(
+        same_includes[0], other_includes[0],
+        "distinct include arguments must not collide in the cache",
+    );
+
+    let first_tag_row = html
+        .find("TAGROW-1-BEGIN")
+        .expect("first tagged row should substitute its index");
+    let second_tag_row = html
+        .find("TAGROW-2-BEGIN")
+        .expect("second tagged row should substitute its index");
+    assert!(first_tag_row < second_tag_row, "{html}");
+    assert_eq!(
+        html.matches("INCLUDED-BODY|same").count(),
+        7,
+        "row-dependent substitution must not consume another row's include output:\n{html}",
+    );
+}
