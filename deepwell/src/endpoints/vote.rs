@@ -24,6 +24,26 @@ use crate::services::vote::{
     CountVoteHistory, CreateVote, GetVote, GetVoteHistory, VoteAction,
 };
 
+async fn ensure_vote_target_available(
+    ctx: &ServiceContext<'_>,
+    page_id: i64,
+) -> Result<()> {
+    let page = PageService::get_direct_optional(ctx, page_id, false)
+        .await
+        .or_raise(|| {
+            Error::new("failed to resolve vote target page", ErrorType::PageVote)
+        })?;
+
+    if page.is_none() {
+        bail!(Error::new(
+            "cannot vote on a deleted or missing page",
+            ErrorType::PermissionDenied,
+        ));
+    }
+
+    Ok(())
+}
+
 pub async fn vote_get(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
@@ -58,6 +78,8 @@ pub async fn vote_set(
 
     info!("Casting vote cast by {} on page {}", user_id, page_id,);
 
+    ensure_vote_target_available(ctx, page_id).await?;
+
     VoteService::add(ctx, input).await.or_raise(|| {
         Error::new(
             format!(
@@ -78,6 +100,8 @@ pub async fn vote_remove(
     let user_id = input.user_id;
 
     info!("Removing vote cast by {} on page {}", user_id, page_id,);
+
+    ensure_vote_target_available(ctx, page_id).await?;
 
     VoteService::remove(ctx, input).await.or_raise(|| {
         Error::new(
@@ -102,6 +126,7 @@ pub async fn vote_action(
     } = parse!(params, PageVote);
 
     // e.g. enable or disable a vote
+    ensure_vote_target_available(ctx, page_id).await?;
     let key = GetVote { page_id, user_id };
     VoteService::action(ctx, key, enable, acting_user_id)
         .await
