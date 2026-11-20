@@ -191,16 +191,13 @@ fn a_url_offset_selector_resolves_to_the_requests_offset() {
 
 #[test]
 fn a_url_offset_selector_falls_back_without_a_valid_request_offset() {
-    for offset in [None] {
-        let arguments = parse_list_pages_arguments_with_url(
-            r#" offset="@URL|3""#,
-            url_offset(offset),
-        )
-        .expect("url offset fallback should parse");
+    let offset = None;
+    let arguments =
+        parse_list_pages_arguments_with_url(r#" offset="@URL|3""#, url_offset(offset))
+            .expect("url offset fallback should parse");
 
-        assert_eq!(arguments.offset, 3);
-        assert_eq!(arguments.offset_origin, ListPagesOffsetOrigin::Fallback);
-    }
+    assert_eq!(arguments.offset, 3);
+    assert_eq!(arguments.offset_origin, ListPagesOffsetOrigin::Fallback);
     let arguments = parse_list_pages_arguments_with_url(
         r#" offset="@URL|3""#,
         url_offset(Some(1_001)),

@@ -334,7 +334,7 @@ impl RenderService {
         let url_page = url.page_for_prefix(url_attr_prefix.as_deref());
         let offset = if let Some(raw_offset) = offset_beyond_render_window {
             if url_page.unwrap_or(1) > 1 {
-                (raw_offset % u64::from(per_page)) as u32
+                (raw_offset % per_page) as u32
             } else {
                 u32::MAX
             }
