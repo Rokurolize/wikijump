@@ -37,7 +37,6 @@ pub struct PageDraftService;
 struct PageDraftCandidate {
     slug: String,
     title: String,
-    draft_user_id: i64,
     draft_page_id: Option<i64>,
     active_page_id: Option<i64>,
     page_category_id: Option<i64>,
@@ -254,7 +253,6 @@ impl PageDraftService {
                 txn.get_database_backend(),
                 format!(
                     r#"SELECT d.slug, d.title,
-                              d.user_id AS draft_user_id,
                               d.page_id AS draft_page_id,
                               p.page_id AS active_page_id,
                               p.page_category_id,
@@ -287,8 +285,9 @@ impl PageDraftService {
             .into());
         }
 
-        // Drafts are private working state: a viewer sees only their own
-        // drafts. Site admins keep the moderation view over all drafts.
+        // The reserved `_admin` page is gated on Site/Edit, so its drafts
+        // are visible to site admins only; every other draft is listed for
+        // any viewer who can view its target, as on live Wikidot.
         let viewer_is_admin = match viewer_user_id {
             Some(user_id) => PermissionService::check_user_can_access_admin(
                 ctx,
@@ -302,15 +301,10 @@ impl PageDraftService {
 
         let mut drafts = Vec::new();
         for candidate in candidates {
-            if !viewer_is_admin {
-                if Some(candidate.draft_user_id) != viewer_user_id {
-                    continue;
-                }
-                // The reserved `_admin` page is gated on Site/Edit, so
-                // its drafts are visible to site admins only.
-                if PermissionService::slug_targets_reserved_admin_page(&candidate.slug) {
-                    continue;
-                }
+            if !viewer_is_admin
+                && PermissionService::slug_targets_reserved_admin_page(&candidate.slug)
+            {
+                continue;
             }
             let Some(active_page_id) = candidate.active_page_id else {
                 if candidate.draft_page_id.is_some() {
