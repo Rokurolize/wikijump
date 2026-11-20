@@ -10,8 +10,9 @@ mod common;
 use self::common::TestRunner;
 use deepwell::constants::ADMIN_USER_ID;
 use deepwell::error::ErrorType;
+use deepwell::services::page_lock::{CreatePageLockInput, PageLockService};
 use deepwell::services::RequestContext;
-use deepwell::types::Reference;
+use deepwell::types::{PageLockType, Reference};
 use serde_json::json;
 use uuid::Uuid;
 
@@ -50,19 +51,23 @@ async fn fixture(runner: &mut TestRunner) -> (i64, i64) {
 async fn page_lock_actions_require_lock_permission() {
     let mut runner = TestRunner::setup().await;
     let (site_id, page_id) = fixture(&mut runner).await;
-    run_endpoint!(
-        runner,
-        page_lock_create,
-        json!({
-            "page": page_id,
-            "lock_type": "permission-only",
-            "reason": "baseline lock",
-            "expires_at": null,
-            "from_wikidot": false,
-            "override_existing": true,
-            "ip_address": common::IP_ADDRESS,
-        }),
-    );
+    PageLockService::create(
+        runner.context(),
+        site_id,
+        ADMIN_USER_ID,
+        Reference::Id(page_id),
+        CreatePageLockInput {
+            page: Reference::Id(page_id),
+            expires_at: None,
+            from_wikidot: false,
+            lock_type: PageLockType::PermissionOnly,
+            reason: Some(String::from("baseline lock")),
+            override_existing: true,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("baseline lock should be created");
 
     runner.set_request_context(RequestContext {
         session: None,
