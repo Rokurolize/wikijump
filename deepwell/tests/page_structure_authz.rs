@@ -57,6 +57,22 @@ async fn page_structure_actions_require_edit_permission() {
         page_reference: Some(Reference::Id(page_id)),
     });
 
+    let page_before = run_endpoint!(
+        runner,
+        page_get_direct,
+        json!({
+            "site_id": site_id,
+            "page_id": page_id,
+            "details": {"wikitext": false, "compiled_html": false},
+        }),
+    )
+    .expect("fixture page must exist");
+    let parents_before = run_endpoint!(
+        runner,
+        parent_get_all,
+        json!({"site_id": site_id, "page": page_id}),
+    );
+
     let move_error = run_endpoint_err!(
         runner,
         page_move,
@@ -97,4 +113,33 @@ async fn page_structure_actions_require_edit_permission() {
         }),
     );
     assert_contains_error!(parent_error, ErrorType::PermissionDenied);
+
+    let page_after = run_endpoint!(
+        runner,
+        page_get_direct,
+        json!({
+            "site_id": site_id,
+            "page_id": page_id,
+            "details": {"wikitext": false, "compiled_html": false},
+        }),
+    )
+    .expect("fixture page must still exist");
+    assert_eq!(
+        page_after.slug, page_before.slug,
+        "denied move must not change the page slug"
+    );
+    assert_eq!(
+        page_after.layout, page_before.layout,
+        "denied layout change must not change the page layout"
+    );
+
+    let parents_after = run_endpoint!(
+        runner,
+        parent_get_all,
+        json!({"site_id": site_id, "page": page_id}),
+    );
+    assert_eq!(
+        parents_after, parents_before,
+        "denied parent change must not change the page parent list"
+    );
 }
