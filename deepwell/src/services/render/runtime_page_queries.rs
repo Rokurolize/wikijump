@@ -21,8 +21,9 @@
 use super::service::{MAX_LISTPAGES_RENDER_LIMIT, MAX_LISTPAGES_RENDER_SCAN_ROWS};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::page_query::{
-    FoundPageRow, FoundPages, OrderBySelector, OrderProperty, PageQuery,
-    PageQueryResultMetadata, PageQueryScoreFilterCache, PageQueryScoreFilterSession,
+    FoundPageRow, FoundPages, OrderBySelector, OrderProperty, PageParentSelector,
+    PageQuery, PageQueryResultMetadata, PageQueryScoreFilterCache,
+    PageQueryScoreFilterSession,
 };
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::relation::RelationService;
@@ -30,14 +31,14 @@ use crate::services::{PageQueryService, ServiceContext};
 use crate::types::{Action, Permission, Reference, Resource};
 use std::collections::{BTreeMap, BTreeSet};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(in crate::services::render) struct ViewableCountPagesRows {
     pub(in crate::services::render) sample: CountPagesSample,
     pub(in crate::services::render) metadata: PageQueryResultMetadata,
     pub(in crate::services::render) view_permission_filtering_applied: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(in crate::services::render) enum CountPagesSample {
     Complete(FoundPages),
     Capped(FoundPages),
@@ -93,6 +94,55 @@ pub(in crate::services::render) struct ViewableListPagesRows {
     pub(in crate::services::render) pages: FoundPages,
     pub(in crate::services::render) metadata: PageQueryResultMetadata,
     pub(in crate::services::render) view_permission_filtering_applied: bool,
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct CascadePageQueryCache {
+    entries: BTreeMap<String, ViewableCountPagesRows>,
+}
+
+impl CascadePageQueryCache {
+    fn get(&self, key: &str) -> Option<ViewableCountPagesRows> {
+        self.entries.get(key).cloned()
+    }
+
+    fn insert(&mut self, key: String, rows: ViewableCountPagesRows) {
+        self.entries.insert(key, rows);
+    }
+}
+
+fn cascade_page_query_cache_key(
+    viewer_user_id: Option<i64>,
+    query: &PageQuery<'_>,
+    target_count: usize,
+    batch_floor: u64,
+    retain_score_filter_session: bool,
+    ignore_order: bool,
+) -> Option<String> {
+    if render_page_query_uses_single_scan(query.order.clone()) {
+        return None;
+    }
+    if !query.contains_outgoing_links.is_empty() {
+        return None;
+    }
+
+    let mut query = query.clone();
+    // The executed query depends on current_page_id only through the parent
+    // condition, and only for the relative parent selectors; for the other
+    // selectors the same rows are produced for every host page, so the key
+    // drops the host identity and lets includers share one execution.
+    if matches!(
+        query.page_parent,
+        PageParentSelector::All
+            | PageParentSelector::NoParent
+            | PageParentSelector::HasParents(_)
+    ) {
+        query.current_page_id = 0;
+    }
+
+    Some(format!(
+        "{viewer_user_id:?}|{target_count}|{batch_floor}|{retain_score_filter_session}|{ignore_order}|{query:?}"
+    ))
 }
 
 pub(in crate::services::render) async fn find_viewable_list_pages_rows(
@@ -203,6 +253,38 @@ struct FindViewableRenderPageRowsArgs<'a, 'b, 'c> {
 }
 
 async fn find_viewable_render_page_rows(
+    args: FindViewableRenderPageRowsArgs<'_, '_, '_>,
+) -> Result<ViewableCountPagesRows> {
+    let cache = args.ctx.cascade_page_query_cache().cloned();
+    let cache_key = cache.as_ref().and_then(|_| {
+        cascade_page_query_cache_key(
+            args.viewer_user_id,
+            &args.query,
+            args.target_count,
+            args.batch_floor,
+            args.retain_score_filter_session,
+            args.ignore_order,
+        )
+    });
+    if let (Some(cache), Some(cache_key)) = (&cache, &cache_key)
+        && let Ok(cache) = cache.lock()
+        && let Some(rows) = cache.get(cache_key)
+    {
+        return Ok(rows);
+    }
+
+    let rows = find_viewable_render_page_rows_uncached(args).await?;
+
+    if let (Some(cache), Some(cache_key)) = (cache, cache_key)
+        && let Ok(mut cache) = cache.lock()
+    {
+        cache.insert(cache_key, rows.clone());
+    }
+
+    Ok(rows)
+}
+
+async fn find_viewable_render_page_rows_uncached(
     args: FindViewableRenderPageRowsArgs<'_, '_, '_>,
 ) -> Result<ViewableCountPagesRows> {
     let FindViewableRenderPageRowsArgs {
@@ -569,7 +651,18 @@ pub(super) fn merge_render_page_query_metadata(
 
 #[cfg(test)]
 mod tests {
-    use super::render_page_query_batch_limit_with_floor;
+    use super::{
+        CascadePageQueryCache, CountPagesSample, ViewableCountPagesRows,
+        cascade_page_query_cache_key, render_page_query_batch_limit_with_floor,
+    };
+    use crate::services::page_query::{
+        AuthorSelector, CategoriesSelector, DateSelector, FoundPageFields, FoundPages,
+        IncludedCategories, OrderBySelector, OrderProperty, PageParentSelector,
+        PageQuery, PageTypeSelector, PaginationSelector, TagCondition,
+    };
+    use crate::types::Reference;
+    use std::borrow::Cow;
+    use time::OffsetDateTime;
 
     #[test]
     fn bounded_modules_can_keep_query_batches_at_their_effective_limit() {
@@ -583,5 +676,149 @@ mod tests {
             10,
             "a bounded runtime module should request no more than its effective limit"
         );
+    }
+
+    fn cascade_test_query<'a>(
+        current_page_id: i64,
+        page_parent: PageParentSelector<'a>,
+    ) -> PageQuery<'a> {
+        PageQuery {
+            current_page_id,
+            current_site_id: 1,
+            queried_site_id: None,
+            page_type: PageTypeSelector::Normal,
+            categories: CategoriesSelector {
+                included_categories: IncludedCategories::All,
+                excluded_categories: &[],
+            },
+            tags: TagCondition {
+                any_present: &[],
+                all_present: &[],
+                none_present: &[],
+                untagged: false,
+            },
+            page_parent,
+            contains_outgoing_links: &[],
+            creation_date: DateSelector::FromPresent {
+                start: OffsetDateTime::UNIX_EPOCH,
+            },
+            update_date: DateSelector::FromPresent {
+                start: OffsetDateTime::UNIX_EPOCH,
+            },
+            author: AuthorSelector::All,
+            score: &[],
+            votes: &[],
+            offset: 0,
+            name: None,
+            slug: None,
+            slugs: &[],
+            data_form_fields: &[],
+            order: None,
+            candidate_limit: None,
+            pagination: PaginationSelector::default(),
+            fields: FoundPageFields::default(),
+        }
+    }
+
+    fn cascade_key(
+        current_page_id: i64,
+        page_parent: PageParentSelector<'_>,
+    ) -> Option<String> {
+        cascade_page_query_cache_key(
+            None,
+            &cascade_test_query(current_page_id, page_parent),
+            1,
+            0,
+            true,
+            false,
+        )
+    }
+
+    #[test]
+    fn cascade_key_ignores_host_page_for_host_independent_parent_selectors() {
+        let parents = [Reference::Slug(Cow::Borrowed("parent-page"))];
+        for page_parent in [
+            PageParentSelector::All,
+            PageParentSelector::NoParent,
+            PageParentSelector::HasParents(&parents),
+        ] {
+            assert_eq!(
+                cascade_key(111, page_parent.clone()),
+                cascade_key(222, page_parent.clone()),
+                "queries with parent selector {page_parent:?} must share rows across host pages",
+            );
+        }
+    }
+
+    #[test]
+    fn cascade_key_keeps_host_page_for_relative_parent_selectors() {
+        for page_parent in [
+            PageParentSelector::SameParents,
+            PageParentSelector::DifferentParents,
+            PageParentSelector::ChildOf,
+        ] {
+            assert_ne!(
+                cascade_key(111, page_parent.clone()),
+                cascade_key(222, page_parent.clone()),
+                "queries with parent selector {page_parent:?} resolve against the host page and must not share rows",
+            );
+        }
+    }
+
+    #[test]
+    fn cascade_key_rejects_random_order_and_distinguishes_execution_inputs() {
+        let mut random_query = cascade_test_query(111, PageParentSelector::All);
+        random_query.order = Some(OrderBySelector {
+            property: OrderProperty::Random,
+            ascending: true,
+        });
+        assert_eq!(
+            cascade_page_query_cache_key(None, &random_query, 1, 0, true, false),
+            None,
+            "random-order queries must re-randomize on every render",
+        );
+
+        let links = [Reference::Slug(Cow::Borrowed("link-target"))];
+        let mut link_query = cascade_test_query(111, PageParentSelector::All);
+        link_query.contains_outgoing_links = &links;
+        assert_eq!(
+            cascade_page_query_cache_key(None, &link_query, 1, 0, true, false),
+            None,
+            "queries over outgoing links read link rows that sibling rerenders rewrite",
+        );
+
+        let query = cascade_test_query(111, PageParentSelector::All);
+        let base = cascade_page_query_cache_key(None, &query, 1, 0, true, false);
+        assert_ne!(
+            base,
+            cascade_page_query_cache_key(Some(7), &query, 1, 0, true, false),
+            "rows are permission-filtered per viewer and must not cross viewers",
+        );
+        assert_ne!(
+            base,
+            cascade_page_query_cache_key(None, &query, 2, 0, true, false),
+            "a different target count fetches a different row window",
+        );
+        assert_ne!(
+            base,
+            cascade_page_query_cache_key(None, &query, 1, 0, true, true),
+            "ordered and unordered executions must not share rows",
+        );
+    }
+
+    #[test]
+    fn cascade_cache_round_trips_rows_by_key() {
+        let mut cache = CascadePageQueryCache::default();
+        assert!(cache.get("missing").is_none());
+
+        let rows = ViewableCountPagesRows {
+            sample: CountPagesSample::Capped(FoundPages { pages: Vec::new() }),
+            metadata: Default::default(),
+            view_permission_filtering_applied: true,
+        };
+        cache.insert("key".to_owned(), rows);
+        let stored = cache.get("key").expect("inserted rows should be stored");
+        assert!(stored.view_permission_filtering_applied);
+        assert_eq!(stored.sample.pages().pages.len(), 0);
     }
 }

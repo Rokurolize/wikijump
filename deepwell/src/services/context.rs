@@ -28,6 +28,7 @@ use crate::services::job::{Job, JobService};
 use crate::services::page_revision::{PageRevisionService, RerenderType};
 use crate::services::permission::{PermissionCache, PermissionService};
 use crate::services::public_cache::PublicContentCache;
+use crate::services::render::CascadePageQueryCache;
 use crate::services::text_block::cleanup_uploaded_text_blocks;
 use crate::types::{PageId, Permission, Reference, RerenderDepth};
 use exn::ErrorExt;
@@ -165,6 +166,7 @@ pub struct ServiceContext<'txn> {
     uncommitted_text_blocks: Mutex<Vec<String>>,
     commit_authentication_rejection: AtomicBool,
     link_graph_read: AtomicBool,
+    cascade_page_query_cache: Option<Arc<Mutex<CascadePageQueryCache>>>,
 }
 
 #[derive(Debug)]
@@ -229,6 +231,7 @@ impl<'txn> ServiceContext<'txn> {
             uncommitted_text_blocks: Mutex::new(Vec::new()),
             commit_authentication_rejection: AtomicBool::new(false),
             link_graph_read: AtomicBool::new(false),
+            cascade_page_query_cache: None,
         }
     }
 
@@ -237,6 +240,22 @@ impl<'txn> ServiceContext<'txn> {
         self.request_ctx = request_ctx;
         self.user_permissions = OnceCell::new();
         self
+    }
+
+    #[inline]
+    pub(crate) fn with_cascade_page_query_cache(
+        mut self,
+        cache: Arc<Mutex<CascadePageQueryCache>>,
+    ) -> Self {
+        self.cascade_page_query_cache = Some(cache);
+        self
+    }
+
+    #[inline]
+    pub(crate) fn cascade_page_query_cache(
+        &self,
+    ) -> Option<&Arc<Mutex<CascadePageQueryCache>>> {
+        self.cascade_page_query_cache.as_ref()
     }
 
     #[inline]
@@ -512,6 +531,12 @@ impl<'txn> ServiceContext<'txn> {
         let mut rsmq = Rsmq::clone(&state.rsmq);
         let mut actions = VecDeque::from(actions);
         let mut first_error = None;
+        let cascade_page_query_cache = match rerender_trust {
+            PostCommitRerenderTrust::Public => {
+                Some(Arc::new(Mutex::new(CascadePageQueryCache::default())))
+            }
+            PostCommitRerenderTrust::CorpusFinalizer => None,
+        };
 
         while let Some(action) = actions.pop_front() {
             let action_result = match action {
@@ -548,6 +573,10 @@ impl<'txn> ServiceContext<'txn> {
                         let transaction =
                             state.database.begin().await.or_raise(make_error)?;
                         let ctx = ServiceContext::new(state, &transaction);
+                        let ctx = match &cascade_page_query_cache {
+                            Some(cache) => ctx.with_cascade_page_query_cache(Arc::clone(cache)),
+                            None => ctx,
+                        };
                         match rerender_trust {
                             PostCommitRerenderTrust::Public => {
                                 PageRevisionService::rerender(&ctx, id, depth, r#type).await
