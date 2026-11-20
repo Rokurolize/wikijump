@@ -20664,18 +20664,46 @@ async fn file_mutations_require_parent_page_edit_permission() {
     );
     assert!(blocked_destination_page.parser_errors.is_empty());
 
-    let edit_file_id =
-        create_empty_file_fixture(&runner, site_id, page.page_id, FILE_EDIT_NAME).await;
-    let move_file_id =
-        create_empty_file_fixture(&runner, site_id, page.page_id, FILE_MOVE_NAME).await;
-    let delete_file_id =
-        create_empty_file_fixture(&runner, site_id, page.page_id, FILE_DELETE_NAME).await;
-    let restore_file_id =
-        create_empty_file_fixture(&runner, site_id, page.page_id, FILE_RESTORE_NAME)
-            .await;
-    let rollback_file_id =
-        create_empty_file_fixture(&runner, site_id, page.page_id, FILE_ROLLBACK_NAME)
-            .await;
+    let edit_file_id = create_empty_file_fixture_as(
+        &runner,
+        site_id,
+        page.page_id,
+        FILE_EDIT_NAME,
+        SAMPLE_USER_ID,
+    )
+    .await;
+    let move_file_id = create_empty_file_fixture_as(
+        &runner,
+        site_id,
+        page.page_id,
+        FILE_MOVE_NAME,
+        SAMPLE_USER_ID,
+    )
+    .await;
+    let delete_file_id = create_empty_file_fixture_as(
+        &runner,
+        site_id,
+        page.page_id,
+        FILE_DELETE_NAME,
+        SAMPLE_USER_ID,
+    )
+    .await;
+    let restore_file_id = create_empty_file_fixture_as(
+        &runner,
+        site_id,
+        page.page_id,
+        FILE_RESTORE_NAME,
+        SAMPLE_USER_ID,
+    )
+    .await;
+    let rollback_file_id = create_empty_file_fixture_as(
+        &runner,
+        site_id,
+        page.page_id,
+        FILE_ROLLBACK_NAME,
+        SAMPLE_USER_ID,
+    )
+    .await;
 
     runner.set_request_context(RequestContext {
         session: None,
@@ -23307,12 +23335,42 @@ async fn create_empty_file_fixture(
     create_file_fixture_with_mime(runner, site_id, page_id, name, EMPTY_BLOB_MIME).await
 }
 
+async fn create_empty_file_fixture_as(
+    runner: &TestRunner,
+    site_id: i64,
+    page_id: i64,
+    name: &str,
+    user_id: i64,
+) -> i64 {
+    create_file_fixture_with_mime_as(
+        runner,
+        site_id,
+        page_id,
+        name,
+        EMPTY_BLOB_MIME,
+        user_id,
+    )
+    .await
+}
+
 async fn create_file_fixture_with_mime(
     runner: &TestRunner,
     site_id: i64,
     page_id: i64,
     name: &str,
     mime: &str,
+) -> i64 {
+    create_file_fixture_with_mime_as(runner, site_id, page_id, name, mime, ADMIN_USER_ID)
+        .await
+}
+
+async fn create_file_fixture_with_mime_as(
+    runner: &TestRunner,
+    site_id: i64,
+    page_id: i64,
+    name: &str,
+    mime: &str,
+    user_id: i64,
 ) -> i64 {
     let file = file::ActiveModel {
         name: Set(name.to_owned()),
@@ -23329,7 +23387,7 @@ async fn create_file_fixture_with_mime(
             site_id,
             page_id,
             file_id: file.file_id,
-            user_id: ADMIN_USER_ID,
+            user_id,
             name: name.to_owned(),
             s3_hash: EMPTY_BLOB_HASH,
             size: 0,
