@@ -116,9 +116,7 @@ use super::include_resolution::{
 use super::include_variable_iftags::resolve_unbound_include_variable_iftags;
 #[cfg(test)]
 use super::include_variables::{
-    MAX_INCLUDE_VARIABLE_PASSES, apply_include_variables,
-    apply_include_variables_before_resolving_iftags, default_include_variable_value,
-    trim_include_variable_value,
+    apply_include_variables, apply_include_variables_before_resolving_iftags,
 };
 use super::include_variables::{
     is_include_variable_name, prepare_include_source_variables_and_comment_branches,
@@ -176,7 +174,7 @@ use crate::types::{PageId, TextBlockType};
 use crate::utils::now;
 use crate::utils::{locale_for_ftml, parse_locales};
 use ftml::data::PageRef;
-use ftml::includes::{FetchedPage, IncludeRef};
+use ftml::includes::{FetchedPage, IncludeArguments, IncludeRef};
 use ftml::prelude::{
     Includer, Layout, PageInfo, ParseError, ScoreValue, WikitextMode, WikitextSettings,
 };
@@ -3303,7 +3301,26 @@ impl RenderService {
                         }
                     })
                     .collect::<VariableMap<'static>>();
-                let include = IncludeRef::new(include.page_ref().clone(), variables);
+                let arguments = include
+                    .arguments()
+                    .iter()
+                    .map(|(name, value)| {
+                        let decoded = include_source_cache
+                            .attachment_provenance
+                            .decode(value)
+                            .map(|(decoded, _)| decoded.as_str())
+                            .unwrap_or(value.as_ref());
+                        (
+                            Cow::Owned(name.to_string()),
+                            Cow::Owned(decoded.to_owned()),
+                        )
+                    })
+                    .collect::<IncludeArguments<'static>>();
+                let include = IncludeRef::with_arguments(
+                    include.page_ref().clone(),
+                    variables,
+                    arguments,
+                );
 
                 let source = RenderRuntime::new(ctx)
                     .fetch_include_source(
@@ -4084,8 +4101,13 @@ fn own_include_ref(include: &IncludeRef<'_>) -> IncludeRef<'static> {
         .iter()
         .map(|(key, value)| (Cow::Owned(key.to_string()), Cow::Owned(value.to_string())))
         .collect::<VariableMap<'static>>();
+    let arguments = include
+        .arguments()
+        .iter()
+        .map(|(key, value)| (Cow::Owned(key.to_string()), Cow::Owned(value.to_string())))
+        .collect::<IncludeArguments<'static>>();
 
-    IncludeRef::new(include.page_ref().clone(), variables)
+    IncludeRef::with_arguments(include.page_ref().clone(), variables, arguments)
         .with_spaced_empty_separator(include.has_spaced_empty_separator())
 }
 
