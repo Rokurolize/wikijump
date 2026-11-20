@@ -24,7 +24,7 @@ use crate::services::permission::{PermissionService, PermissionTarget};
 use crate::services::site::{
     CreateSite, CreateSiteOutput, GetSite, GetSiteOutput, UpdateSite,
 };
-use crate::types::{Action, AliasType, Reference};
+use crate::types::{Action, AliasType};
 
 pub async fn site_create(
     ctx: &ServiceContext<'_>,
