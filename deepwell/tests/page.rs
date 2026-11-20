@@ -18337,6 +18337,38 @@ async fn forum_post_reads_on_admin_page_pin_page_view_permission_path() {
         forum_post_select,
         json!({"site_id": site_id, "page": "_admin"})
     );
+    assert_eq!(
+        selection,
+        Vec::<i64>::new(),
+        "the compat path must apply the canonical _admin gate (Site/Edit), \
+         not raw Page/View, to a moderator"
+    );
+
+    let posts = run_endpoint!(
+        runner,
+        forum_post_get,
+        json!({"site_id": site_id, "posts": [post.forum_post_id]})
+    );
+    assert_eq!(posts.len(), 0);
+
+    let summary = run_endpoint!(
+        runner,
+        forum_post_page_summary,
+        json!({"site_id": site_id, "page": "_admin"})
+    );
+    let summary_value = serde_json::to_value(summary).expect("summary should serialize");
+    assert_eq!(summary_value["comments"], json!(0));
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let selection = run_endpoint!(
+        runner,
+        forum_post_select,
+        json!({"site_id": site_id, "page": "_admin"})
+    );
     assert_eq!(selection, vec![post.forum_post_id]);
 
     let posts = run_endpoint!(
