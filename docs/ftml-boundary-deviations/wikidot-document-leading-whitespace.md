@@ -14,7 +14,7 @@
   source before the expansion fills it. The page source is the only input
   Wikijump owns at that seam.
 - Why FTML is not yet sufficient: the pinned FTML revision
-  `d7727b245fd69f46d44c04592e392850ea244e13` keeps the leading indentation of
+  `0ccfff69f04dd868cb450bfb421a2d0dde3ed4a7` (`ftml 1.42.1+roku.20261120.26`) keeps the leading indentation of
   a document that starts with an indented structural marker. Its
   `preserve_wikidot_document_indentation_barrier` pass replaces that leading
   indentation with a syntax barrier before the leading-document whitespace
@@ -31,10 +31,17 @@
   `trim-indented-heading`, `trim-indented-hr`, `trim-indented-quote`,
   `trim-blank-lines-then-indented-list`, and
   `trim-newline-then-indented-list`, captured 2026-10-19 through the
-  anonymous `edit/PagePreviewModule` of `scp-wiki`), and the focused
+  anonymous `edit/PagePreviewModule` of `scp-wiki`), the focused
   regressions `services::render::service::tests::trims_the_leading_whitespace_of_a_page_source`
   and
-  `services::render::service::tests::keeps_indented_markers_after_content_literal`.
+  `services::render::service::tests::keeps_indented_markers_after_content_literal`,
+  and raw `wikidot_syntax_renderer` re-verification against `0ccfff69` on
+  2026-11-20 confirming that all five shapes without Deepwell's trim still render
+  as literal paragraph text rather than structural elements (`" \t> quote\n"`
+  -> `<p>&gt; quote</p>`, `"  + Heading\n\nz"` -> `<p>+ Heading</p><p>z</p>`,
+  `"   ----\n\nz"` -> `<p>——</p><p>z</p>`, `"\n\n  \n * a\n * b\n\nz"` ->
+  `<p>* a<br>\n* b</p><p>z</p>`, `"\n * a\n * b\n\nz"` ->
+  `<p>* a<br>\n* b</p><p>z</p>`).
 - FTML backlog decision: accept this bounded source normalization as
   Wikijump-side debt. It trims the leading ASCII whitespace of a page source
   and nothing else. It must not become a general source rewriter, must not
@@ -49,15 +56,37 @@
   whitespace handling, and every change that adds another source-level
   normalization to the render service.
 
-## Exposed-leading-indent protection after comment-only line runs
+## Exposed-leading-indent protection after comment-only line runs (Retired)
 
-- Shim: `RenderService::protect_exposed_leading_indent_after_comment_lines` in `deepwell/src/services/render/service/exposed_leading_indent.rs`, called from `RenderService::prepare_outer_render_wikitext_observed` in `deepwell/src/services/render/service.rs` beside `normalize_wikidot_alignment_markers`, before FTML preprocessing consumes the expanded wikitext.
-- Reason it lives in Wikijump: live Wikidot trims only the page source's own leading bytes; text that becomes document-leading only after comment removal keeps its leading indent, so an indented list marker exposed by a leading comment-only line renders as literal text instead of a list. The pinned FTML revision elides document-leading comment-only lines and then applies its `LEADING_DOCUMENT_WHITESPACE` strip to the exposed line, which deletes that indent and flips the render. Wikijump must preserve the indent at the same outer source seam where it already applies the trim deviation.
-- Bounded conditions: scan from document start; skip lines that contain only ASCII space, tab, or carriage return; accept a run of one or more well-formed single-line `[!-- … --]` comment-only lines whose closer is alone on its line (only `\r` may follow the closer on that line; any other remainder vetoes protection); allow blank lines inside the run; require at least one comment line; on the first following content line, if its leading bytes are ASCII space or tab, substitute them with an empty `CompatTextFragments` marker; otherwise leave the source untouched. Content before the comment run, sources with no comments, a non-indented first content line, an unclosed comment, or trailing content missing after the run are all no-ops.
-- Difference from the trim deviation: the trim deletes leading whitespace when the source itself begins with it on legacy layout, before include expansion. The protection does not delete bytes; it hides the first content line's leading indent from FTML's post-elision document-leading strip only after a document-leading comment-only line run exposes that line. The trim is unconditional at its seam; the protection fires only under the scan above and is conservative (it can only force literal rendering for an indented marker exposed that way, which matches live even where FTML would have kept the comment).
-- Why FTML is not yet sufficient: the pinned FTML `elide_comment_only_lines` pass is live-measured for comment-line joins, but its interaction with the document-leading whitespace strip at document start is collateral for sources such as `[!-- c --]\n * a`. An FTML-side fix that stops stripping indent from text exposed only through comment elision is being prepared separately; until that pin lands, Deepwell keeps this bounded protection.
-- Evidence: sealed `no-trim-after-comment` (`claude-list-shape-no-trim-after-comment`, source `[!-- c --]\n * a\n * b\n\nz`, raw_html `<p>* a<br />\n* b</p><p>z</p>`) in `install/local/wikidot-verification/artifacts/wikidot-list-rendering-preview-20261019.json` (scp-wiki, anonymous `edit/PagePreviewModule`, captured 2026-10-19); 2026-11-13 anonymous PagePreview re-probes on `scp-wiki` and `sandbox-for-codex` recorded the same shapes for `[!-- c --]\n * a` and the multi-line list form; the module tests in `exposed_leading_indent::tests`; and the focused regression `services::render::service::tests::keeps_indented_markers_after_content_literal`.
-- FTML backlog decision: accept this second bounded normalization in the same Wikijump-side debt family as the trim. It must not become a general comment rewriter and must not alter sources that do not match the scan conditions.
-- Migration condition: a future FTML pin evaluates document-leading whitespace against the pre-elision document start or otherwise preserves the exposed line's indent through comment elision, after which this call becomes a redundant no-op and Deepwell deletes it with the next FTML boundary review.
+- Status: **Retired.** The Deepwell shim
+  (`RenderService::protect_exposed_leading_indent_after_comment_lines` in
+  `deepwell/src/services/render/service/exposed_leading_indent.rs`, previously
+  called from `RenderService::prepare_outer_render_wikitext_observed`) was
+  removed in commit `ead36fabcc`
+  (`chore(deepwell): pin ftml 1.42.1+roku.20261113.2 and retire leading-indent shim`)
+  and does not exist on current `develop`.
+- Why FTML now satisfies this deviation (verified against pinned revision
+  `0ccfff69f04dd868cb450bfb421a2d0dde3ed4a7`, `ftml 1.42.1+roku.20261120.26`):
+  during `ftml::preprocess_for_layout` on `Layout::Wikidot`,
+  `note_document_leading_whitespace_trim_from_source` invokes
+  `leading_comment_elision_exposes_indent` on the raw pre-elision source and
+  disables `STRIP_DOCUMENT_LEADING_WHITESPACE` whenever comment-only line
+  elision exposes an indented line, preserving that indent naturally without a
+  Deepwell-side shim.
+- Evidence:
+  - Sealed reference `no-trim-after-comment` (`claude-list-shape-no-trim-after-comment`,
+    source `[!-- c --]\n * a\n * b\n\nz`) in
+    `install/local/wikidot-verification/artifacts/wikidot-list-rendering-preview-20261019.json`
+    and 2026-11-13 anonymous PagePreview re-probes (`[!-- c --]\n * a` and
+    multi-line form).
+  - Raw `wikidot_syntax_renderer` verification against FTML `0ccfff69` on
+    2026-11-20 confirming literal preservation with no Deepwell shim:
+    `"[!-- c --]\n * a\n * b\n\nz"` -> `<p>* a<br>\n* b</p><p>z</p>` and
+    `"[!-- c --]\n * a"` -> `<p>* a</p>`.
+  - Focused Deepwell regression
+    `services::render::service::tests::keeps_indented_markers_after_content_literal`
+    (passes on current `develop`).
 - Owner: Rokurolize.
-- Review trigger: every FTML pin bump that changes comment elision or document-leading whitespace handling, and every change that adds another source-level normalization beside the trim at this seam.
+- Review trigger: re-open only if a future FTML pin changes comment elision or
+  `leading_comment_elision_exposes_indent` so an indent exposed by leading
+  comment-only lines renders as a list item instead of literal text.
