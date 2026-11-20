@@ -46,6 +46,8 @@ test("the Files pane Revert control has a matching ?/fileRollback server action"
     fileRollbackTag: string | null
   }
 
-  expect(result.hasFileRollback, `registered actions: ${result.names.join(", ")}`).toBe(true)
+  expect(result.hasFileRollback, `registered actions: ${result.names.join(", ")}`).toBe(
+    true
+  )
   expect(result.fileRollbackTag).toBe("fileRollback")
 })
