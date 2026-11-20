@@ -20,8 +20,14 @@ function createHarness(t) {
   const bin = path.join(directory, "bin")
   const commandLog = path.join(directory, "commands.log")
   const pathLog = path.join(directory, "paths.log")
+  const markerRoot = path.join(directory, "markers")
   mkdirSync(bin)
   mkdirSync(path.join(directory, "evidence-store"), { recursive: true })
+  mkdirSync(path.join(markerRoot, "framerail/node_modules/@playwright/test"), { recursive: true })
+  mkdirSync(path.join(markerRoot, "install/local/wikidot-verification/node_modules/pg"), { recursive: true })
+  writeFileSync(path.join(markerRoot, "framerail/node_modules/@playwright/test/package.json"), "{}")
+  writeFileSync(path.join(markerRoot, "framerail/node_modules/.modules.yaml"), "")
+  writeFileSync(path.join(markerRoot, "install/local/wikidot-verification/node_modules/pg/package.json"), "{}")
   writeFileSync(commandLog, "")
   writeFileSync(pathLog, "")
   t.after(() => rmSync(directory, { recursive: true, force: true }))
@@ -103,6 +109,8 @@ if [[ "\${1:-}" == .github/scripts/classify-changes.mjs ]]; then
     exit 6
   fi
   tee "$PREFLIGHT_PATH_LOG" | "$PREFLIGHT_REAL_NODE" "$@"
+elif [[ "\${1:-}" == install/local/wikidot-verification/scripts/plan-nextest-timeout-retry.mjs || "\${1:-}" == -e ]]; then
+  exec "$PREFLIGHT_REAL_NODE" "$@"
 else
   line="node$(printf ' %s' "$@")"
   if [[ -n "\${PREFLIGHT_DELAY_MATCH:-}" && "$*" == *"$PREFLIGHT_DELAY_MATCH"* ]]; then sleep 1; fi
@@ -124,6 +132,7 @@ fi
     PREFLIGHT_GIT_DIFF_FAIL: "false",
     PREFLIGHT_HEAD_OID: headOid,
     PREFLIGHT_PATH_LOG: pathLog,
+    PREFLIGHT_PNPM_MARKER_ROOT: markerRoot,
     PREFLIGHT_REAL_NODE: process.execPath,
     PREFLIGHT_REMOTE_OID: remoteOid,
     PREFLIGHT_REMOTE_SCOPE: "all",
@@ -131,6 +140,7 @@ fi
   })
 
   return {
+    bin,
     commands() {
       return readFileSync(commandLog, "utf8").trim().split("\n").filter(Boolean)
     },
@@ -211,7 +221,7 @@ test("final preflight is the single explicit full-check barrier", (t) => {
     "cargo fmt --manifest-path wws/Cargo.toml --check",
     "cargo machete wws",
     "cargo clippy --manifest-path wws/Cargo.toml --tests --no-deps -- -D warnings",
-    "cargo nextest run --manifest-path wws/Cargo.toml --locked --all-features --no-fail-fast --test-threads 1",
+    "cargo nextest run --manifest-path wws/Cargo.toml --locked --all-features --profile preflight --no-fail-fast --test-threads 1",
     "node --test wws/tests/resize-iframe.test.mjs",
     "pnpm --dir framerail lint",
     "pnpm --dir framerail check",
@@ -364,4 +374,88 @@ test("listing without a change-set still prints the group plan (the nightly shap
   assert.equal(quiet.status, 0, quiet.stderr)
   assert.match(quiet.stdout, /nothing to check/)
   assert.deepEqual(gated.commands(), [])
+})
+
+test("missing pnpm node_modules markers trigger ensure-pnpm-dependencies before test steps", (t) => {
+  const emptyMarkers = mkdtempSync(path.join(tmpdir(), "wikijump-preflight-empty-markers-"))
+  t.after(() => rmSync(emptyMarkers, { recursive: true, force: true }))
+
+  const harness = createHarness(t)
+  const result = harness.runPreflight(["--base", remoteOid, "--final", "--groups", "verification,theme_lab"], {
+    PREFLIGHT_REMOTE_SCOPE: "none",
+    PREFLIGHT_PNPM_MARKER_ROOT: emptyMarkers
+  })
+  assert.equal(result.status, 0, result.stderr)
+  const cmds = harness.commands()
+  const ensureTheme = cmds.indexOf(
+    "node install/local/wikidot-verification/scripts/ensure-pnpm-dependencies.mjs --dir framerail --require-path node_modules/@playwright/test/package.json"
+  )
+  const runTheme = cmds.findIndex((cmd) => cmd.includes("install/local/theme-lab test"))
+  const ensureVerif = cmds.indexOf(
+    "node install/local/wikidot-verification/scripts/ensure-pnpm-dependencies.mjs --dir install/local/wikidot-verification --require-path node_modules/pg/package.json"
+  )
+  const runVerif = cmds.indexOf("pnpm --dir install/local/wikidot-verification test")
+  assert.ok(ensureTheme >= 0 && runTheme > ensureTheme, cmds.join("\n"))
+  assert.ok(ensureVerif >= 0 && runVerif > ensureVerif, cmds.join("\n"))
+})
+test("wws nextest retries once unloaded on TIMEOUT-only failure and fails closed on functional FAIL", (t) => {
+  const timeoutRetry = createHarness(t)
+  const timeoutDir = mkdtempSync(path.join(tmpdir(), "wikijump-wws-timeout-"))
+  const timeoutCountFile = path.join(timeoutDir, "count")
+  writeFileSync(timeoutCountFile, "0")
+  t.after(() => rmSync(timeoutDir, { recursive: true, force: true }))
+  writeExecutable(path.join(timeoutDir, "cargo"), `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "cargo$(printf ' %s' "$@")" >> "$PREFLIGHT_COMMAND_LOG"
+if [[ "$*" == *"nextest run"* ]]; then
+  n=$(cat "${timeoutCountFile}")
+  n=$((n + 1))
+  printf '%s' "$n" > "${timeoutCountFile}"
+  if [[ "$n" -eq 1 ]]; then
+    printf '%s\\n' "        PASS [   0.100s] wws::lib ok_case"
+    printf '%s\\n' "     TIMEOUT [  15.002s] wws::integration slow_case"
+    printf '%s\\n' "     Summary [  15.102s] 2 tests run: 1 passed, 1 timed out"
+    exit 100
+  fi
+  printf '%s\\n' "        PASS [   1.200s] wws::integration slow_case"
+  printf '%s\\n' "     Summary [   1.200s] 1 test run: 1 passed"
+fi
+`)
+  const retryPass = timeoutRetry.runPreflight(["--base", remoteOid, "--final", "--groups", "wws"], {
+    PATH: `${timeoutDir}:${timeoutRetry.bin}:${process.env.PATH}`
+  })
+  assert.equal(retryPass.status, 0, retryPass.stdout + retryPass.stderr)
+  assert.match(retryPass.stdout, /TIMEOUT-only failure; running one unloaded retry/u)
+  assert.deepEqual(
+    timeoutRetry.commands().filter((cmd) => cmd.startsWith("cargo nextest run")),
+    [
+      "cargo nextest run --manifest-path wws/Cargo.toml --locked --all-features --profile preflight --no-fail-fast --test-threads 1",
+      "cargo nextest run --manifest-path wws/Cargo.toml --locked --all-features --profile preflight --no-fail-fast --test-threads 1 --no-tests fail -E (binary_id(=wws::integration) & test(=slow_case))"
+    ]
+  )
+
+  const functionalFail = createHarness(t)
+  const failDir = mkdtempSync(path.join(tmpdir(), "wikijump-wws-fail-"))
+  t.after(() => rmSync(failDir, { recursive: true, force: true }))
+  writeExecutable(path.join(failDir, "cargo"), `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "cargo$(printf ' %s' "$@")" >> "$PREFLIGHT_COMMAND_LOG"
+if [[ "$*" == *"nextest run"* ]]; then
+  printf '%s\\n' "     TIMEOUT [  15.002s] wws::integration slow_case"
+  printf '%s\\n' "        FAIL [   0.042s] wws::lib broken_case"
+  printf '%s\\n' "     Summary [  15.044s] 2 tests run: 0 passed, 1 failed, 1 timed out"
+  exit 100
+fi
+`)
+  const failResult = functionalFail.runPreflight(["--base", remoteOid, "--final", "--groups", "wws"], {
+    PATH: `${failDir}:${functionalFail.bin}:${process.env.PATH}`
+  })
+  assert.equal(failResult.status, 1, failResult.stdout + failResult.stderr)
+  assert.doesNotMatch(failResult.stdout, /running one unloaded retry/u)
+  assert.deepEqual(
+    functionalFail.commands().filter((cmd) => cmd.startsWith("cargo nextest run")),
+    [
+      "cargo nextest run --manifest-path wws/Cargo.toml --locked --all-features --profile preflight --no-fail-fast --test-threads 1"
+    ]
+  )
 })

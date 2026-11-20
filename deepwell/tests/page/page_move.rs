@@ -521,7 +521,7 @@ async fn page_move_render_failure_rolls_back_destination_identity() {
 
     let state = build_server_state_without_workers(
         Config::integration_testing(),
-        Secrets::load(),
+        Secrets::load_for_test(),
     )
     .await
     .expect("page move RPC state should build");

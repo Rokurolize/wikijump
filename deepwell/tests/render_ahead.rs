@@ -63,7 +63,7 @@ impl Fixture {
         let namespace = format!("rsmq-render-ahead-{label}-{}", Uuid::new_v4().simple());
         let state = build_server_state_without_workers_with_job_queue_namespace(
             Config::integration_testing(),
-            Secrets::load(),
+            Secrets::load_for_test(),
             &namespace,
         )
         .await

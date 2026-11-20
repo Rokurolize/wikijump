@@ -95,6 +95,17 @@ use self::score_filter::{apply_score_filters, score_comparison_operator};
 #[derive(Debug)]
 pub struct PageQueryService;
 
+/// Whether the query shape is the measured plan-flip composition: a
+/// no-parent selector (which builds a NOT IN anti-join) combined with at
+/// least one score selector, whose selectivity PostgreSQL badly
+/// underestimates for the computed effective score. Only that composition
+/// flipped the anti-joins to nested loops in measurement; other shapes
+/// plan best with the default join strategies, so the nestloop guard in
+/// the execution paths is scoped to exactly this pair.
+fn nestloop_guard_applies(parent: &PageParentSelector, score: &[ScoreSelector]) -> bool {
+    matches!(parent, PageParentSelector::NoParent) && !score.is_empty()
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum PageQueryBuildMode {
     Find,
@@ -116,6 +127,7 @@ struct BuiltPageQuery<'a> {
     filtering_deferred_to_rust: bool,
     ordering_deferred_to_rust: bool,
     tag_custom_plan: bool,
+    disable_nestloop: bool,
 }
 
 impl PageQueryService {
@@ -223,7 +235,22 @@ impl PageQueryService {
                 .await
                 .or_raise(make_error)?;
         }
+        // Selector combinations with a small estimated match set flip the
+        // parent and snapshot anti-joins to nested loops that re-scan the
+        // whole relation for every candidate. Hash joins are stable here.
+        // The guard is scoped to that composition (see
+        // nestloop_guard_applies); unscoped, it taxed every other shape.
+        if built.disable_nestloop {
+            txn.execute_unprepared("SET LOCAL enable_nestloop = off")
+                .await
+                .or_raise(make_error)?;
+        }
         let total = built.query.count(txn).await.or_raise(make_error)?;
+        if built.disable_nestloop {
+            txn.execute_unprepared("SET LOCAL enable_nestloop TO DEFAULT")
+                .await
+                .or_raise(make_error)?;
+        }
         if built.tag_custom_plan {
             txn.execute_unprepared("SET LOCAL plan_cache_mode TO DEFAULT")
                 .await
@@ -347,6 +374,7 @@ impl PageQueryService {
 
         let txn = ctx.transaction();
         let score_and_votes_empty = score.is_empty() && votes.is_empty();
+        let disable_nestloop = nestloop_guard_applies(&page_parent, &score);
         if !score_and_votes_empty {
             // These queries deliberately switch between candidate-correlated and
             // site-wide score plans. PostgreSQL's generic prepared plan loses the
@@ -598,6 +626,7 @@ impl PageQueryService {
             filtering_deferred_to_rust: !data_form_fields.is_empty(),
             ordering_deferred_to_rust,
             tag_custom_plan: needs_tag_filter && score_and_votes_empty,
+            disable_nestloop,
         })
     }
 
@@ -623,6 +652,7 @@ impl PageQueryService {
             filtering_deferred_to_rust,
             ordering_deferred_to_rust,
             tag_custom_plan,
+            disable_nestloop,
         } = built;
         if projects_effective_revision_count {
             query = query.column_as(
@@ -663,6 +693,14 @@ impl PageQueryService {
                 .await
                 .or_raise(make_error)?;
         }
+        // Keep the page scan on hash joins for the flip-prone composition
+        // (see nestloop_guard_applies); a nested-loop anti join re-scans its
+        // inner relation once per candidate when that estimate is wrong.
+        if disable_nestloop {
+            txn.execute_unprepared("SET LOCAL enable_nestloop = off")
+                .await
+                .or_raise(make_error)?;
+        }
 
         let (mut pages, effective_revision_count_by_page_id) =
             if projects_effective_revision_count {
@@ -684,6 +722,11 @@ impl PageQueryService {
             } else {
                 (query.all(txn).await.or_raise(make_error)?, BTreeMap::new())
             };
+        if disable_nestloop {
+            txn.execute_unprepared("SET LOCAL enable_nestloop TO DEFAULT")
+                .await
+                .or_raise(make_error)?;
+        }
         if tag_custom_plan {
             txn.execute_unprepared("SET LOCAL plan_cache_mode TO DEFAULT")
                 .await
