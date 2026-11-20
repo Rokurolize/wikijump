@@ -84,7 +84,7 @@ async fn listpages_combined_and_separate_templates_match_live_container_dom() {
 
     let combined = section("COMBINED");
     assert!(
-        combined.contains(&format!("1. {PREFIX}-1<br>\n2. {PREFIX}-2")),
+        combined.contains(&format!("1. {PREFIX}-1<br />\n2. {PREFIX}-2")),
         "separate=no should compile one source with a single line break between rows:\n{combined}",
     );
     assert!(!combined.contains("list-pages-box"), "{combined}");
@@ -323,7 +323,7 @@ async fn listpages_stored_title_remains_literal_in_listing_output() {
     assert!(html.contains("&lt;em&gt;literal&lt;/em&gt;"));
     assert!(!html.contains("<em>literal</em>"));
     assert!(
-        html.contains("literal…ellipsis"),
+        html.contains("literal&#8230;ellipsis"),
         "plain %%title%% must receive live Wikidot typography: {html}",
     );
     let linked_title = html
@@ -780,7 +780,7 @@ async fn listpages_generated_pager_keeps_ascii_dots_after_authored_typography() 
 
     let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
     assert!(
-        html.contains("AUTHORED_DOTS:x….x"),
+        html.contains("AUTHORED_DOTS:x&#8230;.x"),
         "authored prose must retain Wikidot typography:\n{html}",
     );
     assert!(
@@ -3774,7 +3774,7 @@ async fn listpages_default_summary_unwraps_residual_div_before_recursive_error()
 
     let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
     let expected = concat!(
-        "<p>&#91;&#91;div class=&quot;licensebox&quot;&#93;&#93;<br>\n",
+        "<p>&#91;&#91;div class=&quot;licensebox&quot;&#93;&#93;<br />\n",
         "Default summary prefix.</p>",
         r#"<div class="error-block">The ListPages module does not work recursively.</div>"#,
     );

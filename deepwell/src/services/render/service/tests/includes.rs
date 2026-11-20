@@ -3323,7 +3323,7 @@ fn credit_start_attribute_gates_evaluate_and_exhibit_like_live() {
     assert!(html.contains("<a href=\"/\">"), "{html}");
     assert!(
         html.contains(
-            "<img src=\"https://scp-jp.wjfiles.localhost:28443/local--files/credit:start/scp-heritage-v3.png\" class=\"image\""
+            "<img src=\"https://scp-jp.wjfiles.localhost:28443/local--files/credit:start/scp-heritage-v3.png\" alt=\"scp-heritage-v3.png\" class=\"image\""
         ),
         "{html}"
     );

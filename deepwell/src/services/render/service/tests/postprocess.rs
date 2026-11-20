@@ -773,7 +773,7 @@ fn keeps_alignment_markers_with_trailing_whitespace_literal() {
         let body = render_wikidot_alignment_body(source);
 
         assert_eq!(
-            body, "<p>[[=]]<br>\nA<br>\n[[/=]]</p><p>z</p>",
+            body, "<p>[[=]]<br />\nA<br />\n[[/=]]</p><p>z</p>",
             "poisoned markers print as one literal paragraph: {source:?}",
         );
         assert!(
@@ -802,11 +802,11 @@ fn keeps_left_and_right_alignment_markers_with_trailing_whitespace_literal() {
     for (source, expected) in [
         (
             "[[<]] \nA\n[[/<]]\n\nz",
-            "<p>[[&lt;]]<br>\nA<br>\n[[/&lt;]]</p><p>z</p>",
+            "<p>[[&lt;]]<br />\nA<br />\n[[/&lt;]]</p><p>z</p>",
         ),
         (
             "[[>]] \nA\n[[/>]]\n\nz",
-            "<p>[[&gt;]]<br>\nA<br>\n[[/&gt;]]</p><p>z</p>",
+            "<p>[[&gt;]]<br />\nA<br />\n[[/&gt;]]</p><p>z</p>",
         ),
     ] {
         let body = render_wikidot_alignment_body(source);

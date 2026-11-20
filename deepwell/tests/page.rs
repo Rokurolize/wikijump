@@ -10973,7 +10973,7 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
             " does not match any existing user name</span>",
         ),
         concat!(
-            "<span class=\"error-inline\"><em>v7ws=&quot;alpha beta\u{a0}gamma&quot;</em>",
+            "<span class=\"error-inline\"><em>v7ws=&quot;alpha beta&#160;gamma&quot;</em>",
             " does not match any existing user name</span>",
         ),
         concat!(
@@ -16119,8 +16119,8 @@ async fn wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execut
     assert_eq!(
         preview.body,
         concat!(
-            "<p>[[html]]<br>\n&lt;b&gt;X&lt;/b&gt;<br>\n[[/html]]<br>\n",
-            "[[html]]<br>\n&lt;i&gt;Y&lt;/i&gt;<br>\n[[/html]]</p>",
+            "<p>[[html]]<br />\n&lt;b&gt;X&lt;/b&gt;<br />\n[[/html]]<br />\n",
+            "[[html]]<br />\n&lt;i&gt;Y&lt;/i&gt;<br />\n[[/html]]</p>",
         ),
     );
     assert!(!preview.body.contains("<iframe"), "{}", preview.body);
@@ -30178,7 +30178,7 @@ async fn page_render_long_bullet_lists_through_ftml() {
     assert!(!html.contains("data-wikijump"), "{html}");
     assert!(!html.contains("WIKIJUMP"), "{html}");
     assert!(
-        html.contains("<li>Murphy Law in… Type 3043 — FOR MURDER!</li>"),
+        html.contains("<li>Murphy Law in&#8230; Type 3043 &#8212; FOR MURDER!</li>"),
         "{html}"
     );
     assert!(
