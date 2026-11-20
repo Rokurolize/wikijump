@@ -667,6 +667,15 @@ impl RenderService {
             exclude_current_page,
         );
         let total_matched = all_matched_pages.len();
+        let offset = if u64::from(offset) > 1_000 && (offset as usize) > total_matched {
+            if url_page.unwrap_or(1) > 1 {
+                offset % (per_page as u32)
+            } else {
+                u32::MAX
+            }
+        } else {
+            offset
+        };
         let selected_pages = list_pages_slice_rows(all_matched_pages, offset, limit);
         let total_selected = selected_pages.len();
         let page_count = (total_selected as u64).div_ceil(per_page).max(1);
