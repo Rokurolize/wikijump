@@ -33,7 +33,7 @@ femme = "2"
 filemagic = "0.13"
 fluent = "0.17"
 fluent-syntax = "0"
-ftml = { git = "https://github.com/Rokurolize/ftml", rev = "312f17e2e89f888c3c78896ed4522912e57a58f1" }
+ftml = { git = "https://github.com/Rokurolize/ftml", rev = "0ccfff69f04dd868cb450bfb421a2d0dde3ed4a7" }
 futures = { version = "0.3", features = ["async-await"], default-features = false }
 hex = { version = "0.4", features = ["serde"] }
 hostname = "0.4"
@@ -81,7 +81,7 @@ arrayvec = "0.7.6"
 deepwell-relation-impl-derive = { path = "relation-impl-derive" }
 
 [dev-dependencies]
-ftml = { git = "https://github.com/Rokurolize/ftml", rev = "312f17e2e89f888c3c78896ed4522912e57a58f1", features = ["test-support"] }
+ftml = { git = "https://github.com/Rokurolize/ftml", rev = "0ccfff69f04dd868cb450bfb421a2d0dde3ed4a7", features = ["test-support"] }
 maplit = "1"
 pretty_assertions = "1"
 self_cell = "1"
