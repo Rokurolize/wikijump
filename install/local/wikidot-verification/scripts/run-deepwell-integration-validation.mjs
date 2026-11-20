@@ -13,33 +13,89 @@ import {
   runValidationCommand,
   withProvisionedDeepwellStack,
 } from "../src/deepwell-integration-stack.mjs";
+import {
+  buildNextestExactFilterset,
+  planTimeoutOnlyRetry,
+} from "../src/nextest-shard-summary.mjs";
+
+function withPreflightProfile(cargoTestArgs) {
+  const hasProfile = cargoTestArgs.some(
+    (arg) => arg === "-P" || arg === "--profile" || arg.startsWith("--profile="),
+  );
+  return hasProfile ? cargoTestArgs : ["--profile", "preflight", ...cargoTestArgs];
+}
+
+function runChildScript(script, argv, env) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [script, ...argv], {env, stdio: "inherit"});
+    child.on("error", reject);
+    child.on("exit", (code, signal) => resolve({code, signal}));
+  });
+}
 
 async function runShards(shards, argv) {
   const script = fileURLToPath(import.meta.url);
   const capture = await prepareShardSeedCapture(process.env);
-  const results = await Promise.all(Array.from({length: shards}, (_, index) => new Promise((resolve, reject) => {
-    const label = `[shard ${index + 1}/${shards}] `;
-    const env = {...process.env, WIKIJUMP_DEEPWELL_NEXTEST_PARTITION: `hash:${index + 1}/${shards}`};
-    delete env.WIKIJUMP_DEEPWELL_TEST_SHARDS;
-    if (capture.directory) env[SEED_CAPTURE_ENV] = capture.directory;
-    else delete env[SEED_CAPTURE_ENV];
-    const child = spawn(process.execPath, [script, ...argv], {env, stdio: ["ignore", "pipe", "pipe"]});
-    for (const [stream, sink] of [[child.stdout, process.stdout], [child.stderr, process.stderr]]) {
-      let pending = "";
-      stream.setEncoding("utf8");
-      stream.on("data", (chunk) => {
-        const lines = (pending + chunk).split("\n");
-        pending = lines.pop();
-        for (const line of lines) sink.write(`${label}${line}\n`);
-      });
-      stream.on("end", () => { if (pending) sink.write(`${label}${pending}\n`); });
+  try {
+    const results = await Promise.all(Array.from({length: shards}, (_, index) => new Promise((resolve, reject) => {
+      const label = `[shard ${index + 1}/${shards}] `;
+      const env = {...process.env, WIKIJUMP_DEEPWELL_NEXTEST_PARTITION: `hash:${index + 1}/${shards}`};
+      delete env.WIKIJUMP_DEEPWELL_TEST_SHARDS;
+      delete env.WIKIJUMP_DEEPWELL_NEXTEST_FILTERSET;
+      if (capture.directory) env[SEED_CAPTURE_ENV] = capture.directory;
+      else delete env[SEED_CAPTURE_ENV];
+      const child = spawn(process.execPath, [script, ...argv], {env, stdio: ["ignore", "pipe", "pipe"]});
+      let output = "";
+      for (const [stream, sink] of [[child.stdout, process.stdout], [child.stderr, process.stderr]]) {
+        let pending = "";
+        stream.setEncoding("utf8");
+        stream.on("data", (chunk) => {
+          output += chunk;
+          const lines = (pending + chunk).split("\n");
+          pending = lines.pop();
+          for (const line of lines) sink.write(`${label}${line}\n`);
+        });
+        stream.on("end", () => { if (pending) sink.write(`${label}${pending}\n`); });
+      }
+      child.on("error", reject);
+      child.on("exit", (code, signal) => resolve({shard: index + 1, code, signal, output}));
+    })));
+    const failed = results.filter(({code, signal}) => code !== 0 || Boolean(signal));
+    if (failed.length === 0) return;
+
+    if (process.env.WIKIJUMP_DEEPWELL_TIMEOUT_RETRY !== "0") {
+      const plan = planTimeoutOnlyRetry(
+        results.map(({shard, code, signal, output}) => ({shard, code, signal, text: output})),
+      );
+      if (plan.shouldRetry) {
+        const filterset = buildNextestExactFilterset(plan.retryTargets);
+        const summary = plan.retryTargets.map((target) => `${target.binaryId} ${target.testName}`).join(", ");
+        console.error(
+          `Deepwell shards failed only due to ${plan.retryTargets.length} TIMEOUT(s); running one unloaded retry (--profile preflight --test-threads 1): ${summary}`,
+        );
+        const retryEnv = {
+          ...process.env,
+          WIKIJUMP_DEEPWELL_TEST_THREADS: "1",
+          WIKIJUMP_DEEPWELL_NEXTEST_FILTERSET: filterset,
+        };
+        delete retryEnv.WIKIJUMP_DEEPWELL_TEST_SHARDS;
+        delete retryEnv.WIKIJUMP_DEEPWELL_NEXTEST_PARTITION;
+        if (capture.directory) retryEnv[SEED_CAPTURE_ENV] = capture.directory;
+        else delete retryEnv[SEED_CAPTURE_ENV];
+        const retryResult = await runChildScript(script, argv, retryEnv);
+        if (retryResult.code === 0 && !retryResult.signal) {
+          console.error("Deepwell unloaded timeout-only retry passed.");
+          return;
+        }
+        throw new Error(
+          `Deepwell unloaded timeout-only retry failed (${retryResult.signal ?? retryResult.code}) for: ${summary}`,
+        );
+      }
     }
-    child.on("error", reject);
-    child.on("exit", (code, signal) => resolve({shard: index + 1, code, signal}));
-  }))).finally(() => capture.dispose());
-  const failed = results.filter(({code}) => code !== 0);
-  if (failed.length > 0) {
+
     throw new Error(`Deepwell test shards failed: ${failed.map(({shard, code, signal}) => `${shard} (${signal ?? code})`).join(", ")}`);
+  } finally {
+    await capture.dispose();
   }
 }
 
@@ -58,14 +114,17 @@ async function run() {
         "Set WIKIJUMP_DEEPWELL_TEST_SHARDS=N to run N such shards side by side. The shards then seed once and",
         "restore that capture into their own stacks; WIKIJUMP_DEEPWELL_SEED_CAPTURE=off makes each shard run the",
         "seeder instead, and WIKIJUMP_DEEPWELL_SEED_CAPTURE_ROOT=<dir> keeps captures between runs, keyed by their inputs.",
+        "When sharded nextest runs fail solely due to TIMEOUT tests, one unloaded single-stack retry is run automatically",
+        "unless WIKIJUMP_DEEPWELL_TIMEOUT_RETRY=0 is set.",
         "",
       ].join("\n"),
     );
     return;
   }
 
+  const filterset = process.env.WIKIJUMP_DEEPWELL_NEXTEST_FILTERSET?.trim() || "";
   const shards = deepwellTestShards(process.env);
-  if (shards > 1 && !deepwellNextestPartition(process.env)) {
+  if (shards > 1 && !deepwellNextestPartition(process.env) && !filterset) {
     await runShards(shards, process.argv.slice(2));
     return;
   }
@@ -75,11 +134,14 @@ async function run() {
 
   await withProvisionedDeepwellStack(async ({env, cargo}) => {
     const partition = deepwellNextestPartition(env);
-    if (partition) {
+    if (partition || filterset) {
       await runValidationCommand(cargo, [
         "nextest", "run", "--offline", "--locked",
-        "--manifest-path", "deepwell/Cargo.toml", ...cargoTestArgs,
-        "--partition", partition, "--test-threads", deepwellTestThreads(env),
+        "--manifest-path", "deepwell/Cargo.toml",
+        ...withPreflightProfile(cargoTestArgs),
+        ...(partition ? ["--partition", partition] : []),
+        ...(filterset ? ["--no-tests", "fail", "-E", filterset] : []),
+        "--test-threads", deepwellTestThreads(env),
         ...(harnessArgs.length ? ["--", ...harnessArgs] : []),
       ], {env});
     } else {

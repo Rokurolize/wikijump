@@ -19,3 +19,22 @@ emails-reset-password =
   .action = 重置密码
   .expires = 此密码重置链接将于 { $count } 分钟后过期。
   .outro = 若您并未请求密码重置，则无需做出任何操作。
+
+emails-delete-account =
+  .subject = 确认删除账号
+  .greeting = 确认删除您的账号
+  .intro = 请点击下方按钮确认删除您的账号。
+  .action = 确认删除账号
+  .outro = 如果您并未请求删除账号，则无需做出任何操作。
+
+emails-reset-grant =
+  .subject = 密码重置已批准
+  .greeting = 密码重置已批准
+  .intro = 您的密码重置请求已获批准。本邮件不包含链接，请在浏览器中继续完成操作。
+  .outro = 若您并未请求密码重置，则无需做出任何操作。
+
+emails-delete-grant =
+  .subject = 账号删除已批准
+  .greeting = 账号删除已批准
+  .intro = 您的账号删除请求已获批准。本邮件不包含链接，请在浏览器中继续完成操作。
+  .outro = 若您并未请求删除账号，则无需做出任何操作。

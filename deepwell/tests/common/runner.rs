@@ -73,7 +73,7 @@ impl TestRunnerRequestContext {
     }
 
     pub async fn new_with_config(config: Config) -> Self {
-        let secrets = Secrets::load();
+        let secrets = Secrets::load_for_test();
 
         let state = build_server_state_without_workers(config, secrets)
             .await
@@ -95,7 +95,7 @@ impl TestRunnerRequestContext {
     pub async fn new_with_job_queue_namespace(namespace: &str) -> Self {
         let state = build_server_state_without_workers_with_job_queue_namespace(
             Config::integration_testing(),
-            Secrets::load(),
+            Secrets::load_for_test(),
             namespace,
         )
         .await

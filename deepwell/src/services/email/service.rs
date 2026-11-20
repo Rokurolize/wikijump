@@ -23,11 +23,16 @@ use super::structs::{
     MailCheckFailureResponse, MailCheckResponse, MailCheckSuccessResponse,
     MailFormMessage,
 };
-use super::{EmailSender, SendEmail, SendEmailOutput};
+use super::{
+    EmailSender, EmailTokenPurpose, IssuedEmailToken, SendEmail, SendEmailOutput,
+};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::runtime::ServerState;
-use crate::services::ServiceContext;
+use crate::services::{DomainService, ServiceContext};
+use crate::utils::{parse_locales, strip_fluent_control_chars};
+use fluent::{FluentArgs, FluentValue};
 use missive::{Address, DeliveryResult, Email};
+use unic_langid::LanguageIdentifier;
 
 #[derive(Debug)]
 pub struct EmailService;
@@ -260,16 +265,125 @@ impl EmailService {
     }
 
     pub async fn send_token_email(
+        ctx: &ServiceContext<'_>,
         to_email: &str,
-        purpose: super::EmailTokenPurpose,
-        expires_at: time::OffsetDateTime,
+        purpose: EmailTokenPurpose,
+        issued: &IssuedEmailToken,
+        locales: &[String],
     ) {
-        info!(
-            "Email token issued for '{}' (purpose: {}, expires: {})",
-            to_email,
-            purpose.as_str(),
-            expires_at,
-        );
+        let (subject, body) =
+            match Self::token_email_content(ctx, purpose, issued, locales) {
+                Ok(content) => content,
+                Err(error) => {
+                    warn!(
+                        "Failed to compose {} token email for '{}': {error:?}",
+                        purpose.as_str(),
+                        to_email,
+                    );
+                    return;
+                }
+            };
+
+        let email = SendEmail {
+            sender: EmailSender::Automation,
+            recipient: to_email,
+            subject: &subject,
+            text_body: &body,
+            html_body: None,
+        };
+
+        if let Err(error) = Self::send(ctx, email).await {
+            warn!(
+                "Failed to send {} token email to '{}': {error:?}",
+                purpose.as_str(),
+                to_email,
+            );
+        }
+    }
+
+    fn token_email_content(
+        ctx: &ServiceContext<'_>,
+        purpose: EmailTokenPurpose,
+        issued: &IssuedEmailToken,
+        locales: &[String],
+    ) -> Result<(String, String)> {
+        let (key, path, expiry_minutes) = match purpose {
+            EmailTokenPurpose::VerifyEmail => {
+                ("emails-verify-email", Some("/-/verify-email/"), None)
+            }
+            EmailTokenPurpose::ResetPassword => (
+                "emails-reset-password",
+                Some("/-/reset/"),
+                Some(purpose.ttl().whole_minutes()),
+            ),
+            EmailTokenPurpose::DeleteConfirm => {
+                ("emails-delete-account", Some("/-/delete-account/"), None)
+            }
+            EmailTokenPurpose::ResetGrant => ("emails-reset-grant", None, None),
+            EmailTokenPurpose::DeleteGrant => ("emails-delete-grant", None, None),
+        };
+
+        let languages = Self::token_locales(locales)?;
+        let mut args = FluentArgs::new();
+        if let Some(minutes) = expiry_minutes {
+            args.set("count", FluentValue::from(minutes));
+        }
+
+        let translate = |attribute: &str| -> Result<String> {
+            let key = format!("{key}.{attribute}");
+            let value = ctx.localization().translate(&languages, &key, &args)?;
+            Ok(Self::plain_text(&value))
+        };
+
+        let subject = translate("subject")?;
+        let greeting = translate("greeting")?;
+        let intro = translate("intro")?;
+        let outro = translate("outro")?;
+        let action = translate("action").ok();
+        let expires = translate("expires").ok();
+
+        let mut body = String::new();
+        body.push_str(&greeting);
+        body.push_str("\n\n");
+        body.push_str(&intro);
+        body.push_str("\n\n");
+
+        if let (Some(action), Some(path)) = (action, path) {
+            let config = ctx.config();
+            let origin = DomainService::preferred_https_origin_for_domain(
+                config,
+                &config.main_domain_no_dot,
+            );
+            body.push_str(&action);
+            body.push('\n');
+            body.push_str(&origin);
+            body.push_str(path);
+            body.push_str(&issued.token);
+            body.push_str("\n\n");
+        }
+
+        if let Some(expires) = expires {
+            body.push_str(&expires);
+            body.push_str("\n\n");
+        }
+
+        body.push_str(&outro);
+        Ok((subject, body))
+    }
+
+    fn token_locales(locales: &[String]) -> Result<Vec<LanguageIdentifier>> {
+        let mut languages = parse_locales(locales)?;
+        let english: LanguageIdentifier = "en".parse().expect("valid locale");
+        if !languages.contains(&english) {
+            languages.push(english);
+        }
+        Ok(languages)
+    }
+
+    fn plain_text(value: &str) -> String {
+        let mut text = value.to_string();
+        strip_fluent_control_chars(&mut text);
+        text
     }
 
     pub async fn send_mail_form_message(message: &MailFormMessage) {
@@ -430,6 +544,26 @@ mod tests {
         ] {
             assert!(!is_well_formed_email(email), "{email}");
         }
+    }
+
+    #[test]
+    fn token_locales_keep_the_english_fallback() {
+        let parsed =
+            EmailService::token_locales(&[]).expect("empty locales should parse");
+        assert_eq!(parsed.len(), 1);
+        assert_eq!(parsed[0].to_string(), "en");
+
+        let locales = ["ko".to_owned()];
+        let parsed = EmailService::token_locales(&locales).expect("locales should parse");
+        assert_eq!(parsed.len(), 2);
+        assert_eq!(parsed[0].to_string(), "ko");
+        assert_eq!(parsed[1].to_string(), "en");
+
+        let locales = ["en".to_owned(), "fr".to_owned()];
+        let parsed = EmailService::token_locales(&locales).expect("locales should parse");
+        assert_eq!(parsed.len(), 2);
+        assert_eq!(parsed[0].to_string(), "en");
+        assert_eq!(parsed[1].to_string(), "fr");
     }
 
     #[test]

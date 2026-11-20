@@ -538,7 +538,7 @@ impl SiteNavigationRpcFixture {
     async fn setup(redis_url: String, namespace: String) -> Self {
         let state = build_server_state_without_workers_with_job_queue_namespace(
             Config::integration_testing(),
-            Secrets::load(),
+            Secrets::load_for_test(),
             &namespace,
         )
         .await
@@ -1065,7 +1065,7 @@ async fn component_css_save_refreshes_direct_dependent_before_rpc_returns() {
     config.rerender_skip = vec![(10, None)];
     let state = build_server_state_without_workers_with_job_queue_namespace(
         config,
-        Secrets::load(),
+        Secrets::load_for_test(),
         &namespace,
     )
     .await
@@ -1361,7 +1361,7 @@ async fn created_target_refreshes_referrers_and_deleted_target_leaves_them() {
     config.rerender_skip = vec![(10, None)];
     let state = build_server_state_without_workers_with_job_queue_namespace(
         config,
-        Secrets::load(),
+        Secrets::load_for_test(),
         &namespace,
     )
     .await

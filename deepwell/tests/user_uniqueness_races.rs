@@ -63,9 +63,12 @@ const SLUG_MIGRATION: &str = "20261105010000_user_slug_active_unique.sql";
 const EMAIL_MIGRATION: &str = "20261105020000_user_email_active_unique.sql";
 
 async fn test_state() -> ServerState {
-    build_server_state_without_workers(Config::integration_testing(), Secrets::load())
-        .await
-        .expect("test server state should build")
+    build_server_state_without_workers(
+        Config::integration_testing(),
+        Secrets::load_for_test(),
+    )
+    .await
+    .expect("test server state should build")
 }
 
 fn is_index_violation(error: &DbErr, index: &str) -> bool {
@@ -799,7 +802,7 @@ async fn user_uniqueness_migrations_reconcile_live_duplicates() {
     use futures::FutureExt;
     use std::panic::{AssertUnwindSafe, resume_unwind};
 
-    let database_url = Secrets::load().database_url;
+    let database_url = Secrets::load_for_test().database_url;
     let scratch_name = format!("deepwell_g3_{}", cuid());
     let server = Database::connect(replace_database_name(&database_url, "postgres"))
         .await

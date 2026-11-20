@@ -1282,7 +1282,7 @@ mod race {
     async fn setup() -> Fixture {
         let state = build_server_state_without_workers(
             Config::integration_testing(),
-            Secrets::load(),
+            Secrets::load_for_test(),
         )
         .await
         .expect("test server state should build");
