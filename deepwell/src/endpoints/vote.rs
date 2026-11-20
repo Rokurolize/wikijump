@@ -58,6 +58,13 @@ pub async fn vote_set(
 
     info!("Casting vote cast by {} on page {}", user_id, page_id,);
 
+    if !matches!(input.value, -1 | 1) {
+        bail!(Error::new(
+            "vote value must be -1 or 1",
+            ErrorType::BadRequest,
+        ));
+    }
+
     VoteService::add(ctx, input).await.or_raise(|| {
         Error::new(
             format!(

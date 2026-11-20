@@ -61,4 +61,3 @@ async fn vote_set_rejects_values_outside_rating_semantics() {
         );
     }
 }
-
