@@ -1001,7 +1001,11 @@ mod tests {
             };
             let members = if one_timestamp { 6 } else { 1 + group % 6 };
             for index in 0..members {
-                let activity_kind = if (group + index) % 3 == 0 { 1 } else { 0 };
+                let activity_kind = if (group + index).is_multiple_of(3) {
+                    1
+                } else {
+                    0
+                };
                 let revision_id = if activity_kind == 0 {
                     let value = page_revision_id;
                     page_revision_id += 1;
