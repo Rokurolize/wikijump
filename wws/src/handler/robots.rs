@@ -33,3 +33,21 @@ pub async fn handle_robots_txt(headers: HeaderMap) -> StatusCode {
 
     StatusCode::NOT_IMPLEMENTED
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::http::HeaderValue;
+
+    #[tokio::test]
+    async fn request_without_internal_headers_gets_an_http_response() {
+        assert_eq!(
+            handle_robots_txt(HeaderMap::new()).await,
+            StatusCode::NOT_FOUND,
+        );
+
+        let mut headers = HeaderMap::new();
+        headers.insert("x-wikijump-target-server", HeaderValue::from_static("other"));
+        assert_eq!(handle_robots_txt(headers).await, StatusCode::NOT_FOUND);
+    }
+}
