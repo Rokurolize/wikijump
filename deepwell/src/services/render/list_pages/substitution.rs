@@ -120,8 +120,8 @@ use super::super::module_arguments::{
 };
 use super::super::service::{
     CountPagesRequiredTagBatchResult, MAX_LISTPAGES_RENDER_LIMIT,
-    MAX_LISTPAGES_RENDER_SCAN_ROWS, RenderService,
-    format_list_pages_rating, native_numbered_list_content,
+    MAX_LISTPAGES_RENDER_SCAN_ROWS, RenderService, format_list_pages_rating,
+    native_numbered_list_content,
 };
 use super::content_sections::wikidot_content_section;
 use super::data_forms::{

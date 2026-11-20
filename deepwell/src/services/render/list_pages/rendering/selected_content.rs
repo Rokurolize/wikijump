@@ -856,17 +856,11 @@ mod tests {
             select_list_pages_matched_rows(pages.clone(), false, &tags, None, 2, false);
         assert_eq!(ids(&all), vec![1, 2, 3]);
 
-        let offset = select_list_pages_matched_rows(
-            pages.clone(),
-            false,
-            &tags,
-            None,
-            2,
-            false,
-        )
-        .into_iter()
-        .skip(1)
-        .collect::<Vec<_>>();
+        let offset =
+            select_list_pages_matched_rows(pages.clone(), false, &tags, None, 2, false)
+                .into_iter()
+                .skip(1)
+                .collect::<Vec<_>>();
         assert_eq!(ids(&offset), vec![2, 3]);
 
         let excluded =
@@ -894,8 +888,14 @@ mod tests {
             (1000, 20),
             (1001, 20),
         ] {
-            let matched =
-                select_list_pages_matched_rows(pages.clone(), false, &tags, None, 0, false);
+            let matched = select_list_pages_matched_rows(
+                pages.clone(),
+                false,
+                &tags,
+                None,
+                0,
+                false,
+            );
             assert_eq!(
                 matched.len(),
                 CORPUS_SIZE,
@@ -930,7 +930,8 @@ mod tests {
         let mut current = BTreeSet::new();
         current.insert("alpha".to_owned());
 
-        let selected = select_list_pages_matched_rows(pages, true, &current, None, 1, false);
+        let selected =
+            select_list_pages_matched_rows(pages, true, &current, None, 1, false);
         assert_eq!(
             ids(&selected),
             vec![1, 2],
