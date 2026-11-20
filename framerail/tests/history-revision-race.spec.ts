@@ -43,6 +43,7 @@ test.beforeAll(async () => {
         { find: "$lib/types", replacement: stub("types.ts") }
       ]
     },
+    cacheDir: resolve(framerailDir, ".vite-harness-history-revision-race"),
     server: { host: "127.0.0.1", port: 0, fs: { allow: [framerailDir] } },
     optimizeDeps: { noDiscovery: true, include: [] },
     esbuild: { tsconfigRaw: "{}" },
