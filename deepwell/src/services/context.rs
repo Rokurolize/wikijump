@@ -524,6 +524,7 @@ impl<'txn> ServiceContext<'txn> {
             uncommitted_text_blocks: Mutex::new(Vec::new()),
             commit_authentication_rejection: AtomicBool::new(false),
             link_graph_read: AtomicBool::new(false),
+            cascade_page_query_cache: self.cascade_page_query_cache.clone(),
         }
     }
 
