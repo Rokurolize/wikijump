@@ -6,6 +6,7 @@ import { createServer, type ViteDevServer } from "vite"
 
 const framerailDir = process.cwd()
 const harnessDir = resolve(framerailDir, "tests/filerollback-action-wiring")
+const serverStub = resolve(harnessDir, "stubs/server.ts")
 
 let server: ViteDevServer
 let baseURL: string
@@ -16,10 +17,13 @@ test.beforeAll(async () => {
     root: harnessDir,
     resolve: {
       alias: [
-        {
-          find: "$lib/server/load/page",
-          replacement: resolve(harnessDir, "stubs/load-page.ts")
-        }
+        { find: "$lib/defaults", replacement: serverStub },
+        { find: /^\$lib\/server\/deepwell$/, replacement: serverStub },
+        { find: "$lib/server/deepwell/file", replacement: serverStub },
+        { find: "$lib/types", replacement: resolve(framerailDir, "src/lib/types.ts") },
+        { find: /^\$lib\//, replacement: `${resolve(framerailDir, "src/lib")}/` },
+        { find: "sveltekit-superforms/adapters", replacement: serverStub },
+        { find: "sveltekit-superforms", replacement: serverStub }
       ]
     },
     cacheDir: resolve(framerailDir, ".vite-harness"),
@@ -35,19 +39,20 @@ test.afterAll(async () => {
   await server?.close()
 })
 
-test("the Files pane Revert control has a matching ?/fileRollback server action", async ({
-  page
-}) => {
+test("the ?/fileRollback action runs the real rollback handler", async ({ page }) => {
   await page.goto(baseURL)
   await expect.poll(() => page.locator("#result").innerText()).not.toBe("pending")
   const result = (await page.evaluate(() => globalThis.__result)) as {
-    names: string[]
-    hasFileRollback: boolean
-    fileRollbackTag: string | null
+    error: string | null
+    rollback: Record<string, unknown> | null
   }
 
-  expect(result.hasFileRollback, `registered actions: ${result.names.join(", ")}`).toBe(
-    true
-  )
-  expect(result.fileRollbackTag).toBe("fileRollback")
+  expect(result.error, "the mapped action must be callable").toBeNull()
+  expect(result.rollback, "the handler must reach the file_rollback RPC").toMatchObject({
+    site_id: 6000001,
+    page_id: 3000000046,
+    file: 88,
+    revision_number: 1,
+    last_revision_id: 108
+  })
 })
