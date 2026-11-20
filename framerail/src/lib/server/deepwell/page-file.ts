@@ -340,6 +340,7 @@ export async function pageFileHistory(
   fileId: number,
   revisionNumber: Optional<number>,
   limit: Optional<number>,
+  offset: Optional<number>,
   requestContext: RequestContext
 ): Promise<FileRevisionModel[]> {
   return client.request(
@@ -350,7 +351,8 @@ export async function pageFileHistory(
       file_id: fileId,
       revision_number: revisionNumber ?? defaults.page.history.revisionNumber,
       revision_direction: "before",
-      limit: limit ?? defaults.page.history.limit
+      limit: limit ?? defaults.page.history.limit,
+      offset: offset ?? 0
     },
     requestContext
   )
