@@ -16,14 +16,21 @@ const request = new Request("http://localhost/?/fileEdit", {
   })
 })
 
-await actions.fileEdit({
+const actionResult = (await actions.fileEdit({
   request,
   cookies: { get: () => undefined },
   getClientAddress: () => clientAddress
-} as never)
+} as never)) as {
+  status?: number
+  res?: { file_id: number; file_revision_id: number }
+  data?: { message?: string }
+}
+const status = actionResult.status ?? 200
 
 const editCall = calls.find((call) => call.method === "file_edit")
 const result = {
+  status,
+  savedFileId: status === 200 ? (actionResult.res?.file_id ?? null) : null,
   methods: calls.map((call) => call.method),
   params: editCall?.params ?? null
 }
