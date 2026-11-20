@@ -133,6 +133,8 @@ pub struct GetFileRevisionRange {
     pub revision_number: i32,
     pub revision_direction: FetchDirection,
     pub limit: u64,
+    #[serde(default)]
+    pub offset: u64,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -187,7 +189,9 @@ pub type FileRevisionCountOutput = PageRevisionCountOutput;
 
 #[cfg(test)]
 mod tests {
-    use super::{CreateFileRevisionOutput, CreateFirstFileRevisionOutput};
+    use super::{
+        CreateFileRevisionOutput, CreateFirstFileRevisionOutput, GetFileRevisionRange,
+    };
     use serde_json::json;
 
     #[test]
@@ -218,5 +222,29 @@ mod tests {
                 "dedup flag must stay out of responses: {value}",
             );
         }
+    }
+
+    #[test]
+    fn file_revision_range_offset_defaults_to_zero_and_accepts_explicit_values() {
+        let base = json!({
+            "site_id": 6000402,
+            "page_id": 3000132979_i64,
+            "file_id": 152130,
+            "revision_number": -1,
+            "revision_direction": "before",
+            "limit": 10,
+        });
+
+        let without_offset: GetFileRevisionRange = serde_json::from_value(base.clone())
+            .expect("range input parses without offset");
+        assert_eq!(without_offset.offset, 0);
+        assert_eq!(without_offset.limit, 10);
+
+        let mut with_offset = base;
+        with_offset["offset"] = json!(1500);
+        let with_offset: GetFileRevisionRange =
+            serde_json::from_value(with_offset).expect("range input parses with offset");
+        assert_eq!(with_offset.offset, 1500);
+        assert_eq!(with_offset.limit, 10);
     }
 }

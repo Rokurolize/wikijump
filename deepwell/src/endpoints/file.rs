@@ -494,6 +494,7 @@ async fn ensure_file_mutation_ownership(
             revision_number: 0,
             revision_direction: FetchDirection::After,
             limit: 1,
+            offset: 0,
         },
     )
     .await

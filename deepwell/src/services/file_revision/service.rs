@@ -671,6 +671,7 @@ impl FileRevisionService {
             revision_number,
             revision_direction,
             limit,
+            offset,
         }: GetFileRevisionRange,
     ) -> Result<Vec<FileRevisionModel>> {
         let make_error = || {
@@ -720,6 +721,10 @@ impl FileRevisionService {
                 query.order_by_asc(file_revision::Column::RevisionNumber)
             }
         };
+
+        if offset > 0 {
+            query = query.offset(offset);
+        }
 
         let revisions = query.limit(limit).all(txn).await.or_raise(make_error)?;
 

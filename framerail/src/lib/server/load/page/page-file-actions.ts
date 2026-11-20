@@ -27,6 +27,27 @@ import { boolean, file, number, object, optional, string } from "valibot"
 import type { RequestEvent } from "@sveltejs/kit"
 
 const FILE_LIST_PER_PAGE = 10
+const FILE_HISTORY_DEFAULT_PER_PAGE = 20
+
+export function fileHistoryOffset(
+  offset: number | null | undefined,
+  page: number | null | undefined,
+  perPage: number | null | undefined
+): number {
+  if (offset !== null && offset !== undefined) return Math.max(0, Math.floor(offset))
+  if (
+    (page === null || page === undefined) &&
+    (perPage === null || perPage === undefined)
+  ) {
+    return 0
+  }
+  const size = Math.max(
+    Math.floor(perPage ?? FILE_HISTORY_DEFAULT_PER_PAGE) || FILE_HISTORY_DEFAULT_PER_PAGE,
+    1
+  )
+  const current = Math.max(Math.floor(page ?? 1) || 1, 1)
+  return (current - 1) * size
+}
 
 export function paginateFileList<T>(
   files: readonly T[] | null | undefined,
@@ -288,7 +309,8 @@ export async function pageFileHistoryAction(event: RequestEvent) {
   try {
     const requestData = await readActionJson(request, pageFileHistorySchema)
 
-    const { siteId, pageId, fileId, revisionNumber, limit } = requestData
+    const { siteId, pageId, fileId, revisionNumber, limit, offset, page, perPage } =
+      requestData
     const context = await resolvePageActionRequestContext(event, {
       submittedSiteId: siteId
     })
@@ -298,6 +320,7 @@ export async function pageFileHistoryAction(event: RequestEvent) {
       fileId,
       revisionNumber,
       limit,
+      fileHistoryOffset(offset, page, perPage),
       context.requestContext
     )
     return { res }
@@ -310,7 +333,10 @@ const pageFileHistorySchema = object({
   ...pageActionBaseSchema,
   fileId: number(),
   revisionNumber: optional(number()),
-  limit: optional(number())
+  limit: optional(number()),
+  offset: optional(number()),
+  page: optional(number()),
+  perPage: optional(number())
 })
 
 export async function pageFileRollbackAction(event: RequestEvent) {
