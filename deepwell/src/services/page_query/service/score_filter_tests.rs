@@ -44,11 +44,9 @@ fn broad_score_filter_aggregates_site_votes_once() {
             .sql
             .contains("score_vote.rating_system = 'points'")
     );
-    assert!(
-        statement.sql.contains(
-            "WHERE filtered_score.effective_score >= $2 AND filtered_score.effective_score <= $2"
-        )
-    );
+    assert!(statement.sql.contains(
+        "WHERE filtered_score.effective_score >= $2 AND filtered_score.effective_score <= $3"
+    ));
     assert!(
         !statement
             .sql
@@ -64,12 +62,16 @@ fn score_filter_preserves_integer_and_float_bind_types() {
     for (plan, expected_values) in [
         (
             ScoreFilterPlan::CandidateCorrelated,
-            vec![Value::BigInt(Some(INTEGER_THRESHOLD))],
+            vec![
+                Value::BigInt(Some(INTEGER_THRESHOLD)),
+                Value::BigInt(Some(INTEGER_THRESHOLD)),
+            ],
         ),
         (
             ScoreFilterPlan::SiteWide { site_id: SITE_ID },
             vec![
                 Value::BigInt(Some(SITE_ID)),
+                Value::BigInt(Some(INTEGER_THRESHOLD)),
                 Value::BigInt(Some(INTEGER_THRESHOLD)),
             ],
         ),
@@ -88,11 +90,15 @@ fn score_filter_preserves_integer_and_float_bind_types() {
     for (plan, expected_values) in [
         (
             ScoreFilterPlan::CandidateCorrelated,
-            vec![Value::Double(Some(1.5))],
+            vec![Value::Double(Some(1.5)), Value::Double(Some(1.5))],
         ),
         (
             ScoreFilterPlan::SiteWide { site_id: SITE_ID },
-            vec![Value::BigInt(Some(SITE_ID)), Value::Double(Some(1.5))],
+            vec![
+                Value::BigInt(Some(SITE_ID)),
+                Value::Double(Some(1.5)),
+                Value::Double(Some(1.5)),
+            ],
         ),
     ] {
         let selector = ScoreSelector {
@@ -535,13 +541,17 @@ fn equality_score_selector_uses_inclusive_bounds_in_both_plans() {
     for (plan, expected_condition, expected_values) in [
         (
             ScoreFilterPlan::CandidateCorrelated,
-            "WHERE filtered_score.effective_score >= $1 AND filtered_score.effective_score <= $1",
-            vec![Value::BigInt(Some(0))],
+            "WHERE filtered_score.effective_score >= $1 AND filtered_score.effective_score <= $2",
+            vec![Value::BigInt(Some(0)), Value::BigInt(Some(0))],
         ),
         (
             ScoreFilterPlan::SiteWide { site_id: 6_000_005 },
-            "WHERE filtered_score.effective_score >= $2 AND filtered_score.effective_score <= $2",
-            vec![Value::BigInt(Some(6_000_005)), Value::BigInt(Some(0))],
+            "WHERE filtered_score.effective_score >= $2 AND filtered_score.effective_score <= $3",
+            vec![
+                Value::BigInt(Some(6_000_005)),
+                Value::BigInt(Some(0)),
+                Value::BigInt(Some(0)),
+            ],
         ),
     ] {
         let statement = page::Entity::find()
