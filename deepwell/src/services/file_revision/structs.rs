@@ -235,8 +235,8 @@ mod tests {
             "limit": 10,
         });
 
-        let without_offset: GetFileRevisionRange =
-            serde_json::from_value(base.clone()).expect("range input parses without offset");
+        let without_offset: GetFileRevisionRange = serde_json::from_value(base.clone())
+            .expect("range input parses without offset");
         assert_eq!(without_offset.offset, 0);
         assert_eq!(without_offset.limit, 10);
 
