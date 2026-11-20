@@ -243,6 +243,87 @@ pub async fn build_basic_error_response(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cache::Cache;
+    use crate::deepwell::Deepwell;
+    use serde_json::{Value, json};
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+    use std::thread;
+
+    fn test_state(deepwell_url: &str) -> ServerStateInner {
+        let region = s3::region::Region::Custom {
+            region: "local".to_owned(),
+            endpoint: "http://127.0.0.1:1".to_owned(),
+        };
+        let credentials =
+            s3::creds::Credentials::new(Some("test"), Some("test"), None, None, None)
+                .unwrap();
+
+        ServerStateInner {
+            deepwell: Deepwell::connect(deepwell_url).unwrap(),
+            cache: Cache::connect("redis://127.0.0.1:1").unwrap(),
+            s3_files_bucket: s3::Bucket::new(
+                "files",
+                region.clone(),
+                credentials.clone(),
+            )
+            .unwrap(),
+            s3_tblocks_bucket: s3::Bucket::new("tblocks", region, credentials).unwrap(),
+        }
+    }
+
+    fn serve_one_render(listener: TcpListener) -> thread::JoinHandle<()> {
+        thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = Vec::new();
+            let mut chunk = [0u8; 4096];
+            let header_end = loop {
+                let read = stream.read(&mut chunk).unwrap();
+                assert!(read > 0, "mock Deepwell received no request");
+                request.extend_from_slice(&chunk[..read]);
+
+                if let Some(position) =
+                    request.windows(4).position(|window| window == b"\r\n\r\n")
+                {
+                    break position + 4;
+                }
+            };
+
+            let headers = String::from_utf8_lossy(&request[..header_end]).into_owned();
+            let content_length = headers
+                .lines()
+                .find_map(|line| {
+                    let (name, value) = line.split_once(':')?;
+                    name.eq_ignore_ascii_case("content-length")
+                        .then(|| value.trim().parse::<usize>().unwrap())
+                })
+                .unwrap();
+
+            while request.len() < header_end + content_length {
+                let read = stream.read(&mut chunk).unwrap();
+                assert!(read > 0, "mock Deepwell received a truncated request");
+                request.extend_from_slice(&chunk[..read]);
+            }
+
+            let call: Value = serde_json::from_slice(&request[header_end..]).unwrap();
+            let index = call["params"]["index"].as_str().unwrap();
+            let body = format!("<p>Block {index} is missing</p>");
+            let response = json!({
+                "jsonrpc": "2.0",
+                "id": call["id"],
+                "result": { "title": "Missing block", "body": body },
+            });
+            let payload = serde_json::to_vec(&response).unwrap();
+
+            write!(
+                stream,
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                payload.len(),
+            )
+            .unwrap();
+            stream.write_all(&payload).unwrap();
+        })
+    }
 
     #[test]
     fn basic_error_arg_escapes_reflected_markup() {
@@ -255,5 +336,43 @@ mod tests {
     #[test]
     fn basic_error_arg_escapes_ampersand_and_quotes() {
         assert_eq!(html_arg("a&b\"c'd"), "a&amp;b&quot;c&#39;d",);
+    }
+
+    #[tokio::test]
+    async fn rendered_error_page_keeps_injected_markup_inert() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        let server = serve_one_render(listener);
+        let state = test_state(&url);
+
+        let attack = "<img src=x onerror=alert(1)>";
+        let response = build_basic_error_response(
+            &state,
+            &HeaderMap::new(),
+            BasicError::TextBlock {
+                site_id: 1,
+                index: attack,
+                block_type: TextBlockType::Html,
+                reason: TextBlockErrorReason::Missing,
+            },
+        )
+        .await;
+
+        server.join().unwrap();
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        let bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let html = String::from_utf8(bytes.to_vec()).unwrap();
+
+        assert!(
+            html.contains("&lt;img src=x onerror=alert(1)&gt;"),
+            "escaped markup missing from rendered page: {html}"
+        );
+        assert!(
+            !html.contains(attack),
+            "injected markup rendered live: {html}"
+        );
     }
 }
