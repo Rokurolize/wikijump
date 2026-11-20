@@ -81,15 +81,10 @@ pub async fn site_update(
 
     info!("Updating site {site:?}");
 
-    let site_id = match site {
-        Reference::Id(site_id) => site_id,
-        Reference::Slug(_) => {
-            bail!(Error::new(
-                "site_update requires a numeric site ID",
-                ErrorType::BadRequest,
-            ));
-        }
-    };
+    let site_id = SiteService::get(ctx, site.clone())
+        .await
+        .or_raise(|| Error::new("failed to resolve site for update", ErrorType::Site))?
+        .site_id;
 
     let can_edit = PermissionService::can_user(
         ctx,
@@ -107,7 +102,7 @@ pub async fn site_update(
         ));
     }
 
-    SiteService::update(ctx, Reference::Id(site_id), body, user_id, ip_address)
+    SiteService::update(ctx, site, body, user_id, ip_address)
         .await
         .or_raise(|| Error::new("failed to update site data", ErrorType::Site))
 }

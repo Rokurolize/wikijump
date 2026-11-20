@@ -110,4 +110,11 @@ async fn site_update_denies_user_without_site_edit_permission() {
         })
     );
     assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    let after = run_endpoint!(runner, site_get, json!({"site": f.site_id}))
+        .expect("site should still exist after a denied update");
+    assert_ne!(
+        after.site.tagline, "unauthorized tagline",
+        "the site's tagline must not change after a denied update"
+    );
 }
