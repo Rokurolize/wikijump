@@ -6,7 +6,12 @@ import path from "node:path";
 import {spawn} from "node:child_process";
 import {fileURLToPath} from "node:url";
 
-import {evaluateNextestShard} from "../src/nextest-shard-summary.mjs";
+import {
+  buildNextestExactFilterset,
+  evaluateNextestShard,
+  parseNextestSummary,
+  planTimeoutOnlyRetry,
+} from "../src/nextest-shard-summary.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const runner = path.join(here, "run-deepwell-integration-validation.mjs");
@@ -25,6 +30,8 @@ if (args.some((argument) => argument === "--help" || argument === "-h")) {
       "Runs Deepwell integration tests across independent task-owned PostgreSQL/Valkey/MinIO",
       "stacks. Each shard stays single-test-threaded; the test set is partitioned with nextest.",
       "Set WIKIJUMP_DEEPWELL_TEST_SHARDS to 1..8 (default 8; lower it on smaller hosts).",
+      "When shards fail solely due to TIMEOUT tests, one unloaded retry runs automatically",
+      "unless WIKIJUMP_DEEPWELL_TIMEOUT_RETRY=0 is set.",
       "",
     ].join("\n"),
   );
@@ -41,6 +48,7 @@ if (shards === 1) {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "wikijump-deepwell-shards."));
   const startedAt = Date.now();
   const children = [];
+  let activeChild = null;
   let terminating = false;
 
   const terminate = (signal) => {
@@ -48,6 +56,9 @@ if (shards === 1) {
     terminating = true;
     for (const entry of children) {
       if (entry.child.exitCode === null && !entry.child.killed) entry.child.kill(signal);
+    }
+    if (activeChild && activeChild.exitCode === null && !activeChild.killed) {
+      activeChild.kill(signal);
     }
   };
   process.once("SIGINT", () => terminate("SIGINT"));
@@ -62,6 +73,8 @@ if (shards === 1) {
         WIKIJUMP_DEEPWELL_NEXTEST_PARTITION: `hash:${shard}/${shards}`,
         WIKIJUMP_DEEPWELL_TEST_THREADS: "1",
       };
+      delete env.WIKIJUMP_DEEPWELL_TEST_SHARDS;
+      delete env.WIKIJUMP_DEEPWELL_NEXTEST_FILTERSET;
       const child = spawn(process.execPath, [runner, ...args], {
         env,
         stdio: ["ignore", logFd, logFd],
@@ -83,6 +96,8 @@ if (shards === 1) {
 
     let failed = false;
     let totalTests = 0;
+    const shardRuns = [];
+    const failedShardLogs = [];
     for (const result of results) {
       const text = fs.readFileSync(result.logPath, "utf8");
       const evaluation = evaluateNextestShard({
@@ -95,6 +110,10 @@ if (shards === 1) {
       if (tests !== null) totalTests += tests;
       const {ok} = evaluation;
       failed ||= !ok;
+      shardRuns.push({shard: result.shard, code: result.code, signal: result.signal, text});
+      if (!ok) {
+        failedShardLogs.push({shard: result.shard, evaluation, text});
+      }
       process.stdout.write(`${JSON.stringify({
         shard: result.shard,
         shards,
@@ -103,14 +122,62 @@ if (shards === 1) {
         tests,
         passed,
       })}\n`);
-      if (!ok) {
+    }
+
+    let timeoutRetry = null;
+    if (failed && process.env.WIKIJUMP_DEEPWELL_TIMEOUT_RETRY !== "0") {
+      const plan = planTimeoutOnlyRetry(shardRuns);
+      if (plan.shouldRetry) {
+        const filterset = buildNextestExactFilterset(plan.retryTargets);
+        const retryLogPath = path.join(tempDir, "timeout-retry.log");
+        const retryFd = fs.openSync(retryLogPath, "wx", 0o600);
+        const retryEnv = {
+          ...process.env,
+          WIKIJUMP_DEEPWELL_TEST_SHARDS: "1",
+          WIKIJUMP_DEEPWELL_TEST_THREADS: "1",
+          WIKIJUMP_DEEPWELL_NEXTEST_FILTERSET: filterset,
+        };
+        delete retryEnv.WIKIJUMP_DEEPWELL_NEXTEST_PARTITION;
+        process.stderr.write(
+          `Retrying ${plan.retryTargets.length} timed-out Deepwell test(s) once unloaded: ${plan.retryTargets.map((target) => `${target.binaryId} ${target.testName}`).join(", ")}\n`,
+        );
+        const retryStartedAt = Date.now();
+        activeChild = spawn(process.execPath, [runner, ...args], {
+          env: retryEnv,
+          stdio: ["ignore", retryFd, retryFd],
+        });
+        fs.closeSync(retryFd);
+        const retryResult = await new Promise((resolve) => {
+          activeChild.once("exit", (code, signal) => resolve({code, signal}));
+        });
+        activeChild = null;
+        const retryText = fs.readFileSync(retryLogPath, "utf8");
+        const retrySummary = parseNextestSummary(retryText);
+        const retryOk = retryResult.code === 0 && !retryResult.signal && retrySummary !== null;
+        timeoutRetry = {
+          attempted: true,
+          targets: plan.retryTargets.length,
+          passed: retryOk,
+          elapsed_ms: Date.now() - retryStartedAt,
+        };
+        if (retryOk) {
+          failed = false;
+        } else {
+          const retryLines = retryText.trimEnd().split("\n");
+          process.stderr.write(`--- Deepwell timeout-only retry tail ---\n${retryLines.slice(-120).join("\n")}\n`);
+        }
+      }
+    }
+
+    if (failed) {
+      for (const {shard, evaluation, text} of failedShardLogs) {
         if (evaluation.missingSuccessfulSummary) {
           process.stderr.write(
-            `Deepwell shard ${result.shard}/${shards} exited successfully without a parseable nextest Summary\n`,
+            `Deepwell shard ${shard}/${shards} exited successfully without a parseable nextest Summary\n`,
           );
         }
         const lines = text.trimEnd().split("\n");
-        process.stderr.write(`--- Deepwell shard ${result.shard}/${shards} tail ---\n${lines.slice(-120).join("\n")}\n`);
+        process.stderr.write(`--- Deepwell shard ${shard}/${shards} tail ---\n${lines.slice(-120).join("\n")}\n`);
       }
     }
 
@@ -119,6 +186,7 @@ if (shards === 1) {
       shards,
       elapsed_ms: Date.now() - startedAt,
       partitioned_tests_run: totalTests,
+      ...(timeoutRetry ? {timeout_retry: timeoutRetry} : {}),
       failed,
     })}\n`);
     if (failed) process.exitCode = 1;
