@@ -5856,4 +5856,3 @@ async fn listpages_total_matches_for_rating_order_and_excluded_tag_shapes() {
         "excluded-tag ListPages %%total%% should be substituted:\n{excluded_html}",
     );
 }
-
