@@ -122,7 +122,7 @@ if ! [[ "${JOBS}" =~ ^[0-9]+$ ]]; then
   exit 2
 fi
 
-PREFLIGHT_TARGET_ROOT="${PREFLIGHT_TARGET_ROOT:-${XDG_STATE_HOME:-${HOME}/.local/state}/wikijump/preflight-target}"
+PREFLIGHT_TARGET_ROOT="${PREFLIGHT_TARGET_ROOT:-${XDG_STATE_HOME:-${HOME}/.local/state}/wikijump/preflight-target-$(printf '%s' "${REPO_ROOT}" | sha256sum | cut -c1-12)}"
 PREFLIGHT_PNPM_MARKER_ROOT="${PREFLIGHT_PNPM_MARKER_ROOT:-${REPO_ROOT}}"
 
 ensure_pnpm_deps() {
