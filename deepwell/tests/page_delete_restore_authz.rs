@@ -133,3 +133,56 @@ async fn page_restore_requires_authenticated_actor() {
         }),
     );
 }
+
+#[tokio::test]
+async fn page_restore_requires_delete_permission() {
+    let mut runner = TestRunner::setup().await;
+    let (site_id, page_id, revision_id, _slug) = fixture(&mut runner).await;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(page_id)),
+    });
+    run_endpoint!(
+        runner,
+        page_delete,
+        delete_params(site_id, page_id, revision_id, ADMIN_USER_ID)
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(OUTSIDER_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(page_id)),
+    });
+    run_endpoint_err!(
+        runner,
+        page_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": page_id,
+            "revision_comments": "outsider restore",
+            "user_id": OUTSIDER_USER_ID,
+            "slug": null,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let revisions = run_endpoint!(
+        runner,
+        page_revision_range,
+        json!({
+            "site_id": site_id,
+            "page_id": page_id,
+            "revision_number": -1,
+            "revision_direction": "before",
+            "limit": 100,
+        }),
+    );
+    assert!(
+        revisions.iter().all(|rev| rev.user_id != OUTSIDER_USER_ID),
+        "denied restore must not attribute an undelete revision to the attacker"
+    );
+}
