@@ -139,6 +139,9 @@ pub async fn file_edit(
     .await
     .or_raise(|| Error::new("failed to check file edit permission", ErrorType::File))?;
 
+    ensure_page_not_fully_imported(ctx, input.site_id, input.page_id, "edit a file")
+        .await?;
+
     ensure_file_mutation_ownership_by_id(
         ctx,
         input.file_id,
@@ -147,9 +150,6 @@ pub async fn file_edit(
     )
     .await
     .or_raise(|| Error::new("failed to check file edit ownership", ErrorType::File))?;
-
-    ensure_page_not_fully_imported(ctx, input.site_id, input.page_id, "edit a file")
-        .await?;
 
     FileService::edit(ctx, input)
         .await
@@ -182,6 +182,9 @@ pub async fn file_delete(
     .await
     .or_raise(|| Error::new("failed to check file delete permission", ErrorType::File))?;
 
+    ensure_page_not_fully_imported(ctx, input.site_id, input.page_id, "delete a file")
+        .await?;
+
     let existing_file = FileService::get_optional(
         ctx,
         GetFile {
@@ -204,9 +207,6 @@ pub async fn file_delete(
                 Error::new("failed to check file delete ownership", ErrorType::File)
             })?;
     }
-
-    ensure_page_not_fully_imported(ctx, input.site_id, input.page_id, "delete a file")
-        .await?;
 
     FileService::delete(ctx, input)
         .await
@@ -415,6 +415,9 @@ pub async fn file_rollback(
         Error::new("failed to check file rollback permission", ErrorType::File)
     })?;
 
+    ensure_page_not_fully_imported(ctx, input.site_id, input.page_id, "roll back a file")
+        .await?;
+
     let existing_file = FileService::get_optional(
         ctx,
         GetFile {
@@ -437,9 +440,6 @@ pub async fn file_rollback(
                 Error::new("failed to check file rollback ownership", ErrorType::File)
             })?;
     }
-
-    ensure_page_not_fully_imported(ctx, input.site_id, input.page_id, "roll back a file")
-        .await?;
 
     FileService::rollback(ctx, input)
         .await
