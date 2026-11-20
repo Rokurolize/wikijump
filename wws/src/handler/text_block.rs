@@ -46,11 +46,14 @@ pub async fn handle_html_block(
     );
 
     // HTML blocks can't have named aliases
+    let site_id = get_site_id(&headers);
+    let page_id = try_response!(state.get_page_or_response(&headers, site_id, &page_slug));
     handle_text_block(
         &state,
         &headers,
         TextBlockType::Html,
-        &page_slug,
+        site_id,
+        page_id,
         BlockId::Index(index),
     )
     .await
@@ -74,19 +77,27 @@ pub async fn handle_code_block(
         BlockId::Name(value)
     };
 
-    handle_text_block(&state, &headers, TextBlockType::Code, &page_slug, index).await
+    let site_id = get_site_id(&headers);
+    let page_id = try_response!(state.get_page_or_response(&headers, site_id, &page_slug));
+    handle_text_block(
+        &state,
+        &headers,
+        TextBlockType::Code,
+        site_id,
+        page_id,
+        index,
+    )
+    .await
 }
 
 async fn handle_text_block(
     state: &ServerState,
     headers: &HeaderMap,
     block_type: TextBlockType,
-    page_slug: &str,
+    site_id: i64,
+    page_id: i64,
     block_id: BlockId,
 ) -> Response {
-    let site_id = get_site_id(headers);
-    let page_id = try_response!(state.get_page_or_response(headers, site_id, page_slug));
-
     let (index, s3_filename) = match block_id {
         // Parse the index value if numeric
         BlockId::Index(value) => match value.parse() {
@@ -268,6 +279,13 @@ fn get_headers(headers: HashMap<String, String>) -> Headers {
 mod tests {
     use super::*;
     use axum::body::Bytes;
+    use crate::config::Secrets;
+    use crate::state::build_server_state;
+    use s3::creds::Credentials;
+    use s3::region::Region;
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+    use std::thread;
 
     fn object_response(status: u16, data: &[u8]) -> ResponseData {
         let headers = HashMap::from([
@@ -321,5 +339,59 @@ mod tests {
         assert_eq!(response.headers()[header::CONTENT_TYPE], "text/html");
         assert_eq!(response.headers()[header::ETAG], "test-etag");
         assert_eq!(body_text(response).await, "<p>hello</p>\n");
+    }
+
+    fn serve_missing_object(listener: TcpListener) -> thread::JoinHandle<()> {
+        thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut chunk = [0u8; 4096];
+            stream.read(&mut chunk).unwrap();
+            stream
+                .write_all(
+                    b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+                )
+                .unwrap();
+        })
+    }
+
+    #[tokio::test]
+    async fn missing_block_through_handler_returns_clean_error() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let endpoint = format!("http://{}", listener.local_addr().unwrap());
+        let server = serve_missing_object(listener);
+
+        let state = build_server_state(
+            false,
+            Secrets {
+                deepwell_url: String::from("http://127.0.0.1:1"),
+                redis_url: String::from("redis://127.0.0.1:1"),
+                s3_files_bucket: String::from("files"),
+                s3_tblocks_bucket: String::from("tblocks"),
+                s3_region: Region::Custom {
+                    region: String::from("test"),
+                    endpoint,
+                },
+                s3_path_style: true,
+                s3_credentials: Credentials::new(Some("key"), Some("secret"), None, None, None)
+                    .expect("test credentials"),
+            },
+        )
+        .await
+        .expect("test server state");
+
+        let response = handle_text_block(
+            &state,
+            &HeaderMap::new(),
+            TextBlockType::Html,
+            1,
+            42,
+            BlockId::Index(String::from("1")),
+        )
+        .await;
+
+        server.join().unwrap();
+
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(body_text(response).await, "ERROR XF-1004");
     }
 }
