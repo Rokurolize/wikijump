@@ -26,13 +26,14 @@
 //! This module should only contain definitions for the web server and its routes, and
 //! not any of the implementations themselves. Those belong in the `endpoints` module.
 
-use crate::config::{Config, Secrets};
+use crate::config::{Config, EmailProvider, Secrets};
 use crate::endpoints::all::*;
 use crate::error::prelude::*;
 use crate::locales::Localizations;
 use crate::middleware::{RequestContextHeaders, RequestContextLayer, RpcAuthLayer};
 use crate::runtime::ServerStateInner;
 use crate::services::blob::MimeAnalyzer;
+use crate::services::email::EmailMailer;
 use crate::services::job::JobWorker;
 use crate::services::render::{
     CorpusRenderFinalizerService, RenderAheadPromotion, RenderAheadService,
@@ -54,6 +55,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 const BUCKET_REQUEST_TIMEOUT: Duration = Duration::from_millis(500);
+const EMAIL_REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 
 pub use crate::runtime::ServerState;
 
@@ -147,6 +149,7 @@ async fn build_server_state_inner(
         s3_path_style,
         s3_credentials,
         mailcheck_api_key,
+        email_provider,
     }: Secrets,
     start_workers: bool,
     job_queue_namespace: Option<&str>,
@@ -226,6 +229,34 @@ async fn build_server_state_inner(
             .or_raise(make_error)?
     };
 
+    // Set up the mailer used to send emails
+    let email_mailer = match email_provider {
+        EmailProvider::Local => {
+            // Don't silently discard emails in environments which need to send them
+            if !config.allow_local_email {
+                bail!(Error::new(
+                    "local email provider is not allowed, set EMAIL_PROVIDER or email.allow-local",
+                    ErrorType::ServerSetup,
+                ));
+            }
+
+            warn!("Using local email provider, no emails will actually be sent!");
+            EmailMailer::local()
+        }
+        EmailProvider::Mailjet {
+            api_key,
+            secret_key,
+        } => {
+            info!("Using Mailjet as the email provider");
+            let client = ReqwestClient::builder()
+                .timeout(EMAIL_REQUEST_TIMEOUT)
+                .build()
+                .or_raise(make_error)?;
+
+            EmailMailer::mailjet(api_key, secret_key, client)
+        }
+    };
+
     // Build server state
     let render_permits = Arc::new(tokio::sync::Semaphore::new(config.render_concurrency));
     let state = Arc::new(ServerStateInner {
@@ -240,6 +271,7 @@ async fn build_server_state_inner(
         s3_tblocks_bucket,
         mailcheck_api_client,
         render_permits,
+        email_mailer,
     });
 
     // Start workers listening to the job queue (requires ServerState)

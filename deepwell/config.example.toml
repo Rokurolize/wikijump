@@ -388,6 +388,28 @@ refill-name-change-days = 90
 # for instance "john@spam.xxx" is detected as a spam email.
 mock-mailcheck = false
 
+# Whether the "local" email provider is allowed.
+# See EMAIL_PROVIDER in .env.example
+#
+# This should be false anywhere that real emails are expected, i.e. production.
+allow-local = true
+
+# Email addresses to use for sending.
+# See the domain section for the values used for each tier.
+
+# Automation
+# e.g. verifying email, password resets, etc.
+automation-address = "noreply@wikijump.com"
+
+# Notifications
+# For automated notifications, e.g. configured emails on forum thread comment.
+notification-address = "notifications@wikijump.com"
+
+# Newsletter
+# For bulk emails sent to many users, e.g. site mailing list.
+# Expected to be seldom used.
+newsletter-address = "newsletter@wikijump.com"
+
 [file]
 
 # The length of paths used for S3 presigned URLs.

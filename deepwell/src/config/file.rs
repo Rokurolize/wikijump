@@ -222,6 +222,10 @@ struct UserSection {
 #[serde(rename_all = "kebab-case")]
 struct Email {
     mock_mailcheck: bool,
+    allow_local: bool,
+    automation_address: String,
+    notification_address: String,
+    newsletter_address: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -460,7 +464,14 @@ impl ConfigFile {
                     minimum_name_chars,
                     allow_registration,
                 },
-            email: Email { mock_mailcheck },
+            email:
+                Email {
+                    mock_mailcheck,
+                    allow_local: allow_local_email,
+                    automation_address: automation_email,
+                    notification_address: notification_email,
+                    newsletter_address: newsletter_email,
+                },
             file:
                 FileSection {
                     presigned_path_length,
@@ -629,6 +640,10 @@ impl ConfigFile {
             minimum_name_chars,
             allow_registration,
             mock_mailcheck,
+            allow_local_email,
+            automation_email,
+            notification_email,
+            newsletter_email,
             presigned_path_length,
             presigned_expiry_secs: presigned_expiration_minutes * 60,
             maximum_blob_size: maximum_blob_size_kb * 1024,
@@ -792,6 +807,10 @@ mod tests {
             },
             email: Email {
                 mock_mailcheck: true,
+                allow_local: true,
+                automation_address: str!("noreply@wikijump.com"),
+                notification_address: str!("notifications@wikijump.com"),
+                newsletter_address: str!("newsletter@wikijump.com"),
             },
             file: FileSection {
                 presigned_path_length: 16,

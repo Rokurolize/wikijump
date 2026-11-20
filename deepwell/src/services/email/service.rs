@@ -23,9 +23,11 @@ use super::structs::{
     MailCheckFailureResponse, MailCheckResponse, MailCheckSuccessResponse,
     MailFormMessage,
 };
+use super::{EmailSender, SendEmail, SendEmailOutput};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::runtime::ServerState;
 use crate::services::ServiceContext;
+use missive::{Address, DeliveryResult, Email};
 
 #[derive(Debug)]
 pub struct EmailService;
@@ -276,6 +278,88 @@ impl EmailService {
              to='{}', title='{}', body='{}'",
             message.recipients, message.title, message.body,
         );
+    }
+
+    /// Sends an email using the configured email provider.
+    ///
+    /// When the provider is `local` (i.e. local development and tests),
+    /// then nothing is actually sent, and the email is only stored in memory.
+    /// See `EmailMailer`.
+    pub async fn send(
+        ctx: &ServiceContext<'_>,
+        SendEmail {
+            sender,
+            recipient,
+            subject,
+            text_body,
+            html_body,
+        }: SendEmail<'_>,
+    ) -> Result<SendEmailOutput> {
+        // The mailer doesn't check that addresses are well-formed, so do that here.
+        // This is only a syntax check. See validate() for checking deliverability.
+        let to_address = Address::parse(recipient).or_raise(|| {
+            Error::new(
+                format!("cannot send email, invalid recipient address '{recipient}'"),
+                ErrorType::BadRequest,
+            )
+        })?;
+
+        if subject.trim().is_empty() {
+            bail!(Error::new(
+                "cannot send email, subject is empty",
+                ErrorType::BadRequest,
+            ));
+        }
+
+        if text_body.trim().is_empty() {
+            bail!(Error::new(
+                "cannot send email, body is empty",
+                ErrorType::BadRequest,
+            ));
+        }
+
+        let config = ctx.config();
+        let from_address = match sender {
+            EmailSender::Automation => &config.automation_email,
+            EmailSender::Notification => &config.notification_email,
+            EmailSender::Newsletter => &config.newsletter_email,
+        };
+
+        let from_address = Address::parse(from_address).or_raise(|| {
+            Error::new(
+                format!(
+                    "cannot send email, configured {sender:?} sender address '{from_address}' is invalid",
+                ),
+                ErrorType::EmailSend,
+            )
+        })?;
+
+        let mailer = ctx.email_mailer();
+        info!(
+            "Sending email from '{from_address}' to '{recipient}' via {}",
+            mailer.provider_name(),
+        );
+
+        let mut email = Email::new()
+            .from(from_address)
+            .to(to_address)
+            .subject(subject)
+            .text_body(text_body);
+
+        if let Some(html_body) = html_body {
+            email = email.html_body(html_body);
+        }
+
+        let DeliveryResult { message_id, .. } =
+            mailer.deliver(email).await.or_raise(|| {
+                Error::new(
+                    format!("failed to send email to '{recipient}'"),
+                    ErrorType::EmailSend,
+                )
+            })?;
+
+        debug!("Sent email to '{recipient}', message ID {message_id}");
+        Ok(SendEmailOutput { message_id })
     }
 }
 
