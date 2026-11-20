@@ -88,6 +88,18 @@ async fn page_rollback_requires_edit_permission() {
         "outsider must not be able to edit this page"
     );
 
+    let updated_at_before = run_endpoint!(
+        runner,
+        page_revision_get,
+        json!({
+            "site_id": site_id,
+            "page_id": page_id,
+            "revision_number": 0,
+        }),
+    )
+    .expect("revision 0 must exist")
+    .updated_at;
+
     run_endpoint_err!(
         runner,
         page_rollback,
@@ -100,5 +112,21 @@ async fn page_rollback_requires_edit_permission() {
             "user_id": OUTSIDER_USER_ID,
             "ip_address": common::IP_ADDRESS,
         }),
+    );
+
+    let updated_at_after = run_endpoint!(
+        runner,
+        page_revision_get,
+        json!({
+            "site_id": site_id,
+            "page_id": page_id,
+            "revision_number": 0,
+        }),
+    )
+    .expect("revision 0 must exist")
+    .updated_at;
+    assert_eq!(
+        updated_at_after, updated_at_before,
+        "denied rollback must not change the revision timestamp"
     );
 }

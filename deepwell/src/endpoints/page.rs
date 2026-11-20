@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use super::page_action_guard::require_page_edit_permission;
 use super::prelude::*;
 use crate::models::file::Model as FileModel;
 use crate::models::page::Model as PageModel;
@@ -35,34 +36,6 @@ use crate::types::{
     Action, Bytes, FileOrder, PageDetails, PageId, Reference, RerenderDepth,
 };
 use futures::future::try_join_all;
-
-async fn require_page_edit_permission(
-    ctx: &ServiceContext<'_>,
-    site_id: i64,
-    page: Reference<'_>,
-) -> Result<()> {
-    ctx.request().user_id().or_raise(|| {
-        Error::new(
-            "page rollback requires an authenticated actor",
-            ErrorType::PermissionDenied,
-        )
-    })?;
-
-    let allowed = PageService::check_user_permission(ctx, site_id, page, Action::Edit)
-        .await
-        .or_raise(|| {
-            Error::new("failed to check page edit permission", ErrorType::Page)
-        })?;
-
-    if !allowed {
-        bail!(Error::new(
-            "Permission denied.",
-            ErrorType::PermissionDenied
-        ));
-    }
-
-    Ok(())
-}
 
 pub async fn page_create(
     ctx: &ServiceContext<'_>,
