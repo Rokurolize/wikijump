@@ -36,6 +36,34 @@ use crate::types::{
 };
 use futures::future::try_join_all;
 
+async fn require_page_delete_permission(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    page: Reference<'_>,
+) -> Result<()> {
+    ctx.request().user_id().or_raise(|| {
+        Error::new(
+            "page delete and restore require an authenticated actor",
+            ErrorType::PermissionDenied,
+        )
+    })?;
+
+    let allowed = PageService::check_user_permission(ctx, site_id, page, Action::Delete)
+        .await
+        .or_raise(|| {
+            Error::new("failed to check page delete permission", ErrorType::Page)
+        })?;
+
+    if !allowed {
+        bail!(Error::new(
+            "Permission denied.",
+            ErrorType::PermissionDenied
+        ));
+    }
+
+    Ok(())
+}
+
 pub async fn page_create(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
@@ -262,6 +290,7 @@ pub async fn page_delete(
         "Deleting page {:?} in site ID {}",
         input.page, input.site_id,
     );
+    require_page_delete_permission(ctx, input.site_id, input.page.borrow()).await?;
     PageService::delete(ctx, input)
         .await
         .or_raise(|| Error::new("failed to delete page", ErrorType::Page))
@@ -311,6 +340,8 @@ pub async fn page_restore(
         input.site_id, input.page_id,
     );
 
+    require_page_delete_permission(ctx, input.site_id, Reference::Id(input.page_id))
+        .await?;
     PageService::restore(ctx, input)
         .await
         .or_raise(|| Error::new("failed to restore (undelete) page", ErrorType::Page))
