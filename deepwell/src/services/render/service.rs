@@ -464,7 +464,6 @@ pub(super) const MAX_LISTPAGES_CONTENT_ROWS_PER_RENDER: usize =
 // four variant modules), and preserving the excess as literal source text is
 // never Wikidot behavior.
 pub(super) const MAX_LISTPAGES_CONTENT_MODULES_PER_RENDER: usize = 512;
-pub(super) const MAX_LISTPAGES_RENDER_OFFSET: u32 = 1_000;
 pub(super) const MAX_LISTPAGES_RENDER_SCAN_ROWS: u32 = 50_000;
 pub(super) const MAX_WIKIDOT_AJAX_MODULE_BODY_BYTES: usize = 65_536;
 pub(super) const MAX_WIKIDOT_AJAX_MODULE_PARAMETERS: usize = 64;

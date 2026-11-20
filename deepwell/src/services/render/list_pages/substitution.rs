@@ -120,8 +120,8 @@ use super::super::module_arguments::{
 };
 use super::super::service::{
     CountPagesRequiredTagBatchResult, MAX_LISTPAGES_RENDER_LIMIT,
-    MAX_LISTPAGES_RENDER_OFFSET, MAX_LISTPAGES_RENDER_SCAN_ROWS, RenderService,
-    format_list_pages_rating, native_numbered_list_content,
+    MAX_LISTPAGES_RENDER_SCAN_ROWS, RenderService, format_list_pages_rating,
+    native_numbered_list_content,
 };
 use super::content_sections::wikidot_content_section;
 use super::data_forms::{
@@ -782,13 +782,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
             "offset" => {
                 let dynamic = is_dynamic_list_pages_value(value);
                 let resolved_url_offset;
-                let legacy_url_offset = url
-                    .offset
-                    .filter(|offset| {
-                        url_attr_prefix.is_none()
-                            && *offset <= MAX_LISTPAGES_RENDER_OFFSET
-                    })
-                    .map(|offset| offset.to_string());
+                let legacy_url_offset = url.offset.map(|offset| offset.to_string());
                 let value = match resolve_url_selector(
                     value,
                     if url_attr_prefix.is_some() {
@@ -821,7 +815,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
                 };
                 let parsed = parse_list_pages_numeric_argument(value).unwrap_or(0);
                 rss_path.offset = nonempty_list_pages_feed_value(value);
-                if parsed > u64::from(MAX_LISTPAGES_RENDER_OFFSET) {
+                if parsed > u64::from(u32::MAX) {
                     offset_beyond_render_window = Some(parsed);
                     offset = 0;
                 } else {

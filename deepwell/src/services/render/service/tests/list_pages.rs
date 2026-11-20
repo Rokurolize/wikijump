@@ -177,7 +177,7 @@ fn a_static_tags_selector_ignores_the_url_tag() {
 
 #[test]
 fn a_url_offset_selector_resolves_to_the_requests_offset() {
-    for offset in [0, 1, MAX_LISTPAGES_RENDER_OFFSET] {
+    for offset in [0, 1, 1_000] {
         let arguments = parse_list_pages_arguments_with_url(
             r#" offset="@URL|0""#,
             url_offset(Some(offset)),
@@ -191,16 +191,20 @@ fn a_url_offset_selector_resolves_to_the_requests_offset() {
 
 #[test]
 fn a_url_offset_selector_falls_back_without_a_valid_request_offset() {
-    for offset in [None, Some(MAX_LISTPAGES_RENDER_OFFSET + 1)] {
-        let arguments = parse_list_pages_arguments_with_url(
-            r#" offset="@URL|3""#,
-            url_offset(offset),
-        )
-        .expect("url offset fallback should parse");
+    let offset = None;
+    let arguments =
+        parse_list_pages_arguments_with_url(r#" offset="@URL|3""#, url_offset(offset))
+            .expect("url offset fallback should parse");
 
-        assert_eq!(arguments.offset, 3);
-        assert_eq!(arguments.offset_origin, ListPagesOffsetOrigin::Fallback);
-    }
+    assert_eq!(arguments.offset, 3);
+    assert_eq!(arguments.offset_origin, ListPagesOffsetOrigin::Fallback);
+    let arguments = parse_list_pages_arguments_with_url(
+        r#" offset="@URL|3""#,
+        url_offset(Some(1_001)),
+    )
+    .expect("url offset selector should accept offsets beyond the old render window");
+    assert_eq!(arguments.offset, 1_001);
+    assert_eq!(arguments.offset_origin, ListPagesOffsetOrigin::Url);
 }
 
 #[test]
@@ -961,8 +965,9 @@ fn parses_corpus_list_pages_url_and_filter_arguments() {
         r#" parent="@URL|.""#
     ));
     let large_offset = parse_list_pages_arguments(r#" offset="1001""#)
-        .expect("large live offsets should produce an empty result");
-    assert_eq!(large_offset.offset_beyond_render_window, Some(1001));
+        .expect("large offsets should parse and be reachable");
+    assert_eq!(large_offset.offset, 1001);
+    assert_eq!(large_offset.offset_beyond_render_window, None);
     for value in ["", "-1", "2.5"] {
         let arguments = parse_list_pages_arguments(&format!(r#"offset="{value}""#))
             .expect("invalid live offsets should use the zero default");
