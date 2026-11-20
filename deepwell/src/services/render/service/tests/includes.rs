@@ -1315,13 +1315,19 @@ fn leaves_malformed_multiline_include_boundaries_untouched() {
 
 #[test]
 fn resolves_nested_wikidot_include_variables() {
-    let include = IncludeRef::new(
+    let variables = VariableMap::from([
+        (Cow::Borrowed("name"), Cow::Borrowed("action")),
+        (Cow::Borrowed("action"), Cow::Borrowed("true")),
+        (Cow::Borrowed("type"), Cow::Borrowed("false")),
+    ]);
+    let arguments = [("name", "action"), ("action", "true"), ("type", "false")]
+        .into_iter()
+        .map(|(key, value)| (Cow::Borrowed(key), Cow::Borrowed(value)))
+        .collect();
+    let include = IncludeRef::with_arguments(
         PageRef::page_and_site("scp-jp", "user-component:ta-badge-smooth-base-base"),
-        VariableMap::from([
-            (Cow::Borrowed("name"), Cow::Borrowed("action")),
-            (Cow::Borrowed("action"), Cow::Borrowed("true")),
-            (Cow::Borrowed("type"), Cow::Borrowed("false")),
-        ]),
+        variables,
+        arguments,
     );
     let mut source =
         r#"[[div_ class="badges badge-{$name} {$name} a{${$name}} b{$type}"]]"#
@@ -1335,7 +1341,7 @@ fn resolves_nested_wikidot_include_variables() {
 }
 
 #[test]
-fn nested_include_argument_self_reference_uses_later_fallback() {
+fn nested_include_argument_self_reference_stays_literal_without_a_fold_match() {
     let outer = IncludeRef::new(
         PageRef::page_and_site("scp-jp", "component:coltop"),
         VariableMap::from([
@@ -1376,7 +1382,7 @@ fn nested_include_argument_self_reference_uses_later_fallback() {
     let variables = includes[0].variables();
     assert_eq!(
         variables.get("ifprot").map(|value| value.trim_end()),
-        Some("0"),
+        Some("{$ifprot}"),
     );
     assert_eq!(
         variables.get("nohide").map(|value| value.trim_end()),
@@ -1384,7 +1390,7 @@ fn nested_include_argument_self_reference_uses_later_fallback() {
     );
     assert_eq!(
         variables.get("folded").map(|value| value.trim_end()),
-        Some("1"),
+        Some("{$folded}"),
     );
     assert_eq!(
         variables.get("show").map(|value| value.trim_end()),
@@ -1484,12 +1490,18 @@ fn include_variable_rebuild_handles_adjacent_growth_shrink_and_same_length() {
 
 #[test]
 fn include_variable_rebuild_preserves_unresolved_and_self_references_with_defaults() {
-    let include = IncludeRef::new(
+    let variables = VariableMap::from([
+        (Cow::Borrowed("self"), Cow::Borrowed("{$self}")),
+        (Cow::Borrowed("trimmed"), Cow::Borrowed("value")),
+    ]);
+    let arguments = variables
+        .iter()
+        .map(|(key, value)| (key.clone(), value.clone()))
+        .collect();
+    let include = IncludeRef::with_arguments(
         PageRef::page_only("component:test"),
-        VariableMap::from([
-            (Cow::Borrowed("self"), Cow::Borrowed("{$self}")),
-            (Cow::Borrowed("trimmed"), Cow::Borrowed("value \t\r\n")),
-        ]),
+        variables,
+        arguments,
     );
     let mut source = "{$author}|{$missing}|{$shadow}|{$self}|{$trimmed}".to_owned();
 
@@ -1517,100 +1529,67 @@ fn include_variable_rebuild_does_not_repeat_a_self_referential_prefix() {
 }
 
 #[test]
-fn include_variable_rebuild_stops_at_the_variable_pass_limit() {
-    let variables = (0..=super::super::MAX_INCLUDE_VARIABLE_PASSES)
+fn include_variable_rebuild_folds_each_argument_once_in_source_order() {
+    let arguments = (0..8)
         .map(|depth| {
             (
                 Cow::Owned(format!("v{depth}")),
                 Cow::Owned(format!("{{$v{}}}", depth + 1)),
             )
         })
-        .collect();
-    let include = IncludeRef::new(PageRef::page_only("component:test"), variables);
-    let mut source = "{$v0}".to_owned();
+        .collect::<Vec<_>>();
+    let variables = arguments.iter().cloned().collect::<VariableMap<'static>>();
+    let include = IncludeRef::with_arguments(
+        PageRef::page_only("component:test"),
+        variables,
+        arguments,
+    );
+    let mut source = "{$v0}{$v8}".to_owned();
 
     super::super::apply_include_variables(&mut source, &include)
-        .expect("the existing variable pass limit should remain bounded");
+        .expect("the fold should remain bounded");
 
-    assert_eq!(
-        source,
-        format!("{{$v{}}}", super::super::MAX_INCLUDE_VARIABLE_PASSES),
-    );
+    assert_eq!(source, "{$v8}{$v8}");
 }
 
 #[test]
-fn include_variable_rebuild_matches_reverse_replacement_output() {
-    fn apply_reverse_replacement_reference(
-        content: &mut String,
-        include: &IncludeRef<'_>,
-    ) {
-        for _ in 0..super::super::MAX_INCLUDE_VARIABLE_PASSES {
-            let mut matches = Vec::new();
-
-            for capture in super::super::INCLUDE_VARIABLE_REGEX.captures_iter(content) {
-                let mtch = capture.get(0).unwrap();
-                let name = &capture["name"];
-                if let Some(value) = include
-                    .variables()
-                    .get(name)
-                    .map(|value| {
-                        super::super::trim_include_variable_value(value).to_owned()
-                    })
-                    .or_else(|| super::super::default_include_variable_value(name))
-                {
-                    let changed = value != mtch.as_str();
-                    matches.push((value, mtch.range(), changed));
-                }
-            }
-
-            if matches.is_empty() {
-                break;
-            }
-
-            let changed = matches.iter().any(|(_, _, changed)| *changed);
-            matches.reverse();
-            for (value, range, _) in matches {
-                content.replace_range(range, &value);
-            }
-            if !changed {
-                break;
-            }
-        }
-    }
-
+fn include_variable_rebuild_matches_fold_output() {
     let cases = [
         (
             "A{$grow}{$shrink}{$same}Z",
             vec![("grow", "expanded"), ("shrink", "x"), ("same", "same123")],
+            "Aexpandedxsame123Z",
         ),
         (
             "{$missing}|{$author}|{$shadow}|{$self}",
             vec![("self", "{$self}")],
+            "{$missing}|%%created_by%%|no|{$self}",
         ),
         (
             "{$outer}",
             vec![("outer", "pre{$inner}post"), ("inner", "done")],
+            "predonepost",
         ),
         (
             "{$left}{$right}",
             vec![("left", "{$right}"), ("right", "{$left}")],
+            "{$left}{$left}",
         ),
     ];
 
-    for (source, variables) in cases {
-        let include = IncludeRef::new(
+    for (source, arguments, expected) in cases {
+        let arguments = arguments
+            .into_iter()
+            .map(|(name, value)| (Cow::Borrowed(name), Cow::Borrowed(value)))
+            .collect::<Vec<_>>();
+        let variables = arguments.iter().cloned().collect::<VariableMap<'static>>();
+        let include = IncludeRef::with_arguments(
             PageRef::page_only("component:test"),
-            variables
-                .into_iter()
-                .map(|(name, value)| {
-                    (Cow::Owned(name.to_owned()), Cow::Owned(value.to_owned()))
-                })
-                .collect(),
+            variables,
+            arguments,
         );
-        let mut expected = source.to_owned();
         let mut actual = source.to_owned();
 
-        apply_reverse_replacement_reference(&mut expected, &include);
         super::super::apply_include_variables(&mut actual, &include)
             .expect("reference cases should remain within the byte budget");
 
