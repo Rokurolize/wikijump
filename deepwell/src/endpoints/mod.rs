@@ -30,8 +30,6 @@
 #[macro_use]
 mod macros;
 
-mod page_view_guard;
-
 #[allow(unused_imports)]
 mod prelude {
     pub use crate::api::ServerState;
