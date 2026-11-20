@@ -36,6 +36,34 @@ use crate::types::{
 };
 use futures::future::try_join_all;
 
+async fn require_page_edit_permission(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    page: Reference<'_>,
+) -> Result<()> {
+    ctx.request().user_id().or_raise(|| {
+        Error::new(
+            "page rollback requires an authenticated actor",
+            ErrorType::PermissionDenied,
+        )
+    })?;
+
+    let allowed = PageService::check_user_permission(ctx, site_id, page, Action::Edit)
+        .await
+        .or_raise(|| {
+            Error::new("failed to check page edit permission", ErrorType::Page)
+        })?;
+
+    if !allowed {
+        bail!(Error::new(
+            "Permission denied.",
+            ErrorType::PermissionDenied
+        ));
+    }
+
+    Ok(())
+}
+
 pub async fn page_create(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
@@ -327,6 +355,7 @@ pub async fn page_rollback(
         input.page, input.site_id, input.revision_number,
     );
 
+    require_page_edit_permission(ctx, input.site_id, input.page.borrow()).await?;
     PageService::rollback(ctx, input)
         .await
         .or_raise(|| Error::new("failed to rollback page", ErrorType::Page))
