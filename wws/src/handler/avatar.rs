@@ -101,7 +101,7 @@ pub async fn handle_user_avatar(
 
     let Ok(user_id) = user_id.parse::<i64>() else {
         error!("Unable to parse user id into i64: {user_id}");
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        return StatusCode::NOT_FOUND.into_response();
     };
 
     let avatar_s3_hash = match state.get_avatar_or_response(&headers, user_id).await {
@@ -151,19 +151,22 @@ mod tests {
                     endpoint: String::from("http://127.0.0.1:1"),
                 },
                 s3_path_style: true,
-                s3_credentials: Credentials::new(Some("key"), Some("secret"), None, None, None)
-                    .expect("test credentials"),
+                s3_credentials: Credentials::new(
+                    Some("key"),
+                    Some("secret"),
+                    None,
+                    None,
+                    None,
+                )
+                .expect("test credentials"),
             },
         )
         .await
         .expect("test server state");
 
-        let response = handle_user_avatar(
-            State(state),
-            Path(String::from("abc")),
-            HeaderMap::new(),
-        )
-        .await;
+        let response =
+            handle_user_avatar(State(state), Path(String::from("abc")), HeaderMap::new())
+                .await;
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 }
