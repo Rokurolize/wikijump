@@ -135,9 +135,7 @@ async fn file_revision_range_denial_is_permission_not_serde_error() {
 #[tokio::test]
 async fn file_revision_range_is_scoped_to_requested_site_and_page() {
     let mut runner = TestRunner::setup().await;
-    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
-        .expect("seeded test site not found");
-    let site_id = site.site.site_id;
+    let site_id = 6000001;
 
     let join = run_endpoint!(
         runner,
