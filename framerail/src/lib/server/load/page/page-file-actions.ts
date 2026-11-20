@@ -34,8 +34,13 @@ export function fileHistoryOffset(
   page: number | null | undefined,
   perPage: number | null | undefined
 ): number {
-  if (offset != null) return Math.max(0, Math.floor(offset))
-  if (page == null && perPage == null) return 0
+  if (offset !== null && offset !== undefined) return Math.max(0, Math.floor(offset))
+  if (
+    (page === null || page === undefined) &&
+    (perPage === null || perPage === undefined)
+  ) {
+    return 0
+  }
   const size = Math.max(
     Math.floor(perPage ?? FILE_HISTORY_DEFAULT_PER_PAGE) || FILE_HISTORY_DEFAULT_PER_PAGE,
     1
