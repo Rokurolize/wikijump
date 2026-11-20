@@ -239,7 +239,9 @@ impl SiteChangesSeek {
     fn sql(self, table: &str) -> String {
         match self {
             Self::None => "TRUE".to_owned(),
-            Self::SameKind => format!("({table}.created_at, {table}.revision_id) < ($4, $5)"),
+            Self::SameKind => {
+                format!("({table}.created_at, {table}.revision_id) < ($4, $5)")
+            }
             Self::EarlierKind => format!("{table}.created_at < $4"),
             Self::LaterKind => format!("{table}.created_at <= $4"),
         }
@@ -271,7 +273,9 @@ impl SiteChangesCursor {
     }
 }
 
-fn site_changes_seeks(cursor: Option<SiteChangesCursor>) -> (SiteChangesSeek, SiteChangesSeek) {
+fn site_changes_seeks(
+    cursor: Option<SiteChangesCursor>,
+) -> (SiteChangesSeek, SiteChangesSeek) {
     match cursor {
         Some(cursor) => cursor.seeks(),
         None => (SiteChangesSeek::None, SiteChangesSeek::None),
@@ -317,7 +321,8 @@ async fn load_site_changes_list(
     let mut category_permissions = BTreeMap::<(i64, Option<i64>), bool>::new();
     let mut naturally_exhausted = false;
 
-    while revisions.len() < visible_row_target && raw_scanned < SITE_CHANGES_MAX_RAW_SCAN {
+    while revisions.len() < visible_row_target && raw_scanned < SITE_CHANGES_MAX_RAW_SCAN
+    {
         let batch_size =
             site_changes_batch_size(visible_row_target - revisions.len(), raw_scanned);
         let (page_seek, file_seek) = site_changes_seeks(cursor);
@@ -772,8 +777,8 @@ fn push_site_changes_user(output: &mut String, revision: &SiteChangesRevisionRow
 #[cfg(test)]
 mod tests {
     use super::{
-        SITE_CHANGES_MODULE_REGEX, SITE_CHANGES_MAX_RAW_SCAN,
-        SiteChangesCursor, SiteChangesList, SiteChangesRevisionRow, SiteChangesSeek,
+        SITE_CHANGES_MAX_RAW_SCAN, SITE_CHANGES_MODULE_REGEX, SiteChangesCursor,
+        SiteChangesList, SiteChangesRevisionRow, SiteChangesSeek,
         WikidotSiteChangesFilter, push_site_changes_flags, push_site_changes_pager,
         render_site_changes_list, site_changes_batch_size, site_changes_seeks,
     };
@@ -1027,7 +1032,8 @@ mod tests {
         match seek {
             SiteChangesSeek::None => true,
             SiteChangesSeek::SameKind => {
-                (row.created_at, row.revision_id) < (cursor.created_at, cursor.revision_id)
+                (row.created_at, row.revision_id)
+                    < (cursor.created_at, cursor.revision_id)
             }
             SiteChangesSeek::EarlierKind => row.created_at < cursor.created_at,
             SiteChangesSeek::LaterKind => row.created_at <= cursor.created_at,
@@ -1039,10 +1045,12 @@ mod tests {
         if page_start >= SITE_CHANGES_MAX_RAW_SCAN {
             return Vec::new();
         }
-        let visible_row_target = ((page as usize + 2) * perpage + 1).min(SITE_CHANGES_MAX_RAW_SCAN);
+        let visible_row_target =
+            ((page as usize + 2) * perpage + 1).min(SITE_CHANGES_MAX_RAW_SCAN);
         let mut raw_offset = 0usize;
         let mut visible = Vec::new();
-        while visible.len() < visible_row_target && raw_offset < SITE_CHANGES_MAX_RAW_SCAN {
+        while visible.len() < visible_row_target && raw_offset < SITE_CHANGES_MAX_RAW_SCAN
+        {
             let batch_size =
                 site_changes_batch_size(visible_row_target - visible.len(), raw_offset);
             let end = (raw_offset + batch_size).min(keys.len());
@@ -1068,16 +1076,21 @@ mod tests {
         if page_start >= SITE_CHANGES_MAX_RAW_SCAN {
             return Vec::new();
         }
-        let visible_row_target = ((page as usize + 2) * perpage + 1).min(SITE_CHANGES_MAX_RAW_SCAN);
+        let visible_row_target =
+            ((page as usize + 2) * perpage + 1).min(SITE_CHANGES_MAX_RAW_SCAN);
         let mut raw_scanned = 0usize;
         let mut cursor: Option<TestKey> = None;
         let mut visible = Vec::new();
-        while visible.len() < visible_row_target && raw_scanned < SITE_CHANGES_MAX_RAW_SCAN {
+        while visible.len() < visible_row_target
+            && raw_scanned < SITE_CHANGES_MAX_RAW_SCAN
+        {
             let batch_size =
                 site_changes_batch_size(visible_row_target - visible.len(), raw_scanned);
             let seek_cursor = cursor.map(|key| SiteChangesCursor {
-                created_at: OffsetDateTime::from_unix_timestamp(key.created_at / 1_000_000)
-                    .expect("test timestamp"),
+                created_at: OffsetDateTime::from_unix_timestamp(
+                    key.created_at / 1_000_000,
+                )
+                .expect("test timestamp"),
                 activity_kind: key.activity_kind,
                 revision_id: key.revision_id,
             });
@@ -1124,7 +1137,10 @@ mod tests {
         );
         assert_eq!(SiteChangesSeek::EarlierKind.sql("pr"), "pr.created_at < $4");
         assert_eq!(SiteChangesSeek::LaterKind.sql("fr"), "fr.created_at <= $4");
-        assert_eq!(site_changes_seeks(None), (SiteChangesSeek::None, SiteChangesSeek::None));
+        assert_eq!(
+            site_changes_seeks(None),
+            (SiteChangesSeek::None, SiteChangesSeek::None)
+        );
 
         let page_cursor = SiteChangesCursor {
             created_at: OffsetDateTime::UNIX_EPOCH,
@@ -1184,8 +1200,10 @@ mod tests {
                 revision_id: key.revision_id,
                 is_new_page: false,
                 is_file: key.activity_kind == 1,
-                created_at: OffsetDateTime::from_unix_timestamp(key.created_at / 1_000_000)
-                    .expect("test timestamp"),
+                created_at: OffsetDateTime::from_unix_timestamp(
+                    key.created_at / 1_000_000,
+                )
+                .expect("test timestamp"),
                 revision_number: 1,
                 page_id: 7,
                 page_category_id: 3,
