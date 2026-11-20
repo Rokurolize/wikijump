@@ -52,6 +52,7 @@ async fn page_create_requires_create_permission_in_submitted_site() {
         site_id: Some(site_id),
         page_reference: None,
     });
+    let unauthorized_slug = format!("unauthorized-create-{}", Uuid::new_v4().simple());
     let create_error = run_endpoint_err!(
         runner,
         page_create,
@@ -60,7 +61,7 @@ async fn page_create_requires_create_permission_in_submitted_site() {
             "wikitext": "must not be stored",
             "title": "Unauthorized create",
             "alt_title": null,
-            "slug": format!("unauthorized-create-{}", Uuid::new_v4().simple()),
+            "slug": unauthorized_slug,
             "layout": null,
             "revision_comments": "unauthorized",
             "user_id": OUTSIDER_USER_ID,
@@ -68,4 +69,11 @@ async fn page_create_requires_create_permission_in_submitted_site() {
         }),
     );
     assert_contains_error!(create_error, ErrorType::PermissionDenied);
+
+    let stored = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": unauthorized_slug}),
+    );
+    assert!(stored.is_none(), "denied page create must not store the page");
 }
