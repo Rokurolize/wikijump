@@ -20,12 +20,14 @@
 
 mod backup;
 mod bootstrap;
+mod clone;
 mod icons;
 mod service;
 mod structs;
 
 pub use self::backup::SiteBackupService;
 pub use self::bootstrap::{BootstrapNewSite, STANDARD_TEMPLATE_PAGES};
+pub use self::clone::{CloneSite, CloneSiteOutput, SiteCloneService};
 pub use self::service::SiteService;
 pub use self::structs::{
     CreateSite, CreateSiteOutput, DeleteSite, EducationalUpgrade, GetSite, GetSiteBackup,

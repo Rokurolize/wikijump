@@ -542,6 +542,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("authorization_token_issue", auth_token_issue);
 
     // Site
+    register!("site_clone", site_clone);
     register!("site_create", site_create);
     register!("site_get", site_get);
     register!("site_update", site_update);

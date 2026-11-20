@@ -505,6 +505,35 @@ impl<'txn> ServiceContext<'txn> {
         Ok(std::mem::take(&mut *actions))
     }
 
+    pub(crate) fn absorb_post_commit_actions(
+        &self,
+        actions: Vec<PostCommitAction>,
+    ) -> Result<()> {
+        let mut queued = self.post_commit_actions.lock().map_err(|_| {
+            Error::new("failed to queue post-commit actions", ErrorType::Permission)
+                .raise()
+        })?;
+        queued.extend(actions);
+        Ok(())
+    }
+
+    pub fn with_transaction<'a>(
+        &self,
+        transaction: &'a DatabaseTransaction,
+    ) -> ServiceContext<'a> {
+        ServiceContext {
+            state: Arc::clone(&self.state),
+            transaction,
+            request_ctx: self.request_ctx.clone(),
+            user_permissions: OnceCell::new(),
+            post_commit_actions: Mutex::new(Vec::new()),
+            uncommitted_text_blocks: Mutex::new(Vec::new()),
+            commit_authentication_rejection: AtomicBool::new(false),
+            link_graph_read: AtomicBool::new(false),
+            cascade_page_query_cache: self.cascade_page_query_cache.clone(),
+        }
+    }
+
     pub(crate) async fn run_post_commit_actions_for_state(
         state: &ServerState,
         actions: Vec<PostCommitAction>,
