@@ -31,6 +31,7 @@ test.beforeAll(async () => {
         { find: "sveltekit-superforms", replacement: stub("superforms.ts") }
       ]
     },
+    cacheDir: resolve(framerailDir, ".vite-harness-file-history-stale-response"),
     server: { host: "127.0.0.1", port: 0, fs: { allow: [framerailDir] } },
     logLevel: "error"
   })
