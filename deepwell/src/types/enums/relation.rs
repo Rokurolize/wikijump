@@ -40,6 +40,7 @@ use strum_macros::{Display, EnumIter, EnumString};
 #[serde(rename_all = "kebab-case")]
 #[strum(serialize_all = "kebab_case", ascii_case_insensitive)]
 pub enum RelationType {
+    #[strum(serialize = "site-user", serialize = "user")]
     SiteUser,
     SiteBan,
     #[allow(dead_code)] // TEMP
