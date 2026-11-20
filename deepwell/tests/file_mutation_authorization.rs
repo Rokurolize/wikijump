@@ -134,4 +134,3 @@ async fn file_delete_denies_user_without_page_edit_permission() {
     );
     assert_contains_error!(error, ErrorType::PermissionDenied);
 }
-
