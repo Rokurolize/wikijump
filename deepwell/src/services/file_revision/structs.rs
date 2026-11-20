@@ -228,7 +228,7 @@ mod tests {
     fn file_revision_range_offset_defaults_to_zero_and_accepts_explicit_values() {
         let base = json!({
             "site_id": 6000402,
-            "page_id": 3000132979,
+            "page_id": 3000132979_i64,
             "file_id": 152130,
             "revision_number": -1,
             "revision_direction": "before",
