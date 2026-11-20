@@ -47,7 +47,8 @@ pub async fn handle_html_block(
 
     // HTML blocks can't have named aliases
     let site_id = get_site_id(&headers);
-    let page_id = try_response!(state.get_page_or_response(&headers, site_id, &page_slug));
+    let page_id =
+        try_response!(state.get_page_or_response(&headers, site_id, &page_slug));
     handle_text_block(
         &state,
         &headers,
@@ -78,7 +79,8 @@ pub async fn handle_code_block(
     };
 
     let site_id = get_site_id(&headers);
-    let page_id = try_response!(state.get_page_or_response(&headers, site_id, &page_slug));
+    let page_id =
+        try_response!(state.get_page_or_response(&headers, site_id, &page_slug));
     handle_text_block(
         &state,
         &headers,
@@ -278,9 +280,9 @@ fn get_headers(headers: HashMap<String, String>) -> Headers {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::body::Bytes;
     use crate::config::Secrets;
     use crate::state::build_server_state;
+    use axum::body::Bytes;
     use s3::creds::Credentials;
     use s3::region::Region;
     use std::io::{Read, Write};
@@ -372,8 +374,14 @@ mod tests {
                     endpoint,
                 },
                 s3_path_style: true,
-                s3_credentials: Credentials::new(Some("key"), Some("secret"), None, None, None)
-                    .expect("test credentials"),
+                s3_credentials: Credentials::new(
+                    Some("key"),
+                    Some("secret"),
+                    None,
+                    None,
+                    None,
+                )
+                .expect("test credentials"),
             },
         )
         .await
