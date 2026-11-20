@@ -83,7 +83,10 @@ async fn page_rollback_requires_edit_permission() {
         page_reference: Some(Reference::Id(page_id)),
     });
     let denied = run_endpoint!(runner, page_edit_permission, json!({}));
-    assert!(!denied.can_edit, "outsider must not be able to edit this page");
+    assert!(
+        !denied.can_edit,
+        "outsider must not be able to edit this page"
+    );
 
     run_endpoint_err!(
         runner,
