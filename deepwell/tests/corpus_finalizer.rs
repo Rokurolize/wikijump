@@ -134,7 +134,7 @@ impl CascadeFixture {
         config.rerender_skip = vec![(10, None)];
         let state = build_server_state_without_workers_with_job_queue_namespace(
             config,
-            Secrets::load(),
+            Secrets::load_for_test(),
             namespace,
         )
         .await
@@ -304,7 +304,7 @@ impl ImportBudgetFixture {
         config.rerender_skip = vec![(10, None)];
         let state = build_server_state_without_workers_with_job_queue_namespace(
             config,
-            Secrets::load(),
+            Secrets::load_for_test(),
             namespace,
         )
         .await

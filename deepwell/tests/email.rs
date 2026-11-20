@@ -372,7 +372,7 @@ async fn email_send_provider_failure() {
 
 #[tokio::test]
 async fn email_local_provider_disallowed() {
-    let secrets = Secrets::load();
+    let secrets = Secrets::load_for_test();
     assert!(
         matches!(secrets.email_provider, EmailProvider::Local),
         "Tests must run with EMAIL_PROVIDER=local",

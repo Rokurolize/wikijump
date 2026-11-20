@@ -23164,7 +23164,7 @@ async fn text_block_get_index_requires_parent_page_view_permission() {
 async fn startup_backfills_legacy_html_sha1_and_validates_constraint() {
     let state = build_server_state_without_workers(
         Config::integration_testing(),
-        Secrets::load(),
+        Secrets::load_for_test(),
     )
     .await
     .expect("workerless Deepwell state should build");
@@ -23239,14 +23239,14 @@ async fn startup_backfills_legacy_html_sha1_and_validates_constraint() {
     drop(state);
 
     assert!(
-        build_server_state(Config::integration_testing(), Secrets::load())
+        build_server_state(Config::integration_testing(), Secrets::load_for_test())
             .await
             .is_err(),
         "startup must fail when legacy HTML backfill cannot read S3"
     );
     let cleanup_state = build_server_state_without_workers(
         Config::integration_testing(),
-        Secrets::load(),
+        Secrets::load_for_test(),
     )
     .await
     .expect("workerless state should clean up the failed startup fixture");
@@ -23256,9 +23256,10 @@ async fn startup_backfills_legacy_html_sha1_and_validates_constraint() {
         .expect("missing legacy row cleanup should succeed");
     drop(cleanup_state);
 
-    let state = build_server_state(Config::integration_testing(), Secrets::load())
-        .await
-        .expect("startup should backfill and validate legacy HTML rows");
+    let state =
+        build_server_state(Config::integration_testing(), Secrets::load_for_test())
+            .await
+            .expect("startup should backfill and validate legacy HTML rows");
     let populated =
         text_block::Entity::find_by_id((TextBlockType::Html, page_id, block_index))
             .one(&state.database)

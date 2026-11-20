@@ -42,9 +42,12 @@ use tokio::time::sleep;
 const FILE_ACTIVE_UNIQUE_INDEX: &str = "file_active_page_name_unique";
 
 async fn test_state() -> ServerState {
-    build_server_state_without_workers(Config::integration_testing(), Secrets::load())
-        .await
-        .expect("test server state should build")
+    build_server_state_without_workers(
+        Config::integration_testing(),
+        Secrets::load_for_test(),
+    )
+    .await
+    .expect("test server state should build")
 }
 
 async fn test_site_page_ids(state: &ServerState) -> (i64, i64) {
