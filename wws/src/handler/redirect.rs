@@ -22,6 +22,7 @@ use super::get_site_id;
 use crate::path::get_path;
 use crate::state::ServerState;
 use axum::extract::{Path, State};
+use axum::http::StatusCode;
 use axum::http::Uri;
 use axum::http::header::HeaderMap;
 use axum::response::{IntoResponse, Redirect, Response};
@@ -31,7 +32,9 @@ pub async fn redirect_to_main(
     headers: HeaderMap,
     uri: Uri,
 ) -> Response {
-    let site_id = get_site_id(&headers);
+    let Some(site_id) = get_site_id(&headers) else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
     let path = get_path(&uri);
     let domain = try_response!(state.get_site_domain_or_response(site_id));
     let destination = format!("https://{domain}{path}");
