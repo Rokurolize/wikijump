@@ -46,6 +46,20 @@ use super::{
     wikidot_content_section,
 };
 
+fn list_pages_total_query<'a>(
+    query: &PageQuery<'a>,
+    exact_visible_tags: bool,
+) -> PageQuery<'a> {
+    let mut total_query = query.clone();
+    total_query.pagination.limit = Some(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS));
+    total_query.fields = FoundPageFields {
+        page_category_id: true,
+        tags: exact_visible_tags,
+        ..FoundPageFields::default()
+    };
+    total_query
+}
+
 impl RenderService {
     pub(in crate::services::render) async fn render_list_pages_block(
         args: ListPagesBlockRenderArgs<'_, '_, '_, '_>,
@@ -498,45 +512,8 @@ impl RenderService {
             {
                 Some(total)
             } else {
-                let fast_total = None;
-                if !exact_visible_tags && relative_range.is_none() {
-                    let mut count_query = query.clone();
-                    count_query.order = None;
-                    count_query.offset = 0;
-                    count_query.pagination = PaginationSelector::default();
-                    count_query.candidate_limit = None;
-                    let count_envelope =
-                        PageQueryService::count_with_metadata(ctx, count_query).await?;
-                    if count_envelope.metadata.exact_count_safe
-                        && !count_envelope.metadata.filtering_deferred_to_rust
-                        && let Some(candidate_count) =
-                            count_envelope.metadata.candidate_count
-                    {
-                        if !exclude_current_page
-                            && offset == 0
-                            && !count_envelope.metadata.cap_exceeded
-                        {
-                            // For anonymous/public cases without row-level view filtering
-                            // this matches the full match-set count. If view permission
-                            // filtering could remove rows, fall through to scan.
-                            // We conservatively only use this when viewer has no
-                            // per-row attribution concerns by falling back below
-                            // unless we can be sure; handled by scan fallback.
-                        }
-                        let _ = candidate_count;
-                    }
-                }
-                let total = if let Some(total) = fast_total {
-                    total
-                } else {
-                    let mut total_query = query.clone();
-                    total_query.pagination.limit =
-                        Some(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS));
-                    total_query.fields = FoundPageFields {
-                        page_category_id: true,
-                        tags: exact_visible_tags,
-                        ..FoundPageFields::default()
-                    };
+                let total = {
+                    let total_query = list_pages_total_query(&query, exact_visible_tags);
                     let target_count = MAX_LISTPAGES_RENDER_SCAN_ROWS as usize;
                     let found = if relative_range.is_none() {
                         RenderRuntime::for_viewer(ctx, viewer_user_id)
@@ -1805,5 +1782,78 @@ fn list_pages_selected_page_info(
             .map(|tag| Cow::Owned(tag.to_owned()))
             .collect(),
         language: Cow::Owned(page_info.language.to_string()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::services::page_query::{AuthorSelector, PageTypeSelector};
+    use time::OffsetDateTime;
+
+    #[test]
+    fn total_query_keeps_the_resolved_author_and_selection_predicate() {
+        let user_ids = [42, 43];
+        let snapshot_names = [Cow::Borrowed("artex-hunter-a")];
+        let query = PageQuery {
+            current_page_id: 7,
+            current_site_id: 1,
+            queried_site_id: None,
+            page_type: PageTypeSelector::Normal,
+            categories: CategoriesSelector {
+                included_categories: IncludedCategories::All,
+                excluded_categories: &[],
+            },
+            tags: TagCondition {
+                any_present: &[],
+                all_present: &[],
+                none_present: &[],
+                untagged: false,
+            },
+            page_parent: PageParentSelector::All,
+            contains_outgoing_links: &[],
+            creation_date: DateSelector::FromPresent {
+                start: OffsetDateTime::UNIX_EPOCH,
+            },
+            update_date: DateSelector::FromPresent {
+                start: OffsetDateTime::UNIX_EPOCH,
+            },
+            author: AuthorSelector::Any {
+                user_ids: &user_ids,
+                wikidot_snapshot_names: &snapshot_names,
+            },
+            score: &[],
+            votes: &[],
+            offset: 9,
+            name: None,
+            slug: None,
+            slugs: &[],
+            data_form_fields: &[],
+            order: None,
+            candidate_limit: None,
+            pagination: PaginationSelector::default(),
+            fields: FoundPageFields::default(),
+        };
+
+        let total_query = list_pages_total_query(&query, false);
+
+        assert_eq!(total_query.author, query.author);
+        assert_eq!(total_query.offset, query.offset);
+        assert_eq!(total_query.categories, query.categories);
+        assert_eq!(total_query.tags, query.tags);
+        assert_eq!(total_query.page_parent, query.page_parent);
+        assert_eq!(total_query.name, query.name);
+        assert_eq!(total_query.slug, query.slug);
+        assert_eq!(total_query.slugs, query.slugs);
+        assert_eq!(total_query.score, query.score);
+        assert_eq!(total_query.votes, query.votes);
+        assert_eq!(total_query.creation_date, query.creation_date);
+        assert_eq!(total_query.update_date, query.update_date);
+        assert_eq!(
+            total_query.pagination.limit,
+            Some(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS))
+        );
+        assert!(total_query.fields.page_category_id);
+        assert!(!total_query.fields.title);
     }
 }

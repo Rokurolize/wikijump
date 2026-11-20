@@ -22,6 +22,10 @@ impl RenderService {
         arguments: ListPagesArguments,
         body: &str,
         permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
+        author_resolution_cache: &mut BTreeMap<
+            ListPagesAuthorCacheKey,
+            ResolvedListPagesAuthors,
+        >,
     ) -> Result<CountPagesBlockRenderResult> {
         let ListPagesPageContext {
             site_id: current_site_id,
@@ -136,13 +140,14 @@ impl RenderService {
         } else {
             IncludedCategories::List(&categories)
         };
-        let resolved_authors = Self::resolve_list_pages_authors(
+        let resolved_authors = Self::resolve_list_pages_authors_cached(
             ctx,
             current_site_id,
             current_page_id,
             &authors,
             author_filter_present,
             false,
+            author_resolution_cache,
         )
         .await?;
         let query = PageQuery {

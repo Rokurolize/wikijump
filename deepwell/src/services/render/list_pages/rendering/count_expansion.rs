@@ -47,6 +47,7 @@ impl RenderService {
         let mut expanded = String::with_capacity(wikitext.len());
         let mut cursor = 0;
         let mut permission_cache = BTreeMap::new();
+        let mut author_resolution_cache = BTreeMap::new();
         let page_context = ListPagesPageContext {
             site_id: current_site_id,
             page_id: current_page_id,
@@ -193,6 +194,7 @@ impl RenderService {
                 arguments,
                 body,
                 &mut permission_cache,
+                &mut author_resolution_cache,
             )
             .await?;
             match &rendered {

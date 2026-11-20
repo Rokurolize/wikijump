@@ -36,6 +36,23 @@ use sea_orm::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 
+async fn resolve_authors_cached<F, Fut>(
+    key: ListPagesAuthorCacheKey,
+    cache: &mut BTreeMap<ListPagesAuthorCacheKey, ResolvedListPagesAuthors>,
+    resolve: F,
+) -> Result<ResolvedListPagesAuthors>
+where
+    F: Fn() -> Fut,
+    Fut: std::future::Future<Output = Result<ResolvedListPagesAuthors>>,
+{
+    if let Some(resolved) = cache.get(&key) {
+        return Ok(resolved.clone());
+    }
+    let resolved = resolve().await?;
+    cache.insert(key, resolved.clone());
+    Ok(resolved)
+}
+
 impl RenderService {
     pub(in crate::services::render) async fn load_wikidot_user_displays(
         ctx: &ServiceContext<'_>,
@@ -468,20 +485,17 @@ impl RenderService {
     ) -> Result<ResolvedListPagesAuthors> {
         let mut key = list_pages_author_cache_key(author_names, author_filter_present);
         key.negated = exclude_current_page_author;
-        if let Some(resolved) = cache.get(&key) {
-            return Ok(resolved.clone());
-        }
-        let resolved = Self::resolve_list_pages_authors(
-            ctx,
-            current_site_id,
-            current_page_id,
-            author_names,
-            author_filter_present,
-            exclude_current_page_author,
-        )
-        .await?;
-        cache.insert(key, resolved.clone());
-        Ok(resolved)
+        resolve_authors_cached(key, cache, || {
+            Self::resolve_list_pages_authors(
+                ctx,
+                current_site_id,
+                current_page_id,
+                author_names,
+                author_filter_present,
+                exclude_current_page_author,
+            )
+        })
+        .await
     }
 
     pub(in crate::services::render) async fn resolve_list_pages_authors(
@@ -722,5 +736,68 @@ mod tests {
             Some("staff-operator-x"),
         ));
         assert!(!wikidot_author_matches(&by_slug, None, None));
+    }
+
+    #[tokio::test]
+    async fn data_and_count_queries_resolve_created_by_once() {
+        use crate::services::page_query::AuthorSelector;
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        let mut cache = BTreeMap::new();
+        let key = list_pages_author_cache_key(&[Cow::Borrowed("artex-hunter-a")], true);
+        let lookups = AtomicUsize::new(0);
+        let resolve = || {
+            lookups.fetch_add(1, Ordering::SeqCst);
+            std::future::ready(Ok(ResolvedListPagesAuthors::Any {
+                user_ids: vec![42],
+                wikidot_snapshot_names: vec![Cow::Borrowed("artex-hunter-a")],
+            }))
+        };
+
+        let data = resolve_authors_cached(key.clone(), &mut cache, resolve)
+            .await
+            .expect("data query author resolution");
+        let count = resolve_authors_cached(key, &mut cache, resolve)
+            .await
+            .expect("count query author resolution");
+
+        assert_eq!(lookups.load(Ordering::SeqCst), 1);
+        assert_eq!(data.as_selector(), count.as_selector());
+        assert_eq!(
+            data.as_selector(),
+            AuthorSelector::Any {
+                user_ids: &[42],
+                wikidot_snapshot_names: &[Cow::Borrowed("artex-hunter-a")],
+            }
+        );
+    }
+
+    #[tokio::test]
+    async fn negated_author_selectors_do_not_reuse_positive_resolution() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        let mut cache = BTreeMap::new();
+        let positive_key =
+            list_pages_author_cache_key(&[Cow::Borrowed("artex-hunter-a")], true);
+        let mut negated_key = positive_key.clone();
+        negated_key.negated = true;
+        let lookups = AtomicUsize::new(0);
+        let resolve = || {
+            let next = lookups.fetch_add(1, Ordering::SeqCst);
+            std::future::ready(Ok(ResolvedListPagesAuthors::Any {
+                user_ids: vec![next as i64],
+                wikidot_snapshot_names: Vec::new(),
+            }))
+        };
+
+        let positive = resolve_authors_cached(positive_key, &mut cache, resolve)
+            .await
+            .expect("positive author resolution");
+        let negated = resolve_authors_cached(negated_key, &mut cache, resolve)
+            .await
+            .expect("negated author resolution");
+
+        assert_eq!(lookups.load(Ordering::SeqCst), 2);
+        assert_ne!(positive.as_selector(), negated.as_selector());
     }
 }
