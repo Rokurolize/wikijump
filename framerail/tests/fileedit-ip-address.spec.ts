@@ -36,7 +36,9 @@ test.afterAll(async () => {
   await server?.close()
 })
 
-test("file_edit RPC gets the client ip_address required by Deepwell", async ({ page }) => {
+test("file_edit RPC gets the client ip_address required by Deepwell", async ({
+  page
+}) => {
   await page.goto(baseURL)
   await expect.poll(() => page.locator("#result").innerText()).not.toBe("pending")
   const result = (await page.evaluate(() => globalThis.__result)) as {
@@ -45,7 +47,10 @@ test("file_edit RPC gets the client ip_address required by Deepwell", async ({ p
   }
 
   expect(result.methods).toContain("file_edit")
-  expect(result.params, "file_edit params must include the request ip_address").toMatchObject({
+  expect(
+    result.params,
+    "file_edit params must include the request ip_address"
+  ).toMatchObject({
     ip_address: "127.0.0.1"
   })
 })
