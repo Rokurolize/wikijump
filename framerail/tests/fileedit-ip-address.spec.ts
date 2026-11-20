@@ -29,7 +29,7 @@ test.beforeAll(async () => {
         { find: "sveltekit-superforms", replacement: stub("superforms.ts") }
       ]
     },
-    cacheDir: resolve(framerailDir, ".vite-harness"),
+    cacheDir: resolve(framerailDir, ".vite-harness-fileedit-ip-address"),
     server: { host: "127.0.0.1", port: 0, fs: { allow: [framerailDir] } },
     logLevel: "error"
   })
@@ -42,16 +42,20 @@ test.afterAll(async () => {
   await server?.close()
 })
 
-test("file_edit RPC gets the client ip_address required by Deepwell", async ({
+test("saving a file edit succeeds and the API call carries the client address", async ({
   page
 }) => {
   await page.goto(baseURL)
   await expect.poll(() => page.locator("#result").innerText()).not.toBe("pending")
   const result = (await page.evaluate(() => globalThis.__result)) as {
+    status: number
+    savedFileId: number | null
     methods: string[]
     params: Record<string, unknown> | null
   }
 
+  expect(result.status, "the Save action must complete, not return a failure").toBe(200)
+  expect(result.savedFileId, "the saved file must be read back from the action").toBe(88)
   expect(result.methods).toContain("file_edit")
   expect(
     result.params,
