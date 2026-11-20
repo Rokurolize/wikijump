@@ -1,6 +1,11 @@
 import { mount, type ComponentProps } from "svelte"
 
 import HistoryPane from "../../src/routes/[slug]/[...extra]/HistoryPane.svelte"
+import { pageLayoutState } from "./stubs/stores.svelte.ts"
+
+if (new URLSearchParams(location.search).get("layout") === "default") {
+  pageLayoutState.current = "default"
+}
 
 const preview = document.createElement("div")
 preview.id = "published-revision"
