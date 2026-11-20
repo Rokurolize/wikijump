@@ -30,6 +30,7 @@
 #[macro_use]
 mod macros;
 
+#[allow(dead_code)]
 mod page_action_guard;
 
 #[allow(unused_imports)]
