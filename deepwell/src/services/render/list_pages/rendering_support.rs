@@ -783,7 +783,7 @@ pub(in crate::services::render) struct ListPagesSummaryDerivation {
 }
 
 pub(in crate::services::render) fn list_pages_scan_target(query_target: u64) -> u64 {
-    query_target.max(u64::from(MAX_LISTPAGES_RENDER_LIMIT))
+    query_target.max(MAX_LISTPAGES_RENDER_LIMIT)
 }
 
 pub(in crate::services::render) fn list_pages_slice_rows<T>(
@@ -1558,7 +1558,7 @@ mod tests {
 
         #[test]
         fn scan_target_clamps_small_module_limits_to_one_batch() {
-            let floor = u64::from(MAX_LISTPAGES_RENDER_LIMIT);
+            let floor = MAX_LISTPAGES_RENDER_LIMIT;
             assert_eq!(list_pages_scan_target(1), floor);
             assert_eq!(list_pages_scan_target(4), floor);
             assert_eq!(list_pages_scan_target(floor), floor);
