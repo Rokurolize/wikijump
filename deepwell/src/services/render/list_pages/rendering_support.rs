@@ -725,6 +725,28 @@ pub(in crate::services::render) struct ListPagesContentCache {
         BTreeMap<(i64, i64), Option<usize>>,
     pub(in crate::services::render) summary_derivations:
         BTreeMap<ListPagesSummaryDerivationKey, ListPagesSummaryDerivation>,
+    pub(in crate::services::render) content_sections:
+        BTreeMap<ListPagesContentSectionKey, ListPagesContentSectionEntry>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub(in crate::services::render) struct ListPagesContentSectionKey {
+    pub(in crate::services::render) page_id: i64,
+    pub(in crate::services::render) page_revision_id: Option<i64>,
+    pub(in crate::services::render) section: Option<usize>,
+    pub(in crate::services::render) section_source_hash: TextHash,
+    pub(in crate::services::render) selected_page_hash: TextHash,
+    pub(in crate::services::render) render_inputs_hash: TextHash,
+    pub(in crate::services::render) max_include_expansions: usize,
+}
+
+#[derive(Debug, Clone)]
+pub(in crate::services::render) struct ListPagesContentSectionEntry {
+    pub(in crate::services::render) body: String,
+    pub(in crate::services::render) styles: Vec<String>,
+    pub(in crate::services::render) included_pages: Vec<ftml::data::PageRef>,
+    pub(in crate::services::render) expanded_include_count: usize,
+    pub(in crate::services::render) cost_charges: Vec<&'static str>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -1247,5 +1269,71 @@ mod tests {
             rendered.contains("<div class=\"pager\">PAGER</div>\n    \n    </div>"),
             "{rendered:?}",
         );
+    }
+
+    #[test]
+    fn content_section_keys_separate_section_source_revision_and_inputs() {
+        use crate::hash::k12_hash;
+
+        let base = ListPagesContentSectionKey {
+            page_id: 7,
+            page_revision_id: Some(11),
+            section: Some(1),
+            section_source_hash: k12_hash(b"first section"),
+            selected_page_hash: k12_hash(b"selected page"),
+            render_inputs_hash: k12_hash(b"render inputs"),
+            max_include_expansions: 10,
+        };
+        assert_eq!(base, base.clone());
+
+        let variants = [
+            ListPagesContentSectionKey {
+                page_id: 8,
+                ..base.clone()
+            },
+            ListPagesContentSectionKey {
+                page_revision_id: Some(12),
+                ..base.clone()
+            },
+            ListPagesContentSectionKey {
+                section: Some(2),
+                ..base.clone()
+            },
+            ListPagesContentSectionKey {
+                section_source_hash: k12_hash(b"second section"),
+                ..base.clone()
+            },
+            ListPagesContentSectionKey {
+                selected_page_hash: k12_hash(b"other selected page"),
+                ..base.clone()
+            },
+            ListPagesContentSectionKey {
+                render_inputs_hash: k12_hash(b"other render inputs"),
+                ..base.clone()
+            },
+            ListPagesContentSectionKey {
+                max_include_expansions: 9,
+                ..base.clone()
+            },
+        ];
+        for variant in &variants {
+            assert_ne!(&base, variant);
+        }
+
+        let mut cache = ListPagesContentCache::default();
+        cache.content_sections.insert(
+            base.clone(),
+            ListPagesContentSectionEntry {
+                body: "BODY".to_owned(),
+                styles: Vec::new(),
+                included_pages: Vec::new(),
+                expanded_include_count: 0,
+                cost_charges: vec!["block-content render"],
+            },
+        );
+        assert!(cache.content_sections.contains_key(&base));
+        for variant in &variants {
+            assert!(!cache.content_sections.contains_key(variant));
+        }
     }
 }
