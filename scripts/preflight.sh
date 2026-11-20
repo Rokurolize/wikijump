@@ -123,6 +123,17 @@ if ! [[ "${JOBS}" =~ ^[0-9]+$ ]]; then
 fi
 
 PREFLIGHT_TARGET_ROOT="${PREFLIGHT_TARGET_ROOT:-${XDG_STATE_HOME:-${HOME}/.local/state}/wikijump/preflight-target}"
+PREFLIGHT_PNPM_MARKER_ROOT="${PREFLIGHT_PNPM_MARKER_ROOT:-${REPO_ROOT}}"
+
+ensure_pnpm_deps() {
+  local dir="$1"
+  local marker="$2"
+  if [[ ! -e "${PREFLIGHT_PNPM_MARKER_ROOT}/${dir}/${marker}" ]]; then
+    run "ensure pnpm dependencies (${dir})" \
+      node install/local/wikidot-verification/scripts/ensure-pnpm-dependencies.mjs \
+      --dir "${dir}" --require-path "${marker}"
+  fi
+}
 
 if [[ "${LIST}" != true ]]; then
   if { group_selected deepwell || group_selected wws; } && ! command -v cargo >/dev/null 2>&1; then
@@ -185,6 +196,7 @@ run_checks_concurrent() {
 
 group_theme_lab() {
   if group_selected theme_lab; then
+    ensure_pnpm_deps framerail node_modules/@playwright/test/package.json
     run "Theme Lab tests" scripts/run-browser-test-no-external-network.sh npm --prefix install/local/theme-lab test
     if [[ "${MODE}" == "final" ]]; then
       run_test "Theme Lab Python tests" python3 -m unittest discover -s install/local/theme-lab/tests -p 'test_*.py'
@@ -201,6 +213,7 @@ group_workflow() {
 }
 
 check_wikidot_verification_tests() {
+  ensure_pnpm_deps install/local/wikidot-verification node_modules/pg/package.json
   run_test "wikidot verification tests" pnpm --dir install/local/wikidot-verification test
 }
 
@@ -284,6 +297,7 @@ group_wws() {
 
 group_framerail_lint() {
   if group_selected framerail; then
+    ensure_pnpm_deps framerail node_modules/.modules.yaml
     run "framerail lint" pnpm --dir framerail lint
   fi
 }
@@ -292,6 +306,7 @@ group_framerail() {
   # The unit tests and the build both regenerate .svelte-kit, so they stay in
   # one job.
   if group_selected framerail; then
+    ensure_pnpm_deps framerail node_modules/.modules.yaml
     run "framerail check" pnpm --dir framerail check
     run_test "framerail unit tests" pnpm --dir framerail test:unit
     if [[ "${MODE}" == "final" ]]; then

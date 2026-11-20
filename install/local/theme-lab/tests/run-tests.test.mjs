@@ -31,27 +31,60 @@ test('no install runs when playwright already resolves', () => {
   assert.equal(calls, 0);
 });
 
-test('a missing playwright triggers one frozen install and re-verifies', () => {
+test('a missing playwright triggers one offline frozen install against a persistent store and re-verifies', () => {
   const root = fakeFramerail(false);
+  const storeDir = path.join(root, 'persistent-pnpm-store');
   let calls = 0;
   const run = (command, args, options) => {
     calls += 1;
     assert.equal(command, 'pnpm');
-    assert.deepEqual(args, ['install', '--frozen-lockfile']);
+    assert.deepEqual(args, ['install', '--frozen-lockfile', '--offline', '--store-dir', storeDir]);
     assert.equal(options.cwd, root);
     const pkg = path.join(root, 'node_modules', '@playwright', 'test');
     fs.mkdirSync(pkg, {recursive: true});
     fs.writeFileSync(path.join(pkg, 'package.json'), '{}');
     return {status: 0};
   };
-  assert.equal(ensureFramerailDependencies(root, run), true);
+  assert.equal(ensureFramerailDependencies(root, run, {storeDir, env: {}}), true);
   assert.equal(calls, 1);
 });
 
-test('a failed install is a loud error, not a silent skip', () => {
+test('a missing offline tarball heals once outside netns and fails loudly inside netns', () => {
+  const root = fakeFramerail(false);
+  const storeDir = path.join(root, 'persistent-pnpm-store');
+  const invocations = [];
+  const healingRun = (command, args) => {
+    invocations.push([command, ...args]);
+    if (invocations.length === 1) {
+      return {status: 1, stdout: '', stderr: 'ERR_PNPM_NO_OFFLINE_TARBALL pg-8.22.0.tgz\n'};
+    }
+    if (invocations.length === 3) {
+      const pkg = path.join(root, 'node_modules', '@playwright', 'test');
+      fs.mkdirSync(pkg, {recursive: true});
+      fs.writeFileSync(path.join(pkg, 'package.json'), '{}');
+    }
+    return {status: 0, stdout: '', stderr: ''};
+  };
+  assert.equal(ensureFramerailDependencies(root, healingRun, {storeDir, env: {}}), true);
+  assert.equal(invocations.length, 3);
+  assert.deepEqual(invocations[1], ['pnpm', 'fetch', '--frozen-lockfile', '--ignore-scripts', '--store-dir', storeDir]);
+
   assert.throws(
-    () => ensureFramerailDependencies(fakeFramerail(false), () => ({status: 1})),
-    /pnpm install in framerail exited 1/,
+    () =>
+      ensureFramerailDependencies(
+        fakeFramerail(false),
+        () => ({status: 1, stdout: '', stderr: 'ERR_PNPM_NO_OFFLINE_TARBALL pg-8.22.0.tgz\n'}),
+        {storeDir, env: {WIKIJUMP_BROWSER_TEST_NETNS_ACTIVE: '1'}},
+      ),
+    /inside an offline test guard/,
+  );
+});
+
+test('a failed install is a loud error, not a silent skip', () => {
+  const root = fakeFramerail(false);
+  assert.throws(
+    () => ensureFramerailDependencies(root, () => ({status: 1}), {storeDir: path.join(root, 'store'), env: {}}),
+    /pnpm offline install failed/,
   );
 });
 
