@@ -20,7 +20,13 @@ test.beforeAll(async () => {
         { find: "$lib/defaults", replacement: stub("defaults.ts") },
         { find: /^\$lib\/server\/deepwell$/, replacement: stub("deepwell.ts") },
         { find: "$lib/server/deepwell/file", replacement: stub("file.ts") },
-        { find: "$lib/types", replacement: resolve(framerailDir, "src/lib/types.ts") }
+        { find: "$lib/types", replacement: resolve(framerailDir, "src/lib/types.ts") },
+        { find: /^\$lib\//, replacement: `${resolve(framerailDir, "src/lib")}/` },
+        {
+          find: "sveltekit-superforms/adapters",
+          replacement: stub("superforms-adapters.ts")
+        },
+        { find: "sveltekit-superforms", replacement: stub("superforms.ts") }
       ]
     },
     cacheDir: resolve(framerailDir, ".vite-harness"),
@@ -49,8 +55,8 @@ test("file_edit RPC gets the client ip_address required by Deepwell", async ({
   expect(result.methods).toContain("file_edit")
   expect(
     result.params,
-    "file_edit params must include the request ip_address"
+    "the fileEdit action must forward the address from getClientAddress()"
   ).toMatchObject({
-    ip_address: "127.0.0.1"
+    ip_address: "203.0.113.7"
   })
 })
