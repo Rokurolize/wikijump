@@ -1,13 +1,15 @@
 use super::{
     apply_sql_ordering, category_local_wikidot_name_patterns, date_span_bounds,
     list_pages_deferred_ordering, needs_effective_revision_projection,
-    project_effective_revision_count, wikidot_name_condition, wikidot_name_pattern,
+    nestloop_guard_applies, project_effective_revision_count, wikidot_name_condition,
+    wikidot_name_pattern,
 };
 use crate::models::page;
 use crate::services::page_query::{
     ComparisonOperation, DateTimeResolution, FoundPageFields, IncludedCategories,
-    OrderBySelector, OrderProperty,
+    OrderBySelector, OrderProperty, PageParentSelector, ScoreSelector,
 };
+use crate::services::score::ScoreValue;
 use sea_orm::{DatabaseBackend, EntityTrait, QueryFilter, QueryTrait, Value};
 use std::borrow::Cow;
 use std::cmp::Ordering;
@@ -272,4 +274,33 @@ fn updated_at_ordering_uses_creation_time_for_never_edited_pages() {
             "{sql}",
         );
     }
+}
+
+#[test]
+fn nestloop_guard_scoped_to_no_parent_with_score() {
+    let eq_zero = ScoreSelector {
+        score: ScoreValue::Integer(0),
+        comparison: ComparisonOperation::Equal,
+    };
+    let gt = ScoreSelector {
+        score: ScoreValue::Integer(-999),
+        comparison: ComparisonOperation::GreaterThan,
+    };
+    // The measured flip composition: parent="-" plus any score selector.
+    assert!(nestloop_guard_applies(
+        &PageParentSelector::NoParent,
+        &[eq_zero]
+    ));
+    assert!(nestloop_guard_applies(&PageParentSelector::NoParent, &[gt]));
+    // Everything else keeps the planner's default join strategies.
+    assert!(!nestloop_guard_applies(&PageParentSelector::NoParent, &[]));
+    assert!(!nestloop_guard_applies(
+        &PageParentSelector::All,
+        &[eq_zero]
+    ));
+    assert!(!nestloop_guard_applies(
+        &PageParentSelector::SameParents,
+        &[eq_zero]
+    ));
+    assert!(!nestloop_guard_applies(&PageParentSelector::All, &[]));
 }
