@@ -2,7 +2,10 @@
   import AccessPolicySettings from "./AccessPolicySettings.svelte"
   import AnalyticsSettings from "./AnalyticsSettings.svelte"
   import AutonumberSettings from "./AutonumberSettings.svelte"
+  import BlocksSettings from "./BlocksSettings.svelte"
+  import CustomDomainSettings from "./CustomDomainSettings.svelte"
   import ForumSettings from "./ForumSettings.svelte"
+  import PermissionsSettings from "./PermissionsSettings.svelte"
   import LicenseSettings from "./LicenseSettings.svelte"
   import LayoutSettings from "./LayoutSettings.svelte"
   import MembershipSettings from "./MembershipSettings.svelte"
@@ -33,6 +36,9 @@
 <ForumSettings {data} />
 <RatingSettings {data} />
 <LicenseSettings {data} />
+<CustomDomainSettings {data} />
+<PermissionsSettings {data} />
+<BlocksSettings {data} />
 
 <style global lang="scss">
   .site-info {

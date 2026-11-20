@@ -115,6 +115,9 @@ before(async () => {
       return { type: "site_found", data: { categories: [], page_templates: [] } }
     }
     if (method === "membership_application_list") return []
+    if (method === "site_domain") return "test.wikijump.dev.localhost"
+    if (method === "custom_domain_list") return []
+    if (method === "list_site_roles") return []
     if (method === "translate") return {}
     throw new Error(`Unexpected Deepwell method ${method}`)
   }
