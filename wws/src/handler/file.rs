@@ -391,3 +391,65 @@ fn multipart_content_length(
     len += 2 + boundary.len() + 2 + 2;
     len
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::Secrets;
+    use crate::state::build_server_state;
+    use s3::creds::Credentials;
+    use s3::region::Region;
+
+    async fn test_state() -> ServerState {
+        build_server_state(
+            false,
+            Secrets {
+                deepwell_url: String::from("http://127.0.0.1:1"),
+                redis_url: String::from("redis://127.0.0.1:1"),
+                s3_files_bucket: String::from("files"),
+                s3_tblocks_bucket: String::from("tblocks"),
+                s3_region: Region::Custom {
+                    region: String::from("test"),
+                    endpoint: String::from("http://127.0.0.1:1"),
+                },
+                s3_path_style: true,
+                s3_credentials: Credentials::new(Some("key"), Some("secret"), None, None, None)
+                    .expect("test credentials"),
+            },
+        )
+        .await
+        .expect("test server state")
+    }
+
+    #[tokio::test]
+    async fn nul_path_component_returns_not_found() {
+        let state = test_state().await;
+
+        let response = handle_file_fetch(
+            State(state.clone()),
+            Method::GET,
+            Path((String::from("foo\0bar"), String::from("file.txt"))),
+            HeaderMap::new(),
+        )
+        .await;
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
+        let response = handle_file_fetch(
+            State(state.clone()),
+            Method::GET,
+            Path((String::from("foo"), String::from("file\0.txt"))),
+            HeaderMap::new(),
+        )
+        .await;
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
+        let response = handle_file_download(
+            State(state),
+            Method::GET,
+            Path((String::from("foo\0bar"), String::from("file.txt"))),
+            HeaderMap::new(),
+        )
+        .await;
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+}
