@@ -220,7 +220,8 @@ test("file revision reads forward the routed request context to Deepwell", async
           file_id: 5,
           revision_number: -1,
           revision_direction: "before",
-          limit: 20
+          limit: 20,
+          offset: 0
         },
         context: TRUSTED_CONTEXT
       }
