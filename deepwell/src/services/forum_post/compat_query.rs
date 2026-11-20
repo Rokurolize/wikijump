@@ -26,9 +26,9 @@ use crate::models::{
     page::Model as PageModel,
 };
 use crate::services::ServiceContext;
-use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::services::permission::PermissionService;
 use crate::services::{PageService, TextService, UserService};
-use crate::types::{Action, Permission, Reference, Resource};
+use crate::types::Reference;
 use sea_orm::prelude::TimeDateTimeWithTimeZone;
 use sea_orm::{
     ColumnTrait, Condition, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
@@ -102,7 +102,7 @@ pub async fn forum_post_select(
         let Some((page, thread)) = find_page_thread(ctx, site_id, page).await? else {
             return Ok(Vec::new());
         };
-        if !can_view_page(ctx, site_id, &page).await? {
+        if !can_view_page(ctx, &page).await? {
             return Ok(Vec::new());
         }
         Some(thread)
@@ -212,7 +212,7 @@ pub async fn forum_post_page_summary(
     let Some((page_model, thread)) = find_page_thread(ctx, site_id, &page).await? else {
         return Ok(empty_page_summary());
     };
-    if !can_view_page(ctx, site_id, &page_model).await? {
+    if !can_view_page(ctx, &page_model).await? {
         return Ok(empty_page_summary());
     }
 
@@ -324,7 +324,7 @@ async fn build_wikidot_forum_post(
         .into());
     };
 
-    if !can_view_page(ctx, post.site_id, &page).await? {
+    if !can_view_page(ctx, &page).await? {
         return Err(Error::new(
             "forum post page is not viewable",
             ErrorType::PermissionDenied,
@@ -441,39 +441,18 @@ async fn can_view_forum_post(
         return Ok(false);
     };
 
-    can_view_page(ctx, post.site_id, &page).await
+    can_view_page(ctx, &page).await
 }
 
-// DIVERGENCE (forum post #3869): this local check always asks Page/View, while
-// PermissionService::check_user_can_view_page maps _admin pages to Site/Edit;
-// the render path has no _admin branch either. Temporarily switching this helper
-// to the canonical one hid the post from a Page/View moderator in #3869's pin.
-// Pin only: any behavior change waits on live Wikidot evidence.
-async fn can_view_page(
-    ctx: &ServiceContext<'_>,
-    site_id: i64,
-    page: &PageModel,
-) -> Result<bool> {
-    PermissionService::check_user_can(
-        ctx,
-        &CheckPermissionContext {
-            user_id: ctx.request().user_id,
-            site_id,
-            page_reference: Some(Reference::Id(page.page_id)),
-        },
-        Permission {
-            resource_type: Resource::Page,
-            resource_category: Some(Reference::Id(page.page_category_id)),
-            action: Action::View,
-        },
-    )
-    .await
-    .or_raise(|| {
-        Error::new(
-            "failed to check forum post page permissions",
-            ErrorType::Permission,
-        )
-    })
+async fn can_view_page(ctx: &ServiceContext<'_>, page: &PageModel) -> Result<bool> {
+    PermissionService::check_user_can_view_page(ctx, ctx.request().user_id, page)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to check forum post page permissions",
+                ErrorType::Permission,
+            )
+        })
 }
 
 async fn resolve_optional_user_filter(
