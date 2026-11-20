@@ -346,8 +346,8 @@ mod tests {
     fn serve_missing_object(listener: TcpListener) -> thread::JoinHandle<()> {
         thread::spawn(move || {
             let (mut stream, _) = listener.accept().unwrap();
-            let mut chunk = [0u8; 4096];
-            stream.read(&mut chunk).unwrap();
+            let mut request_head = [0u8; 1];
+            stream.read_exact(&mut request_head).unwrap();
             stream
                 .write_all(
                     b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
