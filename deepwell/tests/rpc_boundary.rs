@@ -39,7 +39,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 async fn rpc_request(method: &str, params: Value) -> Value {
     let state = build_server_state_without_workers(
         Config::integration_testing(),
-        Secrets::load(),
+        Secrets::load_for_test(),
     )
     .await
     .expect("Unable to set up server state");
@@ -127,7 +127,7 @@ async fn local_authoring_request(
 async fn production_rpc_binds_local_page_actor_only_to_the_editable_site() {
     let mut config = Config::integration_testing();
     config.main_domain_no_dot = "wikijump.localhost".to_owned();
-    let state = build_server_state_without_workers(config, Secrets::load())
+    let state = build_server_state_without_workers(config, Secrets::load_for_test())
         .await
         .expect("local-authoring RPC state should build");
     let (address, handle) =
@@ -279,7 +279,7 @@ async fn rpc_request_with_session(
 ) -> Value {
     let state = build_server_state_without_workers(
         Config::integration_testing(),
-        Secrets::load(),
+        Secrets::load_for_test(),
     )
     .await
     .expect("Unable to set up server state");
@@ -318,7 +318,7 @@ async fn rpc_request_with_session(
 async fn production_rpc_stack_rolls_back_internal_failure_writes() {
     let state = build_server_state_without_workers(
         Config::integration_testing(),
-        Secrets::load(),
+        Secrets::load_for_test(),
     )
     .await
     .expect("Unable to set up server state");
@@ -420,7 +420,7 @@ async fn production_rpc_stack_rolls_back_internal_failure_writes() {
 async fn production_rpc_stack_commits_terminal_mfa_rejection_state() {
     let state = build_server_state_without_workers(
         Config::integration_testing(),
-        Secrets::load(),
+        Secrets::load_for_test(),
     )
     .await
     .expect("Unable to set up server state");
@@ -631,7 +631,7 @@ async fn production_rpc_stack_commits_terminal_mfa_rejection_state() {
 async fn production_rpc_stack_commits_password_failure_buckets() {
     let state = build_server_state_without_workers(
         Config::integration_testing(),
-        Secrets::load(),
+        Secrets::load_for_test(),
     )
     .await
     .expect("Unable to set up server state");
@@ -749,7 +749,7 @@ async fn production_rpc_stack_commits_password_failure_buckets() {
 async fn production_rpc_login_lockout_is_scoped_to_the_source_ip() {
     let state = build_server_state_without_workers(
         Config::integration_testing(),
-        Secrets::load(),
+        Secrets::load_for_test(),
     )
     .await
     .expect("Unable to set up server state");
@@ -871,7 +871,7 @@ async fn production_rpc_login_lockout_is_scoped_to_the_source_ip() {
 async fn production_rpc_successful_login_keeps_shared_ip_bucket() {
     let state = build_server_state_without_workers(
         Config::integration_testing(),
-        Secrets::load(),
+        Secrets::load_for_test(),
     )
     .await
     .expect("Unable to set up server state");
@@ -989,7 +989,7 @@ async fn production_rpc_successful_login_keeps_shared_ip_bucket() {
 async fn production_rpc_mfa_disable_attempts_persist_and_lock_out() {
     let state = build_server_state_without_workers(
         Config::integration_testing(),
-        Secrets::load(),
+        Secrets::load_for_test(),
     )
     .await
     .expect("Unable to set up server state");
@@ -1174,7 +1174,7 @@ async fn production_rpc_mfa_disable_attempts_persist_and_lock_out() {
 async fn production_rpc_serializes_recovery_code_use_across_sessions() {
     let state = build_server_state_without_workers(
         Config::integration_testing(),
-        Secrets::load(),
+        Secrets::load_for_test(),
     )
     .await
     .expect("Unable to set up server state");

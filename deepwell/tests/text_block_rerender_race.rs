@@ -55,9 +55,12 @@ where
 }
 
 async fn setup_state() -> ServerState {
-    build_server_state_without_workers(Config::integration_testing(), Secrets::load())
-        .await
-        .expect("test server state should build")
+    build_server_state_without_workers(
+        Config::integration_testing(),
+        Secrets::load_for_test(),
+    )
+    .await
+    .expect("test server state should build")
 }
 
 async fn seeded_site_id(state: &ServerState) -> i64 {

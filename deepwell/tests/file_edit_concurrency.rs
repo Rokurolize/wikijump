@@ -390,7 +390,7 @@ async fn cleanup_fixture(
 async fn concurrent_registered_file_edits_promote_only_the_winning_blob() {
     let state = build_server_state_without_workers(
         Config::integration_testing(),
-        Secrets::load(),
+        Secrets::load_for_test(),
     )
     .await
     .expect("test server state should build");
