@@ -47,7 +47,10 @@ mod tests {
         );
 
         let mut headers = HeaderMap::new();
-        headers.insert("x-wikijump-target-server", HeaderValue::from_static("other"));
+        headers.insert(
+            "x-wikijump-target-server",
+            HeaderValue::from_static("other"),
+        );
         assert_eq!(handle_robots_txt(headers).await, StatusCode::NOT_FOUND);
     }
 }
