@@ -413,7 +413,7 @@ async fn page_restore_without_explicit_user_id_uses_request_actor() {
         })
     );
 
-    let restored = run_endpoint!(
+    run_endpoint!(
         runner,
         page_restore,
         json!({
@@ -423,7 +423,6 @@ async fn page_restore_without_explicit_user_id_uses_request_actor() {
             "ip_address": common::IP_ADDRESS,
         })
     );
-    let _ = restored;
     let page = run_endpoint!(
         runner,
         page_get,
@@ -431,4 +430,37 @@ async fn page_restore_without_explicit_user_id_uses_request_actor() {
     )
     .expect("restored page not found");
     assert_eq!(page.page_id, page_id);
+    assert_eq!(page.revision_user_id, ADMIN_USER_ID);
+
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": page_id,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "setup anonymous restore probe",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        })
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(PAGE_SLUG.into())),
+    });
+
+    let error = run_endpoint_err!(
+        runner,
+        page_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": page_id,
+            "revision_comments": "restore with no acting user",
+            "ip_address": common::IP_ADDRESS,
+        })
+    );
+    assert_contains_error!(error, ErrorType::Page);
 }
