@@ -655,10 +655,12 @@ mod tests {
         CascadePageQueryCache, CountPagesSample, ViewableCountPagesRows,
         cascade_page_query_cache_key, render_page_query_batch_limit_with_floor,
     };
+    use super::{MAX_LISTPAGES_RENDER_LIMIT, MAX_LISTPAGES_RENDER_SCAN_ROWS};
     use crate::services::page_query::{
-        AuthorSelector, CategoriesSelector, DateSelector, FoundPageFields, FoundPages,
-        IncludedCategories, OrderBySelector, OrderProperty, PageParentSelector,
-        PageQuery, PageTypeSelector, PaginationSelector, TagCondition,
+        AuthorSelector, CategoriesSelector, DateSelector, FoundPageFields, FoundPageRow,
+        FoundPages, IncludedCategories, OrderBySelector, OrderProperty,
+        PageParentSelector, PageQuery, PageTypeSelector, PaginationSelector,
+        TagCondition,
     };
     use crate::types::Reference;
     use std::borrow::Cow;
@@ -820,5 +822,89 @@ mod tests {
         let stored = cache.get("key").expect("inserted rows should be stored");
         assert!(stored.view_permission_filtering_applied);
         assert_eq!(stored.sample.pages().pages.len(), 0);
+    }
+
+    fn count_scan_query(current_page_id: i64) -> PageQuery<'static> {
+        let mut query = cascade_test_query(current_page_id, PageParentSelector::All);
+        query.order = Some(OrderBySelector {
+            property: OrderProperty::Score,
+            ascending: false,
+        });
+        query.pagination.limit = Some(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS));
+        query
+    }
+
+    fn count_scan_key(query: &PageQuery<'_>) -> Option<String> {
+        cascade_page_query_cache_key(
+            None,
+            query,
+            MAX_LISTPAGES_RENDER_SCAN_ROWS as usize,
+            MAX_LISTPAGES_RENDER_LIMIT,
+            false,
+            true,
+        )
+    }
+
+    #[test]
+    fn cascade_count_scan_rows_are_shared_across_includers() {
+        let first_query = count_scan_query(111);
+        let mut second_query = first_query.clone();
+        second_query.current_page_id = 222;
+
+        let first_key =
+            count_scan_key(&first_query).expect("count scan should be shared");
+        let second_key =
+            count_scan_key(&second_query).expect("count scan should be shared");
+        assert_eq!(
+            first_key, second_key,
+            "%%total%% scan rows must be shared by includers with the same resolved query",
+        );
+
+        let mut different_order = first_query.clone();
+        different_order.order = Some(OrderBySelector {
+            property: OrderProperty::PageSlug,
+            ascending: false,
+        });
+        assert_ne!(
+            first_key,
+            count_scan_key(&different_order).expect("count scan should be shared"),
+            "a different resolved order must not share scan rows",
+        );
+
+        let rows = ViewableCountPagesRows {
+            sample: CountPagesSample::Complete(FoundPages {
+                pages: vec![FoundPageRow {
+                    page_id: 7,
+                    site_id: 1,
+                    title: None,
+                    alt_title: None,
+                    slug: Some("member".to_owned()),
+                    page_category_id: Some(1),
+                    page_revision_id: None,
+                    tags: None,
+                    created_at: None,
+                    created_by: None,
+                    updated_at: None,
+                    updated_by: None,
+                    score: None,
+                    revision_count: None,
+                }],
+            }),
+            metadata: Default::default(),
+            view_permission_filtering_applied: false,
+        };
+        let mut cache = CascadePageQueryCache::default();
+        cache.insert(first_key.clone(), rows);
+
+        let shared = cache
+            .get(&second_key)
+            .expect("second includer must reuse the first includer's scan rows");
+        assert_eq!(
+            shared.sample.pages().pages.len(),
+            1,
+            "the shared row set (and therefore the derived total) must be unchanged",
+        );
+        assert_eq!(shared.sample.pages().pages[0].page_id, 7);
+        assert!(!shared.view_permission_filtering_applied);
     }
 }

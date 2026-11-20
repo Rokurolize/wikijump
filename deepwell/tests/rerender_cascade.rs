@@ -249,3 +249,102 @@ async fn template_edit_rerenders_every_includer_with_new_list_pages_total() {
     assert!(compiled_html(&unrelated).contains("UNRELATED_BODY"));
     assert!(!compiled_html(&unrelated).contains("CASCADE_MARKER"));
 }
+
+#[tokio::test]
+async fn rating_family_totals_survive_immediate_rerender_cascade() {
+    let mut runner = TestRunner::setup().await;
+    let site_id = test_site_id(&runner).await;
+
+    for (suffix, filter) in [("order", "order=\"rating\""), ("gt", "rating=\">-1\"")] {
+        let category_before = format!("cascade-rating-{suffix}-before");
+        let category_after = format!("cascade-rating-{suffix}-after");
+        let template = format!("cascade-rating-{suffix}-template");
+        let host_one = format!("cascade-rating-{suffix}-host-one");
+        let host_two = format!("cascade-rating-{suffix}-host-two");
+
+        for (slug, body) in [
+            (format!("{category_before}:one"), "before one"),
+            (format!("{category_before}:two"), "before two"),
+            (format!("{category_after}:one"), "after one"),
+            (format!("{category_after}:two"), "after two"),
+            (format!("{category_after}:three"), "after three"),
+        ] {
+            create_page(&mut runner, site_id, &slug, body).await;
+        }
+
+        let before_wikitext = format!(
+            "RATING_{suffix}_V1\n\
+             [[module ListPages category=\"{category_before}\" {filter} separate=\"no\" wrapper=\"no\" perPage=\"1\"]]\n\
+             TOTAL=%%total%%\n\
+             [[/module]]"
+        );
+        let after_wikitext = before_wikitext
+            .replace(&category_before, &category_after)
+            .replace(
+                &format!("RATING_{suffix}_V1"),
+                &format!("RATING_{suffix}_V2"),
+            );
+        let template_page =
+            create_page(&mut runner, site_id, &template, &before_wikitext).await;
+        for host in [&host_one, &host_two] {
+            create_page(
+                &mut runner,
+                site_id,
+                host,
+                &format!("[[include {template}]]"),
+            )
+            .await;
+        }
+
+        for host in [&host_one, &host_two] {
+            let before = get_page(&runner, site_id, host).await;
+            let html = compiled_html(&before);
+            assert!(
+                html.contains(&format!("RATING_{suffix}_V1")),
+                "includer {host} should serve the original rating template:\n{html}",
+            );
+            assert!(
+                html.contains("TOTAL=2"),
+                "includer {host} should serve the original rating total:\n{html}",
+            );
+        }
+
+        set_page_actor(&mut runner, site_id, &template);
+        let edit_lease = common::acquire_page_edit_lease(
+            &runner,
+            site_id,
+            &json!(template),
+            ADMIN_USER_ID,
+        )
+        .await;
+        run_endpoint!(
+            runner,
+            page_edit,
+            json!({
+                "lease": edit_lease,
+                "site_id": site_id,
+                "page": template,
+                "last_revision_id": template_page.revision_id,
+                "revision_comments": "change rating template match set",
+                "user_id": ADMIN_USER_ID,
+                "wikitext": after_wikitext,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        )
+        .expect("rating template edit should create a revision");
+
+        for host in [&host_one, &host_two] {
+            rerender_page(&mut runner, site_id, host).await;
+            let after = get_page(&runner, site_id, host).await;
+            let html = compiled_html(&after);
+            assert!(
+                html.contains(&format!("RATING_{suffix}_V2")),
+                "includer {host} should serve the edited rating template:\n{html}",
+            );
+            assert!(
+                html.contains("TOTAL=3") && !html.contains("TOTAL=2"),
+                "includer {host} should serve the edited rating total:\n{html}",
+            );
+        }
+    }
+}
