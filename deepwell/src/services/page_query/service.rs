@@ -223,7 +223,16 @@ impl PageQueryService {
                 .await
                 .or_raise(make_error)?;
         }
+        // Selector combinations with a small estimated match set flip the
+        // parent and snapshot anti-joins to nested loops that re-scan the
+        // whole relation for every candidate. Hash joins are stable here.
+        txn.execute_unprepared("SET LOCAL enable_nestloop = off")
+            .await
+            .or_raise(make_error)?;
         let total = built.query.count(txn).await.or_raise(make_error)?;
+        txn.execute_unprepared("SET LOCAL enable_nestloop TO DEFAULT")
+            .await
+            .or_raise(make_error)?;
         if built.tag_custom_plan {
             txn.execute_unprepared("SET LOCAL plan_cache_mode TO DEFAULT")
                 .await
@@ -663,6 +672,12 @@ impl PageQueryService {
                 .await
                 .or_raise(make_error)?;
         }
+        // Keep the page scan on hash joins regardless of how selective the
+        // selectors look; a nested-loop anti join re-scans its inner relation
+        // once per candidate when that estimate is wrong.
+        txn.execute_unprepared("SET LOCAL enable_nestloop = off")
+            .await
+            .or_raise(make_error)?;
 
         let (mut pages, effective_revision_count_by_page_id) =
             if projects_effective_revision_count {
@@ -684,6 +699,9 @@ impl PageQueryService {
             } else {
                 (query.all(txn).await.or_raise(make_error)?, BTreeMap::new())
             };
+        txn.execute_unprepared("SET LOCAL enable_nestloop TO DEFAULT")
+            .await
+            .or_raise(make_error)?;
         if tag_custom_plan {
             txn.execute_unprepared("SET LOCAL plan_cache_mode TO DEFAULT")
                 .await

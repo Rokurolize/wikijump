@@ -45,9 +45,9 @@ fn broad_score_filter_aggregates_site_votes_once() {
             .contains("score_vote.rating_system = 'points'")
     );
     assert!(
-        statement
-            .sql
-            .contains("WHERE filtered_score.effective_score = $2")
+        statement.sql.contains(
+            "WHERE filtered_score.effective_score >= $2 AND filtered_score.effective_score <= $2"
+        )
     );
     assert!(
         !statement
@@ -524,4 +524,83 @@ fn uncacheable_score_key_stays_on_the_site_wide_fallback() {
     assert_eq!(cache.touch(&key, true), ScoreFilterCacheLookup::Uncacheable);
     assert_eq!(cache.materialized_membership(&key), None);
     assert!(cache.memberships.is_empty());
+}
+
+#[test]
+fn equality_score_selector_uses_inclusive_bounds_in_both_plans() {
+    let selector = ScoreSelector {
+        score: ScoreValue::Integer(0),
+        comparison: ComparisonOperation::Equal,
+    };
+    for (plan, expected_condition, expected_values) in [
+        (
+            ScoreFilterPlan::CandidateCorrelated,
+            "WHERE filtered_score.effective_score >= $1 AND filtered_score.effective_score <= $1",
+            vec![Value::BigInt(Some(0))],
+        ),
+        (
+            ScoreFilterPlan::SiteWide { site_id: 6_000_005 },
+            "WHERE filtered_score.effective_score >= $2 AND filtered_score.effective_score <= $2",
+            vec![Value::BigInt(Some(6_000_005)), Value::BigInt(Some(0))],
+        ),
+    ] {
+        let statement = page::Entity::find()
+            .filter(score_selector_condition(&selector, plan))
+            .build(DatabaseBackend::Postgres);
+
+        assert!(
+            statement.sql.contains(expected_condition),
+            "{}",
+            statement.sql,
+        );
+        assert_eq!(statement.values.unwrap().0, expected_values);
+    }
+}
+
+#[test]
+fn non_equality_score_operators_are_unchanged() {
+    for (comparison, operator) in [
+        (ComparisonOperation::GreaterThan, ">"),
+        (ComparisonOperation::LessThan, "<"),
+        (ComparisonOperation::GreaterOrEqualThan, ">="),
+        (ComparisonOperation::LessOrEqualThan, "<="),
+        (ComparisonOperation::NotEqual, "!="),
+    ] {
+        let selector = ScoreSelector {
+            score: ScoreValue::Integer(0),
+            comparison,
+        };
+        let statement = page::Entity::find()
+            .filter(score_selector_condition(
+                &selector,
+                ScoreFilterPlan::CandidateCorrelated,
+            ))
+            .build(DatabaseBackend::Postgres);
+
+        assert!(
+            statement.sql.contains(&format!(
+                "WHERE filtered_score.effective_score {operator} $1"
+            )),
+            "{}",
+            statement.sql,
+        );
+    }
+}
+
+#[test]
+fn equality_rewrite_keeps_the_same_matched_scores() {
+    let scores = [i64::MIN, -1_000, -1, 0, 1, 1_000, i64::MAX];
+    for target in [i64::MIN, -1, 0, 1, i64::MAX] {
+        let equality: Vec<i64> = scores
+            .iter()
+            .copied()
+            .filter(|score| *score == target)
+            .collect();
+        let bounds: Vec<i64> = scores
+            .iter()
+            .copied()
+            .filter(|score| target <= *score && *score <= target)
+            .collect();
+        assert_eq!(equality, bounds, "target {target}");
+    }
 }

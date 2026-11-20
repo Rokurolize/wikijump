@@ -273,6 +273,25 @@ pub(super) fn score_comparison_operator(comparison: ComparisonOperation) -> &'st
     }
 }
 
+// An equality on the computed effective_score is estimated at 0.5% selectivity,
+// which flips parent+rating COUNT/SELECT to nested-loop anti joins. Two inclusive
+// bounds are equivalent on the integer score domain and keep a hash-join plan.
+fn score_comparison_sql(
+    column: &str,
+    placeholder: &str,
+    comparison: ComparisonOperation,
+) -> String {
+    match comparison {
+        ComparisonOperation::Equal => {
+            format!("{column} >= {placeholder} AND {column} <= {placeholder}")
+        }
+        other => format!(
+            "{column} {} {placeholder}",
+            score_comparison_operator(other)
+        ),
+    }
+}
+
 fn score_selector_value(selector: &ScoreSelector) -> Value {
     match selector.score {
         ScoreValue::Integer(value) => Value::BigInt(Some(value)),
@@ -291,10 +310,10 @@ pub(super) fn score_selectors_condition(
                 .iter()
                 .enumerate()
                 .map(|(index, selector)| {
-                    format!(
-                        "filtered_score.effective_score {} ${}",
-                        score_comparison_operator(selector.comparison),
-                        index + 2,
+                    score_comparison_sql(
+                        "filtered_score.effective_score",
+                        &format!("${}", index + 2),
+                        selector.comparison,
                     )
                 })
                 .collect::<Vec<_>>()
@@ -340,10 +359,10 @@ pub(super) fn score_selectors_condition(
                 .iter()
                 .enumerate()
                 .map(|(index, selector)| {
-                    format!(
-                        "filtered_score.effective_score {} ${}",
-                        score_comparison_operator(selector.comparison),
-                        index + 1,
+                    score_comparison_sql(
+                        "filtered_score.effective_score",
+                        &format!("${}", index + 1),
+                        selector.comparison,
                     )
                 })
                 .collect::<Vec<_>>()
