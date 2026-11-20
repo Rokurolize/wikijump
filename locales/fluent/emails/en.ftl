@@ -24,3 +24,22 @@ emails-reset-password =
     *[other] { $count } minutes.
   }
   .outro = If you did not request a password reset, no further action is required.
+
+emails-delete-account =
+  .subject = Confirm Account Deletion
+  .greeting = Confirm account deletion
+  .intro = Please confirm that you want to delete your account by clicking the button below.
+  .action = Delete My Account
+  .outro = If you did not request account deletion, no further action is required.
+
+emails-reset-grant =
+  .subject = Password Reset Approved
+  .greeting = Password reset approved
+  .intro = Your password reset request has been approved. Continue in your browser; this email contains no link to follow.
+  .outro = If you did not request a password reset, no further action is required.
+
+emails-delete-grant =
+  .subject = Account Deletion Approved
+  .greeting = Account deletion approved
+  .intro = Your account deletion request has been approved. Continue in your browser; this email contains no link to follow.
+  .outro = If you did not request account deletion, no further action is required.

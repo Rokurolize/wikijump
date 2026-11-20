@@ -173,7 +173,13 @@ async fn email_validation_rejects_an_empty_address() {
 
 use deepwell::api::build_server_state;
 use deepwell::config::{Config, EmailProvider, Secrets};
-use deepwell::services::email::{EmailSender, EmailService, SendEmail};
+use deepwell::services::email::{
+    EmailSender, EmailService, EmailTokenPurpose, EmailTokenService, IssueEmailToken,
+    IssueEmailTokenOutcome, IssuedEmailToken, SendEmail,
+};
+use deepwell::services::user::{CreateUser, UserService};
+use deepwell::types::UserType;
+use uuid::Uuid;
 
 const RECIPIENT: &str = "recipient@example.com";
 
@@ -387,4 +393,206 @@ async fn email_local_provider_disallowed() {
         message.contains("local email provider is not allowed"),
         "Wrong server setup error:\n{message}",
     );
+}
+
+fn token_mail_user(email: String) -> CreateUser {
+    CreateUser {
+        user_type: UserType::Regular,
+        name: format!("Token Mail {}", Uuid::new_v4()),
+        email,
+        locales: vec!["en".to_owned()],
+        password: "token-mail-fixture-password".to_owned(),
+        bypass_filter: true,
+        bypass_email_verification: true,
+        override_user_id: None,
+        ip_address: common::IP_ADDRESS,
+    }
+}
+
+async fn issue_token(
+    runner: &TestRunner,
+    user_id: i64,
+    email: &str,
+    purpose: EmailTokenPurpose,
+) -> IssuedEmailToken {
+    match EmailTokenService::issue(
+        runner.context(),
+        IssueEmailToken {
+            user_id,
+            email: email.to_owned(),
+            purpose,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("token issue should succeed")
+    {
+        IssueEmailTokenOutcome::Issued(issued) => issued,
+        IssueEmailTokenOutcome::Suppressed => {
+            panic!("fresh token should not be suppressed")
+        }
+    }
+}
+
+fn token_mail_origin(runner: &TestRunner) -> String {
+    let config = runner.config();
+    format!(
+        "https://{}",
+        config.public_authority(&config.main_domain_no_dot)
+    )
+}
+
+fn stored_emails(runner: &TestRunner) -> Vec<missive::StoredEmail> {
+    runner
+        .state()
+        .email_mailer
+        .local_emails()
+        .expect("Not a local mailer")
+}
+
+#[tokio::test]
+async fn token_email_delivers_action_links_for_link_purposes() {
+    let runner = TestRunner::setup().await;
+    assert_local_provider(&runner);
+
+    let email = format!("token-mail-links-{}@example.invalid", Uuid::new_v4());
+    let created = UserService::create(runner.context(), token_mail_user(email.clone()))
+        .await
+        .expect("user should be created");
+    let origin = token_mail_origin(&runner);
+
+    let cases = [
+        (
+            EmailTokenPurpose::VerifyEmail,
+            "/-/verify-email/",
+            "Verify Email Address",
+        ),
+        (
+            EmailTokenPurpose::ResetPassword,
+            "/-/reset/",
+            "Password Reset Requested",
+        ),
+        (
+            EmailTokenPurpose::DeleteConfirm,
+            "/-/delete-account/",
+            "Confirm Account Deletion",
+        ),
+    ];
+
+    for (purpose, path, subject) in cases {
+        let issued = issue_token(&runner, created.user_id, &email, purpose).await;
+        EmailService::send_token_email(
+            runner.context(),
+            &email,
+            purpose,
+            &issued,
+            &["en".to_owned()],
+        )
+        .await;
+
+        let emails = stored_emails(&runner);
+        let sent = &emails.last().expect("token email should be stored").email;
+        assert_eq!(sent.subject_line(), subject);
+        assert_eq!(sent.to_addresses()[0].email(), email);
+        let body = sent.text_body_content().expect("text body");
+        let link = format!("{origin}{path}{}", issued.token);
+        assert!(body.contains(&link), "missing link for {purpose:?}");
+        assert!(!body.contains('\u{2068}'));
+        assert!(!body.contains('\u{2069}'));
+        if purpose == EmailTokenPurpose::ResetPassword {
+            assert!(body.contains("60 minutes"), "missing expiry in {body}");
+        }
+    }
+
+    assert_eq!(stored_emails(&runner).len(), cases.len());
+}
+
+#[tokio::test]
+async fn token_email_for_grants_has_no_action_link() {
+    let runner = TestRunner::setup().await;
+    assert_local_provider(&runner);
+
+    let email = format!("token-mail-grants-{}@example.invalid", Uuid::new_v4());
+    let created = UserService::create(runner.context(), token_mail_user(email.clone()))
+        .await
+        .expect("user should be created");
+    let origin = token_mail_origin(&runner);
+
+    for (purpose, subject) in [
+        (EmailTokenPurpose::ResetGrant, "Password Reset Approved"),
+        (EmailTokenPurpose::DeleteGrant, "Account Deletion Approved"),
+    ] {
+        let issued = issue_token(&runner, created.user_id, &email, purpose).await;
+        EmailService::send_token_email(
+            runner.context(),
+            &email,
+            purpose,
+            &issued,
+            &["en".to_owned()],
+        )
+        .await;
+
+        let emails = stored_emails(&runner);
+        let sent = &emails.last().expect("grant email should be stored").email;
+        assert_eq!(sent.subject_line(), subject);
+        let body = sent.text_body_content().expect("text body");
+        assert!(!body.contains(&issued.token));
+        assert!(!body.contains(&origin));
+        assert!(!body.contains("/-/"));
+    }
+}
+
+#[tokio::test]
+async fn issue_endpoint_delivers_one_email_and_suppression_delivers_none() {
+    let runner = TestRunner::setup().await;
+    assert_local_provider(&runner);
+
+    let email = format!("token-mail-endpoint-{}@example.invalid", Uuid::new_v4());
+    UserService::create(runner.context(), token_mail_user(email.clone()))
+        .await
+        .expect("user should be created");
+
+    let params = common::make_params(json!({
+        "email": email,
+        "ip_address": common::IP_ADDRESS,
+    }));
+    deepwell::endpoints::all::password_reset_issue(runner.context(), params.clone())
+        .await
+        .expect("first issue should succeed");
+    deepwell::endpoints::all::password_reset_issue(runner.context(), params)
+        .await
+        .expect("suppressed issue should still succeed");
+
+    let emails = stored_emails(&runner);
+    assert_eq!(emails.len(), 1);
+    let body = emails[0].email.text_body_content().expect("text body");
+    assert!(
+        body.contains(&format!("{}/-/reset/", token_mail_origin(&runner))),
+        "missing reset link in {body}",
+    );
+}
+
+#[tokio::test]
+async fn issue_endpoint_succeeds_when_delivery_fails() {
+    let runner = TestRunner::setup().await;
+    assert_local_provider(&runner);
+
+    let email = format!("token-mail-failure-{}@example.invalid", Uuid::new_v4());
+    UserService::create(runner.context(), token_mail_user(email.clone()))
+        .await
+        .expect("user should be created");
+    runner
+        .state()
+        .email_mailer
+        .set_local_failure(Some("simulated token email outage"));
+
+    let params = common::make_params(json!({
+        "email": email,
+        "ip_address": common::IP_ADDRESS,
+    }));
+    deepwell::endpoints::all::email_verify_issue(runner.context(), params)
+        .await
+        .expect("delivery failure must not fail the account flow");
+
+    assert!(stored_emails(&runner).is_empty());
 }
