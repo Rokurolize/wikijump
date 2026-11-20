@@ -18,14 +18,13 @@ use super::*;
 use crate::services::render::service::wikidot_inline_span_marker_open;
 use ftml::tree::{SocialButtons, SocialSelection, SocialService};
 
-pub(super) fn select_list_pages_rows(
+pub(super) fn select_list_pages_matched_rows(
     pages: Vec<FoundPageRow>,
     exact_visible_tags: bool,
     current_visible_tags: &BTreeSet<String>,
     relative_range: Option<RangeSelector>,
     current_page_id: i64,
     exclude_current_page: bool,
-    offset: u32,
 ) -> Vec<FoundPageRow> {
     let pages = pages
         .into_iter()
@@ -64,7 +63,6 @@ pub(super) fn select_list_pages_rows(
     pages
         .into_iter()
         .filter(|page| !exclude_current_page || page.page_id != current_page_id)
-        .skip(offset as usize)
         .collect()
 }
 
@@ -854,16 +852,72 @@ mod tests {
         let pages = vec![row(1, None), row(2, None), row(3, None)];
         let tags = BTreeSet::new();
 
-        let all = select_list_pages_rows(pages.clone(), false, &tags, None, 2, false, 0);
+        let all =
+            select_list_pages_matched_rows(pages.clone(), false, &tags, None, 2, false);
         assert_eq!(ids(&all), vec![1, 2, 3]);
 
-        let offset =
-            select_list_pages_rows(pages.clone(), false, &tags, None, 2, false, 1);
+        let offset = select_list_pages_matched_rows(
+            pages.clone(),
+            false,
+            &tags,
+            None,
+            2,
+            false,
+        )
+        .into_iter()
+        .skip(1)
+        .collect::<Vec<_>>();
         assert_eq!(ids(&offset), vec![2, 3]);
 
         let excluded =
-            select_list_pages_rows(pages.clone(), false, &tags, None, 2, true, 0);
+            select_list_pages_matched_rows(pages.clone(), false, &tags, None, 2, true);
         assert_eq!(ids(&excluded), vec![1, 3]);
+    }
+
+    #[test]
+    fn deep_corpus_offset_window_and_total_are_independent() {
+        const CORPUS_SIZE: usize = 1618;
+        let pages = (0..CORPUS_SIZE)
+            .map(|index| row(100_000 + index as i64, None))
+            .collect::<Vec<_>>();
+        let tags = BTreeSet::new();
+
+        for (offset, limit) in [
+            (0, 5),
+            (100, 5),
+            (500, 5),
+            (1000, 5),
+            (1001, 5),
+            (1500, 5),
+            (1000, 1),
+            (1001, 1),
+            (1000, 20),
+            (1001, 20),
+        ] {
+            let matched =
+                select_list_pages_matched_rows(pages.clone(), false, &tags, None, 0, false);
+            assert_eq!(
+                matched.len(),
+                CORPUS_SIZE,
+                "the matched total must not shrink with the offset",
+            );
+
+            let window = matched
+                .into_iter()
+                .skip(offset)
+                .take(limit)
+                .map(|page| page.page_id)
+                .collect::<Vec<_>>();
+            assert_eq!(
+                window.len(),
+                limit.min(CORPUS_SIZE - offset),
+                "offset {offset} with limit {limit} must return the rows at that offset",
+            );
+            assert_eq!(window.first().copied(), Some(100_000 + offset as i64));
+        }
+
+        let matched = select_list_pages_matched_rows(pages, false, &tags, None, 0, false);
+        assert_eq!(matched.into_iter().skip(CORPUS_SIZE).count(), 0);
     }
 
     #[test]
@@ -876,7 +930,7 @@ mod tests {
         let mut current = BTreeSet::new();
         current.insert("alpha".to_owned());
 
-        let selected = select_list_pages_rows(pages, true, &current, None, 1, false, 0);
+        let selected = select_list_pages_matched_rows(pages, true, &current, None, 1, false);
         assert_eq!(
             ids(&selected),
             vec![1, 2],
@@ -889,36 +943,33 @@ mod tests {
         let pages = vec![row(1, None), row(2, None), row(3, None)];
         let tags = BTreeSet::new();
 
-        let before = select_list_pages_rows(
+        let before = select_list_pages_matched_rows(
             pages.clone(),
             false,
             &tags,
             Some(RangeSelector::Before),
             2,
             false,
-            0,
         );
         assert_eq!(ids(&before), vec![1]);
 
-        let after = select_list_pages_rows(
+        let after = select_list_pages_matched_rows(
             pages.clone(),
             false,
             &tags,
             Some(RangeSelector::After),
             2,
             false,
-            0,
         );
         assert_eq!(ids(&after), vec![3]);
 
-        let missing = select_list_pages_rows(
+        let missing = select_list_pages_matched_rows(
             pages,
             false,
             &tags,
             Some(RangeSelector::Before),
             99,
             false,
-            0,
         );
         assert!(missing.is_empty(), "a missing current page selects nothing");
     }

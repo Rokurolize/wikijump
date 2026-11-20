@@ -42,7 +42,7 @@ use super::{
     render_list_pages_default_summary_source, render_list_pages_selected_content_source,
     render_page_query_uses_single_scan, resolve_list_pages_first_image,
     seal_zero_row_list_pages_wrapper, seed_random_list_pages_order,
-    select_list_pages_rows, should_render_current_page_list_pages_row,
+    select_list_pages_matched_rows, should_render_current_page_list_pages_row,
     wikidot_content_section,
 };
 
@@ -332,11 +332,14 @@ impl RenderService {
             .unwrap_or(DEFAULT_LISTPAGES_PER_PAGE)
             .clamp(1, MAX_LISTPAGES_RENDER_LIMIT);
         let url_page = url.page_for_prefix(url_attr_prefix.as_deref());
-        let oversized_offset_initial_page =
-            offset_beyond_render_window.is_some() && url_page.unwrap_or(1) <= 1;
-        let offset = match (offset_beyond_render_window, url_page) {
-            (Some(raw_offset), Some(page)) if page > 1 => (raw_offset % per_page) as u32,
-            _ => offset,
+        let offset = if let Some(raw_offset) = offset_beyond_render_window {
+            if url_page.unwrap_or(1) > 1 {
+                (raw_offset % u64::from(per_page)) as u32
+            } else {
+                u32::MAX
+            }
+        } else {
+            offset
         };
         let query_limit = list_pages_row_scan_target(
             if relative_range.is_some() {
@@ -478,7 +481,6 @@ impl RenderService {
         let current_page_excluded_by_author =
             current_page_only && exclude_current_page_author;
         let rows_are_complete_without_query = zero_page_size
-            || oversized_offset_initial_page
             || current_page_date_missing
             || votes_equal_current_zero_votes
             || missing_current_page_for_selector
@@ -562,14 +564,13 @@ impl RenderService {
                             "exact total scan incomplete",
                         ));
                     }
-                    select_list_pages_rows(
+                    select_list_pages_matched_rows(
                         found.sample.into_pages().pages,
                         exact_visible_tags,
                         &current_visible_tags,
                         relative_range,
                         current_page_id,
                         exclude_current_page,
-                        offset,
                     )
                     .len()
                 };
@@ -584,7 +585,6 @@ impl RenderService {
             None
         };
         let pages = if zero_page_size
-            || oversized_offset_initial_page
             || current_page_date_missing
             || votes_equal_current_zero_votes
             || missing_current_page_for_selector
@@ -675,18 +675,18 @@ impl RenderService {
                 });
             debug!("ListPages render diagnostics: {diagnostics:?}");
         }
-        let all_selected_pages = select_list_pages_rows(
+        let all_matched_pages = select_list_pages_matched_rows(
             pages.pages,
             exact_visible_tags,
             &current_visible_tags,
             relative_range,
             current_page_id,
             exclude_current_page,
-            offset,
         );
-        let all_selected_total = all_selected_pages.len();
-        let selected_pages = all_selected_pages
+        let total_matched = all_matched_pages.len();
+        let selected_pages = all_matched_pages
             .into_iter()
+            .skip(offset as usize)
             .take(
                 limit
                     .and_then(|limit| usize::try_from(limit).ok())
@@ -694,7 +694,6 @@ impl RenderService {
             )
             .collect::<Vec<_>>();
         let total_selected = selected_pages.len();
-
         let page_count = (total_selected as u64).div_ceil(per_page).max(1);
         let page = u64::from(url_page.unwrap_or(1)).clamp(1, page_count);
         let url_page_skip = usize::try_from((page - 1) * per_page).unwrap_or(usize::MAX);
@@ -707,7 +706,7 @@ impl RenderService {
             pages.reverse();
         }
         let exact_total = exact_total_from_scan
-            .or_else(|| rows_are_complete_without_query.then_some(all_selected_total));
+            .or_else(|| rows_are_complete_without_query.then_some(total_matched));
         if template.uses_total() && exact_total.is_none() {
             return Ok(ListPagesBlockRenderResult::PreserveOriginal(
                 "exact total unavailable",
