@@ -3310,10 +3310,7 @@ impl RenderService {
                             .decode(value)
                             .map(|(decoded, _)| decoded.as_str())
                             .unwrap_or(value.as_ref());
-                        (
-                            Cow::Owned(name.to_string()),
-                            Cow::Owned(decoded.to_owned()),
-                        )
+                        (Cow::Owned(name.to_string()), Cow::Owned(decoded.to_owned()))
                     })
                     .collect::<IncludeArguments<'static>>();
                 let include = IncludeRef::with_arguments(

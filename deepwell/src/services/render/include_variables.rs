@@ -143,7 +143,9 @@ mod tests {
         )
     }
 
-    fn include_with_arguments(variables: &[(&'static str, &'static str)]) -> IncludeRef<'static> {
+    fn include_with_arguments(
+        variables: &[(&'static str, &'static str)],
+    ) -> IncludeRef<'static> {
         let variables = variables
             .iter()
             .map(|&(name, value)| (Cow::Borrowed(name), Cow::Borrowed(value)))
@@ -152,7 +154,11 @@ mod tests {
             .iter()
             .map(|(key, value)| (key.clone(), value.clone()))
             .collect::<IncludeArguments<'static>>();
-        IncludeRef::with_arguments(PageRef::page_only("component:test"), variables, arguments)
+        IncludeRef::with_arguments(
+            PageRef::page_only("component:test"),
+            variables,
+            arguments,
+        )
     }
 
     #[test]
@@ -160,7 +166,8 @@ mod tests {
         let include = include(&[("x", "{$y}{$y}{$y}{$y}"), ("y", "{$x}{$x}{$x}{$x}")]);
         let mut content = "{$x}".to_owned();
 
-        apply_include_variables(&mut content, &include).expect("two-step fold must stay within budget");
+        apply_include_variables(&mut content, &include)
+            .expect("two-step fold must stay within budget");
 
         assert_eq!(content, "{$x}".repeat(16));
         assert_eq!(content.len(), 64);
@@ -173,10 +180,7 @@ mod tests {
             .into_iter()
             .map(|key| (Cow::Borrowed(key), Cow::Owned(value.clone())))
             .collect::<IncludeArguments<'static>>();
-        let variables = arguments
-            .iter()
-            .cloned()
-            .collect::<VariableMap<'static>>();
+        let variables = arguments.iter().cloned().collect::<VariableMap<'static>>();
         let include = IncludeRef::with_arguments(
             PageRef::page_only("component:test"),
             variables,
@@ -193,20 +197,24 @@ mod tests {
 
     #[test]
     fn later_argument_rewrites_text_an_earlier_argument_inserted() {
-        let include = include_with_arguments(&[("first", "{$second}"), ("second", "final")]);
+        let include =
+            include_with_arguments(&[("first", "{$second}"), ("second", "final")]);
         let mut content = "{$first}".to_owned();
 
-        apply_include_variables(&mut content, &include).expect("fold must stay within budget");
+        apply_include_variables(&mut content, &include)
+            .expect("fold must stay within budget");
 
         assert_eq!(content, "final");
     }
 
     #[test]
     fn later_argument_value_naming_an_earlier_key_stays_literal() {
-        let include = include_with_arguments(&[("first", "kept"), ("second", "{$first}")]);
+        let include =
+            include_with_arguments(&[("first", "kept"), ("second", "{$first}")]);
         let mut content = "{$second}".to_owned();
 
-        apply_include_variables(&mut content, &include).expect("fold must stay within budget");
+        apply_include_variables(&mut content, &include)
+            .expect("fold must stay within budget");
 
         assert_eq!(content, "{$first}");
     }
@@ -216,17 +224,20 @@ mod tests {
         let include = include_with_arguments(&[("x", "prefix {$x}")]);
         let mut content = "{$x}".to_owned();
 
-        apply_include_variables(&mut content, &include).expect("fold must stay within budget");
+        apply_include_variables(&mut content, &include)
+            .expect("fold must stay within budget");
 
         assert_eq!(content, "prefix {$x}");
     }
 
     #[test]
     fn defaults_apply_only_to_absent_names_before_the_fold() {
-        let include = include_with_arguments(&[("author", "{$shadow}"), ("shadow", "yes")]);
+        let include =
+            include_with_arguments(&[("author", "{$shadow}"), ("shadow", "yes")]);
         let mut content = "{$author}|{$shadow}".to_owned();
 
-        apply_include_variables(&mut content, &include).expect("fold must stay within budget");
+        apply_include_variables(&mut content, &include)
+            .expect("fold must stay within budget");
 
         assert_eq!(content, "yes|yes");
     }

@@ -1320,14 +1320,10 @@ fn resolves_nested_wikidot_include_variables() {
         (Cow::Borrowed("action"), Cow::Borrowed("true")),
         (Cow::Borrowed("type"), Cow::Borrowed("false")),
     ]);
-    let arguments = [
-        ("name", "action"),
-        ("action", "true"),
-        ("type", "false"),
-    ]
-    .into_iter()
-    .map(|(key, value)| (Cow::Borrowed(key), Cow::Borrowed(value)))
-    .collect();
+    let arguments = [("name", "action"), ("action", "true"), ("type", "false")]
+        .into_iter()
+        .map(|(key, value)| (Cow::Borrowed(key), Cow::Borrowed(value)))
+        .collect();
     let include = IncludeRef::with_arguments(
         PageRef::page_and_site("scp-jp", "user-component:ta-badge-smooth-base-base"),
         variables,
@@ -1542,12 +1538,12 @@ fn include_variable_rebuild_folds_each_argument_once_in_source_order() {
             )
         })
         .collect::<Vec<_>>();
-    let variables = arguments
-        .iter()
-        .cloned()
-        .collect::<VariableMap<'static>>();
-    let include =
-        IncludeRef::with_arguments(PageRef::page_only("component:test"), variables, arguments);
+    let variables = arguments.iter().cloned().collect::<VariableMap<'static>>();
+    let include = IncludeRef::with_arguments(
+        PageRef::page_only("component:test"),
+        variables,
+        arguments,
+    );
     let mut source = "{$v0}{$v8}".to_owned();
 
     super::super::apply_include_variables(&mut source, &include)
@@ -1586,12 +1582,12 @@ fn include_variable_rebuild_matches_fold_output() {
             .into_iter()
             .map(|(name, value)| (Cow::Borrowed(name), Cow::Borrowed(value)))
             .collect::<Vec<_>>();
-        let variables = arguments
-            .iter()
-            .cloned()
-            .collect::<VariableMap<'static>>();
-        let include =
-            IncludeRef::with_arguments(PageRef::page_only("component:test"), variables, arguments);
+        let variables = arguments.iter().cloned().collect::<VariableMap<'static>>();
+        let include = IncludeRef::with_arguments(
+            PageRef::page_only("component:test"),
+            variables,
+            arguments,
+        );
         let mut actual = source.to_owned();
 
         super::super::apply_include_variables(&mut actual, &include)
