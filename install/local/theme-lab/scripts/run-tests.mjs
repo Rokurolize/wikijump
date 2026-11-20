@@ -45,6 +45,11 @@ import path from 'node:path';
 import {spawn, spawnSync} from 'node:child_process';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 
+import {
+  ensurePnpmDependencies,
+  resolvePersistentPnpmStoreDir,
+} from '../../wikidot-verification/src/pnpm-offline-store.mjs';
+
 const themeLabRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const repoRoot = path.resolve(themeLabRoot, '../../..');
 export const framerailRoot = path.join(repoRoot, 'framerail');
@@ -63,12 +68,20 @@ export function collectTestFiles(args, root = themeLabRoot) {
     .map((name) => path.join('tests', name));
 }
 
-export function ensureFramerailDependencies(root = framerailRoot, run = spawnSync) {
+export function ensureFramerailDependencies(root = framerailRoot, run = spawnSync, options = {}) {
   if (!framerailPlaywrightMissing(root)) return false;
-  process.stderr.write('theme-lab tests: framerail dependencies missing; running pnpm install --frozen-lockfile\n');
-  const result = run('pnpm', ['install', '--frozen-lockfile'], {cwd: root, stdio: 'inherit'});
-  if (result.error) throw new Error(`could not run pnpm install in framerail: ${result.error.message}`);
-  if (result.status !== 0) throw new Error(`pnpm install in framerail exited ${result.status}`);
+  const storeDir = options.storeDir ?? resolvePersistentPnpmStoreDir(options.env ?? process.env);
+  process.stderr.write(`theme-lab tests: framerail dependencies missing; installing offline from ${storeDir}\n`);
+  const runner =
+    run === spawnSync
+      ? undefined
+      : (command, args, runOptions) => run(command, args, runOptions);
+  ensurePnpmDependencies({
+    dir: root,
+    storeDir,
+    env: options.env ?? process.env,
+    ...(runner ? {run: runner} : {}),
+  });
   if (framerailPlaywrightMissing(root)) {
     throw new Error('framerail dependencies installed but @playwright/test is still unresolvable');
   }

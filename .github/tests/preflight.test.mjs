@@ -20,8 +20,14 @@ function createHarness(t) {
   const bin = path.join(directory, "bin")
   const commandLog = path.join(directory, "commands.log")
   const pathLog = path.join(directory, "paths.log")
+  const markerRoot = path.join(directory, "markers")
   mkdirSync(bin)
   mkdirSync(path.join(directory, "evidence-store"), { recursive: true })
+  mkdirSync(path.join(markerRoot, "framerail/node_modules/@playwright/test"), { recursive: true })
+  mkdirSync(path.join(markerRoot, "install/local/wikidot-verification/node_modules/pg"), { recursive: true })
+  writeFileSync(path.join(markerRoot, "framerail/node_modules/@playwright/test/package.json"), "{}")
+  writeFileSync(path.join(markerRoot, "framerail/node_modules/.modules.yaml"), "")
+  writeFileSync(path.join(markerRoot, "install/local/wikidot-verification/node_modules/pg/package.json"), "{}")
   writeFileSync(commandLog, "")
   writeFileSync(pathLog, "")
   t.after(() => rmSync(directory, { recursive: true, force: true }))
@@ -126,6 +132,7 @@ fi
     PREFLIGHT_GIT_DIFF_FAIL: "false",
     PREFLIGHT_HEAD_OID: headOid,
     PREFLIGHT_PATH_LOG: pathLog,
+    PREFLIGHT_PNPM_MARKER_ROOT: markerRoot,
     PREFLIGHT_REAL_NODE: process.execPath,
     PREFLIGHT_REMOTE_OID: remoteOid,
     PREFLIGHT_REMOTE_SCOPE: "all",
@@ -369,6 +376,28 @@ test("listing without a change-set still prints the group plan (the nightly shap
   assert.deepEqual(gated.commands(), [])
 })
 
+test("missing pnpm node_modules markers trigger ensure-pnpm-dependencies before test steps", (t) => {
+  const emptyMarkers = mkdtempSync(path.join(tmpdir(), "wikijump-preflight-empty-markers-"))
+  t.after(() => rmSync(emptyMarkers, { recursive: true, force: true }))
+
+  const harness = createHarness(t)
+  const result = harness.runPreflight(["--base", remoteOid, "--final", "--groups", "verification,theme_lab"], {
+    PREFLIGHT_REMOTE_SCOPE: "none",
+    PREFLIGHT_PNPM_MARKER_ROOT: emptyMarkers
+  })
+  assert.equal(result.status, 0, result.stderr)
+  const cmds = harness.commands()
+  const ensureTheme = cmds.indexOf(
+    "node install/local/wikidot-verification/scripts/ensure-pnpm-dependencies.mjs --dir framerail --require-path node_modules/@playwright/test/package.json"
+  )
+  const runTheme = cmds.findIndex((cmd) => cmd.includes("install/local/theme-lab test"))
+  const ensureVerif = cmds.indexOf(
+    "node install/local/wikidot-verification/scripts/ensure-pnpm-dependencies.mjs --dir install/local/wikidot-verification --require-path node_modules/pg/package.json"
+  )
+  const runVerif = cmds.indexOf("pnpm --dir install/local/wikidot-verification test")
+  assert.ok(ensureTheme >= 0 && runTheme > ensureTheme, cmds.join("\n"))
+  assert.ok(ensureVerif >= 0 && runVerif > ensureVerif, cmds.join("\n"))
+})
 test("wws nextest retries once unloaded on TIMEOUT-only failure and fails closed on functional FAIL", (t) => {
   const timeoutRetry = createHarness(t)
   const timeoutDir = mkdtempSync(path.join(tmpdir(), "wikijump-wws-timeout-"))
