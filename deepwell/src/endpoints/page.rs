@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use super::page_view_guard::require_page_view_permission;
 use super::prelude::*;
 use crate::models::file::Model as FileModel;
 use crate::models::page::Model as PageModel;
@@ -174,6 +175,8 @@ pub async fn page_get_files(
     } = parse!(params, Page);
 
     info!("Getting files for page ID {page_id} in site ID {site_id}");
+
+    require_page_view_permission(ctx, site_id, Reference::Id(page_id)).await?;
 
     let make_error = || Error::new("failed to get files for page", ErrorType::Page);
 
