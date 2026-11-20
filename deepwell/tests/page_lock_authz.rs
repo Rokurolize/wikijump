@@ -50,12 +50,32 @@ async fn fixture(runner: &mut TestRunner) -> (i64, i64) {
 async fn page_lock_actions_require_lock_permission() {
     let mut runner = TestRunner::setup().await;
     let (site_id, page_id) = fixture(&mut runner).await;
+    run_endpoint!(
+        runner,
+        page_lock_create,
+        json!({
+            "page": page_id,
+            "lock_type": "permission-only",
+            "reason": "baseline lock",
+            "expires_at": null,
+            "from_wikidot": false,
+            "override_existing": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
     runner.set_request_context(RequestContext {
         session: None,
         user_id: Some(OUTSIDER_USER_ID),
         site_id: Some(site_id),
         page_reference: Some(Reference::Id(page_id)),
     });
+
+    let locks_before = run_endpoint!(
+        runner,
+        page_lock_get_history,
+        json!({"page": page_id}),
+    );
 
     let create_error = run_endpoint_err!(
         runner,
@@ -81,4 +101,14 @@ async fn page_lock_actions_require_lock_permission() {
         }),
     );
     assert_contains_error!(remove_error, ErrorType::PermissionDenied);
+
+    let locks_after = run_endpoint!(
+        runner,
+        page_lock_get_history,
+        json!({"page": page_id}),
+    );
+    assert_eq!(
+        locks_after, locks_before,
+        "denied lock actions must not create or remove a page lock"
+    );
 }
