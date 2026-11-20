@@ -85,3 +85,11 @@
 - 公開中の環境は `FRAMERAIL_ENV=local` か。`scpaiueouiuiuiui` の未認証ページ変更を組み込み管理者として実行する経路(`docs/local-authoring-boundary.md`)が Funnel 経由のインターネット利用者に届かないことの確認。
 - ファイルドメイン(WWS)が Funnel 経由でメインドメインと別オリジンになっているか(親ドメイン Cookie `wikijump_token` の保護)。
 - `install/prod` の本番構成は将来使う予定があるか。
+
+## 9. stafflab 公開経路(追加スキャン用)
+
+**ユーザー回答: Funnel のアドレス(`*.ts.net:8443`)は Standing ではなく stafflab 環境。Funnel の 8443 は stafflab ゲートウェイに転送され、応答するのはサイト 6000303「SCP-JP Sigma-10 (Mirror)」(表示確認用 wiki、`/start` にテーマ表)。stafflab は WSL 上の別 compose スタック `wikijump-stafflab` で、Standing とは独立にロールされる(`install/standing/scripts/roll-stafflab.py`)。stafflab の Framerail は `FRAMERAIL_ENV=local`(ビルド済みモード)で動作。Standing と upstream lab の Framerail も local。**
+
+- stafflab は `scpaiueouiuiuiui.wikijump.localhost` も配信しており(`roll-stafflab.py` の `ABOUT_HOSTS`)、Deepwell の設定ドメインが `.localhost` なので、ローカル匿名作成経路(`deepwell/src/api.rs` の `may_bind_local_authoring_actor`)は有効(推定)。
+- 確認済み(2026-11-20、読み取りのみの GET): Funnel の `/start` に `Host: scpaiueouiuiuiui.wikijump.localhost`、`X-Forwarded-Host`、`X-Wikijump-Site-Slug` を付けても Sigma-10 の同じページが返り、`scpaiueouiuiuiui` には届かなかった。変更系の経路は未確認。
+- 追加の攻撃者: Funnel 経由の未認証インターネット利用者、テスト用アカウント保持者(ユーザー回答)。
