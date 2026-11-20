@@ -24,7 +24,7 @@ use crate::error::{
     BasicError, FallbackError, TextBlockErrorReason, build_basic_error_response,
 };
 use crate::state::ServerState;
-use axum::body::{Body, Bytes};
+use axum::body::Body;
 use axum::extract::{Path, State};
 use axum::http::header::{self, HeaderMap};
 use axum::http::status::StatusCode;
@@ -267,6 +267,7 @@ fn get_headers(headers: HashMap<String, String>) -> Headers {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use axum::body::Bytes;
 
     fn object_response(status: u16, data: &[u8]) -> ResponseData {
         let headers = HashMap::from([
