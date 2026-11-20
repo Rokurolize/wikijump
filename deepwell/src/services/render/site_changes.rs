@@ -50,6 +50,7 @@ pub(super) static SITE_CHANGES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| 
 
 #[derive(Debug, FromQueryResult)]
 struct SiteChangesRevisionRow {
+    revision_id: i64,
     is_new_page: bool,
     is_file: bool,
     created_at: time::OffsetDateTime,
@@ -220,10 +221,61 @@ async fn load_site_changes_snapshot(
     }))
 }
 
-fn site_changes_batch_size(remaining_rows: usize, raw_offset: usize) -> usize {
+fn site_changes_batch_size(remaining_rows: usize, raw_scanned: usize) -> usize {
     SITE_CHANGES_QUERY_BATCH
         .min(remaining_rows)
-        .min(SITE_CHANGES_MAX_RAW_SCAN.saturating_sub(raw_offset))
+        .min(SITE_CHANGES_MAX_RAW_SCAN.saturating_sub(raw_scanned))
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum SiteChangesSeek {
+    None,
+    SameKind,
+    EarlierKind,
+    LaterKind,
+}
+
+impl SiteChangesSeek {
+    fn sql(self, table: &str) -> String {
+        match self {
+            Self::None => "TRUE".to_owned(),
+            Self::SameKind => format!("({table}.created_at, {table}.revision_id) < ($4, $5)"),
+            Self::EarlierKind => format!("{table}.created_at < $4"),
+            Self::LaterKind => format!("{table}.created_at <= $4"),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct SiteChangesCursor {
+    created_at: time::OffsetDateTime,
+    activity_kind: i16,
+    revision_id: i64,
+}
+
+impl SiteChangesCursor {
+    fn from_row(row: &SiteChangesRevisionRow) -> Self {
+        Self {
+            created_at: row.created_at,
+            activity_kind: i16::from(row.is_file),
+            revision_id: row.revision_id,
+        }
+    }
+
+    fn seeks(self) -> (SiteChangesSeek, SiteChangesSeek) {
+        if self.activity_kind <= 0 {
+            (SiteChangesSeek::SameKind, SiteChangesSeek::LaterKind)
+        } else {
+            (SiteChangesSeek::EarlierKind, SiteChangesSeek::SameKind)
+        }
+    }
+}
+
+fn site_changes_seeks(cursor: Option<SiteChangesCursor>) -> (SiteChangesSeek, SiteChangesSeek) {
+    match cursor {
+        Some(cursor) => cursor.seeks(),
+        None => (SiteChangesSeek::None, SiteChangesSeek::None),
+    }
 }
 
 async fn load_site_changes_list(
@@ -259,14 +311,27 @@ async fn load_site_changes_list(
         .unwrap_or(SITE_CHANGES_MAX_RAW_SCAN)
         .min(SITE_CHANGES_MAX_RAW_SCAN);
     let txn = ctx.transaction();
-    let mut raw_offset = 0usize;
+    let mut raw_scanned = 0usize;
+    let mut cursor = None;
     let mut revisions = Vec::with_capacity(visible_row_target);
     let mut category_permissions = BTreeMap::<(i64, Option<i64>), bool>::new();
     let mut naturally_exhausted = false;
 
-    while revisions.len() < visible_row_target && raw_offset < SITE_CHANGES_MAX_RAW_SCAN {
+    while revisions.len() < visible_row_target && raw_scanned < SITE_CHANGES_MAX_RAW_SCAN {
         let batch_size =
-            site_changes_batch_size(visible_row_target - revisions.len(), raw_offset);
+            site_changes_batch_size(visible_row_target - revisions.len(), raw_scanned);
+        let (page_seek, file_seek) = site_changes_seeks(cursor);
+        let page_seek = page_seek.sql("pr");
+        let file_seek = file_seek.sql("fr");
+        let mut values = vec![
+            site_id.into(),
+            request.filter.as_str().to_owned().into(),
+            request.category_id.into(),
+        ];
+        if let Some(cursor) = cursor {
+            values.push(cursor.created_at.into());
+            values.push(cursor.revision_id.into());
+        }
         let rows =
             SiteChangesRevisionRow::find_by_statement(Statement::from_sql_and_values(
                 txn.get_database_backend(),
@@ -299,6 +364,7 @@ async fn load_site_changes_list(
                          AND pr.revision_type NOT IN ('delete', 'undelete') \
                          AND ($2 <> 'source' OR pr.changes @> ARRAY['wikitext']::TEXT[]) \
                          AND ($3::BIGINT IS NULL OR p.page_category_id = $3) \
+                         AND {page_seek} \
                        UNION ALL \
                        SELECT fr.revision_id, 1::SMALLINT AS activity_kind, \
                               FALSE AS is_new_page, TRUE AS is_file, fr.created_at, \
@@ -323,21 +389,19 @@ async fn load_site_changes_list(
                        WHERE fr.site_id = $1 \
                          AND $2 IN ('all', 'files') \
                          AND ($3::BIGINT IS NULL OR p.page_category_id = $3) \
+                         AND {file_seek} \
                      ) activity \
                      ORDER BY created_at DESC, activity_kind, revision_id DESC \
-                     LIMIT {batch_size} OFFSET {raw_offset}",
+                     LIMIT {batch_size}",
                 ),
-                [
-                    site_id.into(),
-                    request.filter.as_str().to_owned().into(),
-                    request.category_id.into(),
-                ],
+                values,
             ))
             .all(txn)
             .await
             .or_raise(make_error)?;
         let row_count = rows.len();
-        raw_offset = raw_offset.saturating_add(row_count);
+        cursor = rows.last().map(SiteChangesCursor::from_row);
+        raw_scanned = raw_scanned.saturating_add(row_count);
 
         let candidates = rows
             .into_iter()
@@ -708,10 +772,12 @@ fn push_site_changes_user(output: &mut String, revision: &SiteChangesRevisionRow
 #[cfg(test)]
 mod tests {
     use super::{
-        SITE_CHANGES_MODULE_REGEX, SiteChangesList, SiteChangesRevisionRow,
+        SITE_CHANGES_MODULE_REGEX, SITE_CHANGES_MAX_RAW_SCAN,
+        SiteChangesCursor, SiteChangesList, SiteChangesRevisionRow, SiteChangesSeek,
         WikidotSiteChangesFilter, push_site_changes_flags, push_site_changes_pager,
-        site_changes_batch_size,
+        render_site_changes_list, site_changes_batch_size, site_changes_seeks,
     };
+    use std::cmp::Reverse;
     use time::OffsetDateTime;
 
     fn revision(
@@ -720,6 +786,7 @@ mod tests {
         changes: &[&str],
     ) -> SiteChangesRevisionRow {
         SiteChangesRevisionRow {
+            revision_id: 1,
             is_new_page,
             is_file,
             created_at: OffsetDateTime::UNIX_EPOCH,
@@ -897,5 +964,281 @@ mod tests {
             WikidotSiteChangesFilter::from_wikidot_py_options("{\"files\":true}"),
             Some(WikidotSiteChangesFilter::Files),
         );
+    }
+
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+    struct TestKey {
+        created_at: i64,
+        activity_kind: i16,
+        revision_id: i64,
+    }
+
+    impl TestKey {
+        fn sort_key(self) -> (Reverse<i64>, i16, Reverse<i64>) {
+            (
+                Reverse(self.created_at),
+                self.activity_kind,
+                Reverse(self.revision_id),
+            )
+        }
+    }
+
+    fn activity_dataset(total: usize, one_timestamp: bool) -> Vec<TestKey> {
+        let mut keys = Vec::with_capacity(total);
+        let mut page_revision_id = 1i64;
+        let mut file_revision_id = 1i64;
+        let mut group = 0usize;
+        while keys.len() < total {
+            let created_at = if one_timestamp {
+                1_700_000_000_000_000
+            } else {
+                1_700_000_000_000_000 - (group as i64) * 1_000_000
+            };
+            let members = if one_timestamp { 6 } else { 1 + group % 6 };
+            for index in 0..members {
+                let activity_kind = if (group + index) % 3 == 0 { 1 } else { 0 };
+                let revision_id = if activity_kind == 0 {
+                    let value = page_revision_id;
+                    page_revision_id += 1;
+                    value
+                } else {
+                    let value = file_revision_id;
+                    file_revision_id += 1;
+                    value
+                };
+                keys.push(TestKey {
+                    created_at,
+                    activity_kind,
+                    revision_id,
+                });
+            }
+            group += 1;
+        }
+        keys.truncate(total);
+        keys.sort_by_key(|key| key.sort_key());
+        keys
+    }
+
+    fn hidden(key: &TestKey) -> bool {
+        key.revision_id % 7 == 0
+    }
+
+    fn seek_matches(seek: SiteChangesSeek, row: &TestKey, cursor: &TestKey) -> bool {
+        match seek {
+            SiteChangesSeek::None => true,
+            SiteChangesSeek::SameKind => {
+                (row.created_at, row.revision_id) < (cursor.created_at, cursor.revision_id)
+            }
+            SiteChangesSeek::EarlierKind => row.created_at < cursor.created_at,
+            SiteChangesSeek::LaterKind => row.created_at <= cursor.created_at,
+        }
+    }
+
+    fn fetch_offset(keys: &[TestKey], page: u32, perpage: usize) -> Vec<TestKey> {
+        let page_start = (page as usize - 1) * perpage;
+        if page_start >= SITE_CHANGES_MAX_RAW_SCAN {
+            return Vec::new();
+        }
+        let visible_row_target = ((page as usize + 2) * perpage + 1).min(SITE_CHANGES_MAX_RAW_SCAN);
+        let mut raw_offset = 0usize;
+        let mut visible = Vec::new();
+        while visible.len() < visible_row_target && raw_offset < SITE_CHANGES_MAX_RAW_SCAN {
+            let batch_size =
+                site_changes_batch_size(visible_row_target - visible.len(), raw_offset);
+            let end = (raw_offset + batch_size).min(keys.len());
+            let batch = &keys[raw_offset..end];
+            raw_offset += batch.len();
+            for key in batch {
+                if !hidden(key) {
+                    visible.push(*key);
+                }
+                if visible.len() == visible_row_target {
+                    break;
+                }
+            }
+            if batch.len() < batch_size {
+                break;
+            }
+        }
+        visible.into_iter().skip(page_start).take(perpage).collect()
+    }
+
+    fn fetch_keyset(keys: &[TestKey], page: u32, perpage: usize) -> Vec<TestKey> {
+        let page_start = (page as usize - 1) * perpage;
+        if page_start >= SITE_CHANGES_MAX_RAW_SCAN {
+            return Vec::new();
+        }
+        let visible_row_target = ((page as usize + 2) * perpage + 1).min(SITE_CHANGES_MAX_RAW_SCAN);
+        let mut raw_scanned = 0usize;
+        let mut cursor: Option<TestKey> = None;
+        let mut visible = Vec::new();
+        while visible.len() < visible_row_target && raw_scanned < SITE_CHANGES_MAX_RAW_SCAN {
+            let batch_size =
+                site_changes_batch_size(visible_row_target - visible.len(), raw_scanned);
+            let seek_cursor = cursor.map(|key| SiteChangesCursor {
+                created_at: OffsetDateTime::from_unix_timestamp(key.created_at / 1_000_000)
+                    .expect("test timestamp"),
+                activity_kind: key.activity_kind,
+                revision_id: key.revision_id,
+            });
+            let (page_seek, file_seek) = site_changes_seeks(seek_cursor);
+            let batch = keys
+                .iter()
+                .copied()
+                .filter(|key| {
+                    let seek = if key.activity_kind == 0 {
+                        page_seek
+                    } else {
+                        file_seek
+                    };
+                    match cursor {
+                        Some(cursor) => seek_matches(seek, key, &cursor),
+                        None => true,
+                    }
+                })
+                .take(batch_size)
+                .collect::<Vec<_>>();
+            cursor = batch.last().copied();
+            raw_scanned += batch.len();
+            for key in &batch {
+                if !hidden(key) {
+                    visible.push(*key);
+                }
+                if visible.len() == visible_row_target {
+                    break;
+                }
+            }
+            if batch.len() < batch_size {
+                break;
+            }
+        }
+        visible.into_iter().skip(page_start).take(perpage).collect()
+    }
+
+    #[test]
+    fn site_changes_seeks_emit_the_index_seek_predicates() {
+        assert_eq!(SiteChangesSeek::None.sql("pr"), "TRUE");
+        assert_eq!(
+            SiteChangesSeek::SameKind.sql("pr"),
+            "(pr.created_at, pr.revision_id) < ($4, $5)"
+        );
+        assert_eq!(SiteChangesSeek::EarlierKind.sql("pr"), "pr.created_at < $4");
+        assert_eq!(SiteChangesSeek::LaterKind.sql("fr"), "fr.created_at <= $4");
+        assert_eq!(site_changes_seeks(None), (SiteChangesSeek::None, SiteChangesSeek::None));
+
+        let page_cursor = SiteChangesCursor {
+            created_at: OffsetDateTime::UNIX_EPOCH,
+            activity_kind: 0,
+            revision_id: 5,
+        };
+        assert_eq!(
+            site_changes_seeks(Some(page_cursor)),
+            (SiteChangesSeek::SameKind, SiteChangesSeek::LaterKind)
+        );
+        let file_cursor = SiteChangesCursor {
+            created_at: OffsetDateTime::UNIX_EPOCH,
+            activity_kind: 1,
+            revision_id: 5,
+        };
+        assert_eq!(
+            site_changes_seeks(Some(file_cursor)),
+            (SiteChangesSeek::EarlierKind, SiteChangesSeek::SameKind)
+        );
+    }
+
+    #[test]
+    fn site_changes_keyset_pages_match_offset_pages_for_all_and_source_sets() {
+        let all = activity_dataset(4362, false);
+        let source = all
+            .iter()
+            .copied()
+            .filter(|key| key.activity_kind == 0)
+            .collect::<Vec<_>>();
+        for (label, keys) in [("all", &all), ("source", &source)] {
+            for page in [1u32, 100, 300] {
+                assert_eq!(
+                    fetch_keyset(keys, page, 10),
+                    fetch_offset(keys, page, 10),
+                    "{label} page {page}",
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn site_changes_keyset_handles_created_at_ties_across_batches() {
+        let keys = activity_dataset(600, true);
+        for page in [1u32, 20, 34, 59] {
+            assert_eq!(
+                fetch_keyset(&keys, page, 10),
+                fetch_offset(&keys, page, 10),
+                "page {page}",
+            );
+        }
+    }
+
+    fn render_revisions(keys: Vec<TestKey>) -> String {
+        let revisions = keys
+            .into_iter()
+            .map(|key| SiteChangesRevisionRow {
+                revision_id: key.revision_id,
+                is_new_page: false,
+                is_file: key.activity_kind == 1,
+                created_at: OffsetDateTime::from_unix_timestamp(key.created_at / 1_000_000)
+                    .expect("test timestamp"),
+                revision_number: 1,
+                page_id: 7,
+                page_category_id: 3,
+                category_slug: "_default".to_owned(),
+                slug: "page".to_owned(),
+                title: "Page".to_owned(),
+                changes: vec!["wikitext".to_owned()],
+                comments: String::new(),
+                hidden: Vec::new(),
+                user_id: 4,
+                wikidot_user_name: None,
+                wikidot_user_slug: None,
+                local_user_name: None,
+            })
+            .collect();
+        render_site_changes_list(&SiteChangesList {
+            page: 1,
+            last_link_page: 1,
+            has_next: false,
+            has_dots: false,
+            revisions,
+        })
+    }
+
+    #[test]
+    fn site_changes_keyset_rendered_rows_are_byte_identical() {
+        let keys = activity_dataset(4362, false);
+        for page in [1u32, 100, 300] {
+            assert_eq!(
+                render_revisions(fetch_keyset(&keys, page, 10)),
+                render_revisions(fetch_offset(&keys, page, 10)),
+                "page {page}",
+            );
+        }
+    }
+
+    #[test]
+    fn site_changes_keyset_windows_are_disjoint_and_in_order() {
+        let keys = activity_dataset(4362, false);
+        let visible = keys
+            .iter()
+            .copied()
+            .filter(|key| !hidden(key))
+            .collect::<Vec<_>>();
+        let mut previous_last = None;
+        for page in [1u32, 100, 300] {
+            let window = fetch_keyset(&keys, page, 10);
+            let start = (page as usize - 1) * 10;
+            assert_eq!(window.as_slice(), &visible[start..start + 10]);
+            if let Some(previous_last) = previous_last {
+                assert!(previous_last < window[0].sort_key());
+            }
+            previous_last = window.last().map(|key| key.sort_key());
+        }
     }
 }
