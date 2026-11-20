@@ -25,14 +25,18 @@ use deepwell::services::ServiceContext;
 use deepwell::services::blob::{BlobService, StartBlobUpload};
 use sea_orm::TransactionTrait;
 
-const SVG_RED: &[u8] = b"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\"><rect width=\"8\" height=\"8\" fill=\"red\"/></svg>";
-const SVG_BLUE: &[u8] = b"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\"><rect width=\"8\" height=\"8\" fill=\"blue\"/></svg>";
+fn svg(fill: &str, unique: u128) -> Vec<u8> {
+    format!(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\"><!--{unique}--><rect width=\"8\" height=\"8\" fill=\"{fill}\"/></svg>"
+    )
+    .into_bytes()
+}
 
 async fn declared_mime_after_upload(
     state: &ServerState,
     data: &[u8],
     declared: &str,
-) -> String {
+) -> (String, String) {
     let txn = state
         .database
         .begin()
@@ -72,8 +76,22 @@ async fn declared_mime_after_upload(
     let result = BlobService::finish_upload(&ctx, ADMIN_USER_ID, &upload.pending_blob_id)
         .await
         .expect("finish_upload failed");
+
+    let hex_hash = deepwell::hash::blob_hash_to_hex(&result.s3_hash);
+    let served = state
+        .s3_files_bucket
+        .get_object(&hex_hash)
+        .await
+        .expect("Unable to read finalized blob from the object store");
+    let served_mime = served
+        .headers()
+        .iter()
+        .find(|(name, _)| name.eq_ignore_ascii_case("content-type"))
+        .map(|(_, value)| value.trim().to_owned())
+        .unwrap_or_default();
+
     txn.rollback().await.expect("Unable to roll back finalize");
-    result.mime
+    (result.mime, served_mime)
 }
 
 #[tokio::test]
@@ -82,12 +100,20 @@ async fn declared_content_type_survives_blob_finalize() {
         .await
         .expect("Unable to set up server state");
 
-    assert_eq!(
-        declared_mime_after_upload(&state, SVG_RED, "image/svg+xml").await,
-        "image/svg+xml",
-    );
-    assert_eq!(
-        declared_mime_after_upload(&state, SVG_BLUE, "image/png").await,
-        "image/png",
-    );
+    let unique = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("system clock before epoch")
+        .as_nanos();
+    let red = svg("red", unique);
+    let blue = svg("blue", unique);
+
+    let (finalized, served) =
+        declared_mime_after_upload(&state, &red, "image/svg+xml").await;
+    assert_eq!(finalized, "image/svg+xml");
+    assert_eq!(served, "image/svg+xml");
+
+    let (finalized, served) =
+        declared_mime_after_upload(&state, &blue, "image/png").await;
+    assert_eq!(finalized, "image/png");
+    assert_eq!(served, "image/png");
 }
