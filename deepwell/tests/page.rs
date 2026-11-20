@@ -7583,7 +7583,7 @@ async fn render_scoped_include_source_cache_preserves_occurrence_semantics() {
             let target = match index % 3 {
                 0 => COMPONENT_SLUG.to_owned(),
                 1 => format!(":{SITE_SLUG}:{COMPONENT_SLUG}"),
-                _ => format!("{COMPONENT_SLUG}#variant-{index}"),
+                _ => format!(":{SITE_SLUG}.wikidot.com:{COMPONENT_SLUG}"),
             };
             format!("[[include {target} | label=occurrence-{index}]]\n")
         })
