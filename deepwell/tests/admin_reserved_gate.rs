@@ -624,8 +624,9 @@ async fn draft_list_and_site_changes_hide_admin_and_foreign_rows() {
         assert!(saved);
     }
 
-    // (#1386) A plain member sees only their own drafts: neither the
-    // `_admin` draft nor the other member's draft on a normal page.
+    // (#1386) A plain member sees every draft whose target they can
+    // view, including the other member's draft on a normal page; only
+    // the `_admin` draft stays hidden.
     set_request_context(&mut runner, Some(member_a), site_id, None);
     let drafts = run_endpoint!(
         runner,
@@ -638,8 +639,8 @@ async fn draft_list_and_site_changes_hide_admin_and_foreign_rows() {
         "own draft missing: {titles:?}"
     );
     assert!(
-        !titles.contains(&"Gate B Draft"),
-        "foreign draft leaked: {titles:?}"
+        titles.contains(&"Gate B Draft"),
+        "foreign draft on a viewable page missing: {titles:?}"
     );
     assert!(
         !titles.contains(&"Gate Admin Draft"),
