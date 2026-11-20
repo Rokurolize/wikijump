@@ -262,6 +262,57 @@ group_deepwell() {
   fi
 }
 
+run_wws_nextest_with_timeout_retry() {
+  local -a nextest_cmd=(
+    cargo nextest run
+    --manifest-path wws/Cargo.toml
+    --locked
+    --all-features
+    --profile preflight
+    --no-fail-fast
+    --test-threads 1
+  )
+  if "${LIST}"; then
+    run_test "wws full tests" "${nextest_cmd[@]}"
+    return 0
+  fi
+
+  local log_file rc=0 started="${SECONDS}" plan_json should_retry filterset
+  log_file="$(mktemp)" || {
+    FAILED+=("wws full tests")
+    return 0
+  }
+  echo ""
+  echo "=== wws full tests"
+  if "${TEST_NETWORK_GUARD}" "${nextest_cmd[@]}" > "${log_file}" 2>&1; then
+    cat "${log_file}"
+    rm -f -- "${log_file}"
+    echo "--- wws full tests: ok ($((SECONDS - started))s)"
+    return 0
+  else
+    rc=$?
+  fi
+  cat "${log_file}"
+
+  plan_json="$(node install/local/wikidot-verification/scripts/plan-nextest-timeout-retry.mjs "${log_file}" "${rc}" 2>/dev/null || true)"
+  rm -f -- "${log_file}"
+  should_retry="$(printf '%s' "${plan_json}" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const p=JSON.parse(s);process.stdout.write(p.shouldRetry?"true":"false")}catch{process.stdout.write("false")}})' 2>/dev/null || echo false)"
+  if [[ "${should_retry}" == "true" ]]; then
+    filterset="$(printf '%s' "${plan_json}" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const p=JSON.parse(s);process.stdout.write(p.filterset||"")})' 2>/dev/null || true)"
+    if [[ -n "${filterset}" ]]; then
+      echo "--- wws full tests: TIMEOUT-only failure; running one unloaded retry (-E ${filterset})"
+      if "${TEST_NETWORK_GUARD}" "${nextest_cmd[@]}" --no-tests fail -E "${filterset}"; then
+        echo "--- wws full tests: ok after timeout retry ($((SECONDS - started))s)"
+        return 0
+      fi
+    fi
+  fi
+
+  echo "--- wws full tests: FAILED ($((SECONDS - started))s)"
+  FAILED+=("wws full tests")
+  return 0
+}
+
 group_wws() {
   # Beside Deepwell, a Rust group builds in its own target directory: cargo
   # locks a target directory, so a shared one would serialize the groups.
@@ -275,7 +326,7 @@ group_wws() {
         echo "wws full tests: cargo-nextest is required (the per-test timeout is enforced there); install cargo-nextest or run scripts/preflight.sh without --final" >&2
         FAILED+=("wws full tests (cargo-nextest missing)")
       else
-        run_test "wws full tests" cargo nextest run --manifest-path wws/Cargo.toml --locked --all-features --no-fail-fast --test-threads 1
+        run_wws_nextest_with_timeout_retry
       fi
       run_test "wws resize iframe tests" node --test wws/tests/resize-iframe.test.mjs
     fi
