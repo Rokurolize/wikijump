@@ -25,7 +25,9 @@ use super::super::include_comment_branches::remove_unresolved_include_comment_br
 use super::super::literal_regions::{ListPagesSourceProjection, LiteralRegionIndex};
 use super::super::render_budget::SharedRenderCostBudget;
 use super::super::runtime::IncludeSourceCache;
-use super::super::service::{IncludeExpansion, IncludeExpansionBudget, RenderService};
+use super::super::service::{
+    IncludeExpansion, IncludeExpansionBudget, MAX_LISTPAGES_RENDER_LIMIT, RenderService,
+};
 use super::scanner::{CountPagesCloseReachabilityIndex, ListPagesModuleMatch};
 use super::substitution::{
     ExactNameListPagesBatchKey, ListPagesArguments, parse_list_pages_arguments,
@@ -45,7 +47,8 @@ use crate::hash::TextHash;
 use crate::models::page_category;
 use crate::services::ServiceContext;
 use crate::services::page_query::{
-    FoundPages, PageQueryResultMetadata, PageQueryScoreFilterCache,
+    FoundPageFields, FoundPages, PageQuery, PageQueryResultMetadata,
+    PageQueryScoreFilterCache, PaginationSelector, RangeSelector,
 };
 use crate::services::render::UrlArguments;
 use crate::services::render::service::IncludeExpansionOptions;
@@ -779,6 +782,57 @@ pub(in crate::services::render) struct ListPagesSummaryDerivation {
     pub(in crate::services::render) cost_charges: Vec<&'static str>,
 }
 
+pub(in crate::services::render) fn list_pages_scan_target(query_target: u64) -> u64 {
+    query_target.max(MAX_LISTPAGES_RENDER_LIMIT)
+}
+
+pub(in crate::services::render) fn list_pages_slice_rows<T>(
+    rows: Vec<T>,
+    offset: u32,
+    limit: Option<u64>,
+) -> Vec<T> {
+    rows.into_iter()
+        .skip(offset as usize)
+        .take(
+            limit
+                .and_then(|limit| usize::try_from(limit).ok())
+                .unwrap_or(usize::MAX),
+        )
+        .collect()
+}
+
+pub(in crate::services::render) fn list_pages_scan_cache_key(
+    viewer_user_id: Option<i64>,
+    query: &PageQuery<'_>,
+    scan_target: u64,
+) -> String {
+    format!("{viewer_user_id:?}|{scan_target}|{query:?}")
+}
+
+pub(in crate::services::render) fn list_pages_total_match_key(
+    viewer_user_id: Option<i64>,
+    query: &PageQuery<'_>,
+    exact_visible_tags: bool,
+    current_visible_tags: &BTreeSet<String>,
+    relative_range: Option<RangeSelector>,
+    current_page_id: i64,
+    exclude_current_page: bool,
+) -> String {
+    let mut match_query = query.clone();
+    match_query.order = None;
+    match_query.candidate_limit = None;
+    match_query.offset = 0;
+    match_query.pagination = PaginationSelector::default();
+    match_query.fields = FoundPageFields {
+        page_category_id: true,
+        tags: exact_visible_tags,
+        ..FoundPageFields::default()
+    };
+    format!(
+        "{viewer_user_id:?}|{match_query:?}|evt={exact_visible_tags}|cvt={current_visible_tags:?}|rr={relative_range:?}|cp={current_page_id}|exc={exclude_current_page}"
+    )
+}
+
 #[derive(Debug, Clone)]
 pub(in crate::services::render) struct CachedListPagesRows {
     pub(in crate::services::render) pages: FoundPages,
@@ -791,12 +845,12 @@ struct CachedListPagesListing {
     rows: Option<CachedListPagesRows>,
     categories: Option<Vec<page_category::Model>>,
     displays: Option<ListPagesBatchDisplays>,
-    exact_totals: BTreeMap<String, usize>,
 }
 
 #[derive(Debug, Default)]
 pub(in crate::services::render) struct ListPagesListingCache {
     entries: BTreeMap<String, CachedListPagesListing>,
+    exact_totals: BTreeMap<String, usize>,
 }
 
 impl ListPagesListingCache {
@@ -849,27 +903,16 @@ impl ListPagesListingCache {
         self.entries.entry(key).or_default().displays = Some(displays);
     }
 
-    pub(in crate::services::render) fn exact_total(
-        &self,
-        listing_key: &str,
-        total_key: &str,
-    ) -> Option<usize> {
-        self.entries
-            .get(listing_key)
-            .and_then(|entry| entry.exact_totals.get(total_key).copied())
+    pub(in crate::services::render) fn exact_total(&self, key: &str) -> Option<usize> {
+        self.exact_totals.get(key).copied()
     }
 
     pub(in crate::services::render) fn cache_exact_total(
         &mut self,
-        listing_key: String,
-        total_key: String,
+        key: String,
         total: usize,
     ) {
-        self.entries
-            .entry(listing_key)
-            .or_default()
-            .exact_totals
-            .insert(total_key, total);
+        self.exact_totals.insert(key, total);
     }
 }
 
@@ -1334,6 +1377,209 @@ mod tests {
         assert!(cache.content_sections.contains_key(&base));
         for variant in &variants {
             assert!(!cache.content_sections.contains_key(variant));
+        }
+    }
+
+    mod shape_keys {
+        use super::*;
+        use crate::services::page_query::{
+            AuthorSelector, CategoriesSelector, ComparisonOperation, DateSelector,
+            DateTimeResolution, IncludedCategories, OrderBySelector, OrderProperty,
+            PageParentSelector, PageTypeSelector, TagCondition,
+        };
+        use time::OffsetDateTime;
+
+        fn query(
+            order: Option<OrderBySelector>,
+            pagination_limit: Option<u64>,
+            offset: u32,
+        ) -> PageQuery<'static> {
+            PageQuery {
+                current_page_id: 9,
+                current_site_id: 1,
+                queried_site_id: None,
+                page_type: PageTypeSelector::All,
+                categories: CategoriesSelector {
+                    included_categories: IncludedCategories::All,
+                    excluded_categories: &[],
+                },
+                tags: TagCondition {
+                    any_present: &[],
+                    all_present: &[],
+                    none_present: &[],
+                    untagged: false,
+                },
+                page_parent: PageParentSelector::All,
+                contains_outgoing_links: &[],
+                creation_date: DateSelector::Span {
+                    timestamp: OffsetDateTime::UNIX_EPOCH,
+                    resolution: DateTimeResolution::Day,
+                    comparison: ComparisonOperation::GreaterOrEqualThan,
+                },
+                update_date: DateSelector::Span {
+                    timestamp: OffsetDateTime::UNIX_EPOCH,
+                    resolution: DateTimeResolution::Day,
+                    comparison: ComparisonOperation::GreaterOrEqualThan,
+                },
+                author: AuthorSelector::All,
+                score: &[],
+                votes: &[],
+                offset,
+                name: None,
+                slug: None,
+                slugs: &[],
+                data_form_fields: &[],
+                order,
+                candidate_limit: None,
+                pagination: PaginationSelector {
+                    limit: pagination_limit,
+                    ..PaginationSelector::default()
+                },
+                fields: FoundPageFields::default(),
+            }
+        }
+
+        fn match_key(q: &PageQuery<'_>) -> String {
+            list_pages_total_match_key(
+                Some(7),
+                q,
+                false,
+                &BTreeSet::new(),
+                None,
+                9,
+                false,
+            )
+        }
+
+        #[test]
+        fn total_key_is_identical_across_order_limit_and_offset_variants() {
+            let base = query(
+                Some(OrderBySelector {
+                    property: OrderProperty::CreatedAt,
+                    ascending: false,
+                }),
+                Some(1),
+                0,
+            );
+            let base_key = match_key(&base);
+            let variants = [
+                query(
+                    Some(OrderBySelector {
+                        property: OrderProperty::Title,
+                        ascending: true,
+                    }),
+                    Some(1),
+                    0,
+                ),
+                query(
+                    Some(OrderBySelector {
+                        property: OrderProperty::FullSlug,
+                        ascending: false,
+                    }),
+                    Some(4),
+                    0,
+                ),
+                query(
+                    Some(OrderBySelector {
+                        property: OrderProperty::UpdatedAt,
+                        ascending: false,
+                    }),
+                    Some(1),
+                    12,
+                ),
+                query(None, Some(250), 40),
+            ];
+            for variant in &variants {
+                assert_eq!(match_key(variant), base_key);
+            }
+        }
+
+        #[test]
+        fn total_key_changes_when_the_match_set_changes() {
+            let base_key = match_key(&query(None, Some(1), 0));
+            let mut tagged = query(None, Some(1), 0);
+            tagged.tags = TagCondition {
+                all_present: &[Cow::Borrowed("required")],
+                ..tagged.tags
+            };
+            assert_ne!(match_key(&tagged), base_key);
+
+            let mut categorised = query(None, Some(1), 0);
+            categorised.categories = CategoriesSelector {
+                included_categories: IncludedCategories::List(&[Cow::Borrowed("scp")]),
+                excluded_categories: &[],
+            };
+            assert_ne!(match_key(&categorised), base_key);
+
+            let excluded = list_pages_total_match_key(
+                Some(7),
+                &query(None, Some(1), 0),
+                false,
+                &BTreeSet::new(),
+                None,
+                9,
+                true,
+            );
+            assert_ne!(excluded, base_key);
+        }
+
+        #[test]
+        fn total_cache_shares_one_total_across_distinct_shapes() {
+            let mut cache = ListPagesListingCache::default();
+            let base_key = match_key(&query(
+                Some(OrderBySelector {
+                    property: OrderProperty::CreatedAt,
+                    ascending: false,
+                }),
+                Some(1),
+                0,
+            ));
+            cache.cache_exact_total(base_key.clone(), 42);
+            for variant in [
+                query(
+                    Some(OrderBySelector {
+                        property: OrderProperty::Title,
+                        ascending: true,
+                    }),
+                    Some(1),
+                    0,
+                ),
+                query(None, Some(4), 8),
+            ] {
+                assert_eq!(cache.exact_total(&match_key(&variant)), Some(42));
+            }
+            let mut tagged = query(None, Some(1), 0);
+            tagged.tags = TagCondition {
+                all_present: &[Cow::Borrowed("required")],
+                ..tagged.tags
+            };
+            assert_eq!(cache.exact_total(&match_key(&tagged)), None);
+        }
+
+        #[test]
+        fn scan_target_clamps_small_module_limits_to_one_batch() {
+            let floor = MAX_LISTPAGES_RENDER_LIMIT;
+            assert_eq!(list_pages_scan_target(1), floor);
+            assert_eq!(list_pages_scan_target(4), floor);
+            assert_eq!(list_pages_scan_target(floor), floor);
+            assert_eq!(list_pages_scan_target(floor + 50), floor + 50);
+        }
+
+        #[test]
+        fn slicing_a_shared_wider_scan_preserves_each_modules_rows() {
+            let shared_scan: Vec<i64> = (0..50).collect();
+            for offset in [0_u32, 1, 7] {
+                for limit in [1_u64, 2, 4, 20] {
+                    let wider =
+                        list_pages_slice_rows(shared_scan.clone(), offset, Some(limit));
+                    let base_scan = &shared_scan
+                        [..(offset as usize + limit as usize).min(shared_scan.len())];
+                    let base =
+                        list_pages_slice_rows(base_scan.to_vec(), offset, Some(limit));
+                    assert_eq!(wider, base, "offset={offset} limit={limit}");
+                    assert_eq!(wider.len(), (limit as usize).min(50 - offset as usize));
+                }
+            }
         }
     }
 }

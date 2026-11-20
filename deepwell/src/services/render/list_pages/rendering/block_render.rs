@@ -2,7 +2,8 @@ use super::super::ListPagesBatchDisplays;
 use super::super::pagination::{ListPagesPagerArgs, ListPagesPagerRoute};
 use super::super::rendering_support::{
     ListPagesBlockRenderArgs, ListPagesContentSectionEntry, ListPagesContentSectionKey,
-    ListPagesSelectedContentArgs,
+    ListPagesSelectedContentArgs, list_pages_scan_cache_key, list_pages_scan_target,
+    list_pages_slice_rows, list_pages_total_match_key,
 };
 use super::{
     BTreeMap, BTreeSet, CachedListPagesRows, CategoriesSelector, ColumnTrait,
@@ -481,7 +482,19 @@ impl RenderService {
             } else {
                 query_limit
             };
+        let scan_target = list_pages_scan_target(query_target);
         let listing_cache_key = format!("{viewer_user_id:?}|{query_target}|{query:?}");
+        let scan_cache_key =
+            list_pages_scan_cache_key(viewer_user_id, &query, scan_target);
+        let total_match_key = list_pages_total_match_key(
+            viewer_user_id,
+            &query,
+            exact_visible_tags,
+            &current_visible_tags,
+            relative_range,
+            current_page_id,
+            exclude_current_page,
+        );
         if lp_prof {
             eprintln!(
                 "WJ_LP_PROF pre_query_us={}",
@@ -508,12 +521,7 @@ impl RenderService {
         let exact_total_from_scan = if template.uses_total()
             && !rows_are_complete_without_query
         {
-            let total_cache_key = format!(
-                "evt={exact_visible_tags}|cvt={current_visible_tags:?}|rr={relative_range:?}|cp={current_page_id}|exc={exclude_current_page}|off={offset}"
-            );
-            if let Some(total) =
-                listing_cache.exact_total(&listing_cache_key, &total_cache_key)
-            {
+            if let Some(total) = listing_cache.exact_total(&total_match_key) {
                 Some(total)
             } else {
                 let total = {
@@ -553,11 +561,7 @@ impl RenderService {
                     )
                     .len()
                 };
-                listing_cache.cache_exact_total(
-                    listing_cache_key.clone(),
-                    total_cache_key,
-                    total,
-                );
+                listing_cache.cache_exact_total(total_match_key.clone(), total);
                 Some(total)
             }
         } else {
@@ -601,7 +605,7 @@ impl RenderService {
             FoundPages { pages: Vec::new() }
         } else if let Some(pages) = prefetched_pages.take() {
             pages
-        } else if let Some(cached) = listing_cache.rows(&listing_cache_key) {
+        } else if let Some(cached) = listing_cache.rows(&scan_cache_key) {
             list_pages_metadata = Some((
                 cached.metadata.clone(),
                 cached.view_permission_filtering_applied,
@@ -611,7 +615,7 @@ impl RenderService {
             let found = RenderRuntime::for_viewer(ctx, viewer_user_id)
                 .find_viewable_list_pages_rows(
                     query,
-                    query_target.min(usize::MAX as u64) as usize,
+                    scan_target.min(usize::MAX as u64) as usize,
                     permission_cache,
                     Some(score_filter_cache),
                 )
@@ -626,7 +630,7 @@ impl RenderService {
                 found.view_permission_filtering_applied,
             ));
             listing_cache.cache_rows(
-                listing_cache_key.clone(),
+                scan_cache_key.clone(),
                 CachedListPagesRows {
                     pages: found.pages.clone(),
                     metadata: found.metadata.clone(),
@@ -663,15 +667,7 @@ impl RenderService {
             exclude_current_page,
         );
         let total_matched = all_matched_pages.len();
-        let selected_pages = all_matched_pages
-            .into_iter()
-            .skip(offset as usize)
-            .take(
-                limit
-                    .and_then(|limit| usize::try_from(limit).ok())
-                    .unwrap_or(usize::MAX),
-            )
-            .collect::<Vec<_>>();
+        let selected_pages = list_pages_slice_rows(all_matched_pages, offset, limit);
         let total_selected = selected_pages.len();
         let page_count = (total_selected as u64).div_ceil(per_page).max(1);
         let page = u64::from(url_page.unwrap_or(1)).clamp(1, page_count);
