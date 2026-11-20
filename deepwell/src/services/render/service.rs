@@ -148,9 +148,7 @@ use super::render_options::{
     RenderContext, RenderExpansionOptions, RenderInnerOptions, RenderLifecycle,
     RenderPageOptions,
 };
-use super::runtime::{
-    AuthorizedIncludeSource, CachedIncludeExpansion, IncludeSourceCache, RenderRuntime,
-};
+use super::runtime::{AuthorizedIncludeSource, IncludeSourceCache, RenderRuntime};
 use super::runtime_modules::{RateModuleContext, SecondaryRuntimeModuleExpansionOptions};
 use super::site_utility_modules::resolve_typed_root_site_grid_runtime_modules;
 use super::structs::{RenderOutput, RenderPageOutput};
@@ -3337,29 +3335,6 @@ impl RenderService {
                     continue;
                 };
 
-                let expansion_key = Self::include_expansion_key(
-                    include.page_ref(),
-                    include.variables(),
-                    &attachment_variable_owners,
-                    &source,
-                    &expansion_context,
-                    includes_enclosed.get(index).copied().unwrap_or(true),
-                    depth,
-                );
-                if let Some(cached) =
-                    include_source_cache.expanded_include(&expansion_key)
-                    && cached.expanded_include_count <= remaining_includes
-                {
-                    remaining_includes -= cached.expanded_include_count;
-                    fetched_pages.push(Some(cached.wikitext.clone()));
-                    nested_included_pages.push(cached.included_pages.clone());
-                    nested_include_counts.push(cached.expanded_include_count);
-                    continue;
-                }
-                let fragments_before = compat_text.fragment_count();
-                let provenance_before =
-                    include_source_cache.attachment_provenance.entry_count();
-
                 qualify_relative_image_variable_attachments(
                     &mut source.wikitext,
                     include.variables(),
@@ -3436,19 +3411,6 @@ impl RenderService {
                     &expansion_context.page_info.tags,
                 );
                 remove_nested_include_boundaries(&mut nested_wikitext);
-                if compat_text.fragment_count() == fragments_before
-                    && include_source_cache.attachment_provenance.entry_count()
-                        == provenance_before
-                {
-                    include_source_cache.cache_expanded_include(
-                        expansion_key,
-                        CachedIncludeExpansion {
-                            wikitext: nested_wikitext.clone(),
-                            included_pages: expansion.included_pages.clone(),
-                            expanded_include_count: expansion.expanded_include_count,
-                        },
-                    );
-                }
                 fetched_pages.push(Some(nested_wikitext));
                 nested_included_pages.push(expansion.included_pages);
             }
@@ -4065,55 +4027,6 @@ impl<'a> IncludeExpansionContext<'a> {
             render_cost_budget: self.render_cost_budget.clone(),
             raw_zone: raw_zone || self.raw_zone,
         }
-    }
-}
-
-impl RenderService {
-    fn include_expansion_key(
-        page_ref: &PageRef,
-        variables: &VariableMap<'_>,
-        owners: &AttachmentVariableOwners,
-        source: &AuthorizedIncludeSource,
-        context: &IncludeExpansionContext<'_>,
-        raw_zone: bool,
-        depth: usize,
-    ) -> TextHash {
-        let mut variable_parts = variables
-            .iter()
-            .map(|(name, value)| format!("{name}\u{1f}{value}"))
-            .collect::<Vec<_>>();
-        variable_parts.sort_unstable();
-        let mut owner_parts = owners
-            .iter()
-            .map(|(name, owner)| format!("{name}\u{1f}{owner:?}"))
-            .collect::<Vec<_>>();
-        owner_parts.sort_unstable();
-        k12_hash(
-            format!(
-                "{:?}|{}|{}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}",
-                page_ref,
-                variable_parts.join("\u{1e}"),
-                owner_parts.join("\u{1e}"),
-                k12_hash(source.wikitext.as_bytes()),
-                source.site_slug,
-                source.page_slug,
-                source.source_site,
-                context.current_site_id,
-                context.current_site_slug,
-                context.imported_source_site,
-                context.attachment_owner,
-                context.page_info,
-                context.settings,
-                (
-                    context.omit_iftags_branches,
-                    context.expand_wikidot_image_blocks,
-                    context.raw_zone,
-                    raw_zone,
-                    depth,
-                ),
-            )
-            .as_bytes(),
-        )
     }
 }
 

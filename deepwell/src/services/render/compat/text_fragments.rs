@@ -32,10 +32,6 @@ impl CompatTextFragments {
         }
     }
 
-    pub(in crate::services::render) fn fragment_count(&self) -> usize {
-        self.fragments.len()
-    }
-
     fn push_owned(&mut self, text: String) -> (String, usize) {
         let index = self.fragments.len();
         self.fragments.push(text);
