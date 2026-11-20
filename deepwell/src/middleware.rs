@@ -150,4 +150,43 @@ mod tests {
         assert!(decode_page_header("%GG").is_none());
         assert!(decode_page_header("abc%").is_none());
     }
+
+    fn encode_page_header(value: &str) -> String {
+        let mut encoded = String::new();
+
+        for byte in value.as_bytes() {
+            match byte {
+                b'A'..=b'Z'
+                | b'a'..=b'z'
+                | b'0'..=b'9'
+                | b'-'
+                | b'_'
+                | b'.'
+                | b'!'
+                | b'~'
+                | b'*'
+                | b'\''
+                | b'('
+                | b')' => encoded.push(char::from(*byte)),
+                byte => encoded.push_str(&format!("%{byte:02X}")),
+            }
+        }
+
+        encoded
+    }
+
+    #[test]
+    fn page_header_round_trips_frontend_encoding() {
+        let cases = [
+            ("r5a1-テスト", "r5a1-%E3%83%86%E3%82%B9%E3%83%88"),
+            ("привет", "%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82"),
+            ("😀", "%F0%9F%98%80"),
+        ];
+
+        for (slug, frontend_header) in cases {
+            let encoded = encode_page_header(slug);
+            assert_eq!(encoded, frontend_header);
+            assert_eq!(decode_page_header(&encoded).as_deref(), Some(slug));
+        }
+    }
 }
