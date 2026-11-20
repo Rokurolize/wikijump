@@ -484,7 +484,8 @@ impl RenderService {
             };
         let scan_target = list_pages_scan_target(query_target);
         let listing_cache_key = format!("{viewer_user_id:?}|{query_target}|{query:?}");
-        let scan_cache_key = list_pages_scan_cache_key(viewer_user_id, &query, scan_target);
+        let scan_cache_key =
+            list_pages_scan_cache_key(viewer_user_id, &query, scan_target);
         let total_match_key = list_pages_total_match_key(
             viewer_user_id,
             &query,

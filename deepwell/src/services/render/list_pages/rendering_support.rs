@@ -1570,13 +1570,12 @@ mod tests {
             let shared_scan: Vec<i64> = (0..50).collect();
             for offset in [0_u32, 1, 7] {
                 for limit in [1_u64, 2, 4, 20] {
-                    let wider = list_pages_slice_rows(
-                        shared_scan.clone(),
-                        offset,
-                        Some(limit),
-                    );
-                    let base_scan = &shared_scan[..(offset as usize + limit as usize).min(shared_scan.len())];
-                    let base = list_pages_slice_rows(base_scan.to_vec(), offset, Some(limit));
+                    let wider =
+                        list_pages_slice_rows(shared_scan.clone(), offset, Some(limit));
+                    let base_scan = &shared_scan
+                        [..(offset as usize + limit as usize).min(shared_scan.len())];
+                    let base =
+                        list_pages_slice_rows(base_scan.to_vec(), offset, Some(limit));
                     assert_eq!(wider, base, "offset={offset} limit={limit}");
                     assert_eq!(wider.len(), (limit as usize).min(50 - offset as usize));
                 }
