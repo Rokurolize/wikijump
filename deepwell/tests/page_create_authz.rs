@@ -75,5 +75,8 @@ async fn page_create_requires_create_permission_in_submitted_site() {
         page_get,
         json!({"site_id": site_id, "page": unauthorized_slug}),
     );
-    assert!(stored.is_none(), "denied page create must not store the page");
+    assert!(
+        stored.is_none(),
+        "denied page create must not store the page"
+    );
 }
