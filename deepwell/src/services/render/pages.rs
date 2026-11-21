@@ -289,68 +289,90 @@ async fn load_pages_module_pages(
         .limit
         .map(|_| format!(" ORDER BY {}", pages_module_order_sql(arguments.order)))
         .unwrap_or_default();
-    let query_limit = pages_module_query_limit(arguments);
-    let statement = Statement::from_sql_and_values(
-        txn.get_database_backend(),
-        format!(
-            "SELECT p.page_id, p.page_category_id, p.slug, pr.title, \
-                p.created_at, COALESCE(p.updated_at, pr.created_at) AS updated_at, \
-                pr.revision_number, pr.user_id AS updated_by, \
-                wu.name AS wikidot_user_name, wu.slug AS wikidot_user_slug, \
-                local_user.name AS local_user_name, local_user.slug AS local_user_slug \
-         FROM page p \
-         JOIN page_revision pr ON pr.revision_id = p.latest_revision_id \
-         JOIN page_category pc ON pc.category_id = p.page_category_id \
-         LEFT JOIN wikidot_user wu ON wu.user_id = pr.user_id AND wu.is_deleted = FALSE \
-         LEFT JOIN \"user\" local_user ON local_user.user_id = pr.user_id \
-         WHERE p.site_id = $1 \
-           AND p.deleted_at IS NULL \
-           {category_filter}\
-         {order_clause} \
-         LIMIT {query_limit}",
-        ),
-        values,
-    );
-    let rows = PagesModulePage::find_by_statement(statement)
-        .all(txn)
-        .await
-        .or_raise(make_error)?;
-    if pages_module_scan_exceeded(rows.len()) {
-        return Ok(None);
-    }
-
     let mut category_permissions = HashMap::new();
-    let mut viewable = Vec::with_capacity(rows.len());
-    for row in rows {
-        // The reserved `_admin` page is gated on Site/Edit; it must not
-        // ride on its category's cached view decision.
-        let can_view = if PermissionService::slug_targets_reserved_admin_page(&row.slug) {
-            PermissionService::check_user_can_access_admin(ctx, None, current_site_id)
-                .await
-                .or_raise(make_error)?
-        } else if let Some(can_view) = category_permissions.get(&row.page_category_id) {
-            *can_view
-        } else {
-            let can_view = PermissionService::check_user_can(
-                ctx,
-                &CheckPermissionContext {
-                    user_id: None,
-                    site_id: current_site_id,
-                    page_reference: Some(Reference::Id(row.page_id)),
-                },
-                Permission {
-                    resource_type: Resource::Page,
-                    resource_category: Some(Reference::Id(row.page_category_id)),
-                    action: Action::View,
-                },
-            )
+    let mut viewable = Vec::new();
+    let mut scanned = 0usize;
+    let mut fetch_offset = 0usize;
+    loop {
+        let batch_size = match arguments.limit {
+            Some(limit) => limit.saturating_sub(viewable.len()),
+            None => pages_module_query_limit(arguments),
+        };
+        if arguments.limit.is_some() && batch_size == 0 {
+            break;
+        }
+        let statement = Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            format!(
+                "SELECT p.page_id, p.page_category_id, p.slug, pr.title, \
+                    p.created_at, COALESCE(p.updated_at, pr.created_at) AS updated_at, \
+                    pr.revision_number, pr.user_id AS updated_by, \
+                    wu.name AS wikidot_user_name, wu.slug AS wikidot_user_slug, \
+                    local_user.name AS local_user_name, local_user.slug AS local_user_slug \
+             FROM page p \
+             JOIN page_revision pr ON pr.revision_id = p.latest_revision_id \
+             JOIN page_category pc ON pc.category_id = p.page_category_id \
+             LEFT JOIN wikidot_user wu ON wu.user_id = pr.user_id AND wu.is_deleted = FALSE \
+             LEFT JOIN \"user\" local_user ON local_user.user_id = pr.user_id \
+             WHERE p.site_id = $1 \
+               AND p.deleted_at IS NULL \
+               {category_filter}\
+             {order_clause} \
+             LIMIT {batch_size} OFFSET {fetch_offset}",
+            ),
+            values.clone(),
+        );
+        let rows = PagesModulePage::find_by_statement(statement)
+            .all(txn)
             .await
             .or_raise(make_error)?;
-            category_permissions.insert(row.page_category_id, can_view);
-            can_view
-        };
-        if can_view {
-            viewable.push(row);
+        let batch_len = rows.len();
+        scanned += batch_len;
+        if pages_module_scan_exceeded(scanned) {
+            return Ok(None);
+        }
+        fetch_offset += batch_len;
+        for row in rows {
+            // The reserved `_admin` page is gated on Site/Edit; it must not
+            // ride on its category's cached view decision.
+            let can_view =
+                if PermissionService::slug_targets_reserved_admin_page(&row.slug) {
+                    PermissionService::check_user_can_access_admin(
+                        ctx,
+                        None,
+                        current_site_id,
+                    )
+                    .await
+                    .or_raise(make_error)?
+                } else if let Some(can_view) =
+                    category_permissions.get(&row.page_category_id)
+                {
+                    *can_view
+                } else {
+                    let can_view = PermissionService::check_user_can(
+                        ctx,
+                        &CheckPermissionContext {
+                            user_id: None,
+                            site_id: current_site_id,
+                            page_reference: Some(Reference::Id(row.page_id)),
+                        },
+                        Permission {
+                            resource_type: Resource::Page,
+                            resource_category: Some(Reference::Id(row.page_category_id)),
+                            action: Action::View,
+                        },
+                    )
+                    .await
+                    .or_raise(make_error)?;
+                    category_permissions.insert(row.page_category_id, can_view);
+                    can_view
+                };
+            if can_view {
+                viewable.push(row);
+            }
+        }
+        if arguments.limit.is_none() || batch_len < batch_size {
+            break;
         }
     }
 
