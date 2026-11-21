@@ -892,6 +892,19 @@ pub(in crate::services::render) fn list_pages_scan_cache_key(
     )
 }
 
+pub(in crate::services::render) fn list_pages_total_only_scan_cache_key(
+    viewer_user_id: Option<i64>,
+    query: &PageQuery<'_>,
+    scan_target: u64,
+) -> String {
+    let mut query = query.clone();
+    query.order = None;
+    format!(
+        "totals-only|{viewer_user_id:?}|{scan_target}|{}",
+        list_pages_canonical_query_debug(&query)
+    )
+}
+
 pub(in crate::services::render) fn list_pages_total_match_key(
     viewer_user_id: Option<i64>,
     query: &PageQuery<'_>,
@@ -1681,6 +1694,132 @@ mod tests {
             assert_ne!(
                 list_pages_scan_cache_key(Some(7), &greater, 250),
                 list_pages_scan_cache_key(Some(7), &greater_or_equal, 250)
+            );
+        }
+
+        #[test]
+        fn total_only_scan_key_is_identical_across_order_variants() {
+            let base = query(
+                Some(OrderBySelector {
+                    property: OrderProperty::CreatedAt,
+                    ascending: false,
+                }),
+                Some(1),
+                0,
+            );
+            let base_key = list_pages_total_only_scan_cache_key(Some(7), &base, 250);
+            for variant in [
+                query(
+                    Some(OrderBySelector {
+                        property: OrderProperty::Title,
+                        ascending: true,
+                    }),
+                    Some(1),
+                    0,
+                ),
+                query(
+                    Some(OrderBySelector {
+                        property: OrderProperty::FullSlug,
+                        ascending: false,
+                    }),
+                    Some(1),
+                    0,
+                ),
+                query(
+                    Some(OrderBySelector {
+                        property: OrderProperty::UpdatedAt,
+                        ascending: false,
+                    }),
+                    Some(1),
+                    0,
+                ),
+                query(None, Some(1), 0),
+            ] {
+                assert_eq!(
+                    list_pages_total_only_scan_cache_key(Some(7), &variant, 250),
+                    base_key,
+                );
+            }
+
+            assert_ne!(
+                list_pages_scan_cache_key(Some(7), &base, 250),
+                list_pages_scan_cache_key(
+                    Some(7),
+                    &query(
+                        Some(OrderBySelector {
+                            property: OrderProperty::Title,
+                            ascending: true,
+                        }),
+                        Some(1),
+                        0,
+                    ),
+                    250,
+                ),
+                "row-rendering bodies must keep order-specific scans",
+            );
+            assert_ne!(
+                list_pages_total_only_scan_cache_key(Some(7), &base, 250),
+                list_pages_scan_cache_key(Some(7), &base, 250),
+                "total-only scans must never hand their rows to a row-rendering body",
+            );
+        }
+
+        #[test]
+        fn one_cached_total_only_scan_serves_every_order_variant() {
+            let mut cache = ListPagesListingCache::default();
+            let base = query(
+                Some(OrderBySelector {
+                    property: OrderProperty::CreatedAt,
+                    ascending: false,
+                }),
+                Some(1),
+                0,
+            );
+            cache.cache_rows(
+                list_pages_total_only_scan_cache_key(Some(7), &base, 250),
+                CachedListPagesRows {
+                    pages: FoundPages { pages: Vec::new() },
+                    metadata: Default::default(),
+                    view_permission_filtering_applied: false,
+                },
+            );
+            for order in [
+                OrderProperty::Title,
+                OrderProperty::FullSlug,
+                OrderProperty::UpdatedAt,
+            ] {
+                let variant = query(
+                    Some(OrderBySelector {
+                        property: order.clone(),
+                        ascending: true,
+                    }),
+                    Some(1),
+                    0,
+                );
+                assert!(
+                    cache
+                        .rows(&list_pages_total_only_scan_cache_key(
+                            Some(7),
+                            &variant,
+                            250,
+                        ))
+                        .is_some(),
+                    "{order:?} must reuse the shared scan instead of re-executing it",
+                );
+            }
+            let row_query = query(
+                Some(OrderBySelector {
+                    property: OrderProperty::Title,
+                    ascending: true,
+                }),
+                Some(1),
+                0,
+            );
+            assert!(
+                cache
+                    .rows(&list_pages_scan_cache_key(Some(7), &row_query, 250))
+                    .is_none(),
+                "a row-rendering body must not read the total-only scan",
             );
         }
 

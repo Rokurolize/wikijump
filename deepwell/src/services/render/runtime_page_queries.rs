@@ -127,6 +127,9 @@ fn cascade_page_query_cache_key(
     }
 
     let mut query = query.clone();
+    if ignore_order {
+        query.order = None;
+    }
     // The executed query depends on current_page_id only through the parent
     // condition, and only for the relative parent selectors; for the other
     // selectors the same rows are produced for every host page, so the key
@@ -805,6 +808,38 @@ mod tests {
             cascade_page_query_cache_key(None, &query, 1, 0, true, true),
             "ordered and unordered executions must not share rows",
         );
+    }
+
+    #[test]
+    fn cascade_key_ignores_order_for_unordered_count_scans() {
+        let mut base = cascade_test_query(111, PageParentSelector::All);
+        base.order = Some(OrderBySelector {
+            property: OrderProperty::CreatedAt,
+            ascending: false,
+        });
+        let unordered_base = cascade_page_query_cache_key(None, &base, 1, 0, false, true);
+
+        for property in [
+            OrderProperty::Title,
+            OrderProperty::FullSlug,
+            OrderProperty::UpdatedAt,
+        ] {
+            let mut variant = base.clone();
+            variant.order = Some(OrderBySelector {
+                property: property.clone(),
+                ascending: true,
+            });
+            assert_eq!(
+                cascade_page_query_cache_key(None, &variant, 1, 0, false, true),
+                unordered_base,
+                "an unordered count scan does not depend on {property:?}",
+            );
+            assert_ne!(
+                cascade_page_query_cache_key(None, &variant, 1, 0, false, false),
+                cascade_page_query_cache_key(None, &base, 1, 0, false, false),
+                "ordered row scans must stay order-specific",
+            );
+        }
     }
 
     #[test]
