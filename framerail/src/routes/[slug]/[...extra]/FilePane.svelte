@@ -20,6 +20,8 @@
   let fileMap = new SvelteMap<number, PageFile>()
   let fileEditId = $state<number>(0)
   let fileRevisionMap = new SvelteMap<number, FileRevisionModel>()
+  let fileHistoryGeneration = 0
+  let fileHistoryFileId = 0
 
   async function getFileList(deleted = false) {
     const res = await fetch("?/fileList", {
@@ -225,6 +227,8 @@
   )
 
   async function handleFileHistory(fileId: number) {
+    const generation = ++fileHistoryGeneration
+    fileHistoryFileId = fileId
     const res = await fetch("?/fileHistory", {
       method: "POST",
       body: JSON.stringify({
@@ -238,6 +242,8 @@
       { res: FileRevisionModel[] },
       { message: string; code: string; data: Record<string, unknown> }
     >(res)
+
+    if (generation !== fileHistoryGeneration || fileId !== fileHistoryFileId) return
 
     if (result.type === "failure" && result.data?.message) {
       errorPopupState.current = {
