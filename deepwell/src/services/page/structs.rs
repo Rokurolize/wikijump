@@ -218,7 +218,9 @@ pub struct RestorePage {
     pub site_id: i64,
     pub page_id: i64,
     pub revision_comments: String,
-    pub user_id: i64,
+
+    #[serde(default)]
+    pub user_id: Option<i64>,
     pub slug: Option<String>,
     pub ip_address: IpAddr,
 }
