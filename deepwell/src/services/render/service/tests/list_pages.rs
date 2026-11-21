@@ -2871,7 +2871,10 @@ fn list_pages_title_variables_match_live_sanitization_and_context() {
         "x...x x....x x. . .x",
         None,
     );
-    assert!(rendered.contains("TITLE=x…x x….x x…x"), "{rendered}");
+    assert!(
+        rendered.contains("TITLE=x&#8230;x x&#8230;.x x&#8230;x"),
+        "{rendered}"
+    );
     assert!(rendered.contains(">x...x x....x x. . .x</a>"), "{rendered}",);
 
     let rendered = render_list_pages_title_variables_through_outer_pipeline(
@@ -2879,7 +2882,7 @@ fn list_pages_title_variables_match_live_sanitization_and_context() {
         None,
     );
     assert!(
-        rendered.contains("TITLE=“DOUBLE” ‘SINGLE’ «ANGLE» 10\u{a0}000\u{a0}5\u{a0}kg"),
+        rendered.contains("TITLE=&#8220;DOUBLE&#8221; &#8216;SINGLE&#8217; &#171;ANGLE&#187; 10&#160;000&#160;5&#160;kg"),
         "{rendered}",
     );
     assert!(
@@ -2929,14 +2932,14 @@ fn list_pages_title_variables_match_live_sanitization_and_context() {
     );
     assert!(
         rendered.contains(
-            "PARENT=div<strong>PARENT</strong>… \
+            "PARENT=div<strong>PARENT</strong>&#8230; \
              <span style=\"white-space: pre-wrap;\">ESCAPED</span>/div",
         ),
         "{rendered}",
     );
     assert!(
         rendered.contains(
-            "PARENT_LINKED=[[[run-owned:parent | div<strong>PARENT</strong>… \
+            "PARENT_LINKED=[[[run-owned:parent | div<strong>PARENT</strong>&#8230; \
              <span style=\"white-space: pre-wrap;\">ESCAPED</span>/div]]]",
         ),
         "{rendered}",

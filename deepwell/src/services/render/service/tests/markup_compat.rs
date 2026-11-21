@@ -886,12 +886,12 @@ fn renders_protected_wikidot_color_spans_as_html_after_ftml_parsing() {
     ));
     assert!(
         rendered.contains(
-            r#"<strong><span style="color: #ce005c">I am… I <em>should</em> be…</span></strong>"#
+            r#"<strong><span style="color: #ce005c">I am&#8230; I <em>should</em> be&#8230;</span></strong>"#
         ),
         "{rendered}",
     );
     assert!(rendered.contains(
-        r#"<strong><span style="color: #c5000b">PATH uses North — heading for the arctic — red.</span></strong>"#
+        r#"<strong><span style="color: #c5000b">PATH uses North &#8212; heading for the arctic &#8212; red.</span></strong>"#
     ));
     assert!(rendered.contains(
         r#"<span style="color: #c5000b"><strong>That might be the reason.</strong></span>"#
@@ -1994,7 +1994,7 @@ fn functional_color_span_marker_protection_boundaries() {
     for (source, literal) in [
         ("####blue|leftover##", "####blue|leftover##"),
         ("##hsl(120, 50%, 25%)|x##", "##hsl(120, 50%, 25%)|x##"),
-        ("##var(--x)|##", "##var(—x)|##"),
+        ("##var(--x)|##", "##var(&#8212;x)|##"),
     ] {
         let html = render_wikidot_page_body_with_compat_restore(source);
         assert!(

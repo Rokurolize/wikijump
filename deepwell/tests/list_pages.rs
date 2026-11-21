@@ -1003,7 +1003,7 @@ async fn delayed_listpages_rows_keep_wikidot_whitespace_boundaries() {
     .html_output
     .body;
     assert!(
-        nbsp_preview.contains('\u{00a0}'),
+        nbsp_preview.contains("&#160;"),
         "an NBSP-only delayed source line remains authored content:\n{nbsp_preview}",
     );
     assert!(
@@ -3988,7 +3988,7 @@ async fn listpages_combined_inline_sections_share_one_paragraph() {
     .html_output
     .body;
 
-    assert_eq!(body, "<p>H<br>\nB=SCP-002<br>\nF</p>");
+    assert_eq!(body, "<p>H<br />\nB=SCP-002<br />\nF</p>");
 
     runner.teardown().await;
 }
@@ -5151,7 +5151,7 @@ async fn unsaved_preview_runs_site_queries_without_inventing_a_current_page() {
     .body;
     assert!(
         zero_row_continued_prepend.contains(concat!(
-            r#"<div class="list-pages-box"><strong>Seiten mit Wertung:</strong><br>"#,
+            r#"<div class="list-pages-box"><strong>Seiten mit Wertung:</strong><br />"#,
             "<br>",
         )) && !zero_row_continued_prepend.contains("WIKIJUMPWIKIDOTCOMPATHTML"),
         "the wrapper close must remain a block boundary after a continued prepend line:\n\
@@ -6233,7 +6233,7 @@ async fn listpages_default_rows_expand_secondary_page_body_modules() {
             r#"<div class="error-block">Inviting users has been disabled"#,
         )) && preview.contains(concat!(
             "site admin dashboard</a>.</div>",
-            "<p>INVITE_END<br>\nTODO_START</p>",
+            "<p>INVITE_END<br />\nTODO_START</p>",
             r#"<div class="error-block">The SimpleTodo module must have an id.</div>"#,
             "<p>TODO_END",
         )),
@@ -6325,10 +6325,10 @@ async fn listpages_selected_content_splits_terminal_embed_error_from_its_paragra
 
     assert!(
         preview.contains(concat!(
-            "DOC_EMBEDAUDIO_BEGIN<br>\n</p>",
+            "DOC_EMBEDAUDIO_BEGIN<br />\n</p>",
             "<div class=\"error-block\">",
             "Sorry, no match for the embedded content.</div>",
-            "<br>\nDOC_EMBEDAUDIO_END</div>",
+            "<br />\nDOC_EMBEDAUDIO_END</div>",
         ),) && !preview.contains("DOC_EMBEDAUDIO_END</p>"),
         "Wikidot closes the leading paragraph before the unsupported embed and leaves its terminal text at row level:\n{preview}",
     );
@@ -6362,9 +6362,9 @@ async fn linked_listpages_values_keep_typed_owner_boundaries_in_preview() {
             "page code shell",
             "[[code]]\n%%title_linked%%\n[[/code]]",
             concat!(
-                "[[code]]<br>\n",
+                "[[code]]<br />\n",
                 "<a href=\"/component:image-block\">Standard Image Block</a>",
-                "<br>\n[[/code]]",
+                "<br />\n[[/code]]",
             ),
         ),
         (
@@ -6405,8 +6405,8 @@ async fn linked_listpages_values_keep_typed_owner_boundaries_in_preview() {
             "tag image alt projection",
             "[[image https://example.com/x.png alt=\"%%tags_linked%%\"]]",
             concat!(
-                "<img src=\"https://example.com/x.png\" class=\"image\" ",
-                "alt=\"[/system:page-tags/tag/component component]\">",
+                "<img src=\"https://example.com/x.png\" alt=\"[/system:page-tags/tag/component component]\" ",
+                "class=\"image\">",
             ),
         ),
         (
@@ -6550,7 +6550,7 @@ async fn delayed_listpages_unicode_space_div_owner_stays_utf8_aligned() {
     assert!(
         !preview.contains("%%title_linked%%")
             && !preview.contains("TODO: module ListPages")
-            && preview.contains("<br>"),
+            && preview.contains("<br />"),
         "the delayed row should bind its page link and preserve following content:\n{preview}",
     );
 }
@@ -6762,7 +6762,7 @@ async fn listpages_separate_row_does_not_append_wrapper_indent_to_unwrapped_text
             "<div class=\"list-pages-item\">",
             "<div style=\"text-align: center;\">",
             "<blockquote><p><em>centered</em></p></blockquote>",
-            "</div><br>\n",
+            "</div><br />\n",
             "after</div></div>",
         )),
         "the generated row close must not become part of the unwrapped text node:\n{preview}",
@@ -8518,13 +8518,16 @@ async fn listpages_respects_corpus_literal_context_ownership() {
     .html_output
     .body;
     assert!(
-        unclosed_comment.contains("[!—")
+        unclosed_comment.contains("[!&#8212;")
             && unclosed_comment.contains("temporary hidden region")
             && unclosed_comment.contains("UNCLOSED COMMENT REACHES EOF"),
         "an unclosed comment must preserve ordinary source literally through EOF:\n{unclosed_comment}",
     );
 
-    for (source, expected) in [("raw ---]", "raw —-]"), ("raw ----]", "raw ——]")] {
+    for (source, expected) in [
+        ("raw ---]", "raw &#8212;-]"),
+        ("raw ----]", "raw &#8212;&#8212;]"),
+    ] {
         let unmatched_closer = RenderService::render_wikidot_page_preview(
             runner.context(),
             site_id,

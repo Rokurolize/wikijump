@@ -290,7 +290,7 @@ fn saved_page_bare_attachment_images_follow_wikidot_file_type_default() {
         html,
         concat!(
             r#"<a href="https://scp-wiki.wjfiles.com/local--files/scp-4875/ATACAMA.jpeg">"#,
-            r#"<img src="https://scp-wiki.wjfiles.com/local--resized-images/scp-4875/ATACAMA.jpeg/medium.jpg" class="image" alt="ATACAMA.jpeg">"#,
+            r#"<img src="https://scp-wiki.wjfiles.com/local--resized-images/scp-4875/ATACAMA.jpeg/medium.jpg" alt="ATACAMA.jpeg" class="image">"#,
             "</a>",
         ),
     );
@@ -514,7 +514,7 @@ fn trims_the_leading_whitespace_of_a_page_source() {
 fn keeps_indented_markers_after_content_literal() {
     assert_eq!(
         render_wikidot_trimmed_page_body("text\n * a\n * b\n\nz"),
-        "<p>text<br>\n* a<br>\n* b</p><p>z</p>",
+        "<p>text<br />\n* a<br />\n* b</p><p>z</p>",
     );
 
     assert_eq!(
@@ -1341,7 +1341,7 @@ fn missing_include_with_spaced_empty_separator_matches_live_browser_dom() {
     assert_eq!(
         restored,
         concat!(
-            "<p>[[div class=&quot;error-block&quot;]]<br>\n",
+            "<p>[[div class=&quot;error-block&quot;]]<br />\n",
             "Included page &quot;page&quot; does not exist ",
             "(<a href=\"/page/edit/true\">create it now</a>)</p>",
         ),
@@ -2695,8 +2695,8 @@ fn long_bullet_lists_render_inline_syntax_like_wikidot() {
         collapse_html_whitespace(&render_native_list_page_for_regression(source, false));
 
     for expected in [
-        r#"<li><a href="http://scp-jp.wikidot.com/example" target="_blank">Example</a> — by x</li>"#,
-        "<li>Murphy Law in… Type 3043 — FOR MURDER!</li>",
+        r#"<li><a href="http://scp-jp.wikidot.com/example" target="_blank">Example</a> &#8212; by x</li>"#,
+        "<li>Murphy Law in&#8230; Type 3043 &#8212; FOR MURDER!</li>",
         "<li>All acroamatic material <em>in absentia</em> must be voided.</li>",
         r#"<li>Source <a href="http://example.com/a//b//c">label</a></li>"#,
         r#"<li>Nested <span class="outer">a <span class="inner">b</span> c</span></li>"#,
@@ -3370,7 +3370,7 @@ fn wikidot_japanese_corrections_locale_localizes_ftml_footnotes() {
     assert_eq!(restored, rendered);
     assert!(restored.contains(r#"<div class="footnote-footer" id="footnote-1">"#));
     assert!(restored.contains(
-        r#"onclick="WIKIDOT.page.utils.scrollToReference(&#39;footnoteref-1&#39;)">1</a>. 注記"#
+        r#"onclick="WIKIDOT.page.utils.scrollToReference('footnoteref-1')">1</a>. 注記"#
     ));
     assert_eq!(restored.matches("注記").count(), 1);
     assert!(!restored.contains("wj-footnote"));
