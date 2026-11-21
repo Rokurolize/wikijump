@@ -75,6 +75,13 @@ impl RelationReference {
     }
 }
 
+pub fn relation_type_condition(relation_type: RelationType) -> Condition {
+    Condition::any().add(
+        relation::Column::RelationType
+            .is_in(relation_type.database_values().iter().copied()),
+    )
+}
+
 pub fn relation_condition(
     relation_type: RelationType,
     dest: RelationObject,

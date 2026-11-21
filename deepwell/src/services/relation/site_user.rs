@@ -203,13 +203,7 @@ async fn get_relation(
 
     let txn = ctx.transaction();
     let model = Relation::find()
-        .filter(
-            Condition::all()
-                .add(relation::Column::RelationType.eq(RelationType::SiteUser))
-                .add(condition)
-                .add(relation::Column::OverwrittenAt.is_null())
-                .add(relation::Column::DeletedAt.is_null()),
-        )
+        .filter(site_user_relation_condition(condition))
         .order_by_asc(relation::Column::CreatedAt)
         .one(txn)
         .await
@@ -222,4 +216,12 @@ async fn get_relation(
             ErrorType::RelationNotFound,
         )),
     }
+}
+
+fn site_user_relation_condition(condition: Condition) -> Condition {
+    Condition::all()
+        .add(relation_type_condition(RelationType::SiteUser))
+        .add(condition)
+        .add(relation::Column::OverwrittenAt.is_null())
+        .add(relation::Column::DeletedAt.is_null())
 }
