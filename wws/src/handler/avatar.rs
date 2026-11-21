@@ -101,7 +101,7 @@ pub async fn handle_user_avatar(
 
     let Ok(user_id) = user_id.parse::<i64>() else {
         error!("Unable to parse user id into i64: {user_id}");
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        return StatusCode::NOT_FOUND.into_response();
     };
 
     let avatar_s3_hash = match state.get_avatar_or_response(&headers, user_id).await {
@@ -126,5 +126,47 @@ pub async fn handle_user_avatar(
             error!("Unable to convert response: {error}");
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::Secrets;
+    use crate::state::build_server_state;
+    use s3::creds::Credentials;
+    use s3::region::Region;
+
+    #[tokio::test]
+    async fn unparseable_avatar_id_returns_not_found() {
+        let state = build_server_state(
+            false,
+            Secrets {
+                deepwell_url: String::from("http://127.0.0.1:1"),
+                redis_url: String::from("redis://127.0.0.1:1"),
+                s3_files_bucket: String::from("files"),
+                s3_tblocks_bucket: String::from("tblocks"),
+                s3_region: Region::Custom {
+                    region: String::from("test"),
+                    endpoint: String::from("http://127.0.0.1:1"),
+                },
+                s3_path_style: true,
+                s3_credentials: Credentials::new(
+                    Some("key"),
+                    Some("secret"),
+                    None,
+                    None,
+                    None,
+                )
+                .expect("test credentials"),
+            },
+        )
+        .await
+        .expect("test server state");
+
+        let response =
+            handle_user_avatar(State(state), Path(String::from("abc")), HeaderMap::new())
+                .await;
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 }
