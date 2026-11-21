@@ -496,15 +496,46 @@ const pageEditSchema = object({
 })
 
 /* ----- Page File ----- */
+const FILE_LIST_PER_PAGE = 10
+
+function paginateFileList<T>(
+  files: T[],
+  page: Optional<number>,
+  perPage: Optional<number>
+) {
+  const size = Math.max(
+    Math.floor(perPage ?? FILE_LIST_PER_PAGE) || FILE_LIST_PER_PAGE,
+    1
+  )
+  const totalPages = Math.max(1, Math.ceil(files.length / size))
+  const current = Math.min(Math.max(Math.floor(page ?? 1) || 1, 1), totalPages)
+  const start = (current - 1) * size
+  return {
+    res: files.slice(start, start + size),
+    total: files.length,
+    page: current,
+    perPage: size,
+    totalPages
+  }
+}
+
 export async function pageFileListAction({ request }: RequestEvent) {
   try {
-    const requestData: { siteId: number; pageId: number; deleted: Optional<boolean> } =
-      await request.json()
+    const requestData: {
+      siteId: number
+      pageId: number
+      deleted: Optional<boolean>
+      page?: number
+      perPage?: number
+    } = await request.json()
 
-    const { siteId, pageId, deleted } = requestData
+    const { siteId, pageId, deleted, page, perPage } = requestData
 
-    const res = await pageFileList(siteId, pageId, deleted)
-    return { res }
+    const files = await pageFileList(siteId, pageId, deleted)
+    if (page === undefined && perPage === undefined) {
+      return { res: files }
+    }
+    return paginateFileList(files, page, perPage)
   } catch (e) {
     const error = e as DeepwellError
     return fail(500, {
