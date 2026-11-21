@@ -12,6 +12,7 @@ import {
   isInterwikiTranslationLookup,
   isWikidotCapturePublicOrigin,
   installBrowserRequestGate,
+  effectiveRequestResourceType,
   isCaptureDependencyResourceType,
   localBrowserCaptureOrigins,
   parseRetryAfterMilliseconds,
@@ -285,6 +286,31 @@ test("theme dependencies are admitted by resource type while third-party executi
   assert.equal(isCaptureDependencyResourceType("script"), false);
   assert.equal(gate.snapshot().public_requests, 3);
   assert.deepEqual(gate.snapshot().blocked_hosts, {"cdn.scpwiki.com": 1});
+});
+
+test("a stylesheet fetch the browser mislabels as other is admitted by its Accept header", async () => {
+  const mislabeled = {resourceType: () => "other", headers: () => ({accept: "text/css,*/*;q=0.1"})};
+  assert.equal(effectiveRequestResourceType(mislabeled), "stylesheet");
+  assert.equal(effectiveRequestResourceType({resourceType: () => "other", headers: () => ({accept: "text/css"})}), "stylesheet");
+  assert.equal(effectiveRequestResourceType({resourceType: () => "other", headers: () => ({accept: "Text/CSS , */*"})}), "stylesheet");
+  assert.equal(effectiveRequestResourceType({resourceType: () => "other", headers: () => ({accept: "*/*"})}), "other");
+  assert.equal(effectiveRequestResourceType({resourceType: () => "other", headers: () => ({})}), "other");
+  assert.equal(effectiveRequestResourceType({resourceType: () => "script", headers: () => ({accept: "text/css"})}), "script");
+  assert.equal(effectiveRequestResourceType({resourceType: () => "stylesheet", headers: () => ({})}), "stylesheet");
+
+  const clock = createClock();
+  const gate = createBrowserRequestGate({intervalMs: 4_000, now: clock.now, sleep: clock.sleep});
+  const context = createContext();
+  await installBrowserRequestGate(context, {gate, publicOriginPredicate: isWikidotCapturePublicOrigin});
+  const handler = context.routes[0].handler;
+  const fonts = createRoute("https://fonts.googleapis.com/css2?family=Inter:wght@400&display=swap", {resourceType: "other", headers: {accept: "text/css,*/*;q=0.1"}});
+  const beacon = createRoute("https://fonts.googleapis.com/css2?family=Inter:wght@400&display=swap", {resourceType: "other", headers: {accept: "*/*"}});
+  await handler(fonts);
+  await handler(beacon);
+  assert.deepEqual(fonts.actions, [{type: "continue"}]);
+  assert.deepEqual(beacon.actions, [{type: "abort", reason: "blockedbyclient"}]);
+  assert.equal(gate.snapshot().public_requests, 1);
+  assert.deepEqual(gate.snapshot().blocked_hosts, {"fonts.googleapis.com": 1});
 });
 
 test("a source response cache serves repeated cacheable assets without another gate grant", async () => {

@@ -30,6 +30,7 @@ export function candidateDeepwellConfig(source, port, {seed = true} = {}) {
     ["https-port = 443", `https-port = ${port}`],
     ['files = "wjfiles.com"', 'files = "wjfiles.localhost"'],
     ["mock-mailcheck = false", "mock-mailcheck = true"],
+    ["allow-local = false", "allow-local = true"],
   ]) {
     if (!config.includes(before)) fail(`candidate Deepwell config source does not contain ${before}`);
     config = config.replace(before, after);

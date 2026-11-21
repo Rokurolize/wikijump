@@ -131,10 +131,11 @@ pub(super) use self::rendering_support::{
     ListPagesExpansionOptions, ListPagesListingCache, ListPagesPageContext,
     ListPagesRenderedBlock, ListPagesSummaryDerivation, ListPagesSummaryDerivationKey,
     expand_list_pages_generated_includes, list_pages_body_starts_with_preparsed_block,
-    list_pages_feed_only_render_result, list_pages_html_encoded_head_owns_script_tail,
-    prepare_list_pages_rendered_block, preserve_list_pages_module_matches,
-    push_list_pages_generated_output, push_list_pages_generated_output_with_cost,
-    push_list_pages_trailing_runtime_blocks, suppress_generated_list_pages_heading_toc,
+    list_pages_canonical_query_debug, list_pages_feed_only_render_result,
+    list_pages_html_encoded_head_owns_script_tail, prepare_list_pages_rendered_block,
+    preserve_list_pages_module_matches, push_list_pages_generated_output,
+    push_list_pages_generated_output_with_cost, push_list_pages_trailing_runtime_blocks,
+    suppress_generated_list_pages_heading_toc,
 };
 pub(super) use self::substitution::{
     CurrentPageAuthorSource, ExactNameListPagesBatchKey, ListPagesArguments,

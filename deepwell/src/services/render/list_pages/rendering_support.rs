@@ -47,8 +47,9 @@ use crate::hash::TextHash;
 use crate::models::page_category;
 use crate::services::ServiceContext;
 use crate::services::page_query::{
-    FoundPageFields, FoundPages, PageQuery, PageQueryResultMetadata,
-    PageQueryScoreFilterCache, PaginationSelector, RangeSelector,
+    CategoriesSelector, FoundPageFields, FoundPages, IncludedCategories,
+    PageParentSelector, PageQuery, PageQueryResultMetadata, PageQueryScoreFilterCache,
+    PaginationSelector, RangeSelector, TagCondition,
 };
 use crate::services::render::UrlArguments;
 use crate::services::render::service::IncludeExpansionOptions;
@@ -801,12 +802,94 @@ pub(in crate::services::render) fn list_pages_slice_rows<T>(
         .collect()
 }
 
+fn sorted_key_str_list<'a>(list: &[Cow<'a, str>]) -> Vec<Cow<'a, str>> {
+    let mut values = list.to_vec();
+    values.sort();
+    values.dedup();
+    values
+}
+
+fn sorted_key_debug_list<T: Clone + std::fmt::Debug>(list: &[T]) -> Vec<T> {
+    let mut keyed: Vec<(String, T)> = list
+        .iter()
+        .map(|value| (format!("{value:?}"), value.clone()))
+        .collect();
+    keyed.sort_by(|a, b| a.0.cmp(&b.0));
+    keyed.dedup_by(|a, b| a.0 == b.0);
+    keyed.into_iter().map(|(_, value)| value).collect()
+}
+
+/// Builds the Debug string used to key the ListPages render caches.
+///
+/// Several PageQuery fields are sets or conjunctions whose element order
+/// carries no meaning: the tag lists, the category lists, outgoing-link
+/// targets, parent references, the slug list, and the score, votes, and
+/// data-form selector lists. Keying on the raw Debug form made modules
+/// whose selectors differed only in the textual order of one of those
+/// lists miss each other's cached scans and totals, re-paying the query
+/// once per distinct spelling (ARTEX task 23 findings 6101, 6157, 6198,
+/// 6333). This formats a copy of the query with those lists sorted and
+/// deduplicated, so equivalent modules share one cache entry. Only the
+/// key copy is reordered; the query that runs is never touched, and no
+/// selector value is rewritten. In particular score comparisons are NOT
+/// canonicalized across operators: with 'stars' rating categories the
+/// effective score is an average, so rating=">0" and rating=">=1" are
+/// different predicates and keep different keys.
+pub(in crate::services::render) fn list_pages_canonical_query_debug(
+    query: &PageQuery<'_>,
+) -> String {
+    let any_tags = sorted_key_str_list(query.tags.any_present);
+    let all_tags = sorted_key_str_list(query.tags.all_present);
+    let no_tags = sorted_key_str_list(query.tags.none_present);
+    let included_categories = match query.categories.included_categories {
+        IncludedCategories::All => Vec::new(),
+        IncludedCategories::List(list) => sorted_key_str_list(list),
+    };
+    let excluded_categories = sorted_key_str_list(query.categories.excluded_categories);
+    let links = sorted_key_debug_list(query.contains_outgoing_links);
+    let parents = match query.page_parent {
+        PageParentSelector::HasParents(references) => sorted_key_debug_list(references),
+        _ => Vec::new(),
+    };
+    let score = sorted_key_debug_list(query.score);
+    let votes = sorted_key_debug_list(query.votes);
+    let slugs = sorted_key_str_list(query.slugs);
+    let data_form_fields = sorted_key_debug_list(query.data_form_fields);
+
+    let mut canonical = query.clone();
+    canonical.tags = TagCondition {
+        any_present: &any_tags,
+        all_present: &all_tags,
+        none_present: &no_tags,
+        untagged: query.tags.untagged,
+    };
+    canonical.categories = CategoriesSelector {
+        included_categories: match query.categories.included_categories {
+            IncludedCategories::All => IncludedCategories::All,
+            IncludedCategories::List(_) => IncludedCategories::List(&included_categories),
+        },
+        excluded_categories: &excluded_categories,
+    };
+    canonical.contains_outgoing_links = &links;
+    if let PageParentSelector::HasParents(_) = query.page_parent {
+        canonical.page_parent = PageParentSelector::HasParents(&parents);
+    }
+    canonical.score = &score;
+    canonical.votes = &votes;
+    canonical.slugs = &slugs;
+    canonical.data_form_fields = &data_form_fields;
+    format!("{canonical:?}")
+}
+
 pub(in crate::services::render) fn list_pages_scan_cache_key(
     viewer_user_id: Option<i64>,
     query: &PageQuery<'_>,
     scan_target: u64,
 ) -> String {
-    format!("{viewer_user_id:?}|{scan_target}|{query:?}")
+    format!(
+        "{viewer_user_id:?}|{scan_target}|{}",
+        list_pages_canonical_query_debug(query)
+    )
 }
 
 pub(in crate::services::render) fn list_pages_total_match_key(
@@ -829,7 +912,8 @@ pub(in crate::services::render) fn list_pages_total_match_key(
         ..FoundPageFields::default()
     };
     format!(
-        "{viewer_user_id:?}|{match_query:?}|evt={exact_visible_tags}|cvt={current_visible_tags:?}|rr={relative_range:?}|cp={current_page_id}|exc={exclude_current_page}"
+        "{viewer_user_id:?}|{}|evt={exact_visible_tags}|cvt={current_visible_tags:?}|rr={relative_range:?}|cp={current_page_id}|exc={exclude_current_page}",
+        list_pages_canonical_query_debug(&match_query)
     )
 }
 
@@ -1385,8 +1469,9 @@ mod tests {
         use crate::services::page_query::{
             AuthorSelector, CategoriesSelector, ComparisonOperation, DateSelector,
             DateTimeResolution, IncludedCategories, OrderBySelector, OrderProperty,
-            PageParentSelector, PageTypeSelector, TagCondition,
+            PageParentSelector, PageTypeSelector, ScoreSelector, TagCondition,
         };
+        use crate::services::score::ScoreValue;
         use time::OffsetDateTime;
 
         fn query(
@@ -1521,6 +1606,82 @@ mod tests {
                 true,
             );
             assert_ne!(excluded, base_key);
+        }
+
+        #[test]
+        fn keys_are_identical_across_set_selector_orders() {
+            let score_fwd = [
+                ScoreSelector {
+                    score: ScoreValue::Integer(3),
+                    comparison: ComparisonOperation::GreaterOrEqualThan,
+                },
+                ScoreSelector {
+                    score: ScoreValue::Integer(9),
+                    comparison: ComparisonOperation::LessOrEqualThan,
+                },
+            ];
+            let score_rev = [score_fwd[1], score_fwd[0]];
+            let mut base = query(None, Some(1), 0);
+            base.tags = TagCondition {
+                any_present: &[Cow::Borrowed("any-a"), Cow::Borrowed("any-b")],
+                all_present: &[Cow::Borrowed("req-a"), Cow::Borrowed("req-b")],
+                none_present: &[Cow::Borrowed("ex-a"), Cow::Borrowed("ex-b")],
+                untagged: false,
+            };
+            base.categories = CategoriesSelector {
+                included_categories: IncludedCategories::List(&[
+                    Cow::Borrowed("cat-a"),
+                    Cow::Borrowed("cat-b"),
+                ]),
+                excluded_categories: &[Cow::Borrowed("no-a"), Cow::Borrowed("no-b")],
+            };
+            base.slugs = &[Cow::Borrowed("slug-a"), Cow::Borrowed("slug-b")];
+            base.score = &score_fwd;
+
+            let mut permuted = base.clone();
+            permuted.tags = TagCondition {
+                any_present: &[Cow::Borrowed("any-b"), Cow::Borrowed("any-a")],
+                all_present: &[Cow::Borrowed("req-b"), Cow::Borrowed("req-a")],
+                none_present: &[Cow::Borrowed("ex-b"), Cow::Borrowed("ex-a")],
+                untagged: false,
+            };
+            permuted.categories = CategoriesSelector {
+                included_categories: IncludedCategories::List(&[
+                    Cow::Borrowed("cat-b"),
+                    Cow::Borrowed("cat-a"),
+                ]),
+                excluded_categories: &[Cow::Borrowed("no-b"), Cow::Borrowed("no-a")],
+            };
+            permuted.slugs = &[Cow::Borrowed("slug-b"), Cow::Borrowed("slug-a")];
+            permuted.score = &score_rev;
+
+            assert_eq!(match_key(&base), match_key(&permuted));
+            assert_eq!(
+                list_pages_scan_cache_key(Some(7), &base, 250),
+                list_pages_scan_cache_key(Some(7), &permuted, 250)
+            );
+        }
+
+        #[test]
+        fn keys_keep_distinct_score_operators_distinct() {
+            // With 'stars' rating categories the effective score is an
+            // average, so >0 and >=1 are different predicates; the key
+            // canonicalization must never merge them.
+            let mut greater = query(None, Some(1), 0);
+            greater.score = &[ScoreSelector {
+                score: ScoreValue::Integer(0),
+                comparison: ComparisonOperation::GreaterThan,
+            }];
+            let mut greater_or_equal = query(None, Some(1), 0);
+            greater_or_equal.score = &[ScoreSelector {
+                score: ScoreValue::Integer(1),
+                comparison: ComparisonOperation::GreaterOrEqualThan,
+            }];
+            assert_ne!(match_key(&greater), match_key(&greater_or_equal));
+            assert_ne!(
+                list_pages_scan_cache_key(Some(7), &greater, 250),
+                list_pages_scan_cache_key(Some(7), &greater_or_equal, 250)
+            );
         }
 
         #[test]

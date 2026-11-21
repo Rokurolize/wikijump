@@ -141,7 +141,8 @@ fn cascade_page_query_cache_key(
     }
 
     Some(format!(
-        "{viewer_user_id:?}|{target_count}|{batch_floor}|{retain_score_filter_session}|{ignore_order}|{query:?}"
+        "{viewer_user_id:?}|{target_count}|{batch_floor}|{retain_score_filter_session}|{ignore_order}|{}",
+        super::list_pages::list_pages_canonical_query_debug(&query)
     ))
 }
 

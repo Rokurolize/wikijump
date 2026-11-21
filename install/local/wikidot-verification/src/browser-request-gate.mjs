@@ -865,6 +865,15 @@ export function isCaptureDependencyResourceType(resourceType) {
   return CAPTURE_DEPENDENCY_RESOURCE_TYPES.has(resourceType);
 }
 
+export function effectiveRequestResourceType(request) {
+  const resourceType = typeof request?.resourceType === "function" ? request.resourceType() : "";
+  if (resourceType !== "other") return resourceType;
+  const headers = typeof request?.headers === "function" ? request.headers() : null;
+  const accept = typeof headers?.accept === "string" ? headers.accept : "";
+  const primary = accept.split(",", 1)[0].trim().toLowerCase();
+  return primary === "text/css" ? "stylesheet" : resourceType;
+}
+
 export function parseRetryAfterMilliseconds(value, {epochNow = Date.now} = {}) {
   if (typeof value !== "string" || value.trim() === "") return null;
   const text = value.trim();
@@ -1350,7 +1359,7 @@ async function fulfillRetainedEntry(route, { gate, responseCache, request, entry
     route,
     gate,
     responseCache,
-    resourceType: request.resourceType(),
+    resourceType: effectiveRequestResourceType(request),
     sourceUrl: request.url(),
     entry,
     request,
@@ -1363,7 +1372,7 @@ async function fulfillRetainedEntry(route, { gate, responseCache, request, entry
   }
   if (resolved.entry !== null) {
     await route.fulfill(
-      evidenceReplaySubresourceFulfillment(request.resourceType(), resolved),
+      evidenceReplaySubresourceFulfillment(effectiveRequestResourceType(request), resolved),
     );
     return;
   }
@@ -1514,15 +1523,16 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
         await abortWithAttribution(route, "unsupported_protocol");
         return;
       }
+      const gateResourceType = effectiveRequestResourceType(route.request());
       if (
         publicOriginPredicate !== null &&
         !publicOriginPredicate(
           url,
-          route.request().resourceType(),
+          gateResourceType,
           route.request().method(),
           typeof route.request().frame === "function" ? route.request().frame()?.url() : null,
         ) &&
-        !isCaptureDependencyResourceType(route.request().resourceType())
+        !isCaptureDependencyResourceType(gateResourceType)
       ) {
         gate.recordUnsupportedRequestBlocked(url.hostname);
         await abortWithAttribution(
