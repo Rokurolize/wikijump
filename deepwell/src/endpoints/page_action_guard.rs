@@ -19,9 +19,7 @@
  */
 
 use super::prelude::*;
-use crate::services::permission::{PermissionService, PermissionTarget};
 use crate::types::{Action, Reference};
-use crate::utils::get_category_name;
 
 pub(super) async fn require_page_delete_permission(
     ctx: &ServiceContext<'_>,
@@ -46,97 +44,6 @@ pub(super) async fn require_page_delete_permission(
             "Permission denied.",
             ErrorType::PermissionDenied
         ));
-    }
-
-    Ok(())
-}
-
-pub(super) async fn require_page_edit_permission(
-    ctx: &ServiceContext<'_>,
-    site_id: i64,
-    page: Reference<'_>,
-) -> Result<()> {
-    ctx.request().user_id().or_raise(|| {
-        Error::new(
-            "page rollback requires an authenticated actor",
-            ErrorType::PermissionDenied,
-        )
-    })?;
-
-    let allowed = PageService::check_user_permission(ctx, site_id, page, Action::Edit)
-        .await
-        .or_raise(|| {
-            Error::new("failed to check page edit permission", ErrorType::Page)
-        })?;
-
-    if !allowed {
-        bail!(Error::new(
-            "Permission denied.",
-            ErrorType::PermissionDenied
-        ));
-    }
-
-    Ok(())
-}
-
-pub(super) async fn require_page_lock_permission(
-    ctx: &ServiceContext<'_>,
-    site_id: i64,
-    page: Reference<'_>,
-) -> Result<()> {
-    let allowed =
-        PageService::check_user_permission(ctx, site_id, page, Action::BypassLock)
-            .await
-            .or_raise(|| {
-                Error::new("failed to check page lock permission", ErrorType::Page)
-            })?;
-
-    if !allowed {
-        return Err(Error::new(
-            "user does not have permission to change locks on this page",
-            ErrorType::PermissionDenied,
-        )
-        .into());
-    }
-
-    Ok(())
-}
-
-pub(super) async fn require_page_create_permission(
-    ctx: &ServiceContext<'_>,
-    site_id: i64,
-    slug: &str,
-) -> Result<()> {
-    let category_ref = Reference::Slug(cow!(get_category_name(slug)));
-    let category_id = CategoryService::get_optional(ctx, site_id, category_ref)
-        .await
-        .or_raise(|| {
-            Error::new(
-                "failed to load page category for create permission check",
-                ErrorType::Page,
-            )
-        })?
-        .ok_or_raise(|| Error::new("page category not found", ErrorType::Page))?
-        .category_id;
-
-    let allowed = PermissionService::can_user(
-        ctx,
-        Some(site_id),
-        Action::Create,
-        PermissionTarget::Page {
-            page_id: 0,
-            category_id,
-        },
-    )
-    .await
-    .or_raise(|| Error::new("failed to check page create permission", ErrorType::Page))?;
-
-    if !allowed {
-        return Err(Error::new(
-            "user does not have permission to create a page in this site",
-            ErrorType::PermissionDenied,
-        )
-        .into());
     }
 
     Ok(())
