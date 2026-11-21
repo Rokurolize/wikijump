@@ -135,3 +135,55 @@ pub fn exn_error_to_rpc_error(exn_error: Exn<Error>) -> ErrorObjectOwned {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use exn::ErrorExt;
+
+    #[test]
+    fn rpc_call_trace_redacts_database_driver_text() {
+        let detail = concat!(
+            "insert or update on table \"page_vote\" violates foreign key constraint ",
+            "\"page_vote_page_id_fkey\" at line 2654, at src/services/vote/service.rs:81:44",
+        );
+        let inner = Error::new(detail, ErrorType::DatabaseQuery).raise();
+        let exn = inner.raise(Error::new("vote operation failed", ErrorType::Page));
+        let rpc = exn_error_to_rpc_error(exn);
+
+        assert!(rpc.message().contains("vote operation failed"), "message: {}", rpc.message());
+        assert!(!rpc.message().contains("page_vote"), "message: {}", rpc.message());
+        let data: JsonValue = serde_json::from_str(rpc.data().unwrap().get()).unwrap();
+        assert_eq!(
+            data["code_trace"],
+            json!([ErrorType::Page.code(), ErrorType::DatabaseQuery.code()]),
+        );
+
+        let trace = data["call_trace"].as_str().unwrap();
+        assert!(trace.contains("vote operation failed"), "trace: {trace}");
+        assert!(!trace.contains("src/"), "trace: {trace}");
+        assert!(!trace.contains("page_vote"), "trace: {trace}");
+        assert!(!trace.contains("foreign key constraint"), "trace: {trace}");
+        assert!(!trace.contains("error returned from database"), "trace: {trace}");
+        assert!(!trace.contains("at line 2654"), "trace: {trace}");
+    }
+
+    #[test]
+    fn rpc_call_trace_redacts_source_locations() {
+        let rpc = exn_error_to_rpc_error(
+            Error::new(
+                "page missing",
+                ErrorType::PageNotFound,
+            )
+            .raise(),
+        );
+
+        assert_eq!(rpc.message(), ErrorType::PageNotFound.summary());
+        let data: JsonValue = serde_json::from_str(rpc.data().unwrap().get()).unwrap();
+        let trace = data["call_trace"].as_str().unwrap();
+        assert!(trace.contains("page missing"), "trace: {trace}");
+        assert!(!trace.contains("src/"), "trace: {trace}");
+        assert!(!trace.contains(":429:5"), "trace: {trace}");
+        assert!(!rpc.message().contains("src/"), "message: {}", rpc.message());
+    }
+}
