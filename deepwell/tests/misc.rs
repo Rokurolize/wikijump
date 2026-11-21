@@ -85,3 +85,41 @@ async fn misc() {
     assert_eq!(info.hostname, *deepwell::info::HOSTNAME);
     assert!(info.current_time > OffsetDateTime::UNIX_EPOCH);
 }
+
+#[tokio::test]
+async fn preload_view_invalid_session_token_is_anonymous() {
+    let runner = TestRunner::setup().await;
+
+    let created = run_endpoint!(
+        runner,
+        site_create,
+        json!({
+            "slug": "r4a1-invalid-token",
+            "name": "R4A1 Invalid Token Test",
+            "tagline": "R4A1",
+            "description": "R4A1 session fallback test site",
+            "default_page": null,
+            "layout": null,
+            "license": "cc-by-sa-3.0",
+            "locale": "en",
+            "ip_address": "127.0.0.1",
+        })
+    );
+
+    let site_id = created.site_id;
+
+    let output = run_endpoint!(
+        runner,
+        preload_view,
+        json!({
+            "site_id": site_id,
+            "locales": ["en"],
+            "session_token": "invalidtoken123",
+        })
+    );
+
+    assert!(
+        output.viewer.user_session.is_none(),
+        "an invalid session token must resolve to an anonymous viewer",
+    );
+}
