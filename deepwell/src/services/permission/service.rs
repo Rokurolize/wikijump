@@ -597,10 +597,9 @@ impl PermissionService {
         let make_error =
             || Error::new("failed to check permission", ErrorType::Permission);
 
-        if action == Action::View
-            && !Self::site_allows_view(ctx, user_id, site_id)
-                .await
-                .or_raise(make_error)?
+        if !Self::site_allows_view(ctx, user_id, site_id)
+            .await
+            .or_raise(make_error)?
         {
             return Ok(false);
         }
