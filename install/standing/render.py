@@ -32,6 +32,12 @@ PRODUCTION_DOMAIN_BLOCK = '[domain]\nmain = "wikijump.com"\nhttps-port = 443\nfi
 # Standing is the stack on 127.0.0.1:443; the local development stack has its
 # own `wikijump.dev.localhost` hosts on 18443 (install/local/deepwell/config.toml).
 STANDING_DOMAIN_BLOCK = '[domain]\nmain = "wikijump.localhost"\nhttps-port = 443\nfiles = "wjfiles.localhost"'
+
+# Standing never sends real mail: it runs the local email provider, which
+# discards messages, so its rendered config must allow that provider where
+# the production config forbids it.
+PRODUCTION_EMAIL_BLOCK = '[email]\nmock-mailcheck = false\nallow-local = false'
+STANDING_EMAIL_BLOCK = '[email]\nmock-mailcheck = false\nallow-local = true' 
 CREDENTIAL_KEYS = (
     "STANDING_DB_PASSWORD",
     "STANDING_MINIO_ROOT_USER",
@@ -131,7 +137,10 @@ def standing_deepwell_config(source: Path) -> tuple[str, str]:
     contents = source.read_text(encoding="utf-8")
     if contents.count(PRODUCTION_DOMAIN_BLOCK) != 1:
         raise ValueError("production Deepwell config must contain exactly one expected domain block")
-    return contents.replace(PRODUCTION_DOMAIN_BLOCK, STANDING_DOMAIN_BLOCK), hashlib.sha256(contents.encode()).hexdigest()
+    if contents.count(PRODUCTION_EMAIL_BLOCK) != 1:
+        raise ValueError("production Deepwell config must contain exactly one expected email block")
+    rendered = contents.replace(PRODUCTION_DOMAIN_BLOCK, STANDING_DOMAIN_BLOCK).replace(PRODUCTION_EMAIL_BLOCK, STANDING_EMAIL_BLOCK)
+    return rendered, hashlib.sha256(contents.encode()).hexdigest()
 
 
 def replace_directory(staging: Path, output_dir: Path, replace: bool) -> Path | None:
