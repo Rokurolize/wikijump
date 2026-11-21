@@ -1,4 +1,4 @@
-FROM postgres:19rc2-alpine3.24@sha256:7e3904251ae6f1e80c756b0ea12fbac512d8b9512de0047cdcbe4c6a69dff60b
+FROM postgres:19.0-alpine3.24@sha256:8e81a484097154610d0b72f2fd1b70e1f8c31fd6b743b6d0da8b2a8c1ab2ea1d
 
 EXPOSE 5432
 
