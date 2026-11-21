@@ -35,6 +35,12 @@ use str_macro::str;
 
 static FIXTURE_COUNTER: AtomicU64 = AtomicU64::new(0);
 
+const SEEDED_SITE_ID: i64 = 6000001;
+const SEEDED_PAGE_ID: i64 = 3000000035;
+const SEEDED_FILE_PAGE_ID: i64 = 3000000032;
+const SEEDED_FILE_OWNER_ID: i64 = 20000808;
+const SEEDED_PENDING_BLOB_ID: &str = "rjkou42azdi2988wx0zsblcm";
+
 struct Fixture {
     site_id: i64,
     page_id: i64,
@@ -124,11 +130,79 @@ async fn file_delete_denies_user_without_page_edit_permission() {
         runner,
         file_delete,
         json!({
-            "site_id": f.site_id,
-            "page_id": f.page_id,
-            "file": 1,
-            "last_revision_id": 1,
+            "site_id": SEEDED_SITE_ID,
+            "page_id": SEEDED_FILE_PAGE_ID,
+            "file": 4,
+            "last_revision_id": 4,
             "revision_comments": "unauthorized delete",
+            "user_id": f.outsider_id,
+        })
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+}
+
+#[tokio::test]
+async fn file_create_denies_user_without_page_edit_permission() {
+    let mut runner = TestRunner::setup().await;
+    let f = fixture(&runner).await;
+    as_outsider(&mut runner, f.outsider_id);
+
+    let error = run_endpoint_err!(
+        runner,
+        file_create,
+        json!({
+            "site_id": SEEDED_SITE_ID,
+            "page_id": SEEDED_PAGE_ID,
+            "name": format!("unauthorized-create-{}", f.outsider_id),
+            "uploaded_blob_id": SEEDED_PENDING_BLOB_ID,
+            "revision_comments": "unauthorized create",
+            "user_id": SEEDED_FILE_OWNER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        })
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+}
+
+#[tokio::test]
+async fn file_move_denies_user_without_page_edit_permission() {
+    let mut runner = TestRunner::setup().await;
+    let f = fixture(&runner).await;
+    as_outsider(&mut runner, f.outsider_id);
+
+    let error = run_endpoint_err!(
+        runner,
+        file_move,
+        json!({
+            "site_id": SEEDED_SITE_ID,
+            "file_id": 4,
+            "current_page_id": SEEDED_FILE_PAGE_ID,
+            "destination_page": SEEDED_PAGE_ID,
+            "last_revision_id": 4,
+            "name": "moved-by-outsider.svg",
+            "revision_comments": "unauthorized move",
+            "user_id": f.outsider_id,
+        })
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+}
+
+#[tokio::test]
+async fn file_restore_denies_user_without_page_edit_permission() {
+    let mut runner = TestRunner::setup().await;
+    let f = fixture(&runner).await;
+    as_outsider(&mut runner, f.outsider_id);
+
+    let error = run_endpoint_err!(
+        runner,
+        file_restore,
+        json!({
+            "site_id": SEEDED_SITE_ID,
+            "page_id": SEEDED_FILE_PAGE_ID,
+            "file_id": 6,
+            "revision_comments": "unauthorized restore",
+            "new_page": null,
+            "new_name": null,
             "user_id": f.outsider_id,
         })
     );
