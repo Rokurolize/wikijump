@@ -18337,6 +18337,38 @@ async fn forum_post_reads_on_admin_page_pin_page_view_permission_path() {
         forum_post_select,
         json!({"site_id": site_id, "page": "_admin"})
     );
+    assert_eq!(
+        selection,
+        Vec::<i64>::new(),
+        "the compat path must apply the canonical _admin gate (Site/Edit), \
+         not raw Page/View, to a moderator"
+    );
+
+    let posts = run_endpoint!(
+        runner,
+        forum_post_get,
+        json!({"site_id": site_id, "posts": [post.forum_post_id]})
+    );
+    assert_eq!(posts.len(), 0);
+
+    let summary = run_endpoint!(
+        runner,
+        forum_post_page_summary,
+        json!({"site_id": site_id, "page": "_admin"})
+    );
+    let summary_value = serde_json::to_value(summary).expect("summary should serialize");
+    assert_eq!(summary_value["comments"], json!(0));
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let selection = run_endpoint!(
+        runner,
+        forum_post_select,
+        json!({"site_id": site_id, "page": "_admin"})
+    );
     assert_eq!(selection, vec![post.forum_post_id]);
 
     let posts = run_endpoint!(
@@ -18611,6 +18643,39 @@ async fn forum_visibility_divergence_admin_page_pins_render_and_compat_paths() {
         forum_post_get,
         json!({"site_id": site_id, "posts": [post.forum_post_id]})
     );
+    assert_eq!(
+        compat_posts.len(),
+        0,
+        "the compat path must apply the canonical _admin gate (Site/Edit),          not raw Page/View, to a moderator"
+    );
+
+    let rendered = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewThreadPostsModule",
+            "parameters": {"t": thread.forum_thread_id.to_string(), "pageNo": "1"},
+        }),
+    );
+    assert_eq!(rendered.status, "no_thread");
+    assert!(
+        !rendered
+            .body
+            .contains(&format!(r#"id="fpc-{}""#, post.forum_post_id)),
+        "the render path must not show an _admin thread post to a moderator"
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let compat_posts = run_endpoint!(
+        runner,
+        forum_post_get,
+        json!({"site_id": site_id, "posts": [post.forum_post_id]})
+    );
     assert_eq!(compat_posts.len(), 1);
     let compat_value =
         serde_json::to_value(&compat_posts[0]).expect("forum post should serialize");
@@ -18630,7 +18695,7 @@ async fn forum_visibility_divergence_admin_page_pins_render_and_compat_paths() {
         rendered
             .body
             .contains(&format!(r#"id="fpc-{}""#, post.forum_post_id)),
-        "both paths currently grant a Page/View moderator access to an _admin thread"
+        "both paths grant a Site/Edit holder access to an _admin thread"
     );
 }
 
