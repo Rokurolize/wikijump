@@ -208,6 +208,14 @@ impl ListPagesVariables {
             .copied()
             .any(|variable| self.contains(variable))
     }
+
+    fn is_subset_of(self, variables: &[ListPagesVariable]) -> bool {
+        let mut allowed = Self::default();
+        for variable in variables {
+            allowed.insert(*variable);
+        }
+        self.0 & !allowed.0 == 0
+    }
 }
 
 #[derive(Debug)]
@@ -769,6 +777,16 @@ impl ListPagesTemplatePlan {
 
     pub(in crate::services::render) fn uses_total(&self) -> bool {
         self.variables.contains(ListPagesVariable::Total)
+    }
+
+    pub(in crate::services::render) fn uses_only_total(&self) -> bool {
+        self.uses_total()
+            && !self.has_unknown_variables
+            && self.variables.is_subset_of(&[
+                ListPagesVariable::Total,
+                ListPagesVariable::Limit,
+                ListPagesVariable::TotalOrLimit,
+            ])
     }
 
     pub(in crate::services::render) fn uses_revisions(&self) -> bool {
@@ -1524,5 +1542,34 @@ mod section_tests {
         assert_eq!(plan.head_section(), Some("H"));
         assert_eq!(plan.body(), "A");
         assert_eq!(plan.foot_section(), None);
+    }
+
+    #[test]
+    fn total_only_bodies_exclude_every_row_variable() {
+        for body in [
+            "%%total%%",
+            "TOT=%%total%%",
+            "%%total%% %%limit%% %%total_or_limit%%",
+            "[[div]]TOT=%%total%%[[/div]]",
+        ] {
+            let plan = ListPagesTemplatePlan::compile(body)
+                .unwrap_or_else(|| panic!("{body} should compile"));
+            assert!(plan.uses_only_total(), "{body} must allow a shared scan");
+        }
+
+        for body in [
+            "%%fullname%%",
+            "%%total%% %%fullname%%",
+            "%%total%% %%index%%",
+            "%%total%% %%title%%",
+            "%%total%% %%unknown_variable%%",
+        ] {
+            let plan = ListPagesTemplatePlan::compile(body)
+                .unwrap_or_else(|| panic!("{body} should compile"));
+            assert!(
+                !plan.uses_only_total(),
+                "{body} renders row-dependent content and must keep its own order"
+            );
+        }
     }
 }
