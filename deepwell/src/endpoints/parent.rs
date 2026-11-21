@@ -20,6 +20,7 @@
 
 use std::collections::{HashMap, HashSet};
 
+use super::page_action_guard::require_page_edit_permission;
 use super::prelude::*;
 use crate::models::page_parent::Model as PageParentModel;
 use crate::services::page::GetPageReference;
@@ -156,6 +157,8 @@ pub async fn parent_update(
         "Updating multiple parental relationships for child {:?} in site ID {}",
         input.child, input.site_id,
     );
+
+    require_page_edit_permission(ctx, input.site_id, input.child.clone()).await?;
 
     let make_error = || {
         Error::new(
