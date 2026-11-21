@@ -2,8 +2,9 @@ use super::super::ListPagesBatchDisplays;
 use super::super::pagination::{ListPagesPagerArgs, ListPagesPagerRoute};
 use super::super::rendering_support::{
     ListPagesBlockRenderArgs, ListPagesContentSectionEntry, ListPagesContentSectionKey,
-    ListPagesSelectedContentArgs, list_pages_scan_cache_key, list_pages_scan_target,
-    list_pages_slice_rows, list_pages_total_match_key,
+    ListPagesSelectedContentArgs, list_pages_canonical_query_debug,
+    list_pages_scan_cache_key, list_pages_scan_target, list_pages_slice_rows,
+    list_pages_total_match_key,
 };
 use super::{
     BTreeMap, BTreeSet, CachedListPagesRows, CategoriesSelector, ColumnTrait,
@@ -483,7 +484,10 @@ impl RenderService {
                 query_limit
             };
         let scan_target = list_pages_scan_target(query_target);
-        let listing_cache_key = format!("{viewer_user_id:?}|{query_target}|{query:?}");
+        let listing_cache_key = format!(
+            "{viewer_user_id:?}|{query_target}|{}",
+            list_pages_canonical_query_debug(&query)
+        );
         let scan_cache_key =
             list_pages_scan_cache_key(viewer_user_id, &query, scan_target);
         let total_match_key = list_pages_total_match_key(
