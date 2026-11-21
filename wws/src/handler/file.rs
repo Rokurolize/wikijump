@@ -396,9 +396,17 @@ fn multipart_content_length(
 mod tests {
     use super::*;
     use crate::config::Secrets;
+    use crate::handler::HEADER_SITE_ID;
     use crate::state::build_server_state;
+    use axum::http::HeaderValue;
     use s3::creds::Credentials;
     use s3::region::Region;
+
+    fn internal_headers() -> HeaderMap {
+        let mut headers = HeaderMap::new();
+        headers.insert(HEADER_SITE_ID, HeaderValue::from_static("1"));
+        headers
+    }
 
     async fn test_state() -> ServerState {
         build_server_state(
@@ -435,7 +443,7 @@ mod tests {
             State(state.clone()),
             Method::GET,
             Path((String::from("foo\0bar"), String::from("file.txt"))),
-            HeaderMap::new(),
+            internal_headers(),
         )
         .await;
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
@@ -444,18 +452,44 @@ mod tests {
             State(state.clone()),
             Method::GET,
             Path((String::from("foo"), String::from("file\0.txt"))),
-            HeaderMap::new(),
+            internal_headers(),
         )
         .await;
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
 
         let response = handle_file_download(
-            State(state),
+            State(state.clone()),
             Method::GET,
             Path((String::from("foo\0bar"), String::from("file.txt"))),
-            HeaderMap::new(),
+            internal_headers(),
         )
         .await;
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
+        let response = handle_file_fetch(
+            State(state.clone()),
+            Method::GET,
+            Path((String::from("foo"), String::from("file.txt"))),
+            internal_headers(),
+        )
+        .await;
+        assert_ne!(
+            response.status(),
+            StatusCode::NOT_FOUND,
+            "a path without a NUL must not be answered by the NUL guard",
+        );
+
+        let response = handle_file_download(
+            State(state),
+            Method::GET,
+            Path((String::from("foo"), String::from("file.txt"))),
+            internal_headers(),
+        )
+        .await;
+        assert_ne!(
+            response.status(),
+            StatusCode::NOT_FOUND,
+            "a path without a NUL must not be answered by the NUL guard",
+        );
     }
 }
