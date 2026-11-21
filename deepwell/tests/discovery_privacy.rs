@@ -23,6 +23,7 @@ mod common;
 
 use self::common::TestRunner;
 use deepwell::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
+use deepwell::error::ErrorType;
 use deepwell::license::License;
 use deepwell::models::page::Entity as PageTable;
 use deepwell::models::role_permission::{self, Entity as RolePermissionTable};
@@ -48,6 +49,7 @@ use deepwell::types::{
 use ftml::data::{PageInfo, ScoreValue};
 use ftml::layout::Layout;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+use serde_json::json;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -185,6 +187,52 @@ async fn grant_root_to_admin(ctx: &ServiceContext<'_>, site_id: i64) {
     )
     .await
     .expect("admin should receive the root role");
+}
+
+async fn grant_nonmember_page_edit(ctx: &ServiceContext<'_>, site_id: i64) {
+    for role_slug in ["registered", "guest", "everyone"] {
+        let role =
+            RoleService::get(ctx, site_id, Reference::Slug(Cow::Borrowed(role_slug)))
+                .await
+                .expect("virtual role should exist");
+        role_permission::ActiveModel {
+            role_id: Set(role.role_id),
+            site_id: Set(site_id),
+            resource_type: Set(Resource::Page),
+            resource_category_id: Set(None),
+            action: Set(Action::Edit),
+            ..Default::default()
+        }
+        .insert(ctx.transaction())
+        .await
+        .expect("virtual role edit permission should be created");
+    }
+    PermissionCache::invalidate_site(ctx, site_id)
+        .await
+        .expect("new edit permissions must be visible");
+}
+
+async fn page_edit_allowed(
+    ctx: &ServiceContext<'_>,
+    viewer_user_id: Option<i64>,
+    site_id: i64,
+    page_id: i64,
+) -> bool {
+    PermissionService::check_user_can(
+        ctx,
+        &CheckPermissionContext {
+            user_id: viewer_user_id,
+            site_id,
+            page_reference: Some(Reference::Id(page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: None,
+            action: Action::Edit,
+        },
+    )
+    .await
+    .expect("page edit check should resolve")
 }
 
 #[tokio::test]
@@ -568,4 +616,174 @@ async fn list_pages_feed_withholds_private_site_pages_from_non_members() {
         feed_has_page(&member_feed),
         "the feed must still serve a private site's pages to its members",
     );
+}
+
+#[tokio::test]
+async fn private_site_denies_non_member_page_view_and_edit_open() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let site_id =
+        create_site(runner.context(), n, "privgate", AccessPolicy::Private).await;
+    let page_id = create_page(
+        runner.context(),
+        site_id,
+        &format!("c3f2-privgate-{n}"),
+        "Cycle3 F2 private gate page",
+        "C3F2PRIVGATEBODY",
+    )
+    .await;
+    let outsider_user_id = create_user(runner.context(), n, "privgate-outsider").await;
+    let member_user_id = create_user(runner.context(), n, "privgate-member").await;
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id,
+            user_id: member_user_id,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::Accepted(SYSTEM_USER_ID),
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("site membership should be created");
+    grant_nonmember_page_edit(runner.context(), site_id).await;
+
+    let page = PageTable::find_by_id(page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("fixture page lookup should succeed")
+        .expect("fixture page should exist");
+
+    assert!(
+        !site_can_view(runner.context(), None, site_id).await,
+        "anonymous callers must stay denied on a private site",
+    );
+    assert!(
+        !site_can_view(runner.context(), Some(outsider_user_id), site_id).await,
+        "an authenticated non-member must be denied page view on a private site",
+    );
+    assert!(
+        site_can_view(runner.context(), Some(member_user_id), site_id).await,
+        "a site member must keep page view on a private site",
+    );
+    assert!(
+        !PermissionService::check_user_can_view_page(
+            runner.context(),
+            Some(outsider_user_id),
+            &page,
+        )
+        .await
+        .expect("single-page view check should resolve"),
+        "the single-page view path must deny an authenticated non-member",
+    );
+    assert!(
+        PermissionService::check_user_can_view_page(
+            runner.context(),
+            Some(member_user_id),
+            &page,
+        )
+        .await
+        .expect("single-page view check should resolve"),
+        "the single-page view path must keep access for a site member",
+    );
+
+    assert!(
+        !page_edit_allowed(runner.context(), None, site_id, page_id).await,
+        "anonymous callers must be denied the page edit path on a private site",
+    );
+    assert!(
+        !page_edit_allowed(runner.context(), Some(outsider_user_id), site_id, page_id)
+            .await,
+        "an authenticated non-member must be denied page edit on a private site",
+    );
+    assert!(
+        page_edit_allowed(runner.context(), Some(member_user_id), site_id, page_id).await,
+        "a site member must keep page edit on a private site",
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(outsider_user_id),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(page_id)),
+        ..Default::default()
+    });
+    let error = run_endpoint_err!(
+        runner,
+        page_edit_lock_acquire,
+        json!({ "page": page_id, "mode": "page" }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(member_user_id),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(page_id)),
+        ..Default::default()
+    });
+    let granted = run_endpoint!(
+        runner,
+        page_edit_lock_acquire,
+        json!({ "page": page_id, "mode": "page" }),
+    );
+    assert!(
+        granted.grant.is_some(),
+        "the edit-open path must still grant a lock to a site member",
+    );
+}
+
+#[tokio::test]
+async fn open_and_closed_sites_keep_non_member_view_and_edit() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let outsider_user_id = create_user(runner.context(), n, "publicgate-outsider").await;
+
+    for (label, policy) in [
+        ("open", AccessPolicy::Open),
+        ("closed", AccessPolicy::Closed),
+    ] {
+        let site_id = create_site(runner.context(), n, label, policy).await;
+        let slug = format!("c3f2-{label}-gate-{n}");
+        let page_id = create_page(
+            runner.context(),
+            site_id,
+            &slug,
+            "Cycle3 F2 public policy page",
+            "C3F2PUBLICGATEBODY",
+        )
+        .await;
+        grant_nonmember_page_edit(runner.context(), site_id).await;
+
+        assert!(
+            site_can_view(runner.context(), None, site_id).await,
+            "an {label} site must stay viewable to anonymous visitors",
+        );
+        assert!(
+            site_can_view(runner.context(), Some(outsider_user_id), site_id).await,
+            "an {label} site must stay viewable to non-members",
+        );
+        assert!(
+            page_edit_allowed(runner.context(), Some(outsider_user_id), site_id, page_id)
+                .await,
+            "an {label} site must keep non-member page edit behavior",
+        );
+
+        runner.set_request_context(RequestContext {
+            user_id: Some(outsider_user_id),
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Id(page_id)),
+            ..Default::default()
+        });
+        let granted = run_endpoint!(
+            runner,
+            page_edit_lock_acquire,
+            json!({ "page": page_id, "mode": "page" }),
+        );
+        assert!(
+            granted.grant.is_some(),
+            "the edit-open path must stay available to non-members on an {label} site",
+        );
+        runner.set_request_context(RequestContext::default());
+    }
 }
