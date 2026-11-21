@@ -42,8 +42,6 @@ const SEEDED_FILE_OWNER_ID: i64 = 20000808;
 const SEEDED_PENDING_BLOB_ID: &str = "rjkou42azdi2988wx0zsblcm";
 
 struct Fixture {
-    site_id: i64,
-    page_id: i64,
     outsider_id: i64,
 }
 
@@ -69,7 +67,7 @@ async fn fixture(runner: &TestRunner) -> Fixture {
     .await
     .expect("create site");
 
-    let page = PageService::create(
+    PageService::create(
         ctx,
         CreatePage {
             site_id: site.site_id,
@@ -105,8 +103,6 @@ async fn fixture(runner: &TestRunner) -> Fixture {
     .expect("create outsider");
 
     Fixture {
-        site_id: site.site_id,
-        page_id: page.page_id,
         outsider_id: outsider.user_id,
     }
 }
