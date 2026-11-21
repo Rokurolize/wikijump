@@ -497,7 +497,7 @@ impl PageQueryService {
             }
         }
 
-        if let Some(author_condition) = author_condition(author) {
+        if let Some(author_condition) = author_condition(author, queried_site_id) {
             condition = condition.add(author_condition);
         }
         if let Some(outgoing_link_condition) =

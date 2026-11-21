@@ -2641,3 +2641,165 @@ async fn page_query_parent_negative_antijoin_matches_exact_set() {
         "no-selector control must match every fixture page",
     );
 }
+
+async fn create_author_scope_site(runner: &TestRunner, kind: &str, tag: &str) -> i64 {
+    SiteService::create(
+        runner.context(),
+        deepwell::services::site::CreateSite {
+            slug: format!("author-scope-{kind}-{tag}"),
+            name: format!("Author scope {kind}"),
+            tagline: String::new(),
+            description: format!("Author scope {kind}"),
+            default_page: None,
+            layout: None,
+            license: License::CcBySa40,
+            locale: String::from("en"),
+            ip_address: common::IP_ADDRESS,
+            access_policy: Default::default(),
+        },
+        None,
+    )
+    .await
+    .expect("author scope site should be created")
+    .site_id
+}
+
+async fn create_author_scope_page(
+    runner: &TestRunner,
+    site_id: i64,
+    slug: &str,
+    user_id: i64,
+) {
+    PageService::create(
+        runner.context(),
+        CreatePage {
+            site_id,
+            wikitext: String::from("author scope fixture"),
+            title: format!("Author scope {slug}"),
+            alt_title: None,
+            tags: Vec::new(),
+            slug: slug.to_owned(),
+            layout: None,
+            revision_comments: String::from("create author scope fixture"),
+            user_id,
+            bypass_filter: true,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("author scope page should be created");
+}
+
+async fn authored_slugs(
+    runner: &TestRunner,
+    site_id: i64,
+    user_ids: &[i64],
+) -> Vec<String> {
+    let pages = PageQueryService::find(
+        runner.context(),
+        PageQuery {
+            current_page_id: 0,
+            current_site_id: site_id,
+            queried_site_id: Some(site_id),
+            page_type: PageTypeSelector::All,
+            categories: CategoriesSelector {
+                included_categories: IncludedCategories::All,
+                excluded_categories: &[],
+            },
+            tags: TagCondition {
+                any_present: &[],
+                all_present: &[],
+                none_present: &[],
+                untagged: false,
+            },
+            page_parent: PageParentSelector::All,
+            contains_outgoing_links: &[],
+            creation_date: DateSelector::FromPresent {
+                start: OffsetDateTime::UNIX_EPOCH,
+            },
+            update_date: DateSelector::FromPresent {
+                start: OffsetDateTime::UNIX_EPOCH,
+            },
+            author: AuthorSelector::Any {
+                user_ids,
+                wikidot_snapshot_names: &[],
+            },
+            score: &[],
+            votes: &[],
+            offset: 0,
+            name: None,
+            slug: None,
+            slugs: &[],
+            data_form_fields: &[],
+            order: Some(OrderBySelector {
+                property: OrderProperty::PageSlug,
+                ascending: true,
+            }),
+            candidate_limit: None,
+            pagination: PaginationSelector {
+                limit: Some(100),
+                ..Default::default()
+            },
+            fields: FoundPageFields {
+                slug: true,
+                ..Default::default()
+            },
+        },
+    )
+    .await
+    .expect("author query should succeed");
+
+    let mut slugs = pages
+        .pages
+        .into_iter()
+        .map(|row| row.slug.expect("slug field should be requested"))
+        .collect::<Vec<_>>();
+    slugs.sort();
+    slugs
+}
+
+#[tokio::test]
+async fn created_by_author_query_scopes_first_revision_authors_to_the_queried_site() {
+    let runner = TestRunner::setup().await;
+    let tag = uuid::Uuid::new_v4().simple().to_string();
+    let queried_site_id = create_author_scope_site(&runner, "queried", &tag).await;
+    let other_site_id = create_author_scope_site(&runner, "other", &tag).await;
+
+    let queried_slugs = [
+        format!("author-scope-queried-a-{tag}"),
+        format!("author-scope-queried-b-{tag}"),
+    ];
+    for slug in &queried_slugs {
+        create_author_scope_page(&runner, queried_site_id, slug, SAMPLE_USER_ID).await;
+    }
+
+    let other_slugs = [
+        format!("author-scope-other-a-{tag}"),
+        format!("author-scope-other-b-{tag}"),
+        format!("author-scope-other-c-{tag}"),
+    ];
+    for slug in &other_slugs {
+        create_author_scope_page(&runner, other_site_id, slug, ADMIN_USER_ID).await;
+    }
+
+    let mut expected_queried = queried_slugs.to_vec();
+    expected_queried.sort();
+    let mut expected_other = other_slugs.to_vec();
+    expected_other.sort();
+
+    assert_eq!(
+        authored_slugs(&runner, queried_site_id, &[ADMIN_USER_ID]).await,
+        Vec::<String>::new(),
+        "a user with pages only on another site must not match on the queried site",
+    );
+    assert_eq!(
+        authored_slugs(&runner, other_site_id, &[ADMIN_USER_ID]).await,
+        expected_other,
+        "a user with pages on the queried site must match exactly those pages",
+    );
+    assert_eq!(
+        authored_slugs(&runner, queried_site_id, &[SAMPLE_USER_ID]).await,
+        expected_queried,
+        "site-local authorship must still match exactly the local pages",
+    );
+}
