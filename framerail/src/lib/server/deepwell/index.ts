@@ -25,7 +25,7 @@ async function processRawRequest(request: JSONRPCRequest): Promise<void> {
     headers["X-Deepwell-Site-Id"] = reqContext.siteId.toString()
   }
   if (reqContext?.page) {
-    headers["X-Deepwell-Page"] = reqContext.page.toString()
+    headers["X-Deepwell-Page"] = encodeURIComponent(reqContext.page.toString())
   }
 
   const response = await fetch(DEEPWELL_URL, {
