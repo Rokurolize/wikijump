@@ -44,14 +44,14 @@ jobs:
         ports:
           - 6379:6379
       minio:
-        image: ghcr.io/scpwiki/wikijump:minio
+        image: bitnamilegacy/minio:latest
         env:
           MINIO_ROOT_USER: minio
           MINIO_ROOT_PASSWORD: minio-github-test
           MINIO_REGION_NAME: test
-          INITIAL_BUCKETS: 'deepwell-files deepwell-text-blocks'
+          MINIO_DEFAULT_BUCKETS: 'deepwell-files,deepwell-text-blocks'
         options: >-
-          --health-cmd "/healthcheck.sh"
+          --health-cmd "curl -fsS http://localhost:9000/minio/health/live"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -140,14 +140,14 @@ jobs:
         ports:
           - 6379:6379
       minio:
-        image: ghcr.io/scpwiki/wikijump:minio
+        image: bitnamilegacy/minio:latest
         env:
           MINIO_ROOT_USER: minio
           MINIO_ROOT_PASSWORD: minio-github-test
           MINIO_REGION_NAME: test
-          INITIAL_BUCKETS: 'deepwell-files deepwell-text-blocks'
+          MINIO_DEFAULT_BUCKETS: 'deepwell-files,deepwell-text-blocks'
         options: >-
-          --health-cmd "/healthcheck.sh"
+          --health-cmd "curl -fsS http://localhost:9000/minio/health/live"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
