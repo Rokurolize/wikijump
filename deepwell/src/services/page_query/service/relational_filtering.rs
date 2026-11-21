@@ -139,16 +139,20 @@ pub(super) async fn page_parent_condition(
     Ok(Some(condition))
 }
 
-fn first_revision_author_page_ids_sql(placeholders: &str) -> String {
+fn first_revision_author_page_ids_sql(placeholders: &str, site_id: i64) -> String {
     format!(
         "SELECT pr.page_id FROM page_revision pr WHERE pr.user_id IN ({placeholders}) \
+         AND pr.site_id = {site_id} \
          AND pr.revision_id = (SELECT pr2.revision_id FROM page_revision pr2 \
          WHERE pr2.page_id = pr.page_id \
          ORDER BY pr2.revision_number ASC, pr2.revision_id ASC LIMIT 1)"
     )
 }
 
-pub(super) fn author_condition(author: AuthorSelector<'_>) -> Option<Condition> {
+pub(super) fn author_condition(
+    author: AuthorSelector<'_>,
+    queried_site_id: i64,
+) -> Option<Condition> {
     if matches!(author, AuthorSelector::All) {
         return None;
     }
@@ -176,7 +180,10 @@ pub(super) fn author_condition(author: AuthorSelector<'_>) -> Option<Condition> 
                 author_condition = author_condition.add(Expr::cust_with_values(
                     format!(
                         "page.page_id IN ({})",
-                        first_revision_author_page_ids_sql(&placeholders)
+                        first_revision_author_page_ids_sql(
+                            &placeholders,
+                            queried_site_id
+                        )
                     ),
                     user_ids.iter().copied(),
                 ));
@@ -222,7 +229,10 @@ pub(super) fn author_condition(author: AuthorSelector<'_>) -> Option<Condition> 
                 condition = condition.add(Expr::cust_with_values(
                     format!(
                         "page.page_id NOT IN ({})",
-                        first_revision_author_page_ids_sql(&placeholders)
+                        first_revision_author_page_ids_sql(
+                            &placeholders,
+                            queried_site_id
+                        )
                     ),
                     user_ids.iter().copied(),
                 ));
@@ -289,12 +299,15 @@ mod tests {
 
     #[test]
     fn unconstrained_author_selectors_do_not_add_conditions() {
-        assert!(author_condition(AuthorSelector::All).is_none());
+        assert!(author_condition(AuthorSelector::All, 6000000).is_none());
         assert!(
-            author_condition(AuthorSelector::NotAny {
-                user_ids: &[],
-                wikidot_snapshot_names: &[],
-            })
+            author_condition(
+                AuthorSelector::NotAny {
+                    user_ids: &[],
+                    wikidot_snapshot_names: &[],
+                },
+                6000000,
+            )
             .is_none()
         );
     }
