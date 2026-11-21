@@ -19,6 +19,7 @@
  */
 
 use super::prelude::*;
+use crate::constants::SYSTEM_USER_ID;
 use crate::services::permission::{PermissionService, PermissionTarget};
 use crate::types::{Action, Reference};
 use crate::utils::get_category_name;
@@ -27,7 +28,14 @@ pub(super) async fn require_page_create_permission(
     ctx: &ServiceContext<'_>,
     site_id: i64,
     slug: &str,
+    actor_user_id: i64,
 ) -> Result<()> {
+    // Internal actors (seeding, fixtures, migrations) are not site members and
+    // must still be able to create pages; ordinary callers are checked below.
+    if actor_user_id == SYSTEM_USER_ID {
+        return Ok(());
+    }
+
     let category_ref = Reference::Slug(cow!(get_category_name(slug)));
     let category_id = CategoryService::get_optional(ctx, site_id, category_ref)
         .await
@@ -40,8 +48,9 @@ pub(super) async fn require_page_create_permission(
         .ok_or_raise(|| Error::new("page category not found", ErrorType::Page))?
         .category_id;
 
-    let allowed = PermissionService::can_user(
+    let allowed = PermissionService::can_user_as(
         ctx,
+        Some(actor_user_id),
         Some(site_id),
         Action::Create,
         PermissionTarget::Page {

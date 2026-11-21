@@ -43,7 +43,8 @@ pub async fn page_create(
 ) -> Result<CreatePageOutput> {
     let input: CreatePage = parse!(params, Page);
     info!("Creating new page in site ID {}", input.site_id);
-    require_page_create_permission(ctx, input.site_id, &input.slug).await?;
+    require_page_create_permission(ctx, input.site_id, &input.slug, input.user_id)
+        .await?;
     PageService::create(ctx, input)
         .await
         .or_raise(|| Error::new("failed to create page", ErrorType::Page))
