@@ -39,7 +39,9 @@ test.afterAll(async () => {
   await server?.close()
 })
 
-test("the production fileRollback action reaches the real rollback RPC", async ({ page }) => {
+test("the production fileRollback action reaches the real rollback RPC", async ({
+  page
+}) => {
   await page.goto(baseURL)
   await expect.poll(() => page.locator("#result").innerText()).not.toBe("pending")
   const result = (await page.evaluate(() => globalThis.__result)) as {
@@ -48,7 +50,10 @@ test("the production fileRollback action reaches the real rollback RPC", async (
   }
 
   expect(result.error, "the production action map must provide fileRollback").toBeNull()
-  expect(result.rollback, "the mapped handler must reach the file_rollback RPC").toMatchObject({
+  expect(
+    result.rollback,
+    "the mapped handler must reach the file_rollback RPC"
+  ).toMatchObject({
     site_id: 6000001,
     page_id: 3000000046,
     file: 88,
