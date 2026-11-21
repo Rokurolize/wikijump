@@ -66,6 +66,10 @@ export async function loadPage(
   cookies: Cookies,
   preloadData: PreloadDataAsync
 ) {
+  if (slug?.includes("\0") || extra?.includes("\0")) {
+    error(404 as never)
+  }
+
   // Set up parameters
   const { siteId } = loadSiteInfo(request.headers)
   const route = slug || extra ? { slug, extra } : null
