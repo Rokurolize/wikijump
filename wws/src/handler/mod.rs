@@ -55,6 +55,10 @@ pub enum TargetServer {
     Files,
 }
 
+pub(crate) fn has_nul(value: &str) -> bool {
+    value.contains('\0')
+}
+
 /// Helper function to extract a string value from a header.
 /// This function asserts that the header does exist.
 fn get_header<'a>(
@@ -106,5 +110,18 @@ fn get_target_server(headers: &HeaderMap) -> TargetServer {
         b"main" => TargetServer::Main,
         b"files" => TargetServer::Files,
         _ => panic!("Invalid header value: {value:?}"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn detects_nul_in_path_component() {
+        assert!(has_nul("foo\0bar"));
+        assert!(has_nul("\0"));
+        assert!(!has_nul("foo"));
+        assert!(!has_nul("foo\\0bar"));
     }
 }

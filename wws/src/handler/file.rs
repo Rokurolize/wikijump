@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::get_site_id;
+use super::{get_site_id, has_nul};
 use crate::attachment::content_disposition_attachment;
 use crate::deepwell::FileData;
 use crate::fetch::{
@@ -268,6 +268,10 @@ pub async fn handle_file_fetch(
         "Returning file data",
     );
 
+    if has_nul(&page_slug) || has_nul(&filename) {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+
     let site_id = get_site_id(&headers);
     let file_info =
         match fetch_file_info(&state, &headers, site_id, &mut page_slug, &filename).await
@@ -293,6 +297,10 @@ pub async fn handle_file_download(
         filename = filename,
         "Returning file download",
     );
+
+    if has_nul(&page_slug) || has_nul(&filename) {
+        return StatusCode::NOT_FOUND.into_response();
+    }
 
     let site_id = get_site_id(&headers);
     let file_info =
@@ -382,4 +390,106 @@ fn multipart_content_length(
     // --boundary--\r\n
     len += 2 + boundary.len() + 2 + 2;
     len
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::Secrets;
+    use crate::handler::HEADER_SITE_ID;
+    use crate::state::build_server_state;
+    use axum::http::HeaderValue;
+    use s3::creds::Credentials;
+    use s3::region::Region;
+
+    fn internal_headers() -> HeaderMap {
+        let mut headers = HeaderMap::new();
+        headers.insert(HEADER_SITE_ID, HeaderValue::from_static("1"));
+        headers
+    }
+
+    async fn test_state() -> ServerState {
+        build_server_state(
+            false,
+            Secrets {
+                deepwell_url: String::from("http://127.0.0.1:1"),
+                redis_url: String::from("redis://127.0.0.1:1"),
+                s3_files_bucket: String::from("files"),
+                s3_tblocks_bucket: String::from("tblocks"),
+                s3_region: Region::Custom {
+                    region: String::from("test"),
+                    endpoint: String::from("http://127.0.0.1:1"),
+                },
+                s3_path_style: true,
+                s3_credentials: Credentials::new(
+                    Some("key"),
+                    Some("secret"),
+                    None,
+                    None,
+                    None,
+                )
+                .expect("test credentials"),
+            },
+        )
+        .await
+        .expect("test server state")
+    }
+
+    #[tokio::test]
+    async fn nul_path_component_returns_not_found() {
+        let state = test_state().await;
+
+        let response = handle_file_fetch(
+            State(state.clone()),
+            Method::GET,
+            Path((String::from("foo\0bar"), String::from("file.txt"))),
+            internal_headers(),
+        )
+        .await;
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
+        let response = handle_file_fetch(
+            State(state.clone()),
+            Method::GET,
+            Path((String::from("foo"), String::from("file\0.txt"))),
+            internal_headers(),
+        )
+        .await;
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
+        let response = handle_file_download(
+            State(state.clone()),
+            Method::GET,
+            Path((String::from("foo\0bar"), String::from("file.txt"))),
+            internal_headers(),
+        )
+        .await;
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
+        let response = handle_file_fetch(
+            State(state.clone()),
+            Method::GET,
+            Path((String::from("foo"), String::from("file.txt"))),
+            internal_headers(),
+        )
+        .await;
+        assert_ne!(
+            response.status(),
+            StatusCode::NOT_FOUND,
+            "a path without a NUL must not be answered by the NUL guard",
+        );
+
+        let response = handle_file_download(
+            State(state),
+            Method::GET,
+            Path((String::from("foo"), String::from("file.txt"))),
+            internal_headers(),
+        )
+        .await;
+        assert_ne!(
+            response.status(),
+            StatusCode::NOT_FOUND,
+            "a path without a NUL must not be answered by the NUL guard",
+        );
+    }
 }
