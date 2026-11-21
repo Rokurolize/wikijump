@@ -326,6 +326,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                     layout: None,
                     revision_comments: str!(),
                     user_id: SYSTEM_USER_ID,
+                    tags: vec![],
                     bypass_filter: true,
                     ip_address: SEED_IP_ADDRESS,
                 },

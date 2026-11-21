@@ -39,6 +39,9 @@ pub struct CreatePage {
     pub user_id: i64,
 
     #[serde(default)]
+    pub tags: Vec<String>,
+
+    #[serde(default)]
     pub bypass_filter: bool,
 
     pub ip_address: IpAddr,

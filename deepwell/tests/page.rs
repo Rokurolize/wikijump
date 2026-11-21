@@ -357,6 +357,52 @@ async fn basic_move() {
     assert!(output.revision_id > revision_id);
 }
 
+#[tokio::test]
+async fn page_create_with_tags() {
+    let mut runner = TestRunner::setup().await;
+
+    const SITE_SLUG: &str = "test";
+    const PAGE_SLUG: &str = "page-with-tags";
+
+    let output = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("Seeded site not found");
+    let site_id = output.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(PAGE_SLUG.into())),
+    });
+
+    let tags = vec!["r5a3-alpha", "r5a3-beta"];
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "page created with tags",
+            "title": "Page with tags",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": null,
+            "revision_comments": "created with tags",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+            "tags": tags,
+        }),
+    );
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": PAGE_SLUG}),
+    )
+    .expect("Cannot find page");
+
+    assert_eq!(page.tags, vec!["r5a3-alpha", "r5a3-beta"]);
+}
+
 // TODO add more cases here
 // e.g. create page in non-default category, move to a new category
 //      create page, edit, delete, edit (fail), restore, edit (success), restore (fail)
