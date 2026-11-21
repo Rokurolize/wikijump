@@ -30,8 +30,6 @@ pub(super) async fn require_page_create_permission(
     slug: &str,
     actor_user_id: i64,
 ) -> Result<()> {
-    // Internal actors (seeding, fixtures, migrations) are not site members and
-    // must still be able to create pages; ordinary callers are checked below.
     if actor_user_id == SYSTEM_USER_ID {
         return Ok(());
     }
