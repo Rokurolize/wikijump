@@ -85,12 +85,14 @@ fn wikidot_name_patterns_keep_the_trailing_prefix_wildcard_and_escape_literals()
 }
 
 #[test]
-fn author_selectors_test_first_revisions_once_per_query() {
+fn author_selectors_scope_first_revisions_to_the_queried_site() {
     use crate::services::page_query::AuthorSelector;
 
     let sql = |author| {
         page::Entity::find()
-            .filter(super::author_condition(author).expect("an author condition"))
+            .filter(
+                super::author_condition(author, 6000000).expect("an author condition"),
+            )
             .build(DatabaseBackend::Postgres)
             .sql
     };
@@ -109,6 +111,8 @@ fn author_selectors_test_first_revisions_once_per_query() {
         (&not_any, "page.page_id NOT IN ("),
     ] {
         assert!(sql.contains(operator), "{sql}");
+        assert!(sql.contains("pr.user_id IN ($1, $2)"), "{sql}");
+        assert!(sql.contains("pr.site_id = 6000000"), "{sql}");
         assert!(sql.contains("WHERE pr2.page_id = pr.page_id"), "{sql}");
         assert!(!sql.contains("pr.page_id = page.page_id"), "{sql}");
     }
