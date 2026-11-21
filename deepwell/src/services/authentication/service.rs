@@ -126,10 +126,14 @@ impl AuthenticationService {
         let txn = ctx.transaction();
         let result = User::find()
             .filter(
-                Condition::any()
-                    .add(user::Column::Name.eq(name_or_email))
-                    .add(user::Column::Slug.eq(name_or_email))
-                    .add(user::Column::Email.eq(name_or_email)),
+                Condition::all()
+                    .add(
+                        Condition::any()
+                            .add(user::Column::Name.eq(name_or_email))
+                            .add(user::Column::Slug.eq(name_or_email))
+                            .add(user::Column::Email.eq(name_or_email)),
+                    )
+                    .add(user::Column::DeletedAt.is_null()),
             )
             .one(txn)
             .await
