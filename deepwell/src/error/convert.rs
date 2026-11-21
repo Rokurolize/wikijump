@@ -111,7 +111,7 @@ pub fn exn_error_to_rpc_error(exn_error: Exn<Error>) -> ErrorObjectOwned {
 
                 // Normal case, provide error context
                 _ => Some(json!({
-                    "call_trace": format!("{exn_error:?}"),
+                    "call_trace": public_call_trace(&exn_error),
                     "code_trace": code_trace,
                     "extra": extra_data,
                 })),
@@ -127,12 +127,44 @@ pub fn exn_error_to_rpc_error(exn_error: Exn<Error>) -> ErrorObjectOwned {
         None => {
             let message = str!(exn_error);
             let data = json!({
-                "call_trace": format!("{exn_error:?}"),
+                "call_trace": public_call_trace(&exn_error),
                 "code_trace": code_trace,
                 "extra": extra_data,
             });
             ErrorObjectOwned::owned(0, message, Some(data))
         }
+    }
+}
+
+fn public_call_trace(exn_error: &Exn<Error>) -> String {
+    const REDACTED: &str = "[internal error detail redacted]";
+
+    format!("{exn_error:?}")
+        .lines()
+        .map(|line| {
+            if let Some(index) = line.find("error returned from database:") {
+                format!("{}{REDACTED}", frame_prefix(&line[..index]))
+            } else if line.contains("violates foreign key constraint")
+                || line.contains("duplicate key value violates unique constraint")
+            {
+                format!("{}{REDACTED}", frame_prefix(line))
+            } else if let Some(index) = line.find("at src/") {
+                line[..index].trim_end_matches(", ").to_owned()
+            } else {
+                line.to_owned()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn frame_prefix(line: &str) -> &str {
+    if let Some(index) = line.find("] ") {
+        &line[..index + 2]
+    } else if line.starts_with("|-- ") || line.starts_with("`-- ") {
+        &line[..4]
+    } else {
+        ""
     }
 }
 
@@ -151,8 +183,16 @@ mod tests {
         let exn = inner.raise(Error::new("vote operation failed", ErrorType::Page));
         let rpc = exn_error_to_rpc_error(exn);
 
-        assert!(rpc.message().contains("vote operation failed"), "message: {}", rpc.message());
-        assert!(!rpc.message().contains("page_vote"), "message: {}", rpc.message());
+        assert!(
+            rpc.message().contains("vote operation failed"),
+            "message: {}",
+            rpc.message()
+        );
+        assert!(
+            !rpc.message().contains("page_vote"),
+            "message: {}",
+            rpc.message()
+        );
         let data: JsonValue = serde_json::from_str(rpc.data().unwrap().get()).unwrap();
         assert_eq!(
             data["code_trace"],
@@ -164,18 +204,17 @@ mod tests {
         assert!(!trace.contains("src/"), "trace: {trace}");
         assert!(!trace.contains("page_vote"), "trace: {trace}");
         assert!(!trace.contains("foreign key constraint"), "trace: {trace}");
-        assert!(!trace.contains("error returned from database"), "trace: {trace}");
+        assert!(
+            !trace.contains("error returned from database"),
+            "trace: {trace}"
+        );
         assert!(!trace.contains("at line 2654"), "trace: {trace}");
     }
 
     #[test]
     fn rpc_call_trace_redacts_source_locations() {
         let rpc = exn_error_to_rpc_error(
-            Error::new(
-                "page missing",
-                ErrorType::PageNotFound,
-            )
-            .raise(),
+            Error::new("page missing", ErrorType::PageNotFound).raise(),
         );
 
         assert_eq!(rpc.message(), ErrorType::PageNotFound.summary());
@@ -184,6 +223,44 @@ mod tests {
         assert!(trace.contains("page missing"), "trace: {trace}");
         assert!(!trace.contains("src/"), "trace: {trace}");
         assert!(!trace.contains(":429:5"), "trace: {trace}");
-        assert!(!rpc.message().contains("src/"), "message: {}", rpc.message());
+        assert!(
+            !rpc.message().contains("src/"),
+            "message: {}",
+            rpc.message()
+        );
+    }
+
+    #[test]
+    fn rpc_call_trace_redacts_driver_prefix_but_keeps_rpc_message() {
+        let inner = Error::new(
+            "Query Error: error returned from database: insert or update on table \"page_lock\" violates foreign key constraint \"page_lock_page_id_fkey\" at line 2654, at src/services/page_lock/service.rs:107:10",
+            ErrorType::DatabaseQuery,
+        )
+        .raise();
+        let exn = inner.raise(Error::new("lock operation failed", ErrorType::Page));
+        let rpc = exn_error_to_rpc_error(exn);
+
+        assert!(
+            rpc.message().contains("lock operation failed"),
+            "message: {}",
+            rpc.message()
+        );
+        assert!(
+            !rpc.message().contains("page_lock"),
+            "message: {}",
+            rpc.message()
+        );
+        let data: JsonValue = serde_json::from_str(rpc.data().unwrap().get()).unwrap();
+        let trace = data["call_trace"].as_str().unwrap();
+        assert!(
+            trace.contains("[internal error detail redacted]"),
+            "trace: {trace}"
+        );
+        assert!(
+            !trace.contains("error returned from database"),
+            "trace: {trace}"
+        );
+        assert!(!trace.contains("page_lock"), "trace: {trace}");
+        assert!(!trace.contains("src/"), "trace: {trace}");
     }
 }
