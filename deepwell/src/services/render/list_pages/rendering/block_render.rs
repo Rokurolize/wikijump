@@ -4,7 +4,7 @@ use super::super::rendering_support::{
     ListPagesBlockRenderArgs, ListPagesContentSectionEntry, ListPagesContentSectionKey,
     ListPagesSelectedContentArgs, list_pages_canonical_query_debug,
     list_pages_scan_cache_key, list_pages_scan_target, list_pages_slice_rows,
-    list_pages_total_match_key,
+    list_pages_total_match_key, list_pages_total_only_scan_cache_key,
 };
 use super::{
     BTreeMap, BTreeSet, CachedListPagesRows, CategoriesSelector, ColumnTrait,
@@ -488,8 +488,14 @@ impl RenderService {
             "{viewer_user_id:?}|{query_target}|{}",
             list_pages_canonical_query_debug(&query)
         );
-        let scan_cache_key =
-            list_pages_scan_cache_key(viewer_user_id, &query, scan_target);
+        let scan_cache_key = if template.uses_only_total()
+            && relative_range.is_none()
+            && !exclude_current_page
+        {
+            list_pages_total_only_scan_cache_key(viewer_user_id, &query, scan_target)
+        } else {
+            list_pages_scan_cache_key(viewer_user_id, &query, scan_target)
+        };
         let total_match_key = list_pages_total_match_key(
             viewer_user_id,
             &query,
