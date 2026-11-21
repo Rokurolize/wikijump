@@ -5712,7 +5712,7 @@ async fn stacked_identical_listpages_modules_return_identical_totals() {
     }
 
     let module = format!(
-        "[[module ListPages tags=\"+{TAG}\" limit=\"5\" order=\"name\"]]%%total%%[[/module]]"
+        "[[module ListPages tags=\"+{TAG}\" limit=\"5\" order=\"name\"]]\n%%total%%\n[[/module]]"
     );
     let stacked_source = (0..4)
         .map(|_| module.clone())
@@ -5731,7 +5731,7 @@ async fn stacked_identical_listpages_modules_return_identical_totals() {
 
     assert_eq!(
         html.matches(">4<").count(),
-        4,
+        16,
         "each stacked identical ListPages module should return the same %%total%%:\n{html}",
     );
     assert!(
@@ -5771,7 +5771,7 @@ async fn listpages_total_counts_parentless_pages_for_parent_dash() {
             "site_id": site_id,
             "title": "parent-dash-total",
             "wikitext": format!(
-                "[[module ListPages tags=\"+{TAG}\" parent=\"-\"]]%%total%%[[/module]]"
+                "[[module ListPages tags=\"+{TAG}\" parent=\"-\"]]\n%%total%%\n[[/module]]"
             ),
         }),
     )
@@ -5816,7 +5816,7 @@ async fn listpages_total_matches_for_rating_order_and_excluded_tag_shapes() {
             "site_id": site_id,
             "title": "rating-order-total",
             "wikitext": format!(
-                "[[module ListPages tags=\"+{TAG}\" order=\"rating\"]]%%total%%[[/module]]"
+                "[[module ListPages tags=\"+{TAG}\" order=\"rating\"]]\n%%total%%\n[[/module]]"
             ),
         }),
     )
@@ -5839,7 +5839,7 @@ async fn listpages_total_matches_for_rating_order_and_excluded_tag_shapes() {
             "site_id": site_id,
             "title": "excluded-tag-total",
             "wikitext": format!(
-                "[[module ListPages tags=\"+{TAG} -{EXCLUDED}\"]]%%total%%[[/module]]"
+                "[[module ListPages tags=\"+{TAG} -{EXCLUDED}\"]]\n%%total%%\n[[/module]]"
             ),
         }),
     )
