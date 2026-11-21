@@ -10,8 +10,8 @@ mod common;
 use self::common::TestRunner;
 use deepwell::constants::ADMIN_USER_ID;
 use deepwell::error::ErrorType;
-use deepwell::services::page_lock::{CreatePageLockInput, PageLockService};
 use deepwell::services::RequestContext;
+use deepwell::services::page_lock::{CreatePageLockInput, PageLockService};
 use deepwell::types::{PageLockType, Reference};
 use serde_json::json;
 use uuid::Uuid;
@@ -76,11 +76,8 @@ async fn page_lock_actions_require_lock_permission() {
         page_reference: Some(Reference::Id(page_id)),
     });
 
-    let locks_before = run_endpoint!(
-        runner,
-        page_lock_get_history,
-        json!({"page": page_id}),
-    );
+    let locks_before =
+        run_endpoint!(runner, page_lock_get_history, json!({"page": page_id}),);
 
     let create_error = run_endpoint_err!(
         runner,
@@ -107,11 +104,8 @@ async fn page_lock_actions_require_lock_permission() {
     );
     assert_contains_error!(remove_error, ErrorType::PermissionDenied);
 
-    let locks_after = run_endpoint!(
-        runner,
-        page_lock_get_history,
-        json!({"page": page_id}),
-    );
+    let locks_after =
+        run_endpoint!(runner, page_lock_get_history, json!({"page": page_id}),);
     assert_eq!(
         locks_after, locks_before,
         "denied lock actions must not create or remove a page lock"
