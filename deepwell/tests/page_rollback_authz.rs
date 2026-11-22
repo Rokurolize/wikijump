@@ -137,7 +137,10 @@ async fn page_rollback_allows_actor_with_edit_permission() {
     let (site_id, page_id, revision_id, _slug) = fixture(&mut runner).await;
 
     let allowed = run_endpoint!(runner, page_edit_permission, json!({}));
-    assert!(allowed.can_edit, "fixture author must be able to edit this page");
+    assert!(
+        allowed.can_edit,
+        "fixture author must be able to edit this page"
+    );
 
     let updated_at_before = run_endpoint!(
         runner,
@@ -168,5 +171,8 @@ async fn page_rollback_allows_actor_with_edit_permission() {
     )
     .expect("revision 0 must exist")
     .updated_at;
-    assert_ne!(updated_at_after, updated_at_before, "allowed rollback must run");
+    assert_ne!(
+        updated_at_after, updated_at_before,
+        "allowed rollback must run"
+    );
 }
