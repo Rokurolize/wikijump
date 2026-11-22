@@ -22,7 +22,7 @@
 mod common;
 
 use self::common::TestRunner;
-use deepwell::constants::ADMIN_USER_ID;
+use deepwell::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
 use deepwell::error::prelude::*;
 use deepwell::services::RequestContext;
 use deepwell::types::{PageRevisionType, Reference};
@@ -463,4 +463,30 @@ async fn page_restore_without_explicit_user_id_uses_request_actor() {
         })
     );
     assert_contains_error!(error, ErrorType::Page);
+
+    // Explicit user_id must take precedence over the request-context actor.
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(PAGE_SLUG.into())),
+    });
+    run_endpoint!(
+        runner,
+        page_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": page_id,
+            "revision_comments": "restore with explicit user_id",
+            "ip_address": common::IP_ADDRESS,
+            "user_id": SYSTEM_USER_ID,
+        })
+    );
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": PAGE_SLUG})
+    )
+    .expect("restored page not found");
+    assert_eq!(page.revision_user_id, SYSTEM_USER_ID);
 }
