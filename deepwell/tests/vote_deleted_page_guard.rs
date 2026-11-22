@@ -87,5 +87,9 @@ async fn vote_mutations_reject_deleted_pages() {
             "acting_user_id": ADMIN_USER_ID,
         }),
     );
-    run_endpoint_err!(runner, vote_remove, json!({"page_id": page_id}));
+    run_endpoint_err!(
+        runner,
+        vote_remove,
+        json!({"page_id": page_id, "user_id": ADMIN_USER_ID})
+    );
 }
