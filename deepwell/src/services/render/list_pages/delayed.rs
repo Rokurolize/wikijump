@@ -1280,9 +1280,9 @@ mod tests {
             (
                 "BEGIN|[[code]]\n%%unknown%%\n[[/code]]\n%%title%%|END",
                 concat!(
-                    "<p>BEGIN|[[code]]<br>\n",
-                    "%%unknown%%<br>\n",
-                    "[[/code]]<br>\n",
+                    "<p>BEGIN|[[code]]<br />\n",
+                    "%%unknown%%<br />\n",
+                    "[[/code]]<br />\n",
                     "Generated|END</p>",
                 ),
             ),

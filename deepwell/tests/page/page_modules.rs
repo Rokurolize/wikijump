@@ -132,7 +132,7 @@ async fn pages_module_renders_the_site_index_and_clamps_pagination() {
         "all Pages invocations in this fixture should execute: {html}",
     );
     assert!(
-        html.contains("AUTHORED_DOTS:x….x"),
+        html.contains("AUTHORED_DOTS:x&#8230;.x"),
         "authored prose must receive Wikidot typography before module output: {html}",
     );
 

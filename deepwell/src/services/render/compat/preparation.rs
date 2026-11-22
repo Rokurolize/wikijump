@@ -607,7 +607,9 @@ mod tests {
                 &settings,
             ),
             concat!(
-                r#"<div class="code"><div class="hl-main"><pre>"#,
+                r#"<div class="code">
+<div class="hl-main">
+<pre>"#,
                 r#"<span class="hl-special">:root</span>"#,
                 r#"<span class="hl-code"> </span>"#,
                 r#"<span class="hl-brackets">{</span>"#,
@@ -618,7 +620,7 @@ mod tests {
                 r#"<span class="hl-string">%</span>"#,
                 "<span class=\"hl-code\">;\n</span>",
                 r#"<span class="hl-brackets">}</span>"#,
-                "</pre></div></div>",
+                "</pre></div>\n</div>",
             ),
         );
     }

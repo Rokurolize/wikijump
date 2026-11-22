@@ -2518,7 +2518,7 @@ async fn page_view_exposes_live_checkbox_and_wiki_contract() {
     );
     assert!(
         rendered_html.contains(r#"<div class="form-value field-details">"#,)
-            && rendered_html.contains("<p><strong>Bold</strong><br>")
+            && rendered_html.contains("<p><strong>Bold</strong><br />")
             && rendered_html.contains(r#"<a class="newpage" href="/start">Home</a>"#),
         "wiki field values must compile through the Wikidot renderer:\n{rendered_html}",
     );
