@@ -607,6 +607,7 @@ mod tests {
             ("site_get", json!({"site": "scp-wiki\0"})),
             ("page_get", json!({"site_id": 1, "page": "scp-001\0"})),
             ("session_get", json!(["a\0b"])),
+            ("echo", json!([1, "x\0y"])),
         ] {
             let response = rpc_request(&module, method, params).await;
             assert!(
