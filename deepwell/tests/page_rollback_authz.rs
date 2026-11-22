@@ -130,3 +130,43 @@ async fn page_rollback_requires_edit_permission() {
         "denied rollback must not change the revision timestamp"
     );
 }
+
+#[tokio::test]
+async fn page_rollback_allows_actor_with_edit_permission() {
+    let mut runner = TestRunner::setup().await;
+    let (site_id, page_id, revision_id, _slug) = fixture(&mut runner).await;
+
+    let allowed = run_endpoint!(runner, page_edit_permission, json!({}));
+    assert!(allowed.can_edit, "fixture author must be able to edit this page");
+
+    let updated_at_before = run_endpoint!(
+        runner,
+        page_revision_get,
+        json!({"site_id": site_id, "page_id": page_id, "revision_number": 0}),
+    )
+    .expect("revision 0 must exist")
+    .updated_at;
+
+    run_endpoint!(
+        runner,
+        page_rollback,
+        json!({
+            "site_id": site_id,
+            "page": page_id,
+            "last_revision_id": revision_id,
+            "revision_number": 0,
+            "revision_comments": "authorized rollback",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let updated_at_after = run_endpoint!(
+        runner,
+        page_revision_get,
+        json!({"site_id": site_id, "page_id": page_id, "revision_number": 0}),
+    )
+    .expect("revision 0 must exist")
+    .updated_at;
+    assert_ne!(updated_at_after, updated_at_before, "allowed rollback must run");
+}
