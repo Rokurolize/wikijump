@@ -192,5 +192,8 @@ async fn page_structure_actions_require_authenticated_actor() {
         }),
     )
     .expect("fixture page must still exist");
-    assert_eq!(after.slug, before.slug, "denied move must not change the slug");
+    assert_eq!(
+        after.slug, before.slug,
+        "denied move must not change the slug"
+    );
 }
