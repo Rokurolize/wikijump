@@ -8,11 +8,15 @@
 mod common;
 
 use self::common::TestRunner;
-use deepwell::constants::ADMIN_USER_ID;
+use deepwell::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
 use deepwell::error::ErrorType;
 use deepwell::services::RequestContext;
 use deepwell::services::page_lock::{CreatePageLockInput, PageLockService};
-use deepwell::types::{PageLockType, Reference};
+use deepwell::services::permission::PermissionService;
+use deepwell::services::role::{
+    GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
+};
+use deepwell::types::{Action, PageLockType, Permission, Reference, Resource};
 use serde_json::json;
 use uuid::Uuid;
 
@@ -109,5 +113,92 @@ async fn page_lock_actions_require_lock_permission() {
     assert_eq!(
         locks_after, locks_before,
         "denied lock actions must not create or remove a page lock"
+    );
+}
+
+async fn grant_bypass_lock(runner: &TestRunner, site_id: i64) {
+    let role = RoleService::create(
+        runner.context(),
+        InternalCreateRoleInput {
+            site_id,
+            name: format!("lock-authz-admin-{}", Uuid::new_v4().simple()),
+            description: None,
+            is_virtual: false,
+            parent_role_id: None,
+            creating_user_id: SYSTEM_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("lock authz role should be created");
+    PermissionService::update_permissions_for_role(
+        runner.context(),
+        UpdateRolePermissionsInput {
+            site_id,
+            role_reference: Reference::Id(role.role_id),
+            new_permissions: [Permission {
+                resource_type: Resource::Page,
+                resource_category: None,
+                action: Action::BypassLock,
+            }]
+            .into_iter()
+            .collect(),
+            cascade_removals: false,
+            updating_user_id: SYSTEM_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("bypass-lock permission should be assigned");
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            role_id: role.role_id,
+            assigning_user_id: SYSTEM_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("admin should receive bypass-lock permission");
+}
+
+#[tokio::test]
+async fn page_lock_create_allows_actor_with_bypass_lock_permission() {
+    let mut runner = TestRunner::setup().await;
+    let (site_id, page_id) = fixture(&mut runner).await;
+    grant_bypass_lock(&runner, site_id).await;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(page_id)),
+    });
+
+    let locks_before =
+        run_endpoint!(runner, page_lock_get_history, json!({"page": page_id}));
+
+    run_endpoint!(
+        runner,
+        page_lock_create,
+        json!({
+            "page": page_id,
+            "lock_type": "permission-only",
+            "reason": "authorized",
+            "expires_at": null,
+            "from_wikidot": false,
+            "override_existing": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let locks_after =
+        run_endpoint!(runner, page_lock_get_history, json!({"page": page_id}));
+    assert_ne!(
+        locks_after, locks_before,
+        "allowed lock create must change history"
     );
 }
