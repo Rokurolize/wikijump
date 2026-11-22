@@ -126,7 +126,7 @@ mod tests {
     use super::*;
     use http::Response;
     use std::convert::Infallible;
-    use std::future::{ready, Ready};
+    use std::future::{Ready, ready};
     use std::sync::{Arc, Mutex};
 
     #[test]
