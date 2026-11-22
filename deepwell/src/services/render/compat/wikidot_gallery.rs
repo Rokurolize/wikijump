@@ -86,6 +86,7 @@ struct VisiblePageFiles {
 #[derive(Clone, Debug)]
 struct ResolvedGalleryImage {
     alt: String,
+    target_blank: bool,
     original_url: String,
     image_url: String,
 }
@@ -340,6 +341,7 @@ async fn resolve_current_page_gallery(
             .into_iter()
             .map(|file| ResolvedGalleryImage {
                 alt: String::new(),
+                target_blank: false,
                 image_url: format!(
                     "{}{}.jpg",
                     file.resized_url_prefix,
@@ -367,50 +369,73 @@ async fn resolve_explicit_gallery(
         if gallery_argument(entry.arguments(), "link").is_some() {
             continue;
         }
-        let file = match entry.image() {
+        let alt = gallery_argument(entry.arguments(), "alt")
+            .unwrap_or_default()
+            .to_owned();
+        match entry.image() {
             GalleryEntrySource::HttpUrl(source) => {
-                let Some((page_slug, encoded_name)) =
+                if let Some((page_slug, encoded_name)) =
                     owned_gallery_url(source, site, ctx)
-                else {
-                    continue;
-                };
-                let Some(page_files) = loader.by_slug(&page_slug).await? else {
-                    continue;
-                };
-                page_files
-                    .files
-                    .into_iter()
-                    .find(|file| percent_encode_path_segment(&file.name) == encoded_name)
+                {
+                    let Some(page_files) = loader.by_slug(&page_slug).await? else {
+                        continue;
+                    };
+                    let Some(file) = page_files.files.into_iter().find(|file| {
+                        percent_encode_path_segment(&file.name) == encoded_name
+                    }) else {
+                        continue;
+                    };
+                    images.push(ResolvedGalleryImage {
+                        alt,
+                        target_blank: false,
+                        image_url: file.original_url.clone(),
+                        original_url: file.original_url,
+                    });
+                } else if let Some(url) = external_gallery_url(source) {
+                    images.push(ResolvedGalleryImage {
+                        alt,
+                        target_blank: false,
+                        image_url: url.clone(),
+                        original_url: url,
+                    });
+                }
             }
             GalleryEntrySource::File(source) => {
                 let Some(page_id) = current_page_id else {
                     continue;
                 };
-                let name = unquote_gallery_token(source);
+                let (name, target_blank) = starred_gallery_source(source);
                 let Some(page_files) = loader.by_id(page_id).await? else {
                     continue;
                 };
-                page_files.files.into_iter().find(|file| file.name == name)
+                let Some(file) =
+                    page_files.files.into_iter().find(|file| file.name == name)
+                else {
+                    continue;
+                };
+                images.push(ResolvedGalleryImage {
+                    alt,
+                    target_blank,
+                    image_url: format!(
+                        "{}{}.jpg",
+                        file.resized_url_prefix,
+                        size.css_value(),
+                    ),
+                    original_url: file.original_url,
+                });
             }
-            GalleryEntrySource::Inert(_) => None,
-        };
-        let Some(file) = file else {
-            continue;
-        };
-        let image_url = match entry.image() {
-            GalleryEntrySource::HttpUrl(_) => file.original_url.clone(),
-            GalleryEntrySource::File(_) => {
-                format!("{}{}.jpg", file.resized_url_prefix, size.css_value(),)
+            GalleryEntrySource::Inert(source) => {
+                let Some((url, target_blank)) = inert_gallery_url(source) else {
+                    continue;
+                };
+                images.push(ResolvedGalleryImage {
+                    alt,
+                    target_blank,
+                    image_url: url.clone(),
+                    original_url: url,
+                });
             }
-            GalleryEntrySource::Inert(_) => continue,
-        };
-        images.push(ResolvedGalleryImage {
-            alt: gallery_argument(entry.arguments(), "alt")
-                .unwrap_or_default()
-                .to_owned(),
-            image_url,
-            original_url: file.original_url,
-        });
+        }
     }
     Ok(if images.is_empty() {
         GalleryResolution::SelectionError
@@ -451,6 +476,31 @@ fn owned_gallery_url(
         return None;
     }
     Some((page_slug.to_owned(), encoded_name.to_owned()))
+}
+
+fn external_gallery_url(source: &str) -> Option<String> {
+    let source = unquote_gallery_token(source);
+    let url = Url::parse(source).ok()?;
+    if !matches!(url.scheme(), "http" | "https") || url.host_str().is_none() {
+        return None;
+    }
+    Some(source.to_owned())
+}
+
+fn starred_gallery_source(source: &str) -> (&str, bool) {
+    let source = unquote_gallery_token(source);
+    match source.strip_prefix('*') {
+        Some(name) => (name, true),
+        None => (source, false),
+    }
+}
+
+fn inert_gallery_url(source: &str) -> Option<(String, bool)> {
+    let (source, target_blank) = starred_gallery_source(source);
+    if !target_blank {
+        return None;
+    }
+    external_gallery_url(source).map(|url| (url, true))
 }
 
 fn unquote_gallery_token(value: &str) -> &str {
@@ -564,7 +614,11 @@ fn render_gallery_dom(
         output.push_str("\">\n<table>\n<tr>\n<td>");
         output.push_str("<a href=\"");
         output.push_str(&original_url);
-        output.push_str("\" class=\"with-lb\">");
+        if image.target_blank {
+            output.push_str("\" target=\"_blank\">");
+        } else {
+            output.push_str("\" class=\"with-lb\">");
+        }
         output.push_str("<img src=\"");
         output.push_str(&image_url);
         output.push_str("\" alt=\"");
@@ -588,6 +642,7 @@ mod tests {
         let html = render_gallery_dom(
             &[ResolvedGalleryImage {
                 alt: "A <caption>".to_owned(),
+                target_blank: false,
                 original_url: "https://site.wjfiles.test/local--files/page/image.png"
                     .to_owned(),
                 image_url:
@@ -619,6 +674,7 @@ mod tests {
         let viewer_disabled = render_gallery_dom(
             &[ResolvedGalleryImage {
                 alt: String::new(),
+                target_blank: false,
                 original_url: "https://site.wjfiles.test/local--files/page/image.png"
                     .to_owned(),
                 image_url:
@@ -649,5 +705,64 @@ mod tests {
             owned_resized_file_path_prefix("category:page", "資料 1/2.png"),
             "/local--resized-images/category%3Apage/%E8%B3%87%E6%96%99%201%2F2.png/",
         );
+    }
+
+    #[test]
+    fn gallery_dom_renders_a_blank_target_anchor_for_starred_images() {
+        let html = render_gallery_dom(
+            &[ResolvedGalleryImage {
+                alt: String::new(),
+                target_blank: true,
+                original_url: "https://example.com/a.png".to_owned(),
+                image_url: "https://example.com/a.png".to_owned(),
+            }],
+            GalleryOptions {
+                size: GallerySize::Thumbnail,
+                order: GalleryOrder::NameAsc,
+                viewer: true,
+            },
+            3,
+        );
+
+        assert_eq!(
+            html,
+            concat!(
+                r#"<div class="gallery-box" id="gallery-box-3">"#,
+                "\n<div class=\"gallery-item thumbnail\">",
+                "\n<table>\n<tr>\n<td>",
+                r#"<a href="https://example.com/a.png" target="_blank">"#,
+                r#"<img src="https://example.com/a.png" alt="" class="gallery-image-size-thumbnail" />"#,
+                "</a></td>\n</tr>\n</table>\n</div>\n</div>",
+            ),
+        );
+        assert!(!html.contains("with-lb"));
+    }
+
+    #[test]
+    fn gallery_external_and_inert_sources_follow_live_classification() {
+        assert_eq!(
+            external_gallery_url("https://example.com/a.png"),
+            Some("https://example.com/a.png".to_owned()),
+        );
+        assert_eq!(
+            external_gallery_url("http://example.com/a.png"),
+            Some("http://example.com/a.png".to_owned()),
+        );
+        assert_eq!(
+            external_gallery_url("\"https://example.com/a.png\""),
+            Some("https://example.com/a.png".to_owned()),
+        );
+        assert_eq!(external_gallery_url("https://"), None);
+        assert_eq!(external_gallery_url("a.png"), None);
+        assert_eq!(
+            inert_gallery_url("*https://example.com/a.png"),
+            Some(("https://example.com/a.png".to_owned(), true)),
+        );
+        assert_eq!(inert_gallery_url("https://example.com/a.png"), None);
+        assert_eq!(inert_gallery_url("flickr:12345"), None);
+        assert_eq!(inert_gallery_url("*a.png"), None);
+        assert_eq!(starred_gallery_source("*a.png"), ("a.png", true));
+        assert_eq!(starred_gallery_source("a.png"), ("a.png", false));
+        assert_eq!(starred_gallery_source("\"*a.png\""), ("a.png", true));
     }
 }
