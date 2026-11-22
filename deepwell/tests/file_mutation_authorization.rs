@@ -215,12 +215,16 @@ async fn file_delete_allows_user_with_page_edit_permission() {
         site_id: Some(SEEDED_SITE_ID),
         page_reference: None,
     });
-    let _ = run_endpoint!(runner, file_delete, json!({
-        "site_id": SEEDED_SITE_ID,
-        "page_id": SEEDED_FILE_PAGE_ID,
-        "file": 4,
-        "last_revision_id": 4,
-        "revision_comments": "authorized delete",
-        "user_id": ADMIN_USER_ID,
-    }));
+    let _ = run_endpoint!(
+        runner,
+        file_delete,
+        json!({
+            "site_id": SEEDED_SITE_ID,
+            "page_id": SEEDED_FILE_PAGE_ID,
+            "file": 4,
+            "last_revision_id": 4,
+            "revision_comments": "authorized delete",
+            "user_id": ADMIN_USER_ID,
+        })
+    );
 }
