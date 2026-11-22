@@ -117,3 +117,22 @@ async fn declared_content_type_survives_blob_finalize() {
     assert_eq!(finalized, "image/png");
     assert_eq!(served, "image/png");
 }
+
+#[tokio::test]
+async fn declared_content_type_wins_for_existing_blob() {
+    let state = build_server_state(Config::integration_testing(), Secrets::load())
+        .await
+        .expect("Unable to set up server state");
+
+    let unique = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("system clock before epoch")
+        .as_nanos();
+    let data = svg("green", unique);
+
+    let (first, _) = declared_mime_after_upload(&state, &data, "image/png").await;
+    assert_eq!(first, "image/png");
+
+    let (second, _) = declared_mime_after_upload(&state, &data, "image/svg+xml").await;
+    assert_eq!(second, "image/svg+xml");
+}
