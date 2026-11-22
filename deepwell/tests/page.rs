@@ -10997,7 +10997,7 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
             " does not match any existing user name</span>",
         ),
         concat!(
-            r#"<span class="error-inline"><em>v7arg=&#39;single quoted&#39; data-v7=unquoted</em>"#,
+            r#"<span class="error-inline"><em>v7arg='single quoted' data-v7=unquoted</em>"#,
             " does not match any existing user name</span>",
         ),
     ];
