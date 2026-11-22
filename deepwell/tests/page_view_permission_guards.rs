@@ -170,15 +170,27 @@ async fn authorized_page_reads_still_succeed() {
         site_id: Some(site_id),
         ..Default::default()
     });
-    run_endpoint!(runner, page_get_files, json!({
-        "site_id": site_id, "page_id": page.page_id, "deleted": false,
-    }));
-    run_endpoint!(runner, page_revision_range, json!({
-        "site_id": site_id, "page_id": page.page_id, "revision_number": -1,
-        "revision_direction": "before", "limit": 10, "details": {},
-    }));
-    run_endpoint!(runner, page_revision_get, json!({
-        "site_id": site_id, "page_id": page.page_id, "revision_number": 0,
-        "details": { "wikitext": true },
-    }));
+    run_endpoint!(
+        runner,
+        page_get_files,
+        json!({
+            "site_id": site_id, "page_id": page.page_id, "deleted": false,
+        })
+    );
+    run_endpoint!(
+        runner,
+        page_revision_range,
+        json!({
+            "site_id": site_id, "page_id": page.page_id, "revision_number": -1,
+            "revision_direction": "before", "limit": 10, "details": {},
+        })
+    );
+    run_endpoint!(
+        runner,
+        page_revision_get,
+        json!({
+            "site_id": site_id, "page_id": page.page_id, "revision_number": 0,
+            "details": { "wikitext": true },
+        })
+    );
 }
