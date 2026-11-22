@@ -143,3 +143,54 @@ async fn page_structure_actions_require_edit_permission() {
         "denied parent change must not change the page parent list"
     );
 }
+
+#[tokio::test]
+async fn page_structure_actions_require_authenticated_actor() {
+    let mut runner = TestRunner::setup().await;
+    let (site_id, page_id, revision_id) = fixture(&mut runner).await;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(page_id)),
+    });
+
+    let before = run_endpoint!(
+        runner,
+        page_get_direct,
+        json!({
+            "site_id": site_id,
+            "page_id": page_id,
+            "details": {"wikitext": false, "compiled_html": false},
+        }),
+    )
+    .expect("fixture page must exist");
+
+    let move_error = run_endpoint_err!(
+        runner,
+        page_move,
+        json!({
+            "site_id": site_id,
+            "page": page_id,
+            "new_slug": format!("unauth-move-{}", Uuid::new_v4().simple()),
+            "user_id": OUTSIDER_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+            "last_revision_id": revision_id,
+            "revision_comments": "unauthorized",
+        }),
+    );
+    assert_contains_error!(move_error, ErrorType::PermissionDenied);
+
+    let after = run_endpoint!(
+        runner,
+        page_get_direct,
+        json!({
+            "site_id": site_id,
+            "page_id": page_id,
+            "details": {"wikitext": false, "compiled_html": false},
+        }),
+    )
+    .expect("fixture page must still exist");
+    assert_eq!(after.slug, before.slug, "denied move must not change the slug");
+}
