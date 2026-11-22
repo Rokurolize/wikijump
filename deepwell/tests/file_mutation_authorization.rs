@@ -37,8 +37,6 @@ use str_macro::str;
 static FIXTURE_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 const SEEDED_SITE_ID: i64 = 6000001;
-const SEEDED_PAGE_ID: i64 = 3000000035;
-const SEEDED_FILE_PAGE_ID: i64 = 3000000032;
 const SEEDED_FILE_OWNER_ID: i64 = 20000808;
 const SEEDED_PENDING_BLOB_ID: &str = "rjkou42azdi2988wx0zsblcm";
 
@@ -117,9 +115,67 @@ fn as_outsider(runner: &mut TestRunner, user_id: i64) {
     });
 }
 
+struct Seeded {
+    file_page_id: i64,
+    destination_page_id: i64,
+    file_id: i64,
+    file_revision_id: i64,
+    deleted_file_id: i64,
+}
+
+async fn seeded(runner: &TestRunner) -> Seeded {
+    let file_page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": SEEDED_SITE_ID, "page": "system:join"}),
+    )
+    .expect("seeded system:join page not found");
+    let destination_page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": SEEDED_SITE_ID, "page": "system:page-tags"}),
+    )
+    .expect("seeded system:page-tags page not found");
+    let files = run_endpoint!(
+        runner,
+        page_get_files,
+        json!({
+            "site_id": SEEDED_SITE_ID,
+            "page_id": file_page.page_id,
+            "deleted": false,
+        }),
+    );
+    let file = files
+        .into_iter()
+        .find(|file| file.name == "restricted.svg")
+        .expect("seeded restricted.svg not found");
+    let deleted_files = run_endpoint!(
+        runner,
+        page_get_files,
+        json!({
+            "site_id": SEEDED_SITE_ID,
+            "page_id": file_page.page_id,
+            "deleted": true,
+        }),
+    );
+    let deleted_file = deleted_files
+        .into_iter()
+        .find(|file| file.name == "restricted3.svg")
+        .expect("seeded deleted restricted3.svg not found");
+
+    Seeded {
+        file_page_id: file_page.page_id,
+        destination_page_id: destination_page.page_id,
+        file_id: file.file_id,
+        file_revision_id: file.revision_id,
+        deleted_file_id: deleted_file.file_id,
+    }
+}
+
 #[tokio::test]
 async fn file_delete_denies_user_without_page_edit_permission() {
     let mut runner = TestRunner::setup().await;
+    let s = seeded(&runner).await;
     let f = fixture(&runner).await;
     as_outsider(&mut runner, f.outsider_id);
 
@@ -128,9 +184,9 @@ async fn file_delete_denies_user_without_page_edit_permission() {
         file_delete,
         json!({
             "site_id": SEEDED_SITE_ID,
-            "page_id": SEEDED_FILE_PAGE_ID,
-            "file": 4,
-            "last_revision_id": 4,
+            "page_id": s.file_page_id,
+            "file": s.file_id,
+            "last_revision_id": s.file_revision_id,
             "revision_comments": "unauthorized delete",
             "user_id": f.outsider_id,
         })
@@ -141,6 +197,7 @@ async fn file_delete_denies_user_without_page_edit_permission() {
 #[tokio::test]
 async fn file_create_denies_user_without_page_edit_permission() {
     let mut runner = TestRunner::setup().await;
+    let s = seeded(&runner).await;
     let f = fixture(&runner).await;
     as_outsider(&mut runner, f.outsider_id);
 
@@ -149,7 +206,7 @@ async fn file_create_denies_user_without_page_edit_permission() {
         file_create,
         json!({
             "site_id": SEEDED_SITE_ID,
-            "page_id": SEEDED_PAGE_ID,
+            "page_id": s.destination_page_id,
             "name": format!("unauthorized-create-{}", f.outsider_id),
             "uploaded_blob_id": SEEDED_PENDING_BLOB_ID,
             "revision_comments": "unauthorized create",
@@ -164,6 +221,7 @@ async fn file_create_denies_user_without_page_edit_permission() {
 #[tokio::test]
 async fn file_move_denies_user_without_page_edit_permission() {
     let mut runner = TestRunner::setup().await;
+    let s = seeded(&runner).await;
     let f = fixture(&runner).await;
     as_outsider(&mut runner, f.outsider_id);
 
@@ -172,10 +230,10 @@ async fn file_move_denies_user_without_page_edit_permission() {
         file_move,
         json!({
             "site_id": SEEDED_SITE_ID,
-            "file_id": 4,
-            "current_page_id": SEEDED_FILE_PAGE_ID,
-            "destination_page": SEEDED_PAGE_ID,
-            "last_revision_id": 4,
+            "file_id": s.file_id,
+            "current_page_id": s.file_page_id,
+            "destination_page": s.destination_page_id,
+            "last_revision_id": s.file_revision_id,
             "name": "moved-by-outsider.svg",
             "revision_comments": "unauthorized move",
             "user_id": f.outsider_id,
@@ -187,6 +245,7 @@ async fn file_move_denies_user_without_page_edit_permission() {
 #[tokio::test]
 async fn file_restore_denies_user_without_page_edit_permission() {
     let mut runner = TestRunner::setup().await;
+    let s = seeded(&runner).await;
     let f = fixture(&runner).await;
     as_outsider(&mut runner, f.outsider_id);
 
@@ -195,8 +254,8 @@ async fn file_restore_denies_user_without_page_edit_permission() {
         file_restore,
         json!({
             "site_id": SEEDED_SITE_ID,
-            "page_id": SEEDED_FILE_PAGE_ID,
-            "file_id": 6,
+            "page_id": s.file_page_id,
+            "file_id": s.deleted_file_id,
             "revision_comments": "unauthorized restore",
             "new_page": null,
             "new_name": null,
@@ -209,6 +268,7 @@ async fn file_restore_denies_user_without_page_edit_permission() {
 #[tokio::test]
 async fn file_delete_allows_user_with_page_edit_permission() {
     let mut runner = TestRunner::setup().await;
+    let s = seeded(&runner).await;
     runner.set_request_context(RequestContext {
         session: None,
         user_id: Some(ADMIN_USER_ID),
@@ -220,9 +280,9 @@ async fn file_delete_allows_user_with_page_edit_permission() {
         file_delete,
         json!({
             "site_id": SEEDED_SITE_ID,
-            "page_id": SEEDED_FILE_PAGE_ID,
-            "file": 4,
-            "last_revision_id": 4,
+            "page_id": s.file_page_id,
+            "file": s.file_id,
+            "last_revision_id": s.file_revision_id,
             "revision_comments": "authorized delete",
             "user_id": ADMIN_USER_ID,
         })
