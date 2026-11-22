@@ -22,6 +22,7 @@
 mod common;
 
 use self::common::TestRunner;
+use deepwell::constants::ADMIN_USER_ID;
 use deepwell::error::ErrorType;
 use deepwell::license::License;
 use deepwell::services::RequestContext;
@@ -203,4 +204,23 @@ async fn file_restore_denies_user_without_page_edit_permission() {
         })
     );
     assert_contains_error!(error, ErrorType::PermissionDenied);
+}
+
+#[tokio::test]
+async fn file_delete_allows_user_with_page_edit_permission() {
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(SEEDED_SITE_ID),
+        page_reference: None,
+    });
+    let _ = run_endpoint!(runner, file_delete, json!({
+        "site_id": SEEDED_SITE_ID,
+        "page_id": SEEDED_FILE_PAGE_ID,
+        "file": 4,
+        "last_revision_id": 4,
+        "revision_comments": "authorized delete",
+        "user_id": ADMIN_USER_ID,
+    }));
 }
