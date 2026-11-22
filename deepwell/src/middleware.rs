@@ -124,6 +124,10 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use http::Response;
+    use std::convert::Infallible;
+    use std::future::{ready, Ready};
+    use std::sync::{Arc, Mutex};
 
     #[test]
     fn page_header_decodes_non_latin_1_slugs() {
@@ -188,5 +192,55 @@ mod tests {
             assert_eq!(encoded, frontend_header);
             assert_eq!(decode_page_header(&encoded).as_deref(), Some(slug));
         }
+    }
+
+    struct Capture {
+        seen: Arc<Mutex<Option<Request<()>>>>,
+    }
+
+    impl Service<Request<()>> for Capture {
+        type Response = Response<()>;
+        type Error = Infallible;
+        type Future = Ready<Result<Response<()>, Infallible>>;
+
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Infallible>> {
+            Poll::Ready(Ok(()))
+        }
+
+        fn call(&mut self, request: Request<()>) -> Self::Future {
+            *self.seen.lock().unwrap() = Some(request);
+            ready(Ok(Response::new(())))
+        }
+    }
+
+    async fn page_ref_from_header(value: &str) -> Option<Reference<'static>> {
+        let seen = Arc::new(Mutex::new(None));
+        let mut service = RequestContextService {
+            service: Capture { seen: seen.clone() },
+        };
+        let request = Request::builder()
+            .header("X-Deepwell-Page", value)
+            .body(())
+            .unwrap();
+        let _ = service.call(request).await;
+        seen.lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .extensions()
+            .get::<RequestContextHeaders>()
+            .expect("middleware must insert RequestContextHeaders")
+            .page_ref
+            .clone()
+    }
+
+    #[tokio::test]
+    async fn page_header_wiring_decodes_slug_and_keeps_numeric_ids() {
+        assert_eq!(
+            page_ref_from_header("r5a1-%E3%83%86%E3%82%B9%E3%83%88").await,
+            Some(Reference::Slug(Cow::Owned("r5a1-テスト".into()))),
+        );
+        assert_eq!(page_ref_from_header("123").await, Some(Reference::Id(123)));
+        assert_eq!(page_ref_from_header("%GG").await, None);
     }
 }
