@@ -22,7 +22,7 @@
 mod common;
 
 use self::common::TestRunner;
-use deepwell::constants::SYSTEM_USER_ID;
+use deepwell::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
 use deepwell::error::ErrorType;
 use deepwell::license::License;
 use deepwell::services::RequestContext;
@@ -153,4 +153,32 @@ async fn cross_site_page_reads_require_view_permission() {
         }),
     );
     assert_contains_error!(revision_error, ErrorType::PermissionDenied);
+}
+
+#[tokio::test]
+async fn authorized_page_reads_still_succeed() {
+    let mut runner = TestRunner::setup().await;
+    let site_id = 6000001;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": "system:join"}),
+    )
+    .expect("seeded join page not found");
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    run_endpoint!(runner, page_get_files, json!({
+        "site_id": site_id, "page_id": page.page_id, "deleted": false,
+    }));
+    run_endpoint!(runner, page_revision_range, json!({
+        "site_id": site_id, "page_id": page.page_id, "revision_number": -1,
+        "revision_direction": "before", "limit": 10, "details": {},
+    }));
+    run_endpoint!(runner, page_revision_get, json!({
+        "site_id": site_id, "page_id": page.page_id, "revision_number": 0,
+        "details": { "wikitext": true },
+    }));
 }
