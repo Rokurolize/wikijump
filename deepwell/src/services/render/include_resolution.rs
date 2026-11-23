@@ -527,10 +527,12 @@ mod tests {
         let uppercase = collect_include_display_pages(
             "[[include :SCP-WIKI.WIKIDOT.COM:component:license-box]]",
         );
-        assert!(!uppercase.contains_key(&PageRef::page_and_site(
-            "scp-wiki",
-            "component:license-box",
-        )));
+        assert!(
+            !uppercase.contains_key(&PageRef::page_and_site(
+                "scp-wiki",
+                "component:license-box",
+            ))
+        );
     }
 
     #[test]
