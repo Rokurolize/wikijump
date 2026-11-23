@@ -713,7 +713,7 @@ async fn save_releases_and_presented_id_rules_after_release() {
 }
 
 #[tokio::test]
-async fn meta_revisions_do_not_move_the_holders_base() {
+async fn meta_revisions_conflict_with_the_holders_save() {
     let mut runner = TestRunner::setup().await;
     let (site_id, page_id, revision_id) =
         setup_page(&mut runner, "edit-lock-meta", "v0").await;
@@ -748,7 +748,7 @@ async fn meta_revisions_do_not_move_the_holders_base() {
     .expect("tag edit creates a revision");
     assert_ne!(tag_revision.revision_id, revision_id);
 
-    let output = edit(
+    let stale = edit(
         &runner,
         site_id,
         page_id,
@@ -758,9 +758,14 @@ async fn meta_revisions_do_not_move_the_holders_base() {
         Some(lease_of(&a, PageEditLockMode::Page)),
     )
     .await
-    .expect("holder save after a meta revision should commit")
-    .expect("should create a revision");
-    assert!(!output.lock_recreated);
+    .expect_err("holder save after a meta revision must conflict");
+    assert_contains_error!(stale, ErrorType::NotLatestRevisionId);
+
+    let latest = PageRevisionService::get_latest(runner.context(), site_id, page_id)
+        .await
+        .expect("latest revision should exist");
+    assert_eq!(latest.revision_id, tag_revision.revision_id);
+    assert!(latest.changes.contains(&"tags".to_owned()));
 }
 
 #[tokio::test]
