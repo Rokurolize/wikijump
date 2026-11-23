@@ -25,7 +25,10 @@
           const categoryIndex = data.categories.findIndex(
             (category) => category.category_id === updatedCategory?.category_id
           )
-          if (categoryIndex !== -1) data.categories[categoryIndex] = updatedCategory
+          if (categoryIndex !== -1) {
+            data.categories[categoryIndex] = updatedCategory
+            $ratingFormData.expectedSettingsRevision = updatedCategory.settings_revision
+          }
         }
         if (result.type === "failure" && result.data) {
           errorPopupState.current = {
@@ -54,6 +57,7 @@
     )
     const values = ratingFormValues(category, defaultCategory)
     $ratingFormData.categoryId = values.categoryId
+    $ratingFormData.expectedSettingsRevision = category.settings_revision
     $ratingFormData.inherit = values.inherit
     $ratingFormData.enabled = values.enabled
     $ratingFormData.permission = values.permission

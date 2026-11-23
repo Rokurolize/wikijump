@@ -25,7 +25,10 @@
           const categoryIndex = data.categories.findIndex(
             (category) => category.category_id === updatedCategory?.category_id
           )
-          if (categoryIndex !== -1) data.categories[categoryIndex] = updatedCategory
+          if (categoryIndex !== -1) {
+            data.categories[categoryIndex] = updatedCategory
+            $licenseFormData.expectedSettingsRevision = updatedCategory.settings_revision
+          }
         }
         if (result.type === "failure" && result.data) {
           errorPopupState.current = {
@@ -59,6 +62,7 @@
       defaultCategory?.license_other
     )
     $licenseFormData.categoryId = values.categoryId
+    $licenseFormData.expectedSettingsRevision = category.settings_revision
     $licenseFormData.inherit = values.inherit
     $licenseFormData.license = values.license
     $licenseFormData.licenseOther = values.licenseOther
