@@ -47,12 +47,14 @@ use crate::hash::TextHash;
 use crate::models::page_category;
 use crate::services::ServiceContext;
 use crate::services::page_query::{
-    CategoriesSelector, FoundPageFields, FoundPages, IncludedCategories,
-    PageParentSelector, PageQuery, PageQueryResultMetadata, PageQueryScoreFilterCache,
-    PaginationSelector, RangeSelector, TagCondition,
+    CategoriesSelector, ComparisonOperation, FoundPageFields, FoundPages,
+    IncludedCategories, PageParentSelector, PageQuery, PageQueryResultMetadata,
+    PageQueryScoreFilterCache, PaginationSelector, RangeSelector, ScoreSelector,
+    TagCondition,
 };
 use crate::services::render::UrlArguments;
 use crate::services::render::service::IncludeExpansionOptions;
+use crate::services::score::ScoreValue;
 use ftml::data::PageInfo;
 use ftml::settings::WikitextSettings;
 use sea_orm::FromQueryResult;
@@ -819,6 +821,40 @@ fn sorted_key_debug_list<T: Clone + std::fmt::Debug>(list: &[T]) -> Vec<T> {
     keyed.into_iter().map(|(_, value)| value).collect()
 }
 
+/// Returns the canonical key form of a votes selector.
+///
+/// The votes predicate is a COUNT of vote rows, so its domain is the
+/// non-negative integers. On that domain `>t` and `<>0` (at zero) have
+/// equivalent inclusive-bound forms; mapping them onto those forms lets
+/// equivalent spellings share one render cache key. Everything that cannot
+/// be proved equivalent on this domain is returned unchanged, so a form we
+/// do not understand simply keeps its own key. Score selectors never pass
+/// through this function.
+fn canonical_key_votes_selector(selector: &ScoreSelector) -> ScoreSelector {
+    let ScoreValue::Integer(threshold) = selector.score else {
+        return *selector;
+    };
+    let comparison = match selector.comparison {
+        ComparisonOperation::GreaterThan => threshold
+            .checked_add(1)
+            .map(|bound| (ComparisonOperation::GreaterOrEqualThan, bound)),
+        ComparisonOperation::LessThan => threshold
+            .checked_sub(1)
+            .map(|bound| (ComparisonOperation::LessOrEqualThan, bound)),
+        ComparisonOperation::NotEqual if threshold == 0 => {
+            Some((ComparisonOperation::GreaterOrEqualThan, 1))
+        }
+        _ => None,
+    };
+    match comparison {
+        Some((comparison, bound)) => ScoreSelector {
+            score: ScoreValue::Integer(bound),
+            comparison,
+        },
+        None => *selector,
+    }
+}
+
 /// Builds the Debug string used to key the ListPages render caches.
 ///
 /// Several PageQuery fields are sets or conjunctions whose element order
@@ -852,7 +888,12 @@ pub(in crate::services::render) fn list_pages_canonical_query_debug(
         _ => Vec::new(),
     };
     let score = sorted_key_debug_list(query.score);
-    let votes = sorted_key_debug_list(query.votes);
+    let canonic_votes: Vec<ScoreSelector> = query
+        .votes
+        .iter()
+        .map(canonical_key_votes_selector)
+        .collect();
+    let votes = sorted_key_debug_list(&canonic_votes);
     let slugs = sorted_key_str_list(query.slugs);
     let data_form_fields = sorted_key_debug_list(query.data_form_fields);
 
@@ -1694,6 +1735,133 @@ mod tests {
             assert_ne!(
                 list_pages_scan_cache_key(Some(7), &greater, 250),
                 list_pages_scan_cache_key(Some(7), &greater_or_equal, 250)
+            );
+        }
+
+        const fn votes_selector(
+            comparison: ComparisonOperation,
+            threshold: i64,
+        ) -> ScoreSelector {
+            ScoreSelector {
+                score: ScoreValue::Integer(threshold),
+                comparison,
+            }
+        }
+
+        fn leaked_votes(votes: Vec<ScoreSelector>) -> &'static [ScoreSelector] {
+            Box::leak(votes.into_boxed_slice())
+        }
+
+        fn with_votes(votes: Vec<ScoreSelector>) -> PageQuery<'static> {
+            let mut query = query(None, Some(1), 0);
+            query.votes = leaked_votes(votes);
+            query
+        }
+
+        #[test]
+        fn votes_equivalent_operator_forms_share_one_key() {
+            let greater =
+                with_votes(vec![votes_selector(ComparisonOperation::GreaterThan, 0)]);
+            let greater_or_equal = with_votes(vec![votes_selector(
+                ComparisonOperation::GreaterOrEqualThan,
+                1,
+            )]);
+            let not_equal =
+                with_votes(vec![votes_selector(ComparisonOperation::NotEqual, 0)]);
+            assert_eq!(match_key(&greater), match_key(&greater_or_equal));
+            assert_eq!(match_key(&greater), match_key(&not_equal));
+            assert_eq!(
+                list_pages_scan_cache_key(Some(7), &greater, 250),
+                list_pages_scan_cache_key(Some(7), &greater_or_equal, 250)
+            );
+            assert_eq!(
+                list_pages_scan_cache_key(Some(7), &greater, 250),
+                list_pages_scan_cache_key(Some(7), &not_equal, 250)
+            );
+        }
+
+        #[test]
+        fn votes_adjacent_forms_stay_distinct() {
+            let greater_zero =
+                with_votes(vec![votes_selector(ComparisonOperation::GreaterThan, 0)]);
+            let ge_zero = with_votes(vec![votes_selector(
+                ComparisonOperation::GreaterOrEqualThan,
+                0,
+            )]);
+            let greater_one =
+                with_votes(vec![votes_selector(ComparisonOperation::GreaterThan, 1)]);
+            let ge_one = with_votes(vec![votes_selector(
+                ComparisonOperation::GreaterOrEqualThan,
+                1,
+            )]);
+            assert_ne!(match_key(&greater_zero), match_key(&ge_zero));
+            assert_ne!(match_key(&greater_one), match_key(&ge_one));
+            assert_ne!(
+                list_pages_scan_cache_key(Some(7), &greater_zero, 250),
+                list_pages_scan_cache_key(Some(7), &ge_zero, 250)
+            );
+        }
+
+        #[test]
+        fn votes_conjunction_canonicalizes_elementwise_and_deduplicates() {
+            let forward = with_votes(vec![
+                votes_selector(ComparisonOperation::GreaterThan, 0),
+                votes_selector(ComparisonOperation::LessThan, 5),
+            ]);
+            let reversed = with_votes(vec![
+                votes_selector(ComparisonOperation::LessThan, 5),
+                votes_selector(ComparisonOperation::GreaterOrEqualThan, 1),
+            ]);
+            let repeated = with_votes(vec![
+                votes_selector(ComparisonOperation::GreaterThan, 0),
+                votes_selector(ComparisonOperation::GreaterOrEqualThan, 1),
+                votes_selector(ComparisonOperation::NotEqual, 0),
+                votes_selector(ComparisonOperation::LessThan, 5),
+            ]);
+            assert_eq!(match_key(&forward), match_key(&reversed));
+            assert_eq!(match_key(&forward), match_key(&repeated));
+            assert_eq!(
+                list_pages_scan_cache_key(Some(7), &forward, 250),
+                list_pages_scan_cache_key(Some(7), &reversed, 250)
+            );
+        }
+
+        #[test]
+        fn votes_unprovable_forms_fail_closed() {
+            let not_equal_one =
+                with_votes(vec![votes_selector(ComparisonOperation::NotEqual, 1)]);
+            let greater_one =
+                with_votes(vec![votes_selector(ComparisonOperation::GreaterThan, 1)]);
+            let overflow = with_votes(vec![votes_selector(
+                ComparisonOperation::GreaterThan,
+                i64::MAX,
+            )]);
+            let ge_overflow = with_votes(vec![votes_selector(
+                ComparisonOperation::GreaterOrEqualThan,
+                i64::MAX,
+            )]);
+            assert_ne!(match_key(&not_equal_one), match_key(&greater_one));
+            assert_ne!(match_key(&overflow), match_key(&ge_overflow));
+        }
+
+        #[test]
+        fn score_operators_stay_distinct_with_votes_canonicalization() {
+            let mut score_greater =
+                with_votes(vec![votes_selector(ComparisonOperation::GreaterThan, 0)]);
+            score_greater.score =
+                leaked_votes(vec![votes_selector(ComparisonOperation::GreaterThan, 0)]);
+            let mut score_ge_one = with_votes(vec![votes_selector(
+                ComparisonOperation::GreaterOrEqualThan,
+                1,
+            )]);
+            score_ge_one.score = leaked_votes(vec![votes_selector(
+                ComparisonOperation::GreaterOrEqualThan,
+                1,
+            )]);
+            assert_ne!(match_key(&score_greater), match_key(&score_ge_one));
+            assert_ne!(
+                list_pages_scan_cache_key(Some(7), &score_greater, 250),
+                list_pages_scan_cache_key(Some(7), &score_ge_one, 250)
             );
         }
 
