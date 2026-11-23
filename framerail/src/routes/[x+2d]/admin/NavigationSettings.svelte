@@ -25,7 +25,11 @@
           const categoryIndex = data.categories.findIndex(
             (category) => category.category_id === updatedCategory?.category_id
           )
-          if (categoryIndex !== -1) data.categories[categoryIndex] = updatedCategory
+          if (categoryIndex !== -1) {
+            data.categories[categoryIndex] = updatedCategory
+            $navigationFormData.expectedSettingsRevision =
+              updatedCategory.settings_revision
+          }
         }
         if (result.type === "failure" && result.data) {
           errorPopupState.current = {
@@ -45,6 +49,7 @@
     if (!category) return
     const values = navigationFormValues(category, data.site)
     $navigationFormData.categoryId = values.categoryId
+    $navigationFormData.expectedSettingsRevision = category.settings_revision
     $navigationFormData.inherit = values.inherit
     $navigationFormData.topBarPage = values.topBarPage
     $navigationFormData.sideBarPage = values.sideBarPage

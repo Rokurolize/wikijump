@@ -21,6 +21,7 @@ type SiteUpdateRequestContext = {
 interface CategoryNavigationUpdateInput {
   siteId: number
   categoryId: number
+  expectedSettingsRevision: number
   userId: number
   userIpAddr: string
   topBarPage: Nullable<string>
@@ -31,6 +32,7 @@ export async function categoryNavigationUpdate(
   {
     siteId,
     categoryId,
+    expectedSettingsRevision,
     userId,
     userIpAddr,
     topBarPage,
@@ -43,6 +45,7 @@ export async function categoryNavigationUpdate(
     {
       site: siteId,
       category: categoryId,
+      expected_settings_revision: expectedSettingsRevision,
       user_id: userId,
       top_bar_page: topBarPage,
       side_bar_page: sideBarPage,
@@ -55,6 +58,7 @@ export async function categoryNavigationUpdate(
 interface CategoryLicenseUpdateInput {
   siteId: number
   categoryId: number
+  expectedSettingsRevision: number
   userId: number
   userIpAddr: string
   license: Nullable<string>
@@ -65,6 +69,7 @@ export async function categoryLicenseUpdate(
   {
     siteId,
     categoryId,
+    expectedSettingsRevision,
     userId,
     userIpAddr,
     license,
@@ -77,6 +82,7 @@ export async function categoryLicenseUpdate(
     {
       site: siteId,
       category: categoryId,
+      expected_settings_revision: expectedSettingsRevision,
       user_id: userId,
       license,
       license_other: licenseOther,
@@ -89,13 +95,21 @@ export async function categoryLicenseUpdate(
 interface CategoryTemplateUpdateInput {
   siteId: number
   categoryId: number
+  expectedSettingsRevision: number
   userId: number
   userIpAddr: string
   templatePageId: Nullable<number>
 }
 
 export async function categoryTemplateUpdate(
-  { siteId, categoryId, userId, userIpAddr, templatePageId }: CategoryTemplateUpdateInput,
+  {
+    siteId,
+    categoryId,
+    expectedSettingsRevision,
+    userId,
+    userIpAddr,
+    templatePageId
+  }: CategoryTemplateUpdateInput,
   requestContext: SiteUpdateRequestContext
 ): Promise<PageCategoryModel> {
   return client.request(
@@ -103,6 +117,7 @@ export async function categoryTemplateUpdate(
     {
       site: siteId,
       category: categoryId,
+      expected_settings_revision: expectedSettingsRevision,
       user_id: userId,
       template_page_id: templatePageId,
       ip_address: userIpAddr
@@ -114,6 +129,7 @@ export async function categoryTemplateUpdate(
 export async function categoryRatingUpdate(
   siteId: number,
   categoryId: number,
+  expectedSettingsRevision: number,
   userId: number,
   userIpAddr: string,
   enabled: Nullable<boolean>,
@@ -127,6 +143,7 @@ export async function categoryRatingUpdate(
     {
       site: siteId,
       category: categoryId,
+      expected_settings_revision: expectedSettingsRevision,
       user_id: userId,
       rating_enabled: enabled,
       rating_permission: permission,
@@ -141,6 +158,7 @@ export async function categoryRatingUpdate(
 export async function categoryDiscussionUpdate(
   siteId: number,
   categoryId: number,
+  expectedSettingsRevision: number,
   userId: number,
   userIpAddr: string,
   enabled: Nullable<boolean>,
@@ -151,6 +169,7 @@ export async function categoryDiscussionUpdate(
     {
       site: siteId,
       category: categoryId,
+      expected_settings_revision: expectedSettingsRevision,
       user_id: userId,
       per_page_discussion: enabled,
       ip_address: userIpAddr

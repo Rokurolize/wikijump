@@ -24,7 +24,10 @@
           const categoryIndex = data.categories.findIndex(
             (category) => category.category_id === updatedCategory?.category_id
           )
-          if (categoryIndex !== -1) data.categories[categoryIndex] = updatedCategory
+          if (categoryIndex !== -1) {
+            data.categories[categoryIndex] = updatedCategory
+            $templateFormData.expectedSettingsRevision = updatedCategory.settings_revision
+          }
         }
         if (result.type === "failure" && result.data) {
           errorPopupState.current = {
@@ -43,6 +46,7 @@
     )
     if (!category) return
     $templateFormData.categoryId = category.category_id
+    $templateFormData.expectedSettingsRevision = category.settings_revision
     $templateFormData.templatePageId = data.pageTemplates.some(
       (template) => template.page_id === category.template_page_id
     )

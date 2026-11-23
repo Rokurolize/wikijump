@@ -841,6 +841,7 @@ export async function discussionAction({
     const res = await categoryDiscussionUpdate(
       siteId,
       form.data.categoryId,
+      form.data.expectedSettingsRevision,
       session.user_id,
       getClientAddress(),
       discussionUpdateValue(form.data),
@@ -886,6 +887,7 @@ export async function templateAction({
       {
         siteId: trustedSiteId,
         categoryId,
+        expectedSettingsRevision: form.data.expectedSettingsRevision,
         userId: session.user_id,
         userIpAddr: getClientAddress(),
         templatePageId
@@ -923,6 +925,7 @@ export async function licenseAction({
       {
         siteId: trustedSiteId,
         categoryId,
+        expectedSettingsRevision: form.data.expectedSettingsRevision,
         userId: session.user_id,
         userIpAddr: getClientAddress(),
         license,
@@ -961,6 +964,7 @@ export async function ratingAction({ request, getClientAddress, cookies }: Reque
     const res = await categoryRatingUpdate(
       siteId,
       categoryId,
+      form.data.expectedSettingsRevision,
       session.user_id,
       getClientAddress(),
       inherit ? null : enabled,
@@ -1010,6 +1014,7 @@ export async function navigationAction({
       {
         siteId: trustedSiteId,
         categoryId,
+        expectedSettingsRevision: form.data.expectedSettingsRevision,
         userId: session.user_id,
         userIpAddr: getClientAddress(),
         topBarPage,
@@ -1402,6 +1407,7 @@ const autonumberSchema = object({
 const navigationSchema = object({
   siteId: number(),
   categoryId: number(),
+  expectedSettingsRevision: pipe(number(), integer(), minValue(0)),
   inherit: boolean(),
   topBarPage: string(),
   sideBarPage: string()
@@ -1410,6 +1416,7 @@ const navigationSchema = object({
 const licenseSchema = object({
   siteId: number(),
   categoryId: number(),
+  expectedSettingsRevision: pipe(number(), integer(), minValue(0)),
   inherit: boolean(),
   license: string(),
   licenseOther: pipe(string(), maxLength(300))
@@ -1418,12 +1425,14 @@ const licenseSchema = object({
 const templateSchema = object({
   siteId: number(),
   categoryId: number(),
+  expectedSettingsRevision: pipe(number(), integer(), minValue(0)),
   templatePageId: nullable(number())
 })
 
 const ratingSchema = object({
   siteId: number(),
   categoryId: number(),
+  expectedSettingsRevision: pipe(number(), integer(), minValue(0)),
   inherit: boolean(),
   enabled: boolean(),
   permission: vEnum({ REGISTERED: "registered", MEMBERS: "members" }),
@@ -1448,6 +1457,7 @@ const forumNestingSchema = object({
 const discussionSchema = object({
   siteId: number(),
   categoryId: number(),
+  expectedSettingsRevision: pipe(number(), integer(), minValue(0)),
   state: vEnum({ DEFAULT: "default", ENABLE: "enable", DISABLE: "disable" })
 })
 
