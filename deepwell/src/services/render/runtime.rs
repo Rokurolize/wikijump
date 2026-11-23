@@ -596,7 +596,7 @@ mod tests {
         let page_ref =
             PageRef::parse_include(":scp.avn.sh:component:aers:classification-stuff")
                 .expect("include target parses");
-        assert_eq!(page_ref.site(), Some("scp-avn-sh"));
+        assert_eq!(page_ref.site(), Some("scp.avn.sh"));
         assert_eq!(
             alternate_source_fullnames(page_ref.page()),
             ["component:aers:classification-stuff"],
