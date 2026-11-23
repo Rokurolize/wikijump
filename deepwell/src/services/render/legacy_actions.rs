@@ -111,16 +111,21 @@ impl LegacyActionRegistry {
             .filter_map(|requirement| {
                 let requirement = requirement.standalone_button_requirement()?;
                 let descriptor = match requirement.action() {
-                    StandaloneButtonAction::Edit => LegacyActionDescriptor::Edit,
-                    StandaloneButtonAction::History => LegacyActionDescriptor::History,
-                    StandaloneButtonAction::Source => LegacyActionDescriptor::Source,
-                    StandaloneButtonAction::Print => LegacyActionDescriptor::Print,
-                    StandaloneButtonAction::SetTags(alterations) => {
-                        LegacyActionDescriptor::SetTags(
-                            alterations.iter().map(TagAlteration::to_owned).collect(),
-                        )
+                    StandaloneButtonAction::Edit => Some(LegacyActionDescriptor::Edit),
+                    StandaloneButtonAction::History => {
+                        Some(LegacyActionDescriptor::History)
                     }
-                };
+                    StandaloneButtonAction::Source => {
+                        Some(LegacyActionDescriptor::Source)
+                    }
+                    StandaloneButtonAction::Print => Some(LegacyActionDescriptor::Print),
+                    StandaloneButtonAction::SetTags(alterations) => {
+                        Some(LegacyActionDescriptor::SetTags(
+                            alterations.iter().map(TagAlteration::to_owned).collect(),
+                        ))
+                    }
+                    _ => None,
+                }?;
                 Some(RegisteredLegacyAction {
                     renderer_id: requirement.id().to_owned(),
                     descriptor,
@@ -289,6 +294,54 @@ mod tests {
                 LegacyBrowserAction::Print,
             ],
         );
+    }
+
+    #[test]
+    fn source_registry_skips_button_types_without_an_execution_path() {
+        let source = concat!(
+            "[[button rename]]\n",
+            "[[button delete]]\n",
+            "[[button parent]]\n",
+            "[[button edit-meta]]\n",
+            "[[button watchers]]\n",
+            "[[button edit-append]]\n",
+            "[[button edit-sections]]\n",
+            "[[button files]]\n",
+            "[[button tags]]\n",
+            "[[button talk]]\n",
+            "[[button backlinks]]\n",
+            "[[button edit]]",
+        );
+
+        let mut rendered = source.to_owned();
+        let page_info = PageInfo {
+            page: Cow::Borrowed("legacy-action"),
+            category: None,
+            site: Cow::Borrowed("legacy-action"),
+            title: Cow::Borrowed("Legacy action"),
+            alt_title: None,
+            score: ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        ftml::preprocess_for_layout(&mut rendered, settings.layout);
+        let tokens = ftml::tokenize(&rendered);
+        let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
+        let output = HtmlRender.render(&tree, &page_info, &settings);
+        let button_requirements = output
+            .resource_requirements
+            .iter()
+            .filter(|requirement| requirement.standalone_button_requirement().is_some())
+            .count();
+        assert_eq!(button_requirements, 12);
+
+        let registry = LegacyActionRegistry::from_resource_requirements(
+            &output.resource_requirements,
+        );
+        assert_eq!(registry.get(0), Some(&LegacyActionDescriptor::Edit));
+        assert_eq!(registry.get(1), None);
+        assert_eq!(registry.browser_actions(), [LegacyBrowserAction::Edit]);
     }
 
     #[test]
