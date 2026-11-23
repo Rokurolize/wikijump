@@ -613,7 +613,7 @@ async fn restore_kills_live_lease_rows_on_the_page() {
 }
 
 #[tokio::test]
-async fn legacy_set_tags_during_lease_is_meta_only_and_lease_survives() {
+async fn legacy_set_tags_during_lease_is_meta_only_and_leased_save_conflicts() {
     const SLUG: &str = "lease-writers-set-tags";
     const SOURCE: &str = "[[button set-tags -* +favorite +_book text=\"Change tags\"]]";
 
@@ -659,12 +659,39 @@ async fn legacy_set_tags_during_lease_is_meta_only_and_lease_survives() {
         .fingerprint(0)
         .expect("set-tags descriptor should have a fingerprint");
 
+    let control_source = format!("{SOURCE}\ncontrol edit\n");
+    let control = edit(
+        &runner,
+        site_id,
+        page_id,
+        USER_A,
+        revision_id,
+        text_body(&control_source),
+        Some(lease_of(&a, PageEditLockMode::Page)),
+    )
+    .await
+    .expect("a leased save with no intervening revision should commit")
+    .expect("should create a revision");
+    let control_revision_id = control.revision_id;
+
+    let holder = grant(
+        &acquire(
+            &runner,
+            site_id,
+            page_id,
+            USER_A,
+            PageEditLockMode::Page,
+            None,
+        )
+        .await,
+    );
+
     set_request_context(&mut runner, USER_B, site_id, SLUG);
     let changed = LegacyActionService::set_tags(
         runner.context(),
         SetLegacyActionTags {
             page_id,
-            last_revision_id: revision_id,
+            last_revision_id: control_revision_id,
             action_index: 0,
             action_fingerprint,
             user_id: USER_B,
@@ -674,34 +701,46 @@ async fn legacy_set_tags_during_lease_is_meta_only_and_lease_survives() {
     .await
     .expect("a third-party set-tags write must not be blocked by the lease")
     .expect("set-tags creates a revision");
-    assert_ne!(changed.revision_id, revision_id);
+    assert_ne!(changed.revision_id, control_revision_id);
     assert_eq!(
         latest_changes(&runner, site_id, page_id).await,
         vec!["tags".to_owned()],
         "a set-tags revision must record tags only, never a wikitext change",
     );
+    assert_eq!(revision_count(&runner, page_id).await, 3);
 
-    let rows = lease_rows(&runner, page_id).await;
-    assert_eq!(rows.len(), 1, "the lease row must survive a set-tags write");
-    assert_eq!(rows[0].lock_id, a.lock_id);
-
-    let output = edit(
+    set_request_context(&mut runner, USER_A, site_id, SLUG);
+    let stale = edit(
         &runner,
         site_id,
         page_id,
         USER_A,
-        revision_id,
+        control_revision_id,
         text_body("after tags"),
-        Some(lease_of(&a, PageEditLockMode::Page)),
+        Some(lease_of(&holder, PageEditLockMode::Page)),
     )
     .await
-    .expect("the holder's save after a set-tags write should commit")
-    .expect("should create a revision");
-    assert!(!output.lock_recreated);
+    .expect_err("a leased save after a metadata-only revision must conflict");
+    assert_contains_error!(stale, ErrorType::NotLatestRevisionId);
+
+    assert_eq!(
+        latest_changes(&runner, site_id, page_id).await,
+        vec!["tags".to_owned()],
+        "the rejected save must leave the tags change intact",
+    );
+    assert_eq!(
+        latest_wikitext(&runner, site_id, page_id).await,
+        control_source
+    );
+    assert_eq!(revision_count(&runner, page_id).await, 3);
+
+    let rows = lease_rows(&runner, page_id).await;
+    assert_eq!(rows.len(), 1, "the lease row must survive a rejected save");
+    assert_eq!(rows[0].lock_id, holder.lock_id);
 }
 
 #[tokio::test]
-async fn parent_set_during_lease_is_meta_only_and_lease_survives() {
+async fn parent_set_during_lease_is_meta_only_and_leased_save_conflicts() {
     let mut runner = TestRunner::setup().await;
     let (site_id, _parent_id, _parent_revision_id) =
         setup_page(&mut runner, "lease-writers-parent", "parent body").await;
@@ -745,7 +784,7 @@ async fn parent_set_during_lease_is_meta_only_and_lease_survives() {
     assert_eq!(rows.len(), 1, "the lease row must survive a parent write");
     assert_eq!(rows[0].lock_id, holder.lock_id);
 
-    let output = edit(
+    let stale = edit(
         &runner,
         site_id,
         child_id,
@@ -755,7 +794,16 @@ async fn parent_set_during_lease_is_meta_only_and_lease_survives() {
         Some(lease_of(&holder, PageEditLockMode::Page)),
     )
     .await
-    .expect("the holder's save after a parent write should commit")
-    .expect("should create a revision");
-    assert!(!output.lock_recreated);
+    .expect_err("a leased save after a parent-only revision must conflict");
+    assert_contains_error!(stale, ErrorType::NotLatestRevisionId);
+
+    assert_eq!(
+        latest_changes(&runner, site_id, child_id).await,
+        vec!["parent".to_owned()],
+        "the rejected save must leave the parent change intact",
+    );
+
+    let rows = lease_rows(&runner, child_id).await;
+    assert_eq!(rows.len(), 1, "the lease row must survive a rejected save");
+    assert_eq!(rows[0].lock_id, holder.lock_id);
 }
