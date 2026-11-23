@@ -124,6 +124,7 @@ impl LegacyActionRegistry {
                             alterations.iter().map(TagAlteration::to_owned).collect(),
                         ))
                     }
+                    _ => None,
                 }?;
                 Some(RegisteredLegacyAction {
                     renderer_id: requirement.id().to_owned(),
