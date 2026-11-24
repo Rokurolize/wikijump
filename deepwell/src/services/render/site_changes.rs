@@ -33,9 +33,10 @@ use crate::services::{CategoryService, ServiceContext};
 use crate::types::{Action, Permission, Reference, Resource};
 use ftml::settings::WikitextSettings;
 use regex::Regex;
-use sea_orm::{ConnectionTrait, FromQueryResult, Statement};
+use sea_orm::sea_query::ArrayType;
+use sea_orm::{ConnectionTrait, FromQueryResult, Statement, Value};
 use serde::Serialize;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::LazyLock;
 
 const SITE_CHANGES_BROWSER_ROWS_PER_PAGE: usize = 20;
@@ -49,20 +50,28 @@ pub(super) static SITE_CHANGES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| 
 });
 
 #[derive(Debug, FromQueryResult)]
+struct SiteChangesScanRow {
+    revision_id: i64,
+    activity_kind: i16,
+    created_at: time::OffsetDateTime,
+    page_id: i64,
+    page_category_id: i64,
+    slug: String,
+    hidden: Vec<String>,
+}
+
+#[derive(Clone, Debug, FromQueryResult)]
 struct SiteChangesRevisionRow {
     revision_id: i64,
     is_new_page: bool,
     is_file: bool,
     created_at: time::OffsetDateTime,
     revision_number: i32,
-    page_id: i64,
-    page_category_id: i64,
     category_slug: String,
     slug: String,
     title: String,
     changes: Vec<String>,
     comments: String,
-    hidden: Vec<String>,
     user_id: i64,
     wikidot_user_name: Option<String>,
     wikidot_user_slug: Option<String>,
@@ -256,10 +265,10 @@ struct SiteChangesCursor {
 }
 
 impl SiteChangesCursor {
-    fn from_row(row: &SiteChangesRevisionRow) -> Self {
+    fn from_row(row: &SiteChangesScanRow) -> Self {
         Self {
             created_at: row.created_at,
-            activity_kind: i16::from(row.is_file),
+            activity_kind: row.activity_kind,
             revision_id: row.revision_id,
         }
     }
@@ -317,14 +326,13 @@ async fn load_site_changes_list(
     let txn = ctx.transaction();
     let mut raw_scanned = 0usize;
     let mut cursor = None;
-    let mut revisions = Vec::with_capacity(visible_row_target);
+    let mut visible = Vec::with_capacity(visible_row_target);
     let mut category_permissions = BTreeMap::<(i64, Option<i64>), bool>::new();
     let mut naturally_exhausted = false;
 
-    while revisions.len() < visible_row_target && raw_scanned < SITE_CHANGES_MAX_RAW_SCAN
-    {
+    while visible.len() < visible_row_target && raw_scanned < SITE_CHANGES_MAX_RAW_SCAN {
         let batch_size =
-            site_changes_batch_size(visible_row_target - revisions.len(), raw_scanned);
+            site_changes_batch_size(visible_row_target - visible.len(), raw_scanned);
         let (page_seek, file_seek) = site_changes_seeks(cursor);
         let page_seek = page_seek.sql("pr");
         let file_seek = file_seek.sql("fr");
@@ -337,73 +345,51 @@ async fn load_site_changes_list(
             values.push(cursor.created_at.into());
             values.push(cursor.revision_id.into());
         }
-        let rows =
-            SiteChangesRevisionRow::find_by_statement(Statement::from_sql_and_values(
-                txn.get_database_backend(),
-                format!(
-                    "SELECT revision_id, is_new_page, is_file, created_at, \
-                            revision_number, page_id, page_category_id, category_slug, \
-                            slug, title, changes, comments, hidden, user_id, \
-                            wikidot_user_name, wikidot_user_slug, local_user_name \
-                     FROM ( \
-                       SELECT pr.revision_id, 0::SMALLINT AS activity_kind, \
-                              pr.revision_type = 'create' AS is_new_page, \
-                              FALSE AS is_file, pr.created_at, pr.revision_number, \
-                              pr.page_id, p.page_category_id, pc.slug AS category_slug, \
-                              pr.slug, pr.title, pr.changes, pr.comments, pr.hidden, pr.user_id, \
-                              wu.name AS wikidot_user_name, \
-                              wu.slug AS wikidot_user_slug, \
-                              local_user.name AS local_user_name \
-                       FROM page_revision pr \
-                       JOIN page p ON p.page_id = pr.page_id \
-                                  AND p.site_id = pr.site_id \
-                                  AND p.deleted_at IS NULL \
-                       JOIN page_category pc ON pc.category_id = p.page_category_id \
-                       LEFT JOIN wikidot_user wu \
-                         ON wu.user_id = pr.user_id AND wu.is_deleted = FALSE \
-                       LEFT JOIN \"user\" local_user \
-                         ON local_user.user_id = pr.user_id \
-                        AND local_user.deleted_at IS NULL \
-                       WHERE pr.site_id = $1 \
-                         AND $2 IN ('all', 'source') \
-                         AND pr.revision_type NOT IN ('delete', 'undelete') \
-                         AND ($2 <> 'source' OR pr.changes @> ARRAY['wikitext']::TEXT[]) \
-                         AND ($3::BIGINT IS NULL OR p.page_category_id = $3) \
-                         AND {page_seek} \
-                       UNION ALL \
-                       SELECT fr.revision_id, 1::SMALLINT AS activity_kind, \
-                              FALSE AS is_new_page, TRUE AS is_file, fr.created_at, \
-                              fr.revision_number, fr.page_id, p.page_category_id, \
-                              pc.slug AS category_slug, current_pr.slug, current_pr.title, \
-                              fr.changes, fr.comments, fr.hidden || current_pr.hidden, fr.user_id, \
-                              wu.name AS wikidot_user_name, \
-                              wu.slug AS wikidot_user_slug, \
-                              local_user.name AS local_user_name \
-                       FROM file_revision fr \
-                       JOIN page p ON p.page_id = fr.page_id \
-                                  AND p.site_id = fr.site_id \
-                                  AND p.deleted_at IS NULL \
-                       JOIN page_revision current_pr \
-                         ON current_pr.revision_id = p.latest_revision_id \
-                       JOIN page_category pc ON pc.category_id = p.page_category_id \
-                       LEFT JOIN wikidot_user wu \
-                         ON wu.user_id = fr.user_id AND wu.is_deleted = FALSE \
-                       LEFT JOIN \"user\" local_user \
-                         ON local_user.user_id = fr.user_id \
-                        AND local_user.deleted_at IS NULL \
-                       WHERE fr.site_id = $1 \
-                         AND $2 IN ('all', 'files') \
-                         AND ($3::BIGINT IS NULL OR p.page_category_id = $3) \
-                         AND {file_seek} \
-                     ) activity \
-                     ORDER BY created_at DESC, activity_kind, revision_id DESC \
-                     LIMIT {batch_size}",
-                ),
-                values,
-            ))
-            .all(txn)
-            .await
-            .or_raise(make_error)?;
+        let rows = SiteChangesScanRow::find_by_statement(Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            format!(
+                "SELECT revision_id, activity_kind, created_at, page_id, \
+                        page_category_id, slug, hidden \
+                 FROM ( \
+                   (SELECT pr.revision_id, 0::SMALLINT AS activity_kind, pr.created_at, \
+                           pr.page_id, p.page_category_id, pr.slug, pr.hidden \
+                    FROM page_revision pr \
+                    JOIN page p ON p.page_id = pr.page_id \
+                              AND p.site_id = pr.site_id \
+                              AND p.deleted_at IS NULL \
+                    WHERE pr.site_id = $1 \
+                      AND $2 IN ('all', 'source') \
+                      AND pr.revision_type NOT IN ('delete', 'undelete') \
+                      AND ($2 <> 'source' OR pr.changes @> ARRAY['wikitext']::TEXT[]) \
+                      AND ($3::BIGINT IS NULL OR p.page_category_id = $3) \
+                      AND {page_seek} \
+                    ORDER BY pr.created_at DESC, pr.revision_id DESC \
+                    LIMIT {batch_size}) \
+                   UNION ALL \
+                   (SELECT fr.revision_id, 1::SMALLINT AS activity_kind, fr.created_at, \
+                           fr.page_id, p.page_category_id, current_pr.slug, \
+                           fr.hidden || current_pr.hidden \
+                    FROM file_revision fr \
+                    JOIN page p ON p.page_id = fr.page_id \
+                              AND p.site_id = fr.site_id \
+                              AND p.deleted_at IS NULL \
+                    JOIN page_revision current_pr \
+                      ON current_pr.revision_id = p.latest_revision_id \
+                    WHERE fr.site_id = $1 \
+                      AND $2 IN ('all', 'files') \
+                      AND ($3::BIGINT IS NULL OR p.page_category_id = $3) \
+                      AND {file_seek} \
+                    ORDER BY fr.created_at DESC, fr.revision_id DESC \
+                    LIMIT {batch_size}) \
+                 ) activity \
+                 ORDER BY created_at DESC, activity_kind, revision_id DESC \
+                 LIMIT {batch_size}",
+            ),
+            values,
+        ))
+        .all(txn)
+        .await
+        .or_raise(make_error)?;
         let row_count = rows.len();
         cursor = rows.last().map(SiteChangesCursor::from_row);
         raw_scanned = raw_scanned.saturating_add(row_count);
@@ -436,8 +422,8 @@ async fn load_site_changes_list(
 
         for (row, can_view) in candidates.into_iter().zip(viewable) {
             if can_view {
-                revisions.push(row);
-                if revisions.len() == visible_row_target {
+                visible.push(row);
+                if visible.len() == visible_row_target {
                     break;
                 }
             }
@@ -449,29 +435,32 @@ async fn load_site_changes_list(
         }
     }
 
-    if revisions.len() < visible_row_target && !naturally_exhausted {
+    if visible.len() < visible_row_target && !naturally_exhausted {
         return Ok(SiteChangesLoad::Saturated);
     }
 
-    let available_pages = revisions
+    let available_pages = visible
         .len()
         .div_ceil(request.rows_per_page)
         .try_into()
         .unwrap_or(u32::MAX);
     let last_link_page = available_pages.min(last_candidate_page).max(request.page);
-    let has_next = revisions.len()
+    let has_next = visible.len()
         > usize::try_from(request.page)
             .unwrap_or(usize::MAX)
             .saturating_mul(request.rows_per_page);
-    let has_dots = revisions.len()
+    let has_dots = visible.len()
         > usize::try_from(last_candidate_page)
             .unwrap_or(usize::MAX)
             .saturating_mul(request.rows_per_page);
-    let revisions = revisions
+    let window = visible
         .into_iter()
         .skip(page_start)
         .take(request.rows_per_page)
-        .collect();
+        .collect::<Vec<_>>();
+    let revisions = load_site_changes_details(ctx, site_id, &window)
+        .await
+        .or_raise(make_error)?;
 
     Ok(SiteChangesLoad::Complete(SiteChangesList {
         page: request.page,
@@ -480,6 +469,123 @@ async fn load_site_changes_list(
         has_dots,
         revisions,
     }))
+}
+
+async fn load_site_changes_details(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    rows: &[SiteChangesScanRow],
+) -> Result<Vec<SiteChangesRevisionRow>> {
+    if rows.is_empty() {
+        return Ok(Vec::new());
+    }
+    let make_error = || {
+        Error::new(
+            format!("failed to load SiteChanges details for site ID {site_id}"),
+            ErrorType::Render,
+        )
+    };
+    let txn = ctx.transaction();
+    let page_ids = rows
+        .iter()
+        .filter(|row| row.activity_kind == 0)
+        .map(|row| row.revision_id)
+        .collect::<Vec<_>>();
+    let file_ids = rows
+        .iter()
+        .filter(|row| row.activity_kind == 1)
+        .map(|row| row.revision_id)
+        .collect::<Vec<_>>();
+    let mut details = HashMap::<(i16, i64), SiteChangesRevisionRow>::new();
+
+    if !page_ids.is_empty() {
+        let found =
+            SiteChangesRevisionRow::find_by_statement(Statement::from_sql_and_values(
+                txn.get_database_backend(),
+                "SELECT pr.revision_id, pr.revision_type = 'create' AS is_new_page, \
+                    FALSE AS is_file, pr.created_at, pr.revision_number, \
+                    pc.slug AS category_slug, pr.slug, pr.title, \
+                    pr.changes, pr.comments, pr.user_id, \
+                    wu.name AS wikidot_user_name, wu.slug AS wikidot_user_slug, \
+                    local_user.name AS local_user_name \
+             FROM page_revision pr \
+             JOIN page p ON p.page_id = pr.page_id \
+                        AND p.site_id = pr.site_id \
+                        AND p.deleted_at IS NULL \
+             JOIN page_category pc ON pc.category_id = p.page_category_id \
+             LEFT JOIN wikidot_user wu \
+               ON wu.user_id = pr.user_id AND wu.is_deleted = FALSE \
+             LEFT JOIN \"user\" local_user \
+               ON local_user.user_id = pr.user_id \
+              AND local_user.deleted_at IS NULL \
+             WHERE pr.site_id = $1 AND pr.revision_id = ANY($2::BIGINT[])",
+                [
+                    Value::from(site_id),
+                    Value::Array(
+                        ArrayType::BigInt,
+                        Some(Box::new(
+                            page_ids.into_iter().map(Value::from).collect::<Vec<_>>(),
+                        )),
+                    ),
+                ],
+            ))
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+        for row in found {
+            details.insert((0, row.revision_id), row);
+        }
+    }
+
+    if !file_ids.is_empty() {
+        let found = SiteChangesRevisionRow::find_by_statement(Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            "SELECT fr.revision_id, FALSE AS is_new_page, TRUE AS is_file, fr.created_at, \
+                    fr.revision_number, pc.slug AS category_slug, current_pr.slug, \
+                    current_pr.title, fr.changes, fr.comments, \
+                    fr.user_id, wu.name AS wikidot_user_name, \
+                    wu.slug AS wikidot_user_slug, \
+                    local_user.name AS local_user_name \
+             FROM file_revision fr \
+             JOIN page p ON p.page_id = fr.page_id \
+                        AND p.site_id = fr.site_id \
+                        AND p.deleted_at IS NULL \
+             JOIN page_revision current_pr \
+               ON current_pr.revision_id = p.latest_revision_id \
+             JOIN page_category pc ON pc.category_id = p.page_category_id \
+             LEFT JOIN wikidot_user wu \
+               ON wu.user_id = fr.user_id AND wu.is_deleted = FALSE \
+             LEFT JOIN \"user\" local_user \
+               ON local_user.user_id = fr.user_id \
+              AND local_user.deleted_at IS NULL \
+             WHERE fr.site_id = $1 AND fr.revision_id = ANY($2::BIGINT[])",
+            [
+                Value::from(site_id),
+                Value::Array(
+                    ArrayType::BigInt,
+                    Some(Box::new(file_ids.into_iter().map(Value::from).collect::<Vec<_>>())),
+                ),
+            ],
+        ))
+        .all(txn)
+        .await
+        .or_raise(make_error)?;
+        for row in found {
+            details.insert((1, row.revision_id), row);
+        }
+    }
+
+    let mut output = Vec::with_capacity(rows.len());
+    for row in rows {
+        output.push(
+            details
+                .get(&(row.activity_kind, row.revision_id))
+                .cloned()
+                .ok_or_else(make_error)
+                .or_raise(make_error)?,
+        );
+    }
+    Ok(output)
 }
 
 async fn load_site_changes_categories(
@@ -796,14 +902,11 @@ mod tests {
             is_file,
             created_at: OffsetDateTime::UNIX_EPOCH,
             revision_number: 1,
-            page_id: 2,
-            page_category_id: 3,
             category_slug: "_default".to_owned(),
             slug: "page".to_owned(),
             title: "Page".to_owned(),
             changes: changes.iter().map(|change| (*change).to_owned()).collect(),
             comments: String::new(),
-            hidden: Vec::new(),
             user_id: 4,
             wikidot_user_name: None,
             wikidot_user_slug: None,
@@ -1209,14 +1312,11 @@ mod tests {
                 )
                 .expect("test timestamp"),
                 revision_number: 1,
-                page_id: 7,
-                page_category_id: 3,
                 category_slug: "_default".to_owned(),
                 slug: "page".to_owned(),
                 title: "Page".to_owned(),
                 changes: vec!["wikitext".to_owned()],
                 comments: String::new(),
-                hidden: Vec::new(),
                 user_id: 4,
                 wikidot_user_name: None,
                 wikidot_user_slug: None,
@@ -1261,6 +1361,95 @@ mod tests {
                 assert!(previous_last < window[0].sort_key());
             }
             previous_last = window.last().map(|key| key.sort_key());
+        }
+    }
+
+    fn fetch_branch_limited(keys: &[TestKey], page: u32, perpage: usize) -> Vec<TestKey> {
+        let page_start = (page as usize - 1) * perpage;
+        if page_start >= SITE_CHANGES_MAX_RAW_SCAN {
+            return Vec::new();
+        }
+        let visible_row_target =
+            ((page as usize + 2) * perpage + 1).min(SITE_CHANGES_MAX_RAW_SCAN);
+        let mut raw_scanned = 0usize;
+        let mut cursor: Option<TestKey> = None;
+        let mut visible = Vec::new();
+        while visible.len() < visible_row_target
+            && raw_scanned < SITE_CHANGES_MAX_RAW_SCAN
+        {
+            let batch_size =
+                site_changes_batch_size(visible_row_target - visible.len(), raw_scanned);
+            let seek_cursor = cursor.map(|key| SiteChangesCursor {
+                created_at: OffsetDateTime::from_unix_timestamp(
+                    key.created_at / 1_000_000,
+                )
+                .expect("test timestamp"),
+                activity_kind: key.activity_kind,
+                revision_id: key.revision_id,
+            });
+            let (page_seek, file_seek) = site_changes_seeks(seek_cursor);
+            let page_branch = keys
+                .iter()
+                .copied()
+                .filter(|key| {
+                    key.activity_kind == 0
+                        && cursor
+                            .is_none_or(|cursor| seek_matches(page_seek, key, &cursor))
+                })
+                .take(batch_size);
+            let file_branch = keys
+                .iter()
+                .copied()
+                .filter(|key| {
+                    key.activity_kind == 1
+                        && cursor
+                            .is_none_or(|cursor| seek_matches(file_seek, key, &cursor))
+                })
+                .take(batch_size);
+            let mut batch = page_branch.chain(file_branch).collect::<Vec<_>>();
+            batch.sort_by_key(|key| key.sort_key());
+            batch.truncate(batch_size);
+            cursor = batch.last().copied();
+            raw_scanned += batch.len();
+            for key in &batch {
+                if !hidden(key) {
+                    visible.push(*key);
+                }
+                if visible.len() == visible_row_target {
+                    break;
+                }
+            }
+            if batch.len() < batch_size {
+                break;
+            }
+        }
+        visible.into_iter().skip(page_start).take(perpage).collect()
+    }
+
+    #[test]
+    fn site_changes_branch_limited_scan_pins_page_1_and_101_rows_and_body() {
+        let all = activity_dataset(4362, false);
+        let files = all
+            .iter()
+            .copied()
+            .filter(|key| key.activity_kind == 1)
+            .collect::<Vec<_>>();
+        let source = all
+            .iter()
+            .copied()
+            .filter(|key| key.activity_kind == 0)
+            .collect::<Vec<_>>();
+        for (label, keys) in [("all", &all), ("files", &files), ("source", &source)] {
+            for page in [1u32, 101] {
+                let expected = fetch_offset(keys, page, 10);
+                let actual = fetch_branch_limited(keys, page, 10);
+                assert_eq!(actual, expected, "{label} page {page} rows");
+                assert_eq!(
+                    render_revisions(actual),
+                    render_revisions(expected),
+                    "{label} page {page} body",
+                );
+            }
         }
     }
 }
