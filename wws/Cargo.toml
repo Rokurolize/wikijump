@@ -43,7 +43,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [build-dependencies]
-built = { version = "0.8" }
+built = { version = "0.9" }
 
 [dev-dependencies]
 jsonrpsee-types = "0.26"
