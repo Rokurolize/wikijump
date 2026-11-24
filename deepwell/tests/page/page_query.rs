@@ -2803,3 +2803,133 @@ async fn created_by_author_query_scopes_first_revision_authors_to_the_queried_si
         "site-local authorship must still match exactly the local pages",
     );
 }
+
+async fn excluded_tag_query_results(
+    runner: &TestRunner,
+    site_id: i64,
+    marker: &'static [Cow<'static, str>],
+    none_present: &[Cow<'_, str>],
+) -> (Vec<String>, Option<usize>) {
+    let query = PageQuery {
+        current_page_id: 0,
+        current_site_id: site_id,
+        queried_site_id: Some(site_id),
+        page_type: PageTypeSelector::All,
+        categories: CategoriesSelector {
+            included_categories: IncludedCategories::All,
+            excluded_categories: &[],
+        },
+        tags: TagCondition {
+            any_present: &[],
+            all_present: marker,
+            none_present,
+            untagged: false,
+        },
+        page_parent: PageParentSelector::All,
+        contains_outgoing_links: &[],
+        creation_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        update_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        author: AuthorSelector::All,
+        score: &[],
+        votes: &[],
+        offset: 0,
+        name: None,
+        slug: None,
+        slugs: &[],
+        data_form_fields: &[],
+        order: None,
+        candidate_limit: None,
+        pagination: PaginationSelector {
+            limit: Some(100),
+            ..Default::default()
+        },
+        fields: FoundPageFields {
+            slug: true,
+            ..Default::default()
+        },
+    };
+    let found = PageQueryService::find(runner.context(), query.clone())
+        .await
+        .expect("excluded-tag query should succeed");
+    let mut slugs = found
+        .pages
+        .into_iter()
+        .map(|row| row.slug.expect("slug field should be requested"))
+        .collect::<Vec<_>>();
+    slugs.sort();
+    let counted = PageQueryService::count_with_metadata(runner.context(), query)
+        .await
+        .expect("excluded-tag count should succeed");
+    (slugs, counted.metadata.candidate_count)
+}
+
+#[tokio::test]
+async fn excluded_tag_queries_keep_identical_rows_and_totals_at_k1024() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    const MARKER: &[Cow<'static, str>] =
+        &[Cow::Borrowed("verification-excluded-tags-marker")];
+    const HIT: &str = "verification-excluded-tags-hit";
+
+    let keep_a = "verification-excluded-tags-keep-a";
+    let drop_slug = "verification-excluded-tags-drop";
+    let keep_b = "verification-excluded-tags-keep-b";
+    for (slug, tags) in [
+        (keep_a, vec![MARKER[0].as_ref()]),
+        (drop_slug, vec![MARKER[0].as_ref(), HIT]),
+        (keep_b, vec![MARKER[0].as_ref()]),
+    ] {
+        let revision =
+            create_listpages_test_page(&mut runner, site_id, slug, slug, "marker body")
+                .await;
+        set_listpages_test_tags(&mut runner, site_id, slug, revision, &tags).await;
+    }
+
+    let mut expected_all =
+        vec![keep_a.to_owned(), drop_slug.to_owned(), keep_b.to_owned()];
+    expected_all.sort();
+    let mut expected_keep = vec![keep_a.to_owned(), keep_b.to_owned()];
+    expected_keep.sort();
+
+    let none: Vec<Cow<'static, str>> = Vec::new();
+    let one_miss: Vec<Cow<'static, str>> = vec![Cow::Borrowed("zzqf0000")];
+    let one_hit: Vec<Cow<'static, str>> = vec![Cow::Borrowed(HIT)];
+    let k1024_miss = (0..1024)
+        .map(|i| Cow::Owned(format!("zzqf{i:04}")))
+        .collect::<Vec<Cow<'static, str>>>();
+    let mut k1024_hit = k1024_miss.clone();
+    k1024_hit[512] = Cow::Owned(HIT.to_owned());
+    k1024_hit[900] = Cow::Owned(HIT.to_owned());
+
+    assert_eq!(
+        excluded_tag_query_results(&runner, site_id, MARKER, &none).await,
+        (expected_all.clone(), Some(3)),
+        "K=0 baseline should return all three tagged pages",
+    );
+    assert_eq!(
+        excluded_tag_query_results(&runner, site_id, MARKER, &one_miss).await,
+        (expected_all.clone(), Some(3)),
+        "K=1 non-matching token should match the K=0 baseline",
+    );
+    assert_eq!(
+        excluded_tag_query_results(&runner, site_id, MARKER, &one_hit).await,
+        (expected_keep.clone(), Some(2)),
+        "K=1 matching token should exclude only the tagged page",
+    );
+    assert_eq!(
+        excluded_tag_query_results(&runner, site_id, MARKER, &k1024_miss).await,
+        (expected_all, Some(3)),
+        "K=1024 non-matching tokens should match the K=0 baseline",
+    );
+    assert_eq!(
+        excluded_tag_query_results(&runner, site_id, MARKER, &k1024_hit).await,
+        (expected_keep.clone(), Some(2)),
+        "K=1024 with a matching token should match the K=1 baseline",
+    );
+}
