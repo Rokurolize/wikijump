@@ -2932,7 +2932,7 @@ async fn excluded_tag_queries_keep_identical_rows_and_totals_at_k1024() {
         (expected_keep.clone(), Some(2)),
         "K=1024 with a matching token should match the K=1 baseline",
     );
-||||||| parent of df7ece280f (perf(page-query): compute added scalar predicates in one scan)
+}
 #[tokio::test]
 async fn page_query_two_scalar_predicates_preserve_rows_and_totals() {
     const PREFIX: &str = "fixture-two-scalar-predicates";
