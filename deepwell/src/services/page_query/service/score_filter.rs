@@ -292,7 +292,7 @@ fn score_comparison_sql(
     }
 }
 
-fn score_selector_value(selector: &ScoreSelector) -> Value {
+pub(super) fn score_selector_value(selector: &ScoreSelector) -> Value {
     match selector.score {
         ScoreValue::Integer(value) => Value::BigInt(Some(value)),
         ScoreValue::Float(value) => Value::Double(Some(value)),

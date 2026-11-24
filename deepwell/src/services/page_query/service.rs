@@ -50,6 +50,7 @@ use std::collections::{BTreeMap, HashSet};
 
 mod filtering;
 mod ordering;
+mod predicate_scan;
 mod projection;
 mod relational_filtering;
 mod score_filter;
@@ -70,6 +71,8 @@ use self::ordering::{
     load_page_ordering_identities, load_page_ordering_titles,
     needs_effective_revision_projection, project_effective_revision_count, score_to_f32,
 };
+
+use self::predicate_scan::{apply_combined_predicates, combined_predicates_applicable};
 
 use self::projection::{
     PageQueryProjection, PageQuerySelectedPage, current_parent_ids,
@@ -386,6 +389,9 @@ impl PageQueryService {
         }
         let votes = votes.to_vec();
 
+        let use_combined_predicates =
+            combined_predicates_applicable(&score, &votes, &author);
+
         let txn = ctx.transaction();
         let score_and_votes_empty = score.is_empty() && votes.is_empty();
         let disable_nestloop = nestloop_guard_applies(&page_parent, &score);
@@ -511,7 +517,9 @@ impl PageQueryService {
             }
         }
 
-        if let Some(author_condition) = author_condition(author, queried_site_id) {
+        if !use_combined_predicates
+            && let Some(author_condition) = author_condition(author, queried_site_id)
+        {
             condition = condition.add(author_condition);
         }
         if let Some(outgoing_link_condition) =
@@ -530,7 +538,7 @@ impl PageQueryService {
             page::Column::UpdatedAt,
             update_date,
         ));
-        if !votes.is_empty() {
+        if !use_combined_predicates && !votes.is_empty() {
             condition = condition.add(vote_selectors_condition(&votes));
         }
 
@@ -607,15 +615,20 @@ impl PageQueryService {
             }
         }
 
-        query = apply_score_filters(
-            txn,
-            query,
-            queried_site_id,
-            &score,
-            score_filter_cache,
-            score_filter_session,
-        )
-        .await?;
+        query = if use_combined_predicates {
+            apply_combined_predicates(txn, query, queried_site_id, &score, &votes, author)
+                .await?
+        } else {
+            apply_score_filters(
+                txn,
+                query,
+                queried_site_id,
+                &score,
+                score_filter_cache,
+                score_filter_session,
+            )
+            .await?
+        };
 
         let projects_effective_revision_count = mode == PageQueryBuildMode::Find
             && needs_effective_revision_projection(&fields, &order);
