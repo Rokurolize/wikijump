@@ -37,7 +37,6 @@ use time::OffsetDateTime;
 const WIKIDOT_RSS_ITEM_LIMIT: u64 = 20;
 const MAX_WIKIDOT_RSS_ITEM_LIMIT: u64 = 1_000;
 const MAX_WIKIDOT_RSS_SELECTOR_BYTES: usize = 8 * 1024;
-const MAX_WIKIDOT_RSS_SELECTOR_VALUES: usize = 100;
 
 impl RenderService {
     pub async fn render_wikidot_list_pages_feed(
@@ -122,7 +121,7 @@ impl RenderService {
         let mut categories = Vec::new();
         let mut excluded_categories = Vec::new();
         let category_all = if let Some(category) = category.as_deref() {
-            let values = bounded_feed_values(category)?;
+            let values = split_list_pages_values(category);
             let mut saw_all = values.is_empty();
             for value in values {
                 if value == "*" {
@@ -154,7 +153,7 @@ impl RenderService {
             }
         };
         if let Some(tags) = tags.as_deref() {
-            for value in bounded_feed_values(tags)? {
+            for value in split_list_pages_values(tags) {
                 match value.as_str() {
                     "-" => untagged = true,
                     "=" | "==" => empty_result = true,
@@ -409,18 +408,6 @@ fn parse_feed_count(
             .parse::<u64>()
             .map_err(|_| wikidot_feed_argument_error(error_message)),
     }
-}
-
-fn bounded_feed_values(value: &str) -> Result<Vec<String>> {
-    let values = split_list_pages_values(value);
-    if values.len() > MAX_WIKIDOT_RSS_SELECTOR_VALUES {
-        return Err(Error::new(
-            "Wikidot ListPages feed selector has too many values",
-            ErrorType::BadRequest,
-        )
-        .into());
-    }
-    Ok(values)
 }
 
 fn wikidot_feed_rating_is_valid(value: &str) -> bool {

@@ -7651,6 +7651,106 @@ async fn wikidot_listpages_feed_queries_newest_viewable_pages() {
 }
 
 #[tokio::test]
+async fn wikidot_listpages_feed_handles_more_than_one_hundred_selector_values() {
+    const TARGET_SLUG: &str = "fixture-listpages-feed-selector-cap-target";
+    const TAG: &str = "verification-listpages-feed-selector-cap";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Selector cap feed target",
+        "Selector cap feed body.",
+    )
+    .await;
+    set_listpages_test_tags(&mut runner, site_id, TARGET_SLUG, revision, &[TAG]).await;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+
+    let honest_category = run_endpoint!(
+        runner,
+        wikidot_list_pages_feed,
+        json!({"site_id": site_id, "category": "_default"}),
+    );
+    let honest_tags = run_endpoint!(
+        runner,
+        wikidot_list_pages_feed,
+        json!({"site_id": site_id, "tags": format!("+{TAG}")}),
+    );
+    assert!(!honest_category.items.is_empty());
+    assert!(!honest_tags.items.is_empty());
+
+    let fingerprint =
+        |output: &deepwell::services::render::WikidotListPagesFeedOutput| {
+            output
+                .items
+                .iter()
+                .map(|item| {
+                    (
+                        item.slug.clone(),
+                        item.title.clone(),
+                        item.created_at,
+                        item.body_html.clone(),
+                        item.created_by_html
+                            .split("&amp;amp;timestamp=")
+                            .next()
+                            .unwrap_or("")
+                            .to_owned(),
+                    )
+                })
+                .collect::<Vec<_>>()
+        };
+
+    for count in [99, 100, 101, 102] {
+        let mut category_values = vec!["_default".to_owned()];
+        category_values.extend((1..count).map(|index| format!("zzNoMatchCat{index:04}")));
+        let many_categories = run_endpoint!(
+            runner,
+            wikidot_list_pages_feed,
+            json!({"site_id": site_id, "category": category_values.join(",")}),
+        );
+        assert_eq!(
+            fingerprint(&many_categories),
+            fingerprint(&honest_category),
+            "category with {count} selector values must match the honest spelling",
+        );
+
+        let tag_values = (1..=count).map(|_| format!("+{TAG}")).collect::<Vec<_>>();
+        let many_tags = run_endpoint!(
+            runner,
+            wikidot_list_pages_feed,
+            json!({"site_id": site_id, "tags": tag_values.join(",")}),
+        );
+        assert_eq!(
+            fingerprint(&many_tags),
+            fingerprint(&honest_tags),
+            "tags with {count} selector values must match the honest spelling",
+        );
+    }
+
+    let no_matches = (1..=101)
+        .map(|index| format!("zzNoMatchTag{index:04}"))
+        .collect::<Vec<_>>()
+        .join(",");
+    let empty = run_endpoint!(
+        runner,
+        wikidot_list_pages_feed,
+        json!({"site_id": site_id, "tags": no_matches}),
+    );
+    assert!(empty.items.is_empty());
+}
+
+#[tokio::test]
 async fn wikidot_listpages_feed_skips_imported_pages_without_revisions() {
     const IMPORT_RUN_ID: i64 = 944_210;
     const CATEGORY: &str = "fixture-listpages-feed-incomplete";
