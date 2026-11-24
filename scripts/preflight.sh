@@ -23,8 +23,11 @@
 #                   wall-clock deadlines plus the compile-only lint groups,
 #                   then the Deepwell tests beside the small Rust groups.
 #                   Checks within a group stay in order, except the groups
-#                   that opt into run_checks_concurrent; each Rust group
-#                   builds in its own target directory.
+#                   that opt into run_checks_concurrent; the WWS and locales
+#                   groups build in their own target directories under
+#                   target/preflight, and the Deepwell groups share the
+#                   canonical target (see
+#                   docs/development/cargo-target-policy.md).
 #   --list          Print the selected groups and the checks, then exit.
 #
 # Exit code is non-zero if any check fails.
@@ -122,7 +125,13 @@ if ! [[ "${JOBS}" =~ ^[0-9]+$ ]]; then
   exit 2
 fi
 
-PREFLIGHT_TARGET_ROOT="${PREFLIGHT_TARGET_ROOT:-${XDG_STATE_HOME:-${HOME}/.local/state}/wikijump/preflight-target-$(printf '%s' "${REPO_ROOT}" | sha256sum | cut -c1-12)}"
+PREFLIGHT_TARGET_ROOT="${PREFLIGHT_TARGET_ROOT:-${REPO_ROOT}/target/preflight}"
+# Preflight is a one-shot verification build: incremental state is never
+# reused across worktrees, it is the largest part of a target directory, and
+# sccache does not cache incremental invocations. CI sets the same
+# (.github/workflows/consolidated-validation.yml). Interactive development
+# outside preflight keeps the caller's setting.
+export CARGO_INCREMENTAL="${CARGO_INCREMENTAL:-0}"
 PREFLIGHT_PNPM_MARKER_ROOT="${PREFLIGHT_PNPM_MARKER_ROOT:-${REPO_ROOT}}"
 
 ensure_pnpm_deps() {
@@ -143,6 +152,22 @@ if [[ "${LIST}" != true ]]; then
   if group_selected deepwell && ! command -v sqlx >/dev/null 2>&1; then
     echo "preflight: sqlx not found on PATH; the Deepwell test stack runs sqlx migrate — run from a login shell or add \$HOME/.cargo/bin to PATH" >&2
     exit 2
+  fi
+  # An out-of-tree PREFLIGHT_TARGET_ROOT (an explicit override) records which
+  # checkout owns it, so a reaper can tell a live root from an orphaned one.
+  case "${PREFLIGHT_TARGET_ROOT}" in
+    "${REPO_ROOT}"/*) ;;
+    *) mkdir -p "${PREFLIGHT_TARGET_ROOT}" && printf '%s\n' "${REPO_ROOT}" > "${PREFLIGHT_TARGET_ROOT}/.repo-root" ;;
+  esac
+  # Disk admission: a --final run writes tens of GiB of build output. Refuse
+  # to start on a nearly full volume instead of dying mid-write.
+  PREFLIGHT_MIN_FREE_GIB="${PREFLIGHT_MIN_FREE_GIB:-60}"
+  if [[ "${PREFLIGHT_MIN_FREE_GIB}" =~ ^[0-9]+$ ]] && [[ "${PREFLIGHT_MIN_FREE_GIB}" -gt 0 ]]; then
+    FREE_KIB="$(df -Pk "${REPO_ROOT}" | awk 'NR==2 {print $4}')"
+    if [[ "${FREE_KIB}" =~ ^[0-9]+$ ]] && [[ "${FREE_KIB}" -lt $((PREFLIGHT_MIN_FREE_GIB * 1024 * 1024)) ]]; then
+      echo "preflight: refusing to start: only $((FREE_KIB / 1024 / 1024)) GiB free on the volume holding ${REPO_ROOT} (floor ${PREFLIGHT_MIN_FREE_GIB} GiB). Free disk space first, or set PREFLIGHT_MIN_FREE_GIB=0 to override." >&2
+      exit 2
+    fi
   fi
 fi
 
@@ -246,9 +271,10 @@ group_verification() {
 }
 
 group_deepwell_lint() {
-  # Clippy beside the test build needs its own target directory: cargo locks
-  # a target directory, so a shared one would serialize the two.
-  if [[ "${JOBS}" != 1 ]]; then export CARGO_TARGET_DIR="${PREFLIGHT_TARGET_ROOT}/deepwell-lint"; fi
+  # The lint group runs in wave 1 and the Deepwell test group in wave 2, so
+  # the two never overlap: both use the canonical target directory, and the
+  # test build reuses the lint build's artifacts instead of duplicating the
+  # whole Deepwell graph in a second target directory.
   if group_selected deepwell; then
     run "deepwell fmt" cargo fmt --manifest-path deepwell/Cargo.toml --check
     if [[ "${MODE}" == "final" ]]; then
@@ -259,10 +285,10 @@ group_deepwell_lint() {
 }
 
 group_deepwell() {
-  # Beside the lint group, the test build needs its own target directory:
-  # cargo locks a target directory, so a shared one would serialize the
-  # two. The integration runner inherits CARGO_TARGET_DIR from here.
-  if [[ "${JOBS}" != 1 ]]; then export CARGO_TARGET_DIR="${PREFLIGHT_TARGET_ROOT}/deepwell-test"; fi
+  # Wave 2: the lint group (wave 1) has finished, so the canonical target
+  # directory is free, and the integration runner inherits it from here.
+  # The WWS and locales groups run beside this one and keep their own
+  # target directories under PREFLIGHT_TARGET_ROOT.
   if group_selected deepwell && [[ "${MODE}" == "final" ]]; then
     # The integration runner builds with --offline, so the complete
     # lockfile graph (including crates only an --all-features metadata
