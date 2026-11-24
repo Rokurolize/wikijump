@@ -141,11 +141,11 @@ pub(super) async fn page_parent_condition(
 
 fn first_revision_author_page_ids_sql(placeholders: &str, site_id: i64) -> String {
     format!(
-        "SELECT pr.page_id FROM page_revision pr WHERE pr.user_id IN ({placeholders}) \
-         AND pr.site_id = {site_id} \
-         AND pr.revision_id = (SELECT pr2.revision_id FROM page_revision pr2 \
-         WHERE pr2.page_id = pr.page_id \
-         ORDER BY pr2.revision_number ASC, pr2.revision_id ASC LIMIT 1)"
+        "SELECT first_author.page_id FROM (\
+             SELECT DISTINCT ON (pr.page_id) pr.page_id, pr.user_id \
+             FROM page_revision pr WHERE pr.site_id = {site_id} \
+             ORDER BY pr.page_id, pr.revision_number ASC, pr.revision_id ASC\
+         ) first_author WHERE first_author.user_id IN ({placeholders})"
     )
 }
 
