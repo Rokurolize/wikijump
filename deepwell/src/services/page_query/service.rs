@@ -134,6 +134,7 @@ struct BuiltPageQuery<'a> {
     query: sea_orm::Select<page::Entity>,
     fields: FoundPageFields,
     order: OrderBySelector,
+    site_id: i64,
     offset: u32,
     pagination: PaginationSelector,
     data_form_fields: &'a [DataFormSelector<'a>],
@@ -552,7 +553,10 @@ impl PageQueryService {
         let needs_revision_join = needs_tag_filter
             || matches!(
                 &order.property,
-                OrderProperty::Title | OrderProperty::AltTitle | OrderProperty::Size
+                OrderProperty::Title
+                    | OrderProperty::AltTitle
+                    | OrderProperty::Size
+                    | OrderProperty::Score
             );
         if needs_tag_filter {
             query = query.join(JoinType::Join, page::Relation::PageRevision.def());
@@ -632,16 +636,16 @@ impl PageQueryService {
 
         let projects_effective_revision_count = mode == PageQueryBuildMode::Find
             && needs_effective_revision_projection(&fields, &order);
-        let score_order = matches!(&order.property, OrderProperty::Score);
         let data_form_order =
             matches!(&order.property, OrderProperty::DataFormFieldName { .. });
         let ordering_deferred_to_rust =
-            mode == PageQueryBuildMode::Find && (score_order || data_form_order);
+            mode == PageQueryBuildMode::Find && data_form_order;
 
         Ok(BuiltPageQuery {
             query,
             fields,
             order,
+            site_id: queried_site_id,
             offset,
             pagination,
             data_form_fields,
@@ -668,6 +672,7 @@ impl PageQueryService {
             mut query,
             fields,
             order,
+            site_id,
             offset,
             pagination,
             data_form_fields,
@@ -688,7 +693,7 @@ impl PageQueryService {
         }
 
         if apply_order {
-            query = apply_sql_ordering(query, &order, needs_tag_filter);
+            query = apply_sql_ordering(query, &order, needs_tag_filter, site_id);
         }
 
         let defer_offset_limit = ordering_deferred_to_rust

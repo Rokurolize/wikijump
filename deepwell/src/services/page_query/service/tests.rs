@@ -268,7 +268,7 @@ fn updated_at_ordering_uses_creation_time_for_never_edited_pages() {
             property: OrderProperty::UpdatedAt,
             ascending,
         };
-        let sql = apply_sql_ordering(page::Entity::find(), &order, false)
+        let sql = apply_sql_ordering(page::Entity::find(), &order, false, 6000402)
             .build(DatabaseBackend::Postgres)
             .sql;
         assert!(
@@ -276,6 +276,62 @@ fn updated_at_ordering_uses_creation_time_for_never_edited_pages() {
                 "COALESCE(page.updated_at, page.created_at) {direction}"
             )),
             "{sql}",
+        );
+    }
+}
+
+#[test]
+fn comments_order_uses_one_grouped_count_join() {
+    let order = OrderBySelector {
+        property: OrderProperty::Comments,
+        ascending: false,
+    };
+    let sql = apply_sql_ordering(page::Entity::find(), &order, false, 6000402)
+        .build(DatabaseBackend::Postgres)
+        .sql;
+    assert_eq!(sql.matches("\"forum_post\"").count(), 1, "{sql}");
+    assert_eq!(sql.matches("\"forum_thread\"").count(), 1, "{sql}");
+    assert!(sql.contains("GROUP BY"), "{sql}");
+    assert!(
+        sql.contains("COALESCE(page_query_comment_count.comment_count, 0) DESC"),
+        "{sql}",
+    );
+}
+
+#[test]
+fn score_order_keeps_deferred_tie_break_ordering_in_sql() {
+    for (ascending, direction) in [(false, "DESC"), (true, "ASC")] {
+        let order = OrderBySelector {
+            property: OrderProperty::Score,
+            ascending,
+        };
+        let sql = apply_sql_ordering(page::Entity::find(), &order, false, 6000402)
+            .build(DatabaseBackend::Postgres)
+            .sql;
+        assert!(
+            sql.contains(&format!(
+                "COALESCE(page_query_score.effective_score, 0) {direction}"
+            )),
+            "{sql}",
+        );
+        assert!(
+            sql.contains(
+                "COALESCE(translate(page_revision.title, 'A-Z', 'a-z'), '') ASC"
+            ),
+            "{sql}",
+        );
+        assert!(
+            sql.contains("COALESCE(page_revision.title, '') ASC"),
+            "{sql}"
+        );
+        assert!(
+            sql.contains(&format!("\"page\".\"page_id\" {direction}")),
+            "{sql}"
+        );
+        assert!(sql.contains("\"scored_page\".\"site_id\""), "{sql}");
+        assert!(
+            sql.contains("FROM \"page\" LEFT JOIN (SELECT \"scored_page\".\"page_id\""),
+            "{sql}"
         );
     }
 }

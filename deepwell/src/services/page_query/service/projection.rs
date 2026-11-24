@@ -81,17 +81,19 @@ pub(super) async fn project_page_query_results(
 
     let mut page_ids = pages.iter().map(|page| page.page_id).collect::<Vec<_>>();
     let score_ordering = matches!(order.property, OrderProperty::Score);
-    let score_by_page_id: BTreeMap<i64, f32> =
-        if (fields.score || score_ordering) && !page_ids.is_empty() {
-            ScoreService::scores_bulk(ctx, &page_ids)
-                .await
-                .or_raise(make_error)?
-                .into_iter()
-                .map(|(page_id, score)| (page_id, score_to_f32(score)))
-                .collect()
-        } else {
-            BTreeMap::new()
-        };
+    let score_by_page_id: BTreeMap<i64, f32> = if (fields.score
+        || (score_ordering && ordering_deferred_to_rust))
+        && !page_ids.is_empty()
+    {
+        ScoreService::scores_bulk(ctx, &page_ids)
+            .await
+            .or_raise(make_error)?
+            .into_iter()
+            .map(|(page_id, score)| (page_id, score_to_f32(score)))
+            .collect()
+    } else {
+        BTreeMap::new()
+    };
     let ordering_identity_by_page_id = if ordering_deferred_to_rust {
         load_page_ordering_identities(ctx, &page_ids)
             .await
@@ -101,7 +103,7 @@ pub(super) async fn project_page_query_results(
     };
     // Live Wikidot resolves equal scores by title ascending, regardless of
     // whether the score direction is ascending or descending.
-    let ordering_title_by_page_id = if score_ordering {
+    let ordering_title_by_page_id = if score_ordering && ordering_deferred_to_rust {
         load_page_ordering_titles(ctx, &pages)
             .await
             .or_raise(make_error)?
