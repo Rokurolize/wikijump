@@ -2932,4 +2932,193 @@ async fn excluded_tag_queries_keep_identical_rows_and_totals_at_k1024() {
         (expected_keep.clone(), Some(2)),
         "K=1024 with a matching token should match the K=1 baseline",
     );
+||||||| parent of df7ece280f (perf(page-query): compute added scalar predicates in one scan)
+#[tokio::test]
+async fn page_query_two_scalar_predicates_preserve_rows_and_totals() {
+    const PREFIX: &str = "fixture-two-scalar-predicates";
+    const A: &str = "fixture-two-scalar-predicates-a";
+    const B: &str = "fixture-two-scalar-predicates-b";
+    const C: &str = "fixture-two-scalar-predicates-c";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (slug, title) in [
+        (A, "Two Scalar Predicates A"),
+        (B, "Two Scalar Predicates B"),
+        (C, "Two Scalar Predicates C"),
+    ] {
+        create_listpages_test_page(
+            &mut runner,
+            site_id,
+            slug,
+            title,
+            "Two scalar predicate fixture.",
+        )
+        .await;
+    }
+
+    let a_id = listpages_test_page_id(&runner, site_id, A).await;
+    let b_id = listpages_test_page_id(&runner, site_id, B).await;
+    let c_id = listpages_test_page_id(&runner, site_id, C).await;
+    set_stored_point_vote(&runner, a_id, 5).await;
+    set_stored_point_vote(&runner, b_id, 5).await;
+    set_stored_point_vote(&runner, c_id, -5).await;
+
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO page_vote (from_wikidot, page_id, user_id, value) VALUES (false, $1, $2, 3)",
+            [Value::from(b_id), Value::from(SAMPLE_USER_ID)],
+        ))
+        .await
+        .expect("second stored point vote fixture should be inserted");
+    let category_id = PageTable::find_by_id(a_id)
+        .one(transaction)
+        .await
+        .expect("two scalar fixture category lookup should succeed")
+        .expect("two scalar fixture page should exist")
+        .page_category_id;
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO page (site_id, page_category_id, slug) SELECT $1, $2, $3 || '-' || value FROM generate_series(1, 513) AS value",
+            [Value::from(site_id), Value::from(category_id), Value::from(PREFIX.to_owned())],
+        ))
+        .await
+        .expect("site-wide two scalar probe fixtures should be inserted");
+
+    let base_query = PageQuery {
+        current_page_id: 0,
+        current_site_id: site_id,
+        queried_site_id: Some(site_id),
+        page_type: PageTypeSelector::All,
+        categories: CategoriesSelector {
+            included_categories: IncludedCategories::All,
+            excluded_categories: &[],
+        },
+        tags: TagCondition {
+            any_present: &[],
+            all_present: &[],
+            none_present: &[],
+            untagged: false,
+        },
+        page_parent: PageParentSelector::All,
+        contains_outgoing_links: &[],
+        creation_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        update_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        author: AuthorSelector::All,
+        score: &[],
+        votes: &[],
+        offset: 0,
+        name: Some(Cow::Owned(format!("{PREFIX}-*"))),
+        slug: None,
+        slugs: &[],
+        data_form_fields: &[],
+        order: Some(OrderBySelector {
+            property: OrderProperty::PageSlug,
+            ascending: true,
+        }),
+        candidate_limit: None,
+        pagination: PaginationSelector {
+            limit: Some(1_000),
+            ..PaginationSelector::default()
+        },
+        fields: FoundPageFields {
+            slug: true,
+            ..FoundPageFields::default()
+        },
+    };
+
+    let positive_score = [ScoreSelector {
+        score: QueryScoreValue::Integer(0),
+        comparison: ComparisonOperation::GreaterThan,
+    }];
+    let more_than_one_vote = [ScoreSelector {
+        score: QueryScoreValue::Integer(1),
+        comparison: ComparisonOperation::GreaterThan,
+    }];
+    let any_vote = [ScoreSelector {
+        score: QueryScoreValue::Integer(0),
+        comparison: ComparisonOperation::GreaterThan,
+    }];
+    let admin_authors = [ADMIN_USER_ID];
+
+    async fn assert_result(
+        runner: &TestRunner,
+        base: &PageQuery<'_>,
+        score: &[ScoreSelector],
+        votes: &[ScoreSelector],
+        author: AuthorSelector<'_>,
+        expected: &[&str],
+    ) {
+        let mut query = base.clone();
+        query.score = score;
+        query.votes = votes;
+        query.author = author;
+        let result = PageQueryService::find(runner.context(), query)
+            .await
+            .expect("two scalar predicate query should succeed");
+        let slugs = result
+            .pages
+            .iter()
+            .map(|page| page.slug.clone().expect("slug field should be requested"))
+            .collect::<Vec<_>>();
+        assert_eq!(slugs, expected, "combined predicate rows changed");
+        assert_eq!(
+            result.total(),
+            expected.len(),
+            "combined predicate total changed",
+        );
+    }
+
+    assert_result(
+        &runner,
+        &base_query,
+        &positive_score,
+        &any_vote,
+        AuthorSelector::All,
+        &[A, B],
+    )
+    .await;
+    assert_result(
+        &runner,
+        &base_query,
+        &positive_score,
+        &more_than_one_vote,
+        AuthorSelector::All,
+        &[B],
+    )
+    .await;
+    assert_result(
+        &runner,
+        &base_query,
+        &positive_score,
+        &[],
+        AuthorSelector::Any {
+            user_ids: &admin_authors,
+            wikidot_snapshot_names: &[],
+        },
+        &[A, B],
+    )
+    .await;
+    assert_result(
+        &runner,
+        &base_query,
+        &positive_score,
+        &more_than_one_vote,
+        AuthorSelector::Any {
+            user_ids: &admin_authors,
+            wikidot_snapshot_names: &[],
+        },
+        &[B],
+    )
+    .await;
 }

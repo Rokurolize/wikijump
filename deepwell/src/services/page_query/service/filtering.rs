@@ -209,7 +209,7 @@ pub(super) fn date_span_bounds(
     (start, end)
 }
 
-fn vote_selector_value(selector: &ScoreSelector) -> Value {
+pub(super) fn vote_selector_value(selector: &ScoreSelector) -> Value {
     Value::Double(Some(selector.score.to_f64()))
 }
 
