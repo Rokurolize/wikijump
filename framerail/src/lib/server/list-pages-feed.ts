@@ -1,6 +1,7 @@
 const FEED_PATH_PREFIX = "/feed/pages/"
 const MAX_FEED_PATH_BYTES = 64 * 1024
 const MAX_FEED_PATH_PAIRS = 100
+const MAX_FEED_SELECTOR_BYTES = 8 * 1024
 
 const FEED_SELECTOR_KEYS = [
   "pagetype",
@@ -104,6 +105,11 @@ export function parseWikidotListPagesFeedPath(
 export function wikidotListPagesFeedSelectorError(
   selectors: WikidotListPagesFeedSelectors
 ): string | null {
+  for (const value of Object.values(selectors)) {
+    if (new TextEncoder().encode(value).length > MAX_FEED_SELECTOR_BYTES) {
+      return "Wikidot ListPages feed selector is too long (maximum 8192 bytes)."
+    }
+  }
   if (
     selectors.pagetype !== undefined &&
     !["*", "hidden", "normal"].includes(selectors.pagetype)
