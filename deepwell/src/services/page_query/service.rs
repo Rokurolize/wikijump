@@ -44,8 +44,9 @@ use sea_orm::{
 };
 use sea_query::extension::postgres::PgBinOper;
 use sea_query::{Expr, Query, SimpleExpr, Value};
+use std::borrow::Cow;
 use std::cmp::Ordering;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
 mod filtering;
 mod ordering;
@@ -104,6 +105,19 @@ pub struct PageQueryService;
 /// the execution paths is scoped to exactly this pair.
 fn nestloop_guard_applies(parent: &PageParentSelector, score: &[ScoreSelector]) -> bool {
     matches!(parent, PageParentSelector::NoParent) && !score.is_empty()
+}
+
+fn excluded_tags_condition<'a>(no_tags: &[Cow<'a, str>]) -> SimpleExpr {
+    let mut seen = HashSet::new();
+    let mut excluded = Vec::new();
+    for tag in no_tags {
+        if seen.insert(tag.as_ref()) {
+            excluded.push(tag.to_string());
+        }
+    }
+    Expr::col(page_revision::Column::Tags)
+        .binary(PgBinOper::Overlap, Expr::val(excluded))
+        .not()
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -579,12 +593,11 @@ impl PageQueryService {
                 );
             }
 
-            for tag in no_tags {
-                query = query.filter(
-                    Expr::col(page_revision::Column::Tags)
-                        .binary(PgBinOper::Contains, Expr::val(vec![tag.to_string()]))
-                        .not(),
-                );
+            // One overlap negation replaces the conjunction of singleton
+            // containments (all_not_contains_iff_not_overlaps in the
+            // lean-sql-opt proof project); duplicates are dropped first.
+            if !no_tags.is_empty() {
+                query = query.filter(excluded_tags_condition(no_tags));
             }
 
             if untagged {

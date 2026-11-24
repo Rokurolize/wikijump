@@ -1,8 +1,8 @@
 use super::{
     apply_sql_ordering, category_local_wikidot_name_patterns, date_span_bounds,
-    list_pages_deferred_ordering, needs_effective_revision_projection,
-    nestloop_guard_applies, project_effective_revision_count, wikidot_name_condition,
-    wikidot_name_pattern,
+    excluded_tags_condition, list_pages_deferred_ordering,
+    needs_effective_revision_projection, nestloop_guard_applies,
+    project_effective_revision_count, wikidot_name_condition, wikidot_name_pattern,
 };
 use crate::models::page;
 use crate::services::page_query::{
@@ -278,6 +278,44 @@ fn updated_at_ordering_uses_creation_time_for_never_edited_pages() {
             "{sql}",
         );
     }
+}
+
+#[test]
+fn excluded_tags_emit_one_overlap_predicate_at_k1024() {
+    let tags = (0..1024)
+        .map(|i| Cow::Owned(format!("zzqf{i:04}")))
+        .collect::<Vec<_>>();
+    let statement = page::Entity::find()
+        .filter(excluded_tags_condition(&tags))
+        .build(DatabaseBackend::Postgres);
+    assert!(!statement.sql.contains("@>"), "{}", statement.sql);
+    assert_eq!(statement.sql.matches("&&").count(), 1, "{}", statement.sql);
+    assert_eq!(statement.sql.matches("$1").count(), 1, "{}", statement.sql);
+    let values = statement.values.expect("one bound value");
+    assert_eq!(values.0.len(), 1);
+    let Value::Array(_, Some(array)) = &values.0[0] else {
+        panic!("excluded tags should bind as one array");
+    };
+    assert_eq!(array.len(), 1024);
+}
+
+#[test]
+fn excluded_tags_dedup_keeps_one_overlap_binding() {
+    let tags = [
+        Cow::Borrowed("excluded"),
+        Cow::Borrowed("excluded"),
+        Cow::Borrowed("other"),
+        Cow::Borrowed("other"),
+    ];
+    let statement = page::Entity::find()
+        .filter(excluded_tags_condition(&tags))
+        .build(DatabaseBackend::Postgres);
+    assert_eq!(statement.sql.matches("&&").count(), 1, "{}", statement.sql);
+    let values = statement.values.expect("one bound value");
+    let Value::Array(_, Some(array)) = &values.0[0] else {
+        panic!("excluded tags should bind as one array");
+    };
+    assert_eq!(array.len(), 2);
 }
 
 #[test]
