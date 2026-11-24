@@ -43,7 +43,7 @@ jsonrpsee = { version = "0.26", features = ["macros", "server"] }
 tower = "0.5"
 log = "0.4"
 missive = { version = "0.7", features = ["local", "mailjet"] }
-notify = { version = "8", optional = true }
+notify = { version = "9", optional = true }
 paste = "1"
 rand = "0.10"
 quick-xml = "0.42"
