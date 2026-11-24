@@ -10,6 +10,8 @@ removed in teardown); only the Valkey INCR is stubbed.
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import os
 from pathlib import Path
@@ -18,6 +20,7 @@ import sys
 import tempfile
 import time
 import unittest
+from types import SimpleNamespace
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
@@ -381,6 +384,47 @@ class T1ActivationTest(unittest.TestCase):
         self.assertLess(order.index("gateway", restart_at), order.index("canary"))
         self.assertNotIn("restore-pages", order)
         self.assertNotIn("restore-parked", order)
+
+
+class RenderStageFreezeTest(unittest.TestCase):
+    def test_render_stage_passes_the_writer_freeze_flag(self) -> None:
+        captured = {}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root / "evidence" / "render-ahead"
+            output.mkdir(parents=True)
+            (output / "render-ahead-summary.json").write_text(
+                json.dumps({
+                    "status": "pass",
+                    "render_image_id": NEW_IMAGE,
+                    "compiled_generator": TARGET,
+                    "stale_without_valid_ahead": 0,
+                }),
+                encoding="utf-8",
+            )
+            plan = {
+                "render_ahead": True,
+                "rehearse": False,
+                "migration_changes": [],
+                "expected_compiled_generator": TARGET,
+                "stale_pages_before": 5,
+            }
+            built = {"images": {service: NEW_IMAGE for service in promote.SERVICES}}
+
+            def run_logged(args, log, cwd):
+                captured["args"] = args
+                return ""
+
+            with mock.patch.object(promote, "run_logged", side_effect=run_logged), \
+                    mock.patch.object(promote, "apply_live_migrations", return_value={}), \
+                    mock.patch.object(promote, "activate", return_value={"catch_up": {}}), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                promote.finish(
+                    SimpleNamespace(health_timeout_seconds=1), root, root / "home",
+                    root / "compose.yaml", {"wikijump_sha": "1" * 40},
+                    root / "evidence", promote.Stages(), plan, {}, built, {}, {},
+                )
+        self.assertIn("--freeze-writer-during-catch-up", captured["args"])
 
 
 if __name__ == "__main__":
