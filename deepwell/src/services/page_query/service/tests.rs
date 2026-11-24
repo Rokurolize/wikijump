@@ -111,9 +111,10 @@ fn author_selectors_scope_first_revisions_to_the_queried_site() {
         (&not_any, "page.page_id NOT IN ("),
     ] {
         assert!(sql.contains(operator), "{sql}");
-        assert!(sql.contains("pr.user_id IN ($1, $2)"), "{sql}");
+        assert!(sql.contains("DISTINCT ON (pr.page_id)"), "{sql}");
+        assert!(sql.contains("first_author.user_id IN ($1, $2)"), "{sql}");
         assert!(sql.contains("pr.site_id = 6000000"), "{sql}");
-        assert!(sql.contains("WHERE pr2.page_id = pr.page_id"), "{sql}");
+        assert!(!sql.contains("WHERE pr2.page_id = pr.page_id"), "{sql}");
         assert!(!sql.contains("pr.page_id = page.page_id"), "{sql}");
     }
 }

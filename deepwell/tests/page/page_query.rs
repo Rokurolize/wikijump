@@ -2804,6 +2804,94 @@ async fn created_by_author_query_scopes_first_revision_authors_to_the_queried_si
     );
 }
 
+async fn authored_slugs_with_tags(
+    runner: &TestRunner,
+    site_id: i64,
+    all_present: &[Cow<'_, str>],
+    untagged: bool,
+) -> Vec<String> {
+    let found = PageQueryService::find(
+        runner.context(),
+        PageQuery {
+            current_page_id: 0,
+            current_site_id: site_id,
+            queried_site_id: Some(site_id),
+            page_type: PageTypeSelector::All,
+            categories: CategoriesSelector {
+                included_categories: IncludedCategories::All,
+                excluded_categories: &[],
+            },
+            tags: TagCondition {
+                any_present: &[],
+                all_present,
+                none_present: &[],
+                untagged,
+            },
+            page_parent: PageParentSelector::All,
+            contains_outgoing_links: &[],
+            creation_date: DateSelector::FromPresent {
+                start: OffsetDateTime::UNIX_EPOCH,
+            },
+            update_date: DateSelector::FromPresent {
+                start: OffsetDateTime::UNIX_EPOCH,
+            },
+            author: AuthorSelector::Any {
+                user_ids: &[SAMPLE_USER_ID],
+                wikidot_snapshot_names: &[],
+            },
+            score: &[],
+            votes: &[],
+            offset: 0,
+            name: None,
+            slug: None,
+            slugs: &[],
+            data_form_fields: &[],
+            order: Some(OrderBySelector {
+                property: OrderProperty::PageSlug,
+                ascending: true,
+            }),
+            candidate_limit: None,
+            pagination: PaginationSelector {
+                limit: Some(100),
+                ..Default::default()
+            },
+            fields: FoundPageFields {
+                slug: true,
+                ..Default::default()
+            },
+        },
+    )
+    .await
+    .expect("created_by query with companion tag should succeed");
+    found
+        .pages
+        .into_iter()
+        .map(|page| page.slug.expect("slug field should be requested"))
+        .collect::<Vec<_>>()
+}
+
+#[tokio::test]
+async fn created_by_with_no_match_companion_selector_returns_no_pages() {
+    let runner = TestRunner::setup().await;
+    let tag = uuid::Uuid::new_v4().simple().to_string();
+    let site_id = create_author_scope_site(&runner, "cb-nomatch", &tag).await;
+    let slug = format!("author-scope-cb-nomatch-{tag}");
+    create_author_scope_page(&runner, site_id, &slug, SAMPLE_USER_ID).await;
+
+    let no_match: [Cow<'static, str>; 1] =
+        [Cow::Borrowed("zz-no-match-createdby-wave10")];
+    assert_eq!(
+        authored_slugs_with_tags(&runner, site_id, &no_match, false).await,
+        Vec::<String>::new(),
+        "a no-match companion selector must still return no pages under created_by",
+    );
+    assert_eq!(
+        authored_slugs_with_tags(&runner, site_id, &[], true).await,
+        vec![slug],
+        "the same created_by selector must still return its authored page when a companion selector matches",
+    );
+}
+
 async fn excluded_tag_query_results(
     runner: &TestRunner,
     site_id: i64,

@@ -517,11 +517,6 @@ impl PageQueryService {
             }
         }
 
-        if !use_combined_predicates
-            && let Some(author_condition) = author_condition(author, queried_site_id)
-        {
-            condition = condition.add(author_condition);
-        }
         if let Some(outgoing_link_condition) =
             outgoing_link_condition(ctx, queried_site_id, contains_outgoing_links)
                 .await
@@ -612,6 +607,26 @@ impl PageQueryService {
                 query = query.filter(SimpleExpr::Custom(
                     "cardinality(page_revision.tags) = 0".into(),
                 ));
+            }
+        }
+
+        if !use_combined_predicates
+            && let Some(author_condition) = author_condition(author, queried_site_id)
+        {
+            let has_candidates = !query
+                .clone()
+                .select_only()
+                .column(page::Column::PageId)
+                .limit(1)
+                .into_tuple::<i64>()
+                .all(txn)
+                .await
+                .or_raise(make_error)?
+                .is_empty();
+            if has_candidates {
+                query = query.filter(author_condition);
+            } else {
+                query = query.filter(SimpleExpr::Custom("FALSE".into()));
             }
         }
 
