@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
 import json
 from pathlib import Path
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).parents[3]
@@ -778,3 +781,290 @@ class VerifyWithCatchUpTest(unittest.TestCase):
         final = RENDER_AHEAD.verify_with_catch_up(render, "cutoff", digests=digests, readers=[2])
         self.assertEqual(final["stale_without_valid_ahead"], 0)
         self.assertEqual(snapshots, [])
+
+
+CONTAINER = "standing-deepwell"
+
+
+class FreezeDocker:
+    def __init__(self, trace, site=None, *, log_lines=(0, 0), resume_state="false true"):
+        self.trace = trace
+        self.site = site
+        self.calls = []
+        self.log_lines = iter(log_lines)
+        self.resume_state = resume_state
+
+    def run(self, *args):
+        self.calls.append(args)
+        self.trace.append(args)
+        if args[:2] == ("docker", "pause") and self.site is not None:
+            self.site.frozen = True
+        elif args[:2] == ("docker", "unpause") and self.site is not None:
+            self.site.frozen = False
+        elif args[:2] == ("docker", "inspect"):
+            return self.resume_state
+        return ""
+
+    def logs(self, container, since):
+        self.trace.append(("docker", "logs"))
+        return next(self.log_lines, 0)
+
+
+def fake_verifies(stale_values, trace):
+    verifies = iter(stale_values)
+
+    def render(name, cutoff, pages=None, *, serial=False, extended=False, dry_run=False):
+        trace.append(("render", name, dry_run))
+        if dry_run:
+            return {"stale_without_valid_ahead": next(verifies), "compiled_generator": "g"}
+        return {
+            "stale_without_valid_ahead": 0,
+            "compiled_generator": "g",
+            "candidates": len(pages or []),
+            "link_reader_page_ids": [],
+        }
+
+    return render
+
+
+class RacingWriterSite:
+    def __init__(self, trace):
+        self.trace = trace
+        self.frozen = False
+        self.stale = 100
+
+    def render(self, name, cutoff, pages=None, *, serial=False, extended=False, dry_run=False):
+        self.trace.append(("render", name, dry_run))
+        if dry_run:
+            return {"stale_without_valid_ahead": self.stale, "compiled_generator": "g"}
+        if self.frozen:
+            self.stale = 0
+        else:
+            self.stale = max(30, self.stale // 3)
+        return {
+            "stale_without_valid_ahead": 0,
+            "compiled_generator": "g",
+            "candidates": 1,
+            "link_reader_page_ids": [],
+        }
+
+
+class CatchUpFreezeTest(unittest.TestCase):
+    def call(self, action, docker, *, timeout=None):
+        patches = [
+            mock.patch.object(RENDER_AHEAD, "run", side_effect=docker.run),
+            mock.patch.object(RENDER_AHEAD, "container_log_lines", side_effect=docker.logs),
+            mock.patch.object(RENDER_AHEAD, "PAUSE_QUIESCENCE_SAMPLE_SECONDS", 0),
+        ]
+        if timeout is not None:
+            patches.append(
+                mock.patch.object(RENDER_AHEAD, "CATCH_UP_PAUSE_TIMEOUT_SECONDS", timeout)
+            )
+        with contextlib.ExitStack() as stack, contextlib.redirect_stdout(io.StringIO()):
+            for patch in patches:
+                stack.enter_context(patch)
+            return action()
+
+    def assert_resume_checked(self, docker):
+        self.assertIn(("docker", "unpause", CONTAINER), docker.calls)
+        self.assertIn(
+            ("docker", "inspect", "--format",
+             "{{.State.Paused}} {{.State.Running}}", CONTAINER),
+            docker.calls,
+        )
+
+    def test_no_pause_without_the_flag(self) -> None:
+        trace = []
+        docker = FreezeDocker(trace)
+        render = fake_verifies([2, 0], trace)
+        final = self.call(
+            lambda: RENDER_AHEAD.verify_with_catch_up(render, "cutoff"), docker
+        )
+        self.assertEqual(final["stale_without_valid_ahead"], 0)
+        self.assertEqual(docker.calls, [])
+
+    def test_a_clean_first_verify_never_pauses(self) -> None:
+        trace = []
+        docker = FreezeDocker(trace)
+        render = fake_verifies([0], trace)
+        final = self.call(
+            lambda: RENDER_AHEAD.verify_with_catch_up(
+                render, "cutoff", freeze_writer=True, deepwell_container=CONTAINER
+            ),
+            docker,
+        )
+        self.assertEqual(final["stale_without_valid_ahead"], 0)
+        self.assertEqual(docker.calls, [])
+
+    def test_pause_precedes_the_first_catch_up_render_and_resume_is_verified(self) -> None:
+        trace = []
+        docker = FreezeDocker(trace)
+        render = fake_verifies([2, 0], trace)
+        final = self.call(
+            lambda: RENDER_AHEAD.verify_with_catch_up(
+                render, "cutoff", freeze_writer=True, deepwell_container=CONTAINER
+            ),
+            docker,
+        )
+        self.assertEqual(final["stale_without_valid_ahead"], 0)
+        names = [entry[0] for entry in trace]
+        self.assertEqual(names.count("docker"), 5)
+        self.assertLess(names.index("docker"), names.index("render", 1))
+        self.assertEqual(
+            trace[-2:],
+            [("docker", "unpause", CONTAINER),
+             ("docker", "inspect", "--format",
+              "{{.State.Paused}} {{.State.Running}}", CONTAINER)],
+        )
+        self.assert_resume_checked(docker)
+
+    def test_incomplete_rounds_still_resume_and_verify(self) -> None:
+        trace = []
+        docker = FreezeDocker(trace)
+        render = fake_verifies([1, 1, 1, 1], trace)
+        final = self.call(
+            lambda: RENDER_AHEAD.verify_with_catch_up(
+                render, "cutoff", rounds=3,
+                freeze_writer=True, deepwell_container=CONTAINER,
+            ),
+            docker,
+        )
+        self.assertEqual(final["stale_without_valid_ahead"], 1)
+        self.assert_resume_checked(docker)
+
+    def test_an_exception_mid_catch_up_still_resumes_and_verifies(self) -> None:
+        trace = []
+        docker = FreezeDocker(trace)
+        render = fake_verifies([2, 0], trace)
+        original = render
+
+        def failing(name, cutoff, *args, **kwargs):
+            result = original(name, cutoff, *args, **kwargs)
+            if name == "catch-up-1":
+                raise RuntimeError("render exploded")
+            return result
+
+        with self.assertRaisesRegex(RuntimeError, "render exploded"):
+            self.call(
+                lambda: RENDER_AHEAD.verify_with_catch_up(
+                    failing, "cutoff",
+                    freeze_writer=True, deepwell_container=CONTAINER,
+                ),
+                docker,
+            )
+        self.assert_resume_checked(docker)
+
+    def test_unproven_quiescence_resumes_and_fails_closed(self) -> None:
+        trace = []
+        docker = FreezeDocker(trace, log_lines=(4, 5))
+        render = fake_verifies([2, 0], trace)
+        with self.assertRaisesRegex(RuntimeError, "kept logging"):
+            self.call(
+                lambda: RENDER_AHEAD.verify_with_catch_up(
+                    render, "cutoff",
+                    freeze_writer=True, deepwell_container=CONTAINER,
+                ),
+                docker,
+            )
+        self.assert_resume_checked(docker)
+        self.assertNotIn(("render", "catch-up-1", False), trace)
+
+    def test_a_failed_resume_check_fails_the_run(self) -> None:
+        trace = []
+        docker = FreezeDocker(trace, resume_state="true true")
+        render = fake_verifies([2, 0], trace)
+        with self.assertRaisesRegex(RuntimeError, "did not resume"):
+            self.call(
+                lambda: RENDER_AHEAD.verify_with_catch_up(
+                    render, "cutoff",
+                    freeze_writer=True, deepwell_container=CONTAINER,
+                ),
+                docker,
+            )
+        self.assertEqual(trace[-1], ("docker", "inspect", "--format",
+                                     "{{.State.Paused}} {{.State.Running}}", CONTAINER))
+
+    def test_the_pause_bound_resumes_and_fails(self) -> None:
+        trace = []
+        docker = FreezeDocker(trace)
+        render = fake_verifies([2, 0], trace)
+        with self.assertRaisesRegex(RuntimeError, "exceeded 0 seconds"):
+            self.call(
+                lambda: RENDER_AHEAD.verify_with_catch_up(
+                    render, "cutoff",
+                    freeze_writer=True, deepwell_container=CONTAINER,
+                ),
+                docker,
+                timeout=0,
+            )
+        self.assert_resume_checked(docker)
+        self.assertNotIn(("render", "catch-up-1", False), trace)
+
+    def test_link_reader_settle_stays_frozen(self) -> None:
+        trace = []
+        site = RacingWriterSite(trace)
+        site.links = {"1": "a"}
+        reader_rounds = []
+
+        def render(name, cutoff, pages=None, *, serial=False, extended=False, dry_run=False):
+            site.render(name, cutoff, pages, serial=serial, extended=extended, dry_run=dry_run)
+            if dry_run:
+                return {"stale_without_valid_ahead": 1 if name == "verify" else 0,
+                        "compiled_generator": "g"}
+            if name.startswith("catch-up-link-readers"):
+                reader_rounds.append((name, site.frozen))
+                if len(reader_rounds) == 1:
+                    site.links["1"] = "b"
+                return {
+                    "stale_without_valid_ahead": 0, "compiled_generator": "g",
+                    "candidates": len(pages or []), "failed_page_ids": [],
+                    "link_reader_page_ids": list(pages or []),
+                }
+            if name == "catch-up-1":
+                site.links["1"] = "moved"
+            return {
+                "stale_without_valid_ahead": 0, "compiled_generator": "g",
+                "candidates": 1, "failed_page_ids": [], "link_reader_page_ids": [2],
+            }
+
+        docker = FreezeDocker(trace, site=site)
+        final = self.call(
+            lambda: RENDER_AHEAD.verify_with_catch_up(
+                render, "cutoff", digests=lambda: dict(site.links), readers=[2],
+                freeze_writer=True, deepwell_container=CONTAINER,
+            ),
+            docker,
+        )
+        self.assertEqual(final["stale_without_valid_ahead"], 0)
+        self.assertEqual(len(reader_rounds), 2)
+        self.assertTrue(all(frozen for _, frozen in reader_rounds))
+        self.assertLess(
+            trace.index(("render", "catch-up-link-readers-2", False)),
+            trace.index(("docker", "unpause", CONTAINER)),
+        )
+        self.assert_resume_checked(docker)
+
+    def test_a_live_writer_never_converges_but_a_frozen_one_does(self) -> None:
+        old_trace = []
+        old_site = RacingWriterSite(old_trace)
+        old = RENDER_AHEAD.verify_with_catch_up(old_site.render, "cutoff")
+        self.assertEqual(old["stale_without_valid_ahead"], 30)
+        self.assertNotIn(("docker", "pause", CONTAINER), old_trace)
+
+        new_trace = []
+        new_site = RacingWriterSite(new_trace)
+        docker = FreezeDocker(new_trace, site=new_site)
+        new = self.call(
+            lambda: RENDER_AHEAD.verify_with_catch_up(
+                new_site.render, "cutoff",
+                freeze_writer=True, deepwell_container=CONTAINER,
+            ),
+            docker,
+        )
+        self.assertEqual(new["stale_without_valid_ahead"], 0)
+        self.assertLess(
+            new_trace.index(("docker", "pause", CONTAINER)),
+            new_trace.index(("render", "catch-up-1", False)),
+        )
+        self.assertTrue(new_site.frozen is False)
+        self.assert_resume_checked(docker)

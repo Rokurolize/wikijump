@@ -1243,6 +1243,7 @@ def finish(
                 [
                     sys.executable, str(Path(__file__).with_name("render_ahead.py")),
                     "--image", images["deepwell"],
+                    "--freeze-writer-during-catch-up",
                     "--output-dir", str(output),
                 ],
                 evidence / "render-ahead.log",
