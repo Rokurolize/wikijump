@@ -40,6 +40,12 @@ struct SearchRow {
     rank: f32,
 }
 
+#[derive(Debug, FromQueryResult)]
+struct OptionalTermMatch {
+    ordinal: i64,
+    matches: bool,
+}
+
 fn push_value(values: &mut Vec<Value>, value: Value) -> String {
     values.push(value);
     format!("${}", values.len())
@@ -103,6 +109,49 @@ impl SearchService {
     const SCAN_MULTIPLIER: i64 = 10;
     const MAX_SCAN_LIMIT: i64 = 1000;
 
+    async fn surviving_optional_terms(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        optional: &[String],
+    ) -> Result<Vec<String>> {
+        let txn = ctx.transaction();
+        let statement = Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            "WITH terms(ordinal, expression) AS (
+                 SELECT ordinality - 1, expression
+                 FROM unnest($2::TEXT[]) WITH ORDINALITY AS t(expression, ordinality)
+             )
+             SELECT terms.ordinal,
+                    EXISTS (SELECT 1 FROM page p
+                            WHERE p.site_id = $1
+                              AND p.deleted_at IS NULL
+                              AND p.search_vector @@ to_tsquery('english'::regconfig, terms.expression)) AS matches
+             FROM terms
+             ORDER BY terms.ordinal",
+            vec![Value::from(site_id), Value::from(optional.to_vec())],
+        );
+
+        let rows = OptionalTermMatch::find_by_statement(statement)
+            .all(txn)
+            .await
+            .or_raise(|| {
+                Error::new("failed to census search terms", ErrorType::PageQuery)
+            })?;
+
+        let matching = rows
+            .iter()
+            .filter(|row| row.matches)
+            .filter_map(|row| usize::try_from(row.ordinal).ok())
+            .collect::<Vec<_>>();
+
+        Ok(optional
+            .iter()
+            .enumerate()
+            .filter(|(index, _)| matching.contains(index))
+            .map(|(_, term)| term.clone())
+            .collect())
+    }
+
     pub async fn search_pages(
         ctx: &ServiceContext<'_>,
         user_id: Option<i64>,
@@ -138,7 +187,7 @@ impl SearchService {
             conditions.push(String::from("p.search_vector @@ search_query.tsq"));
         }
 
-        let mut values = vec![Value::from(site_id), Value::from(grammar.tsquery)];
+        let mut values = vec![Value::from(site_id), Value::from(grammar.tsquery.clone())];
         for pattern in &grammar.patterns {
             let parameter = push_value(&mut values, Value::from(pattern.pattern.clone()));
             let columns = if pattern.field == Field::Title {
@@ -153,6 +202,33 @@ impl SearchService {
             conditions.push(columns);
         }
         conditions.extend(filter_conditions(&grammar.filters, &mut values));
+
+        let rank_expression = if grammar.optional_terms.len() > 1 {
+            let surviving =
+                Self::surviving_optional_terms(ctx, site_id, &grammar.optional_terms)
+                    .await?;
+
+            if surviving.is_empty() || surviving.len() == grammar.optional_terms.len() {
+                None
+            } else {
+                Some(grammar.expression_with_optional(&surviving))
+            }
+        } else {
+            None
+        };
+        let rank_parameter = rank_expression
+            .map(|expression| push_value(&mut values, Value::from(expression)));
+        let rank_select = match &rank_parameter {
+            Some(parameter) => format!(
+                ",\n                           to_tsquery('english'::regconfig, {parameter}) AS rank_tsq"
+            ),
+            None => String::new(),
+        };
+        let rank_source = if rank_parameter.is_some() {
+            "search_query.rank_tsq"
+        } else {
+            "search_query.tsq"
+        };
         let limit_parameter = push_value(&mut values, Value::from(scan_limit));
         let condition_sql = if conditions.is_empty() {
             String::new()
@@ -164,7 +240,7 @@ impl SearchService {
             txn.get_database_backend(),
             format!(
                 "WITH search_query AS (
-                    SELECT to_tsquery('english'::regconfig, $2) AS tsq
+                    SELECT to_tsquery('english'::regconfig, $2) AS tsq{rank_select}
                  )
                  SELECT p.page_id,
                         p.site_id,
@@ -175,7 +251,7 @@ impl SearchService {
                                     coalesce(t.contents, ''),
                                     search_query.tsq,
                                     'StartSel={start}, StopSel={stop}, MaxFragments=1, MaxWords=30, MinWords=10') AS snippet,
-                        ts_rank_cd(p.search_vector, search_query.tsq) AS rank
+                        ts_rank_cd(p.search_vector, {rank_source}) AS rank
                    FROM page p
                    JOIN page_revision pr ON pr.revision_id = p.latest_revision_id
                    LEFT JOIN text t ON t.hash = pr.wikitext_hash

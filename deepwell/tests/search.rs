@@ -848,3 +848,119 @@ async fn search_hides_reserved_admin_page_from_actor_without_site_edit() {
         owner_output.results,
     );
 }
+
+fn fanout_ladder(base: &str, token: &str, extra: usize) -> String {
+    let mut query = base.to_owned();
+    for index in 0..extra {
+        query.push(' ');
+        query.push_str(&format!("n{index}{token}"));
+    }
+    query
+}
+
+fn short_token() -> String {
+    cuid()[..8].to_owned()
+}
+
+async fn create_fanout_pages(
+    runner: &mut TestRunner,
+    site: i64,
+    token: &str,
+    base: &str,
+) {
+    for index in 0..5 {
+        create_page(
+            runner,
+            site,
+            &format!("search-fanout-{token}-{index}"),
+            &format!("Fanout Base {index}"),
+            &format!("The body of this page contains {base} as its base term."),
+        )
+        .await;
+    }
+}
+
+#[tokio::test]
+async fn extra_no_match_terms_leave_search_endpoint_output_byte_identical() {
+    let mut runner = TestRunner::setup().await;
+    let site = site_id(&mut runner, "scp-wiki").await;
+    let token = short_token();
+    let base = format!("b{token}");
+    create_fanout_pages(&mut runner, site, &token, &base).await;
+
+    let baseline = search(&mut runner, site, &fanout_ladder(&base, &token, 0)).await;
+    assert!(baseline.results.len() >= 5, "{:?}", baseline.results);
+    let baseline_json =
+        serde_json::to_string(&baseline.results).expect("results serialize");
+
+    for extra in [1, 4, 16] {
+        let output =
+            search(&mut runner, site, &fanout_ladder(&base, &token, extra)).await;
+        assert_eq!(output.body, baseline.body, "body changed at T={extra}");
+        assert_eq!(
+            serde_json::to_string(&output.results).expect("results serialize"),
+            baseline_json,
+            "results changed at T={extra}",
+        );
+    }
+}
+
+#[tokio::test]
+async fn extra_no_match_terms_leave_search_module_body_byte_identical() {
+    let mut runner = TestRunner::setup().await;
+    let site = site_id(&mut runner, "scp-wiki").await;
+    let token = short_token();
+    let base = format!("b{token}");
+    create_fanout_pages(&mut runner, site, &token, &base).await;
+    let module_slug = format!("search-fanout-module-{token}");
+    create_page(
+        &mut runner,
+        site,
+        &module_slug,
+        "Search Module Host",
+        "[[module Search]]",
+    )
+    .await;
+
+    let baseline = render_search_module(
+        &mut runner,
+        site,
+        &module_slug,
+        &fanout_ladder(&base, &token, 0),
+    )
+    .await;
+    assert!(
+        baseline.contains(r#"class="search-results""#),
+        "baseline should render results:\n{baseline}",
+    );
+
+    for extra in [1, 4, 16] {
+        let query = fanout_ladder(&base, &token, extra);
+        let body = render_search_module(&mut runner, site, &module_slug, &query).await;
+        assert_eq!(body, baseline, "module body changed at T={extra}");
+    }
+}
+
+async fn render_search_module(
+    runner: &mut TestRunner,
+    site: i64,
+    module_slug: &str,
+    query: &str,
+) -> String {
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site,
+            "session_token": null,
+            "route": {"slug": module_slug, "extra": format!("/q/{query}")},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found search module page view, got {other:?}"),
+    }
+}
