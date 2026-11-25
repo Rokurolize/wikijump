@@ -1,3 +1,13 @@
 node_modules/
 pnpm-lock.yaml
 
+# Generated asset caches
+/ports/candidate-assets/
+/ports/shared-assets/
+
+# Generated acceptance output
+/ports/current-acceptance/*
+!/ports/current-acceptance/faithful-design-exemptions.json
+!/ports/current-acceptance/run-contract.json
+!/ports/current-acceptance/visual-gate-policy.json
+
