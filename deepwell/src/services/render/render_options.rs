@@ -50,6 +50,7 @@ pub(super) struct RenderInnerOptions<'a> {
     pub(super) render_context: RenderContext,
     pub(super) viewer_user_id: Option<i64>,
     pub(super) current_page_data_form_values: Option<BTreeMap<String, String>>,
+    pub(super) inflight_include_wikitext: Option<String>,
     pub(super) max_include_expansions: usize,
     pub(super) trusted_corpus_render: bool,
     pub(super) render_cost_budget: SharedRenderCostBudget,
@@ -66,6 +67,7 @@ pub(super) struct RenderPageOptions<'a> {
     pub(super) trusted_corpus_render: bool,
     pub(super) viewer_user_id: Option<i64>,
     pub(super) current_page_data_form_values: Option<BTreeMap<String, String>>,
+    pub(super) inflight_include_wikitext: Option<String>,
 
     pub(super) persist_page_artifacts: bool,
 
@@ -81,6 +83,7 @@ pub(super) struct RenderExpansionOptions<'a> {
     pub(super) current_page_id: Option<i64>,
     pub(super) viewer_user_id: Option<i64>,
     pub(super) current_page_data_form_values: Option<BTreeMap<String, String>>,
+    pub(super) inflight_include_wikitext: Option<String>,
     pub(super) max_include_expansions: usize,
     pub(super) trusted_corpus_render: bool,
     pub(super) render_cost_budget: SharedRenderCostBudget,

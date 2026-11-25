@@ -317,6 +317,7 @@ impl PageRevisionDraft {
                 tags: &self.tags,
             },
             false,
+            true,
             None,
         )
         .await?;
@@ -705,9 +706,17 @@ impl PageRevisionService {
             compiled_side_bar_html_hash,
             compiled_at,
             compiled_generator,
-        } = Self::render_and_update_links(ctx, id, wikitext, render_input, false, None)
-            .await
-            .or_raise(make_error)?;
+        } = Self::render_and_update_links(
+            ctx,
+            id,
+            wikitext,
+            render_input,
+            false,
+            false,
+            None,
+        )
+        .await
+        .or_raise(make_error)?;
 
         let model = page_revision::ActiveModel {
             revision_type: Set(PageRevisionType::Create),
@@ -985,6 +994,7 @@ impl PageRevisionService {
             wikitext,
             render_input,
             false,
+            false,
             None,
         )
         .await
@@ -1070,6 +1080,7 @@ impl PageRevisionService {
             tags,
         }: RenderPageInfo<'_>,
         allow_corpus_dense_includes: bool,
+        use_inflight_self_include: bool,
         trace: Option<&CorpusRenderTrace>,
     ) -> Result<RenderPageOutput> {
         let PageId {
@@ -1123,6 +1134,8 @@ impl PageRevisionService {
                 .unwrap_or_default(),
             None => Vec::new(),
         };
+        let inflight_include_wikitext =
+            use_inflight_self_include.then(|| wikitext.clone());
         let wikitext = BlueprintPageService::apply_page_template(
             ctx,
             site_id,
@@ -1159,6 +1172,7 @@ impl PageRevisionService {
                 layout,
                 id,
                 current_page_data_form_values,
+                inflight_include_wikitext,
             )
             .await
         }
@@ -1298,6 +1312,7 @@ impl PageRevisionService {
             wikitext,
             render_input,
             allow_corpus_dense_includes,
+            false,
             trace,
         )
         .await

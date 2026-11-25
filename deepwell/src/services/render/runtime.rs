@@ -335,12 +335,19 @@ impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
             return Ok(None);
         }
 
-        let wikitext = PageRevisionService::get_wikitext_optional(
-            self.ctx,
-            current_site_id,
-            Reference::Id(page_id),
-        )
-        .await?;
+        let wikitext = if let Some(inflight) = cache.inflight_include_source.as_ref()
+            && inflight.site_id == current_site_id
+            && inflight.page_id == page_id
+        {
+            Some(inflight.wikitext.to_string())
+        } else {
+            PageRevisionService::get_wikitext_optional(
+                self.ctx,
+                current_site_id,
+                Reference::Id(page_id),
+            )
+            .await?
+        };
         let Some(wikitext) = wikitext else {
             cache.imported_cross_site_sources.insert(cache_key, None);
             return Ok(None);
@@ -364,6 +371,7 @@ impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
         page_slug: &str,
         cache: &mut IncludeSourceCache,
     ) -> Result<Option<AuthorizedIncludeSource>> {
+        let inflight_include_source = cache.inflight_include_source.clone();
         let wikitext = cache
             .get_or_try_insert_with(site_id, page_slug, || async {
                 let page_ref = Reference::from(page_slug);
@@ -379,6 +387,13 @@ impl<'context, 'transaction> RenderRuntime<'context, 'transaction> {
                         .await?;
                 if !can_view {
                     return Ok(None);
+                }
+
+                if let Some(inflight) = inflight_include_source.as_ref()
+                    && inflight.site_id == site_id
+                    && inflight.page_id == page.page_id
+                {
+                    return Ok(Some(inflight.wikitext.to_string()));
                 }
 
                 PageRevisionService::get_wikitext_optional(
@@ -407,6 +422,13 @@ impl SnapshotMatchedPageId {
     fn page_id(self) -> i64 {
         self.0
     }
+}
+
+#[derive(Debug, Clone)]
+pub(super) struct InFlightIncludeSource {
+    pub(super) site_id: i64,
+    pub(super) page_id: i64,
+    pub(super) wikitext: Arc<str>,
 }
 
 #[derive(Debug)]
@@ -494,6 +516,7 @@ impl SharedExpandedIncludeCache {
 
 #[derive(Debug, Default)]
 pub(super) struct IncludeSourceCache {
+    pub(super) inflight_include_source: Option<InFlightIncludeSource>,
     sources_by_site: HashMap<i64, HashMap<String, IncludeSourceCacheEntry>>,
     imported_cross_site_sources: HashMap<(i64, String, String), Option<String>>,
     sites_by_id: HashMap<i64, Option<SiteModel>>,
