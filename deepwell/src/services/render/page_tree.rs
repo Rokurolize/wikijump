@@ -55,7 +55,6 @@ struct PageTreeNode {
 #[derive(Debug)]
 struct PageTree {
     nodes: HashMap<i64, PageTreeNode>,
-    page_ids_by_slug: HashMap<String, i64>,
     child_ids_by_parent: HashMap<i64, Vec<i64>>,
 }
 
@@ -309,22 +308,9 @@ impl RenderService {
             return Ok(wikitext);
         };
 
-        let tree = match Self::load_page_tree(
-            ctx,
-            current_site_id,
-            viewer_user_id,
-            expansion_state.module_query_cache,
-        )
-        .await?
-        {
-            PageTreeLoad::Complete(tree) => tree,
-            PageTreeLoad::Saturated => return Ok(wikitext),
-        };
         let literal_regions =
             LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
-        let mut output = String::with_capacity(wikitext.len());
-        let mut cursor = 0;
-
+        let mut invocations = Vec::new();
         for captures in PAGE_TREE_MODULE_REGEX.captures_iter(&wikitext) {
             let matched = captures
                 .get(0)
@@ -342,27 +328,92 @@ impl RenderService {
             if !root_is_supported(arguments.root) {
                 continue;
             }
+            invocations.push((matched.start(), matched.end(), arguments));
+        }
 
-            output.push_str(&wikitext[cursor..matched.start()]);
-            let root_id = arguments.root.map_or(Some(current_page_id), |root| {
-                tree.page_ids_by_slug.get(root).copied()
-            });
+        if invocations.is_empty() {
+            return Ok(wikitext);
+        }
+
+        let make_error =
+            || Error::new("failed to render PageTree module", ErrorType::Render);
+        let explicit_roots = invocations
+            .iter()
+            .filter_map(|(_, _, arguments)| arguments.root)
+            .collect::<Vec<_>>();
+        let explicit_pages = if explicit_roots.is_empty() {
+            Vec::new()
+        } else {
+            Page::find()
+                .filter(page::Column::SiteId.eq(current_site_id))
+                .filter(page::Column::DeletedAt.is_null())
+                .filter(page::Column::Slug.is_in(explicit_roots.iter().copied()))
+                .all(ctx.transaction())
+                .await
+                .or_raise(make_error)?
+        };
+        let explicit_root_ids = explicit_pages
+            .iter()
+            .map(|page| (page.slug.as_str(), page.page_id))
+            .collect::<HashMap<_, _>>();
+        let root_ids = invocations
+            .iter()
+            .map(|(_, _, arguments)| {
+                arguments.root.map_or(Some(current_page_id), |root| {
+                    explicit_root_ids.get(root).copied()
+                })
+            })
+            .collect::<Vec<_>>();
+        let fast_empty = invocations
+            .iter()
+            .all(|(_, _, arguments)| !arguments.show_root)
+            && {
+                let parent_ids = root_ids.iter().flatten().copied().collect::<Vec<_>>();
+                parent_ids.is_empty()
+                    || PageParent::find()
+                        .filter(page_parent::Column::ParentPageId.is_in(parent_ids))
+                        .limit(1)
+                        .all(ctx.transaction())
+                        .await
+                        .or_raise(make_error)?
+                        .is_empty()
+            };
+
+        let tree = if fast_empty {
+            None
+        } else {
+            match Self::load_page_tree(
+                ctx,
+                current_site_id,
+                viewer_user_id,
+                expansion_state.module_query_cache,
+            )
+            .await?
+            {
+                PageTreeLoad::Complete(tree) => Some(tree),
+                PageTreeLoad::Saturated => return Ok(wikitext),
+            }
+        };
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+
+        for ((start, end, arguments), root_id) in invocations.into_iter().zip(root_ids) {
+            output.push_str(&wikitext[cursor..start]);
             if let Some(root_id) = root_id {
-                output.push_str(&expansion_state.compat_html.push_block_html(
-                    render_page_tree(
-                        &tree,
+                let rendered = match &tree {
+                    Some(tree) => render_page_tree(
+                        tree,
                         root_id,
                         arguments.show_root,
                         arguments.depth,
                     ),
-                ));
+                    None => String::new(),
+                };
+                output.push_str(&expansion_state.compat_html.push_block_html(rendered));
             }
-            cursor = matched.end();
+            cursor = end;
         }
 
-        if cursor == 0 {
-            return Ok(wikitext);
-        }
         output.push_str(&wikitext[cursor..]);
         Ok(output)
     }
@@ -408,7 +459,6 @@ impl RenderService {
             .collect::<HashMap<_, _>>();
 
         let mut nodes = HashMap::with_capacity(pages.len());
-        let mut page_ids_by_slug = HashMap::with_capacity(pages.len());
         for page in pages {
             let Some(revision_id) = page.latest_revision_id else {
                 continue;
@@ -416,7 +466,6 @@ impl RenderService {
             let Some(title) = titles.get(&revision_id) else {
                 continue;
             };
-            page_ids_by_slug.insert(page.slug.clone(), page.page_id);
             nodes.insert(
                 page.page_id,
                 PageTreeNode {
@@ -448,7 +497,6 @@ impl RenderService {
 
         let mut tree = PageTree {
             nodes,
-            page_ids_by_slug,
             child_ids_by_parent,
         };
         sort_page_tree_children(&mut tree);
@@ -487,10 +535,6 @@ mod tests {
         })
         .collect::<HashMap<_, _>>();
         PageTree {
-            page_ids_by_slug: nodes
-                .iter()
-                .map(|(page_id, node)| (node.slug.clone(), *page_id))
-                .collect(),
             nodes,
             child_ids_by_parent: HashMap::from([
                 (1, vec![2, 3]),
@@ -590,10 +634,6 @@ mod tests {
             .collect::<HashMap<_, _>>();
         let child_ids = slug_order.iter().map(|index| 100 + index).collect();
         let mut tree = PageTree {
-            page_ids_by_slug: nodes
-                .iter()
-                .map(|(page_id, node)| (node.slug.clone(), *page_id))
-                .collect(),
             nodes,
             child_ids_by_parent: HashMap::from([(1, child_ids)]),
         };
