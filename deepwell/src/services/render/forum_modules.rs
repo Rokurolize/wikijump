@@ -976,7 +976,6 @@ pub(super) struct ExpandForumModulesArgs<'a, 'b, 'c> {
     pub(super) current_page_id: Option<i64>,
     pub(super) viewer_user_id: Option<i64>,
     pub(super) url: UrlArguments<'c>,
-    pub(super) allow_page_discussion_creation: bool,
     pub(super) compat_html: &'a mut CompatHtmlFragments,
 }
 
@@ -992,7 +991,6 @@ impl RenderService {
             current_page_id,
             viewer_user_id,
             url,
-            allow_page_discussion_creation,
             compat_html,
         } = args;
         if !settings.enable_page_syntax || !FORUM_MODULE_REGEX.is_match(&wikitext) {
@@ -1067,7 +1065,6 @@ impl RenderService {
                                     page_id,
                                     arguments.order,
                                     arguments.hide_form,
-                                    allow_page_discussion_creation,
                                 )
                                 .await?
                                 {

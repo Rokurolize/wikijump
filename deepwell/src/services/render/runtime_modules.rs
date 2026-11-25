@@ -411,7 +411,6 @@ pub(super) struct SecondaryRuntimeModuleExpansionOptions<'a> {
     pub(super) page_preview: bool,
     pub(super) url: UrlArguments<'a>,
     pub(super) trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,
-    pub(super) allow_page_discussion_creation: bool,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -1378,7 +1377,6 @@ impl RenderService {
             current_page_id: options.current_page_id,
             viewer_user_id: options.viewer_user_id,
             url: options.url,
-            allow_page_discussion_creation: options.allow_page_discussion_creation,
             compat_html,
         })
         .await

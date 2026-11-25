@@ -303,10 +303,14 @@ pub async fn wikidot_page_discussion_create(
                 ErrorType::PageRevision,
             )
         })?;
+    let acting_user_id = ctx
+        .request()
+        .user_id
+        .unwrap_or(crate::constants::ANONYMOUS_USER_ID);
     let thread = ForumThreadService::get_or_create_page_discussion(
         ctx,
         &page,
-        crate::constants::ANONYMOUS_USER_ID,
+        acting_user_id,
         &revision.title,
     )
     .await

@@ -30,7 +30,9 @@ use crate::models::forum_thread::{
 };
 use crate::models::page::Model as PageModel;
 use crate::services::forum::{CreateForumCategory, CreateForumGroup};
-use crate::services::{ForumService, ServiceContext};
+use crate::services::{
+    ForumService, MutationAuthorization, PermissionService, ServiceContext,
+};
 use crate::utils::now;
 use paste::paste;
 use sea_orm::sea_query::OnConflict;
@@ -60,6 +62,32 @@ impl ForumThreadService {
             )
         };
         let txn = ctx.transaction();
+        let user_id = MutationAuthorization::require_matching_actor(
+            ctx,
+            user_id,
+            "create a page discussion",
+        )?;
+        let can_view_page =
+            PermissionService::check_user_can_view_page(ctx, Some(user_id), page)
+                .await
+                .or_raise(|| {
+                    Error::new(
+                        format!(
+                            "failed to check page-view permission for page ID {}",
+                            page.page_id,
+                        ),
+                        ErrorType::Permission,
+                    )
+                })?;
+        if !can_view_page {
+            bail!(Error::new(
+                format!(
+                    "user ID {user_id} cannot create a page discussion for page ID {}",
+                    page.page_id,
+                ),
+                ErrorType::PermissionDenied,
+            ));
+        }
 
         let pointed_thread = match page.discussion_thread_id {
             Some(thread_id) => ForumThread::find_by_id(thread_id)
@@ -164,17 +192,7 @@ impl ForumThreadService {
             return Ok(thread);
         }
 
-        let category = Self::active_page_discussion_category(ctx, page.site_id)
-            .await?
-            .ok_or_else(|| {
-                Error::new(
-                    format!(
-                        "site ID {} has no active per-page discussion forum category in an active group",
-                        page.site_id,
-                    ),
-                    ErrorType::ForumCategory,
-                )
-            })?;
+        let category = Self::ensure_page_discussion_category(ctx, page.site_id).await?;
 
         ForumThread::insert(forum_thread::ActiveModel {
             forum_category_id: Set(category.forum_category_id),
@@ -214,7 +232,7 @@ impl ForumThreadService {
         Ok(thread)
     }
 
-    pub async fn ensure_page_discussion_category(
+    async fn ensure_page_discussion_category(
         ctx: &ServiceContext<'_>,
         site_id: i64,
     ) -> Result<ForumCategoryModel> {
