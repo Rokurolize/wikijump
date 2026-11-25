@@ -587,6 +587,92 @@ async fn search_category_filter_restricts_results_to_named_categories() {
 }
 
 #[tokio::test]
+async fn unmatched_optional_terms_are_dropped_consistently_across_search_fields() {
+    let mut runner = TestRunner::setup().await;
+    let site = site_id(&mut runner, "scp-wiki").await;
+    let token = short_token();
+    let missing = format!("zzq{token}missing");
+    let category = format!("cat{token}");
+    let tag = format!("tag{token}");
+    let title = format!("Titleprobe{token}");
+    let author_term = format!("created_by:author{token}");
+
+    let category_slug = format!("{category}:target-{token}");
+    create_page(
+        &mut runner,
+        site,
+        &category_slug,
+        "Unmatched Category Fixture",
+        "unmatched optional category fixture",
+    )
+    .await;
+    let tag_slug = format!("search-unmatched-tag-{token}");
+    create_page_with_tags(
+        &runner,
+        site,
+        ADMIN_USER_ID,
+        &tag_slug,
+        "Unmatched Tag Fixture",
+        "unmatched optional tag fixture",
+        &[tag.as_str()],
+    )
+    .await;
+    let title_slug = format!("search-unmatched-title-{token}");
+    create_page(
+        &mut runner,
+        site,
+        &title_slug,
+        &title,
+        "unmatched optional title fixture",
+    )
+    .await;
+    let created_by_slug = format!("search-unmatched-createdby-{token}");
+    create_page(
+        &mut runner,
+        site,
+        &created_by_slug,
+        "Unmatched Created By Fixture",
+        &format!("fixture text {author_term}"),
+    )
+    .await;
+
+    for base_query in [
+        format!("category:{category}"),
+        format!("tags:{tag}"),
+        format!("title:{title}"),
+        author_term.clone(),
+    ] {
+        let base = search(&mut runner, site, &base_query).await;
+        assert!(
+            !base.results.is_empty(),
+            "{base_query} fixture missing: {:?}",
+            base.results,
+        );
+        let base_results =
+            serde_json::to_string(&base.results).expect("results serialize");
+        for query in [
+            format!("{missing} {base_query}"),
+            format!("{base_query} {missing}"),
+        ] {
+            let output = search(&mut runner, site, &query).await;
+            assert_eq!(output.body, base.body, "{query} body diverged");
+            assert_eq!(
+                serde_json::to_string(&output.results).expect("results serialize"),
+                base_results,
+                "{query} results diverged",
+            );
+        }
+    }
+
+    let lone = search(&mut runner, site, &missing).await;
+    assert!(
+        lone.results.is_empty(),
+        "an unmatched text-only query must not become an unfiltered page list: {:?}",
+        lone.results,
+    );
+}
+
+#[tokio::test]
 async fn search_date_filters_bound_results_by_page_creation_date() {
     let mut runner = TestRunner::setup().await;
     let site = site_id(&mut runner, "scp-wiki").await;

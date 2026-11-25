@@ -123,8 +123,8 @@ impl SearchService {
         optional: &[String],
         excluded: &[String],
     ) -> Result<(Vec<String>, Vec<String>)> {
-        if optional.len() <= 1 && excluded.is_empty() {
-            return Ok((optional.to_vec(), Vec::new()));
+        if optional.is_empty() && excluded.is_empty() {
+            return Ok((Vec::new(), Vec::new()));
         }
 
         let txn = ctx.transaction();
@@ -244,21 +244,38 @@ impl SearchService {
             &mut values,
         ));
 
-        let (surviving_optional, surviving_excluded) = Self::surviving_terms(
-            ctx,
-            site_id,
-            &grammar.optional_terms,
-            &grammar.excluded_terms,
-        )
-        .await?;
-        let rank_expression = if surviving_optional.len() == grammar.optional_terms.len()
-            && surviving_excluded.len() == grammar.excluded_terms.len()
-        {
-            None
+        let has_independent_constraint = !grammar.required_terms.is_empty()
+            || !grammar.patterns.is_empty()
+            || !grammar.filters.is_empty()
+            || !grammar.excluded_filters.is_empty();
+        let census_terms = (!grammar.optional_terms.is_empty()
+            || !grammar.excluded_terms.is_empty())
+            && (grammar.optional_terms.len() > 1
+                || !grammar.excluded_terms.is_empty()
+                || has_independent_constraint);
+        let (surviving_optional, surviving_excluded) = if census_terms {
+            Self::surviving_terms(
+                ctx,
+                site_id,
+                &grammar.optional_terms,
+                &grammar.excluded_terms,
+            )
+            .await?
         } else {
-            let expression =
-                grammar.expression_with_terms(&surviving_optional, &surviving_excluded);
-            (!expression.is_empty()).then_some(expression)
+            (grammar.optional_terms.clone(), Vec::new())
+        };
+        let terms_changed = surviving_optional.len() != grammar.optional_terms.len()
+            || surviving_excluded.len() != grammar.excluded_terms.len();
+        let allows_empty_text_query = has_independent_constraint;
+        let narrowed_expression = terms_changed.then(|| {
+            grammar.expression_with_terms(&surviving_optional, &surviving_excluded)
+        });
+        let rank_expression = narrowed_expression.and_then(|expression| {
+            (!expression.is_empty() || allows_empty_text_query).then_some(expression)
+        });
+        let effective_has_tsquery = match &rank_expression {
+            Some(expression) => !expression.is_empty(),
+            None => grammar.has_tsquery,
         };
         let rank_parameter = rank_expression
             .map(|expression| push_value(&mut values, Value::from(expression)));
@@ -273,7 +290,7 @@ impl SearchService {
         } else {
             "search_query.tsq"
         };
-        let match_condition = if grammar.has_tsquery {
+        let match_condition = if effective_has_tsquery {
             format!("p.search_vector @@ {rank_source}")
         } else {
             String::from("TRUE")
@@ -295,6 +312,7 @@ impl SearchService {
                            p.site_id,
                            p.page_category_id,
                            p.slug,
+                           p.created_at,
                            p.search_vector,
                            p.latest_revision_id
                       FROM page p
