@@ -12,9 +12,10 @@ if [[ "${WIKIJUMP_TEST_NETWORK_GUARD_ACTIVE:-}" != "1" ]]; then
     exit 2
   fi
 
-  export WIKIJUMP_OFFLINE_CARGO="$(rustup which --toolchain "${channel}" cargo)"
-  export WIKIJUMP_OFFLINE_RUSTC="$(rustup which --toolchain "${channel}" rustc)"
-  export WIKIJUMP_OFFLINE_RUSTDOC="$(rustup which --toolchain "${channel}" rustdoc)"
+  WIKIJUMP_OFFLINE_CARGO="$(rustup which --toolchain "${channel}" cargo)"
+  WIKIJUMP_OFFLINE_RUSTC="$(rustup which --toolchain "${channel}" rustc)"
+  WIKIJUMP_OFFLINE_RUSTDOC="$(rustup which --toolchain "${channel}" rustdoc)"
+  export WIKIJUMP_OFFLINE_CARGO WIKIJUMP_OFFLINE_RUSTC WIKIJUMP_OFFLINE_RUSTDOC
   exec "${ROOT}/scripts/run-test-no-external-network.sh" "$0" "$@"
 fi
 

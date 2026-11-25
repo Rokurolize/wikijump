@@ -32,10 +32,6 @@ RUN set -eux; \
 RUN apt update
 RUN apt install -y build-essential libmagic-dev pkg-config musl-tools
 
-# The runtime image is Debian Bookworm (glibc 2.36), while the pinned Rust
-# builder image currently carries a newer glibc.  Build the migration helper
-# statically so the immutable runtime image does not inherit that builder
-# libc requirement.
 RUN rustup target add x86_64-unknown-linux-musl
 
 # Keep migration execution in the immutable standing image.  The runtime

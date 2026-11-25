@@ -256,7 +256,9 @@ class ActivationTest(unittest.TestCase):
         self.assertIn("gateway", order, "the reload precedes the standing proof")
 
     def test_a_failed_gateway_reload_restores_the_old_runtime_and_reloads_it(self) -> None:
-        def reload(standing=self.standing, attempts=[]):
+        attempts = []
+
+        def reload(standing=self.standing):
             standing.calls.append(("gateway", standing.switched))
             attempts.append(standing.switched)
             if len(attempts) == 1:
@@ -318,7 +320,9 @@ class ActivationTest(unittest.TestCase):
     def test_a_standing_change_before_the_switch_touches_nothing(self) -> None:
         original = self.standing.containers
 
-        def drifting(_home=None, calls=[0]):
+        calls = [0]
+
+        def drifting(_home=None):
             calls[0] += 1
             value = original()
             if calls[0] > 1:
