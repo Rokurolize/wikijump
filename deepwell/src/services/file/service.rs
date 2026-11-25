@@ -26,7 +26,9 @@ use super::structs::{
 use crate::error::prelude::{Error, ErrorType, ExnError, OptionExt, Result, ResultExt};
 use crate::hash::slice_to_blob_hash;
 use crate::models::file::{self, Entity as File, Model as FileModel};
-use crate::models::file_revision::Model as FileRevisionModel;
+use crate::models::file_revision::{
+    self, Entity as FileRevision, Model as FileRevisionModel,
+};
 use crate::models::page::Entity as Page;
 use crate::models::site::Entity as Site;
 use crate::services::ServiceContext;
@@ -38,11 +40,12 @@ use crate::services::file_revision::{
     GetFileRevision,
 };
 use crate::services::filter::{FilterClass, FilterType};
+use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::{
     AuditService, BlobService, FileRevisionService, FilterService, PageLockService,
     PageService,
 };
-use crate::types::{FileOrder, FileRevisionType};
+use crate::types::{Action, FileOrder, FileRevisionType, Permission, Resource};
 use crate::types::{Maybe, Reference};
 use crate::utils::now;
 use crate::utils::trim_spaces_in_place;
@@ -52,12 +55,39 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DbErr, EntityTrait,
     FromQueryResult, QueryFilter, QueryOrder, QuerySelect, Set, SqlErr, Statement, Value,
 };
+use std::collections::{BTreeSet, HashMap};
 use std::net::IpAddr;
 use time::OffsetDateTime;
 
 pub const MAXIMUM_FILE_NAME_LENGTH: usize = 256;
 
 const FILE_ACTIVE_UNIQUE_INDEX: &str = "file_active_page_name_unique";
+
+#[derive(Debug, Clone, Copy)]
+struct DeletedFileAccess {
+    user_id: Option<i64>,
+    can_edit_page: bool,
+    can_edit_site: bool,
+}
+
+impl DeletedFileAccess {
+    fn denied() -> Self {
+        DeletedFileAccess {
+            user_id: None,
+            can_edit_page: false,
+            can_edit_site: false,
+        }
+    }
+
+    fn permits(self, uploader_user_id: Option<i64>) -> bool {
+        let is_uploader = match (self.user_id, uploader_user_id) {
+            (Some(user_id), Some(uploader_user_id)) => user_id == uploader_user_id,
+            _ => false,
+        };
+
+        self.can_edit_page && (self.can_edit_site || is_uploader)
+    }
+}
 
 #[derive(Debug)]
 pub struct FileService;
@@ -866,6 +896,142 @@ impl FileService {
         find_or_error!(Self::get_optional(ctx, input), "file", File)
     }
 
+    async fn deleted_file_access(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        page_id: i64,
+    ) -> Result<DeletedFileAccess> {
+        let Some(user_id) = ctx.request().user_id else {
+            return Ok(DeletedFileAccess::denied());
+        };
+
+        let make_error =
+            || Error::new("failed to check deleted file visibility", ErrorType::File);
+        let page = PageService::get_optional(ctx, site_id, Reference::Id(page_id))
+            .await
+            .or_raise(make_error)?;
+        let Some(page) = page else {
+            return Ok(DeletedFileAccess::denied());
+        };
+
+        let can_edit_page = PermissionService::check_user_can_act_on_page(
+            ctx,
+            Some(user_id),
+            &page,
+            Action::Edit,
+        )
+        .await
+        .or_raise(make_error)?;
+        let can_edit_site = if can_edit_page {
+            PermissionService::check_user_can(
+                ctx,
+                &CheckPermissionContext {
+                    user_id: Some(user_id),
+                    site_id,
+                    page_reference: None,
+                },
+                Permission {
+                    resource_type: Resource::Site,
+                    resource_category: None,
+                    action: Action::Edit,
+                },
+            )
+            .await
+            .or_raise(make_error)?
+        } else {
+            false
+        };
+
+        Ok(DeletedFileAccess {
+            user_id: Some(user_id),
+            can_edit_page,
+            can_edit_site,
+        })
+    }
+
+    async fn creation_uploaders(
+        ctx: &ServiceContext<'_>,
+        file_ids: &[i64],
+    ) -> Result<HashMap<i64, i64>> {
+        if file_ids.is_empty() {
+            return Ok(HashMap::new());
+        }
+
+        FileRevision::find()
+            .select_only()
+            .column(file_revision::Column::FileId)
+            .column(file_revision::Column::UserId)
+            .filter(file_revision::Column::FileId.is_in(file_ids.to_vec()))
+            .filter(file_revision::Column::RevisionNumber.eq(0))
+            .into_tuple::<(i64, i64)>()
+            .all(ctx.transaction())
+            .await
+            .or_raise(|| {
+                Error::new("failed to load file creation uploaders", ErrorType::File)
+            })
+            .map(|rows| rows.into_iter().collect())
+    }
+
+    async fn retain_visible_files(
+        ctx: &ServiceContext<'_>,
+        files: Vec<FileModel>,
+    ) -> Result<Vec<FileModel>> {
+        let deleted_file_ids = files
+            .iter()
+            .filter(|file| file.deleted_at.is_some())
+            .map(|file| file.file_id)
+            .collect::<Vec<_>>();
+        let uploaders = Self::creation_uploaders(ctx, &deleted_file_ids).await?;
+        let mut access_by_page = HashMap::new();
+        let mut visible = Vec::with_capacity(files.len());
+
+        for file in files {
+            if file.deleted_at.is_none() {
+                visible.push(file);
+                continue;
+            }
+
+            let key = (file.site_id, file.page_id);
+            let access = match access_by_page.get(&key).copied() {
+                Some(access) => access,
+                None => {
+                    let access =
+                        Self::deleted_file_access(ctx, file.site_id, file.page_id)
+                            .await?;
+                    access_by_page.insert(key, access);
+                    access
+                }
+            };
+            if access.permits(uploaders.get(&file.file_id).copied()) {
+                visible.push(file);
+            }
+        }
+
+        Ok(visible)
+    }
+
+    pub async fn filter_visible_file_ids(
+        ctx: &ServiceContext<'_>,
+        file_ids: &[i64],
+    ) -> Result<BTreeSet<i64>> {
+        if file_ids.is_empty() {
+            return Ok(BTreeSet::new());
+        }
+
+        let files = File::find()
+            .filter(file::Column::FileId.is_in(file_ids.to_vec()))
+            .all(ctx.transaction())
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to load files for visibility filtering",
+                    ErrorType::File,
+                )
+            })?;
+        let visible = Self::retain_visible_files(ctx, files).await?;
+        Ok(visible.into_iter().map(|file| file.file_id).collect())
+    }
+
     pub async fn get_all(
         ctx: &ServiceContext<'_>,
         site_id: i64,
@@ -908,7 +1074,7 @@ impl FileService {
             .await
             .or_raise(make_error)?;
 
-        Ok(files)
+        Self::retain_visible_files(ctx, files).await
     }
 
     pub async fn get_visible_rows(

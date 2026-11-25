@@ -86,6 +86,18 @@ pub async fn file_revision_get(
             )
         })?;
 
+    let visible_file_ids = FileService::filter_visible_file_ids(ctx, &[input.file_id])
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to check file revision deleted-file visibility",
+                ErrorType::FileRevision,
+            )
+        })?;
+    if !visible_file_ids.contains(&input.file_id) {
+        return Ok(None);
+    }
+
     let revision = FileRevisionService::get_optional(ctx, input)
         .await
         .or_raise(|| {
@@ -109,6 +121,13 @@ pub async fn file_revision_range(
     ensure_parent_page_view_permission(ctx, input.site_id, input.page_id, None)
         .await
         .or_raise(make_error)?;
+
+    let visible_file_ids = FileService::filter_visible_file_ids(ctx, &[input.file_id])
+        .await
+        .or_raise(make_error)?;
+    if !visible_file_ids.contains(&input.file_id) {
+        return Ok(Vec::new());
+    }
 
     let revisions = FileRevisionService::get_range(ctx, input)
         .await
@@ -170,7 +189,28 @@ pub async fn file_revision_page_history(
             )
         })?;
 
-    let history = FileRevisionService::get_page_history(ctx, input)
+    let revision_file_ids =
+        FileRevisionService::get_page_file_ids(ctx, input.site_id, input.page_id)
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to get file revision history for page",
+                    ErrorType::FileRevision,
+                )
+            })?;
+    let visible_file_ids = FileService::filter_visible_file_ids(
+        ctx,
+        &revision_file_ids.iter().copied().collect::<Vec<_>>(),
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to get file revision history for page",
+            ErrorType::FileRevision,
+        )
+    })?;
+
+    let history = FileRevisionService::get_page_history(ctx, input, &visible_file_ids)
         .await
         .or_raise(|| {
             Error::new(
