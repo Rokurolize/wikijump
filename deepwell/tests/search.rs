@@ -1169,3 +1169,60 @@ async fn distinct_categories_still_fail_closed() {
         "distinct category predicates must keep the existing fail-closed behavior",
     );
 }
+
+#[tokio::test]
+async fn decoded_length_and_quote_group_cells_keep_full_results() {
+    let mut runner = TestRunner::setup().await;
+    let site = site_id(&mut runner, "scp-wiki").await;
+    let token = short_token();
+    let base = format!("b{token}");
+    create_fanout_pages(&mut runner, site, &token, &base).await;
+
+    let baseline = search(&mut runner, site, &base).await;
+    assert!(baseline.results.len() >= 5, "{:?}", baseline.results);
+    let baseline_results =
+        serde_json::to_string(&baseline.results).expect("results serialize");
+
+    let pad = 512 - base.chars().count() - 1;
+    let short = format!("{base} {}", "z".repeat(pad));
+    let long = format!("{base} {}", "z".repeat(pad + 1));
+    assert_eq!(short.chars().count(), 512);
+    assert_eq!(long.chars().count(), 513);
+
+    let quoted = |count| {
+        format!(
+            "{base} {}",
+            (0..count)
+                .map(|index| format!("\"zzq{token}qa{index:02} zzq{token}qb{index:02}\""))
+                .collect::<Vec<_>>()
+                .join(" ")
+        )
+    };
+    let bare = |count| {
+        format!(
+            "{base} {}",
+            (0..count)
+                .map(|index| format!("zzq{token}q{index:02}"))
+                .collect::<Vec<_>>()
+                .join(" ")
+        )
+    };
+
+    for (name, query) in [
+        ("512 chars", short),
+        ("513 chars", long),
+        ("31 quoted groups", quoted(31)),
+        ("32 quoted groups", quoted(32)),
+        ("32 bare words", bare(31)),
+        ("33 bare words", bare(32)),
+    ] {
+        let output = search(&mut runner, site, &query).await;
+        assert!(!output.results.is_empty(), "{name} silently returned zero");
+        assert_eq!(output.body, baseline.body, "{name} changed body");
+        assert_eq!(
+            serde_json::to_string(&output.results).expect("results serialize"),
+            baseline_results,
+            "{name} changed results",
+        );
+    }
+}

@@ -192,7 +192,7 @@ impl SearchService {
         query: &str,
         limit: i64,
     ) -> Result<Vec<SearchResult>> {
-        let grammar = parse(query);
+        let grammar = parse(query)?;
         if grammar.no_results {
             return Ok(Vec::new());
         }
