@@ -26,9 +26,7 @@ use super::structs::{
 use crate::error::prelude::{Error, ErrorType, ExnError, OptionExt, Result, ResultExt};
 use crate::hash::slice_to_blob_hash;
 use crate::models::file::{self, Entity as File, Model as FileModel};
-use crate::models::file_revision::{
-    self, Entity as FileRevision, Model as FileRevisionModel,
-};
+use crate::models::file_revision::Model as FileRevisionModel;
 use crate::models::page::Entity as Page;
 use crate::models::site::Entity as Site;
 use crate::services::ServiceContext;
@@ -949,7 +947,7 @@ impl FileService {
         })
     }
 
-    async fn creation_uploaders(
+    async fn first_revision_users(
         ctx: &ServiceContext<'_>,
         file_ids: &[i64],
     ) -> Result<HashMap<i64, i64>> {
@@ -957,19 +955,42 @@ impl FileService {
             return Ok(HashMap::new());
         }
 
-        FileRevision::find()
-            .select_only()
-            .column(file_revision::Column::FileId)
-            .column(file_revision::Column::UserId)
-            .filter(file_revision::Column::FileId.is_in(file_ids.to_vec()))
-            .filter(file_revision::Column::RevisionNumber.eq(0))
-            .into_tuple::<(i64, i64)>()
-            .all(ctx.transaction())
+        #[derive(Debug, FromQueryResult)]
+        struct FirstRevisionUserRow {
+            file_id: i64,
+            user_id: i64,
+        }
+
+        let txn = ctx.transaction();
+        let statement = Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            concat!(
+                "SELECT f.file_id, first_revision.user_id ",
+                "FROM file f ",
+                "JOIN LATERAL (",
+                "SELECT fr.user_id ",
+                "FROM file_revision fr ",
+                "WHERE fr.file_id = f.file_id ",
+                "AND fr.site_id = f.site_id ",
+                "AND fr.page_id = f.page_id ",
+                "AND fr.revision_number >= 0 ",
+                "ORDER BY fr.revision_number ASC, fr.revision_id ASC LIMIT 1",
+                ") first_revision ON TRUE ",
+                "WHERE f.file_id = ANY($1::BIGINT[])",
+            ),
+            [Value::from(file_ids.to_vec())],
+        );
+        FirstRevisionUserRow::find_by_statement(statement)
+            .all(txn)
             .await
             .or_raise(|| {
-                Error::new("failed to load file creation uploaders", ErrorType::File)
+                Error::new("failed to load file first-revision users", ErrorType::File)
             })
-            .map(|rows| rows.into_iter().collect())
+            .map(|rows| {
+                rows.into_iter()
+                    .map(|row| (row.file_id, row.user_id))
+                    .collect()
+            })
     }
 
     async fn retain_visible_files(
@@ -981,7 +1002,7 @@ impl FileService {
             .filter(|file| file.deleted_at.is_some())
             .map(|file| file.file_id)
             .collect::<Vec<_>>();
-        let uploaders = Self::creation_uploaders(ctx, &deleted_file_ids).await?;
+        let uploaders = Self::first_revision_users(ctx, &deleted_file_ids).await?;
         let mut access_by_page = HashMap::new();
         let mut visible = Vec::with_capacity(files.len());
 
