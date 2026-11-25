@@ -29,13 +29,29 @@ fn live_page_ids_subquery() -> sea_query::SelectStatement {
         .to_owned()
 }
 
+pub(super) enum PageParentFilter {
+    Condition(Condition),
+    NoParentAntiJoin,
+}
+
+pub(super) fn live_parented_children_subquery() -> sea_query::SelectStatement {
+    Query::select()
+        .column(page_parent::Column::ChildPageId)
+        .distinct()
+        .from(PageParent)
+        .and_where(
+            page_parent::Column::ParentPageId.in_subquery(live_page_ids_subquery()),
+        )
+        .to_owned()
+}
+
 pub(super) async fn page_parent_condition(
     ctx: &ServiceContext<'_>,
     current_site_id: i64,
     queried_site_id: i64,
     current_page_id: i64,
     page_parent: PageParentSelector<'_>,
-) -> Result<Option<Condition>> {
+) -> Result<Option<PageParentFilter>> {
     if matches!(page_parent, PageParentSelector::All) {
         return Ok(None);
     }
@@ -44,19 +60,7 @@ pub(super) async fn page_parent_condition(
     match page_parent {
         PageParentSelector::All => unreachable!(),
         PageParentSelector::NoParent => {
-            condition = condition.add(
-                page::Column::PageId.not_in_subquery(
-                    Query::select()
-                        .column(page_parent::Column::ChildPageId)
-                        .distinct()
-                        .from(PageParent)
-                        .and_where(
-                            page_parent::Column::ParentPageId
-                                .in_subquery(live_page_ids_subquery()),
-                        )
-                        .to_owned(),
-                ),
-            );
+            return Ok(Some(PageParentFilter::NoParentAntiJoin));
         }
         PageParentSelector::SameParents => {
             condition = condition.add(
@@ -136,7 +140,7 @@ pub(super) async fn page_parent_condition(
         }
     }
 
-    Ok(Some(condition))
+    Ok(Some(PageParentFilter::Condition(condition)))
 }
 
 fn first_revision_author_page_ids_sql(placeholders: &str, site_id: i64) -> String {
