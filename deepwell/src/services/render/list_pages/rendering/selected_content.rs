@@ -602,6 +602,7 @@ pub(super) async fn render_list_pages_default_summary_source(
         max_include_expansions,
         trusted_corpus_render,
         render_cost_budget,
+        expanded_include_cache,
         url,
     } = args;
     render_cost_budget
@@ -634,6 +635,7 @@ pub(super) async fn render_list_pages_default_summary_source(
             max_include_expansions,
             trusted_corpus_render,
             render_cost_budget,
+            expanded_include_cache,
             trace: None,
             persist_compiled_text: false,
             url,
@@ -675,6 +677,7 @@ pub(super) async fn render_list_pages_block_content_source(
         max_include_expansions,
         trusted_corpus_render,
         render_cost_budget,
+        expanded_include_cache,
         url,
     } = args;
     render_cost_budget
@@ -706,6 +709,7 @@ pub(super) async fn render_list_pages_block_content_source(
             max_include_expansions,
             trusted_corpus_render,
             render_cost_budget,
+            expanded_include_cache,
             trace: None,
             persist_compiled_text: false,
             url,
@@ -736,6 +740,7 @@ pub(super) async fn render_list_pages_selected_content_source(
         max_include_expansions,
         trusted_corpus_render,
         render_cost_budget,
+        expanded_include_cache,
         url,
     } = args;
     render_cost_budget
@@ -792,6 +797,7 @@ pub(super) async fn render_list_pages_selected_content_source(
             max_include_expansions,
             trusted_corpus_render,
             render_cost_budget,
+            expanded_include_cache,
             trace: None,
             persist_compiled_text: false,
             url,

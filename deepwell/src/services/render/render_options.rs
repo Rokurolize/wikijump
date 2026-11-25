@@ -21,6 +21,7 @@
 use super::diagnostics::{CorpusRenderScope, CorpusRenderTrace};
 use super::list_pages::ListPagesPagerRoute;
 use super::render_budget::SharedRenderCostBudget;
+use super::runtime::SharedExpandedIncludeCache;
 use super::url_arguments::UrlArguments;
 use std::collections::BTreeMap;
 
@@ -52,6 +53,7 @@ pub(super) struct RenderInnerOptions<'a> {
     pub(super) max_include_expansions: usize,
     pub(super) trusted_corpus_render: bool,
     pub(super) render_cost_budget: SharedRenderCostBudget,
+    pub(super) expanded_include_cache: SharedExpandedIncludeCache,
     pub(super) trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,
     pub(super) persist_compiled_text: bool,
 
@@ -82,6 +84,7 @@ pub(super) struct RenderExpansionOptions<'a> {
     pub(super) max_include_expansions: usize,
     pub(super) trusted_corpus_render: bool,
     pub(super) render_cost_budget: SharedRenderCostBudget,
+    pub(super) expanded_include_cache: SharedExpandedIncludeCache,
     pub(super) trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,
     pub(super) url: UrlArguments<'a>,
     pub(super) list_pages_pager_route: ListPagesPagerRoute,

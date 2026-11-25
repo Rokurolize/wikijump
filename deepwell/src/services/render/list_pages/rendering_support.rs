@@ -24,7 +24,7 @@ use super::super::compat::text_fragments::CompatTextFragments;
 use super::super::include_comment_branches::remove_unresolved_include_comment_branches;
 use super::super::literal_regions::{ListPagesSourceProjection, LiteralRegionIndex};
 use super::super::render_budget::SharedRenderCostBudget;
-use super::super::runtime::IncludeSourceCache;
+use super::super::runtime::{IncludeSourceCache, SharedExpandedIncludeCache};
 use super::super::service::{
     IncludeExpansion, IncludeExpansionBudget, MAX_LISTPAGES_RENDER_LIMIT, RenderService,
 };
@@ -569,6 +569,7 @@ pub(in crate::services::render) struct ListPagesBlockRenderArgs<'a, 'ctx, 'info,
     pub(in crate::services::render) template: &'a ListPagesTemplatePlan,
     pub(in crate::services::render) include_budget: &'a mut IncludeExpansionBudget,
     pub(in crate::services::render) render_cost_budget: &'a SharedRenderCostBudget,
+    pub(in crate::services::render) expanded_include_cache: SharedExpandedIncludeCache,
     pub(in crate::services::render) prefetched_pages: Option<FoundPages>,
     pub(in crate::services::render) prefetched_displays:
         Option<&'a ListPagesBatchDisplays>,
@@ -633,6 +634,7 @@ pub(in crate::services::render) struct ListPagesSelectedContentArgs<'a, 'ctx, 'i
     pub(in crate::services::render) max_include_expansions: usize,
     pub(in crate::services::render) trusted_corpus_render: bool,
     pub(in crate::services::render) render_cost_budget: SharedRenderCostBudget,
+    pub(in crate::services::render) expanded_include_cache: SharedExpandedIncludeCache,
     pub(in crate::services::render) url: UrlArguments<'url>,
 }
 

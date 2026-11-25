@@ -116,6 +116,7 @@ impl RenderService {
             current_page_data_form_values.clone(),
         )
         .await?;
+        let expanded_include_cache = include_source_cache.expanded_includes.clone();
 
         let initial_remaining_include_expansions = include_budget.remaining;
         let current_category = Self::page_info_category_slug(page_info);
@@ -658,6 +659,7 @@ impl RenderService {
                             template: &template,
                             include_budget: &mut include_budget,
                             render_cost_budget: &render_cost_budget,
+                            expanded_include_cache: expanded_include_cache.clone(),
                             prefetched_pages,
                             prefetched_displays: prefetched_displays.as_ref(),
                             content_cache: &mut content_cache,
@@ -796,6 +798,7 @@ impl RenderService {
                             template: &template,
                             include_budget: &mut include_budget,
                             render_cost_budget: &render_cost_budget,
+                            expanded_include_cache: expanded_include_cache.clone(),
                             prefetched_pages: None,
                             prefetched_displays: None,
                             content_cache: &mut content_cache,

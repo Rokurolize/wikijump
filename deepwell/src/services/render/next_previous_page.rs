@@ -40,6 +40,7 @@ use super::list_pages::{
 };
 use super::literal_regions::LiteralRegionIndex;
 use super::render_budget::SharedRenderCostBudget;
+use super::runtime::SharedExpandedIncludeCache;
 use super::service::{
     IncludeExpansion, IncludeExpansionBudget, MAX_LISTPAGES_RENDER_SCAN_ROWS,
     RenderService,
@@ -299,6 +300,7 @@ impl RenderService {
                     template: &template,
                     include_budget,
                     render_cost_budget,
+                    expanded_include_cache: SharedExpandedIncludeCache::default(),
                     prefetched_pages: Some(pages),
                     prefetched_displays: prefetched_displays.as_ref(),
                     content_cache: &mut content_cache,

@@ -37,6 +37,7 @@ use ftml::{self};
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
 use std::collections::{BTreeMap, HashMap};
 use std::future::Future;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 pub(super) struct RenderRuntime<'context, 'transaction> {
@@ -469,13 +470,35 @@ pub(super) struct CachedIncludeExpansion {
     pub(super) expanded_include_count: usize,
 }
 
+#[derive(Debug, Clone, Default)]
+pub(super) struct SharedExpandedIncludeCache {
+    entries: Arc<Mutex<HashMap<TextHash, CachedIncludeExpansion>>>,
+}
+
+impl SharedExpandedIncludeCache {
+    fn get(&self, key: &TextHash) -> Option<CachedIncludeExpansion> {
+        self.entries
+            .lock()
+            .expect("expanded include cache mutex poisoned")
+            .get(key)
+            .cloned()
+    }
+
+    fn insert(&self, key: TextHash, value: CachedIncludeExpansion) {
+        self.entries
+            .lock()
+            .expect("expanded include cache mutex poisoned")
+            .insert(key, value);
+    }
+}
+
 #[derive(Debug, Default)]
 pub(super) struct IncludeSourceCache {
     sources_by_site: HashMap<i64, HashMap<String, IncludeSourceCacheEntry>>,
     imported_cross_site_sources: HashMap<(i64, String, String), Option<String>>,
     sites_by_id: HashMap<i64, Option<SiteModel>>,
     sites_by_slug: HashMap<String, Option<SiteModel>>,
-    expanded_includes: HashMap<TextHash, CachedIncludeExpansion>,
+    pub(super) expanded_includes: SharedExpandedIncludeCache,
     pub(super) attachment_provenance: AttachmentProvenanceRegistry,
 }
 
@@ -483,7 +506,7 @@ impl IncludeSourceCache {
     pub(super) fn expanded_include(
         &self,
         key: &TextHash,
-    ) -> Option<&CachedIncludeExpansion> {
+    ) -> Option<CachedIncludeExpansion> {
         self.expanded_includes.get(key)
     }
 

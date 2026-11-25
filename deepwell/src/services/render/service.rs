@@ -150,6 +150,7 @@ use super::render_options::{
 };
 use super::runtime::{
     AuthorizedIncludeSource, CachedIncludeExpansion, IncludeSourceCache, RenderRuntime,
+    SharedExpandedIncludeCache,
 };
 use super::runtime_modules::{RateModuleContext, SecondaryRuntimeModuleExpansionOptions};
 use super::site_utility_modules::resolve_typed_root_site_grid_runtime_modules;
@@ -815,6 +816,7 @@ impl RenderService {
                 max_include_expansions: public_include_expansion_limit(ctx.config()),
                 trusted_corpus_render: false,
                 render_cost_budget,
+                expanded_include_cache: SharedExpandedIncludeCache::default(),
                 trace: None,
                 persist_compiled_text: true,
                 url: UrlArguments::default(),
@@ -866,6 +868,7 @@ impl RenderService {
                 max_include_expansions: public_include_expansion_limit(ctx.config()),
                 trusted_corpus_render: false,
                 render_cost_budget: RenderCostBudget::new_default(),
+                expanded_include_cache: SharedExpandedIncludeCache::default(),
                 trace: None,
                 persist_compiled_text: false,
                 url: UrlArguments::default(),
@@ -930,6 +933,7 @@ impl RenderService {
                 max_include_expansions: public_include_expansion_limit(ctx.config()),
                 trusted_corpus_render: false,
                 render_cost_budget: RenderCostBudget::new_default(),
+                expanded_include_cache: SharedExpandedIncludeCache::default(),
                 trace: None,
                 persist_compiled_text: false,
                 url: UrlArguments {
@@ -1167,6 +1171,7 @@ impl RenderService {
                 max_include_expansions,
                 trusted_corpus_render,
                 render_cost_budget: render_cost_budget.clone(),
+                expanded_include_cache: SharedExpandedIncludeCache::default(),
                 trace: trace.map(|trace| (trace, CorpusRenderScope::Body)),
                 persist_compiled_text: persist_page_artifacts,
                 url,
@@ -1213,6 +1218,8 @@ impl RenderService {
                                 max_include_expansions,
                                 trusted_corpus_render,
                                 render_cost_budget: render_cost_budget.clone(),
+                                expanded_include_cache:
+                                    SharedExpandedIncludeCache::default(),
                                 trace: trace.map(|trace| (trace, scope)),
                                 persist_compiled_text: persist_page_artifacts,
                                 url: UrlArguments::default(),
@@ -1308,6 +1315,7 @@ impl RenderService {
                 max_include_expansions: corpus_include_expansion_limit(ctx.config()),
                 trusted_corpus_render: true,
                 render_cost_budget: RenderCostBudget::new_default(),
+                expanded_include_cache: SharedExpandedIncludeCache::default(),
                 trace: None,
                 url: UrlArguments::default(),
                 list_pages_pager_route: super::list_pages::ListPagesPagerRoute::SavedPage,
@@ -1428,6 +1436,7 @@ impl RenderService {
             max_include_expansions,
             trusted_corpus_render,
             render_cost_budget,
+            expanded_include_cache,
             trace,
             url,
             list_pages_pager_route,
@@ -1448,6 +1457,7 @@ impl RenderService {
             IncludeExpansionBudget::new(max_include_expansions, trusted_corpus_render);
         let initial_include_expansions = include_budget.remaining;
         let mut include_source_cache = IncludeSourceCache::default();
+        include_source_cache.expanded_includes = expanded_include_cache;
         select_root_metacomponent_documentation(
             &mut wikitext,
             RootMetacomponentContext::from_root_tags(&page_info.tags),
@@ -1973,6 +1983,7 @@ impl RenderService {
             max_include_expansions,
             trusted_corpus_render,
             render_cost_budget,
+            expanded_include_cache,
             trace,
             persist_compiled_text,
             url,
@@ -2030,6 +2041,7 @@ impl RenderService {
                 max_include_expansions,
                 trusted_corpus_render,
                 render_cost_budget: render_cost_budget.clone(),
+                expanded_include_cache,
                 trace,
                 url,
                 list_pages_pager_route,
@@ -4046,12 +4058,16 @@ struct IncludeExpansionContext<'a> {
 impl<'a> IncludeExpansionContext<'a> {
     fn scope_key(&self) -> String {
         format!(
-            "{}|{}|{:?}|{:?}|{:p}|{:p}|{}|{}|{}|{}",
+            "{}|{}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{}|{}|{}|{}",
             self.current_site_id,
             self.current_site_slug,
             self.imported_source_site,
             self.attachment_owner,
-            self.page_info,
+            self.page_info.page,
+            self.page_info.category,
+            self.page_info.site,
+            self.page_info.tags,
+            self.page_info.language,
             self.settings,
             self.omit_iftags_branches,
             self.expand_wikidot_image_blocks,

@@ -83,6 +83,7 @@ impl RenderService {
             template,
             include_budget,
             render_cost_budget,
+            expanded_include_cache,
             mut prefetched_pages,
             prefetched_displays,
             content_cache,
@@ -1284,6 +1285,8 @@ impl RenderService {
                                                 .trusted_corpus_render,
                                             render_cost_budget: render_cost_budget
                                                 .clone(),
+                                            expanded_include_cache:
+                                                expanded_include_cache.clone(),
                                             url,
                                         },
                                         page_preview,
@@ -1307,6 +1310,8 @@ impl RenderService {
                                                 .trusted_corpus_render,
                                             render_cost_budget: render_cost_budget
                                                 .clone(),
+                                            expanded_include_cache:
+                                                expanded_include_cache.clone(),
                                             url,
                                         },
                                     )
@@ -1361,6 +1366,8 @@ impl RenderService {
                                                 .trusted_corpus_render,
                                             render_cost_budget: render_cost_budget
                                                 .clone(),
+                                            expanded_include_cache:
+                                                expanded_include_cache.clone(),
                                             url,
                                         },
                                     )
@@ -1458,6 +1465,7 @@ impl RenderService {
                                 trusted_corpus_render: include_budget
                                     .trusted_corpus_render,
                                 render_cost_budget: render_cost_budget.clone(),
+                                expanded_include_cache: expanded_include_cache.clone(),
                                 url,
                             },
                         )
