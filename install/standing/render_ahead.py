@@ -32,6 +32,15 @@ failure stops the run. A final dry run checks the whole site.
 Each run renders every stale page itself: rows left by an earlier run are not
 reused, because only this run's own passes know which pages read links.
 
+`--freeze-writer-during-catch-up` stops the race with live writes for the final
+convergence segment only. When the first whole-site verify still finds stale
+pages, the serving Deepwell is paused after proving it has gone quiet, every
+catch-up round and the link-reader settle that follows run while it is frozen,
+and it is resumed and checked before this command returns on every exit path.
+The pause is bounded and fails closed if quiescence cannot be proven, if the
+resume check fails, or if the bound is exceeded. Without the flag, standalone
+runs keep the historical always-live behavior.
+
 The full pass dominates render-ahead wall-clock (about 97% on recent
 generation changes: every stale page must render exactly once, so the pass is
 pure throughput). Two controller-side levers keep that throughput visible and
@@ -53,6 +62,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import contextlib
 from datetime import UTC, datetime
 import hashlib
 import json
@@ -607,6 +617,12 @@ def parse_args() -> argparse.Namespace:
         default=300_000,
         help="one-shot deadline for pages that still miss the serving deadline alone",
     )
+    parser.add_argument(
+        "--freeze-writer-during-catch-up",
+        action="store_true",
+        help="pause the serving Deepwell across the final catch-up and link settle "
+        "when the first verify is stale",
+    )
     parser.add_argument("--output-dir", type=Path, required=True)
     return parser.parse_args()
 
@@ -618,28 +634,67 @@ def parse_args() -> argparse.Namespace:
 # render can itself move the link graph, so the readers are settled again
 # afterwards (see verify_with_catch_up).
 CATCH_UP_ROUNDS = 3
+PAUSE_QUIESCENCE_SAMPLE_SECONDS = 3
+CATCH_UP_PAUSE_TIMEOUT_SECONDS = 600
 
 
-def verify_with_catch_up(
-    render,
-    cutoff,
-    digests=None,
-    timings=None,
-    readers=(),
-    rounds: int = CATCH_UP_ROUNDS,
-) -> dict[str, object]:
-    """Verify the whole site, rendering pages written during the run first.
+def container_log_lines(container: str, since: datetime) -> int:
+    result = subprocess.run(
+        ["docker", "logs", "--since", since.strftime("%Y-%m-%dT%H:%M:%SZ"), container],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return len(result.stdout.splitlines()) + len(result.stderr.splitlines())
 
-    When `digests` is given, the catch-up renders are bracketed by link
-    digests: an edit caught up here can move the link graph after the main
-    pass's readers already settled, leaving those readers with a stale link
-    view. If any digest moved, the known readers (`readers` from the main
-    pass plus any the catch-up renders report) render again until the graph
-    settles, and a final verify confirms the settle left nothing stale
-    (#2738). Without `digests` the historical behavior is kept.
+
+@contextlib.contextmanager
+def deepwell_paused_for_catch_up(container: str):
+    """Freeze the serving writer for one catch-up segment, then prove resume.
+
+    The render containers join this container's network namespace, which
+    persists across the pause; only the writer's processes stop. The finally
+    path resumes on every exit, including a quiescence or deadline failure,
+    and verifies the container is running and not paused before returning.
     """
-    final = render("verify", cutoff, dry_run=True)
-    snapshot = _digest_snapshot(digests, timings) if digests is not None else None
+    started = datetime.now(UTC)
+    deadline = time.monotonic() + CATCH_UP_PAUSE_TIMEOUT_SECONDS
+    run("docker", "pause", container)
+    try:
+        time.sleep(PAUSE_QUIESCENCE_SAMPLE_SECONDS)
+        lines = container_log_lines(container, started)
+        time.sleep(PAUSE_QUIESCENCE_SAMPLE_SECONDS)
+        if container_log_lines(container, started) != lines:
+            raise RuntimeError(
+                f"{container} kept logging while paused for render-ahead catch-up"
+            )
+
+        def check_deadline():
+            if time.monotonic() >= deadline:
+                raise RuntimeError(
+                    f"{container} catch-up pause exceeded "
+                    f"{CATCH_UP_PAUSE_TIMEOUT_SECONDS} seconds"
+                )
+
+        yield check_deadline
+    finally:
+        run("docker", "unpause", container)
+        state = run(
+            "docker", "inspect", "--format",
+            "{{.State.Paused}} {{.State.Running}}", container,
+        )
+        print(
+            f"{container} paused for render-ahead catch-up: "
+            f"{started.isoformat()} .. {datetime.now(UTC).isoformat()}",
+            flush=True,
+        )
+        if state != "false true":
+            raise RuntimeError(
+                f"{container} did not resume after the render-ahead catch-up pause: {state}"
+            )
+
+
+def _catch_up(render, cutoff, snapshot, readers, rounds, final):
     links_before_catch_up: dict[str, str] | None = None
     caught_up_readers: set[int] = set()
     for round_number in range(1, rounds + 1):
@@ -672,6 +727,60 @@ def verify_with_catch_up(
         stage_prefix="catch-up-",
     )
     return render("verify-after-catch-up", cutoff, dry_run=True)
+
+
+def verify_with_catch_up(
+    render,
+    cutoff,
+    digests=None,
+    timings=None,
+    readers=(),
+    rounds: int = CATCH_UP_ROUNDS,
+    *,
+    freeze_writer: bool = False,
+    deepwell_container: str | None = None,
+) -> dict[str, object]:
+    """Verify the whole site, rendering pages written during the run first.
+
+    When `digests` is given, the catch-up renders are bracketed by link
+    digests: an edit caught up here can move the link graph after the main
+    pass's readers already settled, leaving those readers with a stale link
+    view. If any digest moved, the known readers (`readers` from the main
+    pass plus any the catch-up renders report) render again until the graph
+    settles, and a final verify confirms the settle left nothing stale
+    (#2738). Without `digests` the historical behavior is kept.
+
+    With `freeze_writer`, a first verify that still finds stale pages pauses
+    `deepwell_container` for every catch-up round and the link settle that
+    follows. The container's network namespace survives the pause, so render
+    containers can still reach the database. A clean first verify never
+    pauses. Without the flag the historical always-live behavior is kept.
+    """
+    final = render("verify", cutoff, dry_run=True)
+    with contextlib.ExitStack() as stack:
+        if freeze_writer and final["stale_without_valid_ahead"] > 0:
+            if not deepwell_container:
+                raise ValueError("freezing the writer needs a Deepwell container")
+            check = stack.enter_context(
+                deepwell_paused_for_catch_up(deepwell_container)
+            )
+
+            original_render = render
+            original_digests = digests
+
+            def frozen_render(*args, **kwargs):
+                check()
+                return original_render(*args, **kwargs)
+
+            render = frozen_render
+            if original_digests is not None:
+                def frozen_digests():
+                    check()
+                    return original_digests()
+
+                digests = frozen_digests
+        snapshot = _digest_snapshot(digests, timings) if digests is not None else None
+        return _catch_up(render, cutoff, snapshot, readers, rounds, final)
 
 
 def main() -> int:
@@ -755,6 +864,8 @@ def main() -> int:
             digests=lambda: link_digests(args.database_container),
             timings=digest_timings,
             readers=readers,
+            freeze_writer=args.freeze_writer_during_catch_up,
+            deepwell_container=args.deepwell_container,
         )
     finally:
         os.unlink(extended_config)

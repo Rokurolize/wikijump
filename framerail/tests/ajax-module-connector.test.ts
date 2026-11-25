@@ -165,6 +165,53 @@ test("ListPages ignores unknown non-data-form selectors while recognized selecto
   ])
 })
 
+test("ListPages forwards link_to to Deepwell and keeps link_from ignored", async () => {
+  const calls: ListPagesRenderInput[] = []
+  const forms = [
+    "moduleName=list%2FListPagesModule&module_body=body&category=*&limit=20&link_to=start&link_from=start&wikidot_token7=client-token",
+    "moduleName=list%2FListPagesModule&module_body=body&category=*&limit=20&link_to=nonexistent-page-zzq-nope&link_from=start&wikidot_token7=client-token"
+  ]
+
+  for (const form of forms) {
+    const response = await handleAjaxModuleConnectorRequest(
+      new Request("http://scp-wiki.local/ajax-module-connector.php", {
+        method: "POST",
+        headers: {
+          "content-type": "application/x-www-form-urlencoded",
+          cookie: "wikidot_token7=client-token"
+        },
+        body: form
+      }),
+      {
+        siteId: 6000006,
+        renderListPages: async (input) => {
+          calls.push(input)
+          return { body: "rows" }
+        }
+      }
+    )
+    assert.equal(response.status, 200)
+    assert.deepEqual(await response.json(), { status: "ok", body: "rows" })
+  }
+
+  assert.deepEqual(calls, [
+    {
+      siteId: 6000006,
+      moduleBody: "body",
+      parameters: { category: "*", limit: "20", link_to: "start" }
+    },
+    {
+      siteId: 6000006,
+      moduleBody: "body",
+      parameters: {
+        category: "*",
+        limit: "20",
+        link_to: "nonexistent-page-zzq-nope"
+      }
+    }
+  ])
+})
+
 test("ListPages keeps the later URL-form value for duplicate scalar fields", async () => {
   const calls: ListPagesRenderInput[] = []
   const renderListPages = async (input: ListPagesRenderInput) => {

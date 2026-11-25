@@ -81,6 +81,10 @@ impl AttachmentProvenanceRegistry {
         marker
     }
 
+    pub(super) fn entry_count(&self) -> usize {
+        self.entries.len()
+    }
+
     pub(super) fn decode(&self, value: &str) -> Option<(&String, &AttachmentOwner)> {
         self.entries
             .get(value.trim())

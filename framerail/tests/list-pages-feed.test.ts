@@ -63,6 +63,25 @@ test("rejects non-numeric feed windowing parameters", () => {
   assert.equal(wikidotListPagesFeedSelectorError({ limit: "10", offset: "0" }), null)
 })
 
+test("accepts more than one hundred selector values and caps oversized selectors cleanly", () => {
+  const values = Array.from({ length: 101 }, (_, index) => `zzNoMatchCat${index}`).join(
+    ","
+  )
+  const path = parseWikidotListPagesFeedPath(
+    `https://sandbox.example/feed/pages/category/${values}/order/updated_at%20desc/limit/20/offset/0`
+  )
+  assert.ok(path)
+  assert.equal(path.selectors.category, values)
+  assert.equal(wikidotListPagesFeedSelectorError(path.selectors), null)
+
+  const oversized = "x".repeat(8 * 1024 + 1)
+  assert.equal(
+    wikidotListPagesFeedSelectorError({ tags: oversized }),
+    "Wikidot ListPages feed selector is too long (maximum 8192 bytes)."
+  )
+  assert.equal(wikidotListPagesFeedSelectorError({ tags: "x".repeat(8 * 1024) }), null)
+})
+
 test("pairs arguments sequentially and treats an orphan key as empty", () => {
   assert.deepEqual(
     parseWikidotListPagesFeedPath("https://sandbox.example/feed/pages/t/d/foo"),

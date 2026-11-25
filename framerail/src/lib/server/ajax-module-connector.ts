@@ -80,6 +80,7 @@ const LIST_PAGES_PARAMETERS = new Set([
   "tags",
   "tag",
   "parent",
+  "link_to",
   "created_at",
   "createdat",
   "updated_at",

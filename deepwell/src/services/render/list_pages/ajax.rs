@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::LazyLock;
 
@@ -54,6 +55,19 @@ pub(in crate::services::render) fn build_wikidot_list_pages_module_source(
 ) -> Option<String> {
     build_wikidot_list_pages_module_request(module_body, parameters)
         .map(|request| request.source)
+}
+
+fn connector_list_pages_scalar_value(value: &str) -> Cow<'_, str> {
+    if !value.contains('"') {
+        return Cow::Borrowed(value);
+    }
+    let mut scalar = String::with_capacity(value.len());
+    for character in value.chars() {
+        if !matches!(character, '"' | '[' | ']' | '{' | '}') {
+            scalar.push(character);
+        }
+    }
+    Cow::Owned(scalar)
 }
 
 pub(in crate::services::render) fn build_wikidot_list_pages_module_request(
@@ -95,6 +109,7 @@ pub(in crate::services::render) fn build_wikidot_list_pages_module_request(
                 | "tags"
                 | "tag"
                 | "parent"
+                | "link_to"
                 | "created_at"
                 | "createdat"
                 | "updated_at"
@@ -138,19 +153,16 @@ pub(in crate::services::render) fn build_wikidot_list_pages_module_request(
             return None;
         }
 
-        let (quote, quoted_value) = if !value.contains('"') {
-            ('"', value.as_str())
-        } else if !value.contains('\'') {
-            ('\'', value.as_str())
-        } else {
+        let raw_value = value;
+        let value = connector_list_pages_scalar_value(raw_value);
+        if !raw_value.is_empty() && value.trim().is_empty() {
             return None;
-        };
+        }
         source.push(' ');
         source.push_str(key);
-        source.push('=');
-        source.push(quote);
-        source.push_str(quoted_value);
-        source.push(quote);
+        source.push_str("=\"");
+        source.push_str(&value);
+        source.push('"');
     }
     source.push_str("]]\n");
     let body_start = source.len();
@@ -372,4 +384,257 @@ fn literalize_uncovered_ajax_list_pages_openers(body: &str) -> String {
     }
     output.push_str(&body[cursor..]);
     output
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::services::render::list_pages::substitution::{
+        ListPagesArguments, parse_list_pages_arguments,
+    };
+
+    const BODY: &str = "%%fullname%%";
+    const SELECTORS: &[&str] = &["created_by", "tags", "category", "name", "parent"];
+
+    fn connector_source(key: &str, value: &str) -> String {
+        build_wikidot_list_pages_module_request(
+            BODY.to_owned(),
+            &BTreeMap::from([(key.to_owned(), value.to_owned())]),
+        )
+        .unwrap_or_else(|| panic!("connector rejected {key}={value:?}"))
+        .source
+    }
+
+    fn preview_source(key: &str, value: &str) -> String {
+        format!("[[module ListPages {key}=\"{value}\"]]\n{BODY}\n[[/module]]")
+    }
+
+    fn source_head(source: &str) -> &str {
+        find_list_pages_module_matches(source)
+            .first()
+            .expect("built source has one module")
+            .head
+    }
+
+    fn source_arguments(source: &str) -> ListPagesArguments {
+        parse_list_pages_arguments(source_head(source))
+            .unwrap_or_else(|| panic!("head did not parse: {:?}", source_head(source)))
+    }
+
+    fn selector_projection(arguments: &ListPagesArguments) -> String {
+        format!(
+            "category={:?} tags={:?} authors={:?} slug={:?} pattern={:?} fullname={:?} parent={:?} parent_name={:?}",
+            arguments.categories,
+            arguments.default_tags,
+            arguments.authors,
+            arguments.slug,
+            arguments.name_pattern,
+            arguments.fullname_selector_present,
+            arguments.page_parent,
+            arguments.static_parent_fullname,
+        )
+    }
+
+    fn assert_malformed_matches_honest(
+        key: &str,
+        malformed: &str,
+        honest: &str,
+        expected_scalar: &str,
+    ) {
+        let connector = connector_source(key, malformed);
+        let honest_connector = connector_source(key, honest);
+        let preview = preview_source(key, honest);
+        let baseline = preview_source("limit", "1");
+
+        assert_eq!(
+            connector, honest_connector,
+            "{key}={malformed:?} must build the same source as the honest scalar",
+        );
+        assert_eq!(
+            connector, preview,
+            "{key}={malformed:?} must build the same source as the preview head",
+        );
+        assert!(
+            connector.contains(&format!("{key}=\"{honest}\"")),
+            "{key}={malformed:?} must be double-quoted with the scalar operand: {connector:?}",
+        );
+        assert!(
+            wikidot_ajax_list_pages_source_is_safe(&connector),
+            "connector source must remain runtime-safe: {connector:?}",
+        );
+
+        let arguments = source_arguments(&connector);
+        let preview_arguments = source_arguments(&preview);
+        assert_eq!(
+            arguments, preview_arguments,
+            "connector and preview must parse identically for {key}={malformed:?}",
+        );
+        assert_ne!(
+            arguments,
+            source_arguments(&baseline),
+            "{key}={malformed:?} silently dropped its predicate: {connector:?}",
+        );
+        assert!(
+            selector_projection(&arguments).contains(expected_scalar),
+            "{key}={malformed:?} must carry {expected_scalar:?} as a scalar operand: {}",
+            selector_projection(&arguments),
+        );
+    }
+
+    #[test]
+    fn connector_bracket_quote_and_single_quote_values_match_honest_selectors() {
+        for key in SELECTORS {
+            let (primary, companion) = match *key {
+                "created_by" => ("artex-hunter-a", "artex-hunter-b"),
+                "category" => ("sectest", "i9748"),
+                "name" => ("sectest-xss-probe", "i9748"),
+                "parent" => ("system:i9748pbo8r0et1", "extra"),
+                _ => ("sectest", "i9748"),
+            };
+
+            assert_malformed_matches_honest(
+                key,
+                &format!("[\"{primary}\"]"),
+                primary,
+                primary,
+            );
+            assert_malformed_matches_honest(
+                key,
+                &format!("{primary} [\"{companion}\"]"),
+                &format!("{primary} {companion}"),
+                primary,
+            );
+            assert_malformed_matches_honest(key, r#"ab"cd"#, "abcd", "abcd");
+            assert_malformed_matches_honest(
+                key,
+                "ab'cd",
+                "ab'cd",
+                if *key == "name" { "ab-cd" } else { "ab'cd" },
+            );
+        }
+    }
+
+    #[test]
+    fn connector_non_double_quote_brackets_stay_literal() {
+        for key in SELECTORS {
+            let source = connector_source(key, "[x]");
+            assert_eq!(
+                source,
+                preview_source(key, "[x]"),
+                "quote-free bracket tokens keep their literal form for {key}",
+            );
+            assert!(
+                wikidot_ajax_list_pages_source_is_safe(&source),
+                "quote-free bracket token must remain runtime-safe for {key}: {source:?}",
+            );
+            let arguments = source_arguments(&source);
+            assert_ne!(
+                arguments,
+                source_arguments(&preview_source("limit", "1")),
+                "quote-free bracket token must not drop the {key} predicate",
+            );
+        }
+    }
+
+    #[test]
+    fn connector_rejects_a_value_stripped_to_nothing() {
+        for key in SELECTORS {
+            assert!(
+                build_wikidot_list_pages_module_request(
+                    BODY.to_owned(),
+                    &BTreeMap::from([((*key).to_owned(), r#""""#.to_owned())]),
+                )
+                .is_none(),
+                "{key} with only JSON decoration must fail closed",
+            );
+        }
+    }
+
+    #[test]
+    fn connector_link_to_matches_preview_for_omitted_valid_and_nonexistent() {
+        let omitted_connector = connector_source("limit", "20");
+        let omitted_preview = preview_source("limit", "20");
+        assert_eq!(omitted_connector, omitted_preview);
+        assert!(source_arguments(&omitted_connector).link_to.is_empty());
+        assert_eq!(
+            source_arguments(&omitted_connector),
+            source_arguments(&omitted_preview),
+        );
+
+        for target in ["start", "nonexistent-page-zzq-nope"] {
+            let connector = build_wikidot_list_pages_module_request(
+                BODY.to_owned(),
+                &BTreeMap::from([
+                    ("category".to_owned(), "*".to_owned()),
+                    ("limit".to_owned(), "20".to_owned()),
+                    ("link_to".to_owned(), target.to_owned()),
+                ]),
+            )
+            .unwrap_or_else(|| panic!("connector rejected link_to={target:?}"))
+            .source;
+            let preview = format!(
+                "[[module ListPages category=\"*\" limit=\"20\" link_to=\"{target}\"]]\n{BODY}\n[[/module]]"
+            );
+
+            assert_eq!(
+                connector, preview,
+                "connector must emit link_to exactly like preview for {target:?}",
+            );
+            assert!(wikidot_ajax_list_pages_source_is_safe(&connector));
+
+            let arguments = source_arguments(&connector);
+            assert_eq!(
+                arguments,
+                source_arguments(&preview),
+                "connector and preview must parse identically for link_to={target:?}",
+            );
+            assert_eq!(arguments.link_to, vec![Cow::Borrowed(target)]);
+            assert_ne!(
+                arguments.link_to,
+                source_arguments(&omitted_connector).link_to,
+            );
+        }
+    }
+
+    #[test]
+    fn connector_link_to_quote_and_bracket_shapes_match_honest_preview() {
+        for (malformed, honest) in [(r#"["start"]"#, "start"), (r#"ab"cd"#, "abcd")] {
+            let connector = connector_source("link_to", malformed);
+            let preview = preview_source("link_to", honest);
+            assert_eq!(
+                connector, preview,
+                "link_to={malformed:?} must canonicalize to {honest:?}",
+            );
+            let arguments = source_arguments(&connector);
+            assert_eq!(arguments, source_arguments(&preview));
+            assert_eq!(arguments.link_to, vec![Cow::Borrowed(honest)]);
+        }
+    }
+
+    #[test]
+    fn connector_link_from_stays_ignored_like_preview() {
+        let mut baseline: Option<ListPagesArguments> = None;
+        for target in ["start", "nonexistent-page-zzq-nope"] {
+            assert!(
+                build_wikidot_list_pages_module_request(
+                    BODY.to_owned(),
+                    &BTreeMap::from([("link_from".to_owned(), target.to_owned())]),
+                )
+                .is_none(),
+                "link_from must not be forwarded by the connector: live Wikidot has no link_from",
+            );
+            let arguments = source_arguments(&preview_source("link_from", target));
+            assert!(
+                arguments.link_to.is_empty(),
+                "preview must keep ignoring link_from={target:?}",
+            );
+            match baseline.as_ref() {
+                Some(previous) => assert_eq!(
+                    &arguments, previous,
+                    "the ignored link_from value must have no effect on preview",
+                ),
+                None => baseline = Some(arguments),
+            }
+        }
+    }
 }

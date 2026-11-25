@@ -767,6 +767,79 @@ describe("Wikidot site settings public boundaries", () => {
         }
       },
       {
+        action: "navigation",
+        fields: {
+          siteId,
+          categoryId: 23,
+          expectedSettingsRevision: settingsRevision,
+          inherit: false,
+          topBarPage: "nav:top",
+          sideBarPage: "nav:side"
+        },
+        method: "category_update",
+        expected: {
+          category: 23,
+          top_bar_page: "nav:top",
+          side_bar_page: "nav:side"
+        }
+      },
+      {
+        action: "license",
+        fields: {
+          siteId,
+          categoryId: 23,
+          expectedSettingsRevision: settingsRevision,
+          inherit: false,
+          license: "cc-by-sa-3.0",
+          licenseOther: ""
+        },
+        method: "category_update",
+        expected: { category: 23, license: "cc-by-sa-3.0", license_other: null }
+      },
+      {
+        action: "template",
+        fields: {
+          siteId,
+          categoryId: 23,
+          expectedSettingsRevision: settingsRevision,
+          templatePageId: 91
+        },
+        method: "category_update",
+        expected: { category: 23, template_page_id: 91 }
+      },
+      {
+        action: "rating",
+        fields: {
+          siteId,
+          categoryId: 23,
+          expectedSettingsRevision: settingsRevision,
+          inherit: false,
+          enabled: true,
+          permission: "members",
+          visibility: "anonymous",
+          ratingType: "plus_minus"
+        },
+        method: "category_update",
+        expected: {
+          category: 23,
+          rating_enabled: true,
+          rating_permission: "members",
+          rating_visibility: "anonymous",
+          rating_type: "plus_minus"
+        }
+      },
+      {
+        action: "discussion",
+        fields: {
+          siteId,
+          categoryId: 23,
+          expectedSettingsRevision: settingsRevision,
+          state: "enable"
+        },
+        method: "category_update",
+        expected: { category: 23, per_page_discussion: true }
+      },
+      {
         action: "theme",
         fields: {
           siteId,
@@ -984,6 +1057,7 @@ describe("Wikidot site settings public boundaries", () => {
       actionEvent("template", {
         siteId,
         categoryId: 23,
+        expectedSettingsRevision: settingsRevision,
         templatePageId: 91
       })
     )
@@ -1000,6 +1074,7 @@ describe("Wikidot site settings public boundaries", () => {
         params: {
           site: siteId,
           category: 23,
+          expected_settings_revision: settingsRevision,
           user_id: 41,
           template_page_id: 91,
           ip_address: "192.0.2.63"

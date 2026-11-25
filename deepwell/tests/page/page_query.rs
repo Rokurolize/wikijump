@@ -2803,3 +2803,410 @@ async fn created_by_author_query_scopes_first_revision_authors_to_the_queried_si
         "site-local authorship must still match exactly the local pages",
     );
 }
+
+async fn authored_slugs_with_tags(
+    runner: &TestRunner,
+    site_id: i64,
+    all_present: &[Cow<'_, str>],
+    untagged: bool,
+) -> Vec<String> {
+    let found = PageQueryService::find(
+        runner.context(),
+        PageQuery {
+            current_page_id: 0,
+            current_site_id: site_id,
+            queried_site_id: Some(site_id),
+            page_type: PageTypeSelector::All,
+            categories: CategoriesSelector {
+                included_categories: IncludedCategories::All,
+                excluded_categories: &[],
+            },
+            tags: TagCondition {
+                any_present: &[],
+                all_present,
+                none_present: &[],
+                untagged,
+            },
+            page_parent: PageParentSelector::All,
+            contains_outgoing_links: &[],
+            creation_date: DateSelector::FromPresent {
+                start: OffsetDateTime::UNIX_EPOCH,
+            },
+            update_date: DateSelector::FromPresent {
+                start: OffsetDateTime::UNIX_EPOCH,
+            },
+            author: AuthorSelector::Any {
+                user_ids: &[SAMPLE_USER_ID],
+                wikidot_snapshot_names: &[],
+            },
+            score: &[],
+            votes: &[],
+            offset: 0,
+            name: None,
+            slug: None,
+            slugs: &[],
+            data_form_fields: &[],
+            order: Some(OrderBySelector {
+                property: OrderProperty::PageSlug,
+                ascending: true,
+            }),
+            candidate_limit: None,
+            pagination: PaginationSelector {
+                limit: Some(100),
+                ..Default::default()
+            },
+            fields: FoundPageFields {
+                slug: true,
+                ..Default::default()
+            },
+        },
+    )
+    .await
+    .expect("created_by query with companion tag should succeed");
+    found
+        .pages
+        .into_iter()
+        .map(|page| page.slug.expect("slug field should be requested"))
+        .collect::<Vec<_>>()
+}
+
+#[tokio::test]
+async fn created_by_with_no_match_companion_selector_returns_no_pages() {
+    let runner = TestRunner::setup().await;
+    let tag = uuid::Uuid::new_v4().simple().to_string();
+    let site_id = create_author_scope_site(&runner, "cb-nomatch", &tag).await;
+    let slug = format!("author-scope-cb-nomatch-{tag}");
+    create_author_scope_page(&runner, site_id, &slug, SAMPLE_USER_ID).await;
+
+    let no_match: [Cow<'static, str>; 1] =
+        [Cow::Borrowed("zz-no-match-createdby-wave10")];
+    assert_eq!(
+        authored_slugs_with_tags(&runner, site_id, &no_match, false).await,
+        Vec::<String>::new(),
+        "a no-match companion selector must still return no pages under created_by",
+    );
+    assert_eq!(
+        authored_slugs_with_tags(&runner, site_id, &[], true).await,
+        vec![slug],
+        "the same created_by selector must still return its authored page when a companion selector matches",
+    );
+}
+
+async fn excluded_tag_query_results(
+    runner: &TestRunner,
+    site_id: i64,
+    marker: &'static [Cow<'static, str>],
+    none_present: &[Cow<'_, str>],
+) -> (Vec<String>, Option<usize>) {
+    let query = PageQuery {
+        current_page_id: 0,
+        current_site_id: site_id,
+        queried_site_id: Some(site_id),
+        page_type: PageTypeSelector::All,
+        categories: CategoriesSelector {
+            included_categories: IncludedCategories::All,
+            excluded_categories: &[],
+        },
+        tags: TagCondition {
+            any_present: &[],
+            all_present: marker,
+            none_present,
+            untagged: false,
+        },
+        page_parent: PageParentSelector::All,
+        contains_outgoing_links: &[],
+        creation_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        update_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        author: AuthorSelector::All,
+        score: &[],
+        votes: &[],
+        offset: 0,
+        name: None,
+        slug: None,
+        slugs: &[],
+        data_form_fields: &[],
+        order: None,
+        candidate_limit: None,
+        pagination: PaginationSelector {
+            limit: Some(100),
+            ..Default::default()
+        },
+        fields: FoundPageFields {
+            slug: true,
+            ..Default::default()
+        },
+    };
+    let found = PageQueryService::find(runner.context(), query.clone())
+        .await
+        .expect("excluded-tag query should succeed");
+    let mut slugs = found
+        .pages
+        .into_iter()
+        .map(|row| row.slug.expect("slug field should be requested"))
+        .collect::<Vec<_>>();
+    slugs.sort();
+    let counted = PageQueryService::count_with_metadata(runner.context(), query)
+        .await
+        .expect("excluded-tag count should succeed");
+    (slugs, counted.metadata.candidate_count)
+}
+
+#[tokio::test]
+async fn excluded_tag_queries_keep_identical_rows_and_totals_at_k1024() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    const MARKER: &[Cow<'static, str>] =
+        &[Cow::Borrowed("verification-excluded-tags-marker")];
+    const HIT: &str = "verification-excluded-tags-hit";
+
+    let keep_a = "verification-excluded-tags-keep-a";
+    let drop_slug = "verification-excluded-tags-drop";
+    let keep_b = "verification-excluded-tags-keep-b";
+    for (slug, tags) in [
+        (keep_a, vec![MARKER[0].as_ref()]),
+        (drop_slug, vec![MARKER[0].as_ref(), HIT]),
+        (keep_b, vec![MARKER[0].as_ref()]),
+    ] {
+        let revision =
+            create_listpages_test_page(&mut runner, site_id, slug, slug, "marker body")
+                .await;
+        set_listpages_test_tags(&mut runner, site_id, slug, revision, &tags).await;
+    }
+
+    let mut expected_all =
+        vec![keep_a.to_owned(), drop_slug.to_owned(), keep_b.to_owned()];
+    expected_all.sort();
+    let mut expected_keep = vec![keep_a.to_owned(), keep_b.to_owned()];
+    expected_keep.sort();
+
+    let none: Vec<Cow<'static, str>> = Vec::new();
+    let one_miss: Vec<Cow<'static, str>> = vec![Cow::Borrowed("zzqf0000")];
+    let one_hit: Vec<Cow<'static, str>> = vec![Cow::Borrowed(HIT)];
+    let k1024_miss = (0..1024)
+        .map(|i| Cow::Owned(format!("zzqf{i:04}")))
+        .collect::<Vec<Cow<'static, str>>>();
+    let mut k1024_hit = k1024_miss.clone();
+    k1024_hit[512] = Cow::Owned(HIT.to_owned());
+    k1024_hit[900] = Cow::Owned(HIT.to_owned());
+
+    assert_eq!(
+        excluded_tag_query_results(&runner, site_id, MARKER, &none).await,
+        (expected_all.clone(), Some(3)),
+        "K=0 baseline should return all three tagged pages",
+    );
+    assert_eq!(
+        excluded_tag_query_results(&runner, site_id, MARKER, &one_miss).await,
+        (expected_all.clone(), Some(3)),
+        "K=1 non-matching token should match the K=0 baseline",
+    );
+    assert_eq!(
+        excluded_tag_query_results(&runner, site_id, MARKER, &one_hit).await,
+        (expected_keep.clone(), Some(2)),
+        "K=1 matching token should exclude only the tagged page",
+    );
+    assert_eq!(
+        excluded_tag_query_results(&runner, site_id, MARKER, &k1024_miss).await,
+        (expected_all, Some(3)),
+        "K=1024 non-matching tokens should match the K=0 baseline",
+    );
+    assert_eq!(
+        excluded_tag_query_results(&runner, site_id, MARKER, &k1024_hit).await,
+        (expected_keep.clone(), Some(2)),
+        "K=1024 with a matching token should match the K=1 baseline",
+    );
+}
+#[tokio::test]
+async fn page_query_two_scalar_predicates_preserve_rows_and_totals() {
+    const PREFIX: &str = "fixture-two-scalar-predicates";
+    const A: &str = "fixture-two-scalar-predicates-a";
+    const B: &str = "fixture-two-scalar-predicates-b";
+    const C: &str = "fixture-two-scalar-predicates-c";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (slug, title) in [
+        (A, "Two Scalar Predicates A"),
+        (B, "Two Scalar Predicates B"),
+        (C, "Two Scalar Predicates C"),
+    ] {
+        create_listpages_test_page(
+            &mut runner,
+            site_id,
+            slug,
+            title,
+            "Two scalar predicate fixture.",
+        )
+        .await;
+    }
+
+    let a_id = listpages_test_page_id(&runner, site_id, A).await;
+    let b_id = listpages_test_page_id(&runner, site_id, B).await;
+    let c_id = listpages_test_page_id(&runner, site_id, C).await;
+    set_stored_point_vote(&runner, a_id, 5).await;
+    set_stored_point_vote(&runner, b_id, 5).await;
+    set_stored_point_vote(&runner, c_id, -5).await;
+
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO page_vote (from_wikidot, page_id, user_id, value) VALUES (false, $1, $2, 3)",
+            [Value::from(b_id), Value::from(SAMPLE_USER_ID)],
+        ))
+        .await
+        .expect("second stored point vote fixture should be inserted");
+    let category_id = PageTable::find_by_id(a_id)
+        .one(transaction)
+        .await
+        .expect("two scalar fixture category lookup should succeed")
+        .expect("two scalar fixture page should exist")
+        .page_category_id;
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO page (site_id, page_category_id, slug) SELECT $1, $2, $3 || '-' || value FROM generate_series(1, 513) AS value",
+            [Value::from(site_id), Value::from(category_id), Value::from(PREFIX.to_owned())],
+        ))
+        .await
+        .expect("site-wide two scalar probe fixtures should be inserted");
+
+    let base_query = PageQuery {
+        current_page_id: 0,
+        current_site_id: site_id,
+        queried_site_id: Some(site_id),
+        page_type: PageTypeSelector::All,
+        categories: CategoriesSelector {
+            included_categories: IncludedCategories::All,
+            excluded_categories: &[],
+        },
+        tags: TagCondition {
+            any_present: &[],
+            all_present: &[],
+            none_present: &[],
+            untagged: false,
+        },
+        page_parent: PageParentSelector::All,
+        contains_outgoing_links: &[],
+        creation_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        update_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        author: AuthorSelector::All,
+        score: &[],
+        votes: &[],
+        offset: 0,
+        name: Some(Cow::Owned(format!("{PREFIX}-*"))),
+        slug: None,
+        slugs: &[],
+        data_form_fields: &[],
+        order: Some(OrderBySelector {
+            property: OrderProperty::PageSlug,
+            ascending: true,
+        }),
+        candidate_limit: None,
+        pagination: PaginationSelector {
+            limit: Some(1_000),
+            ..PaginationSelector::default()
+        },
+        fields: FoundPageFields {
+            slug: true,
+            ..FoundPageFields::default()
+        },
+    };
+
+    let positive_score = [ScoreSelector {
+        score: QueryScoreValue::Integer(0),
+        comparison: ComparisonOperation::GreaterThan,
+    }];
+    let more_than_one_vote = [ScoreSelector {
+        score: QueryScoreValue::Integer(1),
+        comparison: ComparisonOperation::GreaterThan,
+    }];
+    let any_vote = [ScoreSelector {
+        score: QueryScoreValue::Integer(0),
+        comparison: ComparisonOperation::GreaterThan,
+    }];
+    let admin_authors = [ADMIN_USER_ID];
+
+    async fn assert_result(
+        runner: &TestRunner,
+        base: &PageQuery<'_>,
+        score: &[ScoreSelector],
+        votes: &[ScoreSelector],
+        author: AuthorSelector<'_>,
+        expected: &[&str],
+    ) {
+        let mut query = base.clone();
+        query.score = score;
+        query.votes = votes;
+        query.author = author;
+        let result = PageQueryService::find(runner.context(), query)
+            .await
+            .expect("two scalar predicate query should succeed");
+        let slugs = result
+            .pages
+            .iter()
+            .map(|page| page.slug.clone().expect("slug field should be requested"))
+            .collect::<Vec<_>>();
+        assert_eq!(slugs, expected, "combined predicate rows changed");
+        assert_eq!(
+            result.total(),
+            expected.len(),
+            "combined predicate total changed",
+        );
+    }
+
+    assert_result(
+        &runner,
+        &base_query,
+        &positive_score,
+        &any_vote,
+        AuthorSelector::All,
+        &[A, B],
+    )
+    .await;
+    assert_result(
+        &runner,
+        &base_query,
+        &positive_score,
+        &more_than_one_vote,
+        AuthorSelector::All,
+        &[B],
+    )
+    .await;
+    assert_result(
+        &runner,
+        &base_query,
+        &positive_score,
+        &[],
+        AuthorSelector::Any {
+            user_ids: &admin_authors,
+            wikidot_snapshot_names: &[],
+        },
+        &[A, B],
+    )
+    .await;
+    assert_result(
+        &runner,
+        &base_query,
+        &positive_score,
+        &more_than_one_vote,
+        AuthorSelector::Any {
+            user_ids: &admin_authors,
+            wikidot_snapshot_names: &[],
+        },
+        &[B],
+    )
+    .await;
+}

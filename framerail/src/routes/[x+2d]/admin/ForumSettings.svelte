@@ -52,7 +52,11 @@
           const categoryIndex = data.categories.findIndex(
             (category) => category.category_id === updatedCategory.category_id
           )
-          if (categoryIndex !== -1) data.categories[categoryIndex] = updatedCategory
+          if (categoryIndex !== -1) {
+            data.categories[categoryIndex] = updatedCategory
+            $discussionFormData.expectedSettingsRevision =
+              updatedCategory.settings_revision
+          }
         }
         if (result.type === "failure" && result.data) {
           errorPopupState.current = {
@@ -72,6 +76,7 @@
     if (!category) return
     const values = discussionFormValues(category)
     $discussionFormData.categoryId = values.categoryId
+    $discussionFormData.expectedSettingsRevision = category.settings_revision
     $discussionFormData.state = values.state
   }
 

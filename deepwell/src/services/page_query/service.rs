@@ -44,11 +44,13 @@ use sea_orm::{
 };
 use sea_query::extension::postgres::PgBinOper;
 use sea_query::{Expr, Query, SimpleExpr, Value};
+use std::borrow::Cow;
 use std::cmp::Ordering;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
 mod filtering;
 mod ordering;
+mod predicate_scan;
 mod projection;
 mod relational_filtering;
 mod score_filter;
@@ -69,6 +71,8 @@ use self::ordering::{
     load_page_ordering_identities, load_page_ordering_titles,
     needs_effective_revision_projection, project_effective_revision_count, score_to_f32,
 };
+
+use self::predicate_scan::{apply_combined_predicates, combined_predicates_applicable};
 
 use self::projection::{
     PageQueryProjection, PageQuerySelectedPage, current_parent_ids,
@@ -106,6 +110,19 @@ fn nestloop_guard_applies(parent: &PageParentSelector, score: &[ScoreSelector]) 
     matches!(parent, PageParentSelector::NoParent) && !score.is_empty()
 }
 
+fn excluded_tags_condition<'a>(no_tags: &[Cow<'a, str>]) -> SimpleExpr {
+    let mut seen = HashSet::new();
+    let mut excluded = Vec::new();
+    for tag in no_tags {
+        if seen.insert(tag.as_ref()) {
+            excluded.push(tag.to_string());
+        }
+    }
+    Expr::col(page_revision::Column::Tags)
+        .binary(PgBinOper::Overlap, Expr::val(excluded))
+        .not()
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum PageQueryBuildMode {
     Find,
@@ -117,6 +134,7 @@ struct BuiltPageQuery<'a> {
     query: sea_orm::Select<page::Entity>,
     fields: FoundPageFields,
     order: OrderBySelector,
+    site_id: i64,
     offset: u32,
     pagination: PaginationSelector,
     data_form_fields: &'a [DataFormSelector<'a>],
@@ -372,6 +390,9 @@ impl PageQueryService {
         }
         let votes = votes.to_vec();
 
+        let use_combined_predicates =
+            combined_predicates_applicable(&score, &votes, &author);
+
         let txn = ctx.transaction();
         let score_and_votes_empty = score.is_empty() && votes.is_empty();
         let disable_nestloop = nestloop_guard_applies(&page_parent, &score);
@@ -497,9 +518,6 @@ impl PageQueryService {
             }
         }
 
-        if let Some(author_condition) = author_condition(author, queried_site_id) {
-            condition = condition.add(author_condition);
-        }
         if let Some(outgoing_link_condition) =
             outgoing_link_condition(ctx, queried_site_id, contains_outgoing_links)
                 .await
@@ -516,7 +534,7 @@ impl PageQueryService {
             page::Column::UpdatedAt,
             update_date,
         ));
-        if !votes.is_empty() {
+        if !use_combined_predicates && !votes.is_empty() {
             condition = condition.add(vote_selectors_condition(&votes));
         }
 
@@ -530,7 +548,10 @@ impl PageQueryService {
         let needs_revision_join = needs_tag_filter
             || matches!(
                 &order.property,
-                OrderProperty::Title | OrderProperty::AltTitle | OrderProperty::Size
+                OrderProperty::Title
+                    | OrderProperty::AltTitle
+                    | OrderProperty::Size
+                    | OrderProperty::Score
             );
         if needs_tag_filter {
             query = query.join(JoinType::Join, page::Relation::PageRevision.def());
@@ -579,12 +600,11 @@ impl PageQueryService {
                 );
             }
 
-            for tag in no_tags {
-                query = query.filter(
-                    Expr::col(page_revision::Column::Tags)
-                        .binary(PgBinOper::Contains, Expr::val(vec![tag.to_string()]))
-                        .not(),
-                );
+            // One overlap negation replaces the conjunction of singleton
+            // containments (all_not_contains_iff_not_overlaps in the
+            // lean-sql-opt proof project); duplicates are dropped first.
+            if !no_tags.is_empty() {
+                query = query.filter(excluded_tags_condition(no_tags));
             }
 
             if untagged {
@@ -594,28 +614,53 @@ impl PageQueryService {
             }
         }
 
-        query = apply_score_filters(
-            txn,
-            query,
-            queried_site_id,
-            &score,
-            score_filter_cache,
-            score_filter_session,
-        )
-        .await?;
+        if !use_combined_predicates
+            && let Some(author_condition) = author_condition(author, queried_site_id)
+        {
+            let has_candidates = !query
+                .clone()
+                .select_only()
+                .column(page::Column::PageId)
+                .limit(1)
+                .into_tuple::<i64>()
+                .all(txn)
+                .await
+                .or_raise(make_error)?
+                .is_empty();
+            if has_candidates {
+                query = query.filter(author_condition);
+            } else {
+                query = query.filter(SimpleExpr::Custom("FALSE".into()));
+            }
+        }
+
+        query = if use_combined_predicates {
+            apply_combined_predicates(txn, query, queried_site_id, &score, &votes, author)
+                .await?
+        } else {
+            apply_score_filters(
+                txn,
+                query,
+                queried_site_id,
+                &score,
+                score_filter_cache,
+                score_filter_session,
+            )
+            .await?
+        };
 
         let projects_effective_revision_count = mode == PageQueryBuildMode::Find
             && needs_effective_revision_projection(&fields, &order);
-        let score_order = matches!(&order.property, OrderProperty::Score);
         let data_form_order =
             matches!(&order.property, OrderProperty::DataFormFieldName { .. });
         let ordering_deferred_to_rust =
-            mode == PageQueryBuildMode::Find && (score_order || data_form_order);
+            mode == PageQueryBuildMode::Find && data_form_order;
 
         Ok(BuiltPageQuery {
             query,
             fields,
             order,
+            site_id: queried_site_id,
             offset,
             pagination,
             data_form_fields,
@@ -642,6 +687,7 @@ impl PageQueryService {
             mut query,
             fields,
             order,
+            site_id,
             offset,
             pagination,
             data_form_fields,
@@ -662,7 +708,7 @@ impl PageQueryService {
         }
 
         if apply_order {
-            query = apply_sql_ordering(query, &order, needs_tag_filter);
+            query = apply_sql_ordering(query, &order, needs_tag_filter, site_id);
         }
 
         let defer_offset_limit = ordering_deferred_to_rust

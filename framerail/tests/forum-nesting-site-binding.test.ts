@@ -101,7 +101,7 @@ test("discussion updates stay bound to the routed site", async () => {
     throw new Error(`Unexpected Deepwell method ${method}`)
   }
 
-  const fields = { categoryId: 23, state: "enable" }
+  const fields = { categoryId: 23, expectedSettingsRevision: 4, state: "enable" }
   const denied = await discussionAction(actionEvent("discussion", 999, fields))
   assert.equal(denied.status, 403)
   assert.deepEqual(calls, [])
@@ -119,6 +119,7 @@ test("discussion updates stay bound to the routed site", async () => {
       params: {
         site: routedSiteId,
         category: 23,
+        expected_settings_revision: 4,
         user_id: 41,
         per_page_discussion: true,
         ip_address: "192.0.2.63"
@@ -139,6 +140,7 @@ test("rating updates stay bound to the routed site", async () => {
 
   const fields = {
     categoryId: 23,
+    expectedSettingsRevision: 4,
     inherit: false,
     enabled: true,
     permission: "members",
@@ -162,6 +164,7 @@ test("rating updates stay bound to the routed site", async () => {
       params: {
         site: routedSiteId,
         category: 23,
+        expected_settings_revision: 4,
         user_id: 41,
         rating_enabled: true,
         rating_permission: "members",

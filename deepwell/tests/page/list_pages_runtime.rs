@@ -5856,3 +5856,48 @@ async fn listpages_total_matches_for_rating_order_and_excluded_tag_shapes() {
         "excluded-tag ListPages %%total%% should be substituted:\n{excluded_html}",
     );
 }
+
+#[tokio::test]
+async fn computed_order_shapes_return_identical_totals() {
+    const TAG: &str = "verification-listpages-computed-order-total";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for index in 1..=3 {
+        let slug = format!("fixture-computed-order-total-{index}");
+        let title = format!("Computed Order Target {index}");
+        let revision =
+            create_listpages_test_page(&mut runner, site_id, &slug, &title, "row").await;
+        set_listpages_test_tags(&mut runner, site_id, &slug, revision, &[TAG]).await;
+    }
+
+    let mut bodies = Vec::new();
+    for order in ["created", "rating", "comments", "title"] {
+        let html = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": format!("computed-order-{order}"),
+                "wikitext": format!(
+                    "[[module ListPages tags=\"+{TAG}\" order=\"{order}\"]]\n%%total%%\n[[/module]]"
+                ),
+            }),
+        )
+        .body;
+        assert!(
+            !html.contains("%%total%%") && !html.contains("[[module ListPages"),
+            "order={order} total should be substituted:\n{html}",
+        );
+        bodies.push(html);
+    }
+    for (index, body) in bodies.iter().enumerate().skip(1) {
+        assert_eq!(
+            &bodies[0], body,
+            "order {index} total differs from the created baseline",
+        );
+    }
+}

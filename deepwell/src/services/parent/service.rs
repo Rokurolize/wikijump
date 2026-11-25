@@ -26,8 +26,8 @@ use crate::services::relation::RelationObject;
 use crate::services::{OutdateService, PageService, RelationService, ServiceContext};
 use crate::types::{PageId, Reference, RerenderDepth};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DeleteResult, EntityTrait, QueryFilter, QuerySelect,
-    Set,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseBackend, DeleteResult,
+    EntityTrait, QueryFilter, QuerySelect, Set, Statement, Value,
 };
 use std::collections::BTreeMap;
 use std::collections::HashSet;
@@ -72,6 +72,10 @@ impl ParentService {
             RelationObject::Page(parent_page.page_id),
             RelationObject::Page(child_page.page_id),
         )?;
+
+        let first_page_id = parent_page.page_id.min(child_page.page_id);
+        let second_page_id = parent_page.page_id.max(child_page.page_id);
+        Self::lock_pages(ctx, first_page_id, second_page_id).await?;
 
         let relationship =
             PageParent::find_by_id((parent_page.page_id, child_page.page_id))
@@ -122,6 +126,26 @@ impl ParentService {
 
             Some(_) => Ok(None),
         }
+    }
+
+    async fn lock_pages(
+        ctx: &ServiceContext<'_>,
+        first_page_id: i64,
+        second_page_id: i64,
+    ) -> Result<()> {
+        for page_id in [first_page_id, second_page_id] {
+            ctx.transaction()
+                .execute_raw(Statement::from_sql_and_values(
+                    DatabaseBackend::Postgres,
+                    "SELECT pg_advisory_xact_lock(hashtextextended('wikijump-page-parent:' || $1::TEXT, 0))",
+                    [Value::from(page_id)],
+                ))
+                .await
+                .or_raise(|| {
+                    Error::new("failed to lock page parents", ErrorType::PageParent)
+                })?;
+        }
+        Ok(())
     }
 
     pub async fn remove(

@@ -489,22 +489,21 @@ mod tests {
     }
 
     #[test]
-    fn dotted_include_site_segments_key_on_the_canonical_site() {
-        for target in [
-            ":scp-wiki.wikidot.com:component:license-box",
-            ":SCP-WIKI.WIKIDOT.COM:component:license-box",
-            ":scp-wiki.wikidot.com.:component:license-box",
+    fn dotted_include_site_segments_key_on_the_host_stripped_site() {
+        for (target, site) in [
+            (":scp-wiki.wikidot.com:component:license-box", "scp-wiki"),
+            (":SCP-WIKI.WIKIDOT.COM:component:license-box", "SCP-WIKI"),
+            (":scp-wiki.wikidot.com.:component:license-box", "scp-wiki"),
         ] {
             let source = format!("[[include {target}]]");
             let pages = collect_include_display_pages(&source);
-            let canonical = PageRef::page_and_site("scp-wiki", "component:license-box");
+            assert_eq!(pages.len(), 1, "one display page collected: {target}");
+            let (key, values) = pages.iter().next().expect("display page present");
+            assert_eq!(key.site(), Some(site), "dotted target site: {target}");
+            assert_eq!(key.page(), "component:license-box");
             assert_eq!(
-                pages
-                    .get(&canonical)
-                    .and_then(|values| values.front())
-                    .map(String::as_str),
+                values.front().map(String::as_str),
                 Some("component:license-box"),
-                "dotted target must key on the canonical site: {target}",
             );
             assert!(
                 pages.contains_key(
@@ -514,6 +513,26 @@ mod tests {
                 "display key must equal FTML's include PageRef: {target}",
             );
         }
+        for target in [
+            ":scp-wiki.wikidot.com:component:license-box",
+            ":scp-wiki.wikidot.com.:component:license-box",
+        ] {
+            let source = format!("[[include {target}]]");
+            let pages = collect_include_display_pages(&source);
+            assert!(pages.contains_key(&PageRef::page_and_site(
+                "scp-wiki",
+                "component:license-box",
+            )));
+        }
+        let uppercase = collect_include_display_pages(
+            "[[include :SCP-WIKI.WIKIDOT.COM:component:license-box]]",
+        );
+        assert!(
+            !uppercase.contains_key(&PageRef::page_and_site(
+                "scp-wiki",
+                "component:license-box",
+            ))
+        );
     }
 
     #[test]

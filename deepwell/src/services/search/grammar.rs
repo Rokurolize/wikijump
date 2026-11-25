@@ -59,6 +59,19 @@ pub(crate) struct SearchGrammar {
     pub(crate) no_results: bool,
     pub(crate) patterns: Vec<TextPattern>,
     pub(crate) filters: Vec<Filter>,
+    pub(crate) required_terms: Vec<String>,
+    pub(crate) optional_terms: Vec<String>,
+    pub(crate) excluded_terms: Vec<String>,
+}
+
+impl SearchGrammar {
+    pub(crate) fn expression_with_terms(
+        &self,
+        optional: &[String],
+        excluded: &[String],
+    ) -> String {
+        combine_expression(&self.required_terms, optional, excluded)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -86,7 +99,6 @@ struct Term {
 }
 
 const MAX_QUERY_CHARS: usize = 512;
-const MAX_TERMS: usize = 32;
 
 pub(crate) fn parse(query: &str) -> SearchGrammar {
     if query.chars().count() > MAX_QUERY_CHARS {
@@ -189,9 +201,6 @@ pub(crate) fn parse(query: &str) -> SearchGrammar {
             phrase,
             wildcard,
         });
-        if terms.len() > MAX_TERMS {
-            return empty();
-        }
     }
 
     build(terms, filters)
@@ -375,6 +384,30 @@ fn regex_body(value: &str) -> String {
         .collect()
 }
 
+fn combine_expression(
+    required: &[String],
+    optional: &[String],
+    excluded: &[String],
+) -> String {
+    let mut groups = Vec::new();
+    if !required.is_empty() {
+        groups.push(format!("({})", required.join(" & ")));
+    }
+    if !optional.is_empty() {
+        groups.push(format!("({})", optional.join(" | ")));
+    }
+
+    let mut expression = groups.join(" & ");
+    for term in excluded {
+        if expression.is_empty() {
+            expression = format!("!({term})");
+        } else {
+            expression.push_str(&format!(" & !({term})"));
+        }
+    }
+    expression
+}
+
 fn build(terms: Vec<Term>, filters: Vec<Filter>) -> SearchGrammar {
     let mut required = Vec::new();
     let mut optional = Vec::new();
@@ -412,22 +445,7 @@ fn build(terms: Vec<Term>, filters: Vec<Filter>) -> SearchGrammar {
         }
     }
 
-    let mut groups = Vec::new();
-    if !required.is_empty() {
-        groups.push(format!("({})", required.join(" & ")));
-    }
-    if !optional.is_empty() {
-        groups.push(format!("({})", optional.join(" | ")));
-    }
-
-    let mut expression = groups.join(" & ");
-    for term in &excluded {
-        if expression.is_empty() {
-            expression = format!("!({term})");
-        } else {
-            expression.push_str(&format!(" & !({term})"));
-        }
-    }
+    let expression = combine_expression(&required, &optional, &excluded);
 
     if expression.is_empty() && patterns.is_empty() && filters.is_empty() {
         return empty();
@@ -440,6 +458,9 @@ fn build(terms: Vec<Term>, filters: Vec<Filter>) -> SearchGrammar {
         no_results: false,
         patterns,
         filters,
+        required_terms: required,
+        optional_terms: optional,
+        excluded_terms: excluded,
     }
 }
 
@@ -450,6 +471,9 @@ fn empty() -> SearchGrammar {
         no_results: true,
         patterns: Vec::new(),
         filters: Vec::new(),
+        required_terms: Vec::new(),
+        optional_terms: Vec::new(),
+        excluded_terms: Vec::new(),
     }
 }
 
@@ -582,5 +606,37 @@ mod tests {
         assert!(!grammar.no_results);
         assert!(grammar.tsquery.is_empty());
         assert_eq!(grammar.filters.len(), 1);
+    }
+
+    #[test]
+    fn term_count_does_not_silently_disable_search() {
+        let extras = (0..40)
+            .map(|index| format!("no_match_{index}"))
+            .collect::<Vec<_>>()
+            .join(" ");
+        let grammar = parse(&format!("base {extras}"));
+        assert!(!grammar.no_results);
+        assert!(grammar.has_tsquery);
+        assert_eq!(grammar.optional_terms.len(), 41);
+    }
+
+    #[test]
+    fn optional_terms_can_be_narrowed_without_changing_required_or_excluded() {
+        let grammar = parse("+alpha -beta gamma delta");
+        assert_eq!(
+            grammar.tsquery,
+            "('alpha') & ('gamma' | 'delta') & !('beta')"
+        );
+        assert_eq!(
+            grammar.expression_with_terms(
+                &[String::from("'gamma'")],
+                &grammar.excluded_terms
+            ),
+            "('alpha') & ('gamma') & !('beta')"
+        );
+        assert_eq!(
+            grammar.expression_with_terms(&[], &grammar.excluded_terms),
+            "('alpha') & !('beta')"
+        );
     }
 }

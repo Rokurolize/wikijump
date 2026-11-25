@@ -42,14 +42,7 @@ directories, and keep the current and rollback standing images (see
 
 ## Barrier target directories
 
-`scripts/preflight.sh` runs its check groups side by side for `--final` (or any
-`--jobs` other than 1). Cargo locks a target directory for the whole build, so
-the Deepwell lint, WWS, and locales groups then build in their own
-`target/preflight-deepwell-lint`, `target/preflight-wws`, and
-`target/preflight-locales`; the Deepwell tests keep the canonical target. These
-are ordinary per-checkout targets: the standing promotion's persistent
-checkout keeps them warm between promotions, and `cargo clean` with the
-matching `--target-dir` reclaims them.
+`scripts/preflight.sh` runs its check groups in two waves for `--final` (or any `--jobs` other than 1). The Deepwell lint group runs in wave 1 and the Deepwell test group in wave 2, so the two never overlap: both use the canonical target directory, and the test build reuses the lint build's artifacts. The WWS and locales groups run beside the Deepwell tests in wave 2, and Cargo locks a target directory for the whole build, so those two build in their own `target/preflight/wws` and `target/preflight/locales` (under `PREFLIGHT_TARGET_ROOT`, default `target/preflight`). Every preflight target lives inside the checkout, so removing a worktree reclaims its preflight build state with it; an out-of-tree `PREFLIGHT_TARGET_ROOT` override records its owning checkout in a `.repo-root` file at the root, so a reaper can tell a live root from an orphaned one. Preflight exports `CARGO_INCREMENTAL=0` unless the caller sets it: a one-shot verification build never reuses incremental state, incremental output is the largest part of a target directory, and sccache does not cache incremental invocations. Before running, preflight refuses to start when the volume holding the checkout has less than `PREFLIGHT_MIN_FREE_GIB` GiB free (default 60). Any change to this target layout updates this section in the same PR.
 
 ## Safe cleanup
 

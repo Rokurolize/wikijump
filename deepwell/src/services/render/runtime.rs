@@ -25,6 +25,7 @@ use super::runtime_page_queries::{
 };
 use super::service::site_matches_wikidot_slug;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::hash::TextHash;
 use crate::models::site::Model as SiteModel;
 use crate::services::page_query::{PageQuery, PageQueryScoreFilterCache};
 use crate::services::permission::PermissionService;
@@ -461,16 +462,39 @@ enum IncludeSourceCacheEntry {
     Unavailable,
 }
 
+#[derive(Debug, Clone)]
+pub(super) struct CachedIncludeExpansion {
+    pub(super) wikitext: String,
+    pub(super) included_pages: Vec<PageRef>,
+    pub(super) expanded_include_count: usize,
+}
+
 #[derive(Debug, Default)]
 pub(super) struct IncludeSourceCache {
     sources_by_site: HashMap<i64, HashMap<String, IncludeSourceCacheEntry>>,
     imported_cross_site_sources: HashMap<(i64, String, String), Option<String>>,
     sites_by_id: HashMap<i64, Option<SiteModel>>,
     sites_by_slug: HashMap<String, Option<SiteModel>>,
+    expanded_includes: HashMap<TextHash, CachedIncludeExpansion>,
     pub(super) attachment_provenance: AttachmentProvenanceRegistry,
 }
 
 impl IncludeSourceCache {
+    pub(super) fn expanded_include(
+        &self,
+        key: &TextHash,
+    ) -> Option<&CachedIncludeExpansion> {
+        self.expanded_includes.get(key)
+    }
+
+    pub(super) fn cache_expanded_include(
+        &mut self,
+        key: TextHash,
+        value: CachedIncludeExpansion,
+    ) {
+        self.expanded_includes.insert(key, value);
+    }
+
     fn get(&self, site_id: i64, page_slug: &str) -> Option<&IncludeSourceCacheEntry> {
         self.sources_by_site
             .get(&site_id)
@@ -596,7 +620,7 @@ mod tests {
         let page_ref =
             PageRef::parse_include(":scp.avn.sh:component:aers:classification-stuff")
                 .expect("include target parses");
-        assert_eq!(page_ref.site(), Some("scp-avn-sh"));
+        assert_eq!(page_ref.site(), Some("scp.avn.sh"));
         assert_eq!(
             alternate_source_fullnames(page_ref.page()),
             ["component:aers:classification-stuff"],

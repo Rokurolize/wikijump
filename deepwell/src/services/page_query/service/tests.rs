@@ -1,8 +1,8 @@
 use super::{
     apply_sql_ordering, category_local_wikidot_name_patterns, date_span_bounds,
-    list_pages_deferred_ordering, needs_effective_revision_projection,
-    nestloop_guard_applies, project_effective_revision_count, wikidot_name_condition,
-    wikidot_name_pattern,
+    excluded_tags_condition, list_pages_deferred_ordering,
+    needs_effective_revision_projection, nestloop_guard_applies,
+    project_effective_revision_count, wikidot_name_condition, wikidot_name_pattern,
 };
 use crate::models::page;
 use crate::services::page_query::{
@@ -111,9 +111,10 @@ fn author_selectors_scope_first_revisions_to_the_queried_site() {
         (&not_any, "page.page_id NOT IN ("),
     ] {
         assert!(sql.contains(operator), "{sql}");
-        assert!(sql.contains("pr.user_id IN ($1, $2)"), "{sql}");
+        assert!(sql.contains("DISTINCT ON (pr.page_id)"), "{sql}");
+        assert!(sql.contains("first_author.user_id IN ($1, $2)"), "{sql}");
         assert!(sql.contains("pr.site_id = 6000000"), "{sql}");
-        assert!(sql.contains("WHERE pr2.page_id = pr.page_id"), "{sql}");
+        assert!(!sql.contains("WHERE pr2.page_id = pr.page_id"), "{sql}");
         assert!(!sql.contains("pr.page_id = page.page_id"), "{sql}");
     }
 }
@@ -268,7 +269,7 @@ fn updated_at_ordering_uses_creation_time_for_never_edited_pages() {
             property: OrderProperty::UpdatedAt,
             ascending,
         };
-        let sql = apply_sql_ordering(page::Entity::find(), &order, false)
+        let sql = apply_sql_ordering(page::Entity::find(), &order, false, 6000402)
             .build(DatabaseBackend::Postgres)
             .sql;
         assert!(
@@ -278,6 +279,100 @@ fn updated_at_ordering_uses_creation_time_for_never_edited_pages() {
             "{sql}",
         );
     }
+}
+
+#[test]
+fn comments_order_uses_one_grouped_count_join() {
+    let order = OrderBySelector {
+        property: OrderProperty::Comments,
+        ascending: false,
+    };
+    let sql = apply_sql_ordering(page::Entity::find(), &order, false, 6000402)
+        .build(DatabaseBackend::Postgres)
+        .sql;
+    assert_eq!(sql.matches("\"forum_post\"").count(), 1, "{sql}");
+    assert_eq!(sql.matches("\"forum_thread\"").count(), 1, "{sql}");
+    assert!(sql.contains("GROUP BY"), "{sql}");
+    assert!(
+        sql.contains("COALESCE(page_query_comment_count.comment_count, 0) DESC"),
+        "{sql}",
+    );
+}
+
+#[test]
+fn score_order_keeps_deferred_tie_break_ordering_in_sql() {
+    for (ascending, direction) in [(false, "DESC"), (true, "ASC")] {
+        let order = OrderBySelector {
+            property: OrderProperty::Score,
+            ascending,
+        };
+        let sql = apply_sql_ordering(page::Entity::find(), &order, false, 6000402)
+            .build(DatabaseBackend::Postgres)
+            .sql;
+        assert!(
+            sql.contains(&format!(
+                "COALESCE(page_query_score.effective_score, 0) {direction}"
+            )),
+            "{sql}",
+        );
+        assert!(
+            sql.contains(
+                "COALESCE(translate(page_revision.title, 'A-Z', 'a-z'), '') ASC"
+            ),
+            "{sql}",
+        );
+        assert!(
+            sql.contains("COALESCE(page_revision.title, '') ASC"),
+            "{sql}"
+        );
+        assert!(
+            sql.contains(&format!("\"page\".\"page_id\" {direction}")),
+            "{sql}"
+        );
+        assert!(sql.contains("\"scored_page\".\"site_id\""), "{sql}");
+        assert!(
+            sql.contains("FROM \"page\" LEFT JOIN (SELECT \"scored_page\".\"page_id\""),
+            "{sql}"
+        );
+    }
+}
+
+#[test]
+fn excluded_tags_emit_one_overlap_predicate_at_k1024() {
+    let tags = (0..1024)
+        .map(|i| Cow::Owned(format!("zzqf{i:04}")))
+        .collect::<Vec<_>>();
+    let statement = page::Entity::find()
+        .filter(excluded_tags_condition(&tags))
+        .build(DatabaseBackend::Postgres);
+    assert!(!statement.sql.contains("@>"), "{}", statement.sql);
+    assert_eq!(statement.sql.matches("&&").count(), 1, "{}", statement.sql);
+    assert_eq!(statement.sql.matches("$1").count(), 1, "{}", statement.sql);
+    let values = statement.values.expect("one bound value");
+    assert_eq!(values.0.len(), 1);
+    let Value::Array(_, Some(array)) = &values.0[0] else {
+        panic!("excluded tags should bind as one array");
+    };
+    assert_eq!(array.len(), 1024);
+}
+
+#[test]
+fn excluded_tags_dedup_keeps_one_overlap_binding() {
+    let tags = [
+        Cow::Borrowed("excluded"),
+        Cow::Borrowed("excluded"),
+        Cow::Borrowed("other"),
+        Cow::Borrowed("other"),
+    ];
+    let statement = page::Entity::find()
+        .filter(excluded_tags_condition(&tags))
+        .build(DatabaseBackend::Postgres);
+    assert_eq!(statement.sql.matches("&&").count(), 1, "{}", statement.sql);
+    let values = statement.values.expect("one bound value");
+    let Value::Array(_, Some(array)) = &values.0[0] else {
+        panic!("excluded tags should bind as one array");
+    };
+    assert_eq!(array.len(), 2);
 }
 
 #[test]

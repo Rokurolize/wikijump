@@ -888,7 +888,7 @@ WHERE page.site_id = $1
     ) -> Result<bool> {
         match mode {
             PageEditLockMode::Page => {
-                Self::source_moved_after(ctx, page_id, base_revision_id).await
+                Self::revision_exists_after(ctx, page_id, base_revision_id).await
             }
             PageEditLockMode::Append => Ok(false),
             PageEditLockMode::Section => {
@@ -902,6 +902,45 @@ WHERE page.site_id = $1
                 .await
             }
         }
+    }
+
+    async fn revision_exists_after(
+        ctx: &ServiceContext<'_>,
+        page_id: i64,
+        base_revision_id: Option<i64>,
+    ) -> Result<bool> {
+        let Some(base_revision_id) = base_revision_id else {
+            return Ok(false);
+        };
+
+        let txn = ctx.transaction();
+        let make_error = || {
+            Error::new(
+                format!("failed to check revisions after ID {base_revision_id}"),
+                ErrorType::PageRevision,
+            )
+        };
+
+        let base = PageRevisionService::get_direct_optional(ctx, base_revision_id)
+            .await
+            .or_raise(make_error)?;
+
+        let Some(base) = base else {
+            return Ok(true);
+        };
+
+        if base.page_id != page_id {
+            return Ok(true);
+        }
+
+        let newer = PageRevision::find()
+            .filter(page_revision::Column::PageId.eq(page_id))
+            .filter(page_revision::Column::RevisionNumber.gt(base.revision_number))
+            .one(txn)
+            .await
+            .or_raise(make_error)?;
+
+        Ok(newer.is_some())
     }
 
     async fn source_moved_after(

@@ -18,15 +18,17 @@ use crate::services::ServiceContext;
 use crate::services::score::ScoreValue;
 use sea_orm::query::Order;
 use sea_orm::{
-    ColumnTrait, ConnectionTrait, EntityTrait, FromQueryResult, JoinType, QueryFilter,
-    QueryOrder, QuerySelect, RelationTrait, Select, Statement,
+    ColumnTrait, ConnectionTrait, EntityTrait, ExprTrait, FromQueryResult, JoinType,
+    QueryFilter, QueryOrder, QuerySelect, QueryTrait, RelationTrait, Select, Statement,
 };
 use sea_query::func::Func;
-use sea_query::{Alias, Expr, SimpleExpr, Value};
+use sea_query::{Alias, Condition, Expr, IntoTableRef, Query, SimpleExpr, Value};
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 
 pub(super) const EFFECTIVE_REVISION_COUNT_ALIAS: &str = "effective_revision_count";
+const COMMENT_COUNT_ALIAS: &str = "page_query_comment_count";
+const SCORE_ALIAS: &str = "page_query_score";
 
 #[derive(Debug, FromQueryResult)]
 struct PageOrderingIdentityRow {
@@ -94,10 +96,148 @@ pub(super) async fn load_page_ordering_titles(
         .collect())
 }
 
+fn add_comment_count_join(query: &mut Select<Page>) {
+    let counts = Query::select()
+        .column((Alias::new("ft"), Alias::new("page_id")))
+        .expr_as(
+            Func::count(Expr::col((Alias::new("fp"), Alias::new("forum_post_id")))),
+            Alias::new("comment_count"),
+        )
+        .from(Alias::new("forum_post").into_table_ref().alias("fp"))
+        .join(
+            JoinType::InnerJoin,
+            Alias::new("forum_thread").into_table_ref().alias("ft"),
+            Expr::col((Alias::new("fp"), Alias::new("forum_thread_id")))
+                .eq(Expr::col((Alias::new("ft"), Alias::new("forum_thread_id")))),
+        )
+        .and_where(Expr::col((Alias::new("ft"), Alias::new("deleted_at"))).is_null())
+        .and_where(Expr::col((Alias::new("fp"), Alias::new("deleted_at"))).is_null())
+        .add_group_by([Expr::col((Alias::new("ft"), Alias::new("page_id")))])
+        .to_owned();
+
+    QueryTrait::query(query).join_subquery(
+        JoinType::LeftJoin,
+        counts,
+        Alias::new(COMMENT_COUNT_ALIAS),
+        Expr::col((Page, page::Column::PageId)).eq(Expr::col((
+            Alias::new(COMMENT_COUNT_ALIAS),
+            Alias::new("page_id"),
+        ))),
+    );
+}
+
+fn effective_score_ordering_sql() -> String {
+    "(CASE \
+        WHEN COALESCE(score_category.rating_type, score_default_category.rating_type, 'plus_minus') = 'stars' \
+        THEN COALESCE(AVG(score_vote.value) FILTER (WHERE score_vote.rating_system = 'stars'), 0)::real \
+        ELSE (COALESCE(score_snapshot.imported_rating, 0) + COALESCE(SUM(score_vote.value) FILTER (WHERE score_vote.rating_system = 'points' AND (score_snapshot.imported_rating IS NULL OR score_vote.from_wikidot = FALSE)), 0))::real \
+     END)"
+        .to_owned()
+}
+
+fn add_score_join(query: &mut Select<Page>, site_id: i64) {
+    let scored = Query::select()
+        .column((Alias::new("scored_page"), Alias::new("page_id")))
+        .expr_as(
+            Expr::cust(effective_score_ordering_sql()),
+            Alias::new("effective_score"),
+        )
+        .from(Alias::new("page").into_table_ref().alias("scored_page"))
+        .join(
+            JoinType::LeftJoin,
+            Alias::new("page_category")
+                .into_table_ref()
+                .alias("score_category"),
+            Expr::col((Alias::new("score_category"), Alias::new("category_id"))).eq(
+                Expr::col((Alias::new("scored_page"), Alias::new("page_category_id"))),
+            ),
+        )
+        .join(
+            JoinType::LeftJoin,
+            Alias::new("page_category")
+                .into_table_ref()
+                .alias("score_default_category"),
+            Condition::all()
+                .add(
+                    Expr::col((
+                        Alias::new("score_default_category"),
+                        Alias::new("site_id"),
+                    ))
+                    .eq(Expr::col((
+                        Alias::new("scored_page"),
+                        Alias::new("site_id"),
+                    ))),
+                )
+                .add(
+                    Expr::col((Alias::new("score_default_category"), Alias::new("slug")))
+                        .eq("_default"),
+                ),
+        )
+        .join(
+            JoinType::LeftJoin,
+            Alias::new("wikidot_page_snapshot")
+                .into_table_ref()
+                .alias("score_snapshot"),
+            Expr::col((Alias::new("score_snapshot"), Alias::new("page_id"))).eq(
+                Expr::col((Alias::new("scored_page"), Alias::new("page_id"))),
+            ),
+        )
+        .join(
+            JoinType::LeftJoin,
+            Alias::new("page_vote").into_table_ref().alias("score_vote"),
+            Condition::all()
+                .add(
+                    Expr::col((Alias::new("score_vote"), Alias::new("page_id"))).eq(
+                        Expr::col((Alias::new("scored_page"), Alias::new("page_id"))),
+                    ),
+                )
+                .add(
+                    Expr::col((Alias::new("score_vote"), Alias::new("deleted_at")))
+                        .is_null(),
+                )
+                .add(
+                    Expr::col((Alias::new("score_vote"), Alias::new("disabled_at")))
+                        .is_null(),
+                ),
+        )
+        .and_where(
+            Expr::col((Alias::new("scored_page"), Alias::new("site_id"))).eq(site_id),
+        )
+        .and_where(
+            Expr::col((Alias::new("scored_page"), Alias::new("deleted_at"))).is_null(),
+        )
+        .add_group_by([Expr::col((
+            Alias::new("scored_page"),
+            Alias::new("page_id"),
+        ))])
+        .add_group_by([Expr::col((
+            Alias::new("score_snapshot"),
+            Alias::new("imported_rating"),
+        ))])
+        .add_group_by([Expr::col((
+            Alias::new("score_category"),
+            Alias::new("rating_type"),
+        ))])
+        .add_group_by([Expr::col((
+            Alias::new("score_default_category"),
+            Alias::new("rating_type"),
+        ))])
+        .to_owned();
+
+    QueryTrait::query(query).join_subquery(
+        JoinType::LeftJoin,
+        scored,
+        Alias::new(SCORE_ALIAS),
+        Expr::col((Page, page::Column::PageId))
+            .eq(Expr::col((Alias::new(SCORE_ALIAS), Alias::new("page_id")))),
+    );
+}
+
 pub(super) fn apply_sql_ordering(
     mut query: Select<Page>,
     order: &OrderBySelector,
     needs_tag_filter: bool,
+    site_id: i64,
 ) -> Select<Page> {
     let property = &order.property;
     let sql_order = if order.ascending {
@@ -204,7 +344,27 @@ pub(super) fn apply_sql_ordering(
                 .order_by(identity, sql_order.clone())
                 .order_by(page::Column::PageId, sql_order);
         }
-        OrderProperty::Score => {}
+        OrderProperty::Score => {
+            add_score_join(&mut query, site_id);
+            query = query
+                .order_by(
+                    Expr::cust(format!("COALESCE({SCORE_ALIAS}.effective_score, 0)")),
+                    sql_order.clone(),
+                )
+                .order_by(
+                    Expr::cust(
+                        "COALESCE(translate(page_revision.title, 'A-Z', 'a-z'), '')",
+                    ),
+                    Order::Asc,
+                )
+                .order_by(Expr::cust("COALESCE(page_revision.title, '')"), Order::Asc);
+            let identity = SimpleExpr::Custom(
+                wikidot_page_ordering_identity_sql("page.page_id").into(),
+            );
+            query = query
+                .order_by(identity, sql_order.clone())
+                .order_by(page::Column::PageId, sql_order);
+        }
         OrderProperty::Votes => {
             let expr =
                 SimpleExpr::Custom(effective_vote_count_sql("page.page_id").into());
@@ -223,9 +383,9 @@ pub(super) fn apply_sql_ordering(
                 .order_by(page::Column::PageId, sql_order);
         }
         OrderProperty::Comments => {
-            let expr = SimpleExpr::Custom(
-                "COALESCE((SELECT COUNT(*) FROM forum_post fp JOIN forum_thread ft ON fp.forum_thread_id = ft.forum_thread_id WHERE ft.page_id = page.page_id AND fp.deleted_at IS NULL AND ft.deleted_at IS NULL), 0)".into(),
-            );
+            add_comment_count_join(&mut query);
+            let expr =
+                Expr::cust(format!("COALESCE({COMMENT_COUNT_ALIAS}.comment_count, 0)"));
             query = query.order_by(expr, sql_order);
         }
         OrderProperty::Random => {
