@@ -964,3 +964,98 @@ async fn render_search_module(
         other => panic!("expected found search module page view, got {other:?}"),
     }
 }
+
+fn excluded_ladder(base: &str, extra: usize) -> String {
+    let mut query = base.to_owned();
+    for index in 0..extra {
+        query.push_str(&format!(" -no_match_term_{index}_zzq"));
+    }
+    query
+}
+
+#[tokio::test]
+async fn single_long_no_match_term_keeps_search_output_byte_identical() {
+    let mut runner = TestRunner::setup().await;
+    let site = site_id(&mut runner, "scp-wiki").await;
+    let token = short_token();
+    let base = format!("b{token}");
+    create_fanout_pages(&mut runner, site, &token, &base).await;
+
+    let baseline = search(&mut runner, site, &base).await;
+    assert!(baseline.results.len() >= 5, "{:?}", baseline.results);
+    let baseline_results =
+        serde_json::to_string(&baseline.results).expect("results serialize");
+
+    let long_token = "x".repeat(127);
+    let long = search(&mut runner, site, &format!("{base} {long_token}")).await;
+    assert_eq!(long.body, baseline.body, "long no-match token changed body");
+    assert_eq!(
+        serde_json::to_string(&long.results).expect("results serialize"),
+        baseline_results,
+        "long no-match token changed results",
+    );
+
+    let short = search(&mut runner, site, &fanout_ladder(&base, &token, 16)).await;
+    assert_eq!(
+        short.body, baseline.body,
+        "short no-match ladder changed body"
+    );
+    assert_eq!(
+        serde_json::to_string(&short.results).expect("results serialize"),
+        baseline_results,
+        "short no-match ladder changed results",
+    );
+}
+
+#[tokio::test]
+async fn appended_terms_past_term_cap_keep_full_results() {
+    let mut runner = TestRunner::setup().await;
+    let site = site_id(&mut runner, "scp-wiki").await;
+    let token = short_token();
+    let base = format!("b{token}");
+    create_fanout_pages(&mut runner, site, &token, &base).await;
+
+    let baseline = search(&mut runner, site, &base).await;
+    assert!(baseline.results.len() >= 5, "{:?}", baseline.results);
+    let baseline_results =
+        serde_json::to_string(&baseline.results).expect("results serialize");
+
+    for extra in [31, 32, 33, 40] {
+        let output =
+            search(&mut runner, site, &fanout_ladder(&base, &token, extra)).await;
+        assert!(
+            !output.results.is_empty(),
+            "query with {extra} appended terms must not silently return zero",
+        );
+        assert_eq!(output.body, baseline.body, "body changed at +{extra}");
+        assert_eq!(
+            serde_json::to_string(&output.results).expect("results serialize"),
+            baseline_results,
+            "results changed at +{extra}",
+        );
+    }
+}
+
+#[tokio::test]
+async fn no_match_excluded_terms_keep_search_output_byte_identical() {
+    let mut runner = TestRunner::setup().await;
+    let site = site_id(&mut runner, "scp-wiki").await;
+    let token = short_token();
+    let base = format!("b{token}");
+    create_fanout_pages(&mut runner, site, &token, &base).await;
+
+    let baseline = search(&mut runner, site, &base).await;
+    assert!(baseline.results.len() >= 5, "{:?}", baseline.results);
+    let baseline_results =
+        serde_json::to_string(&baseline.results).expect("results serialize");
+
+    for extra in [1, 16] {
+        let output = search(&mut runner, site, &excluded_ladder(&base, extra)).await;
+        assert_eq!(output.body, baseline.body, "body changed at -T={extra}");
+        assert_eq!(
+            serde_json::to_string(&output.results).expect("results serialize"),
+            baseline_results,
+            "results changed at -T={extra}",
+        );
+    }
+}
