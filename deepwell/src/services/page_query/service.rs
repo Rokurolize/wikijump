@@ -40,10 +40,11 @@ use crate::types::{ConnectionType, Reference};
 use sea_orm::FromQueryResult;
 use sea_orm::{
     ColumnTrait, Condition, ConnectionTrait, EntityTrait, ExprTrait, JoinType,
-    PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, RelationTrait, Statement,
+    PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, QueryTrait, RelationTrait,
+    Statement,
 };
 use sea_query::extension::postgres::PgBinOper;
-use sea_query::{Expr, Query, SimpleExpr, Value};
+use sea_query::{Alias, Expr, Query, SimpleExpr, Value};
 use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashSet};
@@ -80,7 +81,8 @@ use self::projection::{
 };
 
 use self::relational_filtering::{
-    author_condition, outgoing_link_condition, page_parent_condition,
+    PageParentFilter, author_condition, live_parented_children_subquery,
+    outgoing_link_condition, page_parent_condition,
 };
 
 #[cfg(test)]
@@ -100,15 +102,16 @@ use self::score_filter::{apply_score_filters, score_comparison_operator};
 pub struct PageQueryService;
 
 /// Whether the query shape is the measured plan-flip composition: a
-/// no-parent selector (which builds a NOT IN anti-join) combined with at
-/// least one score selector, whose selectivity PostgreSQL badly
-/// underestimates for the computed effective score. Only that composition
-/// flipped the anti-joins to nested loops in measurement; other shapes
+/// no-parent selector combined with at least one score selector. PostgreSQL
+/// badly underestimates the computed effective score's selectivity. Only that
+/// composition flipped the anti-joins to nested loops in measurement; other shapes
 /// plan best with the default join strategies, so the nestloop guard in
 /// the execution paths is scoped to exactly this pair.
 fn nestloop_guard_applies(parent: &PageParentSelector, score: &[ScoreSelector]) -> bool {
     matches!(parent, PageParentSelector::NoParent) && !score.is_empty()
 }
+
+const PAGE_PARENTED_ALIAS: &str = "page_parented";
 
 fn excluded_tags_condition<'a>(no_tags: &[Cow<'a, str>]) -> SimpleExpr {
     let mut seen = HashSet::new();
@@ -463,7 +466,8 @@ impl PageQueryService {
         };
         condition = condition.add(page_category_condition);
 
-        if let Some(parent_condition) = page_parent_condition(
+        let mut no_parent_anti_join = false;
+        if let Some(parent_filter) = page_parent_condition(
             ctx,
             current_site_id,
             queried_site_id,
@@ -473,7 +477,14 @@ impl PageQueryService {
         .await
         .or_raise(make_error)?
         {
-            condition = condition.add(parent_condition);
+            match parent_filter {
+                PageParentFilter::Condition(parent_condition) => {
+                    condition = condition.add(parent_condition);
+                }
+                PageParentFilter::NoParentAntiJoin => {
+                    no_parent_anti_join = true;
+                }
+            }
         }
 
         if let Some(slug) = slug {
@@ -541,6 +552,24 @@ impl PageQueryService {
         let mut query = Page::find()
             .filter(page::Column::DeletedAt.is_null())
             .filter(condition);
+        if no_parent_anti_join {
+            QueryTrait::query(&mut query).join_subquery(
+                JoinType::LeftJoin,
+                live_parented_children_subquery(),
+                Alias::new(PAGE_PARENTED_ALIAS),
+                Expr::col((Page, page::Column::PageId)).equals((
+                    Alias::new(PAGE_PARENTED_ALIAS),
+                    page_parent::Column::ChildPageId,
+                )),
+            );
+            query = query.filter(
+                Expr::col((
+                    Alias::new(PAGE_PARENTED_ALIAS),
+                    page_parent::Column::ChildPageId,
+                ))
+                .is_null(),
+            );
+        }
         let needs_tag_filter = !all_tags.is_empty()
             || !any_tags.is_empty()
             || !no_tags.is_empty()
