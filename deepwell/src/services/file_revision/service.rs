@@ -39,6 +39,7 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, EntityTrait, PaginatorTrait, QueryFilter,
     QueryOrder, QuerySelect, Set,
 };
+use std::collections::BTreeSet;
 use std::num::NonZeroI32;
 use std::sync::LazyLock;
 
@@ -731,6 +732,32 @@ impl FileRevisionService {
         Ok(revisions)
     }
 
+    pub async fn get_page_file_ids(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        page_id: i64,
+    ) -> Result<BTreeSet<i64>> {
+        FileRevision::find()
+            .select_only()
+            .column(file_revision::Column::FileId)
+            .distinct()
+            .filter(
+                Condition::all()
+                    .add(file_revision::Column::SiteId.eq(site_id))
+                    .add(file_revision::Column::PageId.eq(page_id)),
+            )
+            .into_tuple::<i64>()
+            .all(ctx.transaction())
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to get file IDs with revisions on page",
+                    ErrorType::FileRevision,
+                )
+            })
+            .map(|rows| rows.into_iter().collect())
+    }
+
     pub async fn get_page_history(
         ctx: &ServiceContext<'_>,
         GetPageFileRevisionHistory {
@@ -738,6 +765,7 @@ impl FileRevisionService {
             page_id,
             limit,
         }: GetPageFileRevisionHistory,
+        visible_file_ids: &BTreeSet<i64>,
     ) -> Result<PageFileRevisionHistory> {
         let make_error = || {
             Error::new(
@@ -749,10 +777,19 @@ impl FileRevisionService {
             )
         };
 
+        if visible_file_ids.is_empty() {
+            return Ok(PageFileRevisionHistory {
+                revision_count: 0,
+                revisions: Vec::new(),
+            });
+        }
+
         let txn = ctx.transaction();
+        let visible_file_ids = visible_file_ids.iter().copied().collect::<Vec<_>>();
         let filter = Condition::all()
             .add(file_revision::Column::SiteId.eq(site_id))
-            .add(file_revision::Column::PageId.eq(page_id));
+            .add(file_revision::Column::PageId.eq(page_id))
+            .add(file_revision::Column::FileId.is_in(visible_file_ids));
         let revision_count = FileRevision::find()
             .filter(filter.clone())
             .count(txn)
