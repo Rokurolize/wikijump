@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::categories::wikidot_category_sort_key;
+use super::categories::{ModuleQueryCache, wikidot_category_sort_key};
 use super::compat::CompatHtmlFragments;
 use super::literal_regions::LiteralRegionIndex;
 use super::service::{
@@ -28,9 +28,7 @@ use super::service::{
 use super::wikidot_user_resources::WIKIDOT_USER_INFO_URL;
 use super::{ViewablePageRef, view_decisions_for_scanned_pages};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
-use crate::services::permission::{CheckPermissionContext, PermissionService};
-use crate::services::{CategoryService, ServiceContext};
-use crate::types::{Action, Permission, Reference, Resource};
+use crate::services::ServiceContext;
 use ftml::settings::WikitextSettings;
 use regex::Regex;
 use sea_orm::sea_query::ArrayType;
@@ -167,6 +165,7 @@ pub(super) async fn expand_site_changes_modules(
     settings: &WikitextSettings,
     current_site_id: Option<i64>,
     viewer_user_id: Option<i64>,
+    module_query_cache: &mut ModuleQueryCache,
     compat_html: &mut CompatHtmlFragments,
 ) -> Result<String> {
     if !settings.enable_page_syntax || !SITE_CHANGES_MODULE_REGEX.is_match(&wikitext) {
@@ -179,6 +178,7 @@ pub(super) async fn expand_site_changes_modules(
         ctx,
         current_site_id,
         viewer_user_id,
+        module_query_cache,
         WikidotSiteChangesModuleRequest {
             page: 1,
             rows_per_page: SITE_CHANGES_BROWSER_ROWS_PER_PAGE,
@@ -216,14 +216,24 @@ async fn load_site_changes_snapshot(
     ctx: &ServiceContext<'_>,
     site_id: i64,
     viewer_user_id: Option<i64>,
+    module_query_cache: &mut ModuleQueryCache,
     request: WikidotSiteChangesModuleRequest,
 ) -> Result<SiteChangesLoad<SiteChangesSnapshot>> {
-    let list = match load_site_changes_list(ctx, site_id, viewer_user_id, request).await?
+    let list = match load_site_changes_list(
+        ctx,
+        site_id,
+        viewer_user_id,
+        module_query_cache.category_view_permissions(),
+        request,
+    )
+    .await?
     {
         SiteChangesLoad::Complete(list) => list,
         SiteChangesLoad::Saturated => return Ok(SiteChangesLoad::Saturated),
     };
-    let categories = load_site_changes_categories(ctx, site_id, viewer_user_id).await?;
+    let categories =
+        load_site_changes_categories(ctx, site_id, viewer_user_id, module_query_cache)
+            .await?;
     Ok(SiteChangesLoad::Complete(SiteChangesSnapshot {
         categories,
         list,
@@ -295,6 +305,7 @@ async fn load_site_changes_list(
     ctx: &ServiceContext<'_>,
     site_id: i64,
     viewer_user_id: Option<i64>,
+    category_permissions: &mut BTreeMap<(i64, Option<i64>), bool>,
     request: WikidotSiteChangesModuleRequest,
 ) -> Result<SiteChangesLoad<SiteChangesList>> {
     let make_error = || {
@@ -327,7 +338,6 @@ async fn load_site_changes_list(
     let mut raw_scanned = 0usize;
     let mut cursor = None;
     let mut visible = Vec::with_capacity(visible_row_target);
-    let mut category_permissions = BTreeMap::<(i64, Option<i64>), bool>::new();
     let mut naturally_exhausted = false;
 
     while visible.len() < visible_row_target && raw_scanned < SITE_CHANGES_MAX_RAW_SCAN {
@@ -415,7 +425,7 @@ async fn load_site_changes_list(
             ctx,
             viewer_user_id,
             &page_refs,
-            &mut category_permissions,
+            &mut *category_permissions,
         )
         .await
         .or_raise(make_error)?;
@@ -592,40 +602,17 @@ async fn load_site_changes_categories(
     ctx: &ServiceContext<'_>,
     site_id: i64,
     viewer_user_id: Option<i64>,
+    module_query_cache: &mut ModuleQueryCache,
 ) -> Result<Vec<SiteChangesCategory>> {
-    let make_error = || {
-        Error::new(
-            format!("failed to load SiteChanges categories for site ID {site_id}"),
-            ErrorType::Render,
-        )
-    };
-    let categories = CategoryService::get_all_active(ctx, site_id)
+    let mut visible_categories = module_query_cache
+        .visible_categories(ctx, site_id, viewer_user_id)
         .await?
-        .into_iter();
-    let mut visible_categories = Vec::new();
-    for category in categories {
-        let can_view = PermissionService::check_user_can(
-            ctx,
-            &CheckPermissionContext {
-                user_id: viewer_user_id,
-                site_id,
-                page_reference: None,
-            },
-            Permission {
-                resource_type: Resource::Page,
-                resource_category: Some(Reference::Id(category.category_id)),
-                action: Action::View,
-            },
-        )
-        .await
-        .or_raise(make_error)?;
-        if can_view {
-            visible_categories.push(SiteChangesCategory {
-                category_id: category.category_id,
-                slug: category.slug,
-            });
-        }
-    }
+        .into_iter()
+        .map(|category| SiteChangesCategory {
+            category_id: category.category_id,
+            slug: category.slug,
+        })
+        .collect::<Vec<_>>();
     visible_categories
         .sort_by_cached_key(|category| wikidot_category_sort_key(&category.slug));
     Ok(visible_categories)
@@ -637,13 +624,19 @@ impl RenderService {
         site_id: i64,
         request: WikidotSiteChangesModuleRequest,
     ) -> Result<SiteChangesLoad<WikidotSiteChangesModuleResponse>> {
-        let list =
-            match load_site_changes_list(ctx, site_id, ctx.request().user_id, request)
-                .await?
-            {
-                SiteChangesLoad::Complete(list) => list,
-                SiteChangesLoad::Saturated => return Ok(SiteChangesLoad::Saturated),
-            };
+        let mut category_permissions = BTreeMap::new();
+        let list = match load_site_changes_list(
+            ctx,
+            site_id,
+            ctx.request().user_id,
+            &mut category_permissions,
+            request,
+        )
+        .await?
+        {
+            SiteChangesLoad::Complete(list) => list,
+            SiteChangesLoad::Saturated => return Ok(SiteChangesLoad::Saturated),
+        };
         Ok(SiteChangesLoad::Complete(
             WikidotSiteChangesModuleResponse {
                 status: "ok".to_owned(),

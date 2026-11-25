@@ -152,7 +152,10 @@ use super::runtime::{
     AuthorizedIncludeSource, CachedIncludeExpansion, IncludeSourceCache, RenderRuntime,
     SharedExpandedIncludeCache,
 };
-use super::runtime_modules::{RateModuleContext, SecondaryRuntimeModuleExpansionOptions};
+use super::runtime_modules::{
+    RateModuleContext, RuntimeModuleExpansionState,
+    SecondaryRuntimeModuleExpansionOptions,
+};
 use super::site_utility_modules::resolve_typed_root_site_grid_runtime_modules;
 use super::structs::{RenderOutput, RenderPageOutput};
 use super::url_arguments::UrlArguments;
@@ -1586,24 +1589,31 @@ impl RenderService {
         } else {
             super::runtime_modules::theme_previewer_url(&wikitext)
         };
-        wikitext = Box::pin(Self::expand_secondary_runtime_modules(
-            ctx,
-            wikitext,
-            page_info,
-            settings,
-            SecondaryRuntimeModuleExpansionOptions {
-                current_site_id,
-                current_page_id,
-                viewer_user_id,
-                page_preview,
-                url,
-                trace,
-            },
-            &mut wikidot_compat_text,
-            &mut wikidot_compat_html,
-        ))
-        .await
-        .or_raise(make_error)?;
+        let mut module_query_cache = super::categories::ModuleQueryCache::default();
+        {
+            let mut runtime_module_expansion_state = RuntimeModuleExpansionState {
+                module_query_cache: &mut module_query_cache,
+                compat_text: &mut wikidot_compat_text,
+                compat_html: &mut wikidot_compat_html,
+            };
+            wikitext = Box::pin(Self::expand_secondary_runtime_modules(
+                ctx,
+                wikitext,
+                page_info,
+                settings,
+                SecondaryRuntimeModuleExpansionOptions {
+                    current_site_id,
+                    current_page_id,
+                    viewer_user_id,
+                    page_preview,
+                    url,
+                    trace,
+                },
+                &mut runtime_module_expansion_state,
+            ))
+            .await
+            .or_raise(make_error)?;
+        }
         wikitext = {
             let _stage = StageGuard::new(trace, CorpusRenderStage::Backlinks);
             let wikitext = Self::expand_backlinks_modules(
@@ -1626,17 +1636,24 @@ impl RenderService {
             .await
             .or_raise(make_error)?
         };
-        wikitext = Self::expand_categories_and_page_tree_modules(
-            ctx,
-            wikitext,
-            settings,
-            (current_site_id, current_page_id),
-            viewer_user_id,
-            page_preview,
-            &mut wikidot_compat_html,
-        )
-        .await
-        .or_raise(make_error)?;
+        {
+            let mut runtime_module_expansion_state = RuntimeModuleExpansionState {
+                module_query_cache: &mut module_query_cache,
+                compat_text: &mut wikidot_compat_text,
+                compat_html: &mut wikidot_compat_html,
+            };
+            wikitext = Self::expand_categories_and_page_tree_modules(
+                ctx,
+                wikitext,
+                settings,
+                (current_site_id, current_page_id),
+                viewer_user_id,
+                page_preview,
+                &mut runtime_module_expansion_state,
+            )
+            .await
+            .or_raise(make_error)?;
+        }
         wikitext = {
             let _stage = StageGuard::new(trace, CorpusRenderStage::ChildPages);
             Self::expand_child_pages_modules(

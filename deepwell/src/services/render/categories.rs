@@ -27,6 +27,7 @@ use super::service::{
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::page::{self, Entity as Page};
+use crate::models::page_category::Model as PageCategoryModel;
 use crate::models::page_revision::{self, Entity as PageRevision};
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::{CategoryService, ServiceContext};
@@ -34,8 +35,55 @@ use crate::types::{Action, Permission, Reference, Resource};
 use ftml::settings::WikitextSettings;
 use regex::Regex;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::LazyLock;
+
+#[derive(Debug, Default)]
+pub(super) struct ModuleQueryCache {
+    visible_categories: HashMap<(i64, Option<i64>), Vec<PageCategoryModel>>,
+    category_view_permissions: BTreeMap<(i64, Option<i64>), bool>,
+}
+
+impl ModuleQueryCache {
+    pub(super) async fn visible_categories(
+        &mut self,
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        viewer_user_id: Option<i64>,
+    ) -> Result<Vec<PageCategoryModel>> {
+        let key = (site_id, viewer_user_id);
+        if let Some(categories) = self.visible_categories.get(&key) {
+            return Ok(categories.clone());
+        }
+
+        let categories = CategoryService::get_all_active(ctx, site_id).await?;
+        let category_ids = categories
+            .iter()
+            .map(|category| Some(category.category_id))
+            .collect::<Vec<_>>();
+        let decisions = PermissionService::batch_check_page_view_without_page_roles(
+            ctx,
+            viewer_user_id,
+            site_id,
+            &category_ids,
+            &mut self.category_view_permissions,
+        )
+        .await?;
+        let visible = categories
+            .into_iter()
+            .zip(decisions)
+            .filter_map(|(category, can_view)| can_view.then_some(category))
+            .collect::<Vec<_>>();
+        self.visible_categories.insert(key, visible.clone());
+        Ok(visible)
+    }
+
+    pub(super) fn category_view_permissions(
+        &mut self,
+    ) -> &mut BTreeMap<(i64, Option<i64>), bool> {
+        &mut self.category_view_permissions
+    }
+}
 
 static CATEGORIES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?is)\[\[module\s+Categories(?P<head>(?:\s+[^\]]*)?)\]\]").unwrap()
@@ -192,6 +240,7 @@ impl RenderService {
         settings: &WikitextSettings,
         current_site_id: Option<i64>,
         viewer_user_id: Option<i64>,
+        module_query_cache: &mut ModuleQueryCache,
         compat_html: &mut CompatHtmlFragments,
     ) -> Result<String> {
         if !settings.enable_page_syntax || !CATEGORIES_MODULE_REGEX.is_match(&wikitext) {
@@ -202,28 +251,9 @@ impl RenderService {
             return Ok(wikitext);
         };
 
-        let categories = CategoryService::get_all_active(ctx, current_site_id).await?;
-        let mut visible_categories = Vec::with_capacity(categories.len());
-        for category in categories {
-            let can_view = PermissionService::check_user_can(
-                ctx,
-                &CheckPermissionContext {
-                    user_id: viewer_user_id,
-                    site_id: current_site_id,
-                    page_reference: None,
-                },
-                Permission {
-                    resource_type: Resource::Page,
-                    resource_category: Some(Reference::Id(category.category_id)),
-                    action: Action::View,
-                },
-            )
+        let mut categories = module_query_cache
+            .visible_categories(ctx, current_site_id, viewer_user_id)
             .await?;
-            if can_view {
-                visible_categories.push(category);
-            }
-        }
-        let mut categories = visible_categories;
         categories
             .sort_by_cached_key(|category| wikidot_category_sort_key(&category.slug));
         let category_refs = categories
