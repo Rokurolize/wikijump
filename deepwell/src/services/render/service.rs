@@ -149,8 +149,8 @@ use super::render_options::{
     RenderPageOptions,
 };
 use super::runtime::{
-    AuthorizedIncludeSource, CachedIncludeExpansion, IncludeSourceCache, RenderRuntime,
-    SharedExpandedIncludeCache,
+    AuthorizedIncludeSource, CachedIncludeExpansion, InFlightIncludeSource,
+    IncludeSourceCache, RenderRuntime, SharedExpandedIncludeCache,
 };
 use super::runtime_modules::{RateModuleContext, SecondaryRuntimeModuleExpansionOptions};
 use super::site_utility_modules::resolve_typed_root_site_grid_runtime_modules;
@@ -813,6 +813,7 @@ impl RenderService {
                 render_context: RenderContext::none(),
                 viewer_user_id: None,
                 current_page_data_form_values: None,
+                inflight_include_wikitext: None,
                 max_include_expansions: public_include_expansion_limit(ctx.config()),
                 trusted_corpus_render: false,
                 render_cost_budget,
@@ -865,6 +866,7 @@ impl RenderService {
                 ),
                 viewer_user_id: None,
                 current_page_data_form_values: None,
+                inflight_include_wikitext: None,
                 max_include_expansions: public_include_expansion_limit(ctx.config()),
                 trusted_corpus_render: false,
                 render_cost_budget: RenderCostBudget::new_default(),
@@ -930,6 +932,7 @@ impl RenderService {
                 render_context: RenderContext::ajax_module(site_id),
                 viewer_user_id: ctx.request().user_id,
                 current_page_data_form_values: None,
+                inflight_include_wikitext: None,
                 max_include_expansions: public_include_expansion_limit(ctx.config()),
                 trusted_corpus_render: false,
                 render_cost_budget: RenderCostBudget::new_default(),
@@ -981,6 +984,7 @@ impl RenderService {
                 trusted_corpus_render: false,
                 viewer_user_id: None,
                 current_page_data_form_values: None,
+                inflight_include_wikitext: None,
                 persist_page_artifacts: true,
                 url,
                 trace: None,
@@ -996,6 +1000,7 @@ impl RenderService {
         layout: Layout,
         id: PageId,
         current_page_data_form_values: BTreeMap<String, String>,
+        inflight_include_wikitext: Option<String>,
     ) -> Result<RenderPageOutput> {
         Box::pin(Self::render_page_with_include_limit(
             ctx,
@@ -1008,6 +1013,7 @@ impl RenderService {
                 trusted_corpus_render: false,
                 viewer_user_id: None,
                 current_page_data_form_values: Some(current_page_data_form_values),
+                inflight_include_wikitext,
                 persist_page_artifacts: true,
                 url: UrlArguments::default(),
                 trace: None,
@@ -1036,6 +1042,7 @@ impl RenderService {
                 trusted_corpus_render: false,
                 viewer_user_id,
                 current_page_data_form_values: None,
+                inflight_include_wikitext: None,
                 persist_page_artifacts: false,
                 url,
                 trace: None,
@@ -1062,6 +1069,7 @@ impl RenderService {
                 trusted_corpus_render: true,
                 viewer_user_id: None,
                 current_page_data_form_values: None,
+                inflight_include_wikitext: None,
                 persist_page_artifacts: true,
                 url: UrlArguments::default(),
                 trace: None,
@@ -1089,6 +1097,7 @@ impl RenderService {
                 trusted_corpus_render: true,
                 viewer_user_id: None,
                 current_page_data_form_values: None,
+                inflight_include_wikitext: None,
                 persist_page_artifacts: true,
                 url: UrlArguments::default(),
                 trace: Some(trace),
@@ -1112,6 +1121,7 @@ impl RenderService {
             trusted_corpus_render,
             viewer_user_id,
             current_page_data_form_values,
+            inflight_include_wikitext,
             persist_page_artifacts,
             url,
             trace,
@@ -1168,6 +1178,7 @@ impl RenderService {
                 },
                 viewer_user_id,
                 current_page_data_form_values: current_page_data_form_values.clone(),
+                inflight_include_wikitext,
                 max_include_expansions,
                 trusted_corpus_render,
                 render_cost_budget: render_cost_budget.clone(),
@@ -1215,6 +1226,7 @@ impl RenderService {
                                 ),
                                 viewer_user_id,
                                 current_page_data_form_values,
+                                inflight_include_wikitext: None,
                                 max_include_expansions,
                                 trusted_corpus_render,
                                 render_cost_budget: render_cost_budget.clone(),
@@ -1312,6 +1324,7 @@ impl RenderService {
                 current_page_id: Some(id.page_id),
                 viewer_user_id: None,
                 current_page_data_form_values: None,
+                inflight_include_wikitext: None,
                 max_include_expansions: corpus_include_expansion_limit(ctx.config()),
                 trusted_corpus_render: true,
                 render_cost_budget: RenderCostBudget::new_default(),
@@ -1433,6 +1446,7 @@ impl RenderService {
             current_page_id,
             viewer_user_id,
             current_page_data_form_values,
+            inflight_include_wikitext,
             max_include_expansions,
             trusted_corpus_render,
             render_cost_budget,
@@ -1458,6 +1472,15 @@ impl RenderService {
         let initial_include_expansions = include_budget.remaining;
         let mut include_source_cache = IncludeSourceCache::default();
         include_source_cache.expanded_includes = expanded_include_cache;
+        if let (Some(site_id), Some(page_id), Some(wikitext)) =
+            (current_site_id, current_page_id, inflight_include_wikitext)
+        {
+            include_source_cache.inflight_include_source = Some(InFlightIncludeSource {
+                site_id,
+                page_id,
+                wikitext: wikitext.into(),
+            });
+        }
         select_root_metacomponent_documentation(
             &mut wikitext,
             RootMetacomponentContext::from_root_tags(&page_info.tags),
@@ -1980,6 +2003,7 @@ impl RenderService {
             render_context,
             viewer_user_id,
             current_page_data_form_values,
+            inflight_include_wikitext,
             max_include_expansions,
             trusted_corpus_render,
             render_cost_budget,
@@ -2038,6 +2062,7 @@ impl RenderService {
                 current_page_id,
                 viewer_user_id,
                 current_page_data_form_values,
+                inflight_include_wikitext,
                 max_include_expansions,
                 trusted_corpus_render,
                 render_cost_budget: render_cost_budget.clone(),

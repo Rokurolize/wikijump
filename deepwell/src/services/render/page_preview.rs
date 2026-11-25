@@ -123,6 +123,7 @@ impl RenderService {
                     ),
                     viewer_user_id: ctx.request().user_id().ok(),
                     current_page_data_form_values: None,
+                    inflight_include_wikitext: None,
                     max_include_expansions: public_include_expansion_limit(ctx.config()),
                     trusted_corpus_render: false,
                     render_cost_budget: RenderCostBudget::new_default(),
