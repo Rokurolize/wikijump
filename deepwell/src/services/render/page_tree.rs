@@ -26,7 +26,6 @@ use regex::Regex;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
 
 use super::AuthorizedPageSelector;
-use super::compat::CompatHtmlFragments;
 use super::literal_regions::LiteralRegionIndex;
 use super::module_arguments::{module_arguments_are_complete, wikidot_module_arguments};
 use super::service::{
@@ -264,7 +263,7 @@ impl RenderService {
         current_page: (Option<i64>, Option<i64>),
         viewer_user_id: Option<i64>,
         page_preview: bool,
-        compat_html: &mut CompatHtmlFragments,
+        expansion_state: &mut super::runtime_modules::RuntimeModuleExpansionState<'_>,
     ) -> Result<String> {
         let (current_site_id, _) = current_page;
         let wikitext = Self::expand_categories_modules(
@@ -273,7 +272,8 @@ impl RenderService {
             settings,
             current_site_id,
             viewer_user_id,
-            compat_html,
+            &mut *expansion_state.module_query_cache,
+            &mut *expansion_state.compat_html,
         )
         .await?;
         Self::expand_page_tree_modules(
@@ -283,7 +283,7 @@ impl RenderService {
             current_page,
             viewer_user_id,
             page_preview,
-            compat_html,
+            expansion_state,
         )
         .await
     }
@@ -295,7 +295,7 @@ impl RenderService {
         current_page: (Option<i64>, Option<i64>),
         viewer_user_id: Option<i64>,
         page_preview: bool,
-        compat_html: &mut CompatHtmlFragments,
+        expansion_state: &mut super::runtime_modules::RuntimeModuleExpansionState<'_>,
     ) -> Result<String> {
         if !settings.enable_page_syntax || !PAGE_TREE_MODULE_REGEX.is_match(&wikitext) {
             return Ok(wikitext);
@@ -309,11 +309,17 @@ impl RenderService {
             return Ok(wikitext);
         };
 
-        let tree =
-            match Self::load_page_tree(ctx, current_site_id, viewer_user_id).await? {
-                PageTreeLoad::Complete(tree) => tree,
-                PageTreeLoad::Saturated => return Ok(wikitext),
-            };
+        let tree = match Self::load_page_tree(
+            ctx,
+            current_site_id,
+            viewer_user_id,
+            expansion_state.module_query_cache,
+        )
+        .await?
+        {
+            PageTreeLoad::Complete(tree) => tree,
+            PageTreeLoad::Saturated => return Ok(wikitext),
+        };
         let literal_regions =
             LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
         let mut output = String::with_capacity(wikitext.len());
@@ -342,12 +348,14 @@ impl RenderService {
                 tree.page_ids_by_slug.get(root).copied()
             });
             if let Some(root_id) = root_id {
-                output.push_str(&compat_html.push_block_html(render_page_tree(
-                    &tree,
-                    root_id,
-                    arguments.show_root,
-                    arguments.depth,
-                )));
+                output.push_str(&expansion_state.compat_html.push_block_html(
+                    render_page_tree(
+                        &tree,
+                        root_id,
+                        arguments.show_root,
+                        arguments.depth,
+                    ),
+                ));
             }
             cursor = matched.end();
         }
@@ -363,6 +371,7 @@ impl RenderService {
         ctx: &ServiceContext<'_>,
         current_site_id: i64,
         viewer_user_id: Option<i64>,
+        module_query_cache: &mut super::categories::ModuleQueryCache,
     ) -> Result<PageTreeLoad> {
         let make_error =
             || Error::new("failed to render PageTree module", ErrorType::Render);
@@ -378,7 +387,12 @@ impl RenderService {
             return Ok(PageTreeLoad::Saturated);
         }
         let mut authorized_selector = AuthorizedPageSelector::new(ctx, viewer_user_id);
-        let pages = authorized_selector.filter_models(pages).await?;
+        let pages = authorized_selector
+            .filter_models_with_category_permissions(
+                pages,
+                module_query_cache.category_view_permissions(),
+            )
+            .await?;
         let revision_ids = pages
             .iter()
             .filter_map(|page| page.latest_revision_id)

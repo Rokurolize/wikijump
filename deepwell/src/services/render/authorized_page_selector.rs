@@ -32,6 +32,19 @@ impl<'a, 'ctx> AuthorizedPageSelector<'a, 'ctx> {
         &mut self,
         pages: impl IntoIterator<Item = PageModel>,
     ) -> Result<Vec<PageModel>> {
+        let mut category_permissions = std::mem::take(&mut self.category_permissions);
+        let result = self
+            .filter_models_with_category_permissions(pages, &mut category_permissions)
+            .await;
+        self.category_permissions = category_permissions;
+        result
+    }
+
+    pub(crate) async fn filter_models_with_category_permissions(
+        &mut self,
+        pages: impl IntoIterator<Item = PageModel>,
+        category_permissions: &mut BTreeMap<(i64, Option<i64>), bool>,
+    ) -> Result<Vec<PageModel>> {
         let pages = pages.into_iter().collect::<Vec<_>>();
         let undecided = pages
             .iter()
@@ -50,7 +63,7 @@ impl<'a, 'ctx> AuthorizedPageSelector<'a, 'ctx> {
             self.ctx,
             self.viewer_user_id,
             &references,
-            &mut self.category_permissions,
+            category_permissions,
         )
         .await?;
         for (page, decision) in undecided.into_iter().zip(decisions) {

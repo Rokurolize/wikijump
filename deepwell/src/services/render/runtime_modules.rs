@@ -403,6 +403,12 @@ impl MembershipByPasswordResultCache {
     }
 }
 
+pub(super) struct RuntimeModuleExpansionState<'a> {
+    pub(super) module_query_cache: &'a mut super::categories::ModuleQueryCache,
+    pub(super) compat_text: &'a mut CompatTextFragments,
+    pub(super) compat_html: &'a mut CompatHtmlFragments,
+}
+
 #[derive(Clone, Copy, Debug)]
 pub(super) struct SecondaryRuntimeModuleExpansionOptions<'a> {
     pub(super) current_site_id: Option<i64>,
@@ -1250,9 +1256,11 @@ impl RenderService {
         page_info: &PageInfo<'_>,
         settings: &WikitextSettings,
         options: SecondaryRuntimeModuleExpansionOptions<'_>,
-        compat_text: &mut CompatTextFragments,
-        compat_html: &mut CompatHtmlFragments,
+        expansion_state: &mut RuntimeModuleExpansionState<'_>,
     ) -> Result<String> {
+        let module_query_cache = &mut *expansion_state.module_query_cache;
+        let compat_text = &mut *expansion_state.compat_text;
+        let compat_html = &mut *expansion_state.compat_html;
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
         wikitext = Self::expand_www_currency_convert_system_module(
@@ -1356,6 +1364,7 @@ impl RenderService {
             settings,
             options.current_site_id,
             options.viewer_user_id,
+            module_query_cache,
             compat_html,
         )
         .await
