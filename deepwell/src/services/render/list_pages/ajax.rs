@@ -109,6 +109,7 @@ pub(in crate::services::render) fn build_wikidot_list_pages_module_request(
                 | "tags"
                 | "tag"
                 | "parent"
+                | "link_to"
                 | "created_at"
                 | "createdat"
                 | "updated_at"
@@ -546,6 +547,94 @@ mod tests {
                 .is_none(),
                 "{key} with only JSON decoration must fail closed",
             );
+        }
+    }
+
+    #[test]
+    fn connector_link_to_matches_preview_for_omitted_valid_and_nonexistent() {
+        let omitted_connector = connector_source("limit", "20");
+        let omitted_preview = preview_source("limit", "20");
+        assert_eq!(omitted_connector, omitted_preview);
+        assert!(source_arguments(&omitted_connector).link_to.is_empty());
+        assert_eq!(
+            source_arguments(&omitted_connector),
+            source_arguments(&omitted_preview),
+        );
+
+        for target in ["start", "nonexistent-page-zzq-nope"] {
+            let connector = build_wikidot_list_pages_module_request(
+                BODY.to_owned(),
+                &BTreeMap::from([
+                    ("category".to_owned(), "*".to_owned()),
+                    ("limit".to_owned(), "20".to_owned()),
+                    ("link_to".to_owned(), target.to_owned()),
+                ]),
+            )
+            .unwrap_or_else(|| panic!("connector rejected link_to={target:?}"))
+            .source;
+            let preview = format!(
+                "[[module ListPages category=\"*\" limit=\"20\" link_to=\"{target}\"]]\n{BODY}\n[[/module]]"
+            );
+
+            assert_eq!(
+                connector, preview,
+                "connector must emit link_to exactly like preview for {target:?}",
+            );
+            assert!(wikidot_ajax_list_pages_source_is_safe(&connector));
+
+            let arguments = source_arguments(&connector);
+            assert_eq!(
+                arguments,
+                source_arguments(&preview),
+                "connector and preview must parse identically for link_to={target:?}",
+            );
+            assert_eq!(arguments.link_to, vec![Cow::Borrowed(target)]);
+            assert_ne!(
+                arguments.link_to,
+                source_arguments(&omitted_connector).link_to,
+            );
+        }
+    }
+
+    #[test]
+    fn connector_link_to_quote_and_bracket_shapes_match_honest_preview() {
+        for (malformed, honest) in [(r#"["start"]"#, "start"), (r#"ab"cd"#, "abcd")] {
+            let connector = connector_source("link_to", malformed);
+            let preview = preview_source("link_to", honest);
+            assert_eq!(
+                connector, preview,
+                "link_to={malformed:?} must canonicalize to {honest:?}",
+            );
+            let arguments = source_arguments(&connector);
+            assert_eq!(arguments, source_arguments(&preview));
+            assert_eq!(arguments.link_to, vec![Cow::Borrowed(honest)]);
+        }
+    }
+
+    #[test]
+    fn connector_link_from_stays_ignored_like_preview() {
+        let mut baseline: Option<ListPagesArguments> = None;
+        for target in ["start", "nonexistent-page-zzq-nope"] {
+            assert!(
+                build_wikidot_list_pages_module_request(
+                    BODY.to_owned(),
+                    &BTreeMap::from([("link_from".to_owned(), target.to_owned())]),
+                )
+                .is_none(),
+                "link_from must not be forwarded by the connector: live Wikidot has no link_from",
+            );
+            let arguments = source_arguments(&preview_source("link_from", target));
+            assert!(
+                arguments.link_to.is_empty(),
+                "preview must keep ignoring link_from={target:?}",
+            );
+            match baseline.as_ref() {
+                Some(previous) => assert_eq!(
+                    &arguments, previous,
+                    "the ignored link_from value must have no effect on preview",
+                ),
+                None => baseline = Some(arguments),
+            }
         }
     }
 }
