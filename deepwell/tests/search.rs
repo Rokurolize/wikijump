@@ -1059,3 +1059,113 @@ async fn no_match_excluded_terms_keep_search_output_byte_identical() {
         );
     }
 }
+
+fn repeat_query(query: &str, times: usize) -> String {
+    std::iter::repeat_n(query, times)
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+#[tokio::test]
+async fn repeated_identical_category_returns_exactly_the_single_form() {
+    let mut runner = TestRunner::setup().await;
+    let site = site_id(&mut runner, "scp-wiki").await;
+    let token = short_token();
+    create_page(
+        &mut runner,
+        site,
+        &format!("system:catdup-{token}"),
+        "Catdup System Fixture",
+        &format!("catdup {token}"),
+    )
+    .await;
+    create_page(
+        &mut runner,
+        site,
+        &format!("catdup-default-{token}"),
+        "Catdup Default Fixture",
+        &format!("catdup {token}"),
+    )
+    .await;
+
+    for query in ["category:system", "category:_default"] {
+        let single = search(&mut runner, site, query).await;
+        assert!(
+            !single.results.is_empty(),
+            "{query} should return a nonzero result: {:?}",
+            single.results,
+        );
+        let single_body = single.body.clone();
+        let single_results =
+            serde_json::to_string(&single.results).expect("results serialize");
+
+        for times in [2, 3] {
+            let repeated = repeat_query(query, times);
+            let output = search(&mut runner, site, &repeated).await;
+            assert_eq!(output.body, single_body, "{repeated} body changed");
+            assert_eq!(
+                serde_json::to_string(&output.results).expect("results serialize"),
+                single_results,
+                "{repeated} results changed",
+            );
+        }
+    }
+}
+
+#[tokio::test]
+async fn repeated_category_controls_stay_live() {
+    let mut runner = TestRunner::setup().await;
+    let site = site_id(&mut runner, "scp-wiki").await;
+    let token = short_token();
+    create_page(
+        &mut runner,
+        site,
+        &format!("catdup-control-{token}"),
+        &format!("System Catdup Control {token}"),
+        &format!("system catdup {token}"),
+    )
+    .await;
+
+    for query in ["system system", "title:system title:system"] {
+        let output = search(&mut runner, site, query).await;
+        assert!(
+            !output.results.is_empty(),
+            "{query} control should stay live: {:?}",
+            output.results,
+        );
+    }
+
+    let single = search(&mut runner, site, "system category:system").await;
+    assert!(
+        !single.results.is_empty(),
+        "system category:system should stay live",
+    );
+    let single_body = single.body.clone();
+    let single_results =
+        serde_json::to_string(&single.results).expect("results serialize");
+
+    for times in [2, 3] {
+        let mut query = String::from("system");
+        for _ in 0..times {
+            query.push_str(" category:system");
+        }
+        let output = search(&mut runner, site, &query).await;
+        assert_eq!(output.body, single_body, "{query} body changed");
+        assert_eq!(
+            serde_json::to_string(&output.results).expect("results serialize"),
+            single_results,
+            "{query} results changed",
+        );
+    }
+}
+
+#[tokio::test]
+async fn distinct_categories_still_fail_closed() {
+    let mut runner = TestRunner::setup().await;
+    let site = site_id(&mut runner, "scp-wiki").await;
+    let output = search(&mut runner, site, "category:system category:_default").await;
+    assert!(
+        output.results.is_empty(),
+        "distinct category predicates must keep the existing fail-closed behavior",
+    );
+}
