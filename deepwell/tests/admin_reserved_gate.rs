@@ -39,6 +39,9 @@ use deepwell::error::ErrorType;
 use deepwell::models::blob_pending;
 use deepwell::models::file;
 use deepwell::models::file_revision;
+use deepwell::models::page_edit_lock::{
+    self, Entity as PageEditLock, Model as PageEditLockModel,
+};
 use deepwell::services::PageService;
 use deepwell::services::RequestContext;
 use deepwell::services::blob::{EMPTY_BLOB_HASH, EMPTY_BLOB_MIME};
@@ -50,7 +53,7 @@ use deepwell::services::relation::{
 use deepwell::services::render::WikidotListPagesFeedOutput;
 use deepwell::services::user::{CreateUser, UserService};
 use deepwell::types::{FileRevisionType, Reference, UserType};
-use sea_orm::{ActiveModelTrait, Set};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use serde_json::json;
 use str_macro::str;
 use time::{Duration, OffsetDateTime};
@@ -151,6 +154,14 @@ async fn get_or_create_admin_page(runner: &TestRunner, site_id: i64) -> i64 {
     }
 
     create_page(runner, site_id, "_admin", "Admin Panel").await
+}
+
+async fn edit_lock_rows(runner: &TestRunner, page_id: i64) -> Vec<PageEditLockModel> {
+    PageEditLock::find()
+        .filter(page_edit_lock::Column::PageId.eq(page_id))
+        .all(runner.context().transaction())
+        .await
+        .expect("edit lock row query should run")
 }
 
 /// Inserts a file row plus its create revision directly, mirroring
@@ -565,6 +576,164 @@ async fn member_cannot_parent_meta_lock_or_draft_admin_page() {
         }),
     );
     assert!(saved);
+}
+
+#[tokio::test]
+async fn edit_lock_endpoints_enforce_admin_page_gate() {
+    let mut runner = TestRunner::setup().await;
+    let site_id = site_id(&runner).await;
+    let admin_page_id = get_or_create_admin_page(&runner, site_id).await;
+    let member = create_member(&runner, site_id, "edit-lock").await;
+    let normal_page_id = create_page(
+        &runner,
+        site_id,
+        "gate-edit-lock-normal",
+        "Gate Edit Lock Normal",
+    )
+    .await;
+
+    set_request_context(
+        &mut runner,
+        Some(member),
+        site_id,
+        Some(Reference::Id(admin_page_id)),
+    );
+    let error = run_endpoint_err!(
+        runner,
+        page_edit_lock_acquire,
+        json!({ "page": admin_page_id, "mode": "page" }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert!(edit_lock_rows(&runner, admin_page_id).await.is_empty());
+
+    let error = run_endpoint_err!(
+        runner,
+        page_edit_lock_force_acquire,
+        json!({ "page": admin_page_id, "mode": "page" }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert!(edit_lock_rows(&runner, admin_page_id).await.is_empty());
+
+    set_request_context(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        site_id,
+        Some(Reference::Id(admin_page_id)),
+    );
+    let admin_lock = run_endpoint!(
+        runner,
+        page_edit_lock_acquire,
+        json!({ "page": admin_page_id, "mode": "page" }),
+    );
+    let admin_grant = admin_lock.grant.expect("admin acquire should grant");
+    let admin_lock_id = admin_grant.lock_id;
+    let admin_secret = admin_grant.lock_secret.clone();
+
+    set_request_context(
+        &mut runner,
+        Some(member),
+        site_id,
+        Some(Reference::Id(admin_page_id)),
+    );
+    let error = run_endpoint_err!(
+        runner,
+        page_edit_lock_force_acquire,
+        json!({ "page": admin_page_id, "mode": "page" }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    let error = run_endpoint_err!(
+        runner,
+        page_edit_lock_renew,
+        json!({
+            "page": admin_page_id,
+            "lock_id": admin_lock_id,
+            "lock_secret": admin_secret.clone(),
+            "mode": "page",
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    let error = run_endpoint_err!(
+        runner,
+        page_edit_lock_release,
+        json!({
+            "page": admin_page_id,
+            "lock_id": admin_lock_id,
+            "lock_secret": admin_secret.clone(),
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    let rows = edit_lock_rows(&runner, admin_page_id).await;
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].lock_id, admin_lock_id);
+    assert_eq!(rows[0].user_id, ADMIN_USER_ID);
+
+    set_request_context(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        site_id,
+        Some(Reference::Id(admin_page_id)),
+    );
+    let renewed = run_endpoint!(
+        runner,
+        page_edit_lock_renew,
+        json!({
+            "page": admin_page_id,
+            "lock_id": admin_lock_id,
+            "lock_secret": admin_secret.clone(),
+            "mode": "page",
+        }),
+    );
+    assert!(!renewed.lock_recreated);
+    let released = run_endpoint!(
+        runner,
+        page_edit_lock_release,
+        json!({
+            "page": admin_page_id,
+            "lock_id": admin_lock_id,
+            "lock_secret": admin_secret,
+        }),
+    );
+    assert!(released);
+    assert!(edit_lock_rows(&runner, admin_page_id).await.is_empty());
+
+    set_request_context(
+        &mut runner,
+        Some(member),
+        site_id,
+        Some(Reference::Id(normal_page_id)),
+    );
+    let member_lock = run_endpoint!(
+        runner,
+        page_edit_lock_acquire,
+        json!({ "page": normal_page_id, "mode": "page" }),
+    );
+    let member_grant = member_lock.grant.expect("member acquire should grant");
+    let member_lock_id = member_grant.lock_id;
+    let member_secret = member_grant.lock_secret.clone();
+    let renewed = run_endpoint!(
+        runner,
+        page_edit_lock_renew,
+        json!({
+            "page": normal_page_id,
+            "lock_id": member_lock_id,
+            "lock_secret": member_secret.clone(),
+            "mode": "page",
+        }),
+    );
+    assert!(!renewed.lock_recreated);
+    let released = run_endpoint!(
+        runner,
+        page_edit_lock_release,
+        json!({
+            "page": normal_page_id,
+            "lock_id": member_lock_id,
+            "lock_secret": member_secret,
+        }),
+    );
+    assert!(released);
 }
 
 #[tokio::test]

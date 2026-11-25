@@ -25,7 +25,8 @@ use crate::services::page_edit_lock::{
     ReleasePageEditLock, ReleasePageEditLockInput, RenewPageEditLock,
     RenewPageEditLockInput, RenewPageEditLockOutput,
 };
-use crate::types::{Action, Permission, Reference, Resource};
+use crate::services::permission::PermissionService;
+use crate::types::{Action, Reference};
 
 async fn require_page_edit_permission(
     ctx: &ServiceContext<'_>,
@@ -33,18 +34,33 @@ async fn require_page_edit_permission(
     page_ref: Reference<'_>,
     action: &str,
 ) -> Result<i64> {
-    MutationAuthorization::require_permission(
+    let user_id = MutationAuthorization::require_authenticated(ctx, action)?;
+    let make_error = || {
+        Error::new(
+            format!("failed to check permission to {action}"),
+            ErrorType::Permission,
+        )
+    };
+    let page = PageService::get(ctx, site_id, page_ref)
+        .await
+        .or_raise(make_error)?;
+    let permitted = PermissionService::check_user_can_act_on_page(
         ctx,
-        site_id,
-        Some(page_ref),
-        Permission {
-            resource_type: Resource::Page,
-            resource_category: None,
-            action: Action::Edit,
-        },
-        action,
+        Some(user_id),
+        &page,
+        Action::Edit,
     )
     .await
+    .or_raise(make_error)?;
+
+    if !permitted {
+        return Err(Error::new(
+            format!("user does not have permission to {action}"),
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
+    Ok(user_id)
 }
 
 fn request_site_id(ctx: &ServiceContext<'_>) -> Result<i64> {

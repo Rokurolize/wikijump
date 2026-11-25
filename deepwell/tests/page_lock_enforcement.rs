@@ -14,6 +14,7 @@
 mod common;
 
 use self::common::TestRunner;
+use cuid2::cuid;
 use deepwell::constants::{ADMIN_USER_ID, SAMPLE_USER_ID, SYSTEM_USER_ID};
 use deepwell::error::ErrorType;
 use deepwell::models::file;
@@ -36,9 +37,10 @@ use deepwell::services::relation::{
 use deepwell::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
 };
+use deepwell::services::user::{CreateUser, UserService};
 use deepwell::services::{PermissionService, RequestContext};
 use deepwell::types::{
-    Action, FileRevisionType, PageLockType, Permission, Reference, Resource,
+    Action, FileRevisionType, PageLockType, Permission, Reference, Resource, UserType,
 };
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter, Set,
@@ -57,6 +59,44 @@ fn set_context(runner: &mut TestRunner, user_id: i64, site_id: i64, page_id: i64
         site_id: Some(site_id),
         page_reference: Some(Reference::Id(page_id)),
     });
+}
+
+async fn create_plain_member(runner: &TestRunner, site_id: i64, label: &str) -> i64 {
+    let n = cuid();
+    let user_id = UserService::create(
+        runner.context(),
+        CreateUser {
+            user_type: UserType::Regular,
+            name: format!("Persistent Lock {label} {n}"),
+            email: format!("persistent-lock-{label}-{n}@email.com"),
+            locales: vec!["en".to_owned()],
+            password: "persistent-lock-test-password".to_owned(),
+            bypass_filter: true,
+            bypass_email_verification: true,
+            override_user_id: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("plain member fixture user should be created")
+    .user_id;
+
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id,
+            user_id,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::SelfJoined,
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("plain member fixture membership should be created");
+
+    user_id
 }
 
 async fn grant_fixture_roles(runner: &TestRunner, site_id: i64, category_id: i64) {
@@ -263,6 +303,18 @@ async fn active_permission_lock_blocks_page_file_parent_move_layout_and_legacy_w
     set_page_category(&runner, page_id, category.category_id).await;
     let (file_id, file_revision_id) =
         create_file_fixture(&runner, site_id, page_id).await;
+
+    let plain_member = create_plain_member(&runner, site_id, "unscoped").await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("plain member permission cache should be invalidated");
+    set_context(&mut runner, plain_member, site_id, page_id);
+    let error = run_endpoint_err!(
+        runner,
+        page_edit_lock_acquire,
+        json!({"page": page_id, "mode": "page"}),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
 
     set_context(&mut runner, SAMPLE_USER_ID, site_id, page_id);
     let lease = run_endpoint!(
