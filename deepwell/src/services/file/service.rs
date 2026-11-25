@@ -39,7 +39,8 @@ use crate::services::file_revision::{
 };
 use crate::services::filter::{FilterClass, FilterType};
 use crate::services::{
-    AuditService, BlobService, FileRevisionService, FilterService, PageService,
+    AuditService, BlobService, FileRevisionService, FilterService, PageLockService,
+    PageService,
 };
 use crate::types::{FileOrder, FileRevisionType};
 use crate::types::{Maybe, Reference};
@@ -92,6 +93,8 @@ impl FileService {
         };
 
         normalize_and_validate_file_name(&mut name).or_raise(make_error)?;
+
+        PageLockService::require_write_allowed(ctx, site_id, page_id, user_id).await?;
 
         Self::check_conflicts(ctx, page_id, &name, "create")
             .await
@@ -239,6 +242,9 @@ impl FileService {
                     ErrorType::FileNotFound,
                 )
             })?;
+
+        PageLockService::require_write_allowed(ctx, site_id, page_id, user_id).await?;
+
         let last_revision =
             FileRevisionService::get_latest(ctx, site_id, page_id, file_id)
                 .await
@@ -382,6 +388,16 @@ impl FileService {
                 .await
                 .or_raise(make_error)?;
 
+        PageLockService::require_write_allowed(ctx, site_id, current_page_id, user_id)
+            .await?;
+        PageLockService::require_write_allowed(
+            ctx,
+            site_id,
+            destination_page_id,
+            user_id,
+        )
+        .await?;
+
         let mut name = name.unwrap_or_else(|| last_revision.name.clone());
 
         info!(
@@ -475,6 +491,8 @@ impl FileService {
             )
         };
 
+        PageLockService::require_write_allowed(ctx, site_id, page_id, user_id).await?;
+
         let last_revision =
             FileRevisionService::get_latest(ctx, site_id, page_id, file_id)
                 .await
@@ -551,6 +569,10 @@ impl FileService {
             PageService::get_id(ctx, site_id, new_page.unwrap_or(Reference::Id(page_id)))
                 .await
                 .or_raise(make_error)?;
+
+        PageLockService::require_write_allowed(ctx, site_id, page_id, user_id).await?;
+        PageLockService::require_write_allowed(ctx, site_id, new_page_id, user_id)
+            .await?;
 
         let mut new_name = new_name.unwrap_or(file.name);
         normalize_and_validate_file_name(&mut new_name).or_raise(make_error)?;
@@ -676,6 +698,8 @@ impl FileService {
                 ErrorType::File,
             )
         };
+
+        PageLockService::require_write_allowed(ctx, site_id, page_id, user_id).await?;
 
         let get_revision_input = GetFileRevision {
             site_id,

@@ -21,17 +21,22 @@
 use std::net::IpAddr;
 
 use super::structs::{CheckLockBypassOutput, CreatePageLockInput};
+use crate::constants::SYSTEM_USER_ID;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::models::page::Model as PageModel;
 use crate::models::page_lock::{self, Entity as PageLock, Model as PageLockModel};
 use crate::services::ServiceContext;
 use crate::services::audit::{AuditEvent, AuditService};
-use crate::services::permission::{PermissionService, PermissionTarget};
+use crate::services::permission::{
+    CheckPermissionContext, PermissionService, PermissionTarget,
+};
 use crate::services::relation::GetPageAttributions;
 use crate::services::{PageService, RelationService};
 use crate::types::{Action, PageLockType, Permission, Reference, Resource};
 use crate::utils::now;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder, Set,
+    ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DatabaseBackend,
+    EntityTrait, QueryFilter, QueryOrder, Set, Statement, Value,
 };
 
 #[derive(Debug, Clone)]
@@ -58,6 +63,14 @@ impl PageLockService {
             .await
             .or_raise(make_error)?
             .page_id;
+
+        txn.execute_raw(Statement::from_sql_and_values(
+            DatabaseBackend::Postgres,
+            "SELECT pg_advisory_xact_lock(hashtextextended('wikijump-page-lock:' || $1::TEXT, 0))",
+            [Value::from(page_id)],
+        ))
+        .await
+        .or_raise(make_error)?;
 
         let existing_lock = Self::get_active_lock_for_page(ctx, page_id)
             .await
@@ -258,6 +271,52 @@ impl PageLockService {
             .is_some())
     }
 
+    pub async fn require_write_allowed(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        page_id: i64,
+        user_id: i64,
+    ) -> Result<()> {
+        let page = PageService::get(ctx, site_id, Reference::Id(page_id))
+            .await
+            .or_raise(|| {
+                Error::new(
+                    format!("failed to load page ID {page_id} for lock enforcement"),
+                    ErrorType::PageLock,
+                )
+            })?;
+        Self::require_write_allowed_for_page(ctx, &page, user_id).await
+    }
+
+    pub async fn require_write_allowed_for_page(
+        ctx: &ServiceContext<'_>,
+        page: &PageModel,
+        user_id: i64,
+    ) -> Result<()> {
+        if user_id == SYSTEM_USER_ID {
+            return Ok(());
+        }
+
+        let lock = Self::can_user_bypass_lock(
+            ctx,
+            page.site_id,
+            page.page_id,
+            Some(page.page_category_id),
+            user_id,
+        )
+        .await?;
+
+        if lock.can_edit {
+            Ok(())
+        } else {
+            Err(Error::new(
+                format!("page ID {} is locked", page.page_id),
+                ErrorType::PermissionDenied,
+            )
+            .into())
+        }
+    }
+
     pub async fn can_user_bypass_lock(
         ctx: &ServiceContext<'_>,
         site_id: i64,
@@ -280,14 +339,21 @@ impl PageLockService {
             .or_raise(make_error)?;
 
         if let Some(lock) = active_lock {
-            let can_bypass_permission = ctx
-                .user_has_permission(Permission {
+            let can_bypass_permission = PermissionService::check_user_can(
+                ctx,
+                &CheckPermissionContext {
+                    user_id: Some(user_id),
+                    site_id,
+                    page_reference: Some(Reference::Id(page_id)),
+                },
+                Permission {
                     resource_type: Resource::Page,
                     resource_category: page_category_id.map(Reference::Id),
                     action: Action::BypassLock,
-                })
-                .await
-                .or_raise(make_error)?
+                },
+            )
+            .await
+            .or_raise(make_error)?
                 || PermissionService::can_user_as(
                     ctx,
                     Some(user_id),

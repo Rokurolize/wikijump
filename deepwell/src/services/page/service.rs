@@ -40,8 +40,8 @@ use crate::services::page_revision::{
 };
 use crate::services::permission::{PermissionService, PermissionTarget};
 use crate::services::{
-    CategoryService, FilterService, PageEditLockService, PageRevisionService,
-    ParentService, TextBlockService, TextService,
+    CategoryService, FilterService, PageEditLockService, PageLockService,
+    PageRevisionService, ParentService, TextBlockService, TextService,
 };
 use crate::types::Maybe;
 use crate::types::{
@@ -428,6 +428,8 @@ WHERE page.site_id = $1
             )
         };
 
+        PageLockService::require_write_allowed(ctx, site_id, page_id, user_id).await?;
+
         if wikitext.is_set() && !system_writer {
             let lock_rows = PageEditLockService::rows_for_page(ctx, page_id)
                 .await
@@ -586,7 +588,7 @@ WHERE page.site_id = $1
         let locked_page = Self::get_direct_optional_for_update(ctx, page_id, false)
             .await
             .or_raise(make_error)?;
-        let Some(_locked_page) = locked_page else {
+        let Some(locked_page) = locked_page else {
             bail!(Error::new(
                 format!(
                     "page ID {} was deleted before the edit could proceed",
@@ -595,6 +597,9 @@ WHERE page.site_id = $1
                 ErrorType::Page,
             ));
         };
+
+        PageLockService::require_write_allowed_for_page(ctx, &locked_page, user_id)
+            .await?;
 
         let last_revision = PageRevisionService::get_latest(ctx, site_id, page_id)
             .await
@@ -1154,6 +1159,15 @@ WHERE page.site_id = $1
             ));
         }
 
+        PageLockService::require_write_allowed_for_page(
+            ctx,
+            locked_page
+                .as_ref()
+                .expect("locked page presence was checked"),
+            user_id,
+        )
+        .await?;
+
         let lease_conflicts = PageEditLockService::conflicting_live_rows(
             ctx,
             page_id,
@@ -1343,6 +1357,15 @@ WHERE page.site_id = $1
             ));
         }
 
+        PageLockService::require_write_allowed_for_page(
+            ctx,
+            locked_page
+                .as_ref()
+                .expect("locked page presence was checked"),
+            user_id,
+        )
+        .await?;
+
         let output = PageRevisionService::create_tombstone(
             ctx,
             CreateTombstonePageRevision {
@@ -1449,6 +1472,15 @@ WHERE page.site_id = $1
                 ErrorType::Page,
             ));
         }
+
+        PageLockService::require_write_allowed_for_page(
+            ctx,
+            locked_page
+                .as_ref()
+                .expect("locked page presence was checked"),
+            user_id,
+        )
+        .await?;
 
         Self::check_conflicts(ctx, site_id, &slug, "restore")
             .await
@@ -1609,6 +1641,15 @@ WHERE page.site_id = $1
             ));
         }
 
+        PageLockService::require_write_allowed_for_page(
+            ctx,
+            locked_page
+                .as_ref()
+                .expect("locked page presence was checked"),
+            user_id,
+        )
+        .await?;
+
         let (target_revision, last_revision) = join!(
             PageRevisionService::get(
                 ctx,
@@ -1756,6 +1797,11 @@ WHERE page.site_id = $1
                 ErrorType::Page,
             )
         };
+
+        let page = Self::get(ctx, site_id, Reference::Id(page_id))
+            .await
+            .or_raise(make_error)?;
+        PageLockService::require_write_allowed_for_page(ctx, &page, user_id).await?;
 
         ctx.defer_public_content_cache_invalidate_site(site_id)
             .or_raise(make_error)?;

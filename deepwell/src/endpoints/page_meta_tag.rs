@@ -102,7 +102,7 @@ async fn require_mutation_permission(
             action: Action::Edit,
         }
     };
-    MutationAuthorization::require_permission(
+    let user_id = MutationAuthorization::require_permission(
         ctx,
         page.site_id,
         (!all_pages).then_some(Reference::Id(page.page_id)),
@@ -110,7 +110,7 @@ async fn require_mutation_permission(
         "edit metadata tags",
     )
     .await?;
-    Ok(())
+    PageLockService::require_write_allowed_for_page(ctx, page, user_id).await
 }
 
 fn make_error() -> Error {

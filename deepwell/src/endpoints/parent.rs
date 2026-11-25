@@ -21,6 +21,7 @@
 use std::collections::{HashMap, HashSet};
 
 use super::prelude::*;
+use crate::constants::ANONYMOUS_USER_ID;
 use crate::models::page::Model as PageModel;
 use crate::models::page_parent::Model as PageParentModel;
 use crate::services::page::GetPageReference;
@@ -634,15 +635,20 @@ async fn ensure_child_page_edit_permission<'a>(
             .await
             .or_raise(make_error)?;
 
-    if can_edit {
-        Ok(())
-    } else {
-        Err(Error::new(
+    if !can_edit {
+        return Err(Error::new(
             "user does not have permission to edit this child page",
             ErrorType::PermissionDenied,
         )
-        .into())
+        .into());
     }
+
+    PageLockService::require_write_allowed_for_page(
+        ctx,
+        &page,
+        user_id.unwrap_or(ANONYMOUS_USER_ID),
+    )
+    .await
 }
 
 #[cfg(test)]

@@ -180,6 +180,7 @@ pub async fn page_revision_edit(
         "edit page revision visibility",
     )
     .await?;
+    PageLockService::require_write_allowed_for_page(ctx, &page, input.user_id).await?;
 
     info!(
         "Editing revision ID {} for page ID {} in site ID {}",

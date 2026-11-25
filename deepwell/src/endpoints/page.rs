@@ -62,7 +62,9 @@ use crate::services::render::{
     WikidotSitemapOutput, wikidot_site_changes_empty_response,
 };
 use crate::services::settings::PageRatingVisibility;
-use crate::services::{MutationAuthorization, SettingsService, SiteService, TextService};
+use crate::services::{
+    MutationAuthorization, PageLockService, SettingsService, SiteService, TextService,
+};
 use crate::types::{
     Action, Bytes, FileOrder, PageDetails, PageId, Permission, Reference, RerenderDepth,
     Resource,
@@ -1629,6 +1631,13 @@ pub async fn page_rerender(
     .or_raise(|| {
         Error::new("failed to check page rerender permission", ErrorType::Page)
     })?;
+    PageLockService::require_write_allowed(
+        ctx,
+        input.site_id,
+        input.page_id,
+        actor_user_id,
+    )
+    .await?;
     info!(
         "Re-rendering page ID {} in site ID {}",
         input.page_id, input.site_id,
