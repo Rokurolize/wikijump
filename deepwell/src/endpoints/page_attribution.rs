@@ -47,6 +47,9 @@ async fn require_page_attribution_permission(
         )
     })?;
 
+    PageLockService::require_write_allowed_for_page(ctx, &page_model, submitted_user_id)
+        .await?;
+
     // The reserved `_admin` page follows the canonical gate: writing its
     // attributions requires Site/Edit, not category standing.
     if PermissionService::slug_targets_reserved_admin_page(&page_model.slug) {

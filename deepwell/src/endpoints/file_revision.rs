@@ -222,6 +222,13 @@ pub async fn file_revision_edit(
         "edit file revision visibility",
     )
     .await?;
+    PageLockService::require_write_allowed(
+        ctx,
+        input.site_id,
+        input.page_id,
+        input.user_id,
+    )
+    .await?;
 
     info!(
         "Editing file revision ID {} for file ID {} on page {}",

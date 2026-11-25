@@ -26,7 +26,7 @@ use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::page_edit_lock::{
     self, Entity as PageEditLock, Model as PageEditLockModel,
 };
-use crate::services::{PageService, ServiceContext};
+use crate::services::{PageLockService, PageService, ServiceContext};
 use crate::types::PageEditLockMode;
 use crate::utils::{assert_is_csprng, now};
 use rand::distr::{Alphanumeric, SampleString};
@@ -72,10 +72,12 @@ impl PageEditLockService {
 
         check_mode_section(input.mode, input.section_index).or_raise(make_error)?;
 
-        let page_id = PageService::get(ctx, input.site_id, input.page.borrow())
+        let page = PageService::get(ctx, input.site_id, input.page.borrow())
             .await
-            .or_raise(make_error)?
-            .page_id;
+            .or_raise(make_error)?;
+        let page_id = page.page_id;
+        PageLockService::require_write_allowed_for_page(ctx, &page, input.user_id)
+            .await?;
 
         let locked_page = Self::lock_page(ctx, page_id).await.or_raise(make_error)?;
         let base_revision_id = locked_page.latest_revision_id;
@@ -171,10 +173,12 @@ impl PageEditLockService {
 
         check_mode_section(input.mode, input.section_index).or_raise(make_error)?;
 
-        let page_id = PageService::get(ctx, input.site_id, input.page.borrow())
+        let page = PageService::get(ctx, input.site_id, input.page.borrow())
             .await
-            .or_raise(make_error)?
-            .page_id;
+            .or_raise(make_error)?;
+        let page_id = page.page_id;
+        PageLockService::require_write_allowed_for_page(ctx, &page, input.user_id)
+            .await?;
 
         let locked_page = Self::lock_page(ctx, page_id).await.or_raise(make_error)?;
 
