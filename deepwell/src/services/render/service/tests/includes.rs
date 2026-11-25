@@ -1,4 +1,5 @@
 use super::*;
+use crate::services::render::runtime::SharedExpandedIncludeCache;
 use crate::services::render::service::CachedIncludeExpansion;
 use ftml::includes::IncludeArguments;
 
@@ -3528,4 +3529,78 @@ fn include_expansion_cache_key_separates_distinct_module_shapes() {
             other_scope,
         ),
     );
+}
+
+#[test]
+fn include_expansion_scope_key_uses_semantic_page_context() {
+    let settings_a = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let settings_b = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let page_info_a = fallback_test_page_info("consumer", "First row title");
+    let mut page_info_b = fallback_test_page_info("consumer", "Different row title");
+    page_info_b.alt_title = Some(Cow::Borrowed("Different alt title"));
+    page_info_b.score = ftml::data::ScoreValue::Integer(17);
+
+    fn make_context<'a>(
+        page_info: &'a ftml::data::PageInfo<'a>,
+        settings: &'a WikitextSettings,
+    ) -> IncludeExpansionContext<'a> {
+        IncludeExpansionContext {
+            current_site_id: 1,
+            current_site_slug: "scp-wiki".to_owned(),
+            imported_source_site: None,
+            attachment_owner: None,
+            page_info,
+            settings,
+            omit_iftags_branches: false,
+            expand_wikidot_image_blocks: false,
+            max_total_includes: 32,
+            render_cost_budget: RenderCostBudget::new_default(),
+            raw_zone: false,
+        }
+    }
+
+    assert_eq!(
+        make_context(&page_info_a, &settings_a).scope_key(),
+        make_context(&page_info_b, &settings_b).scope_key(),
+    );
+
+    let page_info_other_row = fallback_test_page_info("other-row", "First row title");
+    assert_ne!(
+        make_context(&page_info_a, &settings_a).scope_key(),
+        make_context(&page_info_other_row, &settings_b).scope_key(),
+    );
+
+    let mut page_info_other_tags = fallback_test_page_info("consumer", "First row title");
+    page_info_other_tags.tags = vec![Cow::Borrowed("row-tag")];
+    assert_ne!(
+        make_context(&page_info_a, &settings_a).scope_key(),
+        make_context(&page_info_other_tags, &settings_b).scope_key(),
+    );
+}
+
+#[test]
+fn shared_expanded_include_cache_is_visible_to_row_render_scopes() {
+    let shared = SharedExpandedIncludeCache::default();
+    let key: crate::hash::TextHash = [7; 16];
+    let target = PageRef::page_only("component:w11-shared");
+
+    let mut first_row = IncludeSourceCache::default();
+    first_row.expanded_includes = shared.clone();
+    first_row.cache_expanded_include(
+        key,
+        CachedIncludeExpansion {
+            wikitext: "WAVE13_SHARED".to_owned(),
+            included_pages: vec![target.clone()],
+            expanded_include_count: 1,
+        },
+    );
+
+    let mut second_row = IncludeSourceCache::default();
+    second_row.expanded_includes = shared;
+    let cached = second_row
+        .expanded_include(&key)
+        .expect("a cloned response cache handle must see the first row expansion");
+    assert_eq!(cached.wikitext, "WAVE13_SHARED");
+    assert_eq!(cached.expanded_include_count, 1);
+    assert_eq!(cached.included_pages, vec![target]);
 }

@@ -13,6 +13,7 @@
 use super::generator::COMPILED_GENERATOR;
 use super::render_budget::RenderCostBudget;
 use super::render_options::{RenderContext, RenderInnerOptions};
+use super::runtime::SharedExpandedIncludeCache;
 use super::service::{RenderInnerOutput, RenderService, public_include_expansion_limit};
 use super::{RenderOutput, UrlArguments};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
@@ -125,6 +126,7 @@ impl RenderService {
                     max_include_expansions: public_include_expansion_limit(ctx.config()),
                     trusted_corpus_render: false,
                     render_cost_budget: RenderCostBudget::new_default(),
+                    expanded_include_cache: SharedExpandedIncludeCache::default(),
                     trace: None,
                     persist_compiled_text: false,
                     url: UrlArguments::default(),
