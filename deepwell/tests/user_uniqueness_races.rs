@@ -38,7 +38,9 @@ use sea_orm::{
 use std::fs;
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::Barrier;
 use tokio::time::sleep;
 
 const IP_ADDRESS: IpAddr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 10));
@@ -144,6 +146,7 @@ fn create_input(name: &str, email: &str) -> CreateUser {
 
 fn update_body() -> UpdateUserBody {
     UpdateUserBody {
+        expected_user_revision: None,
         name: Maybe::Unset,
         email: Maybe::Unset,
         email_verified: Maybe::Unset,
@@ -176,6 +179,149 @@ async fn create_committed_user(state: &ServerState, name: &str, email: &str) -> 
         .await
         .expect("user creation transaction should commit");
     output.user_id
+}
+
+fn full_record_body(stored: &user::Model, expected_revision: i64) -> UpdateUserBody {
+    let mut body = update_body();
+    body.expected_user_revision = Some(expected_revision);
+    body.name = Maybe::Set(stored.name.clone());
+    body.email = Maybe::Set(stored.email.clone());
+    body.locales = Maybe::Set(stored.locales.clone());
+    body.forum_signature = Maybe::Set(stored.forum_signature.clone());
+    body.real_name = Maybe::Set(stored.real_name.clone());
+    body.gender = Maybe::Set(stored.gender.clone());
+    body.birthday = Maybe::Set(stored.birthday);
+    body.location = Maybe::Set(stored.location.clone());
+    body.biography = Maybe::Set(stored.biography.clone());
+    body.website = Maybe::Set(stored.website.clone());
+    body.user_page = Maybe::Set(stored.user_page.clone());
+    body
+}
+
+async fn committed_user_update(
+    state: &ServerState,
+    user_id: i64,
+    body: UpdateUserBody,
+) -> Result<user::Model> {
+    let txn = state
+        .database
+        .begin()
+        .await
+        .expect("user update transaction should begin");
+    let ctx = ServiceContext::new(state, &txn);
+    let result =
+        UserService::update(&ctx, Reference::Id(user_id), IP_ADDRESS, body).await;
+    match &result {
+        Ok(_) => txn
+            .commit()
+            .await
+            .expect("successful user update transaction should commit"),
+        Err(_) => txn
+            .rollback()
+            .await
+            .expect("rejected user update transaction should roll back"),
+    }
+    result
+}
+
+async fn barrier_user_update(
+    state: &ServerState,
+    barrier: Arc<Barrier>,
+    user_id: i64,
+    body: UpdateUserBody,
+) -> Result<user::Model> {
+    barrier.wait().await;
+    committed_user_update(state, user_id, body).await
+}
+
+#[tokio::test]
+async fn stale_full_record_user_update_conflicts_and_partial_update_still_commits() {
+    let state = test_state().await;
+    let tag = cuid();
+    let user_id = create_committed_user(
+        &state,
+        &format!("Revision Race {tag}"),
+        &format!("revision-race-{tag}@example.invalid"),
+    )
+    .await;
+    let base = scratch_user(&state.database, user_id).await;
+    let barrier = Arc::new(Barrier::new(2));
+
+    let mut first_body = full_record_body(&base, base.revision);
+    first_body.real_name = Maybe::Set(Some(format!("First Real Name {tag}")));
+    let mut second_body = full_record_body(&base, base.revision);
+    second_body.biography = Maybe::Set(Some(format!("Second Biography {tag}")));
+
+    let (first, second) = tokio::join!(
+        barrier_user_update(&state, Arc::clone(&barrier), user_id, first_body),
+        barrier_user_update(&state, barrier, user_id, second_body),
+    );
+    let mut successes = Vec::new();
+    let mut errors = Vec::new();
+    for result in [first, second] {
+        match result {
+            Ok(user) => successes.push(user),
+            Err(error) => errors.push(error),
+        }
+    }
+    assert_eq!(
+        successes.len(),
+        1,
+        "exactly one stale-base update should commit"
+    );
+    assert_eq!(
+        errors.len(),
+        1,
+        "exactly one stale-base update should conflict"
+    );
+    assert_error_code(
+        &errors[0],
+        ErrorType::UserRevisionConflict {
+            expected_revision: base.revision,
+            current_revision: base.revision + 1,
+        },
+    );
+    let winner = &successes[0];
+    let stored = scratch_user(&state.database, user_id).await;
+    assert_eq!(stored.revision, base.revision + 1);
+    assert_eq!(stored.real_name, winner.real_name);
+    assert_eq!(stored.biography, winner.biography);
+
+    let serialized_base = scratch_user(&state.database, user_id).await;
+    let mut first_serialized =
+        full_record_body(&serialized_base, serialized_base.revision);
+    first_serialized.real_name = Maybe::Set(Some(format!("Serialized Real Name {tag}")));
+    let first_serialized = committed_user_update(&state, user_id, first_serialized)
+        .await
+        .expect("first serialized full-record update should commit");
+    assert_eq!(first_serialized.revision, serialized_base.revision + 1);
+
+    let refreshed_base = scratch_user(&state.database, user_id).await;
+    let mut second_serialized =
+        full_record_body(&refreshed_base, refreshed_base.revision);
+    second_serialized.biography = Maybe::Set(Some(format!("Serialized Biography {tag}")));
+    let second_serialized = committed_user_update(&state, user_id, second_serialized)
+        .await
+        .expect("freshly serialized full-record update should commit");
+    assert_eq!(second_serialized.revision, refreshed_base.revision + 1);
+    assert_eq!(
+        second_serialized.real_name,
+        Some(format!("Serialized Real Name {tag}")),
+    );
+    assert_eq!(
+        second_serialized.biography,
+        Some(format!("Serialized Biography {tag}")),
+    );
+
+    let mut partial = update_body();
+    partial.location = Maybe::Set(Some(format!("Partial Location {tag}")));
+    let partial = committed_user_update(&state, user_id, partial)
+        .await
+        .expect("partial update without an expectation should keep committing");
+    assert_eq!(partial.location, Some(format!("Partial Location {tag}")),);
+    assert_eq!(partial.revision, second_serialized.revision + 1);
+
+    cleanup_users(&state, &[user_id]).await;
 }
 
 async fn live_users_with_slug(state: &ServerState, slug: &str) -> Vec<user::Model> {

@@ -111,6 +111,7 @@ export interface UserModel {
   user_type: UserType
   created_at: string
   updated_at: Nullable<string>
+  revision: number
   deleted_at: Nullable<string>
   from_wikidot: boolean
   name: string

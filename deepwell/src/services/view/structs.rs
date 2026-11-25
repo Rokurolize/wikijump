@@ -350,6 +350,7 @@ mod user_session_tests {
             user_type: UserType::Regular,
             created_at: OffsetDateTime::UNIX_EPOCH,
             updated_at: None,
+            revision: 0,
             deleted_at: None,
             name: "Viewer Test".to_owned(),
             slug: "viewer-test".to_owned(),

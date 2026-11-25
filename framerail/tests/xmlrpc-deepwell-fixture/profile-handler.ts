@@ -52,6 +52,19 @@ export const handleProfileRpc = ({
       sendRpcError(response, rpcRequest.id, -32000, "The user's email is invalid")
       return { responded: true }
     }
+    if (
+      typeof params.expected_user_revision === "number" &&
+      params.expected_user_revision !== fixtureState.authenticatedUser.revision
+    ) {
+      sendRpcError(
+        response,
+        rpcRequest.id,
+        4112,
+        "The user record changed since this edit was loaded"
+      )
+      return { responded: true }
+    }
+    fixtureState.authenticatedUser.revision += 1
     for (const key of [
       "name",
       "email",
@@ -144,6 +157,7 @@ const userFound = (profile: {
         user_type: "regular",
         created_at: "2026-01-01T00:00:00Z",
         updated_at: null,
+        revision: 2,
         deleted_at: null,
         from_wikidot: false,
         name: profile.name,

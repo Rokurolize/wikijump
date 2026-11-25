@@ -42,6 +42,7 @@ export async function userView(
 }
 
 interface UserEditParams {
+  expectedUserRevision?: Optional<number>
   name?: Optional<string>
   email?: Optional<string>
   currentPassword?: Optional<string>
@@ -91,6 +92,9 @@ export async function userEdit(
   for (const [paramName, rpcName] of directUserEditFields) {
     const value = params[paramName]
     if (value !== undefined) data[rpcName] = value
+  }
+  if (params.expectedUserRevision !== undefined) {
+    data.expected_user_revision = params.expectedUserRevision
   }
   if (params.currentPassword) data.current_password = params.currentPassword
   for (const [paramName, rpcName] of nullableUserEditFields) {

@@ -74,6 +74,7 @@ test("account route loads expose their public SvelteKit page data", async () => 
             user_type: "regular",
             created_at: "2026-08-10T00:00:00Z",
             updated_at: null,
+            revision: 4,
             deleted_at: null,
             name: "Account Fixture",
             slug: "account-fixture",
@@ -143,6 +144,7 @@ test("account route loads expose their public SvelteKit page data", async () => 
       user_session: {
         user: {
           user_id: 41,
+          revision: 7,
           locales: ["en-US", "ja-JP"],
           forum_signature: "**Stored signature**"
         }
@@ -276,6 +278,7 @@ test("display settings persist the forum signature through the existing account 
   const formData = new FormData()
   formData.set("locales", "en-US en")
   formData.set("signature", "**Forum signature**\nSecond line")
+  formData.set("expectedUserRevision", "7")
   const result = await routes.settings.actions.display({
     request: new Request("https://wikijump.test/-/settings?/display", {
       method: "POST",
@@ -303,7 +306,8 @@ test("display settings persist the forum signature through the existing account 
         ip_address: "192.0.2.41",
         bypass_filter: false,
         locales: ["en-US", "en"],
-        forum_signature: "**Forum signature**\nSecond line"
+        forum_signature: "**Forum signature**\nSecond line",
+        expected_user_revision: 7
       },
       context: { siteId: 17, page: "-/settings", sessionToken: "account-session" }
     }
@@ -313,6 +317,7 @@ test("display settings persist the forum signature through the existing account 
   const tooManyLines = new FormData()
   tooManyLines.set("locales", "en-US en")
   tooManyLines.set("signature", "one\ntwo\nthree\nfour\nfive")
+  tooManyLines.set("expectedUserRevision", "7")
   const rejected = await routes.settings.actions.display({
     request: new Request("https://wikijump.test/-/settings?/display", {
       method: "POST",
@@ -589,6 +594,7 @@ test("logout and user-edit route actions bind mutations to the server session", 
 
   const editData = new FormData()
   editData.set("name", "Updated Account")
+  editData.set("expectedUserRevision", "4")
   const edited = await routes.user.actions.userEdit({
     request: new Request("https://wikijump.test/-/user?/userEdit", {
       method: "POST",
@@ -624,6 +630,7 @@ test("logout and user-edit route actions bind mutations to the server session", 
         user: 41,
         ip_address: "192.0.2.41",
         bypass_filter: false,
+        expected_user_revision: 4,
         name: "Updated Account"
       },
       context: { siteId: 17, page: "-/user", sessionToken: "account-session" }

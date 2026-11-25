@@ -25,8 +25,11 @@ import {
   array,
   check,
   forward,
+  integer,
   maxLength,
   minLength,
+  minValue,
+  number,
   object,
   partialCheck,
   pipe,
@@ -53,7 +56,8 @@ export async function loadUserSettings(parent: PreloadDataAsync) {
   const displaySettingsForm = await superValidate(
     {
       locales,
-      signature: parentData.user_session.user.forum_signature ?? ""
+      signature: parentData.user_session.user.forum_signature ?? "",
+      expectedUserRevision: parentData.user_session.user.revision
     },
     valibot(userDisplaySettingsSchema)
   )
@@ -104,12 +108,19 @@ export async function userDisplaySettingsAction({
     }
     form.data.locales = locales
 
-    await userEdit(
+    const updated = await userEdit(
       session.user_id,
       getClientAddress(),
-      { locales, forumSignature: signature || null },
+      {
+        locales,
+        forumSignature: signature || null,
+        expectedUserRevision: form.data.expectedUserRevision
+      },
       getRequestContext(locals)
     )
+    if (typeof updated.revision === "number") {
+      form.data.expectedUserRevision = updated.revision
+    }
     return { form }
   } catch (error) {
     return failForActionError(error, { form })
@@ -117,6 +128,7 @@ export async function userDisplaySettingsAction({
 }
 
 export const userDisplaySettingsSchema = object({
+  expectedUserRevision: pipe(number(), integer(), minValue(0)),
   locales: pipe(
     array(string()),
     minLength(1, "At least one display language is required.")

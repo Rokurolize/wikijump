@@ -8,6 +8,7 @@
   let { data }: PageProps = $props()
 
   const userData: InferOutput<typeof userEditSchema> = $derived({
+    expectedUserRevision: data.user?.revision ?? 0,
     name: data.user?.name ?? "",
     realName: data.user?.real_name ?? "",
     email: data.user?.email ?? "",

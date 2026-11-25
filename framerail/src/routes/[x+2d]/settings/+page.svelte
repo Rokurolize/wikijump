@@ -86,6 +86,7 @@
 <h1>{data.internationalization?.settings}</h1>
 
 <form id="user-settings-form" action="?/display" method="POST" use:enhance>
+  <input type="hidden" name="expectedUserRevision" value={$form.expectedUserRevision} />
   <p id="user-display-locales-label">
     {data.internationalization?.["user-profile-info.locales"]}
   </p>

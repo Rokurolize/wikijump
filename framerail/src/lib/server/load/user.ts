@@ -16,7 +16,17 @@ import { loadSiteInfo } from "$lib/server/load/site-info"
 import { error, redirect } from "@sveltejs/kit"
 import { fail, superValidate, withFiles } from "sveltekit-superforms"
 import { valibot } from "sveltekit-superforms/adapters"
-import { boolean, file, object, optional, string } from "valibot"
+import {
+  boolean,
+  file,
+  integer,
+  minValue,
+  number,
+  object,
+  optional,
+  pipe,
+  string
+} from "valibot"
 
 import type { PreloadData, PreloadDataAsync } from "$lib/server/deepwell/views"
 import type { TranslateKeys, TranslatedKeys, UserModel } from "$lib/types"
@@ -210,6 +220,7 @@ export function sanitizeUserData(
     "user_type",
     "created_at",
     "updated_at",
+    "revision",
     "deleted_at",
     "name",
     "slug",
@@ -276,7 +287,8 @@ export async function userEditAction({
       biography,
       website,
       userPage,
-      locales
+      locales,
+      expectedUserRevision
     } = form.data
 
     const hasNewImage = avatar instanceof File && avatar.size > 0
@@ -287,7 +299,7 @@ export async function userEditAction({
       })
     }
 
-    await userEdit(
+    const updated = await userEdit(
       session.user_id,
       ipAddress,
       {
@@ -308,10 +320,14 @@ export async function userEditAction({
         biography,
         website,
         userPage,
+        expectedUserRevision,
         bypassFilter: false
       },
       getRequestContext(locals)
     )
+    if (typeof updated.revision === "number") {
+      form.data.expectedUserRevision = updated.revision
+    }
 
     return withFiles({ form })
   } catch (error) {
@@ -320,6 +336,7 @@ export async function userEditAction({
 }
 
 export const userEditSchema = object({
+  expectedUserRevision: pipe(number(), integer(), minValue(0)),
   name: optional(string()),
   realName: optional(string()),
   email: optional(string()),
