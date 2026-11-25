@@ -65,8 +65,12 @@ pub(crate) struct SearchGrammar {
 }
 
 impl SearchGrammar {
-    pub(crate) fn expression_with_optional(&self, optional: &[String]) -> String {
-        combine_expression(&self.required_terms, optional, &self.excluded_terms)
+    pub(crate) fn expression_with_terms(
+        &self,
+        optional: &[String],
+        excluded: &[String],
+    ) -> String {
+        combine_expression(&self.required_terms, optional, excluded)
     }
 }
 
@@ -95,7 +99,6 @@ struct Term {
 }
 
 const MAX_QUERY_CHARS: usize = 512;
-const MAX_TERMS: usize = 32;
 
 pub(crate) fn parse(query: &str) -> SearchGrammar {
     if query.chars().count() > MAX_QUERY_CHARS {
@@ -198,9 +201,6 @@ pub(crate) fn parse(query: &str) -> SearchGrammar {
             phrase,
             wildcard,
         });
-        if terms.len() > MAX_TERMS {
-            return empty();
-        }
     }
 
     build(terms, filters)
@@ -609,6 +609,18 @@ mod tests {
     }
 
     #[test]
+    fn term_count_does_not_silently_disable_search() {
+        let extras = (0..40)
+            .map(|index| format!("no_match_{index}"))
+            .collect::<Vec<_>>()
+            .join(" ");
+        let grammar = parse(&format!("base {extras}"));
+        assert!(!grammar.no_results);
+        assert!(grammar.has_tsquery);
+        assert_eq!(grammar.optional_terms.len(), 41);
+    }
+
+    #[test]
     fn optional_terms_can_be_narrowed_without_changing_required_or_excluded() {
         let grammar = parse("+alpha -beta gamma delta");
         assert_eq!(
@@ -616,11 +628,14 @@ mod tests {
             "('alpha') & ('gamma' | 'delta') & !('beta')"
         );
         assert_eq!(
-            grammar.expression_with_optional(&[String::from("'gamma'")]),
+            grammar.expression_with_terms(
+                &[String::from("'gamma'")],
+                &grammar.excluded_terms
+            ),
             "('alpha') & ('gamma') & !('beta')"
         );
         assert_eq!(
-            grammar.expression_with_optional(&[]),
+            grammar.expression_with_terms(&[], &grammar.excluded_terms),
             "('alpha') & !('beta')"
         );
     }
