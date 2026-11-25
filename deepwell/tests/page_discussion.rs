@@ -14,17 +14,25 @@
 mod common;
 
 use self::common::TestRunner;
-use deepwell::constants::{ADMIN_USER_ID, ANONYMOUS_USER_ID};
-use deepwell::models::forum_thread::Entity as ForumThreadTable;
+use deepwell::constants::{
+    ADMIN_USER_ID, ANONYMOUS_USER_ID, SAMPLE_USER_ID, SYSTEM_USER_ID,
+};
+use deepwell::error::ErrorType;
+use deepwell::models::forum_thread::{self, Entity as ForumThreadTable};
 use deepwell::services::forum::{CreateForumCategory, CreateForumGroup};
 use deepwell::services::forum_thread::{CreateForumThread, GetForumThread};
+use deepwell::services::permission::PermissionService;
+use deepwell::services::role::{
+    GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
+};
 use deepwell::services::{
     CategoryService, ForumService, ForumThreadService, PageService, RequestContext,
     ServiceContext, SettingsService,
 };
-use deepwell::types::Reference;
+use deepwell::types::{Action, Permission, Reference, Resource};
 use sea_orm::{
-    ConnectionTrait, EntityTrait, PaginatorTrait, Statement, TransactionTrait, Value,
+    ColumnTrait, ConnectionTrait, EntityTrait, PaginatorTrait, QueryFilter, Statement,
+    TransactionTrait, Value,
 };
 use serde_json::json;
 use std::time::Duration;
@@ -58,8 +66,238 @@ async fn set_page_discussion_policy(runner: &TestRunner, page_id: i64, enabled: 
         .expect("discussion policy should update");
 }
 
+async fn grant_private_discussion_view_to_admin(runner: &TestRunner, site_id: i64) {
+    let category_id = CategoryService::get_or_create(
+        runner.context(),
+        site_id,
+        "security-discussion-private",
+    )
+    .await
+    .expect("private discussion category should be created")
+    .category_id;
+    let role = RoleService::create(
+        runner.context(),
+        InternalCreateRoleInput {
+            site_id,
+            name: "security-discussion-private-admin".to_owned(),
+            description: None,
+            is_virtual: false,
+            parent_role_id: None,
+            creating_user_id: SYSTEM_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("private discussion role should be created");
+    PermissionService::update_permissions_for_role(
+        runner.context(),
+        UpdateRolePermissionsInput {
+            site_id,
+            role_reference: Reference::Id(role.role_id),
+            new_permissions: [Action::View, Action::Create, Action::Edit]
+                .into_iter()
+                .map(|action| Permission {
+                    resource_type: Resource::Page,
+                    resource_category: Some(Reference::Id(category_id)),
+                    action,
+                })
+                .collect(),
+            cascade_removals: false,
+            updating_user_id: SYSTEM_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("private discussion permissions should be assigned");
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            role_id: role.role_id,
+            assigning_user_id: SYSTEM_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("admin should receive private discussion permission");
+}
+
+async fn discussion_count_for_page(runner: &TestRunner, page_id: i64) -> u64 {
+    ForumThreadTable::find()
+        .filter(forum_thread::Column::PageId.eq(page_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("page discussion count should be readable")
+}
+
 #[tokio::test]
-async fn wikidot_page_discussion_create_is_anonymous_idempotent_and_rejects_deleted_pages()
+async fn page_discussion_get_or_create_requires_view_and_reads_do_not_create() {
+    const PUBLIC_SLUG: &str = "discussion-security-public";
+    const PRIVATE_SLUG: &str = "security-discussion-private:target";
+    const PRIVATE_TITLE: &str = "Private Discussion Target";
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    grant_private_discussion_view_to_admin(&runner, site_id).await;
+
+    for (slug, title) in [
+        (PUBLIC_SLUG, "Public Discussion Target"),
+        (PRIVATE_SLUG, PRIVATE_TITLE),
+    ] {
+        set_actor(
+            &mut runner,
+            Some(ADMIN_USER_ID),
+            site_id,
+            Reference::from(slug),
+        );
+        run_endpoint!(
+            runner,
+            page_create,
+            json!({
+                "site_id": site_id,
+                "wikitext": "Discussion authorization fixture body",
+                "title": title,
+                "alt_title": null,
+                "slug": slug,
+                "layout": "wikidot",
+                "revision_comments": "create discussion authorization fixture",
+                "user_id": ADMIN_USER_ID,
+                "bypass_filter": true,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+    }
+
+    let public_page =
+        PageService::get(runner.context(), site_id, Reference::from(PUBLIC_SLUG))
+            .await
+            .expect("public discussion fixture should exist");
+    set_page_discussion_policy(&runner, public_page.page_id, true).await;
+    assert_eq!(
+        discussion_count_for_page(&runner, public_page.page_id).await,
+        0
+    );
+    set_actor(
+        &mut runner,
+        None,
+        site_id,
+        Reference::Id(public_page.page_id),
+    );
+    let error = run_endpoint_err!(
+        runner,
+        wikidot_page_discussion_create,
+        json!({ "site_id": site_id, "page_id": public_page.page_id }),
+    );
+    assert_contains_error!(error, ErrorType::NotAuthenticated);
+    assert_eq!(
+        discussion_count_for_page(&runner, public_page.page_id).await,
+        0
+    );
+
+    let read = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumCommentsListModule",
+            "parameters": {"pageId": public_page.page_id.to_string()},
+        }),
+    );
+    assert_eq!(read.status, "no_page");
+    assert_eq!(read.thread_id, None);
+    assert_eq!(
+        discussion_count_for_page(&runner, public_page.page_id).await,
+        0
+    );
+
+    let private_page =
+        PageService::get(runner.context(), site_id, Reference::from(PRIVATE_SLUG))
+            .await
+            .expect("private discussion fixture should exist");
+    set_actor(
+        &mut runner,
+        None,
+        site_id,
+        Reference::Id(private_page.page_id),
+    );
+    let error = match ForumThreadService::get_or_create_page_discussion(
+        runner.context(),
+        &private_page,
+        ANONYMOUS_USER_ID,
+        PRIVATE_TITLE,
+    )
+    .await
+    {
+        Err(error) => error,
+        Ok(_) => panic!("anonymous page discussion creation should fail"),
+    };
+    assert_contains_error!(error, ErrorType::NotAuthenticated);
+    assert_eq!(
+        discussion_count_for_page(&runner, private_page.page_id).await,
+        0
+    );
+
+    set_actor(
+        &mut runner,
+        Some(SAMPLE_USER_ID),
+        site_id,
+        Reference::Id(private_page.page_id),
+    );
+    let error = match ForumThreadService::get_or_create_page_discussion(
+        runner.context(),
+        &private_page,
+        SAMPLE_USER_ID,
+        PRIVATE_TITLE,
+    )
+    .await
+    {
+        Err(error) => error,
+        Ok(_) => panic!("unauthorized page discussion creation should fail"),
+    };
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_eq!(
+        discussion_count_for_page(&runner, private_page.page_id).await,
+        0
+    );
+
+    set_actor(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        site_id,
+        Reference::Id(private_page.page_id),
+    );
+    let thread = ForumThreadService::get_or_create_page_discussion(
+        runner.context(),
+        &private_page,
+        ADMIN_USER_ID,
+        PRIVATE_TITLE,
+    )
+    .await
+    .expect("authorized viewer should create the page discussion");
+    assert_eq!(thread.page_id, Some(private_page.page_id));
+    assert_eq!(thread.created_by, ADMIN_USER_ID);
+    assert_eq!(thread.title, PRIVATE_TITLE);
+    assert_eq!(
+        discussion_count_for_page(&runner, private_page.page_id).await,
+        1
+    );
+    let stored_page =
+        PageService::get_direct(runner.context(), private_page.page_id, false)
+            .await
+            .expect("private discussion fixture should still exist");
+    assert_eq!(
+        stored_page.discussion_thread_id,
+        Some(thread.forum_thread_id)
+    );
+}
+
+#[tokio::test]
+async fn wikidot_page_discussion_create_is_authorized_idempotent_and_rejects_deleted_pages()
  {
     const PAGE_SLUG: &str = "page-discussion-fixture";
     const PAGE_TITLE: &str = "Page Discussion Fixture";
@@ -125,7 +363,12 @@ async fn wikidot_page_discussion_create_is_anonymous_idempotent_and_rejects_dele
     );
     set_page_discussion_policy(&runner, page.page_id, true).await;
 
-    set_actor(&mut runner, None, site_id, Reference::Id(page.page_id));
+    set_actor(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        site_id,
+        Reference::Id(page.page_id),
+    );
     let first = run_endpoint!(
         runner,
         wikidot_page_discussion_create,
@@ -151,7 +394,7 @@ async fn wikidot_page_discussion_create_is_anonymous_idempotent_and_rejects_dele
     .await
     .expect("created discussion thread should exist");
     assert_eq!(thread.page_id, Some(page.page_id));
-    assert_eq!(thread.created_by, ANONYMOUS_USER_ID);
+    assert_eq!(thread.created_by, ADMIN_USER_ID);
     assert_eq!(thread.title, PAGE_TITLE);
     assert_eq!(
         thread.description,
@@ -221,7 +464,12 @@ async fn wikidot_page_discussion_create_is_anonymous_idempotent_and_rejects_dele
     .expect("soft-deleted discussion thread should remain queryable internally");
     assert!(deleted_thread.deleted_at.is_some());
 
-    set_actor(&mut runner, None, site_id, Reference::Id(page.page_id));
+    set_actor(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        site_id,
+        Reference::Id(page.page_id),
+    );
     run_endpoint_err!(
         runner,
         wikidot_page_discussion_create,
@@ -321,7 +569,12 @@ async fn wikidot_page_discussion_create_is_anonymous_idempotent_and_rejects_dele
         }),
     );
 
-    set_actor(&mut runner, None, site_id, Reference::Id(page.page_id));
+    set_actor(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        site_id,
+        Reference::Id(page.page_id),
+    );
     assert!(
         run_endpoint!(
             runner,
@@ -410,7 +663,7 @@ async fn wikidot_page_discussion_respects_disabled_page_policy() {
 
     set_actor(
         &mut runner,
-        None,
+        Some(ADMIN_USER_ID),
         site_id,
         Reference::Id(enabled_page.page_id),
     );
@@ -428,7 +681,7 @@ async fn wikidot_page_discussion_respects_disabled_page_policy() {
     set_page_discussion_policy(&runner, enabled_page.page_id, false).await;
     set_actor(
         &mut runner,
-        None,
+        Some(ADMIN_USER_ID),
         site_id,
         Reference::Id(disabled_page.page_id),
     );
@@ -439,7 +692,7 @@ async fn wikidot_page_discussion_respects_disabled_page_policy() {
             json!({ "site_id": site_id, "page_id": disabled_page.page_id }),
         )
         .is_none(),
-        "an anonymous viewer must not create a thread while page discussions are disabled",
+        "a viewer must not create a thread while page discussions are disabled",
     );
     assert_eq!(
         ForumThreadTable::find()
@@ -457,7 +710,7 @@ async fn wikidot_page_discussion_respects_disabled_page_policy() {
 
     set_actor(
         &mut runner,
-        None,
+        Some(ADMIN_USER_ID),
         site_id,
         Reference::Id(enabled_page.page_id),
     );
@@ -570,7 +823,12 @@ async fn wikidot_page_discussion_rejects_cross_site_thread_associations() {
     .await
     .expect("the legacy service permits constructing the inconsistent fixture");
 
-    set_actor(&mut runner, None, test_site_id, Reference::Id(page.page_id));
+    set_actor(
+        &mut runner,
+        Some(ADMIN_USER_ID),
+        test_site_id,
+        Reference::Id(page.page_id),
+    );
     run_endpoint_err!(
         runner,
         wikidot_page_discussion_create,
@@ -843,7 +1101,7 @@ async fn imported_page_discussion_pointer_can_be_claimed_by_only_one_page() {
 
     set_actor(
         &mut runner,
-        None,
+        Some(ADMIN_USER_ID),
         site_id,
         Reference::Id(first_page.page_id),
     );
@@ -857,7 +1115,7 @@ async fn imported_page_discussion_pointer_can_be_claimed_by_only_one_page() {
 
     set_actor(
         &mut runner,
-        None,
+        Some(ADMIN_USER_ID),
         site_id,
         Reference::Id(second_page.page_id),
     );
@@ -945,7 +1203,7 @@ async fn page_discussions_reject_deleted_containers_and_skip_deleted_groups() {
     set_page_discussion_policy(&runner, first_page.page_id, true).await;
     set_actor(
         &mut runner,
-        None,
+        Some(ADMIN_USER_ID),
         site_id,
         Reference::Id(first_page.page_id),
     );
@@ -1074,7 +1332,7 @@ async fn page_discussions_reject_deleted_containers_and_skip_deleted_groups() {
     );
     set_actor(
         &mut runner,
-        None,
+        Some(ADMIN_USER_ID),
         site_id,
         Reference::Id(second_page.page_id),
     );
@@ -1139,13 +1397,32 @@ async fn page_discussions_reject_deleted_containers_and_skip_deleted_groups() {
     );
     set_actor(
         &mut runner,
-        None,
+        Some(ADMIN_USER_ID),
         site_id,
         Reference::Id(third_page.page_id),
     );
-    run_endpoint_err!(
+    let third_discussion = run_endpoint!(
         runner,
         wikidot_page_discussion_create,
         json!({ "site_id": site_id, "page_id": third_page.page_id }),
+    )
+    .expect("the authorized discussion write should provision a replacement container");
+    let stored_third_discussion = ForumThreadService::get(
+        runner.context(),
+        GetForumThread {
+            forum_thread_id: third_discussion.thread_id,
+            include_deleted: false,
+        },
+    )
+    .await
+    .expect("the replacement discussion container should be provisioned");
+    assert_eq!(stored_third_discussion.page_id, Some(third_page.page_id),);
+    assert_ne!(
+        stored_third_discussion.forum_category_id,
+        first_category.forum_category_id,
+    );
+    assert_ne!(
+        stored_third_discussion.forum_category_id,
+        second_category.forum_category_id,
     );
 }

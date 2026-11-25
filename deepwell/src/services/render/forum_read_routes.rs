@@ -1193,7 +1193,6 @@ impl RenderService {
                     page_id,
                     order,
                     false,
-                    true,
                 )
                 .await?
                 {

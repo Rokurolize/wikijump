@@ -5534,9 +5534,7 @@ async fn forum_mini_recent_posts_matches_live_post_content_rules() {
 }
 
 #[tokio::test]
-async fn forum_comments_empty_state_creates_the_live_thread_ui() {
-    use deepwell::models::forum_category::Entity as ForumCategoryTable;
-    use deepwell::models::forum_group::Entity as ForumGroupTable;
+async fn forum_comments_empty_state_does_not_create_a_thread() {
     use sea_orm::{ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter};
 
     async fn page_body(runner: &mut TestRunner, site_id: i64, slug: &str) -> String {
@@ -5557,6 +5555,14 @@ async fn forum_comments_empty_state_creates_the_live_thread_ui() {
             } => compiled_body_html,
             other => panic!("expected a found Comments page view, got {other:?}"),
         }
+    }
+
+    async fn thread_count(runner: &TestRunner, page_id: i64) -> u64 {
+        ForumThreadTable::find()
+            .filter(deepwell::models::forum_thread::Column::PageId.eq(page_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("page discussion thread count should load")
     }
 
     let mut runner = TestRunner::setup().await;
@@ -5581,56 +5587,15 @@ async fn forum_comments_empty_state_creates_the_live_thread_ui() {
         "fixture-forum-comments-empty-defaults",
     )
     .await;
-    let thread_id = body
-        .split("WIKIDOT.forumThreadId = ")
-        .nth(1)
-        .and_then(|rest| rest.split(';').next())
-        .and_then(|number| number.trim().parse::<i64>().ok())
-        .unwrap_or_else(|| panic!("live empty state must stamp the thread id:\n{body}"));
     assert!(
         body.contains(r#"<div class="comments-box">"#)
-            && body.contains(r#"id="comments-options-hidden" style="display: none""#)
+            && body.contains(r#"id="comments-options-hidden""#)
             && body.contains(r#"id="thread-container""#)
-            && body.contains(r#"id="thread-container-posts""#)
-            && body.contains(r#"id="new-post-button""#)
-            && body.contains(r#"id="post-options-template""#)
-            && !body.contains(r#"id="comments-options-shown""#),
-        "a zero-comment page must render live's empty thread UI:\n{body}",
+            && !body.contains(r#"id="thread-container-posts""#)
+            && !body.contains("WIKIDOT.forumThreadId"),
+        "an unbound page must render an inert Comments shell:\n{body}",
     );
-
-    let thread = ForumThreadTable::find_by_id(thread_id)
-        .one(runner.context().transaction())
-        .await
-        .expect("created page discussion thread lookup should succeed")
-        .expect("the Comments render must create the page discussion thread");
-    let page_model = PageTable::find_by_id(page_id)
-        .one(runner.context().transaction())
-        .await
-        .expect("comments empty page lookup should succeed")
-        .expect("comments empty page should exist");
-    assert_eq!(thread.page_id, Some(page_id));
-    assert_eq!(thread.site_id, site_id);
-    assert_eq!(thread.created_by, ANONYMOUS_USER_ID);
-    assert_eq!(thread.title, "Comments Empty Defaults");
-    assert_eq!(
-        page_model.discussion_thread_id,
-        Some(thread.forum_thread_id)
-    );
-
-    let category = ForumCategoryTable::find_by_id(thread.forum_category_id)
-        .one(runner.context().transaction())
-        .await
-        .expect("created page discussion category lookup should succeed")
-        .expect("the Comments render must create the per-page discussion category");
-    assert_eq!(category.per_page_discussion, Some(true));
-    assert_eq!(category.name, "Per page discussions");
-    let group = ForumGroupTable::find_by_id(thread.forum_group_id)
-        .one(runner.context().transaction())
-        .await
-        .expect("created page discussion group lookup should succeed")
-        .expect("the Comments render must create the hidden group");
-    assert_eq!(group.name, "Hidden");
-    assert!(!group.visible);
+    assert_eq!(thread_count(&runner, page_id).await, 0);
 
     let second_body = page_body(
         &mut runner,
@@ -5639,64 +5604,16 @@ async fn forum_comments_empty_state_creates_the_live_thread_ui() {
     )
     .await;
     assert!(
-        second_body.contains(&format!("WIKIDOT.forumThreadId = {thread_id};")),
-        "repeated renders must reuse the created thread:\n{second_body}",
+        !second_body.contains("WIKIDOT.forumThreadId"),
+        "repeated reads must remain side-effect free:\n{second_body}",
     );
-    let page_threads = ForumThreadTable::find()
-        .filter(deepwell::models::forum_thread::Column::PageId.eq(page_id))
-        .count(runner.context().transaction())
-        .await
-        .expect("page discussion thread count should load");
-    assert_eq!(page_threads, 1);
-
-    create_listpages_test_page(
-        &mut runner,
-        site_id,
-        "fixture-forum-comments-empty-existing-container",
-        "Comments Empty Existing Container",
-        "[[module Comments]]",
-    )
-    .await;
-    let existing_page_id = listpages_test_page_id(
-        &runner,
-        site_id,
-        "fixture-forum-comments-empty-existing-container",
-    )
-    .await;
-    let existing_body = page_body(
-        &mut runner,
-        site_id,
-        "fixture-forum-comments-empty-existing-container",
-    )
-    .await;
-    assert!(
-        existing_body.contains(r#"id="thread-container-posts""#),
-        "later Comments renders must reuse the created container:\n{existing_body}",
-    );
-    let existing_thread = ForumThreadTable::find()
-        .filter(deepwell::models::forum_thread::Column::PageId.eq(existing_page_id))
+    assert_eq!(thread_count(&runner, page_id).await, 0);
+    let page_model = PageTable::find_by_id(page_id)
         .one(runner.context().transaction())
         .await
-        .expect("second page discussion thread lookup should succeed")
-        .expect("the second Comments render must create its own thread");
-    assert_eq!(
-        existing_thread.forum_category_id,
-        category.forum_category_id
-    );
-    let categories = ForumCategoryTable::find()
-        .filter(deepwell::models::forum_category::Column::SiteId.eq(site_id))
-        .filter(deepwell::models::forum_category::Column::PerPageDiscussion.eq(true))
-        .count(runner.context().transaction())
-        .await
-        .expect("per-page discussion category count should load");
-    assert_eq!(categories, 1);
-    let groups = ForumGroupTable::find()
-        .filter(deepwell::models::forum_group::Column::SiteId.eq(site_id))
-        .filter(deepwell::models::forum_group::Column::Name.eq("Hidden"))
-        .count(runner.context().transaction())
-        .await
-        .expect("hidden group count should load");
-    assert_eq!(groups, 1);
+        .expect("comments empty page lookup should succeed")
+        .expect("comments empty page should exist");
+    assert_eq!(page_model.discussion_thread_id, None);
 
     create_listpages_test_page(
         &mut runner,
@@ -5717,10 +5634,5 @@ async fn forum_comments_empty_state_creates_the_live_thread_ui() {
             && !hidden_body.contains("WIKIDOT.forumThreadId"),
         "hide=true must keep the shell inert without creating a thread:\n{hidden_body}",
     );
-    let hidden_threads = ForumThreadTable::find()
-        .filter(deepwell::models::forum_thread::Column::PageId.eq(hidden_page_id))
-        .count(runner.context().transaction())
-        .await
-        .expect("hidden Comments thread count should load");
-    assert_eq!(hidden_threads, 0);
+    assert_eq!(thread_count(&runner, hidden_page_id).await, 0);
 }
