@@ -60,6 +60,7 @@ pub(crate) struct SearchGrammar {
     pub(crate) no_results: bool,
     pub(crate) patterns: Vec<TextPattern>,
     pub(crate) filters: Vec<Filter>,
+    pub(crate) excluded_filters: Vec<Filter>,
     pub(crate) required_terms: Vec<String>,
     pub(crate) optional_terms: Vec<String>,
     pub(crate) excluded_terms: Vec<String>,
@@ -115,36 +116,12 @@ pub(crate) fn parse(query: &str) -> Result<SearchGrammar> {
     let mut terms = Vec::new();
     let mut evaluated_words = 0;
     let mut filters = Vec::new();
+    let mut excluded_filters = Vec::new();
     let mut index = 0;
 
     while index < characters.len() {
         if characters[index].is_whitespace() {
             index += 1;
-            continue;
-        }
-
-        if let Some((kind, prefix_len)) = filter_prefix(&characters, index) {
-            index += prefix_len;
-            let start = index;
-            while index < characters.len() && !characters[index].is_whitespace() {
-                index += 1;
-            }
-            let raw = characters[start..index].iter().collect::<String>();
-            let Some(filter) = parse_filter(kind, &raw) else {
-                return Ok(empty());
-            };
-            if let Some(existing) = filters.iter().find(|existing| {
-                std::mem::discriminant(*existing) == std::mem::discriminant(&filter)
-            }) {
-                if let Filter::Categories(existing_values) = existing
-                    && let Filter::Categories(new_values) = &filter
-                    && existing_values == new_values
-                {
-                    continue;
-                }
-                return Ok(empty());
-            }
-            filters.push(filter);
             continue;
         }
 
@@ -172,6 +149,62 @@ pub(crate) fn parse(query: &str) -> Result<SearchGrammar> {
             continue;
         }
 
+        if field == Field::Any {
+            if let Some((kind, prefix_len)) = filter_prefix(&characters, index) {
+                index += prefix_len;
+                let (raw, end) = filter_value(&characters, index);
+                index = end;
+                let Some(filter) = parse_filter(kind, &raw) else {
+                    return Ok(empty());
+                };
+                if !add_filter(&mut filters, &mut excluded_filters, filter, operator) {
+                    return Ok(empty());
+                }
+                continue;
+            }
+
+            if characters[index] == '"'
+                && let Some((quoted, end)) = quoted_content(&characters, index)
+            {
+                match quoted_predicate(&quoted) {
+                    QuotedPredicate::None => {}
+                    QuotedPredicate::Invalid => return Ok(empty()),
+                    QuotedPredicate::Filter(filter) => {
+                        if !add_filter(
+                            &mut filters,
+                            &mut excluded_filters,
+                            filter,
+                            operator,
+                        ) {
+                            return Ok(empty());
+                        }
+                        index = end;
+                        continue;
+                    }
+                    QuotedPredicate::Term {
+                        field: quoted_field,
+                        raw,
+                        phrase,
+                    } => {
+                        let (wildcard, words) = term_parts(&raw, phrase);
+                        push_evaluated_term(
+                            &mut terms,
+                            &mut evaluated_words,
+                            Term {
+                                field: quoted_field,
+                                operator,
+                                words,
+                                phrase,
+                                wildcard,
+                            },
+                        )?;
+                        index = end;
+                        continue;
+                    }
+                }
+            }
+        }
+
         let (raw, phrase) = if characters[index] == '"' {
             index += 1;
             let start = index;
@@ -191,44 +224,152 @@ pub(crate) fn parse(query: &str) -> Result<SearchGrammar> {
             (characters[start..index].iter().collect::<String>(), false)
         };
 
-        let wildcard = if phrase {
-            Wildcard::None
-        } else {
-            classify_wildcard(&raw)
-        };
-        let words = match &wildcard {
-            Wildcard::Prefix(prefix) | Wildcard::Infix(prefix, _) => {
-                let mut words = lexeme_words(prefix);
-                if let Wildcard::Infix(_, suffix) = &wildcard {
-                    words.extend(lexeme_words(suffix));
-                }
-                words
-            }
-            _ => lexeme_words(&raw.replace('*', " ")),
-        };
-
-        evaluated_words += words.len();
-        if evaluated_words > MAX_EVALUATED_WORDS {
-            return Err(Error::new(
-                format!(
-                    "search query exceeds {MAX_EVALUATED_WORDS} evaluated words, \
-                     including words inside quoted phrases"
-                ),
-                ErrorType::BadRequest,
-            )
-            .into());
-        }
-
-        terms.push(Term {
-            field,
-            operator,
-            words,
-            phrase,
-            wildcard,
-        });
+        let (wildcard, words) = term_parts(&raw, phrase);
+        push_evaluated_term(
+            &mut terms,
+            &mut evaluated_words,
+            Term {
+                field,
+                operator,
+                words,
+                phrase,
+                wildcard,
+            },
+        )?;
     }
 
-    Ok(build(terms, filters))
+    Ok(build(terms, filters, excluded_filters))
+}
+
+enum QuotedPredicate {
+    None,
+    Invalid,
+    Filter(Filter),
+    Term {
+        field: Field,
+        raw: String,
+        phrase: bool,
+    },
+}
+
+fn quoted_content(characters: &[char], index: usize) -> Option<(String, usize)> {
+    let mut end = index + 1;
+    while end < characters.len() && characters[end] != '"' {
+        end += 1;
+    }
+    if end == characters.len() {
+        return None;
+    }
+    Some((characters[index + 1..end].iter().collect(), end + 1))
+}
+
+fn quoted_predicate(raw: &str) -> QuotedPredicate {
+    let characters = raw.chars().collect::<Vec<_>>();
+    if let Some((kind, prefix_len)) = filter_prefix(&characters, 0) {
+        let value = characters[prefix_len..].iter().collect::<String>();
+        return match parse_filter(kind, &value) {
+            Some(filter) => QuotedPredicate::Filter(filter),
+            None => QuotedPredicate::Invalid,
+        };
+    }
+    if starts_with(&characters, 0, "title:") {
+        let value = characters[6..].iter().collect::<String>();
+        return QuotedPredicate::Term {
+            field: Field::Title,
+            phrase: value.chars().any(char::is_whitespace),
+            raw: value,
+        };
+    }
+    if starts_with(&characters, 0, "created_by:") {
+        return QuotedPredicate::Term {
+            field: Field::Any,
+            phrase: raw.chars().any(char::is_whitespace),
+            raw: raw.to_owned(),
+        };
+    }
+    QuotedPredicate::None
+}
+
+fn filter_value(characters: &[char], start: usize) -> (String, usize) {
+    let mut end = start;
+    let mut quoted = false;
+    while end < characters.len() {
+        if characters[end] == '"' {
+            quoted = !quoted;
+        }
+        if characters[end].is_whitespace() && !quoted {
+            break;
+        }
+        end += 1;
+    }
+    (characters[start..end].iter().collect(), end)
+}
+
+fn add_filter(
+    filters: &mut Vec<Filter>,
+    excluded_filters: &mut Vec<Filter>,
+    filter: Filter,
+    operator: Operator,
+) -> bool {
+    if operator == Operator::Excluded {
+        if !excluded_filters.contains(&filter) {
+            excluded_filters.push(filter);
+        }
+        return true;
+    }
+
+    if let Some(existing) = filters.iter().find(|existing| {
+        std::mem::discriminant(*existing) == std::mem::discriminant(&filter)
+    }) {
+        if let Filter::Categories(existing_values) = existing
+            && let Filter::Categories(new_values) = &filter
+            && existing_values == new_values
+        {
+            return true;
+        }
+        return false;
+    }
+    filters.push(filter);
+    true
+}
+
+fn term_parts(raw: &str, phrase: bool) -> (Wildcard, Vec<String>) {
+    let wildcard = if phrase {
+        Wildcard::None
+    } else {
+        classify_wildcard(raw)
+    };
+    let words = match &wildcard {
+        Wildcard::Prefix(prefix) | Wildcard::Infix(prefix, _) => {
+            let mut words = lexeme_words(prefix);
+            if let Wildcard::Infix(_, suffix) = &wildcard {
+                words.extend(lexeme_words(suffix));
+            }
+            words
+        }
+        _ => lexeme_words(&raw.replace('*', " ")),
+    };
+    (wildcard, words)
+}
+
+fn push_evaluated_term(
+    terms: &mut Vec<Term>,
+    evaluated_words: &mut usize,
+    term: Term,
+) -> Result<()> {
+    *evaluated_words += term.words.len();
+    if *evaluated_words > MAX_EVALUATED_WORDS {
+        return Err(Error::new(
+            format!(
+                "search query exceeds {MAX_EVALUATED_WORDS} evaluated words, \
+                 including words inside quoted phrases"
+            ),
+            ErrorType::BadRequest,
+        )
+        .into());
+    }
+    terms.push(term);
+    Ok(())
 }
 
 fn filter_prefix(characters: &[char], index: usize) -> Option<(FilterKind, usize)> {
@@ -239,6 +380,7 @@ fn filter_prefix(characters: &[char], index: usize) -> Option<(FilterKind, usize
         ("user:", FilterKind::Users),
         ("site:", FilterKind::Sites),
         ("tags:", FilterKind::Tags),
+        ("tag:", FilterKind::Tags),
     ] {
         if starts_with(characters, index, prefix) {
             return Some((kind, prefix.chars().count()));
@@ -293,6 +435,10 @@ fn parse_filter_values(raw: &str, kind: FilterKind) -> Option<Vec<String>> {
     let mut values = Vec::new();
     for value in raw.split(',') {
         let value = value.trim();
+        let value = value
+            .strip_prefix('"')
+            .and_then(|value| value.strip_suffix('"'))
+            .unwrap_or(value);
         if value.is_empty() || value.chars().count() > 128 {
             return None;
         }
@@ -433,7 +579,11 @@ fn combine_expression(
     expression
 }
 
-fn build(terms: Vec<Term>, filters: Vec<Filter>) -> SearchGrammar {
+fn build(
+    terms: Vec<Term>,
+    filters: Vec<Filter>,
+    excluded_filters: Vec<Filter>,
+) -> SearchGrammar {
     let mut required = Vec::new();
     let mut optional = Vec::new();
     let mut excluded = Vec::new();
@@ -472,7 +622,11 @@ fn build(terms: Vec<Term>, filters: Vec<Filter>) -> SearchGrammar {
 
     let expression = combine_expression(&required, &optional, &excluded);
 
-    if expression.is_empty() && patterns.is_empty() && filters.is_empty() {
+    if expression.is_empty()
+        && patterns.is_empty()
+        && filters.is_empty()
+        && excluded_filters.is_empty()
+    {
         return empty();
     }
 
@@ -483,6 +637,7 @@ fn build(terms: Vec<Term>, filters: Vec<Filter>) -> SearchGrammar {
         no_results: false,
         patterns,
         filters,
+        excluded_filters,
         required_terms: required,
         optional_terms: optional,
         excluded_terms: excluded,
@@ -496,6 +651,7 @@ fn empty() -> SearchGrammar {
         no_results: true,
         patterns: Vec::new(),
         filters: Vec::new(),
+        excluded_filters: Vec::new(),
         required_terms: Vec::new(),
         optional_terms: Vec::new(),
         excluded_terms: Vec::new(),
@@ -608,6 +764,66 @@ mod tests {
                 Filter::Tags(vec!["big".to_owned(), "noisy".to_owned()]),
             ]
         );
+    }
+
+    #[test]
+    fn prefixed_category_filters_keep_the_membership_predicate() {
+        let bare = parsed("category:abc");
+        let required = parsed("+category:abc");
+        assert_eq!(required.filters, bare.filters);
+        assert!(required.excluded_filters.is_empty());
+
+        let excluded = parsed("-category:abc");
+        assert!(excluded.filters.is_empty());
+        assert_eq!(excluded.excluded_filters, bare.filters);
+        assert!(!excluded.no_results);
+    }
+
+    #[test]
+    fn negative_tag_spellings_keep_the_tag_exclusion_predicate() {
+        for query in ["-tags:big", "-tag:big"] {
+            let grammar = parsed(query);
+            assert!(grammar.filters.is_empty(), "{query}");
+            assert_eq!(
+                grammar.excluded_filters,
+                [Filter::Tags(vec![String::from("big")])],
+                "{query}",
+            );
+            assert!(!grammar.no_results, "{query}");
+        }
+    }
+
+    #[test]
+    fn whole_quoted_metadata_predicates_match_their_unquoted_forms() {
+        for (quoted, unquoted) in [
+            ("\"category:abc\"", "category:abc"),
+            ("\"tags:big,noisy\"", "tags:big,noisy"),
+            ("\"title:elephant\"", "title:elephant"),
+            ("\"created_by:admin\"", "created_by:admin"),
+        ] {
+            let quoted = parsed(quoted);
+            let unquoted = parsed(unquoted);
+            assert_eq!(quoted.tsquery, unquoted.tsquery, "{quoted:?}");
+            assert_eq!(quoted.filters, unquoted.filters, "{quoted:?}");
+            assert_eq!(quoted.excluded_filters, unquoted.excluded_filters);
+            assert_eq!(quoted.no_results, unquoted.no_results);
+        }
+    }
+
+    #[test]
+    fn quoted_filter_values_match_unquoted_values() {
+        for (quoted, unquoted) in [
+            ("category:\"abc\"", "category:abc"),
+            ("tags:\"big\"", "tags:big"),
+            ("+category:\"abc\"", "+category:abc"),
+            ("-tags:\"big\"", "-tags:big"),
+        ] {
+            let quoted = parsed(quoted);
+            let unquoted = parsed(unquoted);
+            assert_eq!(quoted.filters, unquoted.filters, "{quoted:?}");
+            assert_eq!(quoted.excluded_filters, unquoted.excluded_filters);
+            assert_eq!(quoted.no_results, unquoted.no_results);
+        }
     }
 
     #[test]

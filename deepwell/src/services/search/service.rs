@@ -52,54 +52,61 @@ fn push_value(values: &mut Vec<Value>, value: Value) -> String {
     format!("${}", values.len())
 }
 
-fn filter_conditions(filters: &[Filter], values: &mut Vec<Value>) -> Vec<String> {
-    let mut conditions = Vec::new();
-
-    for filter in filters {
-        match filter {
-            Filter::Categories(categories) => {
-                let parameter = push_value(values, Value::from(categories.clone()));
-                conditions.push(format!(
-                    "EXISTS (SELECT 1 FROM page_category filter_category \
-                     WHERE filter_category.category_id = p.page_category_id \
-                     AND lower(filter_category.slug) = ANY({parameter}::TEXT[]))"
-                ));
-            }
-            Filter::Since(date) => {
-                let parameter = push_value(values, Value::from(date.clone()));
-                conditions.push(format!("p.created_at >= {parameter}::date"));
-            }
-            Filter::Till(date) => {
-                let parameter = push_value(values, Value::from(date.clone()));
-                conditions.push(format!(
-                    "p.created_at < ({parameter}::date + INTERVAL '1 day')"
-                ));
-            }
-            Filter::Users(users) => {
-                let parameter = push_value(values, Value::from(users.clone()));
-                conditions.push(format!(
-                    "EXISTS (SELECT 1 FROM page_revision creator \
-                     LEFT JOIN \"user\" creator_user ON creator_user.user_id = creator.user_id \
-                     LEFT JOIN wikidot_user creator_wikidot ON creator_wikidot.user_id = creator.user_id \
-                     WHERE creator.page_id = p.page_id AND creator.revision_number = 0 \
-                     AND lower(coalesce(creator_user.slug, creator_wikidot.slug)) = ANY({parameter}::TEXT[]))"
-                ));
-            }
-            Filter::Sites(sites) => {
-                let parameter = push_value(values, Value::from(sites.clone()));
-                conditions.push(format!(
-                    "EXISTS (SELECT 1 FROM site filter_site \
-                     WHERE filter_site.site_id = p.site_id \
-                     AND lower(filter_site.slug) = ANY({parameter}::TEXT[]))"
-                ));
-            }
-            Filter::Tags(tags) => {
-                let parameter = push_value(values, Value::from(tags.clone()));
-                conditions.push(format!("pr.tags @> {parameter}::TEXT[]"));
-            }
+fn filter_condition(filter: &Filter, values: &mut Vec<Value>) -> String {
+    match filter {
+        Filter::Categories(categories) => {
+            let parameter = push_value(values, Value::from(categories.clone()));
+            format!(
+                "EXISTS (SELECT 1 FROM page_category filter_category \
+                 WHERE filter_category.category_id = p.page_category_id \
+                 AND lower(filter_category.slug) = ANY({parameter}::TEXT[]))"
+            )
+        }
+        Filter::Since(date) => {
+            let parameter = push_value(values, Value::from(date.clone()));
+            format!("p.created_at >= {parameter}::date")
+        }
+        Filter::Till(date) => {
+            let parameter = push_value(values, Value::from(date.clone()));
+            format!("p.created_at < ({parameter}::date + INTERVAL '1 day')")
+        }
+        Filter::Users(users) => {
+            let parameter = push_value(values, Value::from(users.clone()));
+            format!(
+                "EXISTS (SELECT 1 FROM page_revision creator \
+                 LEFT JOIN \"user\" creator_user ON creator_user.user_id = creator.user_id \
+                 LEFT JOIN wikidot_user creator_wikidot ON creator_wikidot.user_id = creator.user_id \
+                 WHERE creator.page_id = p.page_id AND creator.revision_number = 0 \
+                 AND lower(coalesce(creator_user.slug, creator_wikidot.slug)) = ANY({parameter}::TEXT[]))"
+            )
+        }
+        Filter::Sites(sites) => {
+            let parameter = push_value(values, Value::from(sites.clone()));
+            format!(
+                "EXISTS (SELECT 1 FROM site filter_site \
+                 WHERE filter_site.site_id = p.site_id \
+                 AND lower(filter_site.slug) = ANY({parameter}::TEXT[]))"
+            )
+        }
+        Filter::Tags(tags) => {
+            let parameter = push_value(values, Value::from(tags.clone()));
+            format!("pr.tags @> {parameter}::TEXT[]")
         }
     }
+}
 
+fn filter_conditions(
+    filters: &[Filter],
+    excluded_filters: &[Filter],
+    values: &mut Vec<Value>,
+) -> Vec<String> {
+    let mut conditions = Vec::new();
+    for filter in filters {
+        conditions.push(filter_condition(filter, values));
+    }
+    for filter in excluded_filters {
+        conditions.push(format!("NOT ({})", filter_condition(filter, values)));
+    }
     conditions
 }
 
@@ -231,7 +238,11 @@ impl SearchService {
             };
             conditions.push(columns);
         }
-        conditions.extend(filter_conditions(&grammar.filters, &mut values));
+        conditions.extend(filter_conditions(
+            &grammar.filters,
+            &grammar.excluded_filters,
+            &mut values,
+        ));
 
         let (surviving_optional, surviving_excluded) = Self::surviving_terms(
             ctx,
@@ -364,6 +375,7 @@ mod tests {
         let mut values = Vec::new();
         let conditions = filter_conditions(
             &[Filter::Categories(vec![String::from("abc")])],
+            &[],
             &mut values,
         );
         assert_eq!(conditions.len(), 1);
@@ -383,6 +395,7 @@ mod tests {
                 Filter::Since(String::from("2024-01-01")),
                 Filter::Till(String::from("2024-12-31")),
             ],
+            &[],
             &mut values,
         );
         assert_eq!(conditions[0], "p.created_at >= $1::date");
@@ -398,6 +411,7 @@ mod tests {
         let mut values = Vec::new();
         let conditions = filter_conditions(
             &[Filter::Users(vec![String::from("jane_doe")])],
+            &[],
             &mut values,
         );
         assert!(conditions[0].contains("creator.revision_number = 0"));
@@ -411,6 +425,7 @@ mod tests {
         let mut values = Vec::new();
         let conditions = filter_conditions(
             &[Filter::Sites(vec![String::from("elephants")])],
+            &[],
             &mut values,
         );
         assert!(conditions[0].contains("filter_site.site_id = p.site_id"));
@@ -426,10 +441,28 @@ mod tests {
                 String::from("big"),
                 String::from("noisy"),
             ])],
+            &[],
             &mut values,
         );
         assert_eq!(conditions[0], "pr.tags @> $1::TEXT[]");
         assert_eq!(values.len(), 1);
+    }
+
+    #[test]
+    fn excluded_filters_negate_the_positive_predicate_shape() {
+        let mut values = Vec::new();
+        let conditions = filter_conditions(
+            &[],
+            &[
+                Filter::Categories(vec![String::from("abc")]),
+                Filter::Tags(vec![String::from("big")]),
+            ],
+            &mut values,
+        );
+        assert_eq!(conditions.len(), 2);
+        assert!(conditions[0].starts_with("NOT (EXISTS"));
+        assert_eq!(conditions[1], "NOT (pr.tags @> $2::TEXT[])");
+        assert_eq!(values.len(), 2);
     }
 
     #[test]
@@ -441,6 +474,7 @@ mod tests {
                 Filter::Since(String::from("2024-01-01")),
                 Filter::Tags(vec![String::from("big")]),
             ],
+            &[],
             &mut values,
         );
         assert!(conditions[0].contains("ANY($1::TEXT[])"));
