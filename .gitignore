@@ -7,6 +7,10 @@
 *.bak
 *~
 
+# JavaScript/Svelte artifacts
+node_modules/
+.svelte-kit/
+
 # Cargo artifacts shared by the repository-level Cargo configuration.
 target/
 
@@ -17,5 +21,18 @@ __pycache__/
 # Local desloppify state
 .desloppify/
 
-# Per-stack Compose settings, such as WIKIJUMP_LOCAL_VOLUME_NAMESPACE
-/install/local/.env
+# Local environment secrets, including per-stack Compose settings such as WIKIJUMP_LOCAL_VOLUME_NAMESPACE
+.env
+
+# Claude local/runtime state
+**/.claude/settings.local.json
+**/.claude/scheduled_tasks.lock
+**/.claude/scheduled_tasks.json
+**/.claude/routines/.state/
+**/.claude/worktrees/
+**/.claude/checkpoints/
+**/.claude/mailbox/
+**/.claude/agent-registry.json
+**/.claude/agent-memory-local
+**/.claude/first-run
+**/.claude/assistant-daemon-state.json
