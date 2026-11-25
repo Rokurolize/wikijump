@@ -353,7 +353,7 @@ pub(super) fn apply_sql_ordering(
                 )
                 .order_by(
                     Expr::cust(
-                        "COALESCE(translate(page_revision.title, 'A-Z', 'a-z'), '')",
+                        "COALESCE(translate(page_revision.title, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '')",
                     ),
                     Order::Asc,
                 )
