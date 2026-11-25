@@ -126,9 +126,15 @@ pub(crate) fn parse(query: &str) -> SearchGrammar {
             let Some(filter) = parse_filter(kind, &raw) else {
                 return empty();
             };
-            if filters.iter().any(|existing| {
-                std::mem::discriminant(existing) == std::mem::discriminant(&filter)
+            if let Some(existing) = filters.iter().find(|existing| {
+                std::mem::discriminant(*existing) == std::mem::discriminant(&filter)
             }) {
+                if let Filter::Categories(existing_values) = existing
+                    && let Filter::Categories(new_values) = &filter
+                    && existing_values == new_values
+                {
+                    continue;
+                }
                 return empty();
             }
             filters.push(filter);
@@ -595,6 +601,90 @@ mod tests {
             "tags:big, noisy",
             "category:abc category:def",
             "since:2024-01-01 since:2025-01-01",
+        ] {
+            assert!(parse(query).no_results, "{query} should fail closed");
+        }
+    }
+
+    #[test]
+    fn repeated_identical_category_collapses_to_the_single_form() {
+        fn repeated(query: &str, times: usize) -> String {
+            std::iter::repeat_n(query, times)
+                .collect::<Vec<_>>()
+                .join(" ")
+        }
+
+        for category in ["system", "_default"] {
+            let single = parse(&format!("category:{category}"));
+            assert!(!single.no_results);
+            assert_eq!(
+                single.filters,
+                [Filter::Categories(vec![category.to_owned()])]
+            );
+            let single_shape = (single.tsquery.clone(), single.filters.clone());
+            for times in [2, 3] {
+                let grammar = parse(&repeated(&format!("category:{category}"), times));
+                assert!(!grammar.no_results, "x{times} {category} failed closed");
+                assert_eq!(
+                    (grammar.tsquery, grammar.filters),
+                    single_shape,
+                    "x{times} {category} must return the single form",
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn repeated_category_is_deduped_after_normalization() {
+        let single = parse("category:system");
+        let grammar = parse("category:SYSTEM category:system category:System");
+        assert!(!grammar.no_results);
+        assert_eq!(grammar.filters, single.filters);
+        assert_eq!(grammar.tsquery, single.tsquery);
+    }
+
+    #[test]
+    fn repeated_category_with_a_term_keeps_the_single_form() {
+        let single = parse("system category:system");
+        assert!(!single.no_results);
+        let single_shape = (
+            single.tsquery.clone(),
+            single.filters.clone(),
+            single.optional_terms.clone(),
+        );
+        for times in [1, 2, 3] {
+            let mut query = String::from("system");
+            for _ in 0..times {
+                query.push_str(" category:system");
+            }
+            let grammar = parse(&query);
+            assert!(!grammar.no_results, "{query} failed closed");
+            assert_eq!(
+                (grammar.tsquery, grammar.filters, grammar.optional_terms),
+                single_shape,
+                "{query} must return the single form",
+            );
+        }
+    }
+
+    #[test]
+    fn controls_without_repeated_category_stay_searchable() {
+        for query in [
+            "system system",
+            "title:system title:system",
+            "system category:system",
+        ] {
+            let grammar = parse(query);
+            assert!(!grammar.no_results, "{query} should stay searchable");
+        }
+    }
+
+    #[test]
+    fn distinct_category_predicates_still_fail_closed() {
+        for query in [
+            "category:system category:_default",
+            "category:abc category:def",
+            "category:system category:system,default",
         ] {
             assert!(parse(query).no_results, "{query} should fail closed");
         }
