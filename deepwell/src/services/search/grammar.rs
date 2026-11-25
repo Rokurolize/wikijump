@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use crate::error::prelude::{Error, ErrorType, Result};
 use time::Month;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -98,15 +99,21 @@ struct Term {
     wildcard: Wildcard,
 }
 
-const MAX_QUERY_CHARS: usize = 512;
+const MAX_QUERY_CHARS: usize = 4096;
+const MAX_EVALUATED_WORDS: usize = 512;
 
-pub(crate) fn parse(query: &str) -> SearchGrammar {
+pub(crate) fn parse(query: &str) -> Result<SearchGrammar> {
     if query.chars().count() > MAX_QUERY_CHARS {
-        return empty();
+        return Err(Error::new(
+            format!("search query exceeds {MAX_QUERY_CHARS} decoded characters"),
+            ErrorType::BadRequest,
+        )
+        .into());
     }
 
     let characters = query.chars().collect::<Vec<_>>();
     let mut terms = Vec::new();
+    let mut evaluated_words = 0;
     let mut filters = Vec::new();
     let mut index = 0;
 
@@ -124,7 +131,7 @@ pub(crate) fn parse(query: &str) -> SearchGrammar {
             }
             let raw = characters[start..index].iter().collect::<String>();
             let Some(filter) = parse_filter(kind, &raw) else {
-                return empty();
+                return Ok(empty());
             };
             if let Some(existing) = filters.iter().find(|existing| {
                 std::mem::discriminant(*existing) == std::mem::discriminant(&filter)
@@ -135,7 +142,7 @@ pub(crate) fn parse(query: &str) -> SearchGrammar {
                 {
                     continue;
                 }
-                return empty();
+                return Ok(empty());
             }
             filters.push(filter);
             continue;
@@ -200,6 +207,18 @@ pub(crate) fn parse(query: &str) -> SearchGrammar {
             _ => lexeme_words(&raw.replace('*', " ")),
         };
 
+        evaluated_words += words.len();
+        if evaluated_words > MAX_EVALUATED_WORDS {
+            return Err(Error::new(
+                format!(
+                    "search query exceeds {MAX_EVALUATED_WORDS} evaluated words, \
+                     including words inside quoted phrases"
+                ),
+                ErrorType::BadRequest,
+            )
+            .into());
+        }
+
         terms.push(Term {
             field,
             operator,
@@ -209,7 +228,7 @@ pub(crate) fn parse(query: &str) -> SearchGrammar {
         });
     }
 
-    build(terms, filters)
+    Ok(build(terms, filters))
 }
 
 fn filter_prefix(characters: &[char], index: usize) -> Option<(FilterKind, usize)> {
@@ -485,11 +504,15 @@ fn empty() -> SearchGrammar {
 
 #[cfg(test)]
 mod tests {
-    use super::{Field, Filter, parse};
+    use super::{Field, Filter, SearchGrammar, parse};
+
+    fn parsed(query: &str) -> SearchGrammar {
+        parse(query).expect("query within documented limits")
+    }
 
     #[test]
     fn plain_terms_are_optional_and_ranked() {
-        let grammar = parse("grey elephants");
+        let grammar = parsed("grey elephants");
         assert_eq!(grammar.tsquery, "('grey' | 'elephants')");
         assert!(grammar.has_tsquery);
         assert!(!grammar.no_results);
@@ -497,31 +520,31 @@ mod tests {
 
     #[test]
     fn required_and_excluded_terms_change_the_expression() {
-        let grammar = parse("+elephant -mouse");
+        let grammar = parsed("+elephant -mouse");
         assert_eq!(grammar.tsquery, "('elephant') & !('mouse')");
     }
 
     #[test]
     fn title_field_restricts_the_lexeme_weight() {
-        let grammar = parse("title:elephant");
+        let grammar = parsed("title:elephant");
         assert_eq!(grammar.tsquery, "('elephant':A)");
     }
 
     #[test]
     fn title_phrases_keep_word_order_with_weighted_lexemes() {
-        let grammar = parse("title:\"grey elephants\"");
+        let grammar = parsed("title:\"grey elephants\"");
         assert_eq!(grammar.tsquery, "('grey':A <-> 'elephants':A)");
     }
 
     #[test]
     fn trailing_wildcard_becomes_a_prefix_query() {
-        let grammar = parse("ele*");
+        let grammar = parsed("ele*");
         assert_eq!(grammar.tsquery, "('ele':*)");
     }
 
     #[test]
     fn infix_wildcard_becomes_a_text_pattern() {
-        let grammar = parse("ele*ant");
+        let grammar = parsed("ele*ant");
         assert!(!grammar.has_tsquery);
         assert_eq!(grammar.patterns.len(), 1);
         assert_eq!(grammar.patterns[0].field, Field::Any);
@@ -530,29 +553,29 @@ mod tests {
 
     #[test]
     fn title_infix_wildcard_is_scoped_to_titles() {
-        let grammar = parse("title:ele*ant");
+        let grammar = parsed("title:ele*ant");
         assert_eq!(grammar.patterns[0].field, Field::Title);
     }
 
     #[test]
     fn unsupported_and_empty_input_fails_closed() {
-        assert!(parse("").no_results);
-        assert!(parse("   ").no_results);
-        assert!(parse("*").no_results);
-        assert!(parse("a*b*c").no_results);
-        let grammar = parse("elephant *");
+        assert!(parsed("").no_results);
+        assert!(parsed("   ").no_results);
+        assert!(parsed("*").no_results);
+        assert!(parsed("a*b*c").no_results);
+        let grammar = parsed("elephant *");
         assert_eq!(grammar.tsquery, "('elephant')");
     }
 
     #[test]
     fn quoted_lexemes_are_escaped_for_tsquery_input() {
-        let grammar = parse("\"o'brien\"");
+        let grammar = parsed("\"o'brien\"");
         assert_eq!(grammar.tsquery, "('o''brien')");
     }
 
     #[test]
     fn category_filter_accepts_a_documented_comma_list() {
-        let grammar = parse("category:ABC,def");
+        let grammar = parsed("category:ABC,def");
         assert!(!grammar.no_results);
         assert!(!grammar.has_tsquery);
         assert_eq!(
@@ -563,7 +586,7 @@ mod tests {
 
     #[test]
     fn date_filters_accept_valid_calendar_dates() {
-        let grammar = parse("since:2024-02-29 till:2025-12-31");
+        let grammar = parsed("since:2024-02-29 till:2025-12-31");
         assert_eq!(
             grammar.filters,
             [
@@ -575,7 +598,7 @@ mod tests {
 
     #[test]
     fn user_site_and_tags_filters_are_parsed_alongside_terms() {
-        let grammar = parse("+elephant user:Jane_Doe site:Elephants tags:big,noisy");
+        let grammar = parsed("+elephant user:Jane_Doe site:Elephants tags:big,noisy");
         assert_eq!(grammar.tsquery, "('elephant')");
         assert_eq!(
             grammar.filters,
@@ -602,7 +625,7 @@ mod tests {
             "category:abc category:def",
             "since:2024-01-01 since:2025-01-01",
         ] {
-            assert!(parse(query).no_results, "{query} should fail closed");
+            assert!(parsed(query).no_results, "{query} should fail closed");
         }
     }
 
@@ -615,7 +638,7 @@ mod tests {
         }
 
         for category in ["system", "_default"] {
-            let single = parse(&format!("category:{category}"));
+            let single = parsed(&format!("category:{category}"));
             assert!(!single.no_results);
             assert_eq!(
                 single.filters,
@@ -623,7 +646,7 @@ mod tests {
             );
             let single_shape = (single.tsquery.clone(), single.filters.clone());
             for times in [2, 3] {
-                let grammar = parse(&repeated(&format!("category:{category}"), times));
+                let grammar = parsed(&repeated(&format!("category:{category}"), times));
                 assert!(!grammar.no_results, "x{times} {category} failed closed");
                 assert_eq!(
                     (grammar.tsquery, grammar.filters),
@@ -636,8 +659,8 @@ mod tests {
 
     #[test]
     fn repeated_category_is_deduped_after_normalization() {
-        let single = parse("category:system");
-        let grammar = parse("category:SYSTEM category:system category:System");
+        let single = parsed("category:system");
+        let grammar = parsed("category:SYSTEM category:system category:System");
         assert!(!grammar.no_results);
         assert_eq!(grammar.filters, single.filters);
         assert_eq!(grammar.tsquery, single.tsquery);
@@ -645,7 +668,7 @@ mod tests {
 
     #[test]
     fn repeated_category_with_a_term_keeps_the_single_form() {
-        let single = parse("system category:system");
+        let single = parsed("system category:system");
         assert!(!single.no_results);
         let single_shape = (
             single.tsquery.clone(),
@@ -657,7 +680,7 @@ mod tests {
             for _ in 0..times {
                 query.push_str(" category:system");
             }
-            let grammar = parse(&query);
+            let grammar = parsed(&query);
             assert!(!grammar.no_results, "{query} failed closed");
             assert_eq!(
                 (grammar.tsquery, grammar.filters, grammar.optional_terms),
@@ -674,7 +697,7 @@ mod tests {
             "title:system title:system",
             "system category:system",
         ] {
-            let grammar = parse(query);
+            let grammar = parsed(query);
             assert!(!grammar.no_results, "{query} should stay searchable");
         }
     }
@@ -686,13 +709,13 @@ mod tests {
             "category:abc category:def",
             "category:system category:system,default",
         ] {
-            assert!(parse(query).no_results, "{query} should fail closed");
+            assert!(parsed(query).no_results, "{query} should fail closed");
         }
     }
 
     #[test]
     fn filter_only_queries_are_searchable() {
-        let grammar = parse("category:abc");
+        let grammar = parsed("category:abc");
         assert!(!grammar.no_results);
         assert!(grammar.tsquery.is_empty());
         assert_eq!(grammar.filters.len(), 1);
@@ -704,15 +727,101 @@ mod tests {
             .map(|index| format!("no_match_{index}"))
             .collect::<Vec<_>>()
             .join(" ");
-        let grammar = parse(&format!("base {extras}"));
+        let grammar = parsed(&format!("base {extras}"));
         assert!(!grammar.no_results);
         assert!(grammar.has_tsquery);
         assert_eq!(grammar.optional_terms.len(), 41);
     }
 
     #[test]
+    fn decoded_length_cells_are_both_searchable() {
+        let pad = "z".repeat(506);
+        let short = format!("artex {pad}");
+        let long = format!("artex {pad}z");
+        assert_eq!(short.chars().count(), 512);
+        assert_eq!(long.chars().count(), 513);
+
+        for query in [&short, &long] {
+            let grammar = parsed(query);
+            assert!(!grammar.no_results, "{query}");
+            assert!(grammar.has_tsquery, "{query}");
+            assert_eq!(grammar.optional_terms.len(), 2);
+        }
+    }
+
+    #[test]
+    fn quoted_and_bare_boundary_cells_are_both_searchable() {
+        let quoted = |count| {
+            format!(
+                "artex {}",
+                (0..count)
+                    .map(|index| format!("\"zzqa{index:02} zzqb{index:02}\""))
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            )
+        };
+        let bare = |count| {
+            format!(
+                "artex {}",
+                (0..count)
+                    .map(|index| format!("zzq{index:02}"))
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            )
+        };
+
+        let groups31 = quoted(31);
+        let groups32 = quoted(32);
+        assert_eq!(groups31.chars().count(), 501);
+        assert_eq!(groups32.chars().count(), 517);
+        for (query, terms) in [(&groups31, 32), (&groups32, 33)] {
+            let grammar = parsed(query);
+            assert!(!grammar.no_results, "{query}");
+            assert_eq!(grammar.optional_terms.len(), terms);
+        }
+
+        for bare_words in [31, 32, 33] {
+            let grammar = parsed(&bare(bare_words));
+            assert!(!grammar.no_results);
+            assert_eq!(grammar.optional_terms.len(), bare_words + 1);
+        }
+    }
+
+    #[test]
+    fn quoted_phrase_words_share_the_evaluated_word_budget() {
+        let bare = (0..512)
+            .map(|index| format!("w{index}"))
+            .collect::<Vec<_>>()
+            .join(" ");
+        let phrases = (0..256)
+            .map(|index| format!("\"w{index}a w{index}b\""))
+            .collect::<Vec<_>>()
+            .join(" ");
+        assert!(parsed(&bare).has_tsquery);
+        assert!(parsed(&phrases).has_tsquery);
+
+        for over_budget in [format!("{bare} extra"), format!("{phrases} \"extra one\"")] {
+            let error =
+                parse(&over_budget).expect_err("over-budget query must fail loudly");
+            assert!(
+                error.message.contains("512 evaluated words"),
+                "{}",
+                error.message
+            );
+        }
+
+        let over_chars = format!("artex {}", "z".repeat(4096));
+        let error = parse(&over_chars).expect_err("over-length query must fail loudly");
+        assert!(
+            error.message.contains("4096 decoded characters"),
+            "{}",
+            error.message
+        );
+    }
+
+    #[test]
     fn optional_terms_can_be_narrowed_without_changing_required_or_excluded() {
-        let grammar = parse("+alpha -beta gamma delta");
+        let grammar = parsed("+alpha -beta gamma delta");
         assert_eq!(
             grammar.tsquery,
             "('alpha') & ('gamma' | 'delta') & !('beta')"
