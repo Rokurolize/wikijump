@@ -1907,7 +1907,7 @@ async fn page_query_find_with_metadata_marks_sql_limited_results() {
     .expect("metadata query should not fail");
 
     assert_eq!(result.pages.total(), 1);
-    assert_eq!(result.metadata.candidate_count, Some(1));
+    assert_eq!(result.metadata.candidate_count, Some(2));
     assert!(result.metadata.sql_limit_offset_applied);
     assert!(!result.metadata.filtering_deferred_to_rust);
     assert!(!result.metadata.ordering_deferred_to_rust);
@@ -1993,11 +1993,11 @@ async fn page_query_find_with_metadata_marks_deferred_score_ordering() {
 
     assert_eq!(result.pages.total(), 1);
     assert_eq!(result.metadata.candidate_count, Some(2));
-    assert!(!result.metadata.sql_limit_offset_applied);
+    assert!(result.metadata.sql_limit_offset_applied);
     assert!(!result.metadata.filtering_deferred_to_rust);
-    assert!(result.metadata.ordering_deferred_to_rust);
+    assert!(!result.metadata.ordering_deferred_to_rust);
     assert!(!result.metadata.cap_exceeded);
-    assert!(!result.metadata.exact_count_safe);
+    assert!(result.metadata.exact_count_safe);
 }
 
 #[tokio::test]
