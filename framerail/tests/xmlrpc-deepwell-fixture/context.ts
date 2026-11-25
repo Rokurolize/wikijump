@@ -30,6 +30,7 @@ export const createAuthenticatedUser = () => ({
   user_type: "regular",
   created_at: "2026-01-01T00:00:00Z",
   updated_at: null,
+  revision: 2,
   deleted_at: null,
   from_wikidot: false,
   name: "Fixture Member",

@@ -23,7 +23,7 @@ use super::structs::{
     ActivateUserFromWikidot, CreateUser, CreateUserOutput, UpdateUserBody, User,
 };
 use crate::config::Config;
-use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
 use crate::models::known_user::{self, Entity as KnownUser, Model as KnownUserModel};
 use crate::models::user::{self, Entity as WikijumpUser, Model as WikijumpUserModel};
 use crate::models::wikidot_user::{
@@ -48,7 +48,8 @@ use redis::AsyncCommands;
 use sea_orm::sea_query::Expr;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, Condition, ConnectionTrait, DbErr,
-    EntityTrait, FromQueryResult, NotSet, QueryFilter, Set, SqlErr, Statement, Value,
+    EntityTrait, ExprTrait, FromQueryResult, NotSet, QueryFilter, QuerySelect, Set,
+    SqlErr, Statement, Value,
 };
 use serde_json::Value as JsonValue;
 use std::borrow::Cow;
@@ -666,11 +667,12 @@ impl UserService {
         .await
         .or_raise(make_error)?;
 
-        Self::update(
+        let updated_user = Self::update(
             ctx,
             Reference::Id(user_id),
             ip_address,
             UpdateUserBody {
+                expected_user_revision: None,
                 name: Maybe::Unset,
                 email: Maybe::Unset,
                 email_verified: Maybe::Unset,
@@ -699,6 +701,7 @@ impl UserService {
             user_id: Set(user_id),
             created_at: Set(created_at),
             avatar_s3_hash: Set(avatar_s3_hash),
+            revision: Set(updated_user.revision + 1),
             ..Default::default()
         };
 
@@ -841,6 +844,34 @@ impl UserService {
         }
     }
 
+    async fn get_real_for_update(
+        ctx: &ServiceContext<'_>,
+        reference: Reference<'_>,
+    ) -> Result<WikijumpUserModel> {
+        let reference = Self::resolve_user_reference(ctx, reference).await?;
+        let txn = ctx.transaction();
+        let make_error = || Error::new("failed to lock user for update", ErrorType::User);
+        let user = match reference {
+            Reference::Id(id) => WikijumpUser::find_by_id(id)
+                .lock_exclusive()
+                .one(txn)
+                .await
+                .or_raise(make_error)?,
+            Reference::Slug(slug) => WikijumpUser::find()
+                .filter(
+                    Condition::all()
+                        .add(user::Column::Slug.eq(slug.as_ref()))
+                        .add(user::Column::DeletedAt.is_null()),
+                )
+                .lock_exclusive()
+                .one(txn)
+                .await
+                .or_raise(make_error)?,
+        };
+
+        user.ok_or_raise(|| Error::new("user does not exist", ErrorType::UserNotFound))
+    }
+
     #[inline]
     pub async fn get(ctx: &ServiceContext<'_>, reference: Reference<'_>) -> Result<User> {
         find_or_error!(Self::get_optional(ctx, reference), "user", User)
@@ -888,7 +919,7 @@ impl UserService {
         use crate::services::audit::UserFields;
 
         let txn = ctx.transaction();
-        let user = Self::get_real(ctx, reference)
+        let user = Self::get_real_for_update(ctx, reference)
             .await
             .or_raise(|| Error::new("failed to update user", ErrorType::User))?;
 
@@ -901,6 +932,21 @@ impl UserService {
                 ErrorType::User,
             )
         };
+
+        if let Some(expected_revision) = input.expected_user_revision
+            && expected_revision != user.revision
+        {
+            bail!(Error::new(
+                format!(
+                    "user record changed since revision {expected_revision}; current revision is {}",
+                    user.revision,
+                ),
+                ErrorType::UserRevisionConflict {
+                    expected_revision,
+                    current_revision: user.revision,
+                },
+            ));
+        }
 
         if let Maybe::Set(Some(signature)) = &input.forum_signature {
             validate_forum_signature(signature)?;
@@ -1178,6 +1224,7 @@ impl UserService {
         }
 
         model.updated_at = Set(Some(now()));
+        model.revision = Set(user.revision + 1);
         let new_user = match model.update(txn).await {
             Ok(user) => user,
             Err(error) => match user_unique_violation(&error) {
@@ -1336,6 +1383,7 @@ impl UserService {
                 email_validation_at: Set(None),
                 email_validation_info: Set(None),
                 updated_at: Set(Some(now())),
+                revision: Set(other.revision + 1),
                 ..Default::default()
             };
             model.update(txn).await.or_raise(|| {
@@ -1521,6 +1569,7 @@ impl UserService {
             user_id: Set(user.user_id),
             name_changes_left: Set(name_changes),
             updated_at: Set(Some(now())),
+            revision: Set(user.revision + 1),
             ..Default::default()
         };
 
@@ -1551,18 +1600,26 @@ impl UserService {
 
         let txn = ctx.transaction();
         let model = user::ActiveModel {
-            user_id: Set(user_id),
             multi_factor_secret,
             multi_factor_recovery_codes,
             updated_at: Set(Some(now())),
             ..Default::default()
         };
-        model.update(txn).await.or_raise(|| {
-            Error::new(
-                format!("failed to set MFA secrets for user ID {}", user_id),
-                ErrorType::UserMfa,
+        WikijumpUser::update_many()
+            .set(model)
+            .col_expr(
+                user::Column::Revision,
+                Expr::col(user::Column::Revision).add(1),
             )
-        })?;
+            .filter(user::Column::UserId.eq(user_id))
+            .exec(txn)
+            .await
+            .or_raise(|| {
+                Error::new(
+                    format!("failed to set MFA secrets for user ID {}", user_id),
+                    ErrorType::UserMfa,
+                )
+            })?;
 
         Ok(())
     }
@@ -1584,6 +1641,10 @@ impl UserService {
         };
         let rows_affected = WikijumpUser::update_many()
             .set(model)
+            .col_expr(
+                user::Column::Revision,
+                Expr::col(user::Column::Revision).add(1),
+            )
             .filter(user::Column::UserId.eq(user_id))
             .filter(user::Column::MultiFactorSecret.is_null())
             .filter(user::Column::MultiFactorRecoveryCodes.is_null())
@@ -1609,17 +1670,25 @@ impl UserService {
 
         let txn = ctx.transaction();
         let model = user::ActiveModel {
-            user_id: Set(user_id),
             multi_factor_last_totp_step,
             updated_at: Set(Some(now())),
             ..Default::default()
         };
-        model.update(txn).await.or_raise(|| {
-            Error::new(
-                format!("failed to set MFA last TOTP step for user ID {}", user_id),
-                ErrorType::UserMfa,
+        WikijumpUser::update_many()
+            .set(model)
+            .col_expr(
+                user::Column::Revision,
+                Expr::col(user::Column::Revision).add(1),
             )
-        })?;
+            .filter(user::Column::UserId.eq(user_id))
+            .exec(txn)
+            .await
+            .or_raise(|| {
+                Error::new(
+                    format!("failed to set MFA last TOTP step for user ID {}", user_id),
+                    ErrorType::UserMfa,
+                )
+            })?;
 
         Ok(())
     }
@@ -1639,6 +1708,10 @@ impl UserService {
         };
         let rows_affected = WikijumpUser::update_many()
             .set(model)
+            .col_expr(
+                user::Column::Revision,
+                Expr::col(user::Column::Revision).add(1),
+            )
             .filter(user::Column::UserId.eq(user_id))
             .filter(
                 Condition::any()
@@ -1680,6 +1753,7 @@ impl UserService {
                 user_id: Set(user.user_id),
                 multi_factor_recovery_codes: Set(Some(updated_codes)),
                 updated_at: Set(Some(now())),
+                revision: Set(user.revision + 1),
                 ..Default::default()
             };
             model.update(txn).await.or_raise(|| {
@@ -1720,6 +1794,10 @@ impl UserService {
 
         let deletion = WikijumpUser::update_many()
             .col_expr(user::Column::DeletedAt, Expr::value(Some(now())))
+            .col_expr(
+                user::Column::Revision,
+                Expr::col(user::Column::Revision).add(1),
+            )
             .filter(
                 Condition::all()
                     .add(user::Column::UserId.eq(user.user_id))

@@ -74,6 +74,7 @@ export const handleSiteRpc = ({ rpcRequest }: { rpcRequest: any }) => {
                 user_type: "regular",
                 name: "Fixture Page Owner",
                 slug: "fixture-page-owner",
+                revision: 2,
                 locales: ["en"]
               }
             }
@@ -85,6 +86,8 @@ export const handleSiteRpc = ({ rpcRequest }: { rpcRequest: any }) => {
                   user_type: "regular",
                   name: "Fixture Member",
                   slug: "fixture-member",
+                  revision: fixtureState.authenticatedUser.revision,
+                  forum_signature: fixtureState.authenticatedUser.forum_signature,
                   locales: [...fixtureState.authenticatedUser.locales]
                 }
               }

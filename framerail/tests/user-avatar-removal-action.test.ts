@@ -67,13 +67,19 @@ test("only an explicit boolean removal flag clears the stored avatar", async () 
     const userEdits = () => calls.filter(({ method }) => method === "user_edit")
     const reset = () => (calls.length = 0)
 
-    await userEditAction(eventFor(editRequest({ json: [{ avatar: -1 }] })))
+    await userEditAction(
+      eventFor(editRequest({ json: [{ avatar: -1, expectedUserRevision: 1 }, 3] }))
+    )
     assert.equal(userEdits().length, 1)
     assert.equal("avatar_uploaded_blob_id" in userEdits()[0].params, false)
     reset()
 
     const removed = await userEditAction(
-      eventFor(editRequest({ json: [{ avatar: -1, removeAvatar: 1 }, true] }))
+      eventFor(
+        editRequest({
+          json: [{ avatar: -1, removeAvatar: 1, expectedUserRevision: 2 }, true, 3]
+        })
+      )
     )
     assert.equal(removed.status, undefined)
     assert.equal(userEdits().length, 1)
@@ -83,7 +89,11 @@ test("only an explicit boolean removal flag clears the stored avatar", async () 
 
     for (const flag of ["true", null, 1]) {
       const rejected = await userEditAction(
-        eventFor(editRequest({ json: [{ avatar: -1, removeAvatar: 1 }, flag] }))
+        eventFor(
+          editRequest({
+            json: [{ avatar: -1, removeAvatar: 1, expectedUserRevision: 2 }, flag, 3]
+          })
+        )
       )
       assert.equal(rejected.status, 400, `flag ${JSON.stringify(flag)} must be rejected`)
       assert.equal(userEdits().length, 0)
@@ -92,7 +102,12 @@ test("only an explicit boolean removal flag clears the stored avatar", async () 
     const conflict = await userEditAction(
       eventFor(
         editRequest({
-          json: [{ avatar: 1, removeAvatar: 2 }, "avatar", true],
+          json: [
+            { avatar: 1, removeAvatar: 2, expectedUserRevision: 3 },
+            "avatar",
+            true,
+            3
+          ],
           file: PNG_FILE()
         })
       )

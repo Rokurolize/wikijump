@@ -21,6 +21,8 @@ const requestEvent = ({
       data.append("locales", locale)
     }
   }
+  data.set("expectedUserRevision", "3")
+  data.set("signature", "")
   if (submittedUser !== undefined) data.set("user", String(submittedUser))
 
   return {
@@ -140,7 +142,8 @@ test("user settings bind persistence to the server session actor", async () => {
         ip_address: "192.0.2.63",
         bypass_filter: false,
         forum_signature: null,
-        locales: ["ja-JP", "en-US"]
+        locales: ["ja-JP", "en-US"],
+        expected_user_revision: 3
       },
       context: {
         sessionToken: "issue-1063-session",
@@ -153,6 +156,7 @@ test("user settings bind persistence to the server session actor", async () => {
       user_session: {
         user: {
           user_id: 41,
+          revision: 3,
           locales: persistedLocales
         }
       }
@@ -164,6 +168,7 @@ test("user settings bind persistence to the server session actor", async () => {
       user_session: {
         user: {
           user_id: 41,
+          revision: 3,
           locales: ["ja-JP", "en-US", "ja-JP"]
         }
       }
@@ -178,6 +183,7 @@ test("user settings bind persistence to the server session actor", async () => {
       user_session: {
         user: {
           user_id: 41,
+          revision: 3,
           locales: []
         }
       }

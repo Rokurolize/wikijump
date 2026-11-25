@@ -174,6 +174,10 @@ pub enum ErrorType {
         length: usize,
         minimum: usize,
     },
+    UserRevisionConflict {
+        expected_revision: i64,
+        current_revision: i64,
+    },
     ExpectedWikijumpUser {
         was_user: Box<WikidotUserModel>,
     },
@@ -437,6 +441,7 @@ impl ErrorType {
             ErrorType::ExpectedWikijumpUser { .. } => 4107,
             ErrorType::ExpectedWikidotUser { .. } => 4108,
             ErrorType::UserPasswordTooShort { .. } => 4109,
+            ErrorType::UserRevisionConflict { .. } => 4112,
 
             ErrorType::SiteSlugEmpty => 4200,
 
@@ -663,6 +668,9 @@ impl ErrorType {
             ErrorType::InvalidEmailToken => "The email token is invalid or expired",
             ErrorType::Email => "Email service error",
             ErrorType::UserPasswordTooShort { .. } => "The user's password is too short",
+            ErrorType::UserRevisionConflict { .. } => {
+                "The user record changed since this edit was loaded"
+            }
             ErrorType::ExpectedWikijumpUser { .. } => "Expected to be a real user",
             ErrorType::ExpectedWikidotUser { .. } => "Expected to be a Wikidot-only user",
 
@@ -806,6 +814,13 @@ impl ErrorType {
             ErrorType::UserPasswordTooShort { length, minimum } => json!({
                 "length": length,
                 "minimum": minimum,
+            }),
+            ErrorType::UserRevisionConflict {
+                expected_revision,
+                current_revision,
+            } => json!({
+                "expected_revision": expected_revision,
+                "current_revision": current_revision,
             }),
             ErrorType::LocaleInvalid { locale } | ErrorType::LocaleMissing { locale } => {
                 json!({ "locale": locale })
@@ -1011,6 +1026,13 @@ mod tests {
                 },
                 4109,
             ),
+            (
+                ErrorType::UserRevisionConflict {
+                    expected_revision: 2,
+                    current_revision: 3,
+                },
+                4112,
+            ),
             (ErrorType::SiteSlugEmpty, 4200),
             (ErrorType::PageSlugEmpty, 4300),
             (ErrorType::PageNotDeleted, 4301),
@@ -1196,6 +1218,17 @@ mod tests {
             json!({
                 "length": 1,
                 "minimum": 15,
+            }),
+        );
+        assert_eq!(
+            ErrorType::UserRevisionConflict {
+                expected_revision: 2,
+                current_revision: 3,
+            }
+            .data(),
+            json!({
+                "expected_revision": 2,
+                "current_revision": 3,
             }),
         );
         assert_eq!(

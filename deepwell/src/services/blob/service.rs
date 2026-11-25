@@ -47,9 +47,10 @@ use rand::distr::{Alphanumeric, SampleString};
 use s3::request::request_trait::ResponseData;
 use s3::serde_types::HeadObjectResult;
 use sea_orm::prelude::Value;
+use sea_orm::sea_query::Expr;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, EntityTrait, JoinType, PaginatorTrait, QueryFilter,
-    QuerySelect, RelationTrait, Set,
+    ActiveModelTrait, ColumnTrait, EntityTrait, ExprTrait, JoinType, PaginatorTrait,
+    QueryFilter, QuerySelect, RelationTrait, Set,
 };
 use sea_orm::{DatabaseBackend, FromQueryResult, Statement, TransactionTrait};
 use std::collections::{HashMap, HashSet};
@@ -920,6 +921,10 @@ impl BlobService {
 
                 User::update_many()
                     .set(model)
+                    .col_expr(
+                        user::Column::Revision,
+                        Expr::col(user::Column::Revision).add(1),
+                    )
                     .filter(user::Column::AvatarS3Hash.eq(s3_hash.as_slice()))
                     .exec(txn)
                     .await

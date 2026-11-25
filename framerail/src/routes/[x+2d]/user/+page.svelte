@@ -18,7 +18,12 @@
 
   type checkFormType = Omit<InferOutput<typeof userEditSchema>, "avatar" | "removeAvatar">
 
-  let lastSubmitted = $state<checkFormType>(untrack(() => acceptedSnapshot(data.user)))
+  const profileSnapshot = (user: PageProps["data"]["user"]): checkFormType => ({
+    ...acceptedSnapshot(user),
+    expectedUserRevision: user?.revision ?? 0
+  })
+
+  let lastSubmitted = $state<checkFormType>(untrack(() => profileSnapshot(data.user)))
 
   const discardDraft = () => {
     $form = { ...lastSubmitted, avatar: undefined, removeAvatar: false }
@@ -29,9 +34,10 @@
     {
       dataType: "json",
       onSubmit: ({ jsonData }) => {
-        const { avatar, removeAvatar, ...rest } = $form
+        const { avatar, removeAvatar, expectedUserRevision, ...rest } = $form
         jsonData({
           ...partialPatch(rest, lastSubmitted, avatar),
+          expectedUserRevision,
           ...(removeAvatar === true ? { removeAvatar: true } : {})
         })
       },
@@ -49,7 +55,7 @@
           isEdit = false
           await invalidateAll()
           cancel()
-          lastSubmitted = acceptedSnapshot(data.user)
+          lastSubmitted = profileSnapshot(data.user)
           discardDraft()
         }
         if (result.type === "failure" && result.data) {

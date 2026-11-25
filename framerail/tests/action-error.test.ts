@@ -173,4 +173,16 @@ test("edit lock failures are conflicts with truthful codes, not server errors", 
     message: "The page edit was rejected because it does not carry an edit lease",
     code: 4305
   })
+
+  const userConflict = failForActionError({
+    message: "The user record changed since this edit was loaded",
+    code: 4112,
+    data: { expected_revision: 2, current_revision: 3 }
+  })
+  assert.equal(userConflict.status, 409)
+  assert.deepEqual(userConflict.data, {
+    message: "The user record changed since this edit was loaded",
+    code: 4112,
+    data: { expected_revision: 2, current_revision: 3 }
+  })
 })

@@ -138,6 +138,7 @@ mod tests {
             user_type: UserType::Regular,
             created_at: OffsetDateTime::UNIX_EPOCH,
             updated_at: None,
+            revision: 0,
             deleted_at: None,
             name: str!("Example User"),
             slug: str!("example-user"),

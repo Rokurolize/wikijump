@@ -12,6 +12,7 @@ pub struct Model {
     pub created_at: TimeDateTimeWithTimeZone,
     #[serde(with = "time::serde::rfc3339::option")]
     pub updated_at: Option<TimeDateTimeWithTimeZone>,
+    pub revision: i64,
     #[serde(with = "time::serde::rfc3339::option")]
     pub deleted_at: Option<TimeDateTimeWithTimeZone>,
     #[sea_orm(column_type = "Text")]
