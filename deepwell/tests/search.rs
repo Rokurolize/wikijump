@@ -763,6 +763,127 @@ async fn search_tags_filter_requires_every_named_tag() {
 }
 
 #[tokio::test]
+async fn prefixed_and_quoted_category_filters_match_the_bare_predicate() {
+    let mut runner = TestRunner::setup().await;
+    let site = site_id(&mut runner, "scp-wiki").await;
+    let token = short_token();
+    let category = format!("cat{token}");
+    let inside = format!("{category}:inside-{token}");
+    let outside = format!("search-catqp-out-{token}");
+    create_page(
+        &mut runner,
+        site,
+        &inside,
+        "Category Quote Inside",
+        "category quote fixture",
+    )
+    .await;
+    create_page(
+        &mut runner,
+        site,
+        &outside,
+        "Category Quote Outside",
+        "category quote fixture",
+    )
+    .await;
+
+    let bare = search(&mut runner, site, &format!("category:{category}")).await;
+    assert!(
+        bare.results.iter().any(|result| result.slug == inside),
+        "bare category fixture missing: {:?}",
+        bare.results,
+    );
+    let bare_body = bare.body.clone();
+    let bare_results = serde_json::to_string(&bare.results).expect("results serialize");
+    for query in [
+        format!("+category:{category}"),
+        format!("\"category:{category}\""),
+        format!("category:\"{category}\""),
+    ] {
+        let output = search(&mut runner, site, &query).await;
+        assert_eq!(output.body, bare_body, "{query} body diverged");
+        assert_eq!(
+            serde_json::to_string(&output.results).expect("results serialize"),
+            bare_results,
+            "{query} results diverged",
+        );
+    }
+
+    let negative = search(&mut runner, site, &format!("-category:{category}")).await;
+    let slugs = negative
+        .results
+        .iter()
+        .map(|result| result.slug.as_str())
+        .collect::<Vec<_>>();
+    assert!(!slugs.contains(&inside.as_str()), "{slugs:?}");
+    assert!(slugs.contains(&outside.as_str()), "{slugs:?}");
+}
+
+#[tokio::test]
+async fn negative_and_quoted_tag_filters_match_their_predicate_counterparts() {
+    let mut runner = TestRunner::setup().await;
+    let site = site_id(&mut runner, "scp-wiki").await;
+    let token = short_token();
+    let base = format!("qpbase{token}");
+    let excluded = format!("qpexcl{token}");
+    let kept = format!("qpkeep{token}");
+    let excluded_slug = format!("search-tagqp-excluded-{token}");
+    let kept_slug = format!("search-tagqp-kept-{token}");
+    create_page_with_tags(
+        &runner,
+        site,
+        ADMIN_USER_ID,
+        &excluded_slug,
+        "Tag Quote Excluded",
+        "tag quote fixture",
+        &[&base, &excluded],
+    )
+    .await;
+    create_page_with_tags(
+        &runner,
+        site,
+        ADMIN_USER_ID,
+        &kept_slug,
+        "Tag Quote Kept",
+        "tag quote fixture",
+        &[&base, &kept],
+    )
+    .await;
+
+    let bare = search(&mut runner, site, &format!("tags:{base}")).await;
+    assert_eq!(bare.results.len(), 2, "{:?}", bare.results);
+    let bare_body = bare.body.clone();
+    let bare_results = serde_json::to_string(&bare.results).expect("results serialize");
+    for query in [format!("tags:\"{base}\""), format!("\"tags:{base}\"")] {
+        let output = search(&mut runner, site, &query).await;
+        assert_eq!(output.body, bare_body, "{query} body diverged");
+        assert_eq!(
+            serde_json::to_string(&output.results).expect("results serialize"),
+            bare_results,
+            "{query} results diverged",
+        );
+    }
+
+    let counterpart = search(&mut runner, site, &format!("tags:{base},{kept}")).await;
+    assert_eq!(counterpart.results.len(), 1, "{:?}", counterpart.results);
+    let counterpart_body = counterpart.body.clone();
+    let counterpart_results =
+        serde_json::to_string(&counterpart.results).expect("results serialize");
+    for query in [
+        format!("tags:{base} -tags:{excluded}"),
+        format!("tags:{base} -tag:{excluded}"),
+    ] {
+        let output = search(&mut runner, site, &query).await;
+        assert_eq!(output.body, counterpart_body, "{query} body diverged");
+        assert_eq!(
+            serde_json::to_string(&output.results).expect("results serialize"),
+            counterpart_results,
+            "{query} results diverged",
+        );
+    }
+}
+
+#[tokio::test]
 async fn search_hides_reserved_admin_page_from_actor_without_site_edit() {
     let mut runner = TestRunner::setup().await;
     let token = format!("adminsearch{}", cuid());
