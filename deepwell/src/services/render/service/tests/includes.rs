@@ -1,4 +1,6 @@
 use super::*;
+use crate::services::render::service::CachedIncludeExpansion;
+use ftml::includes::IncludeArguments;
 
 fn prepare_test_nested_include_conditionals(
     source: &str,
@@ -3334,4 +3336,196 @@ fn credit_start_attribute_gates_evaluate_and_exhibit_like_live() {
         "{html}"
     );
     assert!(!html.contains("href=\"/[[iftags"), "{html}");
+}
+
+#[test]
+fn include_expansion_cache_key_is_stable_for_identical_includes() {
+    let page_info = fallback_test_page_info("consumer", "Consumer");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let source = AuthorizedIncludeSource::for_test(
+        "scp-wiki".to_owned(),
+        "component:w11-shared".to_owned(),
+        "W11_CELL\n".repeat(64),
+        None,
+    );
+    let context = IncludeExpansionContext {
+        current_site_id: 1,
+        current_site_slug: "scp-wiki".to_owned(),
+        imported_source_site: None,
+        attachment_owner: None,
+        page_info: &page_info,
+        settings: &settings,
+        omit_iftags_branches: false,
+        expand_wikidot_image_blocks: false,
+        max_total_includes: 32,
+        render_cost_budget: RenderCostBudget::new_default(),
+        raw_zone: false,
+    };
+    let scope = context.scope_key();
+    let target = PageRef::page_only("component:w11-shared");
+    let empty_variables = VariableMap::new();
+    let empty_arguments = IncludeArguments::new();
+    let no_owners = AttachmentVariableOwners::new();
+
+    let key = RenderService::include_expansion_key(
+        &IncludeRef::with_arguments(
+            target.clone(),
+            empty_variables.clone(),
+            empty_arguments.clone(),
+        ),
+        &no_owners,
+        &source,
+        &scope,
+        false,
+        0,
+    );
+    assert_eq!(
+        key,
+        RenderService::include_expansion_key(
+            &IncludeRef::with_arguments(
+                target.clone(),
+                empty_variables.clone(),
+                empty_arguments.clone(),
+            ),
+            &no_owners,
+            &source,
+            &scope,
+            false,
+            0,
+        ),
+    );
+
+    let mut cache = IncludeSourceCache::default();
+    cache.cache_expanded_include(
+        key,
+        CachedIncludeExpansion {
+            wikitext: "W11_EXPANDED".to_owned(),
+            included_pages: vec![target.clone()],
+            expanded_include_count: 1,
+        },
+    );
+    let cached = cache
+        .expanded_include(&key)
+        .expect("an identical include must hit the render-scoped cache");
+    assert_eq!(cached.wikitext, "W11_EXPANDED");
+    assert_eq!(cached.expanded_include_count, 1);
+    assert_eq!(cached.included_pages, vec![target.clone()]);
+}
+
+#[test]
+fn include_expansion_cache_key_separates_distinct_module_shapes() {
+    let page_info = fallback_test_page_info("consumer", "Consumer");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let source = AuthorizedIncludeSource::for_test(
+        "scp-wiki".to_owned(),
+        "component:w11-shared".to_owned(),
+        "W11_CELL\n".repeat(64),
+        None,
+    );
+    let context = IncludeExpansionContext {
+        current_site_id: 1,
+        current_site_slug: "scp-wiki".to_owned(),
+        imported_source_site: None,
+        attachment_owner: None,
+        page_info: &page_info,
+        settings: &settings,
+        omit_iftags_branches: false,
+        expand_wikidot_image_blocks: false,
+        max_total_includes: 32,
+        render_cost_budget: RenderCostBudget::new_default(),
+        raw_zone: false,
+    };
+    let scope = context.scope_key();
+    let target = PageRef::page_only("component:w11-shared");
+    let empty_variables = VariableMap::new();
+    let empty_arguments = IncludeArguments::new();
+    let no_owners = AttachmentVariableOwners::new();
+    let key = |include: &IncludeRef<'_>,
+               source: &AuthorizedIncludeSource,
+               scope: &str| {
+        RenderService::include_expansion_key(include, &no_owners, source, scope, false, 0)
+    };
+    let base = key(
+        &IncludeRef::with_arguments(
+            target.clone(),
+            empty_variables.clone(),
+            empty_arguments.clone(),
+        ),
+        &source,
+        &scope,
+    );
+
+    let distinct_target = PageRef::page_only("component:w11-distinct");
+    assert_ne!(
+        base,
+        key(
+            &IncludeRef::with_arguments(
+                distinct_target,
+                empty_variables.clone(),
+                empty_arguments.clone(),
+            ),
+            &source,
+            &scope,
+        ),
+    );
+
+    let variables: VariableMap<'static> = [(Cow::Borrowed("alpha"), Cow::Borrowed("1"))]
+        .into_iter()
+        .collect();
+    assert_ne!(
+        base,
+        key(
+            &IncludeRef::with_arguments(
+                target.clone(),
+                variables,
+                empty_arguments.clone(),
+            ),
+            &source,
+            &scope,
+        ),
+    );
+
+    let arguments: IncludeArguments<'static> =
+        vec![(Cow::Borrowed("show"), Cow::Borrowed("title"))];
+    assert_ne!(
+        base,
+        key(
+            &IncludeRef::with_arguments(
+                target.clone(),
+                empty_variables.clone(),
+                arguments,
+            ),
+            &source,
+            &scope,
+        ),
+    );
+
+    let revised_source = AuthorizedIncludeSource::for_test(
+        "scp-wiki".to_owned(),
+        "component:w11-shared".to_owned(),
+        "W11_CELL_CHANGED\n".repeat(64),
+        None,
+    );
+    assert_ne!(
+        base,
+        key(
+            &IncludeRef::with_arguments(
+                target.clone(),
+                empty_variables.clone(),
+                empty_arguments.clone(),
+            ),
+            &revised_source,
+            &scope,
+        ),
+    );
+
+    let other_scope = "other-render-scope";
+    assert_ne!(
+        base,
+        key(
+            &IncludeRef::with_arguments(target, empty_variables, empty_arguments),
+            &source,
+            other_scope,
+        ),
+    );
 }
