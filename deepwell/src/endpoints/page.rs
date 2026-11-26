@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use super::page_action_guard::require_page_delete_permission;
 use super::prelude::*;
 use crate::models::file::Model as FileModel;
 use crate::models::page::Model as PageModel;
@@ -262,6 +263,7 @@ pub async fn page_delete(
         "Deleting page {:?} in site ID {}",
         input.page, input.site_id,
     );
+    require_page_delete_permission(ctx, input.site_id, input.page.borrow()).await?;
     PageService::delete(ctx, input)
         .await
         .or_raise(|| Error::new("failed to delete page", ErrorType::Page))
@@ -311,6 +313,8 @@ pub async fn page_restore(
         input.site_id, input.page_id,
     );
 
+    require_page_delete_permission(ctx, input.site_id, Reference::Id(input.page_id))
+        .await?;
     PageService::restore(ctx, input)
         .await
         .or_raise(|| Error::new("failed to restore (undelete) page", ErrorType::Page))
