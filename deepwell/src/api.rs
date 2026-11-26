@@ -592,6 +592,14 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
         "membership_email_invitation_accept",
         membership_email_invitation_accept
     );
+    register!(
+        "membership_email_invitation_create",
+        membership_email_invitation_create
+    );
+    register!(
+        "membership_email_invitation_cancel",
+        membership_email_invitation_cancel
+    );
 
     // Category
     register!("category_get", category_get);

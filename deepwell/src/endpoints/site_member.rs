@@ -20,16 +20,19 @@
 
 use super::prelude::*;
 use crate::models::relation::Model as RelationModel;
+use crate::services::DomainService;
+use crate::services::email::{EmailService, InvitationEmail};
 use crate::services::membership::{
-    AcceptMembershipEmailInvitation, ListMembershipApplications,
-    MembershipApplicationOutcome, MembershipApplicationStatus, MembershipApplicationView,
-    MembershipEmailInvitationOutcome, MembershipJoinOutcome, MembershipPasswordOutcome,
-    MembershipService, ReviewMembershipApplication, SubmitMembershipApplication,
-    SubmitMembershipPassword,
+    AcceptMembershipEmailInvitation, CreateMembershipEmailInvitation,
+    ListMembershipApplications, MembershipApplicationOutcome,
+    MembershipApplicationStatus, MembershipApplicationView,
+    MembershipEmailInvitationCreation, MembershipEmailInvitationOutcome,
+    MembershipJoinOutcome, MembershipPasswordOutcome, MembershipService,
+    ReviewMembershipApplication, SubmitMembershipApplication, SubmitMembershipPassword,
 };
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::relation::{CreateSiteMember, GetSiteMember, RemoveSiteMember};
-use crate::types::{Action, Permission, Resource};
+use crate::types::{Action, Permission, Reference, Resource};
 use std::net::IpAddr;
 
 #[derive(Deserialize, Debug)]
@@ -45,6 +48,27 @@ struct RemoveSiteMemberInput {
     input: RemoveSiteMember,
     ip_address: IpAddr,
     reason: String,
+}
+
+fn default_invitation_page_slug() -> String {
+    "invitation".to_owned()
+}
+
+#[derive(Deserialize, Debug)]
+struct CreateMembershipEmailInvitationRequest {
+    site_id: i64,
+    email: String,
+    recipient_name: String,
+    message: String,
+    to_contacts: bool,
+    #[serde(default = "default_invitation_page_slug")]
+    page_slug: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct CancelMembershipEmailInvitationRequest {
+    site_id: i64,
+    invitation_id: i64,
 }
 
 pub async fn membership_join(
@@ -94,6 +118,81 @@ pub async fn membership_email_invitation_accept(
 ) -> Result<MembershipEmailInvitationOutcome> {
     let input: AcceptMembershipEmailInvitation = parse!(params, SiteMembership);
     MembershipService::accept_email_invitation(ctx, input).await
+}
+
+pub async fn membership_email_invitation_create(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<MembershipEmailInvitationCreation> {
+    let input: CreateMembershipEmailInvitationRequest = parse!(params, SiteMembership);
+    let sender_user_id = require_role_assign_permission(ctx, input.site_id).await?;
+    let (invitation_id, hash) = MembershipService::create_email_invitation(
+        ctx,
+        CreateMembershipEmailInvitation {
+            site_id: input.site_id,
+            sender_user_id,
+            email: &input.email,
+            recipient_name: &input.recipient_name,
+            message: &input.message,
+            to_contacts: input.to_contacts,
+        },
+    )
+    .await?;
+
+    let site = SiteService::get(ctx, Reference::Id(input.site_id)).await?;
+    let sender_name = UserService::get(ctx, Reference::Id(sender_user_id))
+        .await?
+        .into_public_identity()
+        .map(|sender| sender.user_name.into_owned())
+        .unwrap_or_default();
+    let origin = DomainService::preferred_https_origin(ctx.config(), &site);
+    let url = format!("{origin}/{}/hash/{hash}", input.page_slug);
+    EmailService::send_invitation_email(
+        ctx,
+        InvitationEmail {
+            recipient_email: &input.email,
+            recipient_name: &input.recipient_name,
+            sender_name: &sender_name,
+            site_name: &site.name,
+            message: &input.message,
+            url: &url,
+        },
+        std::slice::from_ref(&site.locale),
+    )
+    .await;
+
+    Ok(MembershipEmailInvitationCreation {
+        invitation_id,
+        hash,
+    })
+}
+
+pub async fn membership_email_invitation_cancel(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<bool> {
+    let input: CancelMembershipEmailInvitationRequest = parse!(params, SiteMembership);
+    let actor_user_id = ctx.request().user_id().or_raise(|| {
+        Error::new(
+            "canceling a membership email invitation requires an authenticated user",
+            ErrorType::NotAuthenticated,
+        )
+    })?;
+    match MembershipService::email_invitation_sender(
+        ctx,
+        input.site_id,
+        input.invitation_id,
+    )
+    .await?
+    {
+        Some(sender_user_id) if sender_user_id == actor_user_id => {}
+        _ => {
+            require_role_assign_permission(ctx, input.site_id).await?;
+        }
+    }
+
+    MembershipService::cancel_email_invitation(ctx, input.site_id, input.invitation_id)
+        .await
 }
 
 async fn require_role_assign_permission(
