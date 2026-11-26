@@ -70,9 +70,15 @@ impl RoleService {
         };
 
         if let Some(parent_id) = parent_role_id {
-            Self::assert_exists(ctx, site_id, parent_id.into())
+            let parent_role = Self::get_for_update(ctx, site_id, parent_id.into())
                 .await
                 .or_raise(make_error)?;
+            if parent_role.deleted_at.is_some() {
+                bail!(Error::new(
+                    format!("parent role ID {parent_id} in site ID {site_id} not found"),
+                    ErrorType::RoleNotFound,
+                ));
+            }
         }
 
         let now = now();
@@ -601,7 +607,7 @@ impl RoleService {
                 ));
             }
 
-            let parent_role = Self::get(ctx, site_id, parent_id.into())
+            let parent_role = Self::get_for_update(ctx, site_id, parent_id.into())
                 .await
                 .or_raise(make_error)?;
             if parent_role.deleted_at.is_some() {
