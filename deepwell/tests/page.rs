@@ -8085,6 +8085,232 @@ async fn wikidot_gallery_selects_authorized_current_page_images_after_page_acl()
 }
 
 #[tokio::test]
+async fn wikidot_gallery_external_and_starred_entries_match_live_shapes() {
+    const PAGE_SLUG: &str = "fixture-gallery-external";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist")
+        .site;
+    let site_id = site.site_id;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PAGE_SLUG,
+        "Gallery external fixture",
+        "[[gallery]]",
+    )
+    .await;
+    let page_id = listpages_test_page_id(&runner, site_id, PAGE_SLUG).await;
+    let page = PageTable::find_by_id(page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("Gallery page lookup should succeed")
+        .expect("Gallery page should exist");
+    create_file_fixture_with_mime(&runner, site_id, page_id, "image-a.png", "image/png")
+        .await;
+
+    let page_info = PageInfo {
+        page: Cow::Borrowed(PAGE_SLUG),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Gallery external fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let page_ref = PageId {
+        site_id,
+        category_id: page.page_category_id,
+        page_id,
+    };
+
+    let external = render_gallery_fixture_source(
+        &runner,
+        &page_info,
+        page_ref,
+        "[[gallery]]\n: https://example.com/a.png\n[[/gallery]]",
+    )
+    .await;
+    assert!(
+        external.contains(
+            r#"<a href="https://example.com/a.png" class="with-lb"><img src="https://example.com/a.png" alt="" class="gallery-image-size-thumbnail" /></a>"#,
+        ),
+        "external Gallery entries must render as images at the effective size:\n{external}",
+    );
+    assert!(!external.contains("Error selecting page."), "{external}");
+
+    let starred = render_gallery_fixture_source(
+        &runner,
+        &page_info,
+        page_ref,
+        "[[gallery]]\n: *https://example.com/a.png\n[[/gallery]]",
+    )
+    .await;
+    assert!(
+        starred.contains(
+            r#"<a href="https://example.com/a.png" target="_blank"><img src="https://example.com/a.png" alt="" class="gallery-image-size-thumbnail" /></a>"#,
+        ),
+        "starred external Gallery entries must render with a blank target:\n{starred}",
+    );
+    assert!(!starred.contains("*https://example.com"), "{starred}");
+
+    let leak = render_gallery_fixture_source(
+        &runner,
+        &page_info,
+        page_ref,
+        "[[gallery]]\n: *https://example.com/1.png\n: https://example.com/2.png\n[[/gallery]]",
+    )
+    .await;
+    assert_eq!(
+        leak.matches("target=\"_blank\"").count(),
+        1,
+        "a starred entry's blank target must not leak into later entries:\n{leak}",
+    );
+    assert!(
+        leak.contains(r#"<a href="https://example.com/2.png" class="with-lb">"#),
+        "the unstarred entry after a starred one keeps the lightbox anchor:\n{leak}",
+    );
+
+    let small = render_gallery_fixture_source(
+        &runner,
+        &page_info,
+        page_ref,
+        "[[gallery size=\"small\"]]\n: https://example.com/a.png\n[[/gallery]]",
+    )
+    .await;
+    assert!(
+        small.contains(r#"<div class="gallery-item small">"#),
+        "external Gallery entries must take the gallery size class:\n{small}",
+    );
+    assert!(
+        small.contains(r#"class="gallery-image-size-small""#),
+        "external Gallery images must take the gallery size class:\n{small}",
+    );
+
+    let external_first = render_gallery_fixture_source(
+        &runner,
+        &page_info,
+        page_ref,
+        "[[gallery]]\n: https://example.com/a.png\n: image-a.png\n[[/gallery]]",
+    )
+    .await;
+    let external_position = external_first
+        .find("https://example.com/a.png")
+        .expect("mixed Gallery should contain the external entry");
+    let local_position = external_first
+        .find("local--resized-images/fixture-gallery-external/image-a.png/thumbnail.jpg")
+        .expect("mixed Gallery should contain the local entry at thumbnail size");
+    assert!(
+        external_position < local_position,
+        "mixed Gallery entries must keep authored order:\n{external_first}",
+    );
+
+    let local_first = render_gallery_fixture_source(
+        &runner,
+        &page_info,
+        page_ref,
+        "[[gallery]]\n: image-a.png\n: https://example.com/a.png\n[[/gallery]]",
+    )
+    .await;
+    assert_eq!(
+        local_first.matches("gallery-item thumbnail").count(),
+        2,
+        "an external entry must not change the size of local entries:\n{local_first}",
+    );
+    assert!(
+        local_first.contains(
+            r#"<img src="https://example.com/a.png" alt="" class="gallery-image-size-thumbnail" />"#,
+        ),
+        "a local entry must not change the size class of a later external entry:\n{local_first}",
+    );
+
+    let starred_local = render_gallery_fixture_source(
+        &runner,
+        &page_info,
+        page_ref,
+        "[[gallery]]\n: *image-a.png\n[[/gallery]]",
+    )
+    .await;
+    assert!(
+        starred_local.contains(
+            r#"<a href="https://scp-wiki.wjfiles.com/local--files/fixture-gallery-external/image-a.png" target="_blank">"#,
+        ),
+        "starred local Gallery entries must render with a blank target:\n{starred_local}",
+    );
+    assert!(
+        starred_local.contains(
+            r#"<img src="https://scp-wiki.wjfiles.com/local--resized-images/fixture-gallery-external/image-a.png/thumbnail.jpg" alt="" class="gallery-image-size-thumbnail" />"#,
+        ),
+        "starred local Gallery entries must use the selected resized asset:\n{starred_local}",
+    );
+
+    let alt_title = render_gallery_fixture_source(
+        &runner,
+        &page_info,
+        page_ref,
+        "[[gallery]]\n: image-a.png alt=\"My Alt\" title=\"My Title\"\n[[/gallery]]",
+    )
+    .await;
+    assert!(
+        alt_title.contains(r#"alt="My Alt""#),
+        "Gallery entries must honor the item alt text:\n{alt_title}",
+    );
+    assert!(
+        !alt_title.contains("My Title"),
+        "Gallery entries must drop the item title:\n{alt_title}",
+    );
+
+    let alt_apostrophe = render_gallery_fixture_source(
+        &runner,
+        &page_info,
+        page_ref,
+        "[[gallery]]\n: image-a.png alt=\"it's\"\n[[/gallery]]",
+    )
+    .await;
+    assert!(
+        alt_apostrophe.contains(r#"alt="it's""#),
+        "Gallery alt text must keep apostrophes raw:\n{alt_apostrophe}",
+    );
+
+    let external_alt = render_gallery_fixture_source(
+        &runner,
+        &page_info,
+        page_ref,
+        "[[gallery]]\n: https://example.com/a.png alt=\"My Alt\"\n[[/gallery]]",
+    )
+    .await;
+    assert!(
+        external_alt.contains(
+            r#"<img src="https://example.com/a.png" alt="My Alt" class="gallery-image-size-thumbnail" />"#,
+        ),
+        "external Gallery entries must honor the item alt text:\n{external_alt}",
+    );
+}
+
+async fn render_gallery_fixture_source(
+    runner: &TestRunner,
+    page_info: &PageInfo<'_>,
+    page_ref: PageId,
+    source: &str,
+) -> String {
+    RenderService::render_page_for_viewer(
+        runner.context(),
+        source.to_owned(),
+        page_info,
+        Layout::Wikidot,
+        page_ref,
+        Some(ADMIN_USER_ID),
+        UrlArguments::default(),
+    )
+    .await
+    .expect("Gallery fixture render should succeed")
+    .html_output
+    .body
+}
+
+#[tokio::test]
 async fn file_mutation_deferred_actions_fence_warm_anonymous_gallery_cache() {
     const FILE_NAME: &str = "cache-fresh-gallery-image.png";
     const EMPTY_GALLERY: &str =
