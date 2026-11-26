@@ -38,6 +38,7 @@ use crate::services::{RequestContext, ServiceContext, SessionService};
 use crate::utils::debug_pointer;
 use crate::{database, info, redis as redis_db};
 use jsonrpsee::server::{RpcModule, Server, ServerHandle};
+use jsonrpsee::types::params::Params;
 use redis::aio::MultiplexedConnection as RedisMultiplexedConnection;
 use reqwest::Client as ReqwestClient;
 use rsmq_async::Rsmq;
@@ -230,6 +231,24 @@ pub async fn build_server(app_state: ServerState) -> Result<ServerHandle> {
     Ok(handle)
 }
 
+fn params_contain_nul(params: &Params) -> bool {
+    match params.parse::<serde_json::Value>() {
+        Ok(value) => json_value_contains_nul(&value),
+        Err(_) => false,
+    }
+}
+
+fn json_value_contains_nul(value: &serde_json::Value) -> bool {
+    match value {
+        serde_json::Value::String(text) => text.contains('\0'),
+        serde_json::Value::Array(items) => items.iter().any(json_value_contains_nul),
+        serde_json::Value::Object(entries) => entries
+            .iter()
+            .any(|(key, item)| key.contains('\0') || json_value_contains_nul(item)),
+        _ => false,
+    }
+}
+
 async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> {
     use crate::error::{exn_error_to_rpc_error, unwrap_transaction_error};
 
@@ -242,6 +261,16 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
             // Contains a wrapper around each to set up state, convert error types,
             // and produce a transaction used in ServiceContext, passed in.
             module.register_async_method($name, |params, state, extensions| async move {
+                if params_contain_nul(&params) {
+                    return Err(exn_error_to_rpc_error(
+                        Error::new(
+                            "request parameters must not contain NUL characters",
+                            ErrorType::BadRequest,
+                        )
+                        .into(),
+                    ));
+                }
+
                 // NOTE: We have our own Arc because we need to share it in some places
                 //       before setting up, but RpcModule insists on adding its own.
                 //       So we need to "unwrap it" before each method invocation.
@@ -536,4 +565,70 @@ async fn build_request(
         site_id: headers.site_id,
         page_reference: headers.page_ref.clone(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::{Value, json};
+
+    async fn rpc_module() -> RpcModule<ServerState> {
+        let state = build_server_state(Config::integration_testing(), Secrets::load())
+            .await
+            .expect("server state should build");
+        build_module(state).await.expect("RPC module should build")
+    }
+
+    async fn rpc_request(
+        module: &RpcModule<ServerState>,
+        method: &str,
+        params: Value,
+    ) -> Value {
+        let request = json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": method,
+            "params": params,
+        })
+        .to_string();
+        let (response, _) = module
+            .raw_json_request(&request, 1)
+            .await
+            .expect("RPC request should be accepted");
+        serde_json::from_str(response.get()).expect("RPC response should be JSON")
+    }
+
+    #[tokio::test]
+    async fn rpc_boundary_rejects_nul_in_string_params() {
+        let module = rpc_module().await;
+
+        for (method, params) in [
+            ("user_get", json!({"user": "x\0y"})),
+            ("site_get", json!({"site": "scp-wiki\0"})),
+            ("page_get", json!({"site_id": 1, "page": "scp-001\0"})),
+            ("session_get", json!(["a\0b"])),
+            ("echo", json!([1, "x\0y"])),
+        ] {
+            let response = rpc_request(&module, method, params).await;
+            assert!(
+                response.get("result").is_none(),
+                "{method} returned a result for NUL params: {response}",
+            );
+            assert_eq!(
+                response["error"]["code"],
+                ErrorType::BadRequest.code(),
+                "{method} did not reject NUL params: {response}",
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn rpc_boundary_accepts_literal_escape_text() {
+        let module = rpc_module().await;
+        let params = json!(["x\\u0000y"]);
+        let response = rpc_request(&module, "echo", params.clone()).await;
+
+        assert_eq!(response["result"], params);
+        assert!(response.get("error").is_none());
+    }
 }

@@ -2,10 +2,14 @@
 
 import { runWithRequestContext } from "$lib/server/load/request-ctx"
 import { loadSiteInfo } from "$lib/server/load/site-info"
-import type { Handle } from "@sveltejs/kit"
+import { error, type Handle } from "@sveltejs/kit"
 
 export const handle: Handle = async ({ event, resolve }) => {
   const { request, cookies, params } = event
+
+  if (params.slug?.includes("\0") || params.extra?.includes("\0")) {
+    error(404)
+  }
 
   // Gather common request metadata into a shared context.
   const { siteId } = loadSiteInfo(request.headers)
