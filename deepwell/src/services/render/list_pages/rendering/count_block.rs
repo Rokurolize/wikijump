@@ -88,6 +88,7 @@ impl RenderService {
             unsupported_count_pages_filter,
             separate: _,
             wrapper: _,
+            wrapper_present: _,
             rss_title: _,
             rss_description: _,
             rss_home: _,

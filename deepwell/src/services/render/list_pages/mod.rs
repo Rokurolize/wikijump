@@ -595,6 +595,25 @@ mod tests {
     }
 
     #[test]
+    fn wrapper_presence_distinguishes_an_active_attribute_from_inert_spellings() {
+        assert!(
+            !parse_list_pages_arguments(r#"limit="1""#)
+                .expect("a head without wrapper should parse")
+                .wrapper_present
+        );
+        for head in [r#"wrapper="no""#, r#"wrapper="yes""#, r#"wrapper="""#] {
+            let arguments = parse_list_pages_arguments(head)
+                .unwrap_or_else(|| panic!("active wrapper head should parse: {head}"));
+            assert!(arguments.wrapper_present, "{head}");
+        }
+        for head in [r#"WRAPPER="no""#, "wrapper=no", "wrapper='no'"] {
+            let arguments = parse_list_pages_arguments(head)
+                .unwrap_or_else(|| panic!("inert wrapper head should parse: {head}"));
+            assert!(!arguments.wrapper_present, "{head}");
+        }
+    }
+
+    #[test]
     fn html_escaped_quote_assignments_remain_inert() {
         let arguments = parse_list_pages_arguments(
             "category=&quot;fragment&quot; parent=&quot;.&quot; \

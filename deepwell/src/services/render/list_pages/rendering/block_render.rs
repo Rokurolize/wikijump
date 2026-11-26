@@ -169,6 +169,7 @@ impl RenderService {
             append_line,
             separate,
             wrapper,
+            wrapper_present: _,
             rss_title: _,
             rss_description: _,
             rss_home: _,
