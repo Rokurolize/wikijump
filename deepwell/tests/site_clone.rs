@@ -31,12 +31,18 @@ use deepwell::models::page_category::{self, Entity as PageCategoryTable};
 use deepwell::models::page_connection::{self, Entity as PageConnectionTable};
 use deepwell::models::page_parent::{self, Entity as PageParentTable};
 use deepwell::models::page_revision::{self, Entity as PageRevisionTable};
+use deepwell::models::relation::{self, Entity as RelationTable};
 use deepwell::models::role::{self, Entity as RoleTable};
 use deepwell::models::site::{self, Entity as SiteTable};
+use deepwell::models::user_role::{self, Entity as UserRoleTable};
 use deepwell::services::RequestContext;
 use deepwell::services::page::{CreatePage, EditPage, EditPageBody, PageService};
+use deepwell::services::relation::{
+    CreateSiteMember, RelationService, SiteMemberAccepted, SiteMemberData,
+};
+use deepwell::services::role::{GrantUserRoleInput, RoleService};
 use deepwell::services::user::{CreateUser, UserService};
-use deepwell::types::{Maybe, Reference, UserType};
+use deepwell::types::{AccessPolicy, Maybe, Reference, RelationType, UserType};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
     Set,
@@ -147,6 +153,66 @@ async fn edit_source_page(
     )
     .await
     .expect("source edit should create a revision");
+}
+
+async fn create_regular_user(runner: &TestRunner, label: &str) -> i64 {
+    let n = next_n();
+    UserService::create(
+        runner.context(),
+        CreateUser {
+            user_type: UserType::Regular,
+            name: format!("Clone policy {label} {n}"),
+            email: format!("clone-policy-{label}-{n}@example.com"),
+            locales: vec![str!("en")],
+            password: str!("fixture-password"),
+            bypass_filter: true,
+            bypass_email_verification: true,
+            override_user_id: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("clone policy user should be created")
+    .user_id
+}
+
+async fn grant_source_admin(runner: &TestRunner, site_id: i64, user_id: i64) {
+    let admin_role = RoleTable::find()
+        .filter(role::Column::SiteId.eq(site_id))
+        .filter(role::Column::Name.eq("admin"))
+        .one(runner.context().transaction())
+        .await
+        .expect("source admin role lookup should succeed")
+        .expect("source admin role should exist");
+
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id,
+            user_id,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::Accepted(ADMIN_USER_ID),
+            },
+            created_by: ADMIN_USER_ID,
+        },
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("source admin should be a site member");
+
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            site_id,
+            user_id,
+            role_id: admin_role.role_id,
+            assigning_user_id: ADMIN_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("source admin role should be granted");
 }
 
 async fn revisions_for(
@@ -469,6 +535,80 @@ async fn clone_copies_content_history_files_and_remaps_internal_references() {
             .len(),
         2,
     );
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn clone_policy_private_destination_and_cloner_master_admin() {
+    let mut runner = TestRunner::setup().await;
+    let (source_site_id, source_slug) = make_source_site(&mut runner, "policy").await;
+    let cloner = create_regular_user(&runner, "cloner").await;
+    let other_admin = create_regular_user(&runner, "other-admin").await;
+    grant_source_admin(&runner, source_site_id, cloner).await;
+    grant_source_admin(&runner, source_site_id, other_admin).await;
+
+    runner.set_request_context(actor_context(source_site_id, cloner));
+    let n = next_n();
+    let clone_slug = format!("clone-dest-policy-{n}");
+    let output = run_endpoint!(
+        runner,
+        site_clone,
+        json!({
+            "source": source_slug,
+            "slug": clone_slug,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let clone_site = SiteTable::find_by_id(output.site_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("clone site should load")
+        .expect("clone site should exist");
+    assert_eq!(clone_site.access_policy, AccessPolicy::Private);
+    assert_eq!(clone_site.master_admin_user_id, Some(cloner));
+
+    let clone_admin_role = RoleTable::find()
+        .filter(role::Column::SiteId.eq(output.site_id))
+        .filter(role::Column::Name.eq("admin"))
+        .one(runner.context().transaction())
+        .await
+        .expect("clone admin role lookup should succeed")
+        .expect("clone admin role should exist");
+    let assignments = UserRoleTable::find()
+        .filter(user_role::Column::SiteId.eq(output.site_id))
+        .filter(user_role::Column::DeletedAt.is_null())
+        .all(runner.context().transaction())
+        .await
+        .expect("clone role assignments should load");
+    assert_eq!(
+        assignments.len(),
+        1,
+        "clone must only contain the cloner's master-admin assignment: {assignments:?}",
+    );
+    assert_eq!(assignments[0].user_id, cloner);
+    assert_eq!(assignments[0].role_id, clone_admin_role.role_id);
+    assert!(
+        assignments
+            .iter()
+            .all(|assignment| assignment.user_id != other_admin),
+        "source administrator role assignments must not carry over: {assignments:?}",
+    );
+
+    let members = RelationTable::find()
+        .filter(relation::Column::DestId.eq(output.site_id))
+        .filter(relation::Column::RelationType.eq(RelationType::SiteMember))
+        .filter(relation::Column::DeletedAt.is_null())
+        .all(runner.context().transaction())
+        .await
+        .expect("clone membership relations should load");
+    assert_eq!(
+        members.len(),
+        1,
+        "clone must only contain the cloner's membership: {members:?}",
+    );
+    assert_eq!(members[0].from_id, cloner);
+
     runner.teardown().await;
 }
 
