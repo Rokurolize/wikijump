@@ -43,7 +43,7 @@ jobs:
 
       - name: Push image to ECR
         if: ${{ inputs.push }}
-        uses: jwalton/gh-ecr-push@9e900e7c9fd963ecb9f340b1a869016709c5d329 # v2
+        uses: jwalton/gh-ecr-push@79b418c8e7c1940802b6314002715209ab6bcf0f # v2
         with:
           access-key-id: ${{ secrets.aws-access-key }}
           secret-access-key: ${{ secrets.aws-secret-key }}
