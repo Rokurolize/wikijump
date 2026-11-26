@@ -19,6 +19,7 @@
  */
 
 use regex::Regex;
+use unicode_general_category::{GeneralCategory, get_general_category};
 
 pub fn replace_in_place(string: &mut String, pattern: &str, replacement: &str) {
     assert!(
@@ -68,6 +69,27 @@ pub fn trim_spaces_in_place(string: &mut String) {
 #[inline]
 pub fn strip_fluent_control_chars(string: &mut String) {
     regex_replace_in_place(string, regex!("[\u{2068}\u{2069}]"), "");
+}
+
+pub fn contains_invisible_format_characters(value: &str) -> bool {
+    value
+        .chars()
+        .any(|ch| get_general_category(ch) == GeneralCategory::Format)
+}
+
+#[test]
+fn test_contains_invisible_format_characters() {
+    assert!(contains_invisible_format_characters(
+        "artex-h\u{200b}unter-c"
+    ));
+    assert!(contains_invisible_format_characters(
+        "format-ma\u{200c}il@example.invalid"
+    ));
+    assert!(contains_invisible_format_characters("\u{feff}prefix"));
+    assert!(!contains_invisible_format_characters("Ordinary Space-Name"));
+    assert!(!contains_invisible_format_characters(
+        "ユーザー+tag@example.invalid"
+    ));
 }
 
 #[test]
