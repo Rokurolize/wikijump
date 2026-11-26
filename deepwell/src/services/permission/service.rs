@@ -805,28 +805,49 @@ impl PermissionService {
             return Ok(vec![false; page_category_ids.len()]);
         }
 
+        let mut uncached_category_ids = page_category_ids
+            .iter()
+            .flatten()
+            .copied()
+            .filter(|id| !category_scoped_cache.contains_key(&(site_id, Some(*id))))
+            .collect::<Vec<_>>();
+        uncached_category_ids.sort_unstable();
+        uncached_category_ids.dedup();
+
+        for chunk in uncached_category_ids.chunks(10_000) {
+            let rows = RolePermission::find()
+                .filter(
+                    Condition::all()
+                        .add(role_permission::Column::SiteId.eq(site_id))
+                        .add(role_permission::Column::ResourceType.eq(Resource::Page))
+                        .add(role_permission::Column::Action.eq(Action::View))
+                        .add(
+                            role_permission::Column::ResourceCategoryId
+                                .is_in(chunk.iter().copied()),
+                        ),
+                )
+                .all(ctx.transaction())
+                .await
+                .or_raise(make_error)?;
+
+            for row in rows {
+                if let Some(category_id) = row.resource_category_id {
+                    category_scoped_cache.insert((site_id, Some(category_id)), true);
+                }
+            }
+
+            for category_id in chunk {
+                category_scoped_cache
+                    .entry((site_id, Some(*category_id)))
+                    .or_insert(false);
+            }
+        }
+
         let mut results = Vec::with_capacity(page_category_ids.len());
         for category_id in page_category_ids {
             let category_id = *category_id;
             let has_scoped_permissions = match category_id {
-                Some(id) => {
-                    let key = (site_id, Some(id));
-                    if let Some(cached) = category_scoped_cache.get(&key) {
-                        *cached
-                    } else {
-                        let scoped = Self::check_category_scoped(
-                            ctx,
-                            site_id,
-                            Resource::Page,
-                            id,
-                            Action::View,
-                        )
-                        .await
-                        .or_raise(make_error)?;
-                        category_scoped_cache.insert(key, scoped);
-                        scoped
-                    }
-                }
+                Some(id) => category_scoped_cache[&(site_id, Some(id))],
                 None => false,
             };
 
