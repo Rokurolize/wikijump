@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use super::page_view_guard::require_page_view_permission;
 use super::prelude::*;
 use crate::models::page_revision::Model as PageRevisionModel;
 use crate::services::TextService;
@@ -26,7 +27,7 @@ use crate::services::page_revision::{
     GetPageRevision, GetPageRevisionDetails, GetPageRevisionRangeDetails,
     PageRevisionCountOutput, PageRevisionModelFiltered, UpdatePageRevisionDetails,
 };
-use crate::types::PageDetails;
+use crate::types::{PageDetails, Reference};
 
 pub async fn page_revision_count(
     ctx: &ServiceContext<'_>,
@@ -75,6 +76,8 @@ pub async fn page_revision_get(
         "Getting revision {} for page ID {} in site ID {}",
         revision_number, page_id, site_id,
     );
+
+    require_page_view_permission(ctx, site_id, Reference::Id(page_id)).await?;
 
     let make_error =
         || Error::new("failed to get a page revision", ErrorType::PageRevision);
@@ -127,6 +130,9 @@ pub async fn page_revision_range(
     params: Params<'static>,
 ) -> Result<Vec<PageRevisionModelFiltered>> {
     let GetPageRevisionRangeDetails { input, details } = parse!(params, PageRevision);
+
+    require_page_view_permission(ctx, input.site_id, Reference::Id(input.page_id))
+        .await?;
 
     let make_error = || {
         Error::new(
