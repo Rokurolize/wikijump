@@ -4,6 +4,7 @@
   import AutonumberSettings from "./AutonumberSettings.svelte"
   import BackupSettings from "./BackupSettings.svelte"
   import BlocksSettings from "./BlocksSettings.svelte"
+  import CloneSettings from "./CloneSettings.svelte"
   import CustomDomainSettings from "./CustomDomainSettings.svelte"
   import ForumSettings from "./ForumSettings.svelte"
   import PermissionsSettings from "./PermissionsSettings.svelte"
@@ -25,6 +26,7 @@
 
 <SiteSettings {data} />
 <BackupSettings />
+<CloneSettings />
 <AccessPolicySettings {data} />
 <LayoutSettings {data} />
 <AnalyticsSettings {data} />
