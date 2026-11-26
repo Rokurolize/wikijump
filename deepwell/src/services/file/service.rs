@@ -1511,7 +1511,8 @@ mod tests {
 
         assert!(statement.contains(r#""file"."file_id" = 123"#));
         assert!(statement.contains(r#""file"."site_id" = 456"#));
-        assert!(!statement.contains(r#""file"."page_id""#));
+        assert!(!statement.contains(
+            r#""file"."page_id" =#));
         assert!(statement.ends_with("FOR UPDATE"));
     }
 
@@ -1521,7 +1522,8 @@ mod tests {
             .build(DbBackend::Postgres)
             .to_string();
 
-        assert!(statement.contains(r#""file"."file_id" = 123"#));
+        assert!(statement.contains(r#""file"."file_id" = 123"#
+        ));
         assert!(statement.ends_with("FOR UPDATE"));
     }
 }
