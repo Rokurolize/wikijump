@@ -1,3 +1,4 @@
+import { escapeFeedXmlText as escapeXml } from "./feed-xml.ts"
 import { formatWikidotFeedDate } from "./list-pages-feed.ts"
 
 export interface WikidotSiteChangesFeedItem {
@@ -24,15 +25,6 @@ export const WIKIDOT_SITE_CHANGES_FEED_HEADERS = {
   "content-type": "text/xml;charset=utf-8",
   expires: "Mon, 26 Jul 1997 05:00:00 GMT"
 } as const
-
-function escapeXml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;")
-}
 
 // The description is an HTML fragment carried inside XML. User-controlled
 // plain-text fields (page title, user name, change type) must be escaped for

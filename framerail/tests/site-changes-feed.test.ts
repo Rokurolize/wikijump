@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+import { hasInvalidXmlC0 } from "../src/lib/server/feed-xml.ts"
 import { formatWikidotFeedDate } from "../src/lib/server/list-pages-feed.ts"
 import { buildWikidotSiteChangesFeedXml } from "../src/lib/server/site-changes-feed.ts"
 
@@ -168,4 +169,37 @@ test("site changes RSS escapes markup in user-controlled description fields", ()
   assert.ok(!decoded.includes("<b onmouseover"), decoded)
   assert.ok(decoded.includes("&lt;img src=x onerror=window.__ARTEX608=1&gt;"))
   assert.ok(decoded.includes("&lt;b onmouseover=alert(3)&gt;eve&lt;/b&gt;"))
+})
+
+test("site changes RSS strips XML-invalid C0 controls from title and user fields", () => {
+  const xml = buildWikidotSiteChangesFeedXml(
+    "https://pentest.wikijump.localhost/feed/site-changes.xml",
+    {
+      site_name: "Site\u0001Name\u001f",
+      items: [
+        {
+          revision_id: 3_000_000_300,
+          revision_number: 2,
+          is_new_page: false,
+          is_file: false,
+          created_at: "2026-11-18T11:41:44Z",
+          slug: "artex-c0",
+          title: "A\u0001B\u001fC<&>\"'\t\r\nD",
+          change_type: "source",
+          user_id: 20001954,
+          user_name: "Eve\u0001\u001f",
+          body_html: "<p>Body</p>"
+        }
+      ]
+    },
+    new Date("2026-11-18T11:42:00Z")
+  )
+
+  assert.ok(!hasInvalidXmlC0(xml))
+  assert.ok(xml.includes('Recent page changes from site "SiteName" (a Wikidot site)'))
+  assert.ok(
+    xml.includes("&quot;ABC&lt;&amp;&gt;&quot;&#039;\t\r\nD&quot; - source change"),
+    "title keeps valid whitespace and existing escaping"
+  )
+  assert.ok(xml.includes("By: Eve"))
 })

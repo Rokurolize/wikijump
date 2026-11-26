@@ -3,6 +3,7 @@ import { createServer as createHttpServer } from "node:http"
 import { fileURLToPath } from "node:url"
 import { after, before, test } from "node:test"
 
+import { hasInvalidXmlC0 } from "../src/lib/server/feed-xml.ts"
 import { createTestViteServer } from "./vite-test-server.ts"
 
 const root = fileURLToPath(new URL("..", import.meta.url))
@@ -198,6 +199,38 @@ test("populated feed items retain the multiline content CDATA envelope", async (
       parsedContent.slice(prefix.length, -suffix.length),
       '<p>body ]]> & text</p>\n<p>by <span class="printuser">A & B</span></p>'
     )
+  } finally {
+    client.request = rejectingClientRequest
+  }
+})
+
+test("feed atom variant serves the same serializer with no XML-invalid C0 bytes", async () => {
+  const rejectingClientRequest = client.request
+  client.request = async (method: string, ...args: unknown[]) => {
+    if (method === "wikidot_list_pages_feed") {
+      return {
+        items: [
+          {
+            slug: "news:c0",
+            title: "A\u0001B\u001fC",
+            created_at: "2026-07-22T23:23:22Z",
+            body_html: "<p>body</p>",
+            created_by_html: "author"
+          }
+        ]
+      }
+    }
+    return rejectingClientRequest(method, ...args)
+  }
+
+  try {
+    const feedResponse = await fetch(`${baseUrl}/feed/pages/t/test?format=atom`, {
+      headers: siteHeaders
+    })
+    const feedBody = await feedResponse.text()
+    assert.equal(feedResponse.status, 200)
+    assert.ok(!hasInvalidXmlC0(feedBody))
+    assert.ok(feedBody.includes("<title>ABC</title>"))
   } finally {
     client.request = rejectingClientRequest
   }
