@@ -571,6 +571,46 @@ impl FileRevisionService {
         }
     }
 
+    pub async fn get_latest_for_file(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        file_id: i64,
+    ) -> Result<FileRevisionModel> {
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to get latest file revision for file ID {} in site ID {}",
+                    file_id, site_id,
+                ),
+                ErrorType::FileRevision,
+            )
+        };
+
+        let txn = ctx.transaction();
+        let revision_opt = FileRevision::find()
+            .filter(
+                Condition::all()
+                    .add(file_revision::Column::SiteId.eq(site_id))
+                    .add(file_revision::Column::FileId.eq(file_id)),
+            )
+            .order_by_desc(file_revision::Column::RevisionNumber)
+            .order_by_desc(file_revision::Column::RevisionId)
+            .one(txn)
+            .await
+            .or_raise(make_error)?;
+
+        match revision_opt {
+            Some(revision) => Ok(revision),
+            None => bail!(Error::new(
+                format!(
+                    "no latest file revision for file ID {} in site ID {}",
+                    file_id, site_id,
+                ),
+                ErrorType::FileRevisionNotFound,
+            )),
+        }
+    }
+
     pub async fn get_optional(
         ctx: &ServiceContext<'_>,
         GetFileRevision {
