@@ -195,6 +195,11 @@ pub(in crate::services::render) fn list_pages_content_occurrence_is_block(
     if name != "content" {
         return false;
     }
+    if list_pages_variable_inside_include_directive(template, start)
+        || list_pages_variable_inside_quoted_attribute(template, start)
+    {
+        return false;
+    }
     let line_prefix = template[..start].rsplit('\n').next().unwrap_or_default();
     if line_prefix.trim().is_empty() {
         return match section {
@@ -275,6 +280,17 @@ pub(super) fn list_pages_variable_inside_quoted_attribute(
     !head.contains("]]")
         && !head.starts_with('/')
         && head.bytes().filter(|byte| *byte == b'"').count() % 2 == 1
+}
+
+/// Include parameters receive substituted content as argument text on live
+/// Wikidot, the same textual position the `%%content{n}%%` and `%%body%%`
+/// forms already occupy, rather than a rendered block in the row body.
+fn list_pages_variable_inside_include_directive(template: &str, start: usize) -> bool {
+    crate::services::render::include_attachment_owners::wikidot_include_directive_ranges(
+        template,
+    )
+    .iter()
+    .any(|range| range.start <= start && start < range.end)
 }
 
 pub(in crate::services::render) fn list_pages_unknown_link_target_slugs(
@@ -415,5 +431,83 @@ mod tests {
                 "{template:?}",
             );
         }
+    }
+
+    #[test]
+    fn variables_inside_multiline_include_parameters_are_detected() {
+        let template = concat!(
+            "[[include component:carrier\n",
+            "|plain=%%content%%\n",
+            "|body=%%body%%\n",
+            "]]",
+        );
+        let start = template.find("%%content%%").expect("variable");
+        assert!(list_pages_variable_inside_include_directive(
+            template, start
+        ));
+    }
+
+    #[test]
+    fn variables_after_a_closed_include_are_not_detected() {
+        let template = "[[include component:carrier]]\nPLAIN=%%content%%";
+        let start = template.find("%%content%%").expect("variable");
+        assert!(!list_pages_variable_inside_include_directive(
+            template, start
+        ));
+    }
+
+    #[test]
+    fn include_parameter_detection_skips_quoted_closers() {
+        let template =
+            "[[include component:carrier |a=\"quoted ]] closer\" |plain=%%content%%]]";
+        let start = template.find("%%content%%").expect("variable");
+        assert!(list_pages_variable_inside_include_directive(
+            template, start
+        ));
+    }
+
+    #[test]
+    fn plain_content_in_an_include_parameter_is_not_a_block() {
+        let geometry = ListPagesContentGeometry {
+            fullname_selection: true,
+            exact_selection: true,
+            category_selector_present: false,
+            body_has_section_variable: true,
+            body_has_non_content_variable: false,
+        };
+        let include_template = concat!(
+            "[[include component:carrier\n",
+            "|plain=%%content%%\n",
+            "|section=%%content{1}%%\n",
+            "]]",
+        );
+        let start = include_template.find("%%content%%").expect("variable");
+        assert!(!list_pages_content_occurrence_is_block(
+            include_template,
+            start,
+            "content",
+            None,
+            &geometry,
+        ));
+
+        let attribute_template = "[[div style=\"color: %%content%%;\"]]CARRIER[[/div]]";
+        let start = attribute_template.find("%%content%%").expect("variable");
+        assert!(!list_pages_content_occurrence_is_block(
+            attribute_template,
+            start,
+            "content",
+            None,
+            &geometry,
+        ));
+
+        let body_template = "PLAIN-BEGIN|%%content%%|PLAIN-END";
+        let start = body_template.find("%%content%%").expect("variable");
+        assert!(list_pages_content_occurrence_is_block(
+            body_template,
+            start,
+            "content",
+            None,
+            &geometry,
+        ));
     }
 }

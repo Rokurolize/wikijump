@@ -1705,6 +1705,69 @@ async fn listpages_preview_summary_and_content_aliases_match_live_wikidot() {
 }
 
 #[tokio::test]
+async fn listpages_content_variables_feed_include_parameters() {
+    const CARRIER_SLUG: &str = "component:listpages-contentvar-carrier";
+    const TARGET_SLUG: &str = "fixture-listpages-contentvar-target";
+    const INDEX_SLUG: &str = "fixture-listpages-contentvar-index";
+    const TARGET_SOURCE: &str = "rgb(12,34,56)";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        CARRIER_SLUG,
+        "Fixture ListPages Content Variable Carrier",
+        concat!(
+            "[[div style=\"color: {$plain};\"]]PLAIN-CARRIER[[/div]]\n",
+            "[[div style=\"color: {$section};\"]]SECTION-CARRIER[[/div]]\n",
+            "[[div style=\"color: {$body};\"]]BODY-CARRIER[[/div]]",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Content Variable Target",
+        TARGET_SOURCE,
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Content Variable Index",
+        concat!(
+            "[[module ListPages fullname=\"fixture-listpages-contentvar-target\" separate=\"no\" wrapper=\"no\"]]\n",
+            "[[include component:listpages-contentvar-carrier\n",
+            "|plain=%%content%%\n",
+            "|section=%%content{1}%%\n",
+            "|body=%%body%%\n",
+            "]]\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, INDEX_SLUG).await;
+    assert_eq!(
+        html.matches("color: rgb(12,34,56);").count(),
+        3,
+        "plain, numbered, and body content variables must all feed include parameters:\n{html}",
+    );
+    for expected in ["PLAIN-CARRIER", "SECTION-CARRIER", "BODY-CARRIER"] {
+        assert!(
+            html.contains(expected),
+            "the include carrier should render {expected:?}:\n{html}",
+        );
+    }
+}
+
+#[tokio::test]
 async fn listpages_variable_suffixes_are_specific_to_each_variable_family() {
     const TARGET_SLUG: &str = "fixture-listpages-variable-suffix-target";
     const INDEX_SLUG: &str = "fixture-listpages-variable-suffix-index";

@@ -1573,6 +1573,81 @@ mod tests {
     }
 
     #[test]
+    fn include_parameter_content_variables_substitute_raw_wikitext() {
+        let source = concat!(
+            "[[div style=\"color: %%content%%;\"]]PLAIN-CARRIER[[/div]]\n",
+            "[[div style=\"color: %%content{1}%%;\"]]SECTION-CARRIER[[/div]]\n",
+            "[[div style=\"color: %%body%%;\"]]BODY-CARRIER[[/div]]",
+        );
+        let template =
+            ListPagesTemplatePlan::compile(source).expect("supported template");
+        let page = FoundPageRow {
+            page_id: 1,
+            site_id: 1,
+            title: Some("Target".to_owned()),
+            alt_title: None,
+            slug: Some("target".to_owned()),
+            page_category_id: None,
+            page_revision_id: None,
+            tags: None,
+            created_at: None,
+            created_by: None,
+            updated_at: None,
+            updated_by: None,
+            score: None,
+            revision_count: None,
+        };
+        let user_displays = BTreeMap::new();
+        let snapshot_displays = BTreeMap::new();
+        let runtime_displays = BTreeMap::new();
+        let data_form_values = BTreeMap::new();
+        let mut context = empty_substitution_context(
+            &user_displays,
+            &snapshot_displays,
+            &runtime_displays,
+            &data_form_values,
+        );
+        context.page_wikitext = Some("rgb(12,34,56)");
+        let mut blocks = BTreeMap::new();
+        blocks.insert(None, "<p>rgb(12,34,56)</p>".to_owned());
+        context.page_block_content = Some(&blocks);
+        context.content_geometry = ListPagesContentGeometry {
+            fullname_selection: true,
+            exact_selection: true,
+            category_selector_present: false,
+            body_has_section_variable: true,
+            body_has_non_content_variable: false,
+        };
+
+        let mut compat_text = CompatTextFragments::new(source);
+        let prepared = prepare_delayed_list_pages_row(PrepareDelayedListPagesRowParams {
+            template: &template,
+            body: template.body(),
+            page: &page,
+            index: 1,
+            total: 1,
+            context: &context,
+            outer_page_tags: &[],
+            compat_text: &mut compat_text,
+            uses_star_rating: false,
+            numbered_link_titles: None,
+            render_cost_budget: None,
+        });
+
+        assert_eq!(
+            prepared.body.matches("rgb(12,34,56)").count(),
+            3,
+            "all content forms must feed the parameter as raw text: {}",
+            prepared.body,
+        );
+        assert!(
+            !prepared.body.contains("<p>"),
+            "no block paragraph markup may enter the include parameter: {}",
+            prepared.body,
+        );
+    }
+
+    #[test]
     fn parser_functions_wait_for_listpages_row_substitution() {
         let source = concat!(
             "[[#if true | OUTER | NO]]\n",
