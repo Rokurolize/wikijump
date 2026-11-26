@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+import { hasInvalidXmlC0 } from "../src/lib/server/feed-xml.ts"
 import {
   InvalidWikidotListPagesFeedPath,
   buildWikidotListPagesFeedXml,
@@ -170,6 +171,37 @@ test("renders RSS metadata, items, escaped descriptions, and safe CDATA", () => 
   assert.ok(xml.includes("&lt;p&gt;body ]]&gt; &amp; text&lt;/p&gt;"))
   assert.ok(xml.includes("]]]]><![CDATA[>"))
   assert.doesNotMatch(xml, /<script>/)
+})
+
+test("pages RSS strips XML-invalid C0 controls from channel and item titles", () => {
+  const path = parseWikidotListPagesFeedPath(
+    "https://sandbox.example/feed/pages/t/%01Feed%1F/d/%01Description%1F"
+  )
+  assert.ok(path)
+  const xml = buildWikidotListPagesFeedXml(
+    "https://sandbox.example/feed/pages/t/test",
+    path,
+    {
+      items: [
+        {
+          slug: "category:one",
+          title: "A\u0001B\u001fC<&>\"'\t\n\rD",
+          created_at: "2026-07-22T23:23:22Z",
+          body_html: "<p>body</p>",
+          created_by_html: "author"
+        }
+      ]
+    },
+    new Date("2026-07-27T09:53:12Z")
+  )
+
+  assert.ok(!hasInvalidXmlC0(xml))
+  assert.ok(xml.includes("<title>Feed</title>"))
+  assert.ok(xml.includes("<description>Description</description>"))
+  assert.ok(
+    xml.includes("ABC&lt;&amp;&gt;&quot;&#039;\t\n\rD"),
+    "valid whitespace and metacharacter escaping survive the strip"
+  )
 })
 
 test("formats the live generic feed error without exposing a stack trace", () => {

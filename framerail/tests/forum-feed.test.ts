@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+import { hasInvalidXmlC0 } from "../src/lib/server/feed-xml.ts"
 import {
   buildWikidotForumFeedXml,
   formatWikidotForumFeedDate,
@@ -226,4 +227,28 @@ test("site RSS channel stays the observed site-wide pair", () => {
     xml,
     /<description>Posts in forums of the site &quot;SCP &amp; &quot;Test&quot;&quot; - Secure &lt;safe&gt; &amp; sound<\/description>/
   )
+})
+
+test("forum RSS shares the feed XML strip of invalid C0 controls", () => {
+  const xml = buildWikidotForumFeedXml(
+    "https://scp-wiki.wikijump.localhost/feed/forum/threads.xml",
+    "threads",
+    {
+      ...output,
+      site_name: "Site\u0001Name\u001f",
+      items: [
+        {
+          ...output.items[0],
+          thread_title: "Thread\u0001Title\u001f<&>",
+          author_name: "Eve\u0001\u001f"
+        }
+      ]
+    },
+    new Date("2026-10-07T16:54:02Z")
+  )
+
+  assert.ok(!hasInvalidXmlC0(xml))
+  assert.ok(xml.includes("<title>ThreadTitle&lt;&amp;&gt;</title>"))
+  assert.ok(xml.includes("<wikidot:authorName>Eve</wikidot:authorName>"))
+  assert.ok(xml.includes("<title>SiteName - new forum threads</title>"))
 })

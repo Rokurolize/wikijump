@@ -1,3 +1,5 @@
+import { escapeFeedXmlText as escapeXml } from "./feed-xml.ts"
+
 export type WikidotForumFeedKind = "threads" | "posts"
 export type WikidotForumFeedScope = "site" | "category" | "thread"
 
@@ -76,15 +78,6 @@ const XML_HEADERS = {
   "content-type": "text/xml;charset=utf-8",
   expires: "Mon, 26 Jul 1997 05:00:00 GMT"
 } as const
-
-function escapeXml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;")
-}
 
 function cdata(value: string): string {
   return value.replaceAll("]]>", "]]]]><![CDATA[>")
