@@ -3325,7 +3325,7 @@ async fn page_editing_history_preserves_each_page_change_as_a_recoverable_revisi
             "lease": stale_lease,
         }),
     );
-    assert_contains_error!(stale, ErrorType::NotLatestRevisionId);
+    assert_contains_error!(stale, ErrorType::PageEditLockConflict);
 }
 
 #[tokio::test]

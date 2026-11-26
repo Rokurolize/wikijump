@@ -33,7 +33,7 @@ use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
 const IP: &str = "192.0.2.90";
-const NOT_LATEST_REVISION_ID: i64 = 4303;
+const PAGE_EDIT_LOCK_CONFLICT: i64 = 4304;
 
 struct Outcome {
     status: Option<u16>,
@@ -78,8 +78,8 @@ impl Outcome {
         );
         assert_eq!(
             self.error_code(),
-            Some(NOT_LATEST_REVISION_ID),
-            "conflict should be typed NotLatestRevisionId, got: {}",
+            Some(PAGE_EDIT_LOCK_CONFLICT),
+            "conflict should be typed PageEditLockConflict, got: {}",
             self.describe(),
         );
     }
