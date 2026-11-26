@@ -246,6 +246,8 @@ test("final preflight is the single explicit full-check barrier", (t) => {
     source,
     /run_test "deepwell full tests" env WIKIJUMP_DEEPWELL_TEST_SHARDS="\$\{WIKIJUMP_DEEPWELL_TEST_SHARDS:-12\}" node[\s\\]+install\/local\/wikidot-verification\/scripts\/run-deepwell-integration-validation\.mjs/u
   )
+  assert.match(source, /PARALLEL_CARGO_BUILD_JOBS=\$\(\(TOTAL_CARGO_BUILD_JOBS \/ PARALLEL_RUST_GROUPS\)\)/u)
+  assert.equal((source.match(/export CARGO_BUILD_JOBS="\$\{PARALLEL_CARGO_BUILD_JOBS\}"/gu) ?? []).length, 3)
 })
 
 test("final preflight runs groups side by side with the same checks, ordered logs, and every failure", (t) => {

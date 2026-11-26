@@ -110,6 +110,10 @@ path either way; on the four-core CI runner, where a build is limited by how
 much work it does rather than by how wide the machine is, it is worth the
 difference.
 
+### Promotion Rust images share host width
+
+The promotion builder starts the Deepwell and WWS image builds side by side. Each production Dockerfile accepts `CARGO_BUILD_JOBS`, defaulting to the container-visible core count when unset, and the promotion builder passes half the host width to each Rust build. That keeps the two concurrent Cargo builds at host width in aggregate instead of multiplying it while preserving independent image builds.
+
 ### The sqlx-cli build is cached in the production image
 
 `cargo install` compiles into a temporary directory unless a target directory

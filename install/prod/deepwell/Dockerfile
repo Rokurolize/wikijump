@@ -66,12 +66,13 @@ WORKDIR /src/deepwell
 # binaries, and each one pays its own whole-program LTO link, which is the
 # most expensive step of a release build; the image copies none of them.
 ARG CARGO_PROFILE=release
+ARG CARGO_BUILD_JOBS=
 # Source commit for the platform information page (WJ-1279).
 ARG WIKIJUMP_GIT_COMMIT=
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
     --mount=type=cache,target=/src/deepwell/target,id=deepwell-target,sharing=locked \
-    cargo build --profile "${CARGO_PROFILE}" --locked --bin deepwell \
+    CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-$(nproc)}" cargo build --profile "${CARGO_PROFILE}" --locked --bin deepwell \
     && install -D "target/${CARGO_PROFILE}/deepwell" /out/deepwell
 
 #

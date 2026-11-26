@@ -39,10 +39,11 @@ WORKDIR /src/wws
 # Build wws.  The registry and target directory are build caches, so a source
 # change recompiles only what it affects; the binary is copied out of the
 # cache because cache mounts are not part of the image.
+ARG CARGO_BUILD_JOBS=
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
     --mount=type=cache,target=/src/wws/target,id=wws-release-target,sharing=locked \
-    cargo build --release --locked \
+    CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-$(nproc)}" cargo build --release --locked \
     && install -D target/release/wws /out/wws
 
 #

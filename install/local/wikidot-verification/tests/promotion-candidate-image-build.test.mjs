@@ -10,6 +10,7 @@ import {
   APPLICATION_IMAGE_ROLES,
   PROMOTION_IMAGE_ROLES,
   buildPromotionCandidateImages,
+  promotionCargoBuildJobs,
   promotionImageBuildPlan,
   promotionSourceIdentity,
   standingInfrastructureImages,
@@ -134,9 +135,20 @@ test("promotion image plan uses production application images and a candidate-se
   assert.deepEqual(plan.map(({role}) => role), PROMOTION_IMAGE_ROLES);
   assert.match(plan.find(({role}) => role === "deepwell").dockerfile, /install\/prod\/deepwell\/Dockerfile$/u);
   assert.deepEqual(plan.find(({role}) => role === "framerail").build_args, ["FRAMERAIL_ENV=local", "FRAMERAIL_CSRF_CHECK_ORIGIN=true"]);
-  assert.deepEqual(plan.find(({role}) => role === "deepwell").build_args, ["CARGO_PROFILE=standing"]);
+  assert.deepEqual(plan.find(({role}) => role === "deepwell").build_args, ["CARGO_PROFILE=standing", `CARGO_BUILD_JOBS=${promotionCargoBuildJobs()}`]);
+  assert.deepEqual(plan.find(({role}) => role === "wws").build_args, [`CARGO_BUILD_JOBS=${promotionCargoBuildJobs()}`]);
   const deepwellDockerfile = await fs.readFile(path.join(repositoryRoot, "install/prod/deepwell/Dockerfile"), "utf8");
   assert.match(deepwellDockerfile, /COPY \.\/deepwell\/seeder \/opt\/deepwell\/seeder/u);
+});
+
+test("promotion Rust image builds split host width instead of multiplying it", () => {
+  assert.equal(promotionCargoBuildJobs(16), "8");
+  assert.equal(promotionCargoBuildJobs(4), "2");
+  assert.equal(promotionCargoBuildJobs(1), "1");
+  const plan = promotionImageBuildPlan(repositoryRoot, {parallelism: 16});
+  assert.deepEqual(plan.find(({role}) => role === "deepwell").build_args, ["CARGO_PROFILE=standing", "CARGO_BUILD_JOBS=8"]);
+  assert.deepEqual(plan.find(({role}) => role === "wws").build_args, ["CARGO_BUILD_JOBS=8"]);
+  assert.deepEqual(plan.find(({role}) => role === "framerail").build_args, ["FRAMERAIL_ENV=local", "FRAMERAIL_CSRF_CHECK_ORIGIN=true"]);
 });
 
 test("promotion source identity ignores unrelated operator overlays but rejects build-input dirt", async (t) => {

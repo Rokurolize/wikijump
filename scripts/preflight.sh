@@ -133,6 +133,22 @@ PREFLIGHT_TARGET_ROOT="${PREFLIGHT_TARGET_ROOT:-${REPO_ROOT}/target/preflight}"
 # outside preflight keeps the caller's setting.
 export CARGO_INCREMENTAL="${CARGO_INCREMENTAL:-0}"
 PREFLIGHT_PNPM_MARKER_ROOT="${PREFLIGHT_PNPM_MARKER_ROOT:-${REPO_ROOT}}"
+TOTAL_CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || printf '1')}"
+if ! [[ "${TOTAL_CARGO_BUILD_JOBS}" =~ ^[0-9]+$ ]] || [[ "${TOTAL_CARGO_BUILD_JOBS}" -lt 1 ]]; then
+  TOTAL_CARGO_BUILD_JOBS=1
+fi
+PARALLEL_RUST_GROUPS=0
+for rust_group in deepwell wws locales; do
+  group_selected "${rust_group}" && PARALLEL_RUST_GROUPS=$((PARALLEL_RUST_GROUPS + 1))
+done
+if [[ "${PARALLEL_RUST_GROUPS}" -gt 0 ]]; then
+  PARALLEL_CARGO_BUILD_JOBS=$((TOTAL_CARGO_BUILD_JOBS / PARALLEL_RUST_GROUPS))
+  [[ "${PARALLEL_CARGO_BUILD_JOBS}" -lt 1 ]] && PARALLEL_CARGO_BUILD_JOBS=1
+else
+  PARALLEL_CARGO_BUILD_JOBS="${TOTAL_CARGO_BUILD_JOBS}"
+fi
+
+echo "preflight: cargo build jobs: total=${TOTAL_CARGO_BUILD_JOBS} parallel-group=${PARALLEL_CARGO_BUILD_JOBS} rust-groups=${PARALLEL_RUST_GROUPS}"
 
 ensure_pnpm_deps() {
   local dir="$1"
@@ -289,6 +305,7 @@ group_deepwell() {
   # directory is free, and the integration runner inherits it from here.
   # The WWS and locales groups run beside this one and keep their own
   # target directories under PREFLIGHT_TARGET_ROOT.
+  if [[ "${JOBS}" != 1 ]]; then export CARGO_BUILD_JOBS="${PARALLEL_CARGO_BUILD_JOBS}"; fi
   if group_selected deepwell && [[ "${MODE}" == "final" ]]; then
     # The integration runner builds with --offline, so the complete
     # lockfile graph (including crates only an --all-features metadata
@@ -355,7 +372,10 @@ run_wws_nextest_with_timeout_retry() {
 group_wws() {
   # Beside Deepwell, a Rust group builds in its own target directory: cargo
   # locks a target directory, so a shared one would serialize the groups.
-  if [[ "${JOBS}" != 1 ]]; then export CARGO_TARGET_DIR="${PREFLIGHT_TARGET_ROOT}/wws"; fi
+  if [[ "${JOBS}" != 1 ]]; then
+    export CARGO_TARGET_DIR="${PREFLIGHT_TARGET_ROOT}/wws"
+    export CARGO_BUILD_JOBS="${PARALLEL_CARGO_BUILD_JOBS}"
+  fi
   if group_selected wws; then
     run "wws fmt" cargo fmt --manifest-path wws/Cargo.toml --check
     if [[ "${MODE}" == "final" ]]; then
@@ -396,7 +416,10 @@ group_framerail() {
 group_locales() {
   # Beside Deepwell, a Rust group builds in its own target directory: cargo
   # locks a target directory, so a shared one would serialize the groups.
-  if [[ "${JOBS}" != 1 ]]; then export CARGO_TARGET_DIR="${PREFLIGHT_TARGET_ROOT}/locales"; fi
+  if [[ "${JOBS}" != 1 ]]; then
+    export CARGO_TARGET_DIR="${PREFLIGHT_TARGET_ROOT}/locales"
+    export CARGO_BUILD_JOBS="${PARALLEL_CARGO_BUILD_JOBS}"
+  fi
   if group_selected locales; then
     run "locales fmt" cargo fmt --manifest-path locales/validator/Cargo.toml --all -- --check
     if [[ "${MODE}" == "final" ]]; then
