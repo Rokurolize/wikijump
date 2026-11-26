@@ -131,6 +131,16 @@ pub struct SendEmailOutput {
     pub message_id: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct InvitationEmail<'a> {
+    pub recipient_email: &'a str,
+    pub recipient_name: &'a str,
+    pub sender_name: &'a str,
+    pub site_name: &'a str,
+    pub message: &'a str,
+    pub url: &'a str,
+}
+
 #[derive(Serialize, Debug, Clone)]
 pub struct EmailValidationOutput {
     pub valid: bool,

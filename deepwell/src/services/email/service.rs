@@ -20,8 +20,8 @@
 
 use super::structs::{
     EmailClassification, EmailProviderClassification, EmailValidationOutput,
-    MailCheckFailureResponse, MailCheckResponse, MailCheckSuccessResponse,
-    MailFormMessage,
+    InvitationEmail, MailCheckFailureResponse, MailCheckResponse,
+    MailCheckSuccessResponse, MailFormMessage,
 };
 use super::{
     EmailSender, EmailTokenPurpose, IssuedEmailToken, SendEmail, SendEmailOutput,
@@ -301,6 +301,79 @@ impl EmailService {
                 to_email,
             );
         }
+    }
+
+    pub async fn send_invitation_email(
+        ctx: &ServiceContext<'_>,
+        invitation: InvitationEmail<'_>,
+        locales: &[String],
+    ) {
+        let (subject, body) =
+            match Self::invitation_email_content(ctx, &invitation, locales) {
+                Ok(content) => content,
+                Err(error) => {
+                    warn!(
+                        "Failed to compose invitation email for '{}': {error:?}",
+                        invitation.recipient_email,
+                    );
+                    return;
+                }
+            };
+
+        let email = SendEmail {
+            sender: EmailSender::Automation,
+            recipient: invitation.recipient_email,
+            subject: &subject,
+            text_body: &body,
+            html_body: None,
+        };
+
+        if let Err(error) = Self::send(ctx, email).await {
+            warn!(
+                "Failed to send invitation email to '{}': {error:?}",
+                invitation.recipient_email,
+            );
+        }
+    }
+
+    fn invitation_email_content(
+        ctx: &ServiceContext<'_>,
+        invitation: &InvitationEmail<'_>,
+        locales: &[String],
+    ) -> Result<(String, String)> {
+        let languages = Self::token_locales(locales)?;
+        let mut args = FluentArgs::new();
+        args.set(
+            "recipient_name",
+            FluentValue::from(invitation.recipient_name),
+        );
+        args.set("sender_name", FluentValue::from(invitation.sender_name));
+        args.set("site_name", FluentValue::from(invitation.site_name));
+
+        let translate = |attribute: &str| -> Result<String> {
+            let key = format!("emails-invitation.{attribute}");
+            let value = ctx.localization().translate(&languages, &key, &args)?;
+            Ok(Self::plain_text(&value))
+        };
+
+        let subject = translate("subject")?;
+        let greeting = translate("greeting")?;
+        let intro = translate("intro")?;
+        let action = translate("action")?;
+        let outro = translate("outro")?;
+
+        let mut body = format!("{greeting}\n\n{intro}\n\n");
+        let message = invitation.message.trim();
+        if !message.is_empty() {
+            body.push_str(message);
+            body.push_str("\n\n");
+        }
+        body.push_str(&action);
+        body.push('\n');
+        body.push_str(invitation.url);
+        body.push_str("\n\n");
+        body.push_str(&outro);
+        Ok((subject, body))
     }
 
     fn token_email_content(

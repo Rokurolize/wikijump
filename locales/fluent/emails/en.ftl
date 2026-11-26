@@ -43,3 +43,10 @@ emails-delete-grant =
   .greeting = Account deletion approved
   .intro = Your account deletion request has been approved. Continue in your browser; this email contains no link to follow.
   .outro = If you did not request account deletion, no further action is required.
+
+emails-invitation =
+  .subject = Invitation to join { $site_name }
+  .greeting = Hello, { $recipient_name }!
+  .intro = { $sender_name } has invited you to join { $site_name }.
+  .action = Accept the invitation
+  .outro = If you were not expecting this invitation, you can ignore this email.

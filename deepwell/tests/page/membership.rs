@@ -1347,6 +1347,314 @@ async fn membership_email_invitation_matches_hash_one_use_and_cancel_contract() 
 }
 
 #[tokio::test]
+async fn membership_email_invitation_create_and_cancel_endpoints_enforce_site_authority()
+{
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}))
+        .expect("seeded editable site should exist")
+        .site;
+    let site_id = site.site_id;
+    let page_slug = format!("a1033-invitation-endpoints-{}", cuid());
+    PageService::create(
+        runner.context(),
+        CreatePage {
+            site_id,
+            wikitext: "[[module MembershipEmailInvitation]]".to_owned(),
+            title: "A1033 invitation endpoint fixture".to_owned(),
+            alt_title: None,
+            tags: Vec::new(),
+            slug: page_slug.clone(),
+            layout: None,
+            revision_comments: "Create A1033 invitation endpoint fixture".to_owned(),
+            user_id: SYSTEM_USER_ID,
+            bypass_filter: true,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("invitation endpoint fixture page should be created");
+
+    async fn make_user(runner: &TestRunner, label: &str) -> (i64, String) {
+        let email = format!("a1033-endpoint-{label}-{}@example.invalid", cuid());
+        let user = UserService::create(
+            runner.context(),
+            CreateUser {
+                user_type: UserType::Regular,
+                name: format!("A1033 invitation endpoint {label} {}", cuid()),
+                email: email.clone(),
+                locales: vec!["en".to_owned()],
+                password: "A1033 invitation endpoint password!".to_owned(),
+                bypass_filter: true,
+                bypass_email_verification: true,
+                override_user_id: None,
+                ip_address: common::IP_ADDRESS,
+            },
+        )
+        .await
+        .expect("invitation endpoint fixture user should be created");
+        (user.user_id, email)
+    }
+
+    async fn invitation_binding(
+        runner: &mut TestRunner,
+        site_id: i64,
+        page_slug: &str,
+        user_id: i64,
+        token: &str,
+    ) -> (i64, i64, usize, String) {
+        let session_token = SessionService::create(
+            runner.context(),
+            CreateSession {
+                user_id,
+                ip_address: common::IP_ADDRESS,
+                user_agent: "A1033 invitation endpoint fixture".to_owned(),
+                restricted: false,
+            },
+        )
+        .await
+        .expect("invitation endpoint fixture session should be created");
+        runner.set_request_context(RequestContext {
+            user_id: Some(user_id),
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Slug(page_slug.to_owned().into())),
+            ..Default::default()
+        });
+        let view = run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": session_token,
+                "route": {"slug": page_slug, "extra": format!("/hash/{token}")},
+                "locales": ["en-US", "en"],
+            }),
+        );
+        match view {
+            GetPageViewOutput::Found {
+                membership_actions, ..
+            } => membership_actions
+                .iter()
+                .find_map(|action| match action {
+                    MembershipBrowserAction::Invitation {
+                        page_id,
+                        revision_id,
+                        index,
+                        fingerprint,
+                    } => Some((*page_id, *revision_id, *index, fingerprint.clone())),
+                    _ => None,
+                })
+                .expect("authenticated invitation viewer should receive a typed action"),
+            other => panic!("expected invitation page view, got {other:?}"),
+        }
+    }
+
+    let (recipient_id, recipient_email) = make_user(&runner, "recipient").await;
+    let (outsider_id, outsider_email) = make_user(&runner, "outsider").await;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let created = run_endpoint!(
+        runner,
+        membership_email_invitation_create,
+        json!({
+            "site_id": site_id,
+            "email": recipient_email,
+            "recipient_name": "Endpoint Recipient",
+            "message": "endpoint invitation fixture",
+            "to_contacts": false,
+            "page_slug": page_slug,
+        }),
+    );
+    assert!(!created.hash.is_empty());
+
+    let emails = runner
+        .state()
+        .email_mailer
+        .local_emails()
+        .expect("invitation email should use the local mailer");
+    let sent = emails.last().expect("invitation should deliver an email");
+    let sent = &sent.email;
+    assert_eq!(sent.to_addresses()[0].email(), recipient_email);
+    assert_eq!(
+        sent.subject_line(),
+        format!("Invitation to join {}", site.name),
+    );
+    let body = sent.text_body_content().expect("invitation email body");
+    assert!(body.contains(&created.hash), "email should carry the token");
+    assert!(
+        body.contains(&format!("/{page_slug}/hash/{}", created.hash)),
+        "email should carry an invitation link: {body}",
+    );
+
+    let binding = invitation_binding(
+        &mut runner,
+        site_id,
+        &page_slug,
+        recipient_id,
+        &created.hash,
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(recipient_id),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(page_slug.clone().into())),
+        ..Default::default()
+    });
+    let accepted = run_endpoint!(
+        runner,
+        membership_email_invitation_accept,
+        json!({
+            "page_id": binding.0,
+            "last_revision_id": binding.1,
+            "action_index": binding.2,
+            "action_fingerprint": binding.3,
+            "hash": created.hash,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(
+        accepted,
+        MembershipEmailInvitationOutcome::Accepted {
+            site_name: site.name.clone(),
+            site_slug: site.slug.clone(),
+        },
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(outsider_id),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let create_error = run_endpoint_err!(
+        runner,
+        membership_email_invitation_create,
+        json!({
+            "site_id": site_id,
+            "email": outsider_email,
+            "recipient_name": "Unauthorized Recipient",
+            "message": "unauthorized invitation",
+            "to_contacts": false,
+            "page_slug": page_slug,
+        }),
+    );
+    assert_contains_error!(create_error, ErrorType::PermissionDenied);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let cancel_email = format!("a1033-endpoint-cancel-{}@example.invalid", cuid());
+    let to_cancel = run_endpoint!(
+        runner,
+        membership_email_invitation_create,
+        json!({
+            "site_id": site_id,
+            "email": cancel_email,
+            "recipient_name": "Cancel Recipient",
+            "message": "cancel invitation fixture",
+            "to_contacts": false,
+            "page_slug": page_slug,
+        }),
+    );
+    let cancel_binding = invitation_binding(
+        &mut runner,
+        site_id,
+        &page_slug,
+        recipient_id,
+        &to_cancel.hash,
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    assert!(run_endpoint!(
+        runner,
+        membership_email_invitation_cancel,
+        json!({
+            "site_id": site_id,
+            "invitation_id": to_cancel.invitation_id,
+        }),
+    ));
+    assert!(
+        deepwell::services::membership::MembershipService::resolve_email_invitation(
+            runner.context(),
+            &to_cancel.hash,
+        )
+        .await
+        .expect("canceled invitation lookup should succeed")
+        .is_none(),
+        "a canceled invitation must no longer resolve",
+    );
+    runner.set_request_context(RequestContext {
+        user_id: Some(recipient_id),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(page_slug.clone().into())),
+        ..Default::default()
+    });
+    let unusable = run_endpoint!(
+        runner,
+        membership_email_invitation_accept,
+        json!({
+            "page_id": cancel_binding.0,
+            "last_revision_id": cancel_binding.1,
+            "action_index": cancel_binding.2,
+            "action_fingerprint": cancel_binding.3,
+            "hash": to_cancel.hash,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(unusable, MembershipEmailInvitationOutcome::Unavailable);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let protected = run_endpoint!(
+        runner,
+        membership_email_invitation_create,
+        json!({
+            "site_id": site_id,
+            "email": format!("a1033-endpoint-protected-{}@example.invalid", cuid()),
+            "recipient_name": "Protected Recipient",
+            "message": "protected invitation fixture",
+            "to_contacts": false,
+            "page_slug": page_slug,
+        }),
+    );
+    runner.set_request_context(RequestContext {
+        user_id: Some(outsider_id),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let cancel_error = run_endpoint_err!(
+        runner,
+        membership_email_invitation_cancel,
+        json!({
+            "site_id": site_id,
+            "invitation_id": protected.invitation_id,
+        }),
+    );
+    assert_contains_error!(cancel_error, ErrorType::PermissionDenied);
+    assert!(
+        deepwell::services::membership::MembershipService::resolve_email_invitation(
+            runner.context(),
+            &protected.hash,
+        )
+        .await
+        .expect("protected invitation lookup should succeed")
+        .is_some(),
+        "an unrelated actor must not cancel an invitation",
+    );
+}
+
+#[tokio::test]
 async fn membership_password_submit_is_throttled_per_site_and_actor() {
     let mut runner = TestRunner::setup().await;
     let site_output =

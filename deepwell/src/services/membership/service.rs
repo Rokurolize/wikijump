@@ -301,6 +301,33 @@ WHERE invitation_id = $1 AND accepted = FALSE
         })
     }
 
+    pub async fn email_invitation_sender(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        invitation_id: i64,
+    ) -> Result<Option<i64>> {
+        #[derive(Debug, FromQueryResult)]
+        struct SenderRow {
+            sender_user_id: i64,
+        }
+
+        let transaction = ctx.transaction();
+        let row = SenderRow::find_by_statement(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "SELECT sender_user_id FROM membership_email_invitation WHERE invitation_id = $1 AND site_id = $2",
+            [Value::from(invitation_id), Value::from(site_id)],
+        ))
+        .one(transaction)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to look up membership email invitation sender",
+                ErrorType::SiteMembership,
+            )
+        })?;
+        Ok(row.map(|row| row.sender_user_id))
+    }
+
     pub async fn cancel_email_invitation(
         ctx: &ServiceContext<'_>,
         site_id: i64,

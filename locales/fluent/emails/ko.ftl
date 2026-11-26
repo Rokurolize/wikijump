@@ -40,3 +40,10 @@ emails-delete-grant =
   .greeting = 계정 삭제 승인됨
   .intro = 계정 삭제 요청이 승인되었습니다. 이 이메일에는 링크가 없으며, 브라우저에서 절차를 계속 진행해주세요.
   .outro = 계정 삭제를 요청한 적이 없다면 별다른 조치가 필요하지 않습니다.
+
+emails-invitation =
+  .subject = { $site_name } 참여 초대
+  .greeting = 안녕하세요, { $recipient_name }님!
+  .intro = { $sender_name }님이 { $site_name }에 참여하도록 초대했습니다.
+  .action = 초대 수락하기
+  .outro = 이 초대를 받지 못했다면 이 이메일을 무시해도 됩니다.

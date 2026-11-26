@@ -32,6 +32,6 @@ pub use mailer::EmailMailer;
 pub use service::EmailService;
 pub(crate) use service::is_well_formed_email;
 pub use structs::{
-    EmailClassification, EmailSender, EmailValidationOutput, MailFormMessage, SendEmail,
-    SendEmailOutput,
+    EmailClassification, EmailSender, EmailValidationOutput, InvitationEmail,
+    MailFormMessage, SendEmail, SendEmailOutput,
 };

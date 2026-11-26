@@ -57,6 +57,12 @@ pub struct MembershipEmailInvitationView {
     pub recipient_name: String,
 }
 
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+pub struct MembershipEmailInvitationCreation {
+    pub invitation_id: i64,
+    pub hash: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CreateMembershipEmailInvitation<'a> {
     pub site_id: i64,

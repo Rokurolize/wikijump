@@ -38,3 +38,10 @@ emails-delete-grant =
   .greeting = 账号删除已批准
   .intro = 您的账号删除请求已获批准。本邮件不包含链接，请在浏览器中继续完成操作。
   .outro = 若您并未请求删除账号，则无需做出任何操作。
+
+emails-invitation =
+  .subject = 邀请您加入 { $site_name }
+  .greeting = 您好，{ $recipient_name }！
+  .intro = { $sender_name } 邀请您加入 { $site_name }。
+  .action = 接受邀请
+  .outro = 如果您并未收到此邀请，则无需理会本邮件。
