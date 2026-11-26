@@ -57,14 +57,15 @@ struct TagCloudArguments {
 }
 
 #[derive(Debug, FromQueryResult)]
-struct TagCloudPage {
+struct TagCloudCategoryRevisions {
     page_category_id: i64,
-    latest_revision_id: Option<i64>,
+    revision_ids: Vec<i64>,
 }
 
 #[derive(Debug, FromQueryResult)]
-struct TagCloudRevisionTags {
-    tags: Vec<String>,
+struct TagCloudCount {
+    tag: String,
+    count: i64,
 }
 
 #[derive(Clone, Debug)]
@@ -520,30 +521,35 @@ impl RenderService {
         let mut values = vec![current_site_id.into()];
         let category_filter = if let Some(category) = category {
             values.push(category.into());
-            " AND pc.slug = $2"
+            " AND p.page_category_id = (SELECT pc.category_id FROM page_category pc WHERE pc.site_id = $1 AND pc.slug = $2)"
         } else {
             ""
         };
         let statement = Statement::from_sql_and_values(
             txn.get_database_backend(),
             format!(
-                "SELECT p.page_category_id, p.latest_revision_id \
+                "SELECT p.page_category_id, array_agg(p.latest_revision_id) AS revision_ids \
                  FROM page p \
-                 JOIN page_category pc ON pc.category_id = p.page_category_id \
                  WHERE p.site_id = $1 \
                    AND p.deleted_at IS NULL \
-                   {category_filter}",
+                   AND p.latest_revision_id IS NOT NULL \
+                   {category_filter} \
+                 GROUP BY p.page_category_id",
             ),
             values,
         );
-        let pages = TagCloudPage::find_by_statement(statement)
+        let category_rows = TagCloudCategoryRevisions::find_by_statement(statement)
             .all(txn)
             .await
             .or_raise(make_error)?;
+        if category_rows.is_empty() {
+            return Ok(Vec::new());
+        }
+
         let category_permissions = &mut BTreeMap::new();
-        let category_ids = pages
+        let category_ids = category_rows
             .iter()
-            .map(|page| Some(page.page_category_id))
+            .map(|row| Some(row.page_category_id))
             .collect::<Vec<_>>();
         let viewable = PermissionService::batch_check_page_view_without_page_roles(
             ctx,
@@ -555,11 +561,11 @@ impl RenderService {
         .await
         .or_raise(make_error)?;
 
-        let visible_revision_ids = pages
-            .iter()
+        let visible_revision_ids = category_rows
+            .into_iter()
             .zip(viewable)
             .filter(|(_, can_view)| *can_view)
-            .filter_map(|(page, _)| page.latest_revision_id)
+            .flat_map(|(row, _)| row.revision_ids)
             .collect::<Vec<_>>();
 
         if visible_revision_ids.is_empty() {
@@ -568,37 +574,41 @@ impl RenderService {
 
         let mut counts = BTreeMap::<String, usize>::new();
         for chunk in visible_revision_ids.chunks(REVISION_ID_QUERY_CHUNK) {
-            let revision_values =
+            let mut revision_values =
                 chunk.iter().copied().map(Value::from).collect::<Vec<_>>();
             let revision_placeholders = (1..=revision_values.len())
                 .map(|index| format!("${index}"))
                 .collect::<Vec<_>>()
                 .join(", ");
+            let branch_filter = if let Some(branch_tag) = current_branch_tag {
+                revision_values.push(branch_tag.into());
+                format!(" AND ${} = ANY(pr.tags)", revision_values.len())
+            } else {
+                String::new()
+            };
             let revision_statement = Statement::from_sql_and_values(
                 txn.get_database_backend(),
                 format!(
-                    "SELECT pr.tags \
+                    "SELECT cloud_tag.tag, COUNT(*)::bigint AS count \
                      FROM page_revision pr \
-                     WHERE pr.revision_id IN ({revision_placeholders})",
+                     CROSS JOIN LATERAL unnest(pr.tags) AS cloud_tag(tag) \
+                     WHERE pr.revision_id IN ({revision_placeholders}) \
+                     {branch_filter} \
+                     GROUP BY cloud_tag.tag",
                 ),
                 revision_values,
             );
-            let revisions = TagCloudRevisionTags::find_by_statement(revision_statement)
+            let revisions = TagCloudCount::find_by_statement(revision_statement)
                 .all(txn)
                 .await
                 .or_raise(make_error)?;
             for revision in revisions {
-                if let Some(branch_tag) = current_branch_tag
-                    && !revision.tags.iter().any(|tag| tag == branch_tag)
-                {
+                if revision.tag.trim().is_empty() {
                     continue;
                 }
-                for tag in revision.tags {
-                    if tag.trim().is_empty() {
-                        continue;
-                    }
-                    *counts.entry(tag).or_default() += 1;
-                }
+                let count = usize::try_from(revision.count)
+                    .expect("a PostgreSQL tag count is non-negative");
+                *counts.entry(revision.tag).or_default() += count;
             }
         }
 
