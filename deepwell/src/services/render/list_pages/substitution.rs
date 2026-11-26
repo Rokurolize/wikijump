@@ -196,6 +196,7 @@ pub(in crate::services::render) struct ListPagesArguments {
     pub(in crate::services::render) append_line: Option<String>,
     pub(in crate::services::render) separate: bool,
     pub(in crate::services::render) wrapper: bool,
+    pub(in crate::services::render) wrapper_present: bool,
     pub(in crate::services::render) rss_title: Option<String>,
     pub(in crate::services::render) rss_description: Option<String>,
     pub(in crate::services::render) rss_home: Option<String>,
@@ -403,6 +404,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
     let mut append_line = None;
     let mut separate = true;
     let mut wrapper = true;
+    let mut wrapper_present = false;
     let mut rss_title = None;
     let mut rss_description = None;
     let mut rss_home = None;
@@ -1131,6 +1133,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
             }
             "wrapper" => {
                 wrapper = parse_list_pages_false_only_boolean_argument(raw_value);
+                wrapper_present = true;
             }
             "rss" if !raw_value.is_empty() => {
                 saw_rss_argument = true;
@@ -1469,6 +1472,7 @@ pub(in crate::services::render) fn parse_list_pages_arguments_with_url(
         append_line,
         separate,
         wrapper,
+        wrapper_present,
         rss_title,
         rss_description,
         rss_home,

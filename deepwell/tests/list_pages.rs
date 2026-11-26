@@ -3778,7 +3778,7 @@ async fn listpages_total_counts_matches_beyond_the_query_window() {
         "ListPages total over query window",
         concat!(
             "[[module ListPages category=\"_default\" ",
-            "name=\"total-over-query-window-*\" perPage=\"1\" separate=\"no\"]]\n",
+            "name=\"total-over-query-window-*\" perPage=\"1\" separate=\"no\" wrapper=\"no\"]]\n",
             "TOTAL %%total%%\n",
             "[[/module]]",
         )

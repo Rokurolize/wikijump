@@ -5828,7 +5828,7 @@ async fn stacked_identical_listpages_modules_return_identical_totals() {
     }
 
     let module = format!(
-        "[[module ListPages tags=\"+{TAG}\" limit=\"5\" order=\"name\"]]\n%%total%%\n[[/module]]"
+        "[[module ListPages tags=\"+{TAG}\" limit=\"5\" order=\"name\" wrapper=\"no\"]]\n%%total%%\n[[/module]]"
     );
     let stacked_source = (0..4)
         .map(|_| module.clone())
@@ -5853,6 +5853,92 @@ async fn stacked_identical_listpages_modules_return_identical_totals() {
     assert!(
         !html.contains("%%total%%") && !html.contains("[[module ListPages"),
         "stacked ListPages totals should be substituted:\n{html}",
+    );
+}
+
+#[tokio::test]
+async fn listpages_total_only_body_without_wrapper_uses_default_presentation() {
+    const TAG: &str = "verification-listpages-total-fallback";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (slug, title, summary) in [
+        (
+            "fixture-listpages-total-fallback-alpha",
+            "Total Fallback Alpha",
+            "FALLBACK_SUMMARY_ALPHA",
+        ),
+        (
+            "fixture-listpages-total-fallback-beta",
+            "Total Fallback Beta",
+            "FALLBACK_SUMMARY_BETA",
+        ),
+        (
+            "fixture-listpages-total-fallback-gamma",
+            "Total Fallback Gamma",
+            "FALLBACK_SUMMARY_GAMMA",
+        ),
+    ] {
+        let revision =
+            create_listpages_test_page(&mut runner, site_id, slug, title, summary).await;
+        set_listpages_test_tags(&mut runner, site_id, slug, revision, &[TAG]).await;
+    }
+
+    let module = |wrapper: &str| {
+        format!(
+            "[[module ListPages tags=\"+{TAG}\" order=\"name\" separate=\"false\"{wrapper}]]\n%%total%%\n[[/module]]"
+        )
+    };
+    let preview = |wikitext: String| {
+        json!({
+            "site_id": site_id,
+            "title": "total-only-fallback",
+            "wikitext": wikitext,
+        })
+    };
+    let fallback_html =
+        run_endpoint!(runner, wikidot_page_preview, preview(module("")),).body;
+    let wrapped_html = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        preview(module(" wrapper=\"no\"")),
+    )
+    .body;
+
+    assert!(
+        fallback_html.contains(r#"<div class="list-pages-box""#),
+        "the absent-wrapper total-only body should use the default ListPages container:\n{fallback_html}",
+    );
+    for (title, summary) in [
+        ("Total Fallback Alpha", "FALLBACK_SUMMARY_ALPHA"),
+        ("Total Fallback Beta", "FALLBACK_SUMMARY_BETA"),
+        ("Total Fallback Gamma", "FALLBACK_SUMMARY_GAMMA"),
+    ] {
+        assert!(
+            fallback_html.contains(title) && fallback_html.contains(summary),
+            "the default presentation should contain {title} and its summary:\n{fallback_html}",
+        );
+    }
+    assert!(
+        fallback_html.contains("printuser avatarhover"),
+        "the default presentation should contain the row byline:\n{fallback_html}",
+    );
+    assert_eq!(
+        fallback_html.matches(">3<").count(),
+        0,
+        "the ignored total-only body must not render the total once per row:\n{fallback_html}",
+    );
+    assert_eq!(
+        wrapped_html.matches(">3<").count(),
+        3,
+        "an explicit wrapper attribute must keep the total-only row body:\n{wrapped_html}",
+    );
+    assert!(
+        !wrapped_html.contains("FALLBACK_SUMMARY_ALPHA"),
+        "an explicit wrapper attribute must not activate the default presentation:\n{wrapped_html}",
     );
 }
 
@@ -5887,7 +5973,7 @@ async fn listpages_total_counts_parentless_pages_for_parent_dash() {
             "site_id": site_id,
             "title": "parent-dash-total",
             "wikitext": format!(
-                "[[module ListPages tags=\"+{TAG}\" parent=\"-\"]]\n%%total%%\n[[/module]]"
+                "[[module ListPages tags=\"+{TAG}\" parent=\"-\" wrapper=\"no\"]]\n%%total%%\n[[/module]]"
             ),
         }),
     )
@@ -5932,7 +6018,7 @@ async fn listpages_total_matches_for_rating_order_and_excluded_tag_shapes() {
             "site_id": site_id,
             "title": "rating-order-total",
             "wikitext": format!(
-                "[[module ListPages tags=\"+{TAG}\" order=\"rating\"]]\n%%total%%\n[[/module]]"
+                "[[module ListPages tags=\"+{TAG}\" order=\"rating\" wrapper=\"no\"]]\n%%total%%\n[[/module]]"
             ),
         }),
     )
@@ -5955,7 +6041,7 @@ async fn listpages_total_matches_for_rating_order_and_excluded_tag_shapes() {
             "site_id": site_id,
             "title": "excluded-tag-total",
             "wikitext": format!(
-                "[[module ListPages tags=\"+{TAG} -{EXCLUDED}\"]]\n%%total%%\n[[/module]]"
+                "[[module ListPages tags=\"+{TAG} -{EXCLUDED}\" wrapper=\"no\"]]\n%%total%%\n[[/module]]"
             ),
         }),
     )
@@ -5999,7 +6085,7 @@ async fn computed_order_shapes_return_identical_totals() {
                 "site_id": site_id,
                 "title": format!("computed-order-{order}"),
                 "wikitext": format!(
-                    "[[module ListPages tags=\"+{TAG}\" order=\"{order}\"]]\n%%total%%\n[[/module]]"
+                    "[[module ListPages tags=\"+{TAG}\" order=\"{order}\" wrapper=\"no\"]]\n%%total%%\n[[/module]]"
                 ),
             }),
         )

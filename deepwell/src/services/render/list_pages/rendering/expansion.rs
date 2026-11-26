@@ -34,6 +34,17 @@ use super::{
     url_offset_list_pages_content_bytes,
 };
 
+fn list_pages_template_with_total_only_default_fallback(
+    mut template: ListPagesTemplatePlan,
+    wrapper_present: bool,
+) -> ListPagesTemplatePlan {
+    if !wrapper_present && template.uses_only_total() {
+        template = ListPagesTemplatePlan::compile("")
+            .expect("the default ListPages template compiles");
+    }
+    template
+}
+
 impl RenderService {
     pub(in crate::services::render) async fn expand_list_pages_nested(
         args: ListPagesNestedExpansionArgs<'_, '_, '_, '_>,
@@ -422,14 +433,21 @@ impl RenderService {
                             {
                                 fail_closed_unknown_tracking_plan(compat_html)
                             }
-                            Some(template) => ListPagesBlockPlan::Render(Box::new(
-                                ListPagesRenderPlan {
-                                    arguments,
-                                    template,
-                                    batch_key: None,
-                                    legacy_tail: None,
-                                },
-                            )),
+                            Some(template) => {
+                                let template =
+                                    list_pages_template_with_total_only_default_fallback(
+                                        template,
+                                        arguments.wrapper_present,
+                                    );
+                                ListPagesBlockPlan::Render(Box::new(
+                                    ListPagesRenderPlan {
+                                        arguments,
+                                        template,
+                                        batch_key: None,
+                                        legacy_tail: None,
+                                    },
+                                ))
+                            }
                             None => unsupported_plan(module_original, body),
                         }
                     } else {
@@ -504,6 +522,11 @@ impl RenderService {
                         if unsafe_unknown_tracking_template(&template) {
                             fail_closed_unknown_tracking_plan(compat_html)
                         } else {
+                            let template =
+                                list_pages_template_with_total_only_default_fallback(
+                                    template,
+                                    arguments.wrapper_present,
+                                );
                             let batch_key = exact_name_list_pages_batch_key(
                                 head,
                                 &template,
