@@ -112,6 +112,92 @@ pub(super) fn native_list_page_link_ref(target: &str) -> Option<PageRef> {
     native_list_page_link_slug(target).map(PageRef::page_only)
 }
 
+#[derive(Debug)]
+pub(super) struct InnerPreparedRenderWikitext {
+    pub(super) wikitext: String,
+    pub(super) included_pages: Vec<PageRef>,
+    pub(super) protection: RenderProtectionBundle,
+    pub(super) wikidot_compat_links: Vec<ProtectedWikidotCompatLink>,
+    pub(super) wikidot_wikipedia_links: Vec<ProtectedWikidotWikipediaLink>,
+    pub(super) wikidot_embed_iframes: Vec<String>,
+    pub(super) timings: CorpusReplayStageTimings,
+}
+
+#[derive(Debug)]
+pub(super) struct ParsedFtmlRender {
+    pub(super) prepared: InnerPreparedRenderWikitext,
+    pub(super) tree: SyntaxTree<'static>,
+    pub(super) errors: Vec<ParseError>,
+}
+
+impl ParsedFtmlRender {
+    pub(super) fn parse(
+        prepared: InnerPreparedRenderWikitext,
+        page_info: &PageInfo<'_>,
+        settings: &WikitextSettings,
+        trace: Option<(&CorpusRenderTrace, CorpusRenderScope)>,
+    ) -> Self {
+        if let Some((trace, scope)) = trace {
+            trace.add_us(
+                scope,
+                CorpusRenderStage::InnerProtect,
+                prepared.timings.inner_protection_us,
+            );
+            trace.add_us(
+                scope,
+                CorpusRenderStage::Preprocess,
+                prepared.timings.preprocess_us,
+            );
+        }
+        let tokens = {
+            let _stage = StageGuard::new(trace, CorpusRenderStage::Tokenize);
+            ftml::tokenize(&prepared.wikitext)
+        };
+        let result = {
+            let _stage = StageGuard::new(trace, CorpusRenderStage::Parse);
+            ftml::parse(&tokens, page_info, settings)
+        };
+        let (tree, errors) = result.into();
+        let tree = tree.to_owned();
+
+        Self {
+            prepared,
+            tree,
+            errors,
+        }
+    }
+
+    pub(super) fn render(
+        &self,
+        page_info: &PageInfo<'_>,
+        settings: &WikitextSettings,
+        page_existence: Option<&crate::services::PageExistenceSnapshot>,
+        user_info: &UserInfoSnapshot,
+        trace: Option<(&CorpusRenderTrace, CorpusRenderScope)>,
+    ) -> HtmlOutput {
+        let _stage = StageGuard::new(trace, CorpusRenderStage::HtmlRender);
+        match page_existence {
+            Some(page_existence) => HtmlRender.render_with_resolvers(
+                &self.tree,
+                page_info,
+                settings,
+                page_existence,
+                user_info,
+            ),
+            None => HtmlRender
+                .render_with_user_info(&self.tree, page_info, settings, user_info),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct FtmlRenderOutput {
+    pub(super) html_output: HtmlOutput,
+    pub(super) errors: Vec<ParseError>,
+    pub(super) html_block_texts: Vec<String>,
+    pub(super) code_blocks: Vec<CodeBlock<'static>>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -213,90 +299,4 @@ mod tests {
             ])
         );
     }
-}
-
-#[derive(Debug)]
-pub(super) struct InnerPreparedRenderWikitext {
-    pub(super) wikitext: String,
-    pub(super) included_pages: Vec<PageRef>,
-    pub(super) protection: RenderProtectionBundle,
-    pub(super) wikidot_compat_links: Vec<ProtectedWikidotCompatLink>,
-    pub(super) wikidot_wikipedia_links: Vec<ProtectedWikidotWikipediaLink>,
-    pub(super) wikidot_embed_iframes: Vec<String>,
-    pub(super) timings: CorpusReplayStageTimings,
-}
-
-#[derive(Debug)]
-pub(super) struct ParsedFtmlRender {
-    pub(super) prepared: InnerPreparedRenderWikitext,
-    pub(super) tree: SyntaxTree<'static>,
-    pub(super) errors: Vec<ParseError>,
-}
-
-impl ParsedFtmlRender {
-    pub(super) fn parse(
-        prepared: InnerPreparedRenderWikitext,
-        page_info: &PageInfo<'_>,
-        settings: &WikitextSettings,
-        trace: Option<(&CorpusRenderTrace, CorpusRenderScope)>,
-    ) -> Self {
-        if let Some((trace, scope)) = trace {
-            trace.add_us(
-                scope,
-                CorpusRenderStage::InnerProtect,
-                prepared.timings.inner_protection_us,
-            );
-            trace.add_us(
-                scope,
-                CorpusRenderStage::Preprocess,
-                prepared.timings.preprocess_us,
-            );
-        }
-        let tokens = {
-            let _stage = StageGuard::new(trace, CorpusRenderStage::Tokenize);
-            ftml::tokenize(&prepared.wikitext)
-        };
-        let result = {
-            let _stage = StageGuard::new(trace, CorpusRenderStage::Parse);
-            ftml::parse(&tokens, page_info, settings)
-        };
-        let (tree, errors) = result.into();
-        let tree = tree.to_owned();
-
-        Self {
-            prepared,
-            tree,
-            errors,
-        }
-    }
-
-    pub(super) fn render(
-        &self,
-        page_info: &PageInfo<'_>,
-        settings: &WikitextSettings,
-        page_existence: Option<&crate::services::PageExistenceSnapshot>,
-        user_info: &UserInfoSnapshot,
-        trace: Option<(&CorpusRenderTrace, CorpusRenderScope)>,
-    ) -> HtmlOutput {
-        let _stage = StageGuard::new(trace, CorpusRenderStage::HtmlRender);
-        match page_existence {
-            Some(page_existence) => HtmlRender.render_with_resolvers(
-                &self.tree,
-                page_info,
-                settings,
-                page_existence,
-                user_info,
-            ),
-            None => HtmlRender
-                .render_with_user_info(&self.tree, page_info, settings, user_info),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub(super) struct FtmlRenderOutput {
-    pub(super) html_output: HtmlOutput,
-    pub(super) errors: Vec<ParseError>,
-    pub(super) html_block_texts: Vec<String>,
-    pub(super) code_blocks: Vec<CodeBlock<'static>>,
 }

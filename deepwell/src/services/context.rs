@@ -86,77 +86,6 @@ impl RequestContext {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::types::Reference;
-    use std::borrow::Cow;
-    use time::OffsetDateTime;
-
-    fn session_model() -> SessionModel {
-        SessionModel {
-            session_token: str!("token"),
-            user_id: 42,
-            created_at: OffsetDateTime::UNIX_EPOCH,
-            expires_at: OffsetDateTime::UNIX_EPOCH,
-            ip_address: "127.0.0.1".parse().expect("test IP"),
-            user_agent: str!("test"),
-            restricted: false,
-            mfa_failed_attempts: 0,
-        }
-    }
-
-    #[test]
-    fn request_context_accessors_return_present_values() {
-        let context = RequestContext {
-            session: Some(session_model()),
-            user_id: Some(42),
-            site_id: Some(7),
-            page_reference: Some(Reference::Slug(Cow::Borrowed("page"))),
-        };
-
-        assert_eq!(context.user_session().unwrap().session_token, "token");
-        assert_eq!(context.user_id().unwrap(), 42);
-        assert_eq!(context.site_id().unwrap(), 7);
-        assert_eq!(
-            context.page_reference().unwrap(),
-            &Reference::Slug(Cow::Borrowed("page")),
-        );
-    }
-
-    #[test]
-    fn request_context_accessors_reject_absent_values() {
-        let context = RequestContext::default();
-
-        assert!(context.user_session().is_err());
-        assert!(context.user_id().is_err());
-        assert!(context.site_id().is_err());
-        assert!(context.page_reference().is_err());
-    }
-
-    #[test]
-    fn text_block_cleanup_action_carries_exact_filenames() {
-        let action = PostCommitAction::delete_text_block_objects(vec![
-            str!("page-42_code_1.blk"),
-            str!("page-42_html_1.blk"),
-        ]);
-
-        match action {
-            Some(PostCommitAction::DeleteTextBlockObjects { filenames }) => {
-                assert_eq!(filenames, ["page-42_code_1.blk", "page-42_html_1.blk"]);
-            }
-            other => panic!("expected a DeleteTextBlockObjects action, got {other:?}"),
-        }
-    }
-
-    #[test]
-    fn text_block_cleanup_action_empty_filenames_queue_nothing() {
-        let action = PostCommitAction::delete_text_block_objects(Vec::new());
-
-        assert!(action.is_none());
-    }
-}
-
 #[derive(Debug)]
 pub struct ServiceContext<'txn> {
     state: ServerState,
@@ -721,5 +650,76 @@ impl<'txn> ServiceContext<'txn> {
         )
         .await
         .or_raise(make_error)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::Reference;
+    use std::borrow::Cow;
+    use time::OffsetDateTime;
+
+    fn session_model() -> SessionModel {
+        SessionModel {
+            session_token: str!("token"),
+            user_id: 42,
+            created_at: OffsetDateTime::UNIX_EPOCH,
+            expires_at: OffsetDateTime::UNIX_EPOCH,
+            ip_address: "127.0.0.1".parse().expect("test IP"),
+            user_agent: str!("test"),
+            restricted: false,
+            mfa_failed_attempts: 0,
+        }
+    }
+
+    #[test]
+    fn request_context_accessors_return_present_values() {
+        let context = RequestContext {
+            session: Some(session_model()),
+            user_id: Some(42),
+            site_id: Some(7),
+            page_reference: Some(Reference::Slug(Cow::Borrowed("page"))),
+        };
+
+        assert_eq!(context.user_session().unwrap().session_token, "token");
+        assert_eq!(context.user_id().unwrap(), 42);
+        assert_eq!(context.site_id().unwrap(), 7);
+        assert_eq!(
+            context.page_reference().unwrap(),
+            &Reference::Slug(Cow::Borrowed("page")),
+        );
+    }
+
+    #[test]
+    fn request_context_accessors_reject_absent_values() {
+        let context = RequestContext::default();
+
+        assert!(context.user_session().is_err());
+        assert!(context.user_id().is_err());
+        assert!(context.site_id().is_err());
+        assert!(context.page_reference().is_err());
+    }
+
+    #[test]
+    fn text_block_cleanup_action_carries_exact_filenames() {
+        let action = PostCommitAction::delete_text_block_objects(vec![
+            str!("page-42_code_1.blk"),
+            str!("page-42_html_1.blk"),
+        ]);
+
+        match action {
+            Some(PostCommitAction::DeleteTextBlockObjects { filenames }) => {
+                assert_eq!(filenames, ["page-42_code_1.blk", "page-42_html_1.blk"]);
+            }
+            other => panic!("expected a DeleteTextBlockObjects action, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn text_block_cleanup_action_empty_filenames_queue_nothing() {
+        let action = PostCommitAction::delete_text_block_objects(Vec::new());
+
+        assert!(action.is_none());
     }
 }

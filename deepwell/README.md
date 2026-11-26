@@ -52,7 +52,7 @@ JSON-RPC methods are registered in `api.rs`, decoded and authorized in `endpoint
 
 ### Compilation
 
-This executable targets the latest stable Rust. The pinned toolchain is `1.100.0`, as recorded in the repository's `rust-toolchain.toml`.
+This executable targets the pinned nightly Rust toolchain `nightly-2026-11-26`, as recorded in the repository's `rust-toolchain.toml`.
 
 At present the crate has one feature:
 * `watch` &mdash; Enables a feature to track the locale directory and configuration file, reloading the server if they are modified. This should be used in local builds only, not in production.

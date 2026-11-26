@@ -8,8 +8,7 @@ not rebuild an image or reinstall dependencies.
 
 ## Deterministic toolchain
 
-Rust is selected by `rust-toolchain.toml` (`1.100.0`). The local Rust images are
-pinned to `rust:1.100.0@sha256:e19840879045c951c905d0eaa9887f3439c62000e429963371b376bac8d38c31`.
+Rust is selected by `rust-toolchain.toml` (`nightly-2026-11-26`). The local Rust images are pinned to `rustlang/rust:nightly@sha256:b3d2bf816722790f1d34c5e6e06f42520ea745b5aaae6e170787579cc979427e`, whose `RUST_VERSION` is `nightly-2026-11-26`.
 Node and pnpm are pinned to `24.22.1` and `11.10.0`; the local Node image is
 `node:24.22.1-alpine@sha256:6a1c190e17215d844926b0677f4bf87273ff7d5e54db06d3b5b5863ab0b09a3d`.
 The Rust watcher helpers are `cargo-watch 8.5.3` and `sqlx-cli 0.9.0`.
