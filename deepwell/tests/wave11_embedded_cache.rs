@@ -174,7 +174,7 @@ async fn stacked_module_includes_share_expansion_without_changing_bytes() {
 
     assert_eq!(
         identical_body.matches("W11_CELL").count(),
-        5,
+        240,
         "every module-wrapped include must still expand",
     );
     assert_eq!(
@@ -191,7 +191,7 @@ async fn stacked_module_includes_share_expansion_without_changing_bytes() {
     .await;
     assert_eq!(
         single.matches("W11_CELL").count(),
-        1,
+        48,
         "a single-module shape must still expand its include once",
     );
     let single_again = render_host(

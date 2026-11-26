@@ -729,6 +729,14 @@ impl PageQueryService {
             tag_custom_plan,
             disable_nestloop,
         } = built;
+        let defer_offset_limit = ordering_deferred_to_rust
+            || filtering_deferred_to_rust
+            || hard_candidate_limit.is_some();
+        let sql_limit_offset_applied =
+            !defer_offset_limit && (offset > 0 || pagination.limit.is_some());
+        let filtered_candidate_count_query =
+            sql_limit_offset_applied.then(|| query.clone());
+
         if projects_effective_revision_count {
             query = query.column_as(
                 SimpleExpr::Custom(effective_revision_count_sql("page.page_id").into()),
@@ -740,11 +748,6 @@ impl PageQueryService {
             query = apply_sql_ordering(query, &order, needs_tag_filter, site_id);
         }
 
-        let defer_offset_limit = ordering_deferred_to_rust
-            || filtering_deferred_to_rust
-            || hard_candidate_limit.is_some();
-        let sql_limit_offset_applied =
-            !defer_offset_limit && (offset > 0 || pagination.limit.is_some());
         if !defer_offset_limit {
             if offset > 0 {
                 query = query.offset(u64::from(offset));
@@ -776,6 +779,14 @@ impl PageQueryService {
                 .await
                 .or_raise(make_error)?;
         }
+
+        let filtered_candidate_count = match filtered_candidate_count_query {
+            Some(count_query) => {
+                let count = count_query.count(txn).await.or_raise(make_error)?;
+                Some(usize::try_from(count).or_raise(make_error)?)
+            }
+            None => None,
+        };
 
         let (mut pages, effective_revision_count_by_page_id) =
             if projects_effective_revision_count {
@@ -816,7 +827,11 @@ impl PageQueryService {
             )
             .into());
         }
-        let candidate_count = Some(pages.len());
+        let candidate_count = if sql_limit_offset_applied {
+            filtered_candidate_count
+        } else {
+            Some(pages.len())
+        };
         let cap_exceeded = defer_offset_limit
             && candidate_limit
                 .and_then(|limit| usize::try_from(limit).ok())

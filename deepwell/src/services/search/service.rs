@@ -326,7 +326,7 @@ impl SearchService {
                         coalesce(pr.title, p.slug) AS title,
                         ts_headline('english'::regconfig,
                                     coalesce(t.contents, ''),
-                                    search_query.tsq,
+                                    {rank_source},
                                     'StartSel={start}, StopSel={stop}, MaxFragments=1, MaxWords=30, MinWords=10') AS snippet,
                         ts_rank_cd(p.search_vector, {rank_source}) AS rank
                    FROM site_pages p

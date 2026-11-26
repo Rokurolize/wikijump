@@ -317,7 +317,7 @@ fn score_order_keeps_deferred_tie_break_ordering_in_sql() {
         );
         assert!(
             sql.contains(
-                "COALESCE(translate(page_revision.title, 'A-Z', 'a-z'), '') ASC"
+                "COALESCE(translate(page_revision.title, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '') ASC"
             ),
             "{sql}",
         );
