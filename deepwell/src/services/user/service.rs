@@ -41,6 +41,7 @@ use crate::services::{AliasService, FilterService, PasswordService, RelationServ
 use crate::types::{AliasType, UserType};
 use crate::types::{Maybe, Reference};
 use crate::utils::confusable_skeleton;
+use crate::utils::contains_invisible_format_characters;
 use crate::utils::now;
 use crate::utils::regex_replace_in_place;
 use paste::paste;
@@ -267,6 +268,14 @@ impl UserService {
         };
 
         check_user_name(ctx.config(), &slug, &name)?;
+
+        if contains_invisible_format_characters(&email) {
+            error!("User email contains invisible format characters");
+            bail!(Error::new(
+                "cannot use email, it contains invisible format characters",
+                ErrorType::InvalidEmail,
+            ));
+        }
 
         if should_check_filter(bypass_filter, user_type, None) {
             let object = ObjectScope::User(user_id);
@@ -1060,6 +1069,14 @@ impl UserService {
         let email_changed = updated_email != user.email;
 
         if let Maybe::Set(email) = input.email {
+            if contains_invisible_format_characters(&email) {
+                error!("User email contains invisible format characters");
+                bail!(Error::new(
+                    "cannot use email, it contains invisible format characters",
+                    ErrorType::InvalidEmail,
+                ));
+            }
+
             if should_check_filter {
                 Self::run_email_filter(
                     ctx,
@@ -1405,6 +1422,8 @@ impl UserService {
         let new_slug = get_user_slug(&new_name, user.user_type);
         let old_slug = &user.slug;
 
+        check_user_name(ctx.config(), &new_slug, &new_name)?;
+
         let make_error = || {
             Error::new(
                 format!("failed to update name '{}' -> '{}'", old_slug, new_slug),
@@ -1483,8 +1502,6 @@ impl UserService {
 
             return Ok(());
         }
-
-        check_user_name(ctx.config(), &new_slug, &new_name)?;
 
         if user.name_changes_left == 0 {
             error!("User ID {} has no remaining name changes", user.user_id);
@@ -1981,6 +1998,16 @@ fn get_user_slug(name: &str, user_type: UserType) -> String {
 }
 
 fn check_user_name(config: &Config, slug: &str, name: &str) -> Result<()> {
+    if contains_invisible_format_characters(slug)
+        || contains_invisible_format_characters(name)
+    {
+        error!("User name contains invisible format characters");
+        bail!(Error::new(
+            "cannot use user name, it contains invisible format characters",
+            ErrorType::UserNameInvalidCharacters,
+        ));
+    }
+
     if slug.is_empty() {
         error!("Cannot create user with empty slug");
         bail!(Error::new(

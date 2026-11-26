@@ -2222,6 +2222,302 @@ async fn user_create_and_email_change_reject_duplicate_emails() {
 }
 
 #[tokio::test]
+async fn user_create_and_email_change_reject_invisible_format_emails() {
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+
+    let first = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Format Email Owner",
+            "email": "format-mail@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(first.user_id > 0);
+
+    let error = run_endpoint_err!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Format Email Claimant",
+            "email": "format-ma\u{200c}il@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::InvalidEmail);
+
+    let changer = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Format Email Changer",
+            "email": "format-changer@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(changer.user_id),
+        ..Default::default()
+    });
+
+    let error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": changer.user_id,
+            "email": "format-ma\u{200c}il@example.invalid",
+            "current_password": "password-fixture",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::InvalidEmail);
+
+    let changed = run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": changer.user_id,
+            "email": "format-changer+new@example.invalid",
+            "current_password": "password-fixture",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_str_eq!(changed.email, Some("format-changer+new@example.invalid"));
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+
+    let nonascii = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Nonascii Mailbox User",
+            "email": "ユーザー+tag@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(nonascii.user_id > 0);
+}
+
+#[tokio::test]
+async fn user_create_and_rename_reject_invisible_format_names() {
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+
+    let victim = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "artex-hunter-c",
+            "email": "format-name-victim@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "bypass_filter": true,
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(victim.slug, "artex-hunter-c");
+
+    let error = run_endpoint_err!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "artex-h\u{200b}unter-c",
+            "email": "format-name-fold@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "bypass_filter": true,
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::UserNameInvalidCharacters);
+
+    let error = run_endpoint_err!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Isolate \u{2066}User",
+            "email": "format-name-isolate@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "bypass_filter": true,
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::UserNameInvalidCharacters);
+
+    let spaced = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Ordinary Space-Name",
+            "email": "format-name-spaced@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "bypass_filter": true,
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(spaced.slug, "ordinary-space-name");
+
+    let nonascii = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Élodie Durand",
+            "email": "format-name-nonascii@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "bypass_filter": true,
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(nonascii.user_id > 0);
+
+    let attacker = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Format Rename User",
+            "email": "format-name-rename@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "bypass_filter": true,
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(attacker.user_id),
+        ..Default::default()
+    });
+
+    let error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": attacker.user_id,
+            "name": "artex-h\u{200b}unter-c",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::UserNameInvalidCharacters);
+
+    let renamed = run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": attacker.user_id,
+            "name": "Valid Renamed-Name",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(renamed.slug, "valid-renamed-name");
+}
+
+#[tokio::test]
+async fn user_import_rejects_invisible_format_names_and_emails() {
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+
+    insert_wikidot_user(
+        &runner,
+        700_031,
+        "Import\u{200b}ed User",
+        "imported-format-user",
+        false,
+        0,
+        false,
+    )
+    .await;
+
+    let error = run_endpoint_err!(
+        runner,
+        user_import,
+        json!({
+            "user_type": "regular",
+            "name": "Import\u{200b}ed User",
+            "email": "import-format-name@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "bypass_email_verification": true,
+            "override_user_id": 700_031_i64,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::UserNameInvalidCharacters);
+
+    insert_wikidot_user(
+        &runner,
+        700_032,
+        "Imported Mail User",
+        "imported-mail-user",
+        false,
+        0,
+        false,
+    )
+    .await;
+
+    let error = run_endpoint_err!(
+        runner,
+        user_import,
+        json!({
+            "user_type": "regular",
+            "name": "Imported Mail User",
+            "email": "import-ma\u{200c}il@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "bypass_email_verification": true,
+            "override_user_id": 700_032_i64,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::InvalidEmail);
+}
+
+#[tokio::test]
 async fn user_create_and_rename_reject_confusable_names() {
     let mut runner = TestRunner::setup().await;
     runner.set_request_context(RequestContext {

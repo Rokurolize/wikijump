@@ -166,6 +166,7 @@ pub enum ErrorType {
     BadRequest,
 
     UserNameTooShort,
+    UserNameInvalidCharacters,
     UserSlugEmpty,
     UserEmailEmpty,
     UserWrongType,
@@ -435,6 +436,7 @@ impl ErrorType {
             ErrorType::BadRequest => 4000,
 
             ErrorType::UserNameTooShort => 4100,
+            ErrorType::UserNameInvalidCharacters => 4113,
             ErrorType::UserSlugEmpty => 4101,
             ErrorType::UserEmailEmpty => 4102,
             ErrorType::UserWrongType => 4103,
@@ -665,6 +667,9 @@ impl ErrorType {
             ErrorType::BadRequest => "The request is in some way malformed or incorrect",
 
             ErrorType::UserNameTooShort => "User name is too short",
+            ErrorType::UserNameInvalidCharacters => {
+                "User name contains invisible format characters"
+            }
             ErrorType::UserSlugEmpty => "User slug cannot be empty",
             ErrorType::UserEmailEmpty => "User email cannot be empty",
             ErrorType::UserWrongType => "Wrong user type for this operation",
@@ -1035,6 +1040,7 @@ mod tests {
             ),
             (ErrorType::BadRequest, 4000),
             (ErrorType::UserNameTooShort, 4100),
+            (ErrorType::UserNameInvalidCharacters, 4113),
             (ErrorType::UserSlugEmpty, 4101),
             (ErrorType::UserEmailEmpty, 4102),
             (ErrorType::UserWrongType, 4103),

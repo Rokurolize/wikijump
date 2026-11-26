@@ -29,7 +29,9 @@ use super::{
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::runtime::ServerState;
 use crate::services::{DomainService, ServiceContext};
-use crate::utils::{parse_locales, strip_fluent_control_chars};
+use crate::utils::{
+    contains_invisible_format_characters, parse_locales, strip_fluent_control_chars,
+};
 use fluent::{FluentArgs, FluentValue};
 use missive::{Address, DeliveryResult, Email};
 use unic_langid::LanguageIdentifier;
@@ -478,7 +480,9 @@ impl EmailService {
 }
 
 pub(crate) fn is_well_formed_email(email: &str) -> bool {
-    if email.chars().any(|c| c.is_whitespace() || c.is_control()) {
+    if email.chars().any(|c| c.is_whitespace() || c.is_control())
+        || contains_invisible_format_characters(email)
+    {
         return false;
     }
     let Some((local, domain)) = email.split_once('@') else {
@@ -498,6 +502,13 @@ mod tests {
             status,
             error: str!("error"),
         })
+    }
+
+    #[test]
+    fn invisible_format_characters_are_not_well_formed() {
+        assert!(!is_well_formed_email("format-ma\u{200c}il@example.invalid"));
+        assert!(!is_well_formed_email("\u{feff}format-mail@example.invalid"));
+        assert!(is_well_formed_email("ユーザー+tag@example.invalid"));
     }
 
     #[test]
