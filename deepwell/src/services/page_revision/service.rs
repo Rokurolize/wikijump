@@ -390,6 +390,7 @@ impl PageRevisionService {
             alt_title,
             slug,
             layout,
+            tags,
         }: CreateFirstPageRevision,
     ) -> Result<CreateFirstPageRevisionOutput> {
         let txn = ctx.transaction();
@@ -433,7 +434,7 @@ impl PageRevisionService {
             title: &title,
             alt_title: alt_title.ref_map(|s| s.as_str()),
             score,
-            tags: &[], // Initial revision always has empty tags
+            tags: &tags,
         };
 
         let RenderPageOutput {
@@ -479,7 +480,7 @@ impl PageRevisionService {
             title: Set(title),
             alt_title: Set(alt_title),
             slug: Set(slug),
-            tags: Set(vec![]),
+            tags: Set(tags),
             ..Default::default()
         };
 
