@@ -21,6 +21,7 @@
 use super::categories::{ModuleQueryCache, wikidot_category_sort_key};
 use super::compat::CompatHtmlFragments;
 use super::literal_regions::LiteralRegionIndex;
+use super::runtime_modules::ViewerModuleContext;
 use super::service::{
     RenderService, escape_list_pages_html_attr, escape_list_pages_html_text,
     format_wikidot_list_pages_date,
@@ -166,8 +167,7 @@ pub(super) async fn expand_site_changes_modules(
     wikitext: String,
     settings: &WikitextSettings,
     current_site_id: Option<i64>,
-    viewer_user_id: Option<i64>,
-    view_independent_compiled: bool,
+    viewer: ViewerModuleContext,
     module_query_cache: &mut ModuleQueryCache,
     compat_html: &mut CompatHtmlFragments,
 ) -> Result<String> {
@@ -175,7 +175,7 @@ pub(super) async fn expand_site_changes_modules(
         return Ok(wikitext);
     }
     let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
-    if view_independent_compiled {
+    if viewer.view_independent_compiled {
         let mut output = String::with_capacity(wikitext.len());
         let mut cursor = 0;
         for matched in SITE_CHANGES_MODULE_REGEX.find_iter(&wikitext) {
@@ -201,7 +201,7 @@ pub(super) async fn expand_site_changes_modules(
     let snapshot = match load_site_changes_snapshot(
         ctx,
         current_site_id,
-        viewer_user_id,
+        viewer.viewer_user_id,
         module_query_cache,
         WikidotSiteChangesModuleRequest {
             page: 1,

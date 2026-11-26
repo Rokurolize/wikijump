@@ -410,6 +410,12 @@ pub(super) struct RuntimeModuleExpansionState<'a> {
 }
 
 #[derive(Clone, Copy, Debug)]
+pub(super) struct ViewerModuleContext {
+    pub(super) viewer_user_id: Option<i64>,
+    pub(super) view_independent_compiled: bool,
+}
+
+#[derive(Clone, Copy, Debug)]
 pub(super) struct SecondaryRuntimeModuleExpansionOptions<'a> {
     pub(super) current_site_id: Option<i64>,
     pub(super) current_page_id: Option<i64>,
@@ -1285,8 +1291,10 @@ impl RenderService {
             wikitext,
             settings,
             page_info,
-            options.viewer_user_id,
-            options.view_independent_compiled,
+            ViewerModuleContext {
+                viewer_user_id: options.viewer_user_id,
+                view_independent_compiled: options.view_independent_compiled,
+            },
             options.url,
             compat_html,
         )
@@ -1365,8 +1373,10 @@ impl RenderService {
             wikitext,
             settings,
             options.current_site_id,
-            options.viewer_user_id,
-            options.view_independent_compiled,
+            ViewerModuleContext {
+                viewer_user_id: options.viewer_user_id,
+                view_independent_compiled: options.view_independent_compiled,
+            },
             module_query_cache,
             compat_html,
         )

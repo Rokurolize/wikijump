@@ -1,7 +1,7 @@
 use super::{
     CompatHtmlFragments, ConnectionTrait, DomainService, Error, ErrorType,
     FromQueryResult, LazyLock, LiteralRegionIndex, PageInfo, Regex, Result, ResultExt,
-    ServiceContext, Statement, UrlArguments, WikitextSettings,
+    ServiceContext, Statement, UrlArguments, ViewerModuleContext, WikitextSettings,
     escape_list_pages_html_attr, escape_list_pages_html_text,
 };
 use crate::models::site::{Column as SiteColumn, Entity as Site};
@@ -44,8 +44,7 @@ pub(super) async fn expand(
     wikitext: String,
     settings: &WikitextSettings,
     page_info: &PageInfo<'_>,
-    viewer_user_id: Option<i64>,
-    view_independent_compiled: bool,
+    viewer: ViewerModuleContext,
     url: UrlArguments<'_>,
     compat_html: &mut CompatHtmlFragments,
 ) -> Result<String> {
@@ -62,10 +61,10 @@ pub(super) async fn expand(
             continue;
         }
         output.push_str(&wikitext[cursor..matched.start()]);
-        let html = if view_independent_compiled {
+        let html = if viewer.view_independent_compiled {
             VIEW_INDEPENDENT_SITES_HTML.to_owned()
         } else {
-            render_sites(ctx, viewer_user_id, url.page.unwrap_or(1)).await?
+            render_sites(ctx, viewer.viewer_user_id, url.page.unwrap_or(1)).await?
         };
         output.push_str(&retain_rendered_html(html, compat_html));
         cursor = matched.end();
@@ -73,26 +72,10 @@ pub(super) async fn expand(
     if cursor > 0 {
         output.push_str(&wikitext[cursor..]);
     } else {
-        return expand_activity(
-            ctx,
-            wikitext,
-            settings,
-            viewer_user_id,
-            view_independent_compiled,
-            compat_html,
-        )
-        .await;
+        return expand_activity(ctx, wikitext, settings, viewer, compat_html).await;
     }
 
-    expand_activity(
-        ctx,
-        output,
-        settings,
-        viewer_user_id,
-        view_independent_compiled,
-        compat_html,
-    )
-    .await
+    expand_activity(ctx, output, settings, viewer, compat_html).await
 }
 
 fn upgrade_seeded_platform_page(wikitext: String, page_info: &PageInfo<'_>) -> String {
@@ -132,8 +115,7 @@ async fn expand_activity(
     ctx: &ServiceContext<'_>,
     wikitext: String,
     settings: &WikitextSettings,
-    viewer_user_id: Option<i64>,
-    view_independent_compiled: bool,
+    viewer: ViewerModuleContext,
     compat_html: &mut CompatHtmlFragments,
 ) -> Result<String> {
     if !settings.enable_page_syntax {
@@ -147,10 +129,10 @@ async fn expand_activity(
             continue;
         }
         output.push_str(&wikitext[cursor..matched.start()]);
-        let html = if view_independent_compiled {
+        let html = if viewer.view_independent_compiled {
             VIEW_INDEPENDENT_ACTIVITY_HTML.to_owned()
         } else {
-            render_activity(ctx, viewer_user_id).await?
+            render_activity(ctx, viewer.viewer_user_id).await?
         };
         output.push_str(&retain_rendered_html(html, compat_html));
         cursor = matched.end();
