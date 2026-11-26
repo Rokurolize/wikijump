@@ -27,7 +27,30 @@ use axum::http::status::StatusCode;
 // TODO
 
 pub async fn handle_robots_txt(headers: HeaderMap) -> StatusCode {
-    let _target_server = get_target_server(&headers);
+    let Some(_target_server) = get_target_server(&headers) else {
+        return StatusCode::NOT_FOUND;
+    };
 
     StatusCode::NOT_IMPLEMENTED
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::http::HeaderValue;
+
+    #[tokio::test]
+    async fn request_without_internal_headers_gets_an_http_response() {
+        assert_eq!(
+            handle_robots_txt(HeaderMap::new()).await,
+            StatusCode::NOT_FOUND,
+        );
+
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "x-wikijump-target-server",
+            HeaderValue::from_static("other"),
+        );
+        assert_eq!(handle_robots_txt(headers).await, StatusCode::NOT_FOUND);
+    }
 }

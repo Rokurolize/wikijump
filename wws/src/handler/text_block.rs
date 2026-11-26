@@ -82,7 +82,9 @@ async fn handle_text_block(
     page_slug: &str,
     block_id: BlockId,
 ) -> Response {
-    let site_id = get_site_id(headers);
+    let Some(site_id) = get_site_id(headers) else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
     let page_id = try_response!(state.get_page_or_response(headers, site_id, page_slug));
 
     let (index, s3_filename) = match block_id {

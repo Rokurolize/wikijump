@@ -30,7 +30,9 @@ use axum::http::status::StatusCode;
 // TODO
 
 pub async fn handle_well_known(headers: HeaderMap) -> StatusCode {
-    let _target_server = get_target_server(&headers);
+    let Some(_target_server) = get_target_server(&headers) else {
+        return StatusCode::NOT_FOUND;
+    };
 
     StatusCode::NOT_IMPLEMENTED
 }
