@@ -24,9 +24,6 @@ use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::page::Model as PageModel;
 use crate::models::page_revision::Model as PageRevisionModel;
 use crate::models::site::Model as SiteModel;
-use crate::services::{
-    PageService, ServiceContext, SiteService, TextService,
-};
 use crate::services::blueprint::BlueprintPageService;
 use crate::services::render::{
     RenderService, UrlArguments, wikitext_has_visibility_sensitive_module,
@@ -34,6 +31,7 @@ use crate::services::render::{
 };
 use crate::services::score::ScoreService;
 use crate::services::settings::SettingsService;
+use crate::services::{PageService, ServiceContext, SiteService, TextService};
 use crate::types::{PageId, Reference};
 use crate::utils::{locale_for_ftml, split_category};
 use exn::Exn;
@@ -164,10 +162,7 @@ pub(crate) async fn viewer_safe_compiled_body(
         SiteService::get(ctx, Reference::Id(site_id)),
     )
     .or_raise(|| {
-        Error::new(
-            "failed to load page for viewer-safe body",
-            ErrorType::Page,
-        )
+        Error::new("failed to load page for viewer-safe body", ErrorType::Page)
     })?;
     render_body_for_module_arguments(RenderBodyForModuleArgumentsInput {
         ctx,

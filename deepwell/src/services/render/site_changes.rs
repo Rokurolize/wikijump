@@ -183,9 +183,10 @@ pub(super) async fn expand_site_changes_modules(
                 continue;
             }
             output.push_str(&wikitext[cursor..matched.start()]);
-            output.push_str(&compat_html.push_block_html(
-                VIEW_INDEPENDENT_SITE_CHANGES_HTML.to_owned(),
-            ));
+            output.push_str(
+                &compat_html
+                    .push_block_html(VIEW_INDEPENDENT_SITE_CHANGES_HTML.to_owned()),
+            );
             cursor = matched.end();
         }
         if cursor == 0 {

@@ -13,8 +13,7 @@ const SITES_PER_PAGE: usize = 20;
 const MAX_SITE_SCAN: usize = 1_001;
 const ACTIVITY_ROWS: usize = 10;
 const ACTIVITY_SCAN: usize = 500;
-const VIEW_INDEPENDENT_ACTIVITY_HTML: &str =
-    r#"<div class="wikidot-runtime-module" data-wikidot-module="platform-activity"></div>"#;
+const VIEW_INDEPENDENT_ACTIVITY_HTML: &str = r#"<div class="wikidot-runtime-module" data-wikidot-module="platform-activity"></div>"#;
 const VIEW_INDEPENDENT_SITES_HTML: &str =
     r#"<div class="wikidot-runtime-module" data-wikidot-module="platform-sites"></div>"#;
 

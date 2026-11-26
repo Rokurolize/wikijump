@@ -315,25 +315,29 @@ impl RenderService {
                     });
                 }
             };
-            let stored_body_html =
-                match TextService::get(ctx, &revision.compiled_body_html_hash).await {
-                    Ok(body_html) => body_html,
-                    Err(error) if error.error_type == ErrorType::TextNotFound => {
-                        warn!(
-                            "Skipping incomplete ListPages RSS page ID {} ({:?}): no compiled body HTML exists",
-                            page.page_id, page.slug,
-                        );
-                        continue;
-                    }
-                    Err(error) => {
-                        return Err(error).or_raise(|| {
-                            Error::new(
-                                "failed to load ListPages feed page HTML",
-                                ErrorType::Render,
-                            )
-                        });
-                    }
-                };
+            let stored_body_html = match TextService::get(
+                ctx,
+                &revision.compiled_body_html_hash,
+            )
+            .await
+            {
+                Ok(body_html) => body_html,
+                Err(error) if error.error_type == ErrorType::TextNotFound => {
+                    warn!(
+                        "Skipping incomplete ListPages RSS page ID {} ({:?}): no compiled body HTML exists",
+                        page.page_id, page.slug,
+                    );
+                    continue;
+                }
+                Err(error) => {
+                    return Err(error).or_raise(|| {
+                        Error::new(
+                            "failed to load ListPages feed page HTML",
+                            ErrorType::Render,
+                        )
+                    });
+                }
+            };
             let body_html = viewer_safe_compiled_body(
                 ctx,
                 site_id,
