@@ -26,9 +26,10 @@ use crate::services::membership::{
     AcceptMembershipEmailInvitation, CreateMembershipEmailInvitation,
     ListMembershipApplications, MembershipApplicationOutcome,
     MembershipApplicationStatus, MembershipApplicationView,
-    MembershipEmailInvitationCreation, MembershipEmailInvitationOutcome,
-    MembershipJoinOutcome, MembershipPasswordOutcome, MembershipService,
-    ReviewMembershipApplication, SubmitMembershipApplication, SubmitMembershipPassword,
+    MembershipEmailInvitationCreation, MembershipEmailInvitationListView,
+    MembershipEmailInvitationOutcome, MembershipJoinOutcome, MembershipPasswordOutcome,
+    MembershipService, ReviewMembershipApplication, SubmitMembershipApplication,
+    SubmitMembershipPassword,
 };
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::relation::{CreateSiteMember, GetSiteMember, RemoveSiteMember};
@@ -69,6 +70,11 @@ struct CreateMembershipEmailInvitationRequest {
 struct CancelMembershipEmailInvitationRequest {
     site_id: i64,
     invitation_id: i64,
+}
+
+#[derive(Deserialize, Debug)]
+struct ListMembershipEmailInvitationsRequest {
+    site_id: i64,
 }
 
 pub async fn membership_join(
@@ -193,6 +199,15 @@ pub async fn membership_email_invitation_cancel(
 
     MembershipService::cancel_email_invitation(ctx, input.site_id, input.invitation_id)
         .await
+}
+
+pub async fn membership_email_invitation_list(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Vec<MembershipEmailInvitationListView>> {
+    let input: ListMembershipEmailInvitationsRequest = parse!(params, SiteMembership);
+    require_role_assign_permission(ctx, input.site_id).await?;
+    MembershipService::list_email_invitations(ctx, input.site_id).await
 }
 
 async fn require_role_assign_permission(

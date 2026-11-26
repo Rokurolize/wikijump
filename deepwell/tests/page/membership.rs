@@ -2006,3 +2006,176 @@ async fn membership_by_password_ignores_arguments_and_module_source_boundaries()
         "an inline MembershipByPassword invocation must stay literal like live:\n{inline}",
     );
 }
+
+#[tokio::test]
+async fn membership_email_invitation_list_reports_outstanding_invitations_to_site_managers()
+ {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}))
+        .expect("seeded editable site should exist")
+        .site;
+    let site_id = site.site_id;
+
+    let manager_name = format!("A1033 invitation list manager {}", cuid());
+    let manager = UserService::create(
+        runner.context(),
+        CreateUser {
+            user_type: UserType::Regular,
+            name: manager_name.clone(),
+            email: format!("a1033-list-manager-{}@example.invalid", cuid()),
+            locales: vec!["en".to_owned()],
+            password: "A1033 invitation list fixture password!".to_owned(),
+            bypass_filter: true,
+            bypass_email_verification: true,
+            override_user_id: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("invitation list manager should be created");
+    let stranger = UserService::create(
+        runner.context(),
+        CreateUser {
+            user_type: UserType::Regular,
+            name: format!("A1033 invitation list stranger {}", cuid()),
+            email: format!("a1033-list-stranger-{}@example.invalid", cuid()),
+            locales: vec!["en".to_owned()],
+            password: "A1033 invitation list fixture password!".to_owned(),
+            bypass_filter: true,
+            bypass_email_verification: true,
+            override_user_id: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("invitation list stranger should be created");
+
+    let manager_role = RoleService::create(
+        runner.context(),
+        InternalCreateRoleInput {
+            site_id,
+            name: format!("A1033 invitation list managers {}", cuid()),
+            description: None,
+            is_virtual: false,
+            parent_role_id: None,
+            creating_user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("invitation list manager role should be created");
+    PermissionService::update_permissions_for_role(
+        runner.context(),
+        UpdateRolePermissionsInput {
+            site_id,
+            role_reference: Reference::Id(manager_role.role_id),
+            expected_role_revision: manager_role.revision,
+            new_permissions: vec![Permission {
+                resource_type: Resource::Role,
+                resource_category: None,
+                action: Action::Assign,
+            }],
+            cascade_removals: false,
+            updating_user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("invitation list manager role should grant role assignment");
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            user_id: manager.user_id,
+            role_id: manager_role.role_id,
+            site_id,
+            assigning_user_id: ADMIN_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("manager should receive the invitation list role");
+
+    let recipient_email = format!("a1033-list-recipient-{}@example.invalid", cuid());
+    runner.set_request_context(RequestContext {
+        user_id: Some(manager.user_id),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let created = run_endpoint!(
+        runner,
+        membership_email_invitation_create,
+        json!({
+            "site_id": site_id,
+            "email": recipient_email,
+            "recipient_name": "List Recipient",
+            "message": "invitation list fixture",
+            "to_contacts": false,
+            "page_slug": "invitation",
+        }),
+    );
+
+    let listed = run_endpoint!(
+        runner,
+        membership_email_invitation_list,
+        json!({"site_id": site_id}),
+    );
+    let view = listed
+        .iter()
+        .find(|row| row.invitation_id == created.invitation_id)
+        .expect("created invitation should appear in the site list");
+    assert_eq!(view.site_id, site_id);
+    assert_eq!(view.email, recipient_email);
+    assert_eq!(view.recipient_name, "List Recipient");
+    assert_eq!(view.sender_user_name, manager_name);
+    assert!(view.created_at > OffsetDateTime::UNIX_EPOCH);
+
+    runner.set_request_context(RequestContext {
+        user_id: None,
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let anonymous_error = run_endpoint_err!(
+        runner,
+        membership_email_invitation_list,
+        json!({"site_id": site_id}),
+    );
+    assert_contains_error!(anonymous_error, ErrorType::NotAuthenticated);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(stranger.user_id),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let denied_error = run_endpoint_err!(
+        runner,
+        membership_email_invitation_list,
+        json!({"site_id": site_id}),
+    );
+    assert_contains_error!(denied_error, ErrorType::PermissionDenied);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(manager.user_id),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    assert!(run_endpoint!(
+        runner,
+        membership_email_invitation_cancel,
+        json!({
+            "site_id": site_id,
+            "invitation_id": created.invitation_id,
+        }),
+    ));
+    let listed = run_endpoint!(
+        runner,
+        membership_email_invitation_list,
+        json!({"site_id": site_id}),
+    );
+    assert!(
+        listed
+            .iter()
+            .all(|row| row.invitation_id != created.invitation_id),
+        "a canceled invitation must leave the outstanding list",
+    );
+}

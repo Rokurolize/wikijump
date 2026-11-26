@@ -7,6 +7,7 @@
   import CloneSettings from "./CloneSettings.svelte"
   import CustomDomainSettings from "./CustomDomainSettings.svelte"
   import ForumSettings from "./ForumSettings.svelte"
+  import InvitationsSettings from "./InvitationsSettings.svelte"
   import PermissionsSettings from "./PermissionsSettings.svelte"
   import LicenseSettings from "./LicenseSettings.svelte"
   import LayoutSettings from "./LayoutSettings.svelte"
@@ -33,6 +34,7 @@
 <ThemeSettings {data} />
 <ToolbarSettings {data} />
 <MembershipSettings {data} />
+<InvitationsSettings />
 <AutonumberSettings {data} />
 <NavigationSettings {data} />
 <TemplateSettings {data} />
