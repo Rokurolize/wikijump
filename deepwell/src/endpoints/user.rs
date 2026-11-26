@@ -25,7 +25,7 @@ use crate::models::wikidot_user::Entity as WikidotUser;
 use crate::services::authentication::AuthenticateUser;
 use crate::services::user::{
     ActivateUserFromWikidot, CreateUser, CreateUserOutput, DeleteUser, GetUser,
-    GetUserOutput, UpdateUser, UpdateUserBody, User, UserOutput, WikijumpUserOutput,
+    GetUserOutput, UpdateUser, User, UserOutput, WikijumpUserOutput,
 };
 use crate::services::{
     AuthenticationAttemptService, AuthenticationService, MutationAuthorization,
