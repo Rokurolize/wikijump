@@ -451,6 +451,7 @@ export async function roleUpdateInfoAction({
   const form = {
     siteId: submittedInteger(data, "siteId"),
     roleId: submittedInteger(data, "roleId"),
+    expectedRoleRevision: submittedRevision(data, "expectedRoleRevision"),
     name: submittedText(data, "name"),
     description: submittedText(data, "description")
   }
@@ -471,6 +472,7 @@ export async function roleUpdateInfoAction({
       throw new PageActionContextMismatchError("Permission denied.")
     }
     if (
+      form.expectedRoleRevision < 0 ||
       form.name.length === 0 ||
       form.name.length > 100 ||
       form.description.length > 500
@@ -481,6 +483,7 @@ export async function roleUpdateInfoAction({
       {
         siteId,
         roleId: form.roleId,
+        expectedRoleRevision: form.expectedRoleRevision,
         name: form.name,
         description: form.description,
         updatingUserId: session.user_id,
@@ -503,6 +506,7 @@ export async function rolePermissionsUpdateAction({
   const form = {
     siteId: submittedInteger(data, "siteId"),
     roleId: submittedInteger(data, "roleId"),
+    expectedRoleRevision: submittedRevision(data, "expectedRoleRevision"),
     permissions: data.get("permissions")
   }
   const sessionToken = cookies.get("wikijump_token")
@@ -515,6 +519,13 @@ export async function rolePermissionsUpdateAction({
     const session = requireActionSession(await authGetSession(sessionToken))
     const context = { sessionToken, siteId }
     await requireSiteRole(siteId, form.roleId, context)
+    if (form.expectedRoleRevision < 0) {
+      return fail(400, {
+        siteId,
+        roleId: form.roleId,
+        message: "Missing role revision."
+      })
+    }
     let permissions: RolePermission[]
     try {
       permissions = parseRolePermissions(form.permissions)
@@ -525,6 +536,7 @@ export async function rolePermissionsUpdateAction({
       {
         siteId,
         roleId: form.roleId,
+        expectedRoleRevision: form.expectedRoleRevision,
         permissions,
         cascadeRemovals: true,
         updatingUserId: session.user_id,
@@ -661,6 +673,13 @@ function submittedText(data: FormData, name: string): string {
 function submittedInteger(data: FormData, name: string): number {
   const value = Number(data.get(name))
   return Number.isSafeInteger(value) ? value : -1
+}
+
+function submittedRevision(data: FormData, name: string): number {
+  const value = data.get(name)
+  if (typeof value !== "string" || value.trim() === "") return -1
+  const revision = Number(value)
+  return Number.isSafeInteger(revision) ? revision : -1
 }
 
 async function requireSiteRole(

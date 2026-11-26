@@ -292,6 +292,7 @@ async fn create_editable_site_fixture(state: &ServerState, site_slug: &str) -> i
             UpdateRolePermissionsInput {
                 site_id: site.site_id,
                 role_reference: Reference::Id(everyone.role_id),
+                expected_role_revision: everyone.revision,
                 new_permissions: [
                     Action::View,
                     Action::Create,
@@ -621,6 +622,7 @@ impl SiteNavigationRpcFixture {
             UpdateRolePermissionsInput {
                 site_id: site.site_id,
                 role_reference: Reference::Id(everyone.role_id),
+                expected_role_revision: everyone.revision,
                 new_permissions: vec![Permission {
                     resource_type: Resource::Site,
                     resource_category: None,

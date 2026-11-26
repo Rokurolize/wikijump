@@ -23597,6 +23597,7 @@ async fn make_listpages_test_category_admin_only(
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(role.role_id),
+            expected_role_revision: role.revision,
             new_permissions: vec![Permission {
                 resource_type: Resource::Page,
                 resource_category: Some(Reference::Id(category_id)),
@@ -23656,6 +23657,7 @@ async fn make_page_mutation_test_category_for_user(
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(role.role_id),
+            expected_role_revision: role.revision,
             new_permissions: actions
                 .iter()
                 .copied()

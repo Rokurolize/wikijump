@@ -14,6 +14,7 @@ pub struct Model {
     pub from_wikidot: bool,
     pub is_virtual: bool,
     pub parent_role_id: Option<i64>,
+    pub revision: i64,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: TimeDateTimeWithTimeZone,
     #[serde(with = "time::serde::rfc3339::option")]

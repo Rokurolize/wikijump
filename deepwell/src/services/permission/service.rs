@@ -37,7 +37,9 @@ use crate::services::role::{
 use crate::services::site::SiteService;
 use crate::types::{AccessPolicy, Action, Permission, Reference, Resource};
 use futures::future::try_join_all;
-use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder, Set,
+};
 use std::collections::{BTreeMap, HashSet};
 
 #[derive(Debug)]
@@ -158,6 +160,7 @@ impl PermissionService {
         UpdateRolePermissionsInput {
             site_id,
             role_reference: reference,
+            expected_role_revision,
             new_permissions,
             cascade_removals,
             updating_user_id,
@@ -166,9 +169,21 @@ impl PermissionService {
     ) -> Result<()> {
         let txn = ctx.transaction();
 
-        let role = RoleService::get(ctx, site_id, reference)
+        let role = RoleService::get_for_update(ctx, site_id, reference)
             .await
             .or_raise(|| Error::new("failed to get role", ErrorType::RoleNotFound))?;
+        if expected_role_revision != role.revision {
+            bail!(Error::new(
+                format!(
+                    "role changed since revision {expected_role_revision}; current revision is {}. Reload the admin page and retry",
+                    role.revision,
+                ),
+                ErrorType::RoleRevisionConflict {
+                    expected_revision: expected_role_revision,
+                    current_revision: role.revision,
+                },
+            ));
+        }
 
         let make_error = || {
             Error::new(
@@ -299,6 +314,15 @@ impl PermissionService {
                 .await
                 .or_raise(make_error)?;
         }
+
+        role::ActiveModel {
+            role_id: Set(role.role_id),
+            revision: Set(role.revision + 1),
+            ..Default::default()
+        }
+        .update(txn)
+        .await
+        .or_raise(make_error)?;
 
         AuditService::log(
             ctx,
@@ -959,6 +983,10 @@ impl PermissionService {
             )
         };
 
+        let child_role =
+            RoleService::get_for_update(ctx, site_id, Reference::Id(child_role_id))
+                .await
+                .or_raise(make_error)?;
         let child_perms = Self::permissions_as_set(ctx, child_role_id)
             .await
             .or_raise(make_error)?;
@@ -989,6 +1017,17 @@ impl PermissionService {
                 .exec(txn)
                 .await
                 .or_raise(make_error)?;
+        }
+
+        if !to_remove.is_empty() {
+            role::ActiveModel {
+                role_id: Set(child_role_id),
+                revision: Set(child_role.revision + 1),
+                ..Default::default()
+            }
+            .update(txn)
+            .await
+            .or_raise(make_error)?;
         }
 
         let grandchildren = Role::find()

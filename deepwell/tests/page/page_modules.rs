@@ -1198,6 +1198,7 @@ async fn make_nextprevious_test_category_member_only(
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(role.role_id),
+            expected_role_revision: role.revision,
             new_permissions: vec![Permission {
                 resource_type: Resource::Page,
                 resource_category: Some(Reference::Id(category_id)),

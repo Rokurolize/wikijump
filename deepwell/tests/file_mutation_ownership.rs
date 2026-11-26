@@ -111,6 +111,7 @@ async fn grant_page_edit(runner: &TestRunner, site_id: i64, user_id: i64) {
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(role.role_id),
+            expected_role_revision: role.revision,
             new_permissions: vec![Permission {
                 resource_type: Resource::Page,
                 resource_category: None,

@@ -157,6 +157,7 @@ async fn grant_fixture_roles(runner: &TestRunner, site_id: i64, category_id: i64
             UpdateRolePermissionsInput {
                 site_id,
                 role_reference: Reference::Id(role.role_id),
+                expected_role_revision: role.revision,
                 new_permissions: permissions,
                 cascade_removals: false,
                 updating_user_id: SYSTEM_USER_ID,

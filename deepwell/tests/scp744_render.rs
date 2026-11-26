@@ -231,6 +231,7 @@ async fn scp744_full_closure_render_keeps_article_body() {
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(role.role_id),
+            expected_role_revision: role.revision,
             new_permissions: vec![
                 Permission {
                     resource_type: Resource::Site,
@@ -290,6 +291,7 @@ async fn scp744_full_closure_render_keeps_article_body() {
             UpdateRolePermissionsInput {
                 site_id,
                 role_reference: Reference::Id(virtual_role_id),
+                expected_role_revision: 0,
                 new_permissions: vec![Permission {
                     resource_type: Resource::Page,
                     resource_category: None,

@@ -110,6 +110,7 @@ async fn grant_site_edit(runner: &TestRunner, site_id: i64, user_id: i64, n: u64
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(role.role_id),
+            expected_role_revision: role.revision,
             new_permissions: vec![Permission {
                 resource_type: Resource::Site,
                 resource_category: None,
@@ -159,6 +160,7 @@ async fn grant_site_page_create(runner: &TestRunner, site_id: i64, user_id: i64,
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(role.role_id),
+            expected_role_revision: role.revision,
             new_permissions: vec![
                 Permission {
                     resource_type: Resource::Page,

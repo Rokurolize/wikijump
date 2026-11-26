@@ -120,6 +120,7 @@ async fn setup_fixture(runner: &TestRunner) -> Fixture {
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(role_id),
+            expected_role_revision: 0,
             new_permissions: vec![Permission {
                 resource_type: Resource::Page,
                 resource_category: None,

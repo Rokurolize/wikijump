@@ -286,6 +286,7 @@ async fn add_perms_to_role(
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(role_id),
+            expected_role_revision: 0,
             new_permissions: permissions,
             cascade_removals: false,
             updating_user_id: SYSTEM_USER_ID,
@@ -2138,6 +2139,7 @@ async fn role_update_permissions_and_get() {
         UpdateRolePermissionsInput {
             site_id: f.site_id,
             role_reference: Reference::Id(role.role_id),
+            expected_role_revision: role.revision,
             new_permissions: vec![
                 Permission {
                     resource_type: Resource::Page,

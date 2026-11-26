@@ -150,6 +150,7 @@ async fn create_component_notice_fixture_site(
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(everyone_role.role_id),
+            expected_role_revision: everyone_role.revision,
             new_permissions: vec![Permission {
                 resource_type: Resource::Page,
                 resource_category: None,
@@ -308,6 +309,7 @@ async fn grant_category_permission(
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(role.role_id),
+            expected_role_revision: role.revision,
             new_permissions: vec![Permission {
                 resource_type: Resource::Page,
                 resource_category: Some(Reference::Id(category_id)),

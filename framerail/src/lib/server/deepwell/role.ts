@@ -10,6 +10,7 @@ export interface RoleModel {
   from_wikidot: boolean
   is_virtual: boolean
   parent_role_id: number | null
+  revision: number
   created_at: string
   updated_at: string | null
   deleted_at: string | null
@@ -103,6 +104,7 @@ export async function roleUpdateInfo(
   input: {
     siteId: number
     roleId: number
+    expectedRoleRevision: number
     name: string
     description: string
     updatingUserId: number
@@ -115,6 +117,7 @@ export async function roleUpdateInfo(
     {
       site_id: input.siteId,
       role_id: input.roleId,
+      expected_role_revision: input.expectedRoleRevision,
       name: input.name,
       description: input.description,
       updating_user_id: input.updatingUserId,
@@ -128,6 +131,7 @@ export async function roleUpdatePermissions(
   input: {
     siteId: number
     roleId: number
+    expectedRoleRevision: number
     permissions: RolePermission[]
     cascadeRemovals: boolean
     updatingUserId: number
@@ -140,6 +144,7 @@ export async function roleUpdatePermissions(
     {
       site_id: input.siteId,
       role_reference: input.roleId,
+      expected_role_revision: input.expectedRoleRevision,
       new_permissions: input.permissions,
       cascade_removals: input.cascadeRemovals,
       updating_user_id: input.updatingUserId,

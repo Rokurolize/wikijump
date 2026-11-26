@@ -197,6 +197,7 @@ async fn create_role_maybe_virtual(
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(role_id),
+            expected_role_revision: 0,
             new_permissions: permissions,
             cascade_removals: false,
             updating_user_id: SYSTEM_USER_ID,

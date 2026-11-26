@@ -52,6 +52,7 @@ pub struct GetRoleInput<'a> {
 pub struct UpdateRoleInput {
     pub site_id: i64,
     pub role_id: i64,
+    pub expected_role_revision: i64,
     pub name: Maybe<String>,
     pub description: Maybe<String>,
     pub updating_user_id: i64,
@@ -62,6 +63,7 @@ pub struct UpdateRoleInput {
 pub struct UpdateRolePermissionsInput<'a> {
     pub site_id: i64,
     pub role_reference: Reference<'a>,
+    pub expected_role_revision: i64,
     pub new_permissions: Vec<Permission<'a>>,
     pub cascade_removals: bool,
     pub updating_user_id: i64,

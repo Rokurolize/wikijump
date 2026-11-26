@@ -19,7 +19,7 @@
 
   import type { PageProps } from "./$types"
 
-  let { data }: PageProps = $props()
+  let { data, form }: PageProps = $props()
 </script>
 
 <SiteSettings {data} />
@@ -37,7 +37,7 @@
 <RatingSettings {data} />
 <LicenseSettings {data} />
 <CustomDomainSettings {data} />
-<PermissionsSettings {data} />
+<PermissionsSettings {data} actionData={form} />
 <BlocksSettings {data} />
 
 <style global lang="scss">
