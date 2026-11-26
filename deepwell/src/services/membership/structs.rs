@@ -63,6 +63,17 @@ pub struct MembershipEmailInvitationCreation {
     pub hash: String,
 }
 
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+pub struct MembershipEmailInvitationListView {
+    pub invitation_id: i64,
+    pub site_id: i64,
+    pub email: String,
+    pub recipient_name: String,
+    pub sender_user_name: String,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: time::OffsetDateTime,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CreateMembershipEmailInvitation<'a> {
     pub site_id: i64,

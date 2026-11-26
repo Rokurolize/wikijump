@@ -20,8 +20,8 @@ pub use self::structs::{
     MembershipApplicationData, MembershipApplicationOutcome,
     MembershipApplicationReviewDecision, MembershipApplicationStatus,
     MembershipApplicationView, MembershipBrowserAction,
-    MembershipEmailInvitationCreation, MembershipEmailInvitationOutcome,
-    MembershipEmailInvitationView, MembershipJoinOutcome, MembershipPasswordOutcome,
-    MembershipPolicy, ReviewMembershipApplication, SubmitMembershipApplication,
-    SubmitMembershipPassword,
+    MembershipEmailInvitationCreation, MembershipEmailInvitationListView,
+    MembershipEmailInvitationOutcome, MembershipEmailInvitationView,
+    MembershipJoinOutcome, MembershipPasswordOutcome, MembershipPolicy,
+    ReviewMembershipApplication, SubmitMembershipApplication, SubmitMembershipPassword,
 };

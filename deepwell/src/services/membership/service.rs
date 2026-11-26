@@ -15,9 +15,10 @@ use super::structs::{
     JoinMembership, JoinModuleState, MembershipApplicationData,
     MembershipApplicationOutcome, MembershipApplicationReviewDecision,
     MembershipApplicationStatus, MembershipApplicationView,
-    MembershipEmailInvitationOutcome, MembershipEmailInvitationView,
-    MembershipJoinOutcome, MembershipPasswordOutcome, MembershipPolicy,
-    ReviewMembershipApplication, SubmitMembershipApplication, SubmitMembershipPassword,
+    MembershipEmailInvitationListView, MembershipEmailInvitationOutcome,
+    MembershipEmailInvitationView, MembershipJoinOutcome, MembershipPasswordOutcome,
+    MembershipPolicy, ReviewMembershipApplication, SubmitMembershipApplication,
+    SubmitMembershipPassword,
 };
 use crate::constants::ADMIN_USER_ID;
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
@@ -847,6 +848,59 @@ WHERE invitation_id = $1 AND accepted = FALSE
             });
         }
         Ok(applications)
+    }
+
+    pub async fn list_email_invitations(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+    ) -> Result<Vec<MembershipEmailInvitationListView>> {
+        #[derive(Debug, FromQueryResult)]
+        struct InvitationListRow {
+            invitation_id: i64,
+            sender_user_id: i64,
+            email: String,
+            recipient_name: String,
+            created_at: time::OffsetDateTime,
+        }
+
+        let transaction = ctx.transaction();
+        let rows = InvitationListRow::find_by_statement(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            r#"
+SELECT invitation_id, sender_user_id, email, recipient_name, created_at
+FROM membership_email_invitation
+WHERE site_id = $1 AND accepted = FALSE
+ORDER BY created_at DESC, invitation_id DESC
+            "#,
+            [Value::from(site_id)],
+        ))
+        .all(transaction)
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to list membership email invitations",
+                ErrorType::SiteMembership,
+            )
+        })?;
+        let sender_ids = rows
+            .iter()
+            .map(|row| row.sender_user_id)
+            .collect::<std::collections::BTreeSet<_>>();
+        let identities = UserService::get_public_identities(ctx, &sender_ids).await?;
+        Ok(rows
+            .into_iter()
+            .map(|row| MembershipEmailInvitationListView {
+                invitation_id: row.invitation_id,
+                site_id,
+                email: row.email,
+                recipient_name: row.recipient_name,
+                sender_user_name: identities
+                    .get(&row.sender_user_id)
+                    .map(|identity| identity.user_name.to_string())
+                    .unwrap_or_default(),
+                created_at: row.created_at,
+            })
+            .collect())
     }
 
     fn denied() -> Error {
