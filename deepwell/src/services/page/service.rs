@@ -838,6 +838,22 @@ WHERE page.site_id = $1
             });
         }
 
+        let authenticated_expired = named.is_some_and(|row| {
+            row.lock_secret == lease.lock_secret
+                && row.user_id == user_id
+                && !page_edit_lock::is_live(row, now)
+        });
+
+        if !authenticated_expired {
+            bail!(Error::new(
+                format!(
+                    "page edit lock {} is not an expired lock held by user ID {} on page ID {}",
+                    lease.lock_id, user_id, page_id,
+                ),
+                ErrorType::PageEditLockConflict,
+            ));
+        }
+
         let moved =
             Self::source_moved_after(ctx, page_id, Some(presented_revision_id)).await?;
 
