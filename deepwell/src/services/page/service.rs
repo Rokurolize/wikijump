@@ -811,6 +811,19 @@ WHERE page.site_id = $1
                 ));
             }
 
+            if lease.mode == PageEditLockMode::Page
+                && presented_revision_id != last_revision.revision_id
+            {
+                bail!(Error::new(
+                    format!(
+                        "last revision verification failed, actual last revision ID {}, \
+                         but user passed in ID {}",
+                        last_revision.revision_id, presented_revision_id,
+                    ),
+                    ErrorType::NotLatestRevisionId,
+                ));
+            }
+
             let conflict = rows.iter().any(|other| {
                 other.page_edit_lock_id != row.page_edit_lock_id
                     && page_edit_lock::is_live(other, now)

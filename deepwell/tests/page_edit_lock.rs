@@ -716,12 +716,12 @@ async fn save_releases_and_released_credentials_are_rejected() {
         site_id,
         page_id,
         USER_A,
-        424_242,
+        revision_id,
         text_body("a v1"),
         Some(lease_of(&a, PageEditLockMode::Page)),
     )
     .await
-    .expect("live-row save ignores the presented id and commits")
+    .expect("live-row save with the current presented id should commit")
     .expect("live-row save should create a revision");
     assert!(!output.lock_recreated);
     assert!(
@@ -830,6 +830,193 @@ async fn meta_revisions_conflict_with_the_holders_save() {
         .expect("latest revision should exist");
     assert_eq!(latest.revision_id, tag_revision.revision_id);
     assert!(latest.changes.contains(&"tags".to_owned()));
+}
+
+#[tokio::test]
+async fn live_page_lease_rejects_stale_presented_base_and_preserves_tags() {
+    let mut runner = TestRunner::setup().await;
+    let (site_id, page_id, revision_a) = setup_page(
+        &mut runner,
+        "edit-lock-live-lease-stale-base",
+        "source before tags",
+    )
+    .await;
+
+    let tags = vec!["alpha".to_owned(), "beta".to_owned()];
+    let tag_revision = edit(
+        &runner,
+        site_id,
+        page_id,
+        USER_B,
+        revision_a,
+        EditPageBody {
+            tags: Maybe::Set(tags.clone()),
+            ..Default::default()
+        },
+        None,
+    )
+    .await
+    .expect("intervening tag-set edit should commit")
+    .expect("tag-set edit should create a revision");
+    assert_ne!(tag_revision.revision_id, revision_a);
+
+    let holder = grant(
+        &acquire(
+            &runner,
+            site_id,
+            page_id,
+            USER_A,
+            PageEditLockMode::Page,
+            None,
+        )
+        .await,
+    );
+    assert_eq!(holder.base_revision_id, Some(tag_revision.revision_id));
+
+    let stale = edit(
+        &runner,
+        site_id,
+        page_id,
+        USER_A,
+        revision_a,
+        EditPageBody {
+            wikitext: Maybe::Set("stale full-page save".to_owned()),
+            tags: Maybe::Set(Vec::new()),
+            ..Default::default()
+        },
+        Some(lease_of(&holder, PageEditLockMode::Page)),
+    )
+    .await
+    .expect_err("a live page lease must not accept a stale presented base");
+    assert_contains_error!(stale, ErrorType::NotLatestRevisionId);
+
+    let latest = PageRevisionService::get_latest(runner.context(), site_id, page_id)
+        .await
+        .expect("latest revision should exist");
+    assert_eq!(latest.revision_id, tag_revision.revision_id);
+    assert!(latest.changes.contains(&"tags".to_owned()));
+    assert_eq!(
+        latest_wikitext(&runner, site_id, page_id).await,
+        "source before tags"
+    );
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({ "site_id": site_id, "page": page_id }),
+    )
+    .expect("page should still exist");
+    assert_eq!(page.tags, tags);
+    assert_eq!(revision_count(&runner, page_id).await, 2);
+}
+
+#[tokio::test]
+async fn live_append_lease_allows_stale_presented_base() {
+    let mut runner = TestRunner::setup().await;
+    let (site_id, page_id, revision_a) =
+        setup_page(&mut runner, "edit-lock-append-stale-base", "base\n").await;
+
+    edit(
+        &runner,
+        site_id,
+        page_id,
+        USER_B,
+        revision_a,
+        EditPageBody {
+            tags: Maybe::Set(vec!["intervening".to_owned()]),
+            ..Default::default()
+        },
+        None,
+    )
+    .await
+    .expect("intervening tag-set edit should commit")
+    .expect("intervening edit should create a revision");
+
+    let holder = grant(
+        &acquire(
+            &runner,
+            site_id,
+            page_id,
+            USER_A,
+            PageEditLockMode::Append,
+            None,
+        )
+        .await,
+    );
+
+    edit(
+        &runner,
+        site_id,
+        page_id,
+        USER_A,
+        revision_a,
+        text_body("appended"),
+        Some(lease_of(&holder, PageEditLockMode::Append)),
+    )
+    .await
+    .expect("append mode must stay exempt from the presented-base refusal")
+    .expect("append save should create a revision");
+
+    assert_eq!(
+        latest_wikitext(&runner, site_id, page_id).await,
+        "base\nappended",
+    );
+}
+
+#[tokio::test]
+async fn live_section_lease_allows_stale_presented_base_when_section_is_anchored() {
+    let mut runner = TestRunner::setup().await;
+    let (site_id, page_id, revision_a) = setup_page(
+        &mut runner,
+        "edit-lock-section-stale-base",
+        "+ One\nalpha\n+ Two\nbeta\n",
+    )
+    .await;
+
+    edit(
+        &runner,
+        site_id,
+        page_id,
+        USER_B,
+        revision_a,
+        EditPageBody {
+            tags: Maybe::Set(vec!["intervening".to_owned()]),
+            ..Default::default()
+        },
+        None,
+    )
+    .await
+    .expect("intervening tag-set edit should commit")
+    .expect("intervening edit should create a revision");
+
+    let holder = grant(
+        &acquire(
+            &runner,
+            site_id,
+            page_id,
+            USER_A,
+            PageEditLockMode::Section,
+            Some(0),
+        )
+        .await,
+    );
+
+    edit(
+        &runner,
+        site_id,
+        page_id,
+        USER_A,
+        revision_a,
+        text_body("+ One\nALPHA"),
+        Some(section_lease_of(&holder, 0)),
+    )
+    .await
+    .expect("section mode must keep its section anchor without a whole-page refusal")
+    .expect("section save should create a revision");
+
+    let wikitext = latest_wikitext(&runner, site_id, page_id).await;
+    assert!(wikitext.contains("+ One\nALPHA"));
+    assert!(wikitext.contains("+ Two\nbeta"));
 }
 
 #[tokio::test]
