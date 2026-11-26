@@ -2,7 +2,7 @@
 
 ## Validation
 
-Develop in the local incremental stack. Run `scripts/preflight.sh --final` on the PR head before merging. `--base` picks the comparison ref and `--groups` runs named groups regardless of the diff.
+Develop in the local incremental stack. GitHub targeted PR checks are the merge gate. Run `scripts/preflight.sh --final` locally only for standing-sensitive or operator-requested work. `--base` picks the comparison ref and `--groups` runs named groups regardless of the diff.
 
 ## Candidates
 

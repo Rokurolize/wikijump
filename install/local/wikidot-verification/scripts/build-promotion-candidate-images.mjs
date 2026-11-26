@@ -98,14 +98,22 @@ export async function promotionSourceIdentity(sourceRoot) {
   return Object.freeze({wikijump_commit: commit, wikijump_tree: tree, ftml_sha: ftmlRevision(lock)});
 }
 
-export function promotionImageBuildPlan(sourceRoot) {
+export function promotionCargoBuildJobs(parallelism = os.availableParallelism()) {
+  return String(Math.max(1, Math.floor(parallelism / 2)));
+}
+
+export function promotionImageBuildPlan(sourceRoot, {parallelism} = {}) {
+  const cargoJobs = promotionCargoBuildJobs(parallelism);
   return PROMOTION_IMAGE_ROLES.map((role) => {
     const definition = BUILD_DEFINITIONS[role];
     return Object.freeze({
       role,
       dockerfile: path.resolve(sourceRoot, definition.context, definition.dockerfile),
       context: path.resolve(sourceRoot, definition.context),
-      build_args: Object.freeze([...(definition.buildArgs ?? [])]),
+      build_args: Object.freeze([
+        ...(definition.buildArgs ?? []),
+        ...(role === "deepwell" || role === "wws" ? [`CARGO_BUILD_JOBS=${cargoJobs}`] : []),
+      ]),
     });
   });
 }

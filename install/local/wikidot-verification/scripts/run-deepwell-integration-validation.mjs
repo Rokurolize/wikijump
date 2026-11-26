@@ -25,6 +25,11 @@ function withPreflightProfile(cargoTestArgs) {
   return hasProfile ? cargoTestArgs : ["--profile", "preflight", ...cargoTestArgs];
 }
 
+function deepwellTestCompileArgs(cargoTestArgs) {
+  const args = withPreflightProfile(cargoTestArgs);
+  return args.includes("--no-run") ? args : [...args, "--no-run"];
+}
+
 function runChildScript(script, argv, env) {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [script, ...argv], {env, stdio: "inherit"});
@@ -124,13 +129,19 @@ async function run() {
 
   const filterset = process.env.WIKIJUMP_DEEPWELL_NEXTEST_FILTERSET?.trim() || "";
   const shards = deepwellTestShards(process.env);
-  if (shards > 1 && !deepwellNextestPartition(process.env) && !filterset) {
-    await runShards(shards, process.argv.slice(2));
-    return;
-  }
   const separator = process.argv.indexOf("--", 2);
   const cargoTestArgs = process.argv.slice(2, separator === -1 ? undefined : separator);
   const harnessArgs = separator === -1 ? [] : process.argv.slice(separator + 1);
+  if (shards > 1 && !deepwellNextestPartition(process.env) && !filterset) {
+    const cargo = process.env.WIKIJUMP_OFFLINE_CARGO?.trim() || "cargo";
+    await runValidationCommand(cargo, [
+      "test", "--offline", "--locked",
+      "--manifest-path", "deepwell/Cargo.toml",
+      ...deepwellTestCompileArgs(cargoTestArgs),
+    ], {env: {...process.env, CARGO_BUILD_JOBS: process.env.CARGO_BUILD_JOBS?.trim() || "1"}});
+    await runShards(shards, process.argv.slice(2));
+    return;
+  }
 
   await withProvisionedDeepwellStack(async ({env, cargo}) => {
     const partition = deepwellNextestPartition(env);
